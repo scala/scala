@@ -321,8 +321,7 @@ object PartialFunction {
     def isDefinedAt(x: A): Boolean = f(x).isDefined
 
     override def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 = {
-      val z = f(x)
-      if (!z.isEmpty) z.get else default(x)
+      f(x).getOrElse(default(x))
     }
 
     override def lift = f
