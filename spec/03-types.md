@@ -829,7 +829,7 @@ The conformance relation $(<:)$ is the smallest transitive relation that satisfi
 - Conformance includes equivalence. If $T \equiv U$ then $T <: U$.
 - For every value type $T$, `scala.Nothing <: $T$ <: scala.Any`.
 - For every type constructor $T$ (with any number of type parameters), `scala.Nothing <: $T$ <: scala.Any`.
-- For every class type $T$ such that `$T$ <: scala.AnyRef` one has `scala.Null <: $T$`.
+- For every value type $T$, `scala.Null <: $T$` unless `$T$ <: scala.AnyVal`.
 - A type variable or abstract type $t$ conforms to its upper bound and
   its lower bound conforms to $t$.
 - A class type or parameterized type conforms to any of its base-types.
