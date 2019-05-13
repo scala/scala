@@ -190,8 +190,7 @@ final class IntAccumulator
     val s = stepper
     while (s.hasStep) {
       val n = s.nextStep()
-      if (pf.isDefinedAt(n))
-        b.addOne(pf.apply(n))
+      pf.runWith(b.addOne)(n)
     }
     b.result()
   }
