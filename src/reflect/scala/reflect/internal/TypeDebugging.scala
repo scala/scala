@@ -133,7 +133,7 @@ trait TypeDebugging {
       def refine(defs: Scope): String          = defs.toList.mkString("{", " ;\n ", "}")
       def bounds(lo: Type, hi: Type): String   = {
         val lo_s = if (typeIsNothing(lo)) "" else s" >: $lo"
-        val hi_s = if (typeIsAny(hi)) "" else s" <: $hi"
+        val hi_s = if (typeIsAnyOrJavaObject(hi)) "" else s" <: $hi"
         lo_s + hi_s
       }
     }
