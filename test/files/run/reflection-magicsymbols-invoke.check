@@ -7,7 +7,7 @@ method ##: ()Int
 method ==: (x$1: Any)Boolean
 method asInstanceOf: [T0]=> T0
 method equals: (x$1: Any)Boolean
-method getClass: ()Class[_ <: Object]
+method getClass: ()Class[_]
 method hashCode: ()Int
 method isInstanceOf: [T0]=> Boolean
 method toString: ()String
@@ -45,7 +45,7 @@ method clone: ()Object
 method eq: (x$1: AnyRef)Boolean
 method equals: (x$1: Object)Boolean
 method finalize: ()Unit
-method getClass: ()Class[_ <: Object]
+method getClass: ()Class[_]
 method hashCode: ()Int
 method isInstanceOf: [T0]=> Boolean
 method ne: (x$1: AnyRef)Boolean
@@ -91,7 +91,7 @@ method clone: ()Array[T]
 method eq: (x$1: AnyRef)Boolean
 method equals: (x$1: Object)Boolean
 method finalize: ()Unit
-method getClass: ()Class[_ <: Object]
+method getClass: ()Class[_]
 method hashCode: ()Int
 method isInstanceOf: [T0]=> Boolean
 method length: => Int

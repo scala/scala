@@ -319,10 +319,10 @@ class TypesTest {
     val aSym = typeOf[Foo.type].member(TermName("a"))
     val nSym = typeOf[Foo.type].member(TermName("n"))
 
-    assert(typeIsAny(AnyTpe))
+    assert(typeIsAnyOrJavaObject(AnyTpe))
     assert(typeIsNothing(NothingTpe))
-    assert(!typeIsAny(LiteralType(Constant(1))))
-    assert(!typeIsAny(SingleType(NoPrefix, aSym)))
+    assert(!typeIsAnyOrJavaObject(LiteralType(Constant(1))))
+    assert(!typeIsAnyOrJavaObject(SingleType(NoPrefix, aSym)))
     assert(!typeIsNothing(SingleType(NoPrefix, nSym)))
   }
 

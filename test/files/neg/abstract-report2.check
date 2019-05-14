@@ -11,7 +11,7 @@ Missing implementations for 13 members. Stub implementations follow:
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
   def size(): Int = ???
-  def toArray[T <: Object](x$1: Array[T with Object]): Array[T with Object] = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
   def toArray(): Array[Object] = ???
 
 class Foo extends Collection[Int]
@@ -29,7 +29,7 @@ Missing implementations for 13 members. Stub implementations follow:
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
   def size(): Int = ???
-  def toArray[T <: Object](x$1: Array[T with Object]): Array[T with Object] = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
   def toArray(): Array[Object] = ???
 
 class Bar extends Collection[List[_ <: String]]
@@ -47,7 +47,7 @@ Missing implementations for 13 members. Stub implementations follow:
   def removeAll(x$1: java.util.Collection[_]): Boolean = ???
   def retainAll(x$1: java.util.Collection[_]): Boolean = ???
   def size(): Int = ???
-  def toArray[T <: Object](x$1: Array[T with Object]): Array[T with Object] = ???
+  def toArray[T](x$1: Array[T with Object]): Array[T with Object] = ???
   def toArray(): Array[Object] = ???
 
 class Baz[T] extends Collection[T]

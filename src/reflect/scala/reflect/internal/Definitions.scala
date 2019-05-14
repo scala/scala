@@ -303,7 +303,7 @@ trait Definitions extends api.StandardDefinitions {
      *
      * We use `ObjectTpeJava`'s identity to equate it, but not `ObjectTpe`, to `AnyTpe` in subtyping and type equality.
      */
-    lazy val ObjectTpeJava   = mkObjectTpeJava
+    lazy val ObjectTpeJava   = new ObjectTpeJavaRef
 
     lazy val SerializableTpe = SerializableClass.tpe
     lazy val StringTpe       = StringClass.tpe

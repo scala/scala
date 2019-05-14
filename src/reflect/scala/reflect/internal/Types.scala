@@ -1542,7 +1542,7 @@ trait Types
       case _                => lo <:< that && that <:< hi
     }
     private def emptyLowerBound = typeIsNothing(lo) || lo.isWildcard
-    private def emptyUpperBound = typeIsAny(hi) || hi.isWildcard
+    private def emptyUpperBound = typeIsAnyOrJavaObject(hi) || hi.isWildcard
     def isEmptyBounds = emptyLowerBound && emptyUpperBound
 
     override def safeToString = scalaNotation(_.toString)
@@ -2409,7 +2409,11 @@ trait Types
       if (this eq other.asInstanceOf[AnyRef]) true
       else other match {
         case otherTypeRef: TypeRef =>
-          Objects.equals(pre, otherTypeRef.pre) && sym.eq(otherTypeRef.sym) && sameElementsEquals(args, otherTypeRef.args)
+          Objects.equals(pre, otherTypeRef.pre) &&
+            sym.eq(otherTypeRef.sym) &&
+            sameElementsEquals(args, otherTypeRef.args) &&
+            // `ObjectTpeJavaRef` is not structurally equal to `ObjectTpe` -- they should not be collapsed by `unique`
+            !(this.isInstanceOf[ObjectTpeJavaRef] || otherTypeRef.isInstanceOf[ObjectTpeJavaRef])
         case _ => false
       }
     }
@@ -2706,18 +2710,21 @@ trait Types
   private final class ClassArgsTypeRef(pre: Type, sym: Symbol, args: List[Type]) extends ArgsTypeRef(pre, sym, args)
   private final class AliasNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AliasTypeRef
   private final class AbstractNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) with AbstractTypeRef
-  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym){
+  private final class ClassNoArgsTypeRef(pre: Type, sym: Symbol) extends NoArgsTypeRef(pre, sym) {
     override def contains(sym0: Symbol): Boolean = (sym eq sym0) || pre.contains(sym0)
   }
 
-  /** Expose ClassNoArgsTypeRef so we can create a non-uniqued ObjectTpeJava here and in reflect
-   *
-   * NOTE:
-   *   - definitions.ObjectTpe is forced first, so that it ends up in the unique cache.
-   *   - the created TypeRef is structurally equal to  ObjectTpe, but with its own identity
-   *   - we don't want the TypeRef we create here to be unique'd
-   */
-  private[scala] def mkObjectTpeJava: Type = new ClassNoArgsTypeRef(definitions.ObjectTpe.prefix, definitions.ObjectClass)
+  /** Expose ObjectTpeJavaRef so we can create a non-uniqued ObjectTpeJava
+    * (using a type test rather than `eq`, which causes cycles).
+    *
+    * NOTE:
+    *   - definitions.ObjectTpe is forced first, so that it ends up in the unique cache.
+    *   - the created TypeRef is structurally equal to ObjectTpe, but with its own identity
+    *   - we don't want the TypeRef we create here to be unique'd
+    */
+  private[internal] final class ObjectTpeJavaRef extends NoArgsTypeRef(definitions.ObjectTpe.prefix, definitions.ObjectClass) {
+    override def contains(sym0: Symbol): Boolean = (sym eq sym0) || pre.contains(sym0)
+  }
 
   object TypeRef extends TypeRefExtractor {
     def apply(pre: Type, sym: Symbol, args: List[Type]): Type = unique({
@@ -3534,7 +3541,7 @@ trait Types
         if (typeIsNothing(tp)) { // kind-polymorphic
           addBound(NothingTpe)
           true
-        } else if(typeIsAny(tp)) { // kind-polymorphic
+        } else if(typeIsAnyExactly(tp)) { // kind-polymorphic
           addBound(AnyTpe)
           true
         } else if (params.isEmpty) {
@@ -5203,9 +5210,17 @@ trait Types
     }
 
   @tailrec
-  private[scala] final def typeIsAny(tp: Type): Boolean =
+  private[scala] final def typeIsAnyOrJavaObject(tp: Type): Boolean =
     tp.dealias match {
-      case PolyType(_, tp) => typeIsAny(tp)
+      case PolyType(_, tp) => typeIsAnyOrJavaObject(tp)
+      case TypeRef(_, AnyClass, _) => true
+      case _: ObjectTpeJavaRef => true
+      case _ => false
+    }
+
+  private[scala] final def typeIsAnyExactly(tp: Type): Boolean =
+    tp.dealias match {
+      case PolyType(_, tp) => typeIsAnyExactly(tp)
       case TypeRef(_, AnyClass, _) => true
       case _ => false
     }
