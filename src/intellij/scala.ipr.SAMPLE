@@ -173,6 +173,7 @@
     <modules>
       <module filepath="$PROJECT_DIR$/benchmarks.iml" fileurl="file://$PROJECT_DIR$/benchmarks.iml"/>
       <module filepath="$PROJECT_DIR$/compiler.iml" fileurl="file://$PROJECT_DIR$/compiler.iml"/>
+      <module filepath="$PROJECT_DIR$/compiler-bridge.iml" fileurl="file://$PROJECT_DIR$/compiler-bridge.iml"/>
       <module filepath="$PROJECT_DIR$/interactive.iml" fileurl="file://$PROJECT_DIR$/interactive.iml"/>
       <module filepath="$PROJECT_DIR$/junit.iml" fileurl="file://$PROJECT_DIR$/junit.iml"/>
       <module filepath="$PROJECT_DIR$/library.iml" fileurl="file://$PROJECT_DIR$/library.iml"/>
@@ -218,6 +219,16 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-generator-asm/jars/jmh-generator-asm-1.20.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.ow2.asm/asm/jars/asm-5.0.3.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jol/jol-core/jars/jol-core-0.6.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+    <library name="compiler-bridge-deps">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-lang/modules/scala-asm/7.0.0-scala-1/scala-asm-7.0.0-scala-1.jar!/" />
+        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/scala-sbt/compiler-interface/1.3.0-beta1/compiler-interface-1.3.0-beta1.jar!/" />
+        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/jline/jline/2.14.6/jline-2.14.6.jar!/" />
+        <root url="jar://$USER_HOME$/.coursier/cache/v1/http/127.0.0.1%3A8081/artifactory/scala-ci-virtual/org/fusesource/jansi/jansi/1.12/jansi-1.12.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />

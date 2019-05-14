@@ -47,6 +47,7 @@ val asmDep            = "org.scala-lang.modules"         % "scala-asm"          
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
 val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % "1.12"
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.3.0-beta1"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
@@ -415,6 +416,22 @@ def setForkedWorkingDirectory: Seq[Setting[_]] = {
   setting ++ inTask(run)(setting)
 }
 
+lazy val quickInstanceSettings = Seq[Setting[_]](
+  scalaVersion := (ThisBuild / version).value,
+  scalaCompilerBridgeBinaryJar := Some((compilerBridge / Compile / packageBin).value),
+  scalaInstance := {
+    val s = state.value
+    val v = (ThisBuild / version).value
+    val libraryJar = (library / Compile / packageBin).value
+    val reflectJar = (reflect / Compile / packageBin).value
+    val compilerJar = (compiler / Compile / packageBin).value
+    val externalDeps = (compiler / Runtime / externalDependencyClasspath).value.map(_.data)
+    val allJars = Seq(libraryJar, reflectJar, compilerJar) ++ externalDeps
+    Bootstrap.makeScalaInstance(s, v, libraryJar, compilerJar, allJars)
+  },
+  Compile / unmanagedJars += (library / Compile / packageBin).value
+)
+
 // This project provides the STARR scalaInstance for bootstrapping
 lazy val bootstrap = project in file("target/bootstrap")
 
@@ -504,6 +521,7 @@ lazy val compiler = configureAsSubproject(project)
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= Seq(jlineDep, jansiDep),
+    libraryDependencies += compilerInterfaceDep,
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -587,6 +605,22 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   )
   .dependsOn(repl)
 
+lazy val compilerBridge = configureAsSubproject(Project("compiler-bridge", file("src") / "compiler-bridge"))
+  .dependsOn(compiler % Provided)
+  .settings(
+    commonSettings,
+    libraryDependencies += compilerInterfaceDep % Provided,
+    Test / Keys.test := (LocalProject("compiler-bridge-test") / Test / Keys.test).value
+  )
+
+lazy val compilerBridgeTest = Project("compiler-bridge-test", file("test") / "compiler-bridge")
+  .settings(
+    commonSettings,
+    quickInstanceSettings,
+    publish / skip := true,
+    Compile / unmanagedSourceDirectories := Nil,
+    Test / unmanagedSourceDirectories := List(baseDirectory.value)
+  )
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
@@ -1240,6 +1274,7 @@ intellij := {
       moduleDeps(interactive).value,
       moduleDeps(junit).value,
       moduleDeps(library).value,
+      moduleDeps(compilerBridge).value,
       moduleDeps(manual).value,
       moduleDeps(testkit).value,
       moduleDeps(partest).value,
