@@ -3,6 +3,24 @@
 This is the official repository for the [Scala Programming Language](http://www.scala-lang.org)
 standard library, compiler, and language spec.
 
+# If you're completely new to Scala and Open Source Software
+
+If you're new to Scala and the open source community please follow these step:
+
+1. Learn more about what scala is and does! You can do this here: http://allaboutscala.com/tutorials/scala-introduction/learn-scala-programming-language/
+
+2. Learn how to do a git pull request. This will allow you to make contributions to the code base. To get more information on how to complete it go to this site: https://help.github.com/articles/using-pull-requests/#fork--pull
+
+3. Look through the repository and see if you can find any bugs you want to fix or features you want to add. All of the files are at the top of this page and you can download them to your computer (clone)
+
+4. If you would like to look at bugs that are already reported and start working on them please go to the bug tracker: https://github.com/scala/bug/issues
+
+5. Once you have written and tested your code please complete a pull request on it (follow the guide in step 2). Other contributors will sign off on it and pushed it. 
+
+6. If you have any issues please read more about open source: https://opensource.guide/. Or contact the community. Scroll down to the get in touch section and contact anyone on the list!
+
+Thank you for your interest in Scala and the larger Open Source Software community!
+
 # How to contribute
 
 To contribute in this repo, please open a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository.
