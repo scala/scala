@@ -39,6 +39,7 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
 
   def isNaN: Boolean         = java.lang.Double.isNaN(self)
   def isInfinity: Boolean    = java.lang.Double.isInfinite(self)
+  def isFinite: Boolean      = java.lang.Double.isFinite(self)
   def isPosInfinity: Boolean = Double.PositiveInfinity == self
   def isNegInfinity: Boolean = Double.NegativeInfinity == self
 
