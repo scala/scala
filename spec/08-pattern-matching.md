@@ -44,7 +44,7 @@ Some examples of patterns are:
  1.  The pattern `(x, _)` matches pairs of values, binding `x` to
         the first component of the pair. The second component is matched
         with a wildcard pattern.
- 1.  The pattern `x :: y :: xs` matches lists of length $\geq 2$,
+ 1.  The pattern `x :: y :: xs` matches lists of length `>= 2`,
         binding `x` to the list's first element, `y` to the list's
         second element, and `xs` to the remainder.
  1.  The pattern `1 | 2 | 3` matches the integers between 1 and 3.
@@ -197,8 +197,7 @@ argument of `f` are equal.
 SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
-A _constructor pattern_ is of the form $c(p_1 , \ldots , p_n)$ where $n
-\geq 0$. It consists of a stable identifier $c$, followed by element
+A _constructor pattern_ is of the form $c(p_1 , \ldots , p_n)$ where `n >= 0`. It consists of a stable identifier $c$, followed by element
 patterns $p_1 , \ldots , p_n$. The constructor $c$ is a simple or
 qualified name which denotes a [case class](05-classes-and-objects.html#case-classes).
 If the case class is monomorphic, then it
@@ -225,7 +224,7 @@ repeated parameter. This is further discussed [here](#pattern-sequences).
 
 A _tuple pattern_ `($p_1 , \ldots , p_n$)` is an alias
 for the constructor pattern `scala.Tuple$n$($p_1 , \ldots , p_n$)`,
-where $n \geq 2$. The empty tuple
+where `n >= 2`. The empty tuple
 `()` is the unique value of type `scala.Unit`.
 
 ### Extractor Patterns
@@ -234,7 +233,7 @@ where $n \geq 2$. The empty tuple
   SimplePattern   ::=  StableId ‘(’ [Patterns] ‘)’
 ```
 
-An _extractor pattern_ $x(p_1 , \ldots , p_n)$ where $n \geq 0$ is of
+An _extractor pattern_ $x(p_1 , \ldots , p_n)$ where `n >= 0` is of
 the same syntactic form as a constructor pattern. However, instead of
 a case class, the stable identifier $x$ denotes an object which has a
 member method named `unapply` or `unapplySeq` that matches
