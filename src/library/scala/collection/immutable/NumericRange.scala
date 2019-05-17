@@ -71,9 +71,17 @@ sealed class NumericRange[T](
     */
   import num._
 
-  // See comment in Range for why this must be lazy.
+  //length may be larger than Int.MaxValue. If so, length will throw when evaluated
+  //so don't evaluate unless needed.
   override lazy val length: Int = NumericRange.count(start, end, step, isInclusive)
-  override def isEmpty = length == 0
+  override def nonEmpty = {
+    val stepped = start + step
+    (stepped == end && isInclusive) || {
+      if (step >= zero) (stepped >= start && stepped < end) 
+      else (stepped < start && stepped > end)
+    }
+  }
+  override def isEmpty = !nonEmpty
   override def last: T =
     if (length == 0) Nil.head
     else locationAfterN(length - 1)
