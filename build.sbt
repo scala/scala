@@ -83,63 +83,13 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
-// to be locked down sometime around the time of 2.13.0-RC1
-Global / mimaReferenceVersion := Some("2.13.0-RC1")
+Global / mimaReferenceVersion := Some("2.13.0-RC2")
 
-// Drop once 2.13.0 is out.
 import com.typesafe.tools.mima.core._
 val mimaPrereleaseHandlingSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
+    // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ShortArrayHasSeqParStream"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$CharArrayHasSeqParStream"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$ByteArrayHasSeqParStream"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.convert.StreamExtensions$FloatArrayHasSeqParStream"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ShortArrayHasSeqParStream"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.CharArrayHasSeqParStream"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.ByteArrayHasSeqParStream"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.StreamExtensions.FloatArrayHasSeqParStream"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.StepperShape$"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority1"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.StepperShapeLowPriority2"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StepperShape.anyStepperShapePrototype"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.effectiveRootLevel"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.skipHalf"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealCurrentNodesFrom"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.impl.ChampStepperBase.stealNodesFrom"),
-    ProblemFilters.exclude[Problem]("scala.collection.convert.*"),
-    ProblemFilters.exclude[Problem]("scala.collection.StepperShape.*"),
-    ProblemFilters.exclude[Problem]("scala.jdk.*"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.impl.FutureConvertersImpl#CF.*"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.StringContext.standardInterpolator"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.BitSet.fromSpecific"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.BitSet.empty"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.mutable.BitSet.fromSpecific"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.mutable.BitSet.empty"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.PropertiesTrait.versionFor"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.versionFor"),
-    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.HashMap.updatedWith"),
-    ProblemFilters.exclude[FinalClassProblem]("scala.collection.StringView"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.None$"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.Option"),
-    ProblemFilters.exclude[MissingTypesProblem]("scala.Some"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Option.knownSize"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Option.stepper"),
-    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
-    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isDefined"),
-    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
-    ProblemFilters.exclude[FinalMethodProblem]("scala.Option.isEmpty"),
-    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.Option.isEmpty"),
-    ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.Option.isEmpty"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SortedMapFactory#SortedMapFactoryToBuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.BuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.EvidenceIterableFactory#EvidenceIterableFactoryToBuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.IntMap#ToBuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.LongMap#ToBuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.AnyRefMap#ToBuildFrom.toFactory"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.LongMap#ToBuildFrom.toFactory"),
   ),
 )
 
