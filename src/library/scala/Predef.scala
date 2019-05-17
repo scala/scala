@@ -16,7 +16,7 @@ import scala.language.implicitConversions
 
 import scala.collection.{mutable, immutable, ArrayOps, StringOps}, immutable.WrappedString
 import scala.annotation.{elidable, implicitNotFound}, elidable.ASSERTION
-import scala.annotation.meta.companionMethod
+import scala.annotation.meta.{ companionClass, companionMethod }
 
 /** The `Predef` object provides definitions that are accessible in all Scala
  *  compilation units without explicit qualification.
@@ -372,9 +372,12 @@ object Predef extends LowPriorityImplicits {
     @inline def formatted(fmtstr: String): String = fmtstr format self
   }
 
-  // scala/bug#8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
-  /** @group implicit-classes-any */
+  /** Injects String concatenation operator `+` to any classes. 
+   * @group implicit-classes-any
+   */
   @(deprecated @companionMethod)("Implicit injection of + is deprecated. Convert to String to call +", "2.13.0")
+  @(deprecated @companionClass)("Implicit injection of + is deprecated. Convert to String to call +", "2.13.0") // for Scaladoc
+  // scala/bug#8229 retaining the pre 2.11 name for source compatibility in shadowing this implicit
   implicit final class any2stringadd[A](private val self: A) extends AnyVal {
     def +(other: String): String = String.valueOf(self) + other
   }
