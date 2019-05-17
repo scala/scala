@@ -1,0 +1,16 @@
+class Constants extends scala.AnyRef {
+  def this() = { /* compiled code */ }
+  final val UnitConstant: scala.Unit = { /* compiled code */ }
+  final val ByteConstant: scala.Boolean = { /* compiled code */ }
+  final val CharConstant: scala.Char = { /* compiled code */ }
+  final val ShortConstant: scala.Short = { /* compiled code */ }
+  final val IntConstant: scala.Int = { /* compiled code */ }
+  final val LongConstant: scala.Long = { /* compiled code */ }
+  final val FloatConstant: scala.Float = { /* compiled code */ }
+  final val DoubleConstant: scala.Double = { /* compiled code */ }
+  final val NullConstant: scala.Null = { /* compiled code */ }
+  final val ClassConstant: java.lang.Class[scala.Predef.String] = { /* compiled code */ }
+  final val ClassConstant2: java.lang.Class[scala.Some[_]] = { /* compiled code */ }
+  final val EnumConstant: java.util.concurrent.TimeUnit = { /* compiled code */ }
+  final val StringConstant: java.lang.Class[scala.Predef.String] = { /* compiled code */ }
+}
