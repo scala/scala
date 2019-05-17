@@ -503,6 +503,11 @@ abstract class LambdaLift extends InfoTransform {
             }
 
             treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
+          } else if(sym.enclClass.isSubClass(DelayedInitClass) && !mods.hasFlag(CAPTURED)) {
+            // Fields of DelayedInit bodies are initialized in a regular method, not in a static initializer,
+            // and must therefore not be final in bytecode (https://github.com/scala/bug/issues/11412)
+            sym.setFlag(MUTABLE)
+            tree
           } else tree
         case Return(Block(stats, value)) =>
           Block(stats, treeCopy.Return(tree, value)) setType tree.tpe setPos tree.pos

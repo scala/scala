@@ -10,6 +10,7 @@ import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
 import scala.collection.JavaConverters._
+import scala.tools.asm.Opcodes
 
 @RunWith(classOf[JUnit4])
 class BytecodeTest extends BytecodeTesting {
@@ -264,5 +265,17 @@ class BytecodeTest extends BytecodeTesting {
     }
     check(s"$main\n$person")
     check(s"$person\n$main")
+  }
+
+  @Test
+  def t11412: Unit = {
+    val code = "object Foo extends App { val x = 1; val y = x }"
+    val cs = compileClasses(code)
+    val companion = cs.find(_.name == "Foo$").get
+    val fields = companion.fields.asScala.filter(f => f.name == "x" || f.name == "y")
+    assertEquals(2, fields.size)
+    fields.foreach { f =>
+      assertTrue("Field "+f.name+" should not be final", (f.access & Opcodes.ACC_FINAL) == 0)
+    }
   }
 }
