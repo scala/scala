@@ -1,0 +1,19 @@
+missing-implicit.scala:23: error: foo
+  implicitly[TC[String] { type Int}]
+            ^
+missing-implicit.scala:24: error: bar
+  implicitly[XC[String]]
+            ^
+missing-implicit.scala:25: error: nope
+  implicitly[U]
+            ^
+missing-implicit.scala:26: error: no way
+  implicitly[V]
+            ^
+missing-implicit.scala:31: error: no way
+  f
+  ^
+missing-implicit.scala:32: error: huh
+  g
+  ^
+6 errors found

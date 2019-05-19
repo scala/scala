@@ -18,6 +18,7 @@ package scala.annotation
  * Assuming `C` has type parameters `X1, ..., XN`, the error message will be the
  * result of replacing all occurrences of `${Xi}` in the string `msg` with the
  * string representation of the corresponding type argument `Ti`.
+ * The annotation is effectively inherited by subtypes if they are not annotated.
  *
  * The annotation can also be attached to implicit parameters. In this case, `${Xi}`
  * can refer to type parameters in the current scope. The `@implicitNotFound` message
