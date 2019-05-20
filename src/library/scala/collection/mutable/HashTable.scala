@@ -176,7 +176,11 @@ private[collection] /*abstract class*/ trait HashTable[A, B, Entry >: Null <: Ha
   /** Remove entry from table if present.
    */
   final def removeEntry(key: A) : Entry = {
-    val h = index(elemHashCode(key))
+    removeEntry0(key, index(elemHashCode(key)))
+  }
+  /** Remove entry from table if present.
+   */
+  private[collection] final def removeEntry0(key: A, h: Int) : Entry = {
     var e = table(h).asInstanceOf[Entry]
     if (e != null) {
       if (elemEquals(e.key, key)) {

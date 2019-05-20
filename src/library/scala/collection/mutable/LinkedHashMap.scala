@@ -139,15 +139,17 @@ class LinkedHashMap[K, V]
   override def remove(key: K): Option[V] = {
     val e = table.removeEntry(key)
     if (e eq null) None
-    else {
-      if (e.earlier eq null) firstEntry = e.later
-      else e.earlier.later = e.later
-      if (e.later eq null) lastEntry = e.earlier
-      else e.later.earlier = e.earlier
-      e.earlier = null // Null references to prevent nepotism
-      e.later = null
-      Some(e.value)
-    }
+    else Some(remove0(e))
+  }
+
+  private[this] def remove0(e: Entry): V = {
+    if (e.earlier eq null) firstEntry = e.later
+    else e.earlier.later = e.later
+    if (e.later eq null) lastEntry = e.earlier
+    else e.later.earlier = e.earlier
+    e.earlier = null // Null references to prevent nepotism
+    e.later = null
+    e.value
   }
 
   def addOne(kv: (K, V)): this.type = { put(kv._1, kv._2); this }
@@ -174,6 +176,34 @@ class LinkedHashMap[K, V]
     def next() =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
       else Iterator.empty.next()
+  }
+
+  // Override updateWith for performance, so we can do the update while hashing
+  // the input key only once and performing one lookup into the hash table
+  override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
+    val keyIndex = table.index(table.elemHashCode(key))
+    val entry = table.findEntry0(key, keyIndex)
+
+    val previousValue =
+      if (entry == null) None
+      else Some(entry.value)
+
+    val nextValue = remappingFunction(previousValue)
+
+    (previousValue, nextValue) match {
+      case (None, None) => // do nothing
+      case (Some(_), None) =>
+        remove0(entry)
+        table.removeEntry0(key, keyIndex)
+
+      case (None, Some(value)) =>
+        table.addEntry0(table.createNewEntry(key, value), keyIndex)
+
+      case (Some(_), Some(value)) =>
+        entry.value = value
+    }
+
+    nextValue
   }
 
   override def valuesIterator: Iterator[V] = new AbstractIterator[V] {
