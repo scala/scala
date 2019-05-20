@@ -179,6 +179,38 @@ class LinkedHashMap[K, V]
       else Iterator.empty.next()
   }
 
+
+  override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
+    val keyHash = table.elemHashCode(key)
+    val keyIndex = table.index(keyHash)
+    val entry = table.findEntry0(key, keyIndex)
+
+    val previousValue =
+      if (entry == null) None
+      else Some(entry.value)
+
+    val nextValue = remappingFunction(previousValue)
+    (previousValue, nextValue) match {
+      case (None, None) => // do nothing
+      case (Some(_), None) =>
+        if (entry.earlier eq null) firstEntry = entry.later
+        else entry.earlier.later = entry.later
+        if (entry.later eq null) lastEntry = entry.earlier
+        else entry.later.earlier = entry.earlier
+        entry.earlier = null // Null references to prevent nepotism
+        entry.later = null
+
+      case (None, Some(value)) =>
+        table.addEntry0(table.createNewEntry(key, value), keyIndex)
+        val e = table.findOrAddEntry(key, value)
+        if (e ne null) e.value = value
+
+      case (Some(_), Some(value)) =>
+        entry.value = value
+    }
+    nextValue
+  }
+
   override def valuesIterator: Iterator[V] = new AbstractIterator[V] {
     private[this] var cur = firstEntry
     def hasNext = cur ne null
