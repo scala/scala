@@ -202,8 +202,6 @@ class LinkedHashMap[K, V]
 
       case (None, Some(value)) =>
         table.addEntry0(table.createNewEntry(key, value), keyIndex)
-        val e = table.findOrAddEntry(key, value)
-        if (e ne null) e.value = value
 
       case (Some(_), Some(value)) =>
         entry.value = value
