@@ -16,9 +16,11 @@ In order to get in touch with other Scala contributors, join
 [scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
 [contributors.scala-lang.org](http://contributors.scala-lang.org) (Discourse).
 
-# Reporting issues
+# Bugs / issues
 
-Please report bugs at the [scala/bug issue tracker](https://github.com/scala/bug/issues). We use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues) for coordinating bigger work items.
+Please report bugs at the [scala/bug issue tracker](https://github.com/scala/bug/issues). This tracker is also where new contributors may find good first issues to work on.
+
+We use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues) for coordinating bigger work items.
 
 # Get in touch!
 
