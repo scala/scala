@@ -179,7 +179,8 @@ class LinkedHashMap[K, V]
       else Iterator.empty.next()
   }
 
-
+  // Override updateWith for performance, so we can do the update while hashing
+  // the input key only once and performing one lookup into the hash table
   override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = {
     val keyHash = table.elemHashCode(key)
     val keyIndex = table.index(keyHash)
