@@ -162,7 +162,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use .iterator.toArray", "2.13.0")
   def toArray[B >: A: ClassTag]: Array[B] = it match {
     case it: Iterable[B] => it.toArray[B]
-    case _ => mutable.ArrayBuffer.from(it).toArray
+    case _ => it.iterator.toArray[B]
   }
 
   @deprecated("Use .iterator.to(List) instead", "2.13.0")
@@ -1275,14 +1275,17 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
 
-  /** Convert collection to array. */
+  /** Convert collection to array.
+    *
+    * Implementation note: DO NOT call [[Array.from]] from this method.
+    */
   def toArray[B >: A: ClassTag]: Array[B] =
     if (knownSize >= 0) {
       val destination = new Array[B](knownSize)
       copyToArray(destination, 0)
       destination
     }
-    else mutable.ArrayBuffer.from(this).toArray[B]
+    else mutable.ArrayBuilder.make[B].addAll(this).result()
 
   // For internal use
   protected def reversed: Iterable[A] = {

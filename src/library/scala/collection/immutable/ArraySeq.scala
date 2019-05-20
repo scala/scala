@@ -208,18 +208,9 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   def empty[A : ClassTag]: ArraySeq[A] = emptyImpl
 
-  def from[A : ClassTag](it: scala.collection.IterableOnce[A]): ArraySeq[A] = unsafeWrapArray {
-    val n = it.knownSize
-    if (n > -1) {
-      val elements = Array.ofDim[A](n)
-      val iterator = it.iterator
-      var i = 0
-      while (i < n) {
-        ScalaRunTime.array_update(elements, i, iterator.next())
-        i = i + 1
-      }
-      elements
-    } else ArrayBuffer.from(it).toArray
+  def from[A](it: scala.collection.IterableOnce[A])(implicit tag: ClassTag[A]): ArraySeq[A] = it match {
+    case as: ArraySeq[A] => as
+    case _ => unsafeWrapArray(Array.from[A](it))
   }
 
   def newBuilder[A : ClassTag]: Builder[A, ArraySeq[A]] =

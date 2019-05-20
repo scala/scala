@@ -95,4 +95,11 @@ class ArraySeqTest {
     val y = Array[Byte](10).toSeq
     assertEquals(x.hashCode(), y.hashCode())
   }
+
+  @Test
+  def from(): Unit = {
+    val as = ArraySeq("foo", "bar", "baz")
+    assert(ArraySeq.from(as) eq as)
+    assert(ArraySeq(as: _*) eq as)
+  }
 }
