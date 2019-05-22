@@ -5945,14 +5945,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     final def transformedOrTyped(tree: Tree, mode: Mode, pt: Type): Tree = {
       lookupTransformed(tree) match {
         case Some(tree1) => tree1
-        case _           => typed(tree, mode, pt)
+        case _           => if (canSkipRhs(tree)) EmptyTree else typed(tree, mode, pt)
       }
     }
     final def lookupTransformed(tree: Tree): Option[Tree] =
       if (phase.erasedTypes) None // OPT save the hashmap lookup in erasure type and beyond
       else transformed remove tree
-  }
 
+    private final def canSkipRhs(tree: Tree) = settings.Youtline.value && !tree.exists {
+      case Super(qual, mix) =>
+        // conservative approximation of method bodies that may give rise to super accessors which must be
+        // stored in pickle.
+        context.owner.enclClass.isTrait || mix != tpnme.EMPTY
+      case _ => false
+    }
+  }
 
   /** Finish computation of param aliases after typechecking is completed */
   final def finishComputeParamAlias(): Unit = {
@@ -5981,6 +5988,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
     superConstructorCalls.clear()
   }
+
 }
 
 trait TypersStats {
