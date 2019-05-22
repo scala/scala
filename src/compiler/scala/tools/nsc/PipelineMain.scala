@@ -28,7 +28,7 @@ import scala.collection.{immutable, mutable, parallel}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.pickling.PickleBuffer
-import scala.reflect.internal.util.{BatchSourceFile, FakePos, Position}
+import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.{PlainNioFile, RootPath}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
@@ -599,8 +599,10 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               val msg = diagnostic.getMessage(Locale.getDefault)
               val source: JavaFileObject = diagnostic.getSource
               val path = Paths.get(source.toUri)
-              val sourceFile = new BatchSourceFile(new PlainNioFile(path))
-              val position = Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+              val position = if (diagnostic.getPosition == Diagnostic.NOPOS) NoPosition else {
+                val sourceFile = new BatchSourceFile(new PlainNioFile(path))
+                Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+              }
               diagnostic.getKind match {
                 case Kind.ERROR => reporter.error(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
