@@ -489,8 +489,12 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         command.settings.Ymacroexpand.value = command.settings.MacroExpand.None
         val run1 = new compiler.Run()
         run1 compile files
-        registerPickleClassPath(command.settings.outputDirs.getSingleOutput.get.file.toPath, run1.symData)
         outlineTimer.stop()
+        log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
+        pickleExportTimer.start()
+        registerPickleClassPath(command.settings.outputDirs.getSingleOutput.get.file.toPath, run1.symData)
+        pickleExportTimer.stop()
+        log(f"scalac: exported pickles ${pickleExportTimer.durationMs}%.0f ms")
         reporter.finish()
         if (reporter.hasErrors) {
           log("scalac outline: failed")
