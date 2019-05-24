@@ -120,6 +120,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.pendingSuperCall
     this.emptyValDef
     this.EmptyTreeTypeSubstituter
+    this.duplicateAndResetPos
     this.UnmappableAnnotArg
     this.LiteralAnnotArg
     this.ArrayAnnotArg

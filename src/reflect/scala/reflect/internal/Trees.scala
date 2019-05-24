@@ -1710,6 +1710,14 @@ trait Trees extends api.Trees {
       t1
     }
   }
+  object duplicateAndResetPos extends Transformer {
+    override val treeCopy = newStrictTreeCopier
+    override def transform(t: Tree) = {
+      val t1 = super.transform(t)
+      if (t1 ne EmptyTree) t1.setPos(NoPosition)
+      t1
+    }
+  }
   trait TreeStackTraverser extends Traverser {
     import collection.mutable
     val path: mutable.Stack[Tree] = mutable.Stack()
