@@ -1,6 +1,3 @@
-t7187.scala:4: warning: Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write (() => EtaExpandZeroArg.this.foo()).
-  val t1b: () => Any = foo   // eta-expansion (deprecated) in 2.12, `()`-insertion in 2.13
-                       ^
 t7187.scala:8: error: _ must follow method; cannot follow () => String
   val t1f: Any       = foo() _ // error: _ must follow method
                           ^
@@ -17,17 +14,7 @@ t7187.scala:15: error: not enough arguments for method apply: (index: Int)Char i
 Unspecified value parameter index.
   val t2e: Any       = bar() _ // error: not enough arguments for method apply
                           ^
-t7187.scala:18: warning: Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write (() => EtaExpandZeroArg.this.baz()).
-  val t3a: () => Any = baz   // eta-expansion (deprecated) in 2.12, error in 2.13
-                       ^
 t7187.scala:21: error: _ must follow method; cannot follow String
   val t3d: Any       = baz() _ // error: _ must follow method
                           ^
-t7187.scala:24: warning: Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write (() => EtaExpandZeroArg.this.zap()).
-  val t4a: () => Any = zap     // eta-expansion (deprecated) in 2.12, error in 2.13
-                       ^
-t7187.scala:25: warning: Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write (() => EtaExpandZeroArg.this.zap()()).
-  val t4b: () => Any = zap()   // ditto
-                          ^
-four warnings found
 5 errors found

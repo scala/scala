@@ -923,43 +923,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (isFunctionType(pt) || (!mt.params.isEmpty && samOf(pt).exists)) {
           // scala/bug#9536 `!mt.params.isEmpty &&`: for backwards compatibility with 2.11,
           // we don't adapt a zero-arg method value to a SAM
-          // In 2.13, we won't do any eta-expansion for zero-arg methods, but we should deprecate first
-
-          debuglog(s"eta-expanding $tree: ${tree.tpe} to $pt")
           checkParamsConvertible(tree, tree.tpe)
 
-          // method values (`m _`) are always eta-expanded (this syntax will disappear once we eta-expand regardless of expected type, at least for arity > 0)
-          // a "naked" method reference (`m`) may or not be eta expanded -- currently, this depends on the expected type and the arity (the conditions for this are in flux)
-          def isMethodValue = tree.getAndRemoveAttachment[MethodValueAttachment.type].isDefined
-          val nakedZeroAryMethod = mt.params.isEmpty && !isMethodValue
+          // We changed our mind on deprecating 0-arity eta expansion in https://github.com/scala/scala/pull/7660
+          // For history on this, see scala/bug#7187, scala/bug#9178
+          // We will deprecate insertion of `()` in 2.13 (except for java-defined methods) and remove it in 2.14
+          // Once that's done, we can more aggressively eta-expand method references, even if they are 0-arity.
 
-          // scala/bug#7187 eta-expansion of zero-arg method value is deprecated
-          // 2.13 will switch order of (4.3) and (4.2), always inserting () before attempting eta expansion
-          // (This effectively disables implicit eta-expansion of 0-ary methods.)
-          // See mind-bending stuff like scala/bug#9178
-          if (nakedZeroAryMethod && settings.isScala213) emptyApplication
-          else {
-            // eventually, we will deprecate insertion of `()` (except for java-defined methods) -- this is already the case in dotty
-            // Once that's done, we can more aggressively eta-expand method references, even if they are 0-arity
-            // 2.13 will already eta-expand non-zero-arity methods regardless of expected type (whereas 2.12 requires a function-equivalent type)
-            if (nakedZeroAryMethod && settings.isScala212) {
-              currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
-                                                       s"Eta-expansion of zero-argument methods is deprecated. To avoid this warning, write ${Function(Nil, Apply(tree, Nil))}.", "2.12.0")
-            }
+          val tree0 = etaExpand(context.unit, tree, this)
 
-            val tree0 = etaExpand(context.unit, tree, this)
-
-            // #2624: need to infer type arguments for eta expansion of a polymorphic method
-            // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
-            // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
-            // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
-            // (note that (3) does not call typed to do the polymorphic type instantiation --
-            //  it is called after the tree has been typed with a polymorphic expected result type)
-            if (hasUndets)
-              instantiate(typed(tree0, mode), mode, pt)
-            else
-              typed(tree0, mode, pt)
-          }
+          // #2624: need to infer type arguments for eta expansion of a polymorphic method
+          // context.undetparams contains clones of meth.typeParams (fresh ones were generated in etaExpand)
+          // need to run typer on tree0, since etaExpansion sets the tpe's of its subtrees to null
+          // can't type with the expected type, as we can't recreate the setup in (3) without calling typed
+          // (note that (3) does not call typed to do the polymorphic type instantiation --
+          //  it is called after the tree has been typed with a polymorphic expected result type)
+          if (hasUndets) instantiate(typed(tree0, mode), mode, pt)
+          else typed(tree0, mode, pt)
         }
         // (4.3) apply to empty argument list
         else if (mt.params.isEmpty) emptyApplication
