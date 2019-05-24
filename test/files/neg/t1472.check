@@ -1,0 +1,7 @@
+t1472.scala:7: error: illegal cyclic reference involving type Utmp
+    val a : (SA { type U = Utmp })
+                           ^
+t1472.scala:12: error: illegal cyclic reference involving type U
+    type Ttmp = this.a.type#T
+                     ^
+two errors found
