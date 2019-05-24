@@ -171,17 +171,19 @@ trait Trees extends api.Trees {
       if (builder eq null) Nil else builder.result()
     }
 
-    def freeTerms: List[FreeTermSymbol] = freeSyms[FreeTermSymbol](_.isFreeTerm, _.termSymbol)
-    def freeTypes: List[FreeTypeSymbol] = freeSyms[FreeTypeSymbol](_.isFreeType, _.typeSymbol)
+    def freeTerms: List[FreeTermSymbol] = freeSyms(terms = true, types = false).asInstanceOf[List[FreeTermSymbol]]
+    def freeTypes: List[FreeTypeSymbol] = freeSyms(terms = false, types = true).asInstanceOf[List[FreeTypeSymbol]]
+    def freeSyms: List[FreeSymbol] = freeSyms(terms = true, types = true)
 
-    private def freeSyms[S <: Symbol](isFree: Symbol => Boolean, symOfType: Type => Symbol): List[S] = {
-      val s = mutable.LinkedHashSet[S]()
-      def addIfFree(sym: Symbol): Unit = if (sym != null && isFree(sym)) s += sym.asInstanceOf[S]
+    private def freeSyms(terms: Boolean, types: Boolean): List[FreeSymbol] = {
+      val s = mutable.LinkedHashSet[FreeSymbol]()
+      def addIfFree(sym: Symbol): Unit = if (sym != null && (terms && sym.isFreeTerm || types && sym.isFreeType)) s += sym.asInstanceOf[FreeSymbol]
       for (t <- this) {
         addIfFree(t.symbol)
         if (t.tpe != null) {
           for (tp <- t.tpe) {
-            addIfFree(symOfType(tp))
+            if (types) addIfFree(tp.typeSymbol)
+            if (types) addIfFree(tp.termSymbol)
           }
         }
       }

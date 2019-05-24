@@ -822,7 +822,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           def validateResultingTree(expanded: Tree) = {
             macroLogVerbose("original:")
             macroLogLite("" + expanded + "\n" + showRaw(expanded))
-            val freeSyms = expanded.freeTerms ++ expanded.freeTypes
+            val freeSyms = expanded.freeSyms
             freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
             // Macros might have spliced arguments with range positions into non-compliant
             // locations, notably, under a tree without a range position. Or, they might
