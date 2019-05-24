@@ -67,7 +67,7 @@ class ArrayDeque[A] protected (
   override def knownSize: Int = super[IndexedSeqOps].knownSize
 
   // No-Op override to allow for more efficient stepper in a minor release.
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = super.stepper(shape)
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = super.stepper(shape)
 
   def apply(idx: Int) = {
     requireBounds(idx)

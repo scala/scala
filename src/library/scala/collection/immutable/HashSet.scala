@@ -62,13 +62,13 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   protected[immutable] def reverseIterator: Iterator[A] = new SetReverseIterator[A](rootNode)
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => IntChampStepper.from[   SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Int])
       case StepperShape.LongShape   => LongChampStepper.from[  SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Long])
       case StepperShape.DoubleShape => DoubleChampStepper.from[SetNode[A]](size, rootNode, (node, i) => node.getPayload(i).asInstanceOf[Double])
-      case _         => shape.parUnbox(AnyChampStepper.from[B, SetNode[A]](size, rootNode, (node, i) => node.getPayload(i)))
+      case _         => shape.parUnbox(AnyChampStepper.from[A, SetNode[A]](size, rootNode, (node, i) => node.getPayload(i)))
     }
     s.asInstanceOf[S with EfficientSplit]
   }

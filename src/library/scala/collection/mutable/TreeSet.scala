@@ -55,14 +55,14 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
 
   def iteratorFrom(start: A): collection.Iterator[A] = RB.keysIterator(tree, Some(start))
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Node[A, Null]
     val s = shape.shape match {
       case StepperShape.IntShape    => IntBinaryTreeStepper.from[T]   (size, tree.root, _.left, _.right, _.key.asInstanceOf[Int])
       case StepperShape.LongShape   => LongBinaryTreeStepper.from[T]  (size, tree.root, _.left, _.right, _.key.asInstanceOf[Long])
       case StepperShape.DoubleShape => DoubleBinaryTreeStepper.from[T](size, tree.root, _.left, _.right, _.key.asInstanceOf[Double])
-      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[B, T](size, tree.root, _.left, _.right, _.key.asInstanceOf[B]))
+      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[A, T](size, tree.root, _.left, _.right, _.key))
     }
     s.asInstanceOf[S with EfficientSplit]
   }

@@ -121,7 +121,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
       else Iterator.empty.next()
   }
 
-  override def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[Int, S]): S with EfficientSplit = {
     val st = scala.collection.convert.impl.BitSetStepper.from(this)
     val r =
       if (shape.shape == StepperShape.IntShape) st

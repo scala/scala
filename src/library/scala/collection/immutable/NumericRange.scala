@@ -54,13 +54,13 @@ sealed class NumericRange[T](
 
   override def iterator: Iterator[T] = new NumericRange.NumericRangeIterator(this, num)
 
-  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[T, S]): S with EfficientSplit = {
     import scala.collection.convert._
     import impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => new IntNumericRangeStepper   (this.asInstanceOf[NumericRange[Int]],    0, length)
       case StepperShape.LongShape   => new LongNumericRangeStepper  (this.asInstanceOf[NumericRange[Long]],   0, length)
-      case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+      case _         => shape.parUnbox(new AnyNumericRangeStepper[T](this, 0, length).asInstanceOf[AnyStepper[T] with EfficientSplit])
     }
     s.asInstanceOf[S with EfficientSplit]
   }

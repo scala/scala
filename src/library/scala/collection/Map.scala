@@ -90,7 +90,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   }
 
   /** Returns a [[Stepper]] for the values of this map. See method [[stepper]]. */
-  def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
+  def valueStepper[S <: Stepper[_]](implicit shape: StepperShape[V, S]): S = {
     import convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])

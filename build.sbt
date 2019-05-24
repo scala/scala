@@ -91,6 +91,7 @@ val mimaPrereleaseHandlingSettings = Seq(
     // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
 
+
 // #8094    
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#CompletionStageOps.toScala"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#FutureOps.toJava"),
@@ -105,13 +106,16 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.asJava"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.asScala"),
 
+
 // #8096    
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.this"),
-    
+
+
 // #8093    
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnceOps.knownSize"),
     ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.IterableOnce.knownSize"),
-    
+
+
 // #8089 
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$Concat"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.AbstractMapView.++"),
@@ -121,11 +125,17 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.+"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.concat"),
 
+
 // #8104
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichFloat.isFinite$extension"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichDouble.isFinite$extension"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichFloat.isFinite"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichDouble.isFinite"),
+
+
+// #8083
+    ProblemFilters.exclude[FinalMethodProblem]("scala.jdk.Accumulator.stepper"),
+
 
   ),
 )

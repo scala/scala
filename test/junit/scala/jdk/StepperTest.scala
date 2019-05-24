@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.{AnyStepper, ClassTagIterableFactory, IntStepper, IterableFactory, MapFactory, SortedIterableFactory, SortedMapFactory, SpecificIterableFactory, Stepper, concurrent => cc, immutable => ci, mutable => cm}
+import scala.collection.{AnyStepper, ClassTagIterableFactory, IntStepper, IterableFactory, MapFactory, SortedIterableFactory, SortedMapFactory, SpecificIterableFactory, Stepper, StepperShape, concurrent => cc, immutable => ci, mutable => cm}
 import scala.jdk.StreamConverters._
 import scala.util.chaining._
 
@@ -275,5 +275,12 @@ class StepperTest {
       val codePoints = s.codePoints().toScala(List)
       testStepper(null, s.codePointStepper, codePoints, size, testElemOrder = true, orderedFlag = true)
     }
+  }
+
+  class MyIterableOnce extends IterableOnce[Int] {
+    private[this] val data = Array(1, 2, 3)
+    def iterator = data.iterator
+    override def knownSize = data.length
+    override def stepper[S <: Stepper[_]](implicit shape: StepperShape[Int, S]): S = data.stepper[S]
   }
 }

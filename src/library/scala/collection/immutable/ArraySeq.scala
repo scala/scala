@@ -55,7 +55,7 @@ sealed abstract class ArraySeq[+A]
   protected def evidenceIterableFactory: ArraySeq.type = ArraySeq
   protected def iterableEvidence: ClassTag[A @uncheckedVariance] = elemTag.asInstanceOf[ClassTag[A]]
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     val isRefShape = shape.shape == StepperShape.ReferenceShape
     val s = if (isRefShape) unsafeArray match {
@@ -70,7 +70,7 @@ sealed abstract class ArraySeq[+A]
       case a: Array[AnyRef]  => new ObjectArrayStepper(a, 0, a.length)
     } else {
       unsafeArray match {
-        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[A] with EfficientSplit])
         case a: Array[Int]    => new IntArrayStepper(a, 0, a.length)
         case a: Array[Long]   => new LongArrayStepper(a, 0, a.length)
         case a: Array[Double] => new DoubleArrayStepper(a, 0, a.length)

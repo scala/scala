@@ -93,9 +93,9 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
 
   override def valuesIteratorFrom(start: K): Iterator[V] = RB.valuesIterator(tree, Some(start))
 
-  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[(K, V), S]): S with EfficientSplit =
     shape.parUnbox(
-      scala.collection.convert.impl.AnyBinaryTreeStepper.from[B, RB.Tree[K, V]](
+      scala.collection.convert.impl.AnyBinaryTreeStepper.from[(K, V), RB.Tree[K, V]](
         size, tree, _.left, _.right, x => (x.key, x.value)
       )
     )
@@ -112,14 +112,14 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSplit = {
+  override def valueStepper[S <: Stepper[_]](implicit shape: StepperShape[V, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Tree[K, V]
     val s = shape.shape match {
       case StepperShape.IntShape    => IntBinaryTreeStepper.from[T]    (size, tree, _.left, _.right, _.value.asInstanceOf[Int])
       case StepperShape.LongShape   => LongBinaryTreeStepper.from[T]   (size, tree, _.left, _.right, _.value.asInstanceOf[Long])
       case StepperShape.DoubleShape => DoubleBinaryTreeStepper.from[T] (size, tree, _.left, _.right, _.value.asInstanceOf[Double])
-      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[V1, T](size, tree, _.left, _.right, _.value.asInstanceOf[V1]))
+      case _         => shape.parUnbox(AnyBinaryTreeStepper.from[V, T] (size, tree, _.left, _.right, _.value.asInstanceOf[V]))
     }
     s.asInstanceOf[S with EfficientSplit]
   }
