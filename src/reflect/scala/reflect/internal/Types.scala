@@ -2989,8 +2989,8 @@ trait Types
           else new TypeVar(origin, constr) {}
         }
         else if (args.size == params.size) {
-          if (untouchable) new AppliedTypeVar(origin, constr, params zip args) with UntouchableTypeVar
-          else new AppliedTypeVar(origin, constr, params zip args)
+          if (untouchable) new AppliedTypeVar(origin, constr, params, args) with UntouchableTypeVar
+          else new AppliedTypeVar(origin, constr, params, args)
         }
         else if (args.isEmpty) {
           if (untouchable) new HKTypeVar(origin, constr, params) with UntouchableTypeVar
@@ -3019,19 +3019,14 @@ trait Types
     override def isHigherKinded          = true
   }
 
-  /** Precondition: zipped params/args nonEmpty.  (Size equivalence enforced structurally.)
-   */
+  /** Precondition: `params.length == typeArgs.length > 0` (enforced structurally). */
   class AppliedTypeVar(
     _origin: Type,
     _constr: TypeConstraint,
-    zippedArgs: List[(Symbol, Type)]
+    override val params: List[Symbol],
+    override val typeArgs: List[Type]
   ) extends TypeVar(_origin, _constr) {
-
-    require(zippedArgs.nonEmpty, this)
-
-    override def params: List[Symbol] = zippedArgs map (_._1)
-    override def typeArgs: List[Type] = zippedArgs map (_._2)
-
+    require(params.nonEmpty && sameLength(params, typeArgs), this)
     override def safeToString: String = super.safeToString + typeArgs.map(_.safeToString).mkString("[", ", ", "]")
   }
 
@@ -4038,7 +4033,7 @@ trait Types
   /** The maximum allowable depth of lubs or glbs over types `ts`.
     */
   def lubDepth(ts: List[Type]): Depth = {
-    val td = typeDepth(ts)
+    val td = maxDepth(ts)
     val bd = baseTypeSeqDepth(ts)
     lubDepthAdjust(td, td max bd)
   }
@@ -4055,9 +4050,9 @@ trait Types
     else td.decr max (bd decr 3)
   )
 
-  private def symTypeDepth(syms: List[Symbol]): Depth  = typeDepth(syms map (_.info))
-  private def typeDepth(tps: List[Type]): Depth        = maxDepth(tps)
-  private def baseTypeSeqDepth(tps: List[Type]): Depth = maxbaseTypeSeqDepth(tps)
+  private def infoTypeDepth(sym: Symbol): Depth = typeDepth(sym.info)
+  private def symTypeDepth(syms: List[Symbol]): Depth  = Depth.maximumBy(syms)(infoTypeDepth)
+  private def baseTypeSeqDepth(tps: List[Type]): Depth = Depth.maximumBy(tps)((t: Type) => t.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
    *  for all types tp1, tp2 in intersection
@@ -4519,11 +4514,20 @@ trait Types
   // sides of a subtyping/equality judgement, which can lead to recursive types
   // being constructed. See pos/t0851 for a situation where this happens.
   @inline final def suspendingTypeVars[T](tvs: List[TypeVar])(op: => T): T = {
-    val saved = tvs map (_.suspended)
+    val saved = bitSetByPredicate(tvs)(_.suspended)
     tvs foreach (_.suspended = true)
 
     try op
-    finally foreach2(tvs, saved)(_.suspended = _)
+    finally {
+      var index = 0
+      var sss = tvs
+      while (sss != Nil) {
+        val tv = sss.head
+        tv.suspended = saved(index)
+        index += 1
+        sss = sss.tail
+      }
+    }
   }
 
   final def stripExistentialsAndTypeVars(ts: List[Type], expandLazyBaseType: Boolean = false): (List[Type], List[Symbol]) = {
@@ -4582,10 +4586,10 @@ trait Types
               NoType  // something is wrong: an array without a type arg.
             }
             else {
-              val args = argss map (_.head)
-              if (args.tail forall (_ =:= args.head)) typeRef(pre, sym, List(args.head))
-              else if (args exists (arg => isPrimitiveValueClass(arg.typeSymbol))) ObjectTpe
-              else typeRef(pre, sym, List(lub(args)))
+              val argH = argss.head.head
+              if (argss.tail forall (_.head =:= argH)) typeRef(pre, sym, List(argH))
+              else if (argss exists (args => isPrimitiveValueClass(args.head.typeSymbol))) ObjectTpe
+              else typeRef(pre, sym, List(lub(argss.map(_.head))))
             }
           }
           else transposeSafe(argss) match {
@@ -4803,8 +4807,8 @@ trait Types
 
   /** The maximum depth of type `tp` */
   def typeDepth(tp: Type): Depth = tp match {
-    case TypeRef(pre, sym, args)          => typeDepth(pre) max typeDepth(args).incr
-    case RefinedType(parents, decls)      => typeDepth(parents) max symTypeDepth(decls.toList).incr
+    case TypeRef(pre, sym, args)          => typeDepth(pre) max maxDepth(args).incr
+    case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepth(decls.toList).incr
     case TypeBounds(lo, hi)               => typeDepth(lo) max typeDepth(hi)
     case MethodType(paramtypes, result)   => typeDepth(result)
     case NullaryMethodType(result)        => typeDepth(result)
@@ -4813,25 +4817,8 @@ trait Types
     case _                                => Depth(1)
   }
 
-  //OPT replaced with tail recursive function to save on #closures
-  // was:
-  //    var d = 0
-  //    for (tp <- tps) d = d max by(tp) //!!!OPT!!!
-  //    d
-  private[scala] def maxDepth(tps: List[Type]): Depth = {
-    @tailrec def loop(tps: List[Type], acc: Depth): Depth = tps match {
-      case tp :: rest => loop(rest, acc max typeDepth(tp))
-      case _          => acc
-    }
-    loop(tps, Depth.Zero)
-  }
-  private[scala] def maxbaseTypeSeqDepth(tps: List[Type]): Depth = {
-    @tailrec def loop(tps: List[Type], acc: Depth): Depth = tps match {
-      case tp :: rest => loop(rest, acc max tp.baseTypeSeqDepth)
-      case _          => acc
-    }
-    loop(tps, Depth.Zero)
-  }
+  private[scala] def maxDepth(tps: List[Type]): Depth =
+    Depth.maximumBy(tps)(typeDepth)
 
   @tailrec private def areTrivialTypes(tps: List[Type]): Boolean = tps match {
     case tp :: rest => tp.isTrivial && areTrivialTypes(rest)
