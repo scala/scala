@@ -213,9 +213,41 @@ object AssertUtil {
 
   /** Like Await.ready but return false on timeout, true on completion, throw InterruptedException. */
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
+
+  /** Syntax to clarify which is the expected value. */
+  def assertEqualTo[A](expected: A)(actual: A): Unit = assertEquals(expected, actual)
+
+  /* TODO maybe asserting(message).equalTo(expected) { value } */
+
+  def stacklessly[A](body: => A) = new Stacklessly(body)
 }
 
 object TestDuration {
   import scala.concurrent.duration.{Duration, SECONDS}
   val Standard = Duration(4, SECONDS)
+}
+
+/** Run a thunk, collecting uncaught exceptions from any spawned threads. */
+class Stacklessly[A](body: => A) extends Runnable {
+
+  private val errors = new collection.mutable.ListBuffer[(Thread, Throwable)]()
+
+  @volatile private var result: Option[A] = None
+
+  def run(): Unit = {
+    val group = new ThreadGroup("stackless") {
+      override def uncaughtException(t: Thread, e: Throwable): Unit = addError(t, e)
+    }
+    val thread = new Thread(group, () => { result = Some(body) ; () })
+    thread.start()
+    thread.join()
+  }
+
+  private def addError(t: Thread, e: Throwable): Unit = synchronized(errors.+=((t, e)))
+
+  def getResult: Option[A] = result
+
+  def getErrors: List[(Thread, Throwable)] = synchronized(errors.toList)
+
+  def assert(): Unit = getErrors.collect { case (_, e: AssertionError) => e }.headOption.foreach(e => throw e)
 }
