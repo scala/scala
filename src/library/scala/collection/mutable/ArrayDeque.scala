@@ -481,7 +481,7 @@ class ArrayDeque[A] protected (
 
   @inline private[this] def isResizeNecessary(len: Int) = {
     // Either resize if we need more cells OR we need to downsize BUT not a good idea to repeatedly resize small arrays
-    len >= (array.length - 1) || (2*len < array.length && array.length >= ArrayDeque.StableSize)
+    len >= array.length || (2*len < array.length && array.length >= ArrayDeque.StableSize)
   }
 
   @inline private[this] def _get(idx: Int): A = array(start_+(idx)).asInstanceOf[A]
