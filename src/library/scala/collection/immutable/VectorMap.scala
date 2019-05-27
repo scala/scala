@@ -122,9 +122,9 @@ final class VectorMap[K, +V] private (
 
   override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S = super.stepper(shape)
 
-  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = super.keyStepper(shape)
+  override def keysStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = super.keysStepper(shape)
 
-  override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = super.valueStepper(shape)
+  override def valuesStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = super.valuesStepper(shape)
 
 
   def removed(key: K): VectorMap[K, V] = {

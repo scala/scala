@@ -98,7 +98,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     shape.
       parUnbox(collection.convert.impl.AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i)))
 
-  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
+  override def keysStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import collection.convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getKey(i).asInstanceOf[Int])
@@ -109,7 +109,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def valuesStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
     import collection.convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Int])

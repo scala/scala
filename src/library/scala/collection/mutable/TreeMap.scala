@@ -87,7 +87,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
       )
     )
 
-  override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
+  override def keysStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Node[K, V]
     val s = shape.shape match {
@@ -99,7 +99,7 @@ sealed class TreeMap[K, V] private (tree: RB.Tree[K, V])(implicit val ordering: 
     s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSplit = {
+  override def valuesStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     type T = RB.Node[K, V]
     val s = shape.shape match {

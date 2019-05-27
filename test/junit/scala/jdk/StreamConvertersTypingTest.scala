@@ -40,13 +40,13 @@ class StreamConvertersTypingTest {
     val s2 = mutable.LinkedHashSet('a', 'b')
 
 
-    val m1ks = m1.keyStepper
+    val m1ks = m1.keysStepper
     (m1ks: IntStepper /*with EfficientSubstep*/).nextStep()
-    val m1vs = m1.valueStepper
+    val m1vs = m1.valuesStepper
     (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
-    val m2ks = m2.keyStepper
+    val m2ks = m2.keysStepper
     (m2ks: IntStepper /*with EfficientSplit*/).nextStep()
-    val m2vs = m2.valueStepper
+    val m2vs = m2.valuesStepper
     (m2vs: DoubleStepper /*with EfficientSplit*/).nextStep()
 
     val m1sps = m1.asJavaSeqStream

@@ -78,7 +78,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   override def view: MapView[K, V] = new MapView.Id(this)
 
   /** Returns a [[Stepper]] for the keys of this map. See method [[stepper]]. */
-  def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
+  def keysStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S = {
     import convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => new IntIteratorStepper   (keysIterator.asInstanceOf[Iterator[Int]])
@@ -90,7 +90,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   }
 
   /** Returns a [[Stepper]] for the values of this map. See method [[stepper]]. */
-  def valueStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
+  def valuesStepper[V1 >: V, S <: Stepper[_]](implicit shape: StepperShape[V1, S]): S = {
     import convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => new IntIteratorStepper   (valuesIterator.asInstanceOf[Iterator[Int]])

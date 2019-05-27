@@ -90,88 +90,88 @@ object StreamConverters {
   // Map Key Streams
 
   /** Create a sequential [[java.util.stream.Stream Java Stream]] for the keys of a Scala Map. */
-  def asJavaSeqKeyStream[K, V](m: collection.Map[K, V]): Stream[K] = StreamSupport.stream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyStream[K, V](m: collection.Map[K, V]): Stream[K] = StreamSupport.stream(m.keysStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyIntStream         [V](m: collection.Map[jl.Integer, V]):   IntStream = StreamSupport.intStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyIntStream         [V](m: collection.Map[jl.Integer, V]):   IntStream = StreamSupport.intStream(m.keysStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyIntStreamFromByte [V](m: collection.Map[jl.Byte, V]):      IntStream = StreamSupport.intStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyIntStreamFromByte [V](m: collection.Map[jl.Byte, V]):      IntStream = StreamSupport.intStream(m.keysStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyIntStreamFromShort[V](m: collection.Map[jl.Short, V]):     IntStream = StreamSupport.intStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyIntStreamFromShort[V](m: collection.Map[jl.Short, V]):     IntStream = StreamSupport.intStream(m.keysStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyIntStreamFromChar [V](m: collection.Map[jl.Character, V]): IntStream = StreamSupport.intStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyIntStreamFromChar [V](m: collection.Map[jl.Character, V]): IntStream = StreamSupport.intStream(m.keysStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyDoubleStream         [V](m: collection.Map[jl.Double, V]): DoubleStream = StreamSupport.doubleStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyDoubleStream         [V](m: collection.Map[jl.Double, V]): DoubleStream = StreamSupport.doubleStream(m.keysStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyDoubleStreamFromFloat[V](m: collection.Map[jl.Float, V]):  DoubleStream = StreamSupport.doubleStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyDoubleStreamFromFloat[V](m: collection.Map[jl.Float, V]):  DoubleStream = StreamSupport.doubleStream(m.keysStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.LongStream Java LongStream]] for the keys of a Scala Map.
     *
     * $primitiveNote
     */
-  def asJavaSeqKeyLongStream[V](m: collection.Map[jl.Long, V]): LongStream = StreamSupport.longStream(m.keyStepper.spliterator, false)
+  def asJavaSeqKeyLongStream[V](m: collection.Map[jl.Long, V]): LongStream = StreamSupport.longStream(m.keysStepper.spliterator, false)
 
   // Map Value Streams
 
   /** Create a sequential [[java.util.stream.Stream Java Stream]] for the values of a Scala Map. */
-  def asJavaSeqValueStream[K, V](m: collection.Map[K, V]): Stream[V] = StreamSupport.stream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueStream[K, V](m: collection.Map[K, V]): Stream[V] = StreamSupport.stream(m.valuesStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueIntStream         [K](m: collection.Map[K, jl.Integer]):   IntStream = StreamSupport.intStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueIntStream         [K](m: collection.Map[K, jl.Integer]):   IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueIntStreamFromByte [K](m: collection.Map[K, jl.Byte]):      IntStream = StreamSupport.intStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueIntStreamFromByte [K](m: collection.Map[K, jl.Byte]):      IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueIntStreamFromShort[K](m: collection.Map[K, jl.Short]):     IntStream = StreamSupport.intStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueIntStreamFromShort[K](m: collection.Map[K, jl.Short]):     IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.IntStream Java IntStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueIntStreamFromChar [K](m: collection.Map[K, jl.Character]): IntStream = StreamSupport.intStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueIntStreamFromChar [K](m: collection.Map[K, jl.Character]): IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueDoubleStream         [K](m: collection.Map[K, jl.Double]): DoubleStream = StreamSupport.doubleStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueDoubleStream         [K](m: collection.Map[K, jl.Double]): DoubleStream = StreamSupport.doubleStream(m.valuesStepper.spliterator, false)
   /** Create a sequential [[java.util.stream.DoubleStream Java DoubleStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueDoubleStreamFromFloat[K](m: collection.Map[K, jl.Float]):  DoubleStream = StreamSupport.doubleStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueDoubleStreamFromFloat[K](m: collection.Map[K, jl.Float]):  DoubleStream = StreamSupport.doubleStream(m.valuesStepper.spliterator, false)
 
   /** Create a sequential [[java.util.stream.LongStream Java LongStream]] for the values of a
     *
     * $primitiveNote
     */
-  def asJavaSeqValueLongStream[K](m: collection.Map[K, jl.Long]): LongStream = StreamSupport.longStream(m.valueStepper.spliterator, false)
+  def asJavaSeqValueLongStream[K](m: collection.Map[K, jl.Long]): LongStream = StreamSupport.longStream(m.valuesStepper.spliterator, false)
 
   ///////////////////////////////////
   // parallel streams for collections
@@ -242,7 +242,7 @@ object StreamConverters {
     *
     * $parNote
     */
-  def asJavaParKeyStream[K, V](m: collection.Map[K, V]): Stream[K] = StreamSupport.stream(m.keyStepper.spliterator, true)
+  def asJavaParKeyStream[K, V](m: collection.Map[K, V]): Stream[K] = StreamSupport.stream(m.keysStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
@@ -250,28 +250,28 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParKeyIntStream         [V](m: collection.Map[jl.Integer, V]):   IntStream = StreamSupport.intStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyIntStream         [V](m: collection.Map[jl.Integer, V]):   IntStream = StreamSupport.intStream(m.keysStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParKeyIntStreamFromByte [V](m: collection.Map[jl.Byte, V]):      IntStream = StreamSupport.intStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyIntStreamFromByte [V](m: collection.Map[jl.Byte, V]):      IntStream = StreamSupport.intStream(m.keysStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParKeyIntStreamFromShort[V](m: collection.Map[jl.Short, V]):     IntStream = StreamSupport.intStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyIntStreamFromShort[V](m: collection.Map[jl.Short, V]):     IntStream = StreamSupport.intStream(m.keysStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the keys of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParKeyIntStreamFromChar [V](m: collection.Map[jl.Character, V]): IntStream = StreamSupport.intStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyIntStreamFromChar [V](m: collection.Map[jl.Character, V]): IntStream = StreamSupport.intStream(m.keysStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for the keys of a Scala Map.
     *
@@ -279,14 +279,14 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParKeyDoubleStream         [V](m: collection.Map[jl.Double, V]): DoubleStream = StreamSupport.doubleStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyDoubleStream         [V](m: collection.Map[jl.Double, V]): DoubleStream = StreamSupport.doubleStream(m.keysStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for the keys of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParKeyDoubleStreamFromFloat[V](m: collection.Map[jl.Float, V]):  DoubleStream = StreamSupport.doubleStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyDoubleStreamFromFloat[V](m: collection.Map[jl.Float, V]):  DoubleStream = StreamSupport.doubleStream(m.keysStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.LongStream Java LongStream]] for the keys of a Scala Map.
     *
@@ -294,7 +294,7 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParKeyLongStream[V](m: collection.Map[jl.Long, V]): LongStream = StreamSupport.longStream(m.keyStepper.spliterator, true)
+  def asJavaParKeyLongStream[V](m: collection.Map[jl.Long, V]): LongStream = StreamSupport.longStream(m.keysStepper.spliterator, true)
 
   // Map Value Streams
 
@@ -302,7 +302,7 @@ object StreamConverters {
     *
     * $parNote
     */
-  def asJavaParValueStream[K, V](m: collection.Map[K, V]): Stream[V] = StreamSupport.stream(m.valueStepper.spliterator, true)
+  def asJavaParValueStream[K, V](m: collection.Map[K, V]): Stream[V] = StreamSupport.stream(m.valuesStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the values of a Scala Map.
     *
@@ -310,28 +310,28 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParValueIntStream         [K](m: collection.Map[K, jl.Integer]):   IntStream = StreamSupport.intStream(m.valueStepper.spliterator, true)
+  def asJavaParValueIntStream         [K](m: collection.Map[K, jl.Integer]):   IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the values of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParValueIntStreamFromByte [K](m: collection.Map[K, jl.Byte]):      IntStream = StreamSupport.intStream(m.valueStepper.spliterator, true)
+  def asJavaParValueIntStreamFromByte [K](m: collection.Map[K, jl.Byte]):      IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the values of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParValueIntStreamFromShort[K](m: collection.Map[K, jl.Short]):     IntStream = StreamSupport.intStream(m.valueStepper.spliterator, true)
+  def asJavaParValueIntStreamFromShort[K](m: collection.Map[K, jl.Short]):     IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.IntStream Java IntStream]] for the values of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParValueIntStreamFromChar [K](m: collection.Map[K, jl.Character]): IntStream = StreamSupport.intStream(m.valueStepper.spliterator, true)
+  def asJavaParValueIntStreamFromChar [K](m: collection.Map[K, jl.Character]): IntStream = StreamSupport.intStream(m.valuesStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for the values of a Scala Map.
     *
@@ -339,14 +339,14 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParValueDoubleStream         [K](m: collection.Map[K, jl.Double]): DoubleStream = StreamSupport.doubleStream(m.valueStepper.spliterator, true)
+  def asJavaParValueDoubleStream         [K](m: collection.Map[K, jl.Double]): DoubleStream = StreamSupport.doubleStream(m.valuesStepper.spliterator, true)
   /** Create a parallel [[java.util.stream.DoubleStream Java DoubleStream]] for the values of a Scala Map.
     *
     * $parNote
     *
     * $primitiveNote
     */
-  def asJavaParValueDoubleStreamFromFloat[K](m: collection.Map[K, jl.Float]):  DoubleStream = StreamSupport.doubleStream(m.valueStepper.spliterator, true)
+  def asJavaParValueDoubleStreamFromFloat[K](m: collection.Map[K, jl.Float]):  DoubleStream = StreamSupport.doubleStream(m.valuesStepper.spliterator, true)
 
   /** Create a parallel [[java.util.stream.LongStream Java LongStream]] for the values of a Scala Map.
     *
@@ -354,5 +354,5 @@ object StreamConverters {
     *
     * $primitiveNote
     */
-  def asJavaParValueLongStream[K](m: collection.Map[K, jl.Long]): LongStream = StreamSupport.longStream(m.valueStepper.spliterator, true)
+  def asJavaParValueLongStream[K](m: collection.Map[K, jl.Long]): LongStream = StreamSupport.longStream(m.valuesStepper.spliterator, true)
 }

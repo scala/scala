@@ -64,14 +64,14 @@ trait StreamExtensions {
       * [[java.util.stream.IntStream `IntStream`]]).
       */
     def asJavaSeqKeyStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[K, S, St], st: StepperShape[K, St]): S =
-      s.fromStepper(cc.keyStepper, par = false)
+      s.fromStepper(cc.keysStepper, par = false)
 
     /** Create a sequential [[java.util.stream.Stream Java Stream]] for the values of this map. If
       * the values are primitives, a corresponding specialized Stream is returned (e.g.,
       * [[java.util.stream.IntStream `IntStream`]]).
       */
     def asJavaSeqValueStream[S <: BaseStream[_, _], St <: Stepper[_]](implicit s: StreamShape[V, S, St], st: StepperShape[V, St]): S =
-      s.fromStepper(cc.valueStepper, par = false)
+      s.fromStepper(cc.valuesStepper, par = false)
 
     // The asJavaSeqStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
     /** Create a sequential [[java.util.stream.Stream Java Stream]] for the `(key, value)` pairs of
@@ -96,7 +96,7 @@ trait StreamExtensions {
         st: StepperShape[K, St],
         @implicitNotFound("parKeyStream can only be called on maps where `keyStepper` returns a `Stepper with EfficientSplit`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientKeyStepper[K, V]): S =
-      s.fromStepper(cc.keyStepper, par = true)
+      s.fromStepper(cc.keysStepper, par = true)
 
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for the values of this map. If
       * the values are primitives, a corresponding specialized Stream is returned (e.g.,
@@ -107,7 +107,7 @@ trait StreamExtensions {
         st: StepperShape[V, St],
         @implicitNotFound("parValueStream can only be called on maps where `valueStepper` returns a `Stepper with EfficientSplit`")
         isEfficient: CC[K, V] <:< MapOpsWithEfficientValueStepper[K, V]): S =
-      s.fromStepper(cc.valueStepper, par = true)
+      s.fromStepper(cc.valuesStepper, par = true)
 
     // The asJavaParStream extension method for IterableOnce doesn't apply because its `CC` takes a single type parameter, whereas the one here takes two
     /** Create a parallel [[java.util.stream.Stream Java Stream]] for the `(key, value)` pairs of
