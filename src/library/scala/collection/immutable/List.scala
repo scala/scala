@@ -284,6 +284,30 @@ sealed abstract class List[+A]
     }
   }
 
+  final def flatMap[B](f: A => Option[B]): List[B] = {
+    if (this eq Nil) Nil else {
+      var rest = this
+      var found = false
+      var h: ::[B] = null
+      var t: ::[B] = null
+      while (rest ne Nil) {
+        f(rest.head) match {
+          case Some(b) if ! found =>
+            h = new ::(b, Nil)
+            t = h
+            found = true
+          case Some(b) if found =>
+            val nx = new ::(b, Nil)
+            t.next = nx
+            t = nx
+          case None => // do nothing
+        }
+        rest = rest.tail
+      }
+      if (!found) Nil else {releaseFence(); h}
+    }
+  }
+
   @inline final override def takeWhile(p: A => Boolean): List[A] = {
     val b = new ListBuffer[A]
     var these = this
