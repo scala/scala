@@ -90,6 +90,8 @@ val mimaPrereleaseHandlingSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
     // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnceOps.knownSize"),
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.IterableOnce.knownSize"),
   ),
 )
 

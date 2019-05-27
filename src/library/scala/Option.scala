@@ -171,7 +171,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    */
   final def isDefined: Boolean = !isEmpty
 
-  final def knownSize: Int = if (isEmpty) 0 else 1
+  override final def knownSize: Int = if (isEmpty) 0 else 1
 
   /** Returns the option's value.
    *
