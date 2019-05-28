@@ -41,7 +41,7 @@ trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatC
     val dirForPackage = getDirectory(inPackage)
     val nestedDirs: Array[File] = dirForPackage match {
       case None => Array.empty
-      case Some(directory) => directory.listFiles(DirectoryFileLookup.packageDirectoryFileFilter)
+      case Some(directory) => listDir(directory, Some(DirectoryFileLookup.packageDirectoryFileFilter))
     }
     val prefix = PackageNameUtils.packagePrefix(inPackage)
     val entries = nestedDirs map { file =>
@@ -54,7 +54,7 @@ trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatC
     val dirForPackage = getDirectory(inPackage)
     val files: Array[File] = dirForPackage match {
       case None => Array.empty
-      case Some(directory) => directory.listFiles(fileFilter)
+      case Some(directory) => listDir(directory, Some(fileFilter))
     }
     val entries = files map { file =>
       val wrappedFile = new scala.reflect.io.File(file)
@@ -67,7 +67,7 @@ trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatC
     val dirForPackage = getDirectory(inPackage)
     val files: Array[File] = dirForPackage match {
       case None => Array.empty
-      case Some(directory) => directory.listFiles()
+      case Some(directory) => listDir(directory, None)
     }
     val packagePrefix = PackageNameUtils.packagePrefix(inPackage)
     val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
@@ -84,6 +84,27 @@ trait DirectoryFileLookup[FileEntryType <: ClassRepClassPathEntry] extends FlatC
     }
     FlatClassPathEntries(packageBuf, fileBuf)
   }
+
+  private def listDir(dir: File, filter: Option[FileFilter]): Array[File] = {
+    val listing = filter match {
+      case Some(f) => dir.listFiles(f)
+      case None => dir.listFiles()
+    }
+
+    // Sort by file name for stable order of directory .class entries in package scope.
+    // This gives stable results ordering of base type sequences for unrelated classes
+    // with the same base type depth.
+    //
+    // Notably, this will stably infer`Product with Serializable`
+    // as the type of `case class C(); case class D(); List(C(), D()).head`, rather than the opposite order.
+    // On Mac, the HFS performs this sorting transparently, but on Linux the order is unspecified.
+    //
+    // Note this behaviour can be enabled in javac with `javac -XDsortfiles`, but that's only
+    // intended to improve determinism of the compiler for compiler hackers.
+    java.util.Arrays.sort(listing, new java.util.Comparator[File] {  def compare(o1: File, o2: File) = o1.getName.compareTo(o2.getName) } )
+    listing
+  }
+
 
   protected def createFileEntry(file: AbstractFile): FileEntryType
   protected def fileFilter: FileFilter

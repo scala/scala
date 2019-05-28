@@ -137,7 +137,7 @@ class ByteCodeRepository(val classPath: ClassFileLookup[AbstractFile], val isJav
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
     classPath.findClassFile(fullName) map { classFile =>
-      val classNode = new asm.tree.ClassNode()
+      val classNode = new ClassNode1
       val classReader = new asm.ClassReader(classFile.toByteArray)
 
       // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`

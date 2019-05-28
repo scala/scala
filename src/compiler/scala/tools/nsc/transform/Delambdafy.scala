@@ -18,7 +18,7 @@ import scala.collection.mutable.LinkedHashMap
  *
  * From a lambda, Delambdafy will create:
  *
- * Under -target:jvm-1.7 and below:
+ * Under GenASM
  *
  * 1) a new top level class that
       a) has fields and a constructor taking the captured environment (including possibly the "this"
@@ -27,7 +27,7 @@ import scala.collection.mutable.LinkedHashMap
  *    c) if needed a bridge method for the apply method
  * 2) an instantiation of the newly created class which replaces the lambda
  *
- * Under -target:jvm-1.8 with GenBCode:
+ * Under GenBCode:
  *
  * 1) An application of the captured arguments to a fictional symbol representing the lambda factory.
  *    This will be translated by the backed into an invokedynamic using a bootstrap method in JDK8's `LambdaMetaFactory`.
@@ -573,8 +573,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   // given function type. Returns `NoSymbol` if the compiler settings are unsuitable.
   private def java8CompatFunctionalInterface(target: Symbol, functionType: Type): (Symbol, Boolean) = {
     val canUseLambdaMetafactory: Boolean = {
-      val isTarget18 = settings.target.value.contains("jvm-1.8")
-      settings.isBCodeActive && isTarget18
+      settings.isBCodeActive
     }
 
     val sym = functionType.typeSymbol

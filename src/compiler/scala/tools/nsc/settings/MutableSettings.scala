@@ -221,6 +221,13 @@ class MutableSettings(val errorFn: String => Unit)
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default))
+  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String) =
+    ChoiceSetting(name, helpArg, descr, choices, default).withPostSetHook(sett =>
+      if (sett.value != default) {
+        sett.withDeprecationMessage(s"${name}:${sett.value} is deprecated, forcing use of $default")
+        sett.value = default
+      }
+    )
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
     add(new IntSetting(name, descr, default, range, parser))
   def MultiStringSetting(name: String, arg: String, descr: String) = add(new MultiStringSetting(name, arg, descr))

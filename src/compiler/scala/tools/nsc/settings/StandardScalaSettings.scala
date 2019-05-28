@@ -38,8 +38,8 @@ trait StandardScalaSettings {
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.")
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
-  val target =          ChoiceSetting ("-target", "target", "Target platform for object files. All JVM 1.5 targets are deprecated.",
-                          List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"), "jvm-1.6")
+  val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.",
+                          List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"), "jvm-1.8")
   val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.")
   val uniqid =         BooleanSetting ("-uniqid", "Uniquely tag all identifiers in debugging output.")
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")

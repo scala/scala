@@ -280,7 +280,7 @@ object $read extends scala.AnyRef {
   };
   val INSTANCE = new $read.<init>
 }
-res3: List[Product with Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+res3: List[Serializable with Product] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)
 defined class Sum

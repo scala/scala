@@ -117,9 +117,9 @@ class FlatClassPathResolverTest {
       val packageNameParts = if (inPackage == FlatClassPath.RootPackage) Nil else inPackage.split('.').toList
       val recursiveClassPathInPackage = traverseToPackage(packageNameParts, recursiveClassPath)
 
-      val flatCpPackages = flatClassPath.packages(inPackage).map(_.name)
+      val flatCpPackages = flatClassPath.packages(inPackage).map(_.name).sorted
       val pkgPrefix = PackageNameUtils.packagePrefix(inPackage)
-      val recursiveCpPackages = recursiveClassPathInPackage.packages.map(pkgPrefix + _.name)
+      val recursiveCpPackages = recursiveClassPathInPackage.packages.map(pkgPrefix + _.name).sorted
       assertEquals(s"Packages in package '$inPackage' on flat cp should be the same as on the recursive cp",
         recursiveCpPackages, flatCpPackages)
 

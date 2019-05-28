@@ -105,7 +105,7 @@
         <then>
           <stopwatch name="@{project}.timer"/>
           <mkdir dir="${@{project}-classes}"/>
-          <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${@{project}-classes}" classpath="${@{project}-classes}" includes="**/*.java" target="1.6" source="1.5" compiler="javac1.6">
+          <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${@{project}-classes}" classpath="${@{project}-classes}" includes="**/*.java" target="1.8" source="1.8" compiler="javac1.8">
             <compilerarg line="${javac.args} @{args}"/>
           </javac>
           <if>
@@ -132,7 +132,7 @@
     <attribute name="args" default=""/>
     <attribute name="excludes" default=""/>
     <sequential>
-      <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${build-@{stage}.dir}/classes/@{destproject}" includes="**/*.java" excludes="@{excludes}" target="1.6" source="1.5">
+      <javac debug="true" srcdir="${src.dir}/@{project}" destdir="${build-@{stage}.dir}/classes/@{destproject}" includes="**/*.java" excludes="@{excludes}" target="1.8" source="1.8">
         <compilerarg line="${javac.args} @{args}"/>
         <classpath refid="@{stage}.@{destproject}.build.path"/>
       </javac>

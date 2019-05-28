@@ -241,7 +241,7 @@ abstract class UnCurry extends InfoTransform
 
           def canUseDelamdafyMethod = (
                (inConstructorFlag == 0) // Avoiding synthesizing code prone to SI-6666, SI-8363 by using old-style lambda translation
-            && (!isSpecialized || (settings.isBCodeActive && settings.target.value == "jvm-1.8")) // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
+            && (!isSpecialized || settings.isBCodeActive) // DelambdafyTransformer currently only emits generic FunctionN-s, use the old style in the meantime
           )
           if (inlineFunctionExpansion || !canUseDelamdafyMethod) {
             val parents = addSerializable(abstractFunctionForFunctionType(fun.tpe))
