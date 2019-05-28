@@ -170,6 +170,8 @@ val mimaPrereleaseHandlingSettings = Seq(
 // #8107
     ProblemFilters.exclude[MissingClassProblem]("scala.jdk.CollectionConverters$Ops$"),
 
+// #8108
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.StrictOptimizedSeqOps.scala$collection$immutable$StrictOptimizedSeqOps$$super$sorted"),
 
   ),
 )
