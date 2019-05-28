@@ -39,6 +39,9 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
     with IterableFactoryDefaults[A, HashSet]
     with DefaultSerializable {
 
+  def this() = this(SetNode.empty)
+
+  // This release fence is present because rootNode may have previously been mutated during construction.
   releaseFence()
 
   private[this] def newHashSetOrThis(newRootNode: BitmapIndexedSetNode[A]): HashSet[A] =
