@@ -90,6 +90,13 @@ val mimaPrereleaseHandlingSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
     // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$Concat"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.AbstractMapView.++"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractMapView.+"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.AbstractMapView.concat"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.++"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.+"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.concat")
   ),
 )
 
