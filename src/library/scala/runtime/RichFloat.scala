@@ -38,6 +38,7 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
 
   def isNaN: Boolean         = java.lang.Float.isNaN(self)
   def isInfinity: Boolean    = java.lang.Float.isInfinite(self)
+  def isFinite: Boolean      = java.lang.Float.isFinite(self)
   def isPosInfinity: Boolean = Float.PositiveInfinity == self
   def isNegInfinity: Boolean = Float.NegativeInfinity == self
 
