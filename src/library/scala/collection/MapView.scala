@@ -43,6 +43,8 @@ trait MapView[K, +V]
 
   override def partition(p: ((K, V)) => Boolean): (MapView[K, V], MapView[K, V]) = (filter(p), filterNot(p))
 
+  override def tapEach[U](f: ((K, V)) => U): MapView[K, V] = new MapView.TapEach(this, f)
+
   def mapFactory: MapViewFactory = MapView
 
   override def empty: MapView[K, V] = mapFactory.empty
@@ -107,6 +109,21 @@ object MapView extends MapViewFactory {
     }
     override def knownSize: Int = if (underlying.knownSize == 0) 0 else super.knownSize
     override def isEmpty: Boolean = iterator.isEmpty
+  }
+
+  @SerialVersionUID(3L)
+  class TapEach[K, +V, +U](underlying: SomeMapOps[K, V], f: ((K, V)) => U) extends AbstractMapView[K, V] {
+    override def get(key: K): Option[V] = {
+      underlying.get(key) match {
+        case s @ Some(v) =>
+          f((key, v))
+          s
+        case None => None
+      }
+    }
+    override def iterator: Iterator[(K, V)] = underlying.iterator.tapEach(f)
+    override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
   }
 
   override def newBuilder[X, Y]: Builder[(X, Y), MapView[X, Y]] = mutable.HashMap.newBuilder[X, Y].mapResult(_.view)

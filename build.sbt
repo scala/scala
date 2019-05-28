@@ -125,7 +125,7 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.+"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.concat"),
 
-
+    
 // #8104
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichFloat.isFinite$extension"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichDouble.isFinite$extension"),
@@ -135,6 +135,36 @@ val mimaPrereleaseHandlingSettings = Seq(
 
 // #8083
     ProblemFilters.exclude[FinalMethodProblem]("scala.jdk.Accumulator.stepper"),
+
+
+// #8099
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Drop.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Take.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Concat.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractIndexedSeqView.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Sorted.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Drop.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#TakeRight.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Appended.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Sorted#ReverseSorted.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Map.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#DropRight.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Take.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Reverse.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractMapView.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Prepended.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Map.tapEach"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$TapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#DropRight.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Id.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Appended.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#TakeRight.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Concat.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.IndexedSeqView#Prepended.tapEach"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractSeqView.tapEach"),
 
 
   ),
