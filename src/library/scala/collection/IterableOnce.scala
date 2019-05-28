@@ -77,7 +77,7 @@ trait IterableOnce[+A] extends Any {
   /** @return The number of elements in this $coll, if it can be cheaply computed,
     *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
     */
-  def knownSize: Int
+  def knownSize: Int = -1
 }
 
 final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) extends AnyVal {
@@ -530,8 +530,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def tapEach[U](f: A => U): C
 
   /////////////////////////////////////////////////////////////// Concrete methods based on iterator
-
-  def knownSize: Int = -1
 
   /** Tests whether this $coll is known to have a finite size.
     *  All strict collections are known to have finite size. For a non-strict

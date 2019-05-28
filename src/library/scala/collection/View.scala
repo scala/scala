@@ -34,7 +34,7 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Itera
 
   override def empty: scala.collection.View[A] = iterableFactory.empty
 
-  override def toString: String  = stringPrefix + "(<not computed>)"
+  override def toString: String  = className + "(<not computed>)"
 
   @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "View"
