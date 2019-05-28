@@ -107,6 +107,12 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.+"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.concat"),
 
+// #8104
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichFloat.isFinite$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichDouble.isFinite$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichFloat.isFinite"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.runtime.RichDouble.isFinite"),
+
   ),
 )
 
