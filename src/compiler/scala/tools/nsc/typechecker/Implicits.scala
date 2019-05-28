@@ -181,7 +181,7 @@ trait Implicits {
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
-
+  private val shadowerUseOldImplementation = java.lang.Boolean.getBoolean("scalac.implicit.shadow.old")
   def resetImplicits() {
     implicitsCache.clear()
     infoMapCache.clear()
@@ -986,7 +986,7 @@ trait Implicits {
 
       /** Sorted list of eligible implicits.
        */
-      val eligible = Shadower.using(isLocalToCallsite){ shadower =>
+      private def eligibleOld = Shadower.using(isLocalToCallsite){ shadower =>
         val matches = iss flatMap { is =>
           val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
           shadower addInfos is
@@ -1070,9 +1070,10 @@ trait Implicits {
         }
       }
 
+      val eligible = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
+
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
-      assert(eligibleNew == eligible, (eligibleNew, eligible))
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
