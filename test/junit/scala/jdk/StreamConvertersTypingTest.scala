@@ -348,8 +348,8 @@ class StreamConvertersTypingTest {
       val s3: IntStepper with EfficientSplit = ibs.stepper
       val s4: Stepper[Int] = ibs.stepper
       val s5: Stepper[Int] with EfficientSplit = ibs.stepper
-      val s6: AnyStepper[Int] = ibs.stepper[Int, AnyStepper[Int]]
-      val s7: AnyStepper[Int] with EfficientSplit = ibs.stepper[Int, AnyStepper[Int]]
+      val s6: AnyStepper[Int] = ibs.stepper[AnyStepper[Int]]
+      val s7: AnyStepper[Int] with EfficientSplit = ibs.stepper[AnyStepper[Int]]
       // val s8: Stepper[Any] = ibs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = ibs.stepper // no StepperShape instance
     }
@@ -376,8 +376,8 @@ class StreamConvertersTypingTest {
     val s3: IntStepper with EfficientSplit = r.stepper
     val s4: Stepper[Int] = r.stepper
     val s5: Stepper[Int] with EfficientSplit = r.stepper
-    val s6: AnyStepper[Int] = r.stepper[Int, AnyStepper[Int]]
-    val s7: AnyStepper[Int] with EfficientSplit = r.stepper[Int, AnyStepper[Int]]
+    val s6: AnyStepper[Int] = r.stepper[AnyStepper[Int]]
+    val s7: AnyStepper[Int] with EfficientSplit = r.stepper[AnyStepper[Int]]
     // val s8: Stepper[Any] = r.stepper  // no StepperShape instance
     // val s9: Stepper[Long] = r.stepper // no StepperShape instance
   }

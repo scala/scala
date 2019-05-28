@@ -94,9 +94,9 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     else new MapKeyValueTupleReverseIterator[K, V](rootNode)
   }
 
-  override def stepper[B >: (K, V), S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit =
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[(K, V), S]): S with EfficientSplit =
     shape.
-      parUnbox(collection.convert.impl.AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i)))
+      parUnbox(collection.convert.impl.AnyChampStepper.from[(K, V), MapNode[K, V]](size, rootNode, (node, i) => node.getPayload(i)))
 
   override def keyStepper[S <: Stepper[_]](implicit shape: StepperShape[K, S]): S with EfficientSplit = {
     import collection.convert.impl._
@@ -109,13 +109,13 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     s.asInstanceOf[S with EfficientSplit]
   }
 
-  override def valueStepper[B >: V, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def valueStepper[S <: Stepper[_]](implicit shape: StepperShape[V, S]): S with EfficientSplit = {
     import collection.convert.impl._
     val s = shape.shape match {
       case StepperShape.IntShape    => IntChampStepper.from[   MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Int])
       case StepperShape.LongShape   => LongChampStepper.from[  MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Long])
       case StepperShape.DoubleShape => DoubleChampStepper.from[MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i).asInstanceOf[Double])
-      case _         => shape.parUnbox(AnyChampStepper.from[B, MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i)))
+      case _         => shape.parUnbox(AnyChampStepper.from[V, MapNode[K, V]](size, rootNode, (node, i) => node.getValue(i)))
     }
     s.asInstanceOf[S with EfficientSplit]
   }

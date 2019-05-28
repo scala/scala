@@ -70,7 +70,7 @@ sealed abstract class Range(
 
   final override def iterator: Iterator[Int] = new RangeIterator(start, step, lastElement, isEmpty)
 
-  override final def stepper[B >: Int, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override final def stepper[S <: Stepper[_]](implicit shape: StepperShape[Int, S]): S with EfficientSplit = {
     val st = new RangeStepper(start, step, 0, length)
     val r =
       if (shape.shape == StepperShape.IntShape) st

@@ -53,9 +53,9 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   protected[collection] var array: Array[AnyRef] = initialElements
   protected var size0 = initialSize
 
-  override def stepper[B >: A, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
-    shape.parUnbox(new ObjectArrayStepper(array, 0, length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+    shape.parUnbox(new ObjectArrayStepper(array, 0, length).asInstanceOf[AnyStepper[A] with EfficientSplit])
   }
 
   override def knownSize: Int = super[IndexedSeqOps].knownSize

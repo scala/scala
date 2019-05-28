@@ -67,7 +67,7 @@ sealed abstract class ArraySeq[T]
     * or subtype of the element type. */
   def array: Array[_]
 
-  override def stepper[B >: T, S <: Stepper[_]](implicit shape: StepperShape[B, S]): S with EfficientSplit = {
+  override def stepper[S <: Stepper[_]](implicit shape: StepperShape[T, S]): S with EfficientSplit = {
     import scala.collection.convert.impl._
     val isRefShape = shape.shape == StepperShape.ReferenceShape
     val s = if (isRefShape) array match {
@@ -82,7 +82,7 @@ sealed abstract class ArraySeq[T]
       case a: Array[AnyRef]  => new ObjectArrayStepper(a, 0, a.length)
     } else {
       array match {
-        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[B] with EfficientSplit])
+        case a: Array[AnyRef] => shape.parUnbox(new ObjectArrayStepper(a, 0, a.length).asInstanceOf[AnyStepper[T] with EfficientSplit])
         case a: Array[Int]    => new IntArrayStepper(a, 0, a.length)
         case a: Array[Long]   => new LongArrayStepper(a, 0, a.length)
         case a: Array[Double] => new DoubleArrayStepper(a, 0, a.length)
