@@ -34,6 +34,7 @@ trait IndexedSeqView[+A] extends IndexedSeqOps[A, View, View[A]] with SeqView[A]
   override def map[B](f: A => B): IndexedSeqView[B] = new IndexedSeqView.Map(this, f)
   override def reverse: IndexedSeqView[A] = new IndexedSeqView.Reverse(this)
   override def slice(from: Int, until: Int): IndexedSeqView[A] = new IndexedSeqView.Slice(this, from, until)
+  override def tapEach[U](f: A => U): IndexedSeqView[A] = new IndexedSeqView.Map(this, { (a: A) => f(a); a})
 
   def concat[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
   def appendedAll[B >: A](suffix: IndexedSeqView.SomeIndexedSeqOps[B]): IndexedSeqView[B] = new IndexedSeqView.Concat(this, suffix)
