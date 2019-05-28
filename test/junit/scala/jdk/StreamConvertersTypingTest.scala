@@ -35,9 +35,9 @@ class StreamConvertersTypingTest {
     // the elements in insertion order.
 
     val m1 = Map(1 -> "a")
-    val m2 = mutable.LinkedHashMap('c' -> 35f)
+    val m2 = mutable.TreeMap('c' -> 35f)
     val s1 = Set("3", "4")
-    val s2 = mutable.LinkedHashSet('a', 'b')
+    val s2 = mutable.TreeSet('a', 'b')
 
 
     val m1ks = m1.keyStepper
@@ -45,9 +45,9 @@ class StreamConvertersTypingTest {
     val m1vs = m1.valueStepper
     (m1vs: AnyStepper[String] /*with EfficientSubstep*/).nextStep()
     val m2ks = m2.keyStepper
-    (m2ks: IntStepper /*with EfficientSplit*/).nextStep()
+    (m2ks: IntStepper with EfficientSplit).nextStep()
     val m2vs = m2.valueStepper
-    (m2vs: DoubleStepper /*with EfficientSplit*/).nextStep()
+    (m2vs: DoubleStepper with EfficientSplit).nextStep()
 
     val m1sps = m1.asJavaSeqStream
     (m1sps: Stream[(Int, String)]).count()
@@ -56,9 +56,9 @@ class StreamConvertersTypingTest {
     val m1svs = m1.asJavaSeqValueStream
     (m1svs: Stream[String]).count()
 
-    // val m1pps = m1.parStream // Not available
-    // val m1pks = m1.parKeyStream // Not available
-    // val m1pvs = m1.parValueStream // Not available
+//    val m1pps = m1.asJavaParStream // Not available, no efficient stepper
+//    val m1pks = m1.asJavaParKeyStream // Not available, no efficient key stepper
+//    val m1pvs = m1.asJavaParValueStream // Not available, no efficient value stepper
 
     val m2sps = m2.asJavaSeqStream
     (m2sps: Stream[(Char, Float)]).count()
@@ -67,21 +67,21 @@ class StreamConvertersTypingTest {
     val m2svs = m2.asJavaSeqValueStream
     (m2svs: DoubleStream).count()
 
-//    val m2pps = m2.asJavaParStream
-//    (m2pps: Stream[(Char, Float)]).count()
-//    val m2pks = m2.asJavaParKeyStream
-//    (m2pks: IntStream).sum()
-//    val m2pvs = m2.asJavaParValueStream
-//    (m2pvs: DoubleStream).count()
+    val m2pps = m2.asJavaParStream
+    (m2pps: Stream[(Char, Float)]).count()
+    val m2pks = m2.asJavaParKeyStream
+    (m2pks: IntStream).sum()
+    val m2pvs = m2.asJavaParValueStream
+    (m2pvs: DoubleStream).count()
 
     val s1sps = s1.asJavaSeqStream
     (s1sps: Stream[String]).count()
-//    val s1pps = s1.parStream
+//    val s1pps = s1.asJavaParStream
 
     val s2sps = s2.asJavaSeqStream
     (s2sps: IntStream).count()
-//    val s2pps = s2.asJavaParStream
-//    (s2pps: IntStream).count()
+    val s2pps = s2.asJavaParStream
+    (s2pps: IntStream).count()
   }
 
   @Test
