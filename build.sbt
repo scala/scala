@@ -91,6 +91,20 @@ val mimaPrereleaseHandlingSettings = Seq(
     // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
 
+// #8094    
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#CompletionStageOps.toScala"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#FutureOps.toJava"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#CompletionStageOps.toScala$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#FutureOps.toJava$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.toJava"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.toScala"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#CompletionStageOps.asScala"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#FutureOps.asJava"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#CompletionStageOps.asScala$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.FutureConverters#FutureOps.asJava$extension"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.asJava"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.jdk.javaapi.FutureConverters.asScala"),
+
 // #8096    
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.this"),
     
