@@ -21,8 +21,8 @@ import java.util.concurrent.*;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.*;
-import static scala.jdk.javaapi.FutureConverters.toJava;
-import static scala.jdk.javaapi.FutureConverters.toScala;
+import static scala.jdk.javaapi.FutureConverters.asJava;
+import static scala.jdk.javaapi.FutureConverters.asScala;
 
 public class FutureConvertersTest {
     private <T> Promise<T> promise() { return Promise.apply(); }
@@ -30,7 +30,7 @@ public class FutureConvertersTest {
     @Test
     public void testToScalaSuccess() {
         final CompletableFuture<String> cs = new CompletableFuture<>();
-        final Future<String> f = toScala(cs);
+        final Future<String> f = asScala(cs);
         assertFalse("f must not yet be completed", f.isCompleted());
         cs.complete("Hello");
         assertTrue("f must be completed by now", f.isCompleted());
@@ -40,7 +40,7 @@ public class FutureConvertersTest {
     @Test
     public void testToScalaFailure() {
         final CompletableFuture<String> cs = new CompletableFuture<>();
-        final Future<String> f = toScala(cs);
+        final Future<String> f = asScala(cs);
         assertFalse("f must not yet be completed", f.isCompleted());
         final Exception ex = new RuntimeException("Hello");
         cs.completeExceptionally(ex);
@@ -52,7 +52,7 @@ public class FutureConvertersTest {
     public void testToJavaSuccess() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletableFuture<String> cp = (CompletableFuture<String>) cs;
         assertFalse("cs must not yet be completed", cp.isDone());
         p.success("Hello");
@@ -64,7 +64,7 @@ public class FutureConvertersTest {
     public void testToJavaFailure() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletableFuture<String> cp = (CompletableFuture<String>) cs;
         assertFalse("cs must not yet be completed", cp.isDone());
         final Exception ex = new RuntimeException("Hello");
@@ -86,7 +86,7 @@ public class FutureConvertersTest {
     public void testToJavaThenApply() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.thenApply(x -> {
             try {
@@ -105,7 +105,7 @@ public class FutureConvertersTest {
     public void testToJavaThenAccept() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenAccept(x -> {
             try {
@@ -123,7 +123,7 @@ public class FutureConvertersTest {
     public void testToJavaThenRun() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenRun(() -> {
             try {
@@ -141,7 +141,7 @@ public class FutureConvertersTest {
     public void testToJavaThenCombine() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<Integer> other = CompletableFuture.completedFuture(42);
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.thenCombine(other, (x, y) -> {
@@ -161,7 +161,7 @@ public class FutureConvertersTest {
     public void testToJavaThenAcceptBoth() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<Integer> other = CompletableFuture.completedFuture(42);
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.thenAcceptBoth(other, (x, y) -> {
@@ -180,7 +180,7 @@ public class FutureConvertersTest {
     public void testToJavaRunAfterBoth() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<Integer> other = CompletableFuture.completedFuture(42);
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.runAfterBoth(other, () -> {
@@ -199,7 +199,7 @@ public class FutureConvertersTest {
     public void testToJavaApplyToEither() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<String> other = new CompletableFuture<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.applyToEither(other, x -> {
@@ -219,7 +219,7 @@ public class FutureConvertersTest {
     public void testToJavaAcceptEither() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<String> other = new CompletableFuture<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.acceptEither(other, x -> {
@@ -238,7 +238,7 @@ public class FutureConvertersTest {
     public void testToJavaRunAfterEither() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CompletionStage<String> other = new CompletableFuture<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Void> second = cs.runAfterEither(other, () -> {
@@ -257,7 +257,7 @@ public class FutureConvertersTest {
     public void testToJavaThenCompose() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.thenCompose(x -> {
             try {
@@ -276,7 +276,7 @@ public class FutureConvertersTest {
     public void testToJavaWhenComplete() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.whenComplete((v, e) -> {
             try {
@@ -294,7 +294,7 @@ public class FutureConvertersTest {
     public void testToJavaHandle() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<Integer> second = cs.handle((v, e) -> {
             try {
@@ -313,7 +313,7 @@ public class FutureConvertersTest {
     public void testToJavaExceptionally() throws InterruptedException,
             ExecutionException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         final CountDownLatch latch = new CountDownLatch(1);
         final CompletionStage<String> second = cs.exceptionally(e -> {
             try {
@@ -336,7 +336,7 @@ public class FutureConvertersTest {
         final CompletableFuture<String> future = new CompletableFuture<>();
 
         CompletableFuture.supplyAsync(() -> "Hello").
-                thenCompose(x -> toJava(p1.future())).handle((x, t) -> future.complete(x));
+                thenCompose(x -> asJava(p1.future())).handle((x, t) -> future.complete(x));
         p1.success("Hello");
         assertEquals("Hello", future.get(1000, MILLISECONDS));
     }
@@ -344,7 +344,7 @@ public class FutureConvertersTest {
     @Test
     public void testToJavaToCompletableFuture() throws ExecutionException, InterruptedException {
         final Promise<String> p = promise();
-        final CompletionStage<String> cs = toJava(p.future());
+        final CompletionStage<String> cs = asJava(p.future());
         CompletableFuture<String> cf = cs.toCompletableFuture();
         assertEquals("notyet", cf.getNow("notyet"));
         p.success("done");
@@ -355,7 +355,7 @@ public class FutureConvertersTest {
     public void testToJavaToCompletableFutureDoesNotMutateUnderlyingPromise() throws ExecutionException, InterruptedException {
         final Promise<String> p = promise();
         Future<String> sf = p.future();
-        final CompletionStage<String> cs = toJava(sf);
+        final CompletionStage<String> cs = asJava(sf);
         CompletableFuture<String> cf = cs.toCompletableFuture();
         assertEquals("notyet", cf.getNow("notyet"));
         cf.complete("done");
@@ -368,7 +368,7 @@ public class FutureConvertersTest {
     public void testToJavaToCompletableFutureJavaCompleteCalledAfterScalaComplete() throws ExecutionException, InterruptedException {
         final Promise<String> p = promise();
         Future<String> sf = p.future();
-        final CompletionStage<String> cs = toJava(sf);
+        final CompletionStage<String> cs = asJava(sf);
         CompletableFuture<String> cf = cs.toCompletableFuture();
         assertEquals("notyet", cf.getNow("notyet"));
         p.success("scaladone");
@@ -381,7 +381,7 @@ public class FutureConvertersTest {
     public void testToJavaToCompletableFutureJavaCompleteCalledBeforeScalaComplete() throws ExecutionException, InterruptedException {
         final Promise<String> p = promise();
         Future<String> sf = p.future();
-        final CompletionStage<String> cs = toJava(sf);
+        final CompletionStage<String> cs = asJava(sf);
         CompletableFuture<String> cf = cs.toCompletableFuture();
         assertEquals("notyet", cf.getNow("notyet"));
         cf.complete("javadone");
@@ -394,7 +394,7 @@ public class FutureConvertersTest {
     public void testToJavaToCompletableFutureJavaObtrudeCalledBeforeScalaComplete() throws ExecutionException, InterruptedException {
         final Promise<String> p = promise();
         Future<String> sf = p.future();
-        final CompletionStage<String> cs = toJava(sf);
+        final CompletionStage<String> cs = asJava(sf);
         CompletableFuture<String> cf = cs.toCompletableFuture();
         try {
             cf.obtrudeValue("");
@@ -414,16 +414,16 @@ public class FutureConvertersTest {
     public void testToJavaAndBackAvoidsWrappers() {
         final Promise<String> p = promise();
         final Future<String> sf = p.future();
-        final CompletionStage<String> cs = toJava(sf);
-        Future<String> sf1 = toScala(cs);
+        final CompletionStage<String> cs = asJava(sf);
+        Future<String> sf1 = asScala(cs);
         assertSame(sf, sf1);
     }
 
     @Test
     public void testToScalaAndBackAvoidsWrappers() {
         final CompletableFuture<String> cf = new CompletableFuture<>();
-        final Future<String> f = toScala(cf);
-        CompletionStage<String> cs1 = toJava(f);
+        final Future<String> f = asScala(cf);
+        CompletionStage<String> cs1 = asJava(f);
         assertSame(cf, cs1);
 
     }

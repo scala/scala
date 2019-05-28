@@ -44,7 +44,7 @@ object FutureConverters {
     * @return a CompletionStage that runs all callbacks asynchronously and does not support the
     *         CompletableFuture interface
     */
-  def toJava[T](f: Future[T]): CompletionStage[T] = {
+  def asJava[T](f: Future[T]): CompletionStage[T] = {
     f match {
       case p: P[T] => p.wrapped
       // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
@@ -65,7 +65,7 @@ object FutureConverters {
     *           Scala Future
     * @return a Scala Future that represents the CompletionStage's completion
     */
-  def toScala[T](cs: CompletionStage[T]): Future[T] = {
+  def asScala[T](cs: CompletionStage[T]): Future[T] = {
     cs match {
       case cf: CF[T] => cf.wrapped
       // in theory not safe (could be `class C extends Future[A] with CompletionStage[B]`):
