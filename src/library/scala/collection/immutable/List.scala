@@ -266,16 +266,45 @@ sealed abstract class List[+A]
       var h: ::[B] = null
       var t: ::[B] = null
       while (rest ne Nil) {
-        f(rest.head).iterator.foreach { b =>
-          if (!found) {
-            h = new ::(b, Nil)
-            t = h
-            found = true
+        f(rest.head) match {
+          // Specialise to Option: avoid allocating Iterators
+          case sm: Some[_] =>
+            val b = sm.get
+            if (!found) {
+              h = new ::(b, Nil)
+              t = h
+              found = true
+            }
+            else {
+              val nx = new ::(b, Nil)
+              t.next = nx
+              t = nx
+            }
+          // Specialise to List: avoid allocating extra Iterator, use foreach
+          case sm: ::[_] => sm.foreach { b => 
+            if (!found) {
+              h = new ::(b, Nil)
+              t = h
+              found = true
+            }
+            else {
+              val nx = new ::(b, Nil)
+              t.next = nx
+              t = nx
+            }
           }
-          else {
-            val nx = new ::(b, Nil)
-            t.next = nx
-            t = nx
+          // if other IterableOnce type, use iterator
+          case it => it.iterator.foreach { b =>
+            if (!found) {
+              h = new ::(b, Nil)
+              t = h
+              found = true
+            }
+            else {
+              val nx = new ::(b, Nil)
+              t.next = nx
+              t = nx
+            }
           }
         }
         rest = rest.tail
