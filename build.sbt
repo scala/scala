@@ -167,6 +167,10 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractSeqView.tapEach"),
 
 
+// #8107
+    ProblemFilters.exclude[MissingClassProblem]("scala.jdk.CollectionConverters$Ops$"),
+
+
   ),
 )
 
