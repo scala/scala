@@ -6,9 +6,9 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 @RunWith(classOf[JUnit4])
-class SeqViewTest {
+class MapViewTest {
   @Test
   def _toString(): Unit = {
-    assertEquals("SeqView(<not computed>)", Seq(1, 2, 3).view.toString)
+    assertEquals("MapView(<not computed>)", Map(1 -> 2).view.toString)
   }
 }

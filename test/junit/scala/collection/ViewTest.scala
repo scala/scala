@@ -107,8 +107,14 @@ class ViewTest {
     checkThrows(ll.toList)
   }
 
-  def t10103: Unit = {
+  @Test
+  def t10103(): Unit = {
     val ints: IndexedSeq[Int] = Vector(1, 2, 3, 4)
     ints.view(1, 3): scala.collection.IndexedSeqView[Int]
+  }
+
+  @Test
+  def _toString(): Unit = {
+    assertEquals("View(<not computed>)", View(1, 2, 3).toString)
   }
 }
