@@ -23,12 +23,6 @@ trait MapView[K, +V]
 
   override def view: MapView[K, V] = this
 
-  def concat[V1 >: V](that: SomeMapOps[K, V1]): MapView[K, V1] = new MapView.Concat(this, that)
-
-  def ++[V1 >: V](that: SomeMapOps[K, V1]): MapView[K, V1] = concat(that)
-
-  override def +[V1 >: V](kv: (K, V1)): MapView[K, V1] = concat(new Map1(kv._1, kv._2))
-
   /** Filters this map by retaining only keys satisfying a predicate.
     *  @param  p   the predicate used to test keys
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
@@ -73,7 +67,6 @@ object MapView extends MapViewFactory {
     override def iterator: Iterator[Nothing] = Iterator.empty[Nothing]
     override def knownSize: Int = 0
     override def isEmpty: Boolean = true
-    override def concat[V1 >: Nothing](that: SomeMapOps[Any, V1]): MapView[Any, V1] = mapFactory.from(that)
     override def filterKeys(p: Any => Boolean): MapView[Any, Nothing] = this
     override def mapValues[W](f: Nothing => W): MapView[Any, Nothing] = this
     override def filter(pred: ((Any, Nothing)) => Boolean): MapView[Any, Nothing] = this
@@ -87,15 +80,6 @@ object MapView extends MapViewFactory {
     def iterator: Iterator[(K, V)] = underlying.iterator
     override def knownSize: Int = underlying.knownSize
     override def isEmpty: Boolean = underlying.isEmpty
-  }
-
-  @SerialVersionUID(3L)
-  class Concat[K, +V](left: SomeMapOps[K, V], right: SomeMapOps[K, V]) extends AbstractMapView[K, V] {
-    def get(key: K): Option[V] = right.get(key) match {
-      case s @ Some(_) => s
-      case _ => left.get(key)
-    }
-    def iterator: Iterator[(K, V)] = left.iterator.filter { case (k, _) => !right.contains(k) }.concat(right.iterator)
   }
 
   @SerialVersionUID(3L)
