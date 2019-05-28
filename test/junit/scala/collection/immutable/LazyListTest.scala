@@ -350,4 +350,9 @@ class LazyListTest {
     assertEquals(1 to 10, build(_ ++= LazyList.from(1).take(10)))
     assertEquals(1 to 10, build(_ ++= Iterator.from(1).take(10)))
   }
+
+  @Test
+  def sorted(): Unit = {
+    assertEquals(List(1,2,3), LazyList(2,1,3).sorted)
+  }
 }

@@ -107,6 +107,19 @@ val mimaPrereleaseHandlingSettings = Seq(
     ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.MapView.+"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.MapView.concat"),
 
+// #8100
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Drop.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Take.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Prepended.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Map.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#DropRight.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Appended.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#TakeRight.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.SeqView#Concat.sorted"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.AbstractSeqView.sorted"),
+
+
   ),
 )
 

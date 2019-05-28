@@ -889,6 +889,24 @@ class LazyListLazinessTest {
     assertLazyAll(op)
     assertRepeatedlyLazy(op)
   }
+
+  @Test
+  def sorted_properlyLazy(): Unit = {
+    val sorted = lazyListOp { ll => ll.sorted }
+    val sortBy = lazyListOp { ll => ll.sortBy(identity) }
+    val sortWith = lazyListOp { ll => ll.sortWith(_ < _) }
+
+
+    assertLazyAll(sorted)
+    assertLazyAll(sortBy)
+    assertLazyAll(sortWith)
+//    assertRepeatedlyLazy(sorted)
+//    assertRepeatedlyLazy(sortBy)
+//    assertRepeatedlyLazy(sortWith)
+//    genericLazyOp_properlyLazy(_.sorted)
+  }
+
+
 }
 
 private object LazyListLazinessTest {

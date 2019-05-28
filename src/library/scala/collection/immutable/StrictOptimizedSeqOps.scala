@@ -77,4 +77,22 @@ trait StrictOptimizedSeqOps[+A, +CC[_], +C]
     b.result()
   }
 
+  override def sorted[B >: A](implicit ord: Ordering[B]): C = {
+    val len = this.length
+    val b = newSpecificBuilder
+    if (len == 1) b += head
+    else if (len > 1) {
+      b.sizeHint(len)
+      val arr = new Array[Any](len)
+      copyToArray(arr)
+      java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
+      var i = 0
+      while (i < len) {
+        b += arr(i).asInstanceOf[A]
+        i += 1
+      }
+    }
+    b.result()
+  }
+
 }

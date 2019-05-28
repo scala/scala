@@ -684,29 +684,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     *
     *  @see [[scala.math.Ordering]]
     *
-    *  $willForceEvaluation
-    *
     *  @param  ord the ordering to be used to compare elements.
     *  @return     a $coll consisting of the elements of this $coll
     *              sorted according to the ordering `ord`.
     */
-  def sorted[B >: A](implicit ord: Ordering[B]): C = {
-    val len = this.length
-    val b = newSpecificBuilder
-    if (len == 1) b += head
-    else if (len > 1) {
-      b.sizeHint(len)
-      val arr = new Array[Any](len)
-      copyToArray(arr)
-      java.util.Arrays.sort(arr.asInstanceOf[Array[AnyRef]], ord.asInstanceOf[Ordering[AnyRef]])
-      var i = 0
-      while (i < len) {
-        b += arr(i).asInstanceOf[A]
-        i += 1
-      }
-    }
-    b.result()
-  }
+  def sorted[B >: A](implicit ord: Ordering[B]): C = fromSpecific(new SeqView.Sorted(this, ord))
 
   /** Sorts this $coll according to a comparison function.
     *  $willNotTerminateInf
