@@ -140,6 +140,7 @@ if not "%_LINE_TOOLCP%"=="" call :add_cpath "%_LINE_TOOLCP%"
 
 set _PROPS=-Dscala.home="!_SCALA_HOME!" %_OVERRIDE_USEJAVACP% @properties@
 
+setlocal DisableDelayedExpansion
 rem echo "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
 "%_JAVACMD%" %_JAVA_OPTS% %_PROPS% -cp "%_TOOL_CLASSPATH%" @class@ @toolflags@ %*
 goto end
