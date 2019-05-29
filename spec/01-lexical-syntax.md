@@ -34,8 +34,8 @@ classes (Unicode general category given in parentheses):
 
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
 1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
-   titlecase letters (`Lt`), other letters (`Lo`), letter numerals (`Nl`) and the
-   two characters `\u0024 ‘$’` and `\u005F ‘_’`.
+   titlecase letters (`Lt`), other letters (`Lo`), modifier letters (`Ml`), 
+   letter numerals (`Nl`) and the two characters `\u0024 ‘$’` and `\u005F ‘_’`.
 1. Digits `‘0’ | … | ‘9’`.
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
 1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
@@ -82,8 +82,10 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 The rules for pattern matching further distinguish between
 _variable identifiers_, which start with a lower case letter, and
 _constant identifiers_, which do not. For this purpose,
-underscore `‘_‘` is taken as lower case, and the ‘\$’ character
-is taken as upper case.
+all letters in unicode category Lo (lowercase letter), and all letters that 
+that have contributory property Other_Lowercase that are not in
+category Nl (letter numerals) are taken as lower case, as well as
+underscore `‘_‘`.
 
 The ‘\$’ character is reserved for compiler-synthesized identifiers.
 User programs should not define identifiers which contain ‘\$’ characters.
