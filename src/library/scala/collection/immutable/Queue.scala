@@ -142,7 +142,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @param  iter        an iterable object
     */
   def enqueueAll[B >: A](iter: scala.collection.Iterable[B]) =
-    if (isEmpty) new Queue(in, iter.toList ::: out)
+    if (isEmpty) new Queue(Nil, iter.toList)
     else  new Queue(iter.toList reverse_::: in, out)
 
 
