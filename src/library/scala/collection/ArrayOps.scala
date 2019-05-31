@@ -904,36 +904,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @param op      a binary operator that must be associative.
     *  @return        the result of applying the fold operator `op` between all the elements, or `z` if this array is empty.
     */
-  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = {
-    def f[@specialized(Specializable.Everything) T](xs: Array[T], op: (Any, Any) => Any, z: Any): Any = {
-      // Start with the last element and run the loop from 0 until length-1. It would be more logical to start with
-      // the first element and loop from 1 until length but hotspot performs special optimizations for loops starting
-      // at 0 which have a huge impact when the actual folding operation is fast.
-      val length = xs.length-1
-      if(length >= 0) {
-        var v: Any = xs(length)
-        var i = 0
-        while(i < length) {
-          v = op(v, xs(i))
-          i += 1
-        }
-        v
-      } else z
-    }
-    ((xs: Any) match {
-      case null => throw new NullPointerException
-      case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Double]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Long]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Float]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Char]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Byte]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Short]   => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Boolean] => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-      case xs: Array[Unit]    => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
-    }).asInstanceOf[A1]
-  }
+  def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1 = foldLeft(z)(op)
 
   /** Builds a new array by applying a function to all elements of this array.
     *
