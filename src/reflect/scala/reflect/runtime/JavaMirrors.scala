@@ -33,6 +33,7 @@ import internal.pickling.UnPickler
 import scala.collection.mutable.ListBuffer
 import internal.Flags._
 import ReflectionUtils._
+import scala.reflect.api.TypeCreator
 import scala.runtime.{ScalaRunTime, BoxesRunTime}
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
@@ -103,6 +104,25 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private val constructorCache = new TwoWayCache[jConstructor[_], MethodSymbol]
     private val fieldCache       = new TwoWayCache[jField, TermSymbol]
     private val tparamCache      = new TwoWayCache[jTypeVariable[_ <: GenericDeclaration], TypeSymbol]
+
+    private[this] object typeTagCache extends ClassValue[TypeTag[_]]() {
+      val typeCreator = new ThreadLocal[TypeCreator]()
+
+      override protected def computeValue(cls: jClass[_]): TypeTag[_] = {
+        val creator = typeCreator.get()
+        assert(creator.getClass == cls, (creator, cls))
+        TypeTagImpl[AnyRef](thisMirror.asInstanceOf[Mirror], creator)
+      }
+    }
+
+    final def typeTag(typeCreator: TypeCreator): TypeTag[_] = {
+      typeTagCache.typeCreator.set(typeCreator)
+      try {
+        typeTagCache.get(typeCreator.getClass)
+      } finally  {
+        typeTagCache.typeCreator.remove()
+      }
+    }
 
     private[runtime] def toScala[J: HasJavaClass, S](cache: TwoWayCache[J, S], key: J)(body: (JavaMirror, J) => S): S =
       cache.toScala(key){

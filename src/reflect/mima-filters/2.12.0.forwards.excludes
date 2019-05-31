@@ -32,3 +32,8 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.URLZipArchi
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.close")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ManifestResources.close")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.close")
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag")
+ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl")
