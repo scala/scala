@@ -248,6 +248,55 @@ final class StringOps(private val s: String) extends AnyVal {
     sb.toString
   }
 
+  /** Builds a new String by applying a partial function to all chars of this String
+    * on which the function is defined.
+    *
+    *  @param pf     the partial function which filters and maps the String.
+    *  @return       a new String resulting from applying the given partial function
+    *                `pf` to each char on which it is defined and collecting the results.
+    */
+  def collect(pf: PartialFunction[Char, Char]): String = {
+    var i = 0
+    var matched = true
+    def d(x: Char): Char = {
+      matched = false
+      0
+    }
+    val b = new StringBuilder
+    while(i < s.length) {
+      matched = true
+      val v = pf.applyOrElse(s.charAt(i), d)
+      if(matched) b += v
+      i += 1
+    }
+    b.result()
+  }
+
+  /** Builds a new collection by applying a partial function to all chars of this String
+    * on which the function is defined.
+    *
+    *  @param pf     the partial function which filters and maps the String.
+    *  @tparam B     the element type of the returned collection.
+    *  @return       a new collection resulting from applying the given partial function
+    *                `pf` to each char on which it is defined and collecting the results.
+    */
+  def collect[B](pf: PartialFunction[Char, B]): immutable.IndexedSeq[B] = {
+    var i = 0
+    var matched = true
+    def d(x: Char): B = {
+      matched = false
+      null.asInstanceOf[B]
+    }
+    val b = immutable.IndexedSeq.newBuilder[B]
+    while(i < s.length) {
+      matched = true
+      val v = pf.applyOrElse(s.charAt(i), d)
+      if(matched) b += v
+      i += 1
+    }
+    b.result()
+  }
+
   /** Returns a new collection containing the chars from this string followed by the elements from the
     * right hand operand.
     *
