@@ -25,9 +25,7 @@ import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
 import scala.reflect.internal.util.StringContextStripMarginOps
 
-trait ScalaSettings extends AbsScalaSettings
-                       with StandardScalaSettings
-                       with Warnings {
+trait ScalaSettings extends StandardScalaSettings with Warnings {
   self: MutableSettings =>
 
   /** Set of settings */

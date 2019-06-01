@@ -1,4 +1,4 @@
 //
-// scalac: -Werror -deprecation -optimise -Xexperimental -Xfuture -target:jvm-1.7
+// scalac: -Werror -deprecation -optimise -Xexperimental -Xfuture
 //
 // Deprecated options are announced before compilation.
