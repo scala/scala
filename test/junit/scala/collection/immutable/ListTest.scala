@@ -9,6 +9,46 @@ import scala.ref.WeakReference
 
 @RunWith(classOf[JUnit4])
 class ListTest {
+  @Test
+  def foo2: Unit = {
+
+    println(List(List(1,2), List(3, 4), List(5, 6))
+        .view
+        .tapEach(println)
+        .transpose
+        .to(List)
+      )
+
+  }
+
+  @Test
+  def foo: Unit = {
+    println("HI")
+    val x = LazyList.from(Iterator.from(1)).view
+      .tapEach(println)
+      .sorted
+      .reverse
+
+    val y = x .reverse
+
+    val a =
+      (1 to 10)
+        .iterator
+        .to(LazyList)
+      LazyList.from(Iterator.from(1 to 10).tapEach(println)).view.reverse.sorted.take(3).iterator
+
+
+    println("Done!")
+
+//      val z = y
+//      .toList
+//    val sv =
+//      (1 to 10)
+//      .to(LazyList)
+//      .view
+//      .tapEach(println)
+//      .reverse
+  }
   /**
    * Test that empty iterator does not hold reference
    * to complete List

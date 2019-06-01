@@ -50,7 +50,6 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Itera
   */
 @SerialVersionUID(3L)
 object View extends IterableFactory[View] {
-
   /**
     * @return A `View[A]` whose underlying iterator is provided by the `it` parameter-less function.
     *
@@ -430,6 +429,53 @@ object View extends IterableFactory[View] {
     }
     override def isEmpty: Boolean = underlying.isEmpty && len <= 0
   }
+
+
+  @SerialVersionUID(3L)
+  private[collection] class Transpose[A, B](underlying: SomeIterableOps[A])(implicit asIterable: A => Iterable[B]) extends AbstractView[Iterable[B]] {
+    override def iterator: Iterator[Iterable[B]] = new TransposeIterator(underlying)
+  }
+
+  private[collection] class TransposeIterator[A, B](underlying: SomeIterableOps[A])(implicit asIterable: A => Iterable[B]) extends Iterator[View[B]] {
+    private[this] def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
+    private[this] var buffer: ArrayBuffer[Iterable[B]] = _
+    private[this] var bufferIterator: Iterator[View[B]] = _
+
+    private[this] def forceTranspose(): Unit = {
+      val underlyingIter = underlying.iterator
+
+      if (!underlyingIter.hasNext) {
+        bufferIterator = Iterator.empty
+        return
+      }
+
+      def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
+
+      val head = underlyingIter.next()
+      val headSize = head.size
+      val as: scala.collection.immutable.IndexedSeq[ArrayBuffer[B]] = scala.collection.immutable.IndexedSeq.fill(headSize)(ArrayBuffer())
+      for (xs <- Iterator.single(head) ++ underlyingIter) {
+        var i = 0
+        for (x <- xs) {
+          if (i >= headSize) fail
+          as(i) += x
+          i += 1
+        }
+        if (i != headSize)
+          fail
+      }
+
+      bufferIterator = as.iterator.map(_.view)
+    }
+
+    override def hasNext: Boolean =
+      if (bufferIterator == null) underlying.nonEmpty else bufferIterator.hasNext
+    override def next(): View[B] = {
+      if (bufferIterator == null) forceTranspose()
+      bufferIterator.next()
+    }
+  }
+
 
   private[collection] def takeRightIterator[A](it: Iterator[A], n: Int): Iterator[A] = {
     val k = it.knownSize
