@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertSame
+import org.junit.Assert.{assertSame, assertEquals}
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -9,50 +9,11 @@ import scala.ref.WeakReference
 
 @RunWith(classOf[JUnit4])
 class ListTest {
-  @Test
-  def foo2: Unit = {
 
-    println(List(List(1,2), List(3, 4), List(5, 6))
-        .view
-        .tapEach(println)
-        .transpose
-        .to(List)
-      )
-
-  }
-
-  @Test
-  def foo: Unit = {
-    println("HI")
-    val x = LazyList.from(Iterator.from(1)).view
-      .tapEach(println)
-      .sorted
-      .reverse
-
-    val y = x .reverse
-
-    val a =
-      (1 to 10)
-        .iterator
-        .to(LazyList)
-      LazyList.from(Iterator.from(1 to 10).tapEach(println)).view.reverse.sorted.take(3).iterator
-
-
-    println("Done!")
-
-//      val z = y
-//      .toList
-//    val sv =
-//      (1 to 10)
-//      .to(LazyList)
-//      .view
-//      .tapEach(println)
-//      .reverse
-  }
   /**
-   * Test that empty iterator does not hold reference
-   * to complete List
-   */
+    * Test that empty iterator does not hold reference
+    * to complete List
+    */
   @Test
   def testIteratorGC(): Unit = {
     var num = 0
@@ -68,8 +29,8 @@ class ListTest {
 
       emptyIterators = (i, ref) +: emptyIterators
 
-      num+=1
-    } while (emptyIterators.forall(_._2.get.isDefined) && num<1000)
+      num += 1
+    } while (emptyIterators.forall(_._2.get.isDefined) && num < 1000)
 
     // check something is result to protect from JIT optimizations
     for ((i, _) <- emptyIterators) {
@@ -78,7 +39,7 @@ class ListTest {
 
     // await gc up to ~5 seconds
     var forceLoops = 50
-    while (emptyIterators.forall(_._2.get.isDefined) && forceLoops>0) {
+    while (emptyIterators.forall(_._2.get.isDefined) && forceLoops > 0) {
       System.gc()
       Thread.sleep(100)
       forceLoops -= 1
@@ -114,5 +75,45 @@ class ListTest {
     assertSame(ls, List.from(ls))
   }
 
-  @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+  @Test def checkSearch: Unit =
+    SeqTests.checkSearch(List(0 to 1000: _*), 15, implicitly[Ordering[Int]])
+
+  @Test def transpose: Unit = {
+
+    for {
+      h <- 0 to 20
+      w <- 0 to 20
+    } {
+
+      val list: Seq[IndexedSeq[(Int, Int)]] = List.from(
+        for {
+          x <- 0 until h
+        } yield
+          for {
+            y <- 0 until w
+          } yield (x, y)
+      )
+
+
+      val transposed: Seq[IndexedSeq[(Int, Int)]] = List.from(
+        if (h * w == 0) Nil
+        else for {
+          y <- 0 until w
+        } yield
+          for {
+            x <- 0 until h
+          } yield (x, y)
+      )
+
+      assertEquals(s"h=$h,w=$w,list=\n$list",transposed, list.transpose)
+    }
+
+    assertEquals(List(), List().transpose)
+    assertEquals(List(List(1)), List(List(1)).transpose)
+    assertEquals(List(List(1, 2)), List(List(1), List(2)).transpose)
+    assertEquals(
+      List(List(1, 2), List(3, 4)),
+      List(List(1, 3), List(2, 4)).transpose
+    )
+  }
 }

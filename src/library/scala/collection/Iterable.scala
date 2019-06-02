@@ -375,28 +375,36 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *  @throws IllegalArgumentException if all collections in this $coll
     *          are not of the same size.
     */
-  def transpose[B](implicit asIterable: A => /*<:<!!!*/ Iterable[B]): CC[CC[B] @uncheckedVariance] =
-    iterableFactory.from(new View.Transpose(this).map(iterableFactory.from))
-//  def transpose[B](implicit asIterable: A => /*<:<!!!*/ Iterable[B]): CC[CC[B] @uncheckedVariance] = {
-//    if (isEmpty)
-//      return iterableFactory.empty[CC[B]]
-//
-//    def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
-//
-//    val headSize = asIterable(head).size
-//    val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] = scala.collection.immutable.IndexedSeq.fill(headSize)(iterableFactory.newBuilder[B])
-//    for (xs <- iterator) {
-//      var i = 0
-//      for (x <- asIterable(xs)) {
-//        if (i >= headSize) fail
-//        bs(i) += x
-//        i += 1
-//      }
-//      if (i != headSize)
-//        fail
-//    }
-//    iterableFactory.from(bs.map(_.result()))
-//  }
+  def transpose[B](implicit asIterable: A => /*<:<!!!*/ Iterable[B]): CC[CC[B] @uncheckedVariance] = this match {
+    case _: StrictOptimizedIterableOps[A, _, _] =>
+      // TODO: Move this implementation to `StrictOptimizedIterableOps` in 2.14
+      if (isEmpty)
+        return iterableFactory.empty[CC[B]]
+
+      def fail = throw new IllegalArgumentException("transpose requires all collections have the same size")
+
+      val it = iterator
+      val head = it.next()
+      val headIterable = asIterable(head)
+      val headSize = headIterable.size
+
+      val bs: scala.collection.immutable.IndexedSeq[Builder[B, CC[B]]] =
+        Array.fill(headSize)(iterableFactory.newBuilder[B])
+
+      for (xs <- Iterator.single(head).concat(it)) {
+        var i = 0
+        for (x <- asIterable(xs)) {
+          if (i >= headSize) fail
+          bs(i) += x
+          i += 1
+        }
+        if (i != headSize)
+          fail
+      }
+      iterableFactory.from(bs.iterator.map(_.result()))
+    case _ =>
+      iterableFactory.from(new View.Transpose(this).map(iterableFactory.from) )
+  }
 
   def filter(pred: A => Boolean): C = fromSpecific(new View.Filter(this, pred, isFlipped = false))
 
