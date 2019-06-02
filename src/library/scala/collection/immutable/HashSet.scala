@@ -467,7 +467,7 @@ private final class BitmapIndexedSetNode[A](
       } else {
         val element0UnimprovedHash = getHash(index)
         val element0Hash = improve(element0UnimprovedHash)
-        if (originalHash == element0UnimprovedHash && element0.equals(element)) {
+        if (originalHash == element0UnimprovedHash && element0 == element) {
           return this
         } else {
           val subNodeNew = mergeTwoKeyValPairs(element0, element0UnimprovedHash, element0Hash, element, originalHash, elementHash, shift + BitPartitionSize)
