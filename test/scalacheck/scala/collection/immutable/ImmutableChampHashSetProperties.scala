@@ -376,4 +376,8 @@ object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
     hs.removedAll(hs2)
     hs ?= clone
   }
+  property("t11551") = forAll { (x: HashSet[AnyVal], y: HashSet[AnyVal]) =>
+    val z = x ++ y
+    z.size ?= z.toList.toSet.size
+  }
 }

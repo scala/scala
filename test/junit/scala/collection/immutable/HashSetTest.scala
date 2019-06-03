@@ -10,6 +10,14 @@ import scala.tools.testkit.AssertUtil._
 class HashSetTest {
 
   @Test
+  def t11551(): Unit = {
+    val x = Set[AnyVal](1L, (), 28028, -3.8661012E-17, -67)
+    val y = Set[AnyVal](1, 3.3897517E-23, ())
+    val z = x ++ y
+    assertEquals(6, z.size)
+  }
+
+  @Test
   def factoryReuse(): Unit = {
     assertSame(HashSet.empty, HashSet.empty)
     assertSame(HashSet.empty, HashSet())
