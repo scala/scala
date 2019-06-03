@@ -23,7 +23,7 @@ The lexical syntax of Scala is given by the following grammar in EBNF form:
 whiteSpace       ::=  ‘\u0020’ | ‘\u0009’ | ‘\u000D’ | ‘\u000A’
 lower            ::=  ‘a’ | … | ‘z’ | ‘_’ // and any character in Unicode category Ll, and and any character in Lo or Ml that has contributory property Other_Lowercase
 upper            ::=  ‘A’ | … | ‘Z’ | ‘\$’ // and any character in Unicode category Lu, Lt or Nl, and any character in Lo and Ml that don't have contributory property Other_Lowercase
-letter           ::=  upper | lower // and Unicode categories Lo, Lt, Nl
+letter           ::=  upper | lower
 digit            ::=  ‘0’ | … | ‘9’
 paren            ::=  ‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’
 delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’

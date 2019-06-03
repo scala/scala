@@ -80,12 +80,30 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 `def`.
 
 The rules for pattern matching further distinguish between
-_variable identifiers_, which start with a lower case letter, and
-_constant identifiers_, which do not. For this purpose,
-all letters in unicode category Lo (lowercase letter), and all letters that 
-that have contributory property Other_Lowercase that are not in
-category Nl (letter numerals) are taken as lower case, as well as
-underscore `‘_‘`.
+_variable identifiers_, which start with a lower case letter
+or `_`, and _constant identifiers_, which do not.
+
+For this purpose, lower case letter don't only include a-z,
+but also all characters in Unicode category Ll (lowercase letter),
+as well as all letters that have contributory property
+Other_Lowercase, except characters in category Nl (letter numerals)
+which are never taken as lower case.
+
+The following are examples of variable identifiers:
+
+> ```scala
+>     x         maxIndex   p2p   empty_?
+>     `yield`   αρετη      _y    dot_product_*
+>     __system  _MAX_LEN_
+>     ªpple     ʰelper
+> ```
+
+Some examples of constant identifiers are
+
+> ```scala
+>     +    Object  $reserved  ǅul    ǂnûm
+>     ⅰ_ⅲ  Ⅰ_Ⅲ     ↁelerious  ǃqhàà  ʹthatsaletter
+> ```
 
 The ‘\$’ character is reserved for compiler-synthesized identifiers.
 User programs should not define identifiers which contain ‘\$’ characters.
