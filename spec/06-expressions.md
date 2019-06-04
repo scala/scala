@@ -417,14 +417,14 @@ SimpleExpr    ::=  SimpleExpr1 ‘_’
 The expression `$e$ _` is well-formed if $e$ is of method
 type or if $e$ is a call-by-name parameter.  If $e$ is a method with
 parameters, `$e$ _` represents $e$ converted to a function
-type by [eta expansion](#eta-expansion). If $e$ is a
+type by [eta expansion](#eta-expansion-section). If $e$ is a
 parameterless method or call-by-name parameter of type
 `=>$T$`, `$e$ _` represents the function of type
 `() => $T$`, which evaluates $e$ when it is applied to the empty
 parameter list `()`.
 
 ###### Example
-The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion) on the right.
+The method values in the left column are each equivalent to the [eta-expanded expressions](#eta-expansion-section) on the right.
 
 | placeholder syntax            | eta-expansion                                                               |
 |------------------------------ | ----------------------------------------------------------------------------|
@@ -1401,7 +1401,7 @@ arguments are passed following the rules [here](07-implicits.html#implicit-param
 Otherwise, if the method is not a constructor,
 and the expected type $\mathit{pt}$ is a function type, or,
 for methods of non-zero arity, a type [sam-convertible](#sam-conversion) to a function type,
-$(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion)
+$(\mathit{Ts}') \Rightarrow T'$, [eta-expansion](#eta-expansion-section)
 is performed on the expression $e$.
 
 (The exception for zero-arity methods is to avoid surprises due to unexpected sam conversion.)
@@ -1587,7 +1587,7 @@ value arguments, the type arguments are inferred by solving a
 constraint system which relates the expression's type $T$ with the
 expected type $\mathit{pt}$. Without loss of generality we can assume that
 $T$ is a value type; if it is a method type we apply
-[eta-expansion](#eta-expansion) to convert it to a function type. Solving
+[eta-expansion](#eta-expansion-section) to convert it to a function type. Solving
 means finding a substitution $\sigma$ of types $T_i$ for the type
 parameters $a_i$ such that
 
@@ -1614,7 +1614,7 @@ The last case applies if the expression
 $e$ appears in an application $e(d_1 , \ldots , d_m)$. In that case
 $T$ is a method type $(p_1:R_1 , \ldots , p_m:R_m)T'$. Without loss of
 generality we can assume that the result type $T'$ is a value type; if
-it is a method type we apply [eta-expansion](#eta-expansion) to
+it is a method type we apply [eta-expansion](#eta-expansion-section) to
 convert it to a function type.  One computes first the types $S_j$ of
 the argument expressions $d_j$, using two alternative schemes.  Each
 argument expression $d_j$ is typed first with the expected type $R_j$,
@@ -1746,7 +1746,7 @@ a = scala.Any
 
 so `scala.Any` is the type inferred for `a`.
 
-### Eta Expansion
+### <a name="eta-expansion-section">Eta Expansion</a>
 
 _Eta-expansion_ converts an expression of method type to an
 equivalent expression of function type. It proceeds in two steps.
