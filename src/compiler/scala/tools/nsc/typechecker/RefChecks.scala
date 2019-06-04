@@ -1314,16 +1314,20 @@ abstract class RefChecks extends Transform {
       && (otherSym isLessAccessibleThan memberSym.enclClass)
     )
     private def lessAccessibleSymsInType(other: Type, memberSym: Symbol): List[Symbol] = {
-      val extras = other match {
-        case TypeRef(pre, _, args) =>
+      val res: ListBuffer[Symbol] = ListBuffer.empty[Symbol]
+      def loop(tp: Type): Unit = {
+        if (lessAccessible(tp.typeSymbol, memberSym))
+          res += tp.typeSymbol
+        tp match {
           // checking the prefix here gives us spurious errors on e.g. a private[process]
           // object which contains a type alias, which normalizes to a visible type.
-          args filterNot (_ eq NoPrefix) flatMap (tp => lessAccessibleSymsInType(tp, memberSym))
-        case _ =>
-          Nil
+          case TypeRef(pre, _, args) =>
+            args foreach { arg => if (arg ne NoPrefix) loop(arg) }
+          case _ => ()
+        }
       }
-      if (lessAccessible(other.typeSymbol, memberSym)) other.typeSymbol :: extras
-      else extras
+      loop(other)
+      res.toList
     }
     private def warnLessAccessible(otherSym: Symbol, memberSym: Symbol) {
       val comparison = accessFlagsToString(memberSym) match {
@@ -1440,8 +1444,8 @@ abstract class RefChecks extends Transform {
         }
 
         val annotsBySymbol = new mutable.LinkedHashMap[Symbol, ListBuffer[AnnotationInfo]]()
-        val transformedAnnots = annots.map(_.transformArgs(transformTrees))
-        for (transformedAnnot <- transformedAnnots) {
+        annots foreach { annot =>
+          val transformedAnnot = annot.transformArgs(transformTrees)
           val buffer = annotsBySymbol.getOrElseUpdate(transformedAnnot.symbol, new ListBuffer)
           buffer += transformedAnnot
         }
