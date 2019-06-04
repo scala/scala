@@ -239,7 +239,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   /**
    * Wrap an existing `Array` into an `ArraySeq` of the proper primitive specialization type
-   * without copying.
+   * without copying. Any changes to wrapped array will break the expected immutability.
    *
    * Note that an array containing boxed primitives can be wrapped in an `ArraySeq` without
    * copying. For example, `val a: Array[Any] = Array(1)` is an array of `Object` at runtime,
