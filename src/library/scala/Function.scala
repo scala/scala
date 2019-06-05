@@ -27,6 +27,14 @@ object Function {
   /** The constant function */
   def const[T, U](x: T)(y: U): T = x
 
+  def constLazy[T, U](x: => T)(y: U): T = x
+
+  def constMemoized[T, U](x: => T): U => T = {
+    var thunk: () => T = x _
+    lazy val t: T = { val result = thunk(); thunk = null; result }
+    (_: U) => t
+  }
+
   /** Turns a function `A => Option[B]` into a `PartialFunction[A, B]`.
    *
    *  '''Important note''': this transformation implies the original function
