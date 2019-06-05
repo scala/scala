@@ -227,11 +227,12 @@ private[internal] trait TypeConstraints {
         // Solve other type vars, they are relevant when:
         //   - our current bound mentions the other tparam
         //   - our current tparam equals the other tparam's bound (we'll add the symmetric bound below)
-        foreachWithIndex(tvars) { (tvar2, ix) =>
-          val tparam2 = tvar2.origin.typeSymbol
-          if ((tparam2 ne tparam) && ((bound contains tparam2) || tparamTycon =:= toBound(!up, tparam2))) {
-            if (tvar2.constr.inst eq null) cyclic = true // came back to a tvar that's being solved --> cycle! (note that we capture the `cyclic` var)
-            solveOne(tvar2, areContravariant(ix))
+        foreachWithIndex(tvars) { (tvarOther, ix) =>
+          val tparamOther = tvarOther.origin.typeSymbol
+          // don't use =:= -- we just want to know whether the tparam occurs (using =:= is overly lax and caused https://github.com/scala/bug/issues/11558
+          if ((tparamOther ne tparam) && ((bound contains tparamOther) || (tparamTycon == toBound(!up, tparamOther).dealias))) {
+            if (tvarOther.constr.inst eq null) cyclic = true // came back to a tvar that's being solved --> cycle! (note that we capture the `cyclic` var)
+            solveOne(tvarOther, areContravariant(ix))
           }
         }
 
@@ -240,26 +241,20 @@ private[internal] trait TypeConstraints {
           if (up) {
             if (boundSym != AnyClass)
               tvar.addHiBound(bound.instantiateTypeParams(tparams, tvars))
-
-            // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
-            // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
-            // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
-            tvars.foreach { tvarOther =>
-              val tparamOther = tvarOther.origin.typeSymbol
-              if ((tparamOther ne tparam) && tparamOther.info.lowerBound =:= tparamTycon)
-                tvar.addHiBound(tvarOther)
-            }
           } else {
             if (boundSym != tparam && boundSym != NothingClass)
               tvar.addLoBound(bound.instantiateTypeParams(tparams, tvars))
+          }
 
-            // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
-            // `tparam` is the upper bound of `tvarOther`. Flip that, and add `tvarOther` as an lower bound for `tvar`.
-            // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
-            tvars.foreach { tvarOther =>
-              val tparamOther = tvarOther.origin.typeSymbol
-              if ((tparamOther ne tparam) && tparamOther.info.upperBound =:= tparamTycon)
-                tvar.addLoBound(tvarOther)
+          // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
+          // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
+          // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
+          tvars.foreach { tvarOther =>
+            val tparamOther = tvarOther.origin.typeSymbol
+            // don't use =:= -- we just want to know whether the tparam occurs (using =:= is overly lax and caused https://github.com/scala/bug/issues/11558
+            if ((tparamOther ne tparam) && (tparamTycon == toBound(!up, tparamOther).dealias)) {
+              if (up) tvar.addHiBound(tvarOther)
+              else tvar.addLoBound(tvarOther)
             }
           }
         }
