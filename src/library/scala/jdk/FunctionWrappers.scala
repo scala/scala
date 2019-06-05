@@ -16,7 +16,7 @@
 package scala.jdk
 
 object FunctionWrappers {
-  case class FromJavaBiConsumer[T, U](jf: java.util.function.BiConsumer[T, U]) extends scala.Function2[T, U, Unit] {
+  case class FromJavaBiConsumer[T, U](jf: java.util.function.BiConsumer[T, U]) extends scala.runtime.AbstractFunction2[T, U, Unit] {
     def apply(x1: T, x2: U) = jf.accept(x1, x2)
   }
   
@@ -43,7 +43,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaBiFunction[T, U, R](jf: java.util.function.BiFunction[T, U, R]) extends scala.Function2[T, U, R] {
+  case class FromJavaBiFunction[T, U, R](jf: java.util.function.BiFunction[T, U, R]) extends scala.runtime.AbstractFunction2[T, U, R] {
     def apply(x1: T, x2: U) = jf.apply(x1, x2)
   }
   
@@ -70,7 +70,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaBiPredicate[T, U](jf: java.util.function.BiPredicate[T, U]) extends scala.Function2[T, U, Boolean] {
+  case class FromJavaBiPredicate[T, U](jf: java.util.function.BiPredicate[T, U]) extends scala.runtime.AbstractFunction2[T, U, Boolean] {
     def apply(x1: T, x2: U) = jf.test(x1, x2)
   }
   
@@ -97,7 +97,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaBinaryOperator[T](jf: java.util.function.BinaryOperator[T]) extends scala.Function2[T, T, T] {
+  case class FromJavaBinaryOperator[T](jf: java.util.function.BinaryOperator[T]) extends scala.runtime.AbstractFunction2[T, T, T] {
     def apply(x1: T, x2: T) = jf.apply(x1, x2)
   }
   
@@ -124,7 +124,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaBooleanSupplier(jf: java.util.function.BooleanSupplier) extends scala.Function0[Boolean] {
+  case class FromJavaBooleanSupplier(jf: java.util.function.BooleanSupplier) extends scala.runtime.AbstractFunction0[Boolean] {
     def apply() = jf.getAsBoolean()
   }
   
@@ -147,7 +147,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaConsumer[T](jf: java.util.function.Consumer[T]) extends scala.Function1[T, Unit] {
+  case class FromJavaConsumer[T](jf: java.util.function.Consumer[T]) extends scala.runtime.AbstractFunction1[T, Unit] {
     def apply(x1: T) = jf.accept(x1)
   }
   
@@ -174,7 +174,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleBinaryOperator(jf: java.util.function.DoubleBinaryOperator) extends scala.Function2[Double, Double, Double] {
+  case class FromJavaDoubleBinaryOperator(jf: java.util.function.DoubleBinaryOperator) extends scala.runtime.AbstractFunction2[Double, Double, Double] {
     def apply(x1: scala.Double, x2: scala.Double) = jf.applyAsDouble(x1, x2)
   }
   
@@ -197,7 +197,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleConsumer(jf: java.util.function.DoubleConsumer) extends scala.Function1[Double, Unit] {
+  case class FromJavaDoubleConsumer(jf: java.util.function.DoubleConsumer) extends scala.runtime.AbstractFunction1[Double, Unit] {
     def apply(x1: scala.Double) = jf.accept(x1)
   }
   
@@ -220,7 +220,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleFunction[R](jf: java.util.function.DoubleFunction[R]) extends scala.Function1[Double, R] {
+  case class FromJavaDoubleFunction[R](jf: java.util.function.DoubleFunction[R]) extends scala.runtime.AbstractFunction1[Double, R] {
     def apply(x1: scala.Double) = jf.apply(x1)
   }
   
@@ -247,7 +247,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoublePredicate(jf: java.util.function.DoublePredicate) extends scala.Function1[Double, Boolean] {
+  case class FromJavaDoublePredicate(jf: java.util.function.DoublePredicate) extends scala.runtime.AbstractFunction1[Double, Boolean] {
     def apply(x1: scala.Double) = jf.test(x1)
   }
   
@@ -270,7 +270,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleSupplier(jf: java.util.function.DoubleSupplier) extends scala.Function0[Double] {
+  case class FromJavaDoubleSupplier(jf: java.util.function.DoubleSupplier) extends scala.runtime.AbstractFunction0[Double] {
     def apply() = jf.getAsDouble()
   }
   
@@ -293,7 +293,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleToIntFunction(jf: java.util.function.DoubleToIntFunction) extends scala.Function1[Double, Int] {
+  case class FromJavaDoubleToIntFunction(jf: java.util.function.DoubleToIntFunction) extends scala.runtime.AbstractFunction1[Double, Int] {
     def apply(x1: scala.Double) = jf.applyAsInt(x1)
   }
   
@@ -316,7 +316,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleToLongFunction(jf: java.util.function.DoubleToLongFunction) extends scala.Function1[Double, Long] {
+  case class FromJavaDoubleToLongFunction(jf: java.util.function.DoubleToLongFunction) extends scala.runtime.AbstractFunction1[Double, Long] {
     def apply(x1: scala.Double) = jf.applyAsLong(x1)
   }
   
@@ -339,7 +339,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaDoubleUnaryOperator(jf: java.util.function.DoubleUnaryOperator) extends scala.Function1[Double, Double] {
+  case class FromJavaDoubleUnaryOperator(jf: java.util.function.DoubleUnaryOperator) extends scala.runtime.AbstractFunction1[Double, Double] {
     def apply(x1: scala.Double) = jf.applyAsDouble(x1)
   }
   
@@ -362,7 +362,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaFunction[T, R](jf: java.util.function.Function[T, R]) extends scala.Function1[T, R] {
+  case class FromJavaFunction[T, R](jf: java.util.function.Function[T, R]) extends scala.runtime.AbstractFunction1[T, R] {
     def apply(x1: T) = jf.apply(x1)
   }
   
@@ -389,7 +389,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntBinaryOperator(jf: java.util.function.IntBinaryOperator) extends scala.Function2[Int, Int, Int] {
+  case class FromJavaIntBinaryOperator(jf: java.util.function.IntBinaryOperator) extends scala.runtime.AbstractFunction2[Int, Int, Int] {
     def apply(x1: scala.Int, x2: scala.Int) = jf.applyAsInt(x1, x2)
   }
   
@@ -412,7 +412,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntConsumer(jf: java.util.function.IntConsumer) extends scala.Function1[Int, Unit] {
+  case class FromJavaIntConsumer(jf: java.util.function.IntConsumer) extends scala.runtime.AbstractFunction1[Int, Unit] {
     def apply(x1: scala.Int) = jf.accept(x1)
   }
   
@@ -435,7 +435,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntFunction[R](jf: java.util.function.IntFunction[R]) extends scala.Function1[Int, R] {
+  case class FromJavaIntFunction[R](jf: java.util.function.IntFunction[R]) extends scala.runtime.AbstractFunction1[Int, R] {
     def apply(x1: scala.Int) = jf.apply(x1)
   }
   
@@ -462,7 +462,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntPredicate(jf: java.util.function.IntPredicate) extends scala.Function1[Int, Boolean] {
+  case class FromJavaIntPredicate(jf: java.util.function.IntPredicate) extends scala.runtime.AbstractFunction1[Int, Boolean] {
     def apply(x1: scala.Int) = jf.test(x1)
   }
   
@@ -485,7 +485,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntSupplier(jf: java.util.function.IntSupplier) extends scala.Function0[Int] {
+  case class FromJavaIntSupplier(jf: java.util.function.IntSupplier) extends scala.runtime.AbstractFunction0[Int] {
     def apply() = jf.getAsInt()
   }
   
@@ -508,7 +508,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntToDoubleFunction(jf: java.util.function.IntToDoubleFunction) extends scala.Function1[Int, Double] {
+  case class FromJavaIntToDoubleFunction(jf: java.util.function.IntToDoubleFunction) extends scala.runtime.AbstractFunction1[Int, Double] {
     def apply(x1: scala.Int) = jf.applyAsDouble(x1)
   }
   
@@ -531,7 +531,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntToLongFunction(jf: java.util.function.IntToLongFunction) extends scala.Function1[Int, Long] {
+  case class FromJavaIntToLongFunction(jf: java.util.function.IntToLongFunction) extends scala.runtime.AbstractFunction1[Int, Long] {
     def apply(x1: scala.Int) = jf.applyAsLong(x1)
   }
   
@@ -554,7 +554,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaIntUnaryOperator(jf: java.util.function.IntUnaryOperator) extends scala.Function1[Int, Int] {
+  case class FromJavaIntUnaryOperator(jf: java.util.function.IntUnaryOperator) extends scala.runtime.AbstractFunction1[Int, Int] {
     def apply(x1: scala.Int) = jf.applyAsInt(x1)
   }
   
@@ -577,7 +577,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongBinaryOperator(jf: java.util.function.LongBinaryOperator) extends scala.Function2[Long, Long, Long] {
+  case class FromJavaLongBinaryOperator(jf: java.util.function.LongBinaryOperator) extends scala.runtime.AbstractFunction2[Long, Long, Long] {
     def apply(x1: scala.Long, x2: scala.Long) = jf.applyAsLong(x1, x2)
   }
   
@@ -600,7 +600,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongConsumer(jf: java.util.function.LongConsumer) extends scala.Function1[Long, Unit] {
+  case class FromJavaLongConsumer(jf: java.util.function.LongConsumer) extends scala.runtime.AbstractFunction1[Long, Unit] {
     def apply(x1: scala.Long) = jf.accept(x1)
   }
   
@@ -623,7 +623,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongFunction[R](jf: java.util.function.LongFunction[R]) extends scala.Function1[Long, R] {
+  case class FromJavaLongFunction[R](jf: java.util.function.LongFunction[R]) extends scala.runtime.AbstractFunction1[Long, R] {
     def apply(x1: scala.Long) = jf.apply(x1)
   }
   
@@ -650,7 +650,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongPredicate(jf: java.util.function.LongPredicate) extends scala.Function1[Long, Boolean] {
+  case class FromJavaLongPredicate(jf: java.util.function.LongPredicate) extends scala.runtime.AbstractFunction1[Long, Boolean] {
     def apply(x1: scala.Long) = jf.test(x1)
   }
   
@@ -673,7 +673,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongSupplier(jf: java.util.function.LongSupplier) extends scala.Function0[Long] {
+  case class FromJavaLongSupplier(jf: java.util.function.LongSupplier) extends scala.runtime.AbstractFunction0[Long] {
     def apply() = jf.getAsLong()
   }
   
@@ -696,7 +696,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongToDoubleFunction(jf: java.util.function.LongToDoubleFunction) extends scala.Function1[Long, Double] {
+  case class FromJavaLongToDoubleFunction(jf: java.util.function.LongToDoubleFunction) extends scala.runtime.AbstractFunction1[Long, Double] {
     def apply(x1: scala.Long) = jf.applyAsDouble(x1)
   }
   
@@ -719,7 +719,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongToIntFunction(jf: java.util.function.LongToIntFunction) extends scala.Function1[Long, Int] {
+  case class FromJavaLongToIntFunction(jf: java.util.function.LongToIntFunction) extends scala.runtime.AbstractFunction1[Long, Int] {
     def apply(x1: scala.Long) = jf.applyAsInt(x1)
   }
   
@@ -742,7 +742,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaLongUnaryOperator(jf: java.util.function.LongUnaryOperator) extends scala.Function1[Long, Long] {
+  case class FromJavaLongUnaryOperator(jf: java.util.function.LongUnaryOperator) extends scala.runtime.AbstractFunction1[Long, Long] {
     def apply(x1: scala.Long) = jf.applyAsLong(x1)
   }
   
@@ -765,7 +765,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaObjDoubleConsumer[T](jf: java.util.function.ObjDoubleConsumer[T]) extends scala.Function2[T, Double, Unit] {
+  case class FromJavaObjDoubleConsumer[T](jf: java.util.function.ObjDoubleConsumer[T]) extends scala.runtime.AbstractFunction2[T, Double, Unit] {
     def apply(x1: T, x2: scala.Double) = jf.accept(x1, x2)
   }
   
@@ -819,7 +819,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaObjLongConsumer[T](jf: java.util.function.ObjLongConsumer[T]) extends scala.Function2[T, Long, Unit] {
+  case class FromJavaObjLongConsumer[T](jf: java.util.function.ObjLongConsumer[T]) extends scala.runtime.AbstractFunction2[T, Long, Unit] {
     def apply(x1: T, x2: scala.Long) = jf.accept(x1, x2)
   }
   
@@ -846,7 +846,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaPredicate[T](jf: java.util.function.Predicate[T]) extends scala.Function1[T, Boolean] {
+  case class FromJavaPredicate[T](jf: java.util.function.Predicate[T]) extends scala.runtime.AbstractFunction1[T, Boolean] {
     def apply(x1: T) = jf.test(x1)
   }
   
@@ -873,7 +873,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaSupplier[T](jf: java.util.function.Supplier[T]) extends scala.Function0[T] {
+  case class FromJavaSupplier[T](jf: java.util.function.Supplier[T]) extends scala.runtime.AbstractFunction0[T] {
     def apply() = jf.get()
   }
   
@@ -927,7 +927,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaToDoubleFunction[T](jf: java.util.function.ToDoubleFunction[T]) extends scala.Function1[T, Double] {
+  case class FromJavaToDoubleFunction[T](jf: java.util.function.ToDoubleFunction[T]) extends scala.runtime.AbstractFunction1[T, Double] {
     def apply(x1: T) = jf.applyAsDouble(x1)
   }
   
@@ -954,7 +954,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaToIntBiFunction[T, U](jf: java.util.function.ToIntBiFunction[T, U]) extends scala.Function2[T, U, Int] {
+  case class FromJavaToIntBiFunction[T, U](jf: java.util.function.ToIntBiFunction[T, U]) extends scala.runtime.AbstractFunction2[T, U, Int] {
     def apply(x1: T, x2: U) = jf.applyAsInt(x1, x2)
   }
   
@@ -981,7 +981,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaToIntFunction[T](jf: java.util.function.ToIntFunction[T]) extends scala.Function1[T, Int] {
+  case class FromJavaToIntFunction[T](jf: java.util.function.ToIntFunction[T]) extends scala.runtime.AbstractFunction1[T, Int] {
     def apply(x1: T) = jf.applyAsInt(x1)
   }
   
@@ -1008,7 +1008,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaToLongBiFunction[T, U](jf: java.util.function.ToLongBiFunction[T, U]) extends scala.Function2[T, U, Long] {
+  case class FromJavaToLongBiFunction[T, U](jf: java.util.function.ToLongBiFunction[T, U]) extends scala.runtime.AbstractFunction2[T, U, Long] {
     def apply(x1: T, x2: U) = jf.applyAsLong(x1, x2)
   }
   
@@ -1035,7 +1035,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaToLongFunction[T](jf: java.util.function.ToLongFunction[T]) extends scala.Function1[T, Long] {
+  case class FromJavaToLongFunction[T](jf: java.util.function.ToLongFunction[T]) extends scala.runtime.AbstractFunction1[T, Long] {
     def apply(x1: T) = jf.applyAsLong(x1)
   }
   
@@ -1062,7 +1062,7 @@ object FunctionWrappers {
   }
   
   
-  case class FromJavaUnaryOperator[T](jf: java.util.function.UnaryOperator[T]) extends scala.Function1[T, T] {
+  case class FromJavaUnaryOperator[T](jf: java.util.function.UnaryOperator[T]) extends scala.runtime.AbstractFunction1[T, T] {
     def apply(x1: T) = jf.apply(x1)
   }
   

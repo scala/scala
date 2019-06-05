@@ -60,7 +60,7 @@ import scala.annotation.implicitNotFound
 // All of these methods are reimplemented unsafely in =:=.singleton to avoid any indirection.
 // They are here simply for reference as the "correct", safe implementations.
 @implicitNotFound(msg = "Cannot prove that ${From} <:< ${To}.")
-sealed abstract class <:<[-From, +To] extends (From => To) with Serializable {
+sealed abstract class <:<[-From, +To] extends scala.runtime.AbstractFunction1[From, To] with Serializable {
   /** Substitute `To` for `From` and `From` for `To` in the type `F[To, From]`, given that `F` is $contraCo.
     *  Essentially swaps `To` and `From` in `ftf`'s type.
     *

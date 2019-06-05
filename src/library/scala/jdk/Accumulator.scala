@@ -70,7 +70,7 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * [[DoubleAccumulator]].
   */
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
-  extends mutable.Seq[A]
+  extends mutable.AbstractSeq[A]
     with mutable.Builder[A, C] {
   private[jdk] var index: Int = 0
   private[jdk] var hIndex: Int = 0
