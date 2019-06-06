@@ -41,7 +41,10 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
   private val pickleCache: Path = configuredPickleCache.getOrElse(Files.createTempDirectory("scala.picklecache"))
   private def cachePath(file: Path): Path = {
     val newExtension = if (useJars) ".jar" else ""
-    changeExtension(pickleCache.resolve("./" + file).normalize(), newExtension)
+    val root = file.getRoot
+    // An empty component on Unix, just the drive letter on Windows
+    val validRootPathComponent = root.toString.replaceAllLiterally("/", "").replaceAllLiterally(":", "")
+    changeExtension(pickleCache.resolve(validRootPathComponent).resolve(root.relativize(file)).normalize(), newExtension)
   }
 
   private val strippedAndExportedClassPath = mutable.HashMap[Path, Path]()
