@@ -4746,7 +4746,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         * The expression `$e$ _` is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter.
         *   (1) If $e$ is a method with parameters, `$e$ _` represents $e$ converted to a function type
         *       by [eta expansion](#eta-expansion).
-        *   (2) If $e$ is a parameterless method or call-by-name parameter of type `=>$T$`, `$e$ _` represents
+        *   (2) If $e$ is a parameterless method or call-by-name parameter of type `=> $T$`, `$e$ _` represents
         *       the function of type `() => $T$`, which evaluates $e$ when it is applied to the empty parameter list `()`.
         */
       def typedEta(methodValue: Tree): Tree = methodValue.tpe match {

@@ -6,7 +6,7 @@ import language.implicitConversions
 object test {
   def ok(): Unit = {
     class Foo(val i: Int) {
-      def foo[A](body: =>A): A = body
+      def foo[A](body: => A): A = body
     }
     implicit def toFoo(i: Int): Foo = new Foo(i)
 
@@ -16,7 +16,7 @@ object test {
   }
   def nope(): Unit = {
     implicit class Foo(val i: Int) {
-      def foo[A](body: =>A): A = body
+      def foo[A](body: => A): A = body
     }
 
     val k = 1

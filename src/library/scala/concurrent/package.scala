@@ -121,7 +121,7 @@ package object concurrent {
    *  @throws InterruptedException in the case that a wait within the blocking `body` was interrupted
    */
   @throws(classOf[Exception])
-  final def blocking[T](body: =>T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
+  final def blocking[T](body: => T): T = BlockContext.current.blockOn(body)(scala.concurrent.AwaitPermission)
 }
 
 package concurrent {

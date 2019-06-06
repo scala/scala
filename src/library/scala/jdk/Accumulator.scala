@@ -54,7 +54,7 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * There are two possibilities to process elements of a primitive Accumulator without boxing:
   * specialized operations of the Accumulator, or the Stepper interface. The most common collection
   * operations are overloaded or overridden in the primitive Accumulator classes, for example
-  * [[IntAccumulator.map(f:Int=>Int)* IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
+  * [[IntAccumulator.map(f: Int => Int)* IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
   * `intAcc.exists(x => testOn(x))` does not incur boxing.
   *
   * The [[Stepper]] interface provides iterator-like `hasStep` and `nextStep` methods, and is

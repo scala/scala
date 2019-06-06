@@ -34,7 +34,7 @@ trait HangingRepl extends ReplTest {
   import ExecutionContext.Implicits._
   import Resulting._
   def timeout = 120 seconds
-  def hanging[A](a: =>A): A = Future(a) resultWithin timeout
+  def hanging[A](a: => A): A = Future(a) resultWithin timeout
   override def show() = Try(hanging(super.show())) recover {
     case e => e.printStackTrace()
   }

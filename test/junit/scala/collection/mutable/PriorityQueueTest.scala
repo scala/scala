@@ -24,7 +24,7 @@ class PriorityQueueTest {
 
   @Test
   def orderingReverseReverse(): Unit = {
-    val pq = new mutable.PriorityQueue[Nothing]()((_,_)=>42)
+    val pq = new mutable.PriorityQueue[Nothing]()((_,_) => 42)
     assert(pq.ord eq pq.reverse.reverse.ord)
   }
 

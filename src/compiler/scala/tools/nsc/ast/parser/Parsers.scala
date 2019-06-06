@@ -292,7 +292,7 @@ self =>
     /** Perform an operation while peeking ahead.
      *  Pushback if the operation yields an empty tree or blows to pieces.
      */
-    @inline def peekingAhead(tree: =>Tree): Tree = {
+    @inline def peekingAhead(tree: => Tree): Tree = {
       @inline def peekahead() = {
         in.prev copyFrom in
         in.nextToken()
@@ -1340,7 +1340,7 @@ self =>
     /** Handle placeholder syntax.
      *  If evaluating the tree produces placeholders, then make it a function.
      */
-    private def withPlaceholders(tree: =>Tree, isAny: Boolean): Tree = {
+    private def withPlaceholders(tree: => Tree, isAny: Boolean): Tree = {
       val savedPlaceholderParams = placeholderParams
       placeholderParams = List()
       var res = tree

@@ -166,7 +166,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   /** Perform operation `op` the number of
    *  times specified.  Concatenate the results into a list.
    */
-  def times[T](n: Int, op: ()=>T): List[T] =
+  def times[T](n: Int, op: () => T): List[T] =
     if (n == 0) List() else op() :: times(n-1, op)
 
   /** Pickle = majorVersion_Nat minorVersion_Nat nbEntries_Nat {Entry}

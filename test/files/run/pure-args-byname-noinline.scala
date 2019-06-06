@@ -1,12 +1,12 @@
 object Test {
   //Were affected by scala/bug#6306
-  def f[A](a: =>A) = println(a.toString)
-  def f1[A <: AnyVal](a: =>A) = println(a.toString)
-  def f1a[A <: AnyVal](a: =>A) = println(a.##)
-  def f2[A <: AnyRef](a: =>A) = println(a.toString)
-  def f2a[A <: String](a: =>A) = println(a.toString)
+  def f[A](a: => A) = println(a.toString)
+  def f1[A <: AnyVal](a: => A) = println(a.toString)
+  def f1a[A <: AnyVal](a: => A) = println(a.##)
+  def f2[A <: AnyRef](a: => A) = println(a.toString)
+  def f2a[A <: String](a: => A) = println(a.toString)
   //Works
-  def f3[A](a: =>Seq[A]) = println(a.toString)
+  def f3[A](a: => Seq[A]) = println(a.toString)
 
   def foo() = println(2)
   def client(f: () => Unit) = {f(); f()}

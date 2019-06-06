@@ -270,7 +270,7 @@ of evaluating the rewritten right-hand side is finally converted to
 the function's declared result type, if one is given.
 
 The case of a formal parameter with a parameterless
-method type `=>$T$` is treated specially. In this case, the
+method type `=> $T$` is treated specially. In this case, the
 corresponding actual argument expression $e$ is not evaluated before the
 application. Instead, every use of the formal parameter on the
 right-hand side of the rewrite rule entails a re-evaluation of $e$.
@@ -419,7 +419,7 @@ type or if $e$ is a call-by-name parameter.  If $e$ is a method with
 parameters, `$e$ _` represents $e$ converted to a function
 type by [eta expansion](#eta-expansion-section). If $e$ is a
 parameterless method or call-by-name parameter of type
-`=>$T$`, `$e$ _` represents the function of type
+`=> $T$`, `$e$ _` represents the function of type
 `() => $T$`, which evaluates $e$ when it is applied to the empty
 parameter list `()`.
 

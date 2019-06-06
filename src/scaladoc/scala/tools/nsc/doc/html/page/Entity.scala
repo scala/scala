@@ -629,7 +629,7 @@ trait EntityPage extends HtmlPage {
 
     val mainComment: Elems = mbr.comment match {
       case Some(comment) if (! isReduced) =>
-        def orEmpty[T](it: Iterable[T])(gen:  =>Elems): Elems =
+        def orEmpty[T](it: Iterable[T])(gen: => Elems): Elems =
           if (it.isEmpty) NoElems else gen
 
         val example =

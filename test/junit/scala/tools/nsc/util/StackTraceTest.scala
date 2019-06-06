@@ -63,7 +63,7 @@ class StackTraceTest extends Expecting {
   def represser: String = repressed
 
   // evaluating s should throw, p trims stack trace, t is the test of resulting trace string
-  def probe(s: =>String)(p: StackTraceElement => Boolean)(t: String => Unit): Unit = {
+  def probe(s: => String)(p: StackTraceElement => Boolean)(t: String => Unit): Unit = {
     Try(s) recover { case e => e stackTracePrefixString p } match {
       case Success(s) => t(s)
       case Failure(e) => throw e

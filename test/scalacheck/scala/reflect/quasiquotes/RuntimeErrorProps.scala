@@ -4,7 +4,7 @@ import org.scalacheck._, Prop._, Gen._, Arbitrary._
 import scala.reflect.runtime.universe._, Flag._
 
 object RuntimeErrorProps extends QuasiquoteProperties("errors") {
-  def testFails[T](block: =>T) = test {
+  def testFails[T](block: => T) = test {
     assertThrows[IllegalArgumentException] {
       block
     }

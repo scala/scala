@@ -29,7 +29,7 @@ package scala.concurrent
  * {{{
  *  val oldContext = BlockContext.current
  *  val myContext = new BlockContext {
- *    override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = {
+ *    override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = {
  *      // you'd have code here doing whatever you need to do
  *      // when the thread is about to block.
  *      // Then you'd chain to the previous context:
@@ -54,12 +54,12 @@ trait BlockContext {
     *
     * @throws IllegalArgumentException if the `permission` is `null`
     */
-  def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T
+  def blockOn[T](thunk: => T)(implicit permission: CanAwait): T
 }
 
 object BlockContext {
   private[this] object DefaultBlockContext extends BlockContext {
-    override final def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = thunk
+    override final def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = thunk
   }
 
   /**

@@ -753,9 +753,9 @@ abstract class UnCurry extends InfoTransform
                 // 1. when varargs and byname params are involved, the uncurry transformation desugars these special
                 //    cases to actual typerefs, eg:
                 //    ```
-                //           T*  ~> Seq[T] (Scala-defined varargs)
-                //           T*  ~> Array[T] (Java-defined varargs)
-                //           =>T ~> Function0[T] (by name params)
+                //           T*   ~> Seq[T] (Scala-defined varargs)
+                //           T*   ~> Array[T] (Java-defined varargs)
+                //           => T ~> Function0[T] (by name params)
                 //    ```
                 //    we use the DesugaredParameterType object (defined in scala.reflect.internal.transform.UnCurry)
                 //    to redo this desugaring manually here

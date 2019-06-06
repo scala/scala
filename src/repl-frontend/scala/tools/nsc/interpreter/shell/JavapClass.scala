@@ -139,8 +139,8 @@ class JavapClass(
     type ByteAry = Array[Byte]
     type Input = Tuple2[String, Try[ByteAry]]
 
-    implicit protected class Failer[A](a: =>A) {
-      def orFailed[B >: A](b: =>B) = if (failed) b else a
+    implicit protected class Failer[A](a: => A) {
+      def orFailed[B >: A](b: => B) = if (failed) b else a
     }
     protected def noToolError = new JpError(s"No javap tool available: ${getClass.getName} failed to initialize.")
 
