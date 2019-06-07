@@ -485,6 +485,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case Apply(appMeth, elem0 :: Apply(wrapArrayMeth, (rest @ ArrayValue(elemtpt, _)) :: Nil) :: Nil)
       if wrapArrayMeth.symbol == wrapVarargsArrayMethod(elemtpt.tpe) && appMeth.symbol == ArrayModule_apply(elemtpt.tpe) =>
         treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems).transform(this)
+      case Apply(appMeth, elem :: (nil: RefTree) :: Nil)
+      if nil.symbol == NilModule && appMeth.symbol == ArrayModule_apply(elem.tpe.widen) && treeInfo.isExprSafeToInline(nil) =>
+        localTyper.typedPos(elem.pos) {
+          ArrayValue(TypeTree(elem.tpe), elem :: Nil)
+        } transform this
 
       // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
       case Apply(appMeth @ Select(qual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
