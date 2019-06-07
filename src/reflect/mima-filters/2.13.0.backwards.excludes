@@ -1,1 +1,0 @@
-ProblemFilters.exclude[Problem]("scala.reflect.internal.*")
