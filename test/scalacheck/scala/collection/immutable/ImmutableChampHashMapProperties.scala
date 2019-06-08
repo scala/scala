@@ -161,8 +161,62 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
       intersected.forall { case (k, _) => merged.get(k).contains(mergedValue) }
     }
 
+  property("merged with a null merge function is equal to concatenation") =
+    forAll { (left: HashMap[K, V], right: HashMap[K, V]) =>
+      left.merged(right)(null) == right.concat(left)
+    }
+
+  property("merged specification") =
+    forAll { (left: HashMap[K, V], right: HashMap[K, V], mergef: ((K, V), (K, V))=> (K, V)) =>
+      // A key-by-key specification of the behaviour of merged, for case where mergef != null
+      val keysOnlyInLeft: Set[K] = left.keySet -- right.keySet
+      val keysOnlyInRight: Set[K] = right.keySet -- left.keySet
+      val keysInBoth: Set[K] = left.keySet intersect right.keySet
+
+      val resultsOfMergeFunctionByOriginalKey: Map[K, (K, V)] = {
+        val rightKVsByKey: Map[K, (K, V)] = right.iterator.map { case kv@(k, _) => k -> kv }.toMap
+        keysInBoth.iterator.map(k => k -> mergef((k, left(k)), rightKVsByKey(k))).toMap
+      }
+
+      val resultsOfMergeFunctionByNewKey: Map[K, List[V]] = resultsOfMergeFunctionByOriginalKey.valuesIterator.toList.groupMap(_._1)(_._2)
+
+      val allKeys = keysOnlyInLeft.concat(keysOnlyInRight.iterator.concat(resultsOfMergeFunctionByNewKey.keys))
+
+      val merged = left.merged(right)(mergef)
+
+      keysOnlyInLeft.iterator.map { leftKey =>
+        Prop(merged.get(leftKey).contains(left(leftKey)) || resultsOfMergeFunctionByNewKey.contains(leftKey))
+          .label(s"Key $leftKey from left(and not right) must be found in merged, or overwritten by the merge function")
+      }.concat(
+        keysOnlyInRight.iterator.map { rightKey =>
+          Prop(merged.get(rightKey).contains(right(rightKey)) || resultsOfMergeFunctionByNewKey.contains(rightKey))
+            .label(s"Key $right from right(and not left) must be found in merged, or overwritten by the merge function")
+        }
+      ).concat(
+        keysInBoth.iterator.map { key =>
+
+          val (newKey, _) = resultsOfMergeFunctionByOriginalKey(key)
+          Prop(merged.get(newKey).exists { mergedValue =>
+            resultsOfMergeFunctionByNewKey(newKey).contains(mergedValue) || // the resulting value could have come from the merge function
+              left.get(newKey).contains(mergedValue) || // or it could have been from left
+              right.get(newKey).contains(mergedValue) //                             ... or right
+          })
+            .label(
+              s"""Key $key found in left and right, so its merged form ($newKey) must exist in the resulting map, with the value derived from either:
+                 |1) this or an other invocation of mergef
+                 |2) a value existing in left
+                 |3) a value existing in right""".stripMargin)
+        }
+      ).concat(
+        merged.keysIterator.map ( k => Prop(allKeys.contains(k)).label(s"Key $k in merged should not be present"))
+      )
+      .foldLeft(
+        Prop(merged.size <= keysInBoth.size + keysOnlyInLeft.size + keysOnlyInRight.size)
+          .label("A merged hashmap mustn't have greater size than leftOnlyKeys + rightOnlyKeys + collidingKeys"))(_ && _)
+    }
+
   property("rootnode hashCode should be sum of key improved hashcodes") =
-    forAll { (seq: Seq[(K, V)]) =>
+    forAll { seq: Seq[(K, V)] =>
       val distinct = seq.distinctBy(_._1)
       val expectedHash = distinct.map(_._1.hashCode).map(Hashing.improve).sum
       val b = HashMap.newBuilder[K, V]
@@ -312,6 +366,11 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
   }
   property("xs.keySet diff ks == xs.map(_._1).to(Set) diff ks") = forAll { (hm: HashMap[K, V], ks: Set[K]) =>
     hm.keySet.diff(ks) ?= hm.to(List).map(_._1).to(Set).diff(ks)
+  }
+
+  property("xs.removed(key) eq xs when !xs.contains(key)") = forAll { (hm: HashMap[K, V], key: K) =>
+    Prop(!hm.contains(key)).label("HashMap does not contain key") ==>
+      Prop(hm.removed(key) eq hm).label("hashMap.removed(key) eq hashMap")
   }
 
 }

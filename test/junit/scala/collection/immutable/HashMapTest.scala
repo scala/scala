@@ -135,4 +135,11 @@ class HashMapTest {
     assertEquals(hashMap.updatedWith(2)(noneAnytime), HashMap(1 -> "a"))
   }
 
+  @Test
+  def t11559(): Unit = {
+    assertEquals(HashMap("c" -> "c"), HashMap("a" -> "b").merged(HashMap("a" -> "b"))((_,_) => "c" -> "c"))
+    assertEquals(HashMap(4 -> 4), HashMap(1 -> 1).merged(HashMap(1 -> 1))((_,_) => 4 -> 4))
+    assertEquals(HashMap(1 -> 1, 3 -> 3, 4 -> 4), HashMap(1 -> 1, 2 -> 2).merged(HashMap(2 -> 2, 3 -> 3))((_,_) => 4 -> 4))
+  }
+
 }
