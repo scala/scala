@@ -25,7 +25,6 @@ trait SortedSet[A] extends Set[A]
 
   def sortedIterableFactory: SortedIterableFactory[SortedSet] = SortedSet
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SortedSet"
 }
 
