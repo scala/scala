@@ -1516,7 +1516,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
           informTime(globalPhase.description, phaseTimer.nanos)
 
         // progress update
-        if ((settings.Xprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
+        if ((settings.Vprint containsPhase globalPhase) || settings.printLate && runIsAt(cleanupPhase)) {
           // print trees
           if (settings.Xshowtrees || settings.XshowtreesCompact || settings.XshowtreesStringified) nodePrinters.printAll()
           else printAllUnits()

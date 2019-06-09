@@ -39,7 +39,7 @@ abstract class NodePrinters {
   }
 
   trait DefaultPrintAST extends PrintAST {
-    val printPos = settings.Xprintpos || settings.Yposdebug
+    val printPos = settings.Vprintpos || settings.Yposdebug
 
     def showNameAndPos(tree: NameTree) = showPosition(tree) + showName(tree.name)
     def showDefTreeName(tree: DefTree) = showName(tree.name)

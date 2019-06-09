@@ -828,7 +828,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       unit.body = spliceUserCode.transform(unspliced)
       unit.encounteredXml(firstXmlPos)
 
-//      settings.Xprintpos.value = true
+//      settings.Vprintpos.value = true
       showCode(asCompactString(unit.body))
 
       unit
@@ -1322,18 +1322,18 @@ object IMain {
   private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
     import settings.{reporter => _, _}
     val wasWarning = !nowarn
-    val noisy = List(Xprint, Ytyperdebug, browse)
-    val current = (Xprint.value, Ytyperdebug.value, browse.value)
+    val noisy = List(Vprint, Ytyperdebug, browse)
+    val current = (Vprint.value, Ytyperdebug.value, browse.value)
     val noisesome = wasWarning || noisy.exists(!_.isDefault)
     if (/*isDebug ||*/ !noisesome) body
     else {
-      Xprint.value = List.empty
+      Vprint.value = List.empty
       browse.value = List.empty
       Ytyperdebug.value = false
       if (wasWarning) nowarn.value = true
       try body
       finally {
-        Xprint.value       = current._1
+        Vprint.value       = current._1
         Ytyperdebug.value  = current._2
         browse.value       = current._3
         if (wasWarning) nowarn.value = false

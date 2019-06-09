@@ -43,7 +43,7 @@ private[reflect] class Settings extends MutableSettings {
   }
 
   val XnoPatmatAnalysis = new BooleanSetting(false)
-  val Xprintpos         = new BooleanSetting(false)
+  val Vprintpos         = new BooleanSetting(false)
   val Yposdebug         = new BooleanSetting(false)
   val Yrangepos         = new BooleanSetting(false)
   val Yshowsymowners    = new BooleanSetting(false)
@@ -62,4 +62,7 @@ private[reflect] class Settings extends MutableSettings {
   val Yrecursion        = new IntSetting(0)
   def isScala212        = true
   private[scala] def isScala213 = true
+
+  @deprecated("Use Vprintpos instead", "2.13.1")
+  val Xprintpos: BooleanSetting = Vprintpos
 }

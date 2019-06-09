@@ -20,7 +20,7 @@ package interactive
 object Main extends nsc.MainClass {
   override def processSettingsHook(): Boolean = {
     def run(): Unit = {
-      this.settings.Xprintpos.value = true
+      this.settings.Vprintpos.value = true
       this.settings.Yrangepos.value = true
       val compiler = new interactive.Global(this.settings, this.reporter)
 

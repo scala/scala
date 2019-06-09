@@ -76,7 +76,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     printOwners = settings.Yshowsymowners.value
     printKinds = settings.Yshowsymkinds.value
     printMirrors = false // typically there's no point to print mirrors inside the compiler, as there is only one mirror there
-    printPositions = settings.Xprintpos.value
+    printPositions = settings.Vprintpos.value
 
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep

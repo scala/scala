@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -Yrangepos -Xprint:patmat -Xprint-pos -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Yrangepos -Vprint:patmat -Vprint-pos -d " + testOutput.path
 
   override def code = """
 abstract class A[T] {

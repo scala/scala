@@ -215,7 +215,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YprintTrees = ChoiceSetting(
       name = "-Yprint-trees",
       helpArg = "style",
-      descr = "How to print trees when -Xprint is enabled.",
+      descr = "How to print trees when -Vprint is enabled.",
       choices = List("text", "compact", "format", "text+format"),
       default = "text"
     ).withPostSetHook(pt => pt.value match {
@@ -225,11 +225,11 @@ trait ScalaSettings extends AbsScalaSettings
       case "text+format" => XshowtreesStringified.value = true
     })
 
-  val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Xprint:) Print detailed ASTs in formatted form.").internalOnly()
+  val Xshowtrees      = BooleanSetting    ("-Yshow-trees", "(Requires -Vprint:) Print detailed ASTs in formatted form.").internalOnly()
   val XshowtreesCompact
-                      = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Xprint:) Print detailed ASTs in compact form.").internalOnly()
+                      = BooleanSetting    ("-Yshow-trees-compact", "(Requires -Vprint:) Print detailed ASTs in compact form.").internalOnly()
   val XshowtreesStringified
-                      = BooleanSetting    ("-Yshow-trees-stringified", "(Requires -Xprint:) Print stringifications along with detailed ASTs.").internalOnly()
+                      = BooleanSetting    ("-Yshow-trees-stringified", "(Requires -Vprint:) Print stringifications along with detailed ASTs.").internalOnly()
 
   val skip            = PhasesSetting     ("-Yskip", "Skip")
   val Ygenasmp        = StringSetting     ("-Ygen-asmp",  "dir", "Generate a parallel output directory of .asmp files (ie ASM Textifier output).", "")
@@ -438,9 +438,9 @@ trait ScalaSettings extends AbsScalaSettings
   val showPhases         = BooleanSetting("-Vphases", "Print a synopsis of compiler phases.")
     .withAbbreviation("-Xshow-phases")
   val Yposdebug          = BooleanSetting("-Vpos", "Trace position validation.") withAbbreviation "-Ypos-debug"
-  val Xprint             = PhasesSetting("-Vprint", "Print out program after")
+  val Vprint             = PhasesSetting("-Vprint", "Print out program after")
     .withAbbreviation("-Xprint")
-  val Xprintpos          = BooleanSetting("-Vprint-pos", "Print tree positions, as offsets.")
+  val Vprintpos          = BooleanSetting("-Vprint-pos", "Print tree positions, as offsets.")
     .withAbbreviation("-Xprint-pos")
   val printtypes         = BooleanSetting("-Vprint-types", "Print tree types (debugging option).")
     .withAbbreviation("-Xprint-types")
