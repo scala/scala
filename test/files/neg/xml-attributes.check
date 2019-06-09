@@ -1,0 +1,5 @@
+xml-attributes.scala:4: error: To compile XML syntax, the scala.xml package must be on the classpath.
+Please see https://github.com/scala/scala-xml for details.
+    <root lang="en" type='xml'>
+    ^
+one error found

@@ -7,4 +7,7 @@ object foo {
       <![CDATA[]]>
       <![CDATA[{bar}]]>
     </root>
+  val pcdata =
+      <![CDATA[]]>
+      <![CDATA[{bar}]]>
 }

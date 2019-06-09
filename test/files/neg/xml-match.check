@@ -1,0 +1,5 @@
+xml-match.scala:3: error: To compile XML syntax, the scala.xml package must be on the classpath.
+Please see https://github.com/scala/scala-xml for details.
+    case <t>{ _* }</t> => <q/>
+         ^
+one error found
