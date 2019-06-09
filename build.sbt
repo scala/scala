@@ -83,21 +83,12 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
-Global / mimaReferenceVersion := Some("2.13.0-RC3")
+Global / mimaReferenceVersion := Some("2.13.0")
 
 import com.typesafe.tools.mima.core._
-val mimaPrereleaseHandlingSettings = Seq(
+val mimaFilterSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
-    // Drop after 2.13.0 is out, whence src/reflect/mima-filters/ takes over.
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
-
-
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StringOps.collect$extension"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StringOps.collect$extension"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StringOps.collect"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.StringOps.collect"),
-
-
   ),
 )
 
@@ -368,7 +359,7 @@ lazy val library = configureAsSubproject(project)
     ),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both",
-    mimaPrereleaseHandlingSettings,
+    mimaFilterSettings,
   )
   .settings(filterDocSources("*.scala" -- regexFileFilter(".*/scala/runtime/.*")))
   .settings(
@@ -400,7 +391,7 @@ lazy val reflect = configureAsSubproject(project)
     ),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
     mimaCheckDirection := "both",
-    mimaPrereleaseHandlingSettings,
+    mimaFilterSettings,
   )
   .dependsOn(library)
 
