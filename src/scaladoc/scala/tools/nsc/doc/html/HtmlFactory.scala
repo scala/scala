@@ -84,6 +84,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     "ref-index.css",
     "template.css",
     "diagrams.css",
+    "print.css",
 
     "class_diagram.png",
     "object_diagram.png",
