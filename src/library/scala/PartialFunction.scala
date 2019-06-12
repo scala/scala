@@ -58,7 +58,7 @@ package scala
  * | How to convert ... | to a [[PartialFunction]] | to an optional [[Function]] | to an extractor |
  * | :---:  | ---  | --- | --- |
  * | from a [[PartialFunction]] | [[Predef.identity]] | [[lift]] | [[Predef.identity]] |
- * | from optional [[Function]] | [[Function.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function.UnliftOps#unlift]] |
+ * | from optional [[Function]] | [[Function1.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function1.UnliftOps#unlift]] |
  * | from an extractor | `{ case extractor(x) => x }` | `extractor.unapply _` | [[Predef.identity]] |
  *  &nbsp;
  *
