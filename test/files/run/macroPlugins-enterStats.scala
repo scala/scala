@@ -4,7 +4,7 @@ import scala.tools.partest._
 import scala.tools.nsc._
 
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -Xprint:typer"
+  override def extraSettings: String = "-usejavacp -Vprint:typer"
 
   def code = """
     class C {

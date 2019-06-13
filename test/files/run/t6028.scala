@@ -3,7 +3,7 @@ import java.io.{Console => _, _}
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Ydelambdafy:inline -Xprint:lambdalift -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Ydelambdafy:inline -Vprint:lambdalift -d " + testOutput.path
 
   override def code = """class T(classParam: Int) {
                         |  val field: Int = 0

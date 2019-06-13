@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends StoreReporterDirectTest {
-  override def extraSettings: String = "-usejavacp -Xprint:patmat -Ystop-after:patmat"
+  override def extraSettings: String = "-usejavacp -Vprint:patmat -Ystop-after:patmat"
 
   override def code =
     """trait T { type T ; val t: T }

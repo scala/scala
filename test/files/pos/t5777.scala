@@ -23,7 +23,7 @@ object MyApp {
   val r1 = new Poly[BigInt.type](BigInt)
   (null.asInstanceOf[BigInt.E] : r1.ring.E)
 
-  // Oddly, -Xprint:typer reports that r and r1 have the same inferred type.
+  // Oddly, -Vprint:typer reports that r and r1 have the same inferred type.
   //
   // private[this] val r: Poly[BigInt.type] = new Poly[BigInt.type](BigInt);
   // <stable> <accessor> def r: Poly[BigInt.type] = MyApp.this.r;

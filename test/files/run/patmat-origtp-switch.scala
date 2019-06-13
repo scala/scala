@@ -3,7 +3,7 @@ import java.io.{Console => _, _}
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Xprint:patmat -Xprint-types -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Vprint:patmat -Vprint-types -d " + testOutput.path
 
   override def code = """class C {
     def foo[A](a: A, b: A with C, i: Int) = i match {

@@ -13,7 +13,7 @@ import anns._
 object Test extends DirectTest {
 
   override def extraSettings: String =
-    s"-usejavacp -cp ${testOutput.path} -Xprint:pic,ref -Ystop-after:ref -d ${testOutput.path}"
+    s"-usejavacp -cp ${testOutput.path} -Vprint:pic,ref -Ystop-after:ref -d ${testOutput.path}"
 
   override def code =
     """import anns._

@@ -28,7 +28,7 @@ abstract class IcodeTest extends DirectTest {
   // override to use source code other than the file being tested.
   def code = testPath.slurp()
 
-  override def extraSettings: String = "-usejavacp -Xprint-icode:" + printIcodeAfterPhase
+  override def extraSettings: String = "-usejavacp -Vprint-icode:" + printIcodeAfterPhase
 
   // Compile, read in all the *.icode files, delete them, and return their contents
   def collectIcode(args: String*): List[String] = {

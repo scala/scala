@@ -1,7 +1,7 @@
 import scala.tools.partest._
 
 object Test extends StoreReporterDirectTest {
-  override def extraSettings: String = "-usejavacp -Xprint:typer -Ystop-after:typer"
+  override def extraSettings: String = "-usejavacp -Vprint:typer -Ystop-after:typer"
 
   override def code =
     """class C {

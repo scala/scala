@@ -7,7 +7,7 @@ object Test extends StoreReporterDirectTest {
     "-usejavacp",
     "-Xfatal-warnings",
     "-Ydelambdafy:method",
-    "-Xprint:delambdafy",
+    "-Vprint:delambdafy",
     s"-d ${testOutput.path}"
   ) mkString " "
 

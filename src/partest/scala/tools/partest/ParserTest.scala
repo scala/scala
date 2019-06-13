@@ -17,7 +17,7 @@ package scala.tools.partest
  */
 abstract class ParserTest extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Ystop-after:parser -Xprint:parser"
+  override def extraSettings: String = "-usejavacp -Ystop-after:parser -Vprint:parser"
 
   override def show(): Unit = {
     // redirect err to out, for logging
