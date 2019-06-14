@@ -16,6 +16,7 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
+import java.nio.file.Paths
 
 import scala.io.Codec
 import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
@@ -23,6 +24,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.collection.mutable
 import PickleFormat._
 import Flags._
+import scala.reflect.io.{AbstractFile, NoAbstractFile, PlainFile, PlainNioFile}
 
 /**
  * Serialize a top-level module and/or class.
@@ -40,6 +42,13 @@ abstract class Pickler extends SubComponent {
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
+    import global.genBCode.postProcessor.classfileWriters.FileWriter
+    private lazy val sigWriter: Option[FileWriter] =
+      if (settings.YpickleWrite.isSetByUser && !settings.YpickleWrite.value.isEmpty)
+        Some(FileWriter(global, new PlainFile(settings.YpickleWrite.value), None))
+      else
+        None
+
     def apply(unit: CompilationUnit): Unit = {
       def pickle(tree: Tree): Unit = {
         tree match {
@@ -64,6 +73,7 @@ abstract class Pickler extends SubComponent {
                 currentRun.symData(sym) = pickle
               }
               pickle.writeArray()
+              writeSigFile(sym, pickle)
               currentRun registerPickle sym
             }
           case _ =>
@@ -88,6 +98,27 @@ abstract class Pickler extends SubComponent {
             }
           }
           throw e
+      }
+    }
+
+    override def run(): Unit = {
+      try super.run()
+      finally closeSigWriter()
+    }
+
+    private def writeSigFile(sym: Symbol, pickle: PickleBuffer): Unit = {
+      sigWriter.foreach { writer =>
+        val binaryName = sym.javaBinaryNameString
+        val binaryClassName = if (sym.isModule) binaryName.stripSuffix(nme.MODULE_SUFFIX_STRING) else binaryName
+        val relativePath = java.nio.file.Paths.get(binaryClassName + ".sig")
+        val data = pickle.bytes.take(pickle.writeIndex)
+        writer.writeFile(relativePath, data)
+      }
+    }
+    private def closeSigWriter(): Unit = {
+      sigWriter.foreach { writer =>
+        writer.close()
+        reporter.info(NoPosition, "[sig files written]", force = false)
       }
     }
 
