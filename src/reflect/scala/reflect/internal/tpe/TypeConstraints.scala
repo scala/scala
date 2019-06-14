@@ -213,30 +213,37 @@ private[internal] trait TypeConstraints {
       if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
     def solveOne(tvar: TypeVar, isContravariant: Boolean): Unit = {
-      val tparam = tvar.origin.typeSymbol
       if (tvar.constr.inst == NoType) {
         tvar.constr.inst = null // mark tvar as being solved
 
         val up = if (isContravariant) !upper else upper
+        val tparam = tvar.origin.typeSymbol
 
-        val tparamTycon = tparam.typeConstructor
+        // don't use =:= -- we just want to know whether the tparam occurs
+        // (using =:= may side-effect additional constraints / unify too much, e.g. with wildcard -- scala/bug#11558)
+        @inline def tvarIsBoundOf(tparamOther: Symbol) =
+          toBound(!up, tparamOther).dealias match {
+            case TypeRef(_, `tparam`, Nil) => true // make sure typeArgs.isEmpty: it gets complicated with type constructor variables -- don't flip those around
+            // TODO could add the PolyType equivalent for eta-expanded type constructors
+            case _                         => false
+          }
+
         val bound = toBound(up, tparam)
-
-        var cyclic = bound contains tparam
+        var otherTypeVarBeingSolved = false
 
         // Solve other type vars, they are relevant when:
         //   - our current bound mentions the other tparam
         //   - our current tparam equals the other tparam's bound (we'll add the symmetric bound below)
         foreachWithIndex(tvars) { (tvarOther, ix) =>
           val tparamOther = tvarOther.origin.typeSymbol
-          // don't use =:= -- we just want to know whether the tparam occurs (using =:= is overly lax and caused https://github.com/scala/bug/issues/11558
-          if ((tparamOther ne tparam) && ((bound contains tparamOther) || (tparamTycon == toBound(!up, tparamOther).dealias))) {
-            if (tvarOther.constr.inst eq null) cyclic = true // came back to a tvar that's being solved --> cycle! (note that we capture the `cyclic` var)
+          if ((tparamOther ne tparam) && ((bound contains tparamOther) || tvarIsBoundOf(tparamOther))) {
+            if (tvarOther.constr.inst eq null) otherTypeVarBeingSolved = true
             solveOne(tvarOther, areContravariant(ix))
           }
         }
 
-        if (!cyclic) {
+
+        if (!(otherTypeVarBeingSolved || (bound contains tparam))) {
           val boundSym = bound.typeSymbol
           if (up) {
             if (boundSym != AnyClass)
@@ -246,20 +253,16 @@ private[internal] trait TypeConstraints {
               tvar.addLoBound(bound.instantiateTypeParams(tparams, tvars))
           }
 
-          // Try to derive more constraints for `tvar` (and `tparam`) from its symmetric occurrences in the bounds of other tparams.
-          // `tparam` is the lower bound of `tvarOther`. Flip that, and add `tvarOther` as an upper bound for `tvar`.
-          // Use =:=, so that we equate eta-expanded type constructors (polytypes) and the equivalent no-arg typeref.
+          // Derive more constraints for `tvar` from its symmetric occurrences in the bounds of other tparams.
           tvars.foreach { tvarOther =>
             val tparamOther = tvarOther.origin.typeSymbol
-            // don't use =:= -- we just want to know whether the tparam occurs (using =:= is overly lax and caused https://github.com/scala/bug/issues/11558
-            if ((tparamOther ne tparam) && (tparamTycon == toBound(!up, tparamOther).dealias)) {
-              if (up) tvar.addHiBound(tvarOther)
-              else tvar.addLoBound(tvarOther)
+            if ((tparamOther ne tparam) && tvarIsBoundOf(tparamOther)) {
+              if (up) tvar.addHiBound(tvarOther) else tvar.addLoBound(tvarOther)
             }
           }
         }
 
-        tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar
+        tvar.constr.inst = NoType // necessary because hibounds/lobounds may contain tvar (about to lub/glb the bounds)
 
         val newInst =
           if (up || tvar.constr.hiBounds.exists(isSingleType)) { // If we have a singleton upper bound then we should use it.
