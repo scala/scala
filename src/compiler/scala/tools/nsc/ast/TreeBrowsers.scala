@@ -23,7 +23,6 @@ import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
 
-import java.util.concurrent.locks._
 import scala.annotation.tailrec
 
 /**
@@ -71,11 +70,23 @@ abstract class TreeBrowsers {
       val frame = new BrowserFrame(pName)
       frame.setTreeModel(tm)
 
-      val lock = new ReentrantLock()
+
+
+      val lock = new Lock
       frame.createFrame(lock)
 
       // wait for the frame to be closed
-      lock.lock()
+      lock.pause()
+    }
+  }
+
+  /** Lock needed to pause execution during tree browser display **/
+  class Lock {
+    def pause() = synchronized {
+      wait
+    }
+    def resume() = synchronized {
+      notify
     }
   }
 
@@ -176,13 +187,11 @@ abstract class TreeBrowsers {
      * especially symbols/types would change while the window is visible.
      */
     def createFrame(lock: Lock): Unit = {
-      lock.lock() // keep the lock until the user closes the window
-
       frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
-        override def windowClosed(e: WindowEvent): Unit = lock.unlock()
+        override def windowClosed(e: WindowEvent): Unit = lock.resume()
       })
 
       jTree = new JTree(treeModel) {
