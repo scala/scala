@@ -23,7 +23,7 @@ import javax.swing._
 import javax.swing.event.TreeModelListener
 import javax.swing.tree._
 
-import java.util.concurrent.locks._
+import java.util.concurrent.CountDownLatch
 import scala.annotation.tailrec
 
 /**
@@ -62,16 +62,16 @@ abstract class TreeBrowsers {
 
     /** print the whole program */
     def browse(pName: String, units: List[CompilationUnit]): Unit = {
-      val lock = new ReentrantLock()
+      val latch = new CountDownLatch(1)
       SwingUtilities.invokeAndWait {() =>
         val unitList = units.map(UnitTree(_))
         val tm = new ASTTreeModel(ProgramTree(unitList))
         val frame = new BrowserFrame(pName)
         frame.setTreeModel(tm)
-        frame.createFrame(lock)
+        frame.createFrame(latch)
       }
       // wait for the frame to be closed
-      lock.lock()
+      latch.await()
     }
   }
 
@@ -165,20 +165,19 @@ abstract class TreeBrowsers {
 
     /** Create a frame that displays the AST.
      *
-     * @param lock The lock is used in order to stop the compilation thread
+     * @param latch The latch is used in order to stop the compilation thread
      * until the user is done with the tree inspection. Swing creates its
      * own threads when the frame is packed, and therefore execution
      * would continue. However, this is not what we want, as the tree and
      * especially symbols/types would change while the window is visible.
      */
-    def createFrame(lock: Lock): Unit = {
-      lock.lock() // keep the lock until the user closes the window
+    def createFrame(latch: CountDownLatch): Unit = {
 
       frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
 
       frame.addWindowListener(new WindowAdapter() {
         /** Release the lock, so compilation may resume after the window is closed. */
-        override def windowClosed(e: WindowEvent): Unit = lock.unlock()
+        override def windowClosed(e: WindowEvent): Unit = latch.countDown()
       })
 
       jTree = new JTree(treeModel) {
