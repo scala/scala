@@ -62,18 +62,14 @@ abstract class TreeBrowsers {
 
     /** print the whole program */
     def browse(pName: String, units: List[CompilationUnit]): Unit = {
-      var unitList: List[UnitTree] = Nil
-
-      for (i <- units)
-        unitList = UnitTree(i) :: unitList
-      val tm = new ASTTreeModel(ProgramTree(unitList))
-
-      val frame = new BrowserFrame(pName)
-      frame.setTreeModel(tm)
-
       val lock = new ReentrantLock()
-      frame.createFrame(lock)
-
+      SwingUtilities.invokeAndWait {() =>
+        val unitList = units.map(UnitTree(_))
+        val tm = new ASTTreeModel(ProgramTree(unitList))
+        val frame = new BrowserFrame(pName)
+        frame.setTreeModel(tm)
+        frame.createFrame(lock)
+      }
       // wait for the frame to be closed
       lock.lock()
     }
@@ -220,6 +216,7 @@ abstract class TreeBrowsers {
       frame.getContentPane().add(splitPane)
       frame.pack()
       frame.setVisible(true)
+      splitPane.setDividerLocation(0.5)
     }
 
     class ASTMenuBar extends JMenuBar {

@@ -1531,8 +1531,8 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
           showMembers()
 
         // browse trees with swing tree viewer
-        if (settings.browse containsPhase globalPhase)
-          treeBrowser browse (phase.name, units)
+        if (settings.browse.containsPhase(globalPhase))
+          treeBrowser.browse(phase.name, units)
 
         if ((settings.Yvalidatepos containsPhase globalPhase) && !reporter.hasErrors)
           currentRun.units.foreach(unit => validatePositions(unit.body))
