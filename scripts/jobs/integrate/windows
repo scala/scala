@@ -4,15 +4,16 @@
 
 export ANT_OPTS="-Dfile.encoding=UTF-8 -server -XX:+AggressiveOpts -XX:+UseParNewGC -Xmx2G -Xss1M -XX:MaxPermSize=512M -XX:ReservedCodeCacheSize=128M"
 
-export JAVA_HOME="C:/java/jdk-1.6"
-export PATH="$(cygpath $JAVA_HOME)/bin:$PATH"
+# scala 2.11.13 and up will be built with Java 8 (until 2.11.12 we used Java 6)
+#export JAVA_HOME="C:/java/jdk-1.6"
+#export PATH="$(cygpath $JAVA_HOME)/bin:$PATH"
 
 java -version
 javac -version
 ant -version
 
 ant \
-  -Dstarr.version=2.11.11 \
+  -Dstarr.version=2.11.12 \
   -Dscalac.args.optimise=-optimise \
   -Dlocker.skip=1 \
   test
