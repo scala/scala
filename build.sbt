@@ -395,23 +395,6 @@ lazy val reflect = configureAsSubproject(project)
   )
   .dependsOn(library)
 
-lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") / "src" / "compilerOptionsExporter")
-  .dependsOn(compiler, reflect, library)
-  .settings(clearSourceAndResourceDirectories)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(skip in publish := true)
-  .settings(
-    libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.7",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.7",
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.7"
-      // TODO: implement without Scala dependency. Not available when STARR has a new binary verison.
-      // "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.7"
-    )
-  )
-
 lazy val compiler = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(generateBuildCharacterFileSettings)
@@ -972,7 +955,7 @@ lazy val root: Project = (project in file("."))
     },
     setIncOptions
   )
-  .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replFrontend,
+  .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
     scaladoc, scalap, partest, junit, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
@@ -1164,7 +1147,6 @@ intellij := {
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
       moduleDeps(testP).value,
-      moduleDeps(compilerOptionsExporter).value
     )
   }
 
