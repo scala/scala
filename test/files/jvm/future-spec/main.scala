@@ -107,7 +107,7 @@ class TestLatch(count: Int = 1) extends Awaitable[Unit] {
     this
   }
 
-  @throws(classOf[Exception])
+  @throws(classOf[TimeoutException])
   def result(atMost: Duration)(implicit permit: CanAwait): Unit = {
     ready(atMost)
   }

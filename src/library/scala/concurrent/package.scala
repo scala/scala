@@ -214,7 +214,8 @@ package concurrent {
      * @throws TimeoutException         if after waiting for the specified time `awaitable` is still not ready
      * @throws IllegalArgumentException if `atMost` is [[scala.concurrent.duration.Duration.Undefined Duration.Undefined]]
      */
-    @throws(classOf[Exception])
+    @throws(classOf[TimeoutException])
+    @throws(classOf[InterruptedException])
     def result[T](awaitable: Awaitable[T], atMost: Duration): T =
       blocking(awaitable.result(atMost)(AwaitPermission))
   }
