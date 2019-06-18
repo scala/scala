@@ -494,7 +494,6 @@ class ArrayDeque[A] protected (
     reset(array = array2, start = 0, end = n)
   }
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "ArrayDeque"
 }
 

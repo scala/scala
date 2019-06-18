@@ -50,7 +50,6 @@ trait Seq[+A]
 
   override def toString(): String = super[Iterable].toString()
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "Seq"
 }
 

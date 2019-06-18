@@ -168,7 +168,6 @@ trait Buffer[A]
     this
   }
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix = "Buffer"
 }
 

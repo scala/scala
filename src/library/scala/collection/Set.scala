@@ -41,7 +41,6 @@ trait Set[A]
 
   override def iterableFactory: IterableFactory[Set] = Set
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "Set"
 
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too

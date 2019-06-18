@@ -33,7 +33,6 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
 
   override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = new SeqView.Sorted(this, ord)
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SeqView"
 }
 

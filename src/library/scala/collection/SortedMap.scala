@@ -26,7 +26,6 @@ trait SortedMap[K, +V]
 
   def sortedMapFactory: SortedMapFactory[SortedMap] = SortedMap
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "SortedMap"
 }
 

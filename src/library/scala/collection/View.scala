@@ -36,7 +36,6 @@ trait View[+A] extends Iterable[A] with IterableOps[A, View, View[A]] with Itera
 
   override def toString: String  = className + "(<not computed>)"
 
-  @deprecatedOverriding("Compatibility override", since="2.13.0")
   override protected[this] def stringPrefix: String = "View"
 
   @deprecated("Views no longer know about their underlying collection type; .force always returns an IndexedSeq", "2.13.0")
