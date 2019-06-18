@@ -3183,10 +3183,10 @@ self =>
      *  }}}
      * @param isPre specifies whether in early initializer (true) or not (false)
      */
-    def templateStatSeq(isPre : Boolean): (ValDef, List[Tree]) = checkNoEscapingPlaceholders {
+    def templateStatSeq(isPre : Boolean): (ValDef, List[Tree]) = {
       var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
-      if (isExprIntro) {
+      if (isExprIntro) checkNoEscapingPlaceholders {
         in.flushDoc
         val first = expr(InTemplate) // @S: first statement is potentially converted so cannot be stubbed.
         if (in.token == ARROW) {
@@ -3219,7 +3219,7 @@ self =>
      *                     |
      *  }}}
      */
-    def templateStats(): List[Tree] = statSeq(templateStat)
+    def templateStats(): List[Tree] = checkNoEscapingPlaceholders { statSeq(templateStat) }
     def templateStat: PartialFunction[Token, List[Tree]] = {
       case IMPORT =>
         in.flushDoc

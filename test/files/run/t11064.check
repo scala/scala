@@ -1,0 +1,16 @@
+
+scala> // should say "unbound wildcard type" not "not found: type _$1"
+
+scala>  type T = _
+                 ^
+       error: unbound wildcard type
+
+scala>  class C extends _
+                        ^
+       error: unbound wildcard type
+
+scala>  trait F[x <: _]
+                     ^
+       error: unbound wildcard type
+
+scala> :quit
