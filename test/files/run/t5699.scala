@@ -7,7 +7,7 @@ object Test extends ParserTest {
     |public @interface MyAnnotation { String value(); }
   """.stripMargin
 
-  override def extraSettings: String = "-usejavacp -Ystop-after:namer -Xprint:parser"
+  override def extraSettings: String = "-usejavacp -Ystop-after:namer -Vprint:parser"
 
   override def newSources(sourceCodes: String*) = {
     assert(sourceCodes.size == 1)

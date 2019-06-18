@@ -3,7 +3,7 @@ import scala.tools.partest.DirectTest
 object Test extends DirectTest {
 
   override def extraSettings: String =
-    s"-usejavacp -Xprint-pos -Xprint:parser -Yrangepos -Ystop-after:parser -d ${testOutput.path} -cp ${testOutput.path}"
+    s"-usejavacp -Vprint-pos -Vprint:parser -Yrangepos -Ystop-after:parser -d ${testOutput.path} -cp ${testOutput.path}"
 
   // test/files/pos/t6124.scala
   override def code = """

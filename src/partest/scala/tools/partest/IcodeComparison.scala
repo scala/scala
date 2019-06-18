@@ -49,7 +49,7 @@ abstract class IcodeComparison extends DirectTest {
   /** Compile the test code and return the contents of all
    *  (sorted) .icode files, which are immediately deleted.
    *  @param arg0 at least one arg is required
-   *  @param args must include -Xprint-icode:phase
+   *  @param args must include -Vprint-icode:phase
    */
   def collectIcode(arg0: String, args: String*): List[String] = {
     compile("-d" :: testOutput.path :: arg0 :: args.toList : _*)
@@ -65,7 +65,7 @@ abstract class IcodeComparison extends DirectTest {
   }
 
   /** Collect icode at the default phase, `printIcodeAfterPhase`. */
-  def collectIcode(): List[String] = collectIcode(s"-Xprint-icode:$printIcodeAfterPhase")
+  def collectIcode(): List[String] = collectIcode(s"-Vprint-icode:$printIcodeAfterPhase")
 
   /** Default show is showComparison. May be overridden for showIcode or similar. */
   def show() = showComparison()
@@ -74,8 +74,8 @@ abstract class IcodeComparison extends DirectTest {
    *  then print the diff of the icode.
    */
   def showComparison() = {
-    val lines1 = collectIcode(s"-Xprint-icode:$printSuboptimalIcodeAfterPhase")
-    val lines2 = collectIcode("-optimise", s"-Xprint-icode:$printIcodeAfterPhase")
+    val lines1 = collectIcode(s"-Vprint-icode:$printSuboptimalIcodeAfterPhase")
+    val lines2 = collectIcode("-optimise", s"-Vprint-icode:$printIcodeAfterPhase")
 
     println(compareContents(lines1, lines2))
   }

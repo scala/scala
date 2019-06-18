@@ -37,8 +37,8 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     |-- Note --
     |Boolean settings are false unless set: -Xdev -Xcheck-init:true -Xprompt:false
     |Multi-valued settings are comma-separated: -Xlint:infer-any,unused,-missing-interpolator
-    |Phases are a list of names, ids, or ranges of ids: -Xprint:parser,typer,5-10 -Ylog:-4
-    |Use _ to enable all: -language:_ -Xprint:_
+    |Phases are a list of names, ids, or ranges of ids: -Vprint:parser,typer,5-10 -Ylog:-4
+    |Use _ to enable all: -language:_ -Vprint:_
     |
   """.stripMargin.trim
 

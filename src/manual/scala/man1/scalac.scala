@@ -263,16 +263,16 @@ object scalac extends Command {
           CmdOption("Xpluginsdir", Argument("path")),
           "Path to search for plugin archives."),
         Definition(
-          CmdOptionBound("Xprint:", Argument("phases")),
+          CmdOptionBound("Vprint:", Argument("phases")),
           "Print out program after " & Argument("phases") & " (see below)."),
         Definition(
-          CmdOptionBound("Xprint-icode", "[:" & Argument("phases") & "]"),
+          CmdOptionBound("Vprint-icode", "[:" & Argument("phases") & "]"),
           "Log internal icode to *.icode files after" & Argument("phases") & " (default: icode)."),
         Definition(
-          CmdOption("Xprint-pos"),
+          CmdOption("Vprint-pos"),
           "Print tree positions, as offsets."),
         Definition(
-          CmdOption("Xprint-types"),
+          CmdOption("Vprint-types"),
           "Print tree types (debugging option)."),
         Definition(
           CmdOption("Xprompt"),

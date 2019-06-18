@@ -7,7 +7,7 @@ import scala.reflect.internal.Positions
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Xprint:parser -Ystop-after:parser -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Vprint:parser -Ystop-after:parser -d " + testOutput.path
 
   override def code = """
     class C {
