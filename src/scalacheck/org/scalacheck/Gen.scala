@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
  **  ScalaCheck                                                             **
- **  Copyright (c) 2007-2017 Rickard Nilsson. All rights reserved.          **
+ **  Copyright (c) 2007-2018 Rickard Nilsson. All rights reserved.          **
  **  http://www.scalacheck.org                                              **
  **                                                                         **
  **  This software is released under the terms of the Revised BSD License.  **
@@ -15,6 +15,7 @@ import language.implicitConversions
 import rng.Seed
 import util.Buildable
 import util.SerializableCanBuildFroms._
+import ScalaVersionSpecific._
 
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
@@ -83,10 +84,6 @@ sealed abstract class Gen[+T] extends Serializable { self =>
     rt.flatMap(t => f(t).doApply(p, rt.seed))
   }
 
-  @deprecated("Empty generators are discouraged.", "1.14.0")
-  def flatten[U](implicit asOption: T => Option[U]): Gen[U] =
-    map(asOption).collect{ case Some(t) => t }
-
   /** Create a new generator that uses this generator to produce a value
    *  that fulfills the given condition. If the condition is not fulfilled,
    *  the generator fails (returns None). Also, make sure that the provided
@@ -98,13 +95,6 @@ sealed abstract class Gen[+T] extends Serializable { self =>
    *  the generator fails (returns None). Also, make sure that the provided
    *  test property is side-effect free, eg it should not use external vars. */
   def filterNot(p: T => Boolean): Gen[T] = suchThat(x => !p(x))
-
-  /** Create a new generator that fails if the specified partial function
-   *  is undefined for this generator's value, otherwise returns the result
-   *  of the partial function applied to this generator's value. */
-  @deprecated("Empty generators are discouraged.", "1.14.0")
-  def collect[U](pf: PartialFunction[T,U]): Gen[U] =
-    flatMap { t => Gen.fromOption(pf.lift(t)) }
 
   /** Creates a non-strict filtered version of this generator. */
   def withFilter(p: T => Boolean): WithFilter = new WithFilter(p)
@@ -211,7 +201,7 @@ sealed abstract class Gen[+T] extends Serializable { self =>
     Gen.gen((p, seed) => doApply(p, f(seed)))
 }
 
-object Gen extends GenArities{
+object Gen extends GenArities with GenVersionSpecific {
 
   //// Private interface ////
 
@@ -410,6 +400,12 @@ object Gen extends GenArities{
       new Choose[Double] {
         def choose(low: Double, high: Double) =
           if (low > high) throw new IllegalBoundsError(low, high)
+          else if (low == Double.NegativeInfinity)
+            frequency(1 -> const(Double.NegativeInfinity),
+                      9 -> choose(Double.MinValue, high))
+          else if (high == Double.PositiveInfinity)
+            frequency(1 -> const(Double.PositiveInfinity),
+                      9 -> choose(low, Double.MaxValue))
           else gen(chDbl(low,high))
       }
 
@@ -446,14 +442,6 @@ object Gen extends GenArities{
       val seed = seed0
     }
 
-  /** A generator that fails if the provided option value is undefined,
-   *  otherwise just returns the value. */
-  @deprecated("Empty generators are discouraged.", "1.14.0")
-  def fromOption[T](o: Option[T]): Gen[T] = o match {
-    case Some(t) => const(t)
-    case None => fail
-  }
-
   /** A generator that generates a random value in the given (inclusive)
    *  range. If the range is invalid, the generator will not generate
    *  any value. */
@@ -462,7 +450,7 @@ object Gen extends GenArities{
 
   /** Sequences generators. If any of the given generators fails, the
    *  resulting generator will also fail. */
-  def sequence[C,T](gs: Iterable[Gen[T]])(implicit b: Buildable[T,C]): Gen[C] = {
+  def sequence[C,T](gs: Traversable[Gen[T]])(implicit b: Buildable[T,C]): Gen[C] = {
     val g = gen { (p, seed) =>
       gs.foldLeft(r(Some(Vector.empty[T]), seed)) {
         case (rs,g) =>
@@ -513,12 +501,6 @@ object Gen extends GenArities{
     lazy val h = g
     gen { (p, seed) => h.doApply(p, seed) }
   }
-
-  /** Wraps a generator for later evaluation. The given parameter is
-   *  evaluated each time the wrapper generator is evaluated.
-   *  This has been deprecated in favor of [[org.scalacheck.Gen.delay]]. */
-  @deprecated("Replaced with delay()", "1.13.0")
-  def wrap[T](g: => Gen[T]): Gen[T] = delay(g)
 
   /** Wraps a generator for later evaluation. The given parameter is
    *  evaluated each time the wrapper generator is evaluated. */
@@ -578,7 +560,7 @@ object Gen extends GenArities{
         builder += ((total, value))
       }
       val tree = builder.result
-      choose(1L, total).flatMap(r => tree.from(r).head._2).suchThat { x =>
+      choose(1L, total).flatMap(r => tree.rangeFrom(r).head._2).suchThat { x =>
         gs.exists(_._2.sieveCopy(x))
       }
     }
@@ -595,7 +577,7 @@ object Gen extends GenArities{
 
   //// List Generators ////
 
-  /** Generates a container of any Iterable type for which there exists an
+  /** Generates a container of any Traversable type for which there exists an
    *  implicit [[org.scalacheck.util.Buildable]] instance. The elements in the
    *  container will be generated by the given generator. The size of the
    *  generated container is limited by `n`. Depending on what kind of container
@@ -603,47 +585,47 @@ object Gen extends GenArities{
    *  `n`, but not more. If the given generator fails generating a value, the
    *  complete container generator will also fail. */
   def buildableOfN[C,T](n: Int, g: Gen[T])(implicit
-    evb: Buildable[T,C], evt: C => Iterable[T]
+    evb: Buildable[T,C], evt: C => Traversable[T]
   ): Gen[C] =
-    sequence[C,T](Iterable.fill(n)(g)) suchThat { c =>
+    sequence[C,T](Traversable.fill(n)(g)) suchThat { c =>
       // TODO: Can we guarantee c.size == n (See issue #89)?
       c.forall(g.sieveCopy)
     }
 
-  /** Generates a container of any Iterable type for which there exists an
+  /** Generates a container of any Traversable type for which there exists an
    *  implicit [[org.scalacheck.util.Buildable]] instance. The elements in the
    *  container will be generated by the given generator. The size of the
    *  container is bounded by the size parameter used when generating values. */
   def buildableOf[C,T](g: Gen[T])(implicit
-    evb: Buildable[T,C], evt: C => Iterable[T]
+    evb: Buildable[T,C], evt: C => Traversable[T]
   ): Gen[C] =
     sized(s => choose(0, s max 0).flatMap(buildableOfN[C,T](_,g))) suchThat { c =>
       if (c == null) g.sieveCopy(null) else c.forall(g.sieveCopy)
     }
 
-  /** Generates a non-empty container of any Iterable type for which there
+  /** Generates a non-empty container of any Traversable type for which there
    *  exists an implicit [[org.scalacheck.util.Buildable]] instance. The
    *  elements in the container will be generated by the given generator. The
    *  size of the container is bounded by the size parameter used when
    *  generating values. */
   def nonEmptyBuildableOf[C,T](g: Gen[T])(implicit
-    evb: Buildable[T,C], evt: C => Iterable[T]
+    evb: Buildable[T,C], evt: C => Traversable[T]
   ): Gen[C] =
     sized(s => choose(1, s max 1).flatMap(buildableOfN[C,T](_,g))) suchThat(_.size > 0)
 
   /** A convenience method for calling `buildableOfN[C[T],T](n,g)`. */
   def containerOfN[C[_],T](n: Int, g: Gen[T])(implicit
-    evb: Buildable[T,C[T]], evt: C[T] => Iterable[T]
+    evb: Buildable[T,C[T]], evt: C[T] => Traversable[T]
   ): Gen[C[T]] = buildableOfN[C[T],T](n,g)
 
   /** A convenience method for calling `buildableOf[C[T],T](g)`. */
   def containerOf[C[_],T](g: Gen[T])(implicit
-    evb: Buildable[T,C[T]], evt: C[T] => Iterable[T]
+    evb: Buildable[T,C[T]], evt: C[T] => Traversable[T]
   ): Gen[C[T]] = buildableOf[C[T],T](g)
 
   /** A convenience method for calling `nonEmptyBuildableOf[C[T],T](g)`. */
   def nonEmptyContainerOf[C[_],T](g: Gen[T])(implicit
-    evb: Buildable[T,C[T]], evt: C[T] => Iterable[T]
+    evb: Buildable[T,C[T]], evt: C[T] => Traversable[T]
   ): Gen[C[T]] = nonEmptyBuildableOf[C[T],T](g)
 
   /** Generates a list of random length. The maximum length depends on the

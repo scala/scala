@@ -6,112 +6,112 @@ private[scalacheck] abstract class CogenArities{
 
   
   implicit final def tuple1[T1](implicit c1:Cogen[T1]): Cogen[Tuple1[T1]] =
-    Cogen((seed: rng.Seed, t: Tuple1[T1]) =>
+    Cogen((seed, t) =>
       c1.perturb(seed, t._1)
     )
 
   implicit final def tuple2[T1,T2](implicit c1:Cogen[T1], c2:Cogen[T2]): Cogen[Tuple2[T1,T2]] =
-    Cogen((seed: rng.Seed, t: Tuple2[T1,T2]) =>
+    Cogen((seed, t) =>
       c2.perturb(c1.perturb(seed, t._1), t._2)
     )
 
   implicit final def tuple3[T1,T2,T3](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3]): Cogen[Tuple3[T1,T2,T3]] =
-    Cogen((seed: rng.Seed, t: Tuple3[T1,T2,T3]) =>
+    Cogen((seed, t) =>
       c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3)
     )
 
   implicit final def tuple4[T1,T2,T3,T4](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4]): Cogen[Tuple4[T1,T2,T3,T4]] =
-    Cogen((seed: rng.Seed, t: Tuple4[T1,T2,T3,T4]) =>
+    Cogen((seed, t) =>
       c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4)
     )
 
   implicit final def tuple5[T1,T2,T3,T4,T5](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5]): Cogen[Tuple5[T1,T2,T3,T4,T5]] =
-    Cogen((seed: rng.Seed, t: Tuple5[T1,T2,T3,T4,T5]) =>
+    Cogen((seed, t) =>
       c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5)
     )
 
   implicit final def tuple6[T1,T2,T3,T4,T5,T6](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6]): Cogen[Tuple6[T1,T2,T3,T4,T5,T6]] =
-    Cogen((seed: rng.Seed, t: Tuple6[T1,T2,T3,T4,T5,T6]) =>
+    Cogen((seed, t) =>
       c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6)
     )
 
   implicit final def tuple7[T1,T2,T3,T4,T5,T6,T7](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7]): Cogen[Tuple7[T1,T2,T3,T4,T5,T6,T7]] =
-    Cogen((seed: rng.Seed, t: Tuple7[T1,T2,T3,T4,T5,T6,T7]) =>
+    Cogen((seed, t) =>
       c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7)
     )
 
   implicit final def tuple8[T1,T2,T3,T4,T5,T6,T7,T8](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8]): Cogen[Tuple8[T1,T2,T3,T4,T5,T6,T7,T8]] =
-    Cogen((seed: rng.Seed, t: Tuple8[T1,T2,T3,T4,T5,T6,T7,T8]) =>
+    Cogen((seed, t) =>
       c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8)
     )
 
   implicit final def tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9]): Cogen[Tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9]] =
-    Cogen((seed: rng.Seed, t: Tuple9[T1,T2,T3,T4,T5,T6,T7,T8,T9]) =>
+    Cogen((seed, t) =>
       c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9)
     )
 
   implicit final def tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10]): Cogen[Tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]] =
-    Cogen((seed: rng.Seed, t: Tuple10[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10]) =>
+    Cogen((seed, t) =>
       c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10)
     )
 
   implicit final def tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11]): Cogen[Tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]] =
-    Cogen((seed: rng.Seed, t: Tuple11[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11]) =>
+    Cogen((seed, t) =>
       c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11)
     )
 
   implicit final def tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12]): Cogen[Tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12]] =
-    Cogen((seed: rng.Seed, t: Tuple12[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12]) =>
+    Cogen((seed, t) =>
       c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12)
     )
 
   implicit final def tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13]): Cogen[Tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13]] =
-    Cogen((seed: rng.Seed, t: Tuple13[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13]) =>
+    Cogen((seed, t) =>
       c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13)
     )
 
   implicit final def tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14]): Cogen[Tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14]] =
-    Cogen((seed: rng.Seed, t: Tuple14[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14]) =>
+    Cogen((seed, t) =>
       c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14)
     )
 
   implicit final def tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15]): Cogen[Tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15]] =
-    Cogen((seed: rng.Seed, t: Tuple15[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15]) =>
+    Cogen((seed, t) =>
       c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15)
     )
 
   implicit final def tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16]): Cogen[Tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16]] =
-    Cogen((seed: rng.Seed, t: Tuple16[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16]) =>
+    Cogen((seed, t) =>
       c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16)
     )
 
   implicit final def tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17]): Cogen[Tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17]] =
-    Cogen((seed: rng.Seed, t: Tuple17[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17]) =>
+    Cogen((seed, t) =>
       c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17)
     )
 
   implicit final def tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17], c18:Cogen[T18]): Cogen[Tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18]] =
-    Cogen((seed: rng.Seed, t: Tuple18[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18]) =>
+    Cogen((seed, t) =>
       c18.perturb(c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17), t._18)
     )
 
   implicit final def tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17], c18:Cogen[T18], c19:Cogen[T19]): Cogen[Tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19]] =
-    Cogen((seed: rng.Seed, t: Tuple19[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19]) =>
+    Cogen((seed, t) =>
       c19.perturb(c18.perturb(c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17), t._18), t._19)
     )
 
   implicit final def tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17], c18:Cogen[T18], c19:Cogen[T19], c20:Cogen[T20]): Cogen[Tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20]] =
-    Cogen((seed: rng.Seed, t: Tuple20[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20]) =>
+    Cogen((seed, t) =>
       c20.perturb(c19.perturb(c18.perturb(c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17), t._18), t._19), t._20)
     )
 
   implicit final def tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17], c18:Cogen[T18], c19:Cogen[T19], c20:Cogen[T20], c21:Cogen[T21]): Cogen[Tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21]] =
-    Cogen((seed: rng.Seed, t: Tuple21[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21]) =>
+    Cogen((seed, t) =>
       c21.perturb(c20.perturb(c19.perturb(c18.perturb(c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17), t._18), t._19), t._20), t._21)
     )
 
   implicit final def tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22](implicit c1:Cogen[T1], c2:Cogen[T2], c3:Cogen[T3], c4:Cogen[T4], c5:Cogen[T5], c6:Cogen[T6], c7:Cogen[T7], c8:Cogen[T8], c9:Cogen[T9], c10:Cogen[T10], c11:Cogen[T11], c12:Cogen[T12], c13:Cogen[T13], c14:Cogen[T14], c15:Cogen[T15], c16:Cogen[T16], c17:Cogen[T17], c18:Cogen[T18], c19:Cogen[T19], c20:Cogen[T20], c21:Cogen[T21], c22:Cogen[T22]): Cogen[Tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22]] =
-    Cogen((seed: rng.Seed, t: Tuple22[T1,T2,T3,T4,T5,T6,T7,T8,T9,T10,T11,T12,T13,T14,T15,T16,T17,T18,T19,T20,T21,T22]) =>
+    Cogen((seed, t) =>
       c22.perturb(c21.perturb(c20.perturb(c19.perturb(c18.perturb(c17.perturb(c16.perturb(c15.perturb(c14.perturb(c13.perturb(c12.perturb(c11.perturb(c10.perturb(c9.perturb(c8.perturb(c7.perturb(c6.perturb(c5.perturb(c4.perturb(c3.perturb(c2.perturb(c1.perturb(seed, t._1), t._2), t._3), t._4), t._5), t._6), t._7), t._8), t._9), t._10), t._11), t._12), t._13), t._14), t._15), t._16), t._17), t._18), t._19), t._20), t._21), t._22)
     )
 

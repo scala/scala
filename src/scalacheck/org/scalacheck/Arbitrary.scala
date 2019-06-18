@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2017 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2018 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -357,22 +357,22 @@ private[scalacheck] sealed trait ArbitraryLowPriority {
     Arbitrary(Gen.oneOf(arbitrary[T].map(Success(_)), arbitrary[Throwable].map(Failure(_))))
 
   /** Arbitrary instance of any [[org.scalacheck.util.Buildable]] container
-   *  (such as lists, arrays, streams, etc). The maximum size of the container
+   *  (such as lists, arrays, streams / lazy lists, etc). The maximum size of the container
    *  depends on the size generation parameter. */
   implicit def arbContainer[C[_],T](implicit
-    a: Arbitrary[T], b: Buildable[T,C[T]], t: C[T] => Iterable[T]
+    a: Arbitrary[T], b: Buildable[T,C[T]], t: C[T] => Traversable[T]
   ): Arbitrary[C[T]] = Arbitrary(buildableOf[C[T],T](arbitrary[T]))
 
   /** Arbitrary instance of any [[org.scalacheck.util.Buildable]] container
    *  (such as maps). The maximum size of the container depends on the size
    *  generation parameter. */
   implicit def arbContainer2[C[_,_],T,U](implicit
-    a: Arbitrary[(T,U)], b: Buildable[(T,U),C[T,U]], t: C[T,U] => Iterable[(T,U)]
+    a: Arbitrary[(T,U)], b: Buildable[(T,U),C[T,U]], t: C[T,U] => Traversable[(T,U)]
   ): Arbitrary[C[T,U]] = Arbitrary(buildableOf[C[T,U],(T,U)](arbitrary[(T,U)]))
 
   implicit def arbEnum[A <: java.lang.Enum[A]](implicit A: reflect.ClassTag[A]): Arbitrary[A] = {
     val values = A.runtimeClass.getEnumConstants.asInstanceOf[Array[A]]
-    Arbitrary(Gen.oneOf(values))
+    Arbitrary(Gen.oneOf(values.toIndexedSeq))
   }
 
   implicit def arbPartialFunction[A: Cogen, B: Arbitrary]: Arbitrary[PartialFunction[A, B]] =

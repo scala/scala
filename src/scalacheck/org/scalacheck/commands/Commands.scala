@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------*\
 **  ScalaCheck                                                             **
-**  Copyright (c) 2007-2017 Rickard Nilsson. All rights reserved.          **
+**  Copyright (c) 2007-2018 Rickard Nilsson. All rights reserved.          **
 **  http://www.scalacheck.org                                              **
 **                                                                         **
 **  This software is released under the terms of the Revised BSD License.  **
@@ -55,15 +55,15 @@ trait Commands {
    *  (a singleton [[Sut]]), implement this method the following way:
    *
    *  {{{
-   *  def canCreateNewSut(newState: State, initSuts: Iterable[State]
-   *    runningSuts: Iterable[Sut]
+   *  def canCreateNewSut(newState: State, initSuts: Traversable[State]
+   *    runningSuts: Traversable[Sut]
    *  ) = {
    *    initSuts.isEmpty && runningSuts.isEmpty
    *  }
    *  }}}
    */
-  def canCreateNewSut(newState: State, initSuts: Iterable[State],
-    runningSuts: Iterable[Sut]): Boolean
+  def canCreateNewSut(newState: State, initSuts: Traversable[State],
+    runningSuts: Traversable[Sut]): Boolean
 
   /** Create a new [[Sut]] instance with an internal state that
    *  corresponds to the provided abstract state instance. The provided state
@@ -77,7 +77,7 @@ trait Commands {
   def destroySut(sut: Sut): Unit
 
   /** The precondition for the initial state, when no commands yet have
-   *  run. This is used by ScalaCheck when command sequences are shrunk
+   *  run. This is used by ScalaCheck when command sequences are shrinked
    *  and the first state might differ from what is returned from
    *  [[genInitialState]]. */
   def initialPreCondition(state: State): Boolean
@@ -271,7 +271,7 @@ trait Commands {
 
   private implicit val shrinkActions = Shrink[Actions] { as =>
     val shrinkedCmds: Stream[Actions] =
-      Shrink.shrink(as.seqCmds).map(cs => as.copy(seqCmds = cs)) lazyAppendedAll
+      Shrink.shrink(as.seqCmds).map(cs => as.copy(seqCmds = cs)) append
       Shrink.shrink(as.parCmds).map(cs => as.copy(parCmds = cs))
 
     Shrink.shrinkWithOrig[State](as.s)(shrinkState) flatMap { state =>
@@ -377,7 +377,7 @@ trait Commands {
     }
 
     def actionsPrecond(as: Actions) =
-      as.parCmds.lengthIs != 1 && as.parCmds.forall(_.nonEmpty) &&
+      as.parCmds.length != 1 && as.parCmds.forall(_.nonEmpty) &&
       initialPreCondition(as.s) && (cmdsPrecond(as.s, as.seqCmds) match {
         case (s,true) => as.parCmds.forall(cmdsPrecond(s,_)._2)
         case _ => false
