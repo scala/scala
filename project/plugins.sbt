@@ -37,6 +37,6 @@ addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
 // See DottySupport.scala
 if (Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false))
-  Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.0"))
+  Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.3"))
 else
   Seq()
