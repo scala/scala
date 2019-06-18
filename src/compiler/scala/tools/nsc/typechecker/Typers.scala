@@ -3203,7 +3203,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (tree.tpe.isDependentMethodType) DependentMethodTpeConversionToFunctionError(tree, tree.tpe) // TODO: support this
       else {
-        val expansion = etaExpand(context.unit, tree, context.owner)
+        val expansion = etaExpand(tree, context.owner)
         if (context.undetparams.isEmpty) typed(expansion, mode, pt)
         else instantiate(typed(expansion, mode), mode, pt)
       }

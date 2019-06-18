@@ -431,8 +431,8 @@ The method values in the left column are each equivalent to the [eta-expanded ex
 |`math.sin _`                   | `x => math.sin(x)`                                                          |
 |`math.pow _`                   | `(x1, x2) => math.pow(x1, x2)`                                              |
 |`val vs = 1 to 9; vs.fold _`   | `(z) => (op) => vs.fold(z)(op)`                                             |
-|`(1 to 9).fold(z)_`            | `{ val eta1 = z; val eta2 = 1 to 9; op => eta2.fold(eta1)(op) }`            |
-|`Some(1).fold(??? : Int)_`     | `{ val eta1 = () => ???; val eta2 = Some(1); op => eta2.fold(eta1())(op) }` |
+|`(1 to 9).fold(z)_`            | `{ val eta1 = 1 to 9; val eta2 = z; op => eta1.fold(eta2)(op) }`            |
+|`Some(1).fold(??? : Int)_`     | `{ val eta1 = Some(1); val eta2 = () => ???; op => eta1.fold(eta2())(op) }` |
 
 Note that a space is necessary between a method name and the trailing underscore
 because otherwise the underscore would be considered part of the name.
