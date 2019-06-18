@@ -47,7 +47,7 @@ class Breaks {
   }
 
   sealed trait TryBlock[T] {
-    def catchBreak(onBreak: =>T): T
+    def catchBreak(onBreak: => T): T
   }
 
   /**
@@ -62,8 +62,8 @@ class Breaks {
    * }
    * }}}
    */
-  def tryBreakable[T](op: =>T) = new TryBlock[T] {
-    def catchBreak(onBreak: =>T) = try {
+  def tryBreakable[T](op: => T) = new TryBlock[T] {
+    def catchBreak(onBreak: => T) = try {
       op
     } catch {
       case ex: BreakControl =>

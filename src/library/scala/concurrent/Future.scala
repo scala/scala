@@ -656,7 +656,7 @@ object Future {
   *  @param executor  the execution context on which the future is run
   *  @return          the `Future` holding the result of the computation
   */
-  final def apply[T](body: =>T)(implicit executor: ExecutionContext): Future[T] =
+  final def apply[T](body: => T)(implicit executor: ExecutionContext): Future[T] =
     unit.map(_ => body)
 
   /** Starts an asynchronous computation and returns a `Future` instance with the result of that computation once it completes.

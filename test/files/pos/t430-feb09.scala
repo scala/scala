@@ -30,5 +30,5 @@ package f.scala {
 
 // Doesn't compile: type <byname> is not a member of package h.scala
 package h.scala {
-  case class H(s: String)(t: =>String)
+  case class H(s: String)(t: => String)
 }

@@ -45,7 +45,7 @@ object Test1625 {
     def unwrap() = x
   }
 
-  implicit def byName[A](x: =>A) = new Wrapped(x)
+  implicit def byName[A](x: => A) = new Wrapped(x)
 
   implicit def byVal[A](x: A) = x
 

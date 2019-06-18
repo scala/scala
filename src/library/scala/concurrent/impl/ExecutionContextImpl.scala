@@ -49,7 +49,7 @@ private[concurrent] object ExecutionContextImpl {
     def newThread(fjp: ForkJoinPool): ForkJoinWorkerThread =
       wire(new ForkJoinWorkerThread(fjp) with BlockContext {
         private[this] final var isBlocked: Boolean = false // This is only ever read & written if this thread is the current thread
-        final override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T =
+        final override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T =
           if ((Thread.currentThread eq this) && !isBlocked && blockerPermits.tryAcquire()) {
             try {
               val b: ForkJoinPool.ManagedBlocker with (() => T) =

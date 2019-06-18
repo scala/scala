@@ -312,11 +312,11 @@ trait Infer extends Checkable {
 
     /** "Compatible" means conforming after conversions.
      *  "Raising to a thunk" is not implicit; therefore, for purposes of applicability and
-     *  specificity, an arg type `A` is considered compatible with cbn formal parameter type `=>A`.
+     *  specificity, an arg type `A` is considered compatible with cbn formal parameter type `=> A`.
      *  For this behavior, the type `pt` must have cbn params preserved; for instance, `formalTypes(removeByName = false)`.
      *
-     *  `isAsSpecific` no longer prefers A by testing applicability to A for both m(A) and m(=>A)
-     *  since that induces a tie between m(=>A) and m(=>A,B*) [scala/bug#3761]
+     *  `isAsSpecific` no longer prefers A by testing applicability to A for both m(A) and m(=> A)
+     *  since that induces a tie between m(=> A) and m(=> A, B*) [scala/bug#3761]
      */
     private def isCompatible(tp: Type, pt: Type): Boolean = {
       def isCompatibleByName(tp: Type, pt: Type): Boolean = (

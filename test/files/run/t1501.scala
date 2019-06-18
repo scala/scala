@@ -11,7 +11,7 @@ object Test {
   
     class xyz[A] extends annotation.TypeConstraint
     
-    def loopWhile[T](cond: =>Boolean)(body: =>(Unit @xyz[T])): Unit @ xyz[T] = {{
+    def loopWhile[T](cond: => Boolean)(body: => (Unit @xyz[T])): Unit @ xyz[T] = {{
       if (cond) {{
         body
         loopWhile[T](cond)(body)

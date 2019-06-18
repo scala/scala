@@ -752,7 +752,7 @@ class BlockContexts extends TestBase {
   def testPushCustom(): Unit = {
     val orig = BlockContext.current
     val customBC = new BlockContext() {
-      override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
+      override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
     }
 
     val bc = getBlockContext({
@@ -768,7 +768,7 @@ class BlockContexts extends TestBase {
   def testPopCustom(): Unit = {
     val orig = BlockContext.current
     val customBC = new BlockContext() {
-      override def blockOn[T](thunk: =>T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
+      override def blockOn[T](thunk: => T)(implicit permission: CanAwait): T = orig.blockOn(thunk)
     }
 
     val bc = getBlockContext({

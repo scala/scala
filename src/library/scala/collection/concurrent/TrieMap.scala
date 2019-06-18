@@ -944,7 +944,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     *  @param op     the expression that computes the value
     *  @return       the newly added value
     */
-  override def getOrElseUpdate(k: K, op: =>V): V = {
+  override def getOrElseUpdate(k: K, op: => V): V = {
     val hc = computeHash(k)
     lookuphc(k, hc) match {
       case INodeBase.NO_SUCH_ELEMENT_SENTINEL =>

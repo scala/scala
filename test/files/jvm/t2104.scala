@@ -13,16 +13,16 @@ object Test
   import java.io.{ File => JFile }
   import java.io.FileWriter
   import io.Source
-  def overwrite(file: JFile,w: FileWriter=>Unit): Unit = {
+  def overwrite(file: JFile, w: FileWriter => Unit): Unit = {
     val fw=new FileWriter(file)
     w(fw)
     fw.close
   }
-  def delete_after(f: JFile,g: Source=>Unit) = {
+  def delete_after(f: JFile, g: Source => Unit) = {
     g(Source.fromFile(f))
     f.delete
   }
-  def store_tempfile(f: FileWriter=>Unit)(implicit name:String) : JFile = {
+  def store_tempfile(f: FileWriter => Unit)(implicit name: String) : JFile = {
     val tp=JFile.createTempFile(name,null)
     overwrite(tp,f)
     tp
@@ -36,13 +36,13 @@ object Test
     if (n==0) List(Nil)
     else {
       val sufs=all_strings(n-1)
-      chars.flatMap((c)=>sufs.map(c :: _))
+      chars.flatMap((c) => sufs.map(c :: _))
     }
   }
   def test(n: Int): Unit = {
     for(l <- all_strings(n)) {
-      val tmp=store_tempfile((f)=>l.foreach(f.write(_)))
-      delete_after(tmp,(s)=>assert(s.toList == l))
+      val tmp=store_tempfile((f) => l.foreach(f.write(_)))
+      delete_after(tmp,(s) => assert(s.toList == l))
     }
   }
   def main(args: Array[String]): Unit = {

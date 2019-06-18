@@ -335,7 +335,7 @@ will issue an error signalling a divergent implicit expansion.
 Implicit parameters and methods can also define implicit conversions
 called views. A _view_ from type $S$ to type $T$ is
 defined by an implicit value which has function type
-`$S$=>$T$` or `(=>$S$)=>$T$` or by a method convertible to a value of that
+`$S$ => $T$` or `(=> $S$) => $T$` or by a method convertible to a value of that
 type.
 
 Views are applied in three situations:

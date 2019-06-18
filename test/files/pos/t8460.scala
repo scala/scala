@@ -9,7 +9,7 @@ trait UFunc {
 
 object UFunc {
   class UImpl[A, B, C]
-  implicit def implicitDoubleUTag[Tag, V, VR](implicit conv: V=>Double, impl: UImpl[Tag, Double, VR]):UImpl[Tag, V, VR] = ???
+  implicit def implicitDoubleUTag[Tag, V, VR](implicit conv: V => Double, impl: UImpl[Tag, Double, VR]):UImpl[Tag, V, VR] = ???
 
 }
 

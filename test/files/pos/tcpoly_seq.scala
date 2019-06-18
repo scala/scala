@@ -153,8 +153,8 @@ trait HOSeq {
     Subseq <: Seq[T]
 
 
-    def map[K](f: T=>K): MapResult[K]
-    def filter(f: T=>Boolean): FilterResult
+    def map[K](f: T => K): MapResult[K]
+    def filter(f: T => Boolean): FilterResult
     def subseq(from: Int, to: Int): Subseq
     def flatMap[S <: Seq[K], K](f: T => S): S#Concat  // legal?
     def concat(others: Seq[T]): Concat

@@ -58,8 +58,8 @@ class BitSetTest {
     assert(m.map(i => i + 1).isInstanceOf[BitSet])
 
     val im = collection.immutable.BitSet(1)
-    assert(im.map(i=>i.toLong).isInstanceOf[collection.immutable.TreeSet[Long]])
-    assert(im.map(i=>i + 1).isInstanceOf[collection.immutable.BitSet])
+    assert(im.map(i=> i.toLong).isInstanceOf[collection.immutable.TreeSet[Long]])
+    assert(im.map(i=> i + 1).isInstanceOf[collection.immutable.BitSet])
 
     // SI-10879
     assert(m.flatMap(i => Seq(i.toLong)).isInstanceOf[TreeSet[Long]])

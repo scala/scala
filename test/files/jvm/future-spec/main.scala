@@ -42,12 +42,12 @@ trait MinimalScalaTest extends Output with Features with Vigil {
 
   implicit def stringops(s: String) = new {
 
-    def should[U](snippets: =>U) = {
+    def should[U](snippets: => U) = {
       bufferPrintln(s + " should:")
       snippets
     }
 
-    def in[U](snippet: =>U) = {
+    def in[U](snippet: => U) = {
       try {
         bufferPrintln("- " + s)
         snippet
@@ -69,7 +69,7 @@ trait MinimalScalaTest extends Output with Features with Vigil {
 
   }
 
-  def intercept[T <: Throwable: Manifest](body: =>Any): T = {
+  def intercept[T <: Throwable: Manifest](body: => Any): T = {
     try {
       body
       throw new Exception("Exception of type %s was not thrown".format(manifest[T]))

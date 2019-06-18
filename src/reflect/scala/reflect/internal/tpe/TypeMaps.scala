@@ -177,7 +177,7 @@ private[internal] trait TypeMaps {
       *  The default is to transform the tree with
       *  TypeMapTransformer.
       */
-    def mapOver(tree: Tree, giveup: ()=>Nothing): Tree =
+    def mapOver(tree: Tree, giveup: () => Nothing): Tree =
       (new TypeMapTransformer).transform(tree)
 
     /** This transformer leaves the tree alone except to remap
@@ -615,7 +615,7 @@ private[internal] trait TypeMaps {
     // was touched. This takes us to one allocation per AsSeenFromMap rather
     // than an allocation on every call to mapOver, and no extra work when the
     // tree only has its types remapped.
-    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
+    override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
       if (isStablePrefix)
         annotationArgRewriter transform tree
       else {
@@ -816,7 +816,7 @@ private[internal] trait TypeMaps {
         }
       }
     }
-    override def mapOver(tree: Tree, giveup: ()=>Nothing): Tree = {
+    override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
       mapTreeSymbols.transform(tree)
     }
   }
@@ -969,7 +969,7 @@ private[internal] trait TypeMaps {
     }
 
     //AM propagate more info to annotations -- this seems a bit ad-hoc... (based on code by spoon)
-    override def mapOver(arg: Tree, giveup: ()=>Nothing): Tree = {
+    override def mapOver(arg: Tree, giveup: () => Nothing): Tree = {
       // TODO: this should be simplified; in the stable case, one can
       // probably just use an Ident to the tree.symbol.
       //

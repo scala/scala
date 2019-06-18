@@ -46,7 +46,7 @@ object CtrieTest extends Properties("concurrent.TrieMap") {
     threads map (_.result)
   }
 
-  def spawn[T](body: =>T): { def get: T } = {
+  def spawn[T](body: => T): { def get: T } = {
     val t = new Thread {
       setName("SpawnThread")
       private var res: T = _

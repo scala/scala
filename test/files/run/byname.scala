@@ -29,7 +29,7 @@ test("old by name s", 3, testOldByNameS(2))
 def testRegThenByName(x: Int, y: => Int): Int = x + y
 test("reg then by name", 7, testRegThenByName(3, 2 * 2))
 
-val testRegThenByNameS: (Int, =>Int) => Int = testRegThenByName _
+val testRegThenByNameS: (Int, => Int) => Int = testRegThenByName _
 test("reg then by name s", 8, testRegThenByNameS(2, 12 / 2))
 
 def testVarargs(x: Int*) = x.reduceLeft((x: Int, y: Int) => x + y)

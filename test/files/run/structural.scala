@@ -37,7 +37,7 @@ object test1 {
     def r: Array[Unit] = Array((), ())
     def s: Array[String] = Array("one", "two")
     def t: Array[Tata] = Array(t1, t2)
-    def u[T](f: T=>T, v:T): T = f(v)
+    def u[T](f: T => T, v: T): T = f(v)
     var v = 4
     var w = 11
     val x = t1
@@ -64,7 +64,7 @@ object test1 {
     def r: Array[Unit]
     def s: Array[String]
     def t: Array[Tata]
-    def u[T](f: T=>T, v:T): T
+    def u[T](f: T => T, v: T): T
     var v: Int
     val y: Tata
   }

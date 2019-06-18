@@ -339,7 +339,7 @@ trait Commands {
   }
 
   /** A property that runs the given actions in the given SUT */
-  private def runActions(sut: Sut, as: Actions, finalize : =>Unit): Prop = {
+  private def runActions(sut: Sut, as: Actions, finalize: => Unit): Prop = {
     try{
     val (p1, s, rs1) = runSeqCmds(sut, as.s, as.seqCmds)
     val l1 = s"initialstate = ${as.s}\nseqcmds = ${prettyCmdsRes(as.seqCmds zip rs1)}"

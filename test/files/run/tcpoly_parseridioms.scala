@@ -49,7 +49,7 @@ trait Parsers {
     }
   }
 
-  def apply_++[s, tt](fun: Parser[s => tt], arg: Parser[s]): Parser[tt] = lift[Tuple2[s=>tt, s], tt]({case (f, a) => f(a)})(sq(fun, arg))
+  def apply_++[s, tt](fun: Parser[s => tt], arg: Parser[s]): Parser[tt] = lift[Tuple2[s => tt, s], tt]({ case (f, a) => f(a) })(sq(fun, arg))
 
   def success[u](v: u): Parser[u] = new Parser[u] {
     def apply(in: Input) = Success(in, v)
@@ -73,8 +73,8 @@ trait Idioms {
   }
 
   class IdiomaticApp[idi[x], idiom <: Idiom[idi], x](i: idiom, a: idi[x]) {
-    // where x <: s=>t -- TODO can this be expressed without generalised constraints?
-    def <> [s, t](b: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(a.asInstanceOf[idi[s=>t]])(b))
+    // where x <: s => t -- TODO can this be expressed without generalised constraints?
+    def <> [s, t](b: idi[s]) = new IdiomaticApp[idi, idiom, t](i, i.liftedApply(a.asInstanceOf[idi[s => t]])(b))
 
     def |> : idi[x] = a
   }
@@ -90,7 +90,7 @@ trait ParserIdioms extends Parsers with Idioms {
     def pure[a](x: a): Parser[a] = success(x)
   }
 
-  implicit def parserIdiomFun[s, t](fun: s=>t): IdiomaticFunction[Parser, ParserIdiom.type, s, t] =
+  implicit def parserIdiomFun[s, t](fun: s => t): IdiomaticFunction[Parser, ParserIdiom.type, s, t] =
     new IdiomaticFunction[Parser, ParserIdiom.type, s, t](ParserIdiom, fun)
   implicit def parserIdiomTgt[s](tgt: s): IdiomaticTarget[Parser, ParserIdiom.type, s] =
     new IdiomaticTarget[Parser, ParserIdiom.type, s](ParserIdiom, tgt)
@@ -103,8 +103,8 @@ trait ParserIdioms extends Parsers with Idioms {
   // TODO: how can parserIdiom(curry2(_)) be omitted?
   def expr: Parser[Expr] = parserIdiomFun(curry2(Plus)) <| num <> num |>
 
-  implicit def curry2[s,t,u](fun: (s, t)=>u)(a: s)(b: t) = fun(a, b)
-  implicit def curry3[r,s,t,u](fun: (r,s, t)=>u)(a: r)(b: s)(c: t) = fun(a, b, c)
+  implicit def curry2[s, t, u](fun: (s, t) => u)(a: s)(b: t) = fun(a, b)
+  implicit def curry3[r, s, t, u](fun: (r, s, t) => u)(a: r)(b: s)(c: t) = fun(a, b, c)
 }
 
 object Test extends ParserIdioms with App {
