@@ -108,12 +108,6 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     }
   }
 
-  def usage(): Unit = {
-    println(RunnerSpec.programInfo.usage)
-    println(RunnerSpec.helpMsg)
-    sys.exit(1)
-  }
-
   def verbose(msg: => String): Unit =
     if (verbose) realSysErr.println(msg)
 
@@ -184,7 +178,10 @@ class AbstractRunner(val config: RunnerSpec.Config, protected final val testSour
     setUncaughtHandler
 
     if (config.optVersion) echo(versionMsg)
-    else if (config.optHelp) usage()
+    else if (config.optHelp) {
+      echo(s"Usage: $partestCmd [options] [test test ...]")
+      echo(RunnerSpec.helpMsg)
+    }
     else {
       val (individualTests, invalid) = config.parsed.residualArgs map (p => Path(p)) partition denotesTestPath
       if (invalid.nonEmpty) {
