@@ -35,3 +35,16 @@ trait X {
     ()
   }
 }
+
+object app {
+  def test(): Unit = {
+    val x = null.asInstanceOf[X]
+    x f0 ()
+    x.f0(())
+  }
+  def workaround(): Unit = {
+    import language.postfixOps
+    val x = null.asInstanceOf[X]
+    x f0
+  }
+}

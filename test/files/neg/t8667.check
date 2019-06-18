@@ -97,4 +97,10 @@ t8667.scala:33: error: 2 more arguments than can be applied to method f6: (i: In
 t8667.scala:34: error: 15 arguments but expected 12 for method f12: (i: Int, j: Int, k: Int, l: Int, m: Int, n: Int, o: Int, p: Int, q: Int, r: Int, s: Int, t: Int)Int
     f12(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
                                                ^
-33 errors found
+t8667.scala:42: error: can't supply unit value with infix notation because nullary method f0: ()Int takes no arguments; use dotted invocation instead: x.f0()
+    x f0 ()
+      ^
+t8667.scala:43: error: no arguments allowed for nullary method f0: ()Int
+    x.f0(())
+         ^
+35 errors found
