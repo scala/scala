@@ -64,5 +64,5 @@ import scala.annotation.meta._
  *  @see    [[scala.deprecatedOverriding]]
  *  @see    [[scala.deprecatedName]]
  */
-@getter @setter @beanGetter @beanSetter
+@getter @setter @beanGetter @beanSetter @field
 class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
