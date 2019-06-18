@@ -1,0 +1,5 @@
+xml-procinstr.scala:4: error: To compile XML syntax, the scala.xml package must be on the classpath.
+Please see https://github.com/scala/scala-xml for details.
+    <?xml-stylesheet href="style.xslt" type="text/xsl"?>
+    ^
+one error found

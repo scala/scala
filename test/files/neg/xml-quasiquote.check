@@ -1,0 +1,5 @@
+<quasiquote>:1: error: To compile XML syntax, the scala.xml package must be on the classpath.
+Please see https://github.com/scala/scala-xml for details.
+<sample xmlns='ns1'/>
+^
+one error found

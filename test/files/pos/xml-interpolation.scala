@@ -7,5 +7,7 @@ object foo {
       {bar}
       { bar }
       {{ bar }}
+      {{ 3 }}
+      {{3}}
     </root>
 }
