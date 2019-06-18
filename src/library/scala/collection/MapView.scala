@@ -53,7 +53,7 @@ trait MapView[K, +V]
 
   override def toString: String = super[View].toString
 
-  override protected[this] def className: String = "MapView"
+  override protected[this] def stringPrefix: String = "MapView"
 }
 
 object MapView extends MapViewFactory {
