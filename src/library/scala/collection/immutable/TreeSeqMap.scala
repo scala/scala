@@ -250,10 +250,7 @@ final class TreeSeqMap[K, +V] private (
     while (iter.hasNext) {
       val k = iter.next()
       val (_, v) = mapping(k)
-      if (pf.isDefinedAt((k, v))) {
-        val (k2, v2) = pf((k, v))
-        bdr.addOne(k2, v2)
-      }
+      pf.runWith({ case (k2, v2) => bdr.addOne(k2, v2) })((k, v))
     }
     bdr.result()
   }
