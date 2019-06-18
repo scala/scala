@@ -116,8 +116,6 @@ package util
  *  } yield x + y + z
  *  // Left(42.0), but unexpectedly a `Either[Double,String]`
  *  }}}
- *
- *  @since 2.7
  */
 sealed abstract class Either[+A, +B] extends Product with Serializable {
   /** Projects this `Either` as a `Left`.

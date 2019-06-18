@@ -19,8 +19,6 @@ package util.control
  *  [[scala.sys.SystemProperties]].
  *
  *  @note Since JDK 1.7, a similar effect can be achieved with `class Ex extends Throwable(..., writableStackTrace = false)`
- *
- *  @since    2.8
  */
 trait NoStackTrace extends Throwable {
   override def fillInStackTrace(): Throwable =

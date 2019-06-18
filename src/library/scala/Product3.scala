@@ -20,7 +20,6 @@ object Product3 {
 }
 
 /** Product3 is a Cartesian product of 3 components.
- *  @since 2.3
  */
 trait Product3[+T1, +T2, +T3] extends Any with Product {
   /** The arity of this product.

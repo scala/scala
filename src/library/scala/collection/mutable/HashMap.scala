@@ -19,7 +19,6 @@ import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable maps using a hashtable.
   *
-  *  @since 1
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#hash-tables "Scala's Collection Library overview"]]
   *  section on `Hash Tables` for more information.
   *

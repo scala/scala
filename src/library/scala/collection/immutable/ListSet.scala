@@ -34,7 +34,6 @@ import scala.collection.generic.DefaultSerializable
   *
   * @tparam A the type of the elements contained in this list set
   *
-  * @since 1
   * @define Coll ListSet
   * @define coll list set
   * @define mayNotTerminateInf
@@ -114,7 +113,6 @@ sealed class ListSet[A]
   * n elements will take O(n^2^) time. This makes the builder suitable only for a small number of
   * elements.
   *
-  * @since 1
   * @define Coll ListSet
   * @define coll list set
   */

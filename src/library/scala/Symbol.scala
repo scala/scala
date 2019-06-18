@@ -20,8 +20,6 @@ package scala
  *  For instance, the Scala term `'mysym` will
  *  invoke the constructor of the `Symbol` class in the following way:
  *  `Symbol("mysym")`.
- *
- *  @since   1.7
  */
 final class Symbol private (val name: String) extends Serializable {
   /** Converts this symbol to a string.

@@ -15,8 +15,6 @@ package scala.concurrent
 /** A `SyncChannel` allows one to exchange data synchronously between
  *  a reader and a writer thread. The writer thread is blocked until the
  *  data to be written has been read by a corresponding reader thread.
- *
- *  @since 2.0
  */
 @deprecated("Use `java.util.concurrent.Exchanger` instead.", since = "2.13.0")
 class SyncChannel[A] {

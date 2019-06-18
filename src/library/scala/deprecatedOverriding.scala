@@ -43,7 +43,6 @@ import scala.annotation.meta._
  *
  *  @param  message the message to print during compilation if the member was overridden
  *  @param  since   a string identifying the first version in which overriding was deprecated
- *  @since  2.10
  *  @see    [[scala.deprecated]]
  *  @see    [[scala.deprecatedInheritance]]
  *  @see    [[scala.deprecatedName]]

@@ -42,7 +42,6 @@ import scala.annotation.meta._
  *
  *  @param  message the message to print during compilation if the class was sub-classed
  *  @param  since   a string identifying the first version in which inheritance was deprecated
- *  @since  2.10
  *  @see    [[scala.deprecated]]
  *  @see    [[scala.deprecatedOverriding]]
  *  @see    [[scala.deprecatedName]]

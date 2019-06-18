@@ -13,7 +13,5 @@
 package scala.annotation.unchecked
 
 /** An annotation for type arguments for which one wants to suppress variance checking.
- *
- *  @since 2.7
  */
 final class uncheckedVariance extends scala.annotation.StaticAnnotation {}

@@ -26,7 +26,6 @@ import scala.util.hashing.MurmurHash3
   *
   *  @tparam T    type of the elements in this wrapped array.
   *
-  *  @since 2.8
   *  @define Coll `ArraySeq`
   *  @define coll wrapped array
   *  @define orderDependent

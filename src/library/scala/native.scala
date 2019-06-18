@@ -22,8 +22,6 @@ package scala
   * while discarding the method's body (if any). The body will be type checked if present.
   *
   * A method marked @native must be a member of a class, not a trait (since 2.12).
-  *
-  * @since 2.6
   */
 @deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
 class native extends scala.annotation.StaticAnnotation {}

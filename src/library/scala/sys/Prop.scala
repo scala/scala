@@ -18,8 +18,6 @@ package sys
  *  is not a requirement.
  *
  *  See `scala.sys.SystemProperties` for an example usage.
- *
- *  @since   2.9
  */
 trait Prop[+T] {
   /** The full name of the property, e.g., "java.awt.headless".

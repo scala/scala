@@ -15,9 +15,6 @@ package math
 
 import scala.language.implicitConversions
 
-/**
- * @since 2.8
- */
 trait Integral[T] extends Numeric[T] {
   def quot(x: T, y: T): T
   def rem(x: T, y: T): T

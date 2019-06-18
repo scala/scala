@@ -32,7 +32,6 @@ import scala.Predef.{ // unimport char-related implicit conversions to avoid tri
   *
   * $multipleResults
   *
-  * @since   2.7
   * @define Coll `mutable.IndexedSeq`
   * @define coll string builder
   * @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#stringbuilders "Scala's Collection Library overview"]]

@@ -61,8 +61,6 @@ package scala
  * | from optional [[Function]] | [[Function1.UnliftOps#unlift]] or [[Function.unlift]] | [[Predef.identity]] | [[Function1.UnliftOps#unlift]] |
  * | from an extractor | `{ case extractor(x) => x }` | `extractor.unapply _` | [[Predef.identity]] |
  *  &nbsp;
- *
- *  @since   1.0
  */
 trait PartialFunction[-A, +B] extends (A => B) { self =>
   import PartialFunction._
@@ -184,7 +182,6 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *  @param  x       the function argument
    *  @param default  the fallback function
    *  @return   the result of this function or fallback function application.
-   *  @since   2.10
    */
   def applyOrElse[A1 <: A, B1 >: B](x: A1, default: A1 => B1): B1 =
     if (isDefinedAt(x)) apply(x) else default(x)
@@ -202,7 +199,6 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *  @param   action  the action function
    *  @return  a function which maps arguments `x` to `isDefinedAt(x)`. The resulting function
    *           runs `action(this(x))` where `this` is defined.
-   *  @since   2.10
    */
   def runWith[U](action: B => U): A => Boolean = { x =>
     val z = applyOrElse(x, checkFallback[B])
@@ -221,8 +217,6 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
  *  }
  *  def onlyInt(v: Any): Option[Int] = condOpt(v) { case x: Int => x }
  *  }}}
- *
- *  @since   2.8
  */
 object PartialFunction {
 
@@ -354,7 +348,6 @@ object PartialFunction {
 
   /** The partial function with empty domain.
    *  Any attempt to invoke empty partial function leads to throwing [[scala.MatchError]] exception.
-   *  @since   2.10
    */
   def empty[A, B] : PartialFunction[A, B] = empty_pf
 

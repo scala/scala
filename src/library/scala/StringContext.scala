@@ -51,7 +51,6 @@ import scala.annotation.tailrec
  *  Here the `JsonHelper` extension class implicitly adds the `json` method to
  *  `StringContext` which can be used for `json` string literals.
  *
- *  @since 2.10.0
  *  @param   parts  The parts that make up the interpolated string,
  *                  without the expressions that get inserted by interpolation.
  */

@@ -27,8 +27,6 @@ import scala.reflect.ClassTag
   *
   *  @note Subclasses ''must'' override the `ofArray` protected method to return a more specific type.
   *
-  *  @since   2.13
-  *
   *  @tparam A  the type of this ArrayDeque's elements.
   *
   *  @define Coll `mutable.ArrayDeque`

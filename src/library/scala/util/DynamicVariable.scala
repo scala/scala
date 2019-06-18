@@ -37,8 +37,6 @@ import java.lang.InheritableThreadLocal
  *  of the stack of bindings from the parent thread, and
  *  from then on the bindings for the new thread
  *  are independent of those for the original thread.
- *
- *  @since   2.6
  */
 class DynamicVariable[T](init: T) {
   private[this] val tl = new InheritableThreadLocal[T] {

@@ -126,7 +126,6 @@ object Option {
  *  the implicit conversion tends to leave one with an Iterable in
  *  situations where one could have retained an Option.
  *
- *  @since   1.1
  *  @define none `None`
  *  @define some [[scala.Some]]
  *  @define option [[scala.Option]]
@@ -614,8 +613,6 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
 
 /** Class `Some[A]` represents existing values of type
  *  `A`.
- *
- *  @since   1.0
  */
 @SerialVersionUID(1234815782226070388L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class Some[+A](value: A) extends Option[A] {
@@ -624,8 +621,6 @@ final case class Some[+A](value: A) extends Option[A] {
 
 
 /** This case object represents non-existent values.
- *
- *  @since   1.0
  */
 @SerialVersionUID(5066590221178148012L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 case object None extends Option[Nothing] {

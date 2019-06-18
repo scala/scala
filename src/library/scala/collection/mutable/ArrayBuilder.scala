@@ -17,8 +17,6 @@ import scala.reflect.ClassTag
 
 /** A builder class for arrays.
  *
- *  @since 2.8
- *
  *  @tparam T    the type of the elements for the builder.
  */
 @SerialVersionUID(3L)
@@ -74,8 +72,6 @@ sealed abstract class ArrayBuilder[T]
 }
 
 /** A companion object for array builders.
- *
- *  @since 2.8
  */
 object ArrayBuilder {
 

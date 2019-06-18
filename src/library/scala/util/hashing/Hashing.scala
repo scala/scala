@@ -23,8 +23,6 @@ import scala.annotation.implicitNotFound
   *
   * Note: when using a custom `Hashing`, make sure to use it with the `Equiv`
   * such that if any two objects are equal, then their hash codes must be equal.
-  *
-  * @since 2.10
   */
 @implicitNotFound(msg = "No implicit Hashing defined for ${T}.")
 trait Hashing[T] extends Serializable {

@@ -28,7 +28,6 @@ import scala.collection.mutable.{Builder, StringBuilder}
   *
   *  @param self    a string contained within this wrapped string
   *
-  *  @since 2.8
   *  @define Coll `WrappedString`
   *  @define coll wrapped string
   */
@@ -124,8 +123,6 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
 }
 
 /** A companion object for wrapped strings.
-  *
-  *  @since 2.8
   */
 @SerialVersionUID(3L)
 object WrappedString extends SpecificIterableFactory[Char, WrappedString] {

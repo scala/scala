@@ -36,7 +36,6 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
   def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
 
   /** Class for the linked hash map entry, used internally.
-    *  @since 2.8
     */
   private[mutable] final class LinkedEntry[K, V](val key: K, var value: V)
     extends HashEntry[K, LinkedEntry[K, V]] {

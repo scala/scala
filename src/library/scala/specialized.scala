@@ -25,8 +25,6 @@ import Specializable._
  *  {{{
  *    class MyList[@specialized(Int, Double, Boolean) T] ..
  *  }}}
- *
- *  @since 2.8
  */
 // class tspecialized[T](group: Group[T]) extends scala.annotation.StaticAnnotation {
 

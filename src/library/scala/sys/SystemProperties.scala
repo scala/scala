@@ -27,8 +27,6 @@ import scala.language.implicitConversions
  *  will be caught and discarded.
  *  @define Coll `collection.mutable.Map`
  *  @define coll mutable map
- *
- *  @since   2.9
  */
 class SystemProperties
 extends mutable.AbstractMap[String, String] {

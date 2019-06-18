@@ -36,7 +36,6 @@ import scala.annotation.meta._
   *           ^
   *  }}}
   *
-  *  @since  2.8.1
   *  @see    [[scala.deprecated]]
   *  @see    [[scala.deprecatedInheritance]]
   *  @see    [[scala.deprecatedOverriding]]

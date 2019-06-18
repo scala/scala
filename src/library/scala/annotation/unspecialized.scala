@@ -15,8 +15,6 @@ package scala.annotation
 /** A method annotation which suppresses the creation of
  *  additional specialized forms based on enclosing specialized
  *  type parameters.
- *
- *  @since 2.10
  */
 @deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
 class unspecialized extends scala.annotation.StaticAnnotation

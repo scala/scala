@@ -60,8 +60,6 @@ import scala.util.control.NonFatal
  * ''Note:'': all Try combinators will catch exceptions and return failure unless otherwise specified in the documentation.
  *
  * `Try` comes to the Scala standard library after years of use as an integral part of Twitter's stack.
- *
- * @since 2.10
  */
 sealed abstract class Try[+T] extends Product with Serializable {
 

@@ -28,7 +28,6 @@ import scala.collection.mutable.Builder
   * @tparam V      the type of the values associated with the keys in this linked map.
   *
   * @version 2.13
-  * @since 2.13
   * @define coll immutable seq map
   * @define Coll `immutable.SeqMap`
   */

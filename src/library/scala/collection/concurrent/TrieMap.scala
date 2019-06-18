@@ -677,8 +677,6 @@ private[concurrent] case class RDCSS_Descriptor[K, V](old: INode[K, V], expected
   *  distributed across subsequent updates, thus making snapshot evaluation horizontally scalable.
   *
   *  For details, see: [[http://lampwww.epfl.ch/~prokopec/ctries-snapshot.pdf]]
-  *
-  *  @since 2.10
   */
 final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater[TrieMap[K, V], AnyRef], hashf: Hashing[K], ef: Equiv[K])
   extends scala.collection.mutable.AbstractMap[K, V]

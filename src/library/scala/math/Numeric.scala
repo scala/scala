@@ -17,9 +17,6 @@ import scala.collection.StringParsers
 import scala.language.implicitConversions
 import scala.util.Try
 
-/**
- * @since 2.8
- */
 object Numeric {
   @inline def apply[T](implicit num: Numeric[T]): Numeric[T] = num
 

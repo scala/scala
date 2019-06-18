@@ -232,8 +232,6 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
 
   /** Returns a LazyList of pseudorandomly chosen alphanumeric characters,
    *  equally chosen from A-Z, a-z, and 0-9.
-   *
-   *  @since 2.8
    */
   @migration("`alphanumeric` returns a LazyList instead of a Stream", "2.13.0")
   def alphanumeric: LazyList[Char] = {
@@ -249,8 +247,6 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
 
 /** The object `Random` offers a default implementation
  *  of scala.util.Random and random-related convenience methods.
- *
- *  @since 2.8
  */
 object Random extends Random {
 

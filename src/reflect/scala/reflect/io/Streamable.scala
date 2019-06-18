@@ -24,8 +24,6 @@ import scala.annotation.tailrec
 
 /** Traits for objects which can be represented as Streams.
  *
- *  @since  2.8
- *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object Streamable {

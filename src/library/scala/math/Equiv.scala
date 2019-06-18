@@ -30,8 +30,6 @@ import scala.language.higherKinds
  *    1. symmetric: `equiv(x, y) == equiv(y, x)` for any `x` and `y` of type `T`.
  *    1. transitive: if `equiv(x, y) == true` and `equiv(y, z) == true`, then
  *       `equiv(x, z) == true` for any `x`, `y`, and `z` of type `T`.
- *
- *  @since 2.7
  */
 
 trait Equiv[T] extends Any with Serializable {

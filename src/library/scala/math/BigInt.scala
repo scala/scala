@@ -16,9 +16,6 @@ package math
 import java.math.BigInteger
 import scala.language.implicitConversions
 
-/**
- *  @since 2.1
- */
 object BigInt {
 
   private[this] val minCached = -1024

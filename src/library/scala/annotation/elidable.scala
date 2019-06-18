@@ -75,8 +75,6 @@ package scala.annotation
  *     (O: C).f() // elided if compiled with `-Xelide-below 1`
  *   }
  * }}}
- *
- *  @since    2.8
  */
 final class elidable(final val level: Int) extends scala.annotation.StaticAnnotation
 
@@ -88,8 +86,6 @@ final class elidable(final val level: Int) extends scala.annotation.StaticAnnota
  *  (Select(Level, Select(FINEST, Apply(intValue, Nil))))
  *  }}}
  *  instead of the number `300`.
- *
- *  @since 2.8
  */
 object elidable {
   /** The levels `ALL` and `OFF` are confusing in this context because
