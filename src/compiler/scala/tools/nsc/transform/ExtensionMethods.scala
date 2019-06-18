@@ -23,7 +23,6 @@ import scala.collection.mutable
  * methods in a value class, except parameter or super accessors, or constructors.
  *
  *  @author Martin Odersky
- *  @version 2.10
  */
 abstract class ExtensionMethods extends Transform with TypingTransformers {
 

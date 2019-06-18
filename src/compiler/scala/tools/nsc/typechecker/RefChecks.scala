@@ -43,7 +43,6 @@ import transform.Transform
  *  </ul>
  *
  *  @author  Martin Odersky
- *  @version 1.0
  *
  *  @todo    Check whether we always check type parameter bounds.
  */

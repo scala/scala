@@ -9,7 +9,7 @@
  package scala.runtime;
 
  import scala.math.ScalaNumber;
-@@ -44,37 +44,54 @@
+@@ -43,37 +43,54 @@
 
  /* BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING ... BOXING */
 

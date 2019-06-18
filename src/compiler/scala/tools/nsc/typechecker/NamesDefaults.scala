@@ -20,7 +20,6 @@ import PartialFunction.{ cond => when }
 
 /**
  *  @author Lukas Rytz
- *  @version 1.0
  */
 trait NamesDefaults { self: Analyzer =>
 

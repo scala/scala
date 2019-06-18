@@ -39,6 +39,5 @@ trait CommonRunner {
 /** An object that runs another object specified by name.
  *
  *  @author  Lex Spoon
- *  @version 1.1, 2007/7/13
  */
 object ObjectRunner extends CommonRunner

@@ -21,7 +21,6 @@ import scala.reflect.internal.util.ListOfNil
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 trait Namers extends MethodSynthesis {
   self: Analyzer =>

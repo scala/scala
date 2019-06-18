@@ -17,7 +17,6 @@ import java.io.Writer
 /** A Writer that writes onto the Scala Console.
  *
  *  @author  Lex Spoon
- *  @version 1.0
  */
 class ConsoleWriter extends Writer {
   def close() = flush()

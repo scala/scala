@@ -27,7 +27,6 @@ import scala.reflect.internal.util.StringOps.splitWhere
  *  who understands this part better wants to give it a shot, please do!
  *
  *  @author  Burak Emir
- *  @version 1.0
  */
 abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   val global: Global

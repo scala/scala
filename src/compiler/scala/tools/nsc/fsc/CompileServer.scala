@@ -27,7 +27,6 @@ import scala.util.Properties
  *  that it can respond more quickly.
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
   lazy val compileSocket: CompileSocket = CompileSocket

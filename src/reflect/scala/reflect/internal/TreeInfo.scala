@@ -17,10 +17,6 @@ package internal
 import Flags._
 import scala.annotation.tailrec
 
-/** This class ...
- *
- *  @version 1.0
- */
 abstract class TreeInfo {
   val global: SymbolTable
 

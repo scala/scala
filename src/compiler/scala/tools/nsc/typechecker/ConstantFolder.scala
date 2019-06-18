@@ -19,7 +19,6 @@ import java.lang.ArithmeticException
 /** This class ...
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 abstract class ConstantFolder {
 

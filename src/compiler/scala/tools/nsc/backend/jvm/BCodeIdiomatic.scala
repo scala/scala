@@ -24,7 +24,6 @@ import scala.tools.nsc.backend.jvm.GenBCode._
  *  A high-level facade to the ASM API for bytecode generation.
  *
  *  @author  Miguel Garcia, http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded
- *  @version 1.0
  *
  */
 abstract class BCodeIdiomatic {

@@ -21,7 +21,6 @@ import scala.annotation.tailrec
 /** Perform tail recursive call elimination.
  *
  *  @author Iulian Dragos
- *  @version 1.0
  */
 abstract class TailCalls extends Transform {
   import global._                     // the global environment
@@ -51,7 +50,6 @@ abstract class TailCalls extends Transform {
    * A Tail Call Transformer
    *
    * @author     Erik Stenman, Iulian Dragos
-   * @version    1.1
    *
    * What it does:
    * <p>

@@ -35,7 +35,6 @@ trait CompileOutputCommon {
  *  communication for the fast Scala compiler.
  *
  *  @author  Martin Odersky
- *  @version 1.0
  */
 abstract class SocketServer(fixPort: Int = 0) extends CompileOutputCommon {
   def shutdown: Boolean

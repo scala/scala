@@ -29,8 +29,6 @@ import scala.reflect.internal.JDK9Reflectors
  *  it is for performance: we come through here a lot on every run.  Be careful
  *  about changing it.
  *
- *  @version 2.0,
- *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object ZipArchive {

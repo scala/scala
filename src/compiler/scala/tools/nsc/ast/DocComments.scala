@@ -20,7 +20,6 @@ import scala.collection.mutable
 
 /*
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait DocComments { self: Global =>
 

@@ -33,7 +33,6 @@ import PartialFunction.cond
 /** This trait provides methods to assign types to trees.
  *
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait Typers extends Adaptations with Tags with TypersTracking with PatternTypers {
   self: Analyzer =>

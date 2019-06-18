@@ -40,7 +40,6 @@ import java.io.IOException
  *  }}}
  *
  *  @author  Lex Spoon
- *  @version 1.0, 15/05/2006
  *  @todo    It would be better if error output went to stderr instead
  *           of stdout...
  */

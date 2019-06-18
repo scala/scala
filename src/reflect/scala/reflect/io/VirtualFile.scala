@@ -18,8 +18,6 @@ import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, InputStream, Outpu
 
 /** This class implements an in-memory file.
  *
- *  @version 1.0, 23/03/2004
- *
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 class VirtualFile(val name: String, override val path: String) extends AbstractFile {

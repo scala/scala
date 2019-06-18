@@ -19,7 +19,6 @@ import java.lang.System.{lineSeparator => EOL}
 
 /** This object provides utility methods to extract elements
  *  from Strings.
- *  @version 1.0
  */
 trait StringOps {
   def oempty(xs: String*)        = xs filterNot (x => x == null || x == "")

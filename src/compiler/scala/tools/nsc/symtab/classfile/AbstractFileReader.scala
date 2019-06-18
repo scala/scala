@@ -25,7 +25,6 @@ import scala.tools.nsc.io.AbstractFile
  * This class reads files byte per byte. Only used by ClassFileParser
  *
  * @author Philippe Altherr
- * @version 1.0, 23/03/2004
  */
 final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
   @deprecated("Use other constructor", "2.13.0")

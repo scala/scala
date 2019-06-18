@@ -33,7 +33,6 @@ import scala.util.{Failure, Success, Try}
  *  }}}
  *
  *  @author Lex Spoon
- *  @version 1.0, 2007-5-21
  */
 abstract class Plugin {
   /** The name of this plugin */
@@ -89,7 +88,6 @@ abstract class Plugin {
 /** ...
  *
  *  @author Lex Spoon
- *  @version 1.0, 2007-5-21
  */
 object Plugin {
 

@@ -23,8 +23,7 @@ import scala.math.ScalaNumber;
   *   - The generalised comparison method to be used when an object may
   *     be a boxed value.
   *   - Standard value operators for boxed number and quasi-number values.
-  *
-  * @version 2.0 */
+  */
 public final class BoxesRunTime
 {
     private static final int CHAR = 0, /* BYTE = 1, SHORT = 2, */ INT = 3, LONG = 4, FLOAT = 5, DOUBLE = 6, OTHER = 7;

@@ -31,7 +31,6 @@ import scala.annotation.tailrec
  * @see EntryTags.scala for symbol table attribute format.
  *
  * @author Martin Odersky
- * @version 1.0
  */
 abstract class Pickler extends SubComponent {
   import global._

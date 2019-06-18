@@ -31,7 +31,6 @@ import scala.annotation.tailrec
  * way, useful for debugging and understanding.
  *
  * @author Iulian Dragos
- * @version 1.0
  */
 abstract class TreeBrowsers {
   val global: Global
@@ -125,7 +124,6 @@ abstract class TreeBrowsers {
    * displaying information
    *
    * @author Iulian Dragos
-   * @version 1.0
    */
   class BrowserFrame(phaseName: String = "unknown") {
     try {
@@ -669,7 +667,6 @@ object TreeBrowsers {
     * of Wadler's adaptation of Hughes' pretty-printer.
     *
     * @author Michel Schinz
-    * @version 1.0
     */
   abstract class Document {
     def ::(hd: Document): Document = DocCons(hd, this)

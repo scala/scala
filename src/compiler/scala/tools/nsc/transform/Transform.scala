@@ -21,7 +21,6 @@ package transform
  *  </p>
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 trait Transform extends SubComponent {
 

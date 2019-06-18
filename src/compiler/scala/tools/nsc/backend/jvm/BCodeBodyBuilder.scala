@@ -25,7 +25,6 @@ import scala.tools.nsc.backend.jvm.GenBCode._
 /*
  *
  *  @author  Miguel Garcia, http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
- *  @version 1.0
  *
  */
 abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
