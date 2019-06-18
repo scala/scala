@@ -36,9 +36,8 @@ object ReflectionUtils {
   }
   // Transforms an exception handler into one which will only receive the unwrapped
   // exceptions (for the values of wrap covered in unwrapThrowable.)
-  def unwrapHandler[T](pf: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] = {
-    case ex if pf isDefinedAt unwrapThrowable(ex)   => pf(unwrapThrowable(ex))
-  }
+  def unwrapHandler[T](pf: PartialFunction[Throwable, T]): PartialFunction[Throwable, T] =
+    pf.compose({ case ex => unwrapThrowable(ex) })
 
   def show(cl: ClassLoader): String = {
     import scala.language.reflectiveCalls
