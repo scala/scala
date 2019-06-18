@@ -173,7 +173,6 @@
     <modules>
       <module filepath="$PROJECT_DIR$/benchmarks.iml" fileurl="file://$PROJECT_DIR$/benchmarks.iml"/>
       <module filepath="$PROJECT_DIR$/compiler.iml" fileurl="file://$PROJECT_DIR$/compiler.iml"/>
-      <module filepath="$PROJECT_DIR$/compilerOptionsExporter.iml" fileurl="file://$PROJECT_DIR$/compilerOptionsExporter.iml"/>
       <module filepath="$PROJECT_DIR$/interactive.iml" fileurl="file://$PROJECT_DIR$/interactive.iml"/>
       <module filepath="$PROJECT_DIR$/junit.iml" fileurl="file://$PROJECT_DIR$/junit.iml"/>
       <module filepath="$PROJECT_DIR$/library.iml" fileurl="file://$PROJECT_DIR$/library.iml"/>
@@ -227,19 +226,6 @@
       <CLASSES>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-7.0.0-scala-1.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="compilerOptionsExporter-deps">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-7.0.0-scala-1.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-core/bundles/jackson-core-2.9.7.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-annotations/bundles/jackson-annotations-2.9.7.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-databind/bundles/jackson-databind-2.9.7.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/bundles/jackson-dataformat-yaml-2.9.7.jar!/" />
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.yaml/snakeyaml/bundles/snakeyaml-1.23.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />
