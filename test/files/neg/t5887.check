@@ -1,0 +1,13 @@
+t5887.scala:8: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
+  def g = try 42
+          ^
+t5887.scala:10: error: missing parameter type for expanded function
+The argument types of an anonymous function must be fully known. (SLS 8.5)
+Expected type was: ?
+  def h = List("x") map (s => try { case _ => 7 })
+                                  ^
+t5887.scala:10: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
+  def h = List("x") map (s => try { case _ => 7 })
+                              ^
+two warnings found
+one error found

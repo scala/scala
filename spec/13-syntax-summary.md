@@ -143,7 +143,7 @@ grammar:
                       |  Expr1
   Expr1             ::=  ‘if’ ‘(’ Expr ‘)’ {nl} Expr [[semi] ‘else’ Expr]
                       |  ‘while’ ‘(’ Expr ‘)’ {nl} Expr
-                      |  ‘try’ (‘{’ Block ‘}’ | Expr) [‘catch’ ‘{’ CaseClauses ‘}’] [‘finally’ Expr]
+                      |  ‘try’ Expr [‘catch’ Expr] [‘finally’ Expr]
                       |  ‘do’ Expr [semi] ‘while’ ‘(’ Expr ‘)’
                       |  ‘for’ (‘(’ Enumerators ‘)’ | ‘{’ Enumerators ‘}’) {nl} [‘yield’] Expr
                       |  ‘throw’ Expr
