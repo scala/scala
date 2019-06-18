@@ -2674,24 +2674,23 @@ self =>
       val lhs = commaSeparated(stripParens(noSeq.pattern2()))
       val tp = typedOpt()
       val rhs =
-        if (tp.isEmpty || in.token == EQUALS) {
-          accept(EQUALS)
-          if (!tp.isEmpty && newmods.isMutable &&
-              (lhs.toList forall (_.isInstanceOf[Ident])) && in.token == USCORE) {
-            in.nextToken()
-            tp match {
-              case SingletonTypeTree(Literal(Constant(_))) =>
-                syntaxError(tp.pos, "default initialization prohibited for literal-typed vars", skipIt = false)
-              case _ =>
-            }
-            newmods = newmods | Flags.DEFAULTINIT
-            EmptyTree
-          } else {
-            expr()
-          }
-        } else {
+        if (!tp.isEmpty && in.token != EQUALS) {
           newmods = newmods | Flags.DEFERRED
           EmptyTree
+        } else {
+          accept(EQUALS)
+          expr() match {
+            case x if !tp.isEmpty && newmods.isMutable && lhs.forall(_.isInstanceOf[Ident]) && isWildcard(x) =>
+              tp match {
+                case SingletonTypeTree(Literal(Constant(_))) =>
+                  syntaxError(tp.pos, "default initialization prohibited for literal-typed vars", skipIt = false)
+                case _ =>
+              }
+              placeholderParams = placeholderParams.tail
+              newmods = newmods | Flags.DEFAULTINIT
+              EmptyTree
+            case x => x
+          }
         }
       def mkDefs(p: Tree, tp: Tree, rhs: Tree): List[Tree] = {
         val trees = {
