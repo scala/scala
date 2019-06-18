@@ -1231,6 +1231,11 @@ private[internal] trait TypeMaps {
         if (clazz.isPackageClass) tp
         else {
           val parents1 = parents mapConserve (this)
+          decls.foreach { decl =>
+            if (decl.hasAllFlags(METHOD | MODULE))
+              // HACK: undo flag Uncurry's flag mutation from prior run
+              decl.resetFlag(METHOD | STABLE)
+          }
           if (parents1 eq parents) tp
           else ClassInfoType(parents1, decls, clazz)
         }
