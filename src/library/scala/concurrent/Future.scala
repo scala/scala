@@ -676,7 +676,7 @@ object Future {
   *  @param executor  the execution context on which the `body` is evaluated in
   *  @return          the `Future` holding the result of the computation
   */
-  final def delegate[T](body: => Future[T])(implicit executor: ExecutionContext): Future[T] =
+  final def `delegate`[T](body: => Future[T])(implicit executor: ExecutionContext): Future[T] =
     unit.flatMap(_ => body)
 
   /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms, in essence, a `IterableOnce[Future[A]]`
