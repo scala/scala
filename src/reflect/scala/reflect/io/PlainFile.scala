@@ -14,6 +14,10 @@ package scala
 package reflect
 package io
 
+import java.nio.ByteBuffer
+import java.nio.file.StandardOpenOption
+import java.util
+
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 class PlainDirectory(givenPath: Directory) extends PlainFile(givenPath) {
   override def isDirectory = true

@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
 import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
 import Flags._
 import scala.annotation.tailrec
-import scala.reflect.io.{ AbstractFile, NoAbstractFile }
+import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import Variance._
 
 trait Symbols extends api.Symbols { self: SymbolTable =>
@@ -3030,7 +3030,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       loop(info)
     }
 
-    override def exceptions = for (ThrownException(tp) <- annotations) yield tp.typeSymbol
+    override def exceptions = {
+      rawInfo match {
+        case lt: LazyType if isJava =>
+          lt.javaThrownExceptions
+        case _ =>
+          for (ThrownException(tp) <- annotations) yield tp.typeSymbol
+      }
+    }
   }
   implicit val MethodSymbolTag = ClassTag[MethodSymbol](classOf[MethodSymbol])
 

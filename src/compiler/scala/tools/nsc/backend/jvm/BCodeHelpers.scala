@@ -415,7 +415,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def getAnnotPickle(jclassName: String, sym: Symbol): Option[AnnotationInfo] = {
       currentRun.symData get sym match {
-        case Some(pickle) if !sym.isModuleClass =>
+        case Some(pickle) if !sym.isModuleClass => // pickles for module classes are in the companion / mirror class
           val scalaAnnot = {
             val sigBytes = ScalaSigBytes(pickle.bytes.take(pickle.writeIndex))
             AnnotationInfo(sigBytes.sigAnnot, Nil, (nme.bytes, sigBytes) :: Nil)
