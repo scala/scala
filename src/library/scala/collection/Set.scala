@@ -43,8 +43,6 @@ trait Set[A]
 
   override protected[this] def stringPrefix: String = "Set"
 
-  override def map[B](f: A => B): Iterable[B] = super.map(f)
-
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
 }
 
@@ -106,6 +104,14 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
       }
 
       itr.next()
+    }
+  }
+
+  override def map[B](f: A => B): List[B] = {
+    {
+      var result: List[B] = List()
+      while (iterator.hasNext) result = result :+ f(iterator.next())
+      result
     }
   }
 
