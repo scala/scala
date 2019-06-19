@@ -9,6 +9,7 @@
       <sourceFolder url="file://$MODULE_DIR$/../../test/benchmarks/src/main/java" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../test/benchmarks/src/main/scala-2.13/scala" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/../../test/benchmarks/src/main/scala-2.13/java" isTestSource="false" />
+      <excludeFolder url="file://$MODULE_DIR$/../../test/benchmarks/target" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
