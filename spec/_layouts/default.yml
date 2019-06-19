@@ -33,7 +33,7 @@
   <header>
     <nav id="chapters">
       <a href="{{site.baseurl}}/" title="Table of Contents">Scala {{ site.thisScalaVersion }}</a>
-      <a id="github" href="https://github.com/scala/scala/tree/2.12.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
+      <a id="github" href="https://github.com/scala/scala/tree/2.13.x/spec"><img src="public/images/github-logo@2x.png" alt="Edit at GitHub"></a>
       {% assign sorted_pages = site.pages | sort:"name" %}
       {% for post in sorted_pages %}
         {% if post.chapter >= 0 %}
