@@ -1,11 +1,12 @@
 # Scala library benchmarks
 
-This directory is a standalone sbt project, within the Scala project,
-that makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
+This directory is used by the `bench` subproject of the Scala sbt build.
+It makes use of the [sbt plugin](https://github.com/ktoso/sbt-jmh) for [JMH](http://openjdk.java.net/projects/code-tools/jmh/).
 
 ## Running a benchmark
 
-The benchmarks require first building Scala into `../../build/pack`.
+Benchmarks are built with the bootstrap compiler ("starr") using the library built from the `library` project ("quick").
+If you want to test compiler changes you need to bootstrap with the new compiler.
 
 You'll then need to know the fully-qualified name of the benchmark runner class.
 The benchmarking classes are organized under `src/main/scala`,
@@ -14,12 +15,12 @@ Assuming that we're benchmarking `scala.collection.mutable.OpenHashMap`,
 the benchmark runner would likely be named `scala.collection.mutable.OpenHashMapRunner`.
 Using this example, one would simply run
 
-    jmh:runMain scala.collection.mutable.OpenHashMapRunner
+    bench/jmh:runMain scala.collection.mutable.OpenHashMapRunner
 
-in sbt, run _from this directory_ (`test/benchmarks`).
+in the Scala sbt build.
 
-The JMH results can be found under `target/jmh-results/`.
-`target` gets deleted on an sbt `clean`,
+The JMH results can be found under `../../target/jmh-results/` (i.e. the main Scala build's `target`,
+not the one that contains the benchmark class files). `jmh-results` gets deleted on an sbt `bench/clean`,
 so you should copy these files out of `target` if you wish to preserve them.
 
 ## Creating a benchmark and runner
@@ -30,9 +31,9 @@ should that be necessary for benchmarking.
 
 There are two types of classes in the source directory:
 those suffixed `Benchmark` and those suffixed `Runner`.
-The former are benchmarks that can be run directly using `jmh:run`;
+The former are benchmarks that can be run directly using `bench/jmh:run`;
 however, they are normally run from a corresponding class of the latter type,
-which is run using `jmh:runMain` (as described above).
+which is run using `bench/jmh:runMain` (as described above).
 This …`Runner` class is useful for setting appropriate JMH command options,
 and for processing the JMH results into files that can be read by other tools, such as Gnuplot.
 
@@ -85,18 +86,3 @@ To show it for _all_ methods, add `-XX:+PrintAssembly`.
   * "[Anatomy of a flawed benchmark](http://www.ibm.com/developerworks/java/library/j-jtp02225/)"
 * [Doug Lea's JSR 166 benchmarks](http://gee.cs.oswego.edu/cgi-bin/viewcvs.cgi/jsr166/src/test/loops/)
 * "[Measuring performance](http://docs.scala-lang.org/overviews/parallel-collections/performance.html)" of Scala parallel collections
-
-## Legacy frameworks
-
-An older version of the benchmarking framework is still present in this directory, in the following locations:
-
-<dl>
-<dt><code>bench</code></dt>
-<dd>A script to run the old benchmarks.</dd>
-<dt><code>source.list</code></dt>
-<dd>A temporary file used by <code>bench</code>.</dd>
-<dt><code>src/scala/</code></dt>
-<dd>The older benchmarks, including the previous framework.</dd>
-</dl>
-
-Another, older set of benchmarks is present in `../benchmarking/`.
