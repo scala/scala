@@ -1,0 +1,1 @@
+class LocalImpl extends Cover
