@@ -43,6 +43,8 @@ trait Set[A]
 
   override protected[this] def stringPrefix: String = "Set"
 
+  override def map[B](f: A => B): Iterable[B] = super.map(f)
+
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
 }
 
