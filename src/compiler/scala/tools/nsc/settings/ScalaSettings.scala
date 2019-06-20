@@ -360,10 +360,10 @@ trait ScalaSettings extends AbsScalaSettings
         |  <sources>      Classes defined in source files compiled in the current compilation, either
         |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
-        |The setting accepts a list of patterns: `-opt-inline-from:p1:p2`. The setting can be passed
+        |The setting accepts a list of patterns: `-opt-inline-from:p1,p2`. The setting can be passed
         |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.
         |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
-        |For example, `a.**:!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |For example, `a.**,!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
         |
         |Note: on the command-line you might need to quote patterns containing `*` to prevent the shell
         |from expanding it to a list of files in the current directory.""".stripMargin))

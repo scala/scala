@@ -74,7 +74,7 @@ abstract class Plugin {
     true
   }
 
-  @deprecated("use Plugin#init instead", since="2.11.0")
+  @deprecatedOverriding("use Plugin#init instead", since="2.11.0")
   def processOptions(options: List[String], error: String => Unit): Unit = {
     if (!options.isEmpty) error(s"Error: $name takes no options")
   }
