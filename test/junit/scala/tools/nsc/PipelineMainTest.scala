@@ -5,7 +5,7 @@ import java.nio.charset.Charset
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
-import org.junit.{After, Before, Test}
+import org.junit.{After, Before, Ignore, Test}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -32,14 +32,17 @@ class PipelineMainTest {
 
   private def projectsBase = createDir(base, "projects")
 
+  @Ignore("scala/scala-dev#637")
   @Test def pipelineMainBuildsSeparate(): Unit = {
     check(allBuilds.map(_.projects))
   }
 
+  @Ignore("scala/scala-dev#637")
   @Test def pipelineMainBuildsCombined(): Unit = {
     check(List(allBuilds.flatMap(_.projects)))
   }
 
+  @Ignore("scala/scala-dev#637")
   @Test def pipelineMainBuildsJavaAccessor(): Unit = {
     // Tests the special case in Typer:::canSkipRhs to make outline typing descend into method bodies might
     // give rise to super accssors
