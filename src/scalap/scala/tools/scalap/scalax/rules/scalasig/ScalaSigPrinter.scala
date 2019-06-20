@@ -341,6 +341,8 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
         case _: Double => "scala.Double"
         case _: String => "java.lang.String"
         case c: Class[_] => "java.lang.Class[" + c.getComponentType.getCanonicalName.replace("$", ".") + "]"
+        case e: ExternalSymbol => e.parent.get.path
+        case tp: Type => "java.lang.Class[" + toString(tp, sep) + "]"
       })
       case TypeRefType(prefix, symbol, typeArgs) => sep + (symbol.path match {
         case "scala.<repeated>" => flags match {

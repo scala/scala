@@ -252,6 +252,8 @@ trait ScalaSettings extends AbsScalaSettings
   val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
   val YmacroClasspath = PathSetting       ("-Ymacro-classpath", "The classpath used to reflectively load macro implementations, default is the compilation classpath.", "")
 
+  val Youtline        = BooleanSetting    ("-Youtline", "Don't compile method bodies. Use together with `-Ystop-afer:pickler to generate the pickled signatures for all source files.").internalOnly()
+
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
 
@@ -360,10 +362,10 @@ trait ScalaSettings extends AbsScalaSettings
         |  <sources>      Classes defined in source files compiled in the current compilation, either
         |                 passed explicitly to the compiler or picked up from the `-sourcepath`
         |
-        |The setting accepts a list of patterns: `-opt-inline-from:p1:p2`. The setting can be passed
+        |The setting accepts a list of patterns: `-opt-inline-from:p1,p2`. The setting can be passed
         |multiple times, the list of patterns gets extended. A leading `!` marks a pattern excluding.
         |The last matching pattern defines whether a classfile is included or excluded (default: excluded).
-        |For example, `a.**:!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
+        |For example, `a.**,!a.b.**` includes classes in a and sub-packages, but not in a.b and sub-packages.
         |
         |Note: on the command-line you might need to quote patterns containing `*` to prevent the shell
         |from expanding it to a list of files in the current directory.""".stripMargin))

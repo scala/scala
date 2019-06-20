@@ -549,7 +549,7 @@ trait TypeDiagnostics {
         }
 
         if (t.tpe ne null) {
-          for (tp <- t.tpe if !treeTypes(tp)) {
+          for (tp <- t.tpe) if (!treeTypes(tp)) {
             // Include references to private/local aliases (which might otherwise refer to an enclosing class)
             val isAlias = {
               val td = tp.typeSymbolDirect
