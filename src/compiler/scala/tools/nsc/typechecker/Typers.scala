@@ -2115,7 +2115,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       sym.annotations.map(_.completeInfo())
       sym.filterAnnotations(_ != UnmappableAnnotation)
 
-      val tpt1 = checkNoEscaping.privates(this, sym, typedType(vdef.tpt))
+      val tpt1 = checkNoEscaping.privates(this, sym, transformedOr(vdef.tpt, typedType(vdef.tpt)))
       checkNonCyclic(vdef, tpt1)
 
       // allow trait accessors: it's the only vehicle we have to hang on to annotations that must be passed down to
@@ -2348,7 +2348,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (isRepeatedParamType(vparam1.symbol.tpe))
             StarParamNotLastError(vparam1)
 
-        val tpt1 = checkNoEscaping.privates(this, meth, typedType(ddef.tpt))
+        val tpt1 = checkNoEscaping.privates(this, meth, transformedOr(ddef.tpt, typedType(ddef.tpt)))
         checkNonCyclic(ddef, tpt1)
         ddef.tpt.setType(tpt1.tpe)
         val typedMods = typedModifiers(ddef.mods)

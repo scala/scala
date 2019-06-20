@@ -1338,7 +1338,11 @@ trait Namers extends MethodSynthesis {
 
       val resTpGiven =
         if (tpt.isEmpty) WildcardType
-        else typer.typedType(tpt).tpe
+        else {
+          val tptTyped = typer.typedType(tpt)
+          context.unit.transformed(tpt) = tptTyped
+          tptTyped.tpe
+        }
 
 
       // ignore missing types unless we can look to overridden method to recover the missing information
@@ -1720,7 +1724,11 @@ trait Namers extends MethodSynthesis {
 
             tptFromRhsUnderPt
           }
-        } else typer.typedType(tpt).tpe
+        } else {
+          val tptTyped = typer.typedType(tpt)
+          context.unit.transformed(tpt) = tptTyped
+          tptTyped.tpe
+        }
 
 //      println(s"val: $result / ${vdef.tpt.tpe} / ")
 
