@@ -64,7 +64,6 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
   }
 
   implicit val executor = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
-  val fileManager = ToolProvider.getSystemJavaCompiler.getStandardFileManager(null, null, null)
   def changeExtension(p: Path, newExtension: String): Path = {
     val fileName = p.getFileName.toString
     val changedFileName = fileName.lastIndexOf('.') match {
@@ -255,6 +254,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               p.fullCompile()
               Future.traverse(p.groups)(_.done.future)
             }
+            _ <- Future.traverse(dependsOn.getOrElse(p, Nil))(task => task.t.javaDone.future)
           } yield {
             p.javaCompile()
           }
@@ -294,6 +294,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               // Start javac after scalac has completely finished
               Future.traverse(p.groups)(_.done.future)
             }
+            _ <- Future.traverse(dependsOn.getOrElse(p, Nil))(task => task.t.javaDone.future)
           } yield {
             p.javaCompile()
           }
@@ -351,7 +352,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       writeChromeTrace(dir, projects)
     }
     deleteTempPickleCache()
-    true
+    !reporter.hasErrors
   }
 
   private def deleteTempPickleCache(): Unit = {
