@@ -305,6 +305,7 @@ abstract class TreeBrowsers {
         case _ =>
           str.append("tree.id: ").append(t.id)
           str.append("\ntree.pos: ").append(t.pos)
+          str.append(TreeInfo.attachments(t, "tree"))
           str.append("\nSymbol: ").append(TreeInfo.symbolText(t))
           str.append("\nSymbol owner: ").append(
             if ((t.symbol ne null) && t.symbol != NoSymbol)
@@ -523,12 +524,23 @@ abstract class TreeBrowsers {
       val s = t.symbol
 
       if ((s ne null) && (s != NoSymbol)) {
-        var str = s.flagString
-        if (s.isStaticMember) str = str + " isStatic "
-        (str + " annotations: " + s.annotations.mkString("", " ", "")
-          + (if (s.isTypeSkolem) "\ndeSkolemized annotations: " + s.deSkolemize.annotations.mkString("", " ", "") else ""))
+        val str = new StringBuilder(s.flagString)
+        if (s.isStaticMember) str ++= " isStatic "
+        str ++= " annotations: "
+        str ++= s.annotations.mkString("", " ", "")
+        if (s.isTypeSkolem) {
+          str ++= "\ndeSkolemized annotations: "
+          str ++= s.deSkolemize.annotations.mkString("", " ", "")
+        }
+        str ++= attachments(s, "")
+        str.toString
       }
       else ""
+    }
+
+    def attachments(t: Attachable, pre: String): String = {
+      if (t.attachments.isEmpty) ""
+      else t.attachments.all.mkString(s"\n$pre attachments:\n   ","\n   ","")
     }
   }
 
