@@ -180,7 +180,7 @@ abstract class SymbolPairs {
           val high    = nextEntry.sym
           val isMatch = matches(high) && { visited addEntry nextEntry ; true } // side-effect visited on all matches
 
-          // Advance if no match, or if the particular cursor is not intested in this pair
+          // Advance if no match, or if the particular cursor is not interested in this pair
           if (!isMatch || skipOwnerPair(low.owner, high.owner)) advanceNextEntry()
           else highSymbol = high
         }

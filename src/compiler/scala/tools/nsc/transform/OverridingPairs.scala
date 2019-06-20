@@ -40,10 +40,16 @@ abstract class OverridingPairs extends SymbolPairs {
      */
     override protected def matches(high: Symbol) = low.isType || (
          (low.owner != high.owner)     // don't try to form pairs from overloaded members
+      && !bothJavaOwnedAndEitherIsField(low, high)
       && !high.isPrivate               // private or private[this] members never are overridden
       && !exclude(low)                 // this admits private, as one can't have a private member that matches a less-private member.
       && (lowMemberType matches (self memberType high))
     ) // TODO we don't call exclude(high), should we?
+  }
+
+  private def bothJavaOwnedAndEitherIsField(low: Symbol, high: Symbol): Boolean = {
+    low.owner.isJavaDefined && high.owner.isJavaDefined &&
+      (low.isField || high.isField)
   }
 
   final class BridgesCursor(base: Symbol) extends Cursor(base) {

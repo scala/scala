@@ -1,0 +1,7 @@
+LocalImpl.scala:2: error: incompatible type in overriding
+private[package <empty>] var counts: Array[Int] (defined in class Cover);
+ found   : String
+ required: Array[Int]
+    override var counts: String = ""
+                 ^
+one error found
