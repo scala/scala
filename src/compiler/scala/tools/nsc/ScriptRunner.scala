@@ -82,7 +82,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
    *
    *  @return true if compilation and the handler succeeds, false otherwise.
    */
-  private def withCompiledScript(scriptFile: String)(handler: String => Boolean): Boolean = {
+  private def withCompiledScript(scriptFile: String)(handler: String => Option[Throwable]): Option[Throwable] = {
 
     /* Compiles the script file, and returns the directory with the compiled
      * class files, if the compilation succeeded.
@@ -100,7 +100,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 
     def hasClassToRun(d: Directory): Boolean = DirectoryClassPath(d.jfile).findClass(mainClass).isDefined
 
-    def withLatestJar(): Boolean = {
+    def withLatestJar(): Option[Throwable] = {
       /** Choose a jar filename to hold the compiled version of a script. */
       def jarFileFor(scriptFile: String) = File(
         if (scriptFile endsWith ".jar") scriptFile
@@ -109,7 +109,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
       val jarFile = jarFileFor(scriptFile)
       def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
 
-      def recompile() = {
+      def recompile(): Option[Throwable] = {
         jarFile.delete()
 
         compile match {
@@ -117,7 +117,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
             if (!hasClassToRun(compiledPath)) {
               // it compiled ok, but there is nothing to run;
               // running an empty script should succeed
-              true
+              None
             } else {
               try io.Jar.create(jarFile, compiledPath, mainClass)
               catch { case NonFatal(_) => jarFile.delete() }
@@ -129,7 +129,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
               // jar failed; run directly from the class files
               else handler(compiledPath.path)
             }
-          case _  => false
+          case _  => Some(ScriptCompileError)
         }
       }
 
@@ -143,7 +143,12 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     util.waitingForThreads {
       // either update the jar or don't use a cache jar at all, just use the class files, if they exist
       if (settings.save) withLatestJar()
-      else compile.exists(cp => !hasClassToRun(cp) || handler(cp.path))
+      else {
+        compile match {
+          case Some(cp) => if (hasClassToRun(cp)) handler(cp.path) else None
+          case _        => Some(ScriptCompileError)
+        }
+      }
     }
   }
 
@@ -151,12 +156,9 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
    *
    * @return true if execution succeeded, false otherwise
    */
-  private def runCompiled(compiledLocation: String, scriptArgs: List[String]): Boolean = {
+  private def runCompiled(compiledLocation: String, scriptArgs: List[String]): Option[Throwable] = {
     val cp = File(compiledLocation).toURL +: settings.classpathURLs
-    ObjectRunner.runAndCatch(cp, mainClass, scriptArgs) match {
-      case Some(e) => e.printStackTrace() ; false
-      case _       => true
-    }
+    ObjectRunner.runAndCatch(cp, mainClass, scriptArgs)
   }
 
   final def runScript(scriptFile: String, scriptArgs: List[String]): Option[Throwable] = {
@@ -165,10 +167,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     else if (!f.canRead) Some(new IOException(s"can't read: $scriptFile"))
     else if (f.isDirectory) Some(new IOException(s"can't compile a directory: $scriptFile"))
     else if (!settings.nc && !f.isFile) Some(new IOException(s"compile server requires a regular file: $scriptFile"))
-    else {
-      withCompiledScript(scriptFile) { runCompiled(_, scriptArgs) }
-      None
-    }
+    else withCompiledScript(scriptFile) { runCompiled(_, scriptArgs) }
   }
 
   final def runScriptText(command: String, scriptArgs: List[String]): Option[Throwable] = {
@@ -176,10 +175,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     // save the command to the file
     scriptFile writeAll command
 
-    try {
-      withCompiledScript(scriptFile.path) { runCompiled(_, scriptArgs) }
-      None
-    }
+    try withCompiledScript(scriptFile.path) { runCompiled(_, scriptArgs) }
     catch {
       case NonFatal(e) => Some(e)
     }
@@ -209,3 +205,5 @@ object ScriptRunner {
         loader.create[ScriptRunner](custom, settings.errorFn)(settings)
     }
 }
+
+object ScriptCompileError extends scala.util.control.ControlThrowable

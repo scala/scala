@@ -89,7 +89,8 @@ class MainGenericRunner {
       }
 
       runTarget() match {
-        case e @ Some(ex) => errorFn("", e)  // there must be a useful message of hope to offer here
+        case Some(ScriptCompileError) => false
+        case e @ Some(ex) => errorFn("", e)
         case _            => true
       }
     }
