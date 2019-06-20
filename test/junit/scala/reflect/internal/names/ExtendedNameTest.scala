@@ -96,10 +96,10 @@ abstract class ExtendedNameTest {
 
   @Test
   def checkSources2(): Unit = {
+    assertEquals(0, nameTable.size)
     lookupInRandom
   }
   def lookupInRandom = {
-    assertEquals(0, nameTable.size)
     val random = new Random()
     val size = sources.size
     val all = new Array[AnyRef](sources.length)
