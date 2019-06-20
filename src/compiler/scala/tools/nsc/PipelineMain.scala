@@ -28,9 +28,9 @@ import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.pickling.PickleBuffer
-import scala.reflect.internal.util.{BatchSourceFile, FakePos, Position}
+import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.{PlainNioFile, RootPath}
-import scala.tools.nsc.PipelineMain.{Pipeline, Traditional}
+import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
@@ -239,6 +239,43 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       }
     }
     strategy match {
+      case OutlineTypePipeline =>
+        projects.foreach { p: Task =>
+          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
+          val f = for {
+            _ <- depsReady
+            _ <- {
+              p.outlineCompile()
+              p.outlineDone.future
+            }
+            _ <- {
+              p.fullCompile()
+              Future.traverse(p.groups)(_.done.future)
+            }
+          } yield {
+            p.javaCompile()
+          }
+          f.onComplete { _ => p.compiler.close() }
+        }
+
+        awaitDone()
+
+        for (p <- projects) {
+          val dependencies = dependsOn(p).map(_.t)
+
+          def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
+
+          val maxOutlineCriticalPathMs = maxByOrZero(dependencies)(_.outlineCriticalPathMs)
+          p.outlineCriticalPathMs = maxOutlineCriticalPathMs + p.outlineTimer.durationMs
+          p.regularCriticalPathMs = maxOutlineCriticalPathMs + maxByOrZero(p.groups)(_.timer.durationMs)
+          p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
+        }
+
+        if (parallelism == 1) {
+          val criticalPath = projects.maxBy(_.regularCriticalPathMs)
+          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+        } else
+          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Pipeline =>
         projects.foreach { p =>
           val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
@@ -332,7 +369,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     def projectEvents(p: Task): List[String] = {
       val events = List.newBuilder[String]
       if (p.outlineTimer.durationMicros > 0d) {
-        val desc = "parser-to-pickler"
+        val desc = if (strategy == OutlineTypePipeline) "outline-type" else "parser-to-pickler"
         events += durationEvent(p.label, desc, p.outlineTimer)
         events += durationEvent(p.label, "pickle-export", p.pickleExportTimer)
       }
@@ -398,7 +435,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
     val groups: List[Group] = {
       val isScalaLibrary = files.exists(_.endsWith("Predef.scala"))
-      if (isScalaLibrary) {
+      if (strategy != OutlineTypePipeline || isScalaLibrary) {
         Group(files) :: Nil
       } else {
         command.settings.classpath.value = command.settings.outputDirs.getSingleOutput.get.toString + File.pathSeparator + command.settings.classpath.value
@@ -441,6 +478,32 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       case t: Throwable =>
         t.printStackTrace()
         throw t
+    }
+
+    def outlineCompile(): Unit = {
+      outlineTimer.start()
+      try {
+        log("scalac outline: start")
+        command.settings.Youtline.value = true
+        command.settings.stopAfter.value = List("pickler")
+        command.settings.Ymacroexpand.value = command.settings.MacroExpand.None
+        val run1 = new compiler.Run()
+        run1 compile files
+        registerPickleClassPath(command.settings.outputDirs.getSingleOutput.get.file.toPath, run1.symData)
+        outlineTimer.stop()
+        reporter.finish()
+        if (reporter.hasErrors) {
+          log("scalac outline: failed")
+          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
+        } else {
+          log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
+          outlineDone.complete(Success(()))
+        }
+      } catch {
+        case t: Throwable =>
+          t.printStackTrace()
+          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
+      }
     }
 
     def fullCompile(): Unit = {
@@ -536,8 +599,10 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               val msg = diagnostic.getMessage(Locale.getDefault)
               val source: JavaFileObject = diagnostic.getSource
               val path = Paths.get(source.toUri)
-              val sourceFile = new BatchSourceFile(new PlainNioFile(path))
-              val position = Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+              val position = if (diagnostic.getPosition == Diagnostic.NOPOS) NoPosition else {
+                val sourceFile = new BatchSourceFile(new PlainNioFile(path))
+                Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+              }
               diagnostic.getKind match {
                 case Kind.ERROR => reporter.error(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
@@ -608,6 +673,8 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 object PipelineMain {
   sealed abstract class BuildStrategy
 
+  /** Outline type check sources to compute type signatures an input to downstream compilation. Compile sources (optionally */
+  case object OutlineTypePipeline extends BuildStrategy
   /** Transport pickles as an input to downstream compilation. */
   case object Pipeline extends BuildStrategy
 
@@ -619,7 +686,7 @@ object PipelineMain {
                               stripExternalClassPath: Boolean, useTraditionalForLeaf: Boolean, logDir: Option[Path],
                               createReporter: (Settings => Reporter))
   def defaultSettings: PipelineSettings = {
-    val strategies = List(Pipeline, Traditional)
+    val strategies = List(OutlineTypePipeline, Pipeline, Traditional)
     val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
     val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", java.lang.Runtime.getRuntime.availableProcessors())
     val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")

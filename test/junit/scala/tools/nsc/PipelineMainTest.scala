@@ -40,6 +40,12 @@ class PipelineMainTest {
     check(List(allBuilds.flatMap(_.projects)))
   }
 
+  @Test def pipelineMainBuildsJavaAccessor(): Unit = {
+    // Tests the special case in Typer:::canSkipRhs to make outline typing descend into method bodies might
+    // give rise to super accssors
+    check(List(b5SuperAccessor.projects), altStrategies = List(OutlineTypePipeline))
+  }
+
   private val pipelineSettings = PipelineMain.defaultSettings.copy(
     useJars = true,
     parallelism = java.lang.Runtime.getRuntime.availableProcessors,
@@ -50,7 +56,7 @@ class PipelineMainTest {
     createReporter = ((s: Settings) => if (debug) new ConsoleReporter(s) else new StoreReporter())
   )
 
-  private def check(projectss: List[List[Build#Project]], altStrategies: List[BuildStrategy] = List(Pipeline)): Unit = {
+  private def check(projectss: List[List[Build#Project]], altStrategies: List[BuildStrategy] = List(Pipeline, OutlineTypePipeline)): Unit = {
     def build(strategy: BuildStrategy): Unit = {
       for (projects <- projectss) {
         val argsFiles = projects.map(_.argsFile(Nil))
@@ -72,7 +78,7 @@ class PipelineMainTest {
     }
   }
 
-  private lazy val allBuilds = List(m1, b2, b3, b4)
+  private lazy val allBuilds = List(m1, b2, b3, b4, b5SuperAccessor)
 
   private lazy val m1: Build = {
     val build = new Build(projectsBase, "m1")
@@ -167,6 +173,39 @@ class PipelineMainTest {
         |package b4.p2
         |class ScalaClient {
         |  def test(): b3.p1.JavaDefined[String] = null;
+        |}
+      """.stripMargin)
+    build
+  }
+
+  private lazy val b5SuperAccessor: Build = {
+    val build = new Build(projectsBase, "b5")
+    val p1 = build.project("p1")
+    p1.withSource("b5/p1/JavaProtectedMethod.java")(
+      """
+        |package b5.p1;
+        |public class JavaProtectedMethod {
+        |  protected String foo() { return "JavaProtectedMethod.foo"; }
+        |}
+      """.stripMargin)
+    p1.withSource("b5/p1/NeedSuperAccessor.scala")(
+      """
+        |package b5.p1
+        |trait NeedSuperAccessor extends JavaProtectedMethod {
+        |  protected override def foo = "NeedSuperAccessor.foo"
+        |  class Inner {
+        |    def test: Any = {
+        |      NeedSuperAccessor.super[JavaProtectedMethod].foo
+        |    }
+        |  }
+        |}
+      """.stripMargin)
+    val p2 = build.project("p2")
+    p2.classpath += p1.out
+    p2.withSource("b5/p2/ScalaSub.scala")(
+      """
+        |package b5.p2
+        |class ScalaSub extends b5.p1.NeedSuperAccessor {
         |}
       """.stripMargin)
     build
