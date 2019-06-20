@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.{ClassTag, classTag}
 
 @RunWith(classOf[JUnit4])
 class VectorTest {
@@ -91,10 +92,10 @@ class VectorTest {
       assertEquals(start, it.next())
     }
   }
-  def intercept[T <: Throwable: Manifest](fn: => Any): T = {
+  def intercept[T <: Throwable: ClassTag](fn: => Any): T = {
     try {
       fn
-      fail(s"expected a ${manifest[T].runtimeClass.getName} to be thrown")
+      fail(s"expected a ${classTag[T].runtimeClass.getName} to be thrown")
       ???
     } catch {
       case x: T => x
