@@ -3,6 +3,9 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../test">
+      <excludeFolder url="file://$MODULE_DIR$/../../test/jcstress/target" />
+      <excludeFolder url="file://$MODULE_DIR$/../../test/jcstress/project" />
+      <excludeFolder url="file://$MODULE_DIR$/../../test/macro-annot/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../test/junit" />
       <excludeFolder url="file://$MODULE_DIR$/../../test/scalacheck" />
     </content>
