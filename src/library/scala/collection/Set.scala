@@ -84,6 +84,11 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
     else new SubsetsItr(toIterable.to(IndexedSeq), len)
   }
 
+  override def map[B](f: A => B): CC[B] = {
+    warning("Possible information loss, only one f(x) will be in the result for different x with the same f(x) e.g. (x,y), x /= y && f x == f y")
+    super.map(f)
+  }
+
   /** An iterator over all subsets of this set.
     *
     *  @return     the iterator.
@@ -104,14 +109,6 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
       }
 
       itr.next()
-    }
-  }
-
-  override def map[B](f: A => B): List[B] = {
-    {
-      var result: List[B] = List()
-      while (iterator.hasNext) result = result :+ f(iterator.next())
-      result
     }
   }
 
