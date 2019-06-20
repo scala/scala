@@ -17,32 +17,28 @@ import java.lang.Thread.UncaughtExceptionHandler
 import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Path, Paths}
 import java.time.Instant
-import java.util.Collections
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.{Collections, Locale}
 
-import javax.tools.ToolProvider
+import javax.tools.Diagnostic.Kind
+import javax.tools.{Diagnostic, DiagnosticListener, JavaFileObject, ToolProvider}
 
 import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 import scala.reflect.internal.pickling.PickleBuffer
-import scala.reflect.internal.util.FakePos
-import scala.reflect.io.RootPath
-import scala.tools.nsc.PipelineMain.{BuildStrategy, Pipeline, Traditional}
+import scala.reflect.internal.util.{BatchSourceFile, FakePos, Position}
+import scala.reflect.io.{PlainNioFile, RootPath}
+import scala.tools.nsc.PipelineMain.{Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
 import scala.util.{Failure, Success, Try}
 
-class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy, argFiles: Seq[Path], useJars: Boolean) {
-  private val pickleCacheConfigured = System.getProperty("scala.pipeline.picklecache")
-  private val pickleCache: Path = {
-    if (pickleCacheConfigured == null) Files.createTempDirectory("scala.picklecache")
-    else {
-      Paths.get(pickleCacheConfigured)
-    }
-  }
+class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.PipelineSettings) {
+  import pipelineSettings._
+  private val pickleCache: Path = configuredPickleCache.getOrElse(Files.createTempDirectory("scala.picklecache"))
   private def cachePath(file: Path): Path = {
     val newExtension = if (useJars) ".jar" else ""
     changeExtension(pickleCache.resolve("./" + file).normalize(), newExtension)
@@ -120,7 +116,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
   }
 
 
-  def writeDotFile(dependsOn: mutable.LinkedHashMap[Task, List[Dependency]]): Unit = {
+  def writeDotFile(logDir: Path, dependsOn: mutable.LinkedHashMap[Task, List[Dependency]]): Unit = {
     val builder = new java.lang.StringBuilder()
     builder.append("digraph projects {\n")
     for ((p, deps) <- dependsOn) {
@@ -133,17 +129,16 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       }
     }
     builder.append("}\n")
-    val path = Paths.get("projects.dot")
+    val path = logDir.resolve("projects.dot")
     Files.write(path, builder.toString.getBytes(java.nio.charset.StandardCharsets.UTF_8))
-    println("Wrote project dependency graph to: " + path.toAbsolutePath)
+    reporter.echo("Wrote project dependency graph to: " + path.toAbsolutePath)
   }
 
   private case class Dependency(t: Task, isMacro: Boolean, isPlugin: Boolean)
 
   def process(): Boolean = {
-    println(s"parallelism = $parallelism, strategy = $strategy")
-
-    reporter = new ConsoleReporter(new Settings(scalacError))
+    reporter = createReporter(new Settings(scalacError))
+    reporter.echo(s"parallelism = $parallelism, strategy = $strategy")
 
     def commandFor(argFileArg: Path): Task = {
       val ss = new Settings(scalacError)
@@ -152,6 +147,8 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     }
 
     val projects: List[Task] = argFiles.toList.map(commandFor)
+    if (reporter.hasErrors) return false
+
     val numProjects = projects.size
     val produces = mutable.LinkedHashMap[Path, Task]()
     for (p <- projects) {
@@ -168,26 +165,26 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
     val externalClassPath = projects.iterator.flatMap(_.classPath).filter(p => !produces.contains(p) && Files.exists(p)).toSet
 
     if (strategy != Traditional) {
-      val exportTimer = new Timer
-      exportTimer.start()
-      for (entry <- externalClassPath) {
-        val extracted = cachePath(entry)
-        val sourceTimeStamp = Files.getLastModifiedTime(entry)
-        if (Files.exists(extracted) && Files.getLastModifiedTime(extracted) == sourceTimeStamp) {
-          // println(s"Skipped export of pickles from $entry to $extracted (up to date)")
-        } else {
-          PickleExtractor.process(entry, extracted)
-          Files.setLastModifiedTime(extracted, sourceTimeStamp)
-          println(s"Exported pickles from $entry to $extracted")
-          Files.setLastModifiedTime(extracted, sourceTimeStamp)
+      if (stripExternalClassPath) {
+        val exportTimer = new Timer
+        exportTimer.start()
+        for (entry <- externalClassPath) {
+          val extracted = cachePath(entry)
+          val sourceTimeStamp = Files.getLastModifiedTime(entry)
+          if (Files.exists(extracted) && Files.getLastModifiedTime(extracted) == sourceTimeStamp) {
+            // println(s"Skipped export of pickles from $entry to $extracted (up to date)")
+          } else {
+            PickleExtractor.process(entry, extracted)
+            Files.setLastModifiedTime(extracted, sourceTimeStamp)
+            reporter.echo(s"Exported pickles from $entry to $extracted")
+            Files.setLastModifiedTime(extracted, sourceTimeStamp)
+          }
+          strippedAndExportedClassPath(entry) = extracted
         }
-        strippedAndExportedClassPath(entry) = extracted
+        exportTimer.stop()
+        reporter.echo(f"Exported external classpath in ${exportTimer.durationMs}%.0f ms")
       }
-      exportTimer.stop()
-      println(f"Exported external classpath in ${exportTimer.durationMs}%.0f ms")
     }
-
-    writeDotFile(dependsOn)
 
     val timer = new Timer
     timer.start()
@@ -197,9 +194,12 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       val allFutures = projects.flatMap(_.futures)
       val count = allFutures.size
       val counter = new AtomicInteger(count)
+      val failed = new AtomicBoolean(false)
       val handler = (a: Try[_]) => a match {
         case f @ Failure(_) =>
-          done.complete(f)
+          if (failed.compareAndSet(false, true)) {
+            done.complete(f)
+          }
         case Success(_) =>
           val remaining = counter.decrementAndGet()
           if (remaining == 0) done.success(())
@@ -213,28 +213,28 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       val allFutures: immutable.Seq[Future[_]] = projects.flatMap(_.futures)
       val numAllFutures = allFutures.size
       val awaitAllFutures: Future[_] = awaitAll(allFutures)
-      val numTasks = awaitAllFutures
       var lastNumCompleted = allFutures.count(_.isCompleted)
       while (true) try {
         Await.result(awaitAllFutures, Duration(60, "s"))
         timer.stop()
         val numCompleted = allFutures.count(_.isCompleted)
-        println(s"PROGRESS: $numCompleted / $numAllFutures")
+        reporter.echo(s"PROGRESS: $numCompleted / $numAllFutures")
         return
       } catch {
         case _: TimeoutException =>
           val numCompleted = allFutures.count(_.isCompleted)
           if (numCompleted == lastNumCompleted) {
-            println(s"STALLED: $numCompleted / $numAllFutures")
-            println("Outline/Scala/Javac")
+            reporter.echo(s"STALLED: $numCompleted / $numAllFutures")
+            reporter.echo("Outline/Scala/Javac")
             projects.map {
               p =>
                 def toX(b: Future[_]): String = b.value match { case None => "-"; case Some(Success(_)) => "x"; case Some(Failure(_)) => "!" }
                 val s = List(p.outlineDoneFuture, p.groupsDoneFuture, p.javaDoneFuture).map(toX).mkString(" ")
-                println(s + " " + p.label)
+                reporter.echo(s + " " + p.label)
             }
           } else {
-            println(s"PROGRESS: $numCompleted / $numAllFutures")
+            reporter.echo(s"PROGRESS: $numCompleted / $numAllFutures")
+            lastNumCompleted = numCompleted
           }
       }
     }
@@ -246,7 +246,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
             _ <- depsReady
             _ <- {
               val isLeaf = !dependedOn.contains(p)
-              if (isLeaf) {
+              if (isLeaf && useTraditionalForLeaf) {
                 p.outlineDone.complete(Success(()))
                 p.fullCompile()
               } else
@@ -274,16 +274,17 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
 
         if (parallelism == 1) {
           val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          println(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
         } else
-          println(f" Wall Clock: ${timer.durationMs}%.0f ms")
+          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
       case Traditional =>
         projects.foreach { p =>
           val f1 = Future.traverse(dependsOn.getOrElse(p, Nil))(_.t.javaDone.future)
           val f2 = f1.flatMap { _ =>
             p.outlineDone.complete(Success(()))
             p.fullCompile()
-            Future.traverse(p.groups)(_.done.future).map(_ => p.javaCompile())
+            val eventualUnits: Future[List[Unit]] = Future.traverse(p.groups)(_.done.future)
+            eventualUnits.map(_ => p.javaCompile())
           }
           f2.onComplete { _ => p.compiler.close() }
         }
@@ -298,24 +299,28 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
         }
         if (parallelism == 1) {
           val maxFullCriticalPath: Double = projects.map(_.fullCriticalPathMs).max
-          println(f"Critical path: $maxFullCriticalPath%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+          reporter.echo(f"Critical path: $maxFullCriticalPath%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
         } else {
-          println(f"Wall Clock: ${timer.durationMs}%.0f ms")
+          reporter.echo(f"Wall Clock: ${timer.durationMs}%.0f ms")
         }
     }
 
-    writeChromeTrace(projects)
+    logDir.foreach { dir =>
+      Files.createDirectories(dir)
+      writeDotFile(dir, dependsOn)
+      writeChromeTrace(dir, projects)
+    }
     deleteTempPickleCache()
     true
   }
 
   private def deleteTempPickleCache(): Unit = {
-    if (pickleCacheConfigured == null) {
+    if (configuredPickleCache.isEmpty) {
       AbstractFile.getDirectory(pickleCache.toFile).delete()
     }
   }
 
-  private def writeChromeTrace(projects: List[Task]) = {
+  private def writeChromeTrace(logDir: Path, projects: List[Task]) = {
     val trace = new java.lang.StringBuilder()
     trace.append("""{"traceEvents": [""")
     val sb = new mutable.StringBuilder(trace)
@@ -344,9 +349,9 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
 
     projects.iterator.flatMap(projectEvents).addString(sb, ",\n")
     trace.append("]}")
-    val traceFile = Paths.get(s"build-${label}.trace")
+    val traceFile = logDir.resolve(s"build-${label}.trace")
     Files.write(traceFile, trace.toString.getBytes())
-    println("Chrome trace written to " + traceFile.toAbsolutePath)
+    reporter.echo("Chrome trace written to " + traceFile.toAbsolutePath)
   }
 
   case class Group(files: List[String]) {
@@ -355,7 +360,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
   }
 
   private case class Task(argsFile: Path, command: CompilerCommand, files: List[String]) {
-    val label = argsFile.toString.replaceAll("target/", "").replaceAll("""(.*)/(.*).args""", "$1:$2")
+    val label = argsFile.toString.replaceAll(".*/target/", "").replaceAll("""(.*)/(.*).args""", "$1:$2")
     override def toString: String = argsFile.toString
     def outputDir: Path = command.settings.outputDirs.getSingleOutput.get.file.toPath.toAbsolutePath.normalize()
     private def expand(s: command.settings.PathSetting): List[Path] = {
@@ -380,8 +385,6 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       dependency.t.outlineDone.future
 
 
-    val cacheMacro = java.lang.Boolean.getBoolean("scala.pipeline.cache.macro.classloader")
-    val cachePlugin = java.lang.Boolean.getBoolean("scala.pipeline.cache.plugin.classloader")
     if (cacheMacro)
       command.settings.YcacheMacroClassLoader.value = "always"
     if (cachePlugin)
@@ -391,6 +394,8 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       command.settings.YpickleJava.value = true
     }
 
+    val groupSize = Integer.getInteger("scala.pipeline.group.size", 128)
+
     val groups: List[Group] = {
       val isScalaLibrary = files.exists(_.endsWith("Predef.scala"))
       if (isScalaLibrary) {
@@ -398,7 +403,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
       } else {
         command.settings.classpath.value = command.settings.outputDirs.getSingleOutput.get.toString + File.pathSeparator + command.settings.classpath.value
         val length = files.length
-        val groups = (length.toDouble / 128).toInt.max(1)
+        val groups = (length.toDouble / groupSize).toInt.max(1)
         files.grouped((length.toDouble / groups).ceil.toInt.max(1)).toList.map(Group(_))
       }
     }
@@ -438,8 +443,8 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
         throw t
     }
 
-
     def fullCompile(): Unit = {
+      command.settings.Youtline.value = false
       command.settings.stopAfter.value = Nil
       command.settings.Ymacroexpand.value = command.settings.MacroExpand.Normal
 
@@ -451,9 +456,14 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
             group.timer.start()
             val compiler2 = newCompiler(command.settings)
             try {
-              val run2 = new compiler2.Run()
-              run2 compile group.files
-              compiler2.reporter.finish()
+              try {
+                val run2 = new compiler2.Run()
+                run2 compile group.files
+                compiler2.reporter.finish()
+              } finally {
+                group.timer.stop()
+                log(f"scalac (${ix + 1}/$groupCount): done ${group.timer.durationMs}%.0f ms")
+              }
               if (compiler2.reporter.hasErrors) {
                 group.done.complete(Failure(new RuntimeException(label + ": compile failed: ")))
               } else {
@@ -461,9 +471,7 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
               }
             } finally {
               compiler2.close()
-              group.timer.stop()
             }
-            log(f"scalac (${ix + 1}/$groupCount): done ${group.timer.durationMs}%.0f ms")
           }
         }
       }
@@ -521,19 +529,40 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
         log("javac: start")
         javaTimer.start()
         javaDone.completeWith(Future {
-          val opts = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.outdir.value + File.pathSeparator + originalClassPath)
-          val compileTask = ToolProvider.getSystemJavaCompiler.getTask(null, null, null, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
+          val opts: java.util.List[String] = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.outdir.value + File.pathSeparator + originalClassPath)
+          val compiler = ToolProvider.getSystemJavaCompiler
+          val listener = new DiagnosticListener[JavaFileObject] {
+            override def report(diagnostic: Diagnostic[_ <: JavaFileObject]): Unit = {
+              val msg = diagnostic.getMessage(Locale.getDefault)
+              val source: JavaFileObject = diagnostic.getSource
+              val path = Paths.get(source.toUri)
+              val sourceFile = new BatchSourceFile(new PlainNioFile(path))
+              val position = Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+              diagnostic.getKind match {
+                case Kind.ERROR => reporter.error(position, msg)
+                case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
+                case Kind.NOTE => reporter.info(position, msg, true)
+                case Kind.OTHER => reporter.echo(position, msg)
+              }
+            }
+          }
+          val fileManager = ToolProvider.getSystemJavaCompiler.getStandardFileManager(null, null, null)
+          val compileTask = compiler.getTask(null, fileManager, listener, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
           compileTask.setProcessors(Collections.emptyList())
-          compileTask.call()
-          javaTimer.stop()
-          log(f"javac: done ${javaTimer.durationMs}%.0f ms")
+          if (compileTask.call()) {
+            javaTimer.stop()
+            log(f"javac: done ${javaTimer.durationMs}%.0f ms ")
+          } else {
+            javaTimer.stop()
+            log(f"javac: error ${javaTimer.durationMs}%.0f ms ")
+          }
           ()
         })
       } else {
         javaDone.complete(Success(()))
       }
     }
-    def log(msg: String): Unit = println(this.label + ": " + msg)
+    def log(msg: String): Unit = reporter.echo(this.label + ": " + msg)
   }
 
   final class Timer() {
@@ -579,24 +608,39 @@ class PipelineMainClass(label: String, parallelism: Int, strategy: BuildStrategy
 object PipelineMain {
   sealed abstract class BuildStrategy
 
-  /** Begin compilation as soon as the pickler phase is complete on all dependencies. */
+  /** Transport pickles as an input to downstream compilation. */
   case object Pipeline extends BuildStrategy
 
   /** Emit class files before triggering downstream compilation */
   case object Traditional extends BuildStrategy
 
-  def main(args: Array[String]): Unit = {
+  case class PipelineSettings(label: String, parallelism: Int, strategy: BuildStrategy, useJars: Boolean,
+                              configuredPickleCache: Option[Path], cacheMacro: Boolean, cachePlugin: Boolean,
+                              stripExternalClassPath: Boolean, useTraditionalForLeaf: Boolean, logDir: Option[Path],
+                              createReporter: (Settings => Reporter))
+  def defaultSettings: PipelineSettings = {
     val strategies = List(Pipeline, Traditional)
     val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
     val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", java.lang.Runtime.getRuntime.availableProcessors())
     val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")
+    val cacheMacro = java.lang.Boolean.getBoolean("scala.pipeline.cache.macro.classloader")
+    val cachePlugin = java.lang.Boolean.getBoolean("scala.pipeline.cache.plugin.classloader")
+    val stripExternalClassPath = java.lang.Boolean.getBoolean("scala.pipeline.strip.external.classpath")
+    val useTraditionalForLeaf = java.lang.Boolean.getBoolean("scala.pipeline.use.traditional.for.leaf")
+    val configuredPickleCache = Option(System.getProperty("scala.pipeline.picklecache")).map(Paths.get(_))
+    val logDir = Paths.get(".")
+    new PipelineSettings("1", parallelism, strategy, useJars, configuredPickleCache,
+      cacheMacro, cachePlugin, stripExternalClassPath, useTraditionalForLeaf, Some(logDir), new ConsoleReporter(_))
+  }
+
+  def main(args: Array[String]): Unit = {
     val argFiles: Seq[Path] = args match {
       case Array(path) if Files.isDirectory(Paths.get(path)) =>
         Files.walk(Paths.get(path)).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
       case _ =>
         args.map(Paths.get(_))
     }
-    val main = new PipelineMainClass("1", parallelism, strategy, argFiles, useJars)
+    val main = new PipelineMainClass(argFiles, defaultSettings)
     val result = main.process()
     if (!result)
       System.exit(1)
@@ -608,10 +652,12 @@ object PipelineMain {
 //object PipelineMainTest {
 //  def main(args: Array[String]): Unit = {
 //    var i = 0
-//    val argsFiles = Files.walk(Paths.get("/code/guardian-frontend")).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
-//    for (_ <- 1 to 2; n <- List(parallel.availableProcessors); start <- List(Pipeline)) {
+////    val argsFiles = Files.walk(Paths.get("/code/guardian-frontend")).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
+//    val argsFiles = List(Paths.get("/Users/jz/code/guardian-frontend/common/target/compile.args"))
+//    val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")
+//    for (_ <- 1 to 20; n <- List(parallel.availableProcessors); start <- List(OutlineTypePipeline)) {
 //      i += 1
-//      val main = new PipelineMainClass(start + "-" + i, n, start, argsFiles, useJars = false)
+//      val main = new PipelineMainClass(start + "-" + i, n, start, argsFiles, useJars)
 //      println(s"====== ITERATION $i=======")
 //      val result = main.process()
 //      if (!result)
