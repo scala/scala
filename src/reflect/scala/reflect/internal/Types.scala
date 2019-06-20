@@ -4873,14 +4873,18 @@ trait Types
   /** Do type arguments `targs` conform to formal parameters `tparams`?
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
-    var bounds = instantiatedBounds(pre, owner, tparams, targs)
-    if (targs exists typeHasAnnotations)
-      bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
-    (bounds corresponds targs)(boundsContainType)
-  }
+    def instantiatedBound(tparam: Symbol): TypeBounds =
+      tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds
 
-  def instantiatedBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): List[TypeBounds] =
-    mapList(tparams)(_.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds)
+    if (targs exists typeHasAnnotations){
+      var bounds = mapList(tparams)(instantiatedBound)
+      bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
+      (bounds corresponds targs)(boundsContainType)
+    } else
+      (tparams corresponds targs){ (tparam, targ) =>
+        boundsContainType(instantiatedBound(tparam), targ)
+      }
+  }
 
   def elimAnonymousClass(t: Type) = t match {
     case TypeRef(pre, clazz, Nil) if clazz.isAnonymousClass =>

@@ -1165,15 +1165,25 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (MethodType(params1, res1), MethodType(params2, res2)) =>
       if (strict && params1.length != params2.length) unifyError(tp1, tp2)
       debuglog(s"Unify methods $tp1 and $tp2")
-      unify(res1 :: (params1 map (_.tpe)), res2 :: (params2 map (_.tpe)), env, strict)
+      val env1 = unifyAux(res1, res2, env, strict)
+      if (params1.isEmpty) env1
+      else
+        foldLeft2(params1, params2)(env1){ (e, p1, p2) => unifyAux(p1.tpe, p2.tpe, e, strict) }
     case (PolyType(tparams1, res1), PolyType(tparams2, res2)) =>
       debuglog(s"Unify polytypes $tp1 and $tp2")
       if (strict && tparams1.length != tparams2.length)
         unifyError(tp1, tp2)
-      else if (tparams && tparams1.sizeCompare(tparams2) == 0)
-        unify(res1 :: tparams1.map(_.info), res2 :: tparams2.map(_.info), env, strict)
+      else if (tparams && tparams1.sizeCompare(tparams2) == 0) {
+        val env1 = unifyAux(res1, res2, env, strict)
+        if (tparams1.isEmpty) env1
+        else
+          foldLeft2(tparams1, tparams2)(env1){ (e, tp1, tp2) => unifyAux(tp1.info, tp2.info, e, strict) }
+      }
       else
         unify(res1, res2, env, strict)
+    case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
+      val env1 = unifyAux(lo1, lo2, env, strict)
+      unifyAux(hi1, hi2, env1, strict)
     case (PolyType(_, res), other)                    => unify(res, other, env, strict)
     case (ThisType(_), ThisType(_))                   => env
     case (_, SingleType(_, _))                        => unify(tp1, tp2.underlying, env, strict)
@@ -1183,26 +1193,27 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     case (RefinedType(_, _), RefinedType(_, _))       => env
     case (AnnotatedType(_, tp1), tp2)                 => unify(tp2, tp1, env, strict)
     case (ExistentialType(_, res1), _)                => unify(tp2, res1, env, strict)
-    case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) => unify(List(lo1, hi1), List(lo2, hi2), env, strict)
     case _ =>
       debuglog(s"don't know how to unify $tp1 [${tp1.getClass}] with $tp2 [${tp2.getClass}]")
       env
   }
 
-  private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv = {
+  private def unify(tp1: List[Type], tp2: List[Type], env: TypeEnv, strict: Boolean): TypeEnv =
     if (tp1.isEmpty || tp2.isEmpty) env
     else foldLeft2(tp1, tp2)(env) { (env, arg1, arg2) =>
-      if (!strict) unify(arg1, arg2, env, strict)
+      unifyAux(arg1, arg2, env, strict)
+    }
+
+  private def unifyAux(arg1: Type, arg2: Type, env: TypeEnv, strict: Boolean): TypeEnv =
+    if (!strict) unify(arg1, arg2, env, strict)
+    else {
+      val nenv = unify(arg1, arg2, emptyEnv, strict)
+      if (env.keySet.intersect(nenv.keySet).isEmpty) env ++ nenv
       else {
-        val nenv = unify(arg1, arg2, emptyEnv, strict)
-        if (env.keySet.intersect(nenv.keySet).isEmpty) env ++ nenv
-        else {
-          debuglog(s"could not unify: u($arg1, $arg2) yields $nenv, env: $env")
-          unifyError(tp1, tp2)
-        }
+        debuglog(s"could not unify: u($arg1, $arg2) yields $nenv, env: $env")
+        unifyError(arg1, arg2)
       }
     }
-  }
 
   /** Apply the type environment 'env' to the given type. All type
    *  bindings are supposed to be to primitive types. A type variable
