@@ -582,7 +582,8 @@ object Future {
       throw new TimeoutException(s"Future timed out after [$atMost]")
     }
 
-    @throws[Exception]
+    @throws[TimeoutException]
+    @throws[InterruptedException]
     override final def result(atMost: Duration)(implicit permit: CanAwait): Nothing = {
       ready(atMost)
       throw new TimeoutException(s"Future timed out after [$atMost]")
