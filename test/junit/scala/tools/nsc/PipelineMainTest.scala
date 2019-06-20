@@ -263,8 +263,8 @@ class PipelineMainTest {
     class CleanVisitor() extends SimpleFileVisitor[Path] {
       override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
         if (dir.getFileName.toString == "target") {
-          deleteRecursive(dir)
-          Files.createDirectories(dir)
+          for (p <- Files.list(dir).iterator.asScala)
+            deleteRecursive(p)
           FileVisitResult.SKIP_SUBTREE
         } else super.preVisitDirectory(dir, attrs)
       }
