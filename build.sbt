@@ -673,7 +673,7 @@ lazy val specLib = project.in(file("test") / "instrumented")
   )
 
 lazy val bench = project.in(file("test") / "benchmarks")
-  .dependsOn(library)
+  .dependsOn(library, compiler)
   .settings(instanceSettings)
   .settings(disableDocs)
   .settings(disablePublishing)
