@@ -166,6 +166,7 @@
   </component>
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/benchmarks.iml" filepath="$PROJECT_DIR$/benchmarks.iml" />
       <module fileurl="file://$PROJECT_DIR$/compiler.iml" filepath="$PROJECT_DIR$/compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/compilerOptionsExporter.iml" filepath="$PROJECT_DIR$/compilerOptionsExporter.iml" />
       <module fileurl="file://$PROJECT_DIR$/interactive.iml" filepath="$PROJECT_DIR$/interactive.iml" />
@@ -198,6 +199,16 @@
     <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
   </component>
   <component name="libraryTable">
+    <library name="bench-deps">
+      <CLASSES>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jmh/jmh-core/jars/jmh-core-1.19.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.openjdk.jol/jol-core/jars/jol-core-0.5.jar!/" />
+      </CLASSES>
+      <JAVADOC />
+      <SOURCES />
+    </library>
+
     <library name="compiler-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />

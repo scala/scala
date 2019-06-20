@@ -116,7 +116,7 @@ mimaReferenceVersion in Global := Some("2.12.0")
 
 scalaVersion in Global         := versionProps("starr.version")
 
-lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
+lazy val instanceSettings = Seq[Setting[_]](
   // we don't cross build Scala itself
   crossPaths := false,
   // do not add Scala library jar as a dependency automatically
@@ -142,6 +142,10 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
   // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
   // scala-library are correct to be different. So disable overriding.
   ivyScala ~= (_ map (_ copy (overrideScalaVersion = false))),
+  Quiet.silenceScalaBinaryVersionWarning
+)
+
+lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
@@ -238,8 +242,7 @@ lazy val commonSettings = clearSourceAndResourceDirectories ++ publishSettings +
 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
-  outputStrategy in run := Some(StdoutOutput),
-  Quiet.silenceScalaBinaryVersionWarning
+  outputStrategy in run := Some(StdoutOutput)
 ) ++ removePomDependencies
 
 /** Extra post-processing for the published POM files. These are needed to create POMs that
@@ -669,6 +672,17 @@ lazy val specLib = project.in(file("test") / "instrumented")
     }.taskValue
   )
 
+lazy val bench = project.in(file("test") / "benchmarks")
+  .dependsOn(library, compiler)
+  .settings(instanceSettings)
+  .settings(disableDocs)
+  .settings(disablePublishing)
+  .enablePlugins(JmhPlugin)
+  .settings(
+    name := "test-benchmarks",
+    libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.6",
+    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:**")
+  )
 
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
@@ -947,7 +961,7 @@ lazy val root: Project = (project in file("."))
           (Keys.test in Test in osgiTestFelix).result,
           (Keys.test in Test in osgiTestEclipse).result)).value,
 
-    // all of testRun, testPosPres, testRest
+    // all of testRun, testPosPres, testRest and more
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
@@ -961,6 +975,7 @@ lazy val root: Project = (project in file("."))
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
         (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
+        (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
           doc in Compile in reflect,
@@ -1193,6 +1208,7 @@ intellij := {
     val buildModule = ("scala-build", scalabuild.BuildInfo.buildClasspath.split(java.io.File.pathSeparator).toSeq.map(new File(_)))
     // `sbt projects` lists all modules in the build
     buildModule :: List(
+      moduleDeps(bench).value,
       moduleDeps(compilerP).value,
       // moduleDeps(dist).value,                // No sources, therefore no module in IntelliJ
       moduleDeps(interactive).value,

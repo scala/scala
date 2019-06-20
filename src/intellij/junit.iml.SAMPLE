@@ -2,7 +2,7 @@
 <module type="JAVA_MODULE" version="4">
   <component name="NewModuleRootManager" inherit-compiler-output="false">
     <output url="file://$MODULE_DIR$/../../build/quick/classes/junit" />
-    <output-test url="file://$MODULE_DIR$/../../out/test/junit" />
+    <output-test url="file://$MODULE_DIR$/../../target/junit/test-classes" />
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../test/junit">
       <sourceFolder url="file://$MODULE_DIR$/../../test/junit" isTestSource="true" />
