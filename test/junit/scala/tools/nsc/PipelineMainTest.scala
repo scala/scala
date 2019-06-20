@@ -80,6 +80,7 @@ class PipelineMainTest {
 
   private lazy val allBuilds = List(m1, b2, b3, b4, b5SuperAccessor)
 
+  // Build containing a macro definition and a reference to it from another internal subproject
   private lazy val m1: Build = {
     val build = new Build(projectsBase, "m1")
     val macroProject = build.project("p1")
@@ -106,6 +107,7 @@ class PipelineMainTest {
     build
   }
 
+  // Build containing a reference to the external macro from `b1`
   private lazy val b2: Build = {
     val build = new Build(projectsBase, "b1")
     val p1 = build.project("p1")
@@ -120,6 +122,9 @@ class PipelineMainTest {
     build
   }
 
+  // Build containing projects with mixed Java/Scala source files.
+  // PipelineMain pickles the API of jointly compiled .java files and
+  // places these on the classpath of downstream scalac invocations.
   private lazy val b3: Build = {
     val build = new Build(projectsBase, "b3")
     val p1 = build.project("p1")
@@ -156,6 +161,7 @@ class PipelineMainTest {
     build
   }
 
+  // External version of `b4.p2`.
   private lazy val b4: Build = {
     val build = new Build(projectsBase, "b4")
     val b3P1 = b3.project("p1")
@@ -178,6 +184,8 @@ class PipelineMainTest {
     build
   }
 
+  // Build containing motivating test case for special handling of `Super` AST nodes
+  // in outline typechecking implementation.
   private lazy val b5SuperAccessor: Build = {
     val build = new Build(projectsBase, "b5")
     val p1 = build.project("p1")
