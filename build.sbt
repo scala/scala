@@ -889,6 +889,7 @@ lazy val root: Project = (project in file("."))
     },
 
     testJDeps := TestJDeps.testJDepsImpl.value,
+    testJarSize := TestJarSize.testJarSizeImpl.value,
 
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
@@ -905,6 +906,7 @@ lazy val root: Project = (project in file("."))
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
         (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
         testJDeps.result map (_ -> "testJDeps"),
+        testJarSize.result map (_ -> "testJarSize"),
         (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
           doc in Compile in library,
@@ -1026,6 +1028,7 @@ lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in bu
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
 
 val testJDeps = taskKey[Unit]("Run jdeps to check dependencies")
+val testJarSize = taskKey[Unit]("Test that jars have the expected size")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
