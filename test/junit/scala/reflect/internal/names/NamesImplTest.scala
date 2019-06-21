@@ -65,3 +65,15 @@ class Unsafe extends ExtendedNameTest {
   override type T = Term
   override val nameTable: NameTable[T] = new UnsafeWeakFixedSizeAutoTrimConcurrentNodeInterner[Term](Term.apply)
 }
+class Tail extends ExtendedNameTest {
+  override type T = Term
+  override val nameTable: NameTable[T] = new WeakFixedSizeAutoTrimConcurrentNodeInterner[Term](Term.apply) {
+    override def find(key: String): Term = super.find(key)
+  }
+}
+class NoTail extends ExtendedNameTest {
+  override type T = Term
+  override val nameTable: NameTable[T] = new WeakFixedSizeAutoTrimConcurrentNodeInterner[Term](Term.apply) {
+    override def find(key: String): Term = super.findNoTail(key)
+  }
+}

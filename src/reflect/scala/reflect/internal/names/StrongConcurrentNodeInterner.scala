@@ -41,14 +41,16 @@ class StrongConcurrentNodeInterner[T >: Null <: NameBase](createName: String => 
         if (head ne null)
           name = StrongNode.find(head, key, hash, oldTail)
         if (name eq null) {
-          // minor optimisation - we can skip this tail if we have to retry
-          // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-          oldTail = head
           name = createName(key)
           val newNode = new N(name, head)
           if (data.compareAndSet(bucket, head, newNode)) {
             afterInsert(data)
-          } else name = null
+          } else {
+            // minor optimisation - we can skip this tail if we have to retry
+            // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
+            oldTail = head
+            name = null
+          }
         }
       }
     } while (name eq null)

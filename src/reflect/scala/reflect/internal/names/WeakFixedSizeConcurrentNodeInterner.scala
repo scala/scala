@@ -33,9 +33,31 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
       if (head ne null)
         name = WeakConcurrentNode.findNoTrim(head, key, hash, oldTail)
       if (name eq null) {
-        // minor optimisation - we can skip this tail if we have to retry
-        // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-        oldTail = head
+        name = createName(key)
+        val newNode = createNode(name, head, bucket)
+        if (data.compareAndSet(bucket, head, newNode)) {
+          size_.incrementAndGet()
+        } else {
+          name = null
+          // minor optimisation - we can skip this tail if we have to retry
+          // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
+          oldTail = head
+        }
+      }
+    } while (name eq null)
+    name
+  }
+  def findNoTail(key: String): T = {
+    val hash = key.hashCode
+    val improved = improveHash(hash)
+
+    var name: T = null
+    val bucket = improved & mask
+    do {
+      val head = data.get(bucket)
+      if (head ne null)
+        name = WeakConcurrentNode.findNoTrim(head, key, hash)
+      if (name eq null) {
         name = createName(key)
         val newNode = createNode(name, head, bucket)
         if (data.compareAndSet(bucket, head, newNode)) {
@@ -50,17 +72,13 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
   def find1(chars: Array[Char], start: Int, count: Int): T = {
     val hash = hashLikeString(chars, start, count)
     val improved = improveHash(hash)
-    var oldTail: N = null
 
     var name: T = null
     val bucket = improved & mask
     val head = data.get(bucket)
     if (head ne null)
-      name = WeakConcurrentNode.findNoTrimC1(head, chars, start, count, hash, oldTail)
+      name = WeakConcurrentNode.findNoTrimC1(head, chars, start, count, hash)
     if (name eq null) {
-      // minor optimisation - we can skip this tail if we have to retry
-      // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-      oldTail = head
       val string = new String(chars, start, count)
       name = createName(string)
       val newNode = createNode(name, head, bucket)
@@ -75,17 +93,13 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
   def find2(chars: Array[Char], start: Int, count: Int): T = {
     val hash = hashLikeString(chars, start, count)
     val improved = improveHash(hash)
-    var oldTail: N = null
 
     var name: T = null
     val bucket = improved & mask
     val head = data.get(bucket)
     if (head ne null)
-      name = WeakConcurrentNode.findNoTrimC2(head, chars, start, count, hash, oldTail)
+      name = WeakConcurrentNode.findNoTrimC2(head, chars, start, count, hash)
     if (name eq null) {
-      // minor optimisation - we can skip this tail if we have to retry
-      // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-      oldTail = head
       val string = new String(chars, start, count)
       name = createName(string)
       val newNode = createNode(name, head, bucket)
@@ -100,17 +114,13 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
   def find3(chars: Array[Char], start: Int, count: Int): T = {
     val hash = hashLikeString(chars, start, count)
     val improved = improveHash(hash)
-    var oldTail: N = null
 
     var name: T = null
     val bucket = improved & mask
     val head = data.get(bucket)
     if (head ne null)
-      name = WeakConcurrentNode.findNoTrimC3(head, chars, start, count, hash, oldTail)
+      name = WeakConcurrentNode.findNoTrimC3(head, chars, start, count, hash)
     if (name eq null) {
-      // minor optimisation - we can skip this tail if we have to retry
-      // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-      oldTail = head
       val string = new String(chars, start, count)
       name = createName(string)
       val newNode = createNode(name, head, bucket)
@@ -130,7 +140,8 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
     val improved = improveHash(hash)
 
     val head = data.get(improved & (data.length - 1))
-    WeakConcurrentNode.findNoTrim(head, key, hash, null)
+    if (head eq null) null
+    else WeakConcurrentNode.findNoTrim(head, key, hash)
 
   }
 
@@ -221,6 +232,7 @@ object AbstractUnsafeWeakFixedSizeConcurrentNodeInterner {
       throw new Error("data type scale not a power of two")
     31 - Integer.numberOfLeadingZeros(scale)
   }
+
   @inline private[this] def offset(bucket: Int) =
     (bucket.toLong << shift) + base
 
@@ -253,9 +265,31 @@ sealed abstract class AbstractUnsafeWeakFixedSizeConcurrentNodeInterner[T >: Nul
       if (head ne null)
         name = WeakConcurrentNode.findNoTrim(head, key, hash, oldTail)
       if (name eq null) {
-        // minor optimisation - we can skip this tail if we have to retry
-        // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
-        oldTail = head
+        name = createName(key)
+        val newNode = createNode(name, head, bucket)
+        if (compareAndSet(data, bucket, head, newNode)) {
+          size_.incrementAndGet()
+        } else {
+          name = null
+          // minor optimisation - we can skip this tail if we have to retry
+          // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
+          oldTail = head
+        }
+      }
+    } while (name eq null)
+    name
+  }
+  def findNoTail(key: String): T = {
+    val hash = key.hashCode
+    val improved = improveHash(hash)
+
+    var name: T = null
+    val bucket = improved & mask
+    do {
+      val head = getVolatile(data, bucket)
+      if (head ne null)
+        name = WeakConcurrentNode.findNoTrim(head, key, hash)
+      if (name eq null) {
         name = createName(key)
         val newNode = createNode(name, head, bucket)
         if (compareAndSet(data, bucket, head, newNode)) {
@@ -275,7 +309,8 @@ sealed abstract class AbstractUnsafeWeakFixedSizeConcurrentNodeInterner[T >: Nul
     val improved = improveHash(hash)
 
     val head = getVolatile(data, improved & (data.length - 1))
-    WeakConcurrentNode.findNoTrim(head, key, hash, null)
+    if (head eq null) null
+    else WeakConcurrentNode.findNoTrim(head, key, hash)
 
   }
 
@@ -300,6 +335,7 @@ sealed abstract class AbstractUnsafeWeakFixedSizeConcurrentNodeInterner[T >: Nul
 
   @inline final private def mask = (1 << 16) - 1
 }
+
 class UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner[T >: Null <: NameBase](createName: String => T) extends AbstractUnsafeWeakFixedSizeConcurrentNodeInterner(createName) {
   override def createNode(name: T, next: WeakConcurrentNode[T], bucket: Int) = new WeakConcurrentNode[T](new WeakReference(name), next)
 
@@ -308,6 +344,7 @@ class UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner[T >: Null <: NameBase]
       trimImpl(index)
   }
 }
+
 class UnsafeWeakFixedSizeAutoTrimConcurrentNodeInterner[T >: Null <: NameBase](createName: String => T) extends AbstractUnsafeWeakFixedSizeConcurrentNodeInterner(createName) {
   private val queue = new ReferenceQueue[T]
 

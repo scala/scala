@@ -62,6 +62,7 @@ object WeakNode {
     }
   }
 }
+
 final class WeakNode[N >: Null <: NameBase](k: N, @volatile var next: WeakNode[N]) extends Node[N] {
   private val ref = new WeakReference(k)
 
@@ -71,6 +72,7 @@ final class WeakNode[N >: Null <: NameBase](k: N, @volatile var next: WeakNode[N
   }
 
   def name = ref.get()
+
   def isDefined = ref.get() ne null
 
   def hash: Int = {
@@ -82,133 +84,128 @@ final class WeakNode[N >: Null <: NameBase](k: N, @volatile var next: WeakNode[N
 
 object WeakConcurrentNode {
   private val nextAccess: AtomicReferenceFieldUpdater[WeakConcurrentNode[_], WeakConcurrentNode[_]] = new WeakConcurrentNode[NameBase](null, null).nextAccess
-  private def nextAccessN[N>: Null <:NameBase ]: AtomicReferenceFieldUpdater[WeakConcurrentNode[N], WeakConcurrentNode[N]] = nextAccess.asInstanceOf[AtomicReferenceFieldUpdater[WeakConcurrentNode[N], WeakConcurrentNode[N]]]
 
-  private def casNext[N>: Null <:NameBase ](prev: WeakConcurrentNode[N], expectedNext: WeakConcurrentNode[N], updateNext: WeakConcurrentNode[N]): Boolean = {
+  private def nextAccessN[N >: Null <: NameBase]: AtomicReferenceFieldUpdater[WeakConcurrentNode[N], WeakConcurrentNode[N]] = nextAccess.asInstanceOf[AtomicReferenceFieldUpdater[WeakConcurrentNode[N], WeakConcurrentNode[N]]]
+
+  private def casNext[N >: Null <: NameBase](prev: WeakConcurrentNode[N], expectedNext: WeakConcurrentNode[N], updateNext: WeakConcurrentNode[N]): Boolean = {
     nextAccess.compareAndSet(prev, expectedNext, updateNext)
   }
+
   private val builderCache = new ThreadLocal[java.lang.StringBuilder] {
-    override def initialValue()= new java.lang.StringBuilder
+    override def initialValue() = new java.lang.StringBuilder
   }
 
-  final def findNoTrimC1[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int, end: Node[N]): N = {
-    def equalsAsString(nameId:String): Boolean = {
+  final def findNoTrimC1[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int): N = {
+    def equalsAsString(nameId: String): Boolean = {
       nameId.hashCode() == hash && nameId.length == charCount && {
         var offset = 0
         var equal = true
         while (offset < charCount && equal) {
-          equal = chars(charOffset+offset) == nameId.charAt(offset)
-          offset +=1
+          equal = chars(charOffset + offset) == nameId.charAt(offset)
+          offset += 1
         }
         equal
       }
     }
-    if (start eq end)
-      null
-    else {
-      var current = start
-      var prev: WeakConcurrentNode[N] = null
 
-      var currentName: N = null
-      var found: N = null
+    var current = start
+    var prev: WeakConcurrentNode[N] = null
 
-      do {
-        currentName = current.name
-        if ((currentName ne null) && equalsAsString(currentName.id))
-          found = currentName
-        else {
-          prev = current
-          current = current.next
-        }
-      } while ((found eq null) && (current ne null) && (current ne end))
-      found
-    }
+    var currentName: N = null
+    var found: N = null
 
-  }
-  final def findNoTrimC2[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int, end: Node[N]): N = {
-    var seq:java.lang.StringBuilder = null
-    if (start eq end)
-      null
-    else {
-      var current = start
-      var prev: WeakConcurrentNode[N] = null
-
-      var currentName: N = null
-      var found: N = null
-
-      do {
-        currentName = current.name
-        if ((currentName ne null) && currentName.id.hashCode() == hash && currentName.id.length == charCount  && {
-          if (seq == null) {
-            seq = new java.lang.StringBuilder()
-            seq.append(chars, charOffset, charCount)
-          }
-          currentName.id.contentEquals(seq)
-        })
-          found = currentName
-        else {
-          prev = current
-          current = current.next
-        }
-      } while ((found eq null) && (current ne null) && (current ne end))
-      found
-    }
-
+    do {
+      currentName = current.name
+      if ((currentName ne null) && equalsAsString(currentName.id))
+        found = currentName
+      else {
+        prev = current
+        current = current.next
+      }
+    } while ((found eq null) && (current ne null))
+    found
   }
 
-  final def findNoTrimC3[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int, end: Node[N]): N = {
-    var seq:java.lang.StringBuilder = null
-    if (start eq end)
-      null
-    else {
-      var current = start
-      var prev: WeakConcurrentNode[N] = null
+  final def findNoTrimC2[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int): N = {
+    var seq: java.lang.StringBuilder = null
+    var current = start
+    var prev: WeakConcurrentNode[N] = null
 
-      var currentName: N = null
-      var found: N = null
+    var currentName: N = null
+    var found: N = null
 
-      do {
-        currentName = current.name
-        if ((currentName ne null) && currentName.id.hashCode() == hash && currentName.id.length == charCount  && {
-          if (seq == null) {
-            seq = builderCache.get()
-            seq.append(chars, charOffset, charCount)
-          }
-          currentName.id.contentEquals(seq)
-        })
-          found = currentName
-        else {
-          prev = current
-          current = current.next
+    do {
+      currentName = current.name
+      if ((currentName ne null) && currentName.id.hashCode() == hash && currentName.id.length == charCount && {
+        if (seq == null) {
+          seq = new java.lang.StringBuilder()
+          seq.append(chars, charOffset, charCount)
         }
-      } while ((found eq null) && (current ne null) && (current ne end))
-      if (seq ne null)
-        seq.setLength(0)
-      found
-    }
-
+        currentName.id.contentEquals(seq)
+      })
+        found = currentName
+      else {
+        prev = current
+        current = current.next
+      }
+    } while ((found eq null) && (current ne null))
+    found
   }
+
+  final def findNoTrimC3[N >: Null <: NameBase](start: WeakConcurrentNode[N], chars: Array[Char], charOffset: Int, charCount: Int, hash: Int): N = {
+    var seq: java.lang.StringBuilder = null
+    var current = start
+    var prev: WeakConcurrentNode[N] = null
+
+    var currentName: N = null
+    var found: N = null
+
+    do {
+      currentName = current.name
+      if ((currentName ne null) && currentName.id.hashCode() == hash && currentName.id.length == charCount && {
+        if (seq == null) {
+          seq = builderCache.get()
+          seq.append(chars, charOffset, charCount)
+        }
+        currentName.id.contentEquals(seq)
+      })
+        found = currentName
+      else {
+        prev = current
+        current = current.next
+      }
+    } while ((found eq null) && (current ne null))
+    if (seq ne null)
+      seq.setLength(0)
+    found
+  }
+
   final def findNoTrim[N >: Null <: NameBase](start: WeakConcurrentNode[N], key: String, hash: Int, end: Node[N]): N = {
-    if (start eq end)
-      null
-    else {
-      var current = start
-      var prev: WeakConcurrentNode[N] = null
+    var current = start
+    var name: N = null
 
-      var currentName: N = null
-      var found: N = null
+    do {
+      name = current.name
+      if ((name eq null) || name.id.hashCode() != hash || name.id != key) {
+        name = null
+        current = current.next
+      }
+    } while ((name eq null) && (current ne null) && (current ne end))
+    name
+  }
 
-      do {
-        currentName = current.name
-        if ((currentName ne null)  && currentName.id.hashCode() == hash && currentName.id == key)
-          found = currentName
-        else {
-          prev = current
-          current = current.next
-        }
-      } while ((found eq null) && (current ne null) && (current ne end))
-      found
-    }
+  final def findNoTrim[N >: Null <: NameBase](start: WeakConcurrentNode[N], key: String, hash: Int): N = {
+    var current = start
+    var name: N = null
+
+    do {
+      name = current.name
+      if ((name eq null) || name.id.hashCode() != hash || name.id != key) {
+        name = null
+        current = current.next
+      }
+    } while ((name eq null) && (current ne null))
+    name
   }
 
   /** trim the collected nodes
@@ -217,7 +214,7 @@ object WeakConcurrentNode {
     *
     * @return the count of collected nodes
     */
-  def trimCollected[N >: Null <: NameBase](start: WeakConcurrentNode[N]) : Int= {
+  def trimCollected[N >: Null <: NameBase](start: WeakConcurrentNode[N]): Int = {
     var trimmed = 0
     var prev: WeakConcurrentNode[N] = start
     while (prev ne null) {
@@ -234,43 +231,44 @@ object WeakConcurrentNode {
     trimmed
   }
 
-//  final def findAutoTrim[N >: Null <: Name](start: WeakConcurrentNode[N], key: String, hash: Int, end: Node[N], decrementOnRemove: AtomicInteger): N = {
-//    if (start eq end)
-//      null
-//    else {
-//      //prev refers to the previos entry with a name that has not been GCed
-//      var prevRef: WeakConcurrentNode[N] = null
-//      var prevRefName: N = null
-//
-//      var current = start
-//      var currentName: N = null
-//      var found: N = null
-//
-//      var skipped = 0
-//
-//      do {
-//        currentName = current.name
-//        while ((current ne null) && (currentName eq null)) {
-//            val next = current.next
-//          skipped += 1
-//          }
-//        }
-//          //we dont care if we lost the race - someone else fixed it
-//          if ((prev ne null) && casNext(prev, current, next))
-//            decrementOnRemove.decrementAndGet()
-//          //leave prev where it was
-//          current = next
-//        } else if (currentName.id.hashCode() == hash && currentName.id == key)
-//          found = currentName
-//        else {
-//          prev = current
-//          current = current.next
-//        }
-//      } while ((found eq null) && (current ne null) && (current ne end))
-//      found
-//    }
-//  }
+  //  final def findAutoTrim[N >: Null <: Name](start: WeakConcurrentNode[N], key: String, hash: Int, end: Node[N], decrementOnRemove: AtomicInteger): N = {
+  //    if (start eq end)
+  //      null
+  //    else {
+  //      //prev refers to the previos entry with a name that has not been GCed
+  //      var prevRef: WeakConcurrentNode[N] = null
+  //      var prevRefName: N = null
+  //
+  //      var current = start
+  //      var currentName: N = null
+  //      var found: N = null
+  //
+  //      var skipped = 0
+  //
+  //      do {
+  //        currentName = current.name
+  //        while ((current ne null) && (currentName eq null)) {
+  //            val next = current.next
+  //          skipped += 1
+  //          }
+  //        }
+  //          //we dont care if we lost the race - someone else fixed it
+  //          if ((prev ne null) && casNext(prev, current, next))
+  //            decrementOnRemove.decrementAndGet()
+  //          //leave prev where it was
+  //          current = next
+  //        } else if (currentName.id.hashCode() == hash && currentName.id == key)
+  //          found = currentName
+  //        else {
+  //          prev = current
+  //          current = current.next
+  //        }
+  //      } while ((found eq null) && (current ne null) && (current ne end))
+  //      found
+  //    }
+  //  }
 }
+
 final class WeakConcurrentNode[N >: Null <: NameBase](private val ref: WeakReference[N], @volatile var next: WeakConcurrentNode[N]) extends Node[N] {
   private def nextAccess = AtomicReferenceFieldUpdater.newUpdater(classOf[WeakConcurrentNode[_]], classOf[WeakConcurrentNode[_]], "next")
 
@@ -282,6 +280,7 @@ final class WeakConcurrentNode[N >: Null <: NameBase](private val ref: WeakRefer
   }
 
   def name = ref.get()
+
   def isDefined = ref.get() ne null
 
   def hash: Int = {
