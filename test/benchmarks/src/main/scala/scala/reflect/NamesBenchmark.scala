@@ -22,8 +22,8 @@ abstract class AbstractNamesBenchmark {
 
   def testType: String
 
-  var fullNameTable: NameTable[_] = _
-  var newNameTable: () => NameTable[_] = _
+  var fullNameTable: NameTable[_ <: AnyRef] = _
+  var newNameTable: () => NameTable[_ <: AnyRef] = _
 
   @Setup def setup(): Unit = {
     names = Array.tabulate(arraySize)(i => s"name$i")
@@ -67,21 +67,25 @@ abstract class AbstractNamesBenchmark {
   }
 
   @Benchmark def findOldString(bh: Blackhole): Any = {
-    val nameTable: NameTable[_] = fullNameTable
+    val nameTable: NameTable[_ <: AnyRef] = fullNameTable
+    val res = new Array[AnyRef](arraySize)
     var i = 0
     while (i < arraySize) {
-      bh.consume(nameTable.find(names(i)))
+      res(i) = nameTable.find(names(i))
       i += 1
     }
+    bh.consume(res)
   }
   @Benchmark def findOldChars(bh: Blackhole): Any = {
-    val nameTable: NameTable[_] = fullNameTable
+    val nameTable: NameTable[_<: AnyRef] = fullNameTable
     var i = 0
+    val res = new Array[AnyRef](arraySize)
     while (i < arraySize) {
       val c= namesChars(i)
-      bh.consume(nameTable.find(c,0,c.length))
+      res(i) = nameTable.find(c,0,c.length)
       i += 1
     }
+    bh.consume(res)
   }
 }
 @Threads(1)
@@ -93,21 +97,25 @@ class NamesBenchmark extends AbstractNamesBenchmark {
   override def testType = testImpl
   @Benchmark def findNewString(bh: Blackhole): Any = {
     val nameTable = newNameTable()
+    val res = new Array[AnyRef](arraySize)
     var i = 0
     while (i < arraySize) {
-      bh.consume(nameTable.find(names(i)))
+      res(i) = nameTable.find(names(i))
       i += 1
     }
+    bh.consume(res)
   }
 
   @Benchmark def findNewChars(bh: Blackhole): Any = {
     val nameTable = newNameTable()
     var i = 0
+    val res = new Array[AnyRef](arraySize)
     while (i < arraySize) {
       val c= namesChars(i)
-      bh.consume(nameTable.find(c,0,c.length))
+      res(i) = nameTable.find(c,0,c.length)
       i += 1
     }
+    bh.consume(res)
   }
 }
 @Threads(4)
