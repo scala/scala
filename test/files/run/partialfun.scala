@@ -81,8 +81,75 @@ object Test {
     chained(())
   }
 
+  def fromFunctionLiteralTest(): Unit = {
+    def isEven(n: Int): Boolean = PartialFunction.cond(n)(_ % 2 == 0)
+    println(isEven(1))
+    println(isEven(2))
+    println((1 to 5).map(_.toString))
+    println((1 to 5).collect(_.toString))
+  }
+
+  def takeFunction1(fn: String => String)                      = println("fn only")
+  def takePartialFunction(pf: PartialFunction[String, String]) = println("pf only")
+  def takeFunctionLike(fn: String => String)                   = println("fn wins")
+  def takeFunctionLike(pf: PartialFunction[String, String])    = println("pf wins")
+
+  def testOverloadingWithFunction1(): Unit = {
+    println("testing function literal syntax with methods overloaded for Function1 and PartialFunction")
+    println("base case: a method that takes a Function1, so no overloading")
+    takeFunction1(_.reverse)
+    takeFunction1 { case s => s.reverse }
+    takeFunction1 { case s: String => s.reverse }
+    println()
+
+    println("base case: a method that takes a PartialFunction, so no overloading")
+    takePartialFunction(_.reverse)
+    takePartialFunction { case s => s.reverse }
+    takePartialFunction { case s: String => s.reverse }
+    println()
+
+    println("test case: a method that is overloaded for Funtion1 and PartialFunction")
+    takeFunctionLike(_.reverse)
+    takeFunctionLike { case s => s.reverse }
+    takeFunctionLike { case s: String => s.reverse }
+  }
+
+  def reverse(s: String): String = s.reverse
+
+  def testEtaExpansion(): Unit = {
+    println("testing eta-expansion with methods overloaded for Function1 and PartialFunction")
+    println("base case: a method that takes a Function1, so no overloading")
+    takeFunction1(x => reverse(x))
+    takeFunction1(reverse(_))
+    takeFunction1(reverse _)
+    takeFunction1(reverse)
+    println()
+
+    println("base case: a method that takes a PartialFunction, so no overloading")
+    takePartialFunction(x => reverse(x))
+    takePartialFunction(reverse(_))
+    takePartialFunction(reverse _)
+  //takePartialFunction(reverse)          // can't pass a method to a method that takes a PartialFunction
+    println()
+
+    println("test case: a method that is overloaded for Funtion1 and PartialFunction")
+    takeFunctionLike(x => reverse(x))
+    takeFunctionLike(reverse(_))
+    takeFunctionLike(reverse _)
+  //takeFunctionLike(reverse)             // can't pass a method to a method overloaded to take a Function1 or a PartialFunction
+  }
+
   def main(args: Array[String]): Unit = {
     collectTest()
     orElseTest()
+    println()
+
+    fromFunctionLiteralTest()
+    println()
+
+    testOverloadingWithFunction1()
+    println()
+
+    testEtaExpansion()
   }
 }
