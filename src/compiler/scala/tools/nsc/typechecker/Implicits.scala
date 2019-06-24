@@ -181,7 +181,7 @@ trait Implicits {
   private val infoMapCache = new LinkedHashMap[Symbol, InfoMap]
   private val improvesCache = perRunCaches.newMap[(ImplicitInfo, ImplicitInfo), Boolean]()
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
-
+  private val shadowerUseOldImplementation = java.lang.Boolean.getBoolean("scalac.implicit.shadow.old")
   def resetImplicits() {
     implicitsCache.clear()
     infoMapCache.clear()
@@ -257,6 +257,7 @@ trait Implicits {
 
     var useCountArg: Int = 0
     var useCountView: Int = 0
+    def useCount(isView: Boolean): Int = if (isView) useCountView else useCountArg
 
     /** Does type `tp` contain an Error type as parameter or result?
      */
@@ -985,7 +986,7 @@ trait Implicits {
 
       /** Sorted list of eligible implicits.
        */
-      val eligible = Shadower.using(isLocalToCallsite){ shadower =>
+      private def eligibleOld = Shadower.using(isLocalToCallsite){ shadower =>
         val matches = iss flatMap { is =>
           val result = is filter (info => checkValid(info.sym) && survives(info, shadower))
           shadower addInfos is
@@ -995,6 +996,82 @@ trait Implicits {
         // most frequent one first
         matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
       }
+
+      /** Sorted list of eligible implicits.
+       */
+      private def eligibleNew = {
+        final case class Candidate(info: ImplicitInfo, level: Int)
+        var matches: java.util.ArrayList[Candidate] = null
+        var matchesNames: java.util.HashSet[Name] = null
+
+        var maxCandidateLevel = 0
+
+        {
+          var i = 0
+          // Collect candidates, the level at which each was found and build a set of their names
+          var iss = this.iss
+          while (!iss.isEmpty) {
+            var is = iss.head
+            while (!is.isEmpty) {
+              val info = is.head
+              if (checkValid(info.sym) && survives(info, NoShadower)) {
+                if (matches == null) {
+                  matches = new java.util.ArrayList(16)
+                  matchesNames = new java.util.HashSet(16)
+                }
+                matches.add(Candidate(info, i))
+                matchesNames.add(info.name)
+                maxCandidateLevel = i
+              }
+              is = is.tail
+            }
+            iss = iss.tail
+            i += 1
+          }
+        }
+
+        if (matches == null)
+          Nil // OPT common case: no candidates
+        else {
+          if (isLocalToCallsite) {
+            // A second pass to filter out results that are shadowed by implicits in inner scopes.
+            var i = 0
+            var removed = false
+            var iss = this.iss
+            while (!iss.isEmpty && i < maxCandidateLevel) {
+              var is = iss.head
+              while (!is.isEmpty) {
+                val info = is.head
+                if (matchesNames.contains(info.name)) {
+                  var j = 0
+                  val numMatches = matches.size()
+                  while (j < numMatches) {
+                    val matchInfo = matches.get(j)
+                    if (matchInfo != null && matchInfo.info.name == info.name && matchInfo.level > i) {
+                      // Shadowed. For now set to null, so as not to mess up the indexing our current loop.
+                      matches.set(j, null)
+                      removed = true
+                    }
+                    j += 1
+                  }
+                }
+                is = is.tail
+              }
+              iss = iss.tail
+              i += 1
+            }
+            if (removed) matches.removeIf(_ == null) // remove for real now.
+          }
+          // most frequent one first. Sort in-place.
+          matches.sort(((x, y) => java.lang.Integer.compare(y.info.useCount(isView), x.info.useCount(isView))))
+          val result = new ListBuffer[ImplicitInfo]
+          matches.forEach(x => result += x.info)
+          result.toList
+        }
+      }
+
+      val eligible = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
+
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
