@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 @SuppressWarnings("unused")
 public abstract class ExtendedThreadMxBean implements ThreadMXBean {
     static final ExtendedThreadMxBean proxy;
+    public static ExtendedThreadMxBean proxy() {return proxy;}
 
     static {
         ExtendedThreadMxBean local;

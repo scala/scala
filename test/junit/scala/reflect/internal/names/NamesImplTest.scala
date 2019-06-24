@@ -6,9 +6,17 @@ class MapNamesTabelTest extends ExtendedNameTest {
   override type T = Term
   override val nameTable: NameTable[T] = new MapNameTable[Term](Term.apply)
 }
-class ConcurrentMapNamesTabelTest extends ExtendedNameTest {
+class ConcurrentMapNamesTabel1Test extends ExtendedNameTest {
   override type T = Term
-  override val nameTable: NameTable[T] = new ConcurrentMapNameTable[Term](Term.apply)
+  override val nameTable: NameTable[T] = new ConcurrentMapNameTable1[Term](Term.apply)
+}
+class ConcurrentMapNamesTabel2Test extends ExtendedNameTest {
+  override type T = Term
+  override val nameTable: NameTable[T] = new ConcurrentMapNameTable2[Term](Term.apply)
+}
+class ConcurrentMapNamesTabel3Test extends ExtendedNameTest {
+  override type T = Term
+  override val nameTable: NameTable[T] = new ConcurrentMapNameTable3[Term](Term.apply)
 }
 class StrongConcurrentNodeInternerTest extends ExtendedNameTest  with ConcurrentNamesTest {
   override type T = Term
@@ -18,9 +26,23 @@ class WeakMapNameTableTest extends ExtendedNameTest with WeakNamesTest {
   override type T = Term
   override val nameTable: NameTable[T] = new WeakMapNameTable[Term](Term.apply)
 }
-class WeakConcurrentMapNameTableTest extends ExtendedNameTest with WeakNamesTest {
+class WeakAutoTrimConcurrentMapNameTable1Test extends ExtendedNameTest with WeakNamesTest {
   override type T = Term
-  override val nameTable: NameTable[T] = new WeakConcurrentMapNameTable[Term](Term.apply)
+  override val nameTable: NameTable[T] = new WeakAutoTrimConcurrentMapNameTable1[Term](Term.apply)
+}
+class WeakAutoTrimConcurrentMapNameTable2Test extends ExtendedNameTest with WeakNamesTest {
+  override type T = Term
+  override val nameTable: NameTable[T] = new WeakAutoTrimConcurrentMapNameTable2[Term](Term.apply)
+}
+class WeakNoAutoTrimConcurrentMapNameTable1Test extends ExtendedNameTest with WeakNamesTest {
+  override type T = Term
+  override val nameTable: WeakNoAutoTrimConcurrentMapNameTable1[T] = new WeakNoAutoTrimConcurrentMapNameTable1[Term](Term.apply)
+  override def cleanupIfNeeded(): Unit = nameTable.trim()
+}
+class WeakAutoNoTrimConcurrentMapNameTable2Test extends ExtendedNameTest with WeakNamesTest {
+  override type T = Term
+  override val nameTable: WeakNoAutoTrimConcurrentMapNameTable2[T] = new WeakNoAutoTrimConcurrentMapNameTable2[Term](Term.apply)
+  override def cleanupIfNeeded(): Unit = nameTable.trim()
 }
 class WeakFixedSizeNoAutoTrimConcurrentNodeInternerTest extends ExtendedNameTest with WeakNamesTest {
   override type T = Term
@@ -42,6 +64,7 @@ class Find0 extends ExtendedNameTest {
 class Find1 extends ExtendedNameTest {
   override type T = Term
   override val nameTable: NameTable[T] = new WeakFixedSizeAutoTrimConcurrentNodeInterner[Term](Term.apply) {
+    override def nonAllocatingCharLookup: Boolean = true
     override def find(chars: Array[Char], start: Int, count: Int): Term = super.find1(chars, start, count)
   }
 }
@@ -54,6 +77,7 @@ class Find2 extends ExtendedNameTest {
 class Find3 extends ExtendedNameTest {
   override type T = Term
   override val nameTable: NameTable[T] = new WeakFixedSizeAutoTrimConcurrentNodeInterner[Term](Term.apply) {
+    override def nonAllocatingCharLookup: Boolean = true
     override def find(chars: Array[Char], start: Int, count: Int): Term = super.find3(chars, start, count)
   }
 }

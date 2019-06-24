@@ -1,25 +1,23 @@
 package scala.reflect.internal.names
 
-import java.util
-import java.util.concurrent.{CyclicBarrier, Executors, TimeUnit}
-
 import org.junit.Assert._
-import org.junit.Test
+import org.junit._
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Random
+import scala.util.{Allocations, Random}
 
-abstract class ExtendedNameTest {
+abstract class ExtendedNameTest extends Allocations {
   type T <: AnyRef
   val nameTable: NameTable[T]
+
   def newTermName(s: String) = {
     nameTable.find(s)
   }
-  def newTermName(c:Array[Char], off:Int, len:Int) = {
-    nameTable.find(c,off,len)
+
+  def newTermName(c: Array[Char], off: Int, len: Int) = {
+    nameTable.find(c, off, len)
   }
-  lazy val sources = Array.tabulate(10000)( i => s"n$i")
+
+  lazy val sources = Array.tabulate(10000)(i => s"n$i")
 
   @Test
   def checkSimple(): Unit = {
@@ -29,13 +27,14 @@ abstract class ExtendedNameTest {
 
     val n2 = newTermName("xx")
     assertEquals(1, nameTable.size)
-    assertSame(n1,n2)
+    assertSame(n1, n2)
 
     val n3 = newTermName(new String("xx"))
     assertEquals(1, nameTable.size)
-    assertSame(n1,n3)
-    assertEquals(n1,n3)
+    assertSame(n1, n3)
+    assertEquals(n1, n3)
   }
+
   @Test def checkByCharsAndByString() {
     assertEquals(0, nameTable.size)
     val byString = sources map newTermName
@@ -55,6 +54,7 @@ abstract class ExtendedNameTest {
     }
 
   }
+
   @Test def checkByCharsAndByString2() {
     assertEquals(0, nameTable.size)
     //same as previous but do the chars first
@@ -75,6 +75,7 @@ abstract class ExtendedNameTest {
     }
 
   }
+
   @Test
   def checkSources1(): Unit = {
     assertEquals(0, nameTable.size)
@@ -86,7 +87,7 @@ abstract class ExtendedNameTest {
 
     val shuffled: List[Int] = Random.shuffle(List.tabulate(sources.length)(i => i))
 
-    shuffled.foreach{
+    shuffled.foreach {
       i =>
         val again = newTermName(new String(sources(i)))
         assertSame(terms(i), again)
@@ -99,6 +100,7 @@ abstract class ExtendedNameTest {
     assertEquals(0, nameTable.size)
     lookupInRandom
   }
+
   def lookupInRandom = {
     val random = new Random()
     val size = sources.size
@@ -106,7 +108,7 @@ abstract class ExtendedNameTest {
     for (count <- 0 until size * 10) {
       val i = random.nextInt(size)
       val term = newTermName(new String(sources(i)))
-      if (null eq all(i) ) {
+      if (null eq all(i)) {
         all(i) = term
       } else {
         assertSame(all(i), term)
@@ -115,13 +117,64 @@ abstract class ExtendedNameTest {
 
     for (i <- 0 until size) {
       val term = newTermName(new String(sources(i)))
-      if (null eq all(i) ) {
+      if (null eq all(i)) {
         all(i) = term
       } else {
         assertSame(all(i), term)
       }
     }
     all
+  }
+
+  @Test def lookupByStringNonAllocating: Unit = {
+    Assume.assumeTrue(nameTable.nonAllocatingStringLookup)
+
+    assertEquals(0, nameTable.size)
+    val initial = sources map newTermName
+
+
+    val byString = {
+      val res = new Array[AnyRef](sources.length)
+      assertNonAllocating {
+        var i = 0
+        while (i < sources.length) {
+          res(i) = newTermName(sources(i))
+          i += 1
+        }
+      }
+      res
+    }
+
+
+    assertEquals(sources.length, nameTable.size)
+    for (i <- 0 until sources.length) {
+      assertSame(initial(i), byString(i))
+    }
+  }
+
+  @Test def lookupByCharNonAllocating: Unit = {
+    Assume.assumeTrue(nameTable.nonAllocatingCharLookup)
+    assertEquals(0, nameTable.size)
+    val initial = sources map newTermName
+
+    //warmup any data structures
+    newTermName("Mike".toCharArray, 0, 4)
+
+    val byChars = {
+      val res = new Array[AnyRef](sources.length)
+      assertNonAllocating {
+        var i = 0
+        while (i < sources.length) {
+          res(i) = newTermName(sources(i).toCharArray, 0, sources(i).length)
+          i += 1
+        }
+      }
+      res
+    }
+    assertEquals(sources.length, nameTable.size)
+    for (i <- 0 until sources.length) {
+      assertSame(initial(i), byChars(i))
+    }
   }
 }
 

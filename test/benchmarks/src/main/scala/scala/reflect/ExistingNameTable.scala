@@ -9,6 +9,8 @@ class ExistingSynchronizedNameTable extends ExistingNameTable{
 class ExistingNameTable extends NameTable[AnyRef] with Names{
   override def size: Int = -1
 
+  override def nonAllocatingCharLookup: Boolean = true
+
   override def find(source: String) = newTermName(source.toCharArray(), 0, source.length(), null)
 
 

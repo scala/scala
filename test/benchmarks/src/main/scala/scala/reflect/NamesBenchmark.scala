@@ -17,7 +17,7 @@ abstract class AbstractNamesBenchmark {
   var names: Array[String] = null
   var namesChars: Array[Array[Char]] = null
 
-  @Param(Array("0", "10", "100","1000", "10000", "100000"))
+  @Param(Array("0", "10", "10000", "100000", "1000000"))
   var arraySize: Int = _
 
   def testType: String
@@ -31,39 +31,54 @@ abstract class AbstractNamesBenchmark {
     newNameTable = testType match {
       case "Existing" => () => new ExistingNameTable
       case "ExistingSynchronized" => () => new ExistingSynchronizedNameTable
-      case "MapNameTable" => () => new MapNameTable (new NameBase(_))
-      case "ConcurrentMapNameTable" => () => new ConcurrentMapNameTable(new NameBase(_))
-      case "WeakConcurrentMapNameTable" => () => new WeakConcurrentMapNameTable(new NameBase(_))
+      case "MapNameTable" => () => new MapNameTable(new NameBase(_))
+      case "ConcurrentMapNameTable1" => () => new ConcurrentMapNameTable1(new NameBase(_))
+      case "ConcurrentMapNameTable2" => () => new ConcurrentMapNameTable2(new NameBase(_))
+      case "ConcurrentMapNameTable3" => () => new ConcurrentMapNameTable3(new NameBase(_))
+      case "WeakAutoTrimConcurrentMapNameTable1" => () => new WeakAutoTrimConcurrentMapNameTable1[AnyRef](new NameBase(_))
+      case "WeakAutoTrimConcurrentMapNameTable2" => () => new WeakAutoTrimConcurrentMapNameTable1[AnyRef](new NameBase(_))
+      case "WeakNoAutoTrimConcurrentMapNameTable1" => () => new WeakNoAutoTrimConcurrentMapNameTable1[AnyRef](new NameBase(_))
+      case "WeakNoAutoTrimConcurrentMapNameTable2" => () => new WeakNoAutoTrimConcurrentMapNameTable2[AnyRef](new NameBase(_))
       case "StrongConcurrentNodeInterner" => () => new StrongConcurrentNodeInterner(new NameBase(_))
       case "WeakFixedSizeNoAutoTrimConcurrentNodeInterner" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_))
       case "WeakFixedSizeAutoTrimConcurrentNodeInterner" => () => new WeakFixedSizeAutoTrimConcurrentNodeInterner(new NameBase(_))
-      case "Find0" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
-      }
-      case "Find1" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find1(chars, start, count)
-      }
-      case "Find2" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find2(chars, start, count)
-      }
-      case "Find3" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find3(chars, start, count)
-      }
-      case "Safe" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
-      }
-      case "Unsafe" => () => new UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
-      }
-      case "Tail" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(key: String) = super.find(key)
-      }
-      case "NoTail" => () => new UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
-        override def find(key: String) = super.findNoTail(key)
-      }
+      case "Find0" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
+        }
+      case "Find1" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find1(chars, start, count)
+        }
+      case "Find2" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find2(chars, start, count)
+        }
+      case "Find3" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find3(chars, start, count)
+        }
+      case "Safe" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
+        }
+      case "Unsafe" => () =>
+        new UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(chars: Array[Char], start: Int, count: Int) = super.find(chars, start, count)
+        }
+      case "Tail" => () =>
+        new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(key: String) = super.find(key)
+        }
+      case "NoTail" => () =>
+        new UnsafeWeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
+          override def find(key: String) = super.findNoTail(key)
+        }
     }
     fullNameTable = newNameTable()
-    names foreach {fullNameTable.find(_)}
+    names foreach {
+      fullNameTable.find(_)
+    }
   }
 
   @Benchmark def findOldString(bh: Blackhole): Any = {
@@ -76,25 +91,32 @@ abstract class AbstractNamesBenchmark {
     }
     bh.consume(res)
   }
+
   @Benchmark def findOldChars(bh: Blackhole): Any = {
-    val nameTable: NameTable[_<: AnyRef] = fullNameTable
+    val nameTable: NameTable[_ <: AnyRef] = fullNameTable
     var i = 0
     val res = new Array[AnyRef](arraySize)
     while (i < arraySize) {
-      val c= namesChars(i)
-      res(i) = nameTable.find(c,0,c.length)
+      val c = namesChars(i)
+      res(i) = nameTable.find(c, 0, c.length)
       i += 1
     }
     bh.consume(res)
   }
 }
+
 @Threads(1)
 class NamesBenchmark extends AbstractNamesBenchmark {
-  @Param(Array("Existing", "ExistingSynchronized", "MapNameTable", "ConcurrentMapNameTable",
-    "WeakConcurrentMapNameTable", "StrongConcurrentNodeInterner", "WeakFixedSizeNoAutoTrimConcurrentNodeInterner",
+  @Param(Array("Existing", "ExistingSynchronized", "MapNameTable",
+    "ConcurrentMapNameTable1", "ConcurrentMapNameTable2", "ConcurrentMapNameTable3",
+    "WeakAutoTrimConcurrentMapNameTable1", "WeakAutoTrimConcurrentMapNameTable2",
+    "WeakNoAutoTrimConcurrentMapNameTable1", "WeakNoAutoTrimConcurrentMapNameTable2",
+    "StrongConcurrentNodeInterner", "WeakFixedSizeNoAutoTrimConcurrentNodeInterner",
     "WeakFixedSizeAutoTrimConcurrentNodeInterner", "Find0", "Find1", "Find2", "Find3", "Safe", "Unsafe", "Tail", "NoTail"))
   var testImpl: String = _
+
   override def testType = testImpl
+
   @Benchmark def findNewString(bh: Blackhole): Any = {
     val nameTable = newNameTable()
     val res = new Array[AnyRef](arraySize)
@@ -111,18 +133,23 @@ class NamesBenchmark extends AbstractNamesBenchmark {
     var i = 0
     val res = new Array[AnyRef](arraySize)
     while (i < arraySize) {
-      val c= namesChars(i)
-      res(i) = nameTable.find(c,0,c.length)
+      val c = namesChars(i)
+      res(i) = nameTable.find(c, 0, c.length)
       i += 1
     }
     bh.consume(res)
   }
 }
+
 @Threads(4)
 class NamesBenchmarkMT extends AbstractNamesBenchmark {
-  @Param(Array("ExistingSynchronized", "ConcurrentMapNameTable", "WeakConcurrentMapNameTable",
+  @Param(Array("ExistingSynchronized",
+    "ConcurrentMapNameTable1", "ConcurrentMapNameTable2", "ConcurrentMapNameTable3",
+    "WeakAutoTrimConcurrentMapNameTable1", "WeakAutoTrimConcurrentMapNameTable2",
+    "WeakNoAutoTrimConcurrentMapNameTable1", "WeakNoAutoTrimConcurrentMapNameTable2",
     "StrongConcurrentNodeInterner", "WeakFixedSizeNoAutoTrimConcurrentNodeInterner",
     "WeakFixedSizeAutoTrimConcurrentNodeInterner", "Find0", "Find1", "Find2", "Find3", "Safe", "Unsafe", "Tail", "NoTail"))
   var testImpl: String = _
+
   override def testType = testImpl
 }

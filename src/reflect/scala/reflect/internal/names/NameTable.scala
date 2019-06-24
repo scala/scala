@@ -3,6 +3,11 @@ package scala.reflect.internal.names
 import java.nio.charset.Charset
 
 abstract class NameTable[T <: AnyRef] {
+  //temp method
+  def nonAllocatingCharLookup: Boolean = false
+  //temp method
+  def nonAllocatingStringLookup: Boolean = true
+
   def size: Int
   def find(source: String): T
 

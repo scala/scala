@@ -7,4 +7,6 @@ class MapNameTable[T <: AnyRef](builder: (String) => T) extends NameTable[T] {
   private val data = new mutable.AnyRefMap[String, T]
 
   def find(source: String): T = data.getOrElseUpdate(source, builder(source))
+
+  override def nonAllocatingStringLookup: Boolean = false
 }
