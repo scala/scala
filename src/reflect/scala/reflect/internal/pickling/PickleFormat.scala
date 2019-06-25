@@ -19,8 +19,6 @@ package pickling
  *
  *  If you extend the format, be sure to increase the
  *  version minor number.
- *
- *  @version 1.0
  */
 object PickleFormat {
 

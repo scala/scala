@@ -34,7 +34,5 @@ package scala
  *      def g(xs: Any) = xs match { case x: List[String @unchecked] => x.head }
  *    }
  * }}}
- *
- *  @since 2.4
  */
 final class unchecked extends scala.annotation.Annotation {}

@@ -20,7 +20,6 @@ import scala.annotation.tailrec
   *
   *  $concurrentmapinfo
   *
-  *  @since 2.8
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#concurrent_maps "Scala's Collection Library overview"]]
   *  section on `Concurrent Maps` for more information.
   *
@@ -117,7 +116,6 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
    * @param key the key value
    * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
    * @return the new value associated with the specified key
-   * @since 2.13.0
    */
   override def updateWith(key: K)(remappingFunction: Option[V] => Option[V]): Option[V] = updateWithAux(key)(remappingFunction)
 

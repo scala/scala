@@ -36,8 +36,6 @@ package math
  *  `lteq(x, y) && lteq(y, x) == '''true'''`. This equivalence relation is
  *  exposed as the `equiv` method, inherited from the
  *  [[scala.math.Equiv Equiv]] trait.
- *
- *  @since 2.7
  */
 
 trait PartialOrdering[T] extends Equiv[T] {

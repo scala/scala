@@ -20,7 +20,6 @@ import scala.collection.mutable
  *  and create fresh symbols for new local definitions.
  *
  *  @author  Iulian Dragos
- *  @version 1.0
  */
 abstract class Duplicators extends Analyzer {
   import global._

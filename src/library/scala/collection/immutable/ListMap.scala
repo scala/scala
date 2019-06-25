@@ -35,7 +35,6 @@ import scala.runtime.Statics.releaseFence
   * @tparam K the type of the keys contained in this list map
   * @tparam V the type of the values associated with the keys
   *
-  * @since 1
   * @define Coll ListMap
   * @define coll list map
   * @define mayNotTerminateInf
@@ -98,7 +97,6 @@ sealed class ListMap[K, +V]
   *
   * @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#list-maps "Scala's Collection Library overview"]]
   * section on `List Maps` for more information.
-  * @since 1
   * @define Coll ListMap
   * @define coll list map
   */

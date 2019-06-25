@@ -22,7 +22,6 @@ import scala.reflect.internal.Depth
 /** This trait contains methods related to type parameter inference.
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 trait Infer extends Checkable {
   self: Analyzer =>

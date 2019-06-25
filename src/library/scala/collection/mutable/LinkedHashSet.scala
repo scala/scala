@@ -21,8 +21,6 @@ import scala.collection.generic.DefaultSerializable
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.
  *
- *  @since   1
- *
  *  @tparam A     the type of the elements contained in this set.
  *
  *  @define Coll `LinkedHashSet`
@@ -170,7 +168,6 @@ object LinkedHashSet extends IterableFactory[LinkedHashSet] {
   def newBuilder[A] = new GrowableBuilder(empty[A])
 
   /** Class for the linked hash set entry, used internally.
-   *  @since 2.10
    */
   private[mutable] final class Entry[A](val key: A) extends HashEntry[A, Entry[A]] {
     var earlier: Entry[A] = null

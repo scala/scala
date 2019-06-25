@@ -34,7 +34,6 @@ package scala.annotation
   }}}
   *
   * @param enabled whether to show this type as an infix type operator.
-  * @since 2.12.2
   */
 @deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
 class showAsInfix(enabled: Boolean = true) extends annotation.StaticAnnotation

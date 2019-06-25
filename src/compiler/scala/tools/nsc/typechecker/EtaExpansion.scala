@@ -20,7 +20,6 @@ import symtab.Flags._
 /** This trait ...
  *
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait EtaExpansion { self: Analyzer =>
   import global._

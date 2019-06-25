@@ -37,7 +37,6 @@ import scala.annotation.tailrec
  *  And more, and there is plenty of overlap, so it'll be a process.
  *
  *  @author Paul Phillips
- *  @version 1.0
  */
 trait TypeDiagnostics {
   self: Analyzer with StdAttachments =>

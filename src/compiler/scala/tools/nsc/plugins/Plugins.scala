@@ -25,10 +25,6 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver.Defaults
 
 /** Support for run-time loading of compiler plugins.
- *
- *  @author Lex Spoon
- *  @version 1.1, 2009/1/2
- *  Updated 2009/1/2 by Anders Bach Nielsen: Added features to implement SIP 00002
  */
 trait Plugins { global: Global =>
 

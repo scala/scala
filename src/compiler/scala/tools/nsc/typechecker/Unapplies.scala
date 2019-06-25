@@ -19,7 +19,6 @@ import scala.reflect.internal.util.ListOfNil
 
 /*
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait Unapplies extends ast.TreeDSL {
   self: Analyzer =>

@@ -17,8 +17,6 @@ package scala
  *
  *  Such runtime checks are not emitted by default.
  *  They can be enabled by the `-Xcheckinit` compiler option.
- *
- *  @since 2.7
  */
 final case class UninitializedFieldError(msg: String) extends RuntimeException(msg) {
   def this(obj: Any) = this("" + obj)

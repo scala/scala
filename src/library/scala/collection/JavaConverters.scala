@@ -73,8 +73,6 @@ import scala.collection.convert._
  *    scala> val ss = asScalaBuffer(vs)
  *    ss: scala.collection.mutable.Buffer[String] = Buffer(hi, bye)
  *  }}}
- *
- *  @since  2.8.1
  */
 @deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 object JavaConverters extends AsJavaConverters with AsScalaConverters {

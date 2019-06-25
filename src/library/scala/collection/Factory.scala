@@ -76,7 +76,6 @@ object Factory {
   * @tparam CC Collection type constructor (e.g. `List`)
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
-  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -359,7 +358,6 @@ trait StrictOptimizedSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extends SeqFac
   * @tparam C Type of collection (e.g. `List[Int]`, `TreeMap[Int, String]`, etc.)
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
-  *   @since  2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -376,7 +374,6 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
 /**
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
-  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`
@@ -714,7 +711,6 @@ trait StrictOptimizedClassTagSeqFactory[+CC[A] <: SeqOps[A, Seq, Seq[A]]] extend
 /**
   * @define factoryInfo
   *   This object provides a set of operations to create $Coll values.
-  *   @since 2.13
   *
   * @define coll collection
   * @define Coll `Iterable`

@@ -19,9 +19,7 @@ import scala.reflect.internal.util.StringContextStripMarginOps
  *  to XML for inclusion in the plugin's .jar file.
  *
  * @author Lex Spoon
- * @version 1.0, 2007-5-21
  * @author Adriaan Moors
- * @version 2.0, 2013
  * @param name A short name of the plugin, used to identify it in
  *   various contexts. The phase defined by the plugin
  *   should have the same name.
@@ -39,11 +37,6 @@ case class PluginDescription(name: String, classname: String) {
 }
 
 /** Utilities for the PluginDescription class.
- *
- * @author Lex Spoon
- * @version 1.0, 2007-5-21
- * @author Adriaan Moors
- * @version 2.0, 2013
  */
 object PluginDescription {
   private def text(ns: org.w3c.dom.NodeList): String =

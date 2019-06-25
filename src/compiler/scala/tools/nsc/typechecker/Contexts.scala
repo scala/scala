@@ -20,7 +20,6 @@ import scala.reflect.internal.Reporter
 
 /**
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait Contexts { self: Analyzer =>
   import global._

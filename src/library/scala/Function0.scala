@@ -11,7 +11,7 @@
  */
 
 // GENERATED CODE: DO NOT EDIT.
-// genprod generated these sources at: 2019-01-20T09:16:45.854Z
+// genprod generated these sources at: 2019-06-18T20:49:11.955Z
 
 package scala
 

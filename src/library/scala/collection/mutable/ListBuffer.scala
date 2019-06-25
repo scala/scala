@@ -23,7 +23,6 @@ import scala.runtime.Statics.releaseFence
 /** A `Buffer` implementation backed by a list. It provides constant time
   *  prepend and append. Most other operations are linear.
   *
-  *  @since   1
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-mutable-collection-classes.html#list-buffers "Scala's Collection Library overview"]]
   *  section on `List Buffers` for more information.
   *

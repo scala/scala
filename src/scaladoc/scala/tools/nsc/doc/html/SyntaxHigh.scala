@@ -19,7 +19,6 @@ import scala.annotation.{switch, tailrec}
   * (see method `HtmlPage.blockToHtml`).
   *
   * @author Stephane Micheloud
-  * @version 1.0
   */
 private[html] object SyntaxHigh {
   import HtmlTags.{Elems, Raw, NoElems}

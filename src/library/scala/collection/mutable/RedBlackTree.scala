@@ -21,8 +21,6 @@ import java.lang.String
  * An object containing the red-black tree implementation used by mutable `TreeMaps`.
  *
  * The trees implemented in this object are *not* thread safe.
- *
- * @since 2.12
  */
 private[collection] object RedBlackTree {
 

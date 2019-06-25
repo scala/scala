@@ -992,7 +992,6 @@ object SeqOps {
  /**  A KMP implementation, based on the undoubtedly reliable wikipedia entry.
    *  Note: I made this private to keep it from entering the API.  That can be reviewed.
    *
-   *  @since  2.10
    *  @param  S       Sequence that may contain target
    *  @param  m0      First index of S to consider
    *  @param  m1      Last index of S to consider (exclusive)
@@ -1080,7 +1079,6 @@ object SeqOps {
 
   /** Make sure a target sequence has fast, correctly-ordered indexing for KMP.
    *
-   *  @since  2.10
    *  @param  W    The target sequence
    *  @param  n0   The first element in the target sequence that we should use
    *  @param  n1   The far end of the target sequence that we should use (exclusive)
@@ -1119,7 +1117,6 @@ object SeqOps {
 
  /** Make a jump table for KMP search.
    *
-   *  @since  2.10
    *  @param  Wopt The target sequence
    *  @param  wlen Just in case we're only IndexedSeq and not IndexedSeqOptimized
    *  @return KMP jump table for target sequence

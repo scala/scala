@@ -178,9 +178,7 @@ object ArrayOps {
   *  `immutable.ArraySeq` serve this purpose.
   *
   *  The difference between this class and `ArraySeq`s is that calling transformer methods such as
- *   `filter` and `map` will yield an array, whereas an `ArraySeq` will remain an `ArraySeq`.
-  *
-  *  @since 2.8
+  *  `filter` and `map` will yield an array, whereas an `ArraySeq` will remain an `ArraySeq`.
   *
   *  @tparam A   type of the elements contained in this array.
   */

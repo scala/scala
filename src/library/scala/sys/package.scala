@@ -18,8 +18,6 @@ import scala.collection.JavaConverters._
 /** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the
  *  world outside of it.
- *
- *  @since   2.9
  */
 package object sys {
   /** Throw a new RuntimeException with the supplied message.

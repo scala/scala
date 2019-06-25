@@ -23,8 +23,6 @@ package runtime
  *    of partial function literals.
  *
  *  This trait is used as a basis for implementation of all partial function literals.
- *
- *  @since   2.10
  */
 abstract class AbstractPartialFunction[@specialized(Specializable.Arg) -T1, @specialized(Specializable.Return) +R] extends Function1[T1, R] with PartialFunction[T1, R] { self =>
   // this method must be overridden for better performance,

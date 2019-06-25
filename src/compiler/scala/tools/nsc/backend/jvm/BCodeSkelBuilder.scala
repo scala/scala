@@ -21,10 +21,7 @@ import GenBCode._
 import BackendReporting._
 
 /*
- *
  *  @author  Miguel Garcia, http://lamp.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
- *  @version 1.0
- *
  */
 abstract class BCodeSkelBuilder extends BCodeHelpers {
   import global._

@@ -15,8 +15,6 @@ import scala.util.{Try, Success, Failure}
 /** An API for stateful testing in ScalaCheck.
  *
  *  For an implementation overview, see the examples in ScalaCheck's source tree.
- *
- *  @since 1.12.0
  */
 trait Commands {
 

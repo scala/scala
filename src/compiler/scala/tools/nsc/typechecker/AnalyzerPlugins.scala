@@ -15,7 +15,6 @@ package typechecker
 
 /**
  *  @author Lukas Rytz
- *  @version 1.0
  */
 trait AnalyzerPlugins { self: Analyzer =>
   import global._

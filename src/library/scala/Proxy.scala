@@ -22,8 +22,6 @@ package scala
  *  }}}
  *  '''Note:''' forwarding methods in this way will most likely create
  *  an asymmetric equals method, which is not generally recommended.
- *
- *  @since   1.0
  */
 @deprecated("Explicitly override hashCode, equals and toString instead.", "2.13.0")
 trait Proxy extends Any {

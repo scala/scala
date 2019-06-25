@@ -30,8 +30,6 @@ import scala.runtime.ScalaRunTime.{array_apply, array_update}
  *  }}}
  *  where the array objects `a`, `b` and `c` have respectively the values
  *  `Array(1, 2)`, `Array(0, 0)` and `Array(1, 2, 0, 0)`.
- *
- *  @since  1.0
  */
 object Array {
   val emptyBooleanArray = new Array[Boolean](0)
@@ -608,7 +606,6 @@ object Array {
  *  by converting to `ArraySeq` first and invoking the variant of `reverse` that returns another
  *  `ArraySeq`.
  *
- *  @since  1.0
  *  @see [[http://www.scala-lang.org/files/archive/spec/2.13/ Scala Language Specification]], for in-depth information on the transformations the Scala compiler makes on Arrays (Sections 6.6 and 6.15 respectively.)
  *  @see [[http://docs.scala-lang.org/sips/completed/scala-2-8-arrays.html "Scala 2.8 Arrays"]] the Scala Improvement Document detailing arrays since Scala 2.8.
  *  @see [[http://docs.scala-lang.org/overviews/collections/arrays.html "The Scala 2.8 Collections' API"]] section on `Array` by Martin Odersky for more information.

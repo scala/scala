@@ -52,7 +52,6 @@ import scala.annotation.meta._
  *  @see    The official documentation on [[http://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
  *  @param  message the message to print during compilation if the definition is accessed
  *  @param  since   a string identifying the first version in which the definition was deprecated
- *  @since  2.3
  *  @see    [[scala.deprecatedInheritance]]
  *  @see    [[scala.deprecatedOverriding]]
  *  @see    [[scala.deprecatedName]]

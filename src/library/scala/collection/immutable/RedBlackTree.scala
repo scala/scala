@@ -27,8 +27,6 @@ import java.lang.{Integer, String}
   *  uses `null` to represent empty trees. This also means pattern matching cannot
   *  easily be used. The API represented by the RedBlackTree object tries to hide these
   *  optimizations behind a reasonably clean API.
-  *
-  *  @since 2.10
   */
 private[collection] object RedBlackTree {
 

@@ -114,7 +114,6 @@ trait MapOps[K, +V, +CC[X, +Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]
    * @param key the key value
    * @param remappingFunction a partial function that receives current optionally-mapped value and return a new mapping
    * @return A new map with the updated mapping with the key
-   * @since 2.13.0
    */
   def updatedWith[V1 >: V](key: K)(remappingFunction: Option[V] => Option[V1]): CC[K,V1] = {
     val previousValue = this.get(key)

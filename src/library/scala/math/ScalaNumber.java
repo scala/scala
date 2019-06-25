@@ -13,8 +13,6 @@
 package scala.math;
 
 /** A marker class for Number types introduced by Scala
- *  @version 2.8
- *  @since 2.8
  */
 public abstract class ScalaNumber extends java.lang.Number {
   protected abstract boolean isWhole();

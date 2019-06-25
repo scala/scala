@@ -29,8 +29,6 @@ package mutable
   *  @tparam  Elem  the type of elements that get added to the builder.
   *  @tparam  To    the type of collection that it produced.
   *
-  *  @since 2.12
-  *
   *  @define multipleResults
   *
   *     This Builder can be reused after calling `result()` without an

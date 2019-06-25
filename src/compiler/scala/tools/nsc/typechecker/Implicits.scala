@@ -31,7 +31,6 @@ import scala.language.implicitConversions
 /** This trait provides methods to find various kinds of implicits.
  *
  *  @author  Martin Odersky
- *  @version 1.0
  */
 trait Implicits {
   self: Analyzer =>

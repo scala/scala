@@ -186,7 +186,6 @@ import scala.runtime.Statics
   *
   *  @tparam A    the type of the elements contained in this lazy list.
   *
-  *  @since   2.13
   *  @see [[http://docs.scala-lang.org/overviews/collections/concrete-immutable-collection-classes.html#lazylists "Scala's Collection Library overview"]]
   *  section on `LazyLists` for more information.
   *  @define Coll `LazyList`

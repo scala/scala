@@ -65,7 +65,6 @@ import scala.language.{higherKinds, implicitConversions}
   * You can import scala.math.Ordering.Implicits to gain access to other
   * implicit orderings.
   *
-  * @since 2.7
   * @see [[scala.math.Ordered]], [[scala.util.Sorting]]
   */
 @annotation.implicitNotFound(msg = "No implicit Ordering defined for ${T}.")

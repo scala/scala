@@ -25,8 +25,6 @@ import scala.collection.AbstractIterable
  * An abstraction over files for use in the reflection/compiler libraries.
  *
  * ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
- *
- * @version 1.0, 23/03/2004
  */
 object AbstractFile {
   /** Returns "getFile(new File(path))". */

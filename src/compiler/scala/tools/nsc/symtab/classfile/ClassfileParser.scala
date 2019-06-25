@@ -33,7 +33,6 @@ import scala.util.control.NonFatal
 /** This abstract class implements a class file parser.
  *
  *  @author Martin Odersky
- *  @version 1.0
  */
 abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   val symbolTable: SymbolTable {

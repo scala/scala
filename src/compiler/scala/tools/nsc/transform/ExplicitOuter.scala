@@ -22,7 +22,6 @@ import scala.collection.mutable.ListBuffer
 /** This class ...
  *
  *  @author  Martin Odersky
- *  @version 1.0
  */
 abstract class ExplicitOuter extends InfoTransform
       with TypingTransformers

@@ -20,8 +20,6 @@ import scala.collection.generic.DefaultSerializable
 /**
   *  @define Coll `OpenHashMap`
   *  @define coll open hash map
-  *
-  *  @since 2.7
   */
 @deprecated("Use HashMap or one of the specialized versions (LongMap, AnyRefMap) instead of OpenHashMap", "2.13.0")
 @SerialVersionUID(3L)
@@ -54,8 +52,6 @@ object OpenHashMap extends MapFactory[OpenHashMap] {
   *  @tparam Key          type of the keys in this map.
   *  @tparam Value        type of the values in this map.
   *  @param initialSize   the initial size of the internal hash table.
-  *
-  *  @since  2.7
   *
   *  @define Coll `OpenHashMap`
   *  @define coll open hash map

@@ -22,7 +22,5 @@ package scala.annotation
  *  down is not a proper constrained type, and this marker should not be
  *  applied.  A Scala compiler will drop such annotations in cases where it
  *  would rewrite a type constraint.
- *
- *  @since   2.6
  */
 trait TypeConstraint extends Annotation

@@ -19,8 +19,6 @@ package collection.mutable
   *
   * GrowableBuilders can produce only a single instance of the collection they are growing.
   *
-  * @since 2.8
-  *
   * @define Coll `GrowingBuilder`
   * @define coll growing builder
   */
