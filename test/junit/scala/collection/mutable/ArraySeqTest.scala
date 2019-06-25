@@ -74,6 +74,13 @@ class ArraySeqTest {
     assertOfRef(Array(Int.box(65)), Array(Char.box('A')))
     assertOfRef(Array(Char.box('A')), Array(Int.box(65)))
   }
+
+  @Test
+  def t11583(): Unit = {
+    assertEquals("1 2 3 4 5 6 7", ArraySeq('1', '2', '3', '4', '5', '6', '7').mkString(" "))
+    // this wraps as `ArraySeq` via `Predef`
+    assertEquals("1 2 3 4 5 6 7", Array('1', '2', '3', '4', '5', '6', '7').mkString(" "))
+  }
 }
 
 /*
