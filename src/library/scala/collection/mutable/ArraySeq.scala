@@ -245,7 +245,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
           while (i < len) {
             jsb.append(sep)
             jsb.append(array(i))
-            i += i
+            i += 1
           }
         }
       }
