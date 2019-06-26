@@ -54,6 +54,7 @@ trait EntityPage extends HtmlPage {
     canonicalLink ++ List(
       HtmlTags.Link(href = relativeLinkTo(List("index.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("template.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
+    HtmlTags.Link(href = relativeLinkTo(List("print.css", "lib")), media = "print", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("diagrams.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet", id = "diagrams-css"),
     libScript("jquery.js"),
     libScript("index.js"),

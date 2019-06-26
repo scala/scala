@@ -1,0 +1,11 @@
+@media print {
+  * {
+    text-decoration: none;
+    font-family: "Lato", Arial, sans-serif;
+    border-width: 0px;
+    margin: 0px;
+  }
+  #textfilter, #package, #subpackage-spacer, #memberfilter, #filterby, div#definition .big-circle {
+    display: none !important;
+  }
+}
