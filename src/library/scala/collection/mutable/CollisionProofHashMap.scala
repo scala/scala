@@ -385,7 +385,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
 
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new CollisionProofHashMap.DeserializationFactory[K, V](table.length, loadFactor, ordering), this)
 
-  override protected[this] def stringPrefix = "CollisionProofHashMap"
+  override protected[this] def className = "CollisionProofHashMap"
 
   override def getOrElseUpdate(key: K, defaultValue: => V): V = {
     val hash = computeHash(key)
