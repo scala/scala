@@ -8,10 +8,10 @@ scala> :paste
 // Entering paste mode (ctrl-D to finish)
 
 {
-  val clazz = rootMirror.getClassByName(newTermName("test.ThrowsDeclaration_2"));
+  val clazz = rootMirror.getClassByName("test.ThrowsDeclaration_2");
   {
   	val method = clazz.info.member(newTermName("foo"))
-  	val throwsAnn = method.annotations.head
+  	val throwsAnn = method.initialize.annotations.head
   	val atp = throwsAnn.atp
   	println("foo")
   	println("atp.typeParams.isEmpty: " + atp.typeParams.isEmpty)
@@ -21,7 +21,7 @@ scala> :paste
 
   {
   	val method = clazz.info.member(newTermName("bar"))
-  	val throwsAnn = method.annotations.head
+  	val throwsAnn = method.initialize.annotations.head
   	val Literal(const) = throwsAnn.args.head
   	val tp = const.typeValue
   	println("bar")
@@ -37,7 +37,7 @@ atp.typeParams.isEmpty: true
 throws[IllegalStateException](classOf[java.lang.IllegalStateException])
 
 bar
-tp.typeParams.isEmpty: true
-throws[test.PolymorphicException[_]](classOf[test.PolymorphicException])
+tp.typeParams.isEmpty: false
+throws[test.PolymorphicException](classOf[test.PolymorphicException])
 
 scala> :quit
