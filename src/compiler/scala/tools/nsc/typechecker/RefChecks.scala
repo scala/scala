@@ -1567,21 +1567,39 @@ abstract class RefChecks extends Transform {
 
           transform(qual)
       case StringContextIntrinsic(treated, args) =>
-        var result: Tree = treated.head
-        def concat(t: Tree): Unit = {
-          result = atPos(t.pos)(gen.mkMethodCall(gen.mkAttributedSelect(result, definitions.String_+), t :: Nil)).setType(StringTpe)
-        }
+        val argsIndexed = args.toVector
+        var concatArgs = ListBuffer[Tree]()
         val numLits = treated.length
         foreachWithIndex(treated.tail) { (lit, i) =>
           val treatedContents = lit.asInstanceOf[Literal].value.stringValue
           val emptyLit = treatedContents.isEmpty
           if (i < numLits - 1) {
-            concat(args(i))
-            if (!emptyLit) concat(lit)
+            concatArgs += argsIndexed(i)
+            if (!emptyLit) concatArgs += lit
           } else if (!emptyLit) {
-            concat(lit)
+            concatArgs += lit
           }
         }
+        def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
+          atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(StringTpe)
+
+        var result: Tree = treated.head
+        val chunkSize = 32
+        if (concatArgs.lengthCompare(chunkSize) <= 0) {
+          concatArgs.foreach { t =>
+            result = mkConcat(t.pos, result, t)
+          }
+        } else {
+          concatArgs.toList.grouped(chunkSize).foreach {
+            case group =>
+              var chunkResult: Tree = group.head
+              group.tail.foreach { t =>
+                chunkResult = mkConcat(t.pos, chunkResult, t)
+              }
+              result = mkConcat(chunkResult.pos, result, chunkResult)
+          }
+        }
+
         result match {
           case ap: Apply => transformApply(ap)
           case _ => result
@@ -1608,8 +1626,7 @@ abstract class RefChecks extends Transform {
               if qual1.symbol == rd.StringContext_apply &&
                 treeInfo.isQualifierSafeToElide(qual) &&
                 lits.forall(lit => treeInfo.isLiteralString(lit)) &&
-                lits.length == (args.length + 1) &&
-                args.lengthCompare(64) <= 0 => // TODO make more robust to large input so that we can drop this condition, chunk the concatenations in manageable batches
+                lits.length == (args.length + 1) =>
               val isRaw = sym == rd.StringContext_raw
               if (isRaw) Some((lits, args))
               else {
