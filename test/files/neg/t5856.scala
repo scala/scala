@@ -8,4 +8,12 @@ object Test {
   val s7 = s"$s1 $null $super"
   val s8 = s"$super"
   val s9 = s"$"
+  val sA = s"$this"
+
+  // is Java but not UnicodeIdentifierStart
+  //val ₵ = "cents"
+  //val sense = s"$₵"
+
+  val ᛯ = "sign"
+  def sign = s"$ᛯ"
 }
