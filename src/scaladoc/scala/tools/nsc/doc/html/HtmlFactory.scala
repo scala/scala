@@ -94,6 +94,10 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     "ownerbg2.gif"
   )
 
+  def webjarResources = List(
+    "jquery.min.js"
+  )
+
   /** Generates the Scaladoc site for a model into the site root.
     * A scaladoc site is a set of HTML and related files
     * that document a model extracted from a compiler run.
@@ -113,7 +117,21 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
       finally out.close()
     }
 
+    def copyWebjarResource(subPath: String): Unit = {
+      val bytes = new Streamable.Bytes {
+        val p = "/" + subPath
+        val inputStream = getClass.getResourceAsStream(p)
+        assert(inputStream != null, p)
+      }.toByteArray()
+      val dest = Directory(siteRoot) / "lib" / subPath
+      dest.parent.createDirectory()
+      val out = dest.toFile.bufferedOutput()
+      try out.write(bytes, 0, bytes.length)
+      finally out.close()
+    }
+
     libResources foreach (s => copyResource("lib/" + s))
+    webjarResources foreach (s => copyWebjarResource(s))
 
     IndexScript(universe) writeFor this
 

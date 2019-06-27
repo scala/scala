@@ -56,7 +56,7 @@ trait EntityPage extends HtmlPage {
     HtmlTags.Link(href = relativeLinkTo(List("template.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("print.css", "lib")), media = "print", `type` = "text/css", rel = "stylesheet"),
     HtmlTags.Link(href = relativeLinkTo(List("diagrams.css", "lib")), media = "screen", `type` = "text/css", rel = "stylesheet", id = "diagrams-css"),
-    extScript("https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"),
+    libScript("jquery.min.js"),
     libScript("index.js"),
     extScript(relativeLinkTo(List("index.js"))),
     libScript("scheduler.js"),
