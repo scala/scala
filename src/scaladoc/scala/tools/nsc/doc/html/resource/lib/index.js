@@ -107,13 +107,17 @@ function handleKeyNavigation() {
         };
     };
 
+    function safeOffset($elem) {
+        return $elem.length ? $elem.offset() : { top:0, left:0 }; // offset relative to viewport
+    }
+
     /** Scroll helper, ensures that the selected elem is inside the viewport */
     var Scroller = function ($container) {
         scroller = this;
         scroller.container = $container;
 
         scroller.scrollDown = function($elem) {
-            var offset = $elem.offset(); // offset relative to viewport
+            var offset = safeOffset($elem);
             if (offset !== undefined) {
                 var yPos = offset.top;
                 if ($container.height() < yPos || (yPos - $("#search").height()) < 0) {
@@ -125,7 +129,7 @@ function handleKeyNavigation() {
         };
 
         scroller.scrollUp = function ($elem) {
-            var offset = $elem.offset(); // offset relative to viewport
+            var offset = safeOffset($elem);
             if (offset !== undefined) {
                 var yPos = offset.top;
                 if (yPos < $("#search").height()) {
@@ -177,12 +181,12 @@ function handleKeyNavigation() {
                 break;
 
             case 37: // left
-                var oldTop = $old.offset().top;
+                var oldTop = safeOffset($old).top;
                 $old.removeClass("selected");
                 $old = items.left();
                 $old.addClass("selected");
 
-                (oldTop - $old.offset().top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
+                (oldTop - safeOffset($old).top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
                 break;
 
             case 38: // up
@@ -201,12 +205,12 @@ function handleKeyNavigation() {
                 break;
 
             case 39: // right
-                var oldTop = $old.offset().top;
+                var oldTop = safeOffset($old).top;
                 $old.removeClass("selected");
                 $old = items.right();
                 $old.addClass("selected");
 
-                (oldTop - $old.offset().top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
+                (oldTop - safeOffset($old).top < 0 ? scroller.scrollDown : scroller.scrollUp)($old);
                 break;
 
             case 40: // down
