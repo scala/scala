@@ -293,8 +293,7 @@ trait EntityPage extends HtmlPage {
                 List(
                   Li(`class`="public in", elems=Span(elems=Txt("Public"))),
                   Li(`class`="protected out", elems=Span(elems=Txt("Protected"))),
-                  Li(`class`="private out", elems=Span(elems=Txt("Private"))),
-                  Li(`class`="all out", elems=Span(elems=Txt("All"))))
+                  Li(`class`="private out", elems=Span(elems=Txt("Private"))))
                 )
           ))
         )

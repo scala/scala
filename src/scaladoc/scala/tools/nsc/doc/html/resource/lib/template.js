@@ -11,10 +11,9 @@ $(document).ready(function() {
 
     var controls = {
         visibility: {
-            publicOnly: $("#visbl").find("> ol > li.public"),
-            protectedOnly: $("#visbl").find("> ol > li.protected"),
-            privateOnly: $("#visbl").find("> ol > li.private"),
-            all: $("#visbl").find("> ol > li.all")
+            publicFilter: $("#visbl").find("> ol > li.public"),
+            protectedFilter: $("#visbl").find("> ol > li.protected"),
+            privateFilter: $("#visbl").find("> ol > li.private")
         }
     };
 
@@ -23,24 +22,14 @@ $(document).ready(function() {
         return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=<>\|])/g, '\\$1');
     }
 
-    function toggleVisibilityFilter(ctrlToEnable, visibilities) {
-        if (ctrlToEnable.hasClass("out")) {
-            ctrlToEnable.removeClass("out").addClass("in");
-            for (var key in visibilities) if (visibilities.hasOwnProperty(key)) {
-                var ctrToDisable = visibilities[key];
-                if (ctrlToEnable !== ctrToDisable) {
-                    ctrToDisable.removeClass("in").addClass("out");
-                }
-            }
-            filter();
-        }
+    function toggleVisibilityFilter() {
+        $(this).toggleClass("in").toggleClass("out");
+        filter();
     }
 
-    for (var key in controls.visibility) if (controls.visibility.hasOwnProperty(key)) (function(visControl){
-        visControl.on("click", function () {
-            toggleVisibilityFilter(visControl, controls.visibility);
-        });
-    })(controls.visibility[key]);
+    controls.visibility.publicFilter.on("click", toggleVisibilityFilter);
+    controls.visibility.protectedFilter.on("click", toggleVisibilityFilter);
+    controls.visibility.privateFilter.on("click", toggleVisibilityFilter);
 
     function exposeMember(jqElem) {
         var jqElemParent = jqElem.parent(),
@@ -49,7 +38,7 @@ $(document).ready(function() {
 
         // switch visibility filter if necessary
         if (jqElemParent.attr("visbl") == "prt") {
-            toggleVisibilityFilter(controls.visibility.all, controls.visibility);
+            controls.visibility.privateFilter.removeClass("out").addClass("in");
         }
 
         // toggle appropriate ancestor filter buttons
@@ -441,10 +430,9 @@ function filter() {
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
 
-    var allMembersShown = $("#visbl > ol > li.all").hasClass("in");
-    var publicMembersShown = allMembersShown || $("#visbl > ol > li.public").hasClass("in");
-    var protectedMembersShown = allMembersShown || $("#visbl > ol > li.protected").hasClass("in");
-    var privateMembersShown = allMembersShown || $("#visbl > ol > li.private").hasClass("in");
+    var publicMembersShown = $("#visbl > ol > li.public").hasClass("in");
+    var protectedMembersShown = $("#visbl > ol > li.protected").hasClass("in");
+    var privateMembersShown = $("#visbl > ol > li.private").hasClass("in");
 
     var orderingAlphabetic = $("#order > ol > li.alpha").hasClass("in");
     var orderingInheritance = $("#order > ol > li.inherit").hasClass("in");
