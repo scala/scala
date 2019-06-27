@@ -104,7 +104,7 @@ object BasicIO {
     * @return A `ProcessIO` with the characteristics above.
     */
   def apply(withIn: Boolean, output: String => Unit, log: Option[ProcessLogger]) =
-    new ProcessIO(input(withIn), processFully(output), getErr(log))
+    new ProcessIO(closer, processFully(output), getErr(log), false, withIn)
 
   /** Creates a `ProcessIO` that appends its output to an `Appendable`. It can
     * attach the process input to stdin, and it will either send the error
@@ -127,7 +127,7 @@ object BasicIO {
     * @return A `ProcessIO` with the characteristics above.
     */
   def apply(withIn: Boolean, buffer: Appendable, log: Option[ProcessLogger]) =
-    new ProcessIO(input(withIn), processFully(buffer), getErr(log))
+    new ProcessIO(closer, processFully(buffer), getErr(log), false, withIn)
 
   /** Creates a `ProcessIO` from a `ProcessLogger` . It can attach the
     * process input to stdin.
@@ -137,7 +137,7 @@ object BasicIO {
     * @return A `ProcessIO` with the characteristics above.
     */
   def apply(withIn: Boolean, log: ProcessLogger) =
-    new ProcessIO(input(withIn), processOutFully(log), processErrFully(log))
+    new ProcessIO(closer, processOutFully(log), processErrFully(log), false, withIn)
 
   /** Returns a function `InputStream => Unit` given an optional
     * `ProcessLogger`. If no logger is passed, the function will send the output
@@ -213,19 +213,24 @@ object BasicIO {
   }
 
   /** Copy contents of stdin to the `OutputStream`. */
+  @deprecated("no longer used")
   def connectToIn(o: OutputStream): Unit = transferFully(Uncloseable protect stdin, o)
 
   /** Returns a function `OutputStream => Unit` that either reads the content
     * from stdin or does nothing. This function can be used by
     * [[scala.sys.process.ProcessIO]].
     */
+  @deprecated("no longer used")
   def input(connect: Boolean): OutputStream => Unit = { outputToProcess =>
     if (connect) connectToIn(outputToProcess)
     outputToProcess.close()
   }
 
+  /** Just closes given OutputStream, to be passed to ProcessIO. */
+  private[this] val closer: (OutputStream) => Unit = (stream) => stream.close
+
   /** Returns a `ProcessIO` connected to stdout and stderr, and, optionally, stdin. */
-  def standard(connectInput: Boolean): ProcessIO = standard(input(connectInput))
+  def standard(connectInput: Boolean): ProcessIO = new ProcessIO(closer, toStdOut, toStdErr, false, connectInput)
 
   /** Returns a `ProcessIO` connected to stdout, stderr and the provided `in` */
   def standard(in: OutputStream => Unit): ProcessIO = new ProcessIO(in, toStdOut, toStdErr)

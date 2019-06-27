@@ -3,6 +3,7 @@ package scala.sys.process
 import java.io.{ByteArrayInputStream, File, IOException}
 import java.nio.file.{Files, Paths}, Files.createTempFile
 import java.nio.charset.StandardCharsets.UTF_8
+import java.util.concurrent.{CountDownLatch, TimeUnit}
 
 import scala.io.{Source => IOSource}
 import scala.util.Try
@@ -21,6 +22,30 @@ import org.junit.Assert._
 class ProcessTest {
   private def testily(body: => Unit) = if (!isWin) body
   private val tempFiles = Seq(File.createTempFile("foo", "tmp"), File.createTempFile("bar", "tmp"))
+
+  @Test def t7963(): Unit = {
+    var exception: Exception = null
+    val latch: CountDownLatch = new CountDownLatch(1)
+    val inputStream = new ByteArrayInputStream("a".getBytes) {
+      override def read(b: Array[Byte], off: Int, len: Int): Int = {
+        try {
+          latch.await(10, TimeUnit.SECONDS)
+        } catch {
+          case e: Exception => exception = e
+        }
+        super.read(b, off, len)
+      }
+    }
+    val originalIn = System.in
+    System.setIn(inputStream)
+    try {
+      Process("echo -n").run(true).exitValue()
+      latch.countDown()
+      assertNull(exception)
+    } finally {
+      System.setIn(originalIn)
+    }
+  }
 
   @Test def t10007(): Unit = testily {
     val res = ("cat" #< new ByteArrayInputStream("lol".getBytes)).!!

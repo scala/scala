@@ -1,0 +1,2 @@
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessIO.connectInput")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessIO.this")

@@ -17,6 +17,7 @@ package process
 import processInternal._
 import Process._
 import java.io.{ FileInputStream, FileOutputStream }
+import java.lang.ProcessBuilder.Redirect
 import BasicIO.{ LazilyListed, Streamed, Uncloseable }
 import Uncloseable.protect
 import scala.util.control.NonFatal
@@ -75,6 +76,7 @@ private[process] trait ProcessBuilderImpl {
     override def run(io: ProcessIO): Process = {
       import io._
 
+      if(io.connectInput) p.redirectInput(Redirect.INHERIT)
       val process = p.start() // start the external process
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
