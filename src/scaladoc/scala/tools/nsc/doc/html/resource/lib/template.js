@@ -4,7 +4,7 @@
 $(document).ready(function() {
 
     var oldWidth = $("div#subpackage-spacer").width() + 1 + "px";
-    $("div#packages > ul > li.current").click(function() {
+    $("div#packages > ul > li.current").on("click", function() {
         $("div#subpackage-spacer").css({ "width": oldWidth });
         $("li.current-entities").toggle();
     });
@@ -29,11 +29,11 @@ $(document).ready(function() {
         }
     }
 
-    controls.visibility.publicOnly.click(function () {
+    controls.visibility.publicOnly.on("click", function() {
         toggleVisibilityFilter(controls.visibility.publicOnly, controls.visibility.all);
     });
 
-    controls.visibility.all.click(function () {
+    controls.visibility.all.on("click", function() {
         toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
     });
 
@@ -75,7 +75,7 @@ $(document).ready(function() {
         return isHidden(this);
     }).removeClass("in").addClass("out");
 
-    $("#memberfilter > i.arrow").click(function() {
+    $("#memberfilter > i.arrow").on("click", function() {
         $(this).toggleClass("rotate");
         $("#filterby").toggle();
     });
@@ -85,7 +85,7 @@ $(document).ready(function() {
 
     // Member filter box
     var input = $("#memberfilter input");
-    input.bind("keyup", function(event) {
+    input.on("keyup", function(event) {
 
         switch ( event.keyCode ) {
 
@@ -98,7 +98,7 @@ $(document).ready(function() {
             input.val("");
             filter(false);
             window.scrollTo(0, $("body").offset().top);
-            input.focus();
+            input.trigger("focus");
             break;
 
         case 33: //page up
@@ -118,23 +118,23 @@ $(document).ready(function() {
 
         }
     });
-    input.focus(function(event) {
-        input.select();
+    input.on("focus", function(event) {
+        input.trigger("select");
     });
-    $("#memberfilter > .clear").click(function() {
+    $("#memberfilter > .clear").on("click", function() {
         $("#memberfilter input").val("");
         $(this).hide();
         filter();
     });
-    $(document).keydown(function(event) {
+    $(document).on("keydown", function(event) {
         if (event.keyCode == 9) { // tab
-            $("#index-input", window.parent.document).focus();
+            $("#index-input", window.parent.document).trigger("focus");
             input.val( "");
             return false;
         }
     });
 
-    $("#linearization li").click(function(){
+    $("#linearization li").on("click", function(){
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
@@ -145,7 +145,7 @@ $(document).ready(function() {
         filter();
     });
 
-    $("#implicits li").click(function(){
+    $("#implicits li").on("click", function(){
         if ($(this).hasClass("in")) {
             $(this).removeClass("in");
             $(this).addClass("out");
@@ -156,7 +156,7 @@ $(document).ready(function() {
         filter();
     });
 
-    $("#mbrsel > div > div.ancestors > ol > li.hideall").click(function() {
+    $("#mbrsel > div > div.ancestors > ol > li.hideall").on("click", function() {
         $("#linearization li.in").removeClass("in").addClass("out");
         $("#linearization li:first").removeClass("out").addClass("in");
         $("#implicits li.in").removeClass("in").addClass("out");
@@ -168,7 +168,7 @@ $(document).ready(function() {
 
         filter();
     })
-    $("#mbrsel > div > div.ancestors > ol > li.showall").click(function() {
+    $("#mbrsel > div > div.ancestors > ol > li.showall").on("click", function() {
         var filteredLinearization =
             $("#linearization li.out").filter(function() {
                 return ! isHiddenClass($(this).attr("name"));
@@ -188,15 +188,15 @@ $(document).ready(function() {
 
         filter();
     });
-    $("#order > ol > li.alpha").click(function() {
+    $("#order > ol > li.alpha").on("click", function() {
         if ($(this).hasClass("out"))
             orderAlpha();
     })
-    $("#order > ol > li.inherit").click(function() {
+    $("#order > ol > li.inherit").on("click", function() {
         if ($(this).hasClass("out"))
             orderInherit();
     });
-    $("#order > ol > li.group").click(function() {
+    $("#order > ol > li.group").on("click", function() {
         if ($(this).hasClass("out"))
             orderGroup();
     });
@@ -241,7 +241,7 @@ $(document).ready(function() {
         }
     };
 
-    $("#template li[fullComment=yes]").click(function() {
+    $("#template li[fullComment=yes]").on("click", function() {
         var sel = window.getSelection().toString();
         if (!sel) commentToggleFct($(this));
     });
@@ -261,7 +261,7 @@ $(document).ready(function() {
       }
     };
 
-    $(".toggle").click(function() {
+    $(".toggle").on("click", function() {
       toggleShowContentFct($(this).parent());
       // Stop propagation so that we don't hide/show the parent (this a use case's full sig, which is nested in a member list)
       if ($(this).parent().hasClass("full-signature-block")) return false;
@@ -284,7 +284,7 @@ $(document).ready(function() {
         }
     }
 
-    $("#template span.permalink").click(function(e) {
+    $("#template span.permalink").on("click", function(e) {
         e.preventDefault();
         var href = $("a", this).attr("href");
         if (href.indexOf("#") != -1) {

@@ -37,7 +37,7 @@ var QueryString = function(key) {
 
 $(document).ready(function() {
     // Clicking #doc-title returns the user to the root package
-    $("#doc-title").click(function() { document.location = toRoot + "index.html" });
+    $("#doc-title").on("click", function() { document.location = toRoot + "index.html" });
 
     scheduler = new Scheduler();
     scheduler.addLabel("init", 1);
@@ -144,7 +144,7 @@ function handleKeyNavigation() {
     };
 
     scheduler.add("init", function() {
-        $("#textfilter input").blur();
+        $("#textfilter input").trigger("blur");
         var items = new EntityIterator(
             $("div#results-content > div#entity-results > ul.entities span.entity > a").toArray(),
             $("div#results-content > div#member-results > ul.entities span.entity > a").toArray()
@@ -156,7 +156,7 @@ function handleKeyNavigation() {
         $old.addClass("selected");
         scroller.scrollDown($old);
 
-        $(window).bind("keydown", function(e) {
+        $(window).on("keydown", function(e) {
             switch ( e.keyCode ) {
             case 9: // tab
                 $old.removeClass("selected");
@@ -165,7 +165,7 @@ function handleKeyNavigation() {
             case 13: // enter
                 var href = $old.attr("href");
                 location.replace(href);
-                $old.click();
+                $old.trigger("click");
                 $("#textfilter input").val("");
                 break;
 
@@ -190,8 +190,8 @@ function handleKeyNavigation() {
                 $old = items.prev();
 
                 if ($old === undefined) { // scroll past top
-                    $(window).unbind("keydown");
-                    $("#textfilter input").focus();
+                    $(window).off("keydown");
+                    $("#textfilter input").trigger("focus");
                     scroller.scrollTop();
                     return false;
                 } else {
@@ -224,7 +224,7 @@ function handleKeyNavigation() {
 function configureTextFilter() {
     scheduler.add("init", function() {
         var input = $("#textfilter input");
-        input.bind('keyup', function(event) {
+        input.on('keyup', function(event) {
             switch ( event.keyCode ) {
                 case 27: // escape
                     input.val("");
@@ -237,7 +237,7 @@ function configureTextFilter() {
                     return false;
 
                 case 40: // down arrow
-                    $(window).unbind("keydown");
+                    $(window).off("keydown");
                     handleKeyNavigation();
                     return false;
             }
@@ -246,7 +246,7 @@ function configureTextFilter() {
         });
     });
     scheduler.add("init", function() {
-        $("#textfilter > .input > .clear").click(function() {
+        $("#textfilter > .input > .clear").on("click", function() {
             $("#textfilter input").val("");
             $("div#search-results").hide();
             $("#search > span.close-results").hide();
@@ -257,7 +257,7 @@ function configureTextFilter() {
     });
 
     scheduler.add("init", function() {
-        $("div#search > span.close-results").click(function() {
+        $("div#search > span.close-results").on("click", function() {
             $("div#search-results").hide();
             $("#search > span.close-results").hide();
             $("#search > span#doc-title").show();
