@@ -15,7 +15,7 @@ package scala
 import scala.collection.{SpecificIterableFactory, StrictOptimizedIterableOps, View, immutable, mutable}
 import java.lang.reflect.{Field => JField, Method => JMethod}
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, tailrec}
 import scala.reflect.NameTransformer._
 import scala.util.matching.Regex
 
@@ -188,7 +188,13 @@ abstract class Enumeration (initial: Int) extends Serializable {
   protected final def Value(i: Int, name: String): Value = new Val(i, name)
 
   private def populateNameMap(): Unit = {
-    val fields: Array[JField] = getClass.getDeclaredFields
+    @tailrec def getFields(clazz: Class[_], acc: Array[JField]): Array[JField] = {
+      if (clazz == null)
+        acc
+      else
+        getFields(clazz.getSuperclass, if (clazz.getDeclaredFields.isEmpty) acc else acc ++ clazz.getDeclaredFields)
+    }
+    val fields = getFields(getClass.getSuperclass, getClass.getDeclaredFields)
     def isValDef(m: JMethod): Boolean = fields exists (fd => fd.getName == m.getName && fd.getType == m.getReturnType)
 
     // The list of possible Value methods: 0-args which return a conforming type
