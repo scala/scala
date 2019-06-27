@@ -109,7 +109,7 @@ class ChampSetSmokeTest {
     assertEquals(xs, ys)
   }
 
-  @Test def RemovalFromCollisonNodeEqualsSingelton(): Unit = {
+  @Test def RemovalFromCollisionNodeEqualsSingleton(): Unit = {
     val hash98304_obj1 = mkValue(1, 98304)
     val hash98304_obj2 = mkValue(2, 98304)
     val xs: Set[CustomHashInt] = setOf(hash98304_obj1)

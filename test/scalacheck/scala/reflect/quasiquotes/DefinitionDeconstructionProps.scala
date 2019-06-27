@@ -247,7 +247,7 @@ trait ImportDeconstruction { self: QuasiquoteProperties =>
     matches("import foo.bar")
     matches("import foo.{bar, baz}")
     matches("import foo.{a => b, c => d}")
-    matches("import foo.{poision => _, _}")
+    matches("import foo.{position => _, _}")
     matches("import foo.bar.baz._")
   }
 
