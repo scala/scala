@@ -60,8 +60,7 @@ trait EntityPage extends HtmlPage {
     libScript("index.js"),
     extScript(relativeLinkTo(List("index.js"))),
     libScript("scheduler.js"),
-    libScript("template.js"),
-    libScript("tools.tooltip.js")) ++
+    libScript("template.js")) ++
     ((if (!universe.settings.docDiagrams.value) Nil
      else (List(
          extScript("https://d3js.org/d3.v4.js"),

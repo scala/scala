@@ -205,13 +205,9 @@ $(document).ready(function() {
     initInherit();
 
     // Create tooltips
-    $(".extype").add(".defval").tooltip({
-        tip: "#tooltip",
-        position: "top center",
-        predelay: 500,
-        onBeforeShow: function(ev) {
-            $(this.getTip()).text(this.getTrigger().attr("name"));
-        }
+    $(".extype").add(".defval").each(function(_,e) {
+        var $this = $(e);
+        $this.attr("title", $this.attr("name"));
     });
 
     /* Add toggle arrows */

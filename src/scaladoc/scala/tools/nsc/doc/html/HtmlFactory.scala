@@ -78,7 +78,6 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     "jquery.js",
     "scheduler.js",
     "template.js",
-    "tools.tooltip.js",
 
     "index.css",
     "ref-index.css",
