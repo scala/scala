@@ -122,14 +122,14 @@ $(document).ready(function() {
         input.select();
     });
     $("#memberfilter > .clear").click(function() {
-        $("#memberfilter input").attr("value", "");
+        $("#memberfilter input").val("");
         $(this).hide();
         filter();
     });
     $(document).keydown(function(event) {
         if (event.keyCode == 9) { // tab
             $("#index-input", window.parent.document).focus();
-            input.attr("value", "");
+            input.val( "");
             return false;
         }
     });

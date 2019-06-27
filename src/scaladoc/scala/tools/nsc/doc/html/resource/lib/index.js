@@ -166,11 +166,11 @@ function handleKeyNavigation() {
                 var href = $old.attr("href");
                 location.replace(href);
                 $old.click();
-                $("#textfilter input").attr("value", "");
+                $("#textfilter input").val("");
                 break;
 
             case 27: // escape
-                $("#textfilter input").attr("value", "");
+                $("#textfilter input").val("");
                 $("div#search-results").hide();
                 $("#search > span.close-results").hide();
                 $("#search > span#doc-title").show();
@@ -227,7 +227,7 @@ function configureTextFilter() {
         input.bind('keyup', function(event) {
             switch ( event.keyCode ) {
                 case 27: // escape
-                    input.attr("value", "");
+                    input.val("");
                     $("div#search-results").hide();
                     $("#search > span.close-results").hide();
                     $("#search > span#doc-title").show();
@@ -247,7 +247,7 @@ function configureTextFilter() {
     });
     scheduler.add("init", function() {
         $("#textfilter > .input > .clear").click(function() {
-            $("#textfilter input").attr("value", "");
+            $("#textfilter input").val("");
             $("div#search-results").hide();
             $("#search > span.close-results").hide();
             $("#search > span#doc-title").show();
@@ -261,7 +261,7 @@ function configureTextFilter() {
             $("div#search-results").hide();
             $("#search > span.close-results").hide();
             $("#search > span#doc-title").show();
-            $("#textfilter input").attr("value", "");
+            $("#textfilter input").val("");
         });
     });
 }
@@ -531,7 +531,7 @@ function listItem(entity, regExp) {
 function searchAll() {
     scheduler.clear("search"); // clear previous search
     maxJobs = 1; // clear previous max
-    var searchStr = $("#textfilter input").attr("value").trim() || '';
+    var searchStr = ($("#textfilter input").val() || '').trim();
 
     if (searchStr === '') {
         $("div#search-results").hide();
