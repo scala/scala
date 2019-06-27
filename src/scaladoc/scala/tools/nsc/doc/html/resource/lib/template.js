@@ -12,6 +12,8 @@ $(document).ready(function() {
     var controls = {
         visibility: {
             publicOnly: $("#visbl").find("> ol > li.public"),
+            protectedOnly: $("#visbl").find("> ol > li.protected"),
+            privateOnly: $("#visbl").find("> ol > li.private"),
             all: $("#visbl").find("> ol > li.all")
         }
     };
@@ -21,21 +23,24 @@ $(document).ready(function() {
         return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=<>\|])/g, '\\$1');
     }
 
-    function toggleVisibilityFilter(ctrlToEnable, ctrToDisable) {
+    function toggleVisibilityFilter(ctrlToEnable, visibilities) {
         if (ctrlToEnable.hasClass("out")) {
             ctrlToEnable.removeClass("out").addClass("in");
-            ctrToDisable.removeClass("in").addClass("out");
+            for (var key in visibilities) if (visibilities.hasOwnProperty(key)) {
+                var ctrToDisable = visibilities[key];
+                if (ctrlToEnable !== ctrToDisable) {
+                    ctrToDisable.removeClass("in").addClass("out");
+                }
+            }
             filter();
         }
     }
 
-    controls.visibility.publicOnly.on("click", function() {
-        toggleVisibilityFilter(controls.visibility.publicOnly, controls.visibility.all);
-    });
-
-    controls.visibility.all.on("click", function() {
-        toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
-    });
+    for (var key in controls.visibility) if (controls.visibility.hasOwnProperty(key)) (function(visControl){
+        visControl.on("click", function () {
+            toggleVisibilityFilter(visControl, controls.visibility);
+        });
+    })(controls.visibility[key]);
 
     function exposeMember(jqElem) {
         var jqElemParent = jqElem.parent(),
@@ -44,7 +49,7 @@ $(document).ready(function() {
 
         // switch visibility filter if necessary
         if (jqElemParent.attr("visbl") == "prt") {
-            toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
+            toggleVisibilityFilter(controls.visibility.all, controls.visibility);
         }
 
         // toggle appropriate ancestor filter buttons
@@ -435,7 +440,12 @@ function filter() {
     var query = $.trim($("#memberfilter input").val()).toLowerCase();
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
-    var privateMembersHidden = $("#visbl > ol > li.public").hasClass("in");
+
+    var allMembersShown = $("#visbl > ol > li.all").hasClass("in");
+    var publicMembersShown = allMembersShown || $("#visbl > ol > li.public").hasClass("in");
+    var protectedMembersShown = allMembersShown || $("#visbl > ol > li.protected").hasClass("in");
+    var privateMembersShown = allMembersShown || $("#visbl > ol > li.private").hasClass("in");
+
     var orderingAlphabetic = $("#order > ol > li.alpha").hasClass("in");
     var orderingInheritance = $("#order > ol > li.inherit").hasClass("in");
     var orderingGroups = $("#order > ol > li.group").hasClass("in");
@@ -485,7 +495,16 @@ function filter() {
       var members = $(this);
       members.find("> ol > li").each(function() {
         var mbr = $(this);
-        if (privateMembersHidden && mbr.attr("visbl") == "prt") {
+        var visibility = mbr.attr("visbl");
+        if (!publicMembersShown && visibility == "pub") {
+          mbr.hide();
+          return;
+        }
+        if (!protectedMembersShown && visibility == "prt") {
+          mbr.hide();
+          return;
+        }
+        if (!privateMembersShown && visibility == "prv") {
           mbr.hide();
           return;
         }

@@ -18,10 +18,13 @@ package model
 sealed trait Visibility {
   def isProtected: Boolean = false
   def isPublic: Boolean = false
+  def isPrivate: Boolean = false
 }
 
 /** The visibility of `private[this]` members. */
-case class PrivateInInstance() extends Visibility
+case class PrivateInInstance() extends Visibility {
+  override def isPrivate = true
+}
 
 /** The visibility of `protected[this]` members. */
 case class ProtectedInInstance() extends Visibility {
@@ -30,7 +33,9 @@ case class ProtectedInInstance() extends Visibility {
 
 /** The visibility of `private[owner]` members. An unqualified private members
   * is encoded with `owner` equal to the members's `inTemplate`. */
-case class PrivateInTemplate(owner: TemplateEntity) extends Visibility
+case class PrivateInTemplate(owner: TemplateEntity) extends Visibility {
+  override def isPrivate = true
+}
 
 /** The visibility of `protected[owner]` members. An unqualified protected
   * members is encoded with `owner` equal to the members's `inTemplate`.

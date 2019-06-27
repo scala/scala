@@ -602,4 +602,12 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
   property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
     checkTemplate("t9599.scala", "X.html") { (_, s) => s.contains("""<span class="cmt"><p>todo1</p></span><span class="cmt"><p>todo2</p></span><span class="cmt"><p>todo3</p></span>""") }
   }
+
+  property("scala/bug#10999 Private and Protected method should also be documented") = {
+    checkTemplate("t10999.scala", "T10999.html"){(_, s) =>
+      s.contains("protectedMethod:Boolean") &&
+      s.contains("privateMethod:String")
+    }
+  }
+
 }
