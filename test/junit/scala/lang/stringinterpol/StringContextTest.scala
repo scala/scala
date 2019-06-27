@@ -63,6 +63,21 @@ class StringContextTest {
     val res = processEscapes(s)
     assertEquals("Scala", res)
   }
+  @Test def t5856(): Unit = {
+    class X {
+      override def toString = "Test"
+
+      def thistle(): Unit = {
+        assertEquals("Test", s"$this")
+        assertEquals("TestTest", s"$this$this")
+        assertEquals("Test$", s"$this$$")
+        assertEquals("Test.##", s"$this.##")
+        assertEquals("Test.toString", s"$this.toString")
+        assertEquals("Test=THIS", s"$this=THIS")
+      }
+    }
+    new X().thistle()   // this'll be good
+  }
 
   @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
 
