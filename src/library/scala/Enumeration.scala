@@ -96,7 +96,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
 
   /** The name of this enumeration.
    */
-  override def toString =
+  override def toString: String =
     ((getClass.getName stripSuffix MODULE_SUFFIX_STRING split '.').last split
        Regex.quote(NAME_JOIN_STRING)).last
 
@@ -231,14 +231,14 @@ abstract class Enumeration (initial: Int) extends Serializable {
       if (this.id < that.id) -1
       else if (this.id == that.id) 0
       else 1
-    override def equals(other: Any) = other match {
+    override def equals(other: Any): Boolean = other match {
       case that: Enumeration#Value  => (outerEnum eq that.outerEnum) && (id == that.id)
       case _                        => false
     }
     override def hashCode: Int = id.##
 
     /** Create a ValueSet which contains this value and another one */
-    def + (v: Value) = ValueSet(this, v)
+    def + (v: Value): ValueSet = ValueSet(this, v)
   }
 
   /** A class implementing the [[scala.Enumeration.Value]] type. This class
@@ -257,8 +257,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
     nextId = i + 1
     if (nextId > topId) topId = nextId
     if (i < bottomId) bottomId = i
-    def id = i
-    override def toString() =
+    def id: Int = i
+    override def toString(): String =
       if (name != null) name
       else try thisenum.nameOf(i)
       catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }
@@ -293,20 +293,20 @@ abstract class Enumeration (initial: Int) extends Serializable {
     def rangeImpl(from: Option[Value], until: Option[Value]): ValueSet =
       new ValueSet(nnIds.rangeImpl(from.map(_.id - bottomId), until.map(_.id - bottomId)))
 
-    override def empty = ValueSet.empty
+    override def empty: ValueSet = ValueSet.empty
     override def knownSize: Int = nnIds.size
     override def isEmpty: Boolean = nnIds.isEmpty
-    def contains(v: Value) = nnIds contains (v.id - bottomId)
-    def incl (value: Value) = new ValueSet(nnIds + (value.id - bottomId))
-    def excl (value: Value) = new ValueSet(nnIds - (value.id - bottomId))
-    def iterator = nnIds.iterator map (id => thisenum.apply(bottomId + id))
-    override def iteratorFrom(start: Value) = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
-    override def className = s"$thisenum.ValueSet"
+    def contains(v: Value): Boolean = nnIds contains (v.id - bottomId)
+    def incl (value: Value): ValueSet = new ValueSet(nnIds + (value.id - bottomId))
+    def excl (value: Value): ValueSet = new ValueSet(nnIds - (value.id - bottomId))
+    def iterator: Iterator[Value] = nnIds.iterator map (id => thisenum.apply(bottomId + id))
+    override def iteratorFrom(start: Value): Iterator[Value] = nnIds iteratorFrom start.id  map (id => thisenum.apply(bottomId + id))
+    override def className: String = s"$thisenum.ValueSet"
     /** Creates a bit mask for the zero-adjusted ids in this set as a
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
 
-    override protected def fromSpecific(coll: IterableOnce[Value]) = ValueSet.fromSpecific(coll)
+    override protected def fromSpecific(coll: IterableOnce[Value]): ValueSet = ValueSet.fromSpecific(coll)
     override protected def newSpecificBuilder = ValueSet.newBuilder
 
     def map(f: Value => Value): ValueSet = fromSpecific(new View.Map(toIterable, f))
@@ -330,7 +330,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     private final val zipOrdMsg = "No implicit Ordering[${B}] found to build a SortedSet[(Value, ${B})]. You may want to upcast to a Set[Value] first by calling `unsorted`."
 
     /** The empty value set */
-    val empty = new ValueSet(immutable.BitSet.empty)
+    val empty: ValueSet = new ValueSet(immutable.BitSet.empty)
     /** A value set containing all the values for the zero-adjusted ids
      *  corresponding to the bits in an array */
     def fromBitMask(elems: Array[Long]): ValueSet = new ValueSet(immutable.BitSet.fromBitMask(elems))

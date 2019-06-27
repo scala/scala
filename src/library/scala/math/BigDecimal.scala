@@ -688,7 +688,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
     new Range.Partial(until(end, _))
 
   /** Same as the one-argument `until`, but creates the range immediately. */
-  def until(end: BigDecimal, step: BigDecimal) = Range.BigDecimal(this, end, step)
+  def until(end: BigDecimal, step: BigDecimal): NumericRange.Exclusive[BigDecimal] = Range.BigDecimal(this, end, step)
 
   /** Like `until`, but inclusive of the end value. */
   def to(end: BigDecimal): Range.Partial[BigDecimal, NumericRange.Inclusive[BigDecimal]] =

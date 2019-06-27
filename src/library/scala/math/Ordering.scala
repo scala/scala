@@ -184,11 +184,11 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
 
   /** This inner class defines comparison operators available for `T`. */
   class OrderingOps(lhs: T) {
-    def <(rhs: T) = lt(lhs, rhs)
-    def <=(rhs: T) = lteq(lhs, rhs)
-    def >(rhs: T) = gt(lhs, rhs)
-    def >=(rhs: T) = gteq(lhs, rhs)
-    def equiv(rhs: T) = Ordering.this.equiv(lhs, rhs)
+    def <(rhs: T): Boolean = lt(lhs, rhs)
+    def <=(rhs: T): Boolean = lteq(lhs, rhs)
+    def >(rhs: T): Boolean = gt(lhs, rhs)
+    def >=(rhs: T): Boolean = gteq(lhs, rhs)
+    def equiv(rhs: T): Boolean = Ordering.this.equiv(lhs, rhs)
     def max(rhs: T): T = Ordering.this.max(lhs, rhs)
     def min(rhs: T): T = Ordering.this.min(lhs, rhs)
   }
@@ -338,32 +338,32 @@ object Ordering extends LowPriorityOrderingImplicits {
   implicit object Unit extends UnitOrdering
 
   trait BooleanOrdering extends Ordering[Boolean] {
-    def compare(x: Boolean, y: Boolean) = java.lang.Boolean.compare(x, y)
+    def compare(x: Boolean, y: Boolean): Int = java.lang.Boolean.compare(x, y)
   }
   implicit object Boolean extends BooleanOrdering
 
   trait ByteOrdering extends Ordering[Byte] {
-    def compare(x: Byte, y: Byte) = java.lang.Byte.compare(x, y)
+    def compare(x: Byte, y: Byte): Int = java.lang.Byte.compare(x, y)
   }
   implicit object Byte extends ByteOrdering
 
   trait CharOrdering extends Ordering[Char] {
-    def compare(x: Char, y: Char) = java.lang.Character.compare(x, y)
+    def compare(x: Char, y: Char): Int = java.lang.Character.compare(x, y)
   }
   implicit object Char extends CharOrdering
 
   trait ShortOrdering extends Ordering[Short] {
-    def compare(x: Short, y: Short) = java.lang.Short.compare(x, y)
+    def compare(x: Short, y: Short): Int = java.lang.Short.compare(x, y)
   }
   implicit object Short extends ShortOrdering
 
   trait IntOrdering extends Ordering[Int] {
-    def compare(x: Int, y: Int) = java.lang.Integer.compare(x, y)
+    def compare(x: Int, y: Int): Int = java.lang.Integer.compare(x, y)
   }
   implicit object Int extends IntOrdering with CachedReverse[Int]
 
   trait LongOrdering extends Ordering[Long] {
-    def compare(x: Long, y: Long) = java.lang.Long.compare(x, y)
+    def compare(x: Long, y: Long): Int = java.lang.Long.compare(x, y)
   }
   implicit object Long extends LongOrdering
 

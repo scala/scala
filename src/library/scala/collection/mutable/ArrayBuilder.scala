@@ -125,7 +125,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[T] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -172,7 +172,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Byte] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -214,7 +214,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Short] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -256,7 +256,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Char] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -298,7 +298,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Int] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -340,7 +340,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Long] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -382,7 +382,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Float] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -424,7 +424,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Double] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems
@@ -466,7 +466,7 @@ object ArrayBuilder {
       this
     }
 
-    def result() = {
+    def result(): Array[Boolean] = {
       if (capacity != 0 && capacity == size) {
         capacity = 0
         val res = elems

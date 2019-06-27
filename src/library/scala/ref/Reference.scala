@@ -20,7 +20,7 @@ trait Reference[+T <: AnyRef] extends Function0[T] {
   def apply(): T
   /** return `Some` underlying if it hasn't been collected, otherwise `None` */
   def get: Option[T]
-  override def toString = get.map(_.toString).getOrElse("<deleted>")
+  override def toString: String = get.map(_.toString).getOrElse("<deleted>")
   def clear(): Unit
   def enqueue(): Boolean
   def isEnqueued: Boolean

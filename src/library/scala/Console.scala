@@ -136,15 +136,15 @@ object Console extends AnsiColor {
   /** The default output, can be overridden by `withOut`
    *  @group io-default
    */
-  def out = outVar.value
+  def out: PrintStream = outVar.value
   /** The default error, can be overridden by `withErr`
    *  @group io-default
    */
-  def err = errVar.value
+  def err: PrintStream = errVar.value
   /** The default input, can be overridden by `withIn`
    *  @group io-default
    */
-  def in = inVar.value
+  def in: BufferedReader = inVar.value
 
   /** Sets the default output stream for the duration
    *  of execution of one thunk.

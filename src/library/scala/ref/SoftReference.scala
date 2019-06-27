@@ -25,7 +25,7 @@ class SoftReference[+T <: AnyRef](value : T, queue : ReferenceQueue[T]) extends 
 object SoftReference {
 
   /** Creates a `SoftReference` pointing to `value` */
-  def apply[T <: AnyRef](value: T) = new SoftReference(value)
+  def apply[T <: AnyRef](value: T): SoftReference[T] = new SoftReference(value)
 
   /** Optionally returns the referenced value, or `None` if that value no longer exists */
   def unapply[T <: AnyRef](sr: SoftReference[T]): Option[T] = Option(sr.underlying.get)

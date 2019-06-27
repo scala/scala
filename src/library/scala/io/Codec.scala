@@ -89,9 +89,9 @@ object Codec extends LowPriorityCodecImplicits {
    *  the fact that you can influence anything at all via -Dfile.encoding
    *  as an accident, with any anomalies considered "not a bug".
    */
-  def defaultCharsetCodec = apply(Charset.defaultCharset)
-  def fileEncodingCodec   = apply(scala.util.Properties.encodingString)
-  def default             = defaultCharsetCodec
+  def defaultCharsetCodec: Codec = apply(Charset.defaultCharset)
+  def fileEncodingCodec: Codec = apply(scala.util.Properties.encodingString)
+  def default: Codec = defaultCharsetCodec
 
   def apply(encoding: String): Codec        = new Codec(Charset forName encoding)
   def apply(charSet: Charset): Codec        = new Codec(charSet)

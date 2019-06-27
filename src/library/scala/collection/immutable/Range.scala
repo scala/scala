@@ -369,7 +369,7 @@ sealed abstract class Range(
     if (isInclusive) this
     else new Range.Inclusive(start, end, step)
 
-  final def contains(x: Int) = {
+  final def contains(x: Int): Boolean = {
     if (x == end && !isInclusive) false
     else if (step > 0) {
       if (x < start || x > end) false
@@ -457,7 +457,7 @@ sealed abstract class Range(
     }
   override protected final def applyPreferredMaxLength: Int = Int.MaxValue
 
-  final override def equals(other: Any) = other match {
+  final override def equals(other: Any): Boolean = other match {
     case x: Range =>
       // Note: this must succeed for overfull ranges (length > Int.MaxValue)
       if (isEmpty) x.isEmpty                  // empty sequences are equal
@@ -578,23 +578,23 @@ object Range {
 
   @SerialVersionUID(3L)
   final class Inclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    def isInclusive = true
+    def isInclusive: Boolean = true
   }
 
   @SerialVersionUID(3L)
   final class Exclusive(start: Int, end: Int, step: Int) extends Range(start, end, step) {
-    def isInclusive = false
+    def isInclusive: Boolean = false
   }
 
   // BigInt and Long are straightforward generic ranges.
   object BigInt {
-    def apply(start: BigInt, end: BigInt, step: BigInt) = NumericRange(start, end, step)
-    def inclusive(start: BigInt, end: BigInt, step: BigInt) = NumericRange.inclusive(start, end, step)
+    def apply(start: BigInt, end: BigInt, step: BigInt): NumericRange.Exclusive[BigInt] = NumericRange(start, end, step)
+    def inclusive(start: BigInt, end: BigInt, step: BigInt): NumericRange.Inclusive[BigInt] = NumericRange.inclusive(start, end, step)
   }
 
   object Long {
-    def apply(start: Long, end: Long, step: Long) = NumericRange(start, end, step)
-    def inclusive(start: Long, end: Long, step: Long) = NumericRange.inclusive(start, end, step)
+    def apply(start: Long, end: Long, step: Long): NumericRange.Exclusive[Long] = NumericRange(start, end, step)
+    def inclusive(start: Long, end: Long, step: Long): NumericRange.Inclusive[Long] = NumericRange.inclusive(start, end, step)
   }
 
   // BigDecimal uses an alternative implementation of Numeric in which
@@ -605,9 +605,9 @@ object Range {
   object BigDecimal {
     implicit val bigDecAsIntegral: Numeric.BigDecimalAsIfIntegral = Numeric.BigDecimalAsIfIntegral
 
-    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+    def apply(start: BigDecimal, end: BigDecimal, step: BigDecimal): NumericRange.Exclusive[BigDecimal] =
       NumericRange(start, end, step)
-    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal) =
+    def inclusive(start: BigDecimal, end: BigDecimal, step: BigDecimal): NumericRange.Inclusive[BigDecimal] =
       NumericRange.inclusive(start, end, step)
   }
 
@@ -623,8 +623,8 @@ object Range {
   // indefinitely, for performance and because the compiler seems to bootstrap
   // off it and won't do so with our parameterized version without modifications.
   object Int {
-    def apply(start: Int, end: Int, step: Int) = NumericRange(start, end, step)
-    def inclusive(start: Int, end: Int, step: Int) = NumericRange.inclusive(start, end, step)
+    def apply(start: Int, end: Int, step: Int): NumericRange.Exclusive[Int] = NumericRange(start, end, step)
+    def inclusive(start: Int, end: Int, step: Int): NumericRange.Inclusive[Int] = NumericRange.inclusive(start, end, step)
   }
 
   private def emptyRangeError(what: String): Throwable =

@@ -79,7 +79,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *           }
    *           }}}
    */
-  def elementWise = new ElementWiseExtractor(this)
+  def elementWise: ElementWiseExtractor[A, B] = new ElementWiseExtractor[A, B](this)
 
   /** Checks if a value is contained in the function's domain.
    *
