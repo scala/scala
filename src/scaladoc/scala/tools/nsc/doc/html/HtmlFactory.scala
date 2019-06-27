@@ -75,7 +75,6 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
     "MaterialIcons-Regular.woff",
 
     "index.js",
-    "jquery.js",
     "scheduler.js",
     "template.js",
 
