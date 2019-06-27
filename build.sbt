@@ -87,7 +87,7 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
 Global / mimaReferenceVersion := Some("2.13.0")
 
 import com.typesafe.tools.mima.core._
-val mimaFilterSettings = Seq(
+val mimaFilterSettings = Seq {
   mimaBinaryIssueFilters ++= Seq(
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
@@ -122,8 +122,10 @@ val mimaFilterSettings = Seq(
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.ArrayOps$ArrayIterator$mcI$sp"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.ArrayOps$ArrayIterator$mcS$sp"),
     ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Stream.find"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectNoOp"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectToStdIn"),
   ),
-)
+}
 
 // Save MiMa logs
 SavedLogs.settings

@@ -216,13 +216,15 @@ object BasicIO {
   def connectToIn(o: OutputStream): Unit = transferFully(Uncloseable protect stdin, o)
 
   /** Returns a function `OutputStream => Unit` that either reads the content
-    * from stdin or does nothing. This function can be used by
+    * from stdin or does nothing but close the stream. This function can be used by
     * [[scala.sys.process.ProcessIO]].
     */
-  def input(connect: Boolean): OutputStream => Unit = { outputToProcess =>
-    if (connect) connectToIn(outputToProcess)
-    outputToProcess.close()
-  }
+  def input(connect: Boolean): OutputStream => Unit =
+    if (connect) connectToStdIn
+    else _.close()
+
+  /** A sentinel value telling ProcessBuilderImpl to redirect. */
+  private[process] val connectToStdIn: OutputStream => Unit = _ => ()
 
   /** Returns a `ProcessIO` connected to stdout and stderr, and, optionally, stdin. */
   def standard(connectInput: Boolean): ProcessIO = standard(input(connectInput))

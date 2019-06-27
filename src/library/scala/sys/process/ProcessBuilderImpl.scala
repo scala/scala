@@ -73,7 +73,10 @@ private[process] trait ProcessBuilderImpl {
   /** Represents a simple command without any redirection or combination. */
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
+      import java.lang.ProcessBuilder.Redirect.{INHERIT => Inherit}
       import io._
+
+      if (writeInput eq BasicIO.connectToStdIn) p.redirectInput(Inherit)
 
       val process = p.start() // start the external process
 
