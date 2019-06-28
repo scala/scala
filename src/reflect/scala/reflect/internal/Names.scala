@@ -193,7 +193,7 @@ trait Names extends api.Names {
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int, cachedString: String) extends NameApi with CharSequence {
+  sealed abstract class Name(protected val index: Int, protected val len: Int, protected val cachedString: String) extends NameApi with CharSequence {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
