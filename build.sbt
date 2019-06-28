@@ -1155,7 +1155,7 @@ intellij := {
   }
 
   def moduleDep(name: String, jars: Seq[File]) = {
-    val entries = jars.map(f => s"""        <root url="jar://${f.toURI.getRawPath}!/" />""").mkString("\n")
+    val entries = jars.map(f => s"""        <root url="jar://${f.toURI.getPath}!/" />""").mkString("\n")
     s"""|    <library name="$name-deps">
         |      <CLASSES>
         |$entries
@@ -1166,7 +1166,7 @@ intellij := {
   }
 
   def starrDep(jars: Seq[File]) = {
-    val entries = jars.map(f => s"""          <root url="file://${f.toURI.getRawPath}" />""").mkString("\n")
+    val entries = jars.map(f => s"""          <root url="file://${f.toURI.getPath}" />""").mkString("\n")
     s"""|    <library name="starr" type="Scala">
         |      <properties>
         |        <option name="languageLevel" value="Scala_2_12" />
