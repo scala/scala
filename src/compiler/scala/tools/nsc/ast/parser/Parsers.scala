@@ -2445,7 +2445,7 @@ self =>
      *  VariantTypeParam      ::= {Annotation} [`+` | `-`] TypeParam
      *  FunTypeParamClauseOpt ::= [FunTypeParamClause]
      *  FunTypeParamClause    ::= `[` TypeParam {`,` TypeParam} `]`]
-     *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds {<% Type} {":" Type}
+     *  TypeParam             ::= Id TypeParamClauseOpt TypeBounds {`<%` Type} {`:` Type}
      *  }}}
      */
     def typeParamClauseOpt(owner: Name, contextBoundBuf: ListBuffer[Tree]): List[TypeDef] = {
