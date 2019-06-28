@@ -312,10 +312,14 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     macroDef withAnnotation AnnotationInfo(MacroImplAnnotation.tpe, List(pickle), Nil)
   }
 
-  def loadMacroImplBinding(macroDef: Symbol): Option[MacroImplBinding] =
-    macroDef.getAnnotation(MacroImplAnnotation) collect {
-      case AnnotationInfo(_, List(pickle), _) => MacroImplBinding.unpickle(pickle)
-    }
+  def loadMacroImplBinding(macroDef: Symbol): Option[MacroImplBinding] = {
+    macroImplBindingCache.getOrElseUpdate(macroDef,
+      macroDef.getAnnotation(MacroImplAnnotation) collect {
+        case AnnotationInfo(_, List(pickle), _) => MacroImplBinding.unpickle(pickle)
+      }
+    )
+  }
+  private val macroImplBindingCache = perRunCaches.newAnyRefMap[Symbol, Option[MacroImplBinding]]()
 
   def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
   def isBlackbox(macroDef: Symbol): Boolean = pluginsIsBlackbox(macroDef)
@@ -822,7 +826,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           def validateResultingTree(expanded: Tree) = {
             macroLogVerbose("original:")
             macroLogLite("" + expanded + "\n" + showRaw(expanded))
-            val freeSyms = expanded.freeTerms ++ expanded.freeTypes
+            val freeSyms = expanded.freeSyms
             freeSyms foreach (sym => MacroFreeSymbolError(expandee, sym))
             // Macros might have spliced arguments with range positions into non-compliant
             // locations, notably, under a tree without a range position. Or, they might
@@ -906,33 +910,33 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   var hasPendingMacroExpansions = false // JZ this is never reset to false. What is its purpose? Should it not be stored in Context?
   def typerShouldExpandDeferredMacros: Boolean = hasPendingMacroExpansions && !delayed.isEmpty
   private val forced = perRunCaches.newWeakSet[Tree]
-  private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Int]]()
-  private def isDelayed(expandee: Tree) = delayed contains expandee
+  private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Symbol]]()
+  private def isDelayed(expandee: Tree) = !delayed.isEmpty && (delayed contains expandee)
   def clearDelayed(): Unit = delayed.clear()
-  private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Int] =
-    if (forced(expandee)) scala.collection.mutable.Set[Int]()
+  private def calculateUndetparams(expandee: Tree): scala.collection.mutable.Set[Symbol] =
+    if (forced(expandee)) scala.collection.mutable.Set[Symbol]()
     else delayed.getOrElse(expandee, {
       val calculated = scala.collection.mutable.Set[Symbol]()
       expandee foreach (sub => {
-        def traverse(sym: Symbol) = if (sym != null && (undetparams contains sym.id)) calculated += sym
+        def traverse(sym: Symbol) = if (sym != null && (undetparams contains sym)) calculated += sym
         if (sub.symbol != null) traverse(sub.symbol)
         if (sub.tpe != null) sub.tpe foreach (sub => traverse(sub.typeSymbol))
       })
       macroLogVerbose("calculateUndetparams: %s".format(calculated))
-      calculated map (_.id)
+      calculated
     })
-  private val undetparams = perRunCaches.newSet[Int]()
+  private val undetparams = perRunCaches.newSet[Symbol]()
   def notifyUndetparamsAdded(newUndets: List[Symbol]): Unit = {
-    undetparams ++= newUndets map (_.id)
+    undetparams ++= newUndets
     if (macroDebugVerbose) newUndets foreach (sym => println("undetParam added: %s".format(sym)))
   }
   def notifyUndetparamsInferred(undetNoMore: List[Symbol], inferreds: List[Type]): Unit = {
-    undetparams --= undetNoMore map (_.id)
+    undetparams --= undetNoMore
     if (macroDebugVerbose) (undetNoMore zip inferreds) foreach { case (sym, tpe) => println("undetParam inferred: %s as %s".format(sym, tpe))}
     if (!delayed.isEmpty)
       delayed.toList foreach {
         case (expandee, undetparams) if !undetparams.isEmpty =>
-          undetparams --= undetNoMore map (_.id)
+          undetparams --= undetNoMore
           if (undetparams.isEmpty) {
             hasPendingMacroExpansions = true
             macroLogVerbose(s"macro expansion is pending: $expandee")

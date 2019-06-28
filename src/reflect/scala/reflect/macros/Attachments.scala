@@ -65,9 +65,12 @@ abstract class Attachments { self =>
 
   /** Creates a copy of this attachment with the payload of the given class type `T` removed. */
   def remove[T: ClassTag]: Attachments { type Pos = self.Pos } = {
-    val newAll = all filterNot matchesTag[T]
-    if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
-    else new NonemptyAttachments[Pos](this.pos, newAll)
+    if (!all.exists(matchesTag[T])) this // OPT immutable.Set.filter doesn't structurally share on 2.12 collections.
+    else {
+      val newAll = all filterNot matchesTag[T]
+      if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
+      else new NonemptyAttachments[Pos](this.pos, newAll)
+    }
   }
 
   def isEmpty: Boolean = true

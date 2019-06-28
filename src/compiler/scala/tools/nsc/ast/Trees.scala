@@ -171,13 +171,6 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
   }
 
-  object resetPos extends Traverser {
-    override def traverse(t: Tree) {
-      if (t != EmptyTree) t.setPos(NoPosition)
-      super.traverse(t)
-    }
-  }
-
   // Finally, no one uses resetAllAttrs anymore, so I'm removing it from the compiler.
   // Even though it's with great pleasure I'm doing that, I'll leave its body here to warn future generations about what happened in the past.
   //
