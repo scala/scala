@@ -527,8 +527,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val ReflectPackage              = requiredModule[scala.reflect.`package`.type]
     lazy val ReflectApiPackage           = getPackageObjectIfDefined("scala.reflect.api") // defined in scala-reflect.jar, so we need to be careful
     lazy val ReflectRuntimePackage       = getPackageObjectIfDefined("scala.reflect.runtime") // defined in scala-reflect.jar, so we need to be careful
-         def ReflectRuntimeUniverse      = ReflectRuntimePackage.map(sym => getMemberValue(sym, nme.universe))
-         def ReflectRuntimeCurrentMirror = ReflectRuntimePackage.map(sym => getMemberMethod(sym, nme.currentMirror))
+         def ReflectRuntimeUniverse      = ReflectRuntimePackage.map(sym => getDeclValue(sym, nme.universe))
+         def ReflectRuntimeCurrentMirror = ReflectRuntimePackage.map(sym => getDeclMethod(sym, nme.currentMirror))
 
     lazy val UniverseClass    = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
          def UniverseInternal = getMemberValue(UniverseClass, nme.internal)
@@ -551,6 +551,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val TypeTagsClass          = getClassIfDefined("scala.reflect.api.TypeTags") // defined in scala-reflect.jar, so we need to be careful
 
     lazy val ApiUniverseClass      = getClassIfDefined("scala.reflect.api.Universe") // defined in scala-reflect.jar, so we need to be careful
+    lazy val ApiQuasiquotesClass   = getClassIfDefined("scala.reflect.api.Quasiquotes") // defined in scala-reflect.jar, so we need to be careful
     lazy val JavaUniverseClass     = getClassIfDefined("scala.reflect.api.JavaUniverse") // defined in scala-reflect.jar, so we need to be careful
 
     lazy val MirrorClass           = getClassIfDefined("scala.reflect.api.Mirror") // defined in scala-reflect.jar, so we need to be careful
@@ -576,10 +577,10 @@ trait Definitions extends api.StandardDefinitions {
 
     // scala/bug#8392 a reflection universe on classpath may not have
     // quasiquotes, if e.g. crosstyping with -Xsource on
-    lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) getMemberIfDefined(ApiUniverseClass, tpnme.Quasiquote) else NoSymbol
-    lazy val QuasiquoteClass_api         = if (QuasiquoteClass != NoSymbol) getMember(QuasiquoteClass, tpnme.api) else NoSymbol
-    lazy val QuasiquoteClass_api_apply   = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.apply) else NoSymbol
-    lazy val QuasiquoteClass_api_unapply = if (QuasiquoteClass_api != NoSymbol) getMember(QuasiquoteClass_api, nme.unapply) else NoSymbol
+    lazy val QuasiquoteClass             = if (ApiUniverseClass != NoSymbol) ApiQuasiquotesClass.info.decl(tpnme.Quasiquote) else NoSymbol
+    lazy val QuasiquoteClass_api         = if (QuasiquoteClass != NoSymbol) QuasiquoteClass.info.decl(tpnme.api) else NoSymbol
+    lazy val QuasiquoteClass_api_apply   = if (QuasiquoteClass_api != NoSymbol) getDeclMethod(QuasiquoteClass_api, nme.apply) else NoSymbol
+    lazy val QuasiquoteClass_api_unapply = if (QuasiquoteClass_api != NoSymbol) getDeclMethod(QuasiquoteClass_api, nme.unapply) else NoSymbol
 
     lazy val ScalaSignatureAnnotation = requiredClass[scala.reflect.ScalaSignature]
     lazy val ScalaLongSignatureAnnotation = requiredClass[scala.reflect.ScalaLongSignature]
@@ -1410,6 +1411,18 @@ trait Definitions extends api.StandardDefinitions {
         case _             => miss
       }
     }
+    def getDeclMethod(owner: Symbol, name: Name): TermSymbol = {
+      getDecl(owner, name.toTermName) match {
+        case x: TermSymbol => x
+        case _             => fatalMissingSymbol(owner, name, "method")
+      }
+    }
+    def getDeclValue(owner: Symbol, name: Name): TermSymbol = {
+      getDecl(owner, name.toTermName) match {
+        case x: TermSymbol => x
+        case _             => fatalMissingSymbol(owner, name, "declared value")
+      }
+    }
 
     private lazy val erasurePhase = findPhaseWithName("erasure")
     def getMemberIfDefined(owner: Symbol, name: Name): Symbol =
@@ -1695,7 +1708,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val HigherKindsFeature         = getLanguageFeature("higherKinds")
       lazy val ExistentialsFeature        = getLanguageFeature("existentials")
 
-      lazy val ApiUniverseReify = ApiUniverseClass.map(sym => getMemberMethod(sym, nme.reify))
+      lazy val ApiUniverseReify = ApiUniverseClass.map(sym => getDeclIfDefined(sym, nme.reify))
 
       lazy val ReflectRuntimeUniverse      = DefinitionsClass.this.ReflectRuntimeUniverse
       lazy val ReflectRuntimeCurrentMirror = DefinitionsClass.this.ReflectRuntimeCurrentMirror

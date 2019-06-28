@@ -21,24 +21,28 @@ trait Enclosures {
   import universe._
 
   private lazy val site       = callsiteTyper.context
-  private lazy val enclTrees  = site.enclosingContextChain map (_.tree)
-  private lazy val enclPoses  = enclosingMacros map (_.macroApplication.pos) filterNot (_ eq NoPosition)
 
-  private def lenientEnclosure[T <: Tree : ClassTag]: Tree = enclTrees collectFirst { case x: T => x } getOrElse EmptyTree
-  private def strictEnclosure[T <: Tree : ClassTag]: T = enclTrees collectFirst { case x: T => x } getOrElse (throw EnclosureException(classTag[T].runtimeClass, enclTrees))
+  private def lenientEnclosure[T <: Tree : ClassTag]: Tree = site.nextEnclosing(c => classTag[T].runtimeClass.isInstance(c.tree)).tree
+  private def strictEnclosure[T <: Tree : ClassTag]: T = site.nextEnclosing(c => classTag[T].runtimeClass.isInstance(c.tree)) match {
+    case analyzer.NoContext => throw EnclosureException(classTag[T].runtimeClass, site.enclosingContextChain map (_.tree))
+    case cx => cx.tree.asInstanceOf[T]
+  }
 
-  // vals are eager to simplify debugging
-  // after all we wouldn't save that much time by making them lazy
   val macroApplication: Tree                      = expandee
-  def enclosingPackage: PackageDef                = strictEnclosure[PackageDef]
-  val enclosingClass: Tree                        = lenientEnclosure[ImplDef]
+  def enclosingPackage: PackageDef                = site.nextEnclosing(_.tree.isInstanceOf[PackageDef]).tree.asInstanceOf[PackageDef]
+  lazy val enclosingClass: Tree                   = lenientEnclosure[ImplDef]
   def enclosingImpl: ImplDef                      = strictEnclosure[ImplDef]
   def enclosingTemplate: Template                 = strictEnclosure[Template]
-  val enclosingImplicits: List[ImplicitCandidate] = site.openImplicits.map(_.toImplicitCandidate)
-  val enclosingMacros: List[Context]              = this :: universe.analyzer.openMacros // include self
-  val enclosingMethod: Tree                       = lenientEnclosure[DefDef]
+  lazy val enclosingImplicits: List[ImplicitCandidate] = site.openImplicits.map(_.toImplicitCandidate)
+  private val analyzerOpenMacros                  = universe.analyzer.openMacros
+  val enclosingMacros: List[Context]              = this :: analyzerOpenMacros // include self
+  lazy val enclosingMethod: Tree                       = lenientEnclosure[DefDef]
   def enclosingDef: DefDef                        = strictEnclosure[DefDef]
-  val enclosingPosition: Position                 = if (enclPoses.isEmpty) NoPosition else enclPoses.head.pos
+  lazy val enclosingPosition: Position            = if (this.macroApplication.pos ne NoPosition) this.macroApplication.pos else {
+    analyzerOpenMacros.collectFirst {
+      case x if x.macroApplication.pos ne NoPosition => x.macroApplication.pos
+    }.getOrElse(NoPosition)
+  }
   val enclosingUnit: CompilationUnit              = universe.currentRun.currentUnit
   val enclosingRun: Run                           = universe.currentRun
 }

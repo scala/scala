@@ -173,11 +173,17 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     override def transformUnit(unit: CompilationUnit): Unit = {}
   }
 
-  object resetPos extends Traverser {
-    override def traverse(t: Tree): Unit = {
-      if (t != EmptyTree) t.setPos(NoPosition)
-      super.traverse(t)
-    }
+  override protected def xtransform(transformer: super.Transformer, tree: Tree): Tree = tree match {
+    case DocDef(comment, definition) =>
+      transformer.treeCopy.DocDef(tree, comment, transformer.transform(definition))
+    case SelectFromArray(qualifier, selector, erasure) =>
+      transformer.treeCopy.SelectFromArray(
+        tree, transformer.transform(qualifier), selector, erasure)
+    case InjectDerivedValue(arg) =>
+      transformer.treeCopy.InjectDerivedValue(
+        tree, transformer.transform(arg))
+    case TypeTreeWithDeferredRefCheck() =>
+      transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
   }
 
   // Finally, no one uses resetAllAttrs anymore, so I'm removing it from the compiler.
