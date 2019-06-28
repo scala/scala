@@ -244,7 +244,21 @@ abstract class InlinerHeuristics extends PerRunInit {
             // inlined in turn (chosen by the same heuristic), or the code is rolled back. but we don't inline them just because
             // they are forwarders.
             val isTraitSuperAccessor = backendUtils.isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)
-            if (isTraitSuperAccessor) null
+            if (isTraitSuperAccessor) {
+              // inline static trait super accessors if the corresponding trait method is a forwarder or trivial (scala-dev#618)
+              {
+                val css = callGraph.callsites(callee.callee)
+                if (css.sizeIs == 1) css.head._2 else null
+              } match {
+                case null => null
+                case traitMethodCallsite =>
+                  val tmCallee = traitMethodCallsite.callee.get
+                  val traitMethodForwarderKind = backendUtils.looksLikeForwarderOrFactoryOrTrivial(
+                    tmCallee.callee, tmCallee.calleeDeclarationClass.internalName, allowPrivateCalls = false)
+                  if (traitMethodForwarderKind > 0) GenericForwarder
+                  else null
+              }
+            }
             else {
               val forwarderKind = backendUtils.looksLikeForwarderOrFactoryOrTrivial(callee.callee, callee.calleeDeclarationClass.internalName, allowPrivateCalls = false)
               if (forwarderKind < 0)
