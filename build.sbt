@@ -240,6 +240,9 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   baseDirectory in Compile := (baseDirectory in ThisBuild).value,
   baseDirectory in Test := (baseDirectory in ThisBuild).value,
 
+  // Don't pick up source files from the project root.
+  sourcesInBase := false,
+
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
   outputStrategy in run := Some(StdoutOutput)
