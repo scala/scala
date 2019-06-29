@@ -1,6 +1,6 @@
 package scala.sys.process
 
-import java.io.{ByteArrayInputStream, File}
+import java.io.{ByteArrayInputStream, File, IOException}
 import java.nio.file.{Files, Paths}, Files.createTempFile
 import java.nio.charset.StandardCharsets.UTF_8
 
@@ -68,11 +68,11 @@ class ProcessTest {
       val cat = Process.cat(List(file1, file2).map(_.toFile))
       val p = cat #> outf
 
-      assertEquals(0, p.!)
+      assertEqualTo(0)(p.!)
 
       val src = IOSource.fromFile(outf)
       try {
-        assertEquals("hello, world", src.mkString.linesIterator.mkString(", "))
+        assertEqualTo("hello, world")(src.mkString.linesIterator.mkString(", "))
       } finally {
         src.close()
       }
@@ -103,23 +103,23 @@ class ProcessTest {
     val out = createTempFile("out", "tmp")
     val outf = out.toFile
 
-    val stackless = stacklessly {
+    def process =
       try {
         val p0 = (noFile.toFile : ProcessBuilder.Source).cat #&& pb2
         val p = p0 #> outf
 
-        assertEquals(1, p.!)
+        assertEqualTo(1)(p.!)
         assertFalse(failed.get)
       } finally {
         Files.delete(out)
       }
+
+    def fail(why: String): Option[Throwable] = Some(new AssertionError(why))
+
+    withoutATrace(process) {
+      case (None, _) => fail("No main result")
+      case (_, (_, (_: IOException)) :: Nil) => None
+      case (_, other) => fail(s"Expected one IOException, got $other")
     }
-    stackless.run()
-    stackless.assert()
-    stackless.getErrors match {
-      case (_, (_: java.io.IOException)) :: Nil => ()
-      case other => fail(s"Expected one IOException, got $other")
-    }
-    assertFalse(stackless.getResult.isEmpty)
   }
 }
