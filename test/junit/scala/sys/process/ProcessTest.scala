@@ -24,32 +24,32 @@ class ProcessTest {
 
   @Test def t10007(): Unit = testily {
     val res = ("cat" #< new ByteArrayInputStream("lol".getBytes)).!!
-    assertEqualTo("lol\n")(res)
+    assertEquals("lol\n", res)
   }
   // test non-hanging
   @Test def t10055(): Unit = testily {
     val res = ("cat" #< ( () => -1 ) ).!
-    assertEqualTo(0)(res)
+    assertEquals(0, res)
   }
 
   @Test def t10953(): Unit = {
     val res = Process.cat(tempFiles).!
-    assertEqualTo(0)(res)
+    assertEquals(0, res)
   }
 
   @Test def processApply(): Unit = {
     val res = Process("cat", tempFiles.map(_.getAbsolutePath)).!
-    assertEqualTo(0)(res)
+    assertEquals(0, res)
   }
 
   @Test def t10696(): Unit = {
     val res1 = Process("false").lazyLines
-    assertEqualTo("LazyList(<not computed>)")(res1.toString())
+    assertEquals("LazyList(<not computed>)", res1.toString())
     val ex = Try(res1.head).failed.get
     assert(ex.isInstanceOf[RuntimeException])
 
     val res2 = Process("true").lazyLines
-    assertEqualTo("LazyList(<not computed>)")(res2.toString())
+    assertEquals("LazyList(<not computed>)", res2.toString())
     assert(res2.isEmpty)
   }
 
@@ -68,11 +68,11 @@ class ProcessTest {
       val cat = Process.cat(List(file1, file2).map(_.toFile))
       val p = cat #> outf
 
-      assertEqualTo(0)(p.!)
+      assertEquals(0, p.!)
 
       val src = IOSource.fromFile(outf)
       try {
-        assertEqualTo("hello, world")(src.mkString.linesIterator.mkString(", "))
+        assertEquals("hello, world", src.mkString.linesIterator.mkString(", "))
       } finally {
         src.close()
       }
@@ -108,7 +108,7 @@ class ProcessTest {
         val p0 = (noFile.toFile : ProcessBuilder.Source).cat #&& pb2
         val p = p0 #> outf
 
-        assertEqualTo(1)(p.!)
+        assertEquals(1, p.!)
         assertFalse(failed.get)
       } finally {
         Files.delete(out)

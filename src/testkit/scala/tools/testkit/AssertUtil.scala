@@ -234,11 +234,6 @@ object AssertUtil {
   /** Like Await.ready but return false on timeout, true on completion, throw InterruptedException. */
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
 
-  /** Syntax to clarify which is the expected value. */
-  def assertEqualTo[A](expected: A)(actual: A): Unit = assertEquals(expected, actual)
-
-  /* TODO maybe asserting(message).equalTo(expected) { value } */
-
   def withoutATrace[A](body: => A) = NoTrace(body)
 }
 
