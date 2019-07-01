@@ -424,7 +424,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   }
   @deprecated("There are multiple ways to order Floats (Ordering.Float.TotalOrdering, " +
     "Ordering.Float.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See the documentation for details.", since = "2.13.0")
+    "explicitly. See their documentation for details.", since = "2.13.0")
   implicit object DeprecatedFloatOrdering extends Float.TotalOrdering
 
   /** `Ordering`s for `Double`s.
@@ -484,7 +484,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   }
   @deprecated("There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, " +
     "Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See the documentation for details.", since = "2.13.0")
+    "explicitly. See their documentation for details.", since = "2.13.0")
   implicit object DeprecatedDoubleOrdering extends Double.TotalOrdering
 
   trait BigIntOrdering extends Ordering[BigInt] {
