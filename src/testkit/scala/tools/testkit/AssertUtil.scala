@@ -10,18 +10,19 @@
  * additional information regarding copyright ownership.
  */
 
- package scala.tools.testkit
+package scala.tools.testkit
 
 import org.junit.Assert, Assert._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
-import scala.collection.GenIterable
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.concurrent.{Await, Awaitable, SyncVar, TimeoutException}
-import scala.util.Try
+import scala.concurrent.{Await, Awaitable}
+import scala.util.{Failure, Success, Try}
 import scala.util.Properties.isJavaAtLeast
 import scala.util.control.NonFatal
+import java.util.concurrent.{CountDownLatch, TimeUnit}
+import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref._
 import java.lang.reflect.{Array => _, _}
 import java.util.IdentityHashMap
@@ -129,14 +130,18 @@ object AssertUtil {
 
   /** Assert no new threads, with some margin for arbitrary threads to exit. */
   def assertZeroNetThreads(body: => Unit): Unit = {
-    val result = new SyncVar[Option[Throwable]]
     val group = new ThreadGroup("junit")
-    def check() = {
+    try assertZeroNetThreads(group)(body)
+    finally group.destroy()
+  }
+  def assertZeroNetThreads[A](group: ThreadGroup)(body: => A): Try[A] = {
+    val testDone = new CountDownLatch(1)
+    def check(): Try[A] = {
       val beforeCount = group.activeCount
       val beforeThreads = new Array[Thread](beforeCount)
       assertEquals("Spurious early thread creation.", beforeCount, group.enumerate(beforeThreads))
 
-      body
+      val outcome = Try(body)
 
       val afterCount = {
         waitForIt(group.activeCount <= beforeCount, label = "after count")
@@ -146,32 +151,47 @@ object AssertUtil {
       assertEquals("Spurious late thread creation.", afterCount, group.enumerate(afterThreads))
       val staleThreads = afterThreads.toList.diff(beforeThreads)
       //staleThreads.headOption.foreach(_.getStackTrace.foreach(println))
-      assertEquals(staleThreads.mkString("There are stale threads: ",",",""), beforeCount, afterCount)
-      assertTrue(staleThreads.mkString("There are stale threads: ",",",""), staleThreads.isEmpty)
+      val staleMessage = staleThreads.mkString("There are stale threads: ",",","")
+      assertEquals(staleMessage, beforeCount, afterCount)
+      assertTrue(staleMessage, staleThreads.isEmpty)
+
+      outcome
     }
-    def test() = {
+    val result = new AtomicReference[Try[A]]()
+    def test(): Try[A] =
       try {
-        check()
-        result.put(None)
-      } catch {
-        case t: Throwable => result.put(Some(t))
+        val checked = check()
+        result.set(checked)
+        checked
+      } finally {
+        testDone.countDown()
       }
-    }
-    val timeout = 10 * 1000L  // last chance timeout
+
+    val timeout = 10 * 1000L
     val thread = new Thread(group, () => test())
-    def resulted: Boolean = result.get(timeout).isDefined
+    def abort(): Try[A] = {
+      group.interrupt()
+      new Failure(new AssertionError("Test did not complete"))
+    }
     try {
       thread.start()
-      waitForIt(resulted, Slow, label = "test result")
-      val err = result.take(timeout)
-      err.foreach(e => throw e)
+      waitForIt(testDone.getCount == 0, Fast, label = "test result")
+      if (testDone.await(timeout, TimeUnit.MILLISECONDS))
+        result.get
+      else
+        abort()
     } finally {
       thread.join(timeout)
-      group.destroy()
     }
   }
 
   /** Wait for a condition, with a simple back-off strategy.
+   *
+   *  This makes it easier to see hanging threads in development
+   *  without tweaking a timeout parameter. Conversely, when a thread
+   *  fails to make progress in a test environment, we allow the wait
+   *  period to grow larger than usual, since a long wait for failure
+   *  is acceptable.
    *
    *  It would be nicer if what we're waiting for gave us
    *  a progress indicator: we don't care if something
@@ -213,9 +233,51 @@ object AssertUtil {
 
   /** Like Await.ready but return false on timeout, true on completion, throw InterruptedException. */
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
+
+  def withoutATrace[A](body: => A) = NoTrace(body)
 }
 
 object TestDuration {
   import scala.concurrent.duration.{Duration, SECONDS}
   val Standard = Duration(4, SECONDS)
+}
+
+/** Run a thunk, collecting uncaught exceptions from any spawned threads. */
+class NoTrace[A](body: => A) extends Runnable {
+
+  private val uncaught = new mutable.ListBuffer[(Thread, Throwable)]()
+
+  @volatile private[testkit] var result: Option[A] = None
+
+  def run(): Unit = {
+    import AssertUtil.assertZeroNetThreads
+    val group = new ThreadGroup("notrace") {
+      override def uncaughtException(t: Thread, e: Throwable): Unit = synchronized {
+        uncaught += ((t, e))
+      }
+    }
+    try assertZeroNetThreads(group)(body) match {
+      case Success(a) => result = Some(a)
+      case Failure(e) => synchronized { uncaught += ((Thread.currentThread, e)) }
+    }
+    finally group.destroy()
+  }
+
+  private[testkit] lazy val errors: List[(Thread, Throwable)] = synchronized(uncaught.toList)
+
+  private def suppress(t: Throwable, other: Throwable): t.type = { t.addSuppressed(other) ; t }
+
+  private final val noError = None: Option[Throwable]
+
+  def asserted: Option[Throwable] = 
+    errors.collect { case (_, e: AssertionError) => e }
+      .foldLeft(noError)((res, e) => res.map(suppress(_, e)).orElse(Some(e)))
+
+  def apply(test: (Option[A], List[(Thread, Throwable)]) => Option[Throwable]) = {
+    run()
+    test(result, errors).orElse(asserted).foreach(e => throw e)
+  }
+}
+object NoTrace {
+  def apply[A](body: => A): NoTrace[A] = new NoTrace(body)
 }

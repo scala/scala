@@ -1,6 +1,6 @@
 package scala.sys.process
 
-import java.io.{ByteArrayInputStream, File}
+import java.io.{ByteArrayInputStream, File, IOException}
 import java.nio.file.{Files, Paths}, Files.createTempFile
 import java.nio.charset.StandardCharsets.UTF_8
 
@@ -10,6 +10,7 @@ import scala.util.Try
 //import scala.sys.process._
 import scala.util.Properties._
 import scala.collection.JavaConverters._
+import scala.tools.testkit.AssertUtil._
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -89,7 +90,7 @@ class ProcessTest {
       Files.write(file, List(prefix).asJava, UTF_8)
       file
     }
-    val file1 = Paths.get("total", "junk")
+    val noFile = Paths.get("total", "junk")
     val p2 = new ProcessMock(false)
     val failed = new java.util.concurrent.atomic.AtomicBoolean
     val pb2 = new ProcessBuilderMock(p2, error = true) {
@@ -102,14 +103,23 @@ class ProcessTest {
     val out = createTempFile("out", "tmp")
     val outf = out.toFile
 
-    try {
-      val p0 = (file1.toFile : ProcessBuilder.Source).cat #&& pb2
-      val p = p0 #> outf
+    def process =
+      try {
+        val p0 = (noFile.toFile : ProcessBuilder.Source).cat #&& pb2
+        val p = p0 #> outf
 
-      assertEquals(1, p.!)
-      assertFalse(failed.get)
-    } finally {
-      Files.delete(out)
+        assertEquals(1, p.!)
+        assertFalse(failed.get)
+      } finally {
+        Files.delete(out)
+      }
+
+    def fail(why: String): Option[Throwable] = Some(new AssertionError(why))
+
+    withoutATrace(process) {
+      case (None, _) => fail("No main result")
+      case (_, (_, (_: IOException)) :: Nil) => None
+      case (_, other) => fail(s"Expected one IOException, got $other")
     }
   }
 }
