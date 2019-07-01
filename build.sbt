@@ -47,7 +47,6 @@ val asmDep            = "org.scala-lang.modules"         % "scala-asm"          
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
-val jqueryDep         = "org.webjars"                    % "jquery"                           % "3.4.1"
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
   credentials ++= {
@@ -502,35 +501,8 @@ lazy val scaladoc = configureAsSubproject(project)
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
     includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
-    libraryDependencies += jqueryDep,
-    resourceGenerators in Compile += Def.task {
-      val resourcesFromJars = Map(
-        // resourceName -> jarName
-        "jquery.min.js" -> jqueryDep.name
-      )
-      val dest = (resourceManaged.value / "webjars").getAbsoluteFile
-      IO.createDirectory(dest)
-
-      def extractResourceFromJar(classpathes: Keys.Classpath, jarName: String, resourceName: String): Option[File] = {
-        IO.withTemporaryDirectory { tmpDir =>
-          classpathes.collectFirst {
-            case classpathEntry if classpathEntry.get(artifact.key).exists(_.name.contains(jarName)) =>
-              val jarFile = classpathEntry.data
-              val extractedFiles = IO.unzip(jarFile, tmpDir, f => f.endsWith(resourceName))
-              val destFile = dest / resourceName
-              IO.copyFile(extractedFiles.head, destFile)
-              destFile
-          }
-        }
-      }
-
-      for {
-        (resourceName, jarName) <- resourcesFromJars.toSeq
-        extractedFile <- extractResourceFromJar((dependencyClasspath in Compile).value, jarName, resourceName)
-      } yield {
-        extractedFile
-      }
-    }.taskValue
+    libraryDependencies ++= ScaladocSettings.webjarResoources,
+    resourceGenerators in Compile += ScaladocSettings.extractResourcesFromWebjar
   )
   .dependsOn(compiler)
 
