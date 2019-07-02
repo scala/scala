@@ -70,4 +70,44 @@ class HashSetTest {
     val hs = HashSet[PackageEntryImpl](PackageEntryImpl("javax"), PackageEntryImpl("java"))
     assertFalse(hs.add(PackageEntryImpl("java")))
   }
+
+  class Type1(val value:String)
+  class Type2(val value:String)
+
+  import scala.jdk.CollectionConverters._
+
+  @Test
+  def addAll: Unit = {
+    val jhs: java.util.HashSet[Type1] = new java.util.HashSet[Type1]
+    jhs.add(new Type1("A"))
+    jhs.add(new Type1("B"))
+    val shs: scala.collection.mutable.Set[Type2] = jhs.asScala.map(x => new Type2(x.value))
+    assertEquals(jhs.size, shs.size)
+  }
+
+  class OnceOnly extends IterableOnce[Int] {
+    override def knownSize: Int = 1
+
+    var iterated:Boolean = false
+
+    override def iterator: Iterator[Int] = {
+      new Iterator[Int] {
+        assert(!iterated)
+        iterated = true
+        private var v = Option(42)
+        override def hasNext: Boolean = v.nonEmpty && knownSize > 0
+        override def next(): Int = {
+          val res = v.get
+          v = None
+          res
+        }
+      }
+    }
+  }
+
+  @Test
+  def addAllTest2: Unit = {
+    val hs = HashSet.empty[Int]
+    hs.addAll(new OnceOnly)
+  }
 }
