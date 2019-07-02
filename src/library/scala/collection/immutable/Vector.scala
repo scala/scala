@@ -30,11 +30,23 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
-      case as: ArraySeq[E] if as.length <= 32 && as.unsafeArray.isInstanceOf[Array[AnyRef]] =>
+      case as: ArraySeq[E] if as.length <= 32 =>
         if (as.isEmpty) NIL
         else {
-          val v = new Vector(0, as.length, 0)
-          v.display0 = as.unsafeArray.asInstanceOf[Array[AnyRef]]
+          val unsafeArray = as.unsafeArray
+          val len = unsafeArray.length
+          val v = new Vector(0, len, 0)
+          val display0 = new Array[Any](len)
+          if (unsafeArray.isInstanceOf[Array[AnyRef]]) {
+            System.arraycopy(unsafeArray, 0, display0, 0, len)
+          } else {
+            var i = 0
+            while (i < len) {
+              display0(i) = unsafeArray(i)
+              i += 1
+            }
+          }
+          v.display0 = display0.asInstanceOf[Array[AnyRef]]
           v.depth = 1
           releaseFence()
           v
@@ -45,17 +57,11 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
         if (knownSize == 0) empty[E]
         else if (knownSize > 0 && knownSize <= 32) {
-          val display0 = new Array[AnyRef](knownSize)
-
-          var i = 0
-          val iterator = it.iterator
-          while (iterator.hasNext) {
-            display0(i) = iterator.next().asInstanceOf[AnyRef]
-            i += 1
-          }
+          val display0 = new Array[Any](knownSize)
+          it.iterator.copyToArray(display0)
           val v = new Vector[E](0, knownSize, 0)
           v.depth = 1
-          v.display0 = display0
+          v.display0 = display0.asInstanceOf[Array[AnyRef]]
           releaseFence()
           v
         } else {
