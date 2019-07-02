@@ -1642,8 +1642,8 @@ class InlinerTest extends BytecodeTesting {
     assertInvoke(getMethod(c, "t5"), "T", "m3a") // could not inline
     assertNoInvoke(getMethod(c, "t6")) // both forwarders inlined, closure eliminated
 
-    assertInvoke(getMethod(c, "t7"), "T", "m1a$")
-    assertInvoke(getMethod(c, "t8"), "T", "m1b$")
+    assertNoInvoke(getMethod(c, "t7"))
+    assertNoInvoke(getMethod(c, "t8"))
 
     assertNoInvoke(getMethod(c, "t9"))
     assertNoInvoke(getMethod(c, "t10"))
@@ -2207,5 +2207,30 @@ class InlinerTest extends BytecodeTesting {
         List(mh.owner, mh.name)
     }
     assertEquals(List("A", "$anonfun$f$1"), args.head)
+  }
+
+  @Test
+  def sd618(): Unit = {
+    val code =
+      """trait T {
+        |  final def m1 = 1 // trivial
+        |  final def m2 = p // forwarder
+        |  @noinline def p = 42
+        |}
+        |
+        |object TT extends T // gets mixin forwarders m1 / m2 which call the static T.m1$ / T.m2$
+        |
+        |class C {
+        |  def t1a(t: T) = t.m1 // inlined, so we get 1
+        |  def t1b = TT.m1      // mixin forwarder is inlined, static forwarder then as well because the final method is trivial
+        |  def t2a(t: T) = t.m2 // inlined, so we get T.p
+        |  def t2b = TT.m2      // mixin forwarder is inlined, static forwarder then as well because the final method is forwarder
+        |}
+      """.stripMargin
+    val c :: _ = compileClasses(code)
+    assertNoInvoke(getMethod(c, "t1a"))
+    assertNoInvoke(getMethod(c, "t1b"))
+    assertInvoke(getMethod(c, "t2a"), "T", "p")
+    assertInvoke(getMethod(c, "t2b"), "T", "p")
   }
 }
