@@ -5193,11 +5193,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // be extracted and inserted by insertStabilizer when typer unwinds out of this
               // expression.
               val insertionContext = context.nextEnclosing { ctx =>
-                def isInsertionNode(tree: Tree): Boolean = tree match {
-                  case _: Apply | _: TypeApply | _: Select => true
-                  case _ => false
+                def isInsertionNode(outerTest: Boolean): Boolean = {
+                  val tree = if (outerTest) ctx.outer.tree else ctx.tree
+                  tree match {
+                    case Apply(_, args) =>
+                      if (outerTest) !args.contains(ctx.tree)
+                      else !isInsertionNode(outerTest = true)
+                    case _: TypeApply | _: Select =>
+                      if (outerTest) true
+                      else !isInsertionNode(outerTest = true)
+                    case _ => false
+                  }
                 }
-                isInsertionNode(ctx.tree) && !isInsertionNode(ctx.outer.tree)
+                isInsertionNode(outerTest = false)
               }
 
               if (insertionContext != NoContext) {
