@@ -1160,15 +1160,21 @@ trait Implicits {
             }
             if (removed) matches.removeIf(_ == null) // remove for real now.
           }
-          // most frequent one first. Sort in-place.
-          matches.sort(((x, y) => java.lang.Integer.compare(y.info.useCount(isView), x.info.useCount(isView))))
           val result = new ListBuffer[ImplicitInfo]
           matches.forEach(x => result += x.info)
           result.toList
         }
       }
 
-      val eligible = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
+      val eligible: List[ImplicitInfo] = {
+        val matches = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
+        if (currentRun.isScala213) matches
+        else {
+          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
+          // compilation order variation in whether a search succeeds or diverges.
+          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
+        }
+      }
 
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
