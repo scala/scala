@@ -52,8 +52,8 @@ self =>
   class ParRangeIterator(range: Range = self.range)
   extends SeqSplitter[Int] {
     override def toString = "ParRangeIterator(over: " + range + ")"
-    private var ind = 0
-    private val len = range.length
+    private[this] var ind = 0
+    private[this] val len = range.length
 
     final def remaining = len - ind
 

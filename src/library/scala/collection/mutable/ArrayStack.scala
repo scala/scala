@@ -65,8 +65,8 @@ object ArrayStack extends SeqFactory[ArrayStack] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(8565219180626620510L)
-class ArrayStack[T] private(private var table : Array[AnyRef],
-                            private var index : Int)
+class ArrayStack[T] private(private[this] var table : Array[AnyRef],
+                            private[this] var index : Int)
 extends AbstractSeq[T]
    with IndexedSeq[T]
    with IndexedSeqLike[T, ArrayStack[T]]

@@ -463,7 +463,7 @@ private[parallel] final class FutureTasks(executor: ExecutionContext) extends Ta
   import scala.concurrent._
   import scala.util._
 
-  private val maxdepth = (math.log(parallelismLevel) / math.log(2) + 1).toInt
+  private[this] val maxdepth = (math.log(parallelismLevel) / math.log(2) + 1).toInt
 
   val environment: ExecutionContext = executor
 
@@ -542,7 +542,7 @@ trait ExecutionContextTasks extends Tasks {
    *  the driver is `ForkJoinTaskSupport` with the same pool, as an optimization.
    *  Otherwise, the driver will be a Scala `Future`-based implementation.
    */
-  private val driver: Tasks = executionContext match {
+  private[this] val driver: Tasks = executionContext match {
     case eci: scala.concurrent.impl.ExecutionContextImpl => eci.executor match {
       case fjp: ForkJoinPool => new ForkJoinTaskSupport(fjp)
       case _ => new FutureTasks(environment)

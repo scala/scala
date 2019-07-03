@@ -114,8 +114,8 @@ self =>
    */
   def linesWithSeparators: Iterator[String] = new AbstractIterator[String] {
     val str = self.toString
-    private val len = str.length
-    private var index = 0
+    private[this] val len = str.length
+    private[this] var index = 0
     def hasNext: Boolean = index < len
     def next(): String = {
       if (index >= len) throw new NoSuchElementException("next on empty iterator")

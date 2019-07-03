@@ -139,7 +139,7 @@ extends scala.collection.AbstractSeq[T]
 {
   def this(more: (Array[T], Int, Int) => Int) = this(more, new Page[T](0), 0, UndeterminedEnd)
 
-  private var current: Page[T] = first1
+  private[this] var current: Page[T] = first1
 
   private def latest = first1.latest
 

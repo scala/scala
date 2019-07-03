@@ -628,9 +628,9 @@ extends scala.collection.concurrent.Map[K, V]
    with CustomParallelizable[(K, V), ParTrieMap[K, V]]
    with Serializable
 {
-  private var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
-  private var equalityobj = ef
-  private var rootupdater = rtupd
+  private[this] var hashingobj = if (hashf.isInstanceOf[Hashing.Default[_]]) new TrieMap.MangledHashing[K] else hashf
+  private[this] var equalityobj = ef
+  private[this] var rootupdater = rtupd
   def hashing = hashingobj
   def equality = equalityobj
   @deprecated("this field will be made private", "2.12.0")

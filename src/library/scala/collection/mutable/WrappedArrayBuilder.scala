@@ -30,9 +30,9 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends ReusableBuilder[A, Wrappe
   @deprecated("use tag instead", "2.10.0")
   val manifest: ClassTag[A] = tag
 
-  private var elems: WrappedArray[A] = _
-  private var capacity: Int = 0
-  private var size: Int = 0
+  private[this] var elems: WrappedArray[A] = _
+  private[this] var capacity: Int = 0
+  private[this] var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
     val runtimeClass = tag.runtimeClass

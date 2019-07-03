@@ -65,7 +65,7 @@ self =>
 
   /** Used to iterate elements using indices */
   protected abstract class Elements(start: Int, val end: Int) extends SeqSplitter[T] with BufferedIterator[T] {
-    private var i = start
+    private[this] var i = start
 
     def hasNext = i < end
 

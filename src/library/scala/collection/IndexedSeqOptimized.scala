@@ -228,7 +228,7 @@ trait IndexedSeqOptimized[+A, +Repr] extends Any with IndexedSeqLike[A, Repr] { 
 
   override /*SeqLike*/
   def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = self.length
+    private[this] var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =
       if (0 < i) {

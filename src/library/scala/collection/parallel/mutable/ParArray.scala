@@ -63,7 +63,7 @@ extends ParSeq[T]
 {
 self =>
 
-  @transient private var array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
+  @transient private[this] var array: Array[Any] = arrayseq.array.asInstanceOf[Array[Any]]
 
   override def companion: GenericCompanion[ParArray] with GenericParCompanion[ParArray] = ParArray
 

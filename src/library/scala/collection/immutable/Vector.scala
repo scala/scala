@@ -101,7 +101,7 @@ extends AbstractSeq[A]
 
   override /*SeqLike*/
   def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = self.length
+    private[this] var i = self.length
     def hasNext: Boolean = 0 < i
     def next(): A =
       if (0 < i) {
@@ -592,14 +592,14 @@ extends AbstractIterator[A]
    with Iterator[A]
    with VectorPointer[A @uncheckedVariance] {
 
-  private var blockIndex: Int = _startIndex & ~31
-  private var lo: Int = _startIndex & 31
+  private[this] var blockIndex: Int = _startIndex & ~31
+  private[this] var lo: Int = _startIndex & 31
 
-  private var endLo = math.min(endIndex - blockIndex, 32)
+  private[this] var endLo = math.min(endIndex - blockIndex, 32)
 
   def hasNext = _hasNext
 
-  private var _hasNext = blockIndex + lo < endIndex
+  private[this] var _hasNext = blockIndex + lo < endIndex
 
   def next(): A = {
     if (!_hasNext) throw new NoSuchElementException("reached iterator end")
@@ -644,8 +644,8 @@ final class VectorBuilder[A]() extends ReusableBuilder[A, Vector[A]] with Vector
   display0 = new Array[AnyRef](32)
   depth = 1
 
-  private var blockIndex = 0
-  private var lo = 0
+  private[this] var blockIndex = 0
+  private[this] var lo = 0
 
   def +=(elem: A): this.type = {
     if (lo >= display0.length) {

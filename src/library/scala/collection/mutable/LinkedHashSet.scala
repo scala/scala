@@ -82,7 +82,7 @@ class LinkedHashSet[A] extends AbstractSet[A]
   }
 
   def iterator: Iterator[A] = new AbstractIterator[A] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.key; cur = cur.later; res }

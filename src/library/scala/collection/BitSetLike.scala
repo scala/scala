@@ -105,8 +105,8 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   def iterator: Iterator[Int] = iteratorFrom(0)
 
   override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
-    private var current = start
-    private val end = nwords * WordLength
+    private[this] var current = start
+    private[this] val end = nwords * WordLength
     def hasNext: Boolean = {
       while (current != end && !self.contains(current)) current += 1
       current != end

@@ -1050,7 +1050,7 @@ final class StreamIterator[+A] private() extends AbstractIterator[A] with Iterat
     lazy val v = st
   }
 
-  private var these: LazyCell = _
+  private[this] var these: LazyCell = _
 
   def hasNext: Boolean = these.v.nonEmpty
   def next(): A =
@@ -1270,7 +1270,7 @@ object Stream extends SeqFactory[Stream] {
     * which do not satisfy the filter, while the tail is still processing (see scala/bug#8990).
     */
   private[immutable] final class StreamWithFilter[A](sl: => Stream[A], p: A => Boolean) extends FilterMonadic[A, Stream[A]] {
-    private var s = sl                                              // set to null to allow GC after filtered
+    private[this] var s = sl                                              // set to null to allow GC after filtered
     private lazy val filtered = { val f = s filter p; s = null; f } // don't set to null if throw during filter
 
     def map[B, That](f: A => B)(implicit bf: CanBuildFrom[Stream[A], B, That]): That =

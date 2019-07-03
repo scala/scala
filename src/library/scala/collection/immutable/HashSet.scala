@@ -1028,7 +1028,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
   @inline private[this] def unsignedCompare(i: Int, j: Int) =
     (i < j) ^ (i < 0) ^ (j < 0)
 
-  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private var orig: HashSet[A]) extends Serializable {
+  @SerialVersionUID(2L) private class SerializationProxy[A,B](@transient private[this] var orig: HashSet[A]) extends Serializable {
     private def writeObject(out: java.io.ObjectOutputStream) {
       val s = orig.size
       out.writeInt(s)

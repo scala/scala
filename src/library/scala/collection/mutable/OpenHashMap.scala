@@ -71,7 +71,7 @@ extends AbstractMap[Key, Value]
 
   private[this] val actualInitialSize = HashTable.nextPositivePowerOfTwo(initialSize)
 
-  private var mask = actualInitialSize - 1
+  private[this] var mask = actualInitialSize - 1
 
   /** The hash table.
     * 
@@ -80,8 +80,8 @@ extends AbstractMap[Key, Value]
     */
   private[this] var table = new Array[Entry](actualInitialSize)
 
-  private var _size = 0
-  private var deleted = 0
+  private[this] var _size = 0
+  private[this] var deleted = 0
 
   // Used for tracking inserts so that iterators can determine if concurrent modification has occurred.
   private[this] var modCount = 0

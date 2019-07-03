@@ -93,7 +93,7 @@ extends AbstractSeq[T]
  */
 object WrappedArray {
   // This is reused for all calls to empty.
-  private val EmptyWrappedArray  = new ofRef[AnyRef](new Array[AnyRef](0))
+  private[this] val EmptyWrappedArray  = new ofRef[AnyRef](new Array[AnyRef](0))
   def empty[T <: AnyRef]: WrappedArray[T] = EmptyWrappedArray.asInstanceOf[WrappedArray[T]]
 
   // If make is called explicitly we use whatever we're given, even if it's

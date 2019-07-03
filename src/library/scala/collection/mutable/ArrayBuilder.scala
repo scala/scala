@@ -60,7 +60,7 @@ object ArrayBuilder {
   final class ofRef[T <: AnyRef : ClassTag] extends ArrayBuilder[T] {
 
     private var elems: Array[T] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[T] = {
@@ -125,7 +125,7 @@ object ArrayBuilder {
   final class ofByte extends ArrayBuilder[Byte] {
 
     private var elems: Array[Byte] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Byte] = {
@@ -190,7 +190,7 @@ object ArrayBuilder {
   final class ofShort extends ArrayBuilder[Short] {
 
     private var elems: Array[Short] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Short] = {
@@ -255,7 +255,7 @@ object ArrayBuilder {
   final class ofChar extends ArrayBuilder[Char] {
 
     private var elems: Array[Char] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Char] = {
@@ -320,7 +320,7 @@ object ArrayBuilder {
   final class ofInt extends ArrayBuilder[Int] {
 
     private var elems: Array[Int] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Int] = {
@@ -385,7 +385,7 @@ object ArrayBuilder {
   final class ofLong extends ArrayBuilder[Long] {
 
     private var elems: Array[Long] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Long] = {
@@ -450,7 +450,7 @@ object ArrayBuilder {
   final class ofFloat extends ArrayBuilder[Float] {
 
     private var elems: Array[Float] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Float] = {
@@ -515,7 +515,7 @@ object ArrayBuilder {
   final class ofDouble extends ArrayBuilder[Double] {
 
     private var elems: Array[Double] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Double] = {
@@ -580,7 +580,7 @@ object ArrayBuilder {
   class ofBoolean extends ArrayBuilder[Boolean] {
 
     private var elems: Array[Boolean] = _
-    private var capacity: Int = 0
+    private[this] var capacity: Int = 0
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Boolean] = {

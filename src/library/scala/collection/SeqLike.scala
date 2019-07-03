@@ -160,7 +160,7 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
 
   private class PermutationsItr extends AbstractIterator[Repr] {
     private[this] val (elms, idxs) = init()
-    private var _hasNext = true
+    private[this] var _hasNext = true
 
     def hasNext = _hasNext
     def next(): Repr = {
@@ -210,9 +210,9 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
     // generating all nums such that:
     // (1) nums(0) + .. + nums(length-1) = n
     // (2) 0 <= nums(i) <= cnts(i), where 0 <= i <= cnts.length-1
-    private val (elms, cnts, nums) = init()
-    private val offs = cnts.scanLeft(0)(_ + _)
-    private var _hasNext = true
+    private[this] val (elms, cnts, nums) = init()
+    private[this] val offs = cnts.scanLeft(0)(_ + _)
+    private[this] var _hasNext = true
 
     def hasNext = _hasNext
     def next(): Repr = {

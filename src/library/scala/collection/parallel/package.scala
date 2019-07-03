@@ -150,7 +150,7 @@ package parallel {
    *  Automatically forwards the signal delegate when splitting.
    */
   private[parallel] class BufferSplitter[T]
-  (private val buffer: scala.collection.mutable.ArrayBuffer[T], private var index: Int, private val until: Int, _sigdel: scala.collection.generic.Signalling)
+  (private[this] val buffer: scala.collection.mutable.ArrayBuffer[T], private[this] var index: Int, private[this] val until: Int, _sigdel: scala.collection.generic.Signalling)
   extends IterableSplitter[T] {
     signalDelegate = _sigdel
     def hasNext = index < until
@@ -206,7 +206,7 @@ package parallel {
    *  the receiver (which will be the return value).
    */
   private[parallel] abstract class BucketCombiner[-Elem, +To, Buck, +CombinerType <: BucketCombiner[Elem, To, Buck, CombinerType]]
-  (private val bucketnumber: Int)
+  (private[this] val bucketnumber: Int)
   extends Combiner[Elem, To] {
   //self: EnvironmentPassingCombiner[Elem, To] =>
     protected var buckets: Array[UnrolledBuffer[Buck]] @uncheckedVariance = new Array[UnrolledBuffer[Buck]](bucketnumber)

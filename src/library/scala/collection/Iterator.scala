@@ -49,7 +49,7 @@ object Iterator {
    *          and which has no further elements.
    */
   def single[A](elem: A): Iterator[A] = new AbstractIterator[A] {
-    private var hasnext = true
+    private[this] var hasnext = true
     def hasNext: Boolean = hasnext
     def next(): A =
       if (hasnext) { hasnext = false; elem }
@@ -71,7 +71,7 @@ object Iterator {
    *  @return  An iterator that produces the results of `n` evaluations of `elem`.
    */
   def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = i < len
     def next(): A =
       if (hasNext) { i += 1; elem }
@@ -85,7 +85,7 @@ object Iterator {
    *  @return An iterator that produces the values `f(0), ..., f(n -1)`.
    */
   def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
-    private var i = 0
+    private[this] var i = 0
     def hasNext: Boolean = i < end
     def next(): A =
       if (hasNext) { val result = f(i); i += 1; result }
@@ -109,8 +109,8 @@ object Iterator {
    */
   def range(start: Int, end: Int, step: Int): Iterator[Int] = new AbstractIterator[Int] {
     if (step == 0) throw new IllegalArgumentException("zero step")
-    private var i = start
-    private var hasOverflowed = false
+    private[this] var i = start
+    private[this] var hasOverflowed = false
     def hasNext: Boolean = {
       (step <= 0 || i < end) && (step >= 0 || i > end) && !hasOverflowed
     }
@@ -157,7 +157,7 @@ object Iterator {
    *  @return      the iterator producing the infinite sequence of values `start, start + 1 * step, start + 2 * step, ...`
    */
   def from(start: Int, step: Int): Iterator[Int] = new AbstractIterator[Int] {
-    private var i = start
+    private[this] var i = start
     def hasNext: Boolean = true
     def next(): Int = { val result = i; i += step; result }
   }
@@ -252,8 +252,8 @@ object Iterator {
    *  Lazily skip to start on first evaluation.  Avoids daisy-chained iterators due to slicing.
    */
   private[scala] final class SliceIterator[A](val underlying: Iterator[A], start: Int, limit: Int) extends AbstractIterator[A] {
-    private var remaining = limit
-    private var dropping  = start
+    private[this] var remaining = limit
+    private[this] var dropping  = start
     @inline private def unbounded = remaining < 0
     private def skip(): Unit =
       while (dropping > 0) {
@@ -480,7 +480,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesAndProducesIterator
    */
   def flatMap[B](f: A => GenTraversableOnce[B]): Iterator[B] = new AbstractIterator[B] {
-    private var cur: Iterator[B] = empty
+    private[this] var cur: Iterator[B] = empty
     private def nextCur(): Unit = { cur = null ; cur = f(self.next()).toIterator }
     def hasNext: Boolean = {
       // Equivalent to cur.hasNext || self.hasNext && { nextCur(); hasNext }
@@ -503,8 +503,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    */
   def filter(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
     // TODO 2.12 - Make a full-fledged FilterImpl that will reverse sense of p
-    private var hd: A = _
-    private var hdDefined: Boolean = false
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
 
     def hasNext: Boolean = hdDefined || {
       do {
@@ -646,9 +646,9 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesAndProducesIterator
    */
   def takeWhile(p: A => Boolean): Iterator[A] = new AbstractIterator[A] {
-    private var hd: A = _
-    private var hdDefined: Boolean = false
-    private var tail: Iterator[A] = self
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
+    private[this] var tail: Iterator[A] = self
 
     def hasNext = hdDefined || tail.hasNext && {
       hd = tail.next()
@@ -862,7 +862,7 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *    @inheritdoc
    */
   def padTo[A1 >: A](len: Int, elem: A1): Iterator[A1] = new AbstractIterator[A1] {
-    private var count = 0
+    private[this] var count = 0
     def hasNext = self.hasNext || count < len
     def next = {
       count += 1
@@ -1072,8 +1072,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note    Reuse: $consumesAndProducesIterator
    */
   def buffered: BufferedIterator[A] = new AbstractIterator[A] with BufferedIterator[A] {
-    private var hd: A = _
-    private var hdDefined: Boolean = false
+    private[this] var hd: A = _
+    private[this] var hdDefined: Boolean = false
 
     def head: A = {
       if (!hdDefined) {
@@ -1333,8 +1333,8 @@ trait Iterator[+A] extends TraversableOnce[A] {
    *  @note           Reuse: $consumesTwoAndProducesOneIterator
    */
   def patch[B >: A](from: Int, patchElems: Iterator[B], replaced: Int): Iterator[B] = new AbstractIterator[B] {
-    private var origElems = self
-    private var i = (if (from > 0) from else 0)  // Counts down, switch to patch on 0, -1 means use patch first
+    private[this] var origElems = self
+    private[this] var i = (if (from > 0) from else 0)  // Counts down, switch to patch on 0, -1 means use patch first
     def hasNext: Boolean = {
       if (i == 0) {
         origElems = origElems drop replaced

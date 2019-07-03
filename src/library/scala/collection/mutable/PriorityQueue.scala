@@ -250,7 +250,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @return  an iterator over all the elements.
    */
   override def iterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = 1
+    private[this] var i = 1
     def hasNext: Boolean = i < resarr.p_size0
     def next(): A = {
       val n = resarr.p_array(i)
@@ -295,7 +295,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
    *  @return  an iterator over all elements sorted in descending order.
    */
   def reverseIterator: Iterator[A] = new AbstractIterator[A] {
-    private var i = resarr.p_size0 - 1
+    private[this] var i = resarr.p_size0 - 1
     def hasNext: Boolean = i >= 1
     def next(): A = {
       val n = resarr.p_array(i)

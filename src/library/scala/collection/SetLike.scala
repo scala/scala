@@ -198,9 +198,9 @@ self =>
    *  @return     the iterator.
    */
   def subsets(): Iterator[This] = new AbstractIterator[This] {
-    private val elms = self.toIndexedSeq
-    private var len = 0
-    private var itr: Iterator[This] = Iterator.empty
+    private[this] val elms = self.toIndexedSeq
+    private[this] var len = 0
+    private[this] var itr: Iterator[This] = Iterator.empty
 
     def hasNext = len <= elms.size || itr.hasNext
     def next = {
@@ -224,8 +224,8 @@ self =>
    *  @date 2010.12.6
    */
   private class SubsetsItr(elms: IndexedSeq[A], len: Int) extends AbstractIterator[This] {
-    private val idxs = Array.range(0, len+1)
-    private var _hasNext = true
+    private[this] val idxs = Array.range(0, len+1)
+    private[this] var _hasNext = true
     idxs(len) = elms.size
 
     def hasNext = _hasNext

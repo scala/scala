@@ -117,7 +117,7 @@ object IdleSignalling extends DefaultSignalling
  * A mixin trait that implements abort flag behaviour using volatile variables.
  */
 trait VolatileAbort extends Signalling {
-  @volatile private var abortflag = false
+  @volatile private[this] var abortflag = false
   override def isAborted = abortflag
   override def abort() = abortflag = true
 }
@@ -128,7 +128,7 @@ trait VolatileAbort extends Signalling {
  * and `setIndexIfLesser` are lock-free and support only monotonic changes.
  */
 trait AtomicIndexFlag extends Signalling {
-  private val intflag: AtomicInteger = new AtomicInteger(-1)
+  private[this] val intflag: AtomicInteger = new AtomicInteger(-1)
   abstract override def indexFlag = intflag.get
   abstract override def setIndexFlag(f: Int) = intflag.set(f)
   abstract override def setIndexFlagIfGreater(f: Int) = {

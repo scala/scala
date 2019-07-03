@@ -160,12 +160,12 @@ object ParHashMap extends ParMapFactory[ParHashMap] {
   implicit def canBuildFrom[K, V]: CanCombineFrom[Coll, (K, V), ParHashMap[K, V]] = new CanCombineFromMap[K, V]
 }
 
-private[mutable] abstract class ParHashMapCombiner[K, V](private val tableLoadFactor: Int)
+private[mutable] abstract class ParHashMapCombiner[K, V](private[this] val tableLoadFactor: Int)
 extends scala.collection.parallel.BucketCombiner[(K, V), ParHashMap[K, V], DefaultEntry[K, V], ParHashMapCombiner[K, V]](ParHashMapCombiner.numblocks)
    with scala.collection.mutable.HashTable.HashUtils[K]
 {
-  private val nonmasklen = ParHashMapCombiner.nonmasklength
-  private val seedvalue = 27
+  private[this] val nonmasklen = ParHashMapCombiner.nonmasklength
+  private[this] val seedvalue = 27
 
   def +=(elem: (K, V)) = {
     sz += 1

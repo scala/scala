@@ -31,7 +31,7 @@ import immutable.StringLike
  *  section on `StringBuilders` for more information.
  */
 @SerialVersionUID(0 - 8525408645367278351L)
-final class StringBuilder(private val underlying: JavaStringBuilder)
+final class StringBuilder(private[this] val underlying: JavaStringBuilder)
       extends AbstractSeq[Char]
          with java.lang.CharSequence
          with IndexedSeq[Char]

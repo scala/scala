@@ -28,10 +28,10 @@ trait ParHashTable[K, Entry >: Null <: HashEntry[K, Entry]] extends scala.collec
   /** A parallel iterator returning all the entries.
    */
   abstract class EntryIterator[T, +IterRepr <: IterableSplitter[T]]
-  (private var idx: Int, private val until: Int, private val totalsize: Int, private var es: Entry)
+  (private[this] var idx: Int, private[this] val until: Int, private[this] val totalsize: Int, private[this] var es: Entry)
   extends IterableSplitter[T] with SizeMapUtils {
-    private val itertable = table
-    private var traversed = 0
+    private[this] val itertable = table
+    private[this] var traversed = 0
     scan()
 
     def entry2item(e: Entry): T

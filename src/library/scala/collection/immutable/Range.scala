@@ -83,7 +83,7 @@ extends scala.collection.AbstractSeq[Int]
     || (start == end && !isInclusive)
   )
 
-  private val numRangeElements: Int = {
+  private[this] val numRangeElements: Int = {
     if (step == 0) throw new IllegalArgumentException("step cannot be 0.")
     else if (isEmpty) 0
     else {
@@ -94,7 +94,7 @@ extends scala.collection.AbstractSeq[Int]
   }
 
   // This field has a sensible value only for non-empty ranges
-  private val lastElement = step match {
+  private[this] val lastElement = step match {
     case 1  => if (isInclusive) end else end-1
     case -1 => if (isInclusive) end else end+1
     case _  =>

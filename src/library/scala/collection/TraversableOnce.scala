@@ -463,7 +463,7 @@ object TraversableOnce {
   class FlattenOps[A](travs: TraversableOnce[TraversableOnce[A]]) {
     def flatten: Iterator[A] = new AbstractIterator[A] {
       val its = travs.toIterator
-      private var it: Iterator[A] = Iterator.empty
+      private[this] var it: Iterator[A] = Iterator.empty
       def hasNext: Boolean = it.hasNext || its.hasNext && { it = its.next().toIterator; hasNext }
       def next(): A = if (hasNext) it.next() else Iterator.empty.next()
     }

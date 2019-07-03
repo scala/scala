@@ -46,8 +46,8 @@ extends AbstractMap[A, B]
 
   override def empty = ListMap.empty[A, B]
 
-  private var elems: List[(A, B)] = List()
-  private var siz: Int = 0
+  private[this] var elems: List[(A, B)] = List()
+  private[this] var siz: Int = 0
 
   def get(key: A): Option[B] = elems find (_._1 == key) map (_._2)
   def iterator: Iterator[(A, B)] = elems.iterator

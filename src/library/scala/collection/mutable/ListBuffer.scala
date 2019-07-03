@@ -65,9 +65,9 @@ final class ListBuffer[A]
    *  If len > 0, start.nonEmpty
    */
   private var start: List[A] = Nil
-  private var last0: ::[A] = _
-  private var exported: Boolean = false
-  private var len = 0
+  private[this] var last0: ::[A] = _
+  private[this] var exported: Boolean = false
+  private[this] var len = 0
 
   protected def underlying: List[A] = start
 

@@ -121,12 +121,12 @@ object ParHashSet extends ParSetFactory[ParHashSet] {
 }
 
 
-private[mutable] abstract class ParHashSetCombiner[T](private val tableLoadFactor: Int)
+private[mutable] abstract class ParHashSetCombiner[T](private[this] val tableLoadFactor: Int)
 extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], AnyRef, ParHashSetCombiner[T]](ParHashSetCombiner.numblocks)
 with scala.collection.mutable.FlatHashTable.HashUtils[T] {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
-  private val nonmasklen = ParHashSetCombiner.nonmasklength
-  private val seedvalue = 27
+  private[this] val nonmasklen = ParHashSetCombiner.nonmasklength
+  private[this] val seedvalue = 27
 
   def +=(elem: T) = {
     val entry = elemToEntry(elem)
@@ -254,7 +254,7 @@ with scala.collection.mutable.FlatHashTable.HashUtils[T] {
       }
       result = (totalinserts, leftover)
     }
-    private val blocksize = table.tableLength >> ParHashSetCombiner.discriminantbits
+    private[this] val blocksize = table.tableLength >> ParHashSetCombiner.discriminantbits
     private def blockStart(block: Int) = block * blocksize
     private def nextBlockStart(block: Int) = (block + 1) * blocksize
     private def fillBlock(block: Int, elems: UnrolledBuffer[AnyRef], leftovers: UnrolledBuffer[AnyRef]): (Int, UnrolledBuffer[AnyRef]) = {

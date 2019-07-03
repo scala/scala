@@ -165,7 +165,7 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   @transient
   @volatile
-  private var _tasksupport = defaultTaskSupport
+  private[this] var _tasksupport = defaultTaskSupport
 
   protected def initTaskSupport() {
     _tasksupport = defaultTaskSupport

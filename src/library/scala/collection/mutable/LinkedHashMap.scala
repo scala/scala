@@ -96,7 +96,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   def -=(key: A): this.type = { remove(key); this }
 
   def iterator: Iterator[(A, B)] = new AbstractIterator[(A, B)] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = (cur.key, cur.value); cur = cur.later; res }
@@ -122,7 +122,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   override def keySet: scala.collection.Set[A] = new DefaultKeySet
 
   override def keysIterator: Iterator[A] = new AbstractIterator[A] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.key; cur = cur.later; res }
@@ -130,7 +130,7 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
   }
 
   override def valuesIterator: Iterator[B] = new AbstractIterator[B] {
-    private var cur = firstEntry
+    private[this] var cur = firstEntry
     def hasNext = cur ne null
     def next =
       if (hasNext) { val res = cur.value; cur = cur.later; res }
