@@ -17,4 +17,32 @@ class TreeSetTest {
     assertEquals(set, set drop Int.MinValue)
     assertEquals(set, set dropRight Int.MinValue)
   }
+
+  @Test
+  def min(): Unit = {
+    assertEquals(1, TreeSet(1, 2, 3).min)
+    assertEquals(3, TreeSet(1, 2, 3).min(implicitly[Ordering[Int]].reverse))
+
+    try {
+      TreeSet.empty[Int].min
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.min", e.getMessage)
+    }
+  }
+
+  @Test
+  def max(): Unit = {
+    assertEquals(3, TreeSet(1, 2, 3).max)
+    assertEquals(1, TreeSet(1, 2, 3).max(implicitly[Ordering[Int]].reverse))
+
+    try {
+      TreeSet.empty[Int].max
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.max", e.getMessage)
+    }
+  }
 }
