@@ -92,6 +92,9 @@ val mimaFilterSettings = Seq(
   ),
 )
 
+// Save MiMa logs
+SavedLogs.settings
+
 Global / scalaVersion      := {
   if (DottySupport.compileWithDotty)
     DottySupport.dottyVersion
@@ -846,7 +849,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
   .dependsOn(library, reflect, compiler, scalap)
 
 def partestOnly(in: String): Def.Initialize[Task[Unit]] =
-  (testOnly in IntegrationTest in testP).toTask(" -- " + in)
+  (testOnly in IntegrationTest in testP).toTask(" -- --terse " + in)
 
 def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
   partestOnly(in).result map (_ -> s"partest $in")
@@ -893,7 +896,8 @@ lazy val root: Project = (project in file("."))
 
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
-        (Keys.test in Test in junit).result map (_ -> "junit/test"),
+        SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
+        (testOnly in Test in junit).toTask(" -- +v").result map (_ -> "junit/test"),
         (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
         partestDesc("run"),
         partestDesc("pos neg jvm"),
@@ -943,6 +947,7 @@ lazy val root: Project = (project in file("."))
             case None => i.causes.toVector.flatMap(ch => findRootCauses(ch, task))
           }
         }
+        log.error(" ")
         log.error(s"${failed.size} of ${results.length} test tasks failed:")
         failed.foreach { case (i, d) =>
           log.error(s"- $d")
@@ -952,7 +957,8 @@ lazy val root: Project = (project in file("."))
             case (task, None)     => log.error(s"  - ($task failed)")
           }
         }
-        throw new RuntimeException
+        SavedLogs.showSavedLogsImpl(s => log.error(s))
+        throw new MessageOnlyException("testAll failed due to previous errors")
       }
     },
     setIncOptions
