@@ -336,7 +336,7 @@ trait Contexts { self: Analyzer =>
 
     def defineByNameImplicit(tpe: Type, result: SearchResult): SearchResult = implicitRootContext.defineImpl(tpe, result)
 
-    def emitImplicitDictionary(pos: Position, result: SearchResult): SearchResult =
+    def emitImplicitDictionary(result: SearchResult): SearchResult =
       if(implicitDictionary == null || implicitDictionary.isEmpty || result.tree == EmptyTree) result
       else {
         val typer = newTyper(this)
