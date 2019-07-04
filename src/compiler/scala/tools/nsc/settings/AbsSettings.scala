@@ -130,8 +130,8 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
     def isAdvanced   = name.startsWith("-X") && name != "-X"
     def isPrivate    = name.startsWith("-Y") && name != "-Y"
     def isVerbose    = name.startsWith("-V") && name != "-V"
-    def isWarning    = name match { case "-W" | "-Werror" => false ; case "-Xlint" => true ; case _  => name.startsWith("-W") }
-    def isStandard   = !isAdvanced && !isPrivate && !isWarning && !isVerbose
+    def isWarning    = name.startsWith("-W") && name != "-W" || name == "-Xlint"
+    def isStandard   = !isAdvanced && !isPrivate && !isWarning && !isVerbose || name == "-Werror"
     def isDeprecated = deprecationMessage.isDefined
 
     def compare(that: Setting): Int = name compare that.name
