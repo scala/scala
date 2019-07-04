@@ -134,7 +134,7 @@ trait Implicits {
       if (context.owner.hasTransOwner(s))
         context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}")
     }
-    implicitSearchContext.emitImplicitDictionary(search.pos, result)
+    implicitSearchContext.emitImplicitDictionary(result)
   }
 
   /** A friendly wrapper over inferImplicit to be used in macro contexts and toolboxes.
