@@ -27,8 +27,7 @@ trait FastStringInterpolator extends FormatInterpolator {
       stringCtx.symbol == currentRun.runDefinitions.StringContext_apply &&
       treeInfo.isQualifierSafeToElide(qualSC) &&
       parts.forall(treeInfo.isLiteralString) &&
-      parts.length == (args.length + 1) &&
-      args.length <= 64 => // TODO make more robust to large input so that we can drop this condition, chunk the concatenations in manageable batches
+      parts.length == (args.length + 1) =>
 
       val treated =
         if (isRaw) parts
@@ -43,23 +42,37 @@ trait FastStringInterpolator extends FormatInterpolator {
             case e: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(e.index), e.getMessage)
           }
 
-      var result: Tree = treated.head
-
-      def concat(t: Tree): Unit =
-        result =
-          atPos(t.pos)((result, t) match {
-            case (_, Literal(Constant("")))                                   => result
-            case (Literal(Constant(a: String)), Literal(Constant(b: String))) => Literal(Constant(a + b))
-            case _                                                            =>
-              gen.mkMethodCall(gen.mkAttributedSelect(result, definitions.String_+), t :: Nil)
-          }).setType(definitions.StringTpe)
-
-      val numLits = treated.length - 1
+      val argsIndexed = args.toVector
+      var concatArgs = collection.mutable.ListBuffer[Tree]()
+      val numLits = parts.length
       foreachWithIndex(treated.tail) { (lit, i) =>
-        if (i < numLits) {
-          concat(args(i))
-          concat(lit)
-        } else concat(lit)
+        val treatedContents = lit.asInstanceOf[Literal].value.stringValue
+        val emptyLit = treatedContents.isEmpty
+        if (i < numLits - 1) {
+          concatArgs += argsIndexed(i)
+          if (!emptyLit) concatArgs += lit
+        } else if (!emptyLit) {
+          concatArgs += lit
+        }
+      }
+      def mkConcat(pos: Position, lhs: Tree, rhs: Tree): Tree =
+        atPos(pos)(gen.mkMethodCall(gen.mkAttributedSelect(lhs, definitions.String_+), rhs :: Nil)).setType(definitions.StringTpe)
+
+      var result: Tree = treated.head
+      val chunkSize = 32
+      if (concatArgs.lengthCompare(chunkSize) <= 0) {
+        concatArgs.foreach { t =>
+          result = mkConcat(t.pos, result, t)
+        }
+      } else {
+        concatArgs.toList.grouped(chunkSize).foreach {
+          case group =>
+            var chunkResult: Tree = group.head
+            group.tail.foreach { t =>
+              chunkResult = mkConcat(t.pos, chunkResult, t)
+            }
+            result = mkConcat(chunkResult.pos, result, chunkResult)
+        }
       }
 
       result

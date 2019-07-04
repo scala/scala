@@ -580,8 +580,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
     property("scala/bug#8144: Members' permalink - inner package") = files.get("some/pack/index.html").map { page => val html = toHtml(page)
       ("type link" |: html.contains("../../some/pack/index.html")) &&
-        ("member: SomeType (object)" |: html.contains("""<a href="../../some/pack/index.html#SomeType" title="Permalink">""")) &&
-        ("member: SomeType (class)" |: html.contains("""<a href="../../some/pack/index.html#SomeTypeextendsAnyRef" title="Permalink">"""))
+        ("member: SomeType (object)" |: html.contains("""<a href="../../some/pack/SomeType$.html" title="Permalink">""")) &&
+        ("member: SomeType (class)" |: html.contains("""<a href="../../some/pack/SomeType.html" title="Permalink">"""))
     }.getOrElse(Prop.falsified)
 
     property("scala/bug#8144: Members' permalink - companion object") = files.get("some/pack/SomeType$.html").map { page => val html = toHtml(page)

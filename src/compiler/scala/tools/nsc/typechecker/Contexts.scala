@@ -1509,7 +1509,7 @@ trait Contexts { self: Analyzer =>
           }
         }
         // optimization: don't write out package prefixes
-        finish(resetPos(imp1.qual.duplicate), impSym)
+        finish(duplicateAndResetPos.transform(imp1.qual), impSym)
       }
       else finish(EmptyTree, NoSymbol)
     }

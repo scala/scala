@@ -241,7 +241,7 @@ abstract class Erasure extends InfoTransform
       val ps = ensureClassAsFirstParent(validParents)
       ps.foreach(boxedSig)
     }
-    def boxedSig(tp: Type): Unit = jsig(tp, primitiveOK = false)
+    def boxedSig(tp: Type): Unit = jsig(tp, unboxedVCs = false)
     def boundsSig(bounds: List[Type]): Unit = {
       val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
       isClass match {
@@ -271,13 +271,13 @@ abstract class Erasure extends InfoTransform
     def fullNameInSig(sym: Symbol): Unit = builder.append('L').append(enteringJVM(sym.javaBinaryNameString))
 
     @noinline
-    def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, primitiveOK: Boolean = true): Unit = {
+    def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, unboxedVCs: Boolean = true): Unit = {
       val tp = tp0.dealias
       tp match {
         case st: SubType =>
-          jsig(st.supertype, existentiallyBound, toplevel, primitiveOK)
+          jsig(st.supertype, existentiallyBound, toplevel, unboxedVCs)
         case ExistentialType(tparams, tpe) =>
-          jsig(tpe, tparams, toplevel, primitiveOK)
+          jsig(tpe, tparams, toplevel, unboxedVCs)
         case TypeRef(pre, sym, args) =>
           def argSig(tp: Type): Unit =
             if (existentiallyBound contains tp.typeSymbol) {
@@ -350,25 +350,20 @@ abstract class Erasure extends InfoTransform
           else if (sym == NullClass)
             jsig(RuntimeNullClass.tpe)
           else if (isPrimitiveValueClass(sym)) {
-            if (!primitiveOK) jsig(ObjectTpe)
+            if (!unboxedVCs) jsig(ObjectTpe)
             else if (sym == UnitClass) jsig(BoxedUnitTpe)
             else builder.append(abbrvTag(sym))
           }
           else if (sym.isDerivedValueClass) {
-            val unboxed     = sym.derivedValueClassUnbox.tpe_*.finalResultType
-            val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
-            def unboxedMsg  = if (unboxed == unboxedSeen) "" else s", seen within ${sym.simpleName} as $unboxedSeen"
-            logResult(s"Erasure of value class $sym (underlying type $unboxed$unboxedMsg) is") {
-              if (isPrimitiveValueType(unboxedSeen) && !primitiveOK)
-                classSig
-              else
-                jsig(unboxedSeen, existentiallyBound, toplevel, primitiveOK)
-            }
+            if (unboxedVCs) {
+              val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
+              jsig(unboxedSeen, existentiallyBound, toplevel)
+            } else classSig
           }
           else if (sym.isClass)
             classSig
           else
-            jsig(erasure(sym0)(tp), existentiallyBound, toplevel, primitiveOK)
+            jsig(erasure(sym0)(tp), existentiallyBound, toplevel, unboxedVCs)
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty)
           if (toplevel) polyParamSig(tparams)
@@ -395,14 +390,14 @@ abstract class Erasure extends InfoTransform
           if (restpe.typeSymbol == UnitClass || sym0.isConstructor) builder.append(VOID_TAG) else jsig(restpe)
 
         case RefinedType(parents, decls) =>
-          jsig(intersectionDominator(parents), primitiveOK = primitiveOK)
+          jsig(intersectionDominator(parents), unboxedVCs = unboxedVCs)
         case ClassInfoType(parents, _, _) =>
           superSig(tp.typeSymbol, parents)
         case AnnotatedType(_, atp) =>
-          jsig(atp, existentiallyBound, toplevel, primitiveOK)
+          jsig(atp, existentiallyBound, toplevel, unboxedVCs)
         case BoundedWildcardType(bounds) =>
           println("something's wrong: "+sym0+":"+sym0.tpe+" has a bounded wildcard type")
-          jsig(bounds.hi, existentiallyBound, toplevel, primitiveOK)
+          jsig(bounds.hi, existentiallyBound, toplevel, unboxedVCs)
         case _ =>
           val etp = erasure(sym0)(tp)
           if (etp eq tp) throw new UnknownSig
