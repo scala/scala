@@ -351,7 +351,8 @@ trait Contexts { self: Analyzer =>
         }
 
         val pruned = prune(List(result.tree), implicitDictionary.map(_._2), Nil)
-        if(pruned.isEmpty) result
+        if (pruned.isEmpty) result
+        else if (pruned.exists(_._2 == EmptyTree)) SearchFailure
         else {
           val pos = result.tree.pos
           val (dictClassSym, dictClass0) = {
