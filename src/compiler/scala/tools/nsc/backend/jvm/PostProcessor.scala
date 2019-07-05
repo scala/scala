@@ -58,7 +58,7 @@ abstract class PostProcessor extends PerRunInit {
     classfileWriter = classfileWriters.ClassfileWriter(global)
   }
 
-  def sendToDisk(clazz: GeneratedClass, paths: CompilationUnitPaths): Unit = {
+  def sendToDisk(clazz: GeneratedClass, sourceFile: AbstractFile): Unit = {
     val classNode = clazz.classNode
     val internalName = classNode.name
     val bytes = try {
@@ -85,7 +85,7 @@ abstract class PostProcessor extends PerRunInit {
       if (AsmUtils.traceSerializedClassEnabled && internalName.contains(AsmUtils.traceSerializedClassPattern))
         AsmUtils.traceClass(bytes)
 
-      classfileWriter.write(internalName, bytes, paths)
+      classfileWriter.writeClass(internalName, bytes, sourceFile)
     }
   }
 

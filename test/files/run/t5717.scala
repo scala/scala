@@ -20,9 +20,8 @@ object Test extends StoreReporterDirectTest {
     val List(i) = filteredInfos
     // for some reason, nio doesn't throw the same exception on windows and linux/mac
     val path = if(util.Properties.isWin)"\\a" else "/a"
-    val expected = "error writing a/B: Can't create directory " + path +
+    val expected = s"error writing ${testOutput.path}/a/B.class: Can't create directory ${testOutput.path}${path}" +
       "; there is an existing (non-directory) file in its path"
-    val actual = i.msg.replace(testOutput.path, "")
-    assert(actual == expected, actual)
+    assert(i.msg == expected, i.msg)
   }
 }
