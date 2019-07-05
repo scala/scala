@@ -1,5 +1,6 @@
 package scala.collection.mutable
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -47,5 +48,33 @@ class BitSetTest {
     assert(bsFromEmptyBitMask.add(0))
     val bsFromEmptyBitMaskNoCopy = BitSet.fromBitMaskNoCopy(Array.empty[Long])
     assert(bsFromEmptyBitMaskNoCopy.add(0))
+  }
+
+  @Test
+  def min(): Unit = {
+    assertEquals(1, BitSet(1, 2, 3).min)
+    assertEquals(3, BitSet(1, 2, 3).min(implicitly[Ordering[Int]].reverse))
+
+    try {
+      BitSet.empty.min
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.min", e.getMessage)
+    }
+  }
+
+  @Test
+  def max(): Unit = {
+    assertEquals(3, BitSet(1, 2, 3).max)
+    assertEquals(1, BitSet(1, 2, 3).max(implicitly[Ordering[Int]].reverse))
+
+    try {
+      BitSet.empty.max
+      fail("expect UnsupportedOperationException")
+    } catch {
+      case e: UnsupportedOperationException =>
+        assertEquals("empty.max", e.getMessage)
+    }
   }
 }

@@ -226,6 +226,22 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     throw new NoSuchElementException("Empty BitSet")
   }
 
+  override def min[A >: Int](implicit ord: Ordering[A]): Int = {
+    if ((ord eq ordering) && nonEmpty) {
+      head
+    } else {
+      super.min(ord)
+    }
+  }
+
+  override def max[A >: Int](implicit ord: Ordering[A]): Int = {
+    if ((ord eq ordering) && nonEmpty) {
+      last
+    } else {
+      super.max(ord)
+    }
+  }
+
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""
