@@ -41,6 +41,9 @@ abstract class AbstractNamesBenchmark {
       case "WeakNoAutoTrimConcurrentMapNameTable2" => () => new WeakNoAutoTrimConcurrentMapNameTable2[AnyRef](new NameBase(_))
       case "StrongConcurrentNodeInterner" => () => new StrongConcurrentNodeInterner(new NameBase(_))
       case "WeakFixedSizeNoAutoTrimConcurrentNodeInterner" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_))
+      case "HashDefault" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_))
+      case "Hash" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInternerHash(new NameBase(_))
+      case "NoHash" => () => new WeakFixedSizeNoAutoTrimConcurrentNodeInternerNoHash(new NameBase(_))
       case "WeakFixedSizeAutoTrimConcurrentNodeInterner" => () => new WeakFixedSizeAutoTrimConcurrentNodeInterner(new NameBase(_))
       case "Find0" => () =>
         new WeakFixedSizeNoAutoTrimConcurrentNodeInterner(new NameBase(_)) {
@@ -112,7 +115,9 @@ class NamesBenchmark extends AbstractNamesBenchmark {
     "WeakAutoTrimConcurrentMapNameTable1", "WeakAutoTrimConcurrentMapNameTable2",
     "WeakNoAutoTrimConcurrentMapNameTable1", "WeakNoAutoTrimConcurrentMapNameTable2",
     "StrongConcurrentNodeInterner", "WeakFixedSizeNoAutoTrimConcurrentNodeInterner",
-    "WeakFixedSizeAutoTrimConcurrentNodeInterner", "Find0", "Find1", "Find2", "Find3", "Safe", "Unsafe", "Tail", "NoTail"))
+    "WeakFixedSizeAutoTrimConcurrentNodeInterner",
+    "HashDefault", "Hash", "NoHash",
+    "Find0", "Find1", "Find2", "Find3", "Safe", "Unsafe", "Tail", "NoTail"))
   var testImpl: String = _
 
   override def testType = testImpl

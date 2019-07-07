@@ -47,6 +47,58 @@ sealed abstract class AbstractWeakFixedSizeConcurrentNodeInterner[T >: Null <: N
     } while (name eq null)
     name
   }
+  def findHash(key: String): T = {
+    val hash = key.hashCode
+    val improved = improveHash(hash)
+    var oldTail: N = null
+
+    var name: T = null
+    val bucket = improved & mask
+    do {
+      val head = data.get(bucket)
+      if (head ne null)
+        name = WeakConcurrentNode.findNoTrimHash(head, key, hash, oldTail)
+      if (name eq null) {
+        name = createName(key)
+        val newNode = createNode(name, head, bucket)
+        if (data.compareAndSet(bucket, head, newNode)) {
+          size_.incrementAndGet()
+        } else {
+          name = null
+          // minor optimisation - we can skip this tail if we have to retry
+          // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
+          oldTail = head
+        }
+      }
+    } while (name eq null)
+    name
+  }
+  def findNoHash(key: String): T = {
+    val hash = key.hashCode
+    val improved = improveHash(hash)
+    var oldTail: N = null
+
+    var name: T = null
+    val bucket = improved & mask
+    do {
+      val head = data.get(bucket)
+      if (head ne null)
+        name = WeakConcurrentNode.findNoTrimNoHash(head, key, hash, oldTail)
+      if (name eq null) {
+        name = createName(key)
+        val newNode = createNode(name, head, bucket)
+        if (data.compareAndSet(bucket, head, newNode)) {
+          size_.incrementAndGet()
+        } else {
+          name = null
+          // minor optimisation - we can skip this tail if we have to retry
+          // if we came to the end of the chain of nodes we dont need to search the same tail if we fail and try again
+          oldTail = head
+        }
+      }
+    } while (name eq null)
+    name
+  }
   def findNoTail(key: String): T = {
     val hash = key.hashCode
     val improved = improveHash(hash)
@@ -174,6 +226,32 @@ class WeakFixedSizeNoAutoTrimConcurrentNodeInterner[T >: Null <: NameBase](creat
     for (index <- 0 until data.length)
       trimImpl(index)
   }
+}
+class WeakFixedSizeNoAutoTrimConcurrentNodeInternerHash[T >: Null <: NameBase](createName: String => T) extends AbstractWeakFixedSizeConcurrentNodeInterner(createName) {
+  override def createNode(name: T, next: WeakConcurrentNode[T], bucket: Int) = new WeakConcurrentNode[T](new WeakReference(name), next)
+
+  def trim() = synchronized {
+    for (index <- 0 until data.length)
+      trimImpl(index)
+  }
+
+  override def find(key: String): T = {
+    super.findHash(key)
+  }
+
+}
+class WeakFixedSizeNoAutoTrimConcurrentNodeInternerNoHash[T >: Null <: NameBase](createName: String => T) extends AbstractWeakFixedSizeConcurrentNodeInterner(createName) {
+  override def createNode(name: T, next: WeakConcurrentNode[T], bucket: Int) = new WeakConcurrentNode[T](new WeakReference(name), next)
+
+  def trim() = synchronized {
+    for (index <- 0 until data.length)
+      trimImpl(index)
+  }
+
+  override def find(key: String): T = {
+    super.findNoHash(key)
+  }
+
 }
 
 class WeakFixedSizeAutoTrimConcurrentNodeInterner[T >: Null <: NameBase](createName: String => T) extends AbstractWeakFixedSizeConcurrentNodeInterner(createName) {

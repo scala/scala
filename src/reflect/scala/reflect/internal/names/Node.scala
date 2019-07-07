@@ -77,7 +77,7 @@ final class WeakNode[N >: Null <: NameBase](k: N, @volatile var next: WeakNode[N
 
   def hash: Int = {
     val n = name
-    if (n eq null) 0 else n.hashCode
+    if (n eq null) 0 else n.id.hashCode
   }
 
 }
@@ -193,6 +193,36 @@ object WeakConcurrentNode {
     } while ((name eq null) && (current ne null) && (current ne end))
     name
   }
+  final def findNoTrimHash[N >: Null <: NameBase](start: WeakConcurrentNode[N], key: String, hash: Int, end: Node[N]): N = {
+    var current = start
+    var name: N = null
+
+    do {
+      if (current.hash != hash) {
+        current = current.next
+      } else {
+        name = current.name
+        if ((name eq null) || name.id != key) {
+          name = null
+          current = current.next
+        }
+      }
+    } while ((name eq null) && (current ne null) && (current ne end))
+    name
+  }
+  final def findNoTrimNoHash[N >: Null <: NameBase](start: WeakConcurrentNode[N], key: String, hash: Int, end: Node[N]): N = {
+    var current = start
+    var name: N = null
+
+    do {
+        name = current.name
+        if ((name eq null) || name.id != key) {
+          name = null
+          current = current.next
+        }
+    } while ((name eq null) && (current ne null) && (current ne end))
+    name
+  }
 
   final def findNoTrim[N >: Null <: NameBase](start: WeakConcurrentNode[N], key: String, hash: Int): N = {
     var current = start
@@ -285,7 +315,35 @@ final class WeakConcurrentNode[N >: Null <: NameBase](private val ref: WeakRefer
 
   def hash: Int = {
     val n = name
-    if (n eq null) 0 else n.hashCode
+    if (n eq null) 0 else n.id.hashCode
+  }
+
+}
+object WeakConcurrentNode2 {
+  private val nextAccess: AtomicReferenceFieldUpdater[WeakConcurrentNode2[_], WeakConcurrentNode2[_]] = new WeakConcurrentNode2[NameBase](null, null).nextAccess
+  private def nextAccessN[N >: Null <: NameBase]: AtomicReferenceFieldUpdater[WeakConcurrentNode2[N], WeakConcurrentNode2[N]] = nextAccess.asInstanceOf[AtomicReferenceFieldUpdater[WeakConcurrentNode2[N], WeakConcurrentNode2[N]]]
+
+  private def casNext[N >: Null <: NameBase](prev: WeakConcurrentNode2[N], expectedNext: WeakConcurrentNode2[N], updateNext: WeakConcurrentNode2[N]): Boolean = {
+    nextAccess.compareAndSet(prev, expectedNext, updateNext)
+  }
+}
+final class WeakConcurrentNode2[N >: Null <: NameBase](private val ref: WeakReference[N], @volatile var next: WeakConcurrentNode2[N]) extends Node[N] {
+  private def nextAccess = AtomicReferenceFieldUpdater.newUpdater(classOf[WeakConcurrentNode2[_]], classOf[WeakConcurrentNode2[_]], "next")
+
+  def getAndClearNext(): WeakConcurrentNode2[N] = WeakConcurrentNode2.nextAccessN[N].getAndSet(this, null)
+
+  def namesString: String = {
+    val n = name
+    if (n eq null) null else n.id
+  }
+
+  def name = ref.get()
+
+  def isDefined = ref.get() ne null
+
+  val hash: Int = {
+    val n = name
+    if (n eq null) 0 else n.id.hashCode
   }
 
 }

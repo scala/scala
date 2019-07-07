@@ -44,9 +44,21 @@ class WeakAutoNoTrimConcurrentMapNameTable2Test extends ExtendedNameTest with We
   override val nameTable: WeakNoAutoTrimConcurrentMapNameTable2[T] = new WeakNoAutoTrimConcurrentMapNameTable2[Term](Term.apply)
   override def cleanupIfNeeded(): Unit = nameTable.trim()
 }
-class WeakFixedSizeNoAutoTrimConcurrentNodeInternerTest extends ExtendedNameTest with WeakNamesTest {
+class WeakFixedSizeNoAutoTrimConcurrentNodeInterner1Test extends ExtendedNameTest with WeakNamesTest {
   override type T = Term
   override val nameTable: WeakFixedSizeNoAutoTrimConcurrentNodeInterner[T] = new WeakFixedSizeNoAutoTrimConcurrentNodeInterner[Term](Term.apply)
+
+  override def cleanupIfNeeded(): Unit = nameTable.trim()
+}
+class WeakFixedSizeNoAutoTrimConcurrentNodeInternerHashTest extends ExtendedNameTest with WeakNamesTest {
+  override type T = Term
+  override val nameTable: WeakFixedSizeNoAutoTrimConcurrentNodeInternerHash[T] = new WeakFixedSizeNoAutoTrimConcurrentNodeInternerHash[Term](Term.apply)
+
+  override def cleanupIfNeeded(): Unit = nameTable.trim()
+}
+class WeakFixedSizeNoAutoTrimConcurrentNodeInternerNoHashTest extends ExtendedNameTest with WeakNamesTest {
+  override type T = Term
+  override val nameTable: WeakFixedSizeNoAutoTrimConcurrentNodeInternerNoHash[T] = new WeakFixedSizeNoAutoTrimConcurrentNodeInternerNoHash[Term](Term.apply)
 
   override def cleanupIfNeeded(): Unit = nameTable.trim()
 }
