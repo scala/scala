@@ -162,10 +162,11 @@ abstract class ExtendedNameTest extends Allocations {
 
     val byChars = {
       val res = new Array[AnyRef](sources.length)
+      val chars = sources map (_.toCharArray)
       assertNonAllocating {
         var i = 0
-        while (i < sources.length) {
-          res(i) = newTermName(sources(i).toCharArray, 0, sources(i).length)
+        while (i < chars.length) {
+          res(i) = newTermName(chars(i), 0, chars(i).length)
           i += 1
         }
       }
