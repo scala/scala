@@ -245,16 +245,24 @@ class ArrayDeque[A] protected (
         copySliceToArray(srcStart = suffixStart, dest = array2, destStart = idx, maxItems = n)
         reset(array = array2, start = 0, end = finalLength)
       } else if (2*idx <= finalLength) { // Cheaper to move the prefix right
-        var i = suffixStart
-        while(i >= 0) {
+        var i = suffixStart - 1
+        while(i >= removals) {
+          _set(i, _get(i - removals))
           i -= 1
-          _set(i, if (i >= removals) _get(i - removals) else null.asInstanceOf[A])
+        }
+        while(i >= 0) {
+          _set(i, null.asInstanceOf[A])
+          i -= 1
         }
         start = start_+(removals)
       } else {  // Cheaper to move the suffix left
         var i = idx
+        while(i < finalLength) {
+          _set(i, _get(i + removals))
+          i += 1
+        }
         while(i < n) {
-          _set(i, if (i < finalLength) _get(i + removals) else null.asInstanceOf[A])
+          _set(i, null.asInstanceOf[A])
           i += 1
         }
         end = end_-(removals)
