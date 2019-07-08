@@ -181,7 +181,10 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
     *
     *  @return the values of this map as an iterable.
     */
-  def values: Iterable[V] = View.fromIteratorProvider(() => valuesIterator)
+  def values: Iterable[V] = new AbstractIterable[V] with DefaultSerializable {
+    override def knownSize: Int = MapOps.this.knownSize
+    override def iterator: Iterator[V] = valuesIterator
+  }
 
   /** Creates an iterator for all keys.
     *

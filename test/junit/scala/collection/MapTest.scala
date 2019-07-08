@@ -65,4 +65,61 @@ class MapTest {
     val m4 = m.flatMap(_ => Some(3))
     (m4: Iterable[Int]).head
   }
+
+  @Test
+  def t11589(): Unit = {
+    // tests the strictness of Map#values
+
+    def check(m: collection.Map[Int, Int]): Unit = {
+      def checkImmutable[K, V](m: immutable.Map[Int, Int]): Unit = {
+        var i = 0
+        m.withDefault(_ => -1).values.map{v => i = 1; v}
+        assertEquals(1, i)
+        i = 0
+        m.withDefaultValue(-1).values.map{v => i = 1; v}
+        assertEquals(1, i)
+      }
+      var i = 0
+      m.values.map{v => i = 1; v}
+      assertEquals(1, i)
+
+      m match {
+        case im: immutable.Map[Int, Int] =>
+          checkImmutable(im)
+        case _ =>
+          ()
+      }
+    }
+
+
+
+    check(collection.Map(1 -> 1))
+    check(immutable.Map(1 -> 1))
+    check(mutable.Map(1 -> 1))
+
+    check(collection.SortedMap(1 -> 1))
+    check(immutable.SortedMap(1 -> 1))
+    check(mutable.SortedMap(1 -> 1))
+
+    check(immutable.HashMap(1 -> 1))
+    check(mutable.HashMap(1 -> 1))
+
+    check(immutable.TreeMap(1 -> 1))
+    check(mutable.TreeMap(1 -> 1))
+
+    check(immutable.SeqMap(1 -> 1))
+    check(mutable.SeqMap(1 -> 1))
+
+    check(immutable.ListMap(1 -> 1))
+    check(mutable.ListMap(1 -> 1))
+
+    check(immutable.VectorMap(1 -> 1))
+    check(immutable.TreeSeqMap(1 -> 1))
+
+    check(mutable.LinkedHashMap(1 -> 1))
+
+    check(mutable.OpenHashMap(1 -> 1))
+    check(mutable.CollisionProofHashMap(1 -> 1))
+  }
+
 }
