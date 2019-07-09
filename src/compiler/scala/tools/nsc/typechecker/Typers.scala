@@ -5267,7 +5267,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     case _: TypeApply | _: Select => false
                     case _                        => true
                   }
-                isInsertionNode(ctx.tree) && isEnclosingInsertionNode(ctx.outer.tree)
+                ctx.tree match {
+                  case _: DefTree => true
+                  case _ => isInsertionNode(ctx.tree) && isEnclosingInsertionNode(ctx.outer.tree)
+                }
               }
 
               if (insertionContext != NoContext) {
@@ -5276,7 +5279,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 insertionContext.scope enter vsym
                 val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
                 qual.changeOwner(insertionContext.owner -> vsym)
-                addStabilizingDefinition(insertionContext.tree, vdef)
+                val attached = insertionContext.tree match {
+                  case ValOrDefDef(_, _, _, rhs) => rhs
+                  case expr                      => expr
+                }
+                addStabilizingDefinition(attached, vdef)
                 val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
                 return typedSelect(tree, newQual, name)
               }
