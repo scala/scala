@@ -93,7 +93,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     val groupNames     = groupNames0 flatMap {
       case (group, body) =>
         body match {
-          case Body(List(Paragraph(Chain(List(Summary(Text(name))))))) if (!name.trim.contains("\n")) => List(group -> (name.trim))
+          case Body(List(Paragraph(Chain(List(Summary(Text(name))))))) if !name.trim.contains("\n") => List(group -> name.trim)
           case _                                                       => List()
         }
     }
@@ -220,9 +220,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val javadoclessComment = JavadocTags.replaceAllIn(safeComment, { javadocReplacement(_) })
       val markedTagComment =
         SafeTags.replaceAllIn(javadoclessComment, { mtch =>
-          java.util.regex.Matcher.quoteReplacement(safeTagMarker + mtch.matched + safeTagMarker)
+          java.util.regex.Matcher.quoteReplacement(s"$safeTagMarker${mtch.matched}$safeTagMarker")
         })
-      markedTagComment.linesIterator.toList map (cleanLine(_))
+      markedTagComment.linesIterator.toList map cleanLine
     }
 
     /** Parses a comment (in the form of a list of lines) to a `Comment`
@@ -238,13 +238,13 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       * @param inCodeBlock Whether the next line is part of a code block (in which no tags must be read). */
     def parse0 (
       docBody: StringBuilder,
-      tags: Map[TagKey, List[String]],
+      tags: immutable.Map[TagKey, List[String]],
       lastTagKey: Option[TagKey],
       remaining: List[String],
       inCodeBlock: Boolean
     ): Comment = remaining match {
 
-      case CodeBlockStartRegex(before, marker, after) :: ls if (!inCodeBlock) =>
+      case CodeBlockStartRegex(before, marker, after) :: ls if !inCodeBlock =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = false)
         else if (!before.trim.isEmpty)
@@ -254,7 +254,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else lastTagKey match {
           case Some(key) =>
             val value =
-              ((tags get key): @unchecked) match {
+              (tags get key: @unchecked) match {
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
@@ -263,7 +263,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = true)
         }
 
-      case CodeBlockEndRegex(before, marker, after) :: ls => {
+      case CodeBlockEndRegex(before, marker, after) :: ls =>
         if (!before.trim.isEmpty && !after.trim.isEmpty)
           parse0(docBody, tags, lastTagKey, before :: marker :: after :: ls, inCodeBlock = true)
         if (!before.trim.isEmpty)
@@ -273,7 +273,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else lastTagKey match {
           case Some(key) =>
             val value =
-              ((tags get key): @unchecked) match {
+              (tags get key: @unchecked) match {
                 case Some(b :: bs) => (b + endOfLine + marker) :: bs
                 case None => oops("lastTagKey set when no tag exists for key")
               }
@@ -281,46 +281,40 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           case None =>
             parse0(docBody append endOfLine append marker, tags, lastTagKey, ls, inCodeBlock = false)
         }
-      }
 
-      case SymbolTagRegex(name, sym, body) :: ls if (!inCodeBlock) => {
+      case SymbolTagRegex(name, sym, body) :: ls if !inCodeBlock =>
         val key = SymbolTagKey(name, sym)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
-      }
 
-      case SimpleTagRegex(name, body) :: ls if (!inCodeBlock) => {
+      case SimpleTagRegex(name, body) :: ls if !inCodeBlock =>
         val key = SimpleTagKey(name)
         val value = body :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
-      }
 
-      case SingleTagRegex(name) :: ls if (!inCodeBlock) => {
+      case SingleTagRegex(name) :: ls if !inCodeBlock =>
         val key = SimpleTagKey(name)
         val value = "" :: tags.getOrElse(key, Nil)
         parse0(docBody, tags + (key -> value), Some(key), ls, inCodeBlock)
-      }
 
-      case line :: ls if (lastTagKey.isDefined) => {
+      case line :: ls if lastTagKey.isDefined =>
         val newtags = if (!line.isEmpty || inCodeBlock) {
           val key = lastTagKey.get
           val value =
-            ((tags get key): @unchecked) match {
+            (tags get key: @unchecked) match {
               case Some(b :: bs) => (b + endOfLine + line) :: bs
               case None => oops("lastTagKey set when no tag exists for key")
             }
           tags + (key -> value)
         } else tags
         parse0(docBody, newtags, lastTagKey, ls, inCodeBlock)
-      }
 
-      case line :: ls => {
+      case line :: ls =>
         if (docBody.nonEmpty) docBody append endOfLine
         docBody append line
         parse0(docBody, tags, lastTagKey, ls, inCodeBlock)
-      }
 
-      case Nil => {
+      case Nil =>
         // Take the {inheritance, content} diagram keys aside, as it doesn't need any parsing
         val inheritDiagramTag = SimpleTagKey("inheritanceDiagram")
         val contentDiagramTag = SimpleTagKey("contentDiagram")
@@ -342,7 +336,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           tagsWithoutDiagram.view.mapValues(_.map(parseWikiAtSymbol(_, pos, site))).to(mutable.Map)
 
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
-          ((bodyTags remove key): @unchecked) match {
+          bodyTags remove key match {
             case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
               if (rs.nonEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
               Some(r)
@@ -355,8 +349,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         def allSymsOneTag(key: TagKey, filterEmpty: Boolean = true): Map[String, Body] = {
           val keys: Seq[SymbolTagKey] =
             bodyTags.keys.toSeq flatMap {
-              case stk: SymbolTagKey if (stk.name == key.name) => Some(stk)
-              case stk: SimpleTagKey if (stk.name == key.name) =>
+              case stk: SymbolTagKey if stk.name == key.name => Some(stk)
+              case stk: SimpleTagKey if stk.name == key.name =>
                 reporter.warning(pos, s"Tag '@${stk.name}' must be followed by a symbol name")
                 None
               case _ => None
@@ -417,10 +411,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           reporter.warning(pos, s"Tag '@${key.name}' is not recognised")
 
         com
-      }
     }
 
-    parse0(new StringBuilder(comment.size), Map.empty, None, clean(comment), inCodeBlock = false)
+    parse0(new StringBuilder(comment.length), immutable.Map.empty, None, clean(comment), inCodeBlock = false)
 
   }
 
@@ -461,7 +454,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       else if (checkSkipInitWhitespace("----"))
         hrule()
       else if (checkList)
-        listBlock
+        listBlock()
       else if (checkTableRow)
         table()
       else {
@@ -471,8 +464,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     /** listStyle ::= '-' spc | '1.' spc | 'I.' spc | 'i.' spc | 'A.' spc | 'a.' spc
       * Characters used to build lists and their constructors */
-    protected val listStyles = Map[String, (Seq[Block] => Block)]( // TODO Should this be defined at some list companion?
-      "- "  -> ( UnorderedList(_) ),
+    protected val listStyles = Map[String, Seq[Block] => Block]( // TODO Should this be defined at some list companion?
+      "- "  -> UnorderedList,
       "1. " -> ( OrderedList(_,"decimal") ),
       "I. " -> ( OrderedList(_,"upperRoman") ),
       "i. " -> ( OrderedList(_,"lowerRoman") ),
@@ -482,7 +475,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     /** Checks if the current line is formed with more than one space and one the listStyles */
     def checkList =
-      (countWhitespace > 0) && (listStyles.keys exists { checkSkipInitWhitespace(_) })
+      (countWhitespace > 0) && (listStyles.keys exists { checkSkipInitWhitespace })
 
     /** {{{
       * nListBlock ::= nLine { mListBlock }
@@ -495,7 +488,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         * not a list or a different list. */
       def listLine(indent: Int, style: String): Option[Block] =
         if (countWhitespace > indent && checkList)
-          Some(listBlock)
+          Some(listBlock())
         else if (countWhitespace != indent || !checkSkipInitWhitespace(style))
           None
         else {
@@ -520,7 +513,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
 
       val indent = countWhitespace
-      val style = (listStyles.keys find { checkSkipInitWhitespace(_) }).getOrElse(listStyles.keys.head)
+      val style = (listStyles.keys find { checkSkipInitWhitespace }).getOrElse(listStyles.keys.head)
       listLevel(indent, style)
     }
 
@@ -533,7 +526,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       else
         jump("}}}")
       blockEnded("code block")
-      Code(normalizeIndentation(str))
+      Code(normalizeIndentation(str).filterNot(_ == safeTagMarker))
     }
 
     /** {{{ title ::= ('=' inline '=' | "==" inline "==" | ...) '\n' }}} */
@@ -869,16 +862,14 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         list += str
 
         str match {
-          case OPEN_TAG(s, _, standalone) => {
+          case OPEN_TAG(s, _, standalone) =>
             if (standalone != "/") {
               stack += s
             }
-          }
-          case CLOSE_TAG(s) => {
+          case CLOSE_TAG(s) =>
             if (s == stack.last) {
               stack.remove(stack.length-1)
             }
-          }
           case _ => ;
         }
       } while (stack.nonEmpty && char != endOfText)
@@ -1051,7 +1042,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       // maxSkip - size of the longest common whitespace prefix of non-empty lines
       val nonEmptyLines = lines.filter(_.trim.nonEmpty)
-      val maxSkip = if (nonEmptyLines.isEmpty) 0 else nonEmptyLines.map(line => line.prefixLength(_ == ' ')).min
+      val maxSkip = if (nonEmptyLines.isEmpty) 0 else nonEmptyLines.map(line => line.segmentLength(_ == ' ')).min
 
       // remove common whitespace prefix
       lines.map(line => if (line.trim.nonEmpty) line.substring(maxSkip) else line).mkString("\n")
@@ -1098,7 +1089,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
     final def nextChar(): Unit = offset += 1
 
-    final def prevChar() {
+    final def prevChar(): Unit =  {
       offset -= 1
     }
 
