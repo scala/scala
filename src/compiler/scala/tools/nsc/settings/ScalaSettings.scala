@@ -412,7 +412,6 @@ trait ScalaSettings extends AbsScalaSettings
 
   val YoptLogInline = StringSetting("-Yopt-log-inline", "package/Class.method", "Print a summary of inliner activity; `_` to print all, prefix match to select.", "")
 
-  import scala.reflect.internal.util.Statistics
   val Ystatistics = PhasesSetting("-Ystatistics", "Print compiler statistics for specific phases", "parser,typer,patmat,erasure,cleanup,jvm")
   override def YstatisticsEnabled = Ystatistics.value.nonEmpty
 

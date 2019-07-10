@@ -1,9 +1,9 @@
 package scala.reflect.quasiquotes
 
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
+import org.scalacheck._, Prop._
 import scala.tools.reflect.{ToolBox, ToolBoxError}
 import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.setSymbol
+import scala.reflect.runtime.universe._, internal.reificationSupport.setSymbol
 
 abstract class QuasiquoteProperties(name: String) extends Properties(name) with ArbitraryTreesAndNames with Helpers
 

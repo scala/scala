@@ -2,8 +2,6 @@ package scala.tools.nsc.scaladoc
 
 import org.scalacheck._
 import org.scalacheck.Prop._
-import java.net.{URLClassLoader, URLDecoder}
-import java.nio.file.{Files, Paths}
 
 import scala.collection.mutable
 import scala.xml.NodeSeq

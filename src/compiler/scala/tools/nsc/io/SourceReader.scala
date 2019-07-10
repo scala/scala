@@ -15,7 +15,7 @@ package io
 
 import java.io.{FileInputStream, IOException}
 import java.nio.{ByteBuffer, CharBuffer}
-import java.nio.channels.{AsynchronousCloseException, Channels, ClosedByInterruptException, ReadableByteChannel}
+import java.nio.channels.{Channels, ClosedByInterruptException, ReadableByteChannel}
 import java.nio.charset.{CharsetDecoder, CoderResult}
 
 import scala.tools.nsc.reporters._

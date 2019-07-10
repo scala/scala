@@ -1,7 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport.ScalaDot
+import scala.reflect.runtime.universe._, internal.reificationSupport.ScalaDot
 
 object TypeConstructionProps extends QuasiquoteProperties("type construction")  {
   property("bare idents contain type names") = test {

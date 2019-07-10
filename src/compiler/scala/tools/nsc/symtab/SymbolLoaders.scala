@@ -18,7 +18,6 @@ import java.io.IOException
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
-import scala.reflect.internal.TypesStats
 import scala.reflect.internal.util.{ReusableInstance, StatisticsStatics}
 
 /** This class ...

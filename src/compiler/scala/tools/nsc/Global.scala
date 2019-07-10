@@ -14,16 +14,16 @@ package scala
 package tools
 package nsc
 
-import java.io.{File, FileNotFoundException, IOException}
+import java.io.{FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
 
 import scala.collection.{immutable, mutable}
-import io.{AbstractFile, Path, SourceReader}
+import io.{AbstractFile, SourceReader}
 import reporters.Reporter
 import util.{ClassPath, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile, StatisticsStatics}
+import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.pickling.PickleBuffer
 import symtab.{Flags, SymbolTable, SymbolTrackers}
 import symtab.classfile.Pickler
@@ -35,7 +35,6 @@ import transform.patmat.PatternMatching
 import transform._
 import backend.{JavaPlatform, ScalaPrimitives}
 import backend.jvm.{BackendStats, GenBCode}
-import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._

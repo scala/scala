@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.Statistics
 import scala.tools.asm.tree.ClassNode
 
 abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {

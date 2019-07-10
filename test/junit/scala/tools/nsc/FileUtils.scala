@@ -5,7 +5,7 @@ import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
 import difflib.DiffUtils
 
-import scala.collection.JavaConverters.{asJavaIteratorConverter, asScalaBufferConverter, asScalaIteratorConverter}
+import scala.collection.JavaConverters.{asScalaBufferConverter, asScalaIteratorConverter}
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.backend.jvm.AsmUtils
 

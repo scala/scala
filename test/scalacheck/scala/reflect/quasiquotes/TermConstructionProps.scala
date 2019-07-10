@@ -1,7 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._
+import scala.reflect.runtime.universe._
 
 object TermConstructionProps extends QuasiquoteProperties("term construction") {
   property("unquote single tree return tree itself") = forAll { (t: Tree) =>

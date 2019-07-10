@@ -6,7 +6,6 @@ import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.AssertUtil._
 
 @RunWith(classOf[JUnit4])
 class QTest {

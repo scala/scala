@@ -14,14 +14,12 @@ package scala
 package tools.nsc
 package interpreter
 
-import scala.language.dynamics
 
 import scala.beans.BeanProperty
 import scala.collection.JavaConverters._
-import scala.reflect.classTag
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.util.stringFromReader
-import javax.script._, ScriptContext.{ ENGINE_SCOPE, GLOBAL_SCOPE }
+import javax.script._
 import java.io.{ Closeable, Reader }
 
 /* A REPL adaptor for the javax.script API. */

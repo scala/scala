@@ -20,13 +20,12 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
-import mutable.{ArrayBuffer, ListBuffer}
+import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
-import scala.reflect.macros.whitebox
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.

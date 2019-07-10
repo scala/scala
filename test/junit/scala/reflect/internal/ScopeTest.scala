@@ -1,13 +1,11 @@
 package scala.reflect.internal
 
-import scala.tools.nsc.symtab
 
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testing.AssertUtil.assertThrows
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 
 @RunWith(classOf[JUnit4])

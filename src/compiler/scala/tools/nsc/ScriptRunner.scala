@@ -13,7 +13,7 @@
 package scala
 package tools.nsc
 
-import io.{AbstractFile, Directory, File, Path}
+import io.{Directory, File, Path}
 import java.io.IOException
 import scala.tools.nsc.classpath.DirectoryClassPath
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}

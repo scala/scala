@@ -12,8 +12,8 @@
 
 package scala.concurrent.impl
 
-import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, ForkJoinTask, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
-import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
+import java.util.concurrent.{ ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.Collection
 import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.annotation.tailrec

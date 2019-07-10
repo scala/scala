@@ -3,7 +3,6 @@ package scala.collection.mutable
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
-import scala.collection.mutable
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#8014 and ++ in general  */

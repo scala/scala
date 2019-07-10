@@ -13,7 +13,6 @@
 package scala
 package reflect.io
 
-import scala.reflect.internal.util.Statistics
 
 // Due to limitations in the Statistics machinery, these are only
 // reported if this patch is applied.

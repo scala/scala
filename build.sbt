@@ -32,10 +32,7 @@
  *   - to modularize the Scala compiler or library further
  */
 
-import java.io.{PrintWriter, StringWriter}
-
 import sbt.TestResult
-import sbt.testing.TestSelector
 
 import scala.build._
 import VersionUtil._
@@ -188,6 +185,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     // END: Copy/pasted from SBT
   },
   fork in run := true,
+  scalacOptions += "-Ywarn-unused:imports",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -817,6 +815,7 @@ lazy val test = project
     fork in IntegrationTest := true,
     // enable this in 2.13, when tests pass
     //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
+    scalacOptions -= "-Ywarn-unused:imports",
     javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
@@ -1006,13 +1005,13 @@ lazy val root: Project = (project in file("."))
         def findRootCauses(i: Incomplete, currentTask: String): Vector[(String, Option[Throwable])] = {
           val sk = i.node match {
             case Some(t: Task[_]) =>
-              t.info.attributes.entries.collect { case e if e.key == Keys.taskDefinitionKey => e.value.asInstanceOf[Def.ScopedKey[_]] }
-                .headOption.map(showScopedKey)
+              t.info.attributes.entries.collectFirst { case e if e.key == Keys.taskDefinitionKey => e.value.asInstanceOf[Def.ScopedKey[_]] }
+                .map(showScopedKey)
             case _ => None
           }
           val task = sk.getOrElse(currentTask)
-          val dup = sk.map(s => !loggedAny.add(s)).getOrElse(false)
-          if(sk.map(s => !loggedThis.add(s)).getOrElse(false)) Vector.empty
+          val dup = sk.exists(s => !loggedAny.add(s))
+          if(sk.exists(s => !loggedThis.add(s))) Vector.empty
           else i.directCause match {
             case Some(e) => Vector((task, if(dup) None else Some(e)))
             case None => i.causes.toVector.flatMap(ch => findRootCauses(ch, task))

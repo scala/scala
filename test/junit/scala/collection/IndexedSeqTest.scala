@@ -275,7 +275,7 @@ package IndexedTestImpl {
   import java.lang.{Double => jlDouble}
   import java.lang.{Character => jlChar}
 
-  import scala.collection.immutable.{StringLike, StringOps, WrappedString}
+  import scala.collection.immutable.{StringOps, WrappedString}
   import scala.collection.mutable
   import scala.runtime.BoxedUnit
   trait DataProvider[E] {

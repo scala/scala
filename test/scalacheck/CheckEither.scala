@@ -1,9 +1,7 @@
-import org.scalacheck.{ Arbitrary, Prop, Properties }
+import org.scalacheck.{ Arbitrary, Properties }
 import org.scalacheck.Arbitrary.{arbitrary, arbThrowable}
 import org.scalacheck.Gen.oneOf
 import org.scalacheck.Prop._
-import org.scalacheck.Test.check
-import Function.tupled
 
 object CheckEitherTest extends Properties("Either") {
   implicit def arbitraryEither[X, Y](implicit xa: Arbitrary[X], ya: Arbitrary[Y]): Arbitrary[Either[X, Y]] =

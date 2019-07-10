@@ -13,7 +13,6 @@
 package scala.tools.nsc.classpath
 
 import java.net.URL
-import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile

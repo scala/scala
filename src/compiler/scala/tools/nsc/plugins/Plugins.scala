@@ -13,14 +13,10 @@
 package scala.tools.nsc
 package plugins
 
-import java.net.URL
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
-import scala.tools.nsc
-import scala.tools.nsc.io.Jar
 import scala.tools.nsc.plugins.Plugin.pluginClassLoadersCache
-import scala.tools.nsc.typechecker.Macros
 import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver.Defaults
 

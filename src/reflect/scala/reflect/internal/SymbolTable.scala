@@ -21,7 +21,6 @@ import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
 
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.settings.MutableSettings
 import scala.reflect.internal.{TreeGen => InternalTreeGen}
 import scala.reflect.io.AbstractFile

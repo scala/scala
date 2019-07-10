@@ -15,8 +15,6 @@ package typechecker
 
 import scala.reflect.NameTransformer
 import symtab.Flags._
-import scala.reflect.internal.util.StringOps.ojoin
-import scala.reflect.internal.util.ListOfNil
 
 /** Logic related to method synthesis which involves cooperation between
  *  Namer and Typer.

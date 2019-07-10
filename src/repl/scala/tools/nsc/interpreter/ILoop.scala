@@ -28,8 +28,7 @@ import scala.reflect.internal.util.{BatchSourceFile, ScalaClassLoader, NoPositio
 import scala.reflect.io.{Directory, File, Path}
 import scala.tools.util._
 import io.AbstractFile
-import scala.concurrent.{ExecutionContext, Await, Future}
-import ExecutionContext.Implicits._
+import scala.concurrent.{Await, Future}
 import java.io.BufferedReader
 
 import scala.util.{Try, Success, Failure}

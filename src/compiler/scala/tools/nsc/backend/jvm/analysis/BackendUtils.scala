@@ -25,7 +25,7 @@ import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
-import scala.tools.asm.{Handle, Label, Type}
+import scala.tools.asm.{Handle, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._

@@ -2,7 +2,7 @@ package scala
 package tools.nsc
 package reporters
 
-import java.io.{ByteArrayOutputStream, StringReader, BufferedReader, PrintStream, PrintWriter}
+import java.io.{ByteArrayOutputStream, StringReader, BufferedReader, PrintWriter}
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith

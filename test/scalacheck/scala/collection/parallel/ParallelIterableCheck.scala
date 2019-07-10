@@ -9,7 +9,6 @@ import org.scalacheck.Prop._
 import org.scalacheck.Properties
 
 import scala.collection._
-import scala.collection.parallel._
 
 
 

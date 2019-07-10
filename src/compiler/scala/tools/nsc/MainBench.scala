@@ -12,7 +12,6 @@
 
 package scala.tools.nsc
 
-import scala.reflect.internal.util.Statistics
 
 /** The main class for NSC, a compiler for the programming
  *  language Scala.

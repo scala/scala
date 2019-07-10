@@ -15,9 +15,8 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.{ByteArrayInputStream, DataInputStream, File, IOException}
+import java.io.{File, IOException}
 import java.lang.Integer.toHexString
-import java.nio.ByteBuffer
 
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -25,8 +24,7 @@ import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.reflect.io.{NoAbstractFile, VirtualFile}
-import scala.reflect.internal.util.Collections._
+import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.util.control.NonFatal

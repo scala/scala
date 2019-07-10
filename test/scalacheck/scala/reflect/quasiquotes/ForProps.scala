@@ -1,7 +1,7 @@
 package scala.reflect.quasiquotes
 
 import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, Flag._, internal.reificationSupport._
+import scala.reflect.runtime.universe._, internal.reificationSupport._
 
 object ForProps extends QuasiquoteProperties("for") {
   case class ForEnums(val value: List[Tree])

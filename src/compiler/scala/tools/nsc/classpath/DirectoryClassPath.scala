@@ -13,17 +13,14 @@
 package scala.tools.nsc.classpath
 
 import java.io.{Closeable, File}
-import java.net.{URI, URL}
-import java.nio.file.{FileSystems, Files, SimpleFileVisitor}
-import java.util.function.IntFunction
+import java.net.URL
+import java.nio.file.{FileSystems, Files}
 import java.util
-import java.util.Comparator
 
 import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import FileUtils._
 import scala.collection.JavaConverters._
-import scala.collection.immutable
 import scala.reflect.internal.JDK9Reflectors
 import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.PackageNameUtils.{packageContains, separatePkgAndClassNames}
