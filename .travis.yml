@@ -49,6 +49,17 @@ jobs:
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 
+      # pull request validation (w/ mini-bootstrap)
+      - stage: build
+        name: "JDK 11 pr validation"
+        if: type = pull_request
+        env:
+          - ADOPTOPENJDK=11
+        script:
+          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+
       # build the spec using jekyll
       - stage: build
         language: ruby
