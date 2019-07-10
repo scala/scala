@@ -53,6 +53,7 @@ val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.13.4" 
 val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.5"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
+val jansiDep          = "org.fusesource.jansi"   % "jansi"           % "1.12"
 val antDep            = "org.apache.ant"         % "ant"             % "1.9.4"
 
 /** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
@@ -329,7 +330,8 @@ val disablePublishing = Seq[Setting[_]](
   publishArtifact := false,
   // The above is enough for Maven repos but it doesn't prevent publishing of ivy.xml files
   publish := {},
-  publishLocal := {}
+  publishLocal := {},
+  whitesourceIgnore := true
 )
 
 lazy val setJarLocation: Setting[_] =
@@ -454,8 +456,10 @@ lazy val compiler = configureAsSubproject(project)
     name := "scala-compiler",
     description := "Scala Compiler",
     libraryDependencies ++= Seq(antDep, asmDep),
-    // These are only needed for the POM:
-    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional"),
+    // These are only needed for the POM. (And, note that the jansi dependency is a fiction
+    // for WhiteSource purposes; the JLine JAR contains a shaded jansi, but WhiteSource
+    // won't know about that unless we tell it.)
+    libraryDependencies ++= Seq(scalaXmlDep, jlineDep % "optional", jansiDep % "optional"),
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -1358,3 +1362,8 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
   def extract(m: ModuleID) = (m.organization, m.name)
   files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
 }
+
+// WhiteSource
+whitesourceProduct               := "Lightbend Reactive Platform"
+whitesourceAggregateProjectName  := "scala-2.12-stable"
+whitesourceIgnoredScopes         := Vector("test", "scala-tool")
