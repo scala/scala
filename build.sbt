@@ -500,7 +500,9 @@ lazy val scaladoc = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
-    includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf"
+    includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
+    libraryDependencies ++= ScaladocSettings.webjarResoources,
+    resourceGenerators in Compile += ScaladocSettings.extractResourcesFromWebjar
   )
   .dependsOn(compiler)
 
