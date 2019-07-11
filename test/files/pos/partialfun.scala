@@ -8,4 +8,7 @@ object partialfun {
     case None => throw new MatchError(None)
   } (None);
 
+  // Again, but using function literal
+  applyPartial(_.get)(None)
+
 }

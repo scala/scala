@@ -4,3 +4,41 @@
 0:isDefinedAt
 1:isDefinedAt
 2:apply
+
+false
+true
+Vector(1, 2, 3, 4, 5)
+Vector(1, 2, 3, 4, 5)
+
+testing function literal syntax with methods overloaded for Function1 and PartialFunction
+base case: a method that takes a Function1, so no overloading
+fn only
+fn only
+fn only
+
+base case: a method that takes a PartialFunction, so no overloading
+pf only
+pf only
+pf only
+
+test case: a method that is overloaded for Funtion1 and PartialFunction
+fn wins
+pf wins
+pf wins
+
+testing eta-expansion with methods overloaded for Function1 and PartialFunction
+base case: a method that takes a Function1, so no overloading
+fn only
+fn only
+fn only
+fn only
+
+base case: a method that takes a PartialFunction, so no overloading
+pf only
+pf only
+pf only
+
+test case: a method that is overloaded for Funtion1 and PartialFunction
+fn wins
+fn wins
+fn wins

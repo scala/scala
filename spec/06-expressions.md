@@ -1177,7 +1177,7 @@ If there is no expected type for the function literal, all formal parameter type
 The eventual run-time value of an anonymous function is determined by the expected type:
   - a subclass of one of the builtin function types, `scala.Function$n$[$S_1 , \ldots , S_n$, $R\,$]` (with $S_i$ and $R$ fully defined),
   - a [single-abstract-method (SAM) type](#sam-conversion);
-  - `PartialFunction[$T$, $U$]`, if the function literal is of the shape `x => x match { $\ldots$ }`
+  - `PartialFunction[$T$, $U$]`
   - some other type.
 
 The standard anonymous function evaluates in the same way as the following instance creation expression:
@@ -1192,7 +1192,15 @@ The same evaluation holds for a SAM type, except that the instantiated type is g
 
 The underlying platform may provide more efficient ways of constructing these instances, such as Java 8's `invokedynamic` bytecode and `LambdaMetaFactory` class.
 
-A `PartialFunction`'s value receives an additional `isDefinedAt` member, which is derived from the pattern match in the function literal, with each case's body being replaced by `true`, and an added default (if none was given) that evaluates to `false`.
+When a `PartialFunction` is required, an additional member `isDefinedAt`
+is synthesized, which simply returns `true`.
+However, if the function literal has the shape `x => x match { $\ldots$ }`,
+then `isDefinedAt` is derived from the pattern match in the following way:
+each case from the match expression evaluates to `true`,
+and if there is no default case,
+a default case is added that evalutes to `false`.
+For more details on how that is implemented see
+["Pattern Matching Anonymous Functions"](08-pattern-matching.html#pattern-matching-anonymous-functions).
 
 ###### Example
 Examples of anonymous functions:

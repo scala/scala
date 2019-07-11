@@ -15,4 +15,10 @@ class Test {
   // at scala.tools.nsc.typechecker.SuperAccessors$SuperAccTransformer.hostForAccessorOf(SuperAccessors.scala:474)
   // at scala.tools.nsc.typechecker.SuperAccessors$SuperAccTransformer.needsProtectedAccessor(SuperAccessors.scala:457)
   val c: (Int => (Any => Any)) = { m => { case _ => m.toInt } }
+
+
+  // Again, but using function literal
+  val a2: (Map[Int, Int] => (Any => Any)) = { m => { _ => m - 1} }
+  val b2: (Int => (Any => Any))           = { m => { _ => m } }
+  val c2: (Int => (Any => Any))           = { m => { _ => m.toInt } }
 }

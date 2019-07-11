@@ -3058,23 +3058,25 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               setError(fun)
             }
-          } else {
-            fun.body match {
-              // translate `x => x match { <cases> }` : PartialFunction to
-              // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
-              case Match(sel, cases) if (sel ne EmptyTree) && (pt.typeSymbol == PartialFunctionClass) =>
-                // go to outer context -- must discard the context that was created for the Function since we're discarding the function
-                // thus, its symbol, which serves as the current context.owner, is not the right owner
-                // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
-                val outerTyper = newTyper(context.outer)
-                val p = vparams.head
-                if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
-
-                outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, fun.body, mode, pt)
-
-              case _ => doTypedFunction(fun, resProto)
+          } else if (pt.typeSymbol == PartialFunctionClass) {
+            // translate `x => x match { <cases> }` : PartialFunction to
+            // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
+            val funBody = fun.body match {
+              case Match(sel, _) if sel ne EmptyTree => fun.body
+              case funBody                           =>
+                atPos(funBody.pos.makeTransparent) {
+                  Match(EmptyTree, List(CaseDef(Bind(nme.DEFAULT_CASE, Ident(nme.WILDCARD)), funBody)))
+                }
             }
-          }
+            // go to outer context -- must discard the context that was created for the Function since we're discarding the function
+            // thus, its symbol, which serves as the current context.owner, is not the right owner
+            // you won't know you're using the wrong owner until lambda lift crashes (unless you know better than to use the wrong owner)
+            val outerTyper = newTyper(context.outer)
+            val p = vparams.head
+            if (p.tpt.tpe == null) p.tpt setType outerTyper.typedType(p.tpt).tpe
+
+            outerTyper.synthesizePartialFunction(p.name, p.pos, paramSynthetic = false, funBody, mode, pt)
+          } else doTypedFunction(fun, resProto)
         }
       }
     }
