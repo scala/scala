@@ -499,10 +499,7 @@ of the escape sequences [here](#escape-sequences) are interpreted.
 > ```
 >
 > Method `stripMargin` is defined in class
-> [scala.collection.immutable.StringLike](http://www.scala-lang.org/api/current/#scala.collection.immutable.StringLike).
-> Because there is a predefined
-> [implicit conversion](06-expressions.html#implicit-conversions) from `String` to
-> `StringLike`, the method is applicable to all strings.
+> [scala.collection.StringOps](https://www.scala-lang.org/api/current/scala/collection/StringOps.html#stripMargin:String).
 
 #### Interpolated string
 
