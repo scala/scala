@@ -14,17 +14,15 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{tailrec, switch}
-
-import scala.collection.mutable
+import scala.annotation.{switch, tailrec}
+import scala.collection.JavaConverters._
 import scala.reflect.internal.util.Collections._
+import scala.tools.asm.Opcodes._
 import scala.tools.asm.commons.CodeSizeEvaluator
+import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._
 import scala.tools.asm.{Label, Type}
-import scala.tools.asm.Opcodes._
-import scala.tools.asm.tree._
-import GenBCode._
-import scala.collection.JavaConverters._
+import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.InstructionStackEffect
 
 object BytecodeUtils {
@@ -299,18 +297,6 @@ object BytecodeUtils {
 
     (roughUpperBound(caller) + roughUpperBound(callee) > maxMethodSizeAfterInline) &&
       (maxSize(caller) + maxSize(callee) > maxMethodSizeAfterInline)
-  }
-
-  def removeLineNumberNodes(classNode: ClassNode): Unit = {
-    for (m <- classNode.methods.asScala) removeLineNumberNodes(m.instructions)
-  }
-
-  def removeLineNumberNodes(instructions: InsnList): Unit = {
-    val iter = instructions.iterator()
-    while (iter.hasNext) iter.next() match {
-      case _: LineNumberNode => iter.remove()
-      case _ =>
-    }
   }
 
   def cloneLabels(methodNode: MethodNode): Map[LabelNode, LabelNode] = {

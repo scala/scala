@@ -316,6 +316,14 @@ abstract class ClosureOptimizer {
     // drop the closure from the stack
     ownerMethod.instructions.insertBefore(invocation, new InsnNode(POP))
 
+    val isNew = lambdaBodyHandle.getTag == H_NEWINVOKESPECIAL
+
+    if (isNew) {
+      val insns = ownerMethod.instructions
+      insns.insertBefore(invocation, new TypeInsnNode(NEW, lambdaBodyHandle.getOwner))
+      insns.insertBefore(invocation, new InsnNode(DUP))
+    }
+
     // load captured values and arguments
     insertLoadOps(invocation, ownerMethod, localsForCapturedValues)
     insertLoadOps(invocation, ownerMethod, argumentLocalsList)
@@ -323,7 +331,7 @@ abstract class ClosureOptimizer {
     // update maxStack
     // One slot per value is correct for long / double, see comment in the `analysis` package object.
     val numCapturedValues = localsForCapturedValues.locals.length
-    val invocationStackHeight = stackHeight + numCapturedValues - 1 // -1 because the closure is gone
+    val invocationStackHeight = stackHeight + numCapturedValues - 1 + (if (isNew) 2 else 0) // -1 because the closure is gone
     if (invocationStackHeight > ownerMethod.maxStack)
       ownerMethod.maxStack = invocationStackHeight
 
@@ -333,30 +341,28 @@ abstract class ClosureOptimizer {
       case H_INVOKESTATIC     => INVOKESTATIC
       case H_INVOKESPECIAL    => INVOKESPECIAL
       case H_INVOKEINTERFACE  => INVOKEINTERFACE
-      case H_NEWINVOKESPECIAL =>
-        val insns = ownerMethod.instructions
-        insns.insertBefore(invocation, new TypeInsnNode(NEW, lambdaBodyHandle.getOwner))
-        insns.insertBefore(invocation, new InsnNode(DUP))
-        INVOKESPECIAL
+      case H_NEWINVOKESPECIAL => INVOKESPECIAL
     }
     val bodyInvocation = new MethodInsnNode(bodyOpcode, lambdaBodyHandle.getOwner, lambdaBodyHandle.getName, lambdaBodyHandle.getDesc, lambdaBodyHandle.isInterface)
     ownerMethod.instructions.insertBefore(invocation, bodyInvocation)
 
-    val bodyReturnType = Type.getReturnType(lambdaBodyHandle.getDesc)
-    val invocationReturnType = Type.getReturnType(invocation.desc)
-    if (isPrimitiveType(invocationReturnType) && bodyReturnType.getDescriptor == ObjectRef.descriptor) {
-      val op =
-        if (invocationReturnType.getSort == Type.VOID) getPop(1)
-        else getScalaUnbox(invocationReturnType)
-      ownerMethod.instructions.insertBefore(invocation, op)
-    } else if (isPrimitiveType(bodyReturnType) && invocationReturnType.getDescriptor == ObjectRef.descriptor) {
-      val op =
-        if (bodyReturnType.getSort == Type.VOID) getBoxedUnit
-        else getScalaBox(bodyReturnType)
-      ownerMethod.instructions.insertBefore(invocation, op)
-    } else {
-      // see comment of that method
-      fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, bTypes)
+    if (!isNew) {
+      val bodyReturnType = Type.getReturnType(lambdaBodyHandle.getDesc)
+      val invocationReturnType = Type.getReturnType(invocation.desc)
+      if (isPrimitiveType(invocationReturnType) && bodyReturnType.getDescriptor == ObjectRef.descriptor) {
+        val op =
+          if (invocationReturnType.getSort == Type.VOID) getPop(1)
+          else getScalaUnbox(invocationReturnType)
+        ownerMethod.instructions.insertBefore(invocation, op)
+      } else if (isPrimitiveType(bodyReturnType) && invocationReturnType.getDescriptor == ObjectRef.descriptor) {
+        val op =
+          if (bodyReturnType.getSort == Type.VOID) getBoxedUnit
+          else getScalaBox(bodyReturnType)
+        ownerMethod.instructions.insertBefore(invocation, op)
+      } else {
+        // see comment of that method
+        fixLoadedNothingOrNullValue(bodyReturnType, bodyInvocation, ownerMethod, bTypes)
+      }
     }
 
     ownerMethod.instructions.remove(invocation)
