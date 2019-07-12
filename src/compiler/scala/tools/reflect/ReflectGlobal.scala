@@ -17,7 +17,6 @@ import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.nsc.Global
 import scala.tools.nsc.Settings
-import scala.tools.nsc.typechecker.Analyzer
 
 /** A version of Global that uses reflection to get class
  *  infos, instead of reading class or source files.

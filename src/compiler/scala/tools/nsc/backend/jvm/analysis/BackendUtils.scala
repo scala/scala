@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import java.lang.ref.SoftReference
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{switch, tailrec}
@@ -26,7 +25,6 @@ import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.Value
 import scala.tools.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._

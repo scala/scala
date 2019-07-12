@@ -521,7 +521,7 @@ object AliasSet {
     val index = bit >> 6
     val resSet = bsEnsureCapacity(bits, index)
     val before = resSet(index)
-    val result = before | (1l << bit)
+    val result = before | (1L << bit)
     if (result != before) {
       resSet(index) = result
       set.set = resSet
@@ -534,7 +534,7 @@ object AliasSet {
     val index = bit >> 6
     if (index < bits.length) {
       val before = bits(index)
-      val result = before & ~(1l << bit)
+      val result = before & ~(1L << bit)
       if (result != before) {
         bits(index) = result
         set.size -= 1
@@ -627,15 +627,15 @@ object AliasSet {
 
         while (i < end && {
           val index = i >> 6
-          if (xs(index) == 0l) { // boom. for nullness, this saves 35% of the overall analysis time.
+          if (xs(index) == 0L) { // boom. for nullness, this saves 35% of the overall analysis time.
             i = ((index + 1) << 6) - 1 // -1 required because i is incremented in the loop body
             true
           } else {
-            val mask = 1l << i
+            val mask = 1L << i
             // if (mask > xs(index)) we could also advance i to the next value, but that didn't pay off in benchmarks
-            val thisHasI = (xs(index) & mask) != 0l
+            val thisHasI = (xs(index) & mask) != 0L
             !thisHasI || {
-              val otherHasI = i == notA || i == notB || i == notC || i == notD || (notXs != null && index < notXs.length && (notXs(index) & mask) != 0l)
+              val otherHasI = i == notA || i == notB || i == notC || i == notD || (notXs != null && index < notXs.length && (notXs(index) & mask) != 0L)
               if (otherHasI) setThisAndOther(i)
               otherHasI
             }

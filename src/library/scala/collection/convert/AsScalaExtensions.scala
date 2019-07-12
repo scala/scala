@@ -17,8 +17,6 @@ package convert
 import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
-import scala.jdk.javaapi.CollectionConverters
-
 /** Defines `asScala` extension methods, available through [[scala.jdk.CollectionConverters]]. */
 trait AsScalaExtensions {
   import scala.jdk.javaapi.{CollectionConverters => conv}

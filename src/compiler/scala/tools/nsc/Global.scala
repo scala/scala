@@ -39,7 +39,6 @@ import backend.jvm.{BackendStats, GenBCode}
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
 import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
-import scala.util.control.NonFatal
 import java.io.Closeable
 import scala.annotation.tailrec
 

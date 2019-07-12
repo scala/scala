@@ -12,7 +12,6 @@
 
 package scala.collection.immutable
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{IterableFactory, IterableFactoryDefaults}
 
 /** A trait for collections that are guaranteed immutable.

@@ -14,7 +14,7 @@ package scala.tools.nsc.backend.jvm
 
 import java.io.{PrintWriter, StringWriter}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.tree._
 import scala.tools.asm.util._
 import scala.tools.asm.{Attribute, ClassReader, ClassWriter}

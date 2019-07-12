@@ -835,7 +835,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       accept(RBRACE)
       val superclazz =
         AppliedTypeTree(javaLangDot(tpnme.Enum), List(enumType))
-      val finalFlag = if (enumIsFinal) Flags.FINAL else 0l
+      val finalFlag = if (enumIsFinal) Flags.FINAL else 0L
       addCompanionObject(consts ::: statics ::: predefs, atPos(pos) {
         // Marking the enum class SEALED | ABSTRACT enables exhaustiveness checking. See also ClassfileParser.
         // This is a bit of a hack and requires excluding the ABSTRACT flag in the backend, see method javaClassfileFlags.

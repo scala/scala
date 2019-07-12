@@ -80,7 +80,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
     def tpeTK(tree: Tree): BType = typeToBType(tree.tpe)
 
-
+    @annotation.unused
     private def canAssignModuleInClinit(cd: ClassDef, sym: Symbol): Boolean = {
       import global.definitions._
       val parentsArePure = claszSymbol.parentSymbols.forall(sym => sym == ObjectClass || isFunctionSymbol(sym) || isAbstractFunctionSymbol(sym) || sym == definitions.SerializableClass)

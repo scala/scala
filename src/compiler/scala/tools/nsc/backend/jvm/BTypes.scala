@@ -15,7 +15,6 @@ package backend.jvm
 
 import java.{util => ju}
 import scala.annotation.tailrec
-import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}

@@ -14,11 +14,9 @@ package scala
 package collection
 package immutable
 
-
 import scala.collection.immutable.Set.Set4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
-
 
 /** Base trait for immutable set collections */
 trait Set[A] extends Iterable[A]
@@ -266,9 +264,7 @@ object Set extends IterableFactory[Set] {
 }
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]
-
 
 /** Builder for Set.
   * $multipleResults

@@ -15,9 +15,8 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.{ByteArrayInputStream, DataInputStream, File, IOException}
+import java.io.IOException
 import java.lang.Integer.toHexString
-import java.nio.ByteBuffer
 
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -25,7 +24,7 @@ import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.reflect.io.{NoAbstractFile, VirtualFile}
+import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.util.control.NonFatal
@@ -97,6 +96,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   private def readFieldFlags()      = JavaAccFlags fieldFlags u2
   private def readTypeName()        = readName().toTypeName
   private def readName()            = pool.getName(u2).name
+  @annotation.unused
   private def readType()            = pool getType u2
 
   private object unpickler extends scala.reflect.internal.pickling.UnPickler {

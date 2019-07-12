@@ -34,7 +34,7 @@ abstract class CallGraph {
   import postProcessor._
   import bTypes._
   import bTypesFromClassfile._
-  import frontendAccess.{compilerSettings, recordPerRunCache}
+  import frontendAccess.recordPerRunCache
 
   /**
    * The call graph contains the callsites in the program being compiled.

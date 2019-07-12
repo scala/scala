@@ -14,9 +14,7 @@ package scala
 package collection
 package mutable
 
-import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-
 
 /** This class implements mutable sets using a hashtable.
  *  The iterator and all traversal methods of this class visit elements in the order they were inserted.

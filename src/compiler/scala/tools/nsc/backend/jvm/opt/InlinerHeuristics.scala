@@ -132,7 +132,7 @@ abstract class InlinerHeuristics extends PerRunInit {
   def selectRequestsForMethodSize(method: MethodNode, requests: List[InlineRequest], methodSizes: mutable.Map[MethodNode, Int]): List[InlineRequest] = {
     val byReason = requests.groupBy(_.reason)
     var size = method.instructions.size
-    var res = mutable.ListBuffer.empty[InlineRequest]
+    val res = mutable.ListBuffer.empty[InlineRequest]
     def include(kind: InlineReason, limit: Int): Unit = {
       var rs = byReason.getOrElse(kind, Nil)
       while (rs.nonEmpty && size < limit) {

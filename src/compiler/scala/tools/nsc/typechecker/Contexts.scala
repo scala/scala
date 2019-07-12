@@ -299,7 +299,7 @@ trait Contexts { self: Analyzer =>
             val fresh = freshNameCreatorFor(this)
             val vname = newTermName(fresh.newName("rec$"))
             val vsym = owner.newValue(vname, newFlags = FINAL | SYNTHETIC) setInfo tpe
-            implicitDictionary +:= (tpe, (vsym, EmptyTree))
+            implicitDictionary +:= ((tpe, (vsym, EmptyTree)))
             vsym
         }
       gen.mkAttributedRef(sym) setType tpe

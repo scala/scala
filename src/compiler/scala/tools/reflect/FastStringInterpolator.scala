@@ -43,7 +43,7 @@ trait FastStringInterpolator extends FormatInterpolator {
           }
 
       val argsIndexed = args.toVector
-      var concatArgs = collection.mutable.ListBuffer[Tree]()
+      val concatArgs = collection.mutable.ListBuffer[Tree]()
       val numLits = parts.length
       foreachWithIndex(treated.tail) { (lit, i) =>
         val treatedContents = lit.asInstanceOf[Literal].value.stringValue

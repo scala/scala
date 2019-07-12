@@ -14,7 +14,6 @@ package scala
 package collection
 package concurrent
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.util.concurrent.atomic._
 
 import scala.annotation.tailrec

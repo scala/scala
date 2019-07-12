@@ -18,7 +18,6 @@ import java.util.function.Consumer
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, IterableFactoryDefaults, SeqFactory, Stepper, StepperShape, mutable}
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 /** An Accumulator for arbitrary element types, see [[Accumulator]]. */

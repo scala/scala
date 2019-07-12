@@ -13,8 +13,6 @@
 package scala.collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.annotation.tailrec
 import scala.collection.generic.DefaultSerializable
 import scala.reflect.ClassTag

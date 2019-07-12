@@ -13,7 +13,6 @@
 package scala.collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.IllegalStateException
 
 import scala.collection.generic.{BitOperations, DefaultSerializationProxy}

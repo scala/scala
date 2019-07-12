@@ -16,7 +16,6 @@ import scala.collection.immutable.Range
 import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 import Searching.{Found, InsertionPoint, SearchResult}
-import scala.annotation.unchecked.uncheckedVariance
 
 /** Base trait for sequence collections
   *
@@ -1146,5 +1145,4 @@ object SeqOps {
 }
 
 /** Explicit instantiation of the `Seq` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractSeq[+A] extends AbstractIterable[A] with Seq[A]

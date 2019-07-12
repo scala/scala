@@ -1768,7 +1768,7 @@ trait Types
       throw new TypeError("illegal cyclic inheritance involving " + tpe.typeSymbol)
   }
 
-  protected def defineBaseClassesOfCompoundType(tpe: CompoundType) {
+  protected def defineBaseClassesOfCompoundType(tpe: CompoundType): Unit = {
     val period = tpe.baseClassesPeriod
     if (period != currentPeriod) {
       tpe.baseClassesPeriod = currentPeriod

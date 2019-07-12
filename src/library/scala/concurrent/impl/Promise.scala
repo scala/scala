@@ -11,16 +11,16 @@
  */
 
 package scala.concurrent.impl
-import scala.concurrent.{ Batchable, ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, OnCompleteRunnable }
+import scala.concurrent.{Batchable, ExecutionContext, CanAwait, TimeoutException, ExecutionException, Future, OnCompleteRunnable}
 import scala.concurrent.duration.Duration
-import scala.annotation.{ tailrec, switch }
-import scala.util.control.{ NonFatal, ControlThrowable }
-import scala.util.{ Try, Success, Failure }
+import scala.annotation.{tailrec, switch}
+import scala.util.control.{NonFatal, ControlThrowable}
+import scala.util.{Try, Success, Failure}
 import scala.runtime.NonLocalReturnControl
 import java.util.concurrent.locks.AbstractQueuedSynchronizer
-import java.util.concurrent.atomic.{ AtomicReference, AtomicBoolean }
+import java.util.concurrent.atomic.{AtomicReference}
 import java.util.Objects.requireNonNull
-import java.io.{ NotSerializableException, IOException, ObjectInputStream, ObjectOutputStream }
+import java.io.{NotSerializableException, IOException, ObjectInputStream, ObjectOutputStream}
 
 /**
   * Latch used to implement waiting on a DefaultPromise's result.

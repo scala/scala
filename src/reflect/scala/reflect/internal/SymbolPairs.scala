@@ -14,7 +14,6 @@ package scala
 package reflect
 package internal
 
-import scala.collection.mutable
 import util.HashSet
 import scala.annotation.tailrec
 
@@ -91,8 +90,9 @@ abstract class SymbolPairs {
   abstract class Cursor(val base: Symbol) {
     cursor =>
 
-      final val self  = base.thisType   // The type relative to which symbols are seen.
+    final val self  = base.thisType   // The type relative to which symbols are seen.
     private[this] val decls = newScope        // all the symbols which can take part in a pair.
+    @annotation.unused
     private[this] val size  = bases.length
 
     /** A symbol for which exclude returns true will not appear as

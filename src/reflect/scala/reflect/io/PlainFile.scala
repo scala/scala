@@ -187,7 +187,7 @@ final class PlainNioFile(val nioPath: java.nio.file.Path) extends AbstractFile {
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile] = {
     try {
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val it = Files.newDirectoryStream(nioPath).iterator
       it.asScala.map(new PlainNioFile(_))
     } catch {

@@ -12,8 +12,6 @@
 
 package scala.collection
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.collection.mutable.{ArrayBuffer, Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance

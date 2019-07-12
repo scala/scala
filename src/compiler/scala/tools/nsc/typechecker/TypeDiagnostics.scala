@@ -710,13 +710,11 @@ trait TypeDiagnostics {
           opc.iterator.exists(pair => pair.low == m)
         }
         import PartialFunction._
-        def isConvention(p: Symbol): Boolean = {
-          val ds = currentRun.runDefinitions
-          import ds._ ; (
+        def isConvention(p: Symbol): Boolean = (
             p.name.decoded == "args" && p.owner.isMethod && p.owner.name.decoded == "main"
           ||
             p.isImplicit && cond(p.tpe.typeSymbol) { case SameTypeClass | SubTypeClass | DummyImplicitClass => true }
-        )}
+        )
         def warningIsOnFor(s: Symbol) = if (s.isImplicit) settings.warnUnusedImplicits else settings.warnUnusedExplicits
         def warnable(s: Symbol) = (
           warningIsOnFor(s)

@@ -13,11 +13,8 @@
 package scala.reflect.macros
 package runtime
 
-import java.net.URLClassLoader
-
 import scala.reflect.internal.Flags._
 import scala.reflect.runtime.ReflectionUtils
-import scala.reflect.internal.util.AbstractFileClassLoader
 
 trait MacroRuntimes extends JavaReflectionRuntimes {
   self: scala.tools.nsc.typechecker.Analyzer =>

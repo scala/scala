@@ -46,6 +46,7 @@ trait Mirrors extends api.Mirrors {
     }
 
     /** Todo: organize similar to mkStatic in scala.reflect.Base */
+    @annotation.unused
     private def getModuleOrClass(path: Name, len: Int): Symbol =
       getModuleOrClass(path.toString, len, path.newName(_))
 

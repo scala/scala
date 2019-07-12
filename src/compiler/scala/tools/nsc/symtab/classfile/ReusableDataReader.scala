@@ -12,8 +12,7 @@
 
 package scala.tools.nsc.symtab.classfile
 
-import java.io.{ByteArrayInputStream, DataInputStream, InputStream}
-import java.nio.channels.Channels
+import java.io.{DataInputStream, InputStream}
 import java.nio.{BufferUnderflowException, ByteBuffer}
 
 final class ReusableDataReader() extends DataReader {
