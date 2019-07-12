@@ -243,8 +243,7 @@ class CompletionTest {
 
   @Test
   def completionWithComment(): Unit = {
-    val intp = newIMain()
-    val completer = new PresentationCompilerCompleter(intp)
+    val completer = setup()
 
     val withMultilineCommit =
       """|Array(1, 2, 3)
