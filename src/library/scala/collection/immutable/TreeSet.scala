@@ -63,6 +63,22 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   override def init: TreeSet[A] = new TreeSet(RB.init(tree))
 
+  override def min[A1 >: A](implicit ord: Ordering[A1]): A = {
+    if ((ord eq ordering) && nonEmpty) {
+      head
+    } else {
+      super.min(ord)
+    }
+  }
+
+  override def max[A1 >: A](implicit ord: Ordering[A1]): A = {
+    if ((ord eq ordering) && nonEmpty) {
+      last
+    } else {
+      super.max(ord)
+    }
+  }
+
   override def drop(n: Int): TreeSet[A] = {
     if (n <= 0) this
     else if (n >= size) empty

@@ -242,6 +242,28 @@ class CompletionTest {
   }
 
   @Test
+  def completionWithComment(): Unit = {
+    val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+
+    val withMultilineCommit =
+      """|Array(1, 2, 3)
+         |  .map(_ + 1) /* then we do reverse */
+         |  .rev""".stripMargin
+    assert(
+      completer.complete(withMultilineCommit).candidates.contains("reverseMap")
+    )
+
+    val withInlineCommit =
+      """|Array(1, 2, 3)
+         |  .map(_ + 1) // then we do reverse
+         |  .rev""".stripMargin
+    assert(
+      completer.complete(withInlineCommit).candidates.contains("reverseMap")
+    )
+  }
+
+  @Test
   def dependentTypeImplicits_t10353(): Unit = {
     val code =
       """

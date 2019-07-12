@@ -1254,9 +1254,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val qualPos = qual.pos
         def fallback = qualPos.end + 2
         val source = pos.source
-        val nameStart: Int = (qualPos.end + 1 until focus1.pos.end).find(p =>
-          source.identifier(source.position(p)).exists(_.length > 0)
-        ).getOrElse(fallback)
+        val nameStart: Int = (focus1.pos.end - 1 to qualPos.end by -1).find(p =>
+          source.identifier(source.position(p)).exists(_.length == 0)
+        ).map(_ + 1).getOrElse(fallback)
         typeCompletions(sel, qual, nameStart, name)
       case Ident(name) =>
         val allMembers = scopeMembers(pos)
