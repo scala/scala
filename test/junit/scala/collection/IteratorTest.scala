@@ -1,4 +1,3 @@
-
 package scala.collection
 
 import org.junit.Assert._
@@ -610,5 +609,94 @@ class IteratorTest {
       .take(3)
       .foreach(_ => ())
     assertEquals(3, i)
+  }
+
+  @Test
+  def flatMap(): Unit = {
+    def check[T](mkIterator: () => Iterator[T], expected: Array[T]): Unit = {
+      // tests that the iterator produces the expected array of elems, when alternating hasNext/next() calls
+      // then continues to be empty after repeated calls to hasNext/next after exhausted
+      // additional variants are included, where we:
+      // * avoid calls to hasNext, in this case `next()` should still work as expected
+      // * avoid calls to hasNext in the post-exhaustion check -- next() should still throw each time
+      // * avoid calls to next() in the post-exhaustion check -- hasNext should still return `false` each time
+      locally {
+        val iter = mkIterator()
+        var i = 0
+        while (i < expected.length) {
+          assert(iter.hasNext)
+          assertEquals(expected(i), iter.next())
+          i += 1
+        }
+        i = 0
+        while (i < 10) {
+          assertThrows[Exception](iter.next())
+          assert(!iter.hasNext)
+          i += 1
+        }
+      }
+      locally {
+        val iter = mkIterator()
+        var i = 0
+        while (i < expected.length) {
+          assertEquals(expected(i), iter.next())
+          i += 1
+        }
+        i = 0
+        while (i < 10) {
+          assertThrows[Exception](iter.next())
+          assert(!iter.hasNext)
+          i += 1
+        }
+      }
+      locally {
+        val iter = mkIterator()
+        var i = 0
+        while (i < expected.length) {
+          assertEquals(expected(i), iter.next())
+          i += 1
+        }
+        i = 0
+        while (i < 10) {
+          assertThrows[Exception](iter.next())
+          i += 1
+        }
+      }
+      locally {
+        val iter = mkIterator()
+        var i = 0
+        while (i < expected.length) {
+          assertEquals(expected(i), iter.next())
+          i += 1
+        }
+        i = 0
+        while (i < 10) {
+          i += 1
+          assert(!iter.hasNext)
+        }
+      }
+    }
+
+    check(() => Iterator.empty[Int].flatMap(_ => Iterator.empty[Int]), Array())
+    check(() => Iterator.empty[Int].flatMap(_ => 1 to 10), Array())
+    check(() => Iterator(1).flatMap(i => List(i + 1, i + 2)), Array(2, 3))
+    check(() => Iterator(1).flatMap(i => List(i + 1, i + 2)), Array(2, 3))
+
+    check(() => (0 to 100 by 10).iterator.flatMap(i => i to (i + 9)), (0 to 109).toArray)
+
+
+    check(() => Iterator.from(1 to 10).flatMap {
+      case 1 => Nil
+      case 2 => List(1,2,3)
+      case 3 => Nil
+      case 4 => List(4)
+      case 5 => List(5,6,7,8,9)
+      case 6 => List(10)
+      case 7 => List(11,12,13,14,15)
+      case 8 => Nil
+      case 9 => Nil
+      case 10 => Nil
+      case _ => Nil
+    }, Array.from(1 to 15))
   }
 }

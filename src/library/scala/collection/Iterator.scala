@@ -558,16 +558,38 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def flatMap[B](f: A => IterableOnce[B]): Iterator[B] = new AbstractIterator[B] {
-    private[this] var myCurrent: Iterator[B] = Iterator.empty
-    private def current = {
-      while (!myCurrent.hasNext && self.hasNext) {
-        myCurrent = null   // clear the stale reference before advancing
-        myCurrent = f(self.next()).iterator
-      }
-      myCurrent
+    private[this] var cur: Iterator[B] = Iterator.empty
+    /** Trillium logic boolean: -1 = unknown, 0 = false, 1 = true */
+    private[this] var _hasNext: Int = -1
+
+    private[this] def nextCur(): Unit = {
+      cur = null
+      cur = f(self.next()).iterator
+      _hasNext = -1
     }
-    def hasNext = current.hasNext
-    def next() = current.next()
+
+    def hasNext: Boolean = {
+      if (_hasNext == -1) {
+        while (!cur.hasNext) {
+          if (!self.hasNext) {
+            _hasNext = 0
+            // since we know we are exhausted, we can release cur for gc, and as well replace with
+            // static Iterator.empty which will support efficient subsequent `hasNext`/`next` calls
+            cur = Iterator.empty
+            return false
+          }
+          nextCur()
+        }
+        _hasNext = 1
+        true
+      } else _hasNext == 1
+    }
+    def next(): B = {
+      if (hasNext) {
+        _hasNext = -1
+      }
+      cur.next()
+    }
   }
 
   def flatten[B](implicit ev: A => IterableOnce[B]): Iterator[B] =
