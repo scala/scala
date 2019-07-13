@@ -89,17 +89,15 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     xs match {
       case hm: immutable.HashSet[A] =>
         hm.foreachWithHash((k, h) => addElem(k, improveHash(h)))
-        this
       case hm: mutable.HashSet[A] =>
         val iter = hm.nodeIterator
         while (iter.hasNext) {
           val next = iter.next()
           addElem(next.key, next.hash)
         }
-        this
       case _ => super.addAll(xs)
     }
-    super.addAll(xs)
+    this
   }
 
   override def subtractAll(xs: IterableOnce[A]): this.type = {

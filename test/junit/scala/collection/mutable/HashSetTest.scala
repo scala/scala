@@ -1,5 +1,9 @@
 package scala.collection.mutable
 
+import java.io.{ByteArrayOutputStream, PrintStream}
+import java.util
+import scala.jdk.CollectionConverters._
+
 import org.junit.Test
 import org.junit.Assert._
 
@@ -70,4 +74,16 @@ class HashSetTest {
     val hs = HashSet[PackageEntryImpl](PackageEntryImpl("javax"), PackageEntryImpl("java"))
     assertFalse(hs.add(PackageEntryImpl("java")))
   }
+
+
+  @Test
+  def duplicatePrintln:Unit = {
+    val outContent: ByteArrayOutputStream = new ByteArrayOutputStream()
+    System.setOut(new PrintStream(outContent))
+    val jSet = new util.HashSet[String]()
+    jSet.add("hello")
+    jSet.asScala.map(System.out.println)
+    assertEquals("hello\n", outContent.toString)
+  }
+
 }
