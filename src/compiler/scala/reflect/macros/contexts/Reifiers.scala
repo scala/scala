@@ -21,14 +21,14 @@ trait Reifiers {
   import definitions._
 
   def reifyTree(universe: Tree, mirror: Tree, tree: Tree): Tree = {
-    assert(ExprClass != NoSymbol)
+    assert(ExprClass != NoSymbol, "Missing ExprClass")
     val result = scala.reflect.reify.`package`.reifyTree(self.universe)(callsiteTyper, universe, mirror, tree)
     logFreeVars(enclosingPosition, result)
     result
   }
 
   def reifyType(universe: Tree, mirror: Tree, tpe: Type, concrete: Boolean = false): Tree = {
-    assert(TypeTagsClass != NoSymbol)
+    assert(TypeTagsClass != NoSymbol, "Missing TypeTagsClass")
     val result = scala.reflect.reify.`package`.reifyType(self.universe)(callsiteTyper, universe, mirror, tpe, concrete)
     logFreeVars(enclosingPosition, result)
     result
@@ -41,7 +41,7 @@ trait Reifiers {
     scala.reflect.reify.`package`.reifyEnclosingRuntimeClass(universe)(callsiteTyper)
 
   def unreifyTree(tree: Tree): Tree = {
-    assert(ExprSplice != NoSymbol)
+    assert(ExprSplice != NoSymbol, "Missing ExprSlice")
     Select(tree, ExprSplice)
   }
 

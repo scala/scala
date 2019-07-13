@@ -92,6 +92,7 @@ package object scala {
   object #:: {
     def unapply[A](s: LazyList[A]): Option[(A, LazyList[A])] =
       if (s.nonEmpty) Some((s.head, s.tail)) else None
+    @deprecated("Prefer LazyList instead", since = "2.13.0")
     def unapply[A](s: Stream[A]): Option[(A, Stream[A])] =
       if (s.nonEmpty) Some((s.head, s.tail)) else None
   }

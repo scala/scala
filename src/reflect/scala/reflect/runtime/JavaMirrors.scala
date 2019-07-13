@@ -982,7 +982,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       var prefix = if (enclosingClass != null) enclosingClass.getName else ""
       val isObject = owner.isModuleClass && !owner.isPackageClass
       if (isObject && !prefix.endsWith(nme.MODULE_SUFFIX_STRING)) prefix += nme.MODULE_SUFFIX_STRING
-      assert(jclazz.getName.startsWith(prefix))
+      assert(jclazz.getName.startsWith(prefix), s"Class name ${jclazz.getName} missing prefix $prefix")
       var name = jclazz.getName.substring(prefix.length)
       name = name.substring(name.lastIndexOf(".") + 1)
       newTypeName(name)
@@ -1343,9 +1343,8 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType): Unit = {
-    assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
-  }
+  override def validateClassInfo(tp: ClassInfoType): Unit =
+    assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope], s"$tp is package class or scope")
 
   override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
 

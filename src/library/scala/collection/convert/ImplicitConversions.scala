@@ -21,6 +21,7 @@ import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 
 /** Defines implicit converter methods from Java to Scala collections. */
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 trait ToScalaImplicits {
   /** Implicitly converts a Java `Iterator` to a Scala `Iterator`.
    *  @see [[JavaConverters.asScalaIterator]]
@@ -74,6 +75,7 @@ trait ToScalaImplicits {
 }
 
 /** Defines implicit conversions from Scala to Java collections. */
+@deprecated("Use `scala.jdk.CollectionConverters` instead", "2.13.0")
 trait ToJavaImplicits {
   /** Implicitly converts a Scala `Iterator` to a Java `Iterator`.
    *  @see [[JavaConverters.asJavaIterator]]

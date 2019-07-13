@@ -27,6 +27,7 @@ import scala.collection.{immutable, mutable}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
+import scala.math.Ordering.Double.TotalOrdering
 import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.{PlainNioFile, RootPath}

@@ -71,7 +71,7 @@ trait Reifiers { self: Quasiquotes =>
       if (isReifyingExpressions) {
         val freshdefs = nameMap.iterator.map {
           case (origname, names) =>
-            assert(names.size == 1)
+            assert(names.size == 1, "Require one name")
             val FreshName(prefix) = origname
             val nameTypeName = if (origname.isTermName) tpnme.TermName else tpnme.TypeName
             val freshName = if (origname.isTermName) nme.freshTermName else nme.freshTypeName

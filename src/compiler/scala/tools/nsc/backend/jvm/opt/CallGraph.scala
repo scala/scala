@@ -14,10 +14,10 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.collection.JavaConverters._
 import scala.collection.concurrent.TrieMap
 import scala.collection.immutable.IntMap
 import scala.collection.{concurrent, mutable}
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.{NoPosition, Position}
 import scala.tools.asm.tree._
 import scala.tools.asm.{Opcodes, Type}

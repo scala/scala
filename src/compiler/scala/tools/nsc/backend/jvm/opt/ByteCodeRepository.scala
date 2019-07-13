@@ -14,8 +14,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
+import scala.jdk.CollectionConverters._
 import scala.tools.asm
 import scala.tools.asm.Attribute
 import scala.tools.asm.tree._

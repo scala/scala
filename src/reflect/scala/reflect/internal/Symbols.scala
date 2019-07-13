@@ -1553,7 +1553,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def info_=(info: Type): Unit = {
-      assert(info ne null)
+      assert(info ne null, "Can't assign a null type")
       infos = TypeHistory(currentPeriod, info, null)
       unlock()
       _validTo = if (info.isComplete) currentPeriod else NoPeriod
@@ -1607,7 +1607,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       val outer = Symbols.this
 
       var infos = this.infos
-      outer.assert(infos != null)
+      outer.assert(infos != null, "infos must not be null")
 
       if (_validTo != NoPeriod) {
         val curPeriod = outer.currentPeriod
@@ -1664,8 +1664,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     // adapt to new run in fsc.
     private def adaptInfo(oldest: TypeHistory): TypeHistory = {
-      assert(isCompilerUniverse)
-      assert(oldest.prev == null)
+      assert(isCompilerUniverse, "Must be compiler universe")
+      assert(oldest.prev == null, "Previous history must be null")
       val pid = phaseId(oldest.validFrom)
 
       _validTo = period(currentRunId, pid)
@@ -1698,7 +1698,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Was symbol's type updated during given phase? */
     final def hasTypeAt(pid: Phase#Id): Boolean = {
-      assert(isCompilerUniverse)
+      assert(isCompilerUniverse, "Must be compiler universe")
       var infos = this.infos
       while ((infos ne null) && phaseId(infos.validFrom) > pid) infos = infos.prev
       infos ne null

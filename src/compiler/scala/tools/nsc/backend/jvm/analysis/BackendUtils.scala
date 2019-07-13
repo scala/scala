@@ -17,10 +17,10 @@ package analysis
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{switch, tailrec}
-import scala.collection.JavaConverters._
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._

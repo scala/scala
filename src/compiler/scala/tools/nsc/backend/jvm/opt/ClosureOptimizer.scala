@@ -15,9 +15,9 @@ package backend.jvm
 package opt
 
 import scala.annotation.switch
-import scala.collection.JavaConverters._
 import scala.collection.immutable.IntMap
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.NoPosition
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type

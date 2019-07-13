@@ -222,7 +222,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
         var i = 0
         var res: AliasSet = null
         while (nullChecked > 0) {
-          if ((nullChecked & 1l) != 0) {
+          if ((nullChecked & 1L) != 0) {
             val a = aliasesOf(this.stackTop - i)
             if (res == null) res = a
             else a.iterator.foreach(res.+=)

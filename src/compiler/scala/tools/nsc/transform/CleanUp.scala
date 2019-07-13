@@ -87,7 +87,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
         val typedPos = typedWithPos(ad.pos) _
 
-        assert(ad.symbol.isPublic)
+        assert(ad.symbol.isPublic, "Must be public")
         var qual: Tree = qual0
 
         /* ### CREATING THE METHOD CACHE ### */

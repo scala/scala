@@ -320,11 +320,18 @@ trait StdNames {
     override type NameType = TermName
 
     protected implicit def createNameType(name: String): TermName = newTermNameCached(name)
-    // create a name with leading dollar, avoiding the appearance that interpolation of a value (possibly named "value") was intended
+    // create a name with leading dollar, avoiding the appearance that
+    // interpolation of a value (possibly named "value") was intended
     private class NameContext(s: String) {
-      def n(args: Any*): TermName = { require(args.isEmpty) ; createNameType("$" + s) }
+      def n(args: Any*): TermName = {
+        require(args.isEmpty, "Interpolating args in a name is not supported")
+        createNameType("$" + s)
+      }
     }
-    private def StringContext(parts: String*) = { require(parts.size == 1) ; new NameContext(parts.head) }
+    private def StringContext(parts: String*) = {
+      require(parts.size == 1, "Interpolating multiple parts in a name is not supported")
+      new NameContext(parts.head)
+    }
 
     /** Base strings from which synthetic names are derived. */
     val BITMAP_PREFIX                  = "bitmap$"

@@ -550,7 +550,7 @@ abstract class Pickler extends SubComponent {
 
     /** Write byte array */
     def writeArray(): Unit = {
-      assert(writeIndex == 0)
+      assert(writeIndex == 0, "Index must be zero")
       writeNat(MajorVersion)
       writeNat(MinorVersion)
       writeNat(ep)

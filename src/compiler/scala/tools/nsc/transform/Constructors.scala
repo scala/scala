@@ -382,7 +382,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         }
 
         if (stat1 eq stat) {
-          assert(ctorParams(genericClazz).length == primaryConstrParams.length)
+          assert(ctorParams(genericClazz).length == primaryConstrParams.length, "Bad param len")
           // this is just to make private fields public
           (new specializeTypes.ImplementationAdapter(ctorParams(genericClazz), primaryConstrParams, null, true))(stat1)
 

@@ -273,7 +273,7 @@ trait FindMembers {
     // Cache for the member type of the first member we find.
     private[this] var _member0Tpe: Type = null
     private[this] def member0Tpe: Type = {
-      assert(member0 != null)
+      assert(member0 != null, "member0 must not be null for member type")
       if (_member0Tpe eq null) _member0Tpe = self.memberType(member0)
       _member0Tpe
     }

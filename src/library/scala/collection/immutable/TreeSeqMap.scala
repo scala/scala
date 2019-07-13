@@ -345,7 +345,8 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
   }
 
   private type Mapping[K, +V] = Map[K, (Int, V)]
-  //private val Mapping = Map
+  @annotation.unused
+  private val Mapping = Map
 
   /* The ordering implementation below is an adapted version of immutable.IntMap. */
   private[immutable] object Ordering {

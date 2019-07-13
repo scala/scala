@@ -339,7 +339,7 @@ abstract class BCodeIdiomatic {
           /* phantom type at play in `Array(null)`, scala/bug#1513. On the other hand, Array(()) has element type `scala.runtime.BoxedUnit` which isObject. */
           jmethod.visitTypeInsn(Opcodes.ANEWARRAY, c.classOrArrayType)
         case _ =>
-          assert(elem.isNonVoidPrimitiveType)
+          assert(elem.isNonVoidPrimitiveType, "Require primitive")
           val rand = {
             // using `asm.Type.SHORT` instead of `BType.SHORT` because otherwise "warning: could not emit switch for @switch annotated match"
             (elem: @unchecked) match {
@@ -422,7 +422,7 @@ abstract class BCodeIdiomatic {
      * can-multi-thread
      */
     final def emitSWITCH(keys: Array[Int], branches: Array[asm.Label], defaultBranch: asm.Label, minDensity: Double): Unit = {
-      assert(keys.length == branches.length)
+      assert(keys.length == branches.length, s"Bad branches, have ${branches.length}, wanted ${keys.length}")
 
       // For empty keys, it makes sense emitting LOOKUPSWITCH with defaultBranch only.
       // Similar to what javac emits for a switch statement consisting only of a default case.

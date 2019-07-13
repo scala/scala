@@ -1257,7 +1257,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     }
   }
   private class ParamNames(val names: Array[NameOrString], val access: Array[Int]) {
-    assert(names.length == access.length)
+    assert(names.length == access.length, "Require as many names as access")
     def length = names.length
   }
   private abstract class JavaTypeCompleter extends LazyType {

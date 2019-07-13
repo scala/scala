@@ -234,7 +234,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
       t
     } finally {
       propCnt = propCnt-1
-      assert(propCnt >= 0)
+      assert(propCnt >= 0, "Bad propCnt")
     }
   }
 

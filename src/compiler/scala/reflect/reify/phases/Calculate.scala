@@ -19,7 +19,10 @@ trait Calculate {
   import global._
 
   implicit class RichCalculateSymbol(sym: Symbol) {
-    def metalevel: Int = { assert(sym != null && sym != NoSymbol); localSymbols.getOrElse(sym, 0) }
+    def metalevel: Int = {
+      assert(sym != null && sym != NoSymbol, "Missing symbol")
+      localSymbols.getOrElse(sym, 0)
+    }
     def isLocalToReifee = (localSymbols contains sym) // todo. how do I account for local skolems?
   }
 

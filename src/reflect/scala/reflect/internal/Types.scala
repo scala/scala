@@ -1827,7 +1827,7 @@ trait Types
       parents foreach loop
       if (decls.isEmpty && flattened.size == 1) {
         flattened.head
-      } else if (!flattened.sameElements(parents)) {
+      } else if (!flattened.iterator.sameElements(parents)) {
         refinedType(flattened.toList, if (typeSymbol eq NoSymbol) NoSymbol else typeSymbol.owner, decls, NoPosition)
       } else if (isHigherKinded) {
         etaExpand
@@ -3505,8 +3505,7 @@ trait Types
      */
     def registerBound(tp: Type, isLowerBound: Boolean, isNumericBound: Boolean = false): Boolean = {
       // println("regBound: "+(safeToString, debugString(tp), isLowerBound)) //@MDEBUG
-      if (isLowerBound)
-        assert(tp != this)
+      if (isLowerBound) assert(tp != this, "Lower bound of this type")
 
       // side effect: adds the type to upper or lower bounds
       def addBound(tp: Type): Unit = {
@@ -5063,7 +5062,7 @@ trait Types
    *  where `thistp` is the narrowed owner type of the scope.
    */
   def addMember(thistp: Type, tp: Type, sym: Symbol, depth: Depth): Unit = {
-    assert(sym != NoSymbol)
+    assert(sym != NoSymbol, "Adding member NoSymbol")
     // debuglog("add member " + sym+":"+sym.info+" to "+thistp) //DEBUG
     if (!specializesSym(thistp, sym, depth)) {
       if (sym.isTerm)

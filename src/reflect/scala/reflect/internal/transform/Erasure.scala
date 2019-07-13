@@ -93,7 +93,7 @@ trait Erasure {
    *  This method needs to be called at a phase no later than erasurephase
    */
   def erasedValueClassArg(tref: TypeRef): Type = {
-    assert(!phase.erasedTypes)
+    assert(!phase.erasedTypes, "Types are erased")
     val clazz = tref.sym
     if (valueClassIsParametric(clazz)) {
       val underlying = tref.memberType(clazz.derivedValueClassUnbox).resultType
@@ -108,9 +108,8 @@ trait Erasure {
    *  This method needs to be called at a phase no later than erasurephase
    */
   def valueClassIsParametric(clazz: Symbol): Boolean = {
-    assert(!phase.erasedTypes)
-    clazz.typeParams contains
-      clazz.derivedValueClassUnbox.tpe.resultType.typeSymbol
+    assert(!phase.erasedTypes, "valueClassIsParametric called after erasure")
+    clazz.typeParams contains clazz.derivedValueClassUnbox.tpe.resultType.typeSymbol
   }
 
   abstract class ErasureMap extends TypeMap {

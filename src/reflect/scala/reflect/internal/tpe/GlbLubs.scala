@@ -376,7 +376,7 @@ private[internal] trait GlbLubs {
     if (printLubs) {
       println(indent + "lub of " + ts + " at depth "+depth)//debug
       indent = indent + "  "
-      assert(indent.length <= 100)
+      assert(indent.length <= 100, "LUB is highly indented")
     }
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(nestedLubCount)
     val res = lub0(ts)
@@ -477,7 +477,7 @@ private[internal] trait GlbLubs {
                 }
                 res.toList
               }
-              assert(!symtypes.isEmpty)
+              assert(!symtypes.isEmpty, "No types for GLB")
               proto.cloneSymbol(glbRefined.typeSymbol).setInfoOwnerAdjusted(
                 if (proto.isTerm) glb(symtypes, depth.decr)
                 else {
