@@ -287,4 +287,28 @@ class BigDecimalTest {
   def testIsComparable(): Unit = {
     assert(BigDecimal(0.1).isInstanceOf[java.lang.Comparable[_]])
   }
+
+  
+
+  @Test
+  def testBigDecimalSumInList(): Unit = {
+
+    val bds = List(
+      BigDecimal("1000000000000000000000000.1", MC.UNLIMITED),
+      BigDecimal("9.0000000000000000000000009", MC.UNLIMITED))
+    assert(bds.sum == BigDecimal("1000000000000000000000009.1000000000000000000000009", MC.UNLIMITED))
+
+  }
+
+  @Test
+  def testBigDecimalProductList(): Unit = {
+    val bds = List(
+      BigDecimal("1000000000000000000000000.1", MC.UNLIMITED),
+      BigDecimal("9.00000000000000000000000091", MC.UNLIMITED))
+
+    val prod = bds.foldLeft(BigDecimal(1, MC.UNLIMITED))(_ * _)
+    assert(prod == BigDecimal("9000000000000000000000001.810000000000000000000000091", MC.UNLIMITED))
+
+    assert(bds.product == prod)
+  }
 }
