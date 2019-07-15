@@ -4232,12 +4232,12 @@ trait Types
   }
 
   def isSubArgs(tps1: List[Type], tps2: List[Type], tparams: List[Symbol], depth: Depth): Boolean = {
-    def isSubArg(t1: Type, t2: Type, variance: Variance) = (
-         (variance.isCovariant || isSubType(t2, t1, depth))     // The order of these two checks can be material for performance (scala/bug#8478)
-      && (variance.isContravariant || isSubType(t1, t2, depth))
+    def isSubArg(t1: Type, t2: Type, tparam: Symbol) = (
+         (tparam.isCovariant || isSubType(t2, t1, depth))     // The order of these two checks can be material for performance (scala/bug#8478)
+      && (tparam.isContravariant || isSubType(t1, t2, depth))
     )
 
-    corresponds3(tps1, tps2, mapList(tparams)(_.variance))(isSubArg)
+    corresponds3(tps1, tps2, tparams)(isSubArg)
   }
 
   def specializesSym(tp: Type, sym: Symbol, depth: Depth): Boolean = {
