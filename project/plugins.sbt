@@ -40,3 +40,5 @@ if (Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).
   Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.3"))
 else
   Seq()
+
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
