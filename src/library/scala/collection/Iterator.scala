@@ -653,6 +653,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       else Iterator.empty.next()
   }
 
+  /**
+    * @inheritdoc
+    *
+    * @note    Reuse: $consumesOneAndProducesTwoIterators
+    */
   def span(p: A => Boolean): (Iterator[A], Iterator[A]) = {
     /*
      * Giving a name to following iterator (as opposed to trailing) because
