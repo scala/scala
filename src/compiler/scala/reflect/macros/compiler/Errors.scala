@@ -13,7 +13,6 @@
 package scala.reflect.macros
 package compiler
 
-import java.lang.System.{lineSeparator => EOL}
 import scala.annotation.tailrec
 import scala.reflect.macros.util.Traces
 

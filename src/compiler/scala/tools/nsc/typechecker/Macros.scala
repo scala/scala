@@ -14,7 +14,6 @@ package scala.tools.nsc
 package typechecker
 
 import java.lang.Math.min
-import java.net.URL
 
 import symtab.Flags._
 import scala.reflect.internal.util.ScalaClassLoader
@@ -24,7 +23,6 @@ import scala.reflect.internal.TypesStats
 import scala.reflect.macros.util._
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.ListOfNil
-import scala.reflect.io.AbstractFile
 import scala.reflect.macros.runtime.{AbortMacroException, MacroRuntimes}
 import scala.reflect.macros.compiler.DefaultMacroCompiler
 import scala.tools.reflect.FastTrack

@@ -12,9 +12,7 @@
 
 package scala.collection
 
-
 import scala.collection.MapView.SomeMapOps
-import scala.collection.immutable.Map.Map1
 import scala.collection.mutable.Builder
 
 trait MapView[K, +V]

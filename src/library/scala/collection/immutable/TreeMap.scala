@@ -14,7 +14,6 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}

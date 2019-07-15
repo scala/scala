@@ -30,7 +30,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
     markFlagsCompleted(clazz, module)(mask = ~TopLevelPickledFlags)
     override def complete(sym: Symbol) = {
       debugInfo("completing "+sym+"/"+clazz.fullName)
-      assert(sym == clazz || sym == module || sym == module.moduleClass)
+      assert(sym == clazz || sym == module || sym == module.moduleClass, "Must be class or module")
       slowButSafeEnteringPhaseNotLaterThan(picklerPhase) {
         val loadingMirror = mirrorThatLoaded(sym)
         val javaClass = loadingMirror.javaClass(clazz.javaClassName)
@@ -73,7 +73,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
    */
   class LazyPackageType extends LazyType with FlagAgnosticCompleter {
     override def complete(sym: Symbol): Unit = {
-      assert(sym.isPackageClass)
+      assert(sym.isPackageClass, "Must be package")
       // Time travel to a phase before refchecks avoids an initialization issue. `openPackageModule`
       // creates a module symbol and invokes invokes `companionModule` while the `infos` field is
       // still null. This calls `isModuleNotMethod`, which forces the `info` if run after refchecks.
@@ -107,7 +107,7 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   // to slap a global lock on materialization in runtime reflection.
   class PackageScope(pkgClass: Symbol) extends Scope
       with SynchronizedScope {
-    assert(pkgClass.isType)
+    assert(pkgClass.isType, "Must be type")
 
     // materializing multiple copies of the same symbol in PackageScope is a very popular bug
     // this override does its best to guard against it
@@ -153,8 +153,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
                 val origOwner = loadingMirror.packageNameToScala(pkgClass.fullName)
                 val clazz = origOwner.info decl name.toTypeName
                 val module = origOwner.info decl name.toTermName
-                assert(clazz != NoSymbol)
-                assert(module != NoSymbol)
+                assert(clazz != NoSymbol, "Missing class symbol")
+                assert(module != NoSymbol, "Missing module symbol")
                 // currentMirror.mirrorDefining(cls) might side effect by entering symbols into pkgClass.info.decls
                 // therefore, even though in the beginning of this method, super.lookupEntry(name) returned null
                 // entering clazz/module now will result in a double-enter assertion in PackageScope.enter
@@ -184,9 +184,8 @@ private[reflect] trait SymbolLoaders { self: SymbolTable =>
   }
 
   /** Assert that packages have package scopes */
-  override def validateClassInfo(tp: ClassInfoType): Unit = {
-    assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope])
-  }
+  override def validateClassInfo(tp: ClassInfoType): Unit =
+    assert(!tp.typeSymbol.isPackageClass || tp.decls.isInstanceOf[PackageScope], "Package must have package scope")
 
   override def newPackageScope(pkgClass: Symbol) = new PackageScope(pkgClass)
 

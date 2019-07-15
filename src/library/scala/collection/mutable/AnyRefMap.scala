@@ -14,10 +14,7 @@ package scala
 package collection
 package mutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.collection.generic.DefaultSerializationProxy
-
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
  *

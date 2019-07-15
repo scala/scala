@@ -15,7 +15,6 @@ package collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.mutable.Builder
 

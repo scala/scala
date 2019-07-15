@@ -353,7 +353,7 @@ abstract class TreeGen {
     Apply(Select(tree1, Boolean_or), List(tree2))
 
   def mkRuntimeUniverseRef: Tree = {
-    assert(ReflectRuntimeUniverse != NoSymbol)
+    assert(ReflectRuntimeUniverse != NoSymbol, "Missing ReflectRuntimeUniverse")
     mkAttributedRef(ReflectRuntimeUniverse) setType singleType(ReflectRuntimeUniverse.owner.thisPrefix, ReflectRuntimeUniverse)
   }
 
@@ -717,7 +717,7 @@ abstract class TreeGen {
         mkFor(ValFrom(pat, makeCombination(rhs.pos union test.pos, nme.withFilter, rhs, pat.duplicate, test)).setPos(t.pos) :: rest, sugarBody)
       case (t @ ValFrom(pat, rhs)) :: rest =>
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
-        assert(!valeqs.isEmpty)
+        assert(!valeqs.isEmpty, "Missing ValEq")
         val rest1 = rest.drop(valeqs.length)
         val pats = valeqs map { case ValEq(pat, _) => pat }
         val rhss = valeqs map { case ValEq(_, rhs) => rhs }

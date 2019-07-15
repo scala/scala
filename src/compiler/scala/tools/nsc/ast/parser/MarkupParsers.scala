@@ -395,7 +395,7 @@ trait MarkupParsers {
           handle.makeXMLseq(r2p(start, start, curOffset), ts)
         }
         else {
-          assert(ts.length == 1)
+          assert(ts.length == 1, "Require one tree")
           ts(0)
         }
       },

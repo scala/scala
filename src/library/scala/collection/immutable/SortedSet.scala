@@ -14,7 +14,6 @@ package scala
 package collection
 package immutable
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 
 /** Base trait for sorted sets */

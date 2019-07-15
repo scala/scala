@@ -14,19 +14,17 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import java.lang.ref.SoftReference
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{switch, tailrec}
-import scala.collection.JavaConverters._
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.tree.analysis.Value
 import scala.tools.asm.{Handle, Opcodes, Type}
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._

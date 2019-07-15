@@ -56,11 +56,10 @@ import scala.annotation.tailrec
  */
 case class StringContext(parts: String*) {
 
-  import StringContext._
+  import StringContext.{checkLengths => scCheckLengths, glob, standardInterpolator => scStandardInterpolator}
 
   @deprecated("use same-named method on StringContext companion object", "2.13.0")
-  def checkLengths(args: scala.collection.Seq[Any]): Unit =
-    StringContext.checkLengths(args, parts)
+  def checkLengths(args: scala.collection.Seq[Any]): Unit = scCheckLengths(args, parts)
 
   /** The simple string interpolator.
    *
@@ -127,7 +126,7 @@ case class StringContext(parts: String*) {
      *  Here, we use the `TimeSplitter` regex within the `s` matcher, further splitting the
      *  matched string "10.50" into its constituent parts
      */
-    def unapplySeq(s: String) = StringContext.glob(parts, s)
+    def unapplySeq(s: String) = glob(parts, s)
   }
   /** The raw string interpolator.
    *
@@ -154,8 +153,7 @@ case class StringContext(parts: String*) {
   def raw(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateRaw
 
   @deprecated("Use the static method StringContext.standardInterpolator instead of the instance method", "2.13.0")
-  def standardInterpolator(process: String => String, args: Seq[Any]): String =
-    StringContext.standardInterpolator(process, args, parts)
+  def standardInterpolator(process: String => String, args: Seq[Any]): String = scStandardInterpolator(process, args, parts)
 
   /** The formatted string interpolator.
    *

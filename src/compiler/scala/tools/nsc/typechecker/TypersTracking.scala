@@ -84,6 +84,7 @@ trait TypersTracking {
     def indented(s: String): String =
       if (s == "") "" else currentIndent + s.replaceAll("\n", "\n" + currentIndent)
 
+    @annotation.unused
     @inline private final def runWith[T](t: Tree)(body: => T): T = {
       push(t)
       try body finally pop(t)

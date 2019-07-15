@@ -20,9 +20,9 @@ import java.io.{File => JFile}
 import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import java.util.jar.Manifest
 
-import scala.collection.mutable
-import scala.collection.JavaConverters._
 import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.JDK9Reflectors
 
 /** An abstraction for zip files and streams.  Everything is written the way
@@ -230,10 +230,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
 
   @deprecated("Use allDirsByDottedName after converting keys from relative paths to dotted names", "2.13")
   lazy val allDirs: mutable.HashMap[String, DirEntry] = {
-    def dottedToPath(dotted: String): String = {
-      val sb = new java.lang.StringBuilder(dotted.length)
-      dotted.replace('.', '/') + "/"
-    }
+    def dottedToPath(dotted: String): String = dotted.replace('.', '/') + "/"
     allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
   }
 

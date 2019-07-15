@@ -232,7 +232,7 @@ trait Parsers { self: Quasiquotes =>
   object ForEnumeratorParser extends Parser {
     def entryPoint = { parser =>
       val enums = parser.enumerator(isFirst = false, allowNestedIf = false)
-      assert(enums.length == 1)
+      assert(enums.length == 1, "Require one enumerator")
       implodePatDefs(enums.head)
     }
   }

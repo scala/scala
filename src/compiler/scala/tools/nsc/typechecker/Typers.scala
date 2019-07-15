@@ -23,7 +23,7 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
-import mutable.{ArrayBuffer, ListBuffer}
+import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
 import PartialFunction.cond

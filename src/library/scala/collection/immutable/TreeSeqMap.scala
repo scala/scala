@@ -15,7 +15,6 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked.uncheckedVariance
 
 /** This class implements an immutable map that preserves order using
   * a hash map for the key to value mapping to provide efficient lookup,
@@ -207,7 +206,7 @@ final class TreeSeqMap[K, +V] private (
         }
         while (i < u) {
           val k = iter.next()
-          bdr.addOne(k, mapping(k)._2)
+          bdr.addOne((k, mapping(k)._2))
           i += 1
         }
         bdr.result()
@@ -222,7 +221,7 @@ final class TreeSeqMap[K, +V] private (
       val k = iter.next()
       val (_, v) = mapping(k)
       val (k2, v2) = f((k, v))
-      bdr.addOne(k2, v2)
+      bdr.addOne((k2, v2))
     }
     bdr.result()
   }
@@ -236,7 +235,7 @@ final class TreeSeqMap[K, +V] private (
       val jter = f((k, v)).iterator
       while (jter.hasNext) {
         val (k2, v2) = jter.next()
-        bdr.addOne(k2, v2)
+        bdr.addOne((k2, v2))
       }
     }
     bdr.result()
@@ -248,7 +247,7 @@ final class TreeSeqMap[K, +V] private (
     while (iter.hasNext) {
       val k = iter.next()
       val (_, v) = mapping(k)
-      pf.runWith({ case (k2, v2) => bdr.addOne(k2, v2) })((k, v))
+      pf.runWith({ case (k2, v2) => bdr.addOne((k2, v2)) })((k, v))
     }
     bdr.result()
   }
@@ -346,6 +345,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
   }
 
   private type Mapping[K, +V] = Map[K, (Int, V)]
+  @annotation.unused
   private val Mapping = Map
 
   /* The ordering implementation below is an adapted version of immutable.IntMap. */

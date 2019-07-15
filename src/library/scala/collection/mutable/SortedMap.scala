@@ -13,7 +13,6 @@
 package scala
 package collection.mutable
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{SortedMapFactory, SortedMapFactoryDefaults}
 import scala.language.higherKinds
 

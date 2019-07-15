@@ -14,7 +14,7 @@ package scala.tools.nsc
 package ast
 
 import scala.reflect.ClassTag
-import java.lang.System.{lineSeparator => EOL}
+import java.lang.System.lineSeparator
 
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
@@ -338,8 +338,10 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       new MarkLocals().traverse(x)
 
       if (debug) {
-        assert(locals.size == orderedLocals.size)
-        val msg = orderedLocals.toList filter {_ != NoSymbol} map {"  " + _} mkString EOL
+        assert(locals.size == orderedLocals.size, "Incongruent ordered locals")
+        val msg = orderedLocals.toList.filter{_ != NoSymbol}
+          .map("  " + _)
+          .mkString(lineSeparator)
         trace("locals (%d total): %n".format(orderedLocals.size))(msg)
       }
 

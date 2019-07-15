@@ -15,8 +15,8 @@ package backend.jvm
 package opt
 
 import scala.annotation.tailrec
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
@@ -28,7 +28,6 @@ import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.analysis._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.LambdaMetaFactoryCall
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import scala.tools.nsc.backend.jvm.opt.InlinerHeuristics.InlineReason
 
 abstract class Inliner {
   val postProcessor: PostProcessor
@@ -290,7 +289,7 @@ abstract class Inliner {
       var logs = List.empty[(MethodNode, InlineLog)]
       for (m <- inlinerState.keySet if !changedByClosureOptimizer(m)) {
         val log = inlinerState.remove(m).get.inlineLog
-        if (log.nonEmpty) logs ::= (m, log)
+        if (log.nonEmpty) logs ::= ((m, log))
       }
       if (logs.nonEmpty) {
         // Deterministic inline log

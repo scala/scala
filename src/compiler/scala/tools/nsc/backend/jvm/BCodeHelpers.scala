@@ -896,7 +896,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      *  must-single-thread
      */
     def genMirrorClass(moduleClass: Symbol, cunit: CompilationUnit): asm.tree.ClassNode = {
-      assert(moduleClass.isModuleClass)
+      assert(moduleClass.isModuleClass, "Require module class")
       assert(moduleClass.companionClass == NoSymbol, moduleClass)
 
       val bType = mirrorClassClassBType(moduleClass)

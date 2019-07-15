@@ -15,8 +15,6 @@ package scala.jdk.javaapi
 import java.util.stream.{DoubleStream, IntStream, LongStream, Stream, StreamSupport}
 import java.{lang => jl}
 
-import scala.collection.Stepper
-
 /** This object contains methods to create Java Streams that operate on Scala collections
   * (sequentially or in parallel). For more information on Java streams, consult the documentation
   * ([[https://docs.oracle.com/javase/8/docs/api/java/util/stream/package-summary.html]]).

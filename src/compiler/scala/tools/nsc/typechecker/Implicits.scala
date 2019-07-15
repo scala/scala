@@ -184,7 +184,7 @@ trait Implicits {
   private val implicitSearchId = { var id = 1 ; () => try id finally id += 1 }
 
   private val shadowerUseOldImplementation = java.lang.Boolean.getBoolean("scalac.implicit.shadow.old")
-  def resetImplicits() {
+  def resetImplicits(): Unit = {
     implicitsCache.clear()
     infoMapCache.clear()
     improvesCache.clear()
@@ -759,6 +759,7 @@ trait Implicits {
       loop(tp0, pt0)
     }
 
+    @annotation.unused
     private def isImpossibleSubType(tp1: Type, tp2: Type): Boolean = !isPlausiblySubType(tp1, tp2)
     private def isPlausiblySubType(tp1: Type, tp2: Type): Boolean =
       tp1.dealiasWiden match {

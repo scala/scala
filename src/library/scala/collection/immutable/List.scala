@@ -14,8 +14,6 @@ package scala
 package collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import mutable.{Builder, ListBuffer}

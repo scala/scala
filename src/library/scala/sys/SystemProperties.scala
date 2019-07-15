@@ -13,11 +13,10 @@
 package scala
 package sys
 
-import scala.collection.{ mutable, Iterator }
-import scala.collection.JavaConverters._
+import scala.collection.{mutable, Iterator}
+import scala.jdk.CollectionConverters._
 import java.security.AccessControlException
 import scala.language.implicitConversions
-
 
 /** A bidirectional map wrapping the java System properties.
  *  Changes to System properties will be immediately visible in the map,

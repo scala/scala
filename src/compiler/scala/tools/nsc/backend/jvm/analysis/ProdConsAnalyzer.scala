@@ -17,8 +17,8 @@ package analysis
 import java.util
 
 import scala.annotation.switch
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.asm.tree.analysis._

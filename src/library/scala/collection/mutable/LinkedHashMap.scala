@@ -14,9 +14,7 @@ package scala
 package collection
 package mutable
 
-import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-
 
 /** $factoryInfo
  *  @define Coll `LinkedHashMap`

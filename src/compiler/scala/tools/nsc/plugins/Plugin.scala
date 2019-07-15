@@ -13,13 +13,9 @@
 package scala.tools.nsc
 package plugins
 
-import scala.tools.nsc.io.Jar
 import scala.reflect.internal.util.ScalaClassLoader
-import scala.reflect.io.{Directory, File, Path}
-import java.io.InputStream
-import java.net.URL
+import scala.reflect.io.{File, Path}
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.tools.nsc.classpath.FileBasedCache
 import scala.util.{Failure, Success, Try}
@@ -124,8 +120,6 @@ object Plugin {
     ignoring: List[String],
     findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
   {
-    type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
-
     val fromLoaders = paths.map {path =>
       val loader = findPluginClassloader(path)
       loader.getResource(PluginXML) match {

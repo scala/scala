@@ -235,7 +235,7 @@ private[internal] trait TypeMaps {
 
     def foldOver(scope: Scope): Unit = {
       val elems = scope.toList
-      val elems1 = foldOver(elems)
+      foldOver(elems)
     }
 
     def foldOverAnnotations(annots: List[AnnotationInfo]): Unit =

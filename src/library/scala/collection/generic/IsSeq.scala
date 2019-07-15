@@ -14,7 +14,6 @@ package scala.collection
 package generic
 
 import scala.reflect.ClassTag
-import scala.language.higherKinds
 
 /** Type class witnessing that a collection representation type `Repr` has
   * elements of type `A` and has a conversion to `SeqOps[A, Iterable, C]`, for

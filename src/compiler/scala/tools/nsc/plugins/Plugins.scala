@@ -17,8 +17,7 @@ import java.net.URL
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
-import scala.tools.nsc
-import scala.tools.nsc.io.Jar
+import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.plugins.Plugin.pluginClassLoadersCache
 import scala.tools.nsc.typechecker.Macros
 import scala.tools.nsc.util.ClassPath
@@ -174,8 +173,8 @@ trait Plugins { global: Global =>
   def findMacroClassLoader(): ClassLoader = {
     val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
       for {
-        file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
-        af <- Option(nsc.io.AbstractFile getDirectory file)
+        file <- ClassPath.expandPath(settings.YmacroClasspath.value, true)
+        af <- Option(AbstractFile getDirectory file)
       } yield af.file.toURI.toURL
     } else global.classPath.asURLs
     def newLoader: () => ScalaClassLoader.URLClassLoader = () => {

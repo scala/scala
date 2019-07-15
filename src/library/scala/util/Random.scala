@@ -16,8 +16,8 @@ package util
 import scala.annotation.{migration, tailrec}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.BuildFrom
-import scala.collection.immutable.{ List, LazyList }
-import scala.language.{implicitConversions, higherKinds}
+import scala.collection.immutable.{List, LazyList}
+import scala.language.implicitConversions
 
 class Random(val self: java.util.Random) extends AnyRef with Serializable {
   /** Creates a new random number generator using a single long seed. */

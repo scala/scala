@@ -20,7 +20,6 @@ import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
 
-
 /** Base type of immutable Maps */
 trait Map[K, +V]
   extends Iterable[(K, V)]
@@ -478,7 +477,6 @@ object Map extends MapFactory[Map] {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends scala.collection.AbstractMap[K, V] with Map[K, V]
 
 private[immutable] final class MapBuilderImpl[K, V] extends ReusableBuilder[(K, V), Map[K, V]] {

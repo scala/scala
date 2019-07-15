@@ -17,7 +17,6 @@ package classfile
 import java.io.{ByteArrayInputStream, DataInputStream}
 import java.lang.Double.longBitsToDouble
 import java.lang.Float.intBitsToFloat
-import java.util
 
 import scala.tools.nsc.io.AbstractFile
 

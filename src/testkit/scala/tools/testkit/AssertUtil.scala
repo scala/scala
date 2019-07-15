@@ -15,7 +15,7 @@ package scala.tools.testkit
 import org.junit.Assert, Assert._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
 import scala.util.{Failure, Success, Try}
@@ -93,7 +93,7 @@ object AssertUtil {
   /** JUnit-style assertion for `IterableLike.sameElements`.
    */
   def assertSameElements[A, B >: A](expected: Iterable[A], actual: Iterable[B], message: String = ""): Unit =
-    if (!(expected sameElements actual))
+    if (!expected.iterator.sameElements(actual))
       fail(
         f"${ if (message.nonEmpty) s"$message " else "" }expected:<${ stringOf(expected) }> but was:<${ stringOf(actual) }>"
       )
@@ -101,7 +101,7 @@ object AssertUtil {
   /** Convenient for testing iterators.
    */
   def assertSameElements[A, B >: A](expected: Iterable[A], actual: IterableOnce[B]): Unit =
-    assertSameElements(expected, actual.toList, "")
+    assertSameElements(expected, actual.iterator.to(List), "")
 
   /** Value is not strongly reachable from roots after body is evaluated.
    */

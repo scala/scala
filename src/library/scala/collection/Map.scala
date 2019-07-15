@@ -373,6 +373,4 @@ object Map extends MapFactory.Delegate[Map](immutable.Map) {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractMap[K, +V] extends AbstractIterable[(K, V)] with Map[K, V]
-

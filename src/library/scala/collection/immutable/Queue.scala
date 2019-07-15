@@ -13,9 +13,6 @@
 package scala.collection
 package immutable
 
-import java.io.{ObjectInputStream, ObjectOutputStream}
-
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{Builder, ListBuffer}
 

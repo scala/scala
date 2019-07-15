@@ -20,7 +20,7 @@ import java.util
 import scala.reflect.io.{AbstractFile, PlainFile, PlainNioFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import FileUtils._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.JDK9Reflectors
 import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.PackageNameUtils.{packageContains, separatePkgAndClassNames}

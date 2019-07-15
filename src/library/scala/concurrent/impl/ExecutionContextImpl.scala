@@ -15,8 +15,6 @@ package scala.concurrent.impl
 import java.util.concurrent.{ Semaphore, ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.Collection
 import scala.concurrent.{ Batchable, BatchingExecutor, BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
-import scala.annotation.tailrec
-
 
 private[scala] class ExecutionContextImpl private[impl] (final val executor: Executor, final val reporter: Throwable => Unit) extends ExecutionContextExecutor {
   require(executor ne null, "Executor must not be null")

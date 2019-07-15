@@ -15,7 +15,6 @@ package collection
 package immutable
 
 import scala.annotation.tailrec
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence

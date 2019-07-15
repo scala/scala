@@ -86,8 +86,8 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         if (sym.isSetter) setterBody(sym, sym.getterIn(clazz)) else getterBody(sym)
 
       protected def getterBody(getter: Symbol): Tree = {
-        assert(getter.isGetter)
-        assert(getter.hasFlag(PARAMACCESSOR))
+        assert(getter.isGetter, s"$getter must be a getter")
+        assert(getter.hasFlag(PARAMACCESSOR), s"$getter must be an accessor")
 
         fieldAccess(getter)
       }

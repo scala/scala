@@ -13,7 +13,7 @@
 package scala.tools.nsc.backend.jvm.opt
 
 import scala.collection.mutable.Map
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import java.util.{LinkedHashMap, Collections, Map => JMap}
 
 object LruMap{
