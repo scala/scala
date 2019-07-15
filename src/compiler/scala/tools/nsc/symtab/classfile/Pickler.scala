@@ -16,7 +16,6 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
-import java.nio.file.Paths
 
 import scala.io.Codec
 import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
@@ -24,7 +23,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.collection.mutable
 import PickleFormat._
 import Flags._
-import scala.reflect.io.{AbstractFile, NoAbstractFile, PlainFile, PlainNioFile}
+import scala.reflect.io.PlainFile
 
 /**
  * Serialize a top-level module and/or class.

@@ -16,7 +16,6 @@ package interpreter
 
 import PartialFunction.cond
 import scala.language.implicitConversions
-import scala.beans.BeanProperty
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.{universe => ru}

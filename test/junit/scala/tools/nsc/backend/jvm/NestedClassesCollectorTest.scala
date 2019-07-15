@@ -5,7 +5,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.NestedClassesCollector
 

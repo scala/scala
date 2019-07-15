@@ -15,8 +15,7 @@ package scala.tools.nsc.interpreter.jline
 import java.util.{Collection => JCollection, List => JList}
 
 import _root_.jline.{console => jconsole}
-import jline.console.ConsoleReader
-import jline.console.completer.{CandidateListCompletionHandler, Completer, CompletionHandler}
+import jline.console.completer.{CandidateListCompletionHandler, Completer}
 import jconsole.history.{History => JHistory}
 
 import scala.tools.nsc.interpreter

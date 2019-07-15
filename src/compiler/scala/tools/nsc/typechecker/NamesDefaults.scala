@@ -134,7 +134,6 @@ trait NamesDefaults { self: Analyzer =>
     import typer._
     import typer.infer._
     val context = typer.context
-    import context.unit
 
     /*
      * Transform a function into a block, and passing context.namedApplyBlockInfo to

@@ -13,7 +13,6 @@
 package scala.tools.nsc
 package interpreter
 
-import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
 import typechecker.Analyzer

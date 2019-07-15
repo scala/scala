@@ -15,7 +15,6 @@ package doc
 
 import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
 import typechecker.Analyzer
-import scala.reflect.internal.Chars._
 import scala.reflect.internal.util.{ BatchSourceFile, Position }
 import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo }
 

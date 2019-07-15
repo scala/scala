@@ -1,7 +1,7 @@
 package scala.collection
 
 import scala.{collection => sc}
-import scala.collection.{mutable => scm, immutable => sci, parallel => scp, concurrent => scc}
+import scala.collection.{mutable => scm, immutable => sci, parallel => scp}
 import scala.collection.parallel.{mutable => scpm, immutable => scpi}
 
 import org.junit.runner.RunWith

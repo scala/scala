@@ -3,13 +3,11 @@ package scala.tools.nsc.backend.jvm
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 import scala.reflect.internal.Flags
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
 import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
 
 class DefaultMethodTest extends BytecodeTesting {
   import compiler._

@@ -15,7 +15,6 @@ package scala.reflect.internal.util
 import java.nio.ByteBuffer
 import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING, WRITE}
 import java.nio.file.attribute.PosixFilePermission.{OWNER_EXECUTE, OWNER_READ, OWNER_WRITE}
-import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
 import java.nio.file.attribute._
 import java.nio.file.{Files, Path}
 import java.util.EnumSet

@@ -12,11 +12,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedOutputStream, File}
+import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
-import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Path, Paths}
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Collections, Locale}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
@@ -28,9 +26,8 @@ import scala.collection.JavaConverters._
 import scala.collection.{immutable, mutable, parallel}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
-import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
-import scala.reflect.io.{PlainNioFile, RootPath}
+import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath

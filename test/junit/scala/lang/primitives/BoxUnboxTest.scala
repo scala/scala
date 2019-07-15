@@ -13,7 +13,6 @@ object BoxUnboxTest {
 
 @RunWith(classOf[JUnit4])
 class BoxUnboxTest extends RunTesting {
-  import runner._
 
   @Test
   def boxUnboxInt(): Unit = {

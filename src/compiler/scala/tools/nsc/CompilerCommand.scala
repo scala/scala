@@ -14,7 +14,6 @@ package scala.tools.nsc
 
 import java.nio.file.Files
 
-import io.File
 
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings) {

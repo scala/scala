@@ -2,14 +2,8 @@ package scala.collection.parallel
 
 
 
-import org.scalacheck._
-import org.scalacheck.Gen
-import org.scalacheck.Gen._
 import org.scalacheck.Prop._
-import org.scalacheck.Properties
 
-import scala.collection._
-import scala.collection.parallel._
 
 
 

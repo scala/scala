@@ -6,16 +6,11 @@ package parallel.immutable
 import org.scalacheck._
 import org.scalacheck.Gen
 import org.scalacheck.Gen._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
-import org.scalacheck.Arbitrary._
 
 import scala.collection._
 import scala.collection.parallel.ops._
 
 
-import immutable.Vector
-import immutable.VectorBuilder
 
 import scala.collection.parallel.TaskSupport
 

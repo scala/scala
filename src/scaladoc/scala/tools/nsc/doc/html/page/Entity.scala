@@ -30,7 +30,6 @@ import model.diagram._
 import diagram._
 
 trait EntityPage extends HtmlPage {
-  import ScalaDoc.SummaryReporter
 
   def universe: doc.Universe
   def generator: DiagramGenerator

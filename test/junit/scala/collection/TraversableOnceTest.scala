@@ -1,10 +1,8 @@
 package scala.collection
 
-import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import scala.util.Random
 
 @RunWith(classOf[JUnit4])
 /* Test for scala/bug#7614 */

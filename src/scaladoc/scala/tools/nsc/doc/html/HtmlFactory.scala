@@ -25,7 +25,7 @@ import scala.reflect.internal.Reporter
   * @author David Bernard
   * @author Gilles Dubochet */
 class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
-  import page.{IndexScript, EntityPage}
+  import page.IndexScript
 
   /** The character encoding to be used for generated Scaladoc sites.
     * This value is currently always UTF-8. */

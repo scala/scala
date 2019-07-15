@@ -20,7 +20,6 @@ class ScalaVersionTest {
   // scala/bug#9167
   @Test def `version parses with rigor`() {
     import settings.{ SpecificScalaVersion => V }
-    import ScalaVersion._
 
     // no-brainers
     assertEquals(V(2,11,7,Final), ScalaVersion("2.11.7"))

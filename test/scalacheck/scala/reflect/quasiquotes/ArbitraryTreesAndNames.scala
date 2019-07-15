@@ -1,7 +1,7 @@
 package scala.reflect.quasiquotes
 
-import org.scalacheck._, Prop._, Gen._, Arbitrary._
-import scala.reflect.runtime.universe._, internal._, Flag._
+import org.scalacheck._, Gen._, Arbitrary._
+import scala.reflect.runtime.universe._, Flag._
 
 trait ArbitraryTreesAndNames {
   def smallList[T](size: Int, g: Gen[T]) = {

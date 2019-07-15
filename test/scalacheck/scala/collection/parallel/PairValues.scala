@@ -6,10 +6,6 @@ package scala.collection.parallel.ops
 
 import org.scalacheck._
 import org.scalacheck.Gen
-import org.scalacheck.Gen._
-import org.scalacheck.Prop._
-import org.scalacheck.Properties
-import org.scalacheck.Arbitrary._
 
 
 

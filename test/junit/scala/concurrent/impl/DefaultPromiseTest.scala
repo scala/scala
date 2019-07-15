@@ -3,7 +3,7 @@ package scala.concurrent.impl
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import org.junit.Assert._
-import org.junit.{ After, Before, Test }
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import scala.annotation.tailrec

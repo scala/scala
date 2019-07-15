@@ -18,7 +18,7 @@ import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc.reporters._
 import scala.tools.nsc.CompilerCommand
 import scala.tools.nsc.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.internal.util.{AbstractFileClassLoader, FreshNameCreator, NoSourceFile}
+import scala.reflect.internal.util.{AbstractFileClassLoader, NoSourceFile}
 import scala.reflect.internal.Flags._
 import java.lang.{Class => jClass}
 import scala.compat.Platform.EOL

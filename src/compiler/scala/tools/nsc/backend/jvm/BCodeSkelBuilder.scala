@@ -19,7 +19,6 @@ import scala.tools.nsc.symtab._
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
-import scala.tools.nsc.backend.jvm.BCodeHelpers.InvokeStyle
 
 /*
  *

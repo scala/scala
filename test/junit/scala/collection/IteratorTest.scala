@@ -358,7 +358,6 @@ class IteratorTest {
     assertTrue(hi.hasNext)
   }
   @Test def `flatMap is memory efficient in previous element`(): Unit = {
-    import java.lang.ref._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class.
     var seq1 = Array("first", "second") // captured, need to set to null

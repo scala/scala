@@ -15,7 +15,6 @@ package collection
 package mutable
 
 import scala.reflect.ClassTag
-import scala.runtime.BoxedUnit
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
 import scala.util.hashing.MurmurHash3

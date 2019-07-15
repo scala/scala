@@ -9,7 +9,6 @@ import javax.tools.ToolProvider
 import org.junit.Test
 
 import scala.collection.JavaConverters.seqAsJavaListConverter
-import scala.language.implicitConversions
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.reporters.StoreReporter
 import FileUtils._

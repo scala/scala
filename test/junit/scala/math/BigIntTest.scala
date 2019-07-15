@@ -1,6 +1,5 @@
 package scala.math
 
-import java.math.{BigInteger => BI, MathContext => MC}
 
 import org.junit.Test
 import org.junit.runner.RunWith

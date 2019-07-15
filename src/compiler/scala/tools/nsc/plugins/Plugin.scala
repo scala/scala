@@ -13,10 +13,8 @@
 package scala.tools.nsc
 package plugins
 
-import scala.tools.nsc.io.Jar
 import scala.reflect.internal.util.ScalaClassLoader
-import scala.reflect.io.{Directory, File, Path}
-import java.io.InputStream
+import scala.reflect.io.{File, Path}
 
 import scala.collection.mutable
 import scala.tools.nsc.classpath.FileBasedCache

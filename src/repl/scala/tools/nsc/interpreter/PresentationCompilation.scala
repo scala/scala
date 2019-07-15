@@ -13,10 +13,9 @@
 package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.util.{Position, RangePosition}
-import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.JavaPlatform
 import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.{CloseableRegistry, Settings, interactive}
+import scala.tools.nsc.{Settings, interactive}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
 

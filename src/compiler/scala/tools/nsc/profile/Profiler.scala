@@ -14,7 +14,7 @@ package scala.tools.nsc.profile
 
 import java.io.{FileWriter, PrintWriter}
 import java.lang.management.ManagementFactory
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
 import java.util.ServiceLoader
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
@@ -22,10 +22,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.management.openmbean.CompositeData
 import javax.management.{Notification, NotificationEmitter, NotificationListener}
 
-import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.ChromeTrace
-import scala.reflect.io.{AbstractFile, File}
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.{Global, Phase, Settings}
 
 object Profiler {

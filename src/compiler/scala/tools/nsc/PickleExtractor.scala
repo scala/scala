@@ -12,7 +12,6 @@
 
 package scala.tools.nsc
 
-import java.io.Closeable
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor, _}
 
