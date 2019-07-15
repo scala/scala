@@ -15,9 +15,10 @@ package collection
 
 import generic._
 import mutable.Builder
-import scala.annotation.migration
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
+import scala.annotation.{migration, tailrec}
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.ParIterable
+import scala.collection.immutable.{::, List, Nil}
 import scala.language.higherKinds
 
 /** A template trait for traversable collections of type `Traversable[A]`.
@@ -246,11 +247,95 @@ trait TraversableLike[+A, +Repr] extends Any
   }
 
   private[scala] def filterImpl(p: A => Boolean, isFlipped: Boolean): Repr = {
-    val b = newBuilder
-    for (x <- this)
-      if (p(x) != isFlipped) b += x
+    this match {
+      case as: List[A] =>
+        filterImplList(as, p, isFlipped).asInstanceOf[Repr]
+      case _ =>
+        val b = newBuilder
+        for (x <- this)
+          if (p(x) != isFlipped) b += x
 
-    b.result
+        b.result
+    }
+  }
+
+  private[this] def filterImplList[A](self: List[A], p: A => Boolean, isFlipped: Boolean): List[A] = {
+
+    // everything seen so far so far is not included
+    @tailrec def noneIn(l: List[A]): List[A] = {
+      if (l.isEmpty)
+        Nil
+      else {
+        val h = l.head
+        val t = l.tail
+        if (p(h) != isFlipped)
+          allIn(l, t)
+        else
+          noneIn(t)
+      }
+    }
+
+    // everything from 'start' is included, if everything from this point is in we can return the origin
+    // start otherwise if we discover an element that is out we must create a new partial list.
+    @tailrec def allIn(start: List[A], remaining: List[A]): List[A] = {
+      if (remaining.isEmpty)
+        start
+      else {
+        val x = remaining.head
+        if (p(x) != isFlipped)
+          allIn(start, remaining.tail)
+        else
+          partialFill(start, remaining)
+      }
+    }
+
+    // we have seen elements that should be included then one that should be excluded, start building
+    def partialFill(origStart: List[A], firstMiss: List[A]): List[A] = {
+      val newHead = new ::(origStart.head, Nil)
+      var toProcess = origStart.tail
+      var currentLast = newHead
+
+      // we know that all elements are :: until at least firstMiss.tail
+      while (!(toProcess eq firstMiss)) {
+        val newElem = new ::(toProcess.head, Nil)
+        currentLast.tl = newElem
+        currentLast = newElem
+        toProcess = toProcess.tail
+      }
+
+      // at this point newHead points to a list which is a duplicate of all the 'in' elements up to the first miss.
+      // currentLast is the last element in that list.
+
+      // now we are going to try and share as much of the tail as we can, only moving elements across when we have to.
+      var next = firstMiss.tail
+      var nextToCopy = next // the next element we would need to copy to our list if we cant share.
+      while (!next.isEmpty) {
+        // generally recommended is next.isNonEmpty but this incurs an extra method call.
+        val head: A = next.head
+        if (p(head) != isFlipped) {
+          next = next.tail
+        } else {
+          // its not a match - do we have outstanding elements?
+          while (!(nextToCopy eq next)) {
+            val newElem = new ::(nextToCopy.head, Nil)
+            currentLast.tl = newElem
+            currentLast = newElem
+            nextToCopy = nextToCopy.tail
+          }
+          nextToCopy = next.tail
+          next = next.tail
+        }
+      }
+
+      // we have remaining elements - they are unchanged attach them to the end
+      if (!nextToCopy.isEmpty)
+        currentLast.tl = nextToCopy
+
+      newHead
+    }
+
+    val result = noneIn(self)
+    result
   }
 
   /** Selects all elements of this $coll which satisfy a predicate.
