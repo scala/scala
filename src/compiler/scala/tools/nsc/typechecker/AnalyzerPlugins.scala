@@ -326,23 +326,26 @@ trait AnalyzerPlugins { self: Analyzer =>
   }
 
   /** @see AnalyzerPlugin.pluginsPt */
-  def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type =
-    // performance opt
-    if (analyzerPlugins.isEmpty) pt
-    else invoke(new CumulativeOp[Type] {
-      def default = pt
-      def accumulate = (pt, p) => p.pluginsPt(pt, typer, tree, mode)
-    })
+  def pluginsPt(pt: Type, typer: Typer, tree: Tree, mode: Mode): Type = {
+    var result = pt
+    var plugins = analyzerPlugins
+    while (!plugins.isEmpty) { // OPT use loop rather than the invoke combinator to reduce allocations
+      result = plugins.head.pluginsPt(result, typer, tree, mode)
+      plugins = plugins.tail
+    }
+    result
+  }
 
   /** @see AnalyzerPlugin.pluginsTyped */
-  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type =
-    // performance opt
-    if (analyzerPlugins.isEmpty) addAnnotations(tree, tpe)
-    else invoke(new CumulativeOp[Type] {
-      // support deprecated methods in annotation checkers
-      def default = addAnnotations(tree, tpe)
-      def accumulate = (tpe, p) => p.pluginsTyped(tpe, typer, tree, mode, pt)
-    })
+  def pluginsTyped(tpe: Type, typer: Typer, tree: Tree, mode: Mode, pt: Type): Type = {
+    var result = addAnnotations(tree, tpe)
+    var plugins = analyzerPlugins
+    while (!plugins.isEmpty) { // OPT use loop rather than the invoke combinator to reduce allocations
+      result = plugins.head.pluginsTyped(result, typer, tree, mode, pt)
+      plugins = plugins.tail
+    }
+    result
+  }
 
   /** @see AnalyzerPlugin.pluginsTypeSig */
   def pluginsTypeSig(tpe: Type, typer: Typer, defTree: Tree, pt: Type): Type = invoke(new CumulativeOp[Type] {
