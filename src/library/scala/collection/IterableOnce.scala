@@ -889,7 +889,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *   @tparam  B    the result type of the `+` operator.
     *   @return       the sum of all elements of this $coll with respect to the `+` operator in `num`.
     */
-  def sum[B >: A](implicit num: Numeric[B]): B = foldLeft(num.zero)(num.plus)
+  def sum[B >: A](implicit num: Numeric[B]): B = if (isEmpty) num.zero else reduce(num.plus)
 
   /** Multiplies up the elements of this collection.
     *
@@ -898,7 +898,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *   @tparam  B   the result type of the `*` operator.
     *   @return       the product of all elements of this $coll with respect to the `*` operator in `num`.
     */
-  def product[B >: A](implicit num: Numeric[B]): B = foldLeft(num.one)(num.times)
+  def product[B >: A](implicit num: Numeric[B]): B = if (isEmpty) num.one else reduce(num.times)
 
   /** Finds the smallest element.
     *
