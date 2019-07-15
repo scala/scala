@@ -619,16 +619,6 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
 
   private[concurrent] def string(lev: Int): String = "CNode %x\n%s".format(bitmap, array.map(_.string(lev + 1)).mkString("\n"))
 
-  /* quiescently consistent - don't call concurrently to anything involving a GCAS!! */
-  private def collectElems: Seq[(K, V)] = array.flatMap({
-    case sn: SNode[K, V] => Iterable.single(sn.kvPair)
-    case in: INode[K, V] => in.mainnode match {
-      case tn: TNode[K, V] => Iterable.single(tn.kvPair)
-      case ln: LNode[K, V] => ln.entries.to(immutable.List)
-      case cn: CNode[K, V] => cn.collectElems
-    }
-  })
-
   private def collectLocalElems: Seq[String] = array.flatMap({
     case sn: SNode[K, V] => Iterable.single(sn.kvPair._2.toString)
     case in: INode[K, V] => Iterable.single(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")")

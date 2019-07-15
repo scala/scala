@@ -1,14 +1,19 @@
-# GCE VMs have better performance (will be upgrading to premium VMs soon)
-sudo: required
-
+dist: xenial
+group: stable
 language: scala
-jdk: openjdk8
 
-cache:
-  directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-    - $HOME/.rvm/
+before_install:
+  # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
+  - "[[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
+  - curl -sL https://get.sdkman.io | bash
+  - echo sdkman_auto_answer=true > $HOME/.sdkman/etc/config
+  - source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+install:
+  - sdk install java $(sdk list java | grep -o "$ADOPTOPENJDK\.[0-9\.]*hs-adpt" | head -1)
+  - unset JAVA_HOME
+  - java -Xmx32m -version
+  - javac -J-Xmx32m -version
 
 stages:
   - name: build
@@ -39,6 +44,7 @@ jobs:
 
       # pull request validation (w/ mini-bootstrap)
       - stage: build
+        name: "JDK 8 pr validation"
         if: type = pull_request
         script:
           - set -e
@@ -51,10 +57,8 @@ jobs:
       - stage: build
         language: ruby
         install:
-          - rvm install 2.2
-          - rvm use 2.2
-          - rvm info
           - ruby -v
+          - gem install bundler
           - bundler --version
           - bundle install
         script:
@@ -66,6 +70,7 @@ jobs:
 
 env:
   global:
+    - ADOPTOPENJDK=8
     - secure: "P8EqpZoin/YTnwel9TTxSSAHtXfZ4M262BKXlYUZmjoQsjyvXDAeZ7yAqgAvX5BeRFrGkBToPiE+V60stdWkPKs3+9COw2BDUB1CULBHhRY9Lxordmz0xVhgEfsoH4f6r6wOlIQ9kuaWhmP+JdB/mzOHZhLch9ziPi8O46Z8t4k=" # PRIV_KEY_SECRET, for scripts/travis-publish-spec.sh
     - secure: "T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8=" # PRIVATE_REPO_PASS
     - secure: "feE5A8mYNpkNQKVwCj3aXrwjVrJWh/4ENpRfFlr2HOD9ORk1GORD5Yq907WZd+dTkYK54Lh1gA+qHOCIDgJHbi9ZLU+kjzEjtYKF6lQy6Wb0LI8smTOnAA6IWVVYifiXw8d66MI2MKZb2jjGeIzy8Q00SZjLhEGjLyTeCIB88Ws=" # SONA_USER
@@ -77,6 +82,12 @@ before_cache:
   # Cleanup the cached directories to avoid unnecessary cache updates
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
   - find $HOME/.sbt        -name "*.lock"               -print -delete
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+    - $HOME/.rvm/
+    - $HOME/.sdkman
 
 notifications:
   webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis
