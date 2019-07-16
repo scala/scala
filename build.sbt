@@ -185,7 +185,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     // END: Copy/pasted from SBT
   },
   fork in run := true,
-  scalacOptions += "-Ywarn-unused:imports",
+  scalacOptions in Compile += "-Ywarn-unused:imports",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -815,7 +815,7 @@ lazy val test = project
     fork in IntegrationTest := true,
     // enable this in 2.13, when tests pass
     //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
-    scalacOptions -= "-Ywarn-unused:imports",
+    scalacOptions in Compile -= "-Ywarn-unused:imports",
     javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
