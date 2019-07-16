@@ -3622,9 +3622,13 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
    *  @return           the new list of info-adjusted symbols
    */
   def deriveSymbols(syms: List[Symbol], symFn: Symbol => Symbol): List[Symbol] = {
-    val syms1 = mapList(syms)(symFn)
-    syms1.foreach(_.substInfo(syms, syms1))
-    syms1
+    if (syms.isEmpty) Nil
+    else {
+      val syms1 = mapList(syms)(symFn)
+      val map = new SubstSymMap(syms, syms1)
+      syms1.foreach(_.modifyInfo(map))
+      syms1
+    }
   }
 
   /** Derives a new list of symbols from the given list by mapping the given
