@@ -130,6 +130,7 @@ abstract class UnCurry extends InfoTransform
     def isByNameRef(tree: Tree) = (
          tree.isTerm
       && (tree.symbol ne null)
+      && !(tree.symbol.hasPackageFlag || tree.isInstanceOf[This] || tree.isInstanceOf[Super])
       && isByName(tree.symbol)
       && !byNameArgs(tree)
     )
