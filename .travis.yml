@@ -14,6 +14,7 @@ install:
   - unset JAVA_HOME
   - java -Xmx32m -version
   - javac -J-Xmx32m -version
+  - sdk install sbt
 
 stages:
   - name: build
@@ -46,6 +47,19 @@ jobs:
       - stage: build
         name: "JDK 8 pr validation"
         if: type = pull_request
+        script:
+          - set -e
+          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - sbt -Dscala.build.compileWithDotty=true library/compile
+
+      # pull request validation (w/ mini-bootstrap)
+      - stage: build
+        name: "Windows JDK 8 pr validation"
+        if: type = pull_request
+        os: windows
+        language: bash
         script:
           - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
