@@ -157,7 +157,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   connectInput in run := true,
   //scalacOptions in Compile += "-deprecation",
   //scalacOptions in Compile += "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_",
-  //scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
+  //scalacOptions in Compile ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -620,7 +620,7 @@ lazy val testkit = configureAsSubproject(project)
   .settings(
     name := "scala-testkit",
     description := "Scala Compiler Testkit",
-    scalacOptions += "-feature",
+    scalacOptions in Compile += "-feature",
     libraryDependencies ++= Seq(junitDep, asmDep),
     unmanagedSourceDirectories in Compile := List(baseDirectory.value),
     fixPom(
@@ -642,7 +642,7 @@ lazy val junit = project.in(file("test") / "junit")
     javaOptions in Test += "-Xss1M",
     (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
     (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    scalacOptions += "-feature",
+    scalacOptions in Compile += "-feature",
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     unmanagedSourceDirectories in Compile := Nil,
