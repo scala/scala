@@ -292,7 +292,7 @@ trait Infer extends Checkable {
       }
       // XXX So... what's this for exactly?
       if (context.unit.exists)
-        context.unit.depends += sym.enclosingTopLevelClass
+        context.unit.registerDependency(sym.enclosingTopLevelClass)
 
       if (sym.isError)
         tree setSymbol sym setType ErrorType

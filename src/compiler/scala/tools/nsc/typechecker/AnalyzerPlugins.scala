@@ -409,12 +409,27 @@ trait AnalyzerPlugins { self: Analyzer =>
   private def invoke[T](op: NonCumulativeOp[T]): T = {
     if (macroPlugins.isEmpty) op.default
     else {
-      val results = macroPlugins.filter(_.isActive()).map(plugin => (plugin, op.custom(plugin)))
-      results.flatMap { case (p, Some(result)) => Some((p, result)); case _ => None } match {
-        case (p1, _) :: (p2, _) :: _ => typer.context.error(op.position, s"both $p1 and $p2 want to ${op.description}"); op.default
-        case (_, custom) :: Nil => custom
-        case Nil => op.default
+      var result: Option[T] = None
+      var resultPlugin: MacroPlugin = null
+      var plugins = macroPlugins
+      while (!plugins.isEmpty) {
+        val plugin = plugins.head
+        if (plugin.isActive()) {
+          op.custom(plugin) match {
+            case None =>
+            case s @ Some(custom) =>
+              if (result.isDefined) {
+                typer.context.error(op.position, s"both $resultPlugin and $plugin want to ${op.description}")
+                op.default
+              } else {
+                result = s
+                resultPlugin = plugin
+              }
+          }
+        }
+        plugins = plugins.tail
       }
+      result.getOrElse(op.default)
     }
   }
 
