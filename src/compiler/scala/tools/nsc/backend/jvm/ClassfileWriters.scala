@@ -52,8 +52,8 @@ abstract class ClassfileWriters {
      */
     def close(): Unit
 
-    protected def classRelativePath(className: InternalName, suffix: String = ".class"): Path =
-      Paths.get(className.replace('.', '/') + suffix)
+    protected def classRelativePath(className: InternalName, suffix: String = ".class"): String =
+      className.replace('.', '/') + suffix
   }
 
   object ClassfileWriter {
@@ -143,7 +143,7 @@ abstract class ClassfileWriters {
   }
 
   sealed trait FileWriter {
-    def writeFile(relativePath: Path, bytes: Array[Byte]): Unit
+    def writeFile(relativePath: String, bytes: Array[Byte]): Unit
     def close(): Unit
   }
 
@@ -180,8 +180,8 @@ abstract class ClassfileWriters {
 
     lazy val crc = new CRC32
 
-    override def writeFile(relativePath: Path, bytes: Array[Byte]): Unit = this.synchronized {
-      val entry = new ZipEntry(relativePath.toString)
+    override def writeFile(relativePath: String, bytes: Array[Byte]): Unit = this.synchronized {
+      val entry = new ZipEntry(relativePath)
       if (storeOnly) {
         // When using compression method `STORED`, the ZIP spec requires the CRC and compressed/
         // uncompressed sizes to be written before the data. The JarOutputStream could compute the
@@ -235,7 +235,7 @@ abstract class ClassfileWriters {
     private val fastOpenOptions = util.EnumSet.of(StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)
     private val fallbackOpenOptions = util.EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING)
 
-    override def writeFile(relativePath: Path, bytes: Array[Byte]): Unit = {
+    override def writeFile(relativePath: String, bytes: Array[Byte]): Unit = {
       val path = base.resolve(relativePath)
       try {
         ensureDirForPath(base, path)
@@ -272,13 +272,14 @@ abstract class ClassfileWriters {
   }
 
   private final class VirtualFileWriter(base: AbstractFile) extends FileWriter {
-    private def getFile(base: AbstractFile, path: Path): AbstractFile = {
+    private def getFile(base: AbstractFile, path: String): AbstractFile = {
       def ensureDirectory(dir: AbstractFile): AbstractFile =
         if (dir.isDirectory) dir
         else throw new FileConflictException(s"${base.path}/${path}: ${dir.path} is not a directory")
+      val components = path.split('/')
       var dir = base
-      for (i <- 0 until path.getNameCount - 1) dir = ensureDirectory(dir) subdirectoryNamed path.getName(i).toString
-      ensureDirectory(dir) fileNamed path.getFileName.toString
+      for (i <- 0 until components.length - 1) dir = ensureDirectory(dir) subdirectoryNamed components(i).toString
+      ensureDirectory(dir) fileNamed components.last.toString
     }
 
     private def writeBytes(outFile: AbstractFile, bytes: Array[Byte]): Unit = {
@@ -287,7 +288,7 @@ abstract class ClassfileWriters {
       finally out.close()
     }
 
-    override def writeFile(relativePath: Path, bytes: Array[Byte]): Unit = {
+    override def writeFile(relativePath: String, bytes: Array[Byte]): Unit = {
       val outFile = getFile(base, relativePath)
       writeBytes(outFile, bytes)
     }
