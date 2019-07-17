@@ -109,7 +109,7 @@ abstract class Pickler extends SubComponent {
       sigWriter.foreach { writer =>
         val binaryName = sym.javaBinaryNameString
         val binaryClassName = if (sym.isModule) binaryName.stripSuffix(nme.MODULE_SUFFIX_STRING) else binaryName
-        val relativePath = java.nio.file.Paths.get(binaryClassName + ".sig")
+        val relativePath = binaryClassName + ".sig"
         val data = pickle.bytes.take(pickle.writeIndex)
         writer.writeFile(relativePath, data)
       }
