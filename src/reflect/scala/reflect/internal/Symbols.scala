@@ -2883,11 +2883,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def isLocalDummy       = nme.isLocalDummyName(name)
 
-    override def isClassConstructor = name == nme.CONSTRUCTOR
-    override def isMixinConstructor = name == nme.MIXIN_CONSTRUCTOR
+    override def isClassConstructor = rawname == nme.CONSTRUCTOR
+    override def isMixinConstructor = rawname == nme.MIXIN_CONSTRUCTOR
     override def isConstructor      = isClassConstructor || isMixinConstructor
 
-    override def isPackageObject    = isModule && (name == nme.PACKAGE)
+    override def isPackageObject    = isModule && (rawname == nme.PACKAGE)
 
     // The name in comments is what it is being disambiguated from.
     // TODO - rescue CAPTURED from BYNAMEPARAM so we can see all the names.
