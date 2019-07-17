@@ -25,6 +25,7 @@ class ClassTagBenchmark {
   var refClassTag: ClassTag[_] = null
   var otherValue: Object = null
   var arraySize: Int = 100
+  private[this] var refClasses: Array[Class[_]] = _
 
   @Setup def setup(): Unit = {
     unitClassTag = classTag[Unit]
@@ -38,6 +39,7 @@ class ClassTagBenchmark {
     doubleClassTag = classTag[Double]
     refClassTag = classTag[ClassTagBenchmark]
     otherValue = new Object
+    refClasses = Array(classOf[java.lang.Boolean], classOf[java.lang.Character], classOf[java.lang.Short], classOf[java.lang.Integer], classOf[java.lang.Long], classOf[java.lang.Float], classOf[java.lang.Double])
   }
 
   @Benchmark def primitivesNegOnRefClassTag(bh: Blackhole): Any = {
@@ -85,6 +87,15 @@ class ClassTagBenchmark {
   @Benchmark def refClassTagUnapplyNeg2(bh: Blackhole): Any = refClassTag.unapply(otherValue)
 
   @Benchmark def refClassTagUnapplyNeg2Direct(bh: Blackhole): Any = unapplyDirect(refClassTag, otherValue)
+
+  @Benchmark def lookupClassTag(bh: Blackhole): Any = {
+    var clss = refClasses
+    var i = 0
+    while (i < clss.length) {
+      bh.consume(ClassTag.apply(clss(i)))
+      i += 1
+    }
+  }
 
   def unapplyDirect(ct: ClassTag[_], x: AnyRef): Option[_] = {
     if (null != x && (ct.runtimeClass.isInstance(x))) Some(x)
