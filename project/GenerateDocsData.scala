@@ -138,8 +138,9 @@ class SettingsDescriptor extends SettingsDescriptorModel {
               maybe("multiple", multiple)
               maybe("default", default)
               maybes("choices", choices,
-                (c: Choice) => element("choice", c.choice, head = true),
-                (c: Choice) => maybe("description", c.description))
+                (c: Choice) => indented(element("choice", c.choice, head = true)),
+                (c: Choice) => indented(maybe("description", c.description))
+              )
               maybe("min", min)
               maybe("max", max)
             }
