@@ -1437,7 +1437,7 @@ abstract class RefChecks extends Transform {
     }
 
     private def applyRefchecksToAnnotations(tree: Tree): Unit = {
-      def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = {
+      def applyChecks(annots: List[AnnotationInfo]): List[AnnotationInfo] = if (annots.isEmpty) Nil else {
         annots.foreach { ann =>
           checkTypeRef(ann.tpe, tree, skipBounds = false)
           checkTypeRefBounds(ann.tpe, tree)
