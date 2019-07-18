@@ -496,7 +496,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
           if (shift != 0) {
             if (depth > 1) {
               val newBlockIndex = blockIndex - shift
-              val newFocus = focus - shift
+              val newFocus = math.abs(focus - shift)
 
               val s = new Vector(startIndex - shift, endIndex + 1 - shift, newBlockIndex)
               s.initFrom(this)
