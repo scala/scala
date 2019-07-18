@@ -401,7 +401,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
 
     for (mc <- clazz.mixinClasses ; if mc.isTrait) {
       // @SEAN: adding trait tracking so we don't have to recompile transitive closures
-      unit.depends += mc
+      unit.registerDependency(mc)
       publicizeTraitMethods(mc)
       mixinTraitMembers(mc)
       mixinTraitForwarders(mc)
