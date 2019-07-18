@@ -2187,7 +2187,7 @@ trait Trees { self: Universe =>
   /** 0-1 argument list new, based on a symbol.
    *  @group Factories
    */
-  @deprecated(s"""use q"new $${sym.toType}(..$$args)" instead""", "2.10.1")
+  @deprecated("use q\"new $"+"{sym.toType}(..$"+"args)\" instead", "2.10.1")
   def New(sym: Symbol, args: Tree*): Tree
 
   /** A factory method for `Apply` nodes.
