@@ -171,7 +171,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   @deprecated("Use .iterator.to(Set) instead", "2.13.0")
   @`inline` def toSet[B >: A]: immutable.Set[B] = immutable.Set.from(it)
 
-  @deprecated("Use toIterable instead", "2.13.0")
+  @deprecated("Use .iterator.to(Iterable) instead", "2.13.0")
   @`inline` final def toTraversable: Traversable[A] = toIterable
 
   @deprecated("Use .iterator.to(Iterable) instead", "2.13.0")
