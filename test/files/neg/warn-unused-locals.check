@@ -1,0 +1,24 @@
+warn-unused-locals.scala:7: warning: local var x in method f0 is never used
+    var x = 1 // warn
+        ^
+warn-unused-locals.scala:14: warning: local val b in method f1 is never used
+    val b = new Outer // warn
+        ^
+warn-unused-locals.scala:25: warning: local object HiObject in method l1 is never used
+    object HiObject { def f = this } // warn
+           ^
+warn-unused-locals.scala:26: warning: local class Hi is never used
+    class Hi { // warn
+          ^
+warn-unused-locals.scala:30: warning: local class DingDongDoobie is never used
+    class DingDongDoobie // warn
+          ^
+warn-unused-locals.scala:33: warning: local type OtherThing is never used
+    type OtherThing = String // warn
+         ^
+warn-unused-locals.scala:18: warning: local var x in method f2 is never updated: consider using immutable val
+    var x = 100 // warn about it being a var
+        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+7 warnings found
+one error found
