@@ -760,8 +760,14 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       * particulars.
       */
       val (delayedHookDefs, remainingConstrStatsDelayedInit) =
-        if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) delayedInitDefsAndConstrStats(defs, remainingConstrStats)
-        else (Nil, remainingConstrStats)
+        if (isDelayedInitSubclass && remainingConstrStats.nonEmpty) {
+          remainingConstrStats foreach {
+            case Assign(lhs, _ ) => lhs.symbol.setFlag(MUTABLE) // delayed init fields cannot be final, scala/bug#11412
+            case _ =>
+          }
+          delayedInitDefsAndConstrStats(defs, remainingConstrStats)
+        } else
+          (Nil, remainingConstrStats)
 
       // Assemble final constructor
       val primaryConstructor = deriveDefDef(primaryConstr)(_ => {
