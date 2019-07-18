@@ -105,12 +105,15 @@ class SettingsDescriptor extends SettingsDescriptorModel {
     }
     val sb = new StringBuilder
     var indent = 0
+    def escape(text: String): String = {
+      text.replaceAllLiterally("\"", "\\\"").replaceAllLiterally("\\u ", "\\\\u ")
+    }
     def element(tag: String, value: String = "", head: Boolean = false): Unit = {
       sb.append("  " * indent).append(if (head) "- " else "  ")
       if (tag.nonEmpty) sb.append(tag).append(":")
       if (value.nonEmpty) {
         if (tag.nonEmpty) sb.append(" ")
-        sb.append("\"").append(value).append("\"")
+        sb.append("\"").append(escape(value)).append("\"")
       }
       sb.append("\n")
     }
