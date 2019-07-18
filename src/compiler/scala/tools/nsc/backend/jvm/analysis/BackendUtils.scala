@@ -340,11 +340,8 @@ abstract class BackendUtils extends PerRunInit {
       bTypesFromClassfile.classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
 
     def getClassIfNested(internalName: InternalName): Option[ClassBType] = {
-      if (internalName.indexOf('$') < 0) None
-      else {
-        val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
-        if (c.isNestedClass.get) Some(c) else None
-      }
+      val c = bTypesFromClassfile.classBTypeFromParsedClassfile(internalName)
+      if (c.isNestedClass.get) Some(c) else None
     }
 
     def raiseError(msg: String, sig: String, e: Option[Throwable]): Unit = {
@@ -699,8 +696,10 @@ object BackendUtils {
         while (i < desc.length) {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
-            while (desc.charAt(i) != ';') i += 1
-            visitInternalName(desc.substring(start, i))
+            var seenDollar = false
+            while ({val ch = desc.charAt(i); seenDollar ||= (ch == '$'); ch != ';'}) i += 1
+            if (seenDollar)
+              visitInternalName(desc.substring(start, i))
           }
           // skips over '[', ')', primitives
           i += 1
