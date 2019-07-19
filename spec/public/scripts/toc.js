@@ -45,7 +45,7 @@ $.fn.toc = function(options) {
     }, 50);
   };
   if (opts.highlightOnScroll) {
-    $(window).bind('scroll', highlightOnScroll);
+    $(window).on('scroll', highlightOnScroll);
     highlightOnScroll();
   }
 
@@ -69,10 +69,10 @@ $.fn.toc = function(options) {
       var a = $('<a/>')
         .text(opts.headerText(i, heading, $h))
         .attr('href', '#' + anchorName)
-        .bind('click', function(e) {
-          $(window).unbind('scroll', highlightOnScroll);
+        .on('click', function(e) {
+          $(window).off('scroll', highlightOnScroll);
           scrollTo(e, function() {
-            $(window).bind('scroll', highlightOnScroll);
+            $(window).on('scroll', highlightOnScroll);
           });
           el.trigger('selected', $(this).attr('href'));
         });
