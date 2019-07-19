@@ -1721,7 +1721,7 @@ trait Types
           val varToParam = new TypeMap {
             def apply(tp: Type) = tp match {
               case tv: TypeVar => // Applying a type constructor variable to arguments results in a new instance of AppliedTypeVar each time
-                val toOrigin = appliedType(tv.origin.typeSymbol.typeConstructor, tv.typeArgs.mapConserve(this))
+                val toOrigin = appliedType(tv.origin.typeConstructor, tv.typeArgs.mapConserve(this))
                 tvarFor(toOrigin) = tv
                 toOrigin
               case _ => tp.mapOver(this)
