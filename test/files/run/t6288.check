@@ -10,10 +10,9 @@
       [64]case <synthetic> val x1: [64]String = [64]"";
       [64]case5()[84]{
         [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
-        [84]if ([84]o7.isEmpty.unary_!)
-          [97][97]matchEnd4([97]())
-        else
-          [84][84]case6()
+        [84]if ([84]o7.isEmpty)
+          [84][84]case6();
+        [97][97]matchEnd4([97]())
       };
       [64]case6(){
         [64][64]matchEnd4([64]throw [64][64][64]new [64]MatchError([64]x1))
@@ -33,10 +32,11 @@
       [175]case <synthetic> val x1: [175]String = [175]"";
       [175]case5()[195]{
         [195]<synthetic> val o7: [195]Option[List[Int]] = [195][195]Case4.unapplySeq([195]x1);
-        [195]if ([195][195]o7.isEmpty.unary_!.&&([195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0))))
-          [208][208]matchEnd4([208]())
-        else
-          [195][195]case6()
+        [195]if ([195]o7.isEmpty)
+          [195][195]case6();
+        [195]if ([195][195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0)).unary_!)
+          [195][195]case6();
+        [208][208]matchEnd4([208]())
       };
       [175]case6(){
         [175][175]matchEnd4([175]throw [175][175][175]new [175]MatchError([175]x1))
@@ -56,10 +56,11 @@
       [273]case <synthetic> val x1: [273]String = [273]"";
       [273]case5()[293]{
         [293]<synthetic> val o7: [293]Option[List[Int]] = [293][293]Case4.unapplySeq([293]x1);
-        [293]if ([293][293]o7.isEmpty.unary_!.&&([293][293][293][293]o7.get.!=([293]null).&&([293][293][293][293]o7.get.lengthCompare([293]0).==([293]0))))
-          [304][304]matchEnd4([304]())
-        else
-          [293][293]case6()
+        [293]if ([293]o7.isEmpty)
+          [293][293]case6();
+        [293]if ([293][293][293][293][293]o7.get.!=([293]null).&&([293][293][293][293]o7.get.lengthCompare([293]0).==([293]0)).unary_!)
+          [293][293]case6();
+        [304][304]matchEnd4([304]())
       };
       [273]case6(){
         [273][273]matchEnd4([273]throw [273][273][273]new [273]MatchError([273]x1))

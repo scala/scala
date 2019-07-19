@@ -80,24 +80,21 @@ class BytecodeTest extends BytecodeTesting {
 
     val unapplyLineNumbers = getInstructions(module, "unapply").filter(_.isInstanceOf[LineNumber])
     assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
-
     val expected = List(
       LineNumber(4, Label(0)),
-      LineNumber(5, Label(5)),
-      Jump(IFEQ, Label(20)),
+      LineNumber(5, Label(4)),
+      Jump(IFNE, Label(10)),
+      Jump(GOTO, Label(19)),
 
-      LineNumber(6, Label(11)),
+      LineNumber(6, Label(10)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
-      Jump(GOTO, Label(33)),
+      Jump(GOTO, Label(28)),
 
-      LineNumber(5, Label(20)),
-      Jump(GOTO, Label(24)),
-
-      LineNumber(8, Label(24)),
+      LineNumber(8, Label(19)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
-      Jump(GOTO, Label(33)),
+      Jump(GOTO, Label(28)),
 
-      LineNumber(10, Label(33)),
+      LineNumber(10, Label(28)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false)
     )
 
