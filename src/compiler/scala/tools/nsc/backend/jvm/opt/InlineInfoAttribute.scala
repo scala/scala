@@ -67,13 +67,10 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
     }
 
     // The method count fits in a short (the methods_count in a classfile is also a short)
-    result.putShort(inlineInfo.methodInfos.size)
+    result.putShort(inlineInfo.methodInfosSorted.size)
 
     // Sort the methodInfos for stability of classfiles
-    for ((nameAndType, info) <- inlineInfo.methodInfos.toList.sortBy(_._1)) {
-      val (name, desc) = nameAndType.span(_ != '(')
-      // Name and desc are added separately because a NameAndType entry also stores them separately.
-      // This makes sure that we use the existing constant pool entries for the method.
+    for (((name, desc), info) <- inlineInfo.methodInfosSorted) {
       result.putShort(cw.newUTF8(name))
       result.putShort(cw.newUTF8(desc))
 
@@ -84,7 +81,6 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       if (info.annotatedNoInline) inlineInfo |= 8
       result.putByte(inlineInfo)
     }
-
     result
   }
 
@@ -127,7 +123,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
         //             = (inlineInfo & 2) != 0 // no longer used
         val isInline   = (inlineInfo & 4) != 0
         val isNoInline = (inlineInfo & 8) != 0
-        (name + desc, MethodInlineInfo(isFinal, isInline, isNoInline))
+        ((name, desc), MethodInlineInfo(isFinal, isInline, isNoInline))
       }).toMap
 
       val info = InlineInfo(isFinal, sam, infos, None)
