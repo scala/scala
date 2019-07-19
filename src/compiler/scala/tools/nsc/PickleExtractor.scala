@@ -46,12 +46,19 @@ object PickleExtractor {
         }
         override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
           if (file.getFileName.toString.endsWith(".class")) {
-            stripClassFile(Files.readAllBytes(file)) match {
-              case Class(out) =>
-                Files.write(outputPath.root.resolve(root.relativize(file).toString), out)
-              case Pickle(out) =>
-                Files.write(outputPath.root.resolve(root.relativize(file).toString.replaceAll(".class$", ".sig")), out)
-              case Skip =>
+            try {
+              stripClassFile(Files.readAllBytes(file)) match {
+                case Class(out) =>
+                  Files.write(outputPath.root.resolve(root.relativize(file).toString), out)
+                case Pickle(out) =>
+                  Files.write(outputPath.root.resolve(root.relativize(file).toString.replaceAll(".class$", ".sig")), out)
+                case Skip =>
+              }
+            } catch {
+              case ex: RuntimeException =>
+                throw new RuntimeException("While parsing: " + file +  " in " + inputPath
+                  , ex)
+
             }
           }
           FileVisitResult.CONTINUE
