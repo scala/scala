@@ -14,6 +14,7 @@ install:
   - unset JAVA_HOME
   - java -Xmx32m -version
   - javac -J-Xmx32m -version
+  - "ln -s \"/c/Program Files/7-Zip/7z.exe\" zip.exe"
   - sdk install sbt
 
 stages:
