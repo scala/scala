@@ -14,8 +14,6 @@ install:
   - unset JAVA_HOME
   - java -Xmx32m -version
   - javac -J-Xmx32m -version
-  - "ln -s \"/c/Program Files/7-Zip/7z.exe\" zip.exe"
-  - sdk install sbt
 
 stages:
   - name: build
@@ -61,6 +59,20 @@ jobs:
         if: type = pull_request
         os: windows
         language: bash
+        before_install:
+          # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
+          - "[[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
+          - "ln -s \"/c/Program Files/7-Zip/7z.exe\" zip.exe"
+          - curl -sL https://get.sdkman.io | bash
+          - mkdir -p $HOME/.sdkman/etc/
+          - echo sdkman_auto_answer=true > $HOME/.sdkman/etc/config
+          - source "$HOME/.sdkman/bin/sdkman-init.sh"
+        install:
+          - sdk install java $(sdk list java | grep -o "$ADOPTOPENJDK\.[0-9\.]*hs-adpt" | head -1)
+          - unset JAVA_HOME
+          - java -Xmx32m -version
+          - javac -J-Xmx32m -version
+          - sdk install sbt
         script:
           - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
