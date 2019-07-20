@@ -62,8 +62,8 @@ jobs:
         before_install:
           # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
           - "[[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
-          - mingw-get install msys-zip
-          - mingw-get install msys-unzip
+          - choco install zip
+          - choco install unzip
           - curl -sL https://get.sdkman.io | bash
           - mkdir -p $HOME/.sdkman/etc/
           - echo sdkman_auto_answer=true > $HOME/.sdkman/etc/config
