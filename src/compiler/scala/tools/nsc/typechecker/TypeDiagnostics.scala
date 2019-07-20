@@ -17,7 +17,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
-import PartialFunction.{condOpt => whenever}
+import PartialFunction.condOpt
 import scala.annotation.tailrec
 
 /** An interface to enable higher configurability of diagnostic messages
@@ -518,11 +518,12 @@ trait TypeDiagnostics {
         (sym ne null)
           && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
         )
+      def isExisting(sym: Symbol) = sym != null && sym.exists
 
-      override def traverse(t: Tree): Unit = if (!t.isErrorTyped) {
+      override def traverse(t: Tree): Unit = {
         val sym = t.symbol
         t match {
-          case m: MemberDef if qualifies(sym)   =>
+          case m: MemberDef if qualifies(sym) && !t.isErrorTyped =>
             t match {
               case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
                 if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
@@ -536,16 +537,16 @@ trait TypeDiagnostics {
               case _ =>
                 defnTrees += m
             }
-          case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars    =>
+          case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars && !t.isErrorTyped =>
             pat.foreach {
               case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
               case _ =>
             }
-          case _: RefTree if sym ne null             => targets += sym
-          case Assign(lhs, _) if lhs.symbol != null  => setVars += lhs.symbol
-            case Function(ps, _) if settings.warnUnusedParams =>
-              params ++= ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
-          case _                                     =>
+          case _: RefTree if isExisting(sym)            => targets += sym
+          case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
+          case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
+            ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+          case _                                        =>
         }
 
         if (t.tpe ne null) {
@@ -570,7 +571,7 @@ trait TypeDiagnostics {
             }
           }
           // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-          for (p <- t.tpe.prefix) whenever(p) {
+          for (p <- t.tpe.prefix) condOpt(p) {
             case SingleType(_, sym) => targets += sym
           }
         }
@@ -746,7 +747,7 @@ trait TypeDiagnostics {
     /** Returns Some(msg) if the given tree is untyped apparently due
      *  to a cyclic reference, and None otherwise.
      */
-    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = whenever(tree) {
+    def cyclicReferenceMessage(sym: Symbol, tree: Tree) = condOpt(tree) {
       case ValDef(_, _, TypeTree(), _)       => s"recursive $sym needs type"
       case DefDef(_, _, _, _, TypeTree(), _) => s"${cyclicAdjective(sym)} $sym needs result type"
       case Import(expr, selectors)           =>
