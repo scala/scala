@@ -110,7 +110,7 @@ class ArrayDeque[A] protected (
         case srcLength if srcLength < 0 => prependAll(it.to(IndexedSeq: Factory[A, IndexedSeq[A]] /* type ascription needed by Dotty */))
 
         // We know for sure we need to resize to hold everything, might as well resize and memcopy upfront
-        case srcLength if srcLength > 0 && isResizeNecessary(srcLength + n) =>
+        case srcLength if mustGrow(srcLength + n) =>
           val finalLength = srcLength + n
           val array2 = ArrayDeque.alloc(finalLength)
           it.copyToArray(array2.asInstanceOf[Array[A]])
@@ -119,10 +119,9 @@ class ArrayDeque[A] protected (
 
         // Just fill up from (start - srcLength) to (start - 1) and move back start
         case srcLength =>
-          ensureSize(srcLength + n)
           // Optimized version of `elems.zipWithIndex.foreach((elem, i) => _set(i - srcLength, elem))`
           var i = 0
-          while(it.hasNext) {
+          while(i < srcLength) {
             _set(i - srcLength, it.next())
             i += 1
           }
@@ -151,7 +150,7 @@ class ArrayDeque[A] protected (
       addOne(elem)
     } else {
       val finalLength = n + 1
-      if (isResizeNecessary(finalLength)) {
+      if (mustGrow(finalLength)) {
         val array2 = ArrayDeque.alloc(finalLength)
         copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
         array2(idx) = elem.asInstanceOf[AnyRef]
@@ -198,7 +197,7 @@ class ArrayDeque[A] protected (
       if (it.nonEmpty) {
         val finalLength = srcLength + n
         // Either we resize right away or move prefix left or suffix right
-        if (isResizeNecessary(finalLength)) {
+        if (mustGrow(finalLength)) {
           val array2 = ArrayDeque.alloc(finalLength)
           copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
           it.copyToArray(array2.asInstanceOf[Array[A]], idx)
@@ -240,7 +239,7 @@ class ArrayDeque[A] protected (
       val suffixStart = idx + removals
       // If we know we can resize after removing, do it right away using arrayCopy
       // Else, choose the shorter: either move the prefix (0 until idx) right OR the suffix (idx+removals until n) left
-      if (isResizeNecessary(finalLength)) {
+      if (shouldShrink(finalLength)) {
         val array2 = ArrayDeque.alloc(finalLength)
         copySliceToArray(srcStart = 0, dest = array2, destStart = 0, maxItems = idx)
         copySliceToArray(srcStart = suffixStart, dest = array2, destStart = idx, maxItems = n)
@@ -430,7 +429,7 @@ class ArrayDeque[A] protected (
     res.result()
   }
 
-  @inline def ensureSize(hint: Int) = if (hint > length && isResizeNecessary(hint)) resize(hint + 1)
+  @inline def ensureSize(hint: Int) = if (hint > length && mustGrow(hint)) resize(hint)
 
   def length = end_-(start)
 
@@ -478,7 +477,7 @@ class ArrayDeque[A] protected (
   /**
     * Trims the capacity of this ArrayDeque's instance to be the current size
     */
-  def trimToSize(): Unit = resize(length - 1)
+  def trimToSize(): Unit = resize(length)
 
   // Utils for common modular arithmetic:
   @inline protected def start_+(idx: Int) = (start + idx) & (array.length - 1)
@@ -486,16 +485,30 @@ class ArrayDeque[A] protected (
   @inline private[this] def end_+(idx: Int) = (end + idx) & (array.length - 1)
   @inline private[this] def end_-(idx: Int) = (end - idx) & (array.length - 1)
 
-  @inline private[this] def isResizeNecessary(len: Int) = {
-    // Either resize if we need more cells OR we need to downsize BUT not a good idea to repeatedly resize small arrays
-    len >= array.length || (2*len < array.length && array.length >= ArrayDeque.StableSize)
+  // Note: here be overflow dragons! This is used for int overflow
+  // assumptions in resize(). Use caution changing.
+  @inline private[this] def mustGrow(len: Int) = {
+    len >= array.length
+  }
+
+  // Assumes that 0 <= len < array.length!
+  @inline private[this] def shouldShrink(len: Int) = {
+    // To avoid allocation churn, only shrink when array is large
+    // and less than 2/5 filled.
+    array.length > ArrayDeque.StableSize && array.length - len - (len >> 1) > len
+  }
+
+  // Assumes that 0 <= len < array.length!
+  @inline private[this] def canShrink(len: Int) = {
+    array.length > ArrayDeque.DefaultInitialSize && array.length - len > len
   }
 
   @inline private[this] def _get(idx: Int): A = array(start_+(idx)).asInstanceOf[A]
 
   @inline private[this] def _set(idx: Int, elem: A) = array(start_+(idx)) = elem.asInstanceOf[AnyRef]
 
-  private[this] def resize(len: Int) = if (isResizeNecessary(len)) {
+  // Assumes that 0 <= len.
+  private[this] def resize(len: Int) = if (mustGrow(len) || canShrink(len)) {
     val n = length
     val array2 = copySliceToArray(srcStart = 0, dest = ArrayDeque.alloc(len), destStart = 0, maxItems = n)
     reset(array = array2, start = 0, end = n)
@@ -540,7 +553,7 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
   /**
     * We try to not repeatedly resize arrays smaller than this
     */
-  private[ArrayDeque] final val StableSize = 256
+  private[ArrayDeque] final val StableSize = 128
 
   /**
     * Allocates an array whose size is next power of 2 > $len
