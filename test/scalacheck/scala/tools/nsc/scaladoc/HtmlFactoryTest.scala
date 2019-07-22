@@ -772,4 +772,10 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       case _ => false
     }
   }
+
+  property("protected[X] does not generate invalid link") = {
+    val ds = createTemplates("t11318.scala")("p/D.html").toString
+    ds.contains("""protected[<span class="extype" name="java.lang">lang</span>]""") &&
+      ds.contains("""protected[<a href="index.html" class="extype" name="p">p</a>]""")
+  }
 }
