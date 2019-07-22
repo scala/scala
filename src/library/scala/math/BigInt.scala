@@ -15,6 +15,7 @@ package math
 
 import java.math.BigInteger
 import scala.language.implicitConversions
+import scala.collection.immutable.NumericRange
 
 object BigInt {
 
@@ -124,14 +125,14 @@ final class BigInt(val bigInteger: BigInteger)
     case that: Float      => isValidFloat && toFloat == that
     case x                => isValidLong && unifiedPrimitiveEquals(x)
   }
-  override def isValidByte  = this >= Byte.MinValue && this <= Byte.MaxValue
-  override def isValidShort = this >= Short.MinValue && this <= Short.MaxValue
-  override def isValidChar  = this >= Char.MinValue && this <= Char.MaxValue
-  override def isValidInt   = this >= Int.MinValue && this <= Int.MaxValue
-           def isValidLong  = this >= Long.MinValue && this <= Long.MaxValue
+  override def isValidByte: Boolean = this >= Byte.MinValue && this <= Byte.MaxValue
+  override def isValidShort: Boolean = this >= Short.MinValue && this <= Short.MaxValue
+  override def isValidChar: Boolean = this >= Char.MinValue && this <= Char.MaxValue
+  override def isValidInt: Boolean = this >= Int.MinValue && this <= Int.MaxValue
+           def isValidLong: Boolean = this >= Long.MinValue && this <= Long.MaxValue
   /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
     */
-  def isValidFloat = {
+  def isValidFloat: Boolean = {
     val bitLen = bitLength
     (bitLen <= 24 ||
       {
@@ -144,7 +145,7 @@ final class BigInt(val bigInteger: BigInteger)
   }
   /** Returns `true` iff this can be represented exactly by [[scala.Double]]; otherwise returns `false`.
     */
-  def isValidDouble = {
+  def isValidDouble: Boolean = {
     val bitLen = bitLength
     (bitLen <= 53 ||
       {
@@ -165,8 +166,8 @@ final class BigInt(val bigInteger: BigInteger)
     (shifted.signum != 0) && !(shifted equals BigInt.minusOne)
   }
 
-  def isWhole = true
-  def underlying = bigInteger
+  def isWhole: Boolean = true
+  def underlying: BigInteger = bigInteger
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
@@ -322,28 +323,28 @@ final class BigInt(val bigInteger: BigInteger)
    *                    The execution time of this method is proportional to the value of
    *                    this parameter.
    */
-  def isProbablePrime(certainty: Int) = this.bigInteger.isProbablePrime(certainty)
+  def isProbablePrime(certainty: Int): Boolean = this.bigInteger.isProbablePrime(certainty)
 
   /** Converts this BigInt to a <tt>byte</tt>.
    *  If the BigInt is too big to fit in a byte, only the low-order 8 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
-  override def byteValue   = intValue.toByte
+  override def byteValue: Byte = intValue.toByte
 
   /** Converts this BigInt to a <tt>short</tt>.
    *  If the BigInt is too big to fit in a short, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value as well as return a result with the opposite sign.
    */
-  override def shortValue  = intValue.toShort
+  override def shortValue: Short = intValue.toShort
 
   /** Converts this BigInt to a <tt>char</tt>.
    *  If the BigInt is too big to fit in a char, only the low-order 16 bits are returned.
    *  Note that this conversion can lose information about the overall magnitude of the
    *  BigInt value and that it always returns a positive result.
    */
-  def charValue   = intValue.toChar
+  def charValue: Char = intValue.toChar
 
   /** Converts this BigInt to an <tt>int</tt>.
    *  If the BigInt is too big to fit in an int, only the low-order 32 bits
@@ -351,7 +352,7 @@ final class BigInt(val bigInteger: BigInteger)
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
    */
-  def intValue    = this.bigInteger.intValue
+  def intValue: Int = this.bigInteger.intValue
 
   /** Converts this BigInt to a <tt>long</tt>.
    *  If the BigInt is too big to fit in a long, only the low-order 64 bits
@@ -359,21 +360,21 @@ final class BigInt(val bigInteger: BigInteger)
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
    */
-  def longValue   = this.bigInteger.longValue
+  def longValue: Long = this.bigInteger.longValue
 
   /** Converts this `BigInt` to a `float`.
    *  If this `BigInt` has too great a magnitude to represent as a float,
    *  it will be converted to `Float.NEGATIVE_INFINITY` or
    *  `Float.POSITIVE_INFINITY` as appropriate.
    */
-  def floatValue  = this.bigInteger.floatValue
+  def floatValue: Float = this.bigInteger.floatValue
 
   /** Converts this `BigInt` to a `double`.
    *  if this `BigInt` has too great a magnitude to represent as a double,
    *  it will be converted to `Double.NEGATIVE_INFINITY` or
    *  `Double.POSITIVE_INFINITY` as appropriate.
    */
-  def doubleValue = this.bigInteger.doubleValue
+  def doubleValue: Double = this.bigInteger.doubleValue
 
   /** Create a `NumericRange[BigInt]` in range `[start;end)`
    *  with the specified step, where start is the target BigInt.
@@ -382,11 +383,11 @@ final class BigInt(val bigInteger: BigInteger)
    *  @param step   the distance between elements (defaults to 1)
    *  @return       the range
    */
-  def until(end: BigInt, step: BigInt = BigInt(1)) = Range.BigInt(this, end, step)
+  def until(end: BigInt, step: BigInt = BigInt(1)): NumericRange.Exclusive[BigInt] = Range.BigInt(this, end, step)
 
   /** Like until, but inclusive of the end value.
    */
-  def to(end: BigInt, step: BigInt = BigInt(1)) = Range.BigInt.inclusive(this, end, step)
+  def to(end: BigInt, step: BigInt = BigInt(1)): NumericRange.Inclusive[BigInt] = Range.BigInt.inclusive(this, end, step)
 
   /** Returns the decimal String representation of this BigInt.
    */

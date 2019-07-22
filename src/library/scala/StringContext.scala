@@ -126,7 +126,7 @@ case class StringContext(parts: String*) {
      *  Here, we use the `TimeSplitter` regex within the `s` matcher, further splitting the
      *  matched string "10.50" into its constituent parts
      */
-    def unapplySeq(s: String) = glob(parts, s)
+    def unapplySeq(s: String): Option[Seq[String]] = glob(parts, s)
   }
   /** The raw string interpolator.
    *

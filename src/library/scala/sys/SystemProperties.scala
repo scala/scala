@@ -30,7 +30,7 @@ import scala.language.implicitConversions
 class SystemProperties
 extends mutable.AbstractMap[String, String] {
 
-  override def empty = mutable.Map[String, String]()
+  override def empty: mutable.Map[String, String] = mutable.Map[String, String]()
   override def default(key: String): String = null
 
   def iterator: Iterator[(String, String)] = wrapAccess {
@@ -43,9 +43,9 @@ extends mutable.AbstractMap[String, String] {
     System.getProperties().stringPropertyNames().asScala.iterator
   ) getOrElse Iterator.empty
 
-  def get(key: String) =
+  def get(key: String): Option[String] =
     wrapAccess(Option(System.getProperty(key))) flatMap (x => x)
-  override def contains(key: String) =
+  override def contains(key: String): Boolean =
     wrapAccess(super.contains(key)) exists (x => x)
 
   override def clear(): Unit = wrapAccess(System.getProperties().clear())
@@ -66,7 +66,7 @@ object SystemProperties {
   /** An unenforceable, advisory only place to do some synchronization when
    *  mutating system properties.
    */
-  def exclusively[T](body: => T) = this synchronized body
+  def exclusively[T](body: => T): T = this synchronized body
 
   implicit def systemPropertiesToCompanion(p: SystemProperties): SystemProperties.type = this
 

@@ -339,7 +339,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     else unapplySeq(m.matched)
 
   //  @see UnanchoredRegex
-  protected def runMatcher(m: Matcher) = m.matches()
+  protected def runMatcher(m: Matcher): Boolean = m.matches()
 
   /** Return all non-overlapping matches of this `Regex` in the given character
    *  sequence as a [[scala.util.matching.Regex.MatchIterator]],
@@ -380,7 +380,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @return       A [[scala.util.matching.Regex.MatchIterator]] of matched substrings.
    *  @example      {{{for (words <- """\w+""".r findAllIn "A simple example.") yield words}}}
    */
-  def findAllIn(source: CharSequence) = new Regex.MatchIterator(source, this, groupNames)
+  def findAllIn(source: CharSequence): MatchIterator = new Regex.MatchIterator(source, this, groupNames)
 
   /** Return all non-overlapping matches of this regexp in given character sequence as a
    *  [[scala.collection.Iterator]] of [[scala.util.matching.Regex.Match]].
@@ -591,7 +591,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
   def regex: String = pattern.pattern
 
   /** The string defining the regular expression */
-  override def toString = regex
+  override def toString: String = regex
 }
 
 /** A [[Regex]] that finds the first match when used in a pattern match.
@@ -599,8 +599,8 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
  *  @see [[Regex#unanchored]]
  */
 trait UnanchoredRegex extends Regex {
-  override protected def runMatcher(m: Matcher) = m.find()
-  override def unanchored = this
+  override protected def runMatcher(m: Matcher): Boolean = m.find()
+  override def unanchored: UnanchoredRegex = this
 }
 
 /** This object defines inner classes that describe
@@ -709,7 +709,7 @@ object Regex {
     )
 
     /** The matched string; equivalent to `matched.toString`. */
-    override def toString = matched
+    override def toString: String = matched
   }
 
   /** Provides information about a successful match. */
@@ -718,13 +718,13 @@ object Regex {
               val groupNames: Seq[String]) extends MatchData {
 
     /** The index of the first matched character. */
-    val start = matcher.start
+    val start: Int = matcher.start
 
     /** The index following the last matched character. */
-    val end = matcher.end
+    val end: Int = matcher.end
 
     /** The number of subgroups. */
-    def groupCount = matcher.groupCount
+    def groupCount: Int = matcher.groupCount
 
     private[this] lazy val starts: Array[Int] =
       Array.tabulate(groupCount + 1) { matcher.start }
@@ -732,10 +732,10 @@ object Regex {
       Array.tabulate(groupCount + 1) { matcher.end }
 
     /** The index of the first matched character in group `i`. */
-    def start(i: Int) = starts(i)
+    def start(i: Int): Int = starts(i)
 
     /** The index following the last matched character in group `i`. */
-    def end(i: Int) = ends(i)
+    def end(i: Int): Int = ends(i)
 
     /** The match itself with matcher-dependent lazy vals forced,
      *  so that match is valid even once matcher is advanced.
@@ -826,7 +826,7 @@ object Regex {
     }
 
     /** Report emptiness. */
-    override def toString = super[AbstractIterator].toString
+    override def toString: String = super[AbstractIterator].toString
 
     // ensure we're at a match
     private[this] def ensure(): Unit = nextSeen match {
@@ -849,7 +849,7 @@ object Regex {
     def end(i: Int): Int = { ensure() ; matcher.end(i) }
 
     /** The number of subgroups. */
-    def groupCount = { ensure() ; matcher.groupCount }
+    def groupCount: Int = { ensure() ; matcher.groupCount }
 
     /** Convert to an iterator that yields MatchData elements instead of Strings. */
     def matchData: Iterator[Match] = new AbstractIterator[Match] {

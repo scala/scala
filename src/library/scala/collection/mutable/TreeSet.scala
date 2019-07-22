@@ -16,7 +16,7 @@ package collection.mutable
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.{RedBlackTree => RB}
-import scala.collection.{SortedIterableFactory, SortedSetFactoryDefaults, Stepper, StepperShape, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps}
+import scala.collection.{SortedIterableFactory, SortedSetFactoryDefaults, Stepper, StepperShape, StrictOptimizedIterableOps, StrictOptimizedSortedSetOps, mutable}
 
 /**
   * A mutable sorted set implemented using a mutable red-black tree as underlying data structure.
@@ -152,10 +152,10 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
 
     override def size = if (RB.size(tree) == 0) 0 else iterator.length
     override def knownSize: Int = if (RB.size(tree) == 0) 0 else -1
-    override def isEmpty = RB.size(tree) == 0 || !iterator.hasNext
+    override def isEmpty: Boolean = RB.size(tree) == 0 || !iterator.hasNext
 
-    override def head = headOption.get
-    override def headOption = {
+    override def head: A = headOption.get
+    override def headOption: Option[A] = {
       val elem = if (from.isDefined) RB.minKeyAfter(tree, from.get) else RB.minKey(tree)
       (elem, until) match {
         case (Some(e), Some(unt)) if ordering.compare(e, unt) >= 0 => None
@@ -163,7 +163,7 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
       }
     }
 
-    override def last = lastOption.get
+    override def last: A = lastOption.get
     override def lastOption = {
       val elem = if (until.isDefined) RB.maxKeyBefore(tree, until.get) else RB.maxKey(tree)
       (elem, from) match {
@@ -177,7 +177,7 @@ sealed class TreeSet[A] private (private val tree: RB.Tree[A, Null])(implicit va
     // https://github.com/scala/scala/pull/4608#discussion_r34307985 for a discussion about this.
     override def foreach[U](f: A => U): Unit = iterator.foreach(f)
 
-    override def clone() = super.clone().rangeImpl(from, until)
+    override def clone(): mutable.TreeSet[A] = super.clone().rangeImpl(from, until)
 
   }
 

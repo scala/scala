@@ -82,7 +82,7 @@ sealed class ListSet[A]
 
     override def isEmpty: Boolean = false
 
-    override def contains(e: A) = containsInternal(this, e)
+    override def contains(e: A): Boolean = containsInternal(this, e)
 
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))

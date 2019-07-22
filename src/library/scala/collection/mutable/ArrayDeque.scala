@@ -68,22 +68,22 @@ class ArrayDeque[A] protected (
   // No-Op override to allow for more efficient stepper in a minor release.
   override def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = super.stepper(shape)
 
-  def apply(idx: Int) = {
+  def apply(idx: Int): A = {
     requireBounds(idx)
     _get(idx)
   }
 
-  def update(idx: Int, elem: A) = {
+  def update(idx: Int, elem: A): Unit = {
     requireBounds(idx)
     _set(idx, elem)
   }
 
-  def addOne(elem: A) = {
+  def addOne(elem: A): this.type = {
     ensureSize(length + 1)
     appendAssumingCapacity(elem)
   }
 
-  def prepend(elem: A) = {
+  def prepend(elem: A): this.type = {
     ensureSize(length + 1)
     prependAssumingCapacity(elem)
   }

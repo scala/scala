@@ -103,7 +103,7 @@ final class IterableOnceExtensionMethods[A](private val it: IterableOnce[A]) ext
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = it.iterator.maxBy(f)
 
   @deprecated("Use .iterator.reduceLeft(...) instead", "2.13.0")
-  def reduceLeft(f: (A, A) => A) = it.iterator.reduceLeft(f)
+  def reduceLeft(f: (A, A) => A): A = it.iterator.reduceLeft(f)
 
   @deprecated("Use .iterator.sum instead", "2.13.0")
   def sum(implicit num: Numeric[A]): A = it.iterator.sum

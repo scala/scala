@@ -206,7 +206,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
   /** Defers to defaultEntry to find a default value for the key.  Throws an
    *  exception if no other default behavior was specified.
    */
-  override def default(key: K) = defaultEntry(key)
+  override def default(key: K): V = defaultEntry(key)
 
   private def repack(newMask: Int): Unit = {
     val oh = _hashes

@@ -27,7 +27,7 @@ class WeakReference[+T <: AnyRef](value: T, queue: ReferenceQueue[T]) extends Re
 object WeakReference {
 
   /** Creates a weak reference pointing to `value` */
-  def apply[T <: AnyRef](value: T) = new WeakReference(value)
+  def apply[T <: AnyRef](value: T): WeakReference[T] = new WeakReference(value)
 
   /** Optionally returns the referenced value, or `None` if that value no longer exists */
   def unapply[T <: AnyRef](wr: WeakReference[T]): Option[T] = Option(wr.underlying.get)

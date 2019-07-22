@@ -97,7 +97,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
     if (hi > size0) throw new IndexOutOfBoundsException(s"$hi is out of bounds (min 0, max ${size0 - 1})")
   }
 
-  def apply(n: Int) = {
+  def apply(n: Int): A = {
     checkWithinBounds(n, n + 1)
     array(n).asInstanceOf[A]
   }

@@ -1010,15 +1010,15 @@ object TrieMap extends MapFactory[TrieMap] {
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
 
-  def from[K, V](it: IterableOnce[(K, V)]) = new TrieMap[K, V]() ++= it
+  def from[K, V](it: IterableOnce[(K, V)]): TrieMap[K, V] = new TrieMap[K, V]() ++= it
 
-  def newBuilder[K, V] = new GrowableBuilder(empty[K, V])
+  def newBuilder[K, V]: mutable.GrowableBuilder[(K, V), TrieMap[K, V]] = new GrowableBuilder(empty[K, V])
 
   @transient
-  val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
+  val inodeupdater: AtomicReferenceFieldUpdater[INodeBase[_, _], MainNode[_, _]] = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
   class MangledHashing[K] extends Hashing[K] {
-    def hash(k: K)= scala.util.hashing.byteswap32(k.##)
+    def hash(k: K): Int = scala.util.hashing.byteswap32(k.##)
   }
 }
 
@@ -1090,9 +1090,9 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
     }
   } else current = null
 
-  protected def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean) = new TrieMapIterator[K, V](_lev, _ct, _mustInit)
+  protected def newIterator(_lev: Int, _ct: TrieMap[K, V], _mustInit: Boolean): TrieMapIterator[K, V] = new TrieMapIterator[K, V](_lev, _ct, _mustInit)
 
-  protected def dupTo(it: TrieMapIterator[K, V]) = {
+  protected def dupTo(it: TrieMapIterator[K, V]): Unit = {
     it.level = this.level
     it.ct = this.ct
     it.depth = this.depth

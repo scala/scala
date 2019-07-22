@@ -84,9 +84,9 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   override def knownSize: Int = super[IndexedSeqOps].knownSize
 
-  def addOne(x: Char) = { underlying.append(x); this }
+  def addOne(x: Char): this.type = { underlying.append(x); this }
 
-  def clear() = underlying.setLength(0)
+  def clear(): Unit = underlying.setLength(0)
 
   /** Overloaded version of `addAll` that takes a string */
   def addAll(s: String): this.type = { underlying.append(s); this }
@@ -96,7 +96,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
 
   def result() = underlying.toString
 
-  override def toString = result()
+  override def toString: String = result()
 
   override def toArray[B >: Char](implicit ct: scala.reflect.ClassTag[B]) =
     ct.runtimeClass match {
