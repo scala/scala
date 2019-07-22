@@ -5193,13 +5193,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // We have to introduce the ValDef before its use here, so we walk up the
               // context tree and attach it to the original root of this expression. It will
               // be extracted and inserted by insertStabilizer when typer unwinds out of this
-              // expression.
+              // expression. Stabilized args are introduced in the block arg expression.
               val insertionContext = context.nextEnclosing { ctx =>
-                def isInsertionNode(tree: Tree): Boolean = tree match {
-                  case _: Apply | _: TypeApply | _: Select => true
-                  case _ => false
-                }
-                isInsertionNode(ctx.tree) && !isInsertionNode(ctx.outer.tree)
+                def isInsertionNode(tree: Tree) =
+                  tree match {
+                    case _: Apply | _: TypeApply | _: Select => true
+                    case _                                   => false
+                  }
+                def isEnclosingInsertionNode(tree: Tree) =
+                  tree match {
+                    case Apply(_, args)           => args.contains(ctx.tree)
+                    case _: TypeApply | _: Select => false
+                    case _                        => true
+                  }
+                isInsertionNode(ctx.tree) && isEnclosingInsertionNode(ctx.outer.tree)
               }
 
               if (insertionContext != NoContext) {
