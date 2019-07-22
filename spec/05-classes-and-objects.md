@@ -1017,7 +1017,7 @@ is undefined for the given key. This class is implemented as follows.
 ```scala
 abstract class Table[A, B](defaultValue: B) {
   def get(key: A): Option[B]
-  def set(key: A, value: B)
+  def set(key: A, value: B): Unit
   def apply(key: A) = get(key) match {
     case Some(value) => value
     case None => defaultValue
@@ -1029,8 +1029,8 @@ Here is a concrete implementation of the `Table` class.
 
 ```scala
 class ListTable[A, B](defaultValue: B) extends Table[A, B](defaultValue) {
-  private var elems: List[(A, B)]
-  def get(key: A) = elems.find(._1.==(key)).map(._2)
+  private var elems: List[(A, B)] = Nil
+  def get(key: A) = elems.find(_._1 == key).map(_._2)
   def set(key: A, value: B) = { elems = (key, value) :: elems }
 }
 ```
@@ -1042,7 +1042,7 @@ Here is a trait that prevents concurrent access to the
 trait SynchronizedTable[A, B] extends Table[A, B] {
   abstract override def get(key: A): B =
     synchronized { super.get(key) }
-  abstract override def set((key: A, value: B) =
+  abstract override def set(key: A, value: B) =
     synchronized { super.set(key, value) }
 }
 ```
@@ -1060,7 +1060,7 @@ table with strings as keys and integers as values and with a default
 value `0`:
 
 ```scala
-object MyTable extends ListTable[String, Int](0) with SynchronizedTable
+object MyTable extends ListTable[String, Int](0) with SynchronizedTable[String, Int]
 ```
 
 The object `MyTable` inherits its `get` and `set`
