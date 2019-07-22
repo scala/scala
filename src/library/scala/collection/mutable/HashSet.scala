@@ -99,7 +99,6 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
         this
       case _ => super.addAll(xs)
     }
-    super.addAll(xs)
   }
 
   override def subtractAll(xs: IterableOnce[A]): this.type = {
