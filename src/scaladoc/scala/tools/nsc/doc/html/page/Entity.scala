@@ -292,9 +292,8 @@ trait EntityPage extends HtmlPage {
               Ol(elems=
                 List(
                   Li(`class`="public in", elems=Span(elems=Txt("Public"))),
-                  Li(`class`="protected out", elems=Span(elems=Txt("Protected"))),
-                  Li(`class`="private out", elems=Span(elems=Txt("Private"))))
-                )
+                  Li(`class`="protected out", elems=Span(elems=Txt("Protected")))
+                ) ++ List(Li(`class`="private out", elems=Span(elems=Txt("Private")))).filter(_ => universe.settings.visibilityPrivate))
           ))
         )
       ))
