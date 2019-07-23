@@ -1,0 +1,7 @@
+t11643.scala:6: error: could not find implicit value for parameter i: Int
+  def g(j: Int) = j + f
+                      ^
+t11643.scala:7: error: could not find implicit value for parameter i: Int
+  def k(j: Int) = { val x = j + f ; 42 }
+                                ^
+two errors found
