@@ -30,11 +30,13 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   import scala.tools.nsc.doc.html.HtmlTags.{textOf, Elem => Node, Elems => NodeSeq}
 
-  def createTemplates(basename: String): collection.Map[String, HtmlPage] = {
+  def createTemplates(basename: String, set: Settings => Unit = _ => ()): collection.Map[String, HtmlPage] = {
     val result = mutable.Map[String, HtmlPage]()
 
     val path: String = SettingsUtil.checkoutRoot.resolve(RESOURCES).resolve(basename).toAbsolutePath.toString
-    createFactory.makeUniverse(Left(List(path))) match {
+    val factory = createFactory
+    set(factory.settings)
+    factory.makeUniverse(Left(List(path))) match {
       case Some(universe) =>
         new HtmlFactory(universe, new ScalaDocReporter(universe.settings)).writeTemplates{ page =>
           result += (page.absoluteLinkTo(page.path) -> page)
@@ -104,8 +106,8 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     result
   }
 
-  private def checkTemplate(base: String, file: String)(check: (collection.Map[String, HtmlPage], String) => Boolean): Boolean = {
-    val files = createTemplates(base)
+  private def checkTemplate(base: String, file: String, set: Settings => Unit = _ => ())(check: (collection.Map[String, HtmlPage], String) => Boolean): Boolean = {
+    val files = createTemplates(base, set)
     files.get(file).exists { page => check(files, toHtml(page)) }
   }
 
@@ -601,5 +603,17 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
     checkTemplate("t9599.scala", "X.html") { (_, s) => s.contains("""<span class="cmt"><p>todo1</p></span><span class="cmt"><p>todo2</p></span><span class="cmt"><p>todo3</p></span>""") }
+  }
+
+  property("scala/bug#10999 Private and Protected method should also be documented") = {
+    checkTemplate("t10999.scala", "t10999.html"){(_, s) =>
+      s.contains("protectedMethod:Boolean") && !s.contains("privateMethod:String")
+    }
+  }
+
+  property("scala/bug#10999 Private and Protected method should also be documented") = {
+    checkTemplate("t10999.scala", "t10999.html", _.visibilityPrivate.value = true){(_, s) =>
+      s.contains("protectedMethod:Boolean") && s.contains("privateMethod:String")
+    }
   }
 }
