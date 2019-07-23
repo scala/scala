@@ -290,7 +290,10 @@ trait EntityPage extends HtmlPage {
           Div(id="visbl", elems=
               Span(`class`="filtertype", elems=Txt("Visibility")) ::
               Ol(elems=
-                Li(`class`="public in", elems= Span(elems=Txt("Public"))) :: Li(`class`="all out", elems= Span(elems=Txt("All"))))
+                List(
+                  Li(`class`="public in", elems=Span(elems=Txt("Public"))),
+                  Li(`class`="protected out", elems=Span(elems=Txt("Protected")))
+                ) ++ List(Li(`class`="private out", elems=Span(elems=Txt("Private")))).filter(_ => universe.settings.visibilityPrivate))
           ))
         )
       ))
@@ -365,7 +368,8 @@ trait EntityPage extends HtmlPage {
     }
 
     val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
-    Li(name= mbr.definitionName, visbl= if (mbr.visibility.isProtected) "prt" else "pub",
+    Li(name= mbr.definitionName,
+      visbl=if (mbr.visibility.isPublic) "pub" else if (mbr.visibility.isProtected) "prt" else "prv",
       `class`= s"indented$indentation " + (if (mbr eq inTpl) "current" else ""),
       `data-isabs`= mbr.isAbstract.toString,
       fullComment= if(!memberComment.exists(_.tagName == "div")) "no" else "yes",

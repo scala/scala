@@ -226,6 +226,11 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_))
     ""
   )
 
+  val visibilityPrivate = BooleanSetting (
+    "-private",
+    "Show all types and members. Unless specified, show only public and protected types and members."
+  )
+
   // For improved help output.
   def scaladocSpecific = Set[Settings#Setting](
     docformat, doctitle, docfooter, docversion, docUncompilable, docsourceurl, docgenerator, docRootContent,

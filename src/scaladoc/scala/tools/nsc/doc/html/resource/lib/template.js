@@ -11,8 +11,9 @@ $(document).ready(function() {
 
     var controls = {
         visibility: {
-            publicOnly: $("#visbl").find("> ol > li.public"),
-            all: $("#visbl").find("> ol > li.all")
+            publicFilter: $("#visbl").find("> ol > li.public"),
+            protectedFilter: $("#visbl").find("> ol > li.protected"),
+            privateFilter: $("#visbl").find("> ol > li.private")
         }
     };
 
@@ -21,21 +22,14 @@ $(document).ready(function() {
         return str.replace(/([;&,\.\+\*\~':"\!\^#$%@\[\]\(\)=<>\|])/g, '\\$1');
     }
 
-    function toggleVisibilityFilter(ctrlToEnable, ctrToDisable) {
-        if (ctrlToEnable.hasClass("out")) {
-            ctrlToEnable.removeClass("out").addClass("in");
-            ctrToDisable.removeClass("in").addClass("out");
-            filter();
-        }
+    function toggleVisibilityFilter() {
+        $(this).toggleClass("in").toggleClass("out");
+        filter();
     }
 
-    controls.visibility.publicOnly.on("click", function() {
-        toggleVisibilityFilter(controls.visibility.publicOnly, controls.visibility.all);
-    });
-
-    controls.visibility.all.on("click", function() {
-        toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
-    });
+    controls.visibility.publicFilter.on("click", toggleVisibilityFilter);
+    controls.visibility.protectedFilter.on("click", toggleVisibilityFilter);
+    controls.visibility.privateFilter.on("click", toggleVisibilityFilter);
 
     function exposeMember(jqElem) {
         var jqElemParent = jqElem.parent(),
@@ -44,7 +38,7 @@ $(document).ready(function() {
 
         // switch visibility filter if necessary
         if (jqElemParent.attr("visbl") == "prt") {
-            toggleVisibilityFilter(controls.visibility.all, controls.visibility.publicOnly);
+            controls.visibility.privateFilter.removeClass("out").addClass("in");
         }
 
         // toggle appropriate ancestor filter buttons
@@ -435,7 +429,11 @@ function filter() {
     var query = $.trim($("#memberfilter input").val()).toLowerCase();
     query = query.replace(/[-[\]{}()*+?.,\\^$|#]/g, "\\$&").replace(/\s+/g, "|");
     var queryRegExp = new RegExp(query, "i");
-    var privateMembersHidden = $("#visbl > ol > li.public").hasClass("in");
+
+    var publicMembersShown = $("#visbl > ol > li.public").hasClass("in");
+    var protectedMembersShown = $("#visbl > ol > li.protected").hasClass("in");
+    var privateMembersShown = $("#visbl > ol > li.private").hasClass("in");
+
     var orderingAlphabetic = $("#order > ol > li.alpha").hasClass("in");
     var orderingInheritance = $("#order > ol > li.inherit").hasClass("in");
     var orderingGroups = $("#order > ol > li.group").hasClass("in");
@@ -485,7 +483,16 @@ function filter() {
       var members = $(this);
       members.find("> ol > li").each(function() {
         var mbr = $(this);
-        if (privateMembersHidden && mbr.attr("visbl") == "prt") {
+        var visibility = mbr.attr("visbl");
+        if (!publicMembersShown && visibility == "pub") {
+          mbr.hide();
+          return;
+        }
+        if (!protectedMembersShown && visibility == "prt") {
+          mbr.hide();
+          return;
+        }
+        if (!privateMembersShown && visibility == "prv") {
           mbr.hide();
           return;
         }

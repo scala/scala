@@ -1017,8 +1017,12 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     aSym.isModule && aSym.isJavaDefined &&
     aSym.info.members.exists(s => localShouldDocument(s) && (!s.isConstructor || s.owner == aSym))
 
-  def localShouldDocument(aSym: Symbol): Boolean =
-    !aSym.isPrivate && (aSym.isProtected || aSym.privateWithin == NoSymbol) && !aSym.isSynthetic
+  def localShouldDocument(aSym: Symbol): Boolean = {
+    // For `private[X]`, isPrivate is false (while for protected[X], isProtected is true)
+    def isPrivate = aSym.isPrivate || !aSym.isProtected && aSym.privateWithin != NoSymbol
+    // for private, only document if enabled in settings and not top-level
+    !aSym.isSynthetic && (!isPrivate || settings.visibilityPrivate.value && !aSym.isTopLevel)
+  }
 
   // the classes that are excluded from the index should also be excluded from the diagrams
   def classExcluded(clazz: TemplateEntity): Boolean = settings.hardcoded.isExcluded(clazz.qualifiedName)
