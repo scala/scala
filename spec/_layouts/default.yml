@@ -6,6 +6,7 @@
   <link rel="icon" type="image/png" href="public/favicon.ico">
   <link rel="shortcut icon" type="image/png" href="public/favicon.ico">
 
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
   <script type="text/x-mathjax-config">
   MathJax.Hub.Config({
     tex2jax: {
@@ -15,9 +16,8 @@
     }
   });
   </script>
-  <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-  <script src="//code.jquery.com/jquery-2.1.3.min.js"></script>
-  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css">
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.2/styles/default.min.css">
   <!-- need to use include to see value of page.chapter variable -->
   <style type="text/css">
     {% include numbering.css %}
