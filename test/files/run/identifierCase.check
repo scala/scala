@@ -1,0 +1,10 @@
+identifierCase.scala:22: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+      case ªpple         => "not so constant"
+           ^
+identifierCase.scala:23: warning: unreachable code due to variable pattern 'ªpple' on line 22
+      case ʰelper        => "unreachable"
+                            ^
+identifierCase.scala:23: warning: unreachable code
+      case ʰelper        => "unreachable"
+                            ^
+not so constant

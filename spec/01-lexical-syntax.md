@@ -34,8 +34,8 @@ classes (Unicode general category given in parentheses):
 
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
 1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
-   titlecase letters (`Lt`), other letters (`Lo`), letter numerals (`Nl`) and the
-   two characters `\u0024 ‘$’` and `\u005F ‘_’`.
+   titlecase letters (`Lt`), other letters (`Lo`), modifier letters (`Ml`), 
+   letter numerals (`Nl`) and the two characters `\u0024 ‘$’` and `\u005F ‘_’`.
 1. Digits `‘0’ | … | ‘9’`.
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
 1. Delimiter characters ``‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’ ``.
@@ -80,10 +80,30 @@ decomposes into the three identifiers `big_bob`, `++=`, and
 `def`.
 
 The rules for pattern matching further distinguish between
-_variable identifiers_, which start with a lower case letter, and
-_constant identifiers_, which do not. For this purpose,
-underscore `‘_‘` is taken as lower case, and the ‘\$’ character
-is taken as upper case.
+_variable identifiers_, which start with a lower case letter
+or `_`, and _constant identifiers_, which do not.
+
+For this purpose, lower case letter don't only include a-z,
+but also all characters in Unicode category Ll (lowercase letter),
+as well as all letters that have contributory property
+Other_Lowercase, except characters in category Nl (letter numerals)
+which are never taken as lower case.
+
+The following are examples of variable identifiers:
+
+> ```scala
+>     x         maxIndex   p2p   empty_?
+>     `yield`   αρετη      _y    dot_product_*
+>     __system  _MAX_LEN_
+>     ªpple     ʰelper
+> ```
+
+Some examples of constant identifiers are
+
+> ```scala
+>     +    Object  $reserved  ǅul    ǂnûm
+>     ⅰ_ⅲ  Ⅰ_Ⅲ     ↁelerious  ǃqhàà  ʹthatsaletter
+> ```
 
 The ‘\$’ character is reserved for compiler-synthesized identifiers.
 User programs should not define identifiers which contain ‘\$’ characters.
