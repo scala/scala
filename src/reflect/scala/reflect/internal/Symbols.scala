@@ -928,7 +928,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def migrationMessage     = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(0) }
     def migrationVersion     = getAnnotation(MigrationAnnotationClass) flatMap { _.stringArg(1) }
     def elisionLevel         = getAnnotation(ElidableMethodClass) flatMap { _.intArg(0) }
-    def implicitNotFoundMsg  = getAnnotation(ImplicitNotFoundClass) flatMap { _.stringArg(0) }
+    def implicitNotFoundMsg  = {
+      def onParents =
+        if (isType) parentSymbolsIterator.flatMap(_.getAnnotation(ImplicitNotFoundClass)).nextOption()
+        else None
+      getAnnotation(ImplicitNotFoundClass).orElse(onParents).flatMap(_.stringArg(0))
+    }
     def implicitAmbiguousMsg = getAnnotation(ImplicitAmbiguousClass) flatMap { _.stringArg(0) }
 
     def isCompileTimeOnly       = hasAnnotation(CompileTimeOnlyAttr)
