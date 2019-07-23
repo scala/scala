@@ -472,8 +472,14 @@ override def getClass(): Class[Boolean] = ???
     override def mkObject = s"""@scala.annotation.compileTimeOnly("$nono")\n${super.mkObject}"""
 
     override def boxUnboxInterpolations = Map(
-      "@boxRunTimeDoc@" -> "",
-      "@unboxRunTimeDoc@" -> "",
+      "@boxRunTimeDoc@" -> """
+ *  This method is not intended for use in source code.
+ *  The runtime representation of this value is platform specific.
+ *""",
+      "@unboxRunTimeDoc@" -> """
+ *  This method is not intended for use in source code.
+ *  The result of successfully unboxing a value is `()`.
+ *""",
       "@unboxDoc@" -> "the Unit value ()",
       "@boxImpl@" -> "scala.runtime.BoxedUnit.UNIT",
       "@unboxImpl@" -> "x.asInstanceOf[scala.runtime.BoxedUnit]"
