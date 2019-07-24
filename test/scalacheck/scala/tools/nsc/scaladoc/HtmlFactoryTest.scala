@@ -601,6 +601,10 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   }
 
+  property("show constructor method for annotations") = {
+    checkTemplate("t11390.scala", "A.html") { (_, s) => s.contains("<h3>Instance Constructors</h3>") }
+  }
+
   property("scala/bug#9599 Multiple @todo formatted with comma on separate line") = {
     checkTemplate("t9599.scala", "X.html") { (_, s) => s.contains("""<span class="cmt"><p>todo1</p></span><span class="cmt"><p>todo2</p></span><span class="cmt"><p>todo3</p></span>""") }
   }
