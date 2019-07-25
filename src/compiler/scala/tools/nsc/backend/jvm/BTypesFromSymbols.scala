@@ -565,8 +565,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
           Nil
         } else {
-          val name      = methodSym.javaSimpleName.toString // same as in genDefDef
-          val signature = name + methodBTypeFromSymbol(methodSym).descriptor
+          val name = methodSym.javaSimpleName.toString // same as in genDefDef
+          val signature = (name, methodBTypeFromSymbol(methodSym).descriptor)
 
           // In `trait T { object O }`, `oSym.isEffectivelyFinalOrNotOverridden` is true, but the
           // method is abstract in bytecode, `defDef.rhs.isEmpty`. Abstract methods are excluded
@@ -577,20 +577,20 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           val effectivelyFinal = methodSym.isEffectivelyFinalOrNotOverridden && !(methodSym hasFlag DEFERRED | SYNTHESIZE_IMPL_IN_SUBCLASS)
 
           val info = MethodInlineInfo(
-            effectivelyFinal  = effectivelyFinal,
-            annotatedInline   = methodSym.hasAnnotation(ScalaInlineClass),
+            effectivelyFinal = effectivelyFinal,
+            annotatedInline = methodSym.hasAnnotation(ScalaInlineClass),
             annotatedNoInline = methodSym.hasAnnotation(ScalaNoInlineClass))
 
           if (needsStaticImplMethod(methodSym)) {
             val staticName = traitSuperAccessorName(methodSym).toString
             val selfParam = methodSym.newSyntheticValueParam(methodSym.owner.typeConstructor, nme.SELF)
             val staticMethodType = methodSym.info match {
-              case mt @ MethodType(params, res) => copyMethodType(mt, selfParam :: params, res)
+              case mt@MethodType(params, res) => copyMethodType(mt, selfParam :: params, res)
             }
-            val staticMethodSignature = staticName + methodBTypeFromMethodType(staticMethodType, isConstructor = false)
+            val staticMethodSignature = (staticName, methodBTypeFromMethodType(staticMethodType, isConstructor = false).descriptor)
             val staticMethodInfo = MethodInlineInfo(
-              effectivelyFinal  = true,
-              annotatedInline   = info.annotatedInline,
+              effectivelyFinal = true,
+              annotatedInline = info.annotatedInline,
               annotatedNoInline = info.annotatedNoInline)
             if (methodSym.isMixinConstructor)
               (staticMethodSignature, staticMethodInfo) :: Nil

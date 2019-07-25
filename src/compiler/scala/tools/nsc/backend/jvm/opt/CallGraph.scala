@@ -307,7 +307,7 @@ abstract class CallGraph {
    * Analyze a callsite and gather meta-data that can be used for inlining decisions.
    */
   private def analyzeCallsite(calleeMethodNode: MethodNode, calleeDeclarationClassBType: ClassBType, call: MethodInsnNode, paramTps: FLazy[Array[Type]], calleeSourceFilePath: Option[String], callsiteClass: ClassBType): CallsiteInfo = {
-    val methodSignature = calleeMethodNode.name + calleeMethodNode.desc
+    val methodSignature = (calleeMethodNode.name, calleeMethodNode.desc)
 
     try {
       // The inlineInfo.methodInfos of a ClassBType holds an InlineInfo for each method *declared*

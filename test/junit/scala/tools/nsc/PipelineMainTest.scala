@@ -240,7 +240,7 @@ class PipelineMainTest {
         this
       }
       def argsFile(extraOpts: List[String]): Path = {
-        val cp = if (classpath.isEmpty) Nil else List("-cp", classpath.mkString(File.pathSeparator))
+        val cp = List("-cp", if (classpath.isEmpty) "__DUMMY__" else classpath.mkString(File.pathSeparator)) // Dummy to avoid default classpath of "."
         val printArgs = if (debug) List("-Xprint-args", "-") else Nil
         val entries = List(
           Build.this.scalacOptions.toList,

@@ -43,11 +43,13 @@ object RootPath {
         def close(): Unit = {
           zipfs.close()
         }
+        override def toString: String = path.toString
       }
     } else {
       new RootPath {
         override def root: nio.file.Path = path
         override def close(): Unit = ()
+        override def toString: String = path.toString
       }
     }
   }

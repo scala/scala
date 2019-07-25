@@ -209,6 +209,9 @@ $(document).ready(function() {
 
     function commentToggleFct(element){
         $("#template li.selected").removeClass("selected");
+        if (element.is("[fullcomment=no]")) {
+            return;
+        }
         element.toggleClass("open");
         var signature = element.find(".modifier_kind")
         var shortComment = element.find(".shortcomment");
