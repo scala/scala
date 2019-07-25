@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package plugins
 
+import java.util.jar
+
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{File, Path}
 
@@ -80,6 +82,10 @@ abstract class Plugin {
    *  should be listed with the `-P:plugname:` part included.
    */
   val optionsHelp: Option[String] = None
+
+  def writeAdditionalOutputs(writer: OutputFileWriter): Unit = {}
+  def augmentManifest(manifest: jar.Manifest): Unit = {}
+
 }
 
 /** ...

@@ -27,6 +27,8 @@ import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.Global
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.plugins.{OutputFileWriter, Plugin}
+import scala.tools.nsc.util.JarFactory
 
 abstract class ClassfileWriters {
   val postProcessor: PostProcessor
@@ -41,7 +43,7 @@ abstract class ClassfileWriters {
    *
    * Operations are threadsafe.
    */
-  sealed trait ClassfileWriter {
+  sealed trait ClassfileWriter extends OutputFileWriter {
     /**
      * Write a classfile
      */
@@ -98,16 +100,29 @@ abstract class ClassfileWriters {
       private def getUnderlying(sourceFile: AbstractFile, outputDir: AbstractFile) = underlying.getOrElse(outputDir, {
         throw new Exception(s"Cannot determine output directory for ${sourceFile} with output ${outputDir}. Configured outputs are ${underlying.keySet}")
       })
+      private def getUnderlying(outputDir: AbstractFile) = underlying.getOrElse(outputDir, {
+        throw new Exception(s"Cannot determine output for ${outputDir}. Configured outputs are ${underlying.keySet}")
+      })
 
       override def writeClass(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = {
         getUnderlying(sourceFile, sourceToOutput(sourceFile)).writeFile(classRelativePath(className), bytes)
       }
+
+      override def writeFile(relativePath: String, data: Array[Byte], outputDir: AbstractFile): Unit = {
+        getUnderlying(outputDir).writeFile(relativePath, data)
+      }
+
       override def close(): Unit = underlying.values.foreach(_.close())
     }
     private final class SingleClassWriter(underlying: FileWriter) extends ClassfileWriter {
       override def writeClass(className: InternalName, bytes: Array[Byte], sourceFile: AbstractFile): Unit = {
         underlying.writeFile(classRelativePath(className), bytes)
       }
+
+      override def writeFile(relativePath: String, data: Array[Byte], outputDir: AbstractFile): Unit = {
+        underlying.writeFile(relativePath, data)
+      }
+
       override def close(): Unit = underlying.close()
     }
 
@@ -121,6 +136,10 @@ abstract class ClassfileWriters {
         dump.foreach { writer =>
           writer.writeFile(classRelativePath(className), bytes)
         }
+      }
+
+      override def writeFile(relativePath: String, data: Array[Byte], outputDir: AbstractFile): Unit = {
+        basic.writeFile(relativePath, data, outputDir)
       }
 
       override def close(): Unit = {
@@ -138,6 +157,10 @@ abstract class ClassfileWriters {
         finally statistics.stopTimer(statistics.bcodeWriteTimer, snap)
       }
 
+      override def writeFile(relativePath: String, data: Array[Byte], outputDir: AbstractFile): Unit = {
+        underlying.writeFile(relativePath, data, outputDir)
+      }
+
       override def close(): Unit = underlying.close()
     }
   }
@@ -151,7 +174,8 @@ abstract class ClassfileWriters {
     def apply(global: Global, file: AbstractFile, jarManifestMainClass: Option[String]): FileWriter = {
       if (file hasExtension "jar") {
         val jarCompressionLevel = global.settings.YjarCompressionLevel.value
-        new JarEntryWriter(file, jarManifestMainClass, jarCompressionLevel)
+        val jarFactory = Class.forName(global.settings.YjarFactory.value).asSubclass(classOf[JarFactory]).newInstance()
+        new JarEntryWriter(file, jarManifestMainClass, jarCompressionLevel, jarFactory, global.plugins)
       } else if (file.isVirtual) {
         new VirtualFileWriter(file)
       } else if (file.isDirectory) {
@@ -162,7 +186,7 @@ abstract class ClassfileWriters {
     }
   }
 
-  private final class JarEntryWriter(file: AbstractFile, mainClass: Option[String], compressionLevel: Int) extends FileWriter {
+  private final class JarEntryWriter(file: AbstractFile, mainClass: Option[String], compressionLevel: Int, jarFactory: JarFactory, plugins: List[Plugin]) extends FileWriter {
     //keep these imports local - avoid confusion with scala naming
     import java.util.jar.Attributes.Name
     import java.util.jar.{JarOutputStream, Manifest}
@@ -172,7 +196,8 @@ abstract class ClassfileWriters {
     val jarWriter: JarOutputStream = {
       val manifest = new Manifest()
       mainClass foreach { c => manifest.getMainAttributes.put(Name.MAIN_CLASS, c) }
-      val jar = new JarOutputStream(new BufferedOutputStream(new FileOutputStream(file.file), 64000), manifest)
+      plugins foreach (_.augmentManifest(manifest))
+      val jar = jarFactory.createJarOutputStream(file, manifest)
       jar.setLevel(compressionLevel)
       if (storeOnly) jar.setMethod(ZipOutputStream.STORED)
       jar
