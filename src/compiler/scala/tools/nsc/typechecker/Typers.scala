@@ -3058,7 +3058,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               setError(fun)
             }
-          } else if (pt.typeSymbol == PartialFunctionClass) {
+          } else if (numVparams == 1 && pt.typeSymbol == PartialFunctionClass) { // dodge auto-tupling with the == 1
             // translate `x => x match { <cases> }` : PartialFunction to
             // `new PartialFunction { def applyOrElse(x, default) = x match { <cases> } def isDefinedAt(x) = ... }`
             val funBody = fun.body match {
