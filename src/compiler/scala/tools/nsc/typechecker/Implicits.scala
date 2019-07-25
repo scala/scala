@@ -118,7 +118,15 @@ trait Implicits {
     //         `implicitSearchContext.undetparams`, *not* in `context.undetparams`
     //         Here, we copy them up to parent context (analogously to the way the errors are copied above),
     //         and then filter out any which *were* inferred and are part of the substitutor in the implicit search result.
-    context.undetparams = ((context.undetparams ++ result.undetparams) filterNot result.subst.from.contains).distinct
+    context.undetparams = { // (context.undetparams ++ result.undetparams) filterNot result.subst.from.contains).distinct
+      val buf = ListBuffer.empty[Symbol]
+      def addUndetParam(udp: Symbol): Unit =
+        if (! result.subst.from.contains(udp) && ! buf.contains(udp))
+          buf += udp
+      context.undetparams.foreach(addUndetParam)
+      result.undetparams.foreach(addUndetParam)
+      buf.toList
+    }
 
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(implicitNanos, start)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeImpl, rawTypeStart)
