@@ -5,9 +5,8 @@ import org.junit.Test
 import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
 import scala.tools.testkit.AssertUtil._
-
+import scala.util.Using
 import java.io.{ Console => _, _ }
 
 @RunWith(classOf[JUnit4])
@@ -86,5 +85,12 @@ class SourceTest {
     val ps  = new PrintStream(out, true, charSet)
     s.reportError(s.pos, "That doesn't sound right.", ps)
     assertEquals("0030: THAT DOESN'T SOUND RIGHT.", out.toString(charSet))
+  }
+
+  @Test def canBenefitFromUsing() = {
+    var closed = false
+    val source = Source.fromString("test").withClose(() => closed = true)
+    Using(source)(_.getLines().mkString) // "consume"
+    assertTrue(closed)
   }
 }

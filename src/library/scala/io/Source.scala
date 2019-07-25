@@ -14,8 +14,9 @@ package scala
 package io
 
 import scala.collection.{AbstractIterator, BufferedIterator}
-import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
+import java.io.{ Closeable, FileInputStream, InputStream, PrintStream, File => JFile }
 import java.net.{ URI, URL }
+import scala.util.Using.Releasable
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -178,6 +179,12 @@ object Source {
   def fromResource(resource: String, classLoader: ClassLoader = Thread.currentThread().getContextClassLoader())(implicit codec: Codec): BufferedSource =
     fromInputStream(classLoader.getResourceAsStream(resource))
 
+  /** An implicit `Releasable` for [[scala.io.Source `Source`s]]
+   * to use with [[scala.util.Using `Using`]].
+   */
+  implicit object SourceIsReleasable extends Releasable[Source] {
+    def release(source: Source): Unit = source.close()
+  }
 }
 
 /** An iterable representation of source data.
