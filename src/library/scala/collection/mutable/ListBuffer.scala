@@ -66,8 +66,8 @@ final class ListBuffer[A]
    */
   private var start: List[A] = Nil
   private var last0: ::[A] = _
-  private var exported: Boolean = false
-  private var len = 0
+  private[this] var exported: Boolean = false
+  private[this] var len = 0
 
   protected def underlying: List[A] = start
 
@@ -143,7 +143,7 @@ final class ListBuffer[A]
   def update(n: Int, x: A) {
     // We check the bounds early, so that we don't trigger copying.
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString)
-    if (exported) copy()
+    ensureUnaliased()
     if (n == 0) {
       val newElem = new :: (x, start.tail)
       if (last0 eq start) {
@@ -171,15 +171,10 @@ final class ListBuffer[A]
    *  @return   this $coll.
    */
   def += (x: A): this.type = {
-    if (exported) copy()
-    if (isEmpty) {
-      last0 = new :: (x, Nil)
-      start = last0
-    } else {
-      val last1 = last0
-      last0 = new :: (x, Nil)
-      last1.tl = last0
-    }
+    ensureUnaliased()
+    val last1 = new ::[A](x, Nil)
+    if (len == 0) start = last1 else last0.tl = last1
+    last0 = last1
     len += 1
     this
   }
@@ -209,7 +204,7 @@ final class ListBuffer[A]
    *  @return   this $coll.
    */
   def +=: (x: A): this.type = {
-    if (exported) copy()
+    ensureUnaliased()
     val newElem = new :: (x, start)
     if (isEmpty) last0 = newElem
     start = newElem
@@ -228,7 +223,7 @@ final class ListBuffer[A]
   def insertAll(n: Int, seq: Traversable[A]) {
     // We check the bounds early, so that we don't trigger copying.
     if (n < 0 || n > len) throw new IndexOutOfBoundsException(n.toString)
-    if (exported) copy()
+    ensureUnaliased()
     var elems = seq.toList.reverse
     len += elems.length
     if (n == 0) {
@@ -276,7 +271,7 @@ final class ListBuffer[A]
     if (count < 0) throw new IllegalArgumentException("removing negative number of elements: " + count.toString)
     else if (count == 0) return  // Nothing to do
     if (n < 0 || n > len - count) throw new IndexOutOfBoundsException("at " + n.toString + " deleting " + count.toString)
-    if (exported) copy()
+    ensureUnaliased()
     val n1 = n max 0
     val count1 = count min (len - n1)
     if (n1 == 0) {
@@ -327,7 +322,7 @@ final class ListBuffer[A]
   def prependToList(xs: List[A]): List[A] = {
     if (isEmpty) xs
     else {
-      if (exported) copy()
+      ensureUnaliased()
       last0.tl = xs
       toList
     }
@@ -345,7 +340,7 @@ final class ListBuffer[A]
    */
   def remove(n: Int): A = {
     if (n < 0 || n >= len) throw new IndexOutOfBoundsException(n.toString())
-    if (exported) copy()
+    ensureUnaliased()
     var old = start.head
     if (n == 0) {
       start = start.tail
@@ -371,7 +366,7 @@ final class ListBuffer[A]
    *  @return      this $coll.
    */
   override def -= (elem: A): this.type = {
-    if (exported) copy()
+    ensureUnaliased()
     if (isEmpty) {}
     else if (start.head == elem) {
       start = start.tail
@@ -439,6 +434,9 @@ final class ListBuffer[A]
   }
 
   // Private methods
+  private def ensureUnaliased() = {
+    if (exported) copy()
+  }
 
   /** Copy contents of this buffer */
   private def copy() {
