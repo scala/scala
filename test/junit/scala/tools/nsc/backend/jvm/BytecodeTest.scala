@@ -307,4 +307,28 @@ class BytecodeTest extends BytecodeTesting {
     }
     assertEquals(List("$outer", "x$1", "y$1"), assignedInConstr.sorted)
   }
+
+  @Test
+  def t11641(): Unit = {
+    val code =
+      """class B { val b = 0 }
+        |class C extends DelayedInit {
+        |  def delayedInit(body: => Unit): Unit = ()
+        |}
+        |class D extends DelayedInit {
+        |  val d = 0
+        |  def delayedInit(body: => Unit): Unit = ()
+        |}
+        |class E extends C {
+        |  val e = 0
+        |}
+        |class F extends D
+      """.stripMargin
+    val cs = compileClasses(code, allowMessage = _.msg.contains("there were two deprecation warnings"))
+    assertDoesNotInvoke(getMethod(cs.find(_.name == "B").get, "<init>"), "releaseFence")
+    assertDoesNotInvoke(getMethod(cs.find(_.name == "C").get, "<init>"), "releaseFence")
+    assertInvoke(getMethod(cs.find(_.name == "D").get, "<init>"), "scala/runtime/Statics", "releaseFence")
+    assertInvoke(getMethod(cs.find(_.name == "E").get, "<init>"), "scala/runtime/Statics", "releaseFence")
+    assertDoesNotInvoke(getMethod(cs.find(_.name == "F").get, "<init>"), "releaseFence")
+  }
 }
