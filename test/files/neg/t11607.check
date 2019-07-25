@@ -1,0 +1,4 @@
+t11607.scala:2: error: class migration in package annotation cannot be accessed in package annotation
+@migration("", "") class C
+ ^
+one error found
