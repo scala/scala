@@ -656,8 +656,9 @@ trait TypeDiagnostics {
       unusedPrivates.traverse(body)
 
       if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
+        def shouldWarnOn(sym: Symbol) = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
         val valAdvice = "is never updated: consider using immutable val"
-        for (defn: DefTree <- unusedPrivates.unusedTerms) {
+        def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
           val pos = (
             if (defn.pos.isDefined) defn.pos
@@ -666,7 +667,7 @@ trait TypeDiagnostics {
               case sym: TermSymbol => sym.referenced.pos
               case _               => NoPosition
             }
-            )
+          )
           val why = if (sym.isPrivate) "private" else "local"
           var cond = "is never used"
           val what = (
@@ -685,19 +686,19 @@ trait TypeDiagnostics {
             else if (sym.isMethod) s"method ${sym.name.decoded}"
             else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"
-            )
+          )
           typer.context.warning(pos, s"$why $what in ${sym.owner} $cond")
         }
+        def typeWarning(defn: SymTree): Unit = {
+          val why = if (defn.symbol.isPrivate) "private" else "local"
+          typer.context.warning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used")
+        }
+
+        for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }
+        for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
+
         for (v <- unusedPrivates.unsetVars) {
           typer.context.warning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}")
-        }
-        for (t <- unusedPrivates.unusedTypes) {
-          val sym = t.symbol
-          val wrn = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
-          if (wrn) {
-            val why = if (sym.isPrivate) "private" else "local"
-            typer.context.warning(t.pos, s"$why ${sym.fullLocationString} is never used")
-          }
         }
       }
       if (settings.warnUnusedPatVars) {

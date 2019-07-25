@@ -1100,8 +1100,15 @@ object BTypes {
    */
   final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
-                              methodInfos: Map[String, MethodInlineInfo],
-                              warning: Option[ClassInlineInfoWarning])
+                              methodInfos: Map[(String, String), MethodInlineInfo],
+                              warning: Option[ClassInlineInfoWarning]) {
+    lazy val methodInfosSorted: IndexedSeq[((String, String), MethodInlineInfo)] = {
+      val result = new Array[((String, String), MethodInlineInfo)](methodInfos.size)
+      methodInfos.copyToArray(result)
+      scala.util.Sorting.quickSort(result)(Ordering.by(_._1))
+      result
+    }
+  }
 
   val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
 

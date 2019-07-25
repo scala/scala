@@ -161,12 +161,12 @@ abstract class BTypesFromClassfile {
       // require special handling. Excluding is OK because they are never inlined.
       // Here we are parsing from a classfile and we don't need to do anything special. Many of these
       // primitives don't even exist, for example Any.isInstanceOf.
-      val methodInfos:Map[String,MethodInlineInfo] = classNode.methods.asScala.iterator.map(methodNode => {
+      val methodInfos:Map[(String, String),MethodInlineInfo] = classNode.methods.asScala.iterator.map(methodNode => {
         val info = MethodInlineInfo(
           effectivelyFinal                    = BytecodeUtils.isFinalMethod(methodNode),
           annotatedInline                     = false,
           annotatedNoInline                   = false)
-        (methodNode.name + methodNode.desc, info)
+          ((methodNode.name, methodNode.desc), info)
       }).toMap
       InlineInfo(
         isEffectivelyFinal = BytecodeUtils.isFinalClass(classNode),

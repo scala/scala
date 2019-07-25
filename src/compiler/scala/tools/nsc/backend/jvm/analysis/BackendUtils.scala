@@ -846,8 +846,10 @@ object BackendUtils {
         while (i < desc.length) {
           if (desc.charAt(i) == 'L') {
             val start = i + 1 // skip the L
-            while (desc.charAt(i) != ';') i += 1
-            visitInternalName(desc, start, i)
+            var seenDollar = false
+            while ({val ch = desc.charAt(i); seenDollar ||= (ch == '$'); ch != ';'}) i += 1
+            if (seenDollar)
+              visitInternalName(desc, start, i)
           }
           // skips over '[', ')', primitives
           i += 1

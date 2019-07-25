@@ -10,6 +10,7 @@ import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 import scala.collection.JavaConverters._
+import scala.tools.asm.Opcodes
 
 @RunWith(classOf[JUnit4])
 class BytecodeTest extends BytecodeTesting {
@@ -48,24 +49,21 @@ class BytecodeTest extends BytecodeTesting {
 
     val unapplyLineNumbers = getInstructions(module, "unapply").filter(_.isInstanceOf[LineNumber])
     assert(unapplyLineNumbers == List(LineNumber(2, Label(0))), unapplyLineNumbers)
-
     val expected = List(
       LineNumber(4, Label(0)),
-      LineNumber(5, Label(5)),
-      Jump(IFEQ, Label(20)),
+      LineNumber(5, Label(4)),
+      Jump(IFNE, Label(10)),
+      Jump(GOTO, Label(19)),
 
-      LineNumber(6, Label(11)),
+      LineNumber(6, Label(10)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
-      Jump(GOTO, Label(33)),
+      Jump(GOTO, Label(28)),
 
-      LineNumber(5, Label(20)),
-      Jump(GOTO, Label(24)),
-
-      LineNumber(8, Label(24)),
+      LineNumber(8, Label(19)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false),
-      Jump(GOTO, Label(33)),
+      Jump(GOTO, Label(28)),
 
-      LineNumber(10, Label(33)),
+      LineNumber(10, Label(28)),
       Invoke(INVOKEVIRTUAL, "scala/Predef$", "println", "(Ljava/lang/Object;)V", false)
     )
 
@@ -271,5 +269,42 @@ class BytecodeTest extends BytecodeTesting {
     check("t5", List("C.b", "C.b", "C.b"))
     check("t6", List("C.b", "C.b", "C.b"))
     check("t7", List("C.b", "C.b", "C.b", "C.b", "C.b", "C.b", "C.b", "C.b"))
+  }
+
+  @Test
+  def t11412(): Unit = {
+    val code = "class A { val a = 0 }; class C extends A with App { val x = 1; val y = x }"
+    val cs = compileClasses(code)
+    val c = cs.find(_.name == "C").get
+    val fs = c.fields.asScala.toList.sortBy(_.name).map(f => (f.name, (f.access & Opcodes.ACC_FINAL) != 0))
+    assertEquals(List(
+      ("executionStart", false),
+      ("scala$App$$_args", false),
+      ("scala$App$$initCode", false),
+      ("x", false),
+      ("y", false)
+    ), fs)
+    val assignedInConstr = getMethod(c, "<init>").instructions.filter(_.opcode == Opcodes.PUTFIELD)
+    assertEquals(Nil, assignedInConstr)
+  }
+
+  @Test
+  def t11412b(): Unit = {
+    val code = "class C { def f = { var x = 0; val y = 1; class K extends App { def m = x + y } } }"
+    val cs = compileClasses(code)
+    val k = cs.find(_.name == "C$K$1").get
+    val fs = k.fields.asScala.toList.sortBy(_.name).map(f => (f.name, (f.access & Opcodes.ACC_FINAL) != 0))
+    assertEquals(List(
+      ("$outer", true),
+      ("executionStart", false),
+      ("scala$App$$_args", false),
+      ("scala$App$$initCode", false),
+      ("x$1", true), // captured, assigned in constructor
+      ("y$1", true)  // captured
+    ), fs)
+    val assignedInConstr = getMethod(k, "<init>").instructions.filter(_.opcode == Opcodes.PUTFIELD) map {
+      case f: Field => f.name
+    }
+    assertEquals(List("$outer", "x$1", "y$1"), assignedInConstr.sorted)
   }
 }
