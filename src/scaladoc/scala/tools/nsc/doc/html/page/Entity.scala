@@ -616,11 +616,11 @@ trait EntityPage extends HtmlPage {
 
     // --- start attributes block vals
     val attributes: NodeSeq = {
-      val fvs: List[comment.Paragraph] = visibility(mbr).toList
+      val fvs: List[NodeSeq] = visibility(mbr).toList
       if (fvs.isEmpty || isReduced) NodeSeq.Empty
       else {
         <dt>Attributes</dt>
-        <dd>{ fvs map { fv => { inlineToHtml(fv.text) ++ scala.xml.Text(" ") } } }</dd>
+        <dd>{ fvs.map(_ ++ scala.xml.Text(" ")) }</dd>
       }
     }
 
@@ -852,22 +852,20 @@ trait EntityPage extends HtmlPage {
     bound0(lo, " >: ") ++ bound0(hi, " <: ")
   }
 
-  def visibility(mbr: MemberEntity): Option[comment.Paragraph] = {
-    import comment._
-    import comment.{ Text => CText }
+  def visibility(mbr: MemberEntity): Option[NodeSeq] = {
     mbr.visibility match {
       case PrivateInInstance() =>
-        Some(Paragraph(CText("private[this]")))
-      case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
-        Some(Paragraph(CText("private")))
-      case PrivateInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("private["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
+        Some(Text("private[this]"))
+      case PrivateInTemplate(None) =>
+        Some(Text("private"))
+      case PrivateInTemplate(Some(owner)) =>
+        Some(Text("private[") ++ typeToHtml(owner, true) ++ Text("]"))
       case ProtectedInInstance() =>
-        Some(Paragraph(CText("protected[this]")))
-      case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
-        Some(Paragraph(CText("protected")))
-      case ProtectedInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("protected["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
+        Some(Text("protected[this]"))
+      case ProtectedInTemplate(None) =>
+        Some(Text("protected"))
+      case ProtectedInTemplate(Some(owner)) =>
+        Some(Text("protected[") ++ typeToHtml(owner, true) ++ Text("]"))
       case Public() =>
         None
     }
