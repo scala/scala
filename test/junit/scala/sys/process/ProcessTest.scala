@@ -1,6 +1,6 @@
 package scala.sys.process
 
-import java.io.{ByteArrayInputStream, File, IOException, StringReader}
+import java.io.{ByteArrayInputStream, File, InputStream, IOException, StringReader}
 import java.nio.file.{Files, Paths}, Files.createTempFile
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.{CountDownLatch, TimeUnit}
@@ -22,7 +22,14 @@ import org.junit.Assert._
 @RunWith(classOf[JUnit4])
 class ProcessTest {
   private def testily(body: => Unit) = if (!isWin) body
-  private val tempFiles = Seq(File.createTempFile("foo", "tmp"), File.createTempFile("bar", "tmp"))
+  private val tempFiles = Seq("foo", "bar").map(File.createTempFile(_, "tmp"))
+
+  private def withIn[A](in: InputStream)(body: => A): A = {
+    val saved = System.in
+    System.setIn(in)
+    try body
+    finally System.setIn(saved)
+  }
 
   // under the old regime, the thread to copy input would block on the read
   // until after the latch, which is after the innocuous process exited,
@@ -41,15 +48,11 @@ class ProcessTest {
         super.read(b, off, len)
       }
     }
-    val originalIn = System.in
-    System.setIn(inputStream)
-    try {
+    withIn(inputStream) {
       Process("echo -n").run(true).exitValue()
       latch.countDown()
-      assertNull(exception)
-    } finally {
-      System.setIn(originalIn)
     }
+    assertNull(exception)
   }
 
   @Test def t10007(): Unit = testily {
