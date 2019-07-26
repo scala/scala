@@ -9,3 +9,10 @@
 /* \u000a object foo */
 // object foo \u000a
 // \u000a object foo
+/* \n foo */
+// \n foo
+/* \12 foo */
+// \12 foo
+/* \u000a foo */
+// foo \u000a
+// \u000a foo

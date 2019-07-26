@@ -2,12 +2,12 @@
 //
 
 trait G {
-  val c: Char = '\u000a'   // disallowed!
-  def x\u000d\u000a = 9    // as nl
+  val c: Char = '\u000a'   // allowed!
+  def x = 9
   def y() = x
   def z() = {
-    y()\u000a()           // was Int does not take parameters
+    y()()           // was Int does not take parameters
   }
-  def v = y()\u000c()     // was Int does not take parameters
+  def v = y()()     // was Int does not take parameters
   def w = { x() }       // ^L is colored blue on this screen, hardly visible
 }

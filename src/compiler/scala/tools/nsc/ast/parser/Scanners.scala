@@ -237,10 +237,7 @@ trait Scanners extends ScannersCommon {
 
     /** append Unicode character to "cbuf" buffer
      */
-    protected def putChar(c: Char): Unit = {
-//      assert(cbuf.size < 10000, cbuf)
-      cbuf.append(c)
-    }
+    protected def putChar(c: Char): Unit = cbuf.append(c)
 
     /** Determines whether this scanner should emit identifier deprecation warnings,
      *  e.g. when seeing `macro` or `then`, which are planned to become keywords in future versions of Scala.
@@ -653,7 +650,7 @@ trait Scanners extends ScannersCommon {
               charLitOr(() => getIdentRest())
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(() => getOperatorRest())
-            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
+            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF)) {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
@@ -843,11 +840,21 @@ trait Scanners extends ScannersCommon {
 
     private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
 
+    private def replaceUnicodeEscapes(warn: Boolean): Unit = 
+      if(strVal != null) {
+        val replaced = StringContext.processUnicode(strVal)
+        if(warn && replaced != strVal) {
+          deprecationWarning("Unicode escapes in triple quoted strings and raw interpolations are deprecated, use the literal character instead" , since="2.13.1")
+        }
+        strVal = replaced
+      }
+
     @tailrec private def getRawStringLit(): Unit = {
       if (ch == '\"') {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
+          replaceUnicodeEscapes(true)
           token = STRINGLIT
         } else
           getRawStringLit()
@@ -911,7 +918,7 @@ trait Scanners extends ScannersCommon {
           syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
-        val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
+        val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))
         if (isUnclosedLiteral) {
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
@@ -983,6 +990,7 @@ trait Scanners extends ScannersCommon {
             case '\"' => putChar('\"')
             case '\'' => putChar('\'')
             case '\\' => putChar('\\')
+            case 'u'  => getUEscape()
             case _    => invalidEscape()
           }
           nextChar()
@@ -992,13 +1000,37 @@ trait Scanners extends ScannersCommon {
         nextChar()
       }
 
+    private def getUEscape(): Unit = {
+      while (ch == 'u') nextChar()
+      var codepoint = 0
+      var digitsRead = 0
+      while(digitsRead < 4){
+        if (digitsRead > 0) nextChar()
+        val digit = digit2int(ch, 16)
+        digitsRead += 1
+        if (digit >= 0) {
+          codepoint = codepoint << 4
+          codepoint += digit
+        }
+        else invalidUnicodeEscape(digitsRead)
+      }
+      val found = codepoint.asInstanceOf[Char]
+      putChar(found)
+    }
+    
+
     protected def invalidEscape(): Unit = {
       syntaxError(charOffset - 1, "invalid escape character")
       putChar(ch)
     }
 
+    protected def invalidUnicodeEscape(n: Int): Unit = {
+      syntaxError(charOffset -n, "invalid unicode escape")
+      putChar(ch)
+    }
+
     private def getLitChars(delimiter: Char) = {
-      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF))
         getLitChar()
     }
 
@@ -1391,7 +1423,6 @@ trait Scanners extends ScannersCommon {
    */
   class SourceFileScanner(val source: SourceFile) extends Scanner {
     val buf = source.content
-    override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
     def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()

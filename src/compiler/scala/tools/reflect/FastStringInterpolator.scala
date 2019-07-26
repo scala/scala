@@ -29,18 +29,16 @@ trait FastStringInterpolator extends FormatInterpolator {
       parts.forall(treeInfo.isLiteralString) &&
       parts.length == (args.length + 1) =>
 
-      val treated =
-        if (isRaw) parts
-        else
-          try
-            parts.mapConserve { case lit@Literal(Constant(stringVal: String)) =>
-              val k = Constant(StringContext.processEscapes(stringVal))
-              // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
-              treeCopy.Literal(lit, k).setType(ConstantType(k))
-            }
-          catch {
-            case e: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(e.index), e.getMessage)
+      val treated = 
+        try
+          parts.mapConserve { case lit@Literal(Constant(stringVal: String)) =>
+            val k = Constant(if(isRaw) StringContext.processUnicode(stringVal) else StringContext.processEscapes(stringVal))
+            // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
+            treeCopy.Literal(lit, k).setType(ConstantType(k))
           }
+        catch {
+          case e: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(e.index), e.getMessage)
+        }
 
       val argsIndexed = args.toVector
       val concatArgs = collection.mutable.ListBuffer[Tree]()

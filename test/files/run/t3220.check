@@ -1,0 +1,31 @@
+t3220.scala:9: warning: Unicode escapes in triple quoted strings and raw interpolations are deprecated, use the literal character instead
+  def inTripleQuoted = """\u000A"""
+                       ^
+t3220.scala:32: warning: Unicode escapes in triple quoted strings and raw interpolations are deprecated, use the literal character instead
+      "tab unicode escape in triple quoted string" -> """tab\u0009tab""",
+                                                      ^
+supported
+literals that result in tab	tab:
+literal tab in single quoted string
+tab escape char in single quoted string
+tab unicode escape in single quoted string
+literal tab in triple quoted string
+literal tab in triple quoted raw interpolator
+literal tab in single quoted raw interpolator
+literal tab in triple quoted s interpolator
+literal tab in single quoted s interpolator
+tab escape char in triple quoted s interpolator
+tab escape char in single quoted s interpolator
+tab unicode escape in triple quoted s interpolator
+tab unicode escape in single quoted s interpolator
+
+unsupported
+literals that result in tab\ttab:
+tab escape char in triple quoted string
+tab escape char in raw interpolator
+
+deprecated
+literals that result in tab	tab:
+tab unicode escape in triple quoted string
+tab unicode escape in raw interpolator
+

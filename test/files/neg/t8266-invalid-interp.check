@@ -1,10 +1,10 @@
 t8266-invalid-interp.scala:4: error: Trailing '\' escapes nothing.
     f"a\",
        ^
-t8266-invalid-interp.scala:5: error: invalid escape '\x' not one of [\b, \t, \n, \f, \r, \\, \", \'] at index 1 in "a\xc". Use \\ for literal \.
+t8266-invalid-interp.scala:5: error: invalid escape '\x' not one of [\b, \t, \n, \f, \r, \, \", \', \uxxxx] at index 1 in "a\xc". Use \\ for literal \.
     f"a\xc",
        ^
-t8266-invalid-interp.scala:7: error: invalid escape '\v' not one of [\b, \t, \n, \f, \r, \\, \", \'] at index 1 in "a\vc". Use \\ for literal \.
+t8266-invalid-interp.scala:7: error: invalid escape '\v' not one of [\b, \t, \n, \f, \r, \, \", \', \uxxxx] at index 1 in "a\vc". Use \\ for literal \.
     f"a\vc"
        ^
 3 errors

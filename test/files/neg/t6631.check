@@ -1,4 +1,4 @@
-t6631.scala:2: error: invalid escape '\x' not one of [\b, \t, \n, \f, \r, \\, \", \'] at index 0 in "\x". Use \\ for literal \.
+t6631.scala:2: error: invalid escape '\x' not one of [\b, \t, \n, \f, \r, \, \", \', \uxxxx] at index 0 in "\x". Use \\ for literal \.
   s"""\x"""
       ^
 1 error
