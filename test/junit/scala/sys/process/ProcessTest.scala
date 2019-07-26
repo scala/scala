@@ -1,10 +1,10 @@
 package scala.sys.process
 
-import java.io.{ByteArrayInputStream, File, InputStream, IOException, StringReader}
+import java.io.{ByteArrayInputStream, File, InputStream, IOException}
 import java.nio.file.{Files, Paths}, Files.createTempFile
 import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.{CountDownLatch, TimeUnit}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.collection.JavaConverters._
 import scala.io.{Source => IOSource, StdIn}

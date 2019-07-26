@@ -74,7 +74,7 @@ private[process] trait ProcessBuilderImpl {
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
       import java.lang.ProcessBuilder.Redirect.{INHERIT => Inherit}
-      import io._
+      import io.{daemonizeThreads, processError, processOutput, writeInput}
 
       val inherit = writeInput eq BasicIO.connectToStdIn
       if (inherit) p.redirectInput(Inherit)
@@ -83,7 +83,7 @@ private[process] trait ProcessBuilderImpl {
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
       val inThread =
-        if (inherit) null
+        if (inherit || (writeInput eq BasicIO.connectNoOp)) null
         else Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
       val outThread = Spawn("Simple-output", daemonizeThreads)(processOutput(process.getInputStream))
       val errorThread =
