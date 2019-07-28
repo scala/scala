@@ -219,4 +219,47 @@ class VectorTest {
       assertArrayEquals(s"<${v2.length}>.slice($j, $k)", v2.toArray.slice(j, k), v2.iterator.slice(j, k).toArray)
     }
   }
+  @Test
+  def t11600(): Unit = {
+    locally {
+      abstract class Base
+      class Derived1 extends Base
+      class Derived2 extends Base
+      val d1 = new Derived1
+      val d2 = new Derived2
+
+      locally {
+        val arraySeq = ArraySeq(d1)
+        val vector = Vector(arraySeq: _*)
+        assertEquals(arraySeq, ArraySeq(d1)) // ensure arraySeq is not mutated
+        assertEquals(vector.updated(0, d2), Vector(d2))
+      }
+
+      locally {
+        val list = List(d1)
+        val vector = Vector.from(list)
+        assertEquals(list, vector)
+        assertEquals(List(d2), vector.updated(0, d2))
+      }
+    }
+
+    locally {
+      // ensure boxing logic works:
+      val arraySeq = ArraySeq(1,2,3,4,5)
+      val vector = Vector(arraySeq: _*)
+
+      assertEquals(1 to 5, vector)
+      assertEquals(vector.updated(0, 20), Vector(20,2,3,4,5))
+      assertEquals(vector.updated(0, ""), Vector("",2,3,4,5))
+      assertEquals(1 to 5, arraySeq) // ensure arraySeq is not mutated
+    }
+    locally {
+      // ensure boxing logic works:
+      val arr = Array(1)
+      val vector = Vector.from(arr)
+      assertEquals(arr.toList, vector)
+      assertEquals(List(20), vector.updated(0, 20))
+      assertEquals(List(""), vector.updated(0, ""))
+    }
+  }
 }

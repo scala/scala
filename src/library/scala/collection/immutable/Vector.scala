@@ -14,6 +14,8 @@ package scala
 package collection
 package immutable
 
+import java.util
+
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.ReusableBuilder
@@ -30,11 +32,21 @@ object Vector extends StrictOptimizedSeqFactory[Vector] {
 
   def from[E](it: collection.IterableOnce[E]): Vector[E] =
     it match {
-      case as: ArraySeq[E] if as.length <= 32 && as.unsafeArray.isInstanceOf[Array[AnyRef]] =>
+      case as: ArraySeq[E] if as.length <= 32 =>
         if (as.isEmpty) NIL
         else {
           val v = new Vector(0, as.length, 0)
-          v.display0 = as.unsafeArray.asInstanceOf[Array[AnyRef]]
+          v.display0 = as.unsafeArray match {
+            case array: Array[AnyRef] => array
+            case array =>
+              val display0 = new Array[AnyRef](array.length)
+              var i = 0
+              while (i < array.length) {
+                display0(i) = array(i).asInstanceOf[AnyRef]
+                i += 1
+              }
+              display0
+          }
           v.depth = 1
           releaseFence()
           v
@@ -545,7 +557,7 @@ final class Vector[+A] private[immutable] (private[collection] val startIndex: I
   // low-level implementation (needs cleanup, maybe move to util class)
 
   private def shiftTopLevel(oldLeft: Int, newLeft: Int) = (depth - 1) match {
-    case 0 => display0 = copyRange(display0, oldLeft, newLeft)
+    case 0 => display0 = copyRange(display0, classOf[AnyRef], oldLeft, newLeft)
     case 1 => display1 = copyRange(display1, oldLeft, newLeft)
     case 2 => display2 = copyRange(display2, oldLeft, newLeft)
     case 3 => display3 = copyRange(display3, oldLeft, newLeft)
@@ -1146,7 +1158,7 @@ private[immutable] trait VectorPointer[+T] {
     * If `destination` array is not null, original contents of array(index) will be copied to it, and it will be returned.
     * Otherwise array(index).clone() is returned
     */
-    private[immutable] final def nullSlotAndCopy[T <: AnyRef](array: Array[Array[T]], index: Int, destination: Array[T] = null): Array[T] = {
+    private[immutable] final def nullSlotAndCopy[T0 <: AnyRef](array: Array[Array[T0]], index: Int, destination: Array[T0] = null): Array[T0] = {
       val x = array(index)
       array(index) = null
       if (destination == null) x.clone()
@@ -1154,6 +1166,14 @@ private[immutable] trait VectorPointer[+T] {
         x.copyToArray(destination, 0)
         destination
       }
+    }
+
+    private final def nullSlotAndCopy0(array: Array[Array[AnyRef]], index: Int, destination: Array[AnyRef] = null): Array[AnyRef] = {
+      val x = array(index)
+      array(index) = null
+      val dest = if (destination == null) new Array[AnyRef](x.length) else destination
+      System.arraycopy(x, 0, dest, 0, x.length)
+      dest
     }
 
     // make sure there is no aliasing
@@ -1213,45 +1233,45 @@ private[immutable] trait VectorPointer[+T] {
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       case 4 =>
         display4 = display4.clone()
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       case 3 =>
         display3 = display3.clone()
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       case 2 =>
         display2 = display2.clone()
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       case 1 =>
         display1 = display1.clone()
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       case 0 =>
-        display0 = display0.clone()
+        display0 = util.Arrays.copyOf(display0, display0.length, classOf[Array[AnyRef]])
     }
 
     // requires structure is dirty and at pos oldIndex,
     // ensures structure is dirty and at pos newIndex and writable at level 0
     private[immutable] final def gotoPosWritable1(oldIndex: Int, newIndex: Int, xor: Int, reuseDisplay0: Array[AnyRef] = null): Unit = {
       if        (xor < (1 <<  5)) { // level = 0
-        display0 = display0.clone()
+        display0 = util.Arrays.copyOf(display0, display0.length, classOf[Array[AnyRef]])
       } else if (xor < (1 << 10)) { // level = 1
         display1 = display1.clone()
         display1((oldIndex >>>  5) & 31) = display0
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31)
       } else if (xor < (1 << 15)) { // level = 2
         display1 = display1.clone()
         display2 = display2.clone()
         display1((oldIndex >>>  5) & 31) = display0
         display2((oldIndex >>> 10) & 31) = display1
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 20)) { // level = 3
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1261,7 +1281,7 @@ private[immutable] trait VectorPointer[+T] {
         display3((oldIndex >>> 15) & 31) = display2
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 25)) { // level = 4
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1274,7 +1294,7 @@ private[immutable] trait VectorPointer[+T] {
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else if (xor < (1 << 30)) { // level = 5
         display1 = display1.clone()
         display2 = display2.clone()
@@ -1290,7 +1310,7 @@ private[immutable] trait VectorPointer[+T] {
         display3 = nullSlotAndCopy(display4, (newIndex >>> 20) & 31)
         display2 = nullSlotAndCopy(display3, (newIndex >>> 15) & 31)
         display1 = nullSlotAndCopy(display2, (newIndex >>> 10) & 31)
-        display0 = nullSlotAndCopy(display1, (newIndex >>>  5) & 31, reuseDisplay0)
+        display0 = nullSlotAndCopy0(display1, (newIndex >>>  5) & 31, reuseDisplay0)
       } else {                      // level = 6
         throw new IllegalArgumentException()
       }
@@ -1298,12 +1318,14 @@ private[immutable] trait VectorPointer[+T] {
 
 
     // USED IN DROP
-
-    private[immutable] final def copyRange[T <: AnyRef](array: Array[T], oldLeft: Int, newLeft: Int) = {
-      val elems = java.lang.reflect.Array.newInstance(array.getClass.getComponentType, 32).asInstanceOf[Array[T]]
+    private[immutable] final def copyRange[T <: AnyRef](array: Array[T], componentType: Class[_], oldLeft: Int, newLeft: Int): Array[T] = {
+      val elems = java.lang.reflect.Array.newInstance(componentType, 32).asInstanceOf[Array[T]]
       java.lang.System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft, oldLeft))
       elems
     }
+
+    private[immutable] final def copyRange[T <: AnyRef](array: Array[T], oldLeft: Int, newLeft: Int): Array[T] =
+      copyRange(array, array.getClass.getComponentType, oldLeft, newLeft)
 
 
     // USED IN APPEND
