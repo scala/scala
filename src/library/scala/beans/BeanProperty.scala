@@ -20,8 +20,8 @@ package scala.beans
  *  }}}
  *  adds the following methods to the class:
  *  {{{
- *    def setStatus(s: String) { this.status = s }
- *    def getStatus: String = this.status
+ *    def setStatus(s: String): Unit = { this.status = s }
+ *    def getStatus(): String = this.status
  *  }}}
  *  For fields of type `Boolean`, if you need a getter named `isStatus`,
  *  use the `scala.beans.BooleanBeanProperty` annotation instead.
