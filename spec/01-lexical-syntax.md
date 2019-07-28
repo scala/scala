@@ -345,12 +345,14 @@ Literal  ::=  [‘-’] integerLiteral
 ### Integer Literals
 
 ```ebnf
-integerLiteral  ::=  (decimalNumeral | hexNumeral)
+integerLiteral  ::=  (decimalNumeral | hexNumeral | binNumeral)
                        [‘L’ | ‘l’]
 decimalNumeral  ::=  ‘0’ | nonZeroDigit {digit}
 hexNumeral      ::=  ‘0’ (‘x’ | ‘X’) hexDigit {hexDigit}
+binNumeral      ::=  ‘0’ (‘b’ | ‘B’) binDigit {binDigit}
 digit           ::=  ‘0’ | nonZeroDigit
 nonZeroDigit    ::=  ‘1’ | … | ‘9’
+binDigit        ::=  ‘0’ | ‘1’
 ```
 
 Values of type `Int` are all integer
