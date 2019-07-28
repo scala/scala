@@ -1,12 +1,12 @@
-literals.scala:67: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:86: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
     check_success("1l == 1L", 1l, 1L)
                                ^
-literals.scala:68: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:87: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
     check_success("1L == 1l", 1L, 1l)
                                    ^
-literals.scala:69: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:88: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
     check_success("1.asInstanceOf[Long] == 1l", 1.asInstanceOf[Long], 1l)
                                                                        ^
-literals.scala:116: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:135: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
     check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
                                                      ^

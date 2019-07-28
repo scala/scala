@@ -15,23 +15,27 @@ trait RejectedLiterals {
 
   def noHexFloat: Double = { 0x1.2 }     // line 16: ';' expected but double literal found.
 
+  def missingBin: Int    = { 0b }        // line 18: missing integer number
+
 }
 
 trait Braceless {
 
-  def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
+  def missingHex: Int    = 0x            // line 24: was: not reported, taken as zero
 
-  def leadingZeros: Int  = 01            // line 24: no leading zero
+  def leadingZeros: Int  = 01            // line 26: no leading zero
 
-  def tooManyZeros: Int  = 00            // line 26: no leading zero
+  def tooManyZeros: Int  = 00            // line 28: no leading zero
 
-  def zeroOfNine: Int    = 09            // line 28: no leading zero
+  def zeroOfNine: Int    = 09            // line 30: no leading zero
 
-  def orphanDot: Int     = 9.            // line 30: ident expected
+  def orphanDot: Int     = 9.            // line 32: ident expected
 
-  def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
+  def zeroOfNineDot: Int = 09.           // line 34: malformed integer, ident expected
 
-  def noHexFloat: Double = 0x1.2         // line 34: ';' expected but double literal found.
+  def noHexFloat: Double = 0x1.2         // line 36: ';' expected but double literal found.
+
+  def missingBin: Int    = 0b            // line 38: missing integer number
 }
 
 trait MoreSadness {

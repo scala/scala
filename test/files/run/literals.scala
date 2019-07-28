@@ -63,6 +63,25 @@ object Test {
     check_success("0x80000000 == -2147483648", 0x80000000, -2147483648)
     check_success("0xffffffff == -1", 0xffffffff, -1)
 
+    check_success("0b_0000 == 0x0", 0b_0000, 0x0)
+    check_success("0b_0001 == 0x1", 0b_0001, 0x1)
+    check_success("0b_0010 == 0x2", 0b_0010, 0x2)
+    check_success("0b_0011 == 0x3", 0b_0011, 0x3)
+    check_success("0b_0100 == 0x4", 0b_0100, 0x4)
+    check_success("0b_0101 == 0x5", 0b_0101, 0x5)
+    check_success("0b_0110 == 0x6", 0b_0110, 0x6)
+    check_success("0b_0111 == 0x7", 0b_0111, 0x7)
+    check_success("0b_1000 == 0x8", 0b_1000, 0x8)
+    check_success("0b_1001 == 0x9", 0b_1001, 0x9)
+    check_success("0b_1010 == 0xa", 0b_1010, 0xa)
+    check_success("0b_1011 == 0xb", 0b_1011, 0xb)
+    check_success("0b_1100 == 0xc", 0b_1100, 0xc)
+    check_success("0b_1101 == 0xd", 0b_1101, 0xd)
+    check_success("0b_1110 == 0xe", 0b_1110, 0xe)
+    check_success("0b_1111 == 0xf", 0b_1111, 0xf)
+
+    check_success("0B_1000 == 0x8", 0B_1000, 0x8)
+
     // long
     check_success("1l == 1L", 1l, 1L)
     check_success("1L == 1l", 1L, 1l)

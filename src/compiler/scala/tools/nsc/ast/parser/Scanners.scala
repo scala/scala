@@ -526,6 +526,7 @@ trait Scanners extends ScannersCommon {
             nextChar()
             ch match {
               case 'x' | 'X' => base = 16 ; nextChar()
+              case 'b' | 'B' => base = 2  ; nextChar()
               case _         => base = 8    // single decimal zero, perhaps
             }
           }
@@ -1108,8 +1109,7 @@ trait Scanners extends ScannersCommon {
 
     /** Read a number into strVal.
      *
-     *  The `base` can be 8, 10 or 16, where base 8 flags a leading zero.
-     *  For ints, base 8 is legal only for the case of exactly one zero.
+     *  The `base` can be 2, 10 or 16.
      */
     protected def getNumber(): Unit = {
       // consume digits of a radix
@@ -1140,11 +1140,11 @@ trait Scanners extends ScannersCommon {
       }
 
       // consume leading digits, provisionally an Int
-      consumeDigits(if (base == 16) 16 else 10)
+      consumeDigits(if (base == 8) 10 else base)
 
       checkNoTrailingSeparator()
 
-      val detectedFloat: Boolean = base != 16 && ch == '.' && isDigit(lookaheadReader.getc)
+      val detectedFloat: Boolean = (base == 10 || base == 8) && ch == '.' && isDigit(lookaheadReader.getc())
       if (detectedFloat) restOfNonIntegralNumber() else restOfNumber()
     }
 

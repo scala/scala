@@ -13,31 +13,37 @@ literals.scala:10: warning: Decimal integer literals should not have a leading z
 literals.scala:14: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
   def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
                              ^
-literals.scala:22: error: missing integer number
-  def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
-                           ^
-literals.scala:26: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def tooManyZeros: Int  = 00            // line 26: no leading zero
+literals.scala:18: error: missing integer number
+  def missingBin: Int    = { 0b }        // line 18: missing integer number
+                             ^
+literals.scala:24: error: missing integer number
+  def missingHex: Int    = 0x            // line 24: was: not reported, taken as zero
                            ^
 literals.scala:28: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def zeroOfNine: Int    = 09            // line 28: no leading zero
+  def tooManyZeros: Int  = 00            // line 28: no leading zero
                            ^
-literals.scala:39: error: floating point number too small
+literals.scala:30: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNine: Int    = 09            // line 30: no leading zero
+                           ^
+literals.scala:38: error: missing integer number
+  def missingBin: Int    = 0b            // line 38: missing integer number
+                           ^
+literals.scala:43: error: floating point number too small
   def tooTiny: Float     = { 0.7e-45f }      // floating point number too small
                              ^
-literals.scala:41: error: double precision floating point number too small
+literals.scala:45: error: double precision floating point number too small
   def twoTiny: Double    = { 2.0e-324 }      // double precision floating point number too small
                              ^
-literals.scala:43: error: floating point number too large
+literals.scala:47: error: floating point number too large
   def tooHuge: Float     = { 3.4028236E38f } // floating point number too large
                              ^
-literals.scala:45: error: double precision floating point number too large
+literals.scala:49: error: double precision floating point number too large
   def twoHuge: Double    = { 1.7976931348623159e308 } // double precision floating point number too large
                              ^
-literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:54: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
   def bad = 1l
              ^
-literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+literals.scala:56: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
   def worse = 123l
                  ^
 literals.scala:12: error: identifier expected but '}' found.
@@ -49,11 +55,11 @@ literals.scala:14: error: identifier expected but '}' found.
 literals.scala:16: error: ';' expected but double literal found.
   def noHexFloat: Double = { 0x1.2 }     // line 16: ';' expected but double literal found.
                                 ^
-literals.scala:24: error: ';' expected but 'def' found.
-  def leadingZeros: Int  = 01            // line 24: no leading zero
+literals.scala:26: error: ';' expected but 'def' found.
+  def leadingZeros: Int  = 01            // line 26: no leading zero
   ^
-literals.scala:32: error: identifier expected but 'def' found.
-  def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
+literals.scala:34: error: identifier expected but 'def' found.
+  def zeroOfNineDot: Int = 09.           // line 34: malformed integer, ident expected
   ^
 8 warnings
-11 errors
+13 errors
