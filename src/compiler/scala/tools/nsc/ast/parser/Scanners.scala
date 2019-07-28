@@ -21,6 +21,34 @@ import scala.annotation.{switch, tailrec}
 import scala.collection.mutable, mutable.{ListBuffer, ArrayBuffer}
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
 
+import java.lang.StringBuilder
+
+object Cbuf {
+  final val TargetCapacity = 256
+
+  def create(): StringBuilder = new StringBuilder(TargetCapacity)
+
+  implicit class StringBuilderOps(val sb: StringBuilder) extends AnyVal {
+    def clear(): Unit = {
+      if (sb.capacity() > TargetCapacity) {
+        sb.setLength(TargetCapacity)
+        sb.trimToSize()
+      }
+      sb.setLength(0)
+    }
+    def toCharArray: Array[Char] = {
+      val n = sb.length()
+      val res = new Array[Char](n)
+      sb.getChars(0, n, res, 0)
+      res
+    }
+    def isEmpty = sb.length() == 0
+    def last = sb.charAt(sb.length() - 1)
+  }
+}
+
+import Cbuf.StringBuilderOps
+
 /** See Parsers.scala / ParsersCommon for some explanation of ScannersCommon.
  */
 trait ScannersCommon {
@@ -202,7 +230,7 @@ trait Scanners extends ScannersCommon {
 
     /** A character buffer for literals
      */
-    val cbuf = new StringBuilder
+    val cbuf = Cbuf.create()
 
     /** append Unicode character to "cbuf" buffer
      */
@@ -218,7 +246,7 @@ trait Scanners extends ScannersCommon {
 
     /** Clear buffer and set name and token */
     private def finishNamed(idtoken: Token = IDENTIFIER): Unit = {
-      name = newTermName(cbuf.toArray)
+      name = newTermName(cbuf.toCharArray)
       cbuf.clear()
       token = idtoken
       if (idtoken == IDENTIFIER) {
@@ -1073,7 +1101,7 @@ trait Scanners extends ScannersCommon {
 
     // disallow trailing numeric separator char, but let lexing limp along
     def checkNoTrailingSeparator(): Unit =
-      if (cbuf.nonEmpty && isNumberSeparator(cbuf.last)) {
+      if (!cbuf.isEmpty && isNumberSeparator(cbuf.last)) {
         syntaxError(offset + cbuf.length - 1, "trailing separator is not allowed")
         cbuf.setLength(cbuf.length - 1)
       }
