@@ -1,0 +1,13 @@
+
+scala> :power
+Power mode enabled. :phase is at typer.
+import scala.tools.nsc._, intp.global._, definitions._
+Try :help or completions for vals._ and power._
+
+scala> class C { object o }
+defined class C
+
+scala> typeOf[C].member(newTermName("o")).debugFlagString
+res0: String = <module>
+
+scala> :quit
