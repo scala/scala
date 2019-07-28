@@ -1,4 +1,4 @@
-// scalac: -Ystop-after:refchecks -verbose -Ydebug -uniqid
+// scalac: -Ystop-after:refchecks -Ydebug -uniqid
 package java.lang
 
 /* This is a pretty random test that very indirectly tests `unique`ing of `ObjectTpeJavaRef`
