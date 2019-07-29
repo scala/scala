@@ -14,7 +14,7 @@ package scala
 package tools.nsc.doc.html
 
 import scala.xml.NodeSeq
-import scala.annotation.tailrec
+import scala.annotation.{switch, tailrec}
 
 /** Highlight the syntax of Scala code appearing in a `{{{` wiki block
   * (see method `HtmlPage.blockToHtml`).
@@ -218,6 +218,28 @@ private[html] object SyntaxHigh {
       out.toString
     }
 
+    def escape(str: String): String = {
+      val array = str.toCharArray
+      val len = array.length
+      val buf = new java.lang.StringBuilder(len)
+      @tailrec def loop(i: Int): String = {
+        if (i < len) {
+          (array(i): @switch) match {
+            case '<' =>
+              buf append "&lt;"
+            case '>' =>
+              buf append "&gt;"
+            case c =>
+              buf append c
+          }
+          loop(i + 1)
+        } else {
+          buf.toString
+        }
+      }
+      loop(0)
+    }
+
     @tailrec def parse(pre: String, i: Int): Unit = {
       out append pre
       if (i == buf.length) return
@@ -247,7 +269,8 @@ private[html] object SyntaxHigh {
         case '/' =>
           if (i+1 < buf.length && (buf(i+1) == '/' || buf(i+1) == '*')) {
             val c = comment(i+1)
-            parse("<span class=\"cmt\">"+c+"</span>", i+c.length)
+            val escaped = escape(c)
+            parse("<span class=\"cmt\">"+escaped+"</span>", i+c.length)
           } else
             parse(buf(i).toString, i+1)
         case '\'' =>
@@ -258,7 +281,8 @@ private[html] object SyntaxHigh {
             parse(buf(i).toString, i+1)
         case '"' =>
           val s = strlit(i+1)
-          parse("<span class=\"lit\">"+s+"</span>", i+s.length)
+          val escaped = escape(s)
+          parse("<span class=\"lit\">"+escaped+"</span>", i+s.length)
         case '@' =>
           val k = lookup(annotations, i+1)
           if (k >= 0)

@@ -58,14 +58,13 @@ trait EntityPage extends HtmlPage {
       <link href={ relativeLinkTo{List("index.css", "lib")} }  media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("template.css", "lib")} } media="screen" type="text/css" rel="stylesheet"/>
       <link href={ relativeLinkTo{List("diagrams.css", "lib")} } media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
-      <script type="text/javascript" src={ relativeLinkTo{List("jquery.js", "lib")} }></script>
+      <script type="text/javascript" src={ relativeLinkTo{List("jquery.min.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.panzoom.min.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("jquery.mousewheel.min.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("index.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("index.js")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("scheduler.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("template.js", "lib")} }></script>
-      <script type="text/javascript" src={ relativeLinkTo{List("tools.tooltip.js", "lib")} }></script>
       { if (universe.settings.docDiagrams.value) {
       <script type="text/javascript" src={ relativeLinkTo{List("modernizr.custom.js", "lib")} }></script>
       <script type="text/javascript" src={ relativeLinkTo{List("diagrams.js", "lib")} } id="diagrams-js"></script>
