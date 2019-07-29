@@ -8,7 +8,7 @@ import org.junit.Assert._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.NestedClassesCollector
 
-class Collector extends NestedClassesCollector[String] {
+class Collector extends NestedClassesCollector[String](nestedOnly = false) {
   override def declaredNestedClasses(internalName: InternalName): List[String] = Nil
   override def getClassIfNested(internalName: InternalName): Option[String] = Some(internalName)
   def raiseError(msg: String, sig: String, e: Option[Throwable]): Unit =

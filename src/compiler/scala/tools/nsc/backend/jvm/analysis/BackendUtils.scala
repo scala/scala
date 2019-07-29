@@ -335,7 +335,7 @@ abstract class BackendUtils extends PerRunInit {
     }
   }
 
-  private class Collector extends NestedClassesCollector[ClassBType] {
+  private class Collector extends NestedClassesCollector[ClassBType](nestedOnly = true) {
     def declaredNestedClasses(internalName: InternalName): List[ClassBType] =
       bTypesFromClassfile.classBTypeFromParsedClassfile(internalName).info.get.nestedClasses.force
 
@@ -613,7 +613,7 @@ object BackendUtils {
   def setLabelReachable(label: LabelNode) = setLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
   def clearLabelReachable(label: LabelNode) = clearLabelFlag(label.asInstanceOf[LabelNode1], LABEL_REACHABLE_STATUS)
 
-  abstract class NestedClassesCollector[T] extends GenericSignatureVisitor {
+  abstract class NestedClassesCollector[T](nestedOnly: Boolean) extends GenericSignatureVisitor(nestedOnly) {
     val innerClasses = mutable.Set.empty[T]
 
     def declaredNestedClasses(internalName: InternalName): List[T]
@@ -737,29 +737,27 @@ object BackendUtils {
     }
   }
 
-  abstract class GenericSignatureVisitor {
+  abstract class GenericSignatureVisitor(nestedOnly: Boolean) {
     def visitInternalName(internalName: InternalName): Unit
 
     def raiseError(msg: String, sig: String, e: Option[Throwable] = None): Unit
 
     def visitClassSignature(sig: String): Unit = if (sig != null) {
-      val p = new Parser(sig)
+      val p = new Parser(sig, nestedOnly)
       p.safely { p.classSignature() }
     }
 
     def visitMethodSignature(sig: String): Unit = if (sig != null) {
-      val p = new Parser(sig)
+      val p = new Parser(sig, nestedOnly)
       p.safely { p.methodSignature() }
     }
 
     def visitFieldSignature(sig: String): Unit = if (sig != null) {
-      val p = new Parser(sig)
+      val p = new Parser(sig, nestedOnly)
       p.safely { p.fieldSignature() }
     }
 
-    private final class Parser(sig: String) {
-      // For performance, `Char => Boolean` is not specialized
-      private trait CharBooleanFunction { def apply(c: Char): Boolean }
+    private final class Parser(sig: String, nestedOnly: Boolean) {
 
       private var index = 0
       private val end = sig.length
@@ -830,10 +828,20 @@ object BackendUtils {
 
       @tailrec private def referenceTypeSignature(): Unit = getCurrentAndSkip() match {
         case 'L' =>
-          val names = new java.lang.StringBuilder(32)
+          var names: java.lang.StringBuilder = null
 
-          appendUntil(names, isClassNameEnd)
-          visitInternalName(names.toString)
+          val start = index
+          var seenDollar = false
+          while (!isClassNameEnd(current)) {
+            seenDollar ||= current == '$'
+            index += 1
+          }
+          if ((current == '.' || seenDollar) || !nestedOnly) {
+            // OPT: avoid allocations when only a top-level class is encountered
+            names = new java.lang.StringBuilder(32)
+            names.append(sig, start, index)
+            visitInternalName(names.toString)
+          }
           typeArguments()
 
           while (current == '.') {
@@ -897,3 +905,6 @@ object BackendUtils {
     }
   }
 }
+
+// For performance (`Char => Boolean` is not specialized)
+private trait CharBooleanFunction { def apply(c: Char): Boolean }
