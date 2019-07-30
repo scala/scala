@@ -3439,7 +3439,8 @@ trait Types
     // <region name="constraint mutators + undoLog">
     // invariant: before mutating constr, save old state in undoLog
     // (undoLog is used to reset constraints to avoid piling up unrelated ones)
-    def setInst(tp: Type): this.type =
+    def setInst(tp: Type): this.type = {
+      assert(!origin.isWildcard, s"TypeVar $this with origin $origin")
       if (tp ne this) {
         undoLog record this
         constr.inst = TypeVar.trace("setInst", s"In $originLocation, $originName=$tp")(
@@ -3450,6 +3451,7 @@ trait Types
         log(s"TypeVar cycle: called setInst passing $this to itself.")
         this
       }
+    }
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       assert(tp != this, tp) // implies there is a cycle somewhere (?)
