@@ -1863,7 +1863,7 @@ trait Implicits {
     private def typeArgsAtSym(paramTp: Type) = paramTp.baseType(sym).typeArgs
 
     def formatDefSiteMessage(paramTp: Type): String =
-      formatDefSiteMessage(typeArgsAtSym(paramTp) map (_.toString))
+      formatDefSiteMessage(typeArgsAtSym(paramTp).map(_.toString))
 
     def formatDefSiteMessage(typeArgs: List[String]): String =
       interpolate(msg, Map(symTypeParamNames zip typeArgs: _*))
@@ -1877,13 +1877,13 @@ trait Implicits {
         case _ => NoType
       }
 
-      val argTypes1 = if (prefix == NoType) paramTypeRefs else paramTypeRefs.map(t => t.asSeenFrom(prefix, fun.symbol.owner))
+      val argTypes1 = if (prefix == NoType) paramTypeRefs else paramTypeRefs.map(_.asSeenFrom(prefix, fun.symbol.owner))
       val argTypes2 = fun match {
         case treeInfo.Applied(_, targs, _) => argTypes1.map(_.instantiateTypeParams(fun.symbol.info.typeParams, targs.map(_.tpe)))
         case _ => argTypes1
       }
 
-      val argTypes = argTypes2.map{
+      val argTypes = argTypes2.map {
         case PolyType(tps, tr@TypeRef(_, _, tprefs)) =>
           if (tps.corresponds(tprefs)((p, r) => p == r.typeSymbol)) tr.typeConstructor.toString
           else {

@@ -31,3 +31,23 @@ object Example {
   f
   g
 }
+
+@implicitNotFound("No F of ${A}")
+trait F[A]
+
+trait M[A] extends F[A]
+
+trait AX extends F[String]
+
+@implicitNotFound("Missing X3 of ${A} and ${B} and ${C}")
+trait X3[A, B, C]
+trait X2[A, B] extends X3[A, B, String]
+trait X1[A] extends X2[A, Int]
+trait X0 extends X1[Char]
+
+object SuperSubstitutions {
+  implicitly[F[Int]]
+  implicitly[M[Int]]
+  implicitly[AX]
+  implicitly[X0]
+}

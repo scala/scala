@@ -160,9 +160,18 @@ trait ContextErrors {
         else
           s"parameter $paramName:"
 
-      ImplicitNotFoundMsg.unapply(param).map(_.formatParameterMessage(tree))
-        .orElse(ImplicitNotFoundMsg.unapply(paramTp.typeSymbolDirect).map(_.formatDefSiteMessage(paramTp)))
-        .getOrElse(s"could not find implicit value for $evOrParam $paramTp")
+      param match {
+        case ImplicitNotFoundMsg(msg) => msg.formatParameterMessage(tree)
+        case _ =>
+          paramTp.typeSymbolDirect match {
+            case ImplicitNotFoundMsg(msg) => msg.formatDefSiteMessage(paramTp)
+            case _ =>
+              val supplement = param.baseClasses.collectFirst {
+                case ImplicitNotFoundMsg(msg) => s" (${msg.formatDefSiteMessage(paramTp)})"
+              }.getOrElse("")
+              s"could not find implicit value for $evOrParam $paramTp$supplement"
+          }
+      }
     }
     issueNormalTypeError(tree, errMsg)
   }
