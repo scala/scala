@@ -41,6 +41,23 @@ abstract class Pickler extends SubComponent {
 
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
+  final def pickle(sym: Symbol, companion: Symbol, noPrivates: Boolean): Pickle = {
+    initPickle(sym, noPrivates) { pickle =>
+      def reserveDeclEntries(sym: Symbol): Unit = {
+        if (pickle.reserveEntry(sym)) {
+          if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
+          else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
+        }
+      }
+
+      val syms = sym :: (if (companion != NoSymbol) companion :: Nil else Nil)
+      syms.foreach(reserveDeclEntries)
+      syms.foreach { sym =>
+        pickle.putDecl(sym)
+      }
+    }
+  }
+
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
     import global.genBCode.postProcessor.classfileWriters.FileWriter
     private lazy val sigWriter: Option[FileWriter] =
@@ -58,23 +75,23 @@ abstract class Pickler extends SubComponent {
             val sym = tree.symbol
             def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
             if (shouldPickle(sym)) {
-              val pickle = initPickle(sym) { pickle =>
-                def reserveDeclEntries(sym: Symbol): Unit = {
-                  pickle.reserveEntry(sym)
-                  if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
-                  else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
-                }
-
-                val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
-                val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
-                syms.foreach(reserveDeclEntries)
-                syms.foreach { sym =>
-                  pickle.putSymbol(sym)
+              def pickle(noPrivates: Boolean, writeToSymData: Boolean, writeToSigFile: Boolean): Unit = {
+                val companion = sym.companionSymbol.filter(_.owner == sym.owner).filter(shouldPickle) // exclude companionship between package- and package object-owned symbols.
+                val pickle = Pickler.this.pickle(sym, companion, noPrivates)
+                if (writeToSymData) {
                   currentRun.symData(sym) = pickle
+                  companion.andAlso(sym => currentRun.symData(sym) = pickle)
+                  currentRun registerPickle sym
                 }
+                if (writeToSigFile)
+                  writeSigFile(sym, pickle)
               }
-              writeSigFile(sym, pickle)
-              currentRun registerPickle sym
+              if (sigWriter.isDefined && settings.YpickleWriteNoPrivate) {
+                pickle(noPrivates = false, writeToSymData = true, writeToSigFile = false)
+                pickle(noPrivates = true, writeToSymData = false, writeToSigFile = true)
+              } else {
+                pickle(noPrivates = false, writeToSymData = true, writeToSigFile = true)
+              }
             }
           case _ =>
         }
@@ -136,20 +153,21 @@ abstract class Pickler extends SubComponent {
   private[this] var _index: Index = _
   private[this] var _entries: Entries = _
 
-  final def initPickle(root: Symbol)(f: Pickle => Unit): Pickle = {
+  final def initPickle(root: Symbol, noPrivates: Boolean)(f: Pickle => Unit): Pickle = {
     if (_index eq null)   { _index   = new Index(InitEntriesSize) }
     if (_entries eq null) { _entries = new Entries(InitEntriesSize) }
-    val pickle = new Pickle(root, _index, _entries)
+    val pickle = new Pickle(root, _index, _entries, noPrivates)
     try f(pickle) finally { pickle.close(); _index.clear(); fill(_entries, null) }
     pickle
   }
 
-  class Pickle private[Pickler](root: Symbol, private var index: Index, private var entries: Entries)
+  class Pickle private[Pickler](root: Symbol, private var index: Index, private var entries: Entries, noPrivates: Boolean)
       extends PickleBuffer(new Array[Byte](4096), -1, 0) {
     private val rootName  = root.name.toTermName
     private val rootOwner = root.owner
     private var ep        = 0
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
+    def include(sym: Symbol) = !noPrivates || !sym.isPrivate || (sym.owner.isTrait && sym.isAccessor)
 
     def close(): Unit = { writeArray(); index = null; entries = null }
 
@@ -188,9 +206,12 @@ abstract class Pickler extends SubComponent {
 
     // Phase 1 methods: Populate entries/index ------------------------------------
     private val reserved = mutable.BitSet()
-    final def reserveEntry(sym: Symbol): Unit = {
-      reserved(ep) = true
-      putEntry(sym)
+    final def reserveEntry(sym: Symbol): Boolean = {
+      if (include(sym)) {
+        reserved(ep) = true
+        putEntry(sym)
+        true
+      } else false
     }
 
     /** Store entry e in index at next available position unless
@@ -243,6 +264,8 @@ abstract class Pickler extends SubComponent {
       }
       else sym
     }
+
+    def putDecl(sym: Symbol): Unit = if (include(sym)) putSymbol(sym)
 
     /** Store symbol in index. If symbol is local, also store everything it references.
      */
@@ -314,7 +337,7 @@ abstract class Pickler extends SubComponent {
         case tp: CompoundType =>
           putSymbol(tp.typeSymbol)
           putTypes(tp.parents)
-          putSymbols(tp.decls.toList)
+          tp.decls.toList.foreach(putDecl)
         case MethodType(params, restpe) =>
           putType(restpe)
           putSymbols(params)
