@@ -1,7 +1,6 @@
 package scala.reflect
 
 import org.junit.Assert._
-import org.junit.Ignore
 import org.junit.Test
 
 class FieldAccessTest {
@@ -14,11 +13,11 @@ class FieldAccessTest {
   /** scala/bug#9306 */
   @Test
   def testFieldAccess(): Unit = {
-    import scala.reflect.runtime.universe._
     import scala.reflect.runtime.currentMirror
+    import scala.reflect.runtime.universe._
     val obj = new TestClass
     val objType = currentMirror.reflect(obj).symbol.toType
-    val objFields = objType.members.collect { case ms: MethodSymbol if ms.isGetter => ms }
-    assertEquals(123, currentMirror.reflect(obj).reflectField(objFields.head).get)
+    val objField = objType.member(TermName("x")).asTerm
+    assertEquals(123, currentMirror.reflect(obj).reflectField(objField).get)
   }
 }

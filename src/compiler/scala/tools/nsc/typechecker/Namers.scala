@@ -119,10 +119,16 @@ trait Namers extends MethodSynthesis {
     // All lazy vals need accessors, including those owned by terms (e.g., in method) or private[this] in a class
     def deriveAccessors(vd: ValDef) = (vd.mods.isLazy || owner.isTrait || (owner.isClass && deriveAccessorsInClass(vd)))
 
-    private def deriveAccessorsInClass(vd: ValDef) =
-      !vd.mods.isPrivateLocal && // note, private[this] lazy vals do get accessors -- see outer disjunction of deriveAccessors
+    private def deriveAccessorsInClass(vd: ValDef) = {
+      // note, private lazy vals do get accessors -- see outer disjunction of deriveAccessors
       !(vd.name startsWith nme.OUTER) && // outer accessors are added later, in explicitouter
-      !isEnumConstant(vd)                // enums can only occur in classes, so only check here
+      !isEnumConstant(vd) && {           // enums can only occur in classes, so only check here
+        if (owner.isCaseClass && vd.mods.isCaseAccessor || owner.getAndRemoveAttachment[IsDerivedValueClassAttachment.type].isDefined && vd.mods.isParamAccessor)
+          !vd.mods.isPrivateLocal
+        else
+          !vd.mods.isPrivate
+      }
+    }
 
 
     /** Determines whether this field holds an enum constant.
@@ -1181,6 +1187,8 @@ trait Namers extends MethodSynthesis {
       enterSelf(templ.self)
 
       val decls = newScope
+      if (parents.head.typeSymbol == AnyValClass)
+        clazz.updateAttachment(IsDerivedValueClassAttachment)
       val templateNamer = newNamer(context.make(templ, clazz, decls))
       templateNamer enterSyms templ.body
 

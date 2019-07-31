@@ -119,6 +119,8 @@ trait StdAttachments {
       })
     )
 
+  object IsDerivedValueClassAttachment
+
   /** After being synthesized by the parser, primary constructors aren't fully baked yet.
    *  A call to super in such constructors is just a fill-me-in-later dummy resolved later
    *  by `parentTypes`. This attachment coordinates `parentTypes` and `typedTemplate` and

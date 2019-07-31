@@ -297,9 +297,11 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |}
       """.stripMargin
     val c = compileClass(code, allowMessage = _.msg.contains("exception handler declared in the inlined method"))
-    assertInvokedMethods(getMethod(c, "f1a"), List("C.C$$x1", "C.C$$x1_$eq", "C.C$$x1_$eq", "C.C$$x1_$eq")) // accessors not inlined
+    assertInvokedMethods(getMethod(c, "f1a"), List())
     assertInvoke(getMethod(c, "f1b"), "C", "wrapper1")
-    assertInvokedMethods(getMethod(c, "f2a"), List("C.x2", "C.x2_$eq", "C.x2_$eq", "C.x2_$eq"))
+    assertInvokedMethods(getMethod(c, "f2a"), List("C.x2", "C.x2_$eq", "C.x2_$eq", "C.x2_$eq")) // (*)
+    // (*) accessors not inlined: this would cause `f2a` to contain access to private members, which would in turn
+    //     prevent `f2a` from being into other classes
     assertInvoke(getMethod(c, "f2b"), "C", "wrapper2")  }
 
   @Test

@@ -13,11 +13,16 @@ object Test {
   )
 
   def main(args: Array[String]): Unit = {
+    println("one fields")
     f1(classOf[One])
+    println("one methods")
     f2(classOf[One])
+    println("two fields")
     f1(classOf[Two])
+    println("two methods")
     f2(classOf[Two])
 
+    println("now java")
     new J_2().javaRun
   }
 }

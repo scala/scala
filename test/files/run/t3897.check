@@ -1,8 +1,9 @@
+one fields
 (One$$messages,scala.collection.mutable.ListBuffer<java.lang.String>)
-(One$$messages,scala.collection.mutable.ListBuffer<java.lang.String>)
+one methods
+two fields
 (messages,scala.collection.mutable.ListBuffer<java.lang.String>)
-(messages,scala.collection.mutable.ListBuffer<java.lang.String>)
+two methods
+now java
 (One$$messages,scala.collection.mutable.ListBuffer<java.lang.String>)
-(One$$messages,scala.collection.mutable.ListBuffer<java.lang.String>)
-(messages,scala.collection.mutable.ListBuffer<java.lang.String>)
 (messages,scala.collection.mutable.ListBuffer<java.lang.String>)

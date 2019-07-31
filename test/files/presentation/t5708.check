@@ -5,7 +5,7 @@ askTypeCompletion at Completions.scala(17,9)
 [response] askTypeCompletion at (17,9)
 retrieved 37 members
 [inaccessible] private def privateM: String
-[inaccessible] private[this] val privateV: String
+[inaccessible] private val privateV: String
 [inaccessible] private[this] val protectedV: String
 [inaccessible] protected def protectedValM: String
 [inaccessible] protected[package lang] def clone(): Object

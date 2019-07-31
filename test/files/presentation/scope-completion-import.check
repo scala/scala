@@ -4,8 +4,8 @@ askScopeCompletion at Completions.scala(23,4)
 ================================================================================
 [response] askScopeCompletion at (23,4)
 retrieved 16 members
-[inaccessible] private[this] val pVOOO: Int
-[inaccessible] private[this] var pROOO: Int
+[inaccessible] private val pVOOO: Int
+[inaccessible] private var pROOO: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -26,8 +26,8 @@ askScopeCompletion at Completions.scala(27,4)
 ================================================================================
 [response] askScopeCompletion at (27,4)
 retrieved 15 members
-[inaccessible] private[this] val pVOOO: Int
-[inaccessible] private[this] var pROOO: Int
+[inaccessible] private val pVOOO: Int
+[inaccessible] private var pROOO: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -47,8 +47,8 @@ askScopeCompletion at Completions.scala(32,4)
 ================================================================================
 [response] askScopeCompletion at (32,4)
 retrieved 13 members
-[inaccessible] private[this] val pVCCC: Int
-[inaccessible] private[this] var pRCCC: Int
+[inaccessible] private val pVCCC: Int
+[inaccessible] private var pRCCC: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -80,8 +80,8 @@ askScopeCompletion at Completions.scala(38,5)
 ================================================================================
 [response] askScopeCompletion at (38,5)
 retrieved 13 members
-[inaccessible] private[this] val pVCCC: Int
-[inaccessible] private[this] var pRCCC: Int
+[inaccessible] private val pVCCC: Int
+[inaccessible] private var pRCCC: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -99,10 +99,10 @@ askScopeCompletion at Completions.scala(40,5)
 ================================================================================
 [response] askScopeCompletion at (40,5)
 retrieved 18 members
-[inaccessible] private[this] val pVCCC: Int
-[inaccessible] private[this] val pVOOO: Int
-[inaccessible] private[this] var pRCCC: Int
-[inaccessible] private[this] var pROOO: Int
+[inaccessible] private val pVCCC: Int
+[inaccessible] private val pVOOO: Int
+[inaccessible] private var pRCCC: Int
+[inaccessible] private var pROOO: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -123,8 +123,8 @@ askScopeCompletion at Completions.scala(49,4)
 ================================================================================
 [response] askScopeCompletion at (49,4)
 retrieved 16 members
-[inaccessible] private[this] val pVOOO: Int
-[inaccessible] private[this] var pROOO: Int
+[inaccessible] private val pVOOO: Int
+[inaccessible] private var pROOO: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -145,8 +145,8 @@ askScopeCompletion at Completions.scala(59,4)
 ================================================================================
 [response] askScopeCompletion at (59,4)
 retrieved 17 members
-[inaccessible] private[this] val pVOOO: Int
-[inaccessible] private[this] var pROOO: Int
+[inaccessible] private val pVOOO: Int
+[inaccessible] private var pROOO: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef
@@ -168,8 +168,8 @@ askScopeCompletion at Completions.scala(69,4)
 ================================================================================
 [response] askScopeCompletion at (69,4)
 retrieved 14 members
-[inaccessible] private[this] val pVCCC: Int
-[inaccessible] private[this] var pRCCC: Int
+[inaccessible] private val pVCCC: Int
+[inaccessible] private var pRCCC: Int
 class C extends AnyRef
 class Foo extends AnyRef
 class Foo_1 extends AnyRef

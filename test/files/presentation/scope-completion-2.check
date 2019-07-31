@@ -11,9 +11,9 @@ private class Cc1 extends AnyRef
 private class Co1 extends AnyRef
 private def fc1: Int
 private def fo1: Int
+private val vc1: Int
+private val vo1: Int
 private[this] val c: test.Completion1
-private[this] val vc1: Int
-private[this] val vo1: Int
 ================================================================================
 
 askScopeCompletion at Completions.scala(29,2)
@@ -27,7 +27,7 @@ private class Cc1 extends AnyRef
 private class Co1 extends AnyRef
 private def fc1: Int
 private def fo1: Int
+private val vc1: Int
+private val vo1: Int
 private[this] val c: test.Completion1
-private[this] val vc1: Int
-private[this] val vo1: Int
 ================================================================================
