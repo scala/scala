@@ -24,7 +24,7 @@ import util.Exceptional.unwrap
  *  For example, here is a complete Scala script on Unix:
  *  {{{
  *    #!/bin/sh
- *    exec scala "$0" "$@"
+ *    exec scala "\$0" "\$@"
  *    !#
  *    Console.println("Hello, world!")
  *    args.toList foreach Console.println

@@ -35,8 +35,8 @@ package util
  *    }
  *
  *  result match {
- *    case Right(x) => s"You passed me the Int: $x, which I will increment. $x + 1 = ${x+1}"
- *    case Left(x)  => s"You passed me the String: $x"
+ *    case Right(x) => s"You passed me the Int: \$x, which I will increment. \$x + 1 = \${x+1}"
+ *    case Left(x)  => s"You passed me the String: \$x"
  *  }
  *  }}}
  *
@@ -159,10 +159,10 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *   val report = for (result <- interactWithDB(someQuery)) yield generateReport(result)
    *   report match {
    *     case Right(r) => send(r)
-   *     case Left(e)  => log(s"report not generated, reason was $e")
+   *     case Left(e)  => log(s"report not generated, reason was \$e")
    *   }
    *   // only report errors
-   *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was $e")
+   *   for (e <- interactWithDB(someQuery).left) log(s"query failed, reason was \$e")
    *   }}}
    */
   def left = Either.LeftProjection(this)
@@ -178,8 +178,8 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
    *  @example {{{
    *  val result = util.Try("42".toInt).toEither
    *  result.fold(
-   *    e => s"Operation failed with $e",
-   *    v => s"Operation produced value: $v"
+   *    e => s"Operation failed with \$e",
+   *    v => s"Operation produced value: \$v"
    *  )
    *  }}}
    *
@@ -452,7 +452,7 @@ object Either {
    *  Either.cond(
    *    userInput.forall(_.isDigit) && userInput.size == 10,
    *    PhoneNumber(userInput),
-   *    s"The input ($userInput) does not look like a phone number"
+   *    s"The input (\$userInput) does not look like a phone number"
    *  }}}
    */
   def cond[A, B](test: Boolean, right: => B, left: => A): Either[A, B] =

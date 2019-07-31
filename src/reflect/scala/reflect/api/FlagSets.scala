@@ -245,7 +245,7 @@ trait FlagSets { self: Universe =>
 
     /** Flag used to distinguish platform-specific implementation details.
      *  Trees and symbols which are currently marked ARTIFACT by scalac:
-     *    * $outer fields and accessors
+     *    * \$outer fields and accessors
      *    * super accessors
      *    * protected accessors
      *    * lazy local accessors

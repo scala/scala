@@ -46,13 +46,13 @@ import scala.collection.{immutable, mutable}
  *     Specialization will generate a specialized class and a specialized method:
  *
  *     {{{
- *       class A$mcI$sp(protected val d: Int) extends A[Int] {
- *         def foo(that: A[Int]) = foo$mcI$sp(that)
+ *       class A\$mcI\$sp(protected val d: Int) extends A[Int] {
+ *         def foo(that: A[Int]) = foo\$mcI\$sp(that)
  *         def foo(that: A[Int]) = that.d
  *       }
  *     }}}
  *
- *     Above, `A$mcI$sp` cannot access `d`, so the method cannot be typechecked.
+ *     Above, `A\$mcI\$sp` cannot access `d`, so the method cannot be typechecked.
  */
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   import global._
@@ -557,7 +557,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  Non-specialized type parameters are cloned into new ones.
    *  Type parameters specialized on AnyRef have preexisting symbols.
    *
-   *  For instance, a @specialized(AnyRef) T, will become T$sp <: AnyRef.
+   *  For instance, a @specialized(AnyRef) T, will become T\$sp <: AnyRef.
    */
   def produceTypeParameters(syms: List[Symbol], nowner: Symbol, env: TypeEnv) = {
     val cloned = for (s <- syms) yield if (!env.contains(s)) s.cloneSymbol(nowner) else env(s).typeSymbol
@@ -887,8 +887,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  Given method m[@specialized T, U](x: T, y: U) it returns
    *     m[T, U](x: T, y: U),
-   *     m$I[ U](x: Int, y: U),
-   *     m$D[ U](x: Double, y: U)
+   *     m\$I[ U](x: Int, y: U),
+   *     m\$D[ U](x: Double, y: U)
    *     // etc.
    */
   private def normalizeMember(owner: Symbol, sym: Symbol, outerEnv: TypeEnv): List[Symbol] = {
@@ -1019,7 +1019,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *    def apply(x: Int): Int = ..
    *  }
    *
-   *  this method will return List('apply$mcII$sp')
+   *  this method will return List('apply\$mcII\$sp')
    */
   private def specialOverrides(clazz: Symbol) = logResultIf[List[Symbol]]("specialized overrides in " + clazz, _.nonEmpty) {
     /* Return the overridden symbol in syms that needs a specialized overriding symbol,
@@ -1387,7 +1387,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *   def spec_method[@specialized(Int) T](t: T, expectedXSuper: String) = {
    *     class X extends Parent[T]()
    *     // even in the specialized variant, the local X class
-   *     // doesn't extend Parent$mcI$sp, since its symbol has
+   *     // doesn't extend Parent\$mcI\$sp, since its symbol has
    *     // been created after specialization and was not seen
    *     // by specialization's info transformer.
    *     ...
@@ -1591,7 +1591,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       /** Computes residual type parameters after rewiring, like "String" in the following example:
        *  ```
        *    def specMe[@specialized T, U](t: T, u: U) = ???
-       *    specMe[Int, String](1, "2") => specMe$mIc$sp[String](1, "2")
+       *    specMe[Int, String](1, "2") => specMe\$mIc\$sp[String](1, "2")
        *  ```
        */
       def computeResidualTypeVars(baseTree: Tree, specMember: Symbol, specTree: Tree, baseTargs: List[Tree], env: TypeEnv): Tree = {
@@ -1992,9 +1992,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  {{{
    *    case class Tuple2[T, U](x: T, y: U)
    *
-   *    class Tuple2$II {
-   *      val _x$I: Int = ..
-   *      def x = _x$I
+   *    class Tuple2\$II {
+   *      val _x\$I: Int = ..
+   *      def x = _x\$I
    *      // same for y
    *      def this(x: Int, y: Int) {
    *        super.this(null.asInstanceOf[Int], null.asInstanceOf[Int])

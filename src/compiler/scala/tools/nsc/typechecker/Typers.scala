@@ -2603,11 +2603,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *
      *  `param => sel match { cases }` becomes:
      *
-     *  new AbstractPartialFunction[$argTp, $matchResTp] {
-     *    def applyOrElse[A1 <: $argTp, B1 >: $matchResTp]($param: A1, default: A1 => B1): B1 =
-     *       $selector match { $cases }
-     *    def isDefinedAt(x: $argTp): Boolean =
-     *       $selector match { $casesTrue }
+     *  new AbstractPartialFunction[\$argTp, \$matchResTp] {
+     *    def applyOrElse[A1 <: \$argTp, B1 >: \$matchResTp](\$param: A1, default: A1 => B1): B1 =
+     *       \$selector match { \$cases }
+     *    def isDefinedAt(x: \$argTp): Boolean =
+     *       \$selector match { \$casesTrue }
      *  }
      *
      * TODO: it would be nicer to generate the tree specified above at once and type it as a whole,
@@ -2846,8 +2846,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       *
       * ```
       *   new S {
-      *    def apply$body(p1: T1, ..., pN: TN): T = body
-      *    def apply(p1: T1', ..., pN: TN'): T' = apply$body(p1,..., pN)
+      *    def apply\$body(p1: T1, ..., pN: TN): T = body
+      *    def apply(p1: T1', ..., pN: TN'): T' = apply\$body(p1,..., pN)
       *   }
       * ```
       *

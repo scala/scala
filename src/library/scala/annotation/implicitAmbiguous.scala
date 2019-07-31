@@ -17,7 +17,7 @@ package scala.annotation
   * multiple ambiguous values, annotate at least one of the implicit values
   * `@implicitAmbiguous`. Assuming the implicit value is a method with type
   * parameters `X1,..., XN`, the error message will be the result of replacing
-  * all occurrences of `${Xi}` in the string `msg` with the string representation
+  * all occurrences of `\${Xi}` in the string `msg` with the string representation
   * of the corresponding type argument `Ti`.
   *
   * If more than one `@implicitAmbiguous` annotation is collected, the compiler is
@@ -31,7 +31,7 @@ package scala.annotation
   *
   * implicit def neq[E, F] : E =!= F = null
   *
-  * @annotation.implicitAmbiguous("Could not prove ${J} =!= ${J}")
+  * @annotation.implicitAmbiguous("Could not prove \${J} =!= \${J}")
   * implicit def neqAmbig1[G, H, J] : J =!= J = null
   * implicit def neqAmbig2[I] : I =!= I = null
   *

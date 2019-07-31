@@ -1190,9 +1190,9 @@ trait Trees extends api.Trees {
 
   /**
    * Creates a tree that selects a specific member `sym` without having to qualify the `super`.
-   * For example, given traits `B <:< A`, a class `C <:< B` needs to invoke `A.$init$`. If `A` is
-   * not a direct parent, a tree `super[A].$init$` would not type check ("does not name a parent").
-   * So we generate `super.$init$` and pre-assign the correct symbol. A special-case in
+   * For example, given traits `B <:< A`, a class `C <:< B` needs to invoke `A.\$init\$`. If `A` is
+   * not a direct parent, a tree `super[A].\$init\$` would not type check ("does not name a parent").
+   * So we generate `super.\$init\$` and pre-assign the correct symbol. A special-case in
    * `typedSelectInternal` assigns the correct type `A` to the `super` qualifier.
    */
   def SuperSelect(clazz: Symbol, sym: Symbol): Tree = {
