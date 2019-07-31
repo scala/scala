@@ -12,11 +12,23 @@ object ScriptCommands {
   def env(key: String) = Option(System.getenv(key)).getOrElse("")
 
   def all = Seq(
+    setupPublishCoreNonOpt,
     setupPublishCore,
     setupValidateTest,
     setupBootstrapStarr, setupBootstrapLocker, setupBootstrapQuick, setupBootstrapPublish,
     enableOptimizerCommand
   )
+
+  /** Set up the environment for `validate/publish-core`.
+   * The optional argument is the Artifactory snapshot repository URL. */
+  def setupPublishCoreNonOpt = setup("setupPublishCoreNonOpt") { args =>
+    Seq(
+      baseVersionSuffix in Global := "SHA-SNAPSHOT"
+    ) ++ (args match {
+      case Seq(url) => publishTarget(url)
+      case Nil => Nil
+    }) ++ noDocs
+  }
 
   /** Set up the environment for `validate/publish-core`.
     * The optional argument is the Artifactory snapshot repository URL. */
