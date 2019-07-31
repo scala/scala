@@ -51,4 +51,42 @@ class TreeSetTest {
         assertEquals("empty.max", e.getMessage)
     }
   }
+
+  @Test
+  def t11637: Unit = {
+    import scala.collection.immutable.{RedBlackTree => RB}
+    val instrs = List[RB.Tree[Int, Null] => RB.Tree[Int, Null]](
+      RB.update(_, 18, null, overwrite = false),
+      RB.update(_, 0, null, overwrite = false),
+      RB.update(_, 3, null, overwrite = false),
+      RB.update(_, 4, null, overwrite = false),
+      RB.update(_, 1, null, overwrite = false),
+      RB.update(_, 11, null, overwrite = false),
+      RB.update(_, 14, null, overwrite = false),
+      RB.update(_, -1, null, overwrite = false),
+      RB.update(_, 2, null, overwrite = false),
+      RB.update(_, 17, null, overwrite = false),
+      RB.delete(_, 14),
+      RB.update(_, 9, null, overwrite = false),
+      RB.update(_, 15, null, overwrite = false),
+      RB.take(_, 10),
+      RB.delete(_, 0),
+      RB.update(_, 16, null, overwrite = false),
+      RB.take(_, 10),
+      RB.delete(_, 11),
+      RB.update(_, 11, null, overwrite = false),
+      RB.take(_, 10),
+      RB.delete(_, 1),
+      RB.update(_, 12, null, overwrite = false),
+      RB.take(_, 10),
+      RB.delete(_, 4),
+      RB.update(_, 0, null, overwrite = false),
+      RB.take(_, 8),
+      RB.delete(_, 11),
+    )
+    var t: RB.Tree[Int, Null] = null
+    instrs.zipWithIndex.foreach { case (instr, idx) =>
+      t = instr(t)
+    }
+  }
 }
