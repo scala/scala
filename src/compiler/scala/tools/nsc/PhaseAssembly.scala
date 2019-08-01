@@ -29,7 +29,9 @@ trait PhaseAssembly { global: Global =>
   private class DependencyGraph {
 
     /** Simple edge with to and from refs */
-    case class Edge(var frm: Node, var to: Node, var hard: Boolean)
+    case class Edge(var frm: Node, var to: Node, var hard: Boolean) {
+      override def toString = s"${if(hard)"Hard"else"Soft"}Edge(${frm.phasename}->${to.phasename})"
+    }
 
     /**
      * Simple node with name and object ref for the phase object,
@@ -47,6 +49,7 @@ trait PhaseAssembly { global: Global =>
         case None => phasename
         case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
       }
+      override def toString = s"Node($phasename) @ $level < ${before} > ${after} = $phaseobj"
     }
 
     val nodes = new mutable.HashMap[String,Node]()
@@ -98,8 +101,11 @@ trait PhaseAssembly { global: Global =>
     /* Given the entire graph, collect the phase objects at each level, where the phase
      * names are sorted alphabetical at each level, into the compiler phase list
      */
+    import scala.util.chaining._
     def compilerPhaseList(): List[SubComponent] =
-      nodes.values.toList.filter(_.level > 0).sortBy(x => (x.level, x.phasename)).flatMap(_.phaseobj).flatten
+      nodes.values.toList.filter(_.level > 0).sortBy(x => (x.level, x.phasename)).flatMap(_.phaseobj).flatten tap { list =>
+        //println(list.mkString("Phase list, sorted\n", "\n", ""))
+      }
 
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
@@ -120,17 +126,18 @@ trait PhaseAssembly { global: Global =>
         edges -= edge
         for (b <- node.before) b.to = node
       }
-      var more = true
-      while (more) {
-        more = node.before.find(_.hard).map(hl => {
-          promote(hl)
-          true
-        }).getOrElse(false)
+      @annotation.tailrec
+      def loop(): Unit = {
+        node.before.find(_.hard) match {
+          case Some(edge) =>
+            promote(edge)
+            loop()
+          case _ =>
+        }
       }
+      loop()
       node.visited = true
-
       for (edge <- node.before) collapseHardLinksAndLevels(edge.frm, lvl + 1)
-
       node.visited = false
     }
 
