@@ -1,0 +1,17 @@
+t7187-deprecation.scala:17: error: type mismatch;
+ found   : Int
+ required: () => Any
+  val t1: () => Any  = m1   // error
+                       ^
+t7187-deprecation.scala:24: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method m2,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  val t5 = m2 // apply, ()-insertion
+           ^
+t7187-deprecation.scala:40: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method boom,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  a.boom // error
+    ^
+2 warnings
+1 error
