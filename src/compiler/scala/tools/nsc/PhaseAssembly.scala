@@ -112,16 +112,19 @@ trait PhaseAssembly {
 
       if (node.level < lvl) node.level = lvl
 
-      var hls = Nil ++ node.before.filter(_.hard)
-      while (hls.size > 0) {
-        for (hl <- hls) {
-          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-          node.before = hl.frm.before
-          nodes -= hl.frm.phasename
-          edges -= hl
-          for (edge <- node.before) edge.to = node
+      var befores = node.before
+      def hasHardLinks() = befores.exists(_.hard)
+      while (hasHardLinks()) {
+        for (hl <- befores) {
+          if (hl.hard) {
+            node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
+            node.before = hl.frm.before
+            nodes -= hl.frm.phasename
+            edges -= hl
+            for (edge <- node.before) edge.to = node
+          }
         }
-        hls = Nil ++ node.before.filter(_.hard)
+        befores = node.before
       }
       node.visited = true
 
