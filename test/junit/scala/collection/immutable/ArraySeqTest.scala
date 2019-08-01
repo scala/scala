@@ -53,12 +53,6 @@ class ArraySeqTest {
   }
 
   @Test
-  def t10851(): Unit = {
-    val s1 = ArraySeq.untagged(1,2,3)
-    assertTrue(s1.unsafeArray.getClass == classOf[Array[AnyRef]])
-  }
-
-  @Test
   def t11187(): Unit = {
     assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sorted)
     assertEquals(ArraySeq(1, 2), ArraySeq(2, 1).sortBy(identity))
@@ -100,5 +94,12 @@ class ArraySeqTest {
     val x = Seq[Byte](10)
     val y = Array[Byte](10).toSeq
     assertEquals(x.hashCode(), y.hashCode())
+  }
+
+  @Test
+  def from(): Unit = {
+    val as = ArraySeq("foo", "bar", "baz")
+    assert(ArraySeq.from(as) eq as)
+    assert(ArraySeq(as: _*) eq as)
   }
 }

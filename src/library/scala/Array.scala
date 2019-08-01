@@ -55,24 +55,9 @@ object Array {
    */
   def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
 
-  def from[A : ClassTag](it: IterableOnce[A]): Array[A] = {
-    val n = it.knownSize
-    if (n > -1) {
-      val elements = new Array[A](n)
-      val iterator = it.iterator
-      var i = 0
-      while (i < n) {
-        ScalaRunTime.array_update(elements, i, iterator.next())
-        i = i + 1
-      }
-      elements
-    } else {
-      val b = ArrayBuilder.make[A]
-      val iterator = it.iterator
-      while (iterator.hasNext)
-        b += iterator.next()
-      b.result()
-    }
+  def from[A : ClassTag](it: IterableOnce[A]): Array[A] = it match {
+    case it: Iterable[A] => it.toArray[A]
+    case _ => it.iterator.toArray[A]
   }
 
   private def slowcopy(src : AnyRef,
