@@ -196,7 +196,7 @@ abstract class ClassfileWriters {
     val jarWriter: JarOutputStream = {
       val manifest = new Manifest()
       mainClass foreach { c => manifest.getMainAttributes.put(Name.MAIN_CLASS, c) }
-      plugins foreach (_.augmentManifest(manifest))
+      plugins foreach (_.augmentManifest(file, manifest))
       val jar = jarFactory.createJarOutputStream(file, manifest)
       jar.setLevel(compressionLevel)
       if (storeOnly) jar.setMethod(ZipOutputStream.STORED)
