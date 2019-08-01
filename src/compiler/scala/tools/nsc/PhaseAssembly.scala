@@ -18,8 +18,9 @@ import scala.collection.mutable
  *  satisfies their mutual constraints.
  *  @see SIP 00002. You have read SIP 00002?
  */
-trait PhaseAssembly {
-  self: Global =>
+trait PhaseAssembly { global: Global =>
+
+  import global.settings
 
   /**
    * Aux data structure for solving the constraint system
@@ -111,22 +112,24 @@ trait PhaseAssembly {
 
       if (node.level < lvl) node.level = lvl
 
-      var hls = Nil ++ node.before.filter(_.hard)
-      while (hls.size > 0) {
-        for (hl <- hls) {
-          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-          node.before = hl.frm.before
-          nodes -= hl.frm.phasename
-          edges -= hl
-          for (edge <- node.before) edge.to = node
-        }
-        hls = Nil ++ node.before.filter(_.hard)
+      def promote(edge: Edge): Unit = {
+        require(edge.hard)
+        node.phaseobj = Some(node.phaseobj.get ++ edge.frm.phaseobj.get)
+        node.before = edge.frm.before
+        nodes -= edge.frm.phasename
+        edges -= edge
+        for (b <- node.before) b.to = node
+      }
+      var more = true
+      while (more) {
+        more = node.before.find(_.hard).map(hl => {
+          promote(hl)
+          true
+        }).getOrElse(false)
       }
       node.visited = true
 
-      for (edge <- node.before) {
-        collapseHardLinksAndLevels( edge.frm, lvl + 1)
-      }
+      for (edge <- node.before) collapseHardLinksAndLevels(edge.frm, lvl + 1)
 
       node.visited = false
     }
@@ -163,7 +166,7 @@ trait PhaseAssembly {
             sanity foreach (edge => hl.to.before += edge)
             for (edge <- promote) {
               rerun = true
-              informProgress(
+              global.informProgress(
                 "promote the dependency of " + edge.frm.phasename +
                 ": "  + edge.to.phasename + " => " + hl.frm.phasename)
               edge.to = hl.frm
@@ -189,7 +192,7 @@ trait PhaseAssembly {
           edges -= edge
           edge.frm.after -= edge
           if (edge.frm.phaseobj exists (lsc => !lsc.head.internal))
-            warning(msg)
+            global.warning(msg)
         }
       }
     }
@@ -202,7 +205,7 @@ trait PhaseAssembly {
   def computePhaseAssembly(): List[SubComponent] = {
 
     // Add all phases in the set to the graph
-    val graph = phasesSetToDepGraph(phasesSet)
+    val graph = phasesSetToDepGraph(global.phasesSet)
 
     val dot = settings.genPhaseGraph.valueSetByUser
 
