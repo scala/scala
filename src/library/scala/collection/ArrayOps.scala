@@ -119,9 +119,11 @@ object ArrayOps {
     def withFilter(q: A => Boolean): WithFilter[A] = new WithFilter[A](a => p(a) && q(a), xs)
   }
 
-  private final class ArrayIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] {
+  @SerialVersionUID(3L)
+  private[collection] final class ArrayIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = 0
     private[this] val len = xs.length
+    override def knownSize = len - pos
     def hasNext: Boolean = pos < len
     def next(): A = try {
       val r = xs(pos)
@@ -134,7 +136,8 @@ object ArrayOps {
     }
   }
 
-  private final class ReverseIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] {
+  @SerialVersionUID(3L)
+  private final class ReverseIterator[@specialized(Specializable.Everything) A](xs: Array[A]) extends AbstractIterator[A] with Serializable {
     private[this] var pos = xs.length-1
     def hasNext: Boolean = pos >= 0
     def next(): A = try {
@@ -149,7 +152,8 @@ object ArrayOps {
     }
   }
 
-  private class GroupedIterator[A](xs: Array[A], groupSize: Int) extends AbstractIterator[Array[A]] {
+  @SerialVersionUID(3L)
+  private final class GroupedIterator[A](xs: Array[A], groupSize: Int) extends AbstractIterator[Array[A]] with Serializable {
     private[this] var pos = 0
     def hasNext: Boolean = pos < xs.length
     def next(): Array[A] = {
