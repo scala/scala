@@ -51,7 +51,7 @@ trait Validators {
       // we only check strict correspondence between value parameterss
       // type parameters of macro defs and macro impls don't have to coincide with each other
       if (aparamss.length != rparamss.length) MacroImplParamssMismatchError()
-      map2(aparamss, rparamss)((aparams, rparams) => {
+      foreach2(aparamss, rparamss)((aparams, rparams) => {
         if (aparams.length < rparams.length) MacroImplMissingParamsError(aparams, rparams)
         if (rparams.length < aparams.length) MacroImplExtraParamsError(aparams, rparams)
       })
