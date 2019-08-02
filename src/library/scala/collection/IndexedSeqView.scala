@@ -49,7 +49,7 @@ object IndexedSeqView {
   private final class IndexedSeqViewIterator[A](self: IndexedSeqView[A]) extends AbstractIterator[A] with Serializable {
     private[this] var current = 0
     private[this] var remainder = self.size
-    override def knownSize: Int = self.size - current
+    override def knownSize: Int = remainder
     def hasNext = remainder > 0
     def next(): A =
       if (hasNext) {
