@@ -329,7 +329,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
 
     // the "symbol == Any_getClass || symbol == Object_getClass" test doesn't cut it
     // because both AnyVal and its primitive descendants define their own getClass methods
-    private def isGetClass(meth: MethodSymbol) = (meth.name string_== "getClass") && meth.paramss.flatten.isEmpty
+    private def isGetClass(meth: MethodSymbol) = (meth.name string_== "getClass") && lastNonEmpty(meth.paramss).isEmpty
     private def isStringConcat(meth: MethodSymbol) = meth == String_+ || (meth.owner.isPrimitiveValueClass && meth.returnType =:= StringClass.toType)
     lazy val bytecodelessMethodOwners = Set[Symbol](AnyClass, AnyValClass, AnyRefClass, ObjectClass, ArrayClass) ++ ScalaPrimitiveValueClasses
     lazy val bytecodefulObjectMethods = Set[Symbol](Object_clone, Object_equals, Object_finalize, Object_hashCode, Object_toString,

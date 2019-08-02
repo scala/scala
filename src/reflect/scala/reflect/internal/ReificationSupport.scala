@@ -315,7 +315,7 @@ trait ReificationSupport { self: SymbolTable =>
             }
             // undo flag modifications by merging flag info from constructor args and fieldDefs
             val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
-            def ctorArgsCorrespondToFields = vparamssRestoredImplicits.flatten.forall { vd => modsMap.contains(vd.name) }
+            val ctorArgsCorrespondToFields = mforall(vparamssRestoredImplicits)(vd => modsMap.contains(vd.name) )
             if (!ctorArgsCorrespondToFields) None
             else {
               val vparamss = mmap(vparamssRestoredImplicits) { vd =>
@@ -611,7 +611,7 @@ trait ReificationSupport { self: SymbolTable =>
     def UnliftListOfListsElementwise[T](unliftable: Unliftable[T]) = new UnliftListOfListsElementwise[T] {
       def unapply(lst: List[List[Tree]]): Option[List[List[T]]] = {
         val unlifted = lst.map { l => l.flatMap { unliftable.unapply(_) } }
-        if (unlifted.flatten.length == lst.flatten.length) Some(unlifted) else None
+        if (sumSize(unlifted, 0) == sumSize(lst, 0)) Some(unlifted) else None
       }
     }
 

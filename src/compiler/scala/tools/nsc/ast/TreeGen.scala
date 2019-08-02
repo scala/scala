@@ -57,7 +57,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
 
   // wrap the given expression in a SoftReference so it can be gc-ed
   def mkSoftRef(expr: Tree): Tree = atPos(expr.pos) {
-    val constructor = SoftReferenceClass.info.nonPrivateMember(nme.CONSTRUCTOR).suchThat(_.paramss.flatten.size == 1)
+    val constructor = SoftReferenceClass.info.nonPrivateMember(nme.CONSTRUCTOR).suchThat(x => sumSize(x.paramss, 0) == 1)
     NewFromConstructor(constructor, expr)
   }
 

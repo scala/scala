@@ -481,7 +481,7 @@ trait Definitions extends api.StandardDefinitions {
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]
       lazy val ArrayModule_overloadedApply = getMemberMethod(ArrayModule, nme.apply)
-           def ArrayModule_genericApply    = ArrayModule_overloadedApply.suchThat(_.paramss.flatten.last.tpe.typeSymbol == ClassTagClass) // [T: ClassTag](xs: T*): Array[T]
+           def ArrayModule_genericApply    = ArrayModule_overloadedApply.suchThat(x => lastNonEmpty(x.paramss).last.tpe.typeSymbol == ClassTagClass) // [T: ClassTag](xs: T*): Array[T]
            def ArrayModule_apply(tp: Type) = ArrayModule_overloadedApply.suchThat(_.tpe.resultType =:= arrayType(tp)) // (p1: AnyVal1, ps: AnyVal1*): Array[AnyVal1]
     lazy val ArrayClass                    = getRequiredClass("scala.Array") // requiredClass[scala.Array[_]]
       lazy val Array_apply                 = getMemberMethod(ArrayClass, nme.apply)

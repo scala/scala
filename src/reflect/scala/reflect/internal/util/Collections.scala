@@ -69,6 +69,19 @@ trait Collections {
     head
   }
 
+  /** From a list of lists, get the last list which is not empty (or Nil if none exists)  */
+  final def lastNonEmpty[A](xss: List[List[A]]): List[A] = {
+    var zs: List[A] = Nil
+    var yss = xss
+    while (! yss.isEmpty){
+      val ys = yss.head
+      if (!ys.isEmpty) zs = ys
+      yss = yss.tail
+    }
+    zs
+  }
+
+
   final def sameElementsEquals(thiss: List[AnyRef], that: List[AnyRef]): Boolean = {
     // Probably immutable, so check reference identity first (it's quick anyway)
     (thiss eq that) || {
