@@ -11,6 +11,16 @@ object Literals {
   def inTripleQuotedInterpolation = raw"""\u000A"""
   def inChar = '\u000A'
   def `in backtick quoted\u0020identifier` = "bueno"
+  //unicode escapes preceded by an odd number of backslash characters
+  //are *not* processed, regardless of whether the
+  //backslash characters are processed themselves
+  def after2slashestriple = """\\u0040"""
+  def after2slashesplain = "\\u0040"
+  def after2slashesraw = raw"\\u0040"
+  def after2slashess = s"\\u0040"
+  def firstFailure = ("\""+"""([^"\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"")
+  def badString = """bad\"""
+
 
   def supported = List(
     "literal tab in single quoted string" -> "tab	tab",
@@ -30,7 +40,8 @@ object Literals {
   def deprecated =
     List(
       "tab unicode escape in triple quoted string" -> """tab\u0009tab""",
-      "tab unicode escape in raw interpolator" -> raw"""tab\u0009tab"""
+      "tab unicode escape in single quoted raw interpolator" -> raw"tab\u0009tab",
+      "tab unicode escape in triple quoted raw interpolator" -> raw"""tab\u0009tab"""
     )
 
   def unsupported =
@@ -53,7 +64,7 @@ object Test {
        case (result, ways) => {
          println(s"literals that result in $result:")
          ways.foreach{case (x, _) => println(x)}
-         println
+         println()
        }
      }
 
@@ -68,6 +79,14 @@ object Test {
     println("deprecated")
 
     printSegment(Literals.deprecated)
-    
+
+    println("after backslashes")
+    println(Literals.after2slashestriple.toList)
+    println(Literals.after2slashesplain.toList)
+    println(Literals.after2slashesraw.toList)
+    println(Literals.after2slashess.toList)
+    println(Literals.firstFailure.toList)
+    println(Literals.badString.toList)
+   
   }
 }

@@ -32,7 +32,18 @@ trait FastStringInterpolator extends FormatInterpolator {
       val treated = 
         try
           parts.mapConserve { case lit@Literal(Constant(stringVal: String)) =>
-            val k = Constant(if(isRaw) StringContext.processUnicode(stringVal) else StringContext.processEscapes(stringVal))
+            val k = Constant(if (isRaw && currentRun.isScala214) stringVal
+                             else if (isRaw) {
+                               val processed = StringContext.processUnicode(stringVal)
+                               if(processed != stringVal){
+                                 var diffindex = processed.zip(stringVal).zipWithIndex.collectFirst{
+                                   case ((p, o), i) if p != o => i
+                                 }.getOrElse(processed.length - 1)
+                                 c.warning(lit.pos, "Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14")
+                               }
+                               processed
+                             }
+                             else StringContext.processEscapes(stringVal))
             // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
             treeCopy.Literal(lit, k).setType(ConstantType(k))
           }

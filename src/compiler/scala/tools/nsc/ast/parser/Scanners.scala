@@ -854,7 +854,7 @@ trait Scanners extends ScannersCommon {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
-          replaceUnicodeEscapes(true)
+          if(!currentRun.isScala214) replaceUnicodeEscapes(true)
           token = STRINGLIT
         } else
           getRawStringLit()

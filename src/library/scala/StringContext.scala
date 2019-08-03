@@ -136,7 +136,9 @@ case class StringContext(parts: String*) {
    *
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
    *
-   *  ''Note:'' Even when using the raw interpolator, Scala will preprocess unicode escapes.
+   *  ''Note:'' Even when using the raw interpolator, Scala will process Unicode escapes.
+   *  Unicode processing in the raw interpolator is deprecated as of scala 2.13.1 and
+   *  will be removed in scala 2.14
    *  For example:
    *  {{{
    *    scala> raw"\u005cu0023"
@@ -373,26 +375,24 @@ object StringContext {
    *  @param  str  A string that may contain escape sequences
    *  @return The string with all escape sequences expanded.
    */
-  def processEscapes(str: String): String = {
+  def processEscapes(str: String): String =
     str indexOf '\\' match {
       case -1 => str
-      case  i => replace(str, i, false)
+      case  i => replace(str, i)
     }
-  }
 
-  protected[scala] def processUnicode(str: String): String = {
-    str indexOf "\\u" match {
-      case -1 => str
-      case  i => replace(str, i, true)
+  protected[scala] def processUnicode(str: String): String =
+    str indexOf "\\" match {
+      case i if i == -1 || i >= (str.length() - 5)  => str
+      case i => replaceU(str, i)
     }
-  }
 
-  // replace escapes with given first escape
-  private[this] def replace(str: String, first: Int, unicodeOnly: Boolean): String = {
+  //replace escapes with given first escape
+  private[this] def replace(str: String, first: Int): String = {
     val len = str.length()
     val b = new JLSBuilder
-      // append replacement starting at index `i`, with `next` backslash
-      @tailrec def loop(i: Int, next: Int): String = {
+    // append replacement starting at index `i`, with `next` backslash
+    @tailrec def loop(i: Int, next: Int): String = {
       if (next >= 0) {
         //require(str(next) == '\\')
         if (next > i) b.append(str, i, next)
@@ -400,10 +400,6 @@ object StringContext {
           if (idx >= len) throw new InvalidEscapeException(str, next)
           val c = str(idx) match {
             case 'u'  => 'u'
-            case chr if unicodeOnly => {
-              b.append('\\')
-              chr
-            }
             case 'b'  => '\b'
             case 't'  => '\t'
             case 'n'  => '\n'
@@ -426,6 +422,39 @@ object StringContext {
       }
       loop(0, first)
     }
+
+  //replace escapes with given first escape
+  private[this] def replaceU(str: String, first: Int): String = {
+    val len = str.length()
+    val b = new JLSBuilder
+    // append replacement starting at index `i`, with `next` backslash
+    @tailrec def loop(i: Int, next: Int): String = {
+      if (next >= 0) {
+        //require(str(next) == '\\')
+        if (next > i) b.append(str, i, next)
+          var idx = next + 1
+          if (idx >= len) {
+            b.toString()
+          }
+          else {
+            val (ch, advance) = str(idx) match {
+              case 'u'  => readUEscape(str, idx)
+              case chr  => {
+                b.append('\\')
+                (chr, 1)
+              }
+            }
+            idx += advance
+            b append ch
+            loop(idx, str.indexOf('\\', idx))
+          }
+        } else {
+          if (i < len) b.append(str, i, len)
+          b.toString
+        }
+      }
+    loop(0, first)
+  }
 
   def standardInterpolator(process: String => String, args: scala.collection.Seq[Any], parts: Seq[String]): String = {
     StringContext.checkLengths(args, parts)
