@@ -319,7 +319,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     methSym setInfo MethodType(methParamSyms, resTp)
 
     // we must rewire reference to the function's param symbols -- and not methParamProtos -- to methParamSyms
-    val useMethodParams = new TreeSymSubstituter(fun.vparams.map(_.symbol), methParamSyms)
+    val useMethodParams = new TreeSymSubstituter(new ZippedContraMappedSM( (x: ValDef) => x.symbol, fun.vparams, methParamSyms))
     // we're now owned by the method that holds the body, and not the function
     val moveToMethod = new ChangeOwnerTraverser(fun.symbol, methSym)
     def substThisForModule(tree: Tree) = {

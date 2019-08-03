@@ -92,7 +92,7 @@ trait ExistentialsAndSkolems {
    */
   final def existentialTransform[T](rawSyms: List[Symbol], tp: Type, rawOwner: Symbol = NoSymbol)(creator: (List[Symbol], Type) => T): T = {
     val allBounds = existentialBoundsExcludingHidden(rawSyms)
-    val typeParams: List[Symbol] = rawSyms map { sym =>
+    def toTypeParam(sym: Symbol): Symbol = {
       val name = sym.name match {
         case x: TypeName  => x
         case x            => tpnme.singletonName(x)
@@ -104,11 +104,12 @@ trait ExistentialsAndSkolems {
 
       quantified setInfo bound.cloneInfo(quantified)
     }
+    val typeParams: List[Symbol] = rawSyms map toTypeParam
     // Higher-kinded existentials are not yet supported, but this is
     // tpeHK for when they are: "if a type constructor is expected/allowed,
     // tpeHK must be called instead of tpe."
-    val typeParamTypes = typeParams map (_.tpeHK)
-    def doSubst(info: Type) = info.subst(rawSyms, typeParamTypes)
+    val doSubstMap = new ZippedMapSM[Symbol, Type](rawSyms, typeParams, _.tpeHK)
+    def doSubst(info: Type) = info.subst(doSubstMap)
 
     typeParams foreach (_ modifyInfo doSubst)
     creator(typeParams, doSubst(tp))

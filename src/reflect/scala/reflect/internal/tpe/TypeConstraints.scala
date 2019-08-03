@@ -208,6 +208,7 @@ private[internal] trait TypeConstraints {
     foreachWithIndex(tparams){(tparam, ix) =>
       if (getVariance(tparam).isContravariant) areContravariant += ix
     }
+    val symMap = new ZipSM(tparams, tvars)
 
     def solveOne(tvar: TypeVar, ix: Int): Unit = {
       val tparam = tvar.origin.typeSymbol
@@ -234,25 +235,25 @@ private[internal] trait TypeConstraints {
           if (up) {
             if (bound.typeSymbol != AnyClass) {
               debuglog(s"$tvar addHiBound $bound.instantiateTypeParams($tparams, $tvars)")
-              tvar addHiBound bound.instantiateTypeParams(tparams, tvars)
+              tvar addHiBound bound.instantiateTypeParams(symMap)
             }
             for (tparam2 <- tparams)
               tparam2.info.lowerBound.dealias match {
                 case TypeRef(_, `tparam`, _) =>
                   debuglog(s"$tvar addHiBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
-                  tvar addHiBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
+                  tvar addHiBound tparam2.tpeHK.instantiateTypeParams(symMap)
                 case _ =>
               }
           } else {
             if (bound.typeSymbol != NothingClass && bound.typeSymbol != tparam) {
               debuglog(s"$tvar addLoBound $bound.instantiateTypeParams($tparams, $tvars)")
-              tvar addLoBound bound.instantiateTypeParams(tparams, tvars)
+              tvar addLoBound bound.instantiateTypeParams(symMap)
             }
             for (tparam2 <- tparams)
               tparam2.info.upperBound.dealias match {
                 case TypeRef(_, `tparam`, _) =>
                   debuglog(s"$tvar addLoBound $tparam2.tpeHK.instantiateTypeParams($tparams, $tvars)")
-                  tvar addLoBound tparam2.tpeHK.instantiateTypeParams(tparams, tvars)
+                  tvar addLoBound tparam2.tpeHK.instantiateTypeParams(symMap)
                 case _ =>
               }
           }

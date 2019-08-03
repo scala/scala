@@ -635,8 +635,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         newClassTParams = produceTypeParameters(oldClassTParams, sClass, env) map subst(env)
         // log("new tparams " + newClassTParams.zip(newClassTParams map {s => (s.tpe, s.tpe.upperBound)}) + ", in env: " + env)
 
+        val itm = new ZippedMapSM(oldClassTParams, newClassTParams, (x: Symbol) => x.tpe)
         def applyContext(tpe: Type) =
-          subst(env, tpe).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe))
+          subst(env, tpe).instantiateTypeParams(itm)
 
         /* Return a list of specialized parents to be re-mixed in a specialized subclass.
          * Assuming env = [T -> Int] and
@@ -689,9 +690,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
        * types. The existing typeEnv for `sym` is composed with the current active
        * environment
        */
+      val instMap: SymbolMap[Type] = new ZippedMapSM(oldClassTParams, newClassTParams, (x: Symbol) => x.tpe)
       def enterMember(sym: Symbol): Symbol = {
         typeEnv(sym) = fullEnv ++ typeEnv(sym) // append the full environment
-        sym modifyInfo (_.substThis(clazz, sClass).instantiateTypeParams(oldClassTParams, newClassTParams map (_.tpe)))
+        sym modifyInfo (_.substThis(clazz, sClass).instantiateTypeParams(instMap))
         // we remove any default parameters. At this point, they have been all
         // resolved by the type checker. Later on, erasure re-typechecks everything and
         // chokes if it finds default parameters for specialized members, even though
@@ -925,7 +927,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val tps          = survivingParams(sym.info.typeParams, env0)
           val specMember   = sym.cloneSymbol(owner, (sym.flags | SPECIALIZED) & ~DEFERRED)  // <-- this needs newName = ...
           val env          = mapAnyRefsInSpecSym(env0, sym, specMember)
-          val (keys, vals) = env.toList.unzip
 
           specMember setName specializedName(sym, env)  // <-- but the name is calculated based on the cloned symbol
           // debuglog("%s normalizes to %s%s".format(sym, specMember,
@@ -933,10 +934,13 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
           typeEnv(specMember) = outerEnv ++ env
           val tps1 = produceTypeParameters(tps, specMember, env)
-          tps1 foreach (_ modifyInfo (_.instantiateTypeParams(keys, vals)))
+          val instSymMap = new MapSM(env)
+          tps1 foreach (_ modifyInfo (_.instantiateTypeParams(instSymMap)))
 
           // the cloneInfo is necessary so that method parameter symbols are cloned at the new owner
-          val methodType = sym.info.resultType.instantiateTypeParams(keys ++ tps, vals ++ tps1.map(_.tpe)).cloneInfo(specMember)
+          val menv = foldLeft2(tps, tps1)(env){ (en, tp, tp1) => en + (tp -> tp1.tpe) }
+          val methInstSM = new MapSM(menv)
+          val methodType = sym.info.resultType.instantiateTypeParams(methInstSM).cloneInfo(specMember)
           specMember setInfo GenPolyType(tps1, methodType)
 
           debuglog("%s expands to %s in %s".format(sym, specMember.name.decode, pp(env)))
@@ -1219,7 +1223,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  primitive type losing the annotation.
    */
   private def subst(env: TypeEnv, tpe: Type): Type = {
-    class FullTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) with AnnotationFilter {
+    class FullTypeMap(symMap: SymbolMap[Type]) extends SubstTypeMap(symMap) with AnnotationFilter {
       def keepAnnotation(annot: AnnotationInfo) = !(annot matches uncheckedVarianceClass)
 
       override def mapOver(tp: Type): Type = tp match {
@@ -1233,8 +1237,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           super.mapOver(tp)
       }
     }
-    val (keys, values) = env.toList.unzip
-    (new FullTypeMap(keys, values))(tpe)
+    (new FullTypeMap(new MapSM(env)))(tpe)
   }
 
   private def subst(env: TypeEnv)(decl: Symbol): Symbol =
@@ -1354,8 +1357,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   class Duplicator(casts: Map[Symbol, Type]) extends {
     val global: SpecializeTypes.this.global.type = SpecializeTypes.this.global
   } with typechecker.Duplicators {
-    private val (castfrom, castto) = casts.unzip
-    private object CastMap extends SubstTypeMap(castfrom.toList, castto.toList)
+    private object CastMap extends SubstTypeMap(new MapSM(casts))
 
     class BodyDuplicator(_context: Context) extends super.BodyDuplicator(_context) {
       override def castType(tree: Tree, pt: Type): Tree = {
@@ -1417,12 +1419,14 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   class ImplementationAdapter(from: List[Symbol],
                               to: List[Symbol],
                               targetClass: Symbol,
-                              addressFields: Boolean) extends TreeSymSubstituter(from, to) {
-    override val symSubst = new SubstSymMap(from, to) {
-      override def matches(sym1: Symbol, sym2: Symbol) =
-        if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
-        else sym1 eq sym2
-    }
+                              addressFields: Boolean) extends TreeSymSubstituter(new ZipSM(from, to)) {
+    override val symSubst = new SubstSymMap(
+      new ZipSM[Symbol](from, to) {
+        override protected def matches(sym1: Symbol, sym2: Symbol): Boolean =
+          if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
+          else sym1 eq sym2
+      }
+    )
 
     private def isAccessible(sym: Symbol): Boolean =
       if (currentOwner.isAnonymousFunction) {
@@ -1542,7 +1546,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               val GenPolyType(tparams, tpe) = fun.tpe
               val (from, to) = env.toList.unzip
               val residualTParams = tparams.filterNot(env.contains)
-              GenPolyType(residualTParams, tpe).substituteTypes(from, to)
+              GenPolyType(residualTParams, tpe).substituteTypes(new MapSM(env))
             case _ => tree.tpe
           }
 

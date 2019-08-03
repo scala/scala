@@ -771,7 +771,8 @@ abstract class UnCurry extends InfoTransform
         val rhs1 = if (rhs == EmptyTree || tempVals.isEmpty) rhs else {
           localTyper.typedPos(rhs.pos) {
             // Patch the method body to refer to the temp vals
-            val rhsSubstituted = rhs.substituteSymbols(packedParamsSyms, tempVals.map(_.symbol))
+            val symMap = new ZippedMapSM(packedParamsSyms, tempVals, (t: Tree) => t.symbol)
+            val rhsSubstituted = rhs.substituteSymbols(symMap)
             // The new method body: { val p$1 = p.asInstanceOf[<dependent type>]; ...; <rhsSubstituted> }
             Block(tempVals, rhsSubstituted)
           }

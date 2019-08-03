@@ -109,12 +109,15 @@ trait Types
 
   /** Caching the most recent map has a 75-90% hit rate. */
   private object substTypeMapCache {
-    private[this] var cached: SubstTypeMap = new SubstTypeMap(Nil, Nil)
-
+    private[this] var cached: SubstTypeMap = new SubstTypeMap(new ZipSM(Nil, Nil))
+    private[this] var cachedFrom: List[Symbol] = Nil
+    private[this] var cachedTo: List[Type] = Nil
     def apply(from: List[Symbol], to: List[Type]): SubstTypeMap = {
-      if ((cached.from ne from) || (cached.to ne to))
-        cached = new SubstTypeMap(from, to)
-
+      if ((cachedFrom ne from) || (cachedTo ne to)){
+        cachedFrom = from
+        cachedTo = to
+        cached = new SubstTypeMap(new ZipSM(from, to))
+      }
       cached
     }
   }
@@ -206,7 +209,7 @@ trait Types
     override def params: List[Symbol] = List()
     override def paramTypes: List[Type] = List()
     override def typeArgs = underlying.typeArgs
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = underlying.instantiateTypeParams(formals, actuals)
+    override def instantiateTypeParams(symMap: SymbolMap[Type]): Type = underlying.instantiateTypeParams(symMap)
     override def skolemizeExistential(owner: Symbol, origin: AnyRef) = underlying.skolemizeExistential(owner, origin)
     override def normalize = maybeRewrap(underlying.normalize)
     override def etaExpand = maybeRewrap(underlying.etaExpand)
@@ -251,7 +254,8 @@ trait Types
         result
     }
     def substituteSymbols(from: List[Symbol], to: List[Symbol]): Type = substSym(from, to)
-    def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(from, to)
+    def substituteTypes(from: List[Symbol], to: List[Type]): Type = subst(new ZipSM(from, to))
+    def substituteTypes(sm: SymbolMap[Type]): Type = subst(sm)
 
     // the only thingies that we want to splice are: 1) type parameters, 2) abstract type members
     // the thingies that we don't want to splice are: 1) concrete types (obviously), 2) existential skolems
@@ -491,8 +495,9 @@ trait Types
      *
      * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
      */
-    def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
-      if (sameLength(formals, actuals)) this.subst(formals, actuals) else ErrorType
+    final def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
+      if (sameLength(formals, actuals)) this.instantiateTypeParams(new ZipSM(formals, actuals)) else ErrorType
+    def instantiateTypeParams(symMap: SymbolMap[Type]): Type = this.subst(symMap)
 
     /** If this type is an existential, turn all existentially bound variables to type skolems.
      *  @param  owner    The owner of the created type skolems
@@ -744,8 +749,8 @@ trait Types
     /** Substitute types `to` for occurrences of references to
      *  symbols `from` in this type.
      */
-    def subst(from: List[Symbol], to: List[Type]): Type =
-      if (from.isEmpty) this else substTypeMapCache(from, to)(this)
+    def subst(symMap: SymbolMap[Type]): Type =
+      if (symMap.isEmpty) this else new SubstTypeMap(symMap)(this)
 
     /** Substitute symbols `to` for occurrences of symbols `from` in this type.
      *
@@ -753,9 +758,11 @@ trait Types
      * first, as otherwise symbols will immediately get rebound in typeRef to the old
      * symbol.
      */
-    def substSym(from: List[Symbol], to: List[Symbol]): Type =
+    final def substSym(from: List[Symbol], to: List[Symbol]): Type =
       if ((from eq to) || from.isEmpty) this
-      else new SubstSymMap(from, to) apply this
+      else new SubstSymMap(new ZipSM(from, to)) apply this
+    final def substSym(symMap: SymbolMap[Symbol]): Type =
+      if (symMap.isEmpty) this else new SubstSymMap(symMap) apply this
 
     /** Substitute all occurrences of `ThisType(from)` in this type by `to`.
      *
@@ -1889,16 +1896,16 @@ trait Types
     override def isHigherKinded = (typeParams ne Nil)
     override def typeParams     = if (isDefinitionsInitialized) sym.typeParams else sym.unsafeTypeParams
 
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
+    override def instantiateTypeParams(symMap: SymbolMap[Type]): Type =
       if (isHigherKinded) {
-        if (sameLength(formals intersect typeParams, typeParams))
-          copyTypeRef(this, pre, sym, actuals)
+        if (typeParams.forall(symMap.hasKey))
+          copyTypeRef(this, pre, sym, typeParams.flatMap(symMap.find))
         // partial application (needed in infer when bunching type arguments from classes and methods together)
         else
-          copyTypeRef(this, pre, sym, dummyArgs).instantiateTypeParams(formals, actuals)
+          copyTypeRef(this, pre, sym, dummyArgs).instantiateTypeParams(symMap)
       }
       else
-        super.instantiateTypeParams(formals, actuals)
+        super.instantiateTypeParams(symMap)
 
     override def narrow =
       if (sym.isModuleClass) singleType(pre, sym.sourceModule)
@@ -2179,7 +2186,7 @@ trait Types
         //      other type, which has to be related to this type for that to make sense).
         //
         def seenFromOwnerInstantiated(tp: Type): Type =
-          tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(formals, argsOrDummies)
+          tp.asSeenFrom(pre, sym.owner).instantiateTypeParams(new ZipSM(formals, argsOrDummies))
 
         tp match {
           case PolyType(`formals`, result) => PolyType(formals, seenFromOwnerInstantiated(result))
@@ -2689,11 +2696,11 @@ trait Types
       if (tpe1 eq param.tpeHK) param else param.cloneSymbol.setInfo(tpe1)
     }
     override def paramTypes = underlying.paramTypes map maybeRewrap
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
+    override def instantiateTypeParams(symMap: SymbolMap[Type]): Type = {
 //      maybeRewrap(underlying.instantiateTypeParams(formals, actuals))
 
-      val quantified1 = new SubstTypeMap(formals, actuals) mapOver quantified
-      val underlying1 = underlying.instantiateTypeParams(formals, actuals)
+      val quantified1 = new SubstTypeMap(symMap) mapOver quantified
+      val underlying1 = underlying.instantiateTypeParams(symMap)
       if ((quantified1 eq quantified) && (underlying1 eq underlying)) this
       else existentialAbstraction(quantified1, underlying1.substSym(quantified, quantified1))
 
@@ -2827,7 +2834,7 @@ trait Types
     def withTypeVars(op: Type => Boolean, depth: Depth): Boolean = {
       val quantifiedFresh = cloneSymbols(quantified)
       val tvars = quantifiedFresh map (tparam => TypeVar(tparam))
-      val underlying1 = underlying.instantiateTypeParams(quantified, tvars) // fuse subst quantified -> quantifiedFresh -> tvars
+      val underlying1 = underlying.instantiateTypeParams(new ZipSM(quantified, tvars)) // fuse subst quantified -> quantifiedFresh -> tvars
       op(underlying1) && {
         solve(tvars, quantifiedFresh, (_ => Invariant), upper = false, depth) &&
         isWithinBounds(NoPrefix, NoSymbol, quantifiedFresh, tvars map (_.inst))
@@ -3427,10 +3434,10 @@ trait Types
     override def upperBound: Type = bounds.hi
 
     // ** Replace formal type parameter symbols with actual type arguments. * /
-    override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]) = {
+    override def instantiateTypeParams(symMap: SymbolMap[Type]): Type = {
       val annotations1 = annotations.map(info => AnnotationInfo(info.atp.instantiateTypeParams(
-          formals, actuals), info.args, info.assocs).setPos(info.pos))
-      val underlying1 = underlying.instantiateTypeParams(formals, actuals)
+        symMap), info.args, info.assocs).setPos(info.pos))
+      val underlying1 = underlying.instantiateTypeParams(symMap)
       if ((annotations1 eq annotations) && (underlying1 eq underlying)) this
       else AnnotatedType(annotations1, underlying1)
     }
@@ -4441,8 +4448,9 @@ trait Types
   /** Do type arguments `targs` conform to formal parameters `tparams`?
    */
   def isWithinBounds(pre: Type, owner: Symbol, tparams: List[Symbol], targs: List[Type]): Boolean = {
+    val instSymMap: SymbolMap[Type] = new ZipSM(tparams, targs)
     def instantiatedBound(tparam: Symbol): TypeBounds =
-      tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds
+      tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(instSymMap).bounds
 
     if (targs exists typeHasAnnotations){
       var bounds = mapList(tparams)(instantiatedBound)

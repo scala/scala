@@ -340,7 +340,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         var runtimeType = decreaseMetalevel(macroImpl.info.finalResultType)
 
         // Step II. Transform type parameters of a macro implementation into type arguments in a macro definition's body
-        runtimeType = runtimeType.substituteTypes(macroImpl.typeParams, targs map (_.tpe))
+        val subst = new ZippedMapSM(macroImpl.typeParams, targs, (x: Tree) => x.tpe)
+        runtimeType = runtimeType.substituteTypes(subst)
 
         // Step III. Transform c.prefix.value.XXX to this.XXX and implParam.value.YYY to defParam.YYY
         def unsigma(tpe: Type): Type =
