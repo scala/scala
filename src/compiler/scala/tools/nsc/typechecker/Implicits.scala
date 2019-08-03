@@ -166,7 +166,7 @@ trait Implicits {
   def allViewsFrom(tp: Type, context: Context, tpars: List[Symbol]): List[(SearchResult, List[TypeConstraint])] = {
     // my untouchable typevars are better than yours (they can't be constrained by them)
     val tvars = tpars map (TypeVar untouchable _)
-    val tpSubsted = tp.subst(tpars, tvars)
+    val tpSubsted = tp.subst(new ZipSM(tpars, tvars))
 
     val search = new ImplicitSearch(EmptyTree, functionType(List(tpSubsted), AnyTpe), true, context.makeImplicit(reportAmbiguousErrors = false))
 
@@ -463,8 +463,8 @@ trait Implicits {
       def core(tp: Type): Type = tp.dealiasWiden match {
         case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
         case AnnotatedType(annots, tp)          => core(tp)
-        case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
-        case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
+        case ExistentialType(tparams, result)   => core(result).subst(new KeysFunctionSM(tparams, t => core(t.info.upperBound)))
+        case PolyType(tparams, result)          => core(result).subst(new KeysFunctionSM(tparams, t => core(t.info.upperBound)))
         case _                                  => tp
       }
       def stripped(tp: Type): Type = {
@@ -594,14 +594,15 @@ trait Implicits {
               val allUndetparams = (undetParams ++ tparams).distinct
               val tvars = allUndetparams map freshVar
               val tp = ApproximateDependentMap(restpe)
-              val tpInstantiated = tp.instantiateTypeParams(allUndetparams, tvars)
+              val tpInstantiated = tp.instantiateTypeParams(new ZipSM(allUndetparams, tvars))
               if(!matchesPt(tpInstantiated, wildPt, allUndetparams)) {
                 if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch1)
                 false
               } else {
                 val targs = solvedTypes(tvars, allUndetparams, varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
-                val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
+                val adjustedInst = new ZipSM(adjusted.okParams, adjusted.okArgs)
+                val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjustedInst))
                 if(!matchesPt(tpSubst, wildPt, adjusted.undetParams)) {
                   if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchesPtInstMismatch2)
                   false
@@ -791,7 +792,7 @@ trait Implicits {
             info.sym.fullLocationString, itree2.symbol.fullLocationString))
         else {
           val tvars = undetParams map freshVar
-          val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
+          val ptInstantiated = pt.instantiateTypeParams(new ZipSM(undetParams, tvars))
 
           if (matchesPt(itree3.tpe, ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)

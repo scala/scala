@@ -255,7 +255,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         for(param <- params) {
           var paramTp = param.tpe
           for(ar <- argResultsBuff)
-            paramTp = paramTp.subst(ar.subst.from, ar.subst.to)
+            paramTp = paramTp.subst(new ZipSM(ar.subst.from, ar.subst.to))
 
           val res =
             if (paramFailed || (paramTp.isErroneous && {paramFailed = true; true})) SearchFailure
@@ -1796,8 +1796,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       for (tparam <- clazz.typeParams) {
         if (classinfo.expansiveRefs(tparam) contains tparam) {
+          val instMap = new SingletonSM(tparam, AnyRefTpe)
           val newinfo = ClassInfoType(
-            classinfo.parents map (_.instantiateTypeParams(List(tparam), List(AnyRefTpe))),
+            classinfo.parents map (_.instantiateTypeParams(instMap)),
             classinfo.decls,
             clazz)
           updatePolyClassInfo(clazz, newinfo)
@@ -2084,12 +2085,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
             val tparams = sym.owner.skipConstructor.info.typeParams
-            val subst = new SubstTypeMap(tparams, tparams map (_ => WildcardType)) {
-              override def matches(sym: Symbol, sym1: Symbol) =
-                if (sym.isSkolem) matches(sym.deSkolemize, sym1)
-                else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)
-                else super.matches(sym, sym1)
-            }
+            val subst = new SubstTypeMap(
+              new KeysConstantSM[Type](tparams, WildcardType){
+                override protected def matches(sym: Symbol, sym1: Symbol): Boolean =
+                  if (sym.isSkolem) matches(sym.deSkolemize, sym1)
+                  else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)
+                  else super.matches(sym, sym1)
+              }
+            )
             // allow defaults on by-name parameters
             if (sym hasFlag BYNAMEPARAM)
               if (tpt1.tpe.typeArgs.isEmpty) WildcardType // during erasure tpt1 is Function0
@@ -3753,7 +3756,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (targ == WildcardType) tparam.tpeHK else targ)
                 var remainingParams = paramTypes
                 def typedArgToPoly(arg: Tree, formal: Type): Tree = { //TR TODO: cleanup
-                  val lenientPt = formal.instantiateTypeParams(tparams, lenientTargs)
+                  val lenientPt = formal.instantiateTypeParams(new ZipSM(tparams, lenientTargs))
                   val newmode =
                     if (isByNameParamType(remainingParams.head)) POLYmode
                     else POLYmode | BYVALmode
@@ -3761,7 +3764,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   val arg1 = typedArg(arg, forArgMode(fun, mode), newmode, lenientPt)
                   val argtparams = context.extractUndetparams()
                   if (!argtparams.isEmpty) {
-                    val strictPt = formal.instantiateTypeParams(tparams, strictTargs)
+                    val strictPt = formal.instantiateTypeParams(new ZipSM(tparams, strictTargs))
                     inferArgumentInstance(arg1, argtparams, strictPt, lenientPt)
                     arg1
                   } else arg1
@@ -4180,14 +4183,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           if (fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol))
             typedClassOf(tree, args.head, noGen = true)
           else {
-            if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
+            if (!isPastTyper && fun.symbol == Any_isInstanceOf && args.nonEmpty) {
               val scrutineeType = fun match {
                 case Select(qual, _) => qual.tpe
                 case _               => AnyTpe
               }
               checkCheckable(tree, targs.head, scrutineeType, inPattern = false)
             }
-            val resultpe = restpe.instantiateTypeParams(tparams, targs)
+            val resultpe = restpe.instantiateTypeParams(new ZipSM(tparams, targs))
             //@M substitution in instantiateParams needs to be careful!
             //@M example: class Foo[a] { def foo[m[x]]: m[a] = error("") } (new Foo[Int]).foo[List] : List[Int]
             //@M    --> first, m[a] gets changed to m[Int], then m gets substituted for List,
@@ -5283,7 +5286,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               typedHigherKindedType(arg, mode, pt)
             }
-            val argtypes = mapList(args1)(treeTpe)
+            val symMap = new ZippedMapSM(tparams, args1, treeTpe)
 
             foreach2(args, tparams) { (arg, tparam) =>
               // note: can't use args1 in selector, because Binds got replaced
@@ -5293,8 +5296,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val lo0 = info0.lowerBound
                 val hi0 = info0.upperBound
                 val tpinfo = tparam.info
-                val lo1 = tpinfo.lowerBound.subst(tparams, argtypes)
-                val hi1 = tpinfo.upperBound.subst(tparams, argtypes)
+                val lo1 = tpinfo.lowerBound.subst(symMap)
+                val hi1 = tpinfo.upperBound.subst(symMap)
                 val lo = lub(List(lo0, lo1))
                 val hi = glb(List(hi0, hi1))
                 if (!(lo =:= lo0 && hi =:= hi0))
@@ -5314,6 +5317,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 }
               }
             }
+            val argtypes = mapList(args1)(treeTpe)
             val original = treeCopy.AppliedTypeTree(tree, tpt1, args1)
             val result = TypeTree(appliedType(tpt1.tpe, argtypes)) setOriginal original
             if (isPoly) // did the type application (performed by appliedType) involve an unchecked beta-reduction?

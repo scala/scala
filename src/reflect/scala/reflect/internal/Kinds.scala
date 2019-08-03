@@ -126,6 +126,7 @@ trait Kinds {
     owner: Symbol,
     explainErrors: Boolean
   ): List[(Type, Symbol, KindErrors)] = {
+    val instSymMap: SymbolMap[Type] = new ZipSM(tparams, targs)
 
     // instantiate type params that come from outside the abstract type we're currently checking
     def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz)
@@ -176,7 +177,7 @@ trait Kinds {
           // conceptually the same. Could also replace the types by
           // polytypes, but can't just strip the symbols, as ordering
           // is lost then.
-          val declaredBounds     = transform(hkparam.info.instantiateTypeParams(tparams, targs).bounds, paramowner)
+          val declaredBounds     = transform(hkparam.info.instantiateTypeParams(instSymMap).bounds, paramowner)
           val declaredBoundsInst = transform(bindHKParams(declaredBounds), owner)
           val argumentBounds     = transform(hkarg.info.bounds, owner)
 

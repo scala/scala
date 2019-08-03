@@ -514,7 +514,7 @@ trait NamesDefaults { self: Analyzer =>
       //   f(x = 1)   <<  "x = 1" typechecks with expected type WildcardType
       val udp = context.undetparams
       context.savingUndeterminedTypeParams(reportAmbiguous = false) {
-        val subst = new SubstTypeMap(udp, udp map (_ => WildcardType)) {
+        val subst = new SubstTypeMap(new KeysFunctionSM(udp, _ => WildcardType)) {
           override def apply(tp: Type): Type = super.apply(dropByName(tp))
         }
         // This throws an exception which is caught in `tryTypedApply` (as it

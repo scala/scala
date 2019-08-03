@@ -37,7 +37,7 @@ abstract class Duplicators extends Analyzer {
       newClassOwner = newThis
     } else resetClassOwners()
 
-    envSubstitution = new SubstSkolemsTypeMap(env.keysIterator.toList, env.valuesIterator.toList)
+    envSubstitution = new SubstTypeMap(new SubstSkolemsSM(env.keysIterator.toList, env.valuesIterator.toList))
     debuglog("retyped with env: " + env)
 
     newBodyDuplicator(context).typed(tree)
@@ -58,8 +58,8 @@ abstract class Duplicators extends Analyzer {
   private var newClassOwner: Symbol = _
   private var envSubstitution: SubstTypeMap = _
 
-  private class SubstSkolemsTypeMap(from: List[Symbol], to: List[Type]) extends SubstTypeMap(from, to) {
-    protected override def matches(sym1: Symbol, sym2: Symbol) =
+  private class SubstSkolemsSM(from: List[Symbol], to: List[Type]) extends ZipSM[Type](from, to) {
+    override protected def matches(sym1: Symbol, sym2: Symbol) =
       if (sym2.isTypeSkolem) sym2.deSkolemize eq sym1
       else sym1 eq sym2
   }

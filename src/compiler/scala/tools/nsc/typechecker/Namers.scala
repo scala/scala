@@ -609,7 +609,7 @@ trait Namers extends MethodSynthesis {
       def assignParamTypes(copyDef: DefDef, sym: Symbol): Unit = {
         val clazz = sym.owner
         val constructorType = clazz.primaryConstructor.tpe
-        val subst = new SubstSymMap(clazz.typeParams, copyDef.tparams map (_.symbol))
+        val subst = new SubstSymMap(new ZippedMapSM[TypeDef, Symbol](clazz.typeParams, copyDef.tparams, _.symbol))
         val classParamss = constructorType.paramss
 
         foreach2(copyDef.vparamss, classParamss)((copyParams, classParams) =>
@@ -1285,6 +1285,7 @@ trait Namers extends MethodSynthesis {
       val tparamSyms = typer.reenterTypeParams(tparams)
       val tparamSkolems = tparams.map(_.symbol)
 
+      val deskolemizeSM = new ZippedContraMappedSM((x: TypeDef) => x.symbol, tparams, tparamSyms)
 
       /*
        * Creates a method type using tparamSyms and vparamsSymss as argument symbols and `respte` as result type.
@@ -1295,7 +1296,7 @@ trait Namers extends MethodSynthesis {
        * vparamss refer (if they do) to skolemized tparams
        */
       def deskolemizedPolySig(vparamSymss: List[List[Symbol]], restpe: Type) =
-        GenPolyType(tparamSyms, methodTypeFor(meth, vparamSymss, restpe).substSym(tparamSkolems, tparamSyms))
+        GenPolyType(tparamSyms, methodTypeFor(meth, vparamSymss, restpe).substSym(deskolemizeSM))
 
 
       if (tpt.isEmpty && meth.name == nme.CONSTRUCTOR) {
@@ -1369,7 +1370,7 @@ trait Namers extends MethodSynthesis {
 
           val (overriddenTparams, overriddenTp) =
             methOwner.thisType.memberType(overridden) match {
-              case PolyType(tparams, mt) => (tparams, mt.substSym(tparams, tparamSkolems))
+              case PolyType(tparamsx, mt) => (tparamsx, mt.substSym(new ZippedMapSM(tparamsx, tparams, (t: TypeDef) => t.symbol)))
               case mt => (Nil, mt)
             }
 
@@ -1377,10 +1378,11 @@ trait Namers extends MethodSynthesis {
           if (inferArgTp) {
             val overriddenSyms = overriddenTparams ++ overridden.paramss.flatten
             val ourSyms = tparamSkolems ++ vparamSymss.flatten
+            val sm = new ZipSM(overriddenSyms, ourSyms)
             foreach2(vparamss, overridden.paramss) { foreach2(_, _) { (vparam, overriddenParam) =>
               // println(s"infer ${vparam.symbol} from ${overriddenParam}? ${vparam.tpt}")
               if (vparam.tpt.isEmpty) {
-                val overriddenParamTp = overriddenParam.tpe.substSym(overriddenSyms, ourSyms)
+                val overriddenParamTp = overriddenParam.tpe.substSym(sm)
                 // println(s"inferred ${vparam.symbol} : $overriddenParamTp")
                 // references to type parameters in overriddenParamTp link to the type skolems, so the
                 // assigned type is consistent with the other / existing parameter types in vparamSymss.
@@ -1400,7 +1402,8 @@ trait Namers extends MethodSynthesis {
 
           if (inferResTp) {
             // scala/bug#7668 Substitute parameters from the parent method with those of the overriding method.
-            val overriddenResTp = applyFully(overriddenTp, vparamSymss).substSym(overriddenTparams, tparamSkolems)
+            val pp = new ZippedMapSM(overriddenTparams, tparams, (t: TypeDef) => t.symbol)
+            val overriddenResTp = applyFully(overriddenTp, vparamSymss).substSym(pp)
 
             // provisionally assign `meth` a method type with inherited result type
             // that way, we can leave out the result type even if method is recursive.

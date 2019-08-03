@@ -823,7 +823,7 @@ trait Contexts { self: Analyzer =>
 
         if (isUnique && isPresent)
           devWarningResult(s"Preserving inference: ${sym.nameString}=$hi in $current (based on $current_s) before restoring $sym to saved $saved_s")(
-            current.instantiateTypeParams(List(sym), List(hi))
+            current.instantiateTypeParams(new SingletonSM(sym, hi))
           )
         else if (isPresent)
           devWarningResult(s"Discarding inferred $current_s because it does not uniquely determine $sym in")(current)

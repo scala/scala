@@ -190,8 +190,10 @@ trait Trees extends api.Trees {
       s.toList
     }
 
-    def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
-      new TreeSymSubstituter(from, to)(this)
+    final def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree =
+      substituteSymbols(new ZipSM(from, to))
+    final def substituteSymbols(symMap: SymbolMap[Symbol]): Tree =
+      new TreeSymSubstituter(symMap)(this)
 
     def substituteTypes(from: List[Symbol], to: List[Type]): Tree =
       new TreeTypeSubstituter(from, to)(this)
@@ -1594,14 +1596,16 @@ trait Trees extends api.Trees {
     override def apply[T <: Tree](tree: T): T = super.apply(tree.duplicate)
   }
 
-  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends TypeMapTreeSubstituter(new SubstTypeMap(from, to)) {
+  class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type])
+      extends TypeMapTreeSubstituter(new SubstTypeMap(new ZipSM(from, to))) {
     def isEmpty = from.isEmpty && to.isEmpty
     override def toString() = "TreeTypeSubstituter("+from+","+to+")"
   }
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
-  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends TypeMapTreeSubstituter(new SubstSymMap(from, to)) {
+  class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol])
+      extends TypeMapTreeSubstituter(new SubstSymMap(new ZipSM(from, to))) {
     override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 
@@ -1614,19 +1618,14 @@ trait Trees extends api.Trees {
    *  without copying, and trees that define symbols with an `info` that refer
    *  a symbol in `from` will have a new type assigned.
    */
-  class TreeSymSubstituter(from: List[Symbol], to: List[Symbol]) extends Transformer {
-    val symSubst = new SubstSymMap(from, to)
+  class TreeSymSubstituter(symMap: SymbolMap[Symbol]) extends Transformer {
+    val symSubst = new SubstSymMap(symMap)
     private var mutatedSymbols: List[Symbol] = Nil
     override def transform(tree: Tree): Tree = {
-      def subst(from: List[Symbol], to: List[Symbol]) {
-        if (!from.isEmpty)
-          if (tree.symbol == from.head) tree setSymbol to.head
-          else subst(from.tail, to.tail)
-      }
       tree modifyType symSubst
 
       if (tree.hasSymbolField) {
-        subst(from, to)
+        symMap.find(tree.symbol).foreach(tree.setSymbol(_))
         tree match {
           case _: DefTree =>
             def update(sym: Symbol) = {
@@ -1664,7 +1663,7 @@ trait Trees extends api.Trees {
       invalidateTreeTpeCaches(tree1, mutatedSymbols)
       tree1.asInstanceOf[T]
     }
-    override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
+    override def toString() = "TreeSymSubstituter/" // + substituterString("Symbol", "Symbol", symMap) FIXME
   }
 
 

@@ -378,7 +378,7 @@ trait Infer extends Checkable {
      *  conforms to `pt`, return null.
      */
     private def exprTypeArgs(tvars: List[TypeVar], tparams: List[Symbol], restpe: Type, pt: Type, useWeaklyCompatible: Boolean): List[Type] = {
-      def restpeInst = restpe.instantiateTypeParams(tparams, tvars)
+      def restpeInst = restpe.instantiateTypeParams(new ZipSM(tparams, tvars))
       def conforms   = if (useWeaklyCompatible) isWeaklyCompatible(restpeInst, pt) else isCompatible(restpeInst, pt)
       // If the restpe is an implicit method, and the expected type is fully defined
       // optimize type variables wrt to the implicit formals only; ignore the result type.
@@ -434,7 +434,7 @@ trait Infer extends Checkable {
       }
 
       val tvars = tparams map freshVar
-      if (isConservativelyCompatible(restpe.instantiateTypeParams(tparams, tvars), pt))
+      if (isConservativelyCompatible(restpe.instantiateTypeParams(new ZipSM(tparams, tvars)), pt))
         map2(tparams, tvars)((tparam, tvar) =>
           try instantiateToBound(tvar, varianceInTypes(formals)(tparam))
           catch { case ex: NoInstance => WildcardType }
@@ -511,7 +511,8 @@ trait Infer extends Checkable {
       if (!sameLength(formals, argtpes))
         throw new NoInstance("parameter lists differ in length")
 
-      val restpeInst = restpe.instantiateTypeParams(tparams, tvars)
+      val symMap = new ZipSM[Type](tparams, tvars)
+      val restpeInst = restpe.instantiateTypeParams(symMap)
 
       // first check if typevars can be fully defined from the expected type.
       // The return value isn't used so I'm making it obvious that this side
@@ -535,8 +536,8 @@ trait Infer extends Checkable {
 
       // Then define remaining type variables from argument types.
       map2(argtpes, formals) { (argtpe, formal) =>
-        val tp1 = argtpe.deconst.instantiateTypeParams(tparams, tvars)
-        val pt1 = formal.instantiateTypeParams(tparams, tvars)
+        val tp1 = argtpe.deconst.instantiateTypeParams(symMap)
+        val pt1 = formal.instantiateTypeParams(symMap)
 
         // Note that isCompatible side-effects: subtype checks involving typevars
         // are recorded in the typevar's bounds (see TypeConstraint)
@@ -724,7 +725,7 @@ trait Infer extends Checkable {
         val restpe = mt resultType args
         val adjusted = methTypeArgs(EmptyTree, undetparams, formals, restpe, args, pt)
         import adjusted.{okParams, okArgs, undetParams}
-        val restpeInst = restpe.instantiateTypeParams(okParams, okArgs)
+        val restpeInst = restpe.instantiateTypeParams(new ZipSM(okParams, okArgs))
         // #2665: must use weak conformance, not regular one (follow the monomorphic case above)
         exprTypeArgs(undetParams, restpeInst, pt, useWeaklyCompatible = true) match {
           case null => false
@@ -905,7 +906,7 @@ trait Infer extends Checkable {
     def inferArgumentInstance(tree: Tree, undetparams: List[Symbol], strictPt: Type, lenientPt: Type) {
       printTyping(tree, s"inferring arg instance based on pt0=$strictPt, pt1=$lenientPt")
       var targs = exprTypeArgs(undetparams, tree.tpe, strictPt, useWeaklyCompatible = false)
-      if ((targs eq null) || !(tree.tpe.subst(undetparams, targs) <:< strictPt))
+      if ((targs eq null) || !(tree.tpe.subst(new ZipSM(undetparams, targs)) <:< strictPt))
         targs = exprTypeArgs(undetparams, tree.tpe, lenientPt, useWeaklyCompatible = false)
 
       substExpr(tree, undetparams, targs, lenientPt)
@@ -1020,7 +1021,7 @@ trait Infer extends Checkable {
       /* Compute type arguments for undetermined params */
       def inferFor(pt: Type): Option[List[Type]] = {
         val tvars   = undetparams map freshVar
-        val resTpV  = resTp.instantiateTypeParams(undetparams, tvars)
+        val resTpV  = resTp.instantiateTypeParams(new ZipSM(undetparams, tvars))
 
         if (resTpV <:< pt) {
           try {
@@ -1049,8 +1050,8 @@ trait Infer extends Checkable {
 
       def inferForApproxPt =
         if (isFullyDefined(pt)) {
-          inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
-            val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
+          inferFor(pt.instantiateTypeParams(new KeysConstantSM(ptparams, WildcardType))) flatMap { targs =>
+            val ctorTpInst = tree.tpe.instantiateTypeParams(new ZipSM(undetparams, targs))
             val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
             val ptvars     =
               ptparams map {
@@ -1061,7 +1062,7 @@ trait Infer extends Checkable {
                 case p => freshVar(p)
               }
 
-            val ptV        = pt.instantiateTypeParams(ptparams, ptvars)
+            val ptV        = pt.instantiateTypeParams(new ZipSM(ptparams, ptvars))
 
             if (isPopulated(resTpInst, ptV)) {
               ptvars foreach instantiateTypeVar
@@ -1177,17 +1178,19 @@ trait Infer extends Checkable {
         debuglog("free type params (1) = " + tpparams)
 
         var tvars = tpparams map freshVar
-        var tp    = pattp.instantiateTypeParams(tpparams, tvars)
+        val tvMap = new ZipSM(tpparams, tvars)
+        var tp    = pattp.instantiateTypeParams(tvMap)
 
         if ((tp <:< pt) && isInstantiatable(tvars)) ()
         else {
           tvars = tpparams map freshVar
-          tp    = pattp.instantiateTypeParams(tpparams, tvars)
+          val tvMap =  new ZipSM(tpparams, tvars)
+          tp    = pattp.instantiateTypeParams(tvMap)
 
           debuglog("free type params (2) = " + ptparams)
 
           val ptvars = ptparams map freshVar
-          val pt1    = pt.instantiateTypeParams(ptparams, ptvars)
+          val pt1    = pt.instantiateTypeParams(new ZipSM(ptparams, ptvars))
 
           // See ticket #2486 for an example of code which would incorrectly
           // fail if we didn't allow for pattpMatchesPt.
@@ -1214,7 +1217,7 @@ trait Infer extends Checkable {
         val ptparams = freeTypeParamsOfTerms(pt)
         debuglog("free type params (2) = " + ptparams)
         val ptvars = ptparams map freshVar
-        val pt1 = pt.instantiateTypeParams(ptparams, ptvars)
+        val pt1 = pt.instantiateTypeParams(new ZipSM(ptparams, ptvars))
         if (pat.tpe <:< pt1)
           ptvars foreach instantiateTypeVar
         else

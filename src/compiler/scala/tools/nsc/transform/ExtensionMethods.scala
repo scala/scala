@@ -125,7 +125,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       GenPolyType(mtparams,
         normalize(restpe.substSym(ctparams, clazz.typeParams), clazz))
     case ExtensionMethodType(thiz, etpe) =>
-      etpe.substituteTypes(thiz :: Nil, clazz.thisType :: Nil)
+      etpe.substituteTypes(new SingletonSM(thiz, clazz.thisType))
     case _ =>
       stpe
   }
