@@ -69,11 +69,14 @@ trait Contexts { self: Analyzer =>
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
   def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
+    def exemptedImport(info: ImportInfo): Boolean =
+      info.qual.symbol.fullName == "scala.collection.compat" && info.tree.selectors.forall(_.isWildcard)
     for (imps <- allImportInfos.remove(unit)) {
       for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
-        for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
-          reporter.warning(imp.posOf(sel), "Unused import")
+        for (sel <- imp.tree.selectors)
+          if (!sel.isMask && !used(sel) && !exemptedImport(imp))
+            reporter.warning(imp.posOf(sel), "Unused import")
       }
       allUsedSelectors --= imps
     }
