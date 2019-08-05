@@ -6,12 +6,12 @@ scala> def pos_impl(c: scala.reflect.macros.blackbox.Context): c.Expr[String] = 
   import c.universe._
   c.Expr[String](Literal(Constant(c.enclosingPosition.getClass.toString)))
 }
-pos_impl: (c: scala.reflect.macros.blackbox.Context)c.Expr[String]
+def pos_impl(c: scala.reflect.macros.blackbox.Context): c.Expr[String]
 
 scala> def pos: String = macro pos_impl
-defined term macro pos: String
+def pos: String
 
 scala> pos
-res0: String = class scala.reflect.internal.util.RangePosition
+val res0: String = class scala.reflect.internal.util.RangePosition
 
 scala> :quit

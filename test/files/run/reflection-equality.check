@@ -2,7 +2,7 @@
 scala> class X {
    def methodIntIntInt(x: Int, y: Int) = x+y
 }
-defined class X
+class X
 
 scala> 
 
@@ -13,37 +13,37 @@ scala> import scala.reflect.runtime.{ currentMirror => cm }
 import scala.reflect.runtime.{currentMirror=>cm}
 
 scala> def im: InstanceMirror = cm.reflect(new X)
-im: reflect.runtime.universe.InstanceMirror
+def im: reflect.runtime.universe.InstanceMirror
 
 scala> val cs: ClassSymbol = im.symbol
-cs: reflect.runtime.universe.ClassSymbol = class X
+val cs: reflect.runtime.universe.ClassSymbol = class X
 
 scala> val ts: Type = cs.info
-ts: reflect.runtime.universe.Type =
+val ts: reflect.runtime.universe.Type =
 AnyRef {
   def <init>(): X
   def methodIntIntInt(x: Int, y: Int): Int
 }
 
 scala> val ms: MethodSymbol = ts.decl(TermName("methodIntIntInt")).asMethod
-ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
+val ms: reflect.runtime.universe.MethodSymbol = method methodIntIntInt
 
 scala> val MethodType( _, t1 ) = ms.info
-t1: reflect.runtime.universe.Type = Int
+val t1: reflect.runtime.universe.Type = Int
 
 scala> val t2 = typeOf[scala.Int]
-t2: reflect.runtime.universe.Type = Int
+val t2: reflect.runtime.universe.Type = Int
 
 scala> t1 == t2
-res0: Boolean = false
+val res0: Boolean = false
 
 scala> t1 =:= t2
-res1: Boolean = true
+val res1: Boolean = true
 
 scala> t1 <:< t2
-res2: Boolean = true
+val res2: Boolean = true
 
 scala> t2 <:< t1
-res3: Boolean = true
+val res3: Boolean = true
 
 scala> :quit

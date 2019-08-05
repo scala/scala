@@ -1,8 +1,8 @@
 
 scala> val n = 2
-n: Int = 2
+val n: Int = 2
 
 scala>     () => n
-res0: () => Int = <function0>
+val res0: () => Int = <function0>
 
 scala> :quit

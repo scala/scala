@@ -15,6 +15,6 @@ scala> :silent
 
 scala> res0
 !
-res1: A = A
+val res1: A = A
 
 scala> :quit

@@ -1,12 +1,12 @@
 
 scala> locally { val x = 42 ; "$x" }
-res0: String = $x
+val res0: String = $x
 
 scala> :replay -Xlint
 replay> locally { val x = 42 ; "$x" }
                                ^
         warning: possible missing interpolator: detected interpolated identifier `$x`
-res0: String = $x
+val res0: String = $x
 
 
 scala> :quit

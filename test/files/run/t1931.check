@@ -1,10 +1,10 @@
 
 scala> val x: Any = 42
-x: Any = 42
+val x: Any = 42
 
 scala> x + " works"
 warning: there was one deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
-res0: String = 42 works
+val res0: String = 42 works
 
 scala> import Predef.{ any2stringadd => _, _ }
 import Predef.{any2stringadd=>_, _}
@@ -18,10 +18,10 @@ import Predef._
 
 scala> x + " works"
 warning: there was one deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
-res2: String = 42 works
+val res2: String = 42 works
 
 scala> object Predef { def f = 42 }
-defined object Predef
+object Predef
 
 scala> import Predef._
 import Predef._
@@ -31,6 +31,6 @@ scala> f
        error: not found: value f
 
 scala> Predef.f
-res4: Int = 42
+val res4: Int = 42
 
 scala> :quit

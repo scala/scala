@@ -7,10 +7,10 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class C
+class C
 
 scala> new C().c
-res0: Int = 42
+val res0: Int = 42
 
 scala> :paste <| EOF
 // Entering paste mode (EOF to finish)
@@ -20,9 +20,9 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class D
+class D
 
 scala> new D().d
-res1: Int = 42
+val res1: Int = 42
 
 scala> :quit

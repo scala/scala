@@ -1,12 +1,12 @@
 
 scala> def h()(i: Int) = 1 + i
-h: ()(i: Int)Int
+def h()(i: Int): Int
 
 scala> println(h()(5))
 6
 
 scala> val f = h() _
-f: Int => Int = <function1>
+val f: Int => Int = <function1>
 
 scala> println(f(10))
 11

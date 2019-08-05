@@ -2,12 +2,12 @@
 scala> 2 ; 3
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res0: Int = 3
+val res0: Int = 3
 
 scala> { 2 ; 3 }
          ^
        warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-res1: Int = 3
+val res1: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
   1 +
@@ -21,22 +21,22 @@ scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Mooo
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-defined object Cow
-defined class Moo
-bippy: Int
-res2: Int = 105
+object Cow
+class Moo
+def bippy: Int
+val res2: Int = 105
 
 scala> 
 
 scala> object Bovine { var x: List[_] = null } ; case class Ruminant(x: Int) ; bippy * bippy * bippy
-defined object Bovine
-defined class Ruminant
-res3: Int = 216
+object Bovine
+class Ruminant
+val res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-mutated Bovine.x
+// mutated Bovine.x
 
 scala> Bovine.x
-res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
+val res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> :quit

@@ -1,51 +1,51 @@
 
 scala> class A
-defined class A
+class A
 
 scala> object A // warn
-defined object A
+object A
 warning: previously defined class A is not a companion to object A.
 Companions must be defined together; you may wish to use :paste mode for this.
 
 scala> trait B
-defined trait B
+trait B
 
 scala> object B // warn
-defined object B
+object B
 warning: previously defined trait B is not a companion to object B.
 Companions must be defined together; you may wish to use :paste mode for this.
 
 scala> object C
-defined object C
+object C
 
 scala> object Bippy
-defined object Bippy
+object Bippy
 
 scala> class C // warn
-defined class C
+class C
 warning: previously defined object C is not a companion to class C.
 Companions must be defined together; you may wish to use :paste mode for this.
 
 scala> class D
-defined class D
+class D
 
 scala> def D = 0 // no warn
-D: Int
+def D: Int
 
 scala> val D = 0 // no warn
-D: Int = 0
+val D: Int = 0
 
 scala> object E
-defined object E
+object E
 
 scala> var E = 0 // no warn
-E: Int = 0
+var E: Int = 0
 
 scala> object F
-defined object F
+object F
 
 scala> type F = Int // no warn
-defined type alias F
+type F
 
 scala> :power
 Power mode enabled. :phase is at typer.
@@ -61,9 +61,9 @@ scala> object lookup {
   def terms[T: global.TypeTag] : Symbol = typeOf[T].termSymbol
   def apply[T: global.TypeTag] : Symbol = typeOf[T].typeSymbol
 }
-defined object lookup
+object lookup
 
 scala> lookup("F") // this now works as a result of changing .typeSymbol to .typeSymbolDirect in IMain#Request#definedSymbols
-res0: $r.intp.global.Symbol = type F
+val res0: $r.intp.global.Symbol = type F
 
 scala> :quit

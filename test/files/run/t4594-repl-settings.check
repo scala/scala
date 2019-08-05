@@ -1,16 +1,16 @@
 
 scala> @deprecated(message="Please don't do that.", since="Time began.") def depp = "john"
-depp: String
+def depp: String
 
 scala> def a = depp
 warning: there was one deprecation warning (since Time began.); for details, enable `:setting -deprecation' or `:replay -deprecation'
-a: String
+def a: String
 
 scala> :settings -deprecation
 
 scala> def b = depp
                ^
        warning: method depp is deprecated (since Time began.): Please don't do that.
-b: String
+def b: String
 
 scala> :quit

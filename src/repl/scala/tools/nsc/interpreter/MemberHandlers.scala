@@ -26,7 +26,7 @@ trait MemberHandlers {
   import global._
   import naming._
 
-  import ReplStrings.{string2codeQuoted, string2code, any2stringOf}
+  import ReplStrings.{string2codeQuoted, string2code, any2stringOf, quotedString}
 
   private def codegenln(leadingPlus: Boolean, xs: String*): String = codegen(leadingPlus, (xs ++ Array("\n")): _*)
   private def codegenln(xs: String*): String = codegenln(true, xs: _*)
@@ -133,23 +133,32 @@ trait MemberHandlers {
       else {
         // if this is a lazy val we avoid evaluating it here
         val resultString =
-          if (mods.isLazy) codegenln(false, "<lazy>")
-          else any2stringOf(path, maxStringElements)
+          if (mods.isLazy) quotedString(" // unevaluated")
+          else quotedString(" = ") + " + " + any2stringOf(path, maxStringElements)
 
-        val nameString = string2code(prettyName) + (if (showObjIds) s"""" + f"@$${System.identityHashCode($path)}%8x" + """" else "")
-        val typeString = string2code(req typeOf name)
-        s""" + "$nameString: $typeString = " + $resultString"""
+        val varOrValOrLzy =
+          if (mods.isMutable) "var"
+          else if (mods.isLazy) "lazy val"
+          else "val"
+
+        val nameString = {
+          string2code(prettyName) + (
+            if (showObjIds) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
+            else ""
+          )
+        }
+
+        val typeString = string2code(req.typeOf(name))
+
+        s""" + "$varOrValOrLzy $nameString: $typeString" + $resultString"""
       }
     }
   }
 
   class DefHandler(member: DefDef) extends MemberDefHandler(member) {
     override def definesValue = flattensToEmpty(member.vparamss) // true if 0-arity
-    override def resultExtractionCode(req: Request) = {
-      val nameString = string2code(name)
-      val typeString = string2code(req typeOf name)
-      if (mods.isPublic) s""" + "$nameString: $typeString\\n"""" else ""
-    }
+    override def resultExtractionCode(req: Request) =
+      if (mods.isPublic) codegenln(s"def ${req.defTypeOf(name)}") else ""
   }
 
   abstract class MacroHandler(member: DefDef) extends MemberDefHandler(member) {
@@ -162,19 +171,19 @@ trait MemberHandlers {
   }
 
   class TermMacroHandler(member: DefDef) extends MacroHandler(member) {
-    def notification(req: Request) = s"defined term macro $name: ${req.typeOf(name)}"
+    def notification(req: Request) = s"def ${req.defTypeOf(name)}"
   }
 
   class AssignHandler(member: Assign) extends MemberHandler(member) {
     override def resultExtractionCode(req: Request) =
-      codegenln(s"mutated ${member.lhs}")
+      codegenln(s"// mutated ${member.lhs}")
   }
 
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
     override def definesTerm = Some(name.toTermName)
     override def definesValue = true
 
-    override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
+    override def resultExtractionCode(req: Request) = codegenln(s"object $name")
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
@@ -182,16 +191,14 @@ trait MemberHandlers {
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
 
-    override def resultExtractionCode(req: Request) =
-      codegenln("defined %s %s".format(keyword, name))
+    override def resultExtractionCode(req: Request) = codegenln(s"$keyword $name")
   }
 
   class TypeAliasHandler(member: TypeDef) extends MemberDefHandler(member) {
     private def isAlias = mods.isPublic && treeInfo.isAliasTypeDef(member)
     override def definesType = Some(name.toTypeName) filter (_ => isAlias)
 
-    override def resultExtractionCode(req: Request) =
-      codegenln("defined type alias ", name) + "\n"
+    override def resultExtractionCode(req: Request) = codegenln(s"type $name")
   }
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {

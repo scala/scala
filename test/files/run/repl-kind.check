@@ -29,7 +29,7 @@ scala> :kind -v Tuple2[Int, Int]
 This is a proper type.
 
 scala> trait Functor[F[_]] {}
-defined trait Functor
+trait Functor
 
 scala> :kind -v Functor
 Functor's kind is X[F[A]]
@@ -37,7 +37,7 @@ Functor's kind is X[F[A]]
 This is a type constructor that takes type constructor(s): a higher-kinded type.
 
 scala> object Bar { class Bop }
-defined object Bar
+object Bar
 
 scala> import Bar.Bop
 import Bar.Bop
@@ -46,7 +46,7 @@ scala> :kind Bop
 Bar.Bop's kind is A
 
 scala> type IntTuple[+A] = (Int, A)
-defined type alias IntTuple
+type IntTuple
 
 scala> :kind IntTuple
 IntTuple's kind is F[+A]
@@ -55,10 +55,10 @@ scala> :kind ({type l[A] = Either[Int, A]})#l
 scala.util.Either[Int,?]'s kind is F[+A]
 
 scala> trait Nat[-F1[_], +F2[_]] {}
-defined trait Nat
+trait Nat
 
 scala> type ~>[-F1[_], +F2[_]] = Nat[F1, F2]
-defined type alias $tilde$greater
+type $tilde$greater
 
 scala> :kind ({type l[F[-_]] = F ~> List})#l
 Nat[?,[+A]List[A]]'s kind is X[-F[A]]

@@ -9,12 +9,12 @@ scala>     import scala.reflect.api.{Universe => ApiUniverse}
 import scala.reflect.api.{Universe=>ApiUniverse}
 
 scala>     class A
-defined class A
+class A
 
 scala>     lazy val apiru = ru: ApiUniverse
-apiru: scala.reflect.api.Universe = <lazy>
+lazy val apiru: scala.reflect.api.Universe // unevaluated
 
 scala>     apiru.typeTag[A].in(cm)
-res0: reflect.runtime.universe.TypeTag[A] = TypeTag[A]
+val res0: reflect.runtime.universe.TypeTag[A] = TypeTag[A]
 
 scala> :quit

@@ -1,14 +1,14 @@
 
 scala> var x = 10
-x: Int = 10
+var x: Int = 10
 
 scala> var y = 11
-y: Int = 11
+var y: Int = 11
 
 scala> x = 12
-mutated x
+// mutated x
 
 scala> y = 13
-mutated y
+// mutated y
 
 scala> :quit

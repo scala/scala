@@ -7,9 +7,9 @@ Try :help or completions for vals._ and power._
 scala> 
 
 scala> AnyRefClass.tpe eq AnyRefClass.typeConstructor
-res0: Boolean = true
+val res0: Boolean = true
 
 scala> AnyRefClass.tpe eq AnyRefClass.typeConstructor
-res1: Boolean = true
+val res1: Boolean = true
 
 scala> :quit

@@ -3,7 +3,7 @@ scala> // test varargs in patterns
 
 scala> val List(x, y, _*,
 ) = 42 :: 17 :: Nil
-x: Int = 42
-y: Int = 17
+val x: Int = 42
+val y: Int = 17
 
 scala> :quit

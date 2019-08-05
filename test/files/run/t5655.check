@@ -1,6 +1,6 @@
 
 scala> object x { def x={} }
-defined object x
+object x
 
 scala> import x._
 import x._

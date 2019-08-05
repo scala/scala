@@ -1,28 +1,28 @@
 
 scala> var x = 10
-x: Int = 10
+var x: Int = 10
 
 scala> var y = 11
-y: Int = 11
+var y: Int = 11
 
 scala> x = 12
-mutated x
+// mutated x
 
 scala> y = 13
-mutated y
+// mutated y
 
 scala> val z = x * y
-z: Int = 156
+val z: Int = 156
 
 scala> 2 ; 3
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res0: Int = 3
+val res0: Int = 3
 
 scala> { 2 ; 3 }
          ^
        warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-res1: Int = 3
+val res1: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def bippy = {
   1 +
@@ -36,59 +36,59 @@ scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Mooo
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-defined object Cow
-defined class Moo
-bippy: Int
-res2: Int = 105
+object Cow
+class Moo
+def bippy: Int
+val res2: Int = 105
 
 scala> 
 
 scala> object Bovine { var x: List[_] = null } ; case class Ruminant(x: Int) ; bippy * bippy * bippy
-defined object Bovine
-defined class Ruminant
-res3: Int = 216
+object Bovine
+class Ruminant
+val res3: Int = 216
 
 scala> Bovine.x = List(Ruminant(5), Cow, new Moo)
-mutated Bovine.x
+// mutated Bovine.x
 
 scala> Bovine.x
-res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
+val res4: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> 
 
 scala> (2)
-res5: Int = 2
+val res5: Int = 2
 
 scala> (2 + 2)
-res6: Int = 4
+val res6: Int = 4
 
 scala> ((2 + 2))
-res7: Int = 4
+val res7: Int = 4
 
 scala>   ((2 + 2))
-res8: Int = 4
+val res8: Int = 4
 
 scala>   (  (2 + 2))
-res9: Int = 4
+val res9: Int = 4
 
 scala>   (  (2 + 2 )  )
-res10: Int = 4
+val res10: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res11: Int = 5
+val res11: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-res12: (Int, Int) = (4,4)
+val res12: (Int, Int) = (4,4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-res13: (Int, Int, Int) = (4,4,2)
+val res13: (Int, Int, Int) = (4,4,2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
-res14: String = 4423
+val res14: String = 4423
 
 scala> 
 
@@ -97,60 +97,60 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res15: (Int, Int, Int) = (1,2,3)
+val res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                      ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res16: () => Int = <function0>
+val res16: () => Int = <function0>
 
 scala> 
 
 scala> () => 5
-res17: () => Int = <function0>
+val res17: () => Int = <function0>
 
 scala> 55 ; () => 5
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res18: () => Int = <function0>
+val res18: () => Int = <function0>
 
 scala> () => { class X ; new X }
-res19: () => AnyRef = <function0>
+val res19: () => AnyRef = <function0>
 
 scala> 
 
 scala> def foo(x: Int)(y: Int)(z: Int) = x+y+z
-foo: (x: Int)(y: Int)(z: Int)Int
+def foo(x: Int)(y: Int)(z: Int): Int
 
 scala> foo(5)(10)(15)+foo(5)(10)(15)
-res20: Int = 60
+val res20: Int = 60
 
 scala> 
 
 scala> List(1) ++ List('a')
-res21: List[AnyVal] = List(1, a)
+val res21: List[AnyVal] = List(1, a)
 
 scala> 
 
 scala> 1 to 100 map (_  + 1)
-res22: IndexedSeq[Int] = Vector(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101)
+val res22: IndexedSeq[Int] = Vector(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101)
 
 scala> val x1 = 1
-x1: Int = 1
+val x1: Int = 1
 
 scala> val x2 = 2
-x2: Int = 2
+val x2: Int = 2
 
 scala> val x3 = 3
-x3: Int = 3
+val x3: Int = 3
 
 scala> case class BippyBungus()
-defined class BippyBungus
+class BippyBungus
 
 scala> x1 + x2 + x3
-res23: Int = 6
+val res23: Int = 6
 
 scala> :reset
 Resetting interpreter state.
@@ -207,29 +207,29 @@ scala> x1 + x2 + x3
        error: not found: value x3
 
 scala> val x1 = 4
-x1: Int = 4
+val x1: Int = 4
 
 scala> new BippyBungus
            ^
        error: not found: type BippyBungus
 
 scala> class BippyBungus() { def f = 5 }
-defined class BippyBungus
+class BippyBungus
 
 scala> { new BippyBungus ; x1 }
-res2: Int = 4
+val res2: Int = 4
 
 scala> object x {class y { case object z } }
-defined object x
+object x
 
 scala> case class BippyBups()
-defined class BippyBups
+class BippyBups
 
 scala> case class PuppyPups()
-defined class PuppyPups
+class PuppyPups
 
 scala> case class Bingo()
-defined class Bingo
+class Bingo
 
 scala> List(BippyBups(), PuppyPups(), Bingo()) // show
 package $line10 {
@@ -275,23 +275,23 @@ object $eval {
   lazy val $print: _root_.java.lang.String =  {
     $line10.$read.INSTANCE.$iw.$iw
 
-""  + "res3: List[Product with java.io.Serializable] = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
+""  + "val res3: List[Product with java.io.Serializable]" + " = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
 
   }
 }}
-res3: List[Product with java.io.Serializable] = List(BippyBups(), PuppyPups(), Bingo())
+val res3: List[Product with java.io.Serializable] = List(BippyBups(), PuppyPups(), Bingo())
 
 scala> case class Sum(exp: String, exp2: String)
-defined class Sum
+class Sum
 
 scala> val a = Sum("A", "B")
-a: Sum = Sum(A,B)
+val a: Sum = Sum(A,B)
 
 scala> def b(a: Sum): String = a match { case Sum(_, _) => "Found Sum" }
-b: (a: Sum)String
+def b(a: Sum): String
 
 scala> b(a)
-res4: String = Found Sum
+val res4: String = Found Sum
 
 scala> :power
 Power mode enabled. :phase is at typer.
@@ -299,6 +299,6 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> intp.lastRequest
-res5: $r.intp.Request = Request(line=def $ires15 = treedsl.CODE, 1 trees)
+val res5: $r.intp.Request = Request(line=def $ires15 = treedsl.CODE, 1 trees)
 
 scala> :quit

@@ -1,13 +1,13 @@
 
 scala> class A
-defined class A
+class A
 
 scala> 
 
 scala> class B {
   def foo(x: A) = 1
 }
-defined class B
+class B
 
 scala> 
 
@@ -18,7 +18,7 @@ scala> object defs {
   val method = im.symbol.info.member(u.TermName("foo")).asMethod
   val mm = im.reflectMethod(method)
 }
-defined object defs
+object defs
 
 scala> import defs._
 import defs._
@@ -26,6 +26,6 @@ import defs._
 scala> 
 
 scala> mm(new A)
-res0: Any = 1
+val res0: Any = 1
 
 scala> :quit

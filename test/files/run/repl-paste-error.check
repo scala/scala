@@ -22,6 +22,6 @@ END
   42
   ^
 <pastie>:3: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-f: ()Unit
+def f(): Unit
 
 scala> :quit

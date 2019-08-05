@@ -1,3 +1,3 @@
-defined class xyz
-loopWhile: [T](cond: => Boolean)(body: => Unit @xyz[T])Unit @xyz[T]
-test: ()Unit @xyz[Int]
+class xyz
+def loopWhile[T](cond: => Boolean)(body: => Unit @xyz[T]): Unit @xyz[T]
+def test(): Unit @xyz[Int]

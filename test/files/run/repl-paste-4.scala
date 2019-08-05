@@ -6,11 +6,11 @@ object Test extends SessionTest {
 s"""|
     |scala> :paste $pastie
     |Pasting file $pastie...
-    |defined class Foo
-    |defined object Foo
+    |class Foo
+    |object Foo
     |
     |scala> Foo(new Foo)
-    |res0: Int = 7
+    |val res0: Int = 7
     |
     |scala> :quit"""
   def pastie = testPath changeExtension "pastie"

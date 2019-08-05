@@ -1,13 +1,13 @@
 
 scala> val x = ""; s"$x"
-x: String = ""
-res0: String = ""
+val x: String = ""
+val res0: String = ""
 
 scala> val s"$y" = ""
-y: String = ""
+val y: String = ""
 
 scala> val x = ""; s"$x"
-x: String = ""
-res1: String = ""
+val x: String = ""
+val res1: String = ""
 
 scala> :quit
