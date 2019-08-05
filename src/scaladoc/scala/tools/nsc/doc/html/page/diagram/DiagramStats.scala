@@ -16,8 +16,8 @@ package html.page.diagram
 object DiagramStats {
 
   class TimeTracker(title: String) {
-    var totalTime: Long = 0l
-    var maxTime: Long = 0l
+    var totalTime: Long = 0L
+    var maxTime: Long = 0L
     var instances: Int = 0
 
     def addTime(ms: Long) = {
