@@ -982,10 +982,10 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
 
   override def view: MapView[K, V] = if (nonReadOnly) readOnlySnapshot().view else super.view
 
-  @deprecated("Use .view.filterKeys(f). A future version will include a strict version of this method (for now, .view.filterKeys(p).toMap).", "2.13.0")
+  @deprecated("Use .view.filterKeys(f). A future version will include a strict version of this method (for now, `.view.filterKeys(p).toMap`).", "2.13.0")
   override def filterKeys(p: K => Boolean): collection.MapView[K, V] = view.filterKeys(p)
 
-  @deprecated("Use .view.mapValues(f). A future version will include a strict version of this method (for now, .view.mapValues(f).toMap).", "2.13.0")
+  @deprecated("Use .view.mapValues(f). A future version will include a strict version of this method (for now, `.transform((_, v) => f(v))`).", "2.13.0")
   override def mapValues[W](f: V => W): collection.MapView[K, W] = view.mapValues(f)
   // END extra overrides
   ///////////////////////////////////////////////////////////////////
