@@ -2076,7 +2076,7 @@ trait Namers extends MethodSynthesis {
 
     if (defnSym.isTerm) {
       // for polymorphic DefDefs, create type skolems and assign them to the tparam trees.
-      val skolems = deriveFreshSkolems(tparams map (_.symbol))
+      val skolems = deriveFreshSkolems(typeParams)
       foreach2(tparams, skolems)(_ setSymbol _)
     }
 
