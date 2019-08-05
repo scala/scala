@@ -26,7 +26,7 @@ trait PhaseAssembly {
    * Aux data structure for solving the constraint system
    * The dependency graph container with helper methods for node and edge creation
    */
-  private class DependencyGraph {
+  private[nsc] class DependencyGraph {
 
     /** Simple edge with to and from refs */
     case class Edge(var frm: Node, var to: Node, var hard: Boolean)
@@ -234,7 +234,7 @@ trait PhaseAssembly {
   /** Given the phases set, will build a dependency graph from the phases set
    *  Using the aux. method of the DependencyGraph to create nodes and edges.
    */
-  private def phasesSetToDepGraph(phsSet: mutable.HashSet[SubComponent]): DependencyGraph = {
+  private[nsc] def phasesSetToDepGraph(phsSet: Iterable[SubComponent]): DependencyGraph = {
     val graph = new DependencyGraph()
 
     for (phs <- phsSet) {
