@@ -994,7 +994,11 @@ trait MapFactoryDefaults[K, +V,
     +WithFilterCC[x] <: IterableOps[x, WithFilterCC, WithFilterCC[x]] with Iterable[x]] extends MapOps[K, V, CC, CC[K, V @uncheckedVariance]] with IterableOps[(K, V), WithFilterCC, CC[K, V @uncheckedVariance]] {
   override protected def fromSpecific(coll: IterableOnce[(K, V @uncheckedVariance)]): CC[K, V @uncheckedVariance] = mapFactory.from(coll)
   override protected def newSpecificBuilder: mutable.Builder[(K, V @uncheckedVariance), CC[K, V @uncheckedVariance]] = mapFactory.newBuilder[K, V]
-  override def empty: CC[K, V @uncheckedVariance] = mapFactory.empty
+  override def empty: CC[K, V @uncheckedVariance] = (this: AnyRef) match {
+    // Implemented here instead of in TreeSeqMap since overriding empty in TreeSeqMap is not forwards compatible (should be moved for 2.14)
+    case self: immutable.TreeSeqMap[K, V] => immutable.TreeSeqMap.empty(self.orderedBy).asInstanceOf[CC[K, V]]
+    case _ => mapFactory.empty
+  }
 
   override def withFilter(p: ((K, V)) => Boolean): MapOps.WithFilter[K, V, WithFilterCC, CC] =
     new MapOps.WithFilter[K, V, WithFilterCC, CC](this, p)
