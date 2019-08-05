@@ -1872,8 +1872,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       debuglog("specializing body of" + symbol.defString)
       val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree
       val env = typeEnv(symbol)
-      val boundTvars = env.keySet
-      val origtparams = source.typeParams.filter(tparam => !boundTvars(tparam) || !isPrimitiveValueType(env(tparam)))
+      val origtparams = source.typeParams.filter(tparam => !env.contains(tparam) || !isPrimitiveValueType(env(tparam)))
       if (origtparams.nonEmpty || symbol.typeParams.nonEmpty)
         debuglog("substituting " + origtparams + " for " + symbol.typeParams)
 
