@@ -181,6 +181,11 @@ private[collection] object RedBlackTree {
 
   private[this] def blacken[A, B](t: Tree[A, B]): Tree[A, B] = if (t eq null) null else t.black
 
+  // Blacken if the tree is red and has a red child. This is necessary when using methods such as `upd` or `updNth`
+  // for building subtrees. Use `blacken` instead when building top-level trees.
+  private[this] def maybeBlacken[A, B](t: Tree[A, B]): Tree[A, B] =
+    if(isBlack(t)) t else if(isRedTree(t.left) || isRedTree(t.right)) t.black else t
+
   private[this] def mkTree[A, B](isBlack: Boolean, k: A, v: B, l: Tree[A, B], r: Tree[A, B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
@@ -272,7 +277,7 @@ private[collection] object RedBlackTree {
     else {
       val l = count(tree.left)
       if(n <= l) doTake(tree.left, n)
-      else if(n == l+1) updNth(tree.left, n, tree.key, tree.value, overwrite = false)
+      else if(n == l+1) maybeBlacken(updNth(tree.left, n, tree.key, tree.value, overwrite = false))
       else join(tree.left, tree.key, tree.value, doTake(tree.right, n-l-1))
     }
 

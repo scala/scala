@@ -258,6 +258,16 @@ object TestTake extends RedBlackTreeTest("RedBlackTree.take") {
   property("take") = forAll(genInput) { case (tree, parm, newTree) =>
     iterator(tree).take(parm).toList == iterator(newTree).toList
   }
+
+  property("degenerateTree") =
+    forAll(Gen.listOfN(10000, Gen.posNum[Int])) { items =>
+      items.zipWithIndex.foldLeft(scala.collection.immutable.TreeMap.empty[Int, String]) {
+        case (collection, (key, index)) if index % 2 == 0 =>
+          (collection + (key -> "foobar")).take(10)
+        case (collection, (key, _)) => (collection - key).take(10)
+      }
+      true
+    }
 }
 
 object TestSlice extends RedBlackTreeTest("RedBlackTree.slice") {
