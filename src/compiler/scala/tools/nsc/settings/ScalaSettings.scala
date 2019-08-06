@@ -471,6 +471,8 @@ trait ScalaSettings extends AbsScalaSettings
   val YpresentationReplay  = StringSetting("-Ypresentation-replay", "file", "Replay presentation compiler events from file", "")
   val YpresentationDelay   = IntSetting("-Ypresentation-delay", "Wait number of ms after typing before starting typechecking", 0, Some((0, 999)), str => Some(str.toInt))
 
+  val YpresentationLocateSourceFile = BooleanSetting("-Ypresentation-locate-source-file", "Enables legacy code in the classfile parser to locate a .scala file in the output directories corresponding to the SourceFile attribute .class file.")
+
   /**
    * -P "Plugin" settings
    */

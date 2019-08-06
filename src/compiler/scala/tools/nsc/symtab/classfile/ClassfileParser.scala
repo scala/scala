@@ -862,8 +862,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           parseExceptions(attrLen, completer)
 
         case tpnme.SourceFileATTR =>
-          if (forInteractive) {
-            // opt: disable this code in the batch compiler for performance reasons.
+          if (forInteractive && settings.YpresentationLocateSourceFile) {
+            // opt: disable this code by default for performance reasons.
             // it appears to be looking for the .java source file mentioned in this attribute
             // in the output directories of scalac.
             //
@@ -872,8 +872,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
             // https://github.com/scala/scala/commit/7315339782f6e19ddd6199768352a91ef66eb27d
             // https://github.com/scala-ide/scala-ide/commit/786ea5d4dc44065379a05eb3ac65d37f8948c05d
             //
-            // TODO: can we disable this altogether? Does Scala-IDE actually intermingle source and classfiles in a way
-            //       that this could ever find something?
+            // TODO: Does Scala-IDE actually intermingle source and classfiles in a way that this could ever find something?
+            //       If they want to use this, they'll need to enable the new setting -Ypresentation-locate-source-file.
             val srcfileLeaf = readName().toString.trim
             val srcpath = sym.enclosingPackage match {
               case NoSymbol => srcfileLeaf
