@@ -1592,8 +1592,8 @@ abstract class RefChecks extends Transform {
         } else {
           concatArgs.toList.grouped(chunkSize).foreach {
             case group =>
-              var chunkResult: Tree = group.head
-              group.tail.foreach { t =>
+              var chunkResult: Tree = Literal(Constant("")).setType(StringTpe)
+              group.foreach { t =>
                 chunkResult = mkConcat(t.pos, chunkResult, t)
               }
               result = mkConcat(chunkResult.pos, result, chunkResult)
