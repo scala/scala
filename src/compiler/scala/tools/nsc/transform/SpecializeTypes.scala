@@ -613,8 +613,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       def cloneInSpecializedClass(member: Symbol, flagFn: Long => Long, newName: Name = null) =
         member.cloneSymbol(sClass, flagFn(member.flags | SPECIALIZED), newName)
 
-      sClass.associatedFile = clazz.sourceFile
-      currentRun.symSource(sClass) = clazz.sourceFile // needed later on by mixin
+      val sourceFile = clazz.sourceFile
+      if (sourceFile ne null) {
+        sClass.associatedFile = sourceFile
+        currentRun.symSource(sClass) = sourceFile // needed later on by mixin
+      }
 
       val env = mapAnyRefsInSpecSym(env0, clazz, sClass)
       typeEnv(sClass) = env
