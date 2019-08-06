@@ -8,13 +8,6 @@ chapter: 13
 
 The following descriptions of Scala tokens uses literal characters `‘c’` when referring to the ASCII fragment `\u0000` – `\u007F`.
 
-_Unicode escapes_ are used to represent the Unicode character with the given hexadecimal code:
-
-```ebnf
-UnicodeEscape ::=  ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
-hexDigit      ::=  ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
-```
-
 ## Lexical Syntax
 
 The lexical syntax of Scala is given by the following grammar in EBNF form:
@@ -30,8 +23,10 @@ delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’
 opchar           ::=  // printableChar not matched by (whiteSpace | upper | lower |
                       // letter | digit | paren | delim | opchar | Unicode_Sm | Unicode_So)
 printableChar    ::=  // all characters in [\u0020, \u007F] inclusive
+UnicodeEscape    ::=  ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
+hexDigit         ::=  ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 charEscapeSeq    ::=  ‘\’ (‘b’ | ‘t’ | ‘n’ | ‘f’ | ‘r’ | ‘"’ | ‘'’ | ‘\’)
-
+escapeSeq        ::=  UnicodeEscape | charEscapeSeq
 op               ::=  opchar {opchar}
 varid            ::=  lower idrest
 boundvarid       ::=  varid
@@ -40,7 +35,7 @@ plainid          ::=  upper idrest
                    |  varid
                    |  op
 id               ::=  plainid
-                   |  ‘`’ { charNoBackQuoteOrNewline | UnicodeEscape | charEscapeSeq } ‘`’
+                   |  ‘`’ { charNoBackQuoteOrNewline | escapeSeq } ‘`’
 idrest           ::=  {letter | digit} [‘_’ op]
 
 integerLiteral   ::=  (decimalNumeral | hexNumeral) [‘L’ | ‘l’]
@@ -57,13 +52,12 @@ floatType        ::=  ‘F’ | ‘f’ | ‘D’ | ‘d’
 
 booleanLiteral   ::=  ‘true’ | ‘false’
 
-characterLiteral ::=  ‘'’ (charNoQuoteOrNewline | UnicodeEscape | charEscapeSeq) ‘'’
+characterLiteral ::=  ‘'’ (charNoQuoteOrNewline | escapeSeq) ‘'’
 
 stringLiteral    ::=  ‘"’ {stringElement} ‘"’
                    |  ‘"""’ multiLineChars ‘"""’
 stringElement    ::=  charNoDoubleQuoteOrNewline
-                   |  UnicodeEscape
-                   |  charEscapeSeq
+                   |  escapeSeq
 multiLineChars   ::=  {[‘"’] [‘"’] charNoDoubleQuote} {‘"’}
 
 interpolatedString 

@@ -14,21 +14,6 @@ otherwise mentioned, the following descriptions of Scala tokens refer
 to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment
 `\u0000` – `\u007F`.
 
-In Scala mode, _Unicode escapes_ are replaced by the corresponding
-Unicode character with the given hexadecimal code.
-
-```ebnf
-UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
-hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
-```
-
-<!--
-TODO scala/bug#4583: UnicodeEscape used to allow additional backslashes,
-and there is something in the code `evenSlashPrefix` that alludes to it,
-but I can't make it work nor can I imagine how this would make sense,
-so I removed it for now.
--->
-
 To construct tokens, characters are distinguished according to the following
 classes (Unicode general category given in parentheses):
 
@@ -54,8 +39,11 @@ plainid  ::=  upper idrest
            |  varid
            |  op
 id       ::=  plainid
-           |  ‘`’ { charNoBackQuoteOrNewline | UnicodeEscape | charEscapeSeq } ‘`’
+           |  ‘`’ { charNoBackQuoteOrNewline | escapeSeq } ‘`’
 idrest   ::=  {letter | digit} [‘_’ op]
+escapeSeq     ::= UnicodeEscape | charEscapeSeq
+UnicodeEscape ::= ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
+hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
 ```
 
 There are three ways to form an identifier. First, an identifier can
@@ -427,37 +415,30 @@ members of type `Boolean`.
 ### Character Literals
 
 ```ebnf
-characterLiteral  ::=  ‘'’ (charNoQuoteOrNewline | UnicodeEscape | charEscapeSeq) ‘'’
+characterLiteral  ::=  ‘'’ (charNoQuoteOrNewline | escapeSeq) ‘'’
 ```
 
 A character literal is a single character enclosed in quotes.
 The character can be any Unicode character except the single quote
 delimiter or `\u000A` (LF) or `\u000D` (CR);
-or any Unicode character represented by either a
-[Unicode escape](01-lexical-syntax.html) or by an [escape sequence](#escape-sequences).
+or any Unicode character represented by an
+[escape sequence](#escape-sequences).
 
 > ```scala
 > 'a'    '\u0041'    '\n'    '\t'
 > ```
 
-Note that although Unicode conversion is done early during parsing,
-so that Unicode characters are generally equivalent to their escaped
-expansion in the source text, literal parsing accepts arbitrary
-Unicode escapes, including the character literal `'\u000A'`,
-which can also be written using the escape sequence `'\n'`.
-
 ### String Literals
 
 ```ebnf
 stringLiteral  ::=  ‘"’ {stringElement} ‘"’
-stringElement  ::=  charNoDoubleQuoteOrNewline | UnicodeEscape | charEscapeSeq
+stringElement  ::=  charNoDoubleQuoteOrNewline | escapeSeq
 ```
 
 A string literal is a sequence of characters in double quotes.
 The characters can be any Unicode character except the double quote
 delimiter or `\u000A` (LF) or `\u000D` (CR);
-or any Unicode character represented by either a
-[Unicode escape](01-lexical-syntax.html) or by an [escape sequence](#escape-sequences).
+or any Unicode character represented by an [escape sequence](#escape-sequences).
 
 If the string literal contains a double quote character, it must be escaped using
 `"\""`.
@@ -481,8 +462,8 @@ triple quotes `""" ... """`. The sequence of characters is
 arbitrary, except that it may contain three or more consecutive quote characters
 only at the very end. Characters
 must not necessarily be printable; newlines or other
-control characters are also permitted.  Unicode escapes work as everywhere else, but none
-of the escape sequences [here](#escape-sequences) are interpreted.
+control characters are also permitted. [Escape sequences](#escape-sequences) are
+not processed, except for Unicode escapes.
 
 > ```scala
 >   """the present string
@@ -569,7 +550,7 @@ implicit class StringInterpolation(s: StringContext) {
 
 ### Escape Sequences
 
-The following escape sequences are recognized in character and string literals.
+The following character escape sequences are recognized in character and string literals.
 
 | charEscapeSeq | unicode  | name            | char   |
 |---------------|----------|-----------------|--------|
@@ -581,6 +562,9 @@ The following escape sequences are recognized in character and string literals.
 | `‘\‘ ‘"‘`     | `\u0022` | double quote    |  `"`   |
 | `‘\‘ ‘'‘`     | `\u0027` | single quote    |  `'`   |
 | `‘\‘ ‘\‘`     | `\u005c` | backslash       |  `\`   |
+
+In addition, Unicode escape sequences of the form `\uxxxx`, where each `x` is a hex digit are
+recognized in character and string literals.
 
 It is a compile time error if a backslash character in a character or
 string literal does not start a valid escape sequence.
