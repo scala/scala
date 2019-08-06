@@ -1472,8 +1472,10 @@ self: ParIterableLike[T, Repr, Sequential] =>
 
   /* alias methods */
 
+  @deprecated("Use foldLeft instead of /:", "2.12.10")
   def /:[S](z: S)(op: (S, T) => S): S = foldLeft(z)(op)
 
+  @deprecated("Use foldRight instead of :\\", "2.12.10")
   def :\[S](z: S)(op: (T, S) => S): S = foldRight(z)(op)
 
   /* debug information */
