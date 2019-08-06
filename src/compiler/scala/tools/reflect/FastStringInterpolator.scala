@@ -36,10 +36,11 @@ trait FastStringInterpolator extends FormatInterpolator {
                              else if (isRaw) {
                                val processed = StringContext.processUnicode(stringVal)
                                if(processed != stringVal){
-                                 var diffindex = processed.zip(stringVal).zipWithIndex.collectFirst{
+                                 val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
                                    case ((p, o), i) if p != o => i
                                  }.getOrElse(processed.length - 1)
-                                 c.warning(lit.pos, "Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14")
+                                 
+                                 c.warning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.")
                                }
                                processed
                              }
@@ -48,7 +49,8 @@ trait FastStringInterpolator extends FormatInterpolator {
             treeCopy.Literal(lit, k).setType(ConstantType(k))
           }
         catch {
-          case e: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(e.index), e.getMessage)
+          case ie: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(ie.index), ie.getMessage)
+          case iue: StringContext.InvalidUnicodeEscapeException => c.abort(parts.head.pos.withShift(iue.index), iue.getMessage)
         }
 
       val argsIndexed = args.toVector

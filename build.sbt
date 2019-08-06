@@ -101,6 +101,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.cloneAttachments"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.NonemptyAttachments.cloneAttachments"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.StringContext.processUnicode"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.StringContext$InvalidUnicodeEscapeException"),
     ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.immutable.ArraySeq.stepper"),
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.ArraySeq.stepper"),
     ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.mutable.ArraySeq.stepper"),

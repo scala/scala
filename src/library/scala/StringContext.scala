@@ -324,9 +324,13 @@ object StringContext {
   class InvalidEscapeException(str: String, val index: Int) extends IllegalArgumentException(
     s"""invalid escape ${
       require(index >= 0 && index < str.length)
-      val ok = s"""[\\b, \\t, \\n, \\f, \\r, \\, \\", \\', \\uxxxx]"""
+      val ok = s"""[\\b, \\t, \\n, \\f, \\r, \\\\, \\", \\', \\uxxxx]"""
       if (index == str.length - 1) "at terminal" else s"'\\${str(index + 1)}' not one of $ok at"
     } index $index in "$str". Use \\\\ for literal \\."""
+  )
+
+  protected[scala] class InvalidUnicodeEscapeException(str: String, val escapeStart: Int, val index: Int) extends IllegalArgumentException(
+    s"""invalid unicode escape at index $index of $str"""
   )
 
   private[this] def readUEscape(src: String, startindex: Int): (Char, Int) = {
@@ -340,14 +344,16 @@ object StringContext {
           val digitsRead = dindex
           (codepoint.asInstanceOf[Char], usRead + digitsRead)
         }
+        else if (dindex + uindex >= len)
+          throw new InvalidUnicodeEscapeException(src, startindex, dindex + uindex)
         else {
           val ch = src(dindex + uindex)
           val e = ch.asDigit
           if(e >= 0 && e <= 15) loopCP(dindex + 1, (codepoint << 4) + e)
-          else throw new InvalidEscapeException(src, startindex)
+          else throw new InvalidUnicodeEscapeException(src, startindex, dindex + uindex)
         }
       }
-      if(uindex > len) throw new InvalidEscapeException(src, startindex)
+      if(uindex >= len) throw new InvalidUnicodeEscapeException(src, startindex, uindex - 1)
       //allow one or more `u` characters between the
       //backslash and the code unit
       else if(src(uindex) == 'u') loop(uindex + 1)

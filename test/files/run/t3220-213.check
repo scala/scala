@@ -1,21 +1,21 @@
-t3220-213.scala:9: warning: Unicode escapes in triple quoted strings and raw interpolations are deprecated, use the literal character instead
+t3220-213.scala:9: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
   def inTripleQuoted = """\u000A"""
-                       ^
-t3220-213.scala:42: warning: Unicode escapes in triple quoted strings and raw interpolations are deprecated, use the literal character instead
+                          ^
+t3220-213.scala:42: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
       "tab unicode escape in triple quoted string" -> """tab\u0009tab""",
-                                                      ^
-t3220-213.scala:10: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14
+                                                            ^
+t3220-213.scala:10: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
   def inInterpolation = raw"\u000A"
                             ^
-t3220-213.scala:11: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14
+t3220-213.scala:11: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
   def inTripleQuotedInterpolation = raw"""\u000A"""
                                           ^
-t3220-213.scala:43: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14
+t3220-213.scala:43: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
       "tab unicode escape in single quoted raw interpolator" -> raw"tab\u0009tab",
-                                                                    ^
-t3220-213.scala:44: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14
+                                                                       ^
+t3220-213.scala:44: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
       "tab unicode escape in triple quoted raw interpolator" -> raw"""tab\u0009tab"""
-                                                                      ^
+                                                                         ^
 supported
 literals that result in tab	tab:
 literal tab in single quoted string

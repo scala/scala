@@ -1,0 +1,25 @@
+t3220-1.scala:2: error: invalid unicode escape
+  val badsingle = "foo \unope that's wrong"
+                         ^
+t3220-1.scala:3: error: invalid unicode escape at index 6 of foo \unope that's wrong
+  val badtriple = """foo \unope that's wrong"""
+                        ^
+t3220-1.scala:4: error: invalid unicode escape
+  val caretPos = "foo \u12x3 pos @ x"
+                        ^
+t3220-1.scala:5: error: invalid unicode escape
+  val caretPos2 = "foo \uuuuuuu12x3 pos @ x"
+                               ^
+t3220-1.scala:6: error: invalid unicode escape
+  val carPosTerm = "foo \u123"
+                          ^
+t3220-1.scala:7: error: invalid unicode escape
+  val halfAnEscape = "foo \u12"
+                            ^
+t3220-1.scala:8: error: invalid unicode escape
+  val halfAnEscapeChar = '\u45'
+                            ^
+t3220-1.scala:9: error: invalid unicode escape
+  val `half An Identifier\u45` = "nope"
+                           ^
+8 errors
