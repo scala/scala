@@ -129,6 +129,8 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       hd
     }
 
+    override def knownSize = self.knownSize + (if (hdDefined) 1 else 0)
+
     def hasNext =
       hdDefined || self.hasNext
 
@@ -278,22 +280,25 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
    *          all elements of this $coll followed by the minimal number of occurrences of `elem` so
    *          that the resulting collection has a length of at least `len`.
    */
-  def padTo[B >: A](len: Int, elem: B): Iterator[B] = {
-    val it = this
-    new AbstractIterator[B] {
-      private[this] var i = 0
+  def padTo[B >: A](len: Int, elem: B): Iterator[B] = new AbstractIterator[B] {
+    private[this] var i = 0
 
-      def next(): B = {
-        val b =
-          if (it.hasNext) it.next()
-          else if (i < len) elem
-          else Iterator.empty.next()
-        i += 1
-        b
-      }
-
-      def hasNext: Boolean = it.hasNext || i < len
+    override def knownSize: Int = {
+      val thisSize = self.knownSize
+      if (thisSize < 0) -1
+      else thisSize max (len - i)
     }
+
+    def next(): B = {
+      val b =
+        if (self.hasNext) self.next()
+        else if (i < len) elem
+        else Iterator.empty.next()
+      i += 1
+      b
+    }
+
+    def hasNext: Boolean = self.hasNext || i < len
   }
 
   /** Partitions this iterator in two iterators according to a predicate.
@@ -369,6 +374,12 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     // and then that will be modified to iterate through the collection
     private[this] var current: Iterator[B] =
       new AbstractIterator[B] {
+        override def knownSize = {
+          val thisSize = self.knownSize
+
+          if (thisSize < 0) -1
+          else thisSize + 1
+        }
         def hasNext: Boolean = true
         def next(): B = {
           // Here we change our self-reference to a new iterator that iterates through `self`
@@ -379,10 +390,12 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
               acc
             }
             def hasNext: Boolean = self.hasNext
+            override def knownSize = self.knownSize
           }
           z
         }
       }
+    override def knownSize = current.knownSize
     def next(): B = current.next()
     def hasNext: Boolean = current.hasNext
   }
@@ -551,6 +564,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
   }
 
   def map[B](f: A => B): Iterator[B] = new AbstractIterator[B] {
+    override def knownSize = self.knownSize
     def hasNext = self.hasNext
     def next() = f(self.next())
   }
@@ -773,12 +787,19 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def zip[B](that: IterableOnce[B]): Iterator[(A, B)] = new AbstractIterator[(A, B)] {
     val thatIterator = that.iterator
+    override def knownSize = self.knownSize min thatIterator.knownSize
     def hasNext = self.hasNext && thatIterator.hasNext
     def next() = (self.next(), thatIterator.next())
   }
 
   def zipAll[A1 >: A, B](that: IterableOnce[B], thisElem: A1, thatElem: B): Iterator[(A1, B)] = new AbstractIterator[(A1, B)] {
     val thatIterator = that.iterator
+    override def knownSize = {
+      val thisSize = self.knownSize
+      val thatSize = thatIterator.knownSize
+      if (thisSize < 0 || thatSize < 0) -1
+      else thisSize max thatSize
+    }
     def hasNext = self.hasNext || thatIterator.hasNext
     def next(): (A1, B) = {
       val next1 = self.hasNext
@@ -790,6 +811,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def zipWithIndex: Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
     var idx = 0
+    override def knownSize = -1 max self.knownSize
     def hasNext = self.hasNext
     def next() = {
       val ret = (self.next(), idx)
@@ -825,6 +847,13 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     val gap = new scala.collection.mutable.Queue[A]
     var ahead: Iterator[A] = null
     class Partner extends AbstractIterator[A] {
+      override def knownSize: Int = self.synchronized {
+        val thisSize = self.knownSize
+
+        if (this eq ahead) thisSize
+        else if (thisSize < 0 || gap.knownSize < 0) -1
+        else thisSize + gap.knownSize
+      }
       def hasNext: Boolean = self.synchronized {
         (this ne ahead) && !gap.isEmpty || self.hasNext
       }
@@ -958,6 +987,7 @@ object Iterator extends IterableFactory[Iterator] {
     */
   override def fill[A](len: Int)(elem: => A): Iterator[A] = new AbstractIterator[A] {
     private[this] var i = 0
+    override def knownSize: Int = (len - i) max 0
     def hasNext: Boolean = i < len
     def next(): A =
       if (hasNext) { i += 1; elem }
@@ -972,6 +1002,7 @@ object Iterator extends IterableFactory[Iterator] {
     */
   override def tabulate[A](end: Int)(f: Int => A): Iterator[A] = new AbstractIterator[A] {
     private[this] var i = 0
+    override def knownSize: Int = (end - i) max 0
     def hasNext: Boolean = i < end
     def next(): A =
       if (hasNext) { val result = f(i); i += 1; result }
@@ -1016,6 +1047,12 @@ object Iterator extends IterableFactory[Iterator] {
     if (step == 0) throw new IllegalArgumentException("zero step")
     private[this] var i = start
     private[this] var hasOverflowed = false
+    override def knownSize: Int = {
+      val size = math.ceil((end.toLong - i.toLong) / step.toDouble)
+      if (size < 0) 0
+      else if (size > Int.MaxValue) -1
+      else size.toInt
+    }
     def hasNext: Boolean = {
       (step <= 0 || i < end) && (step >= 0 || i > end) && !hasOverflowed
     }
@@ -1161,6 +1198,11 @@ object Iterator extends IterableFactory[Iterator] {
         } else
           dropping = 0
       }
+    override def knownSize: Int = {
+      val size = underlying.knownSize
+      if (size < 0) -1
+      else remaining min ((size - dropping) max 0)
+    }
     def hasNext = { skip(); remaining != 0 && underlying.hasNext }
     def next()  = {
       skip()
