@@ -40,7 +40,7 @@ trait PhaseAssembly {
       var phaseobj: Option[List[SubComponent]] = None
       val after = new mutable.HashSet[Edge]()
       var before = new mutable.HashSet[Edge]()
-      var visited = false
+      var visited: VisitStatus = NotVisited
       var level = 0
 
       def allPhaseNames(): String = phaseobj match {
@@ -48,6 +48,10 @@ trait PhaseAssembly {
         case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
       }
     }
+    sealed abstract class VisitStatus
+    case object NotVisited extends VisitStatus
+    case object Visiting extends VisitStatus
+    case object Visited extends VisitStatus
 
     val nodes = new mutable.HashMap[String,Node]()
     val edges = new mutable.HashSet[Edge]()
@@ -104,35 +108,64 @@ trait PhaseAssembly {
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
      */
-    def collapseHardLinksAndLevels(node: Node, lvl: Int) {
-      if (node.visited) {
-        dump("phase-cycle")
-        throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
+    def collapseHardLinks() {
+      for (node <- nodes.valuesIterator.toList) {
+        val hardBefores = node.before.iterator.filter(_.hard).toList
+        for (hl <- hardBefores) {
+          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
+          node.before = hl.frm.before
+          nodes -= hl.frm.phasename
+          edges -= hl
+        }
       }
+    }
 
-      if (node.level < lvl) node.level = lvl
-
-      var befores = node.before
-      def hasHardLinks() = befores.exists(_.hard)
-      while (hasHardLinks()) {
-        for (hl <- befores) {
-          if (hl.hard) {
-            node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-            node.before = hl.frm.before
-            nodes -= hl.frm.phasename
-            edges -= hl
-            for (edge <- node.before) edge.to = node
+    /* Test if there are cycles in the graph, assign levels to the nodes
+     * and collapse hard links into nodes
+     */
+    def assignLevelsAndDetectCycles(node: Node) {
+      val stack = mutable.ArrayStack[Node]()
+      def visitNode(node: Node): Unit = {
+        node.visited = Visiting
+        for (edge <- node.before) {
+          val from = edge.frm
+          from.visited match {
+            case NotVisited =>
+              visitNode(edge.frm)
+            case Visiting =>
+              dump("phase-cycle")
+              throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
+            case Visited =>
           }
         }
-        befores = node.before
+        node.visited = Visited
+        stack.push(node)
       }
-      node.visited = true
-
-      for (edge <- node.before) {
-        collapseHardLinksAndLevels( edge.frm, lvl + 1)
+      try {
+        visitNode(node)
+      } finally {
+        nodes.values.foreach(_.visited = NotVisited)
       }
 
-      node.visited = false
+      val topoSort: Map[Node, Int] = stack.zipWithIndex.toMap
+      val root = node
+      assert(stack.head == root, stack)
+      root.level = 1
+
+      // Nodes that have been collapsed into their hard-linked predecessor
+      val collapsed: Map[String, Node] = stack.iterator.flatMap(p => p.phaseobj.toList.flatMap(_.map(x => (x.phaseName, p)))).toMap
+      def followHard(node: Node): Node = collapsed.getOrElse(node.phasename, node)
+
+      // find the longest path to the root node to assign as the level.
+      stack.iterator.drop(1).foreach { node =>
+        var n = node
+        var level = 1
+        while (n != root && n.after.nonEmpty) {
+          n = n.after.maxBy(edge => topoSort.get(followHard(edge.to))).to
+          level += 1
+        }
+        node.level = level
+      }
     }
 
     /* Find all edges in the given graph that are hard links. For each hard link we
@@ -225,10 +258,15 @@ trait PhaseAssembly {
 
     dump(3)
 
-    // test for cycles, assign levels and collapse hard links into nodes
-    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
+    // collapse hard links into nodes
+    graph.collapseHardLinks()
 
     dump(4)
+
+    // test for cycles, assign levels
+    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
+
+    dump(5)
 
     // assemble the compiler
     graph.compilerPhaseList()
