@@ -166,6 +166,8 @@ trait PhaseAssembly {
         }
         node.level = level
       }
+      def phaseDebug = stack.toSeq.groupBy(_.level).toList.sortBy(_._1).map { case (level, nodes) => (level,  nodes.sortBy(_.phasename).map(_.phaseobj.map(_.map(_.phaseName).mkString(":")).mkString(" ")).mkString(" "))}.mkString("\n")
+      debuglog("Phase assembly levels: " + phaseDebug)
     }
 
     /* Find all edges in the given graph that are hard links. For each hard link we
