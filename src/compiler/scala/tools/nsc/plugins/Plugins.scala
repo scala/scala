@@ -64,12 +64,12 @@ trait Plugins { global: Global =>
     * @param classpath
     * @return
     */
-  protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
+  protected def findPluginClassLoader(classpath: Seq[Path]): (ClassLoader, ClassLoader) = {
     val policy = settings.YcachePluginClassLoader.value
     val disableCache = policy == settings.CachePolicy.None.name
+    val urls = classpath map (_.toURL)
     def newLoader = () => {
       val compilerLoader = classOf[Plugin].getClassLoader
-      val urls = classpath map (_.toURL)
       ScalaClassLoader fromURLs (urls, compilerLoader)
     }
 
@@ -83,14 +83,16 @@ trait Plugins { global: Global =>
 
     val cache = pluginClassLoadersCache
     val checkStamps = policy == settings.CachePolicy.LastModified.name
-    cache.checkCacheability(classpath.map(_.toURL), checkStamps, disableCache) match {
+    val pluginXmlLoader = ScalaClassLoader fromURLs (urls, null)
+    closeableRegistry.registerClosable(pluginXmlLoader)
+    (pluginXmlLoader, cache.checkCacheability(urls, checkStamps, disableCache) match {
       case Left(msg) =>
         val loader = newLoader()
         closeableRegistry.registerClosable(loader)
         loader
       case Right(paths) =>
         cache.getOrCreate(classpath.map(_.jfile.toPath()), newLoader, closeableRegistry, checkStamps)
-    }
+    })
   }
 
   protected lazy val roughPluginsList: List[Plugin] = loadRoughPluginsList()

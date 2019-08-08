@@ -17,7 +17,7 @@ class GlobalCustomizeClassloaderTest {
   // that properly closes them before one of the elements needs to be overwritten.
   @Test def test(): Unit = {
     val g = new Global(new Settings) {
-      override protected def findPluginClassLoader(classpath: Seq[Path]): ClassLoader = {
+      override protected def findPluginClassLoader(classpath: Seq[Path]): (ClassLoader, ClassLoader) = {
         val d = new VirtualDirectory("", None)
         val xml = d.fileNamed("scalac-plugin.xml")
         val out = xml.bufferedOutput
@@ -28,7 +28,8 @@ class GlobalCustomizeClassloaderTest {
             |</plugin>
             |""".stripMargin.getBytes())
         out.close()
-        new AbstractFileClassLoader(d, getClass.getClassLoader)
+        val cl = new AbstractFileClassLoader(d, getClass.getClassLoader)
+        (cl, cl)
       }
     }
     g.settings.usejavacp.value = true

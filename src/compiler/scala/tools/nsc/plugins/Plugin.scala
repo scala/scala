@@ -120,18 +120,21 @@ object Plugin {
     paths: List[List[Path]],
     dirs: List[Path],
     ignoring: List[String],
-    findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
+    findPluginClassloader: (Seq[Path] => (ClassLoader, ClassLoader))): List[Try[AnyClass]] =
   {
     type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
 
     val fromLoaders = paths.map {path =>
-      val loader = findPluginClassloader(path)
-      loader.getResource(PluginXML) match {
+      val (pluginXmlLoader, loader) = findPluginClassloader(path)
+      pluginXmlLoader.getResource(PluginXML) match {
         case null => Failure(new MissingPluginException(path))
         case url =>
           val inputStream = url.openStream
           try {
-            Try((PluginDescription.fromXML(inputStream), loader))
+            Try((PluginDescription.fromXML(inputStream), loader)) match {
+              case Success((pd, _)) => Success((pd, loader))
+              case f => f
+            }
           } finally {
             inputStream.close()
           }
