@@ -467,6 +467,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
     * @return       true if and only if `source` matches this `Regex`.
     * @see          [[Regex#unanchored]]
     * @example      {{{"""\d+""".r matches "123" // returns true}}}
+    * @since        2.13
     */
   def matches(source: CharSequence): Boolean =
     runMatcher(pattern.matcher(source))
