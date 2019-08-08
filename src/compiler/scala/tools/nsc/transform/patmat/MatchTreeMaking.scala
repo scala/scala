@@ -194,13 +194,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           else {
             // only store binders actually used
             val (subPatBindersStored, subPatRefsStored) = stored.filter{case (b, _) => usedBinders(b)}.unzip
-            val bindings = map2(subPatBindersStored.toList, subPatRefsStored.toList)(ValDef(_, _))
-            in match {
-              case Block(stats, expr) =>
-                Block(bindings ::: stats, expr)
-              case _ =>
-                Block(bindings, in)
-            }
+            Block(map2(subPatBindersStored.toList, subPatRefsStored.toList)(ValDef(_, _)), in)
           }
         }
     }
