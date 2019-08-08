@@ -488,5 +488,7 @@ object ProcessBuilder extends ProcessBuilderImpl {
 
     /** Reads the output of a [[scala.sys.process.ProcessBuilder]] into the input stream of this process. */
     def #<(b: ProcessBuilder): ProcessBuilder = new PipedBuilder(b, toSink, false)
+
+    def #<<(here: String): ProcessBuilder = #< (new IStreamBuilder(new java.io.ByteArrayInputStream(here.getBytes), label = s"<here ${here.substring(0, 5)}${if (here.length > 5) "..." else ""}>"))
   }
 }
