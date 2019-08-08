@@ -408,6 +408,10 @@ class IteratorTest {
     buf.head
     assertEquals(10, buf.knownSize)
     knownSizeDecreases(buf)
+    val buf2 = Iterator.continually(1).buffered
+    assertEquals(-1, buf2.knownSize)
+    buf2.head
+    assertEquals(-1, buf2.knownSize)
 
     assertEquals(10, it.padTo(5, 0).knownSize)
     assertEquals(15, it.padTo(15, 0).knownSize)
@@ -459,7 +463,10 @@ class IteratorTest {
     assertEquals(-1, Iterator.continually(1).take(5).knownSize)
     assertEquals(-1, List.fill(10)(1).take(5).knownSize)
 
+    assertEquals(3, new Iterator.SliceIterator(it, 7, -1).knownSize)
+
     knownSizeDecreases(it.slice(2, 9))
+    knownSizeDecreases(new Iterator.SliceIterator(it, 7, -1))
   }
 
   @Test
