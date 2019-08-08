@@ -129,7 +129,11 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       hd
     }
 
-    override def knownSize = self.knownSize + (if (hdDefined) 1 else 0)
+    override def knownSize = {
+      val thisSize = self.knownSize
+      if (thisSize >= 0 && hdDefined) thisSize + 1
+      else thisSize
+    }
 
     def hasNext =
       hdDefined || self.hasNext
@@ -811,7 +815,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
 
   def zipWithIndex: Iterator[(A, Int)] = new AbstractIterator[(A, Int)] {
     var idx = 0
-    override def knownSize = -1 max self.knownSize
+    override def knownSize = self.knownSize
     def hasNext = self.hasNext
     def next() = {
       val ret = (self.next(), idx)
@@ -1201,7 +1205,11 @@ object Iterator extends IterableFactory[Iterator] {
     override def knownSize: Int = {
       val size = underlying.knownSize
       if (size < 0) -1
-      else remaining min ((size - dropping) max 0)
+      else {
+        val dropSize = 0 max (size - dropping)
+        if (unbounded) dropSize
+        else remaining min dropSize
+      }
     }
     def hasNext = { skip(); remaining != 0 && underlying.hasNext }
     def next()  = {
