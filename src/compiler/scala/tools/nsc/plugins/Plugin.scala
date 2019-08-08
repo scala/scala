@@ -14,7 +14,7 @@ package scala.tools.nsc
 package plugins
 
 import java.util.jar
-
+import scala.collection.JavaConverters._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{AbstractFile, File, Path}
 import scala.collection.mutable
@@ -152,9 +152,9 @@ object Plugin {
 
     val fromLoaders = paths.map {path =>
       val loader = findPluginClassloader(path)
-      loader.getResource(PluginXML) match {
-        case null => Failure(new MissingPluginException(path))
-        case url =>
+      loader.getResources(PluginXML).asScala.toList.lastOption match {
+        case None => Failure(new MissingPluginException(path))
+        case Some(url) =>
           val inputStream = url.openStream
           try {
             Try((PluginDescription.fromXML(inputStream), loader))
