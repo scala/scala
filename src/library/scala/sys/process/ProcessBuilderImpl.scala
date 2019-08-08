@@ -138,6 +138,18 @@ private[process] trait ProcessBuilderImpl {
     def !<                     = run(connectInput = true).exitValue()
     def !<(log: ProcessLogger) = runBuffered(log, connectInput = true)
 
+    private def textStream(here: String) = { out: java.io.OutputStream => out.write(here.getBytes) ; out.close() }
+    private def slurp(here: String, log: Option[ProcessLogger]): String = {
+      val buf = new StringBuffer
+      val io  = BasicIO(withIn = false, buf, log).withInput(textStream(here))
+      val res = run(io).exitValue()
+      if (res == 0) buf.toString else scala.sys.error(s"Nonzero exit value: $res")
+    }
+    override def !<<(here: String) = run(BasicIO.standard(textStream(here))).exitValue()
+    override def !<<(here: String, log: ProcessLogger) = run(BasicIO(withIn = false, log).withInput(textStream(here))).exitValue()
+    override def !!<<(here: String) = slurp(here, None)
+    override def !!<<(here: String, log: ProcessLogger) = slurp(here, Some(log))
+
     /** Constructs a new builder which runs this command with all input/output threads marked
      *  as daemon threads.  This allows the creation of a long running process while still
      *  allowing the JVM to exit normally.

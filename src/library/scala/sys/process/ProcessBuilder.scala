@@ -328,6 +328,12 @@ trait ProcessBuilder extends Source with Sink {
   def ! : Int
 
   /** Starts the process represented by this builder, blocks until it exits, and
+    * returns the exit code. I/O handling is determined by the ProcessIO.
+    * `run(io).exitValue`.
+    */
+  def !(io: ProcessIO): Int
+
+  /** Starts the process represented by this builder, blocks until it exits, and
     * returns the exit code.  Standard output and error are sent to the given
     * ProcessLogger.
     */
@@ -345,6 +351,13 @@ trait ProcessBuilder extends Source with Sink {
     * current process.
     */
   def !<(log: ProcessLogger): Int
+
+  // Here-document variants for running the process.
+
+  def !<<(here: String): Int
+  def !<<(here: String, log: ProcessLogger): Int
+  def !!<<(here: String): String
+  def !!<<(here: String, log: ProcessLogger): String
 
   /** Starts the process represented by this builder.  Standard output and error
    * are sent to the console.*/
