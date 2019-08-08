@@ -14,6 +14,8 @@ package scala
 package sys
 package process
 
+import java.io.ByteArrayInputStream
+
 import processInternal._
 import ProcessBuilder._
 import scala.language.implicitConversions
@@ -171,6 +173,50 @@ trait ProcessCreation {
   def cat(files: scala.collection.Seq[Source]): ProcessBuilder = {
     require(files.nonEmpty)
     files.map(_.cat).reduceLeft(_ #&& _)
+  }
+
+  /**
+    * Echo the given text.
+    *
+    * This can be used as the source of input for a process, for example:
+    *
+    * {{{
+    * import scala.sys.process._
+    * import scala.sys.process.Process.echo
+    *
+    * echo("Hello, world!") #> "curl -d - https://example.com/upload" !
+    * }}}
+    *
+    * Unlike the shell echo command, this does not append a newline to the text.
+    *
+    * @param text The text to echo.
+    */
+  def echo(text: String): Source = {
+    new ProcessBuilder.IStreamBuilder(
+      new ByteArrayInputStream(text.getBytes()),
+      "<echoed text>"
+    )
+  }
+
+  /**
+    * Echo the given text.
+    *
+    * This can be used as the source of input for a process, for example:
+    *
+    * {{{
+    * import scala.sys.process._
+    * import scala.sys.process.Process.echo
+    *
+    * echo(someBytes) #> "curl -d - https://example.com/upload" !
+    * }}}
+    *
+    * @param bytes The bytes to echo.
+    */
+  def echo(bytes: Array[Byte]): Source = {
+    new ProcessBuilder.IStreamBuilder(
+      new ByteArrayInputStream(bytes),
+      "<echoed bytes>"
+    )
   }
 }
 
