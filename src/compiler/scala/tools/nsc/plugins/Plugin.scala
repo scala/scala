@@ -115,7 +115,7 @@ abstract class Plugin {
  */
 object Plugin {
 
-  private val PluginXML = "scalac-plugin.xml"
+  val PluginXML = "scalac-plugin.xml"
 
   private[nsc] val pluginClassLoadersCache = new FileBasedCache[ScalaClassLoader.URLClassLoader]()
 
