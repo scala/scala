@@ -571,7 +571,7 @@ trait Infer extends Checkable {
         if (!isFullyDefined(tvar)) tvar.constr.inst = NoType
 
       // Then define remaining type variables from argument types.
-      map2(argtpes, formals) { (argtpe, formal) =>
+      foreach2(argtpes, formals) { (argtpe, formal) =>
         val tp1 = argtpe.deconst.instantiateTypeParams(tparams, tvars)
         val pt1 = formal.instantiateTypeParams(tparams, tvars)
 

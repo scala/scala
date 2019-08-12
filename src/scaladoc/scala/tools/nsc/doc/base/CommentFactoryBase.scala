@@ -225,7 +225,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       markedTagComment.linesIterator.toList map cleanLine
     }
 
-    /** Parses a comment (in the form of a list of lines) to a `Comment`
+     /* Parses a comment (in the form of a list of lines) to a `Comment`
       * instance, recursively on lines. To do so, it splits the whole comment
       * into main body and tag bodies, then runs the `WikiParser` on each body
       * before creating the comment instance.
@@ -632,7 +632,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       def contentNonEmpty(content: Inline) = content != Text("")
 
-      /**
+       /* Parse cells of a table.
         * @param cellStartMark The char indicating the start or end of a cell
         * @param finalizeRow   Function to invoke when the row has been fully parsed
         */
