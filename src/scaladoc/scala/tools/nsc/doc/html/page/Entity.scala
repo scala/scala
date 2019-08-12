@@ -551,11 +551,11 @@ trait EntityPage extends HtmlPage {
 
     // --- start attributes block vals
     val attributes: Elems = {
-      val fvs: List[comment.Paragraph] = visibility(mbr).toList
+      val fvs: List[Elems] = visibility(mbr).toList
       if (fvs.isEmpty || isReduced) NoElems
       else {
         dt("Attributes") ::
-        Dd(elems=  fvs flatMap { fv => { inlineToHtml(fv.text) :+ Txt(" ") } }  ) :: NoElems
+        Dd(elems = fvs.flatMap(_ :+ Txt(" "))) :: NoElems
       }
     }
 
@@ -776,22 +776,20 @@ trait EntityPage extends HtmlPage {
     bound0(lo, " >: ") ++ bound0(hi, " <: ")
   }
 
-  def visibility(mbr: MemberEntity): Option[comment.Paragraph] = {
-    import comment._
-    import comment.{ Text => CText }
+  def visibility(mbr: MemberEntity): Option[Elems] = {
     mbr.visibility match {
       case PrivateInInstance() =>
-        Some(Paragraph(CText("private[this]")))
-      case PrivateInTemplate(owner) if (owner == mbr.inTemplate) =>
-        Some(Paragraph(CText("private")))
-      case PrivateInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("private["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
+        Some(Txt("private[this]"))
+      case PrivateInTemplate(None) =>
+        Some(Txt("private"))
+      case PrivateInTemplate(Some(owner)) =>
+        Some((Txt("private[") :: typeToHtml(owner, true)) :+ Txt("]"))
       case ProtectedInInstance() =>
-        Some(Paragraph(CText("protected[this]")))
-      case ProtectedInTemplate(owner) if (owner == mbr.inTemplate) =>
-        Some(Paragraph(CText("protected")))
-      case ProtectedInTemplate(owner) =>
-        Some(Paragraph(Chain(List(CText("protected["), EntityLink(comment.Text(owner.qualifiedName), LinkToTpl(owner)), CText("]")))))
+        Some(Txt("protected[this]"))
+      case ProtectedInTemplate(None) =>
+        Some(Txt("protected"))
+      case ProtectedInTemplate(Some(owner)) =>
+        Some((Txt("protected[") :: typeToHtml(owner, true)) :+ Txt("]"))
       case Public() =>
         None
     }
