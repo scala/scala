@@ -94,7 +94,13 @@ val mimaFilterSettings = Seq(
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl"),
-  ),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.IterableOnceOps.stepper"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.IterableOnceOps.iterator"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.IterableOnceOps.knownSize"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnceOps.stepper"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnceOps.iterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnceOps.knownSize")
+  )
 )
 
 // Save MiMa logs

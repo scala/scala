@@ -297,6 +297,35 @@ object IterableOnce {
   *
   */
 trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
+  // Methods declared in IterableOnce, but which are not inherited because IterableOnceOps is a universal trait
+  /** Iterator can be used only once */
+  def iterator: Iterator[A]
+  /** Returns a [[Stepper]] for the elements of this collection.
+   *
+   * The Stepper enables creating a Java stream to operate on the collection, see
+   * [[scala.jdk.StreamConverters]]. For collections holding primitive values, the Stepper can be
+   * used as an iterator which doesn't box the elements.
+   *
+   * The implicit [[StepperShape]] parameter defines the resulting Stepper type according to the
+   * element type of this collection.
+   *
+   *   - For collections of `Int`, `Short`, `Byte` or `Char`, an [[IntStepper]] is returned
+   *   - For collections of `Double` or `Float`, a [[DoubleStepper]] is returned
+   *   - For collections of `Long` a [[LongStepper]] is returned
+   *   - For any other element type, an [[AnyStepper]] is returned
+   *
+   * Note that this method is overridden in subclasses and the return type is refined to
+   * `S with EfficientSplit`, for example [[IndexedSeqOps.stepper]]. For Steppers marked with
+   * [[scala.collection.Stepper.EfficientSplit]], the converters in [[scala.jdk.StreamConverters]]
+   * allow creating parallel streams, whereas bare Steppers can be converted only to sequential
+   * streams.
+   */
+  def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S
+  /** @return The number of elements in this $coll, if it can be cheaply computed,
+   *  -1 otherwise. Cheaply usually means: Not requiring a collection traversal.
+   */
+  def knownSize: Int
+
   /////////////////////////////////////////////////////////////// Abstract methods that must be implemented
 
   /** Produces a $coll containing cumulative results of applying the
