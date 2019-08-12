@@ -461,12 +461,27 @@ trait Solving extends Logic {
      */
     private def dropUnit(clauses: Array[Clause], unitLit: Lit): Array[Clause] = {
       val negated = -unitLit
+
+      // Avoid value class boxing inside the loop. Ugly, I know, but this alone contributes 3% of allocations
+      // in some builds!
+      val unitLitBoxed = (unitLit: Any)
+      val negatedBoxed = (negated: Any)
+
       val simplified = new ArrayBuffer[Clause](clauses.length)
+      var changed = false
       clauses foreach {
-        case trivial if trivial contains unitLit => // drop
-        case clause                              => simplified += clause - negated
+        case trivial if trivial.asInstanceOf[Set[Any]].contains(unitLitBoxed) =>
+          changed = true
+          // drop
+        case clause                              =>
+          val withoutNegated = (clause.asInstanceOf[Set[Any]] - negatedBoxed).asInstanceOf[Clause]
+          changed ||= withoutNegated ne clause
+          simplified += withoutNegated
       }
-      simplified.toArray
+      if (changed)
+        simplified.toArray
+      else
+        clauses
     }
 
     def findModelFor(solvable: Solvable): Model = {
