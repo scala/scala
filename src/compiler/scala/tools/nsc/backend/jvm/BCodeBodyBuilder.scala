@@ -576,7 +576,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                 asm.Opcodes.PUTSTATIC,
                 thisBType.internalName,
                 strMODULE_INSTANCE_FIELD,
-                thisBType.descriptor
+                thisBTypeDescriptor
               )
             }
           }
