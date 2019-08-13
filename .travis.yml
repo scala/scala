@@ -43,7 +43,7 @@ jobs:
 
       # pull request validation (w/ mini-bootstrap)
       - stage: build
-        name: "JDK 8 pr validation"
+        name: "JDK 12 pr validation"
         if: type = pull_request
         script:
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
@@ -66,7 +66,7 @@ jobs:
 
 env:
   global:
-    - ADOPTOPENJDK=8
+    - ADOPTOPENJDK=12
     - secure: "TuJOUtALynPd+MV1AuMeIpVb8BUBHr7Ul7FS48XhS2PyuTRpEBkSWybYcNg3AXyzmWDAuOjUxbaNMQBvP8vvehTbIYls5H5wTGKvj0D0TNVaPIXjF8bA8KyNat9xGNzhnWm2/2BMaWpKBJWRF7Jb+zHhijMYCJEbkMtoiE5R/mY=" # PRIV_KEY_SECRET, for scripts/travis-publish-spec.sh
     - secure: "T1fxtvLTxioyXJYiC/zVYdNYsBOt+0Piw+xE04rB1pzeKahm9+G2mISdcAyqv6/vze9eIJt6jNHHpKX32/Z3Cs1/Ruha4m3k+jblj3S0SbxV6ht2ieJXLT5WoUPFRrU68KXI8wqUadXpjxeJJV53qF2FC4lhfMUsw1IwwMhdaE8=" # PRIVATE_REPO_PASS
     - secure: "feE5A8mYNpkNQKVwCj3aXrwjVrJWh/4ENpRfFlr2HOD9ORk1GORD5Yq907WZd+dTkYK54Lh1gA+qHOCIDgJHbi9ZLU+kjzEjtYKF6lQy6Wb0LI8smTOnAA6IWVVYifiXw8d66MI2MKZb2jjGeIzy8Q00SZjLhEGjLyTeCIB88Ws=" # SONA_USER
