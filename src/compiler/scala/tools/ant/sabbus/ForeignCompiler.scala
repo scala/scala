@@ -46,7 +46,7 @@ class ForeignCompiler {
   def compile(files: Array[File]): Int = {
     val command = new CompilerCommand(files.toList map (_.toString), settings)
     (new nsc.Run) compile command.files
-    reporter.ERROR.count << 16 | reporter.WARNING.count
+    reporter.errorCount << 16 | reporter.warningCount
   }
 
 }

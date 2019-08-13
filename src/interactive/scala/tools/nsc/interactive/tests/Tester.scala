@@ -165,7 +165,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     print("new round with "+changes.length+" changes:")
     changes foreach (_.deleteAll())
     otherTest()
-    def errorCount() = compiler.ask(() => reporter.ERROR.count)
+    def errorCount() = compiler.ask(() => reporter.errorCount)
 //    println("\nhalf test round: "+errorCount())
     changes.view.reverse foreach (_.insertAll())
     otherTest()

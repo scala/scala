@@ -27,7 +27,7 @@ class ScalaDoc {
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
     val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
-                                       msg => reporter.printMessage(msg),
+                                       msg => reporter.echo(msg),
                                        DefaultPathFactory)
     reporter = new ScalaDocReporter(docSettings)
     val command = new ScalaDoc.Command(args.toList, docSettings)
@@ -66,8 +66,6 @@ class ScalaDoc {
 class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
   import scala.collection.mutable.LinkedHashMap
 
-  object Direct extends Severity(3)("DIRECT")
-
   // need to do sometimes lie so that the Global instance doesn't
   // trash all the symbols just because there was an error
   override def hasErrors = false
@@ -82,7 +80,7 @@ class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
 
   def printDelayedMessages(): Unit = delayedMessages.values.foreach(_.apply())
 
-  override def printMessage(msg: String): Unit = display(NoPosition, msg, Direct)
+  override def printMessage(msg: String): Unit = display(NoPosition, msg, INFO)
 
   override def finish(): Unit = {
     printDelayedMessages()

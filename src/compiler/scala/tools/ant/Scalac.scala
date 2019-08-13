@@ -20,9 +20,10 @@ import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper, SourceFileScanner}
 import org.apache.tools.ant.util.facade.{FacadeTaskHelper, ImplementationSpecificArgument}
 
+import scala.reflect.internal.Reporter
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.io.{Path => SPath}
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.ConsoleReporter
 
 /** An Ant task to compile with the new Scala compiler (NSC).
  *
@@ -694,11 +695,11 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
     reporter.finish()
     if (reporter.hasErrors) {
       val msg = "Compile failed with %d error%s; see the compiler error output for details.".format(
-        reporter.ERROR.count, plural(reporter.ERROR.count))
+        reporter.errorCount, plural(reporter.errorCount))
       if (failonerror) buildError(msg) else log(msg)
     }
-    else if (reporter.WARNING.count > 0)
+    else if (reporter.warningCount > 0)
       log("Compile succeeded with %d warning%s; see the compiler output for details.".format(
-        reporter.WARNING.count, plural(reporter.WARNING.count)))
+        reporter.warningCount, plural(reporter.warningCount)))
   }
 }

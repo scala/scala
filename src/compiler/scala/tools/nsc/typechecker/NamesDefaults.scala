@@ -528,7 +528,7 @@ trait NamesDefaults { self: Analyzer =>
         // instead of arg, but can't do that because eventually setType(ErrorType)
         // is called, and EmptyTree can only be typed NoType.  Thus we need to
         // disable conforms as a view...
-        val errsBefore = reporter.ERROR.count
+        val errsBefore = reporter.errorCount
         try typer.silent { tpr =>
           val res = tpr.typed(arg.duplicate, subst(paramtpe))
           // better warning for scala/bug#5044: if `silent` was not actually silent give a hint to the user
@@ -536,7 +536,7 @@ trait NamesDefaults { self: Analyzer =>
           // thrown in a context completely different from `context` here. The exception happens while
           // completing the type, and TypeCompleter is created/run with a non-silent Namer `context`
           // and there is at the moment no way to connect the two unless we go through some global state.
-          if (errsBefore < reporter.ERROR.count)
+          if (errsBefore < reporter.errorCount)
             WarnAfterNonSilentRecursiveInference(param, arg)(context)
           res
         } match {

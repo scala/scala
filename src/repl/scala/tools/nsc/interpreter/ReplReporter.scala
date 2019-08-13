@@ -13,7 +13,8 @@
 package scala.tools.nsc
 package interpreter
 
-import reporters._
+import scala.reflect.internal.Reporter
+import reporters.ConsoleReporter
 import IMain._
 
 import scala.reflect.internal.util.{OffsetPosition, Position}
@@ -56,9 +57,9 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
   import scala.io.AnsiColor.{RED, YELLOW, RESET}
 
   def severityColor(severity: Severity): String = severity match {
-    case ERROR   => RED
-    case WARNING => YELLOW
-    case INFO    => RESET
+    case Reporter.ERROR   => RED
+    case Reporter.WARNING => YELLOW
+    case Reporter.INFO    => RESET
   }
 
   private val promptLength = replProps.promptText.linesIterator.toList.last.length
