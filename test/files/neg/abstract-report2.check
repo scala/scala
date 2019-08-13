@@ -54,7 +54,7 @@ class Baz[T] extends Collection[T]
       ^
 abstract-report2.scala:15: error: class Dingus needs to be abstract.
 Missing implementations for 7 members. Stub implementations follow:
-  // Members declared in scala.collection.IterableOnce
+  // Members declared in scala.collection.IterableOnceOps
   def iterator: Iterator[(Set[Int], String)] = ???
 
   // Members declared in scala.collection.IterableOps
