@@ -5736,7 +5736,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree1.tpe eq null)
           return setError(tree)
 
-        tree1 modifyType (pluginsTyped(_, this, tree1, mode, ptPlugins))
+        tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode, ptPlugins)
 
         val result =
           if (tree1.isEmpty) tree1
