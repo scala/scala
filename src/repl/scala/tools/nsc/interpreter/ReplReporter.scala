@@ -61,7 +61,7 @@ class ReplReporter(intp: IMain) extends ConsoleReporter(intp.settings, Console.i
     case INFO    => RESET
   }
 
-  private val promptLength = replProps.promptText.lines.toList.last.length
+  private val promptLength = Util.lastOf(replProps.promptText.linesIterator).length
   private val indentation  = " " * promptLength
 
   // colorized console labels

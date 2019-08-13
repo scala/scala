@@ -16,6 +16,7 @@ package interpreter
 import scala.language.implicitConversions
 
 import scala.collection.mutable
+import scala.collection.JavaConverters._
 import scala.io.Codec
 import java.net.URL
 import scala.reflect.runtime.{universe => ru}
@@ -148,7 +149,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     |replImplicits._
     |treedsl.CODE._""".stripMargin.lines
 
-  def init = customInit getOrElse initImports.mkString("import ", ", ", "")
+  def init = customInit getOrElse initImports.iterator.asScala.toList.mkString("import ", ", ", "")
 
   /** Quietly starts up power mode and runs whatever is in init.
    */
@@ -158,7 +159,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     // Then we import everything from $r.
     intp interpret s"import ${ intp.originalPath("$r") }._"
     // And whatever else there is to do.
-    init.lines foreach (intp interpret _)
+    init.linesIterator foreach (intp interpret _)
   }
 
   trait LowPriorityInternalInfo {

@@ -7,6 +7,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.internal.Flags
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.ClassNode
+import scala.tools.nsc.interpreter.Util._
 import scala.tools.testing.BytecodeTesting
 
 class DefaultMethodTest extends BytecodeTesting {
@@ -26,7 +27,7 @@ class DefaultMethodTest extends BytecodeTesting {
       }
     }
     val asmClasses: List[ClassNode] = compiler.compileClassesTransformed(code, Nil, makeFooDefaultMethod.transform(_))
-    val foo = asmClasses.head.methods.iterator.asScala.toList.last
+    val foo = lastOf(asmClasses.head.methods.iterator)
     assertTrue("default method should not be abstract", (foo.access & Opcodes.ACC_ABSTRACT) == 0)
     assertTrue("default method body emitted", foo.instructions.size() > 0)
   }
