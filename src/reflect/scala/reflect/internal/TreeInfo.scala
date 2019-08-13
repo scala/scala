@@ -117,19 +117,21 @@ abstract class TreeInfo {
   private def symOk(sym: Symbol) = sym != null && !sym.isError && sym != NoSymbol
   private def typeOk(tp: Type)   =  tp != null && ! tp.isError
 
+  private def isUncheckedStable(sym: Symbol) = sym.isTerm && sym.hasAnnotation(uncheckedStableClass)
+
   /** Assuming `sym` is a member of `tree`, is it a "stable member"?
    *
    * Stable members are packages or members introduced
    * by object definitions or by value definitions of non-volatile types (§3.6).
    */
   def isStableMemberOf(sym: Symbol, tree: Tree, allowVolatile: Boolean): Boolean = (
-    symOk(sym)       && (!sym.isTerm   || (sym.isStable && (allowVolatile || !sym.hasVolatileType))) &&
+    symOk(sym)       && (!sym.isTerm   || ((sym.isStable || isUncheckedStable(sym)) && (allowVolatile || !sym.hasVolatileType))) &&
     typeOk(tree.tpe) && (allowVolatile || !hasVolatileType(tree)) && !definitions.isByNameParamType(tree.tpe)
   )
 
   private def isStableIdent(tree: Ident, allowVolatile: Boolean): Boolean = (
        symOk(tree.symbol)
-    && tree.symbol.isStable
+    && (tree.symbol.isStable || isUncheckedStable(tree.symbol))
     && !definitions.isByNameParamType(tree.tpe)
     && !definitions.isByName(tree.symbol)
     && (allowVolatile || !tree.symbol.hasVolatileType) // TODO SPEC: not required by spec
@@ -138,7 +140,7 @@ abstract class TreeInfo {
   /** Is `tree`'s type volatile? (Ignored if its symbol has the @uncheckedStable annotation.)
    */
   def hasVolatileType(tree: Tree): Boolean =
-    symOk(tree.symbol) && tree.tpe.isVolatile && !tree.symbol.hasAnnotation(uncheckedStableClass)
+    symOk(tree.symbol) && tree.tpe.isVolatile && !isUncheckedStable(tree.symbol)
 
   /** Is `tree` either a non-volatile type,
    *  or a path that does not include any of:
