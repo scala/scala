@@ -29,7 +29,7 @@ object Main extends nsc.MainClass {
       compiler.askReload(sfs, reloaded)
 
       reloaded.get.toOption match {
-        case Some(ex) => reporter.ERROR.count += 1 // Causes exit code to be non-0
+        case Some(ex) => reporter.count(reporter.ERROR) // Causes exit code to be non-0
         case None     => reporter.reset()          // Causes other compiler errors to be ignored
       }
       compiler.askShutdown()

@@ -16,6 +16,7 @@ package reporters
 
 import java.io.{BufferedReader, PrintWriter}
 import scala.reflect.internal.util.Position
+import scala.reflect.internal.{Reporter => InternalReporter}
 
 /** This class implements a Reporter that displays messages on a text console.
  */
@@ -27,8 +28,8 @@ class ConsoleReporter(val settings: Settings, val reader: BufferedReader, val wr
   override def display(pos: Position, msg: String, severity: Severity): Unit = {
     // the count includes the current message
     val ok = severity match {
-      case ERROR   => ERROR.count   <= settings.maxerrs.value
-      case WARNING => WARNING.count <= settings.maxwarns.value
+      case InternalReporter.ERROR   => errorCount   <= settings.maxerrs.value
+      case InternalReporter.WARNING => warningCount <= settings.maxwarns.value
       case _       => true
     }
     if (ok) super.display(pos, msg, severity)

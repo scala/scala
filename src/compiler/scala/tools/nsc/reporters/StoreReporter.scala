@@ -25,7 +25,7 @@ class StoreReporter extends Reporter {
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
     if (!force) {
       infos += Info(pos, msg, severity)
-      severity.count += 1
+      count(severity)
     }
   }
   override def reset(): Unit = {

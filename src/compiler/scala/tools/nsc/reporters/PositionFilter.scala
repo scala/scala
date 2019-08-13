@@ -38,8 +38,8 @@ trait PositionFiltering extends InternalReporter with Filtering {
 
   override protected def filter(pos: Position, msg: String, severity: Severity) =
     severity match {
-      case INFO => true
-      case WARNING if noWarnings => false
+      case InternalReporter.INFO => true
+      case InternalReporter.WARNING if noWarnings => false
       case _ => !testAndLog(pos, severity, msg) || { suppressed(pos, msg, severity) ; false }
     }
 
@@ -50,7 +50,7 @@ trait PositionFiltering extends InternalReporter with Filtering {
     pos != null && pos.isDefined && {
       val fpos     = pos.focus
       val suppress = positions(fpos) match {
-        case ERROR                    => true  // already error at position
+        case InternalReporter.ERROR   => true  // already error at position
         case highest
           if highest.id > severity.id => true  // already message higher than present severity
         case `severity`               => matchAt(fpos, msg) // already issued this (in)exact message

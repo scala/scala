@@ -1595,9 +1595,9 @@ trait Contexts { self: Analyzer =>
 
     protected final def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
       severity match {
-        case ERROR   => handleError(pos, msg)
-        case WARNING => handleWarning(pos, msg)
-        case INFO    => reporter.echo(pos, msg)
+        case Reporter.ERROR   => handleError(pos, msg)
+        case Reporter.WARNING => handleWarning(pos, msg)
+        case Reporter.INFO    => reporter.echo(pos, msg)
       }
 
     final override def hasErrors = super.hasErrors || (_errorBuffer != null && errorBuffer.nonEmpty)

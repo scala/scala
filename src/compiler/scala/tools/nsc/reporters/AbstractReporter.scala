@@ -40,7 +40,7 @@ abstract class AbstractReporter extends Reporter with PositionFiltering {
       countAndDisplay(pos, msg, severity)
 
   private def countAndDisplay(pos: Position, msg: String, severity: Severity): Unit = {
-    severity.count += 1
+    count(severity)
     display(pos, msg, severity)
   }
 }

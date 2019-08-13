@@ -18,6 +18,7 @@ import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.{AbstractReporter, DisplayReporter}
+import scala.reflect.internal.{Reporter => InternalReporter}
 
 
 object ReplReporterImpl {
@@ -136,9 +137,9 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   import scala.io.AnsiColor.{ RED, YELLOW, RESET }
 
   private def label(severity: Severity): String = severity match {
-    case ERROR   => "error"
-    case WARNING => "warning"
-    case INFO    => ""
+    case InternalReporter.ERROR   => "error"
+    case InternalReporter.WARNING => "warning"
+    case InternalReporter.INFO    => ""
   }
 
   protected def clabel(severity: Severity): String = label(severity) match {
@@ -147,9 +148,9 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   def severityColor(severity: Severity): String = severity match {
-    case ERROR   => RED
-    case WARNING => YELLOW
-    case INFO    => RESET
+    case InternalReporter.ERROR   => RED
+    case InternalReporter.WARNING => YELLOW
+    case InternalReporter.INFO    => RESET
   }
 
   def print(pos: Position, msg: String, severity: Severity): Unit = {
@@ -232,15 +233,16 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   def display(pos: Position, msg: String, severity: Severity): Unit = {
     val ok = severity match {
-      case ERROR   => ERROR.count   <= settings.maxerrs.value
-      case WARNING => WARNING.count <= settings.maxwarns.value
+      case InternalReporter.ERROR   => errorCount   <= settings.maxerrs.value
+      case InternalReporter.WARNING => warningCount <= settings.maxwarns.value
       case _     => true
     }
     if (ok) print(pos, msg, severity)
   }
 
-  override def finish() =
-    for (k <- List(WARNING, ERROR) if k.count > 0)
-      printMessage(s"${StringOps.countElementsAsString(k.count, label(k))} found")
+  override def finish() = {
+    if (hasWarnings) printMessage(s"${StringOps.countElementsAsString(warningCount, label(WARNING))} found")
+    if (hasErrors) printMessage(s"${StringOps.countElementsAsString(errorCount, label(ERROR))} found")
+  }
 
 }
