@@ -12,7 +12,10 @@
 
 package scala.annotation.unchecked
 
+import scala.annotation.meta.{field, getter}
+
 /** An annotation for values that are assumed to be stable even though their
  *  types are volatile.
  */
+@getter @field
 final class uncheckedStable extends scala.annotation.StaticAnnotation {}
