@@ -34,8 +34,8 @@ trait PrintReporter extends InternalReporter {
   var shortname: Boolean = false
 
   private def clabel(severity: Severity): String = severity match {
-    case ERROR   => "error: "
-    case WARNING => "warning: "
+    case InternalReporter.ERROR   => "error: "
+    case InternalReporter.WARNING => "warning: "
     case _       => ""
   }
 
@@ -56,7 +56,7 @@ trait PrintReporter extends InternalReporter {
   def display(pos: Position, msg: String, severity: Severity): Unit = {
     val text = formatMessage(pos, s"${clabel(severity)}${DisplayReporter.explanation(msg)}", shortname)
     severity match {
-      case INFO => echoMessage(text)
+      case InternalReporter.INFO => echoMessage(text)
       case _    => printMessage(text)
     }
   }
@@ -148,8 +148,8 @@ trait SummaryReporter extends InternalReporter {
   /** Prints the number of warnings and errors if there are any. */
   override def finish(): Unit = {
     import reflect.internal.util.StringOps.{countElementsAsString => countAs}
-    if (hasWarnings) echo(s"${countAs(WARNING.count, WARNING.toString.toLowerCase)} found")
-    if (hasErrors)   echo(s"${countAs(ERROR.count, ERROR.toString.toLowerCase)} found")
+    if (hasWarnings) echo(s"${countAs(warningCount, WARNING.toString.toLowerCase)} found")
+    if (hasErrors)   echo(s"${countAs(errorCount, ERROR.toString.toLowerCase)} found")
     super.finish()
   }
 }
@@ -173,7 +173,7 @@ trait FilteringReporter extends ForwardingReporter with Filtering {
 /** A `Reporter` that counts messages that are passed by the filter. */
 trait CountingReporter extends FilteringReporter {
   abstract override protected def filter(pos: Position, msg: String, severity: Severity): Boolean =
-    super.filter(pos, msg, severity) && { severity.count += 1 ; true }
+    super.filter(pos, msg, severity) && { count(severity) ; true }
 }
 
 /** Disable a message when super.filter has passed the message but max limit has been reached.
@@ -191,8 +191,8 @@ trait LimitFilter extends FilteringReporter {
   abstract override protected def filter(pos: Position, msg: String, severity: Severity): Boolean =
     super.filter(pos, msg, severity) && {
     severity match {
-      case ERROR   => erred = true  ; ERROR.count <= maxerrs
-      case WARNING => warned = true ; WARNING.count <= maxwarns
+      case InternalReporter.ERROR   => erred = true  ; errorCount <= maxerrs
+      case InternalReporter.WARNING => warned = true ; warningCount <= maxwarns
       case _       => true
     }}
 

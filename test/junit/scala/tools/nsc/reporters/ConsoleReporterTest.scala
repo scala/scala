@@ -87,17 +87,16 @@ class ConsoleReporterTest {
     testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(reporter.display(_, "Testing display", reporter.WARNING))
     testHelper(posWithSource, msg = "Testing display", severity = "error: ")(reporter.display(_, "Testing display", reporter.ERROR))
 
-    reporter.resetCount(reporter.ERROR)
-    reporter.resetCount(reporter.WARNING)
+    reporter.reset()
 
-    reporter.ERROR.count += 1
+    reporter.count(reporter.ERROR)
     testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(reporter.display(_, "Testing display for maxerrs to pass", reporter.ERROR))
-    reporter.ERROR.count += 1
+    reporter.count(reporter.ERROR)
     testHelper(msg = "")(reporter.display(_, "Testing display for maxerrs to fail", reporter.ERROR))
 
-    reporter.WARNING.count += 1
+    reporter.count(reporter.WARNING)
     testHelper(posWithSource, msg = "Testing display for maxwarns to pass", severity = "warning: ")(reporter.display(_, "Testing display for maxwarns to pass", reporter.WARNING))
-    reporter.WARNING.count += 1
+    reporter.count(reporter.WARNING)
     testHelper(msg = "")(reporter.display(_, "Testing display for maxwarns to fail", reporter.WARNING))
   }
 
@@ -105,12 +104,11 @@ class ConsoleReporterTest {
   def finishTest(): Unit = {
     val reporter = createConsoleReporter("", writerOut)
 
-    reporter.resetCount(reporter.ERROR)
-    reporter.resetCount(reporter.WARNING)
+    reporter.reset()
     testHelper(msg = "")(_ => reporter.finish())
 
-    reporter.ERROR.count = 10
-    reporter.WARNING.count = 3
+    for (i <- 1 to 10) reporter.count(reporter.ERROR)
+    for (i <- 1 to 3) reporter.count(reporter.WARNING)
     reporter.finish()
     reporter.flush()
     val it = writerOut.toString.linesIterator

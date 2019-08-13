@@ -50,13 +50,8 @@ object Reporter {
   /** Adapt a reporter to legacy reporter API. Handle `info` by forwarding to `echo`. */
   class AdaptedReporter(val delegate: InternalReporter) extends Reporter with ForwardingReporter {
     override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = delegate.echo(pos, msg)
-    private def other(severity: Severity): delegate.Severity = severity match {
-      case ERROR   => delegate.ERROR
-      case WARNING => delegate.WARNING
-      case _       => delegate.INFO
-    }
-    override def count(severity: Severity)      = delegate.count(other(severity))
-    override def resetCount(severity: Severity) = delegate.resetCount(other(severity))
+
+    override def count(severity: Severity): Unit = delegate.count(severity)
 
     override def errorCount   = delegate.errorCount
     override def warningCount = delegate.warningCount
@@ -71,15 +66,15 @@ object Reporter {
   class LimitingReporter(settings: Settings, delegate0: Reporter) extends AdaptedReporter(delegate0) with FilteringReporter with LimitedReporter {
     override protected def filter(pos: Position, msg: String, severity: Severity) =
       severity match {
-        case ERROR   => errorCount   < settings.maxerrs.value
-        case WARNING => warningCount < settings.maxwarns.value
+        case InternalReporter.ERROR   => errorCount   < settings.maxerrs.value
+        case InternalReporter.WARNING => warningCount < settings.maxwarns.value
         case _       => true
       }
     // work around fractured API to support `reporters.Reporter.info`, which is not forwarded
     override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
       severity match {
-        case ERROR      => delegate.error(pos, msg)     // for symmetry, but error and warn are already forwarded
-        case WARNING    => delegate.warning(pos, msg)
+        case InternalReporter.ERROR      => delegate.error(pos, msg)     // for symmetry, but error and warn are already forwarded
+        case InternalReporter.WARNING    => delegate.warning(pos, msg)
         case _ if force => delegate.echo(pos, msg)
         case _          => delegate.info(pos, msg, force = false)
       }

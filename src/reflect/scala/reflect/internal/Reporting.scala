@@ -14,6 +14,7 @@ package scala
 package reflect
 package internal
 
+import scala.annotation.unchecked.uncheckedStable
 import settings.MutableSettings
 
 /** Provides delegates to the reporter doing the actual work.
@@ -84,6 +85,15 @@ import util.Position
  *  Currently, scala.tools.nsc.Reporter is used by sbt/ide.
  */
 abstract class Reporter {
+  private[this] var _errorCount = 0
+  private[this] var _warningCount = 0
+
+  // sbt source compatibility
+  type Severity = Reporter.Severity
+  @uncheckedStable final def INFO: Severity    = Reporter.INFO
+  @uncheckedStable final def WARNING: Severity = Reporter.WARNING
+  @uncheckedStable final def ERROR: Severity   = Reporter.ERROR
+
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
   def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
@@ -91,27 +101,23 @@ abstract class Reporter {
   def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
   def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
 
-  class Severity(val id: Int)(name: String) { var count: Int = 0 ; override def toString = name}
-  object INFO    extends Severity(0)("INFO")
-  object WARNING extends Severity(1)("WARNING")
-  private[this] var isERRORInitialized = false // OPT: avoid initializing ERROR to check isError/errorCount
-  object ERROR   extends Severity(2)("ERROR") {
-    isERRORInitialized = true
+  def count(severity: Severity): Unit = {
+    severity match {
+      case Reporter.ERROR => _errorCount += 1
+      case Reporter.WARNING => _warningCount += 1
+      case _ =>
+    }
   }
 
-  def count(severity: Severity): Int       = severity.count
-  def resetCount(severity: Severity): Unit = severity.count = 0
+  def errorCount: Int   = _errorCount
+  def warningCount: Int = _warningCount
 
-  def errorCount: Int   = if (!isERRORInitialized) 0 else count(ERROR)
-  def warningCount: Int = count(WARNING)
-
-  def hasErrors: Boolean   = isERRORInitialized && count(ERROR) > 0
-  def hasWarnings: Boolean = count(WARNING) > 0
+  def hasErrors: Boolean   = _errorCount > 0
+  def hasWarnings: Boolean = _warningCount > 0
 
   def reset(): Unit = {
-    resetCount(INFO)
-    resetCount(WARNING)
-    resetCount(ERROR)
+    _errorCount = 0
+    _warningCount = 0
   }
 
   def flush(): Unit = ()
@@ -127,6 +133,13 @@ abstract class Reporter {
     }
 }
 
+object Reporter {
+  sealed class Severity(val id: Int, override val toString: String)
+  object INFO    extends Severity(0, "INFO")
+  object WARNING extends Severity(1, "WARNING")
+  object ERROR   extends Severity(2, "ERROR")
+}
+
 /** A `Reporter` that forwards messages to a delegate.
  *
  *  Concrete subclasses must implement the abstract `delegate` member.
@@ -139,9 +152,9 @@ trait ForwardingReporter extends Reporter {
   /* Convenience method to forward a given message to the delegate reporter. */
   protected def forward(pos: Position, msg: String, severity: Severity): Unit =
     severity match {
-      case ERROR   => delegate.error(pos, msg)
-      case WARNING => delegate.warning(pos, msg)
-      case INFO    => delegate.echo(pos, msg)
+      case Reporter.ERROR   => delegate.error(pos, msg)
+      case Reporter.WARNING => delegate.warning(pos, msg)
+      case Reporter.INFO    => delegate.echo(pos, msg)
       case _       => throw new IllegalArgumentException(s"Unknown severity: $severity")
     }
 
