@@ -1,13 +1,10 @@
 import scala.tools.partest._
 import java.io.File
 
+import scala.tools.nsc.Global
+
 object Test extends StoreReporterDirectTest {
   def code = ???
-
-  def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
-  }
 
   def C = """
     class C {
@@ -16,7 +13,11 @@ object Test extends StoreReporterDirectTest {
   """
 
   def show(): Unit = {
-    //compileCode(C)
+    // create the compiler sets the `storeReporter`, otherwise we get an NPE below at `filteredInfos`
+    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    val compiler = newCompiler("-cp", classpath, "-d", testOutput.path)
+
+    //compileString(compiler)(C)
     assert(filteredInfos.isEmpty, filteredInfos)
 
     // blow away the entire package
@@ -27,7 +28,7 @@ object Test extends StoreReporterDirectTest {
     println(s"Recompiling after deleting ${a1Class.testIdent}")
 
     // bad symbolic reference error expected (but no stack trace!)
-    compileCode(C)
+    compileString(compiler)(C)
     println(storeReporter.infos.mkString("\n")) // Included a NullPointerException before.
   }
 }

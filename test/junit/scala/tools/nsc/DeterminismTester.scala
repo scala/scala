@@ -49,7 +49,7 @@ class DeterminismTester {
       g.settings.outputDirs.setSingleOutput(output.toString)
       g.settings.async.value = true
       g.settings.processArguments(scalacOptions, true)
-      val storeReporter = new StoreReporter
+      val storeReporter = new StoreReporter(g.settings)
       g.reporter = storeReporter
       import g._
       val r = new Run

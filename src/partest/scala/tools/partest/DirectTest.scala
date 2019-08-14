@@ -12,11 +12,10 @@
 
 package scala.tools.partest
 
-import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc._
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.settings.ScalaVersion
 
 /** Test with code which is embedded as a string.

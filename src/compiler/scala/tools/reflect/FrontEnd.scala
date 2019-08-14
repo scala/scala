@@ -46,9 +46,6 @@ trait FrontEnd {
   /** Displays incoming info */
   def display(info: Info): Unit
 
-  /** Services a request to drop into interactive mode */
-  def interactive(): Unit
-
   /** Refreshes the UI */
   def flush(): Unit = {}
 

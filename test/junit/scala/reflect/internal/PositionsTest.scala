@@ -11,7 +11,7 @@ class PositionsTest {
 
   private object symbolTable extends SymbolTableForUnitTesting {
     override def useOffsetPositions: Boolean = false
-    override val reporter = new StoreReporter
+    override val reporter = new StoreReporter(settings)
   }
 
   @Test def positionValidation(): Unit = {

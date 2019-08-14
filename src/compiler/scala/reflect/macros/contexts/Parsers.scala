@@ -22,7 +22,7 @@ trait Parsers {
   import global._
 
   def parse(code: String) = {
-    val sreporter = new StoreReporter()
+    val sreporter = new StoreReporter(global.settings)
     val oldReporter = global.reporter
     try {
       global.reporter = sreporter
@@ -31,7 +31,7 @@ trait Parsers {
       })
       val tree = gen.mkTreeOrBlock(parser.parseStatsOrPackages())
       sreporter.infos.foreach {
-        case sreporter.Info(pos, msg, Reporter.ERROR) => throw ParseException(pos, msg)
+        case StoreReporter.Info(pos, msg, Reporter.ERROR) => throw ParseException(pos, msg)
         case _ =>
       }
       tree

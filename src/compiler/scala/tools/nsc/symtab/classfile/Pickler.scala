@@ -141,7 +141,8 @@ abstract class Pickler extends SubComponent {
     private def closeSigWriter(): Unit = {
       sigWriter.foreach { writer =>
         writer.close()
-        reporter.echo(NoPosition, "[sig files written]")
+        if (settings.verbose)
+          reporter.echo(NoPosition, "[sig files written]")
       }
     }
 

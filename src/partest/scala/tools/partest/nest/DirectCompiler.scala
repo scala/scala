@@ -16,16 +16,16 @@ package nest
 import java.io.{PrintWriter, FileWriter}
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.{Global, Settings, CompilerCommand}
-import scala.tools.nsc.reporters.{DefaultReporter, Reporter}
+import scala.tools.nsc.{CompilerCommand, Global, Settings}
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
 import scala.sys.process._
 
 object ExtConsoleReporter {
   // `compile` exploits `close` method on default reporter
-  def apply(settings: Settings, writer: PrintWriter): DefaultReporter = {
-    val r = DefaultReporter(settings, writer)
+  def apply(settings: Settings, writer: PrintWriter): ConsoleReporter = {
+    val r = new ConsoleReporter(settings, Console.in, writer, writer)
     r.shortname = true
     r
   }

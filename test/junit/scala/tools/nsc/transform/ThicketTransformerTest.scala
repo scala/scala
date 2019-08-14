@@ -4,10 +4,11 @@ import org.junit.Assert.assertSame
 import org.junit.{Assert, Test}
 
 import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.Settings
 
 class ThicketTransformerTest {
   @Test def thicketExpansion(): Unit = {
-    val g = new scala.tools.nsc.Global(new StoreReporter)
+    val g = new scala.tools.nsc.Global(new StoreReporter(new Settings))
     g.settings.usejavacp.value = true
     new g.Run
     import g._

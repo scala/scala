@@ -20,10 +20,9 @@ import org.apache.tools.ant.types.{Path, Reference}
 import org.apache.tools.ant.util.{FileUtils, GlobPatternMapper, SourceFileScanner}
 import org.apache.tools.ant.util.facade.{FacadeTaskHelper, ImplementationSpecificArgument}
 
-import scala.reflect.internal.Reporter
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.io.{Path => SPath}
-import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.reporters.{ ConsoleReporter, Reporter }
 
 /** An Ant task to compile with the new Scala compiler (NSC).
  *
