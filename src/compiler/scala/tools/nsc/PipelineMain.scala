@@ -566,7 +566,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               diagnostic.getKind match {
                 case Kind.ERROR => reporter.error(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
-                case Kind.NOTE => reporter.info(position, msg, true)
+                case Kind.NOTE => reporter.echo(position, msg)
                 case Kind.OTHER => reporter.echo(position, msg)
               }
             }

@@ -135,7 +135,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   lazy val global: Global = {
     // Can't use our own reporter until global is initialized
-    val startupReporter = new StoreReporter
+    val startupReporter = new StoreReporter(compilerSettings)
 
     compilerSettings.outputDirs setSingleOutput replOutput.dir
     compilerSettings.exposeEmptyPackage.value = true

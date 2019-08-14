@@ -34,7 +34,6 @@ package object reflect {
    */
   def mkSilentFrontEnd(): FrontEnd = new FrontEnd {
     def display(info: Info): Unit = {}
-    def interactive(): Unit = {}
   }
 
   /** Creates a reporter that prints messages to the console according to the settings.
@@ -59,13 +58,13 @@ package object reflect {
     override def hasWarnings = reporter.hasWarnings
 
     def display(info: Info): Unit = info.severity match {
-      case API_INFO => reporter.info(info.pos, info.msg, force = false)
+      case API_INFO => reporter.echo(info.pos, info.msg)
       case API_WARNING => reporter.warning(info.pos, info.msg)
       case API_ERROR => reporter.error(info.pos, info.msg)
     }
 
     def interactive(): Unit = reporter match {
-      case reporter: AbstractReporter => reporter.displayPrompt()
+      case reporter: PrintReporter => reporter.displayPrompt()
       case _ => // do nothing
     }
 
@@ -80,7 +79,7 @@ package object reflect {
     }
   }
 
-  private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): Reporter = new AbstractReporter {
+  private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): Reporter = new FilteringReporter {
     val settings = settings0
 
     val API_INFO = frontEnd.INFO
@@ -92,15 +91,12 @@ package object reflect {
     val NSC_WARNING = WARNING
     val NSC_ERROR = ERROR
 
-    def display(pos: Position, msg: String, nscSeverity: NscSeverity): Unit =
+    def doReport(pos: Position, msg: String, nscSeverity: NscSeverity): Unit =
       frontEnd.log(pos, msg, nscSeverity match {
         case NSC_INFO => API_INFO
         case NSC_WARNING => API_WARNING
         case NSC_ERROR => API_ERROR
       })
-
-    def displayPrompt(): Unit =
-      frontEnd.interactive()
 
     override def flush(): Unit = {
       super.flush()

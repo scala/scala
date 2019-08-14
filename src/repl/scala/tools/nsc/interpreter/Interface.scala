@@ -17,11 +17,10 @@ import java.io.PrintWriter
 import java.net.URL
 
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{AbstractFileClassLoader, SourceFile}
-import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.{AbstractFileClassLoader, Position, SourceFile}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.Results.Result
-import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.reporters.FilteringReporter
 
 
 /** The subset of the Repl used by sbt.
@@ -215,7 +214,7 @@ trait ScriptedRepl extends Repl {
   def addBackReferences(req: Request): Either[String, Request]
 }
 
-trait ReplReporter extends Reporter {
+trait ReplReporter extends FilteringReporter {
   def out: PrintWriter
 
   /**

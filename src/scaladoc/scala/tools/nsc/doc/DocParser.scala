@@ -14,10 +14,9 @@ package scala.tools
 package nsc
 package doc
 
-import reporters.ConsoleReporter
-import scala.reflect.internal.Reporter
 import scala.reflect.internal.util._
-import DocParser.Parsed
+import scala.tools.nsc.doc.DocParser.Parsed
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 
 /** A very minimal global customized for extracting `DocDefs`.  It stops
  *  right after parsing so it can read `DocDefs` from source code which would

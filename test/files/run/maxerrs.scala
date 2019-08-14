@@ -17,7 +17,7 @@ object Test extends DirectTest {
   override def extraSettings = "-usejavacp"
 
   // a reporter that ignores all limits
-  lazy val store = new StoreReporter
+  var store: StoreReporter = _
 
   final val limit = 3
 
@@ -30,5 +30,5 @@ object Test extends DirectTest {
     s.maxerrs.value = limit
     s
   }
-  override def reporter(s: Settings) = store
+  override def reporter(s: Settings) = { store = new StoreReporter(s); store }
 }

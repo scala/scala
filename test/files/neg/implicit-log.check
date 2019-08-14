@@ -5,9 +5,6 @@ incompatible: (x: 7)7 does not match expected type Int(7) => ?{def unwrap: ?}
 implicit-log.scala:70: materializing requested scala.reflect.type.ClassTag[String] using scala.reflect.`package`.materializeClassTag[String]()
   val x: java.util.List[String] = List("foo")
                                       ^
-implicit-log.scala:70: materializing requested scala.reflect.type.ClassTag[String] using scala.reflect.`package`.materializeClassTag[String]()
-  val x: java.util.List[String] = List("foo")
-                                      ^
 implicit-log.scala:96: materializing requested reflect.runtime.universe.type.TypeTag[Class[_]] using scala.reflect.api.`package`.materializeTypeTag[Class[_]](scala.reflect.runtime.`package`.universe)
   println(implicitly[TypeTag[Class[_]]])
                     ^

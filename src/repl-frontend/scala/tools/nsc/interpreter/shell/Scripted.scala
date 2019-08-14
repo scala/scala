@@ -314,17 +314,14 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
 
 
 private class SaveFirstErrorReporter(settings: Settings, out: PrintWriter) extends ReplReporterImpl(settings, out) {
-  override def display(pos: Position, msg: String, severity: Severity): Unit = {}
-
   private var _firstError: Option[(Position, String)] = None
   def firstError = _firstError
 
-  override def error(pos: Position, msg: String): Unit = {
-    if (_firstError.isEmpty) _firstError = Some((pos, msg))
-    super.error(pos, msg)
+  override def doReport(pos: Position, msg: String, severity: Severity): Unit = {
+    if (severity == ERROR && _firstError.isEmpty) _firstError = Some((pos, msg))
   }
 
   override def reset() = { super.reset(); _firstError = None }
 
-  override def printResult(result: Either[String, String]): Unit = {}
+  override def printResult(result: Either[String, String]): Unit = ()
 }

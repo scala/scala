@@ -14,7 +14,7 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
-import scala.reflect.internal.{Reporter => CompilerReporter}
+import scala.tools.nsc.reporters.{Reporter => CompilerReporter}
 
 /** Trait encapsulating the creation of a presentation compiler's instance.*/
 private[tests] trait PresentationCompilerInstance extends TestSettings {

@@ -3,7 +3,7 @@ package interactive
 package tests.core
 
 import scala.tools.nsc.interactive.InteractiveReporter
-import scala.reflect.internal.{Reporter => CompilerReporter}
+import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.SourceFile
 
 /** Deterministically interrupts typechecking of `code` when a definition named
@@ -16,7 +16,7 @@ abstract class IdempotencyTest { self =>
 
   private object Break extends scala.util.control.ControlThrowable
 
-  private val compilerReporter: CompilerReporter = new InteractiveReporter {
+  private val compilerReporter: Reporter = new InteractiveReporter {
     override def compiler = self.compiler
   }
 

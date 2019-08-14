@@ -14,24 +14,22 @@ package scala.tools.nsc
 package interactive
 
 import java.io.{FileReader, FileWriter}
-
-import scala.collection.mutable
-import mutable.{HashSet, LinkedHashMap}
-import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.Reporter
-import scala.reflect.internal.util.SourceFile
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.typechecker.Analyzer
-import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.annotation.{elidable, tailrec}
-import scala.language.implicitConversions
-import scala.tools.nsc.typechecker.Typers
-import scala.util.control.Breaks._
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.annotation.{elidable, tailrec}
+import scala.collection.mutable
+import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.jdk.javaapi.CollectionConverters
+import scala.language.implicitConversions
 import scala.reflect.internal.Chars.isIdentifierStart
+import scala.reflect.internal.util.SourceFile
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
+import scala.tools.nsc.symtab._
+import scala.tools.nsc.typechecker.{Analyzer, Typers}
+import scala.util.control.Breaks._
+import scala.util.control.ControlThrowable
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -979,7 +977,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     case _ => tree.tpe
   }
 
-  import analyzer.{SearchResult, ImplicitSearch}
+  import analyzer.{ImplicitSearch, SearchResult}
 
   private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]): Unit = {
     informIDE("getScopeCompletion" + pos)

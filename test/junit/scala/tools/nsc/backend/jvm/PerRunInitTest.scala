@@ -60,7 +60,7 @@ abstract class PerRunInitTest {
 
       val settings = new Settings(showError)
 
-      new Global(settings, new StoreReporter)
+      new Global(settings, new StoreReporter(settings))
     }
     underTest = new PostProcessorFrontendAccessImpl(global)
   }
