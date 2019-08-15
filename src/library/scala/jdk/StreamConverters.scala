@@ -28,7 +28,7 @@ import scala.collection.convert.StreamExtensions
   *   scala> import scala.jdk.StreamConverters._
   *
   *   scala> val s = (1 to 10).toList.asJavaSeqStream
-  *   s: java.util.stream.IntStream = java.util.stream.IntPipeline$Head@7b1e5e55
+  *   s: java.util.stream.IntStream = java.util.stream.IntPipeline\$Head@7b1e5e55
   *
   *   scala> s.map(_ * 2).filter(_ > 5).toScala(List)
   *   res1: List[Int] = List(6, 8, 10, 12, 14, 16, 18, 20)

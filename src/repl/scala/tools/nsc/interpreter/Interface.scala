@@ -234,7 +234,7 @@ trait ReplReporter extends Reporter {
     */
   def withoutTruncating[T](body: => T): T
 
-  /** Do not remove interpreter wrappers ($iw etc) from all output during the execution of `body`.
+  /** Do not remove interpreter wrappers (\$iw etc) from all output during the execution of `body`.
     */
   def withoutUnwrapping(body: => Unit): Unit
 

@@ -75,7 +75,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
    *
    *           Seq("foo", "bar", "baz") match {
    *             case firstChar.unlift.elementWise(c0, c1, c2) =>
-   *               println(s"$c0, $c1, $c2") // Output: f, b, b
+   *               println(s"\$c0, \$c1, \$c2") // Output: f, b, b
    *           }
    *           }}}
    */

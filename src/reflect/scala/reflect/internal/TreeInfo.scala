@@ -360,7 +360,7 @@ abstract class TreeInfo {
       tree
   }
 
-  /** Strips layers of `.asInstanceOf[T]` / `_.$asInstanceOf[T]()` from an expression */
+  /** Strips layers of `.asInstanceOf[T]` / `_.\$asInstanceOf[T]()` from an expression */
   @tailrec
   final def stripCast(tree: Tree): Tree = tree match {
     case TypeApply(sel @ Select(inner, _), _) if isCastSymbol(sel.symbol) =>

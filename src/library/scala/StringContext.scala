@@ -99,26 +99,26 @@ case class StringContext(parts: String*) {
      *  Here is an example usage:
      *
      *  {{{
-     *    val s"Hello, $name" = "Hello, James"
+     *    val s"Hello, \$name" = "Hello, James"
      *    println(name)  // "James"
      *  }}}
      *
      *  In this example, the string "James" ends up matching the location where the pattern
-     *  `$name` is positioned, and thus ends up bound to that variable.
+     *  `\$name` is positioned, and thus ends up bound to that variable.
      *
      *  Multiple matches are supported:
      *
      *  {{{
-     *    val s"$greeting, $name" = "Hello, James"
+     *    val s"\$greeting, \$name" = "Hello, James"
      *    println(greeting)  // "Hello"
      *    println(name)  // "James"
      *  }}}
      *
-     *  And the `s` matcher can match an arbitrary pattern within the `${}` block, for example:
+     *  And the `s` matcher can match an arbitrary pattern within the `\${}` block, for example:
      *
      *  {{{
      *    val TimeSplitter = "([0-9]+)[.:]([0-9]+)".r
-     *    val s"The time is ${TimeSplitter(hours, mins)}" = "The time is 10.50"
+     *    val s"The time is \${TimeSplitter(hours, mins)}" = "The time is 10.50"
      *    println(hours) // 10
      *    println(mins) // 50
      *  }}}
