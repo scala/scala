@@ -79,6 +79,7 @@ abstract class GenBCode extends SubComponent {
           initialize()
           super.run() // invokes `apply` for each compilation unit
           generatedClassHandler.complete()
+          writeOtherFiles()
         } finally {
           this.close()
         }
@@ -95,6 +96,12 @@ abstract class GenBCode extends SubComponent {
       postProcessor.initialize(global)
       generatedClassHandler = GeneratedClassHandler(global)
       statistics.stopTimer(statistics.bcodeInitTimer, initStart)
+    }
+    def writeOtherFiles(): Unit = {
+      global.plugins foreach {
+        plugin =>
+          plugin.writeAdditionalOutputs(postProcessor.classfileWriter)
+      }
     }
 
     private def close(): Unit = {

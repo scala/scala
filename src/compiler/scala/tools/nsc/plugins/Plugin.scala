@@ -13,9 +13,10 @@
 package scala.tools.nsc
 package plugins
 
-import scala.reflect.internal.util.ScalaClassLoader
-import scala.reflect.io.{File, Path}
+import java.util.jar
 
+import scala.reflect.internal.util.ScalaClassLoader
+import scala.reflect.io.{AbstractFile, File, Path}
 import scala.collection.mutable
 import scala.tools.nsc.classpath.FileBasedCache
 import scala.util.{Failure, Success, Try}
@@ -80,6 +81,31 @@ abstract class Plugin {
    *  should be listed with the `-P:plugname:` part included.
    */
   val optionsHelp: Option[String] = None
+
+  /**
+   * A callback to allow a plugin to add additional resources to the generated output.
+   * This allows a plug to, for instance, package resources or services into a jar, or add artifacts specific to a
+   * build environment. Typically this extension point is used when writing to a jar, to avoid the build system
+   * having an additional step to add these resources, and therefore speed up the build process.
+   * The default implementation is a NO-OP
+   * @param writer the writer associated with the targets
+   */
+  def writeAdditionalOutputs(writer: OutputFileWriter): Unit = {}
+
+  /**
+   * A callback to allow a plugin to customise the manifest of a jar. This is only called if the output is a jar.
+   * In the case of a multi-output compile, it is called once for each output (if the output is a jar).
+   * Typically this extension point is to avoid the build system having an additional step
+   * to add this information, while would otherwise require the jar to be re-built ( as the manifest is required
+   * to be the first entry in a jar.
+   * The default implementation is a NO-OP
+   *
+   * @param file the file that will contains this manifest. Int the case of a multi-output compile, the plugin can
+   *             use this to differentiate the outputs
+   * @param manifest the manifest that will be written
+   */
+  def augmentManifest(file: AbstractFile, manifest: jar.Manifest): Unit = {}
+
 }
 
 /** ...
