@@ -1037,7 +1037,10 @@ trait Types
      *  @param stableOnly     If set, return only members that are types or stable values
      */
     def findMember(name: Name, excludedFlags: Long, requiredFlags: Long, stableOnly: Boolean): Symbol = {
-      def findMemberInternal = new FindMember(this, name, excludedFlags, requiredFlags, stableOnly).apply()
+      def findMemberInternal = findMemberInstance.using { findMember =>
+        findMember.init(this, name, excludedFlags, requiredFlags, stableOnly)
+        findMember()
+      }
 
       if (this.isGround) findMemberInternal
       else suspendingTypeVars(typeVarsInType(this))(findMemberInternal)
