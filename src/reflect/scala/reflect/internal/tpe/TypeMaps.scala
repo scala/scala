@@ -330,10 +330,15 @@ private[internal] trait TypeMaps {
 
   abstract class TypeCollector[T](initial: T) extends TypeTraverser {
     var result: T = _
-    def collect(tp: Type) = {
-      result = initial
-      traverse(tp)
-      result
+    def collect(tp: Type): T = {
+      val saved = result
+      try {
+        result = initial
+        traverse(tp)
+        result
+      } finally {
+        result = saved // support reentrant use of a single instance of this collector.
+      }
     }
   }
 
