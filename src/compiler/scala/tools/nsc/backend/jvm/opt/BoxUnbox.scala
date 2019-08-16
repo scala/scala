@@ -37,13 +37,13 @@ abstract class BoxUnbox {
    *     f(1, 2) // invokes the generic `apply`
    *   }
    *
-   * The closure optimizer re-writes the `apply` call to `anonfun$adapted` method, which takes
+   * The closure optimizer re-writes the `apply` call to `anonfun\$adapted` method, which takes
    * boxed arguments. After inlining this method, we get
    *
    *   def t2 = {
    *     val a = boxByte(1)
    *     val b = boxInteger(2)
-   *     val r = boxInteger(anonfun$(unboxByte(a), unboxInt(b)))
+   *     val r = boxInteger(anonfun\$(unboxByte(a), unboxInt(b)))
    *     unboxInt(r)
    *   }
    *
@@ -166,8 +166,8 @@ abstract class BoxUnbox {
    *
    *
    * Special case for tuples wrt specialization: a tuple getter may box or unbox the value stored
-   * in the tuple: calling `_1` on a `Tuple2$mcII$sp` boxes the primitive Int stored in the tuple.
-   * Similarly, calling `_1$mcI$sp` on a non-specialized `Tuple2` unboxes the Integer in the tuple.
+   * in the tuple: calling `_1` on a `Tuple2\$mcII\$sp` boxes the primitive Int stored in the tuple.
+   * Similarly, calling `_1\$mcI\$sp` on a non-specialized `Tuple2` unboxes the Integer in the tuple.
    * When eliminating such getters, we have to introduce appropriate box / unbox calls.
    *
    *
@@ -629,7 +629,7 @@ abstract class BoxUnbox {
 
     /**
      * If `mi` is an invocation of a method on Predef, check if the receiver is a GETSTATIC of
-     * Predef.MODULE$ and return it.
+     * Predef.MODULE\$ and return it.
      */
     def checkReceiverPredefLoad(mi: MethodInsnNode, prodCons: ProdConsAnalyzer): Option[AbstractInsnNode] = {
       val numArgs = Type.getArgumentTypes(mi.desc).length
@@ -913,7 +913,7 @@ abstract class BoxUnbox {
 
     /**
      * If this box consumer extracts a boxed value and applies a conversion, this method returns
-     * equivalent conversion operations. For example, invoking `_1$mcI$sp` on a non-specialized
+     * equivalent conversion operations. For example, invoking `_1\$mcI\$sp` on a non-specialized
      * `Tuple2` extracts the Integer value and unboxes it.
      */
     def postExtractionAdaptationOps(typeOfExtractedValue: Type): List[AbstractInsnNode] = this match {
@@ -929,15 +929,15 @@ abstract class BoxUnbox {
 
   /** Static extractor (BoxesRunTime.unboxToInt) or GETFIELD or getter invocation */
   case class StaticGetterOrInstanceRead(consumer: AbstractInsnNode) extends BoxConsumer
-  /** A getter that boxes the returned value, e.g., `Tuple2$mcII$sp._1` */
+  /** A getter that boxes the returned value, e.g., `Tuple2\$mcII\$sp._1` */
   case class PrimitiveBoxingGetter(consumer: MethodInsnNode) extends BoxConsumer
-  /** A getter that unboxes the returned value, e.g., `Tuple2._1$mcI$sp` */
+  /** A getter that unboxes the returned value, e.g., `Tuple2._1\$mcI\$sp` */
   case class PrimitiveUnboxingGetter(consumer: MethodInsnNode, unboxedPrimitive: Type) extends BoxConsumer
   /** An extractor method in a Scala module, e.g., `Predef.Integer2int` */
   case class ModuleGetter(moduleLoad: AbstractInsnNode, consumer: MethodInsnNode) extends BoxConsumer
   /** PUTFIELD or setter invocation */
   case class StaticSetterOrInstanceWrite(consumer: AbstractInsnNode) extends BoxConsumer
-  /** `.$isInstanceOf[T]` (can be statically proven true or false) */
+  /** `.\$isInstanceOf[T]` (can be statically proven true or false) */
   case class BoxedPrimitiveTypeCheck(consumer: AbstractInsnNode, success: Boolean) extends BoxConsumer
   /** An unknown box consumer */
   case class EscapingConsumer(consumer: AbstractInsnNode) extends BoxConsumer

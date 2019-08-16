@@ -97,10 +97,10 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
   /** Recognize a MethodType which represents an extension method.
    *
-   *  It may have a curried parameter list with the `$this` alone in the first
+   *  It may have a curried parameter list with the `\$this` alone in the first
    *  parameter list, in which case that parameter list is dropped.  Or, since
    *  the curried lists disappear during uncurry, it may have a single parameter
-   *  list with `$this` as the first parameter, in which case that parameter is
+   *  list with `\$this` as the first parameter, in which case that parameter is
    *  removed from the list.
    */
   object ExtensionMethodType {
@@ -112,9 +112,9 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     }
   }
 
-  /** This method removes the `$this` argument from the parameter list a method.
+  /** This method removes the `\$this` argument from the parameter list a method.
    *
-   *  A method may be a `PolyType`, in which case we tear out the `$this` and the class
+   *  A method may be a `PolyType`, in which case we tear out the `\$this` and the class
    *  type params from its nested `MethodType`.  Or it may be a MethodType, as
    *  described at the ExtensionMethodType extractor.
    */
@@ -150,7 +150,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
     *      def baz[B >: A](x: B): List[B] = x :: xs
     *      // baz has to be transformed into this extension method, where
     *      // A is cloned from class Foo and  B is cloned from method baz:
-    *      // def extension$baz[B >: A <: Any, A >: Nothing <: AnyRef]($this: Foo[A])(x: B): List[B]
+    *      // def extension\$baz[B >: A <: Any, A >: Nothing <: AnyRef](\$this: Foo[A])(x: B): List[B]
     *    }
     *
     *  TODO: factor out the logic for consolidating type parameters from a class

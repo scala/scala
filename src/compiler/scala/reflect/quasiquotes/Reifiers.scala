@@ -48,9 +48,9 @@ trait Reifiers { self: Quasiquotes =>
      *    and ends with reified tree:
      *
      *      {
-     *        val name$1: universe.TermName = universe.build.freshTermName(prefix1)
+     *        val name\$1: universe.TermName = universe.build.freshTermName(prefix1)
      *        ...
-     *        val name$N: universe.TermName = universe.build.freshTermName(prefixN)
+     *        val name\$N: universe.TermName = universe.build.freshTermName(prefixN)
      *        tree
      *      }
      *
@@ -348,9 +348,9 @@ trait Reifiers { self: Quasiquotes =>
      *
      *  Sample execution of previous concrete list reifier:
      *
-     *    > val lst = List(foo, bar, qq$f3948f9s$1)
+     *    > val lst = List(foo, bar, qq\$f3948f9s\$1)
      *    > reifyHighRankList(lst) { ... } { ... }
-     *    q"List($foo, $bar) ++ ${holeMap(qq$f3948f9s$1).tree}"
+     *    q"List(\$foo, \$bar) ++ \${holeMap(qq\$f3948f9s\$1).tree}"
      */
     def reifyHighRankList(xs: List[Any])(fill: PartialFunction[Any, Tree])(fallback: Any => Tree): Tree
 
@@ -373,7 +373,7 @@ trait Reifiers { self: Quasiquotes =>
       case List(Placeholder(Hole(tree, DotDotDot))) => tree
     }
 
-    /** Reifies arbitrary list filling ..$x and ...$y holeMap when they are put
+    /** Reifies arbitrary list filling ..\$x and ...\$y holeMap when they are put
      *  in the correct position. Falls back to regular reification for zero rank
      *  elements.
      */

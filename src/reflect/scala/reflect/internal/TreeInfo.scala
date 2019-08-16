@@ -344,9 +344,9 @@ abstract class TreeInfo {
    * Named arguments can transform a constructor call into a block, e.g.
    *   <init>(b = foo, a = bar)
    * is transformed to
-   *   { val x$1 = foo
-   *     val x$2 = bar
-   *     <init>(x$2, x$1)
+   *   { val x\$1 = foo
+   *     val x\$2 = bar
+   *     <init>(x\$2, x\$1)
    *   }
    */
   def stripNamedApplyBlock(tree: Tree) = tree match {

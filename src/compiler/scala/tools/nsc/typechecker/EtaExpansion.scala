@@ -32,11 +32,11 @@ trait EtaExpansion { self: Analyzer =>
     *
     * ```
     * {
-    *   private synthetic val eta$f   = p.f   // if p is not stable
+    *   private synthetic val eta\$f   = p.f   // if p is not stable
     *   ...
-    *   private synthetic val eta$e_i = e_i   // if e_i is not stable
+    *   private synthetic val eta\$e_i = e_i   // if e_i is not stable
     *   ...
-    *   (ps_1 => ... => ps_m => eta$f([es_1])...([es_m])(ps_1)...(ps_m))
+    *   (ps_1 => ... => ps_m => eta\$f([es_1])...([es_m])(ps_1)...(ps_m))
     * }
     * ```
     *
