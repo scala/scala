@@ -45,7 +45,7 @@ final class ChainingOps[A](private val self: A) extends AnyVal {
     *   scala> import scala.util.chaining._
     *
     *   scala> val times6 = (_: Int) * 6
-    *   times6: Int => Int = $$Lambda$2023/975629453@17143b3b
+    *   times6: Int => Int = \$\$Lambda\$2023/975629453@17143b3b
     *
     *   scala> val i = (1 - 2 - 3).pipe(times6).pipe(scala.math.abs)
     *   i: Int = 24

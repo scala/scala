@@ -48,7 +48,7 @@ abstract class BackendUtils extends PerRunInit {
 
   /**
    * Classes with indyLambda closure instantiations where the SAM type is serializable (e.g. Scala's
-   * FunctionN) need a `$deserializeLambda$` method. This map contains classes for which such a
+   * FunctionN) need a `\$deserializeLambda\$` method. This map contains classes for which such a
    * method has been generated. It is used during ordinary code generation, as well as during
    * inlining: when inlining an indyLambda instruction into a class, we need to make sure the class
    * has the method.
@@ -335,7 +335,7 @@ abstract class BackendUtils extends PerRunInit {
   }
 
   /**
-   * Identify forwarders, aliases, anonfun$adapted methods, bridges, trivial methods (x + y), etc
+   * Identify forwarders, aliases, anonfun\$adapted methods, bridges, trivial methods (x + y), etc
    * Returns
    *   -1 : no match
    *    1 : trivial (no method calls), but not field getters

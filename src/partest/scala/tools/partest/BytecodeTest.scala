@@ -24,11 +24,11 @@ import scala.tools.nsc.CloseableRegistry
  * Provides utilities for inspecting bytecode using ASM library.
  *
  * HOW TO USE
- * 1. Create subdirectory in test/files/jvm for your test. Let's name it $TESTDIR.
- * 2. Create $TESTDIR/BytecodeSrc_1.scala that contains Scala source file that you
+ * 1. Create subdirectory in test/files/jvm for your test. Let's name it \$TESTDIR.
+ * 2. Create \$TESTDIR/BytecodeSrc_1.scala that contains Scala source file that you
  *    want to inspect the bytecode for. The '_1' suffix signals to partest that it
  *    should compile this file first.
- * 3. Create $TESTDIR/Test.scala:
+ * 3. Create \$TESTDIR/Test.scala:
  *    import scala.tools.partest.BytecodeTest
  *    object Test extends BytecodeTest {
  *      def show {

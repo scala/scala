@@ -56,19 +56,19 @@ abstract class FormatInterpolator {
    *  is inserted.
    *
    *  In any other position, the only permissible conversions are
-   *  the literals (%% and %n) or an index reference (%1$ or %<).
+   *  the literals (%% and %n) or an index reference (%1\$ or %<).
    *
    *  A conversion specifier has the form:
    *
-   *  [index$][flags][width][.precision]conversion
+   *  [index\$][flags][width][.precision]conversion
    *
-   *  1) "...${smth}" => okay, equivalent to "...${smth}%s"
-   *  2) "...${smth}blahblah" => okay, equivalent to "...${smth}%sblahblah"
-   *  3) "...${smth}%" => error
-   *  4) "...${smth}%n" => okay, equivalent to "...${smth}%s%n"
-   *  5) "...${smth}%%" => okay, equivalent to "...${smth}%s%%"
-   *  6) "...${smth}[%legalJavaConversion]" => okay*
-   *  7) "...${smth}[%illegalJavaConversion]" => error
+   *  1) "...\${smth}" => okay, equivalent to "...\${smth}%s"
+   *  2) "...\${smth}blahblah" => okay, equivalent to "...\${smth}%sblahblah"
+   *  3) "...\${smth}%" => error
+   *  4) "...\${smth}%n" => okay, equivalent to "...\${smth}%s%n"
+   *  5) "...\${smth}%%" => okay, equivalent to "...\${smth}%s%%"
+   *  6) "...\${smth}[%legalJavaConversion]" => okay*
+   *  7) "...\${smth}[%illegalJavaConversion]" => error
    *  *Legal according to [[https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html]]
    */
   def interpolated(parts: List[Tree], args: List[Tree]) = {

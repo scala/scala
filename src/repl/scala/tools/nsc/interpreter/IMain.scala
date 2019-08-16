@@ -58,7 +58,7 @@ import scala.util.control.NonFatal
   *  all variables defined by that code.  To extract the result of an
   *  interpreted line to show the user, a second "result object" is created
   *  which imports the variables exported by the above object and then
-  *  exports members called "$eval" and "$print". To accommodate user expressions
+  *  exports members called "\$eval" and "\$print". To accommodate user expressions
   *  that read from variables or methods defined in previous statements, "import"
   *  statements are used.
   *
@@ -322,7 +322,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   /** If path represents a class resource in the default package,
     *  see if the corresponding symbol has a class file that is a REPL artifact
-    *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
+    *  residing at a different resource path. Translate X.class to \$line3/\$read\$\$iw\$\$iw\$X.class.
     */
   def translateSimpleResource(path: String): Option[String] = {
     if (!(path contains '/') && (path endsWith ".class")) {
@@ -339,7 +339,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   /** If unable to find a resource foo.class, try taking foo as a symbol in scope
     *  and use its java class name as a resource to load.
     *
-    *  $intp.classLoader classBytes "Bippy" or $intp.classLoader getResource "Bippy.class" just work.
+    *  \$intp.classLoader classBytes "Bippy" or \$intp.classLoader getResource "Bippy.class" just work.
     */
   private class TranslatingClassLoader(parent: ClassLoader) extends AbstractFileClassLoader(replOutput.dir, parent) {
     override protected def findAbstractFile(name: String): AbstractFile = super.findAbstractFile(name) match {
@@ -499,7 +499,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     *  a custom `eval` object that wraps the bound value.
     *
     *  If the bound value is successfully installed, then bind the name
-    *  by interpreting `val name = $line42.$eval.value`.
+    *  by interpreting `val name = \$line42.\$eval.value`.
     *
     *  @param name      the variable name to bind
     *  @param boundType the type of the variable, as a string

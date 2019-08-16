@@ -110,8 +110,8 @@ abstract class ExplicitOuter extends InfoTransform
    *
    * {{{
    *   class C {
-   *     trait T { C.this }            // C$T$$$outer$ : C
-   *     object T extends T { C.this } // C$T$$$outer$ : C.this.type
+   *     trait T { C.this }            // C\$T\$\$\$outer\$ : C
+   *     object T extends T { C.this } // C\$T\$\$\$outer\$ : C.this.type
    *   }
    * }}}
    *
@@ -264,7 +264,7 @@ abstract class ExplicitOuter extends InfoTransform
     }
 
     /** The path
-     *  <blockquote><pre>`base`.$outer$$C1 ... .$outer$$Cn</pre></blockquote>
+     *  <blockquote><pre>`base`.\$outer\$\$C1 ... .\$outer\$\$Cn</pre></blockquote>
      *  which refers to the outer instance of class to of
      *  value base. The result is typed but not positioned.
      */
