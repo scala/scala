@@ -81,13 +81,9 @@ object ASMConverters {
     final override def toString() = {
       val printOpcode = opcode != -1
       productPrefix + (
-        if (printOpcode) Iterator(opcodeToString(opcode)) ++ productIterator.drop(1).map(quoteString)
-        else productIterator.map(quoteString)
+        if (printOpcode) Iterator(opcodeToString(opcode)) ++ productIterator.drop(1)
+        else productIterator
       ).mkString("(", ", ", ")")
-    }
-    private def quoteString(a: Any): Any = a match {
-      case s: String => "\"" + s + "\""
-      case x => x
     }
   }
 
