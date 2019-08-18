@@ -576,7 +576,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
                 asm.Opcodes.PUTSTATIC,
                 thisBType.internalName,
                 strMODULE_INSTANCE_FIELD,
-                thisBType.descriptor
+                thisBTypeDescriptor
               )
             }
           }
@@ -1092,7 +1092,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       if (style == Super) {
         if (receiverClass.isTrait && !method.isJavaDefined) {
           val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
-          val staticName = traitSuperAccessorName(method).toString
+          val staticName = traitSuperAccessorName(method)
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
         } else {
           if (receiverClass.isTraitOrInterface) {
