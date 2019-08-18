@@ -1,0 +1,14 @@
+[[syntax trees at end of                     typer]] // newSource1.scala
+package <empty> {
+  object t10344 extends scala.AnyRef {
+    def <init>(): t10344.type = {
+      t10344.super.<init>();
+      ()
+    };
+    def unwrap[F[_] >: [_]Nothing <: [_]Any](f: F[Unit] => Unit): Unit = ();
+    private[this] val f: (=> Unit) => Unit = ((x$1: => Unit) => ());
+    <stable> <accessor> def f: (=> Unit) => Unit = t10344.this.f;
+    t10344.this.unwrap[<byname>](t10344.this.f)
+  }
+}
+
