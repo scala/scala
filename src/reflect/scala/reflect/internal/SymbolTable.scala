@@ -78,9 +78,9 @@ abstract class SymbolTable extends macros.Universe
     msg + " in " + (TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNs)) + "ms"
 
   def informProgress(msg: String)            = if (settings.verbose) inform("[" + msg + "]")
-  def informTime(msg: String, startNs: Long) = informProgress(elapsedMessage(msg, startNs))
+  def informTime(msg: String, startNs: Long) = if (settings.verbose) informProgress(elapsedMessage(msg, startNs))
   @inline final def informingProgress[T](msg: => String)(fn: => T) : T = {
-    val verbose:Boolean = settings.verbose
+    val verbose: Boolean = settings.verbose
     val start = if(verbose) System.nanoTime() else 0L
     try fn finally if (verbose) informTime(msg, start)
   }

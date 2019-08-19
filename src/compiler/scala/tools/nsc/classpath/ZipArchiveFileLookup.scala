@@ -77,7 +77,11 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends ClassPa
   }
 
   private def findDirEntry(pkg: String): Option[archive.DirEntry] = {
-    archive.allDirsByDottedName.get(pkg)
+    archive.allDirs.get(dottedToPath(pkg))
+  }
+
+  private def dottedToPath(dotted: String): String = {
+    dotted.replace('.', '/') + "/"
   }
 
   protected def createFileEntry(file: FileZipArchive#Entry): FileEntryType

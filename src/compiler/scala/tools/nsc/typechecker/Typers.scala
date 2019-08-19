@@ -1681,7 +1681,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (preSuperVals.isEmpty && preSuperStats.nonEmpty)
             devWarning("Wanted to zip empty presuper val list with " + preSuperStats)
             else
-            map2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
+            foreach2(preSuperStats, preSuperVals)((ldef, gdef) => gdef.tpt setType ldef.symbol.tpe)
 
           if (superCall1 == cunit) EmptyTree
           else cbody2 match { // ???

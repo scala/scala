@@ -620,4 +620,11 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
       s.contains("protectedMethod:Boolean") && s.contains("privateMethod:String")
     }
   }
+
+  property("protected[X] does not generate invalid link") = {
+    checkTemplate("t11318.scala", "p/C.html") { (_, s) =>
+      s.contains("""protected[<span name="java.lang" class="extype">lang</span>]""") &&
+        s.contains("""protected[<a href="index.html" name="p" id="p" class="extype">p</a>]""")
+    }
+  }
 }

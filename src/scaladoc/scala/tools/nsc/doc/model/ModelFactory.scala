@@ -128,13 +128,16 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       else if (sym.isProtectedLocal) ProtectedInInstance()
       else {
         val qual =
-          if (sym.hasAccessBoundary)
-            Some(makeTemplate(sym.privateWithin))
-          else None
-        if (sym.isPrivate) PrivateInTemplate(inTpl)
-        else if (sym.isProtected) ProtectedInTemplate(qual getOrElse inTpl)
+          if (sym.hasAccessBoundary) {
+            val qualTpl = makeTemplate(sym.privateWithin)
+            if (qualTpl != inTpl) Some(qualTpl)
+            else None
+          } else None
+        def tp(c: TemplateImpl) = makeType(c.sym.tpe, inTpl)
+        if (sym.isPrivate) PrivateInTemplate(None)
+        else if (sym.isProtected) ProtectedInTemplate(qual.map(tp))
         else qual match {
-          case Some(q) => PrivateInTemplate(q)
+          case Some(q) => PrivateInTemplate(Some(tp(q)))
           case None => Public()
         }
       }

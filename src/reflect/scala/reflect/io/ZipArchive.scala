@@ -65,6 +65,7 @@ object ZipArchive {
       if (front) path.substring(0, idx + 1)
       else path.substring(idx + 1)
   }
+  @deprecated("Kept for compatibility", "2.13.1")
   def pathToDotted(path: String): String = {
     if (path == "/") ""
     else {
@@ -120,22 +121,13 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
   }
 
   private def ensureDir(dirs: mutable.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
-    //OPT inlined from getOrElseUpdate; saves ~50K closures on test run.
-    // was:
-    // dirs.getOrElseUpdate(path, {
-    //   val parent = ensureDir(dirs, dirName(path), null)
-    //   val dir    = new DirEntry(path)
-    //   parent.entries(baseName(path)) = dir
-    //   dir
-    // })
-    val dotted = pathToDotted(path)
-    dirs get dotted match {
+    dirs get path match {
       case Some(v) => v
       case None =>
         val parent = ensureDir(dirs, dirName(path), null)
         val dir = new DirEntry(path)
         parent.entries(baseName(path)) = dir
-        dirs(dotted) = dir
+        dirs(path) = dir
         dir
     }
   }
@@ -192,9 +184,9 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def sizeOption: Option[Int] = Some(zipEntry.getSize.toInt)
   }
 
-  lazy val (root, allDirsByDottedName) = {
+  lazy val (root, allDirs) = {
     val root = new DirEntry("/")
-    val dirs = mutable.HashMap[String, DirEntry]("" -> root)
+    val dirs = mutable.HashMap[String, DirEntry]("/" -> root)
     val zipFile = openZipFile()
     val enum    = zipFile.entries()
 
@@ -228,11 +220,9 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     (root, dirs)
   }
 
-  @deprecated("Use allDirsByDottedName after converting keys from relative paths to dotted names", "2.13")
-  lazy val allDirs: mutable.HashMap[String, DirEntry] = {
-    def dottedToPath(dotted: String): String = dotted.replace('.', '/') + "/"
-    allDirsByDottedName.map { case (k, v) => (dottedToPath(k), v) }
-  }
+  @deprecated("Use allDirs after converting keys from dotted names to relative paths", "2.13.1")
+  lazy val allDirsByDottedName: mutable.HashMap[String, DirEntry] =
+    allDirs.map { case (k, v) => (pathToDotted(k), v) }
 
   def iterator: Iterator[Entry] = root.iterator
 
