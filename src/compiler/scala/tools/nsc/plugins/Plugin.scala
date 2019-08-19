@@ -152,9 +152,9 @@ object Plugin {
 
     val fromLoaders = paths.map {path =>
       val loader = findPluginClassloader(path)
-      loader.getResources(PluginXML).asScala.toList.lastOption match {
-        case None => Failure(new MissingPluginException(path))
-        case Some(url) =>
+      loader.getResource(PluginXML) match {
+        case null => Failure(new MissingPluginException(path))
+        case url =>
           val inputStream = url.openStream
           try {
             Try((PluginDescription.fromXML(inputStream), loader))

@@ -62,7 +62,8 @@ trait Plugins { global: Global =>
   /**
     * Locate or create the classloader to load a compiler plugin with `classpath`.
     *
-    * Subclasses may override to customise the behaviour.
+    * Subclasses may override to customise the behaviour. The returned classloader must return the first
+    * from plugin descriptor from `classpath` when `getResource("scalac-plugin.xml")` is called.
     *
     * @param classpath
     * @return
