@@ -38,7 +38,7 @@ import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
 import scala.tools.nsc.transform._
 import scala.tools.nsc.transform.patmat.PatternMatching
 import scala.tools.nsc.typechecker._
-import scala.tools.nsc.util.{ClassPath, returning}
+import scala.tools.nsc.util.ClassPath
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
@@ -1604,8 +1604,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         val snap = profiler.beforePhase(Global.InitPhase)
 
         val sources: List[SourceFile] =
-          if (settings.script.isSetByUser && filenames.size > 1) returning(Nil)(_ => globalError("can only compile one script at a time"))
-          else filenames map getSourceFile
+          if (settings.script.isSetByUser && filenames.size > 1) {
+            globalError("can only compile one script at a time")
+            Nil
+          }
+          else filenames.map(getSourceFile)
 
         profiler.afterPhase(Global.InitPhase, snap)
         compileSources(sources)

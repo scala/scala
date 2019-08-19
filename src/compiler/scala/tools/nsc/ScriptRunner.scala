@@ -57,12 +57,12 @@ trait ScriptRunner {
 
 class DefaultScriptRunner(settings: GenericRunnerSettings) extends AbstractScriptRunner(settings) {
   protected def doCompile(scriptFile: String) = {
-    // Setting settings.script.value informs the compiler this is not a self-contained compilation unit.
-    settings.script.value = mainClass
     val reporter = new ConsoleReporter(settings)
     val compiler = newGlobal(settings, reporter)
-    val run      = new compiler.Run
-    run.compile(List(scriptFile))
+    if (settings.pastefiles.value.nonEmpty) new compiler.Run().compile(settings.pastefiles.value)
+    // Setting settings.script.value informs the compiler this is not a self-contained compilation unit.
+    settings.script.value = mainClass
+    new compiler.Run().compile(scriptFile :: Nil)
     !reporter.hasErrors
   }
 
