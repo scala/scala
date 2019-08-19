@@ -127,7 +127,7 @@ Once you've started an `sbt` session you can run one of the core commands:
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on
-itself`, it may be that a global SBT plugin (such as [ENSIME](https://ensime.github.io/)) is
+itself`, it may be that a global SBT plugin is
 resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
 temporarily commenting them out in `~/.sbt/1.0/plugins/plugins.sbt`).
 
@@ -173,10 +173,12 @@ be easily executed locally.
 
 ### IDE setup
 
-You may use IntelliJ IDEA (see [src/intellij/README.md](src/intellij/README.md)),
-or ENSIME (see [this page on the ENSIME site](https://ensime.github.io/editors/)).
-(Support for Eclipse has decayed and been removed, but could be resurrected by
-a volunteer.)
+We suggest using IntelliJ IDEA (see
+[src/intellij/README.md](src/intellij/README.md).
+
+([Metals](https://scalameta.org/metals/) should also work, but we don't yet have instructions or sample
+configuration for that. A pull request in this area would be
+exceedingly welcome.)
 
 In order to use IntelliJ's incremental compiler:
   - run `dist/mkBin` in sbt to get a build and the runner scripts in `build/quick/bin`
