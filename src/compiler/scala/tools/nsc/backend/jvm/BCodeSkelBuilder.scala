@@ -61,8 +61,9 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     final val MaximumJvmParameters = 254
 
     // current class
-    var cnode: asm.tree.ClassNode  = null
-    var thisBType: ClassBType      = null
+    var cnode: asm.tree.ClassNode   = null
+    var thisBType: ClassBType       = null
+    var thisBTypeDescriptor: String = null
 
     var claszSymbol: Symbol        = null
     var isCZParcelable             = false
@@ -93,7 +94,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       def constructorsArePure = cd.impl.body.iterator.collect {
         case dd: DefDef if dd.symbol.isConstructor => dd
       }.forall(isPureConstructor)
-      parentsArePure && constructorsArePure 
+      parentsArePure && constructorsArePure
     }
 
     /* ---------------- helper utils for generating classes and fields ---------------- */
@@ -101,11 +102,11 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def genPlainClass(cd0: ClassDef): Unit = {
       assert(cnode == null, "GenBCode detected nested methods.")
 
-      claszSymbol       = cd0.symbol
-      isCZParcelable    = isAndroidParcelableClass(claszSymbol)
-      isCZStaticModule  = isStaticModuleClass(claszSymbol)
-      thisBType         = classBTypeFromSymbol(claszSymbol)
-
+      claszSymbol         = cd0.symbol
+      isCZParcelable      = isAndroidParcelableClass(claszSymbol)
+      isCZStaticModule    = isStaticModuleClass(claszSymbol)
+      thisBType           = classBTypeFromSymbol(claszSymbol)
+      thisBTypeDescriptor = thisBType.descriptor
       cnode = new ClassNode1()
 
       initJClass(cnode)
@@ -229,7 +230,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
       val fv =
         cnode.visitField(mods,
                          strMODULE_INSTANCE_FIELD,
-                         thisBType.descriptor,
+                         thisBTypeDescriptor,
                          null, // no java-generic-signature
                          null  // no initial value
         )
@@ -530,7 +531,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
               genDefDef(statified)
             } else {
               val forwarderDefDef = {
-                val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), traitSuperAccessorName(sym), _.cloneSymbol.withoutAnnotations)
+                val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), newTermName(traitSuperAccessorName(sym)), _.cloneSymbol.withoutAnnotations)
                 dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
                 val selfParam :: realParams = dd1.vparamss.head.map(_.symbol)
                 deriveDefDef(dd1)(_ =>
@@ -654,7 +655,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
             if (!hasStaticBitSet) {
               mnode.visitLocalVariable(
                 "this",
-                thisBType.descriptor,
+                thisBTypeDescriptor,
                 null,
                 veryFirstProgramPoint,
                 onePastLastProgramPoint,

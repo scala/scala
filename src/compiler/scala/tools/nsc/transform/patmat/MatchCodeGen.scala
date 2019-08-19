@@ -104,7 +104,7 @@ trait MatchCodeGen extends Interface {
 
       /** Inline runOrElse and get rid of Option allocations
        *
-       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse ${catchAll(`scrut`)}
+       * runOrElse(scrut: scrutTp)(matcher): resTp = matcher(scrut) getOrElse \${catchAll(`scrut`)}
        * the matcher's optional result is encoded as a flag, keepGoing, where keepGoing == true encodes result.isEmpty,
        * if keepGoing is false, the result Some(x) of the naive translation is encoded as matchRes == x
        */
@@ -152,15 +152,7 @@ trait MatchCodeGen extends Interface {
         // res: T
         // returns MatchMonad[T]
         def one(res: Tree): Tree = matchEnd.APPLY(res) // a jump to a case label is special-cased in typedApply
-        protected final def zero: Tree = nextCase.APPLY()
-        override def ifThenElseZero(c: Tree, thenp: Tree): Tree = {
-          thenp match {
-            case Block(stats, expr) =>
-              Block(If(NOT(c), zero, EmptyTree) :: stats, expr)
-            case _ =>
-              Block(If(NOT(c), zero, EmptyTree) :: Nil, thenp)
-          }
-        }
+        protected def zero: Tree = nextCase.APPLY()
 
         // prev: MatchMonad[T]
         // b: T
@@ -168,21 +160,14 @@ trait MatchCodeGen extends Interface {
         // returns MatchMonad[U]
         def flatMap(prev: Tree, b: Symbol, next: Tree): Tree = {
           val prevSym = freshSym(prev.pos, prev.tpe, "o")
-          val nextTree = // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
+          BLOCK(
+            ValDef(prevSym, prev),
+            // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
             ifThenElseZero(
               NOT(prevSym DOT vpmName.isEmpty),
               Substitution(b, prevSym DOT vpmName.get)(next)
             )
-          nextTree match {
-            case Block(stats, expr) =>
-              Block((ValDef(prevSym, prev) :: stats), expr)
-            case _ =>
-              BLOCK(
-                ValDef(prevSym, prev),
-                // must be isEmpty and get as we don't control the target of the call (prev is an extractor call)
-                nextTree
-              )
-          }
+          )
         }
 
         // cond: Boolean
@@ -193,14 +178,9 @@ trait MatchCodeGen extends Interface {
         def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree = {
           val rest = (
             // only emit a local val for `nextBinder` if it's actually referenced in `next`
-            if (next.exists(_.symbol eq nextBinder)) {
-              next match {
-                case Block(stats, expr) =>
-                  Block(ValDef(nextBinder, res) :: stats, expr)
-                case _ =>
-                  Block(ValDef(nextBinder, res) :: Nil, next)
-              }
-            } else next
+            if (next.exists(_.symbol eq nextBinder))
+              Block(ValDef(nextBinder, res) :: Nil, next)
+            else next
           )
           ifThenElseZero(cond, rest)
         }

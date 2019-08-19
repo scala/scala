@@ -21,13 +21,13 @@ import scala.annotation.tailrec
  * Here's an example:
  * {{{
  *   val name = "James"
- *   println(s"Hello, $name")  // Hello, James
+ *   println(s"Hello, \$name")  // Hello, James
  * }}}
  *
  * Any processed string literal is rewritten as an instantiation and
  * method call against this class.   For example:
  * {{{
- *   s"Hello, $name"
+ *   s"Hello, \$name"
  * }}}
  *
  * is rewritten to be:
@@ -45,7 +45,7 @@ import scala.annotation.tailrec
  *    implicit class JsonHelper(private val sc: StringContext) extends AnyVal {
  *      def json(args: Any*): JSONObject = ...
  *    }
- *    val x: JSONObject = json"{ a: $a }"
+ *    val x: JSONObject = json"{ a: \$a }"
  * }}}
  *
  *  Here the `JsonHelper` extension class implicitly adds the `json` method to
@@ -68,14 +68,14 @@ case class StringContext(parts: String*) {
    *  Here's an example of usage:
    *  {{{
    *    val name = "James"
-   *    println(s"Hello, $name")  // Hello, James
+   *    println(s"Hello, \$name")  // Hello, James
    *  }}}
-   *  In this example, the expression $name is replaced with the `toString` of the
+   *  In this example, the expression \$name is replaced with the `toString` of the
    *  variable `name`.
    *  The `s` interpolator can take the `toString` of any arbitrary expression within
-   *  a `${}` block, for example:
+   *  a `\${}` block, for example:
    *  {{{
-   *    println(s"1 + 1 = ${1 + 1}")
+   *    println(s"1 + 1 = \${1 + 1}")
    *  }}}
    *  will print the string `1 + 1 = 2`.
    *
@@ -168,7 +168,7 @@ case class StringContext(parts: String*) {
    *  {{{
    *    val height = 1.9d
    *    val name = "James"
-   *    println(f"$name%s is $height%2.2f meters tall")  // James is 1.90 meters tall
+   *    println(f"\$name%s is \$height%2.2f meters tall")  // James is 1.90 meters tall
    *  }}}
    *
    *  @param `args` The arguments to be inserted into the resulting string.

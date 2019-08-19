@@ -19,12 +19,12 @@ package util
   *
   * Not thread safe.
   */
-final class ReusableInstance[T <: AnyRef](make: () => T) {
+final class ReusableInstance[T <: AnyRef](make: () => T, enabled: Boolean) {
   private val cached = make()
   private var taken = false
 
   @inline def using[R](action: T => R): R =
-    if (taken) action(make())
+    if (!enabled || taken) action(make())
     else try {
       taken = true
       action(cached)
@@ -32,6 +32,6 @@ final class ReusableInstance[T <: AnyRef](make: () => T) {
 }
 
 object ReusableInstance {
-  def apply[T <: AnyRef](make: => T): ReusableInstance[T] =
-    new ReusableInstance[T](make _)
+  def apply[T <: AnyRef](make: => T, enabled: Boolean): ReusableInstance[T] =
+    new ReusableInstance[T](make _, enabled)
 }

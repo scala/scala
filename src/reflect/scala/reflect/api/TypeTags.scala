@@ -66,7 +66,7 @@ import java.io.ObjectStreamException
  *
  *   def paramInfo[T](x: T)(implicit tag: TypeTag[T]): Unit = {
  *     val targs = tag.tpe match { case TypeRef(_, _, args) => args }
- *     println(s"type of $x has type arguments $targs")
+ *     println(s"type of \$x has type arguments \$targs")
  *   }
  *
  *   scala> paramInfo(42)
@@ -85,7 +85,7 @@ import java.io.ObjectStreamException
  *
  *   def paramInfo[T: TypeTag](x: T): Unit = {
  *     val targs = typeOf[T] match { case TypeRef(_, _, args) => args }
- *     println(s"type of $x has type arguments $targs")
+ *     println(s"type of \$x has type arguments \$targs")
  *   }
  *
  *   scala> paramInfo(42)
@@ -107,7 +107,7 @@ import java.io.ObjectStreamException
  * {{{
  * def weakParamInfo[T](x: T)(implicit tag: WeakTypeTag[T]): Unit = {
  *   val targs = tag.tpe match { case TypeRef(_, _, args) => args }
- *   println(s"type of $x has type arguments $targs")
+ *   println(s"type of \$x has type arguments \$targs")
  * }
  *
  * scala> def foo[T] = weakParamInfo(List[T]())

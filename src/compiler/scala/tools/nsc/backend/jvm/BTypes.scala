@@ -1088,10 +1088,10 @@ object BTypes {
    * @param isEffectivelyFinal     True if the class cannot have subclasses: final classes, module
    *                               classes.
    *
-   * @param sam                    If this class is a SAM type, the SAM's "$name$descriptor".
+   * @param sam                    If this class is a SAM type, the SAM's "\$name\$descriptor".
    *
    * @param methodInfos            The [[MethodInlineInfo]]s for the methods declared in this class.
-   *                               The map is indexed by the string s"$name$descriptor" (to
+   *                               The map is indexed by the string s"\$name\$descriptor" (to
    *                               disambiguate overloads).
    *
    * @param warning                Contains an warning message if an error occurred when building this

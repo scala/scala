@@ -25,7 +25,7 @@ trait PhaseAssembly {
    * Aux data structure for solving the constraint system
    * The dependency graph container with helper methods for node and edge creation
    */
-  private class DependencyGraph {
+  private[nsc] class DependencyGraph {
 
     /** Simple edge with to and from refs */
     case class Edge(var frm: Node, var to: Node, var hard: Boolean)
@@ -39,7 +39,7 @@ trait PhaseAssembly {
       var phaseobj: Option[List[SubComponent]] = None
       val after = new mutable.HashSet[Edge]()
       var before = new mutable.HashSet[Edge]()
-      var visited = false
+      var visited: VisitStatus = NotVisited
       var level = 0
 
       def allPhaseNames(): String = phaseobj match {
@@ -47,6 +47,10 @@ trait PhaseAssembly {
         case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
       }
     }
+    sealed abstract class VisitStatus
+    case object NotVisited extends VisitStatus
+    case object Visiting extends VisitStatus
+    case object Visited extends VisitStatus
 
     val nodes = new mutable.HashMap[String,Node]()
     val edges = new mutable.HashSet[Edge]()
@@ -103,32 +107,66 @@ trait PhaseAssembly {
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
      */
-    def collapseHardLinksAndLevels(node: Node, lvl: Int): Unit = {
-      if (node.visited) {
-        dump("phase-cycle")
-        throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
-      }
-
-      if (node.level < lvl) node.level = lvl
-
-      var hls = Nil ++ node.before.filter(_.hard)
-      while (hls.size > 0) {
-        for (hl <- hls) {
+    def collapseHardLinks(): Unit = {
+      for (node <- nodes.valuesIterator.toList) {
+        val hardBefores = node.before.iterator.filter(_.hard).toList
+        for (hl <- hardBefores) {
           node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
           node.before = hl.frm.before
           nodes -= hl.frm.phasename
           edges -= hl
-          for (edge <- node.before) edge.to = node
         }
-        hls = Nil ++ node.before.filter(_.hard)
       }
-      node.visited = true
+    }
 
-      for (edge <- node.before) {
-        collapseHardLinksAndLevels( edge.frm, lvl + 1)
+    /* Test if there are cycles in the graph, assign levels to the nodes
+     * and collapse hard links into nodes
+     */
+    def assignLevelsAndDetectCycles(node: Node) {
+      val stack = mutable.ArrayStack[Node]()
+      def visitNode(node: Node): Unit = {
+        node.visited = Visiting
+        for (edge <- node.before) {
+          val from = edge.frm
+          from.visited match {
+            case NotVisited =>
+              visitNode(edge.frm)
+            case Visiting =>
+              dump("phase-cycle")
+              throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
+            case Visited =>
+          }
+        }
+        node.visited = Visited
+        stack.push(node)
+      }
+      try {
+        visitNode(node)
+      } finally {
+        nodes.values.foreach(_.visited = NotVisited)
       }
 
-      node.visited = false
+      val topoSort: Map[Node, Int] = stack.zipWithIndex.toMap
+      val root = node
+      assert(stack.head == root, stack)
+      root.level = 1
+
+      // Nodes that have been collapsed into their hard-linked predecessor
+      val collapsed: Map[String, Node] = stack.iterator.flatMap(p => p.phaseobj.toList.flatMap(_.map(x => (x.phaseName, p)))).toMap
+      def followHard(node: Node): Node = collapsed.getOrElse(node.phasename, node)
+
+      // find the longest path to the root node to assign as the level.
+      stack.iterator.drop(1).foreach { node =>
+        var n = node
+        var level = 1
+        while (n != root && n.after.nonEmpty) {
+          n = n.after.maxBy(edge => topoSort.get(followHard(edge.to))).to
+          level += 1
+        }
+        node.level = level
+      }
+      def phaseDebug = stack.toSeq.groupBy(_.level).toList.sortBy(_._1).map { case (level, nodes) => (level,  nodes.sortBy(_.phasename).map(_.phaseobj.map(_.map(_.phaseName).mkString(":")).mkString(" ")).mkString(" "))}.mkString("\n")
+      debuglog("Phase assembly levels: " + phaseDebug)
     }
 
     /* Find all edges in the given graph that are hard links. For each hard link we
@@ -221,10 +259,15 @@ trait PhaseAssembly {
 
     dump(3)
 
-    // test for cycles, assign levels and collapse hard links into nodes
-    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
+    // collapse hard links into nodes
+    graph.collapseHardLinks()
 
     dump(4)
+
+    // test for cycles, assign levels
+    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
+
+    dump(5)
 
     // assemble the compiler
     graph.compilerPhaseList()
@@ -233,7 +276,7 @@ trait PhaseAssembly {
   /** Given the phases set, will build a dependency graph from the phases set
    *  Using the aux. method of the DependencyGraph to create nodes and edges.
    */
-  private def phasesSetToDepGraph(phsSet: mutable.HashSet[SubComponent]): DependencyGraph = {
+  private[nsc] def phasesSetToDepGraph(phsSet: Iterable[SubComponent]): DependencyGraph = {
     val graph = new DependencyGraph()
 
     for (phs <- phsSet) {

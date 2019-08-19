@@ -526,13 +526,6 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val runsRightAfter = None
   } with UnCurry
 
-  // phaseName = "tailcalls"
-  object tailCalls extends {
-    val global: Global.this.type = Global.this
-    val runsAfter = List("uncurry")
-    val runsRightAfter = None
-  } with TailCalls
-
   // phaseName = "fields"
   object fields extends {
     val global: Global.this.type = Global.this
@@ -545,10 +538,17 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
     val runsRightAfter = None
   } with Fields
 
+  // phaseName = "tailcalls"
+  object tailCalls extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("fields")
+    val runsRightAfter = None
+  } with TailCalls
+
   // phaseName = "explicitouter"
   object explicitOuter extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("fields")
+    val runsAfter = List("tailcalls")
     val runsRightAfter = None
   } with ExplicitOuter
 
@@ -619,7 +619,7 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
   // phaseName = "jvm"
   object genBCode extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("cleanup")
+    val runsAfter = List("delambdafy")
     val runsRightAfter = None
   } with GenBCode
 

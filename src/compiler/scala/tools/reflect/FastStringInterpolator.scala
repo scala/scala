@@ -67,8 +67,8 @@ trait FastStringInterpolator extends FormatInterpolator {
       } else {
         concatArgs.toList.grouped(chunkSize).foreach {
           case group =>
-            var chunkResult: Tree = group.head
-            group.tail.foreach { t =>
+            var chunkResult: Tree = Literal(Constant("")).setType(definitions.StringTpe)
+            group.foreach { t =>
               chunkResult = mkConcat(t.pos, chunkResult, t)
             }
             result = mkConcat(chunkResult.pos, result, chunkResult)

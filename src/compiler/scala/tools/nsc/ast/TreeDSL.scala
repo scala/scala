@@ -138,11 +138,7 @@ trait TreeDSL {
 
     def NEW(tpt: Tree, args: Tree*): Tree   = New(tpt, List(args.toList))
 
-    def NOT(tree: Tree)   = tree match {
-      case Select(qual, _) if tree.symbol eq Boolean_not => qual
-      case _ => Select(tree, Boolean_not)
-    }
-
+    def NOT(tree: Tree)   = Select(tree, Boolean_not)
     def AND(guards: Tree*) = if (guards.isEmpty) EmptyTree else guards reduceLeft gen.mkAnd
 
     def IF(tree: Tree)    = new IfStart(tree, EmptyTree)

@@ -257,22 +257,22 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         * The compute method (slow path) looks like:
         *
         * ```
-        * def l$compute() = {
+        * def l\$compute() = {
         *   synchronized(this) {
-        *     if ((bitmap$n & MASK) == 0) {
-        *      init // l$ = <rhs>
-        *      bitmap$n = bimap$n | MASK
+        *     if ((bitmap\$n & MASK) == 0) {
+        *      init // l\$ = <rhs>
+        *      bitmap\$n = bimap\$n | MASK
         *     }
         *   }
         *   ...
         *   this.f1 = null
         *   ...
         *   this.fn = null
-        *   l$
+        *   l\$
         * }
         * ```
         *
-        * `bitmap$n` is a byte, int or long value acting as a bitmap of initialized values.
+        * `bitmap\$n` is a byte, int or long value acting as a bitmap of initialized values.
         * The kind of the bitmap determines how many bit indicators for lazy vals are stored in it.
         * For Int bitmap it is 32 and then 'n' in the above code is: (offset / 32),
         * the MASK is (1 << (offset % 32)).

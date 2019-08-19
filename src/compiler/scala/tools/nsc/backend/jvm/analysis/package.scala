@@ -96,7 +96,7 @@ package scala.tools.nsc.backend.jvm
  *   val m = cn.methods.iterator.asScala.find(_.name == "f").head
  *
  *   // the value is read from the classfile, so it's 4
- *   println(s"maxLocals: ${m.maxLocals}, maxStack: ${m.maxStack}") // maxLocals: 5, maxStack: 4
+ *   println(s"maxLocals: \${m.maxLocals}, maxStack: \${m.maxStack}") // maxLocals: 5, maxStack: 4
  *
  *   // we can safely set it to 2 for running the analyzer.
  *   m.maxStack = 2
