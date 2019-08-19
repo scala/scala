@@ -148,6 +148,7 @@ object language {
    *
    *  @group production
    */
+  @deprecated("higherKinds no longer needs to be imported explicitly", "2.13.1")
   implicit lazy val higherKinds: higherKinds = languageFeature.higherKinds
 
   /** Where this feature is enabled, existential types that cannot be expressed as wildcard

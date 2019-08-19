@@ -32,6 +32,7 @@ object languageFeature {
   sealed trait implicitConversions
   object implicitConversions extends implicitConversions
 
+  @deprecated("scala.language.higherKinds no longer needs to be imported explicitly", "2.13.1")
   @meta.languageFeature("higher-kinded type", enableRequired = false)
   sealed trait higherKinds
   object higherKinds extends higherKinds
