@@ -391,9 +391,13 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
     helpArg = "warning",
     descr = "Enable optimizer warnings",
     domain = optWarningsChoices,
-    default = Some(List(optWarningsChoices.atInlineFailed.name)))
+    default = Some(List(optWarningsChoices.atInlineFailed.name))) withPostSetHook { _ =>
+    // no need to set `Wconf` to `silent` if optWarnings is none, since no warnings are reported
+    if (optWarningsSummaryOnly) Wconf.tryToSet(List(s"cat=optimizer:ws"))
+    else Wconf.tryToSet(List(s"cat=optimizer:w"))
+  }
 
-  def optWarningsSummaryOnly = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
+  def optWarningsSummaryOnly: Boolean = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
 
   def optWarningEmitAtInlineFailed =
     !optWarnings.isSetByUser ||

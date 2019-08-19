@@ -1141,9 +1141,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val isScala300: Boolean = settings.isScala300
 
     // used in sbt
-    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
     // used in sbt
-    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings
 
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]

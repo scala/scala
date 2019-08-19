@@ -683,7 +683,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings.map{ case (pos, (msg, since@_)) => (pos, msg) })
+      val warnings = loop(run.reporting.allConditionalWarnings)
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }

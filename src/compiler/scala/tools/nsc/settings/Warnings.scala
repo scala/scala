@@ -14,6 +14,8 @@ package scala.tools
 package nsc
 package settings
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {
@@ -23,6 +25,51 @@ trait Warnings {
 
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Werror", "Fail the compilation if there are any warnings.") withAbbreviation "-Xfatal-warnings"
+
+  private val WconfDefault = List("cat=deprecation:ws", "cat=feature:ws", "cat=unchecked:ws", "cat=optimizer:ws")
+  // Note: user-defined settings are added on the right, but the value is reversed before
+  // it's parsed, so that later defined settings take precedence.
+  val Wconf = MultiStringSetting(
+    "-Wconf",
+    "patterns",
+    "Configure reporting of compiler warnings; use `help` for details.",
+    helpText = Some(
+      s"""Configure compiler warnings.
+         |Syntax: -Wconf:<filter>&...&<filter>:<action>,<filter>:<action>,...
+         |
+         |<filter>
+         |  - any message: any
+         |  - message categories: cat=deprecation, cat=lint, cat=lint-infer-any
+         |  - message content: msg=regex
+         |  - site where the warning is triggered: site=my.package.*
+         |  - source file name: src=src_managed/*
+         |  - origin of deprecation: origin=external.package.*
+         |  - since of deprecation: since<*1.24
+         |
+         |<action>
+         |  - error / e
+         |  - warning / w
+         |  - warning-summary / ws
+         |  - info / i
+         |  - info-summary / is
+         |  - silent / s
+         |
+         |The default configuration is:
+         |  -Wconf:${WconfDefault.mkString(",")}
+         |
+         |User-defined configurations are added to the left. The leftmost rule matching
+         |a warning message defines the action.
+         |
+         |Examples:
+         |  - change every warning into an error: -Wconf any:error
+         |  - ignore certain deprecations: -Wconf:cat=deprecation&origin=some.lib.*&since<*2.2:s
+         |
+         |Full list of message categories:
+         |${WarningCategory.all.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
+         |
+         |Note: on the command-line you might need to quote configurations containing `*` or `&`
+         |to prevent the shell from expanding it to a list of files in the current directory.""".stripMargin))
+  locally { Wconf.tryToSet(WconfDefault) }
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
