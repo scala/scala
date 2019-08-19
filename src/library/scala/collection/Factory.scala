@@ -312,7 +312,10 @@ object SeqFactory {
     def get: UnapplySeqWrapper[A] = this
     def lengthCompare(len: Int): Int = c.lengthCompare(len)
     def apply(i: Int): A = c(i)
-    def drop(n: Int): scala.Seq[A] = c.view.drop(n).toSeq
+    def drop(n: Int): scala.Seq[A] = c match {
+      case seq: scala.Seq[A] => seq.drop(n)
+      case _                 => c.view.drop(n).toSeq
+    }
     def toSeq: scala.Seq[A] = c.toSeq
   }
 }
