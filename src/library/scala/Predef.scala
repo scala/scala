@@ -249,7 +249,7 @@ object Predef extends LowPriorityImplicits {
    *           }}}
    *  @group utilities
    */
-  @inline def locally[T](x: T): T = x
+  @inline def locally[T](@deprecatedName("x") x: T): T = x
 
   // assertions ---------------------------------------------------------
 
