@@ -20,6 +20,7 @@ object Literals {
   def after2slashess = s"\\u0040"
   def firstFailure = ("\""+"""([^"\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"")
   def badString = """bad\"""
+  def escapedQuotesInInterpolation = s"\u0022_\u0022"
 
 
   def supported = List(
@@ -87,6 +88,6 @@ object Test {
     println(Literals.after2slashess.toList)
     println(Literals.firstFailure.toList)
     println(Literals.badString.toList)
-   
+    println(Literals.escapedQuotesInInterpolation.toList)
   }
 }

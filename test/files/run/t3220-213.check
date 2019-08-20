@@ -1,7 +1,7 @@
 t3220-213.scala:9: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
   def inTripleQuoted = """\u000A"""
                           ^
-t3220-213.scala:42: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
+t3220-213.scala:43: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
       "tab unicode escape in triple quoted string" -> """tab\u0009tab""",
                                                             ^
 t3220-213.scala:10: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
@@ -10,10 +10,10 @@ t3220-213.scala:10: warning: Unicode escapes in raw interpolations are deprecate
 t3220-213.scala:11: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
   def inTripleQuotedInterpolation = raw"""\u000A"""
                                           ^
-t3220-213.scala:43: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
+t3220-213.scala:44: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
       "tab unicode escape in single quoted raw interpolator" -> raw"tab\u0009tab",
                                                                        ^
-t3220-213.scala:44: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
+t3220-213.scala:45: warning: Unicode escapes in raw interpolations are deprecated as of scala 2.13.1, and will be removed in scala 2.14. Use the literal character instead.
       "tab unicode escape in triple quoted raw interpolator" -> raw"""tab\u0009tab"""
                                                                          ^
 supported
@@ -49,3 +49,4 @@ List(\, \, u, 0, 0, 4, 0)
 List(\, u, 0, 0, 4, 0)
 List(", (, [, ^, ", \, x, 0, 0, -, \, x, 1, F, \, x, 7, F, \, \, ], |, \, \, [, \, \, ', ", b, f, n, r, t, ], |, \, \, u, [, a, -, f, A, -, F, 0, -, 9, ], {, 4, }, ), *, ")
 List(b, a, d, \)
+List(", _, ")
