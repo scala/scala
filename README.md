@@ -127,8 +127,8 @@ Once you've started an `sbt` session you can run one of the core commands:
       to skip generating / publishing API docs (speeds up the process).
 
 If a command results in an error message like `a module is not authorized to depend on
-itself`, it may be that a global SBT plugin (such as [ENSIME](https://ensime.github.io/)) is
-resulting in a cyclical dependency. Try disabling global SBT plugins (perhaps by
+itself`, it may be that a global sbt plugin is
+resulting in a cyclical dependency. Try disabling global sbt plugins (perhaps by
 temporarily commenting them out in `~/.sbt/1.0/plugins/plugins.sbt`).
 
 #### Sandbox
@@ -159,24 +159,15 @@ Assume the current `starr` version is `2.12.0` (defined in
     generating API docs, see above).
   - Quit sbt and start a new sbt instance using `sbt -Dstarr.version=<version>` where
     `<version>` is the version number you published locally.
-  - If the version number you published is not binary compatible with the current
-    `starr`, `set every scalaBinaryVersion := "2.12.0-M4"`. This is not required if
-    the version you published locally is binary compatible, i.e., if the current
-    `starr` is a 2.12.x release and not a milestone / RC.
-
-The last step is required to resolve modules (scala-partest, etc). It
-assumes that the module releases for the current `starr` work (in terms of binary
-compatibility) with the local starr that you published locally. A full bootstrap
-requires re-building the all the modules. On our CI this is handled by the
-[bootstrap](scripts/jobs/integrate/bootstrap) script, but it (currently) cannot
-be easily executed locally.
 
 ### IDE setup
 
-You may use IntelliJ IDEA (see [src/intellij/README.md](src/intellij/README.md)),
-or ENSIME (see [this page on the ENSIME site](https://ensime.github.io/editors/)).
-(Support for Eclipse has decayed and been removed, but could be resurrected by
-a volunteer.)
+We suggest using IntelliJ IDEA (see
+[src/intellij/README.md](src/intellij/README.md).
+
+([Metals](https://scalameta.org/metals/) should also work, but we don't yet have instructions or sample
+configuration for that. A pull request in this area would be
+exceedingly welcome.)
 
 In order to use IntelliJ's incremental compiler:
   - run `dist/mkBin` in sbt to get a build and the runner scripts in `build/quick/bin`
@@ -233,12 +224,9 @@ $ sbt
 > console
 ```
 
-Note that the scala modules are currently not built/published against the
-tested version during CI validation.
-
 ## Nightly builds
 
-The Scala CI builds nightly download releases (including all modules) and publishes
+The Scala CI builds nightly download releases and publishes
 them to the following locations:
   - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/?C=M;O=D)
   - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/?C=M;O=D)
