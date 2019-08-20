@@ -149,7 +149,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
    *
    *    x.asInstanceOf[`pt`]     up to phase uncurry
    *    x.asInstanceOf[`pt`]()   if after uncurry but before erasure
-   *    x.$asInstanceOf[`pt`]()  if at or after erasure
+   *    x.\$asInstanceOf[`pt`]()  if at or after erasure
    */
   override def mkCast(tree: Tree, pt: Type): Tree = {
     debuglog("casting " + tree + ":" + tree.tpe + " to " + pt + " at phase: " + phase)

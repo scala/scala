@@ -94,22 +94,22 @@ trait NamesDefaults { self: Analyzer =>
    * first the function "fun" (which might be an application itself!) is transformed into a
    * block of the form
    *   {
-   *     val qual$1 = qualifier_of_fun
-   *     val x$1 = arg_1_of_fun
+   *     val qual\$1 = qualifier_of_fun
+   *     val x\$1 = arg_1_of_fun
    *     ...
-   *     val x$n = arg_n_of_fun
-   *     qual$1.fun[targs](x$1, ...)...(..., x$n)
+   *     val x\$n = arg_n_of_fun
+   *     qual\$1.fun[targs](x\$1, ...)...(..., x\$n)
    *   }
    * then for each argument in args, a value is created and entered into the block. finally
    * the application expression of the block is updated.
    *   {
-   *     val qual$1 = ..
+   *     val qual\$1 = ..
    *     ...
-   *     val x$n = ...
-   *  >  val qual$n+1 = arg(1)
+   *     val x\$n = ...
+   *  >  val qual\$n+1 = arg(1)
    *  >  ...
-   *  >  val qual$n+m = arg(m)
-   *  >  qual$1.fun[targs](x$1, ...)...(..., x$n)(x$n+1, ..., x$n+m)
+   *  >  val qual\$n+m = arg(m)
+   *  >  qual\$1.fun[targs](x\$1, ...)...(..., x\$n)(x\$n+1, ..., x\$n+m)
    *   }
    *
    * @param typer the typer calling this method; this method calls
@@ -436,7 +436,7 @@ trait NamesDefaults { self: Analyzer =>
    * Example: given
    *   def foo(x: Int = 2, y: String = "def")
    *   foo(y = "lt")
-   * the argument list (y = "lt") is transformed to (y = "lt", x = foo$default$1())
+   * the argument list (y = "lt") is transformed to (y = "lt", x = foo\$default\$1())
    */
   def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
                   previousArgss: List[List[Tree]], params: List[Symbol],

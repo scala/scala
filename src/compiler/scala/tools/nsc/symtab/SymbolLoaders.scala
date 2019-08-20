@@ -293,7 +293,7 @@ abstract class SymbolLoaders {
       }
     }
   }
-  private val classFileDataReader: ReusableInstance[ReusableDataReader] = new ReusableInstance[ReusableDataReader](() => new ReusableDataReader())
+  private val classFileDataReader: ReusableInstance[ReusableDataReader] = new ReusableInstance[ReusableDataReader](() => new ReusableDataReader(), enabled = true)
   class ClassfileLoader(val classfile: AbstractFile, clazz: ClassSymbol, module: ModuleSymbol) extends SymbolLoader with FlagAssigningCompleter {
     private object classfileParser extends {
       val symbolTable: SymbolLoaders.this.symbolTable.type = SymbolLoaders.this.symbolTable

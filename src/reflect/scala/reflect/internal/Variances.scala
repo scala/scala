@@ -207,7 +207,7 @@ trait Variances {
   final def varianceInType(tp: Type)(tparam: Symbol): Variance = {
     varianceInTypeCache.using(_.apply(tp, tparam))
   }
-  private[this] val varianceInTypeCache = new ReusableInstance[varianceInType](() => new varianceInType)
+  private[this] val varianceInTypeCache = new ReusableInstance[varianceInType](() => new varianceInType, enabled = true)
 
   private final class varianceInType {
     private[this] var tp: Type = _

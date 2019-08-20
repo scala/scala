@@ -59,7 +59,7 @@ import java.util.regex.{ Pattern, Matcher }
  *
  *  {{{
  *  "2004-01-20" match {
- *    case date(year, month, day) => s"$year was a good year for PLs."
+ *    case date(year, month, day) => s"\$year was a good year for PLs."
  *  }
  *  }}}
  *
@@ -78,7 +78,7 @@ import java.util.regex.{ Pattern, Matcher }
  *
  *  {{{
  *  "2004-01-20" match {
- *    case date(year, _*) => s"$year was a good year for PLs."
+ *    case date(year, _*) => s"\$year was a good year for PLs."
  *  }
  *  }}}
  *
@@ -129,7 +129,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  val mi = date.findAllIn(dates)
  *  while (mi.hasNext) {
  *    val d = mi.next
- *    if (mi.group(1).toInt < 1960) println(s"$d: An oldie but goodie.")
+ *    if (mi.group(1).toInt < 1960) println(s"\$d: An oldie but goodie.")
  *  }
  *  }}}
  *
@@ -173,8 +173,8 @@ import java.util.regex.{ Pattern, Matcher }
  *  {{{
  *  val redacted    = date.replaceAllIn(dates, "XXXX-XX-XX")
  *  val yearsOnly   = date.replaceAllIn(dates, m => m.group(1))
- *  val months      = (0 to 11).map { i => val c = Calendar.getInstance; c.set(2014, i, 1); f"$c%tb" }
- *  val reformatted = date.replaceAllIn(dates, _ match { case date(y,m,d) => f"${months(m.toInt - 1)} $d, $y" })
+ *  val months      = (0 to 11).map { i => val c = Calendar.getInstance; c.set(2014, i, 1); f"\$c%tb" }
+ *  val reformatted = date.replaceAllIn(dates, _ match { case date(y,m,d) => f"\${months(m.toInt - 1)} \$d, \$y" })
  *  }}}
  *
  *  Pattern matching the `Match` against the `Regex` that created it does not reapply the `Regex`.
@@ -195,7 +195,7 @@ import java.util.regex.{ Pattern, Matcher }
  *  @param groupNames A mapping from names to indices in capture groups
  *
  *  @define replacementString
- *  In the replacement String, a dollar sign (`$`) followed by a number will be
+ *  In the replacement String, a dollar sign (`\$`) followed by a number will be
  *  interpreted as a reference to a group in the matched pattern, with numbers
  *  1 through 9 corresponding to the first nine groups, and 0 standing for the
  *  whole match. Any other character is an error. The backslash (`\`) character
@@ -368,7 +368,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  {{{
    *  val madhatter = "(h)(?=(at[^a]+))".r
    *  val madhats   = madhatter.findAllMatchIn(hathaway).map {
-   *    case madhatter(x,y) => s"$x$y"
+   *    case madhatter(x,y) => s"\$x\$y"
    *  }.toList                                       // List(hath, hatth, hattth, hatttt)
    *  }}}
    *
@@ -494,7 +494,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    * import scala.util.matching.Regex
    * val datePattern = new Regex("""(\d\d\d\d)-(\d\d)-(\d\d)""", "year", "month", "day")
    * val text = "From 2011-07-15 to 2011-07-17"
-   * val repl = datePattern replaceAllIn (text, m => s"${m group "month"}/${m group "day"}")
+   * val repl = datePattern replaceAllIn (text, m => s"\${m group "month"}/\${m group "day"}")
    * }}}
    *
    * $replacementString
@@ -517,7 +517,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    * {{{
    * import scala.util.matching.Regex._
    *
-   * val vars = Map("x" -> "a var", "y" -> """some $ and \ signs""")
+   * val vars = Map("x" -> "a var", "y" -> """some \$ and \ signs""")
    * val text = "A text with variables %x, %y and %z."
    * val varPattern = """%(\w+)""".r
    * val mapper = (m: Match) => vars get (m group 1) map (quoteReplacement(_))
@@ -564,7 +564,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  the entire String matches in extractor patterns and [[Regex#matches]].
    *
    *  Normally, matching on `date` behaves as though the pattern were
-   *  enclosed in anchors, `"^pattern$"`.
+   *  enclosed in anchors, `"^pattern\$"`.
    *
    *  The unanchored `Regex` behaves as though those anchors were removed.
    *
@@ -578,7 +578,7 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  val date(year, month, day) = "Date 2011-07-15"                       // OK
    *
    *  val copyright: String = "Date of this document: 2011-07-15" match {
-   *    case date(year, month, day) => s"Copyright $year"                  // OK
+   *    case date(year, month, day) => s"Copyright \$year"                  // OK
    *    case _                      => "No copyright"
    *  }
    *  }}}
@@ -766,7 +766,7 @@ object Regex {
    *
    *  val date = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
    *  val text = "The doc spree happened on 2011-07-15."
-   *  val day = date replaceAllIn(text, _ match { case Groups(_, month, day) => s"$month/$day" })
+   *  val day = date replaceAllIn(text, _ match { case Groups(_, month, day) => s"\$month/\$day" })
    *  }}}
    */
   object Groups {
@@ -887,21 +887,21 @@ object Regex {
    *
    *  All regex metacharacters in the input match themselves literally in the output.
    *
-   *  @example {{{List("US$", "CAN$").map(Regex.quote).mkString("|").r}}}
+   *  @example {{{List("US\$", "CAN\$").map(Regex.quote).mkString("|").r}}}
    */
   def quote(text: String): String = Pattern quote text
 
   /** Quotes replacement strings to be used in replacement methods.
    *
    *  Replacement methods give special meaning to backslashes (`\`) and
-   *  dollar signs (`$`) in replacement strings, so they are not treated
+   *  dollar signs (`\$`) in replacement strings, so they are not treated
    *  as literals. This method escapes these characters so the resulting
    *  string can be used as a literal replacement representing the input
    *  string.
    *
    *  @param text The string one wishes to use as literal replacement.
    *  @return A string that can be used to replace matches with `text`.
-   *  @example {{{"CURRENCY".r.replaceAllIn(input, Regex quoteReplacement "US$")}}}
+   *  @example {{{"CURRENCY".r.replaceAllIn(input, Regex quoteReplacement "US\$")}}}
    */
   def quoteReplacement(text: String): String = Matcher quoteReplacement text
 }

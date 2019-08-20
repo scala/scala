@@ -115,7 +115,7 @@ object Option {
  * bMaybe = Option(abc.get(2))
  * bMaybe match {
  *   case Some(b) =>
- *     println(s"Found $b")
+ *     println(s"Found \$b")
  *   case None =>
  *     println("Not found")
  * }

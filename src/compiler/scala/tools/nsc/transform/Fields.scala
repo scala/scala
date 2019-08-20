@@ -52,7 +52,7 @@ import symtab.Flags._
   *
   *
   * In the future, would like to get closer to dotty, which lifts a val's RHS (a similar thing is done for template-level statements)
-  * to a method `$_initialize_$1$x` instead of a block, which is used in the constructor to initialize the val.
+  * to a method `\$_initialize_\$1\$x` instead of a block, which is used in the constructor to initialize the val.
   * This makes for a nice unification of strict and lazy vals, in that the RHS is lifted to a method for both,
   * with the corresponding compute method called at the appropriate time.)
   *
@@ -568,17 +568,17 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       * or a local `object x { ...}` (the rhs will be instantiating the module's class) into:
       *
       * ```
-      * val x$lzy = new scala.runtime.LazyInt()
-      * def x$lzycompute(): Int =
-      *   x$lzy.synchronized {
-      *     if (x$lzy.initialized()) x$lzy.value()
-      *     else x$lzy.initialize(rhs) // for a Unit-typed lazy val, this becomes `{ rhs ; x$lzy.initialize() }` to avoid passing around BoxedUnit
+      * val x\$lzy = new scala.runtime.LazyInt()
+      * def x\$lzycompute(): Int =
+      *   x\$lzy.synchronized {
+      *     if (x\$lzy.initialized()) x\$lzy.value()
+      *     else x\$lzy.initialize(rhs) // for a Unit-typed lazy val, this becomes `{ rhs ; x\$lzy.initialize() }` to avoid passing around BoxedUnit
       *  }
-      * def x(): Int = if (x$lzy.initialized()) x$lzy.value() else x$lzycompute()
+      * def x(): Int = if (x\$lzy.initialized()) x\$lzy.value() else x\$lzycompute()
       * ```
       *
       * The expansion is the same for local lazy vals and local objects,
-      * except for the suffix of the underlying val's name ($lzy or $module)
+      * except for the suffix of the underlying val's name (\$lzy or \$module)
       */
     private def mkLazyLocalDef(lazySym: Symbol, rhs: Tree): Tree = {
       import CODE._

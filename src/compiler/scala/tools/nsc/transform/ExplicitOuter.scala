@@ -134,12 +134,12 @@ abstract class ExplicitOuter extends InfoTransform
    *      in an inner non-trait class;
    *    </li>
    *    <li>
-   *      Add a protected $outer field to an inner class which is
+   *      Add a protected \$outer field to an inner class which is
    *      not a trait.
    *    </li>
    *    <li>
    *      <p>
-   *        Add an outer accessor $outer$$C to every inner class
+   *        Add an outer accessor \$outer\$\$C to every inner class
    *        with fully qualified name C that is not an interface.
    *        The outer accessor is abstract for traits, concrete for other
    *        classes.
@@ -318,9 +318,9 @@ abstract class ExplicitOuter extends InfoTransform
     * (4) A constructor of a non-trait inner class gets an outer parameter.
     *
     * (5) A reference C.this where C refers to an outer class is replaced by a selection
-    *     `this.$outer$$C1 ... .$outer$$Cn` (@see outerPath)
+    *     `this.\$outer\$\$C1 ... .\$outer\$\$Cn` (@see outerPath)
     *
-    * (7) A call to a constructor Q.(args) or Q.$init$(args) where Q != this and
+    * (7) A call to a constructor Q.(args) or Q.\$init\$(args) where Q != this and
     *     the constructor belongs to a non-static class is augmented by an outer argument.
     *     E.g. Q.(OUTER, args) where OUTER
     *     is the qualifier corresponding to the singleton type Q.

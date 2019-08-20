@@ -101,7 +101,7 @@ trait Names extends api.Names {
 
   /** Create a term name from the characters in cs[offset..offset+len-1].
    *  TODO - have a mode where name validation is performed at creation time
-   *  (e.g. if a name has the string "$class" in it, then fail if that
+   *  (e.g. if a name has the string "\$class" in it, then fail if that
    *  string is not at the very end.)
    *
    *  @param len0 the length of the name. Negative lengths result in empty names.
@@ -486,7 +486,7 @@ trait Names extends api.Names {
   implicit def TypeNameOps(name: TypeName): NameOps[TypeName] = new NameOps(name)
 
   /** FIXME: This is a good example of something which is pure "value class" but cannot
-   *  reap the benefits because an (unused) $outer pointer so it is not single-field.
+   *  reap the benefits because an (unused) \$outer pointer so it is not single-field.
    */
   final class NameOps[T <: Name](name: T) {
     import NameTransformer._

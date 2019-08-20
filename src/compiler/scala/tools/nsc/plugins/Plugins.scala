@@ -15,6 +15,9 @@ package plugins
 
 import java.net.URL
 
+import java.net.URL
+import java.util
+
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
 import scala.tools.nsc.io.AbstractFile
@@ -58,7 +61,8 @@ trait Plugins { global: Global =>
   /**
     * Locate or create the classloader to load a compiler plugin with `classpath`.
     *
-    * Subclasses may override to customise the behaviour.
+    * Subclasses may override to customise the behaviour. The returned classloader must return the first
+    * from plugin descriptor from `classpath` when `getResource("scalac-plugin.xml")` is called.
     *
     * @param classpath
     * @return
@@ -69,7 +73,19 @@ trait Plugins { global: Global =>
     def newLoader = () => {
       val compilerLoader = classOf[Plugin].getClassLoader
       val urls = classpath map (_.toURL)
-      ScalaClassLoader fromURLs (urls, compilerLoader)
+      new ScalaClassLoader.URLClassLoader(urls, compilerLoader) {
+        // scala/bug#11666 no parent delegation for plugin.xml to avoid getting plugin.xml from parent classloader
+
+        override def getResources(name: String): util.Enumeration[URL] = {
+          if (name == Plugin.PluginXML) findResources(name);
+          else super.getResources(name)
+        }
+
+        override def getResource(name: String): URL = {
+          if (name == Plugin.PluginXML) findResource(name);
+          else super.getResource(name)
+        }
+      }
     }
 
     // Create a class loader with the specified locations plus

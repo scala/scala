@@ -30,7 +30,7 @@ import java.lang.{ Class => jClass }
  * For example:
  * {{{
  *   scala> def mkArray[T : ClassTag](elems: T*) = Array[T](elems: _*)
- *   mkArray: [T](elems: T*)(implicit evidence$1: scala.reflect.ClassTag[T])Array[T]
+ *   mkArray: [T](elems: T*)(implicit evidence\$1: scala.reflect.ClassTag[T])Array[T]
  *
  *   scala> mkArray(42, 13)
  *   res0: Array[Int] = Array(42, 13)

@@ -247,7 +247,7 @@ object Pickler {
       .cond (x eq _.asInstanceOf[AnyRef])
 
   /** A pickler the handles instances of classes that have an empty constructor.
-   *  It represents than as `$new ( <name of class> )`.
+   *  It represents than as `\$new ( <name of class> )`.
    *  When unpickling, a new instance of the class is created using the empty
    *  constructor of the class via `Class.forName(<name of class>).getConstructor().newInstance()`.
    */

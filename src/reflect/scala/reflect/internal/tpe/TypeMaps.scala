@@ -260,10 +260,15 @@ private[internal] trait TypeMaps {
 
   abstract class TypeCollector[T](initial: T) extends TypeFolder {
     var result: T = _
-    def collect(tp: Type) = {
-      result = initial
-      apply(tp)
-      result
+    def collect(tp: Type): T = {
+      val saved = result
+      try {
+        result = initial
+        apply(tp)
+        result
+      } finally {
+        result = saved // support reentrant use of a single instance of this collector.
+      }
     }
   }
 

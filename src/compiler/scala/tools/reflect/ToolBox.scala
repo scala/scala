@@ -133,7 +133,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *  For a ClassDef, a ClassSymbol is returned, and for a ModuleDef, a ModuleSymbol is returned (not a module class, but a module itself).
    *
    *  This method can be used to generate definitions that will later be re-used by subsequent calls to
-   *  `compile`, `define` or `eval`. To refer to the generated definition in a tree, use q"$sym".
+   *  `compile`, `define` or `eval`. To refer to the generated definition in a tree, use q"\$sym".
    */
   def define(tree: u.ImplDef): u.Symbol
 

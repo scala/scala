@@ -38,9 +38,9 @@ trait Liftables { self: Universe =>
      *
      *  scala> val Oref = symbolOf[O.type].asClass.module
      *
-     *  scala> implicit val liftO = Liftable[O.type] { _ => q"$Oref" }
+     *  scala> implicit val liftO = Liftable[O.type] { _ => q"\$Oref" }
      *
-     *  scala> val lifted = q"$O"
+     *  scala> val lifted = q"\$O"
      *  lifted: universe.Tree = O
      *  }}}
      *
@@ -75,7 +75,7 @@ trait Liftables { self: Universe =>
      *
      *  scala> implicit val unliftO = Unliftable[O.type] { case t if t.symbol == Oref => O }
      *
-     *  scala> val q"${_: O.type}" = q"$Oref"
+     *  scala> val q"\${_: O.type}" = q"\$Oref"
      *  }}}
      *
      *  @see [[http://docs.scala-lang.org/overviews/quasiquotes/unlifting.html]]
