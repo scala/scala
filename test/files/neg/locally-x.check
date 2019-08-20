@@ -1,0 +1,6 @@
+locally-x.scala:8: warning: naming parameter x is deprecated.
+    x = 27
+      ^
+error: No warnings can be incurred under -Werror.
+one warning found
+one error found
