@@ -1,566 +1,566 @@
 0) List(-cp, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 1) List(-cp, , ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 2) List(, -cp, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 3) List(-cp, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 4) List(-cp, , , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 5) List(-cp, , -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 6) List(, -cp, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 7) List(-cp, , -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 8) List(-cp, , , -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 9) List(-cp, , -deprecation, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 10) List(-cp, , -deprecation, foo.scala, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 11) List(, -cp, , -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 12) List(-cp, , foo.scala) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 13) List(-cp, , , foo.scala) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 14) List(-cp, , foo.scala, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 15) List(, -cp, , foo.scala) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 16) List(-cp, , foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 17) List(-cp, , , foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 18) List(-cp, , foo.scala, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 19) List(-cp, , foo.scala, -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 20) List(, -cp, , foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 21) List(-deprecation, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 22) List(, -deprecation, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 23) List(-deprecation, -cp, , ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 24) List(-deprecation, , -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 25) List(-deprecation, -cp, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 26) List(, -deprecation, -cp, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 27) List(-deprecation, -cp, , , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 28) List(-deprecation, -cp, , foo.scala, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 29) List(-deprecation, , -cp, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 30) List(-deprecation, foo.scala, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 31) List(, -deprecation, foo.scala, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 32) List(-deprecation, , foo.scala, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 33) List(-deprecation, foo.scala, -cp, , ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 34) List(-deprecation, foo.scala, , -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 35) List(foo.scala, -cp, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 36) List(, foo.scala, -cp, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 37) List(foo.scala, -cp, , ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 38) List(foo.scala, , -cp, ) ==> Settings {
-  -d = .
   -classpath = ""
+  -d = .
 }
 
 39) List(foo.scala, -cp, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 40) List(, foo.scala, -cp, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 41) List(foo.scala, -cp, , , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 42) List(foo.scala, -cp, , -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 43) List(foo.scala, , -cp, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 44) List(foo.scala, -deprecation, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 45) List(, foo.scala, -deprecation, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 46) List(foo.scala, , -deprecation, -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 47) List(foo.scala, -deprecation, -cp, , ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 48) List(foo.scala, -deprecation, , -cp, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = ""
+  -d = .
 }
 
 0) List(-cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 1) List(-cp, /tmp:/bippy, ) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 2) List(, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 3) List(-cp, /tmp:/bippy, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 4) List(-cp, /tmp:/bippy, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 5) List(-cp, /tmp:/bippy, -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 6) List(, -cp, /tmp:/bippy, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 7) List(-cp, /tmp:/bippy, -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 8) List(-cp, /tmp:/bippy, , -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 9) List(-cp, /tmp:/bippy, -deprecation, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 10) List(-cp, /tmp:/bippy, -deprecation, foo.scala, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 11) List(, -cp, /tmp:/bippy, -deprecation, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 12) List(-cp, /tmp:/bippy, foo.scala) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 13) List(-cp, /tmp:/bippy, , foo.scala) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 14) List(-cp, /tmp:/bippy, foo.scala, ) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 15) List(, -cp, /tmp:/bippy, foo.scala) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 16) List(-cp, /tmp:/bippy, foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 17) List(-cp, /tmp:/bippy, , foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 18) List(-cp, /tmp:/bippy, foo.scala, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 19) List(-cp, /tmp:/bippy, foo.scala, -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 20) List(, -cp, /tmp:/bippy, foo.scala, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 21) List(-deprecation, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 22) List(, -deprecation, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 23) List(-deprecation, -cp, /tmp:/bippy, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 24) List(-deprecation, , -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 25) List(-deprecation, -cp, /tmp:/bippy, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 26) List(, -deprecation, -cp, /tmp:/bippy, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 27) List(-deprecation, -cp, /tmp:/bippy, , foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 28) List(-deprecation, -cp, /tmp:/bippy, foo.scala, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 29) List(-deprecation, , -cp, /tmp:/bippy, foo.scala) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 30) List(-deprecation, foo.scala, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 31) List(, -deprecation, foo.scala, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 32) List(-deprecation, , foo.scala, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 33) List(-deprecation, foo.scala, -cp, /tmp:/bippy, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 34) List(-deprecation, foo.scala, , -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 35) List(foo.scala, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 36) List(, foo.scala, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 37) List(foo.scala, -cp, /tmp:/bippy, ) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 38) List(foo.scala, , -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 39) List(foo.scala, -cp, /tmp:/bippy, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 40) List(, foo.scala, -cp, /tmp:/bippy, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 41) List(foo.scala, -cp, /tmp:/bippy, , -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 42) List(foo.scala, -cp, /tmp:/bippy, -deprecation, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 43) List(foo.scala, , -cp, /tmp:/bippy, -deprecation) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 44) List(foo.scala, -deprecation, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 45) List(, foo.scala, -deprecation, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 46) List(foo.scala, , -deprecation, -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 47) List(foo.scala, -deprecation, -cp, /tmp:/bippy, ) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
 48) List(foo.scala, -deprecation, , -cp, /tmp:/bippy) ==> Settings {
-  -d = .
   -deprecation = true
   -classpath = /tmp:/bippy
+  -d = .
 }
 
