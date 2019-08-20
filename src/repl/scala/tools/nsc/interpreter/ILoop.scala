@@ -247,7 +247,7 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
       buffer.substring(0, cursor) match {
         case trailingWord(s) =>
           val maybes = settings.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
-                               .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).toList.sorted
+                               .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).sorted
           if (maybes.isEmpty) NoCandidates else Candidates(cursor - s.length, maybes)
         case _ => NoCandidates
       }
@@ -362,7 +362,8 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
   }
 
   private def changeSettings(line: String): Result = {
-    def showSettings() = for (s <- settings.userSetSettings.toSeq.sorted) echo(s.toString)
+    val s = settings
+    def showSettings() = for (s <- s.userSetSettings.sorted(Ordering.ordered[s.Setting])) echo(s.toString)
     if (line.isEmpty) showSettings() else { updateSettings(line) ; () }
   }
   private def updateSettings(line: String) = {

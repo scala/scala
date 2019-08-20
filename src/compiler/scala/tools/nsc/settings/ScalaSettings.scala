@@ -31,7 +31,7 @@ trait ScalaSettings extends AbsScalaSettings
   self: MutableSettings =>
 
   /** Set of settings */
-  protected[scala] lazy val allSettings = mutable.HashSet[Setting]()
+  protected[scala] lazy val allSettings = mutable.LinkedHashSet[Setting]()
 
   /** The user class path, specified by `-classpath` or `-cp`,
    *  defaults to the value of CLASSPATH env var if it is set, as in Java,

@@ -128,7 +128,10 @@ object ClassPath {
   def split(path: String): List[String] = (path split pathSeparator).toList.filterNot(_ == "").distinct
 
   /** Join classpath using platform-dependent path separator */
-  def join(paths: String*): String  = paths filterNot (_ == "") mkString pathSeparator
+  def join(paths: String*): String  = paths.toList.filterNot(_ == "") match {
+    case only :: Nil => only // optimize for a common case when called by PathSetting.value
+    case xs => xs.mkString(pathSeparator)
+  }
 
   /** Split the classpath, apply a transformation function, and reassemble it. */
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
