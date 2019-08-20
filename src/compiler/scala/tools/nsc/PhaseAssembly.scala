@@ -112,8 +112,11 @@ trait PhaseAssembly {
       for (node <- nodes.valuesIterator.toList) {
         val hardBefores = node.before.iterator.filter(_.hard).toList
         for (hl <- hardBefores) {
-          node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
-          node.before = hl.frm.before
+          val effectiveNode: Node = if (nodes.contains(node.name)) node else {
+            nodes.find(_._2.phaseobj.exists(_.exists(_.phaseName == node.name))).get._2
+          }
+          effectiveNode.phaseobj = Some(effectiveNode.phaseobj.get ++ hl.frm.phaseobj.get)
+          effectiveNode.before = hl.frm.before
           nodes -= hl.frm.phasename
           edges -= hl
         }
