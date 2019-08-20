@@ -63,6 +63,46 @@ trait TryStandard {
     t.recoverWith{ case x => assert(false); Try(()) }
   }
 
+  def testContainsSuccess(): Unit = {
+    val t = Success(1)
+
+    assert(t contains 1)
+    assert(!t.contains(2))
+  }
+
+  def testContainsFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+
+    assert(!t.contains(1))
+  }
+
+  def testExistsSuccess(): Unit = {
+    val t = Success(1)
+
+    assert(t.exists(_ > 0))
+    assert(!t.exists(_ <= 0))
+  }
+
+  def testExistsFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+
+    assert(!t.exists(_ => true))
+  }
+
+  def testForallSuccess(): Unit = {
+    val t = Success(1)
+
+    assert(t.forall(_ > 0))
+    assert(!t.forall(_ <= 0))
+  }
+
+  def testForallFailure(): Unit = {
+    val t = Failure(new Exception("foo"))
+
+    assert(t.forall(_ => false))
+    assert(t.forall(_ => true))
+  }
+
   def testRescueFailure(): Unit = {
     val t = Failure(new Exception("foo"))
     val n = t.recoverWith{ case x => Try(1) }

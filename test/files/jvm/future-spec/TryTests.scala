@@ -126,5 +126,27 @@ class TryTests extends MinimalScalaTest {
         }
       }
     }
+
+    "contains" in {
+      Success(1) contains 1 mustEqual true
+      Success(2) contains 1 mustEqual false
+      Failure(new Exception) contains 1 mustEqual false
+    }
+
+    "exists" in {
+      Success(1).exists(_ > 0) mustEqual true
+      Success(2).exists(_ < 1) mustEqual false
+
+      Failure(new Exception).exists(_ => true) mustEqual false
+      Failure(new Exception).exists(_ => false) mustEqual false
+    }
+
+    "forall" in {
+      Success(1).forall(_ > 0) mustEqual true
+      Success(2).forall(_ < 1) mustEqual false
+
+      Failure(new Exception).exists(_ => true) mustEqual true
+      Failure(new Exception).exists(_ => false) mustEqual true
+    }
   }
 }

@@ -141,6 +141,61 @@ sealed abstract class Try[+T] extends Product with Serializable {
     def withFilter(q: T => Boolean): WithFilter = new WithFilter(x => p(x) && q(x))
   }
 
+  /** Tests whether this is a `Success` with a given value.
+   *
+   * This is equivalent to:
+   * {{{
+   * tryComputation match {
+   *   case Success(x) => x == value
+   *   case Failure(_) => false
+   * }
+   * }}}
+   *  @example {{{
+   *  // Returns true because Success instance contains string "something" which equals "something".
+   *  Success("something") contains "something"
+   *
+   *  // Returns false because "something" != "anything".
+   *  Success("something") contains "anything"
+   *
+   *  // Returns false when method called on Failure.
+   *  Failure(new Exception("It failed")) contains "anything"
+   *  }}}
+   *
+   *  @param value the value to test.
+   *  @return `true` if the successful computation returns a value 
+   * that is equal (as determined by `==`) to `value`, `false` otherwise.
+   */
+  def contains[U >: T](value: U): Boolean
+
+  /** Returns true if this is successful '''and''' the predicate
+   * $p returns true when applied to this computed value.
+   * Otherwise, returns false.
+   *
+   * This is equivalent to:
+   * {{{
+   * tryComputation match {
+   *   case Success(x) => p(x)
+   *   case Failure(_) => false
+   * }
+   * }}}
+   *  @param p the predicate to test
+   */
+  def exists(p: T => Boolean): Boolean
+
+  /** Returns true if this computation is failed '''or''' the predicate
+   * $p returns true when applied to the successful value.
+   *
+   * This is equivalent to:
+   * {{{
+   * tryComputation match {
+   *   case Success(x) => p(x)
+   *   case Failure    => true
+   * }
+   * }}}
+   *  @param  p the predicate to test
+   */
+  def forall(p: T => Boolean): Boolean
+
   /**
    * Applies the given function `f` if this is a `Failure`, otherwise returns this if this is a `Success`.
    * This is like `flatMap` for the exception.
@@ -234,6 +289,9 @@ final case class Failure[+T](exception: Throwable) extends Try[T] {
       if (marker ne v.asInstanceOf[AnyRef]) Success(v.asInstanceOf[U]) else this
     } catch { case NonFatal(e) => Failure(e) }
   }
+  override def contains[U >: T](value: U): Boolean = false
+  override def exists(p: T => Boolean): Boolean = false
+  override def forall(p: T => Boolean): Boolean = true
   override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = {
     val marker = Statics.pfMarker
     try {
@@ -273,6 +331,9 @@ final case class Success[+T](value: T) extends Try[T] {
       if (p(value)) this else Failure(new NoSuchElementException("Predicate does not hold for " + value))
     } catch { case NonFatal(e) => Failure(e) }
   override def recover[U >: T](pf: PartialFunction[Throwable, U]): Try[U] = this
+  override def contains[U >: T](value: U): Boolean = this.value == value
+  override def exists(p: T => Boolean): Boolean = p(value)
+  @inline override def forall(p: T => Boolean): Boolean = exists(p)
   override def recoverWith[U >: T](pf: PartialFunction[Throwable, Try[U]]): Try[U] = this
   override def failed: Try[Throwable] = Failure(new UnsupportedOperationException("Success.failed"))
   override def toOption: Option[T] = Some(value)
