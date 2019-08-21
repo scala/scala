@@ -19,7 +19,6 @@ import java.io.{ File => JFile }
 import io.{ Streamable, Directory }
 import scala.collection._
 import page.diagram._
-import scala.io.Source
 import scala.reflect.internal.Reporter
 
 /** A class that can generate Scaladoc sites to some fixed root folder.

@@ -39,7 +39,7 @@ object Test {
     imain = IMain(settings)
     println("== evaluating lines")
     imain.directBind("extract", "(AnyRef => Unit)", extract)
-    code.lines.foreach(imain.interpret)
+    code.linesIterator.foreach(imain.interpret)
 
     val virtualFile: AbstractFile = extract.value.getClass.getClassLoader.asInstanceOf[AbstractFileClassLoader].root
     val newLoader = new AbstractFileClassLoader(virtualFile, getClass.getClassLoader)

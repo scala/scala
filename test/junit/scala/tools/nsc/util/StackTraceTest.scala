@@ -68,9 +68,9 @@ class StackTraceTest extends Expecting {
     }
   }
 
-  @Test def showsAllTrace() {
+  @Test def showsAllTrace(): Unit = {
     probe(sampler)(_ => true) { s =>
-      val res = s.lines.toList
+      val res = s.linesIterator.toList
       /*
       expect {
         res.length > 5  // many lines
@@ -83,7 +83,7 @@ class StackTraceTest extends Expecting {
     }
   }
   @Test def showsOnlyPrefix() = probe(sample)(_.getMethodName == "sample") { s =>
-    val res = s.lines.toList
+    val res = s.linesIterator.toList
     /*
     expect {
       res.length == 3   // summary + one frame + elision
@@ -92,7 +92,7 @@ class StackTraceTest extends Expecting {
     assert (res.length == 3)
   }
   @Test def showsCause() = probe(resampler)(_.getMethodName != "resampler") { s =>
-    val res = s.lines.toList
+    val res = s.linesIterator.toList
     /*
     expect {
       res.length == 6   // summary + one frame + elision, caused by + one frame + elision
@@ -103,7 +103,7 @@ class StackTraceTest extends Expecting {
     assert (res exists (_ startsWith CausedBy.toString))
   }
   @Test def showsWrappedExceptions() = probe(rewrapperer)(_.getMethodName != "rewrapperer") { s =>
-    val res = s.lines.toList
+    val res = s.linesIterator.toList
     /*
     expect {
       res.length == 9   // summary + one frame + elision times three
@@ -120,7 +120,7 @@ class StackTraceTest extends Expecting {
       }).size == 2)
   }
   @Test def dontBlowOnCycle() = probe(insaner)(_.getMethodName != "insaner") { s =>
-    val res = s.lines.toList
+    val res = s.linesIterator.toList
     /*
     expect {
       res.length == 7   // summary + one frame + elision times two with extra frame
@@ -142,7 +142,7 @@ java.lang.RuntimeException: My problem
     ... 27 more
   */
   @Test def showsSuppressed() = probe(represser)(_.getMethodName != "represser") { s =>
-    val res = s.lines.toList
+    val res = s.linesIterator.toList
     if (suppressable) {
       assert (res.length == 7)
       assert (res exists (_.trim startsWith Suppressed.toString))
