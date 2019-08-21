@@ -24,6 +24,8 @@ package object partest {
   type PathResolver = scala.tools.util.PathResolver
   type StringWriter = java.io.StringWriter
 
+  type Reporter     = scala.tools.nsc.reporters.FilteringReporter
+
   val SFile        = scala.reflect.io.File
   val Directory    = scala.reflect.io.Directory
   val Path         = scala.reflect.io.Path

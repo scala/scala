@@ -19,8 +19,8 @@ import scala.collection.mutable
 import mutable.{HashSet, LinkedHashMap}
 import scala.util.control.ControlThrowable
 import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.SourceFile
+import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.symtab._
 import scala.tools.nsc.typechecker.Analyzer
 import symtab.Flags.{ACCESSOR, PARAMACCESSOR}

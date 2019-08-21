@@ -177,7 +177,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   }
 
   case class ErrorTrace(
-    sfidx: Int, changes: scala.collection.Seq[Change], infos: scala.collection.Set[reporter.Info], content: Array[Char]) {
+    sfidx: Int, changes: scala.collection.Seq[Change], infos: scala.collection.Set[StoreReporter.Info], content: Array[Char]) {
     override def toString =
       "Sourcefile: "+inputs(sfidx)+
       "\nChanges:\n  "+changes.mkString("\n  ")+

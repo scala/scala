@@ -14,8 +14,7 @@ package scala.tools
 package nsc
 package doc
 
-import reporters.ConsoleReporter
-import scala.reflect.internal.Reporter
+import reporters.{ConsoleReporter, Reporter}
 import scala.reflect.internal.util._
 import DocParser.Parsed
 

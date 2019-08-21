@@ -15,7 +15,7 @@ package contexts
 
 import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.FreshNameCreator
-import scala.tools.nsc.reporters.StoreReporter
+import scala.tools.nsc.reporters.StoreReporter, StoreReporter.Info
 
 trait Parsers {
   self: Context =>
@@ -31,7 +31,7 @@ trait Parsers {
       })
       val tree = gen.mkTreeOrBlock(parser.parseStatsOrPackages())
       sreporter.infos.foreach {
-        case sreporter.Info(pos, msg, Reporter.ERROR) => throw ParseException(pos, msg)
+        case Info(pos, msg, Reporter.ERROR) => throw ParseException(pos, msg)
         case _ =>
       }
       tree

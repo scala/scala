@@ -15,17 +15,17 @@ package interactive
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.Position
-import scala.reflect.internal.Reporter
+import reporters.FilteringReporter
 
 case class Problem(pos: Position, msg: String, severityLevel: Int)
 
-abstract class InteractiveReporter extends Reporter {
+abstract class InteractiveReporter extends FilteringReporter {
 
   def compiler: Global
 
   val otherProblems = new ArrayBuffer[Problem]
 
-  override def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = try {
+  override final def doReport(pos: Position, msg: String, severity: Severity): Unit = try {
     count(severity)
     val problems =
       if (compiler eq null) {

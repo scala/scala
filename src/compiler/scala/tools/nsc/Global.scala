@@ -21,7 +21,7 @@ import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, S
 import scala.collection.{immutable, mutable}
 import io.{AbstractFile, SourceReader}
 import util.{ClassPath, returning}
-import reporters.{Reporter => LegacyReporter}
+import reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
 import scala.reflect.ClassTag
 import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile}
@@ -42,7 +42,7 @@ import scala.tools.nsc.profile.Profiler
 import java.io.Closeable
 import scala.annotation.tailrec
 
-class Global(var currentSettings: Settings, reporter0: LegacyReporter)
+class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
     with Closeable
     with CompilationUnits
@@ -85,20 +85,23 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 
   override def settings = currentSettings
 
-  private[this] var currentReporter: LegacyReporter = { reporter = reporter0 ; currentReporter }
+  private[this] var currentReporter: FilteringReporter = null
+  locally { reporter = reporter0 }
 
-  def reporter: LegacyReporter = currentReporter
-  // enforce maxerrs if necessary
-  def reporter_=(newReporter: LegacyReporter): Unit = currentReporter = LegacyReporter.limitedReporter(settings, newReporter)
+  def reporter: FilteringReporter = currentReporter
+  def reporter_=(newReporter: Reporter): Unit = newReporter match {
+    case f: FilteringReporter => currentReporter = f
+    case r                    => new MakeFilteringForwardingReporter(r, settings) // for sbt
+  }
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
 
-  def this(reporter: LegacyReporter) =
+  def this(reporter: Reporter) =
     this(new Settings(err => reporter.error(null, err)), reporter)
 
   def this(settings: Settings) =
-    this(settings, LegacyReporter(settings))
+    this(settings, Reporter(settings))
 
   def picklerPhase: Phase = if (currentRun.isDefined) currentRun.picklerPhase else NoPhase
 
@@ -1728,9 +1731,9 @@ class Global(var currentSettings: Settings, reporter0: LegacyReporter)
 }
 
 object Global {
-  def apply(settings: Settings, reporter: LegacyReporter): Global = new Global(settings, reporter)
+  def apply(settings: Settings, reporter: Reporter): Global = new Global(settings, reporter)
 
-  def apply(settings: Settings): Global = new Global(settings, LegacyReporter(settings))
+  def apply(settings: Settings): Global = new Global(settings, Reporter(settings))
 
   private object InitPhase extends Phase(null) {
     def name = "<init phase>"

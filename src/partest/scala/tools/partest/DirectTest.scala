@@ -14,8 +14,7 @@ package scala.tools.partest
 
 import scala.tools.nsc._
 import settings.ScalaVersion
-import scala.reflect.internal.Reporter
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
+import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
 import reporters.ConsoleReporter
 import scala.tools.cmd.CommandLineParser
 

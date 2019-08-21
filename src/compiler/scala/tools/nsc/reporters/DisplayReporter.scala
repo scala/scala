@@ -22,75 +22,6 @@ import scala.tools.util.SystemExit
 import Position.formatMessage
 import StringOps.{trimAllTrailingSpace => trimTrailing}
 
-/** Facility for outputting messages, with optional user intervention. */
-trait PrintReporter extends InternalReporter {
-
-  def settings: Settings
-  def reader: BufferedReader
-  def writer: PrintWriter
-  def echoWriter: PrintWriter
-
-  /** Whether a short file name should be displayed before errors */
-  var shortname: Boolean = false
-
-  private def clabel(severity: Severity): String = severity match {
-    case InternalReporter.ERROR   => "error: "
-    case InternalReporter.WARNING => "warning: "
-    case _       => ""
-  }
-
-  /** Prints the warning or error message. */
-  private def printMessage(msg: String): Unit = {
-    writer.println(trimTrailing(msg))
-    writer.flush()
-    if (settings.prompt) displayPrompt()
-  }
-
-  /** Prints the message to the echoWriter, which is usually stdout. */
-  private def echoMessage(msg: String): Unit = {
-    echoWriter.println(trimTrailing(msg))
-    echoWriter.flush()
-  }
-
-  /** Format a message and emit it. */
-  def display(pos: Position, msg: String, severity: Severity): Unit = {
-    val text = formatMessage(pos, s"${clabel(severity)}${DisplayReporter.explanation(msg)}", shortname)
-    severity match {
-      case InternalReporter.INFO => echoMessage(text)
-      case _    => printMessage(text)
-    }
-  }
-
-  def displayPrompt(): Unit = {
-    writer.println()
-    writer.print("a)bort, s)tack, r)esume: ")
-    writer.flush()
-    if (reader != null) {
-      Option(reader.readLine).flatMap(_.trim.headOption).getOrElse('r') match {
-        case 'a' | 'A' =>
-          new Throwable().printStackTrace(writer)
-          throw SystemExit(1)
-        case 's' | 'S' =>
-          new Throwable().printStackTrace(writer)
-          writer.println()
-          writer.flush()
-        case _ =>
-      }
-    } else writer.println("r")
-  }
-
-  override def flush() = {
-    writer.flush()
-    if (writer ne echoWriter) echoWriter.flush()
-    super.flush()
-  }
-
-  def close() = {
-    writer.close()
-    if (writer ne echoWriter) echoWriter.close()
-  }
-}
-
 /** This class implements a Reporter that displays messages on a text console.
  */
 class DisplayReporter(val settings: Settings, val reader: BufferedReader, val writer: PrintWriter, val echoWriter: PrintWriter) extends InternalReporter with PrintReporter {
@@ -164,14 +95,14 @@ trait Filtering { _: InternalReporter =>
  *
  *  Concrete subclasses should implement just the abstract `filter` method.
  */
-trait FilteringReporter extends ForwardingReporter with Filtering {
+trait FilteringReporterOld extends ForwardingReporter with Filtering {
   override def echo(pos: Position, msg: String)    = if (filter(pos, msg, INFO)) delegate.echo(pos, msg)
   override def warning(pos: Position, msg: String) = if (filter(pos, msg, WARNING)) delegate.warning(pos, msg)
   override def error(pos: Position, msg: String)   = if (filter(pos, msg, ERROR)) delegate.error(pos, msg)
 }
 
 /** A `Reporter` that counts messages that are passed by the filter. */
-trait CountingReporter extends FilteringReporter {
+trait CountingReporter extends FilteringReporterOld {
   abstract override protected def filter(pos: Position, msg: String, severity: Severity): Boolean =
     super.filter(pos, msg, severity) && { count(severity) ; true }
 }
@@ -179,7 +110,7 @@ trait CountingReporter extends FilteringReporter {
 /** Disable a message when super.filter has passed the message but max limit has been reached.
  *  `hasErrors` is implemented as a flag to defer initializing ERROR object.
  */
-trait LimitFilter extends FilteringReporter {
+trait LimitFilter extends FilteringReporterOld {
   def maxerrs: Int
   def maxwarns: Int
 

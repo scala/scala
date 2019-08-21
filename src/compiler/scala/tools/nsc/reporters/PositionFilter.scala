@@ -69,7 +69,7 @@ trait PositionFiltering extends InternalReporter with Filtering {
 
 /** This reporter implements filtering by severity and position.
  */
-class PositionFilter(settings: Settings, protected val delegate: InternalReporter) extends InternalReporter with FilteringReporter with PositionFiltering {
+class PositionFilter(settings: Settings, protected val delegate: InternalReporter) extends InternalReporter with FilteringReporterOld with PositionFiltering {
   protected def noWarnings = settings.nowarnings
   protected def suppressed(pos: Position, msg: String, severity: Severity): Unit =
     if (settings.prompt) forward(pos, msg, severity)
