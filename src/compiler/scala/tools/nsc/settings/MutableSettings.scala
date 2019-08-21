@@ -581,6 +581,17 @@ class MutableSettings(val errorFn: String => Unit)
       super.value,
       appendPath.value
     )
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3._
+      // OPT: avoid creating `value` (potentially a long string) just to compute the hashcode.
+      var z = productSeed
+      z = mix(z, name.hashCode)
+      val pathSections = List(prependPath.value, super.value, appendPath.value).filterNot(_ == "")
+      for (p <- pathSections) {
+        z = mix(z, p.hashCode)
+      }
+      finalizeHash(z, 1 + pathSections.length)
+    }
   }
 
   /** Set the output directory. */
