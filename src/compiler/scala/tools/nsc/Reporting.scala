@@ -28,9 +28,8 @@ import scala.util.matching.Regex
 trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.internal.Symbols =>
   def settings: Settings
 
-  // not deprecated yet, but a method called "error" imported into
-  // nearly every trait really must go.  For now using globalError.
-  def error(msg: String) = globalError(msg)
+  @deprecated("use `globalError` instead")
+  def error(msg: String): Unit = globalError(msg)
 
   // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
   protected def PerRunReporting = new PerRunReporting
