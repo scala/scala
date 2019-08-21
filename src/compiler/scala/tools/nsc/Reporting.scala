@@ -50,7 +50,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       sm.getOrElseUpdate(category, mutable.LinkedHashMap.empty)
     }
 
-    def issueWarning(warning: Message): Unit = wconf.action(warning) match {
+    private def issueWarning(warning: Message): Unit = wconf.action(warning) match {
       case Action.Error => reporter.error(warning.pos, warning.msg)
       case Action.Warning => reporter.warning(warning.pos, warning.msg)
       case Action.Info => reporter.echo(warning.pos, warning.msg)
@@ -109,8 +109,18 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       }
     }
 
-    // TODO: remove in favor of the overload that takes a Symbol, give that argument a default (NoSymbol)
-    def deprecationWarning(pos: Position, msg: String, since: String): Unit = issueWarning(Message.Deprecation(msg, pos, "", "", new Version(since)))
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = issueWarning(Message.Deprecation(msg, pos, site, origin, new Version(since)))
+    def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit = {
+      def n(s: Symbol) = if (s.exists) s.fullNameString else ""
+      deprecationWarning(pos, msg, since, n(site), n(origin))
+    }
+    def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
+      val version = origin.deprecationVersion.getOrElse("")
+      val since   = if (version.isEmpty) version else s" (since $version)"
+      val message = origin.deprecationMessage.map(": " + _).getOrElse("")
+      deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
+    }
+
     def uncheckedWarning(pos: Position, msg: String): Unit   = issueWarning(Message.Plain(msg, WarningCategory.Unchecked, pos, ""))
     def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(msg, WarningCategory.Feature, pos, ""))
     def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(msg, WarningCategory.Optimizer, pos, ""))
@@ -120,15 +130,6 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     def uncheckedWarnings: List[(Position, String)]   = summaryMap(Action.WarningSummary, WarningCategory.Unchecked).toList.map(p => (p._1, p._2.msg))
 
     def allConditionalWarnings: List[(Position, String)] = summarizedWarnings.toList.sortBy(_._1.name).flatMap(_._2.toList.map(p => (p._1, p._2.msg)))
-
-    // behold! the symbol that caused the deprecation warning (may not be deprecated itself)
-    def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit = issueWarning(Message.Deprecation(msg, pos, "", "", new Version(since)))
-    def deprecationWarning(pos: Position, sym: Symbol): Unit = {
-      val version = sym.deprecationVersion.getOrElse("")
-      val since   = if (version.isEmpty) version else s" (since $version)"
-      val message = sym.deprecationMessage.map(": " + _).getOrElse("")
-      deprecationWarning(pos, sym, s"$sym${sym.locationString} is deprecated$since$message", version)
-    }
 
     private[this] var reportedFeature = Set[Symbol]()
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit = {
@@ -180,11 +181,13 @@ object Reporting {
     def msg: String
     def category: WarningCategory
     def pos: Position
-    def site: String
+    def site: String // may be empty
   }
 
   object Message {
     final case class Plain(msg: String, category: WarningCategory, pos: Position, site: String) extends Message
+
+    // `site` and `origin` may be empty
     final case class Deprecation(msg: String, pos: Position, site: String, origin: String, since: Version) extends Message {
       def category: WarningCategory = WarningCategory.Deprecation
     }
@@ -337,7 +340,7 @@ object Reporting {
     final case class DeprecatedOrigin(pattern: Regex) extends MessageFilter {
       def matches(message: Message): Boolean = message match {
         case m: Message.Deprecation => pattern.matches(m.origin)
-        case _ => true
+        case _ => false
       }
     }
 
@@ -384,6 +387,10 @@ object Reporting {
           val cs = s.substring(4)
           val c = WarningCategory.all.get(cs).map(Category)
           c.toRight(s"Unknown category: `$cs`")
+        } else if (s.startsWith("site=")) {
+          Right(SitePattern(s.substring(5).r))
+        } else if (s.startsWith("origin=")) {
+          Right(DeprecatedOrigin(s.substring(7).r))
         } else {
           Left(s"filter not yet implemented: $s")
         }

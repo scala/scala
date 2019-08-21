@@ -221,7 +221,7 @@ trait PatternExpansion {
 
     private def err(msg: String) = context.error(fun.pos,msg)
     private def warn(msg: String) = context.warning(fun.pos,msg)
-    private def depr(msg: String, since: String) = currentRun.reporting.deprecationWarning(fun.pos, fun.symbol.owner, msg, since)
+    private def depr(msg: String, since: String) = currentRun.reporting.deprecationWarning(fun.pos, origin = fun.symbol.owner, site = context.owner.asInstanceOf[global.Symbol], msg, since)
 
     private def warnPatternTupling() =
       if (effectivePatternArity(args) == 1 && tupleValuedUnapply) {
@@ -230,7 +230,7 @@ trait PatternExpansion {
           else s" to hold ${equivConstrParamTypes.mkString("(", ", ", ")")}"
         val sym = fun.symbol.owner
         val arr = equivConstrParamTypes.length
-        depr(s"${sym} expects $arr patterns$acceptMessage but crushing into $arr-tuple to fit single pattern (scala/bug#6675)", "2.11.0")
+        depr(s"deprecated adaptation: ${sym} expects $arr patterns$acceptMessage but crushing into $arr-tuple to fit single pattern (scala/bug#6675)", "2.11.0")
       }
 
     private def arityError(mismatch: String) = {

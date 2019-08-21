@@ -1362,7 +1362,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def warnDeprecatedAndConflictingSettings(): Unit = {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
-        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
+        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
       settings.conflictWarning.foreach(reporter.warning(NoPosition, _))
     }

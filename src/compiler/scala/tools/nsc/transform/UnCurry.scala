@@ -265,7 +265,7 @@ abstract class UnCurry extends InfoTransform
                 else gen.mkCastArray(tree, elemtp, pt)
 
               if(copy) {
-                currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
+                currentRun.reporting.deprecationWarning(tree.pos, NoSymbol, currentOwner,
                   "Passing an explicit array value to a Scala varargs method is deprecated (since 2.13.0) and will result in a defensive copy; "+
                     "Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
                 gen.mkMethodCall(PredefModule, nme.copyArrayToImmutableIndexedSeq, List(elemtp), List(adaptedTree))

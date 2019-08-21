@@ -885,7 +885,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     init()
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)
-    def deprecationWarning(pos: Int, msg: String, since: String) = currentRun.reporting.deprecationWarning(pos, msg, since)
+    def deprecationWarning(pos: Int, msg: String, since: String) = currentRun.reporting.deprecationWarning(pos, msg, since, site = "", origin = "")
     implicit def g2p(pos: Int): Position = Position.offset(unit.source, pos)
   }
 }

@@ -536,7 +536,7 @@ abstract class RefChecks extends Transform {
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
             val report  = s"overriding ${other.fullLocationString} is deprecated$since$message"
-            currentRun.reporting.deprecationWarning(member.pos, other, report, version)
+            currentRun.reporting.deprecationWarning(member.pos, other, member, report, version)
           }
         }
       }
@@ -1241,7 +1241,7 @@ abstract class RefChecks extends Transform {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
-        currentRun.reporting.deprecationWarning(pos, sym)
+        currentRun.reporting.deprecationWarning(pos, sym, currentOwner)
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
@@ -1351,6 +1351,7 @@ abstract class RefChecks extends Transform {
           currentRun.reporting.deprecationWarning(
             tree.pos,
             symbol,
+            currentOwner,
             s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", "")
       }
     }

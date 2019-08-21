@@ -411,7 +411,7 @@ trait DocComments { self: Global =>
       val comment      = "/** " + raw.substring(commentStart, end) + "*/"
       val commentPos   = subPos(commentStart, end)
 
-      self.currentRun.reporting.deprecationWarning(codePos, "The @usecase tag is deprecated, instead use the @example tag to document the usage of your API", "2.13.0")
+      self.currentRun.reporting.deprecationWarning(codePos, "The @usecase tag is deprecated, instead use the @example tag to document the usage of your API", "2.13.0", site = "", origin = "")
 
       UseCase(DocComment(comment, commentPos, codePos), code, codePos)
     }

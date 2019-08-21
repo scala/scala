@@ -13,9 +13,10 @@
 package scala.tools.nsc
 package reporters
 
-import org.junit.{Ignore, Test}
+import org.junit.Test
 
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.tools.nsc.reporters.StoreReporter.Info
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
@@ -105,5 +106,13 @@ class WConfTest extends BytecodeTesting {
   def silence(): Unit = {
     // TODO: directly reported, so not yet filtered
     check(reports(code, "any:s"), List(l8, l10, l13) /* should be Nil */)
+  }
+
+  @Test
+  def deprecationSiteOrigin(): Unit = {
+    check(reports(code, "site=A.f:e").filter(_.severity == InternalReporter.ERROR), Nil)
+    check(reports(code, "site=A.invokeDeprecated:e").filter(_.severity == InternalReporter.ERROR), List(l4))
+    check(reports(code, "origin=A.f:e").filter(_.severity == InternalReporter.ERROR), List(l4))
+    check(reports(code, "origin=A.invokeDeprecated:e").filter(_.severity == InternalReporter.ERROR), Nil)
   }
 }

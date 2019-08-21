@@ -215,7 +215,8 @@ self =>
       reporter.warning(o2p(offset), msg)
 
     override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
-      currentRun.reporting.deprecationWarning(o2p(offset), msg, since)
+      // we cannot provide a `site` in the parser, there's no context telling us where we are
+      currentRun.reporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "")
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {

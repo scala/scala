@@ -35,7 +35,7 @@ trait Reporting { self : Positions =>
   type PerRunReporting <: PerRunReportingBase
   protected def PerRunReporting: PerRunReporting
   abstract class PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String): Unit
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit
 
     /** Have we already supplemented the error message of a compiler crash? */
     private[this] var supplementedError = false
