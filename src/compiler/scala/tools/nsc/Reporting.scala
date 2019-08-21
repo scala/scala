@@ -22,8 +22,6 @@ import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
  * PerRunReporting implements per-Run stateful info tracking and reporting
- *
- * TODO: make reporting configurable
  */
 trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.internal.Symbols =>
   def settings: Settings
