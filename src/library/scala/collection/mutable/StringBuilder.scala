@@ -52,7 +52,7 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
     *  initial capacity specified by the `capacity` argument.
     *
     *  @param  capacity  the initial capacity.
-    *  @throws NegativeArraySizeException  if capacity < 0.
+    *  @throws java.lang.NegativeArraySizeException  if capacity < 0.
     */
   def this(capacity: Int) = this(new java.lang.StringBuilder(capacity))
 

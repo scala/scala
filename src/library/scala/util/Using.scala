@@ -67,7 +67,7 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *
   * If two exceptions are thrown (e.g., by an operation and closing a resource),
   * one of them is re-thrown, and the other is
-  * [[java.lang.Throwable.addSuppressed(Throwable) added to it as a suppressed exception]].
+  * [[java.lang.Throwable#addSuppressed added to it as a suppressed exception]].
   * If the two exceptions are of different 'severities' (see below), the one of a higher
   * severity is re-thrown, and the one of a lower severity is added to it as a suppressed
   * exception. If the two exceptions are of the same severity, the one thrown first is

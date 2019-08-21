@@ -506,7 +506,7 @@ trait Mirrors { self: Universe =>
     def runtimeClass(tpe: Type): RuntimeClass
 
     /** Maps a Scala class symbol to the corresponding Java class object
-     *  @throws ClassNotFoundException if there is no Java class
+     *  @throws java.lang.ClassNotFoundException if there is no Java class
      *          corresponding to the given Scala class symbol.
      *  Note: If the Scala symbol is ArrayClass, a ClassNotFound exception is thrown
      *        because there is no unique Java class corresponding to a Scala generic array

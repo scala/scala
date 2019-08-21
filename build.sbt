@@ -175,6 +175,19 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   ),
   //maxErrors := 10,
   setIncOptions,
+  // http://stackoverflow.com/questions/16934488
+  apiMappings ++= {
+    Option(System.getProperty("sun.boot.class.path")).flatMap { classPath =>
+      classPath.split(java.io.File.pathSeparator).find(_.endsWith(java.io.File.separator + "rt.jar"))
+    }.map { jarPath =>
+      Map(
+        file(jarPath) -> url("https://docs.oracle.com/javase/8/docs/api")
+      )
+    }.getOrElse {
+      streams.value.log.warn("Failed to add bootstrap class path of Java to apiMappings")
+      Map.empty[File,URL]
+    }
+  },
   apiURL := Some(url("https://www.scala-lang.org/api/" + versionProperties.value.mavenVersion + "/")),
   pomIncludeRepository := { _ => false },
   pomExtra := {

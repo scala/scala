@@ -728,7 +728,7 @@ final class StringOps(private val s: String) extends AnyVal {
     else s
 
   /** Replace all literal occurrences of `literal` with the literal string `replacement`.
-    *  This method is equivalent to [[java.lang.String#replace]].
+    *  This method is equivalent to [[java.lang.String#replace(CharSequence,CharSequence)]].
     *
     *  @param    literal     the string which should be replaced everywhere it occurs
     *  @param    replacement the replacement string
