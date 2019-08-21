@@ -18,7 +18,7 @@ class TypedTreeTest extends BytecodeTesting {
         |  f(O.x)
         |}
       """.stripMargin
-    val run = compiler.newRun
+    val run = compiler.newRun()
     run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
     val tree = run.units.next().body
     val List(t) = tree.filter(_.attachments.all.nonEmpty).toList
