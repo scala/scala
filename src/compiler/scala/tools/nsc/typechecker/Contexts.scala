@@ -15,8 +15,9 @@ package typechecker
 
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, SomeOfNil }
+import scala.reflect.internal.util.{ReusableInstance, SomeOfNil, shortClassOfInstance}
 import scala.reflect.internal.Reporter
+import scala.tools.nsc.Reporting.WarningCategory
 
 /**
  *  @author  Martin Odersky
@@ -788,7 +789,7 @@ trait Contexts { self: Analyzer =>
       currentRun.reporting.deprecationWarning(fixPosition(pos), sym, owner) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
-      currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required)
+      currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
 
 
     // nextOuter determines which context is searched next for implicits

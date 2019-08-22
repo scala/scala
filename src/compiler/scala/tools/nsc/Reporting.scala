@@ -15,15 +15,16 @@ package tools
 package nsc
 
 import scala.collection.mutable
+import scala.reflect.internal.Symbols
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.tools.nsc.Reporting.{Action, Message, Version, WConf, WarningCategory}
+import scala.tools.nsc.Reporting._
 import scala.util.matching.Regex
 
 /** Provides delegates to the reporter doing the actual work.
  * PerRunReporting implements per-Run stateful info tracking and reporting
  */
-trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.internal.Symbols =>
+trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with Symbols =>
   def settings: Settings
 
   @deprecated("use `globalError` instead")
@@ -55,7 +56,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       case Action.Warning => reporter.warning(warning.pos, warning.msg)
       case Action.Info => reporter.echo(warning.pos, warning.msg)
       case a @ (Action.WarningSummary | Action.InfoSummary) =>
-        val m = summaryMap(a, warning.category)
+        val m = summaryMap(a, warning.category.summaryCategory)
         if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
       case Action.Silent =>
     }
@@ -124,36 +125,32 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
     }
 
-    def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      issueWarning(Message.Plain(pos, msg, category, site))
-
-    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      warning(pos, msg, category, siteName(site))
-
-    @deprecated("use `warning` instead")
-    def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Feature, ""))
-    @deprecated("use `warning` instead")
-    def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
-
-    // used by Global.deprecationWarnings, which is used by sbt
-    def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
-    def uncheckedWarnings: List[(Position, String)]   = summaryMap(Action.WarningSummary, WarningCategory.Unchecked).toList.map(p => (p._1, p._2.msg))
-
-    def allConditionalWarnings: List[(Position, String)] = summarizedWarnings.toList.sortBy(_._1.name).flatMap(_._2.toList.map(p => (p._1, p._2.msg)))
-
     private[this] var reportedFeature = Set[Symbol]()
-    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit = {
+    // we don't have access to runDefinitions here, so mapping from strings instead of feature symbols
+    private val featureCategory: Map[String, WarningCategory.Feature] = {
+      import WarningCategory._
+      Map(
+        ("dynamics", FeatureDynamics),
+        ("existentials", FeatureExistentials),
+        ("higherKinds", FeatureHigherKinds),
+        ("implicitConversions", FeatureImplicitConversions),
+        ("postfixOps", FeaturePostfixOps),
+        ("reflectiveCalls", FeatureReflectiveCalls),
+        ("macros", FeatureMacros)
+      ).withDefaultValue(Feature)
+    }
+    def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean, site: Symbol): Unit = {
       val req     = if (required) "needs to" else "should"
       val fqname  = "scala.language." + featureName
       val explain = (
         if (reportedFeature contains featureTrait) "" else
-        s"""|
-            |----
-            |This can be achieved by adding the import clause 'import $fqname'
-            |or by setting the compiler option -language:$featureName.
-            |See the Scaladoc for value $fqname for a discussion
-            |why the feature $req be explicitly enabled.""".stripMargin
-      )
+          s"""
+             |----
+             |This can be achieved by adding the import clause 'import $fqname'
+             |or by setting the compiler option -language:$featureName.
+             |See the Scaladoc for value $fqname for a discussion
+             |why the feature $req be explicitly enabled.""".stripMargin
+        )
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
@@ -162,8 +159,24 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
         (featureName == "postfixOps" && pos.source.path.endsWith("/xsbt/Compat.scala") && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt.")))
       if (required && !isSbtCompat) {
         reporter.error(pos, msg)
-      } else featureWarning(pos, msg)
+      } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
+
+    // private for now - let's see if we can always use the other overload and pass `site` as a Symbol
+    private def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
+      issueWarning(Message.Plain(pos, msg, category, site))
+
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      warning(pos, msg, category, siteName(site))
+
+    @deprecated("use `warning` instead")
+    def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
+
+    // used by Global.deprecationWarnings, which is used by sbt
+    def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
+    def uncheckedWarnings: List[(Position, String)]   = summaryMap(Action.WarningSummary, WarningCategory.Unchecked).toList.map(p => (p._1, p._2.msg))
+
+    def allConditionalWarnings: List[(Position, String)] = summarizedWarnings.toList.sortBy(_._1.name).flatMap(_._2.toList.map(p => (p._1, p._2.msg)))
 
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
@@ -213,6 +226,7 @@ object Reporting {
     }
 
     def includes(o: WarningCategory): Boolean = this eq o
+    def summaryCategory: WarningCategory = this
   }
 
   object WarningCategory {
@@ -229,7 +243,7 @@ object Reporting {
 
     object Optimizer extends WarningCategory; add(Optimizer)
 
-    sealed trait WFlag extends WarningCategory
+    sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
     object WFlagDeadCode extends WFlag; add(WFlagDeadCode)
     object WFlagExtraImplicit extends WFlag; add(WFlagExtraImplicit)
@@ -237,7 +251,7 @@ object Reporting {
     object WFlagOctalLiteral extends WFlag; add(WFlagOctalLiteral)
     object WFlagValueDiscard extends WFlag; add(WFlagValueDiscard)
 
-    sealed trait Unused extends WarningCategory
+    sealed trait Unused extends WarningCategory { override def summaryCategory: WarningCategory = Unused }
     object Unused extends Unused { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Unused] }; add(Unused)
     object UnusedImports extends Unused; add(UnusedImports)
     object UnusedPatVars extends Unused; add(UnusedPatVars)
@@ -245,7 +259,7 @@ object Reporting {
     object UnusedLocals extends Unused; add(UnusedLocals)
     object UnusedParams extends Unused; add(UnusedParams)
 
-    sealed trait Lint extends WarningCategory
+    sealed trait Lint extends WarningCategory { override def summaryCategory: WarningCategory = Lint }
     object Lint extends Lint { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint] }; add(Lint)
     object LintAdaptedArgs extends Lint; add(LintAdaptedArgs)
     object LintNullaryUnit extends Lint; add(LintNullaryUnit)
@@ -270,7 +284,7 @@ object Reporting {
     object LintEtaSam extends Lint; add(LintEtaSam)
     object LintIncompleteDeprecation extends Lint; add(LintIncompleteDeprecation)
 
-    sealed trait Feature extends WarningCategory
+    sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)
     object FeatureDynamics extends Feature; add(FeatureDynamics)
     object FeatureExistentials extends Feature; add(FeatureExistentials)

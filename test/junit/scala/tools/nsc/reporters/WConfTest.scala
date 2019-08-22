@@ -123,4 +123,15 @@ class WConfTest extends BytecodeTesting {
   def filterUnchecked(): Unit = {
     check(errors(code, "cat=unchecked:e"), List(l16))
   }
+
+  @Test
+  def featureWarnings(): Unit = {
+    check(errors(code, "cat=feature:e"), List(l6))
+    check(errors(code, "cat=feature-reflective-calls:e"), List(l6))
+    check(errors(code, "cat=feature-higher-kinds:e"), Nil)
+    check(errors(code, "cat=feature&site=A.*:e"), List(l6))
+    check(errors(code, "cat=feature&site=A.featureReflectiveCalls:e"), List(l6))
+    check(errors(code, "cat=unchecked&site=A.featureReflectiveCalls:e"), Nil)
+    check(errors(code, "cat=feature&site=A.invokeDeprecated:e"), Nil)
+  }
 }
