@@ -21,6 +21,8 @@ import scala.reflect.internal.util.Position
 class StoreReporter(val settings: Settings) extends FilteringReporter {
   import StoreReporter._
 
+  def this() = this(new Settings)
+
   val infos = new mutable.LinkedHashSet[Info]
 
   override def doReport(pos: Position, msg: String, severity: Severity) = infos += Info(pos, msg, severity)
