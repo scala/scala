@@ -15,6 +15,7 @@ package scala.tools.nsc.transform.patmat
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.internal.util.StatisticsStatics
+import scala.tools.nsc.Reporting.WarningCategory
 
 trait TreeAndTypeAnalysis extends Debugging {
   import global._
@@ -422,8 +423,8 @@ trait MatchAnalysis extends MatchApproximation {
   import global.definitions._
 
   trait MatchAnalyzer extends MatchApproximator  {
-    def uncheckedWarning(pos: Position, msg: String) = currentRun.reporting.uncheckedWarning(pos, msg)
-    def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}")
+    def uncheckedWarning(pos: Position, msg: String, site: Symbol) = currentRun.reporting.warning(pos, msg, WarningCategory.Unchecked, site)
+    def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String, site: Symbol) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}", site)
     def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
@@ -495,7 +496,7 @@ trait MatchAnalysis extends MatchApproximation {
         if (reachable) None else Some(caseIndex)
       } catch {
         case ex: AnalysisBudget.Exception =>
-          warn(prevBinder.pos, ex, "unreachability")
+          warn(prevBinder.pos, ex, "unreachability", prevBinder)
           None // CNF budget exceeded
       }
     }
@@ -547,7 +548,7 @@ trait MatchAnalysis extends MatchApproximation {
 
         try {
           // find the models (under which the match fails)
-          val matchFailModels = findAllModelsFor(propToSolvable(matchFails), prevBinder.pos)
+          val matchFailModels = findAllModelsFor(propToSolvable(matchFails), prevBinder)
 
           val scrutVar = Var(prevBinderTree)
           val counterExamples = {
@@ -567,7 +568,7 @@ trait MatchAnalysis extends MatchApproximation {
           pruned
         } catch {
           case ex: AnalysisBudget.Exception =>
-            warn(prevBinder.pos, ex, "exhaustivity")
+            warn(prevBinder.pos, ex, "exhaustivity", prevBinder)
             Nil // CNF budget exceeded
         }
       }

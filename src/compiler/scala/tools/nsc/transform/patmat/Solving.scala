@@ -45,7 +45,7 @@ object Lit {
 /** Solve pattern matcher exhaustivity problem via DPLL.
  */
 trait Solving extends Logic {
-  import global.statistics
+  import global._
 
   trait CNF extends PropositionalLogic {
 
@@ -423,7 +423,7 @@ trait Solving extends Logic {
     val NoTseitinModel: TseitinModel = null
 
     // returns all solutions, if any (TODO: better infinite recursion backstop -- detect fixpoint??)
-    def findAllModelsFor(solvable: Solvable, pos: Position): List[Solution] = {
+    def findAllModelsFor(solvable: Solvable, owner: Symbol): List[Solution] = {
       debug.patmat("find all models for\n"+ cnfString(solvable.cnf))
 
       // we must take all vars from non simplified formula
@@ -449,7 +449,7 @@ trait Solving extends Logic {
                         models: List[TseitinSolution],
                         recursionDepthAllowed: Int = AnalysisBudget.maxDPLLdepth): List[TseitinSolution]=
         if (recursionDepthAllowed == 0) {
-          uncheckedWarning(pos, AnalysisBudget.recursionDepthReached)
+          uncheckedWarning(owner.pos, AnalysisBudget.recursionDepthReached, owner)
           models
         } else {
           debug.patmat("find all models for\n" + cnfString(clauses))

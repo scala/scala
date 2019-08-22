@@ -18,6 +18,7 @@ import symtab._
 import Flags.{CASE => _, _}
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This class ...
  *
@@ -475,7 +476,7 @@ abstract class ExplicitOuter extends InfoTransform
               // at least don't crash... this duplicates maybeOmittable from constructors
               (acc.owner.isEffectivelyFinal && !acc.isOverridingSymbol)) {
             if (!base.tpe.hasAnnotation(UncheckedClass))
-              currentRun.reporting.uncheckedWarning(tree.pos, "The outer reference in this type test cannot be checked at run time.")
+              currentRun.reporting.warning(tree.pos, "The outer reference in this type test cannot be checked at run time.", WarningCategory.Unchecked, currentOwner)
             transform(TRUE) // urgh... drop condition if there's no accessor (or if it may disappear after constructors)
           } else {
             // println("(base, acc)= "+(base, acc))

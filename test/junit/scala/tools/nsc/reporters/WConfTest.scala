@@ -29,6 +29,9 @@ class WConfTest extends BytecodeTesting {
   def Wconf = global.settings.Wconf
   val WconfDefault = cached("WConfDefault", () => Wconf.value)
 
+  def errors(code: String, extraWconf: String = ""): List[Info] =
+    reports(code, extraWconf).filter(_.severity == InternalReporter.ERROR)
+
   def reports(code: String, extraWconf: String = ""): List[Info] = {
     Wconf.clear()
     Wconf.tryToSet(WconfDefault)
@@ -110,9 +113,14 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def deprecationSiteOrigin(): Unit = {
-    check(reports(code, "site=A.f:e").filter(_.severity == InternalReporter.ERROR), Nil)
-    check(reports(code, "site=A.invokeDeprecated:e").filter(_.severity == InternalReporter.ERROR), List(l4))
-    check(reports(code, "origin=A.f:e").filter(_.severity == InternalReporter.ERROR), List(l4))
-    check(reports(code, "origin=A.invokeDeprecated:e").filter(_.severity == InternalReporter.ERROR), Nil)
+    check(errors(code, "site=A.f:e"), Nil)
+    check(errors(code, "site=A.invokeDeprecated:e"), List(l4))
+    check(errors(code, "origin=A.f:e"), List(l4))
+    check(errors(code, "origin=A.invokeDeprecated:e"), Nil)
+  }
+
+  @Test
+  def filterUnchecked(): Unit = {
+    check(errors(code, "cat=unchecked:e"), List(l16))
   }
 }

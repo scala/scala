@@ -131,8 +131,6 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       warning(pos, msg, category, siteName(site))
 
     @deprecated("use `warning` instead")
-    def uncheckedWarning(pos: Position, msg: String): Unit   = issueWarning(Message.Plain(pos, msg, WarningCategory.Unchecked, ""))
-    @deprecated("use `warning` instead")
     def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Feature, ""))
     @deprecated("use `warning` instead")
     def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
