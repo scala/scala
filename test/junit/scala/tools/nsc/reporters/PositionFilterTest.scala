@@ -16,12 +16,11 @@ class PositionFilterTest {
   val batchFile = new BatchSourceFile(source, "For testing".toList)
   val pos = new OffsetPosition(batchFile, 4)
 
-  val store = new StoreReporter
+  val store = new StoreReporter(new Settings)
 
-  def createFilter: PositionFiltering = new InternalReporter with PositionFiltering with CountingReporter {
-    def noWarnings = false
-    def suppressed(pos: Position, msg: String, severity: Severity): Unit = ()
-    val delegate = store
+  def createFilter: FilteringReporter = new FilteringReporter {
+    def settings: Settings = store.settings
+    def doReport(pos: Position, msg: String, severity: Severity): Unit = store.doReport(pos, msg, severity)
   }
 
   @Test

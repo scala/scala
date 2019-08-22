@@ -66,7 +66,7 @@ class Compiler(val global: Global) {
 
   private def reporter = global.reporter.asInstanceOf[StoreReporter]
 
-  def checkReport(allowMessage: StoreReporter#Info => Boolean = _ => false): Unit = {
+  def checkReport(allowMessage: StoreReporter.Info => Boolean = _ => false): Unit = {
     val disallowed = reporter.infos.toList.filter(!allowMessage(_)) // toList prevents an infer-non-wildcard-existential warning.
     if (disallowed.nonEmpty) {
       val msg = disallowed.mkString("\n")
@@ -74,18 +74,18 @@ class Compiler(val global: Global) {
     }
   }
 
-  def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[(String, Array[Byte])] = {
+  def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): List[(String, Array[Byte])] = {
     val run = newRun
     run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
     checkReport(allowMessage)
     getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get)
   }
 
-  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): List[ClassNode] = {
+  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): List[ClassNode] = {
     readAsmClasses(compileToBytes(code, javaCode, allowMessage))
   }
 
-  def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter#Info => Boolean = _ => false): ClassNode = {
+  def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): ClassNode = {
     val List(c) = compileClasses(code, javaCode, allowMessage)
     c
   }
@@ -110,25 +110,25 @@ class Compiler(val global: Global) {
   def compileClassesTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[ClassNode] =
     readAsmClasses(compileToBytesTransformed(scalaCode, javaCode, beforeBackend))
 
-  def compileAsmMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[MethodNode] = {
+  def compileAsmMethods(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): List[MethodNode] = {
     val c = compileClass(s"class C { $code }", allowMessage = allowMessage)
     getAsmMethods(c, _ != "<init>")
   }
 
-  def compileAsmMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): MethodNode = {
+  def compileAsmMethod(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): MethodNode = {
     val List(m) = compileAsmMethods(code, allowMessage)
     m
   }
 
-  def compileMethods(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Method] =
+  def compileMethods(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): List[Method] =
     compileAsmMethods(code, allowMessage).map(convertMethod)
 
-  def compileMethod(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): Method = {
+  def compileMethod(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): Method = {
     val List(m) = compileMethods(code, allowMessage = allowMessage)
     m
   }
 
-  def compileInstructions(code: String, allowMessage: StoreReporter#Info => Boolean = _ => false): List[Instruction] = {
+  def compileInstructions(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): List[Instruction] = {
     val List(m) = compileMethods(code, allowMessage = allowMessage)
     m.instructions
   }
@@ -166,7 +166,7 @@ object BytecodeTesting {
     val args = (CommandLineParser tokenize defaultArgs) ++ (CommandLineParser tokenize extraArgs)
     val (_, nonSettingsArgs) = settings.processArguments(args, processAll = true)
     if (nonSettingsArgs.nonEmpty) showError("invalid compiler flags: " + nonSettingsArgs.mkString(" "))
-    new Compiler(new Global(settings, new StoreReporter))
+    new Compiler(new Global(settings, new StoreReporter(settings)))
   }
 
   def makeSourceFile(code: String, filename: String): BatchSourceFile = new BatchSourceFile(filename, code)
@@ -192,7 +192,7 @@ object BytecodeTesting {
    * The output directory is a physical directory, I have not figured out if / how it's possible to
    * add a VirtualDirectory to the classpath of a compiler.
    */
-  def compileToBytesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[(String, Array[Byte])] = {
+  def compileToBytesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter.Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[(String, Array[Byte])] = {
     val outDir = AbstractFile.getDirectory(TempDir.createTempDir())
     val outDirPath = outDir.canonicalPath
     val argsWithOutDir = extraArgs + s" -d $outDirPath -cp $outDirPath"
@@ -209,7 +209,7 @@ object BytecodeTesting {
     classfiles
   }
 
-  def compileClassesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter#Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[ClassNode] = {
+  def compileClassesSeparately(codes: List[String], extraArgs: String = "", allowMessage: StoreReporter.Info => Boolean = _ => false, afterEach: AbstractFile => Unit = _ => ()): List[ClassNode] = {
     readAsmClasses(compileToBytesSeparately(codes, extraArgs, allowMessage, afterEach))
   }
 
@@ -338,5 +338,5 @@ object BytecodeTesting {
     def stringLines = l.mkString("\n")
   }
 
-  val ignoreDeprecations = (info: StoreReporter#Info) => info.msg.contains("deprecation")
+  val ignoreDeprecations = (info: StoreReporter.Info) => info.msg.contains("deprecation")
 }
