@@ -184,7 +184,6 @@ trait PatternExpansion {
       // scala/bug#9029 A pattern with arity-1 that doesn't match the arity of
       // the Product-like result of the `get` method, will match that result in its entirety.
       //
-      // ```
       // warning: there was one deprecation warning; re-run with -deprecation for details
       // scala> object Extractor { def unapply(a: Any): Option[(Int, String)] = Some((1, "2")) }
       // defined object Extractor
@@ -193,7 +192,6 @@ trait PatternExpansion {
       //
       // scala> "" match { case Extractor(xy : (Int, String)) => }
       // warning: there was one deprecation warning; re-run with -deprecation for details
-      // ```
       else if (totalArity == 1 && equivConstrParamTypes.tail.nonEmpty) {
         warnPatternTupling()
         (if (tupleValuedUnapply) tupleType(equivConstrParamTypes) else resultOfGetInMonad()) :: Nil

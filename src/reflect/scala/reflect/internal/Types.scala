@@ -2802,7 +2802,7 @@ trait Types
         val len = params.length
         val paramsTpes: Array[Type] = new Array[Type](len)
 
-        // returns the result of ```params.forall(_.tpe.isTrivial))```
+        // returns the result of `params.forall(_.tpe.isTrivial))`
         // along the way, it loads each param' tpe into array
         def forallIsTrivial: Boolean = {
           var res = true

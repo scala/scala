@@ -256,7 +256,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
       /**
         * The compute method (slow path) looks like:
         *
-        * ```
+        * {{{
         * def l\$compute() = {
         *   synchronized(this) {
         *     if ((bitmap\$n & MASK) == 0) {
@@ -270,7 +270,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         *   this.fn = null
         *   l\$
         * }
-        * ```
+        * }}}
         *
         * `bitmap\$n` is a byte, int or long value acting as a bitmap of initialized values.
         * The kind of the bitmap determines how many bit indicators for lazy vals are stored in it.
