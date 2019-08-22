@@ -24,5 +24,12 @@ class ConsoleReporter(val settings: Settings, val reader: BufferedReader, val wr
   def this(settings: Settings) = this(settings, Console.in, new PrintWriter(Console.err, true), new PrintWriter(Console.out, true))
   def this(settings: Settings, reader: BufferedReader, writer: PrintWriter) = this(settings, reader, writer, writer)
 
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = ???
+  def doReport(pos: Position, msg: String, severity: Severity): Unit = display(pos, msg, severity)
+
+  override def finish(): Unit = {
+    import reflect.internal.util.StringOps.{countElementsAsString => countAs}
+    if (hasWarnings) echo(s"${countAs(warningCount, WARNING.toString.toLowerCase)} found")
+    if (hasErrors)   echo(s"${countAs(errorCount, ERROR.toString.toLowerCase)} found")
+    super.finish()
+  }
 }
