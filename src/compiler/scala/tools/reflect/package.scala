@@ -15,7 +15,7 @@ package scala.tools
 import scala.reflect.api.JavaUniverse
 import scala.reflect.internal.util.Position
 import scala.language.implicitConversions
-import scala.tools.nsc.reporters.{ConsoleReporter, FilteringReporter, PrintReporter}
+import scala.tools.nsc.reporters.{ConsoleReporter, FilteringReporter}
 import scala.tools.nsc.Settings
 
 package object reflect {
@@ -34,7 +34,6 @@ package object reflect {
    */
   def mkSilentFrontEnd(): FrontEnd = new FrontEnd {
     def display(info: Info): Unit = ()
-    def interactive(): Unit = {}
   }
 
   /** Creates a reporter that prints messages to the console according to the settings.
@@ -62,11 +61,6 @@ package object reflect {
       case API_INFO    => reporter.echo(info.pos, info.msg)
       case API_WARNING => reporter.warning(info.pos, info.msg)
       case API_ERROR   => reporter.error(info.pos, info.msg)
-    }
-
-    def interactive(): Unit = reporter match {
-      case reporter: PrintReporter => reporter.displayPrompt()
-      case _ => // do nothing
     }
 
     override def flush(): Unit = {
@@ -98,9 +92,6 @@ package object reflect {
         case NSC_WARNING => API_WARNING
         case NSC_ERROR => API_ERROR
       })
-
-    def displayPrompt(): Unit =
-      frontEnd.interactive()
 
     override def flush(): Unit = {
       super.flush()
