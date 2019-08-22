@@ -520,7 +520,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   /**
-   * Build the [[InlineInfo]] for a class symbol.
+   * Build the [[scala.tools.nsc.backend.jvm.BTypes.InlineInfo]] for a class symbol.
    */
   def buildInlineInfoFromClassSymbol(classSym: Symbol): InlineInfo = {
     val isEffectivelyFinal = classSym.isEffectivelyFinal

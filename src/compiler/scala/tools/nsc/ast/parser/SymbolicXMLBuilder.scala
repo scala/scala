@@ -143,7 +143,7 @@ abstract class SymbolicXMLBuilder(p: Parsers#Parser, preserveWS: Boolean) {
   protected def Comment(txt: Tree)                  = New(_scala_xml_Comment, LL(txt))
   protected def ProcInstr(target: Tree, txt: Tree)  = New(_scala_xml_ProcInstr, LL(target, txt))
 
-  /** @todo: attributes */
+  /** @todo attributes */
   def makeXMLpat(pos: Position, n: String, args: scala.collection.Seq[Tree]): Tree = {
     val (prepat, labpat) = splitPrefix(n) match {
       case (Some(pre), rest)  => (const(pre), const(rest))

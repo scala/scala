@@ -118,7 +118,7 @@ object Predef extends LowPriorityImplicits {
    * // mapIntString is java.lang.Class[Map[Int,String]] = interface scala.collection.immutable.Map
    * }}}
    *
-   * @return The runtime [[Class]] representation of type [[T]].
+   * @return The runtime [[Class]] representation of type `T`.
    * @group utilities
    */
   def classOf[T]: Class[T] = null // This is a stub method. The actual implementation is filled in by the compiler.
@@ -207,7 +207,7 @@ object Predef extends LowPriorityImplicits {
   /**
    * A method that returns its input value.
    * @tparam A type of the input value x.
-   * @param x the value of type [[A]] to be returned.
+   * @param x the value of type `A` to be returned.
    * @return the value `x`.
    * @group utilities */
   @inline def identity[A](x: A): A = x // see `$conforms` for the implicit version

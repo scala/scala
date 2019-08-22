@@ -267,7 +267,7 @@ trait Infer extends Checkable {
 
     /** Check that `sym` is defined and accessible as a member of
      *  tree `site` with type `pre` in current context.
-     *  @PP: In case it's not abundantly obvious to anyone who might read
+     *  @note PP: In case it's not abundantly obvious to anyone who might read
      *  this, the method does a lot more than "check" these things, as does
      *  nearly every method in the compiler, so don't act all shocked.
      *  This particular example "checks" its way to assigning both the
@@ -725,7 +725,7 @@ trait Infer extends Checkable {
     }
 
     /** The type of an argument list after being coerced to a tuple.
-     *  @pre: the argument list is eligible for tuple conversion.
+     *  @note Pre-condition: The argument list is eligible for tuple conversion.
      */
     private def typeAfterTupleConversion(argtpes: List[Type]): Type =
       if (argtpes.isEmpty) UnitTpe                 // aka "Tuple0"
@@ -1448,7 +1448,7 @@ trait Infer extends Checkable {
      *    the type is replaces by `Unit`, i.e. the argument is treated as an
      *    assignment expression.
      *
-     *  @pre  tree.tpe is an OverloadedType.
+     *  @note Pre-condition `tree.tpe` is an `OverloadedType`.
      */
     def inferMethodAlternative(tree: Tree, undetparams: List[Symbol], argtpes0: List[Type], pt0: Type): Unit = {
       // This potentially makes up to four attempts: tryOnce may execute

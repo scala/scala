@@ -21,9 +21,9 @@ trait CommonRunner {
   /** Run a given object, specified by name, using a
    *  specified classpath and argument list.
    *
-   *  @throws ClassNotFoundException
-   *  @throws NoSuchMethodException
-   *  @throws InvocationTargetException
+   *  @throws java.lang.ClassNotFoundException
+   *  @throws java.lang.NoSuchMethodException
+   *  @throws java.lang.reflect.InvocationTargetException
    */
   def run(urls: Seq[URL], objectName: String, arguments: Seq[String]): Unit =
     ScalaClassLoader.fromURLs(urls).run(objectName, arguments)

@@ -26,7 +26,7 @@ import scala.annotation.tailrec
  *
  * In Scala reflection, APIs that produce or use `Tree`s are:
  *
- *   - '''Annotations''' which use trees to represent their arguments, exposed in [[scala.reflect.api.Annotations#scalaArgs Annotation.scalaArgs]].
+ *   - '''Annotations''' which use trees to represent their arguments, exposed in [[scala.reflect.api.Annotations.AnnotationApi#scalaArgs Annotation.scalaArgs]].
  *   - '''[[scala.reflect.api.Universe#reify reify]]''', a special method on [[scala.reflect.api.Universe]] that takes an expression and returns an AST which represents the expression.
  *   - '''Macros and runtime compilation with toolboxes''' which both use trees as their program representation medium.
  *
@@ -397,7 +397,7 @@ trait Trees { self: Universe =>
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], impl: Template): ClassDef
     def unapply(classDef: ClassDef): Option[(Modifiers, TypeName, List[TypeDef], Template)]
 
-    /** @see [[InternalApi.classDef]] */
+    /** @see [[Internals.InternalApi.classDef]] */
     @deprecated("use `internal.classDef` instead", "2.11.0")
     def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ClassDef = internal.classDef(sym, impl)
   }
@@ -446,7 +446,7 @@ trait Trees { self: Universe =>
     def apply(mods: Modifiers, name: TermName, impl: Template): ModuleDef
     def unapply(moduleDef: ModuleDef): Option[(Modifiers, TermName, Template)]
 
-    /** @see [[InternalApi.moduleDef]] */
+    /** @see [[Internals.InternalApi.moduleDef]] */
     @deprecated("use `internal.moduleDef` instead", "2.11.0")
     def apply(sym: Symbol, impl: Template)(implicit token: CompatToken): ModuleDef = internal.moduleDef(sym, impl)
   }
@@ -526,11 +526,11 @@ trait Trees { self: Universe =>
     def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
     def unapply(valDef: ValDef): Option[(Modifiers, TermName, Tree, Tree)]
 
-    /** @see [[InternalApi.valDef]] */
+    /** @see [[Internals.InternalApi.valDef]] */
     @deprecated("use `internal.valDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): ValDef = internal.valDef(sym, rhs)
 
-    /** @see [[InternalApi.valDef]] */
+    /** @see [[Internals.InternalApi.valDef]] */
     @deprecated("use `internal.valDef` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): ValDef = internal.valDef(sym)
   }
@@ -577,23 +577,23 @@ trait Trees { self: Universe =>
     def apply(mods: Modifiers, name: TermName, tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree, rhs: Tree): DefDef
     def unapply(defDef: DefDef): Option[(Modifiers, TermName, List[TypeDef], List[List[ValDef]], Tree, Tree)]
 
-    /** @see [[InternalApi.defDef]] */
+    /** @see [[Internals.InternalApi.defDef]] */
     @deprecated("use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, mods: Modifiers, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, vparamss, rhs)
 
-    /** @see [[InternalApi.defDef]] */
+    /** @see [[Internals.InternalApi.defDef]] */
     @deprecated("use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, vparamss: List[List[ValDef]], rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, vparamss, rhs)
 
-    /** @see [[InternalApi.defDef]] */
+    /** @see [[Internals.InternalApi.defDef]] */
     @deprecated("use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, mods: Modifiers, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, mods, rhs)
 
-    /** @see [[InternalApi.defDef]] */
+    /** @see [[Internals.InternalApi.defDef]] */
     @deprecated("use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
 
-    /** @see [[InternalApi.defDef]] */
+    /** @see [[Internals.InternalApi.defDef]] */
     @deprecated("use `internal.defDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: List[List[Symbol]] => Tree)(implicit token: CompatToken): DefDef = internal.defDef(sym, rhs)
   }
@@ -649,11 +649,11 @@ trait Trees { self: Universe =>
     def apply(mods: Modifiers, name: TypeName, tparams: List[TypeDef], rhs: Tree): TypeDef
     def unapply(typeDef: TypeDef): Option[(Modifiers, TypeName, List[TypeDef], Tree)]
 
-    /** @see [[InternalApi.typeDef]] */
+    /** @see [[Internals.InternalApi.typeDef]] */
     @deprecated("use `internal.typeDef` instead", "2.11.0")
     def apply(sym: Symbol, rhs: Tree)(implicit token: CompatToken): TypeDef = internal.typeDef(sym, rhs)
 
-    /** @see [[InternalApi.typeDef]] */
+    /** @see [[Internals.InternalApi.typeDef]] */
     @deprecated("use `internal.typeDef` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): TypeDef = internal.typeDef(sym)
   }
@@ -717,7 +717,7 @@ trait Trees { self: Universe =>
     def apply(name: TermName, params: List[Ident], rhs: Tree): LabelDef
     def unapply(labelDef: LabelDef): Option[(TermName, List[Ident], Tree)]
 
-    /** @see [[InternalApi.labelDef]] */
+    /** @see [[Internals.InternalApi.labelDef]] */
     @deprecated("use `internal.labelDef` instead", "2.11.0")
     def apply(sym: Symbol, params: List[Symbol], rhs: Tree)(implicit token: CompatToken): LabelDef = internal.labelDef(sym, params, rhs)
   }

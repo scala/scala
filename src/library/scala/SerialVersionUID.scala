@@ -16,7 +16,7 @@ package scala
   * Annotation for specifying the `serialVersionUID` field of a (serializable) class.
   *
   * On the JVM, a class with this annotation will receive a `private`, `static`,
-  * and `final` field called `serialVersionUID` with the provided [[value]],
+  * and `final` field called `serialVersionUID` with the provided `value`,
   * which the JVM's serialization mechanism uses to determine serialization
   * compatibility between different versions of a class.
   *

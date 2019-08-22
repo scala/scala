@@ -85,7 +85,7 @@ trait CompilerControl { self: Global =>
   }
 
   /** Locate smallest tree that encloses position
-   *  @pre Position must be loaded
+   *  @note Pre-condition: Position must be loaded
    */
   def locateTree(pos: Position): Tree = onUnitOf(pos.source) { unit => new Locator(pos) locateIn unit.body }
 
@@ -131,7 +131,7 @@ trait CompilerControl { self: Global =>
     postWorkItem(new AskTypeAtItem(pos, response))
 
   /** Sets sync var `response` to the fully attributed & typechecked tree contained in `source`.
-   *  @pre `source` needs to be loaded.
+   *  @note Pre-condition: `source` needs to be loaded.
    *  @note Deprecated because of race conditions in the typechecker when the background compiler
    *        is interrupted while typing the same `source`.
    *  @see  scala/bug#6578
@@ -175,14 +175,14 @@ trait CompilerControl { self: Global =>
 
   /** Sets sync var `response` to list of members that are visible
    *  as members of the tree enclosing `pos`, possibly reachable by an implicit.
-   *  @pre  source is loaded
+   *  @note Pre-condition: source is loaded
    */
   def askTypeCompletion(pos: Position, response: Response[List[Member]]) =
     postWorkItem(new AskTypeCompletionItem(pos, response))
 
   /** Sets sync var `response` to list of members that are visible
    *  as members of the scope enclosing `pos`.
-   *  @pre  source is loaded
+   *  @note  Pre-condition: source is loaded
    */
   def askScopeCompletion(pos: Position, response: Response[List[Member]]) =
     postWorkItem(new AskScopeCompletionItem(pos, response))

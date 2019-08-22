@@ -32,10 +32,10 @@ import scala.language.higherKinds
  */
 abstract class Universe extends scala.reflect.api.Universe {
 
-  /** @inheritdoc */
+  /** @see [[MacroInternalApi]] */
   override type Internal <: MacroInternalApi
 
-  /** @inheritdoc */
+  /** @see [[InternalApi]] */
   trait MacroInternalApi extends InternalApi { internal =>
 
     /** Adds a given symbol to the given scope.
@@ -167,10 +167,10 @@ abstract class Universe extends scala.reflect.api.Universe {
      */
     def subpatterns(tree: Tree): Option[List[Tree]]
 
-    /** @inheritdoc */
+    /** @see MacroDecoratorApi */
     override type Decorators <: MacroDecoratorApi
 
-    /** @inheritdoc */
+    /** @see DecoratorApi */
     trait MacroDecoratorApi extends DecoratorApi {
       /** Extension methods for scopes */
       type ScopeDecorator[T <: Scope] <: MacroScopeDecoratorApi[T]
@@ -180,10 +180,10 @@ abstract class Universe extends scala.reflect.api.Universe {
 
       /** @see [[ScopeDecorator]] */
       class MacroScopeDecoratorApi[T <: Scope](val scope: T) {
-        /** @see [[internal.enter]] */
+        /** @see [[MacroInternalApi.enter]] */
         def enter(sym: Symbol): T = internal.enter(scope, sym)
 
-        /** @see [[internal.unlink]] */
+        /** @see [[MacroInternalApi.unlink]] */
         def unlink(sym: Symbol): T = internal.unlink(scope, sym)
       }
 
@@ -192,28 +192,28 @@ abstract class Universe extends scala.reflect.api.Universe {
 
       /** @see [[TreeDecorator]] */
       class MacroTreeDecoratorApi[T <: Tree](override val tree: T) extends TreeDecoratorApi[T](tree) {
-        /** @see [[internal.changeOwner]] */
+        /** @see [[MacroInternalApi.changeOwner]] */
         def changeOwner(prev: Symbol, next: Symbol): tree.type = internal.changeOwner(tree, prev, next)
 
-        /** @see [[internal.attachments]] */
+        /** @see [[MacroInternalApi.attachments]] */
         def attachments: Attachments { type Pos = Position } = internal.attachments(tree)
 
-        /** @see [[internal.updateAttachment]] */
+        /** @see [[MacroInternalApi.updateAttachment]] */
         def updateAttachment[A: ClassTag](attachment: A): tree.type = internal.updateAttachment(tree, attachment)
 
-        /** @see [[internal.removeAttachment]] */
+        /** @see [[MacroInternalApi.removeAttachment]] */
         def removeAttachment[A: ClassTag]: T = internal.removeAttachment[A](tree)
 
-        /** @see [[internal.setPos]] */
+        /** @see [[MacroInternalApi.setPos]] */
         def setPos(newpos: Position): T = internal.setPos(tree, newpos)
 
-        /** @see [[internal.setType]] */
+        /** @see [[MacroInternalApi.setType]] */
         def setType(tp: Type): T = internal.setType(tree, tp)
 
-        /** @see [[internal.defineType]] */
+        /** @see [[MacroInternalApi.defineType]] */
         def defineType(tp: Type): T = internal.defineType(tree, tp)
 
-        /** @see [[internal.setSymbol]] */
+        /** @see [[MacroInternalApi.setSymbol]] */
         def setSymbol(sym: Symbol): T = internal.setSymbol(tree, sym)
       }
 
@@ -225,7 +225,7 @@ abstract class Universe extends scala.reflect.api.Universe {
 
       /** @see [[TypeTreeDecorator]] */
       class MacroTypeTreeDecoratorApi[T <: TypeTree](val tt: T) {
-        /** @see [[internal.setOriginal]] */
+        /** @see [[MacroInternalApi.setOriginal]] */
         def setOriginal(tree: Tree): TypeTree = internal.setOriginal(tt, tree)
       }
 
@@ -234,34 +234,34 @@ abstract class Universe extends scala.reflect.api.Universe {
 
       /** @see [[TreeDecorator]] */
       class MacroSymbolDecoratorApi[T <: Symbol](override val symbol: T) extends SymbolDecoratorApi[T](symbol) {
-        /** @see [[internal.attachments]] */
+        /** @see [[MacroInternalApi.attachments]] */
         def attachments: Attachments { type Pos = Position } = internal.attachments(symbol)
 
-        /** @see [[internal.updateAttachment]] */
+        /** @see [[MacroInternalApi.updateAttachment]] */
         def updateAttachment[A: ClassTag](attachment: A): T = internal.updateAttachment(symbol, attachment)
 
-        /** @see [[internal.removeAttachment]] */
+        /** @see [[MacroInternalApi.removeAttachment]] */
         def removeAttachment[A: ClassTag]: T = internal.removeAttachment[A](symbol)
 
-        /** @see [[internal.setOwner]] */
+        /** @see [[MacroInternalApi.setOwner]] */
         def setOwner(newowner: Symbol): T = internal.setOwner(symbol, newowner)
 
-        /** @see [[internal.setInfo]] */
+        /** @see [[MacroInternalApi.setInfo]] */
         def setInfo(tpe: Type): T = internal.setInfo(symbol, tpe)
 
-        /** @see [[internal.setAnnotations]] */
+        /** @see [[MacroInternalApi.setAnnotations]] */
         def setAnnotations(annots: Annotation*): T = internal.setAnnotations(symbol, annots: _*)
 
-        /** @see [[internal.setName]] */
+        /** @see [[MacroInternalApi.setName]] */
         def setName(name: Name): T = internal.setName(symbol, name)
 
-        /** @see [[internal.setPrivateWithin]] */
+        /** @see [[MacroInternalApi.setPrivateWithin]] */
         def setPrivateWithin(sym: Symbol): T = internal.setPrivateWithin(symbol, sym)
 
-        /** @see [[internal.setFlag]] */
+        /** @see [[MacroInternalApi.setFlag]] */
         def setFlag(flags: FlagSet): T = internal.setFlag(symbol, flags)
 
-        /** @see [[internal.setFlag]] */
+        /** @see [[MacroInternalApi.setFlag]] */
         def resetFlag(flags: FlagSet): T = internal.resetFlag(symbol, flags)
       }
     }
@@ -343,7 +343,6 @@ abstract class Universe extends scala.reflect.api.Universe {
     def mkCast(tree: Tree, pt: Type): Tree
   }
 
-  /** @see [[internal.gen]] */
   @deprecated("use `internal.gen` instead", "2.11.0")
   val treeBuild: TreeGen
 

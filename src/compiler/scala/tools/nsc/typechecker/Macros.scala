@@ -128,6 +128,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *
    *  We will have the following annotation added on the macro definition `foo`:
    *
+   *  {{{
    *    @scala.reflect.macros.internal.macroImpl(
    *      `macro`(
    *        "macroEngine" = <current macro engine>,
@@ -136,6 +137,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *        "signature" = List(Other),
    *        "methodName" = "impl",
    *        "className" = "Macros$"))
+   *  }}}
    */
   def macroEngine = "v7.0 (implemented in Scala 2.11.0-M8)"
   object MacroImplBinding {

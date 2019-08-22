@@ -1077,7 +1077,7 @@ abstract class Inliner {
   }
 
   /**
-   * Check if a member reference is accessible from the [[destinationClass]], as defined in the
+   * Check if a member reference is accessible from the `destinationClass`, as defined in the
    * JVMS 5.4.4. Note that the class name in a field / method reference is not necessarily the
    * class in which the member is declared:
    *

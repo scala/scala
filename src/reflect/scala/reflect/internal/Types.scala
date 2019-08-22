@@ -274,7 +274,7 @@ trait Types
      */
     def isTrivial: Boolean = false
 
-    /** Is this type higher-kinded, i.e., is it a type constructor @M */
+    /** Is this type higher-kinded, i.e., is it a type constructor \@M */
     def isHigherKinded: Boolean = false
     def takesTypeArgs: Boolean = this.isHigherKinded
 
@@ -435,7 +435,7 @@ trait Types
       case _ => List()
     }
 
-    /** This type, without its type arguments @M */
+    /** This type, without its type arguments \@M */
     def typeConstructor: Type = this
 
     /** For a typeref, its arguments. The empty list for all other types */
@@ -481,7 +481,7 @@ trait Types
 
     /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
      *
-     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- @M
+     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- \@M
      */
     def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (sameLength(formals, actuals)) this.subst(formals, actuals) else ErrorType
@@ -2341,9 +2341,9 @@ trait Types
   /** A class for named types of the form
    *    `<prefix>.<sym.name>[args]`
    *  Cannot be created directly; one should always use `typeRef`
-   *  for creation. (@M: Otherwise hashing breaks)
+   *  for creation. (\@M: Otherwise hashing breaks)
    *
-   * @M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
+   * \@M: a higher-kinded type is represented as a TypeRef with sym.typeParams.nonEmpty, but args.isEmpty
    */
   abstract case class TypeRef(pre: Type, sym: Symbol, args: List[Type]) extends UniqueType with TypeRefApi {
     override def mapOver(map: TypeMap): Type = {

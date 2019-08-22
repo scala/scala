@@ -60,7 +60,7 @@ abstract class BTypesFromClassfile {
   }
 
   /**
-   * Parse the classfile for `internalName` and construct the [[ClassBType]]. If the classfile cannot
+   * Parse the classfile for `internalName` and construct the [[BTypes.ClassBType]]. If the classfile cannot
    * be found in the `byteCodeRepository`, the `info` of the resulting ClassBType is undefined.
    */
   def classBTypeFromParsedClassfile(internalName: InternalName): ClassBType = {
@@ -73,7 +73,7 @@ abstract class BTypesFromClassfile {
   }
 
   /**
-   * Construct the [[ClassBType]] for a parsed classfile.
+   * Construct the [[BTypes.ClassBType]] for a parsed classfile.
    */
   def classBTypeFromClassNode(classNode: ClassNode): ClassBType = {
     ClassBType(classNode.name, fromSymbol = false) { res: ClassBType =>

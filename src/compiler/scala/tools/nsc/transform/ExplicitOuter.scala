@@ -364,7 +364,7 @@ abstract class ExplicitOuter extends InfoTransform
      *
      *  @param mixinClass The mixin class which defines the abstract outer
      *                    accessor which is implemented by the generated one.
-     *  @pre mixinClass is an inner class
+     *  @note Pre-condition: `mixinClass` is an inner class
      */
     def mixinOuterAccessorDef(mixinClass: Symbol): Tree = {
       val outerAcc    = outerAccessor(mixinClass) overridingSymbol currentClass

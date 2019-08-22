@@ -28,7 +28,7 @@ import java.{lang => jl}
   * For details how the stream converters work, see [[scala.jdk.StreamConverters]].
   *
   * @define parNote Note: parallel processing is only efficient for collections that have a
-  *                 [[Stepper]] implementation which supports efficient splitting. For collections
+  *                 [[scala.collection.Stepper]] implementation which supports efficient splitting. For collections
   *                 where this is the case, the [[scala.collection.IterableOnce.stepper `stepper`]]
   *                 method has a return type marked `with EfficientSplit`.
   *
