@@ -567,7 +567,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       * Desugar a local `lazy val x: Int = rhs`
       * or a local `object x { ...}` (the rhs will be instantiating the module's class) into:
       *
-      * ```
+      * {{{
       * val x\$lzy = new scala.runtime.LazyInt()
       * def x\$lzycompute(): Int =
       *   x\$lzy.synchronized {
@@ -575,7 +575,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       *     else x\$lzy.initialize(rhs) // for a Unit-typed lazy val, this becomes `{ rhs ; x\$lzy.initialize() }` to avoid passing around BoxedUnit
       *  }
       * def x(): Int = if (x\$lzy.initialized()) x\$lzy.value() else x\$lzycompute()
-      * ```
+      * }}}
       *
       * The expansion is the same for local lazy vals and local objects,
       * except for the suffix of the underlying val's name (\$lzy or \$module)

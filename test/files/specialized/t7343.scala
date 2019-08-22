@@ -9,11 +9,12 @@ object Test extends App {
    * classes, which usually end up inside methods. For these closures we do
    * want their parents rewired correctly:
    *
-   * ```
+   * {{{
    *  def checkSuperClass$mIc$sp[T](t: T, ...) = {
    *    class X extends Parent$mcI$sp // instead of just Parent
    *    ...
    *  }
+   * }}}
    */
   def checkSuperClass[@specialized(Int) T](t: T, expectedXSuper: String) = {
     // test target:

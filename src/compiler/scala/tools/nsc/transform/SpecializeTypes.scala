@@ -1385,7 +1385,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    * the new info then guides the tree changes. But if a symbol is created during duplication,
    * which runs after specialization, its info is not visited and thus the corresponding tree
    * is not specialized. One manifestation is the following:
-   * ```
+   * {{{
    * object Test {
    *   class Parent[@specialized(Int) T]
    *
@@ -1398,7 +1398,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *     ...
    *   }
    * }
-   * ```
+   * }}}
    * We fix this by forcing duplication to take place before specialization.
    *
    * Note: The constructors phase (which also uses duplication) comes after erasure and uses the
@@ -1594,10 +1594,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
 
       /** Computes residual type parameters after rewiring, like "String" in the following example:
-       *  ```
+       *  {{{
        *    def specMe[@specialized T, U](t: T, u: U) = ???
        *    specMe[Int, String](1, "2") => specMe\$mIc\$sp[String](1, "2")
-       *  ```
+       *  }}}
        */
       def computeResidualTypeVars(baseTree: Tree, specMember: Symbol, specTree: Tree, baseTargs: List[Tree], env: TypeEnv): Tree = {
         val residualTargs = symbol.info.typeParams zip baseTargs collect {

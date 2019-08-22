@@ -735,29 +735,29 @@ abstract class UnCurry extends InfoTransform
               val tempVal: ValDef = {
                 // scala/bug#9442: using the "uncurry-erased" type (the one after the uncurry phase) can lead to incorrect
                 // tree transformations. For example, compiling:
-                // ```
+                //
                 //   def foo(c: Ctx)(l: c.Tree): Unit = {
                 //     val l2: c.Tree = l
                 //   }
-                // ```
+                //
                 // Results in the following AST:
-                // ```
+                //
                 //   def foo(c: Ctx, l: Ctx#Tree): Unit = {
                 //     val l$1: Ctx#Tree = l.asInstanceOf[Ctx#Tree]
                 //     val l2: c.Tree = l$1 // no, not really, it's not.
                 //   }
-                // ```
+                //
                 // Of course, this is incorrect, since `l$1` has type `Ctx#Tree`, which is not a subtype of `c.Tree`.
                 //
                 // So what we need to do is to use the pre-uncurry type when creating `l$1`, which is `c.Tree` and is
                 // correct. Now, there are two additional problems:
                 // 1. when varargs and byname params are involved, the uncurry transformation desugars these special
                 //    cases to actual typerefs, eg:
-                //    ```
+                //
                 //           T*   ~> Seq[T] (Scala-defined varargs)
                 //           T*   ~> Array[T] (Java-defined varargs)
                 //           => T ~> Function0[T] (by name params)
-                //    ```
+                //
                 //    we use the DesugaredParameterType object (defined in scala.reflect.internal.transform.UnCurry)
                 //    to redo this desugaring manually here
                 // 2. the type needs to be normalized, since `gen.mkCast` checks this (no HK here, just aliases have

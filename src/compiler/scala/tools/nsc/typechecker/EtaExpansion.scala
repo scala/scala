@@ -30,7 +30,7 @@ trait EtaExpansion { self: Analyzer =>
     * the target of the application and its supplied arguments if needed (they are not stable),
     * and then wraps a Function that abstracts over the missing arguments.
     *
-    * ```
+    * {{{
     * {
     *   private synthetic val eta\$f   = p.f   // if p is not stable
     *   ...
@@ -38,7 +38,7 @@ trait EtaExpansion { self: Analyzer =>
     *   ...
     *   (ps_1 => ... => ps_m => eta\$f([es_1])...([es_m])(ps_1)...(ps_m))
     * }
-    * ```
+    * }}}
     *
     * This is called from typedEtaExpansion, which itself is called from
     *   - instantiateToMethodType (for a naked method reference), or
