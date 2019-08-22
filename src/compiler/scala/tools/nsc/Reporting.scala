@@ -51,14 +51,22 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       sm.getOrElseUpdate(category, mutable.LinkedHashMap.empty)
     }
 
-    private def issueWarning(warning: Message): Unit = wconf.action(warning) match {
-      case Action.Error => reporter.error(warning.pos, warning.msg)
-      case Action.Warning => reporter.warning(warning.pos, warning.msg)
-      case Action.Info => reporter.echo(warning.pos, warning.msg)
-      case a @ (Action.WarningSummary | Action.InfoSummary) =>
-        val m = summaryMap(a, warning.category.summaryCategory)
-        if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
-      case Action.Silent =>
+    private def issueWarning(warning: Message): Unit = {
+      def debug = warning match {
+        case Message.Deprecation(_, msg, site, origin, version) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.orig}] $msg"
+        case Message.Plain(_, msg, category, site) => s"[${category.name} @ $site] $msg"
+      }
+      wconf.action(warning) match {
+        case Action.Error => reporter.error(warning.pos, warning.msg)
+        case Action.Warning => reporter.warning(warning.pos, warning.msg)
+        case Action.WarningDebug => reporter.warning(warning.pos, debug)
+        case Action.Info => reporter.echo(warning.pos, warning.msg)
+        case Action.InfoDebug => reporter.echo(warning.pos, debug)
+        case a @ (Action.WarningSummary | Action.InfoSummary) =>
+          val m = summaryMap(a, warning.category.summaryCategory)
+          if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
+        case Action.Silent =>
+      }
     }
 
     private def summarize(action: Action, category: WarningCategory): Unit = {
@@ -162,15 +170,13 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       } else warning(pos, msg, featureCategory(featureTrait.nameString), site)
     }
 
-    // private for now - let's see if we can always use the other overload and pass `site` as a Symbol
-    private def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
+    // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.
+    def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
       issueWarning(Message.Plain(pos, msg, category, site))
 
+    // Preferred over the overload above whenever a site symbol is available
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
       warning(pos, msg, category, siteName(site))
-
-    @deprecated("use `warning` instead")
-    def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
 
     // used by Global.deprecationWarnings, which is used by sbt
     def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
@@ -385,8 +391,10 @@ object Reporting {
     object Error extends Action
     object Warning extends Action
     object WarningSummary extends Action
+    object WarningDebug extends Action
     object Info extends Action
     object InfoSummary extends Action
+    object InfoDebug extends Action
     object Silent extends Action
   }
 
@@ -423,8 +431,10 @@ object Reporting {
         case "error" | "e" => Right(Error)
         case "warning" | "w" => Right(Warning)
         case "warning-summary" | "ws" => Right(WarningSummary)
+        case "warning-debug" | "wd" => Right(WarningDebug)
         case "info" | "i" => Right(Info)
         case "info-summary" | "is" => Right(InfoSummary)
+        case "info-debug" | "id" => Right(InfoDebug)
         case "silent" | "s" => Right(Silent)
         case _ => Left(List(s"unknonw action: `$s`"))
       }

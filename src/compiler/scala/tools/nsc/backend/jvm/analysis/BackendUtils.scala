@@ -479,6 +479,10 @@ abstract class BackendUtils extends PerRunInit {
   def indyLambdaBodyMethods(hostClass: InternalName, method: MethodNode): Map[InvokeDynamicInsnNode, Handle] = {
     onIndyLambdaImplMethodIfPresent(hostClass)(ms => ms.getOrElse(method, Nil).toMap).getOrElse(Map.empty)
   }
+
+  // not in `backendReporting` since there we don't have access to the `Callsite` class
+  def optimizerWarningSiteString(cs: callGraph.Callsite): String =
+    frontendAccess.backendReporting.siteString(cs.callsiteClass.internalName, cs.callsiteMethod.name)
 }
 
 object BackendUtils {

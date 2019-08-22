@@ -19,6 +19,8 @@ import scala.reflect.io.AbstractFile
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import java.util.{Collection => JCollection, Map => JMap}
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /**
  * Functionality needed in the post-processor whose implementation depends on the compiler
  * frontend. All methods are synchronized.
@@ -96,7 +98,12 @@ object PostProcessorFrontendAccess {
   }
 
   trait BackendReporting {
-    def inlinerWarning(pos: Position, message: String): Unit
+    def siteString(owner: InternalName, method: String): String = {
+      val c = owner.replace('/', '.').replaceAll("\\$+", ".").replaceAll("\\.$", "")
+      if (method.isEmpty) c
+      else s"$c.$method"
+    }
+    def optimizerWarning(pos: Position, message: String, site: String): Unit
     def error(pos: Position, message: String): Unit
     def warning(pos: Position, message: String): Unit
     def inform(message: String): Unit
@@ -110,8 +117,8 @@ object PostProcessorFrontendAccess {
     // consumed in another
     private var bufferedReports = List.empty[Report]
 
-    def inlinerWarning(pos: Position, message: String): Unit =
-      this.synchronized(bufferedReports ::= new ReportInlinerWarning(pos, message))
+    def optimizerWarning(pos: Position, message: String, site: String): Unit =
+      this.synchronized(bufferedReports ::= new ReportOptimizerWarning(pos, message, site))
 
     def error(pos: Position, message: String): Unit =
       this.synchronized(bufferedReports ::= new ReportError(pos, message))
@@ -136,9 +143,9 @@ object PostProcessorFrontendAccess {
       def relay(backendReporting: BackendReporting): Unit
     }
 
-    private class ReportInlinerWarning(pos: Position, message: String) extends Report {
+    private class ReportOptimizerWarning(pos: Position, message: String, site: String) extends Report {
       override def relay(reporting: BackendReporting): Unit =
-        reporting.inlinerWarning(pos, message)
+        reporting.optimizerWarning(pos, message, site)
     }
 
     private class ReportError(pos: Position, message: String) extends Report {
@@ -236,8 +243,8 @@ object PostProcessorFrontendAccess {
     }
 
     object directBackendReporting extends BackendReporting {
-      def inlinerWarning(pos: Position, message: String): Unit = frontendSynch {
-        currentRun.reporting.inlinerWarning(pos, message)
+      def optimizerWarning(pos: Position, message: String, site: String): Unit = frontendSynch {
+        currentRun.reporting.warning(pos, message, WarningCategory.Optimizer, site)
       }
 
       def error(pos: Position, message: String): Unit = frontendSynch {

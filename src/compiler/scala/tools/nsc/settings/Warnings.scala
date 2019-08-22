@@ -50,8 +50,10 @@ trait Warnings {
          |  - error / e
          |  - warning / w
          |  - warning-summary / ws
+         |  - warning-debug / wd (show warning category and site)
          |  - info / i
          |  - info-summary / is
+         |  - info-debug / id
          |  - silent / s
          |
          |The default configuration is:
@@ -59,6 +61,9 @@ trait Warnings {
          |
          |User-defined configurations are added to the left. The leftmost rule matching
          |a warning message defines the action.
+         |
+         |With `-Wconf:any:warning-debug`, the compiler prints category, site, origin and since
+         |of every warning to help writing filters.
          |
          |Examples:
          |  - change every warning into an error: -Wconf any:error
