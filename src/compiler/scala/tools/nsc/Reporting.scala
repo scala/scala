@@ -33,7 +33,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
   protected def PerRunReporting = new PerRunReporting
   class PerRunReporting extends PerRunReportingBase {
-    lazy val wconf = WConf.parse(settings.Wconf.value.reverse) match {
+    lazy val wconf = WConf.parse(settings.Wconf.value) match {
       case Left(msgs) =>
         globalError(s"Failed to parse `-Wconf` configuration: ${settings.Wconf.value}\n${msgs.mkString("\n")}")
         WConf(Nil)
@@ -292,7 +292,7 @@ object Reporting {
     object LintValpattern extends Lint; add(LintValpattern)
     object LintEtaZero extends Lint; add(LintEtaZero)
     object LintEtaSam extends Lint; add(LintEtaSam)
-    object LintIncompleteDeprecation extends Lint; add(LintIncompleteDeprecation)
+    object LintDeprecation extends Lint; add(LintDeprecation)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)

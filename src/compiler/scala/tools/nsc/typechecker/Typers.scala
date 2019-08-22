@@ -4049,7 +4049,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           if (annTypeSym == DeprecatedAttr && argss.head.size < 2 && settings.lintDeprecation)
             if (usesDefault || blockUsesDefault)
-              context.deprecationWarning(ann.pos, DeprecatedAttr, """Specify both message and version: @deprecated("message", since = "1.0")""", "2.11.0")
+              context.warning(ann.pos, """Specify both message and version: @deprecated("message", since = "1.0")""", WarningCategory.LintDeprecation)
           info
         }
       }

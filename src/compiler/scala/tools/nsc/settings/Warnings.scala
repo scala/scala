@@ -73,7 +73,8 @@ trait Warnings {
          |${WarningCategory.all.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
          |
          |Note: on the command-line you might need to quote configurations containing `*` or `&`
-         |to prevent the shell from expanding it to a list of files in the current directory.""".stripMargin))
+         |to prevent the shell from expanding it to a list of files in the current directory.""".stripMargin),
+    prepend = true)
   locally { Wconf.tryToSet(WconfDefault) }
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration

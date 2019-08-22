@@ -29,18 +29,22 @@ class WConfTest extends BytecodeTesting {
   def Wconf = global.settings.Wconf
   val WconfDefault = cached("WConfDefault", () => Wconf.value)
 
-  def errors(code: String, extraWconf: String = ""): List[Info] =
-    reports(code, extraWconf).filter(_.severity == InternalReporter.ERROR)
+  def errors(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] =
+    reports(code, extraWconf, lint).filter(_.severity == InternalReporter.ERROR)
 
-  def infos(code: String, extraWconf: String = ""): List[Info] =
-    reports(code, extraWconf).filter(_.severity == InternalReporter.INFO)
+  def infos(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] =
+    reports(code, extraWconf, lint).filter(_.severity == InternalReporter.INFO)
 
-  def reports(code: String, extraWconf: String = ""): List[Info] = {
+  def reports(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] = {
+    // lint has a postSetHook to enable `deprecated`, which in turn adds to `Wconf`,
+    // but since we override Wconf after, that effect is cancelled
+    if (lint) global.settings.lint.tryToSet(List("_"))
     Wconf.clear()
     Wconf.tryToSet(WconfDefault)
     if (extraWconf.nonEmpty) Wconf.tryToSet(extraWconf.split(',').toList)
     val run = newRun()
     run.compileSources(makeSourceFile(code, "unitTestSource.scala") :: Nil)
+    if (lint) global.settings.lint.clear()
     global.reporter.asInstanceOf[StoreReporter].infos.toList.sortBy(p => (if (p.pos.isDefined) p.pos.point else -1, p.msg))
   }
 
@@ -65,9 +69,13 @@ class WConfTest extends BytecodeTesting {
       |
       |  @inline def nonFinal = 0
       |  def optimizerWarning = nonFinal
+      |
+      |  def tupleMethod(a: (Int, Int)) = 0
+      |  def lintAdaptedArgs = tupleMethod(1, 2)
       |}
       |""".stripMargin
 
+  val l2 = (2, "Specify both message and version: @deprecated(\"message\", since = \"1.0\")")
   val l4 = (4, "method f in class A is deprecated")
   val l6 = (6, "reflective access of structural type member method f should be enabled")
   val l8 = (8, "a pure expression does nothing in statement position")
@@ -75,11 +83,12 @@ class WConfTest extends BytecodeTesting {
   val l13 = (13, "non-variable type argument Option[_] in type Option[Option[_]] is unchecked since it is eliminated by erasure")
   val l16 = (16, "The outer reference in this type test cannot be checked at run time")
   val l20 = (20, "A::nonFinal()I is annotated @inline but could not be inlined")
+  val l23 = (23, "adapted the argument list to the expected 2-tuple")
 
   val s1 = (-1, "there was one deprecation warning")
   val s2 = (-1, "there was one feature warning")
   val s3 = (-1, "there was one optimizer warning")
-  val s4 = (-1, "there were two unchecked warning")
+  val s4 = (-1, "there were two unchecked warnings")
 
   def check(actual: List[Info], expected: List[(Int, String)]): Unit = {
     def m(a: Info, e: (Int, String)) = a != null && e != null && (if (a.pos.isDefined) a.pos.line else -1) == e._1 && a.msg.startsWith(e._2)
@@ -106,6 +115,7 @@ class WConfTest extends BytecodeTesting {
   @Test
   def noSummarizing(): Unit = {
     check(reports(code, "any:w"), List(l4, l6, l8, l10, l13, l16, l20))
+    check(reports(code, "any:w", lint = true), List(l2, l4, l6, l8, l10, l13, l16, l20, l23))
   }
 
   @Test
@@ -147,5 +157,14 @@ class WConfTest extends BytecodeTesting {
     check(infos(code, "cat=feature&site=A.featureReflectiveCalls:i"), List(l6))
     check(infos(code, "cat=unchecked&site=A.featureReflectiveCalls:i"), Nil)
     check(infos(code, "cat=feature&site=A.invokeDeprecated:i"), Nil)
+  }
+
+  @Test
+  def lint(): Unit = {
+    check(infos(code, "cat=lint:i"), Nil)
+    check(infos(code, "cat=lint:i", lint = true), List(l2, l23))
+    check(reports(code, "cat=lint:ws,any:s", lint = true), List((-1, "there were two lint warnings")))
+    check(infos(code, "cat=lint-deprecation:i", lint = true), List(l2))
+    check(infos(code, "cat=lint-adapted-args:i", lint = true), List(l23))
   }
 }
