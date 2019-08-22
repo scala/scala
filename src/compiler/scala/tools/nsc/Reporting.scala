@@ -109,11 +109,14 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       }
     }
 
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = issueWarning(Message.Deprecation(pos, msg, site, origin, new Version(since)))
-    def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit = {
-      def n(s: Symbol) = if (s.exists) s.fullNameString else ""
-      deprecationWarning(pos, msg, since, n(site), n(origin))
-    }
+    private def siteName(s: Symbol) = if (s.exists) s.fullNameString else ""
+
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
+      issueWarning(Message.Deprecation(pos, msg, site, origin, new Version(since)))
+
+    def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
+      deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
+
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol): Unit = {
       val version = origin.deprecationVersion.getOrElse("")
       val since   = if (version.isEmpty) version else s" (since $version)"
@@ -121,8 +124,17 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
     }
 
+    def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
+      issueWarning(Message.Plain(pos, msg, category, site))
+
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      warning(pos, msg, category, siteName(site))
+
+    @deprecated("use `warning` instead")
     def uncheckedWarning(pos: Position, msg: String): Unit   = issueWarning(Message.Plain(pos, msg, WarningCategory.Unchecked, ""))
+    @deprecated("use `warning` instead")
     def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Feature, ""))
+    @deprecated("use `warning` instead")
     def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
 
     // used by Global.deprecationWarnings, which is used by sbt
