@@ -111,7 +111,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
       val components = global.phaseNames // global.phaseDescriptors // one initializes
       s"Phase graph of ${components.size} components output to ${genPhaseGraph.value}*.dot."
     }
-    else allSettings.filter(_.isHelping).map(_.help).mkString("\n\n")
+    else allSettings.valuesIterator.filter(_.isHelping).map(_.help).mkString("\n\n")
   }
 
   /**
