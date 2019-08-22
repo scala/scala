@@ -109,7 +109,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       }
     }
 
-    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = issueWarning(Message.Deprecation(msg, pos, site, origin, new Version(since)))
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = issueWarning(Message.Deprecation(pos, msg, site, origin, new Version(since)))
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit = {
       def n(s: Symbol) = if (s.exists) s.fullNameString else ""
       deprecationWarning(pos, msg, since, n(site), n(origin))
@@ -121,9 +121,9 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       deprecationWarning(pos, origin, site, s"$origin${origin.locationString} is deprecated$since$message", version)
     }
 
-    def uncheckedWarning(pos: Position, msg: String): Unit   = issueWarning(Message.Plain(msg, WarningCategory.Unchecked, pos, ""))
-    def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(msg, WarningCategory.Feature, pos, ""))
-    def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(msg, WarningCategory.Optimizer, pos, ""))
+    def uncheckedWarning(pos: Position, msg: String): Unit   = issueWarning(Message.Plain(pos, msg, WarningCategory.Unchecked, ""))
+    def featureWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Feature, ""))
+    def inlinerWarning(pos: Position, msg: String): Unit     = issueWarning(Message.Plain(pos, msg, WarningCategory.Optimizer, ""))
 
     // used by Global.deprecationWarnings, which is used by sbt
     def deprecationWarnings: List[(Position, String)] = summaryMap(Action.WarningSummary, WarningCategory.Deprecation).toList.map(p => (p._1, p._2.msg))
@@ -178,17 +178,17 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
 
 object Reporting {
   sealed trait Message {
+    def pos: Position
     def msg: String
     def category: WarningCategory
-    def pos: Position
-    def site: String // may be empty
+    def site: String // sym.FullName of the location where the warning is positioned, may be empty
   }
 
   object Message {
-    final case class Plain(msg: String, category: WarningCategory, pos: Position, site: String) extends Message
+    final case class Plain(pos: Position, msg: String, category: WarningCategory, site: String) extends Message
 
     // `site` and `origin` may be empty
-    final case class Deprecation(msg: String, pos: Position, site: String, origin: String, since: Version) extends Message {
+    final case class Deprecation(pos: Position, msg: String, site: String, origin: String, since: Version) extends Message {
       def category: WarningCategory = WarningCategory.Deprecation
     }
   }
