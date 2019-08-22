@@ -74,7 +74,7 @@ trait Contexts { self: Analyzer =>
       for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
         for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
-          reporter.warning(imp.posOf(sel), "Unused import")
+          currentRun.reporting.warning(imp.posOf(sel), "Unused import", WarningCategory.UnusedImports, NoSymbol)
       }
       allUsedSelectors --= imps
     }

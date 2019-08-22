@@ -18,6 +18,7 @@ import scala.collection.{immutable, mutable}
 import scala.util.control.ControlThrowable
 import symtab.Flags._
 import scala.reflect.internal.Depth
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -598,7 +599,7 @@ trait Infer extends Checkable {
       if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
         targs.foreach(_.typeSymbol match {
           case sym if topTypes contains sym =>
-            reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
+            context.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
           case _ =>
         })
       }
