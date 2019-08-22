@@ -14,6 +14,8 @@ package scala.tools
 package nsc
 package interactive
 
+import scala.reflect.internal.util.NoPosition
+
 /** The main class for NSC, a compiler for the programming
  *  language Scala.
  */
@@ -29,8 +31,8 @@ object Main extends nsc.MainClass {
       compiler.askReload(sfs, reloaded)
 
       reloaded.get.toOption match {
-        case Some(ex) => reporter.count(reporter.ERROR) // Causes exit code to be non-0
-        case None     => reporter.reset()          // Causes other compiler errors to be ignored
+        case Some(ex) => reporter.error(NoPosition, ex.getMessage) // Causes exit code to be non-0
+        case None     => reporter.reset()                          // Causes other compiler errors to be ignored
       }
       compiler.askShutdown()
     }

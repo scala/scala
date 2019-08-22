@@ -25,6 +25,9 @@ abstract class Reporter extends internal.Reporter {
   // used by sbt
   final def info(pos: Position, msg: String, @unused force: Boolean): Unit = info0(pos, msg, INFO, force = true)
 
+  // allow calling info0 in MakeFilteringForwardingReporter
+  private[reporters] final def nonProtectedInfo0(pos: Position, msg: String, severity: Severity): Unit = info0(pos, msg, severity, force = true)
+
   // overridden by sbt, IDE -- should not be in the reporting interface
   // (IDE receives comments from ScaladocAnalyzer using this hook method)
   // TODO: IDE should override a hook method in the parser instead
@@ -32,7 +35,9 @@ abstract class Reporter extends internal.Reporter {
 
   // used by sbt (via unit.cancel) to cancel a compile (see hasErrors)
   // TODO: figure out how sbt uses this, come up with a separate interface for controlling the build
-  var cancelled: Boolean = false
+  private[this] var _cancelled: Boolean = false
+  def cancelled: Boolean = _cancelled
+  def cancelled_=(b: Boolean): Unit = _cancelled = b
 
   override def hasErrors: Boolean = super.hasErrors || cancelled
 
@@ -53,11 +58,19 @@ object Reporter {
   }
 
   /** Take the message with its explanation, if it has one. */
-  def explanation(msg: String): String = ???
+  def explanation(msg: String): String = splitting(msg, explaining = true)
 
   /** Take the message without its explanation, if it has one. */
-  def stripExplanation(msg: String): String = ???
+  def stripExplanation(msg: String): String = splitting(msg, explaining = false)
 
+  /** Split a message into a prefix and an optional explanation that follows a line starting with `"----"`. */
+  private def splitting(msg: String, explaining: Boolean): String =
+    if (msg != null && msg.indexOf("\n----") > 0) {
+      val (err, exp) = msg.linesIterator.span(!_.startsWith("----"))
+      if (explaining) (err ++ exp.drop(1)).mkString("\n") else err.mkString("\n")
+    } else {
+      msg
+    }
 }
 
 /** The reporter used in a Global instance.
@@ -86,6 +99,8 @@ abstract class FilteringReporter extends Reporter {
 
   private var silent = 0
 
+  private def isSilent = silent > 0
+
   /** Filter all messages while evaluating the block. */
   final def silently[A](body: => A): A = {
     silent += 1
@@ -101,7 +116,7 @@ abstract class FilteringReporter extends Reporter {
       case internal.Reporter.WARNING => !noWarnings && (maxWarnings < 0 || warningCount < maxWarnings)
       case _ => true
     }
-    if (!duplicateOk(pos, severity, msg)) {
+    if (isSilent || !duplicateOk(pos, severity, msg)) {
       notifySuppressed(pos, msg, severity)
       2 // don't count, don't display
     } else if (!maxOk) 1 // count, but don't display
@@ -146,11 +161,4 @@ abstract class FilteringReporter extends Reporter {
     positions.clear()
     messages.clear()
   }
-}
-
-/** Used in `Global.reporter_=`. sbt assigns a plain `Reporter`, which is then adapted to respect
- *  maxerrs and do position filtering.
- */
-final class MakeFilteringForwardingReporter(delegate: Reporter, val settings: Settings) extends FilteringReporter {
-  def doReport(pos: Position, msg: String, severity: Severity): Unit = ???
 }

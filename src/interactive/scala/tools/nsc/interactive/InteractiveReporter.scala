@@ -28,7 +28,6 @@ abstract class InteractiveReporter extends FilteringReporter {
   val otherProblems = new ArrayBuffer[Problem]
 
   override final def doReport(pos: Position, msg: String, severity: Severity): Unit = try {
-    count(severity)
     val problems =
       if (compiler eq null) {
         otherProblems

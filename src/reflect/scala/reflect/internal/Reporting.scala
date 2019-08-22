@@ -105,18 +105,23 @@ abstract class Reporter {
   // 2: don't count, don't display
   def filter(pos: Position, msg: String, severity: Severity): Int = 0
 
-  def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
-  def echo(pos: Position, msg: String): Unit    = info0(pos, msg, INFO, force = true)
-  def warning(pos: Position, msg: String): Unit = info0(pos, msg, WARNING, force = false)
-  def error(pos: Position, msg: String): Unit   = info0(pos, msg, ERROR, force = false)
+  final def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
+  final def echo(pos: Position, msg: String): Unit    = if (filter(pos, msg, INFO) == 0) info0(pos, msg, INFO, force = true)
+  final def warning(pos: Position, msg: String): Unit = filteredInfo(pos, msg, WARNING)
+  final def error(pos: Position, msg: String): Unit   = filteredInfo(pos, msg, ERROR)
 
-  def count(severity: Severity): Unit = {
+  private def filteredInfo(pos: Position, msg: String, severity: Severity): Unit = {
+    val f = filter(pos, msg, severity)
+    if (f <= 1) increment(severity)
+    if (f == 0) info0(pos, msg, severity, force = false)
+  }
+
+  def increment(severity: Severity): Unit =
     severity match {
-      case Reporter.ERROR => _errorCount += 1
-      case Reporter.WARNING => _warningCount += 1
+      case _: Reporter.ERROR.type   => _errorCount += 1
+      case _: Reporter.WARNING.type => _warningCount += 1
       case _ =>
     }
-  }
 
   def errorCount: Int   = _errorCount
   def warningCount: Int = _warningCount
@@ -134,7 +139,9 @@ abstract class Reporter {
   /** Finish reporting: print summaries, release resources. */
   def finish(): Unit = ()
 
-  /** After reporting, offer advice on getting more details. */
+  /** After reporting, offer advice on getting more details.
+    * Does not access `this`, but not static because it's overridden in ReplReporterImpl.
+    */
   def rerunWithDetails(setting: MutableSettings#Setting, name: String): String =
     setting.value match {
       case b: Boolean if !b => s"; re-run with ${name} for details"
