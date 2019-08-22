@@ -17,16 +17,15 @@ import java.io.PrintWriter
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
-import scala.tools.nsc.reporters.{AbstractReporter, DisplayReporter}
+import scala.tools.nsc.reporters.{FilteringReporter, DisplayReporter}
 import scala.reflect.internal.{Reporter => InternalReporter}
-
 
 object ReplReporterImpl {
   val defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
 }
 
 // settings are for AbstractReporter (noWarnings, isVerbose, isDebug)
-class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Settings, writer: PrintWriter = ReplReporterImpl.defaultOut) extends AbstractReporter with ReplReporter  {
+class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Settings, writer: PrintWriter = ReplReporterImpl.defaultOut) extends FilteringReporter with ReplReporter  {
   def this(settings: Settings, writer: PrintWriter) = this(ShellConfig(settings), settings, writer)
   def this(settings: Settings) = this(ShellConfig(settings), settings)
 
@@ -129,12 +128,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   var currentRequest: ReplRequest = _
 
-  def printUntruncatedMessage(msg: String): Unit = withoutTruncating(printMessage(msg))
-
-  override def warning(pos: Position, msg: String): Unit = withoutTruncating(super.warning(pos, msg))
-  override def error(pos: Position, msg: String): Unit   = withoutTruncating(super.error(pos, msg))
-
-  import scala.io.AnsiColor.{ RED, YELLOW, RESET }
+  import scala.io.AnsiColor.{RED, RESET, YELLOW}
 
   private def label(severity: Severity): String = severity match {
     case InternalReporter.ERROR   => "error"
@@ -153,7 +147,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     case InternalReporter.INFO    => RESET
   }
 
-  def print(pos: Position, msg: String, severity: Severity): Unit = {
+  def doReport(pos: Position, msg: String, severity: Severity): Unit = withoutTruncating {
     val prefix =
       if (colorOk) severityColor(severity) + clabel(severity) + RESET
       else clabel(severity)
@@ -211,7 +205,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     if (!totalSilence) printlnAndFlush(msg)
     else if (isTrace) printlnAndFlush("[silent] " + msg)
 
-  override def displayPrompt(): Unit =
+  def displayPrompt(): Unit =
     if (!totalSilence) {
       out.println()
       out.print("a)bort, s)tack, r)esume: ")
