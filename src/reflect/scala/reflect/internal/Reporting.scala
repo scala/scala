@@ -90,12 +90,20 @@ abstract class Reporter {
   private[this] var _warningCount = 0
 
   // sbt source compatibility
-  type Severity = Reporter.Severity
+  final type Severity = Reporter.Severity
   @uncheckedStable final def INFO: Severity    = Reporter.INFO
   @uncheckedStable final def WARNING: Severity = Reporter.WARNING
   @uncheckedStable final def ERROR: Severity   = Reporter.ERROR
 
+  // TODO: rename to `doReport`, remove the `force` parameter.
+  // Note: `force` is ignored. It used to mean: if `!force`, the reporter may skip INFO messages.
+  // If `force`, INFO messages were always printed. Now, INFO messages are always printed.
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
+
+  // 0: count and display
+  // 1: count only, don't display
+  // 2: don't count, don't display
+  def filter(pos: Position, msg: String, severity: Severity): Int = 0
 
   def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
   def echo(pos: Position, msg: String): Unit    = info0(pos, msg, INFO, force = true)
@@ -139,35 +147,4 @@ object Reporter {
   object INFO    extends Severity(0, "INFO")
   object WARNING extends Severity(1, "WARNING")
   object ERROR   extends Severity(2, "ERROR")
-}
-
-/** A `Reporter` that forwards messages to a delegate.
- *
- *  Concrete subclasses must implement the abstract `delegate` member.
- */
-trait ForwardingReporter extends Reporter {
-
-  /* Receiver of all forwarded calls. */
-  protected val delegate: Reporter
-
-  /* Convenience method to forward a given message to the delegate reporter. */
-  protected def forward(pos: Position, msg: String, severity: Severity): Unit =
-    severity match {
-      case Reporter.ERROR   => delegate.error(pos, msg)
-      case Reporter.WARNING => delegate.warning(pos, msg)
-      case Reporter.INFO    => delegate.echo(pos, msg)
-      case _       => throw new IllegalArgumentException(s"Unknown severity: $severity")
-    }
-
-  /* Always throws `UnsupportedOperationException`. */
-  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit =
-    throw new UnsupportedOperationException(s"$msg ($pos)")
-
-  override def echo(pos: Position, msg: String)    = delegate.echo(pos, msg)
-  override def warning(pos: Position, msg: String) = delegate.warning(pos, msg)
-  override def error(pos: Position, msg: String)   = delegate.error(pos, msg)
-
-  override def reset()      = { super.reset() ; delegate.reset() }
-  override def flush()      = { super.flush() ; delegate.flush() }
-  override def finish()     = { super.finish() ; delegate.finish() }
 }
