@@ -65,6 +65,10 @@ object Reporter {
  *    - positions (only one error at a position, no duplicate messages on a position)
  */
 abstract class FilteringReporter extends Reporter {
+
+  // should be a ctor param
+  def settings: Settings
+
   // this should be the abstract method all the way up in reflect.internal.Reporter, but sbt compat
   def doReport(pos: Position, msg: String, severity: Severity): Unit
 

@@ -22,10 +22,10 @@ trait Parsers {
   import global._
 
   def parse(code: String) = {
-    val sreporter = new StoreReporter()
-    val oldReporter = global.reporter
+    val sreporter = new StoreReporter(globalSettings)
+    val oldReporter = reporter
     try {
-      global.reporter = sreporter
+      reporter = sreporter
       val parser = newUnitParser(new CompilationUnit(newSourceFile(code, "<macro>")) {
         override implicit val fresh: FreshNameCreator = currentFreshNameCreator
       })
@@ -35,6 +35,6 @@ trait Parsers {
         case _ =>
       }
       tree
-    } finally global.reporter = oldReporter
+    } finally reporter = oldReporter
   }
 }

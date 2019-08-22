@@ -23,6 +23,8 @@ abstract class InteractiveReporter extends FilteringReporter {
 
   def compiler: Global
 
+  def settings = compiler.settings
+
   val otherProblems = new ArrayBuffer[Problem]
 
   override final def doReport(pos: Position, msg: String, severity: Severity): Unit = try {

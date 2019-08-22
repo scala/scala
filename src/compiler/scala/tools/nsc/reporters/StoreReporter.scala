@@ -18,7 +18,7 @@ import scala.reflect.internal.Reporter.Severity
 import scala.reflect.internal.util.Position
 
 /** This class implements a Reporter that stores its reports in the set `infos`. */
-class StoreReporter extends FilteringReporter {
+class StoreReporter(val settings: Settings) extends FilteringReporter {
   import StoreReporter._
 
   val infos = new mutable.LinkedHashSet[Info]

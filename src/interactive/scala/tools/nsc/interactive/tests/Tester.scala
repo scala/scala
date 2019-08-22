@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 
-  val reporter = new StoreReporter
+  val reporter = new StoreReporter(settings)
   val compiler = new Global(settings, reporter)
 
   def askAndListen[T, U](msg: String,  arg: T, op: (T, Response[U]) => Unit): Unit = {
