@@ -241,13 +241,16 @@ object Reporting {
     var all: mutable.Map[String, WarningCategory] = mutable.Map.empty
     private def add(c: WarningCategory): Unit = all += ((c.name, c))
 
-    object Unspecific extends WarningCategory; add(Unspecific)
-
     object Deprecation extends WarningCategory; add(Deprecation)
 
     object Unchecked extends WarningCategory; add(Unchecked)
 
     object Optimizer extends WarningCategory; add(Optimizer)
+
+    sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
+    object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)
+    object OtherShadowing extends Other; add(OtherShadowing)
+    object OtherPureStatement extends Other; add(OtherPureStatement)
 
     sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)

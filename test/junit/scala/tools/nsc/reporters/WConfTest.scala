@@ -110,7 +110,8 @@ class WConfTest extends BytecodeTesting {
     check(reports(code, "any:wd"), List(
       l4.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l4._2),
       l6.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l6._2),
-      l8, l10, l13,
+      l8.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l8._2),
+      l10, l13,
       l16.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l16._2),
       l20.copy(_2 = "[optimizer @ A.optimizerWarning] " + l20._2)))
   }
@@ -118,7 +119,7 @@ class WConfTest extends BytecodeTesting {
   @Test
   def silence(): Unit = {
     // TODO: directly reported, so not yet filtered
-    check(reports(code, "any:s"), List(l8, l10, l13) /* should be Nil */)
+    check(reports(code, "any:s"), List(l10, l13) /* should be Nil */)
   }
 
   @Test

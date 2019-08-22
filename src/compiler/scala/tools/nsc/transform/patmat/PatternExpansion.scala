@@ -18,6 +18,7 @@ package patmat
 
 import scala.tools.nsc.typechecker.Contexts
 import scala.reflect.internal.util
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** An 'extractor' can be a case class or an unapply or unapplySeq method.
   *
@@ -220,7 +221,7 @@ trait PatternExpansion {
     // errors & warnings
 
     private def err(msg: String) = context.error(fun.pos,msg)
-    private def warn(msg: String) = context.warning(fun.pos,msg)
+    private def warn(msg: String, cat: WarningCategory) = context.warning(fun.pos,msg, cat)
     private def depr(msg: String, since: String) = currentRun.reporting.deprecationWarning(fun.pos, origin = fun.symbol.owner, site = context.owner.asInstanceOf[global.Symbol], msg, since)
 
     private def warnPatternTupling() =
@@ -254,7 +255,8 @@ trait PatternExpansion {
     else if (elementArity > 0 && !isSeq) arityError("too many")
     else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn(
       if (isStar) "Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected."
-      else "A repeated case parameter or extracted sequence is not matched by a sequence wildcard (_*), and may fail at runtime.")
+      else "A repeated case parameter or extracted sequence is not matched by a sequence wildcard (_*), and may fail at runtime.",
+      WarningCategory.Other)
 
   }
 }
