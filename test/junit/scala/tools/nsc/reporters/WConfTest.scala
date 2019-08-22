@@ -32,6 +32,9 @@ class WConfTest extends BytecodeTesting {
   def errors(code: String, extraWconf: String = ""): List[Info] =
     reports(code, extraWconf).filter(_.severity == InternalReporter.ERROR)
 
+  def infos(code: String, extraWconf: String = ""): List[Info] =
+    reports(code, extraWconf).filter(_.severity == InternalReporter.INFO)
+
   def reports(code: String, extraWconf: String = ""): List[Info] = {
     Wconf.clear()
     Wconf.tryToSet(WconfDefault)
@@ -76,7 +79,7 @@ class WConfTest extends BytecodeTesting {
   val s1 = (-1, "there was one deprecation warning")
   val s2 = (-1, "there was one feature warning")
   val s3 = (-1, "there was one optimizer warning")
-  val s4 = (-1, "there was one unchecked warning")
+  val s4 = (-1, "there were two unchecked warning")
 
   def check(actual: List[Info], expected: List[(Int, String)]): Unit = {
     def m(a: Info, e: (Int, String)) = a != null && e != null && (if (a.pos.isDefined) a.pos.line else -1) == e._1 && a.msg.startsWith(e._2)
@@ -97,7 +100,7 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def default(): Unit = {
-    check(reports(code), List(s1, s2, s3, s4, l8, l10, l13))
+    check(reports(code), List(s1, s2, s3, s4, l8, l10))
   }
 
   @Test
@@ -111,38 +114,38 @@ class WConfTest extends BytecodeTesting {
       l4.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l4._2),
       l6.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l6._2),
       l8.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l8._2),
-      l10, l13,
+      l10.copy(_2 = "[other @ A.fruitlessTypeTest] " + l10._2),
+      l13.copy(_2 = "[unchecked @ A.uncheckedWarningNotSummarized] " + l13._2),
       l16.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l16._2),
       l20.copy(_2 = "[optimizer @ A.optimizerWarning] " + l20._2)))
   }
 
   @Test
   def silence(): Unit = {
-    // TODO: directly reported, so not yet filtered
-    check(reports(code, "any:s"), List(l10, l13) /* should be Nil */)
+    check(reports(code, "any:s"), Nil)
   }
 
   @Test
   def deprecationSiteOrigin(): Unit = {
-    check(errors(code, "site=A.f:e"), Nil)
-    check(errors(code, "site=A.invokeDeprecated:e"), List(l4))
-    check(errors(code, "origin=A.f:e"), List(l4))
-    check(errors(code, "origin=A.invokeDeprecated:e"), Nil)
+    check(infos(code, "site=A.f:i"), Nil)
+    check(infos(code, "site=A.invokeDeprecated:i"), List(l4))
+    check(infos(code, "origin=A.f:i"), List(l4))
+    check(infos(code, "origin=A.invokeDeprecated:i"), Nil)
   }
 
   @Test
   def filterUnchecked(): Unit = {
-    check(errors(code, "cat=unchecked:e"), List(l16))
+    check(infos(code, "cat=unchecked:i"), List(l13, l16))
   }
 
   @Test
   def featureWarnings(): Unit = {
-    check(errors(code, "cat=feature:e"), List(l6))
-    check(errors(code, "cat=feature-reflective-calls:e"), List(l6))
-    check(errors(code, "cat=feature-higher-kinds:e"), Nil)
-    check(errors(code, "cat=feature&site=A.*:e"), List(l6))
-    check(errors(code, "cat=feature&site=A.featureReflectiveCalls:e"), List(l6))
-    check(errors(code, "cat=unchecked&site=A.featureReflectiveCalls:e"), Nil)
-    check(errors(code, "cat=feature&site=A.invokeDeprecated:e"), Nil)
+    check(infos(code, "cat=feature:i"), List(l6))
+    check(infos(code, "cat=feature-reflective-calls:i"), List(l6))
+    check(infos(code, "cat=feature-higher-kinds:i"), Nil)
+    check(infos(code, "cat=feature&site=A.*:i"), List(l6))
+    check(infos(code, "cat=feature&site=A.featureReflectiveCalls:i"), List(l6))
+    check(infos(code, "cat=unchecked&site=A.featureReflectiveCalls:i"), Nil)
+    check(infos(code, "cat=feature&site=A.invokeDeprecated:i"), Nil)
   }
 }
