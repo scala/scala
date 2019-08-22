@@ -18,7 +18,6 @@ import scala.tools.asm
 import BackendReporting._
 import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
-import scala.tools.nsc.reporters.NoReporter
 
 import PartialFunction.cond
 import scala.annotation.tailrec
@@ -235,21 +234,17 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
   /**
    * This is a hack to work around scala/bug#9111. The completer of `methodSym` may report type errors. We
    * cannot change the typer context of the completer at this point and make it silent: the context
-   * captured when creating the completer in the namer. However, we can temporarily replace
-   * global.reporter (it's a var) to store errors.
+   * captured when creating the completer in the namer. However, we can temporarily ask
+   * global.reporter to suppress reportage.
    */
   def completeSilentlyAndCheckErroneous(sym: Symbol): Boolean =
     if (sym.hasCompleteInfo) false
     else {
-      withoutReporting(sym.info)
-      sym.isErroneous
+      reporter.silently {
+        sym.info
+        sym.isErroneous
+      }
     }
-
-  @inline private def withoutReporting[T](fn : => T) = {
-    val currentReporter = reporter
-    reporter = NoReporter
-    try fn finally reporter = currentReporter
-  }
 
   /*
    * must-single-thread

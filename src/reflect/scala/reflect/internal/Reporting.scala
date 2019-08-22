@@ -81,8 +81,9 @@ import util.Position
 
 /** Report information, warnings and errors.
  *
- *  This describes the (future) external interface for issuing information, warnings and errors.
- *  Currently, scala.tools.nsc.Reporter is used by sbt/ide.
+ *  This describes the internal interface for issuing information, warnings and errors.
+ *  Implementers of scala.tools.nsc.Reporter such as sbt/ide must define info0.
+ *  Implementers of scala.tools.nsc.FilteringReporter must define its extension point doReport.
  */
 abstract class Reporter {
   private[this] var _errorCount = 0

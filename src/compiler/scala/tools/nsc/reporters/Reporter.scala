@@ -73,6 +73,14 @@ abstract class FilteringReporter extends Reporter {
   def doReport(pos: Position, msg: String, severity: Severity): Unit
 
   final protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = doReport(pos, msg, severity)
+
+  private var silent = 0
+
+  /** Filter all messages while evaluating the block. */
+  final def silently[A](body: => A): A = {
+    silent += 1
+    try body finally silent -= 1
+  }
 }
 
 /** Used in `Global.reporter_=`. sbt assigns a plain `Reporter`, which is then adapted to respect
