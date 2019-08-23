@@ -21,12 +21,12 @@ import scala.tools.nsc.util.ClassPath
 class AggregateClassPathTest {
 
   private abstract class TestClassPathBase extends ClassPath {
-    override private[nsc] def hasPackage(pkg: String) = true
-    override def packages(inPackage: String): Seq[PackageEntry] = unsupported
-    override def sources(inPackage: String): Seq[SourceFileEntry] = unsupported
-    override def classes(inPackage: String): Seq[ClassFileEntry] = unsupported
+    override private[nsc] def hasPackage(pkg: PackageName) = true
+    override def packages(inPackage: PackageName): Seq[PackageEntry] = unsupported
+    override def sources(inPackage: PackageName): Seq[SourceFileEntry] = unsupported
+    override def classes(inPackage: PackageName): Seq[ClassFileEntry] = unsupported
 
-    override def list(inPackage: String): ClassPathEntries = unsupported
+    override def list(inPackage: PackageName): ClassPathEntries = unsupported
     override def findClassFile(name: String): Option[AbstractFile] = unsupported
 
     override def asClassPathStrings: Seq[String] = unsupported
@@ -36,30 +36,30 @@ class AggregateClassPathTest {
 
   private case class TestClassPath(virtualPath: String, classesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
 
-    override def classes(inPackage: String): Seq[ClassFileEntry] =
+    override def classes(inPackage: PackageName): Seq[ClassFileEntry] =
       for {
-        entriesWrapper <- classesInPackage if entriesWrapper.inPackage == inPackage
+        entriesWrapper <- classesInPackage if entriesWrapper.inPackage == inPackage.dottedString
         name <- entriesWrapper.names
-      } yield classFileEntry(virtualPath, inPackage, name)
+      } yield classFileEntry(virtualPath, inPackage.dottedString, name)
 
-    override def sources(inPackage: String): Seq[SourceFileEntry] = Nil
+    override def sources(inPackage: PackageName): Seq[SourceFileEntry] = Nil
 
     // we'll ignore packages
-    override def list(inPackage: String): ClassPathEntries = ClassPathEntries(Nil, classes(inPackage))
+    override def list(inPackage: PackageName): ClassPathEntries = ClassPathEntries(Nil, classes(inPackage))
   }
 
   private case class TestSourcePath(virtualPath: String, sourcesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
 
-    override def sources(inPackage: String): Seq[SourceFileEntry] =
+    override def sources(inPackage: PackageName): Seq[SourceFileEntry] =
       for {
-        entriesWrapper <- sourcesInPackage if entriesWrapper.inPackage == inPackage
+        entriesWrapper <- sourcesInPackage if entriesWrapper.inPackage == inPackage.dottedString
         name <- entriesWrapper.names
-      } yield sourceFileEntry(virtualPath, inPackage, name)
+      } yield sourceFileEntry(virtualPath, inPackage.dottedString, name)
 
-    override def classes(inPackage: String): Seq[ClassFileEntry] = Nil
+    override def classes(inPackage: PackageName): Seq[ClassFileEntry] = Nil
 
     // we'll ignore packages
-    override def list(inPackage: String): ClassPathEntries = ClassPathEntries(Nil, sources(inPackage))
+    override def list(inPackage: PackageName): ClassPathEntries = ClassPathEntries(Nil, sources(inPackage))
   }
 
   private case class EntryNamesInPackage(inPackage: String)(val names: String*)
@@ -109,8 +109,8 @@ class AggregateClassPathTest {
   @Test
   def testGettingPackages: Unit = {
     case class ClassPathWithPackages(packagesInPackage: EntryNamesInPackage*) extends TestClassPathBase {
-      override def packages(inPackage: String): Seq[PackageEntry] =
-        packagesInPackage.find(_.inPackage == inPackage).map(_.names).getOrElse(Nil) map PackageEntryImpl
+      override def packages(inPackage: PackageName): Seq[PackageEntry] =
+        packagesInPackage.find(_.inPackage == inPackage.dottedString).map(_.names).getOrElse(Nil) map PackageEntryImpl
     }
 
     val partialClassPaths = Seq(ClassPathWithPackages(EntryNamesInPackage(pkg1)("pkg1.a", "pkg1.d", "pkg1.f")),

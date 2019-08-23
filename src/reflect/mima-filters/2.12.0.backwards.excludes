@@ -16,3 +16,6 @@ ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats$")
 ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.JavaUniverse")
 
 ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.io.ZipArchive.close")
+
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.ZipArchive.getDir")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.reflect.io.FileZipArchive.allDirs")

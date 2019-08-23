@@ -39,3 +39,6 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.T
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl")
 
 ProblemFilters.exclude[MissingClassProblem]("scala.reflect.macros.Attachments$")
+
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.ZipArchive.getDir")
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.reflect.io.FileZipArchive.allDirs")
