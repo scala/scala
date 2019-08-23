@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xfatal-warnings -unchecked
 //
 import scala.language.reflectiveCalls
 

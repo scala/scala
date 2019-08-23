@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xfatal-warnings -unchecked
 //
 object Unchecked {
   (null: Any) match {

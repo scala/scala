@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xfatal-warnings -unchecked
 //
 import scala.reflect.{ClassTag, classTag}
 import java.lang.Integer
