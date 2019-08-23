@@ -121,6 +121,7 @@ val mimaFilterSettings = Seq(
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.ArrayOps$ReverseIterator$mcZ$sp"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.ArrayOps$ArrayIterator$mcI$sp"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.ArrayOps$ArrayIterator$mcS$sp"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Stream.find"),
   ),
 )
 
