@@ -1,5 +1,5 @@
 warning: there was one deprecation warning (since 2.13.0); re-run with -deprecation for details
-newSource:10: warning: Could not find the type $Coll points to while expanding it for the usecase signature of method reverse in trait SpecificColl.In this context, $Coll = "BullSh".
+newSource:10: warning: Could not find the type $Coll points to while expanding it for the usecase signature of method reverse in trait SpecificColl. In this context, $Coll = "BullSh".
              * @usecase def reverse(): $Coll
                         ^
 Done.

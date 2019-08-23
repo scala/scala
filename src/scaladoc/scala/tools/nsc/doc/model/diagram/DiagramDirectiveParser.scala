@@ -16,6 +16,8 @@ package diagram
 
 import model._
 import java.util.regex.Pattern
+
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.matching.Regex
 
 /**
@@ -191,7 +193,7 @@ trait DiagramDirectiveParser {
         // we need the position from the package object (well, ideally its comment, but yeah ...)
         val sym = if (template.sym.hasPackageFlag) template.sym.packageObject else template.sym
         assert((sym != global.NoSymbol) || (sym == global.rootMirror.RootPackage))
-        global.reporter.warning(sym.pos, message)
+        global.runReporting.warning(sym.pos, message, WarningCategory.Scaladoc, sym)
       }
 
       def preparePattern(className: String) =
