@@ -45,4 +45,3 @@ This license is used by the following third-party libraries:
 This license is used by the following third-party libraries:
 
   * jquery
-  * tools tooltip
