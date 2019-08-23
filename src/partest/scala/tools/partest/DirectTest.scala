@@ -30,7 +30,7 @@ import scala.tools.nsc.settings.ScalaVersion
  *
  *  There are helper methods for creating settings and
  *  invoking a (newly constructed) compiler.
- */
+  */
 abstract class DirectTest {
   // The program being tested in some fashion
   def code: String

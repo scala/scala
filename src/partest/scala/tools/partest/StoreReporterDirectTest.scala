@@ -24,7 +24,7 @@ trait StoreReporterDirectTest extends DirectTest {
 
   /** Hook into [[scala.tools.partest.DirectTest]] to install the custom reporter */
   override def reporter(settings: Settings) = {
-    _storeReporter = new scala.tools.nsc.reporters.StoreReporter(settings)
+    _storeReporter = new StoreReporter(settings)
     _storeReporter
   }
 }

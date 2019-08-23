@@ -20,7 +20,7 @@ import scala.reflect.internal.util.{Position, ScalaClassLoader}
 /** This class exists for sbt compatibility. Global.reporter holds a FilteringReporter.
   * The only Reporter that is *not* a FilteringReporter is the one created by sbt.
   * The Global.reporter_= setter wraps that in a delegating [[MakeFilteringForwardingReporter]].
- */
+  */
 abstract class Reporter extends internal.Reporter {
   // used by sbt
   @deprecated("Use echo, as internal.Reporter does not support unforced info", since="2.13.0")
@@ -99,11 +99,10 @@ abstract class FilteringReporter extends Reporter {
   private def noWarnings: Boolean = settings.nowarn.value
 
   override def filter(pos: Position, msg: String, severity: Severity): Int = {
-    import internal.Reporter.{ERROR => Error, WARNING => Warning}
     def maxOk = severity match {
-      case Error   => maxErrors < 0 || errorCount < maxErrors
-      case Warning => !noWarnings && (maxWarnings < 0 || warningCount < maxWarnings)
-      case _       => true
+      case internal.Reporter.ERROR   => maxErrors < 0 || errorCount < maxErrors
+      case internal.Reporter.WARNING => !noWarnings && (maxWarnings < 0 || warningCount < maxWarnings)
+      case _ => true
     }
     if (!duplicateOk(pos, severity, msg)) {
       notifySuppressed(pos, msg, severity)

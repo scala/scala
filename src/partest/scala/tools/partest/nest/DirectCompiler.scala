@@ -13,18 +13,17 @@
 package scala.tools.partest
 package nest
 
-import java.io.{PrintWriter, FileWriter}
+import java.io.{FileWriter, PrintWriter}
 
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.{CompilerCommand, Global, Settings}
-import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.reflect.internal.util.NoPosition
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.sys.process._
 
 object ExtConsoleReporter {
-  // `compile` exploits `close` method on default reporter
-  def apply(settings: Settings, writer: PrintWriter): ConsoleReporter = {
+  def apply(settings: Settings, writer: PrintWriter) = {
     val r = new ConsoleReporter(settings, Console.in, writer, writer)
     r.shortname = true
     r
@@ -51,7 +50,6 @@ class DirectCompiler(val runner: Runner) {
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
     newGlobal(settings, ExtConsoleReporter(settings, new PrintWriter(logWriter, true)))
-
 
   /** Massage args to merge plugins and fix paths.
     *  Plugin path can be relative to test root, or cwd is out.

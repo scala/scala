@@ -12,11 +12,11 @@
 
 package scala.tools
 
+import scala.language.implicitConversions
 import scala.reflect.api.JavaUniverse
 import scala.reflect.internal.util.Position
-import scala.language.implicitConversions
-import scala.tools.nsc.reporters._
 import scala.tools.nsc.Settings
+import scala.tools.nsc.reporters.{ConsoleReporter, FilteringReporter}
 
 package object reflect {
   // [todo: can we generalize this?
@@ -33,7 +33,7 @@ package object reflect {
   /** Creates a UI-less reporter that simply accumulates all the messages
    */
   def mkSilentFrontEnd(): FrontEnd = new FrontEnd {
-    def display(info: Info): Unit = {}
+    def display(info: Info): Unit = ()
   }
 
   /** Creates a reporter that prints messages to the console according to the settings.
@@ -49,7 +49,7 @@ package object reflect {
     reporterToFrontEnd(new ConsoleReporter(settings))
   }
 
-  private[reflect] def reporterToFrontEnd(reporter: Reporter): FrontEnd = new FrontEnd {
+  private[reflect] def reporterToFrontEnd(reporter: FilteringReporter): FrontEnd = new FrontEnd {
     val API_INFO = INFO
     val API_WARNING = WARNING
     val API_ERROR = ERROR
@@ -58,9 +58,9 @@ package object reflect {
     override def hasWarnings = reporter.hasWarnings
 
     def display(info: Info): Unit = info.severity match {
-      case API_INFO => reporter.echo(info.pos, info.msg)
+      case API_INFO    => reporter.echo(info.pos, info.msg)
       case API_WARNING => reporter.warning(info.pos, info.msg)
-      case API_ERROR => reporter.error(info.pos, info.msg)
+      case API_ERROR   => reporter.error(info.pos, info.msg)
     }
 
     override def flush(): Unit = {
@@ -74,7 +74,7 @@ package object reflect {
     }
   }
 
-  private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): Reporter = new FilteringReporter {
+  private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): FilteringReporter = new FilteringReporter {
     val settings = settings0
 
     val API_INFO = frontEnd.INFO

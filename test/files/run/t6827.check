@@ -1,5 +1,10 @@
+#partest !java8
+start at -5: java.lang.ArrayIndexOutOfBoundsException: Index -5 out of bounds for length 10
+start at -1: java.lang.ArrayIndexOutOfBoundsException: Index -1 out of bounds for length 10
+#partest java8
 start at -5: java.lang.ArrayIndexOutOfBoundsException: -5
 start at -1: java.lang.ArrayIndexOutOfBoundsException: -1
+#partest
 start at limit: ok
 start at limit-1: ok
 first 10: ok
