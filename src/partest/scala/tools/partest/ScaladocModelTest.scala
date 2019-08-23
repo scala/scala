@@ -101,7 +101,7 @@ abstract class ScaladocModelTest extends DirectTest {
   def model: Option[Universe] = newDocFactory.makeUniverse(Right(code))
 
   // so we don't get the newSettings warning
-  override def isDebug = false
+  //override def isDebug = false  // sorry, TODO
 
   // finally, enable easy navigation inside the entities
   object access {

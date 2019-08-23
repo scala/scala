@@ -95,14 +95,6 @@ abstract class DirectTest {
   // compile the code, optionally first adding to the settings
   def compile(args: String*) = compileString(newCompiler(args: _*))(code)
 
-  /** Debugger interest only below this line **/
-  protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
-  protected def debugSettings = sys.props.getOrElse("partest.debug.settings", "")
-
-  final def log(msg: => Any): Unit = {
-    if (isDebug) Console.err println msg
-  }
-
   /**  Constructor/main body  **/
   def main(args: Array[String]): Unit =
     try show()
@@ -116,26 +108,32 @@ abstract class DirectTest {
   /**
    * Run a test only if the current java version is at least the version specified.
    */
-  def testUnderJavaAtLeast[A](version: String)(yesRun: => A) = new TestUnderJavaAtLeast(version, { yesRun })
+  def testUnderJavaAtLeast[A](version: String)(yesRun: => A) = ifJavaAtLeast(version)(yesRun)
+}
 
-  class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
-    val javaVersion = System.getProperty("java.specification.version")
+class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
+  //val javaVersion = System.getProperty("java.specification.version")
+  val javaVersion = scala.util.Properties.javaSpecVersion
 
-    // the "ScalaVersion" class parses Java specification versions just fine
-    val requiredJavaVersion = ScalaVersion(version)
-    val executingJavaVersion = ScalaVersion(javaVersion)
-    val shouldRun = executingJavaVersion >= requiredJavaVersion
-    val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
+  // the "ScalaVersion" class parses Java specification versions just fine
+  val requiredJavaVersion = ScalaVersion(version)
+  val executingJavaVersion = ScalaVersion(javaVersion)
+  val shouldRun = executingJavaVersion >= requiredJavaVersion
+  val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
 
-    def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
- 
-   /*
-    * If the current java version is at least 'version' then 'yesRun' is evaluated
-    * otherwise 'fallback' is 
-    */
-    def otherwise(fallback: => A): A = {
-      logInfo()
-      if (shouldRun) yesRun else fallback
-    }
+  def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
+
+ /*
+  * If the current java version is at least 'version' then 'yesRun' is evaluated
+  * otherwise 'fallback' is 
+  */
+  def otherwise(fallback: => A): A = {
+    logInfo()
+    if (shouldRun) yesRun else fallback
   }
 }
+/*
+object IfJavaAtLeast {
+  def apply[A](version: String)(yesRun: => A) = new TestUnderJavaAtLeast(version, { yesRun })
+}
+*/

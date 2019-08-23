@@ -1,9 +1,11 @@
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.runtime.{currentMirror => cm}
+import scala.tools.partest._
 
 object Test extends App {
+  val fancyName = ifJavaAtLeast("9")("Foo_1$Bar") otherwise "Foo_1$1"
+  val jfancy = Class.forName(fancyName)
   println("===== JAVA POV =====")
-  val jfancy = Class.forName("Foo_1$1")
   println(jfancy)
   println("getEnclosingClass = " + jfancy.getEnclosingClass)
   println("getEnclosingMethod = " + jfancy.getEnclosingMethod)
