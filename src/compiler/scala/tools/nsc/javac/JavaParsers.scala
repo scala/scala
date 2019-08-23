@@ -36,7 +36,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def freshName(prefix: String): Name = freshTermName(prefix)
     def freshTermName(prefix: String): TermName = unit.freshTermName(prefix)
     def freshTypeName(prefix: String): TypeName = unit.freshTypeName(prefix)
-    def deprecationWarning(off: Int, msg: String, since: String) = currentRun.reporting.deprecationWarning(off, msg, since, site = "", origin = "")
+    def deprecationWarning(off: Int, msg: String, since: String) = runReporting.deprecationWarning(off, msg, since, site = "", origin = "")
     implicit def i2p(offset : Int) : Position = Position.offset(unit.source, offset)
     def warning(pos : Int, msg : String) : Unit = reporter.warning(pos, msg)
     def syntaxError(pos: Int, msg: String) : Unit = reporter.error(pos, msg)

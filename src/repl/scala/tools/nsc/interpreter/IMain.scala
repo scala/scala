@@ -1098,7 +1098,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val trees = newUnitParser(unit).parseStats()
       if (reporter.hasErrors) Left(Error)
       else if (reporter.hasWarnings && settings.fatalWarnings) {
-        currentRun.reporting.summarizeErrors()
+        runReporting.summarizeErrors()
         Left(Error)
       }
       else if (isIncomplete) Left(Incomplete)

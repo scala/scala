@@ -423,7 +423,7 @@ trait MatchAnalysis extends MatchApproximation {
   import global.definitions._
 
   trait MatchAnalyzer extends MatchApproximator  {
-    def uncheckedWarning(pos: Position, msg: String, site: Symbol) = currentRun.reporting.warning(pos, msg, WarningCategory.Unchecked, site)
+    def uncheckedWarning(pos: Position, msg: String, site: Symbol) = runReporting.warning(pos, msg, WarningCategory.Unchecked, site)
     def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String, site: Symbol) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}", site)
     def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
 

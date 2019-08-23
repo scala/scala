@@ -30,7 +30,7 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
   @deprecated("use `globalError` instead")
   def error(msg: String): Unit = globalError(msg)
 
-  // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
+  // a new instance of this class is created for every Run (access the current instance via `runReporting`)
   protected def PerRunReporting = new PerRunReporting
   class PerRunReporting extends PerRunReportingBase {
     lazy val wconf = WConf.parse(settings.Wconf.value) match {

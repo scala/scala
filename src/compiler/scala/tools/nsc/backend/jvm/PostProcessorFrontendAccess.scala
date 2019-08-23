@@ -244,7 +244,7 @@ object PostProcessorFrontendAccess {
 
     object directBackendReporting extends BackendReporting {
       def optimizerWarning(pos: Position, message: String, site: String): Unit = frontendSynch {
-        currentRun.reporting.warning(pos, message, WarningCategory.Optimizer, site)
+        runReporting.warning(pos, message, WarningCategory.Optimizer, site)
       }
 
       def error(pos: Position, message: String): Unit = frontendSynch {

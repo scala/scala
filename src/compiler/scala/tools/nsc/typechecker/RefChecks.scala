@@ -133,7 +133,7 @@ abstract class RefChecks extends Transform {
     }
 
     private def refchecksWarning(pos: Position, msg: String, cat: WarningCategory): Unit =
-      currentRun.reporting.warning(pos, msg, cat, currentOwner)
+      runReporting.warning(pos, msg, cat, currentOwner)
 
     // only one overloaded alternative is allowed to define default arguments
     private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
@@ -539,7 +539,7 @@ abstract class RefChecks extends Transform {
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
             val report  = s"overriding ${other.fullLocationString} is deprecated$since$message"
-            currentRun.reporting.deprecationWarning(member.pos, other, member, report, version)
+            runReporting.deprecationWarning(member.pos, other, member, report, version)
           }
         }
       }
@@ -1244,7 +1244,7 @@ abstract class RefChecks extends Transform {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
-        currentRun.reporting.deprecationWarning(pos, sym, currentOwner)
+        runReporting.deprecationWarning(pos, sym, currentOwner)
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
@@ -1351,7 +1351,7 @@ abstract class RefChecks extends Transform {
           symbol.allOverriddenSymbols.filter(sym =>
             !sym.isDeprecated && !sym.isDeferred && !sym.hasDeprecatedOverridingAnnotation && !sym.enclClass.hasDeprecatedInheritanceAnnotation)
         if(!concrOvers.isEmpty)
-          currentRun.reporting.deprecationWarning(
+          runReporting.deprecationWarning(
             tree.pos,
             symbol,
             currentOwner,

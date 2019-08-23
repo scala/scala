@@ -222,7 +222,7 @@ trait PatternExpansion {
 
     private def err(msg: String) = context.error(fun.pos,msg)
     private def warn(msg: String, cat: WarningCategory) = context.warning(fun.pos,msg, cat)
-    private def depr(msg: String, since: String) = currentRun.reporting.deprecationWarning(fun.pos, origin = fun.symbol.owner, site = context.owner.asInstanceOf[global.Symbol], msg, since)
+    private def depr(msg: String, since: String) = runReporting.deprecationWarning(fun.pos, origin = fun.symbol.owner, site = context.owner.asInstanceOf[global.Symbol], msg, since)
 
     private def warnPatternTupling() =
       if (effectivePatternArity(args) == 1 && tupleValuedUnapply) {

@@ -74,7 +74,7 @@ trait Contexts { self: Analyzer =>
       for (imp <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
         for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
-          currentRun.reporting.warning(imp.posOf(sel), "Unused import", WarningCategory.UnusedImports, site = "")
+          runReporting.warning(imp.posOf(sel), "Unused import", WarningCategory.UnusedImports, site = "")
       }
       allUsedSelectors --= imps
     }
@@ -785,12 +785,12 @@ trait Contexts { self: Analyzer =>
 
 
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, owner) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
-      currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
+      runReporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
 
 
     // nextOuter determines which context is searched next for implicits
@@ -1554,7 +1554,7 @@ trait Contexts { self: Analyzer =>
       reporter.echo(pos, msg)
 
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
-      currentRun.reporting.warning(pos, msg, category, site)
+      runReporting.warning(pos, msg, category, site)
 
     def error(pos: Position, msg: String): Unit
 
@@ -1649,7 +1649,7 @@ trait Contexts { self: Analyzer =>
 
     final def emitWarnings() = if (_warningBuffer != null) {
       _warningBuffer foreach {
-        case (pos, msg, category, site) => currentRun.reporting.warning(pos, msg, category, site)
+        case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site)
       }
       _warningBuffer = null
     }

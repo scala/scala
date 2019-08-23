@@ -1356,7 +1356,7 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def deprecationWarning(off: Offset, msg: String, since: String) = currentRun.reporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "")
+    override def deprecationWarning(off: Offset, msg: String, since: String) = runReporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "")
     override def error(off: Offset, msg: String)                             = reporter.error(unit.position(off), msg)
     override def incompleteInputError(off: Offset, msg: String)              = currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
