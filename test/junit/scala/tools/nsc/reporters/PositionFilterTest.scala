@@ -7,7 +7,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.reflect.internal.util._
 
 @RunWith(classOf[JUnit4])

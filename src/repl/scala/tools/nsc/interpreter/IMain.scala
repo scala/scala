@@ -134,11 +134,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def initializeCompiler(): Boolean = global != null
 
   lazy val global: Global = {
+    compilerSettings.outputDirs.setSingleOutput(replOutput.dir)
+    compilerSettings.exposeEmptyPackage.value = true
+
     // Can't use our own reporter until global is initialized
     val startupReporter = new StoreReporter(compilerSettings)
-
-    compilerSettings.outputDirs setSingleOutput replOutput.dir
-    compilerSettings.exposeEmptyPackage.value = true
 
     val compiler = new Global(compilerSettings, startupReporter) with ReplGlobal
 

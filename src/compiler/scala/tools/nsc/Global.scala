@@ -14,34 +14,31 @@ package scala
 package tools
 package nsc
 
-import java.io.{FileNotFoundException, IOException}
+import java.io.{Closeable, FileNotFoundException, IOException}
 import java.net.URL
-import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
-
-import scala.collection.{immutable, mutable}
-import io.{AbstractFile, SourceReader}
-import util.{ClassPath, returning}
-import reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
-import scala.reflect.ClassTag
-import scala.reflect.internal.{Reporter => InternalReporter}
-import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile}
-import scala.reflect.internal.pickling.PickleBuffer
-import symtab.{Flags, SymbolTable, SymbolTrackers}
-import symtab.classfile.Pickler
-import plugins.Plugins
-import ast._
-import ast.parser._
-import typechecker._
-import transform.patmat.PatternMatching
-import transform._
-import backend.{JavaPlatform, ScalaPrimitives}
-import backend.jvm.{BackendStats, GenBCode}
-import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
-import scala.tools.nsc.classpath._
-import scala.tools.nsc.profile.Profiler
-import java.io.Closeable
+import java.nio.charset._
 
 import scala.annotation.tailrec
+import scala.collection.{immutable, mutable}
+import scala.reflect.ClassTag
+import scala.reflect.internal.pickling.PickleBuffer
+import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile}
+import scala.reflect.internal.{Reporter => InternalReporter}
+import scala.tools.nsc.ast.parser._
+import scala.tools.nsc.ast.{TreeGen => AstTreeGen, _}
+import scala.tools.nsc.backend.jvm.{BackendStats, GenBCode}
+import scala.tools.nsc.backend.{JavaPlatform, ScalaPrimitives}
+import scala.tools.nsc.classpath._
+import scala.tools.nsc.io.{AbstractFile, SourceReader}
+import scala.tools.nsc.plugins.Plugins
+import scala.tools.nsc.profile.Profiler
+import scala.tools.nsc.reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
+import scala.tools.nsc.symtab.classfile.Pickler
+import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
+import scala.tools.nsc.transform._
+import scala.tools.nsc.transform.patmat.PatternMatching
+import scala.tools.nsc.typechecker._
+import scala.tools.nsc.util.{ClassPath, returning}
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
@@ -86,15 +83,15 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   override def settings = currentSettings
 
-  private[this] var currentReporter: FilteringReporter = _
+  private[this] var currentReporter: FilteringReporter = null
   locally { reporter = reporter0 }
 
   def reporter: FilteringReporter = currentReporter
-
-  def reporter_=(newReporter: Reporter): Unit = newReporter match {
-    case f: FilteringReporter => currentReporter = f
-    case r => currentReporter = new MakeFilteringForwardingReporter(r, settings) // for sbt
-  }
+  def reporter_=(newReporter: Reporter): Unit =
+    currentReporter = newReporter match {
+      case f: FilteringReporter => f
+      case r                    => new MakeFilteringForwardingReporter(r, settings) // for sbt
+    }
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value
@@ -471,7 +468,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     override val initial = true
   }
 
-  import syntaxAnalyzer.{ UnitScanner, UnitParser, JavaUnitParser }
+  import syntaxAnalyzer.{JavaUnitParser, UnitParser, UnitScanner}
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer
@@ -774,7 +771,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val line2 = fmt.format("----------", "--", "-" * title.length)
 
     // built-in string precision merely truncates
-    import java.util.{ Formattable, FormattableFlags, Formatter }
+    import java.util.{Formattable, FormattableFlags, Formatter}
     def dotfmt(s: String) = new Formattable {
       def foreshortened(s: String, max: Int) = (
         if (max < 0 || s.length <= max) s

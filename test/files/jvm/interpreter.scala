@@ -146,5 +146,8 @@ def f(e: Exp) = e match {  // non-exhaustive warning here
     interp.interpret("plusOne(5) // should be undefined now")
   }
 
-  appendix()
+  override def main(args: Array[String]): Unit = {
+    super.main(args)
+    appendix()
+  }
 }

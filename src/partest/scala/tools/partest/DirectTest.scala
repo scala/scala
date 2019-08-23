@@ -12,17 +12,17 @@
 
 package scala.tools.partest
 
-import scala.tools.nsc._
-import settings.ScalaVersion
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
-import reporters.{ConsoleReporter, Reporter}
 import scala.tools.cmd.CommandLineParser
+import scala.tools.nsc._
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.settings.ScalaVersion
 
 /** A class for testing code which is embedded as a string.
- *  It allows for more complete control over settings, compiler
- *  configuration, sequence of events, etc. than does partest.
- */
-abstract class DirectTest extends App {
+  *  It allows for more complete control over settings, compiler
+  *  configuration, sequence of events, etc. than does partest.
+  */
+abstract class DirectTest {
   // The program being tested in some fashion
   def code: String
   // produce the output to be compared against a checkfile
@@ -46,7 +46,7 @@ abstract class DirectTest extends App {
   }
   // new compiler
   def newCompiler(args: String*): Global = {
-    val settings = newSettings((CommandLineParser tokenize ("-d \"" + testOutput.path + "\" " + extraSettings)) ++ args.toList)
+    val settings = newSettings(CommandLineParser.tokenize(s"""-d "${testOutput.path}" ${extraSettings}""") ++ args.toList)
     newCompiler(settings)
   }
 
@@ -96,40 +96,39 @@ abstract class DirectTest extends App {
   def compile(args: String*) = compileString(newCompiler(args: _*))(code)
 
   /**  Constructor/main body  **/
-  try show()
-  catch { case t: Exception => println(t.getMessage) ; t.printStackTrace ; sys.exit(1) }
-
-  /** Debugger interest only below this line **/
-  protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
-  protected def debugSettings = sys.props.getOrElse("partest.debug.settings", "")
-
-  final def log(msg: => Any): Unit = {
-    if (isDebug) Console.err println msg
-  }
+  def main(args: Array[String]): Unit =
+    try show()
+    catch {
+      case t: Exception =>
+        println(t.getMessage)
+        t.printStackTrace
+        sys.exit(1)
+    }
 
   /**
-   * Run a test only if the current java version is at least the version specified.
-   */
-  def testUnderJavaAtLeast[A](version: String)(yesRun: => A) = new TestUnderJavaAtLeast(version, { yesRun })
-
-  class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
-    val javaVersion = System.getProperty("java.specification.version")
-
-    // the "ScalaVersion" class parses Java specification versions just fine
-    val requiredJavaVersion = ScalaVersion(version)
-    val executingJavaVersion = ScalaVersion(javaVersion)
-    val shouldRun = executingJavaVersion >= requiredJavaVersion
-    val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
-
-    def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
- 
-   /*
-    * If the current java version is at least 'version' then 'yesRun' is evaluated
-    * otherwise 'fallback' is 
+    * Run a test only if the current java version is at least the version specified.
     */
-    def otherwise(fallback: => A): A = {
-      logInfo()
-      if (shouldRun) yesRun else fallback
-    }
+  def testUnderJavaAtLeast[A](version: String)(yesRun: => A) = ifJavaAtLeast(version)(yesRun)
+}
+
+class TestUnderJavaAtLeast[A](version: String, yesRun: => A) {
+  //val javaVersion = System.getProperty("java.specification.version")
+  val javaVersion = scala.util.Properties.javaSpecVersion
+
+  // the "ScalaVersion" class parses Java specification versions just fine
+  val requiredJavaVersion = ScalaVersion(version)
+  val executingJavaVersion = ScalaVersion(javaVersion)
+  val shouldRun = executingJavaVersion >= requiredJavaVersion
+  val preamble = if (shouldRun) "Attempting" else "Doing fallback for"
+
+  def logInfo() = log(s"$preamble java $version specific test under java version $javaVersion")
+
+  /*
+   * If the current java version is at least 'version' then 'yesRun' is evaluated
+   * otherwise 'fallback' is
+   */
+  def otherwise(fallback: => A): A = {
+    logInfo()
+    if (shouldRun) yesRun else fallback
   }
 }

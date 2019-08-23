@@ -17,7 +17,7 @@ object Test {
 
     def genericNull[T] = null.asInstanceOf[T] // allowed, see scala/bug#4437, point 2
 
-    val b = new Integer(1)
+    val b = Integer.valueOf(1)
     val u = 1
 
     assertEquals(1.toInt, u)

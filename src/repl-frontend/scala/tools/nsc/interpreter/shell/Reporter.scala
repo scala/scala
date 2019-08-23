@@ -14,12 +14,11 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
 
+import scala.reflect.internal
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
-import scala.reflect.internal.{Reporter => InternalReporter}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
 import scala.tools.nsc.reporters.{FilteringReporter, Reporter}
 import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
-
 
 object ReplReporterImpl {
   val defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
@@ -132,9 +131,9 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   import scala.io.AnsiColor.{RED, RESET, YELLOW}
 
   private def label(severity: Severity): String = severity match {
-    case InternalReporter.ERROR   => "error"
-    case InternalReporter.WARNING => "warning"
-    case InternalReporter.INFO    => ""
+    case internal.Reporter.ERROR   => "error"
+    case internal.Reporter.WARNING => "warning"
+    case internal.Reporter.INFO    => ""
   }
 
   protected def clabel(severity: Severity): String = label(severity) match {
@@ -143,9 +142,9 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   def severityColor(severity: Severity): String = severity match {
-    case InternalReporter.ERROR   => RED
-    case InternalReporter.WARNING => YELLOW
-    case InternalReporter.INFO    => RESET
+    case internal.Reporter.ERROR   => RED
+    case internal.Reporter.WARNING => YELLOW
+    case internal.Reporter.INFO    => RESET
   }
 
   def doReport(pos: Position, msg: String, severity: Severity): Unit = withoutTruncating {

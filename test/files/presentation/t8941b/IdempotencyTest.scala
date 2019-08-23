@@ -3,8 +3,8 @@ package interactive
 package tests.core
 
 import scala.tools.nsc.interactive.InteractiveReporter
-import scala.tools.nsc.reporters.Reporter
 import scala.reflect.internal.util.SourceFile
+import reporters.Reporter
 
 /** Deterministically interrupts typechecking of `code` when a definition named
   * `MagicInterruptionMarker` is typechecked, and then performs a targeted

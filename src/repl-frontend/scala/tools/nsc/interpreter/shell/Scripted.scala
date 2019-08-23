@@ -12,18 +12,19 @@
 
 package scala.tools.nsc.interpreter.shell
 
-import scala.beans.BeanProperty
-import javax.script._
 import java.io.{Closeable, OutputStream, PrintWriter, Reader}
 import java.util.Arrays.asList
 
+import javax.script._
+
+import scala.beans.BeanProperty
 import scala.collection.JavaConverters._
 import scala.reflect.internal.util.Position
-import scala.util.Properties.versionString
 import scala.tools.nsc.Settings
-import scala.tools.nsc.util.stringFromReader
-import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter, ScriptedRepl}
 import scala.tools.nsc.interpreter.Results.Incomplete
+import scala.tools.nsc.interpreter.{ImportContextPreamble, ScriptedInterpreter, ScriptedRepl}
+import scala.tools.nsc.util.stringFromReader
+import scala.util.Properties.versionString
 
 /* A REPL adaptor for the javax.script API. */
 class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Settings, out: PrintWriter)
@@ -281,9 +282,9 @@ object Scripted {
 }
 
 import java.io.Writer
-import java.nio.{ ByteBuffer, CharBuffer }
-import java.nio.charset.{ Charset, CodingErrorAction }
-import CodingErrorAction.{ REPLACE => Replace }
+import java.nio.charset.Charset
+import java.nio.charset.CodingErrorAction.{REPLACE => Replace}
+import java.nio.{ByteBuffer, CharBuffer}
 
 /* An OutputStream that decodes bytes and flushes to the writer. */
 class WriterOutputStream(writer: Writer) extends OutputStream {
@@ -312,14 +313,12 @@ class WriterOutputStream(writer: Writer) extends OutputStream {
   override def toString = charBuffer.toString
 }
 
-
 private class SaveFirstErrorReporter(settings: Settings, out: PrintWriter) extends ReplReporterImpl(settings, out) {
   private var _firstError: Option[(Position, String)] = None
   def firstError = _firstError
 
-  override def doReport(pos: Position, msg: String, severity: Severity): Unit = {
+  override def doReport(pos: Position, msg: String, severity: Severity): Unit =
     if (severity == ERROR && _firstError.isEmpty) _firstError = Some((pos, msg))
-  }
 
   override def reset() = { super.reset(); _firstError = None }
 

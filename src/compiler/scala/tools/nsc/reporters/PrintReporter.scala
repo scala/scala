@@ -15,15 +15,15 @@ package tools.nsc
 package reporters
 
 import java.io.{BufferedReader, PrintWriter}
-import scala.reflect.internal.{Reporter => InternalReporter}
-import scala.reflect.internal.util.{Position, StringOps}
+
+import scala.reflect.internal
+import scala.reflect.internal.util.Position
+import scala.reflect.internal.util.Position.formatMessage
+import scala.reflect.internal.util.StringOps.{trimAllTrailingSpace => trimTrailing}
 import scala.tools.util.SystemExit
 
-import Position.formatMessage
-import StringOps.{trimAllTrailingSpace => trimTrailing}
-
 /** Facility for outputting messages, with optional user intervention. */
-trait PrintReporter extends InternalReporter {
+trait PrintReporter extends internal.Reporter {
 
   def settings: Settings
   def reader: BufferedReader
@@ -34,9 +34,9 @@ trait PrintReporter extends InternalReporter {
   var shortname: Boolean = false
 
   private def clabel(severity: Severity): String = severity match {
-    case InternalReporter.ERROR   => "error: "
-    case InternalReporter.WARNING => "warning: "
-    case _       => ""
+    case internal.Reporter.ERROR   => "error: "
+    case internal.Reporter.WARNING => "warning: "
+    case _                         => ""
   }
 
   /** Prints the warning or error message. */
@@ -56,8 +56,8 @@ trait PrintReporter extends InternalReporter {
   protected def display(pos: Position, msg: String, severity: Severity): Unit = {
     val text = formatMessage(pos, s"${clabel(severity)}${Reporter.explanation(msg)}", shortname)
     severity match {
-      case InternalReporter.INFO => echoMessage(text)
-      case _    => printMessage(text)
+      case internal.Reporter.INFO => echoMessage(text)
+      case _                      => printMessage(text)
     }
   }
 

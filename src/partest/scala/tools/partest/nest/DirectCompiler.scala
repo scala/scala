@@ -13,20 +13,17 @@
 package scala.tools.partest
 package nest
 
-import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.{CompilerCommand, Global, Settings}
-import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
-import scala.reflect.internal.util.NoPosition
-import scala.reflect.io.AbstractFile
 import java.io.{FileWriter, PrintWriter}
 
+import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.util.NoPosition
+import scala.reflect.io.AbstractFile
+import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
+import scala.tools.nsc.{CompilerCommand, Global, Settings}
+import scala.util.chaining._
+
 object ExtConsoleReporter {
-  // `compile` exploits `close` method on default reporter
-  def apply(settings: Settings, writer: PrintWriter): ConsoleReporter = {
-    val r = new ConsoleReporter(settings, Console.in, writer, writer)
-    r.shortname = true
-    r
-  }
+  def apply(settings: Settings, writer: PrintWriter) = new ConsoleReporter(settings, Console.in, writer, writer).tap(_.shortname = true)
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
@@ -51,10 +48,10 @@ class DirectCompiler(val runner: Runner) {
 
 
   /** Massage args to merge plugins and fix paths.
-   *  Plugin path can be relative to test root, or cwd is out.
-   *  While we're at it, mix in the baseline options, too.
-   *  That's how ant passes in the plugins dir.
-   */
+    *  Plugin path can be relative to test root, or cwd is out.
+    *  While we're at it, mix in the baseline options, too.
+    *  That's how ant passes in the plugins dir.
+    */
   private def updatePluginPath(args: List[String], out: AbstractFile, srcdir: AbstractFile): Seq[String] = {
     val dir = runner.suiteRunner.pathSettings.testRoot
     // The given path, or the output dir if ".", or a temp dir if output is virtual (since plugin loading doesn't like virtual)
@@ -81,7 +78,8 @@ class DirectCompiler(val runner: Runner) {
   }
 
   def compile(opts0: List[String], sources: List[File]): TestState = {
-    import runner.{sources => _, _}, testInfo._
+    import runner.{sources => _, _}
+    import testInfo._
 
     // adding codelib.jar to the classpath
     // codelib provides the possibility to override standard reify
