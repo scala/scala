@@ -194,8 +194,8 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
         summarize(Action.InfoSummary, c)
 
       if (seenMacroExpansionsFallingBack)
-        reporter.warning(NoPosition, "some macros could not be expanded and code fell back to overridden methods;"+
-                "\nrecompiling with generated classfiles on the classpath might help.")
+        warning(NoPosition, "some macros could not be expanded and code fell back to overridden methods;"+
+                "\nrecompiling with generated classfiles on the classpath might help.", WarningCategory.Other, site = "")
 
       // todo: migrationWarnings
 
@@ -246,6 +246,8 @@ object Reporting {
     object Unchecked extends WarningCategory; add(Unchecked)
 
     object Optimizer extends WarningCategory; add(Optimizer)
+
+    object Scaladoc extends WarningCategory; add(Scaladoc)
 
     sealed trait Other extends WarningCategory { override def summaryCategory: WarningCategory = Other }
     object Other extends Other { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Other] }; add(Other)

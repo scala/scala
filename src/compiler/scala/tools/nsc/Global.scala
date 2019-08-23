@@ -24,6 +24,7 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.{Reporter => InternalReporter}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.ast.parser._
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen, _}
 import scala.tools.nsc.backend.jvm.{BackendStats, GenBCode}
@@ -994,10 +995,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** The currently active run
    */
-  def currentRun: Run              = curRun
-  def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
-  def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  def currentFreshNameCreator      = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
+  def currentRun: Run               = curRun
+  def currentUnit: CompilationUnit  = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
+  def currentSource: SourceFile     = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  def runReporting: PerRunReporting = currentRun.reporting
+  def currentFreshNameCreator       = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
   private[this] var curFreshNameCreator: FreshNameCreator = null
   private[scala] def currentFreshNameCreator_=(fresh: FreshNameCreator): Unit = curFreshNameCreator = fresh
 
@@ -1364,7 +1366,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
         currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
-      settings.conflictWarning.foreach(reporter.warning(NoPosition, _))
+      settings.conflictWarning.foreach(currentRun.reporting.warning(NoPosition, _, WarningCategory.Other, site = ""))
     }
 
     /* An iterator returning all the units being compiled in this run */

@@ -17,6 +17,7 @@ import scala.annotation.tailrec
 import symtab._
 import util.DocStrings._
 import scala.collection.mutable
+import scala.tools.nsc.Reporting.WarningCategory
 
 /*
  *  @author  Martin Odersky
@@ -86,7 +87,7 @@ trait DocComments { self: Global =>
       case None =>
         // scala/bug#8210 - The warning would be false negative when this symbol is a setter
         if (ownComment.indexOf("@inheritdoc") != -1 && ! sym.isSetter)
-          reporter.warning(sym.pos, s"The comment for ${sym} contains @inheritdoc, but no parent comment is available to inherit from.")
+          runReporting.warning(sym.pos, s"The comment for ${sym} contains @inheritdoc, but no parent comment is available to inherit from.", WarningCategory.Scaladoc, sym)
         ownComment.replaceAllLiterally("@inheritdoc", "<invalid inheritdoc annotation>")
       case Some(sc) =>
         if (ownComment == "") sc
@@ -364,7 +365,7 @@ trait DocComments { self: Global =>
                 case None              =>
                   val pos = docCommentPos(sym)
                   val loc = pos withPoint (pos.start + vstart + 1)
-                  reporter.warning(loc, s"Variable $vname undefined in comment for $sym in $site")
+                  runReporting.warning(loc, s"Variable $vname undefined in comment for $sym in $site", WarningCategory.Scaladoc, sym)
               }
             }
         }
@@ -495,9 +496,11 @@ trait DocComments { self: Global =>
         }
         val result = rest.foldLeft(start)(select(_, _, NoType))
         if (result == NoType)
-          reporter.warning(comment.codePos, "Could not find the type " + variable + " points to while expanding it " +
-                                            "for the usecase signature of " + sym + " in " + site + "." +
-                                            "In this context, " + variable + " = \"" + str + "\".")
+          runReporting.warning(
+            comment.codePos,
+            s"""Could not find the type $variable points to while expanding it for the usecase signature of $sym in $site. In this context, $variable = "$str".""",
+            WarningCategory.Scaladoc,
+            site)
         result
       }
 
