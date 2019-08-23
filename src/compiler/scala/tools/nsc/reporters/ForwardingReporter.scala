@@ -16,7 +16,7 @@ import scala.reflect.internal.util.Position
 import scala.tools.nsc.Settings
 
 
-/** A ForwardingReporter that delegates to another ForwardingReporter. This class can be used to
+/** A FilteringReporter that delegates to another FilteringReporter. This class can be used to
   * customize error reporting.
   * {{{
   *   val myReporter = new ForwardingReporter(global.reporter) {
