@@ -63,11 +63,6 @@ package object reflect {
       case API_ERROR => reporter.error(info.pos, info.msg)
     }
 
-    def interactive(): Unit = reporter match {
-      case reporter: PrintReporter => reporter.displayPrompt()
-      case _ => // do nothing
-    }
-
     override def flush(): Unit = {
       super.flush()
       reporter.flush()
