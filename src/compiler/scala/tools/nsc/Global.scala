@@ -89,10 +89,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   locally { reporter = reporter0 }
 
   def reporter: FilteringReporter = currentReporter
-  def reporter_=(newReporter: Reporter): Unit = newReporter match {
-    case f: FilteringReporter => currentReporter = f
-    case r                    => new MakeFilteringForwardingReporter(r, settings) // for sbt
-  }
+  def reporter_=(newReporter: Reporter): Unit =
+    currentReporter = newReporter match {
+      case f: FilteringReporter => f
+      case r                    => new MakeFilteringForwardingReporter(r, settings) // for sbt
+    }
 
   /** Switch to turn on detailed type logs */
   var printTypings = settings.Ytyperdebug.value

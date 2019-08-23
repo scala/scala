@@ -15,14 +15,14 @@ package scala.tools.partest
 import scala.tools.nsc._
 import settings.ScalaVersion
 import scala.reflect.internal.util.{SourceFile, BatchSourceFile}
-import reporters.ConsoleReporter
+import reporters.{ConsoleReporter, Reporter}
 import scala.tools.cmd.CommandLineParser
 
 /** A class for testing code which is embedded as a string.
  *  It allows for more complete control over settings, compiler
  *  configuration, sequence of events, etc. than does partest.
  */
-abstract class DirectTest extends App {
+abstract class DirectTest {
   // The program being tested in some fashion
   def code: String
   // produce the output to be compared against a checkfile
@@ -46,7 +46,7 @@ abstract class DirectTest extends App {
   }
   // new compiler
   def newCompiler(args: String*): Global = {
-    val settings = newSettings((CommandLineParser tokenize ("-d \"" + testOutput.path + "\" " + extraSettings)) ++ args.toList)
+    val settings = newSettings(CommandLineParser.tokenize(s"""-d "${testOutput.path}" ${extraSettings}""") ++ args.toList)
     newCompiler(settings)
   }
 
@@ -95,10 +95,6 @@ abstract class DirectTest extends App {
   // compile the code, optionally first adding to the settings
   def compile(args: String*) = compileString(newCompiler(args: _*))(code)
 
-  /**  Constructor/main body  **/
-  try show()
-  catch { case t: Exception => println(t.getMessage) ; t.printStackTrace ; sys.exit(1) }
-
   /** Debugger interest only below this line **/
   protected def isDebug       = (sys.props contains "partest.debug") || (sys.env contains "PARTEST_DEBUG")
   protected def debugSettings = sys.props.getOrElse("partest.debug.settings", "")
@@ -106,6 +102,16 @@ abstract class DirectTest extends App {
   final def log(msg: => Any): Unit = {
     if (isDebug) Console.err println msg
   }
+
+  /**  Constructor/main body  **/
+  def main(args: Array[String]): Unit =
+    try show()
+    catch {
+      case t: Exception =>
+        println(t.getMessage)
+        t.printStackTrace
+        sys.exit(1)
+    }
 
   /**
    * Run a test only if the current java version is at least the version specified.
