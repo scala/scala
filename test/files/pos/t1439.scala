@@ -1,5 +1,5 @@
 
-// scalac: -unchecked -Xfatal-warnings
+// scalac: -Xfatal-warnings
 
 import language.higherKinds
 

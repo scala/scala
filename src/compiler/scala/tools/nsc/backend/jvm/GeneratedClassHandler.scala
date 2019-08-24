@@ -14,14 +14,12 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.nio.channels.ClosedByInterruptException
-import java.nio.file.Path
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent._
 
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
-import scala.reflect.internal.util.NoPosition
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.BufferingBackendReporting
 import scala.tools.nsc.io.AbstractFile
@@ -103,6 +101,8 @@ private[jvm] object GeneratedClassHandler {
 
   sealed abstract class WritingClassHandler(val javaExecutor: Executor) extends GeneratedClassHandler {
     import postProcessor.bTypes.frontendAccess
+
+    import scala.reflect.internal.util.NoPosition
 
     def tryStealing: Option[Runnable]
 

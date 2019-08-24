@@ -60,8 +60,7 @@ class WConfTest extends BytecodeTesting {
       |
       |  def fruitlessTypeTest = Some(List(1)).isInstanceOf[Option[List[String]]]
       |
-      |  // not reported through reporting.uncheckedWarning, so not summarized, not subject to -unchecked
-      |  def uncheckedWarningNotSummarized = Some(123).isInstanceOf[Option[Option[_]]]
+      |  def uncheckedTypeTest = Some(123).isInstanceOf[Option[Option[_]]]
       |
       |  class Outer {
       |    final case class UncheckedWarningSummarized(val s: String)
@@ -80,10 +79,10 @@ class WConfTest extends BytecodeTesting {
   val l6 = (6, "reflective access of structural type member method f should be enabled")
   val l8 = (8, "a pure expression does nothing in statement position")
   val l10 = (10, "fruitless type test: a value of type Some[List[Int]] cannot also be a Option[List[String]]")
-  val l13 = (13, "non-variable type argument Option[_] in type Option[Option[_]] is unchecked since it is eliminated by erasure")
-  val l16 = (16, "The outer reference in this type test cannot be checked at run time")
-  val l20 = (20, "A::nonFinal()I is annotated @inline but could not be inlined")
-  val l23 = (23, "adapted the argument list to the expected 2-tuple")
+  val l12 = (12, "non-variable type argument Option[_] in type Option[Option[_]] is unchecked since it is eliminated by erasure")
+  val l15 = (15, "The outer reference in this type test cannot be checked at run time")
+  val l19 = (19, "A::nonFinal()I is annotated @inline but could not be inlined")
+  val l22 = (22, "adapted the argument list to the expected 2-tuple")
 
   val s1 = (-1, "there was one deprecation warning")
   val s2 = (-1, "there was one feature warning")
@@ -109,13 +108,14 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def default(): Unit = {
-    check(reports(code), List(s1, s2, s3, s4, l8, l10))
+    check(reports(code), List(s1, s2, s3, l8, l10, l12, l15))
+    check(reports(code, "cat=unchecked:ws"), List(s1, s2, s3, s4, l8, l10))
   }
 
   @Test
   def noSummarizing(): Unit = {
-    check(reports(code, "any:w"), List(l4, l6, l8, l10, l13, l16, l20))
-    check(reports(code, "any:w", lint = true), List(l2, l4, l6, l8, l10, l13, l16, l20, l23))
+    check(reports(code, "any:w"), List(l4, l6, l8, l10, l12, l15, l19))
+    check(reports(code, "any:w", lint = true), List(l2, l4, l6, l8, l10, l12, l15, l19, l22))
   }
 
   @Test
@@ -125,9 +125,9 @@ class WConfTest extends BytecodeTesting {
       l6.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l6._2),
       l8.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l8._2),
       l10.copy(_2 = "[other @ A.fruitlessTypeTest] " + l10._2),
-      l13.copy(_2 = "[unchecked @ A.uncheckedWarningNotSummarized] " + l13._2),
-      l16.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l16._2),
-      l20.copy(_2 = "[optimizer @ A.optimizerWarning] " + l20._2)))
+      l12.copy(_2 = "[unchecked @ A.uncheckedTypeTest] " + l12._2),
+      l15.copy(_2 = "[unchecked @ A.Outer.UncheckedWarningSummarized.equals] " + l15._2),
+      l19.copy(_2 = "[optimizer @ A.optimizerWarning] " + l19._2)))
   }
 
   @Test
@@ -145,7 +145,7 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def filterUnchecked(): Unit = {
-    check(infos(code, "cat=unchecked:i"), List(l13, l16))
+    check(infos(code, "cat=unchecked:i"), List(l12, l15))
   }
 
   @Test
@@ -162,9 +162,9 @@ class WConfTest extends BytecodeTesting {
   @Test
   def lint(): Unit = {
     check(infos(code, "cat=lint:i"), Nil)
-    check(infos(code, "cat=lint:i", lint = true), List(l2, l23))
+    check(infos(code, "cat=lint:i", lint = true), List(l2, l22))
     check(reports(code, "cat=lint:ws,any:s", lint = true), List((-1, "there were two lint warnings")))
     check(infos(code, "cat=lint-deprecation:i", lint = true), List(l2))
-    check(infos(code, "cat=lint-adapted-args:i", lint = true), List(l23))
+    check(infos(code, "cat=lint-adapted-args:i", lint = true), List(l22))
   }
 }

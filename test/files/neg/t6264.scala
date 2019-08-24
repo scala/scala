@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -unchecked
+// scalac: -Xfatal-warnings
 //
 class Foo {
   def foo(x: AnyRef): Unit = {

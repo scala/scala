@@ -1,5 +1,3 @@
-// scalac: -unchecked
-
 import reflect.{ClassTag, classTag}
 
 // abstract types and extractors, oh my!

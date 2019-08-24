@@ -61,7 +61,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         def check(tree: Tree) = {
           for (t <- tree) t match {
             case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
-              runReporting.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}", WarningCategory.Other)
+              runReporting.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}", WarningCategory.Other, t.symbol)
             case _ =>
           }
         }

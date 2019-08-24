@@ -1,4 +1,4 @@
-// scalac: -unchecked -Xfatal-warnings
+// scalac: -Xfatal-warnings
 //
 object Test extends App{
   trait Bar

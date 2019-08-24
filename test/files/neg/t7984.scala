@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -unchecked
+// scalac: -Xfatal-warnings
 //
 class Test {
   type ListInt = List[Int]
