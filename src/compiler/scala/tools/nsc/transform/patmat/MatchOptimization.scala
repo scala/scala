@@ -594,6 +594,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
                           with CommonSubconditionElimination {
+    //TODO how can I tell I have annotation?
+    //Follow stack trace up I can see exhaustive in selector. Might have to pass somehow?
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
       val optCases = doCSE(prevBinder, cases, pt, selectorPos)
@@ -601,7 +603,18 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
         ).flatten.flatten.toList
-      (optCases, toHoist)
+
+      val exhaustive = false
+      val exhaustiveAnnotation = false //TODO get this
+      val optimizeByDefault = false //TODO do by default without annotation for "boolean and  any pattern matching on a sealed sum type within the same compilation unit of said type"
+      //TODO clean
+      val optimizeAgain = if ((exhaustiveAnnotation || optimizeByDefault) && exhaustive) {
+        optCases match {
+          case _ :: last :: Nil => List(last)
+          case _ => optCases //unexpected I think
+        }
+      } else optCases
+      (optimizeAgain, toHoist)
     }
   }
 }

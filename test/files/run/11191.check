@@ -1,0 +1,31 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+package <empty>{<empty>.type} {
+  class C extends scala.AnyRef {
+    def <init>(): C = {
+      C.super{C.super.type}.<init>{()Object}(){Object};
+      (){Unit}
+    }{Unit};
+    def optimizeDefault(b: Boolean): Int = {
+      case <synthetic> val x1: Boolean = b{Boolean};
+      case6(){
+        if (true{Boolean(true)}.=={(x: Boolean)Boolean}(x1{Boolean}){Boolean})
+          matchEnd5{(x: Int)Int}(10{Int(10)}){Int}
+        else
+          case7{()Int}(){Int}{Int}
+      }{Int};
+      case7(){
+        if (false{Boolean(false)}.=={(x: Boolean)Boolean}(x1{Boolean}){Boolean})
+          matchEnd5{(x: Int)Int}(11{Int(11)}){Int}
+        else
+          case8{()Int}(){Int}{Int}
+      }{Int};
+      case8(){
+        matchEnd5{(x: Int)Int}(throw new MatchError{MatchError}{(obj: Any)MatchError}(x1{Boolean}){MatchError}{Nothing}){Int}
+      }{Int};
+      matchEnd5(x: Int){
+        x{Int}
+      }{Int}
+    }{Int}
+  }
+}
+
