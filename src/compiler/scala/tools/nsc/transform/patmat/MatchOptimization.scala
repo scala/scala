@@ -591,30 +591,39 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
   }
 
+  trait ExhaustiveOptimizer extends MatchAnalyzer {
+    def doExhaustive(prevBinder: Symbol, pt: Type, selectorPos: Position, cases: List[List[TreeMaker]]): List[List[TreeMaker]] = {
+      val exhaustiveAnnotation = false //TODO get this
+
+      //Safe to optimize for booleans and any pattern matching on a sealed sum type. Otherwise explicitly use the @exhaustive annotation.
+      //This is to avoid an NPE mentioned https://github.com/scala/bug/issues/11191
+      val safeToOptimizeByDefault = prevBinder.info.=:=(BooleanTpe) // || is sealed sum type TODO
+      if ((safeToOptimizeByDefault || exhaustiveAnnotation) && exhaustive(prevBinder, cases, pt).isEmpty) {
+        cases match {
+          //Remove last conditional check to trick the thingy to generate the equivalent as if it was a case _ => ...
+          case allButLastCases :: lastCase :: Nil =>
+            allButLastCases :: List(lastCase.last) :: Nil
+          case _ => cases // shouldn't happen
+        }
+      } else cases
+    }
+  }
+
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
-                          with CommonSubconditionElimination {
-    //TODO how can I tell I have annotation?
+                          with CommonSubconditionElimination
+                          with ExhaustiveOptimizer
+  {
+    //TODO how can I tell I have the @exhaustive annotation here?
     //Follow stack trace up I can see exhaustive in selector. Might have to pass somehow?
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
-      val optCases = doCSE(prevBinder, cases, pt, selectorPos)
+      val optCases = doCSE(prevBinder, doExhaustive(prevBinder, pt, selectorPos, cases), pt, selectorPos)
       val toHoist = (
         for (treeMakers <- optCases)
           yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
         ).flatten.flatten.toList
-
-      val exhaustive = false
-      val exhaustiveAnnotation = false //TODO get this
-      val optimizeByDefault = false //TODO do by default without annotation for "boolean and  any pattern matching on a sealed sum type within the same compilation unit of said type"
-      //TODO clean
-      val optimizeAgain = if ((exhaustiveAnnotation || optimizeByDefault) && exhaustive) {
-        optCases match {
-          case _ :: last :: Nil => List(last)
-          case _ => optCases //unexpected I think
-        }
-      } else optCases
-      (optimizeAgain, toHoist)
+      (optCases, toHoist)
     }
   }
 }
