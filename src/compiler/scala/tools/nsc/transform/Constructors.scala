@@ -15,6 +15,7 @@ package transform
 
 import scala.collection.mutable
 import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
 /** This phase converts classes with parameters into Java-like classes with
@@ -60,7 +61,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
         def check(tree: Tree) = {
           for (t <- tree) t match {
             case t: RefTree if uninitializedVals(t.symbol.accessedOrSelf) && t.qualifier.symbol == clazz =>
-              reporter.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}")
+              runReporting.warning(t.pos, s"Reference to uninitialized ${t.symbol.accessedOrSelf}", WarningCategory.Other)
             case _ =>
           }
         }

@@ -19,9 +19,9 @@ import BackendReporting._
 import scala.tools.asm.ClassWriter
 import scala.tools.nsc.backend.jvm.BCodeHelpers.ScalaSigBytes
 import scala.tools.nsc.reporters.NoReporter
-
 import PartialFunction.cond
 import scala.annotation.tailrec
+import scala.tools.nsc.Reporting.WarningCategory
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -267,19 +267,21 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def apply(sym: Symbol, csymCompUnit: CompilationUnit, mainClass: Option[String]): Boolean = sym.hasModuleFlag && {
       val warn = mainClass.fold(true)(_ == sym.fullNameString)
-      def warnBadMain(msg: String, pos: Position): Unit = if (warn) reporter.warning(pos,
+      def warnBadMain(msg: String, pos: Position): Unit = if (warn) runReporting.warning(pos,
         s"""|not a valid main method for ${sym.fullName('.')},
             |  because $msg.
             |  To define an entry point, please define the main method as:
             |    def main(args: Array[String]): Unit
-            |""".stripMargin
-      )
-      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = if (warn) reporter.warning(sym.pos,
+            |""".stripMargin,
+        WarningCategory.Other,
+        sym)
+      def warnNoForwarder(msg: String, hasExact: Boolean, mainly: Type) = if (warn) runReporting.warning(sym.pos,
         s"""|${sym.name.decoded} has a ${if (hasExact) "valid " else ""}main method${if (mainly != NoType) " "+mainly else ""},
             |  but ${sym.fullName('.')} will not have an entry point on the JVM.
             |  Reason: $msg, which means no static forwarder can be generated.
-            |""".stripMargin
-      )
+            |""".stripMargin,
+        WarningCategory.Other,
+        sym)
       val possibles = (sym.tpe nonPrivateMember nme.main).alternatives
       val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
 
@@ -697,11 +699,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         }
 
         if(!isValidSignature) {
-          reporter.warning(sym.pos,
+          runReporting.warning(sym.pos,
             sm"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
                  |signature: $sig
                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+              """.trim,
+            WarningCategory.Other,
+            sym)
           return null
         }
       }
@@ -710,14 +714,16 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
-          reporter.warning(sym.pos,
+          runReporting.warning(sym.pos,
             sm"""|compiler bug: created generic signature for $sym in ${sym.owner.skipPackageObject.fullName} that does not conform to its erasure
                  |signature: $sig
                  |original type: $memberTpe
                  |normalized type: $normalizedTpe
                  |erasure type: $bytecodeTpe
                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+              """.trim,
+            WarningCategory.Other,
+            sym)
            return null
         }
       }

@@ -425,7 +425,7 @@ trait MatchAnalysis extends MatchApproximation {
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String, site: Symbol) = runReporting.warning(pos, msg, WarningCategory.Unchecked, site)
     def warn(pos: Position, ex: AnalysisBudget.Exception, kind: String, site: Symbol) = uncheckedWarning(pos, s"Cannot check match for $kind.\n${ex.advice}", site)
-    def reportWarning(message: String) = global.reporter.warning(typer.context.tree.pos, message)
+    def reportWarning(message: String) = typer.context.warning(typer.context.tree.pos, message, WarningCategory.OtherMatchAnalysis)
 
   // TODO: model dependencies between variables: if V1 corresponds to (x: List[_]) and V2 is (x.hd), V2 cannot be assigned when V1 = null or V1 = Nil
     // right now hackily implement this by pruning counter-examples

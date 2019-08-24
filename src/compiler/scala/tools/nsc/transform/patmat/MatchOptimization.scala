@@ -16,6 +16,7 @@ import scala.annotation.tailrec
 import scala.tools.nsc.symtab.Flags.MUTABLE
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *
@@ -450,7 +451,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                   val distinctAlts = distinctBy(switchableAlts)(extractConst)
                   if (distinctAlts.size < switchableAlts.size) {
                     val duplicated = switchableAlts.groupBy(extractConst).flatMap(_._2.drop(1).take(1)) // report the first duplicated
-                    reporter.warning(pos, s"Pattern contains duplicate alternatives: ${duplicated.mkString(", ")}")
+                    typer.context.warning(pos,
+                      s"Pattern contains duplicate alternatives: ${duplicated.mkString(", ")}",
+                      WarningCategory.OtherMatchAnalysis)
                   }
                   CaseDef(Alternative(distinctAlts), guard, body)
                 }

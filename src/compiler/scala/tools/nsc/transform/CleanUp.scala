@@ -16,6 +16,7 @@ package transform
 import symtab._
 import Flags._
 import scala.collection._
+import scala.tools.nsc.Reporting.WarningCategory
 
 abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
   import global._
@@ -337,11 +338,17 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               assert(params.length == mparams.length, ((params, mparams)))
               (mparams, resType)
             case tpe @ OverloadedType(pre, alts) =>
-              reporter.warning(ad.pos, s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe))
+              runReporting.warning(ad.pos,
+                s"Overloaded type reached the backend! This is a bug in scalac.\n     Symbol: ${ad.symbol}\n  Overloads: $tpe\n  Arguments: " + ad.args.map(_.tpe),
+                WarningCategory.Other,
+                currentOwner)
               val fittingAlts = alts collect { case alt if sumSize(alt.paramss, 0) == params.length => alt.tpe }
               fittingAlts match {
                 case mt @ MethodType(mparams, resType) :: Nil =>
-                  reporter.warning(NoPosition, "Only one overload has the right arity, proceeding with overload " + mt)
+                  runReporting.warning(ad.pos,
+                    "Only one overload has the right arity, proceeding with overload " + mt,
+                    WarningCategory.Other,
+                    currentOwner)
                   (mparams, resType)
                 case _ =>
                   reporter.error(ad.pos, "Cannot resolve overload.")
