@@ -36,14 +36,14 @@ t5553_2.scala:50: error: could not find implicit value for parameter z: String
   def test16[T]         = Foo3[T]
                               ^
 t5553_2.scala:54: error: ambiguous reference to overloaded definition,
-both method apply in object Foo4 of type (x: Int)(implicit z: String)Base[T]
-and  method apply in object Foo4 of type (x: Int)Base[T]
+both method apply in object Foo4 of type (x: Int)(implicit z: String): Base[T]
+and  method apply in object Foo4 of type (x: Int): Base[T]
 match argument types (Int)
   def test17[T]          = Foo4[T](1)
                                ^
 t5553_2.scala:55: error: ambiguous reference to overloaded definition,
-both method apply in object Foo4 of type (x: Int)(implicit z: String)Base[T]
-and  method apply in object Foo4 of type (x: Int)Base[T]
+both method apply in object Foo4 of type (x: Int)(implicit z: String): Base[T]
+and  method apply in object Foo4 of type (x: Int): Base[T]
 match argument types (Int) and expected result type Base[T]
   def test18[T]: Base[T] = Foo4[T](1)
                                ^

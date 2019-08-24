@@ -1,8 +1,8 @@
 t11042.scala:9: error: incompatible type in overriding
 def get: Int (defined in trait Base)
   with override def get: Any (defined in trait SubBase);
- found   : => Any
- required: => Int
+ found   : Any
+ required: Int
 class Hi extends Base[Int] with SubBase
       ^
 1 error

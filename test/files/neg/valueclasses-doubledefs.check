@@ -1,7 +1,7 @@
 valueclasses-doubledefs.scala:5: error: double definition:
 def apply(x: Double): String at line 4 and
 def apply(x: Meter): String at line 5
-have same type after erasure: (x: Double)String
+have same type after erasure: (x: Double): String
  def apply(x: Meter) = x.toString
      ^
 1 error

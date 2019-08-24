@@ -4,7 +4,7 @@ logImplicits.scala:4: applied implicit conversion from xs.type to ?{def size: ?}
 logImplicits.scala:9: applied implicit conversion from String("abc") to ?{def map: ?} = implicit def augmentString(x: String): scala.collection.StringOps
   def f = "abc" map (_ + 1)
           ^
-logImplicits.scala:17: inferred view from String("abc") to Int via C.this.convert: (p: "abc")Int
+logImplicits.scala:17: inferred view from String("abc") to Int via C.this.convert: (p: "abc"): Int
   math.max(122, x: Int)
                 ^
 logImplicits.scala:21: applied implicit conversion from Int(1) to ?{def ->: ?} = final implicit def ArrowAssoc[A](self: A): ArrowAssoc[A]

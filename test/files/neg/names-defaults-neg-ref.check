@@ -11,8 +11,8 @@ class C extends B {
       ^
 names-defaults-neg-ref.scala:21: error: incompatible type in overriding
 def bar$default$1: String (defined in class B);
- found   : => Int
- required: => String
+ found   : Int
+ required: String
   def bar(i: Int = 129083) = i
           ^
 4 errors

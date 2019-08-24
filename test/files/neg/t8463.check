@@ -2,12 +2,12 @@ t8463.scala:5: error: type mismatch;
  found   : 5L
  required: ?T[Long]
 Note that implicit conversions are not applicable because they are ambiguous:
- both method longWrapper in class LowPriorityImplicits of type (x: Long)scala.runtime.RichLong
- and method ArrowAssoc in object Predef of type [A](self: A)ArrowAssoc[A]
+ both method longWrapper in class LowPriorityImplicits of type (x: Long): scala.runtime.RichLong
+ and method ArrowAssoc in object Predef of type [A](self: A): ArrowAssoc[A]
  are possible conversion functions from 5L to ?T[Long]
   insertCell(Foo(5))
             ^
-t8463.scala:5: error: no type parameters for method apply: (activity: T[Long])Test.Foo[T] in object Foo exist so that it can be applied to arguments (Long)
+t8463.scala:5: error: no type parameters for method apply: (activity: T[Long]): Test.Foo[T] in object Foo exist so that it can be applied to arguments (Long)
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : 5L

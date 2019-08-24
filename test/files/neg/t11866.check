@@ -1,24 +1,24 @@
 t11866.scala:11: error: ambiguous reference to overloaded definition,
 both object f in class X of type Test.x.f.type
-and  method f in class X of type (n: Int)Int
+and  method f in class X of type (n: Int): Int
 match argument types (Int)
   def t1 = x.f(42)
              ^
 t11866.scala:13: error: ambiguous reference to overloaded definition,
 both object f in class X of type Test.x.f.type
-and  method f in class X of type (n: Int)Int
+and  method f in class X of type (n: Int): Int
 match argument types (Int)
   def t2 = x.f(n)
              ^
 t11866.scala:15: error: ambiguous reference to overloaded definition,
-both method f in class Y of type [A <: 42](a: A)Int
-and  method f in class Y of type (n: 42)Int
+both method f in class Y of type [A <: 42](a: A): Int
+and  method f in class Y of type (n: 42): Int
 match argument types (42)
   def t3 = y.f(n)
              ^
 t11866.scala:17: error: ambiguous reference to overloaded definition,
 both object f in class Z of type Test.z.f.type
-and  method f in class Z of type [A <: 42](a: A)Int
+and  method f in class Z of type [A <: 42](a: A): Int
 match argument types (Int) and expected result type Any
   println(z.f(n))
             ^

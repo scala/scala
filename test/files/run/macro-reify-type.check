@@ -1,1 +1,1 @@
-[B](f: Int => B)List[B]
+[B](f: Int => B): List[B]

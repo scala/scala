@@ -1,4 +1,4 @@
-t1038.scala:4: error: not enough arguments for constructor X: (x: Int)X.
+t1038.scala:4: error: not enough arguments for constructor X: (x: Int): X.
 Unspecified value parameter x.
   val a = new X
           ^

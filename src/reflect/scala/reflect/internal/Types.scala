@@ -2897,7 +2897,12 @@ trait Types
     //TODO this may be generalised so that the only constraint is dependencies are acyclic
     def approximate: MethodType = MethodType(params, resultApprox)
 
-    override def safeToString = paramString(this) + resultType
+    //Format (a: A)(b: B)(implicit c: C, d: D): E
+    override def safeToString = {
+      s"${paramString(this)}${
+        resultType match { case _: MethodType => "" case _ => ": "}
+      }$resultType"
+    }
 
     override def cloneInfo(owner: Symbol) = {
       val vparams = cloneSymbolsAtOwner(params, owner)
@@ -2942,7 +2947,7 @@ trait Types
     override def baseTypeSeqDepth: Depth = resultType.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = resultType.baseClasses
     override def baseType(clazz: Symbol): Type = resultType.baseType(clazz)
-    override def safeToString: String = "=> "+ resultType
+    override def safeToString: String = resultType.toString
     override def kind = "NullaryMethodType"
     override def mapOver(map: TypeMap): Type = {
       val result1 = map(resultType)

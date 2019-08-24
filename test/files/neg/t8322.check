@@ -1,6 +1,6 @@
 t8322.scala:17: error: ambiguous implicit values:
- both method $conforms in object Predef of type [A]=> A => A
- and value ew in trait F of type => Writes[Any]
+ both method $conforms in object Predef of type [A]A => A
+ and value ew in trait F of type Writes[Any]
  match expected type T
   implicit def wr[E] = jw(implicitly, implicitly)
                           ^

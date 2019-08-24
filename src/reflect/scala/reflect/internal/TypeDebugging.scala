@@ -127,6 +127,10 @@ trait TypeDebugging {
 
     object str {
       def parentheses(xs: List[_]): String     = xs.mkString("(", ", ", ")")
+      def params(params: List[Symbol]): String = {
+        val paramsStrPre = if (params.nonEmpty && params.head.isImplicit) "(implicit " else "("
+        params map (_.defStringWithoutImplicit) mkString (paramsStrPre, ", ", ")")
+      }
       def brackets(xs: List[_]): String        = if (xs.isEmpty) "" else xs.mkString("[", ", ", "]")
       def tparams(tparams: List[Type]): String = brackets(tparams map debug)
       def parents(ps: List[Type]): String      = (ps map debug).mkString(" with ")
@@ -152,7 +156,7 @@ trait TypeDebugging {
     }
     def debugString(tp: Type) = debug(tp)
   }
-  def paramString(tp: Type)      = typeDebug.str parentheses (tp.params map (_.defString))
+  def paramString(tp: Type)      = typeDebug.str params tp.params
   def typeParamsString(tp: Type) = typeDebug.str brackets (tp.typeParams map (_.defString))
   def debugString(tp: Type)      = typeDebug debugString tp
 }

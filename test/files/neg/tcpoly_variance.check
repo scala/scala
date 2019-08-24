@@ -1,7 +1,7 @@
 tcpoly_variance.scala:6: error: incompatible type in overriding
 def str: m[Object] (defined in class A);
- found   : => m[String]
- required: => m[Object]
+ found   : m[String]
+ required: m[Object]
  override def str: m[String]  = sys.error("foo") // since x in m[x] is invariant, ! m[String] <: m[Object]
               ^
 1 error

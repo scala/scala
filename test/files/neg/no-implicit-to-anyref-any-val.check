@@ -26,8 +26,8 @@ no-implicit-to-anyref-any-val.scala:32: error: type mismatch;
  found   : Object
  required: AnyVal
 Note that implicit conversions are not applicable because they are ambiguous:
- both method ArrowAssoc in object Predef of type [A](self: A)ArrowAssoc[A]
- and method Ensuring in object Predef of type [A](self: A)Ensuring[A]
+ both method ArrowAssoc in object Predef of type [A](self: A): ArrowAssoc[A]
+ and method Ensuring in object Predef of type [A](self: A): Ensuring[A]
  are possible conversion functions from Object to AnyVal
   new Object() : AnyVal
   ^

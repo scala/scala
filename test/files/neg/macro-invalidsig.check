@@ -73,13 +73,13 @@ Macros_Test_2.scala:46: error: type arguments [U] do not conform to method foo's
 Macros_Test_2.scala:50: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
   def foo[U <: Int]: Any = macro Impls13.foo[U]
                                             ^
-Macros_Test_2.scala:54: error: macro implementation reference has too few type arguments for method foo: [U](c: scala.reflect.macros.blackbox.Context)(implicit evidence$4: c.WeakTypeTag[U])Nothing
+Macros_Test_2.scala:54: error: macro implementation reference has too few type arguments for method foo: [U](c: scala.reflect.macros.blackbox.Context)(implicit evidence$4: c.WeakTypeTag[U]): Nothing
   def foo: Any = macro Impls14.foo
                                ^
-Macros_Test_2.scala:59: error: macro implementation reference has too few type arguments for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$5: c.WeakTypeTag[T], implicit evidence$6: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
+Macros_Test_2.scala:59: error: macro implementation reference has too few type arguments for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$5: c.WeakTypeTag[T], evidence$6: c.WeakTypeTag[U], V: c.WeakTypeTag[V]): c.Expr[Unit]
     def foo15[V]: Unit = macro Impls15.foo
                                        ^
-Macros_Test_2.scala:60: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$7: c.WeakTypeTag[T], implicit evidence$8: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
+Macros_Test_2.scala:60: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$7: c.WeakTypeTag[T], evidence$8: c.WeakTypeTag[U], V: c.WeakTypeTag[V]): c.Expr[Unit]
     def foo16[V]: Unit = macro Impls16.foo[V]
                                           ^
 16 errors

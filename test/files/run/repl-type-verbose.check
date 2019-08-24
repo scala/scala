@@ -3,7 +3,7 @@ scala> // verbose!
 
 scala> :type -v def f = 5
 // Type signature
-=> Int
+Int
 
 // Internal Type structure
 NullaryMethodType(
@@ -12,7 +12,7 @@ NullaryMethodType(
 
 scala> :type -v def f() = 5
 // Type signature
-()Int
+(): Int
 
 // Internal Type structure
 NullaryMethodType(
@@ -23,7 +23,7 @@ NullaryMethodType(
 
 scala> :type -v def f[T] = 5
 // Type signature
-[T]=> Int
+[T]Int
 
 // Internal Type structure
 PolyType(
@@ -35,7 +35,7 @@ PolyType(
 
 scala> :type -v def f[T >: Null] = 5
 // Type signature
-[T >: Null]=> Int
+[T >: Null]Int
 
 // Internal Type structure
 PolyType(
@@ -47,7 +47,7 @@ PolyType(
 
 scala> :type -v def f[T <: String] = 5
 // Type signature
-[T <: String]=> Int
+[T <: String]Int
 
 // Internal Type structure
 PolyType(
@@ -59,7 +59,7 @@ PolyType(
 
 scala> :type -v def f[T]() = 5
 // Type signature
-[T]()Int
+[T](): Int
 
 // Internal Type structure
 PolyType(
@@ -73,7 +73,7 @@ PolyType(
 
 scala> :type -v def f[T, U]() = 5
 // Type signature
-[T, U]()Int
+[T, U](): Int
 
 // Internal Type structure
 PolyType(
@@ -87,7 +87,7 @@ PolyType(
 
 scala> :type -v def f[T, U]()() = 5
 // Type signature
-[T, U]()()Int
+[T, U]()(): Int
 
 // Internal Type structure
 PolyType(
@@ -103,7 +103,7 @@ PolyType(
 
 scala> :type -v def f[T, U <: T] = 5
 // Type signature
-[T, U <: T]=> Int
+[T, U <: T]Int
 
 // Internal Type structure
 PolyType(
@@ -115,7 +115,7 @@ PolyType(
 
 scala> :type -v def f[T, U <: T](x: T)(y: U) = 5
 // Type signature
-[T, U <: T](x: T)(y: U)Int
+[T, U <: T](x: T)(y: U): Int
 
 // Internal Type structure
 PolyType(
@@ -133,7 +133,7 @@ PolyType(
 
 scala> :type -v def f[T: Ordering] = 5
 // Type signature
-[T](implicit evidence$1: Ordering[T])Int
+[T](implicit evidence$1: Ordering[T]): Int
 
 // Internal Type structure
 PolyType(
@@ -148,7 +148,7 @@ PolyType(
 
 scala> :type -v def f[T: Ordering] = implicitly[Ordering[T]]
 // Type signature
-[T](implicit evidence$1: Ordering[T])Ordering[T]
+[T](implicit evidence$1: Ordering[T]): Ordering[T]
 
 // Internal Type structure
 PolyType(
@@ -171,7 +171,7 @@ PolyType(
 
 scala> :type -v def f[T <: { type Bippy = List[Int] ; def g(): Bippy }] = 5
 // Type signature
-[T <: AnyRef{type Bippy = List[Int]; def g(): this.Bippy}]=> Int
+[T <: AnyRef{type Bippy = List[Int]; def g(): this.Bippy}]Int
 
 // Internal Type structure
 PolyType(

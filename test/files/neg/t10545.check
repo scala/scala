@@ -1,6 +1,6 @@
 t10545.scala:32: error: ambiguous implicit values:
- both method barF0 in object Bar of type [F[_]](implicit fooF: Foo[F])Bar[F]
- and method barF1 in object Bar of type [F[_]](implicit fooF: Foo[F])Bar[F]
+ both method barF0 in object Bar of type [F[_]](implicit fooF: Foo[F]): Bar[F]
+ and method barF1 in object Bar of type [F[_]](implicit fooF: Foo[F]): Bar[F]
  match expected type Bar[Option]
   implicitly[Bar[Option]]
             ^

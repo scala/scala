@@ -1,13 +1,13 @@
 t588.scala:3: error: double definition:
 def visit(f: Int => Unit): Boolean at line 2 and
 def visit(f: Int => String): Boolean at line 3
-have same type after erasure: (f: Function1)Boolean
+have same type after erasure: (f: Function1): Boolean
   def visit(f: Int => String): Boolean
       ^
 t588.scala:10: error: double definition:
 def f(node: Test.this.TypeA): Unit at line 9 and
 def f(brac: Test.this.TypeB): Unit at line 10
-have same type after erasure: (node: Test#TraitA)Unit
+have same type after erasure: (node: Test#TraitA): Unit
   def f(brac : TypeB) : Unit;
       ^
 2 errors

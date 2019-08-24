@@ -19,14 +19,14 @@ macro [<macro bundle>].<method name>[[<type args>]]
   def foo(x: Any): Any = macro Impls4.foo
                                       ^
 Macros_Test_2.scala:27: error: ambiguous reference to overloaded definition,
-both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
-and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any])Nothing
+both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any]): Nothing
+and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any]): Nothing
 match expected type ?
   def foo(x: Any): Any = macro Impls5.foo
                                       ^
 Macros_Test_2.scala:28: error: ambiguous reference to overloaded definition,
-both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
-and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any])Nothing
+both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any]): Nothing
+and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any]): Nothing
 match expected type ?
   def foo(x: Any, y: Any): Any = macro Impls5.foo
                                               ^
