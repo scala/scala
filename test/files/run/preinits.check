@@ -4,7 +4,6 @@ trait B extends { override val x = 1 } with A { println("B") }
 preinits.scala:3: warning: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
 trait C extends { override val x = 2 } with A
                                ^
-warning: there were two deprecation warnings (since 2.13.0); re-run with -deprecation for details
 A
 B
 2

@@ -1,5 +1,5 @@
 //
-// scalac: -deprecation -Xfatal-warnings
+// scalac: -deprecation -Xfatal-warnings -Xsource:2.14
 //
 trait Base {
   val abstractVal: String

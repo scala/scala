@@ -1,18 +1,14 @@
-t2796.scala:9: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+t2796.scala:9: warning: early initializers are deprecated; use trait parameters instead.
 trait T1 extends {
                  ^
-t2796.scala:13: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+t2796.scala:13: warning: early initializers are deprecated; use trait parameters instead.
 trait T2 extends {
                  ^
-t2796.scala:14: warning: early type members are deprecated: move them to the regular body; the semantics are the same
-  type X = Int                       // warn
-       ^
-t2796.scala:17: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+t2796.scala:17: warning: early initializers are deprecated; use trait parameters instead.
 class C1 extends {
                  ^
-t2796.scala:10: warning: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
-  val abstractVal = "T1.abstractVal" // warn
-      ^
-error: No warnings can be incurred under -Werror.
-5 warnings found
+t2796.scala:14: error: early type members are unsupported: move them to the regular body; the semantics are the same
+  type X = Int                       // warn
+       ^
+three warnings found
 one error found

@@ -3024,10 +3024,9 @@ self =>
         // @S: pre template body cannot stub like post body can!
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
-          val advice =
-            if (currentRun.isScala214) "use trait parameters instead."
-            else "they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits."
-          deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
+          if (currentRun.isScala214) {
+            deprecationWarning(braceOffset, "early initializers are deprecated; use trait parameters instead.", "2.13.0")
+          }
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
           val parents = templateParents()

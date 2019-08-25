@@ -1,4 +1,4 @@
-deprecate-early-type-defs.scala:3: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+deprecate-early-type-defs.scala:3: warning: early initializers are deprecated; use trait parameters instead.
 object Test extends { type T = Int } with App
                     ^
 deprecate-early-type-defs.scala:3: warning: early type members are deprecated: move them to the regular body; the semantics are the same

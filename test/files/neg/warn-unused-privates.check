@@ -1,4 +1,4 @@
-warn-unused-privates.scala:31: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+warn-unused-privates.scala:31: warning: early initializers are deprecated; use trait parameters instead.
 class Boppy extends {
                     ^
 warn-unused-privates.scala:5: warning: private constructor in class Bippy is never used
@@ -70,6 +70,16 @@ warn-unused-privates.scala:237: warning: private class D in class nonprivate ali
 warn-unused-privates.scala:102: warning: local var x in method f2 is never updated: consider using immutable val
     var x = 100 // warn about it being a var
         ^
+warn-unused-privates.scala:17: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method unary_!,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  private lazy val BOOL: Boolean = true   // warn
+                   ^
+warn-unused-privates.scala:118: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method initialized,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+    object HiObject { def f = this } // warn
+           ^
 error: No warnings can be incurred under -Werror.
-24 warnings found
+26 warnings found
 one error found
