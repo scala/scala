@@ -615,7 +615,6 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                           with ExhaustiveOptimizer
   {
     //TODO how can I tell I have the @exhaustive annotation here?
-    //Follow stack trace up I can see exhaustive in selector. Might have to pass somehow?
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
       val optCases = doCSE(prevBinder, doExhaustive(prevBinder, pt, selectorPos, cases), pt, selectorPos)
