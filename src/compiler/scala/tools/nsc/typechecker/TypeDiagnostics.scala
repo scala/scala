@@ -48,8 +48,8 @@ trait TypeDiagnostics {
   /** For errors which are artifacts of the implementation: such messages
    *  indicate that the restriction may be lifted in the future.
    */
-  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String): Unit =
-    reporter.warning(pos, "Implementation restriction: " + msg)
+  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String, category: WarningCategory, site: Symbol): Unit =
+    runReporting.warning(pos, "Implementation restriction: " + msg, category, site)
   def restrictionError(pos: Position, unit: CompilationUnit, msg: String): Unit =
     reporter.error(pos, "Implementation restriction: " + msg)
 

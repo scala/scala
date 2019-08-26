@@ -16,13 +16,16 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.shortClassOfInstance
 import scala.reflect.internal.util.StringOps._
+import scala.tools.nsc.Reporting.WarningCategory
 
 abstract class TreeCheckers extends Analyzer {
   import global._
 
   override protected def onTreeCheckerError(pos: Position, msg: String): Unit = {
+    // could thread the `site` through ContextReporter for errors, like we do for warnings, but it
+    // looks like an overkill since it would only be used here.
     if (settings.fatalWarnings)
-      reporter.warning(pos, "\n** Error during internal checking:\n" + msg)
+      runReporting.warning(pos, "\n** Error during internal checking:\n" + msg, WarningCategory.OtherDebug, site = "")
   }
 
   case class DiffResult[T](lost: List[T], gained: List[T]) {
@@ -173,7 +176,7 @@ abstract class TreeCheckers extends Analyzer {
   )
 
 
-  def errorFn(pos: Position, msg: Any): Unit = reporter.warning(pos, "[check: %s] %s".format(phase.prev, msg))
+  def errorFn(pos: Position, msg: Any): Unit = runReporting.warning(pos, "[check: %s] %s".format(phase.prev, msg), WarningCategory.OtherDebug, site = "")
   def errorFn(msg: Any): Unit                = errorFn(NoPosition, msg)
 
   def informFn(msg: Any): Unit = {

@@ -902,9 +902,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val samClazz = sam.owner
           // TODO: we allow a Java class as a SAM type, whereas Java only allows the @FunctionalInterface on interfaces -- align?
           if (sam.exists && (!samClazz.hasFlag(JAVA) || samClazz.hasFlag(INTERFACE)) && !samClazz.hasAnnotation(definitions.FunctionalInterfaceClass))
-            reporter.warning(tree.pos, s"Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},\n" +
-                                       s"even though ${samClazz} is not annotated with `@FunctionalInterface`;\n" +
-                                       s"to suppress warning, add the annotation or write out the equivalent function literal.")
+            context.warning(tree.pos,
+              s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
+                 |even though ${samClazz} is not annotated with `@FunctionalInterface`;
+                 |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
+              WarningCategory.Other)
         }
 
         // note that isFunctionProto(pt) does not work properly for Function0
@@ -949,8 +951,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   if (expectingFunctionOfArity) pt
                   else s"$pt, which is SAM-equivalent to ${samToFunctionType(pt)}"
 
-                reporter.warning(tree.pos, s"An unapplied 0-arity method was eta-expanded (due to the expected type ${ptHelp}), rather than applied to `()`.\n" +
-                                           s"Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.")
+                context.warning(tree.pos,
+                  s"""An unapplied 0-arity method was eta-expanded (due to the expected type ${ptHelp}), rather than applied to `()`.
+                     |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
+                  WarningCategory.Other)
               }
               doEtaZero
             } else sourceLevel2_14 || expectingFunctionOfArity || expectingSamOfArity
