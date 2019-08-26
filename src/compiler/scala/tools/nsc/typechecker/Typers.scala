@@ -906,7 +906,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               s"""Eta-expansion performed to meet expected type $pt, which is SAM-equivalent to ${samToFunctionType(pt)},
                  |even though ${samClazz} is not annotated with `@FunctionalInterface`;
                  |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
-              WarningCategory.Other)
+              WarningCategory.LintEtaSam)
         }
 
         // note that isFunctionProto(pt) does not work properly for Function0
@@ -954,7 +954,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 context.warning(tree.pos,
                   s"""An unapplied 0-arity method was eta-expanded (due to the expected type ${ptHelp}), rather than applied to `()`.
                      |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
-                  WarningCategory.Other)
+                  WarningCategory.LintEtaZero)
               }
               doEtaZero
             } else sourceLevel2_14 || expectingFunctionOfArity || expectingSamOfArity

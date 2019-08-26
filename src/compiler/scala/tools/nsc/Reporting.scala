@@ -295,7 +295,6 @@ object Reporting {
     object LintNonlocalReturn extends Lint; add(LintNonlocalReturn)
     object LintImplicitNotFound extends Lint; add(LintImplicitNotFound)
     object LintSerial extends Lint; add(LintSerial)
-    object LintValpattern extends Lint; add(LintValpattern)
     object LintEtaZero extends Lint; add(LintEtaZero)
     object LintEtaSam extends Lint; add(LintEtaSam)
     object LintDeprecation extends Lint; add(LintDeprecation)

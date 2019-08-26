@@ -246,7 +246,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
               context.warning(tree.pos,
                                "it is not recommended to define classes/objects inside of package objects.\n" +
                                "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead.",
-                              WarningCategory.Other)
+                              WarningCategory.LintPackageObjectClasses)
             }
             // Suggested location only.
             if (mods.isImplicit) {

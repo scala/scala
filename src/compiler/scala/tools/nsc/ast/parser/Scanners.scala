@@ -18,10 +18,12 @@ import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import Tokens._
 import scala.annotation.{switch, tailrec}
-import scala.collection.mutable, mutable.{ListBuffer, ArrayBuffer}
+import scala.collection.mutable
+import mutable.{ArrayBuffer, ListBuffer}
 import scala.tools.nsc.ast.parser.xml.Utility.isNameStart
-
 import java.lang.StringBuilder
+
+import scala.tools.nsc.Reporting.WarningCategory
 
 object Cbuf {
   final val TargetCapacity = 256
@@ -69,6 +71,7 @@ trait ScannersCommon {
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
     def error(off: Offset, msg: String): Unit
     def incompleteInputError(off: Offset, msg: String): Unit
+    def warning(off: Offset, msg: String, category: WarningCategory): Unit
     def deprecationWarning(off: Offset, msg: String, since: String): Unit
   }
 
@@ -1015,7 +1018,10 @@ trait Scanners extends ScannersCommon {
         } else {
           if (base == 8) {
             if (settings.warnOctalLiteral)
-              deprecationWarning("Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)" , since="2.10")
+              warning(
+                offset,
+                "Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)" ,
+                WarningCategory.WFlagOctalLiteral)
             base = 10
           }
           val divider     = if (base == 10) 1 else 2
@@ -1346,6 +1352,7 @@ trait Scanners extends ScannersCommon {
     override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
+    def warning(off: Offset, msg: String, category: WarningCategory): Unit = ()
     def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()
     def error(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
     def incompleteInputError(off: Offset, msg: String): Unit = throw new MalformedInput(off, msg)
@@ -1356,9 +1363,10 @@ trait Scanners extends ScannersCommon {
   class UnitScanner(val unit: CompilationUnit, patches: List[BracePatch]) extends SourceFileScanner(unit.source) {
     def this(unit: CompilationUnit) = this(unit, List())
 
-    override def deprecationWarning(off: Offset, msg: String, since: String) = runReporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "")
-    override def error(off: Offset, msg: String)                             = reporter.error(unit.position(off), msg)
-    override def incompleteInputError(off: Offset, msg: String)              = currentRun.parsing.incompleteInputError(unit.position(off), msg)
+    override def warning(off: Offset, msg: String, category: WarningCategory): Unit   = runReporting.warning(unit.position(off), msg, category, site = "")
+    override def deprecationWarning(off: Offset, msg: String, since: String)          = runReporting.deprecationWarning(unit.position(off), msg, since, site = "", origin = "")
+    override def error(off: Offset, msg: String)                                      = reporter.error(unit.position(off), msg)
+    override def incompleteInputError(off: Offset, msg: String)                       = currentRun.parsing.incompleteInputError(unit.position(off), msg)
 
     private var bracePatches: List[BracePatch] = patches
 

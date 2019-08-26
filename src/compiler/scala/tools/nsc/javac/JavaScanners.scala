@@ -17,9 +17,10 @@ import scala.tools.nsc.util.JavaCharArrayReader
 import scala.reflect.internal.util._
 import scala.reflect.internal.Chars._
 import JavaTokens._
-import scala.annotation.{ switch, tailrec }
+import scala.annotation.{switch, tailrec}
 import scala.language.implicitConversions
 import scala.collection.immutable.ArraySeq
+import scala.tools.nsc.Reporting.WarningCategory
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {
@@ -885,6 +886,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     init()
     def error(pos: Int, msg: String) = reporter.error(pos, msg)
     def incompleteInputError(pos: Int, msg: String) = currentRun.parsing.incompleteInputError(pos, msg)
+    def warning(pos: Int, msg: String, category: WarningCategory) = runReporting.warning(pos, msg, category, site = "")
     def deprecationWarning(pos: Int, msg: String, since: String) = runReporting.deprecationWarning(pos, msg, since, site = "", origin = "")
     implicit def g2p(pos: Int): Position = Position.offset(unit.source, pos)
   }

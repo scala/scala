@@ -165,7 +165,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       }
       def isDirty = unclean(unmooredParser parseComment doc)
       if ((doc ne null) && (settings.warnDocDetached || isDirty))
-        runReporting.warning(doc.pos, "discarding unmoored doc comment", WarningCategory.Scaladoc, site = "")
+        runReporting.warning(doc.pos, "discarding unmoored doc comment", WarningCategory.LintDocDetached, site = "")
     }
 
     protected def docPosition: Position = Position.range(unit.source, offset, offset, charOffset - 2)
