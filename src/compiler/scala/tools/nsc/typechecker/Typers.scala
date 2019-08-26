@@ -1230,7 +1230,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
           tree
         else {
-          val constFolded = constfold(tree, pt)
+          val constFolded = constfold(tree, pt, context.owner)
           if (constFolded.tpe <:< pt) adapt(constFolded, mode, pt, original) // set stage for (0)
           else adaptExprNotFunMode() // (10) -- (15)
         }
@@ -3765,7 +3765,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else {
                   val resTp = ifPatternSkipFormals(if (isPastTyper) restpe else restpe.deconst) // annoying issue with classOf that shouldn't be deconsted after typers (during fields phase)
-                  constfold(treeCopy.Apply(tree, fun, args2) setType resTp setPos pos2)
+                  constfold(treeCopy.Apply(tree, fun, args2) setType resTp setPos pos2, context.owner)
                 }
               }
               if (settings.warnDeadCode) {
@@ -3862,7 +3862,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
         // e.g. it may have encountered an implicit conversion.
-        val ttree = typed(constfold(tr), pt)
+        val ttree = typed(constfold(tr, context.owner), pt)
         val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
@@ -5992,7 +5992,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def checkRootSymbol(t: Tree): Unit =
         context.lookupSymbol(nme.ROOTPKG, p => p.isPackage && !p.isRootPackage) match {
           case LookupSucceeded(_, sym) =>
-            warning(t.pos, s"${nme.ROOTPKG} in root position in package definition does not refer to the root package, but to ${sym.fullLocationString}, which is in scope")
+            runReporting.warning(
+              t.pos,
+              s"${nme.ROOTPKG} in root position in package definition does not refer to the root package, but to ${sym.fullLocationString}, which is in scope",
+              WarningCategory.Other,
+              currentOwner)
             t.setSymbol(sym)
           case _ => ()
         }
@@ -6014,7 +6018,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def checkRootSymbol(t: Tree): Unit = {
         startContext.lookupSymbol(nme.ROOTPKG, !_.isRootPackage) match {
           case LookupSucceeded(_, sym) =>
-            warning(t.pos, s"${nme.ROOTPKG} in root position of qualifier refers to the root package, not ${sym.fullLocationString}, which is in scope")
+            runReporting.warning(
+              t.pos,
+              s"${nme.ROOTPKG} in root position of qualifier refers to the root package, not ${sym.fullLocationString}, which is in scope",
+              WarningCategory.Other,
+              currentOwner)
             t.setSymbol(rootMirror.RootPackage)
           case _ => ()
         }

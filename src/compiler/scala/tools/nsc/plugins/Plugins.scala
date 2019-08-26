@@ -17,6 +17,7 @@ import java.net.URL
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.plugins.Plugin.pluginClassLoadersCache
 import scala.tools.nsc.typechecker.Macros
@@ -44,7 +45,7 @@ trait Plugins { global: Global =>
     // Explicit parameterization of recover to avoid -Xlint warning about inferred Any
     errors foreach (_.recover[Any] {
       // legacy behavior ignores altogether, so at least warn devs
-      case e: MissingPluginException => if (global.isDeveloper) warning(e.getMessage)
+      case e: MissingPluginException => if (global.isDeveloper) runReporting.warning(NoPosition, e.getMessage, WarningCategory.OtherDebug, site = "")
       case e: Exception              => inform(e.getMessage)
     })
     val classes = goods map (_.get)  // flatten

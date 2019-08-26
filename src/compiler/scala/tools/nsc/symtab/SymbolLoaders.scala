@@ -15,10 +15,12 @@ package symtab
 
 import classfile.{ClassfileParser, ReusableDataReader}
 import java.io.IOException
+
 import scala.reflect.internal.MissingRequirementError
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.reflect.internal.util.{ReusableInstance, StatisticsStatics}
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This class ...
  *
@@ -44,6 +46,9 @@ abstract class SymbolLoaders {
    * interface.
    */
   protected def compileLate(srcfile: AbstractFile): Unit
+
+  // forwards to runReporting.warning, but we don't have global in scope here
+  def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit
 
   protected def enterIfNew(owner: Symbol, member: Symbol, completer: SymbolLoader): Symbol = {
     assert(owner.info.decls.lookup(member.name) == NoSymbol, owner.fullName + "." + member.name)
@@ -104,16 +109,20 @@ abstract class SymbolLoaders {
         )
       else if (settings.termConflict.value == "package") {
         warning(
+          NoPosition,
           "Resolving package/object name conflict in favor of package " +
-          preExisting.fullName + ".  The object will be inaccessible."
-        )
+          preExisting.fullName + ".  The object will be inaccessible.",
+          WarningCategory.Other,
+          site = "")
         root.info.decls.unlink(preExisting)
       }
       else {
         warning(
+          NoPosition,
           "Resolving package/object name conflict in favor of object " +
-          preExisting.fullName + ".  The package will be inaccessible."
-        )
+          preExisting.fullName + ".  The package will be inaccessible.",
+          WarningCategory.Other,
+          site = "")
         return NoSymbol
       }
     }

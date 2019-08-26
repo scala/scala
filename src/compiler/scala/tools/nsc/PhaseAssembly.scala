@@ -13,6 +13,7 @@
 package scala.tools.nsc
 
 import scala.collection.mutable
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Converts an unordered morass of components into an order that
  *  satisfies their mutual constraints.
@@ -189,7 +190,7 @@ trait PhaseAssembly {
           edges -= edge
           edge.frm.after -= edge
           if (edge.frm.phaseobj exists (lsc => !lsc.head.internal))
-            warning(msg)
+            runReporting.warning(NoPosition, msg, WarningCategory.Other, site = "")
         }
       }
     }

@@ -252,7 +252,7 @@ object PostProcessorFrontendAccess {
       }
 
       def warning(pos: Position, message: String): Unit = frontendSynch {
-        global.warning(pos, message)
+        runReporting.warning(pos, message, WarningCategory.Other, site = "")
       }
 
       def inform(message: String): Unit = frontendSynch {

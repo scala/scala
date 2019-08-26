@@ -25,6 +25,7 @@ import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
 import scala.reflect.io.NoAbstractFile
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.util.control.NonFatal
@@ -406,7 +407,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     //   - better owner than `NoSymbol`
     //   - remove eager warning
     val msg = s"Class $name not found - continuing with a stub."
-    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) warning(msg)
+    if ((!settings.isScaladoc) && (settings.verbose || settings.developer)) loaders.warning(NoPosition, msg, WarningCategory.OtherDebug, clazz.fullNameString)
     NoSymbol.newStubSymbol(name.toTypeName, msg)
   }
 
@@ -933,10 +934,12 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         val s = module.info.decls.lookup(n)
         if (s != NoSymbol) Some(LiteralAnnotArg(Constant(s)))
         else {
-          warning(
+          loaders.warning(
+            NoPosition,
             sm"""While parsing annotations in ${file}, could not find $n in enum ${module.nameString}.
-                |This is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014)."""
-          )
+                |This is likely due to an implementation restriction: an annotation argument cannot refer to a member of the annotated class (scala/bug#7014).""",
+            WarningCategory.Other,
+            clazz.fullNameString)
           None
         }
 
@@ -983,7 +986,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       // the classpath would *not* end up here. A class not found is signaled
       // with a `FatalError` exception, handled above. Here you'd end up after a NPE (for example),
       // and that should never be swallowed silently.
-      warning(s"Caught: $ex while parsing annotations in ${file}")
+      loaders.warning(NoPosition, s"Caught: $ex while parsing annotations in ${file}", WarningCategory.Other, clazz.fullNameString)
       if (settings.debug) ex.printStackTrace()
       None // ignore malformed annotations
   }
