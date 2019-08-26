@@ -190,7 +190,7 @@ trait FlagSets { self: Universe =>
 
     /** Flag indicating that tree represents a parameter of the primary constructor of some class
      *  or a synthetic member underlying thereof. E.g. here's how 'class C(val x: Int)' is represented:
-     *
+     * {{{
      *      [[syntax trees at end of parser]]// Scala source: tmposDU52
      *      class C extends scala.AnyRef {
      *        <paramaccessor> val x: Int = _;
@@ -210,12 +210,13 @@ trait FlagSets { self: Universe =>
      *              Modifiers(), nme.CONSTRUCTOR, List(),
      *              List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"), Ident(TypeName("Int")), EmptyTree))), TypeTree(),
      *              Block(List(pendingSuperCall), Literal(Constant(())))))))))
+     * }}}
      */
     val PARAMACCESSOR: FlagSet
 
     /** Flag indicating that tree represents a parameter of the primary constructor of some case class
      *  or a synthetic member underlying thereof.  E.g. here's how 'case class C(val x: Int)' is represented:
-     *
+     * {{{
      *      [[syntax trees at end of parser]]// Scala source: tmpnHkJ3y
      *      case class C extends scala.Product with scala.Serializable {
      *        <caseaccessor> <paramaccessor> val x: Int = _;
@@ -235,6 +236,7 @@ trait FlagSets { self: Universe =>
      *              Modifiers(), nme.CONSTRUCTOR, List(),
      *              List(List(ValDef(Modifiers(PARAM | PARAMACCESSOR), TermName("x"), Ident(TypeName("Int")), EmptyTree))), TypeTree(),
      *              Block(List(pendingSuperCall), Literal(Constant(())))))))))
+     * }}}
      */
     val CASEACCESSOR: FlagSet
 

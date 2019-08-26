@@ -113,7 +113,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
 
     /** Generate a synthetic cast operation from tree.tpe to pt.
       *
-      *  @pre pt eq pt.normalize
+      *  @note Pre-condition: pt eq pt.normalize
      */
     final def cast(tree: Tree, pt: Type): Tree = {
       if (settings.debug && (tree.tpe ne null) && !(tree.tpe =:= ObjectTpe)) {

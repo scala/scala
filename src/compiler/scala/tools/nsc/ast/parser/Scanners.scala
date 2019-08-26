@@ -209,8 +209,8 @@ trait Scanners extends ScannersCommon {
       }
     }
 
-    /** @pre ch == '/'
-     *  Returns true if a comment was skipped.
+    /** Returns true if a comment was skipped.
+     *  @note Pre-condition: ch == '/'
      */
     final def skipComment(): Boolean = ch match {
       case '/' | '*' => skipToCommentEnd(isLineComment = ch == '/') ; finishDocComment(); true

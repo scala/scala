@@ -390,19 +390,19 @@ trait Internals { self: Universe =>
 
       /** @see [[TreeDecorator]] */
       class TreeDecoratorApi[T <: Tree](val tree: T) {
-        /** @see [[internal.freeTerms]] */
+        /** @see [[InternalApi.freeTerms]] */
         def freeTerms: List[FreeTermSymbol] = internal.freeTerms(tree)
 
-        /** @see [[internal.freeTypes]] */
+        /** @see [[InternalApi.freeTypes]] */
         def freeTypes: List[FreeTypeSymbol] = internal.freeTypes(tree)
 
-        /** @see [[internal.substituteSymbols]] */
+        /** @see [[InternalApi.substituteSymbols]] */
         def substituteSymbols(from: List[Symbol], to: List[Symbol]): Tree = internal.substituteSymbols(tree, from, to)
 
-        /** @see [[internal.substituteTypes]] */
+        /** @see [[InternalApi.substituteTypes]] */
         def substituteTypes(from: List[Symbol], to: List[Type]): Tree = internal.substituteTypes(tree, from, to)
 
-        /** @see [[internal.substituteThis]] */
+        /** @see [[InternalApi.substituteThis]] */
         def substituteThis(clazz: Symbol, to: => Tree): Tree = internal.substituteThis(tree, clazz, to)
       }
 
@@ -414,49 +414,49 @@ trait Internals { self: Universe =>
 
       /** @see [[SymbolDecorator]] */
       class SymbolDecoratorApi[T <: Symbol](val symbol: T) {
-        /** @see [[internal.isFreeTerm]] */
+        /** @see [[InternalApi.isFreeTerm]] */
         def isFreeTerm: Boolean = internal.isFreeTerm(symbol)
 
-        /** @see [[internal.asFreeTerm]] */
+        /** @see [[InternalApi.asFreeTerm]] */
         def asFreeTerm: FreeTermSymbol = internal.asFreeTerm(symbol)
 
-        /** @see [[internal.isFreeType]] */
+        /** @see [[InternalApi.isFreeType]] */
         def isFreeType: Boolean = internal.isFreeType(symbol)
 
-        /** @see [[internal.asFreeType]] */
+        /** @see [[InternalApi.asFreeType]] */
         def asFreeType: FreeTypeSymbol = internal.asFreeType(symbol)
 
-        /** @see [[internal.newTermSymbol]] */
+        /** @see [[InternalApi.newTermSymbol]] */
         def newTermSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TermSymbol = internal.newTermSymbol(symbol, name, pos, flags)
 
-        /** @see [[internal.newModuleAndClassSymbol]] */
+        /** @see [[InternalApi.newModuleAndClassSymbol]] */
         def newModuleAndClassSymbol(name: Name, pos: Position = NoPosition, flags: FlagSet = NoFlags): (ModuleSymbol, ClassSymbol) = internal.newModuleAndClassSymbol(symbol, name, pos, flags)
 
-        /** @see [[internal.newMethodSymbol]] */
+        /** @see [[InternalApi.newMethodSymbol]] */
         def newMethodSymbol(name: TermName, pos: Position = NoPosition, flags: FlagSet = NoFlags): MethodSymbol = internal.newMethodSymbol(symbol, name, pos, flags)
 
-        /** @see [[internal.newTypeSymbol]] */
+        /** @see [[InternalApi.newTypeSymbol]] */
         def newTypeSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): TypeSymbol = internal.newTypeSymbol(symbol, name, pos, flags)
 
-        /** @see [[internal.newClassSymbol]] */
+        /** @see [[InternalApi.newClassSymbol]] */
         def newClassSymbol(name: TypeName, pos: Position = NoPosition, flags: FlagSet = NoFlags): ClassSymbol = internal.newClassSymbol(symbol, name, pos, flags)
 
-        /** @see [[internal.isErroneous]] */
+        /** @see [[InternalApi.isErroneous]] */
         def isErroneous: Boolean = internal.isErroneous(symbol)
 
-        /** @see [[internal.isSkolem]] */
+        /** @see [[InternalApi.isSkolem]] */
         def isSkolem: Boolean = internal.isSkolem(symbol)
 
-        /** @see [[internal.deSkolemize]] */
+        /** @see [[InternalApi.deSkolemize]] */
         def deSkolemize: Symbol = internal.deSkolemize(symbol)
 
-        /** @see [[internal.initialize]] */
+        /** @see [[InternalApi.initialize]] */
         def initialize: T = internal.initialize(symbol)
 
-        /** @see [[internal.fullyInitialize]] */
+        /** @see [[InternalApi.fullyInitialize]] */
         def fullyInitialize: T = internal.fullyInitialize(symbol)
 
-        /** @see [[internal.flags]] */
+        /** @see [[InternalApi.flags]] */
         def flags: FlagSet = internal.flags(symbol)
       }
 
@@ -468,7 +468,7 @@ trait Internals { self: Universe =>
 
       /** @see [[TypeDecorator]] */
       implicit class TypeDecoratorApi[T <: Type](val tp: T) {
-        /** @see [[internal.fullyInitialize]] */
+        /** @see [[InternalApi.fullyInitialize]] */
         def fullyInitialize: T = internal.fullyInitialize(tp)
       }
     }

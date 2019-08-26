@@ -208,9 +208,9 @@ trait Contexts { self: Analyzer =>
    *     applications with and without an expected type, or when `Typer#tryTypedApply` tries to fit arguments to
    *     a function type with/without implicit views.
    *
-   *     When the error policies entail error/warning buffering, the mutable [[ReportBuffer]] records
+   *     When the error policies entail error/warning buffering, the mutable [[ContextReporter]] records
    *     everything that is issued. It is important to note, that child Contexts created with `make`
-   *     "inherit" the very same `ReportBuffer` instance, whereas children spawned through `makeSilent`
+   *     "inherit" the very same `ContextReporter` instance, whereas children spawned through `makeSilent`
    *     receive a separate, fresh buffer.
    *
    * @param tree  Tree associated with this context
@@ -1606,7 +1606,7 @@ trait Contexts { self: Analyzer =>
     // Implicit relies on this most heavily, but there you know reporter.isInstanceOf[BufferingReporter]
     // can we encode this statically?
 
-    // have to pass in context because multiple contexts may share the same ReportBuffer
+    // have to pass in context because multiple contexts may share the same ContextReporter
     def reportFirstDivergentError(fun: Tree, param: Symbol, paramTp: Type)(implicit context: Context): Unit =
       errors.collectFirst {
         case dte: DivergentImplicitTypeError => dte

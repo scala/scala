@@ -351,7 +351,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
     /**
      * Get an array of bytes stored in the classfile as a string. The data is encoded in the format
-     * described in object [[ByteCodecs]]. Used for the ScalaSignature annotation argument.
+     * described in object [[scala.reflect.internal.pickling.ByteCodecs]]. Used for the ScalaSignature annotation argument.
      */
     def getBytes(index: Int): Array[Byte] = {
       if (index <= 0 || len <= index) errorBadIndex(index)
@@ -368,7 +368,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
     /**
      * Get an array of bytes stored in the classfile as an array of strings. The data is encoded in
-     * the format described in object [[ByteCodecs]]. Used for the ScalaLongSignature annotation
+     * the format described in object [[scala.reflect.internal.pickling.ByteCodecs]]. Used for the ScalaLongSignature annotation
      * argument.
      */
     def getBytes(indices: List[Int]): Array[Byte] = {

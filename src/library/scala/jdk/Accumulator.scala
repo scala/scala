@@ -57,7 +57,7 @@ import scala.collection.{Stepper, StepperShape, mutable}
   * [[IntAccumulator.map(f: Int => Int)* IntAccumulator.map]] or [[IntAccumulator.exists]]. Thanks to Scala's function specialization,
   * `intAcc.exists(x => testOn(x))` does not incur boxing.
   *
-  * The [[Stepper]] interface provides iterator-like `hasStep` and `nextStep` methods, and is
+  * The [[scala.collection.Stepper]] interface provides iterator-like `hasStep` and `nextStep` methods, and is
   * specialized for `Int`, `Long` and `Double`. The `intAccumulator.stepper` method creates an
   * [[scala.collection.IntStepper]] that yields the elements of the accumulator without boxing.
   *

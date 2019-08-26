@@ -19,7 +19,7 @@ package api
  *
  * The base class for all mirrors.
  *
- * See [[scala.reflect.api.Mirrors]] or [[docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
+ * See [[scala.reflect.api.Mirrors]] or [[https://docs.scala-lang.org/overviews/reflection/overview.html Reflection Guide]]
  * for a complete overview of `Mirror`s.
  *
  * @tparam U the type of the universe this mirror belongs to.

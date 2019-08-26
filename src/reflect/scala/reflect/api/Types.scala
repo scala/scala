@@ -454,7 +454,7 @@ trait Types {
   abstract class ThisTypeExtractor {
     def unapply(tpe: ThisType): Option[Symbol]
 
-    /** @see [[InternalApi.thisType]] */
+    /** @see [[Internals.InternalApi.thisType]] */
     @deprecated("use `internal.thisType` instead", "2.11.0")
     def apply(sym: Symbol)(implicit token: CompatToken): Type = internal.thisType(sym)
   }
@@ -493,7 +493,7 @@ trait Types {
   abstract class SingleTypeExtractor {
     def unapply(tpe: SingleType): Option[(Type, Symbol)]
 
-    /** @see [[InternalApi.singleType]] */
+    /** @see [[Internals.InternalApi.singleType]] */
     @deprecated("use `ClassSymbol.thisPrefix` or `internal.singleType` instead", "2.11.0")
     def apply(pre: Type, sym: Symbol)(implicit token: CompatToken): Type = internal.singleType(pre, sym)
   }
@@ -533,7 +533,7 @@ trait Types {
   abstract class SuperTypeExtractor {
     def unapply(tpe: SuperType): Option[(Type, Type)]
 
-    /** @see [[InternalApi.superType]] */
+    /** @see [[Internals.InternalApi.superType]] */
     @deprecated("use `ClassSymbol.superPrefix` or `internal.superType` instead", "2.11.0")
     def apply(thistpe: Type, supertpe: Type)(implicit token: CompatToken): Type = internal.superType(thistpe, supertpe)
   }
@@ -581,7 +581,7 @@ trait Types {
   abstract class ConstantTypeExtractor {
     def unapply(tpe: ConstantType): Option[Constant]
 
-    /** @see [[InternalApi.constantType]] */
+    /** @see [[Internals.InternalApi.constantType]] */
     @deprecated("use `value.tpe` or `internal.constantType` instead", "2.11.0")
     def apply(value: Constant)(implicit token: CompatToken): ConstantType = internal.constantType(value)
   }
@@ -624,7 +624,7 @@ trait Types {
   abstract class TypeRefExtractor {
     def unapply(tpe: TypeRef): Option[(Type, Symbol, List[Type])]
 
-    /** @see [[InternalApi.typeRef]] */
+    /** @see [[Internals.InternalApi.typeRef]] */
     @deprecated("use `internal.typeRef` instead", "2.11.0")
     def apply(pre: Type, sym: Symbol, args: List[Type])(implicit token: CompatToken): Type = internal.typeRef(pre, sym, args)
   }
@@ -684,11 +684,11 @@ trait Types {
   abstract class RefinedTypeExtractor {
     def unapply(tpe: RefinedType): Option[(List[Type], Scope)]
 
-    /** @see [[InternalApi.refinedType]] */
+    /** @see [[Internals.InternalApi.refinedType]] */
     @deprecated("use `internal.refinedType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls)
 
-    /** @see [[InternalApi.refinedType]] */
+    /** @see [[Internals.InternalApi.refinedType]] */
     @deprecated("use `internal.refinedType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope, clazz: Symbol)(implicit token: CompatToken): RefinedType = internal.refinedType(parents, decls, clazz)
   }
@@ -733,7 +733,7 @@ trait Types {
   abstract class ClassInfoTypeExtractor {
     def unapply(tpe: ClassInfoType): Option[(List[Type], Scope, Symbol)]
 
-    /** @see [[InternalApi.classInfoType]] */
+    /** @see [[Internals.InternalApi.classInfoType]] */
     @deprecated("use `internal.classInfoType` instead", "2.11.0")
     def apply(parents: List[Type], decls: Scope, typeSymbol: Symbol)(implicit token: CompatToken): ClassInfoType = internal.classInfoType(parents, decls, typeSymbol)
   }
@@ -782,7 +782,7 @@ trait Types {
   abstract class MethodTypeExtractor {
     def unapply(tpe: MethodType): Option[(List[Symbol], Type)]
 
-    /** @see [[InternalApi.methodType]] */
+    /** @see [[Internals.InternalApi.methodType]] */
     @deprecated("use `internal.methodType` instead", "2.11.0")
     def apply(params: List[Symbol], resultType: Type)(implicit token: CompatToken): MethodType = internal.methodType(params, resultType)
   }
@@ -818,7 +818,7 @@ trait Types {
   abstract class NullaryMethodTypeExtractor {
     def unapply(tpe: NullaryMethodType): Option[(Type)]
 
-    /** @see [[InternalApi.nullaryMethodType]] */
+    /** @see [[Internals.InternalApi.nullaryMethodType]] */
     @deprecated("use `internal.nullaryMethodType` instead", "2.11.0")
     def apply(resultType: Type)(implicit token: CompatToken): NullaryMethodType = internal.nullaryMethodType(resultType)
   }
@@ -852,7 +852,7 @@ trait Types {
   abstract class PolyTypeExtractor {
     def unapply(tpe: PolyType): Option[(List[Symbol], Type)]
 
-    /** @see [[InternalApi.polyType]] */
+    /** @see [[Internals.InternalApi.polyType]] */
     @deprecated("use `internal.polyType` instead", "2.11.0")
     def apply(typeParams: List[Symbol], resultType: Type)(implicit token: CompatToken): PolyType = internal.polyType(typeParams, resultType)
   }
@@ -890,7 +890,7 @@ trait Types {
   abstract class ExistentialTypeExtractor {
     def unapply(tpe: ExistentialType): Option[(List[Symbol], Type)]
 
-    /** @see [[InternalApi.existentialType]] */
+    /** @see [[Internals.InternalApi.existentialType]] */
     @deprecated("use `internal.existentialType` instead", "2.11.0")
     def apply(quantified: List[Symbol], underlying: Type)(implicit token: CompatToken): ExistentialType = internal.existentialType(quantified, underlying)
   }
@@ -928,7 +928,7 @@ trait Types {
   abstract class AnnotatedTypeExtractor {
     def unapply(tpe: AnnotatedType): Option[(List[Annotation], Type)]
 
-    /** @see [[InternalApi.annotatedType]] */
+    /** @see [[Internals.InternalApi.annotatedType]] */
     @deprecated("use `internal.annotatedType` instead", "2.11.0")
     def apply(annotations: List[Annotation], underlying: Type)(implicit token: CompatToken): AnnotatedType = internal.annotatedType(annotations, underlying)
   }
@@ -972,7 +972,7 @@ trait Types {
   abstract class TypeBoundsExtractor {
     def unapply(tpe: TypeBounds): Option[(Type, Type)]
 
-    /** @see [[InternalApi.typeBounds]] */
+    /** @see [[Internals.InternalApi.typeBounds]] */
     @deprecated("use `internal.typeBounds` instead", "2.11.0")
     def apply(lo: Type, hi: Type)(implicit token: CompatToken): TypeBounds = internal.typeBounds(lo, hi)
   }
@@ -1025,7 +1025,7 @@ trait Types {
   abstract class BoundedWildcardTypeExtractor {
     def unapply(tpe: BoundedWildcardType): Option[TypeBounds]
 
-    /** @see [[InternalApi.boundedWildcardType]] */
+    /** @see [[Internals.InternalApi.boundedWildcardType]] */
     @deprecated("use `internal.boundedWildcardType` instead", "2.11.0")
     def apply(bounds: TypeBounds)(implicit token: CompatToken): BoundedWildcardType = internal.boundedWildcardType(bounds)
   }

@@ -117,8 +117,8 @@ trait NamesDefaults { self: Analyzer =>
    * @param mode the mode to use for calling typer.doTypedApply
    * @param pt the expected type for calling typer.doTypedApply
    *
-   * @param tree: the function application tree
-   * @argPos: a function mapping arguments from their current position to the
+   * @param tree the function application tree
+   * @param argPos a function mapping arguments from their current position to the
    *   position specified by the method type. example:
    *    def foo(a: Int, b: String)
    *    foo(b = "1", a = 2)

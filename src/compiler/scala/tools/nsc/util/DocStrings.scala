@@ -44,7 +44,7 @@ object DocStrings {
   /** Returns index of string `str` after `start` skipping longest
    *  sequence of space and tab characters, possibly also containing
    *  a single `*` character or the `/``**` sequence.
-   *  @pre  start == str.length || str(start) == `\n`
+   *  @note Pre-condition:  start == str.length || str(start) == `\n`
    */
   def skipLineLead(str: String, start: Int): Int =
     if (start == str.length) start

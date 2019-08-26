@@ -567,14 +567,15 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
    * package object abstraction and placing members directly in the package.
    *
    * Here's the explanation of what we do. The code:
-   *
+   * {{{
    * package foo {
    *   object `package` {
    *     class Bar
    *   }
    * }
-   *
+   * }}}
    * will yield this Symbol structure:
+   * <pre>
    *                                       +---------+ (2)
    *                                       |         |
    * +---------------+         +---------- v ------- | ---+                              +--------+ (2)
@@ -587,6 +588,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
    *                                                                +------------------- | ---+   |
    *                                                                                     |        |
    *                                                                                     +--------+
+   * </pre>
    * (1) sourceModule
    * (2) you get out of owners with .owner
    *

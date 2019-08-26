@@ -38,8 +38,9 @@ abstract class DefaultMacroCompiler extends Resolvers
   /** Resolves a macro impl reference provided in the right-hand side of the given macro definition.
    *
    *  Acceptable shapes of the right-hand side:
-   *    1) [<static object>].<method name>[[<type args>]] // vanilla macro impl ref
-   *    2) [<macro bundle>].<method name>[[<type args>]]  // shiny new macro bundle impl ref
+   *
+   *    1. `[<static object>].<method name>[ [<type args>] ] // vanilla macro impl ref`
+   *    1. `[<macro bundle>].<method name>[ [<type args>] ]  // shiny new macro bundle impl ref`
    *
    *  Produces a tree, which represents a reference to a macro implementation if everything goes well,
    *  otherwise reports found errors and returns EmptyTree. The resulting tree should have the following format:

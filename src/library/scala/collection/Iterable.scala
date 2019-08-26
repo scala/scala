@@ -163,7 +163,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * @note When implementing a custom collection type and refining `C` to the new type, this
     *       method needs to be overridden (the compiler will issue an error otherwise). In the
     *       common case where `C =:= CC[A]`, this can be done by mixing in the
-    *       [[IterableFactoryDefaults]] trait, which implements the method using
+    *       [[scala.collection.IterableFactoryDefaults]] trait, which implements the method using
     *       [[iterableFactory]].
     *
     * @note As witnessed by the `@uncheckedVariance` annotation, using this method
@@ -188,7 +188,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
   /**
     * @return a strict builder for the same collection type.
     *
-    * Note that in the case of lazy collections (e.g. [[View]] or [[immutable.LazyList]]),
+    * Note that in the case of lazy collections (e.g. [[scala.collection.View]] or [[scala.collection.immutable.LazyList]]),
     * it is possible to implement this method but the resulting `Builder` will break laziness.
     * As a consequence, operations should preferably be implemented with `fromSpecific`
     * instead of this method.
@@ -196,7 +196,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * @note When implementing a custom collection type and refining `C` to the new type, this
     *       method needs to be overridden (the compiler will issue an error otherwise). In the
     *       common case where `C =:= CC[A]`, this can be done by mixing in the
-    *       [[IterableFactoryDefaults]] trait, which implements the method using
+    *       [[scala.collection.IterableFactoryDefaults]] trait, which implements the method using
     *       [[iterableFactory]].
     *
     * @note As witnessed by the `@uncheckedVariance` annotation, using this method might

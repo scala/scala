@@ -29,7 +29,7 @@ object  DurationConverters {
     * the Scala duration will have a time unit of nanoseconds.
     *
     * @throws IllegalArgumentException If the given Java Duration is out of bounds of what can be
-    *                                  expressed by [[FiniteDuration]].
+    *                                  expressed by [[scala.concurrent.duration.FiniteDuration]].
     */
   def toScala(duration: JDuration): FiniteDuration = {
     val originalSeconds = duration.getSeconds

@@ -30,7 +30,7 @@ import scala.collection.Stepper.EfficientSplit
   *
   * The selection of primitive types (`Int`, `Long` and `Double`) matches the hand-specialized
   * variants of Java Streams ([[java.util.stream.Stream]], [[java.util.stream.IntStream]], etc.)
-  * and the corresponding Java Spliterators ([[Spliterator]], [[Spliterator.OfInt]], etc.).
+  * and the corresponding Java Spliterators ([[java.util.Spliterator]], [[java.util.Spliterator.OfInt]], etc.).
   *
   * Steppers can be converted to Scala Iterators, Java Iterators and Java Spliterators. Primitive
   * Steppers are converted to the corresponding primitive Java Iterators and Spliterators.
@@ -49,29 +49,29 @@ trait Stepper[@specialized(Double, Int, Long) +A] {
     *
     * May return `null`, in which case the current Stepper yields the same elements as before.
     *
-    * See method `trySplit` in [[Spliterator]].
+    * See method `trySplit` in [[java.util.Spliterator]].
     */
   def trySplit(): Stepper[A]
 
   /** Returns an estimate of the number of elements of this Stepper, or [[Long.MaxValue]]. See
-    * method `estimateSize` in [[Spliterator]].
+    * method `estimateSize` in [[java.util.Spliterator]].
     */
   def estimateSize: Long
 
   /** Returns a set of characteristics of this Stepper and its elements. See method
-    * `characteristics` in [[Spliterator]].
+    * `characteristics` in [[java.util.Spliterator]].
     */
   def characteristics: Int
 
-  /** Returns a [[Spliterator]] corresponding to this Stepper.
+  /** Returns a [[java.util.Spliterator]] corresponding to this Stepper.
     *
     * Note that the return type is `Spliterator[_]` instead of `Spliterator[A]` to allow returning
-    * a [[Spliterator.OfInt]] (which is a `Spliterator[Integer]`) in the subclass [[IntStepper]]
+    * a [[java.util.Spliterator.OfInt]] (which is a `Spliterator[Integer]`) in the subclass [[IntStepper]]
     * (which is a `Stepper[Int]`).
     */
   def spliterator[B >: A]: Spliterator[_]
 
-  /** Returns a Java [[JIterator]] corresponding to this Stepper.
+  /** Returns a Java [[java.util.Iterator]] corresponding to this Stepper.
     *
     * Note that the return type is `Iterator[_]` instead of `Iterator[A]` to allow returning
     * a [[java.util.PrimitiveIterator.OfInt]] (which is a `Iterator[Integer]`) in the subclass
