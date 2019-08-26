@@ -371,13 +371,21 @@ object Stream extends SeqFactory[Stream] {
 
   @SerialVersionUID(3L)
   final class Cons[A](override val head: A, tl: => Stream[A]) extends Stream[A] {
-    private[this] var tlEvaluated: Boolean = false
     override def isEmpty: Boolean = false
-    override lazy val tail: Stream[A] = {
-      tlEvaluated = true
-      tl
+    @volatile private[this] var tlVal: Stream[A] = _
+    @volatile private[this] var tlGen = () => tl
+    protected def tailDefined: Boolean = tlGen eq null
+    override def tail: Stream[A] = {
+      if (!tailDefined)
+        synchronized {
+          if (!tailDefined) {
+            tlVal = tlGen()
+            tlGen = null
+          }
+        }
+      tlVal
     }
-    protected def tailDefined: Boolean = tlEvaluated
+
     /** Forces evaluation of the whole `Stream` and returns it.
       *
       * @note Often we use `Stream`s to represent an infinite set or series.  If
