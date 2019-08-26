@@ -119,8 +119,8 @@ class WConfTest extends BytecodeTesting {
   }
 
   @Test
-  def warnDebug(): Unit = {
-    check(reports(code, "any:wd"), List(
+  def warnVerbose(): Unit = {
+    check(reports(code, "any:wv"), List(
       l4.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l4._2),
       l6.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l6._2),
       l8.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l8._2),

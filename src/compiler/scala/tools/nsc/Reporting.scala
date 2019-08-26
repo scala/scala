@@ -59,9 +59,9 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       wconf.action(warning) match {
         case Action.Error => reporter.error(warning.pos, warning.msg)
         case Action.Warning => reporter.warning(warning.pos, warning.msg)
-        case Action.WarningDebug => reporter.warning(warning.pos, debug)
+        case Action.WarningVerbose => reporter.warning(warning.pos, debug)
         case Action.Info => reporter.echo(warning.pos, warning.msg)
-        case Action.InfoDebug => reporter.echo(warning.pos, debug)
+        case Action.InfoVerbose => reporter.echo(warning.pos, debug)
         case a @ (Action.WarningSummary | Action.InfoSummary) =>
           val m = summaryMap(a, warning.category.summaryCategory)
           if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
@@ -400,10 +400,10 @@ object Reporting {
     object Error extends Action
     object Warning extends Action
     object WarningSummary extends Action
-    object WarningDebug extends Action
+    object WarningVerbose extends Action
     object Info extends Action
     object InfoSummary extends Action
-    object InfoDebug extends Action
+    object InfoVerbose extends Action
     object Silent extends Action
   }
 
@@ -440,10 +440,10 @@ object Reporting {
         case "error" | "e" => Right(Error)
         case "warning" | "w" => Right(Warning)
         case "warning-summary" | "ws" => Right(WarningSummary)
-        case "warning-debug" | "wd" => Right(WarningDebug)
+        case "warning-verbose" | "wv" => Right(WarningVerbose)
         case "info" | "i" => Right(Info)
         case "info-summary" | "is" => Right(InfoSummary)
-        case "info-debug" | "id" => Right(InfoDebug)
+        case "info-verbose" | "iv" => Right(InfoVerbose)
         case "silent" | "s" => Right(Silent)
         case _ => Left(List(s"unknonw action: `$s`"))
       }

@@ -50,10 +50,10 @@ trait Warnings {
          |  - error / e
          |  - warning / w
          |  - warning-summary / ws
-         |  - warning-debug / wd (show warning category and site)
+         |  - warning-verbose / wv (show warning category and site)
          |  - info / i
          |  - info-summary / is
-         |  - info-debug / id
+         |  - info-verbose / iv
          |  - silent / s
          |
          |The default configuration is:
@@ -62,7 +62,7 @@ trait Warnings {
          |User-defined configurations are added to the left. The leftmost rule matching
          |a warning message defines the action.
          |
-         |With `-Wconf:any:warning-debug`, the compiler prints category, site, origin and since
+         |With `-Wconf:any:warning-verbose`, the compiler prints category, site, origin and since
          |of every warning to help writing filters.
          |
          |Examples:
