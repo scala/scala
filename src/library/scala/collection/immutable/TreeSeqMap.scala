@@ -66,8 +66,15 @@ final class TreeSeqMap[K, +V] private (
 
   override def isEmpty = size == 0
 
+  /*
+  // This should have been overridden in 2.13.0 but wasn't so it will have to wait until 2.14 since it is not forwards compatible
+  // Now handled in inherited method from scala.collection.MapFactoryDefaults instead.
+  override def empty = TreeSeqMap.empty[K, V](orderedBy)
+  */
+
   def orderingBy(orderBy: OrderBy): TreeSeqMap[K, V] = {
     if (orderBy == this.orderedBy) this
+    else if (isEmpty) TreeSeqMap.empty(orderBy)
     else new TreeSeqMap(ordering, mapping, ordinal, orderBy)
   }
 
@@ -75,7 +82,7 @@ final class TreeSeqMap[K, +V] private (
     mapping.get(key) match {
       case e if ordinal == -1 && (orderedBy == OrderBy.Modification || e.isEmpty) =>
         // Reinsert into fresh instance to restart ordinal counting, expensive but only done after 2^32 updates.
-        TreeSeqMap.empty[K, V](orderedBy) ++ this + (key -> value)
+        TreeSeqMap.empty[K, V1](orderedBy) ++ this + (key -> value)
       case Some((o, _)) if orderedBy == OrderBy.Insertion =>
         new TreeSeqMap(
           ordering.include(o, key),
@@ -174,13 +181,13 @@ final class TreeSeqMap[K, +V] private (
 
   override def slice(from: Int, until: Int): TreeSeqMap[K, V] = {
     val sz = size
-    if (sz == 0 || from >= until) empty
+    if (sz == 0 || from >= until) TreeSeqMap.empty[K, V](orderedBy)
     else {
       val sz = size
       val f = if (from >= 0) from else 0
       val u = if (until <= sz) until else sz
       val l = u - f
-      if (l <= 0) empty
+      if (l <= 0) TreeSeqMap.empty[K, V](orderedBy)
       else if (l > sz / 2) {
         // Remove front and rear incrementally if majority of elements are to be kept
         val (front, rest) = ordering.splitAt(f)
@@ -286,9 +293,14 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
     case object Modification extends OrderBy
   }
 
-  val Empty = new TreeSeqMap[Nothing, Nothing](Ordering.empty, HashMap.empty, 0, OrderBy.Insertion)
+  private val EmptyByInsertion = new TreeSeqMap[Nothing, Nothing](Ordering.empty, HashMap.empty, 0, OrderBy.Insertion)
+  private val EmptyByModification = new TreeSeqMap[Nothing, Nothing](Ordering.empty, HashMap.empty, 0, OrderBy.Modification)
+  val Empty = EmptyByInsertion
   def empty[K, V]: TreeSeqMap[K, V] = empty(OrderBy.Insertion)
-  def empty[K, V](orderBy: OrderBy): TreeSeqMap[K, V] = Empty.asInstanceOf[TreeSeqMap[K, V]]
+  def empty[K, V](orderBy: OrderBy): TreeSeqMap[K, V] = {
+    if (orderBy == OrderBy.Modification) EmptyByModification
+    else EmptyByInsertion
+  }.asInstanceOf[TreeSeqMap[K, V]]
 
   def from[K, V](it: collection.IterableOnce[(K, V)]): TreeSeqMap[K, V] =
     it match {

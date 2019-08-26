@@ -147,6 +147,33 @@ class TreeSeqMapTest {
       assertEquals(s"$i", o3, o5)
     }
   }
+  @Test
+  def testEmpty: Unit = {
+    {
+      val e1 = TreeSeqMap.empty[Int, Int]
+      val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
+      val e3 = e2.tail
+      assertEquals(s"default empty keeps insertion order", List(2 -> 2, 1 -> 3), e3.toList)
+    }
+    {
+      val e1 = TreeSeqMap.empty[Int, Int](TreeSeqMap.OrderBy.Modification)
+      val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
+      val e3 = e2.tail
+      assertEquals(s"modification empty keeps modification order", List(1 -> 3, 3 -> 4), e3.toList)
+    }
+    {
+      val e1 = TreeSeqMap(3 -> 1).empty
+      val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
+      val e3 = e2.tail
+      assertEquals(s"default empty from instance keeps insertion order", List(2 -> 2, 1 -> 3), e3.toList)
+    }
+    {
+      val e1 = TreeSeqMap(3 -> 1).orderingBy(TreeSeqMap.OrderBy.Modification).empty
+      val e2 = e1 + (3 -> 1) + (2 -> 2) + (1 -> 3) + (3 -> 4)
+      val e3 = e2.tail
+      assertEquals(s"modification empty from instance keeps modification order", List(1 -> 3, 3 -> 4), e3.toList)
+    }
+  }
 }
 object TreeSeqMapTest extends App {
   import TreeSeqMap.Ordering._
