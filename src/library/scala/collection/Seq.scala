@@ -416,6 +416,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
   @deprecatedOverriding("Override lastIndexWhere(p, end) instead - lastIndexWhere(p) calls lastIndexWhere(p, Int.MaxValue)", "2.13.0")
   def lastIndexWhere(p: A => Boolean): Int = lastIndexWhere(p, Int.MaxValue)
 
+  @inline private[this] def toGenericSeq: scala.collection.Seq[A] = this match {
+    case s: scala.collection.Seq[A] => s
+    case _ => toSeq
+  }
+
   /** Finds first index after or at a start index where this $coll contains a given sequence as a slice.
    *  $mayNotTerminateInf
    *  @param  that    the sequence to test
@@ -434,11 +439,11 @@ trait SeqOps[+A, +CC[_], +C] extends Any
         if (from > l) -1
         else if (tl < 1) clippedFrom
         else if (l < tl) -1
-        else SeqOps.kmpSearch(toSeq, clippedFrom, l, that, 0, tl, forward = true)
+        else SeqOps.kmpSearch(toGenericSeq, clippedFrom, l, that, 0, tl, forward = true)
       }
       else {
         var i = from
-        var s: Seq[A] = toSeq drop i
+        var s: scala.collection.Seq[A] = toGenericSeq.drop(i)
         while (!s.isEmpty) {
           if (s startsWith that)
             return i
@@ -476,7 +481,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     if (end < 0) -1
     else if (tl < 1) clippedL
     else if (l < tl) -1
-    else SeqOps.kmpSearch(toSeq, 0, clippedL+tl, that, 0, tl, forward = false)
+    else SeqOps.kmpSearch(toGenericSeq, 0, clippedL+tl, that, 0, tl, forward = false)
   }
 
   /** Finds last index where this $coll contains a given sequence as a slice.
@@ -600,7 +605,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
 
     private[this] def init() = {
       val m = mutable.HashMap[A, Int]()
-      val (es, is) = (self.toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (self.toGenericSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
 
       (es.to(mutable.ArrayBuffer), is.toArray)
     }
@@ -661,7 +666,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
       val m = mutable.HashMap[A, Int]()
 
       // e => (e, weight(e))
-      val (es, is) = (self.toSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
+      val (es, is) = (self.toGenericSeq map (e => (e, m.getOrElseUpdate(e, m.size))) sortBy (_._2)).unzip
       val cs = new Array[Int](m.size)
       is foreach (i => cs(i) += 1)
       val ns = new Array[Int](cs.length)
@@ -1000,7 +1005,7 @@ object SeqOps {
    *  @param  forward Direction of search (from beginning==true, from end==false)
    *  @return Index of start of sequence if found, -1 if not (relative to beginning of S, not m0).
    */
-  private def kmpSearch[B](S: Seq[B], m0: Int, m1: Int, W: Seq[B], n0: Int, n1: Int, forward: Boolean): Int = {
+  private def kmpSearch[B](S: scala.collection.Seq[B], m0: Int, m1: Int, W: scala.collection.Seq[B], n0: Int, n1: Int, forward: Boolean): Int = {
     // Check for redundant case when target has single valid element
     def clipR(x: Int, y: Int) = if (x < y) x else -1
     def clipL(x: Int, y: Int) = if (x > y) x else -1
@@ -1020,7 +1025,7 @@ object SeqOps {
     }
     // Now we know we actually need KMP search, so do it
     else S match {
-      case xs: IndexedSeq[_] =>
+      case xs: scala.collection.IndexedSeq[_] =>
         // We can index into S directly; it should be adequately fast
         val Wopt = kmpOptimizeWord(W, n0, n1, forward)
         val T = kmpJumpTable(Wopt, n1-n0)
@@ -1083,7 +1088,7 @@ object SeqOps {
    *  @param  n1   The far end of the target sequence that we should use (exclusive)
    *  @return Target packed in an IndexedSeq (taken from iterator unless W already is an IndexedSeq)
    */
-  private def kmpOptimizeWord[B](W: Seq[B], n0: Int, n1: Int, forward: Boolean): IndexedSeqView[B] = W match {
+  private def kmpOptimizeWord[B](W: scala.collection.Seq[B], n0: Int, n1: Int, forward: Boolean): IndexedSeqView[B] = W match {
     case iso: IndexedSeq[B] =>
       // Already optimized for indexing--use original (or custom view of original)
       if (forward && n0==0 && n1==W.length) iso.view
