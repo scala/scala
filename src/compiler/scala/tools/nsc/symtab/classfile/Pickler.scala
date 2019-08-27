@@ -251,7 +251,7 @@ abstract class Pickler extends SubComponent {
 
             putChildren(sym, children.toList sortBy (_.sealedSortName))
           }
-          for (annot <- (sym.annotations filter (ann => ann.isStatic && !ann.isErroneous)).reverse)
+          for (annot <- (sym.annotations filter (ann => {ann.failIfStub; ann.isStatic && !ann.isErroneous})).reverse)
             putAnnotation(sym, annot)
         }
         else if (sym != NoSymbol) {
@@ -304,6 +304,7 @@ abstract class Pickler extends SubComponent {
           putSymbols(tparams)
         case AnnotatedType(_, underlying) =>
           putType(underlying)
+          tp.annotations.foreach(_.failIfStub) // staticAnnotations skips stubs but we want a hard error
           tp.staticAnnotations foreach putAnnotation
         case _ =>
           throw new FatalError("bad type: " + tp + "(" + tp.getClass + ")")

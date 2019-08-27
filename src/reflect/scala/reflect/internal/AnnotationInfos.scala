@@ -296,6 +296,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
      *  metaAnnotations = List(getter).
      */
     def symbol = atp.typeSymbol
+    final def failIfStub: Unit = symbol.info
 
     /** These are meta-annotations attached at the use site; they
      *  only apply to this annotation usage.  For instance, in
@@ -323,7 +324,14 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     /** Check whether the type or any of the arguments are erroneous */
     def isErroneous = atp.isErroneous || args.exists(_.isErroneous)
 
-    def isStatic = symbol isNonBottomSubClass StaticAnnotationClass
+    def isStatic = {
+      symbol match {
+        case _: StubSymbol =>
+          false // See scala/bug#11679
+        case _ =>
+          symbol isNonBottomSubClass StaticAnnotationClass
+      }
+    }
 
     /** Check whether any of the arguments mention a symbol */
     def refsSymbol(sym: Symbol) = hasArgWhich(_.symbol == sym)

@@ -3461,9 +3461,12 @@ trait Types
   object AnnotatedType extends AnnotatedTypeExtractor
 
   object StaticallyAnnotatedType {
-    def unapply(tp: Type): Option[(List[AnnotationInfo], Type)] = tp.staticAnnotations match {
-      case Nil    => None
-      case annots => Some((annots, tp.withoutAnnotations))
+    def unapply(tp: Type): Option[(List[AnnotationInfo], Type)] = {
+      tp.annotations.foreach(_.failIfStub) // staticAnnotations skips stubs but we want a hard error
+      tp.staticAnnotations match {
+        case Nil    => None
+        case annots => Some((annots, tp.withoutAnnotations))
+      }
     }
   }
 
