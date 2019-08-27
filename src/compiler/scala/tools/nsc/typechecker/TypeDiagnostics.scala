@@ -703,7 +703,7 @@ trait TypeDiagnostics {
       }
       if (settings.warnUnusedPatVars) {
         for (v <- unusedPrivates.unusedPatVars)
-          typer.context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_` suppresses this warning")
+          typer.context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: consider _ => instead. `${v.name}@_` suppresses this warning")
       }
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
