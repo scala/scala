@@ -22,6 +22,4 @@ object Test extends DirectTest {
     compile()
     System.setErr(prevErr)
   }
-
-  override def isDebug = false // so we don't get the newSettings warning
 }

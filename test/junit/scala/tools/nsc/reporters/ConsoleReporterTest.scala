@@ -29,6 +29,16 @@ class ConsoleReporterTest {
     }
   }
 
+  def incErrorCount(r: Reporter): Unit = {
+    r.error(NoPosition, "")
+    writerOut.reset()
+  }
+
+  def incWarningCount(r: Reporter): Unit = {
+    r.warning(NoPosition, "")
+    writerOut.reset()
+  }
+
   def testHelper(pos: Position = NoPosition, msg: String, severity: String = "")(test: Position => Unit) =
     try {
       test(pos)
@@ -41,13 +51,13 @@ class ConsoleReporterTest {
         assertEquals(content, it.next)
         assertEquals("    ^", it.next)
       }
-    } finally writerOut.reset
+    } finally writerOut.reset()
 
   @Test
   def printMessageTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "Hello World!")(_ => reporter.display(NoPosition, "Hello World!", null))
-    testHelper(posWithSource, "Testing with Defined Position")(reporter.display(_, "Testing with Defined Position", null))
+    testHelper(msg = "Hello World!", severity = "error: ")(_ => reporter.error(NoPosition, "Hello World!"))
+    testHelper(posWithSource, "Testing with Defined Position", severity = "error: ")(reporter.error(_, "Testing with Defined Position"))
   }
 
   @Test
@@ -64,12 +74,12 @@ class ConsoleReporterTest {
   @Test
   def printTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    testHelper(msg = "test")(reporter.display(_, "test", reporter.INFO))
-    testHelper(msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
-    testHelper(msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
-    testHelper(posWithSource, msg = "test")(reporter.display(_, "test", reporter.INFO))
-    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.display(_, "test", reporter.WARNING))
-    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.display(_, "test", reporter.ERROR))
+    testHelper(msg = "test")(reporter.echo(_, "test"))
+    testHelper(msg = "test", severity = "warning: ")(reporter.warning(_, "test"))
+    testHelper(msg = "test", severity = "error: ")(reporter.error(_, "test"))
+    testHelper(posWithSource, msg = "test")(reporter.echo(_, "test"))
+    testHelper(posWithSource, msg = "test", severity = "warning: ")(reporter.warning(_, "test"))
+    testHelper(posWithSource, msg = "test", severity = "error: ")(reporter.error(_, "test"))
   }
 
   @Test
@@ -80,37 +90,47 @@ class ConsoleReporterTest {
     reporter.settings.maxerrs.value = 1
     reporter.settings.maxwarns.value = 1
 
-    testHelper(msg = "Testing display")(reporter.display(_, "Testing display", reporter.INFO))
-    testHelper(msg = "Testing display", severity = "warning: ")(reporter.display(_, "Testing display", reporter.WARNING))
-    testHelper(msg = "Testing display", severity = "error: ")(reporter.display(_, "Testing display", reporter.ERROR))
-    testHelper(posWithSource, msg = "Testing display")(reporter.display(_, "Testing display", reporter.INFO))
-    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(reporter.display(_, "Testing display", reporter.WARNING))
-    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(reporter.display(_, "Testing display", reporter.ERROR))
+    // counting happens in .error/.warning, doReport doesn't count
+    testHelper(msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING))
+    testHelper(msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR))
 
-    reporter.resetCount(reporter.ERROR)
-    reporter.resetCount(reporter.WARNING)
+    testHelper(msg = "Testing display")(reporter.echo(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "warning: ")(reporter.warning(_, "Testing display"))
+    testHelper(msg = "Testing display", severity = "error: ")(reporter.error(_, "Testing display"))
 
-    reporter.ERROR.count += 1
-    testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(reporter.display(_, "Testing display for maxerrs to pass", reporter.ERROR))
-    reporter.ERROR.count += 1
-    testHelper(msg = "")(reporter.display(_, "Testing display for maxerrs to fail", reporter.ERROR))
+    testHelper(posWithSource, msg = "Testing display")(reporter.echo(_, "Testing display"))
+    testHelper(msg = "")(reporter.warning(_, "Test maxerrs"))
+    testHelper(msg = "")(reporter.error(_, "Test maxwarns"))
 
-    reporter.WARNING.count += 1
-    testHelper(posWithSource, msg = "Testing display for maxwarns to pass", severity = "warning: ")(reporter.display(_, "Testing display for maxwarns to pass", reporter.WARNING))
-    reporter.WARNING.count += 1
-    testHelper(msg = "")(reporter.display(_, "Testing display for maxwarns to fail", reporter.WARNING))
+    // the filter happens in .error/.warning, doReport always reports
+    testHelper(posWithSource, msg = "Testing display", severity = "warning: ")(reporter.doReport(_, "Testing display", reporter.WARNING))
+    testHelper(posWithSource, msg = "Testing display", severity = "error: ")(reporter.doReport(_, "Testing display", reporter.ERROR))
+
+    reporter.reset()
+
+    testHelper(posWithSource, msg = "Testing display for maxerrs to pass", severity = "error: ")(reporter.error(_, "Testing display for maxerrs to pass"))
+    incErrorCount(reporter)
+    testHelper(msg = "")(reporter.error(_, "Testing display for maxerrs to fail"))
+
+    testHelper(posWithSource, msg = "")(reporter.warning(_, "Position filter drops warning if there was an error at the same position"))
+    testHelper(msg = "Warning passes at different location", severity = "warning: ")(reporter.warning(_, "Warning passes at different location"))
+
+    reporter.reset()
+
+    testHelper(posWithSource, msg = "Testing display for maxwarns to pass", severity = "warning: ")(reporter.warning(_, "Testing display for maxwarns to pass"))
+    incWarningCount(reporter)
+    testHelper(msg = "")(reporter.warning(_, "Testing display for maxwarns to fail"))
   }
 
   @Test
   def finishTest(): Unit = {
     val reporter = createConsoleReporter("", writerOut)
 
-    reporter.resetCount(reporter.ERROR)
-    reporter.resetCount(reporter.WARNING)
+    reporter.reset()
     testHelper(msg = "")(_ => reporter.finish())
 
-    reporter.ERROR.count = 10
-    reporter.WARNING.count = 3
+    for (i <- 1 to 10) incErrorCount(reporter)
+    for (i <- 1 to 3) incWarningCount(reporter)
     reporter.finish()
     reporter.flush()
     val it = writerOut.toString.linesIterator
@@ -155,11 +175,14 @@ class ConsoleReporterTest {
     val reporter = createConsoleReporter("r", writerOut)
     val filter   = {
       // Change maxerrs and maxwarns from default on filter only
-      val settings = new Settings
-      settings.maxerrs.value  = 1
-      settings.maxwarns.value = 1
+      val conf = new Settings
+      conf.maxerrs.value  = 1
+      conf.maxwarns.value = 1
 
-      new Reporter.LimitingReporter(settings, reporter) with CountingReporter
+      new FilteringReporter {
+        def settings: Settings = conf
+        def doReport(pos: Position, msg: String, severity: Severity): Unit = reporter.doReport(pos, msg, severity)
+      }
     }
 
     // pass one message
@@ -190,7 +213,10 @@ class ConsoleReporterTest {
 
   @Test
   def filteredInfoTest(): Unit = {
-    val reporter = new Reporter.LimitingReporter(new Settings, new StoreReporter)
+    val reporter = new FilteringReporter {
+      val settings: Settings = new Settings
+      def doReport(pos: Position, msg: String, severity: Severity): Unit = ()
+    }
     // test obsolete API, make sure it doesn't throw
     reporter.info(NoPosition, "goodbye, cruel world", force = false)
   }
@@ -198,7 +224,10 @@ class ConsoleReporterTest {
   @Test
   def adaptedReporterTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut)
-    val adapted  = new Reporter.AdaptedReporter(reporter)
+    val adapted  = new FilteringReporter {
+      def settings: Settings = reporter.settings
+      def doReport(pos: Position, msg: String, severity: Severity): Unit = reporter.doReport(pos, msg, severity)
+    }
 
     // pass one message
     testHelper(msg = "Testing display")(adapted.echo(_, "Testing display"))

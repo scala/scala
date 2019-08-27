@@ -283,7 +283,7 @@ class DeterminismTest {
       g.settings.usejavacp.value = true
       g.settings.classpath.value = output.toAbsolutePath.toString
       g.settings.outputDirs.setSingleOutput(output.toString)
-      val storeReporter = new StoreReporter
+      val storeReporter = new StoreReporter(g.settings)
       g.reporter = storeReporter
       import g._
       val r = new Run

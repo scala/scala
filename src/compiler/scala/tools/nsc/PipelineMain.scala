@@ -564,10 +564,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
                 Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
               }
               diagnostic.getKind match {
-                case Kind.ERROR => reporter.error(position, msg)
+                case Kind.ERROR                            => reporter.error(position, msg)
                 case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
-                case Kind.NOTE => reporter.info(position, msg, true)
-                case Kind.OTHER => reporter.echo(position, msg)
+                case Kind.NOTE | Kind.OTHER                => reporter.echo(position, msg)
               }
             }
           }

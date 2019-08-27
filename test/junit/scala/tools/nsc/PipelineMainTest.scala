@@ -53,7 +53,7 @@ class PipelineMainTest {
     cachePlugin = true,
     stripExternalClassPath = true,
     useTraditionalForLeaf = true,
-    createReporter = ((s: Settings) => if (debug) new ConsoleReporter(s) else new StoreReporter())
+    createReporter = ((s: Settings) => if (debug) new ConsoleReporter(s) else new StoreReporter(s))
   )
 
   private def check(projectss: List[List[Build#Project]], altStrategies: List[BuildStrategy] = List(Pipeline, OutlineTypePipeline)): Unit = {

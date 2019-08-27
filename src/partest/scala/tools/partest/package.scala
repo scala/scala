@@ -12,7 +12,8 @@
 
 package scala.tools
 
-import java.util.concurrent.{ Callable, ExecutorService }
+import java.util.concurrent.{Callable, ExecutorService}
+
 import scala.concurrent.duration.Duration
 import scala.tools.nsc.util.Exceptional
 
@@ -189,4 +190,11 @@ package object partest {
     import scala.collection.JavaConverters._
     System.getProperties.asScala.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
   }
+
+  def ifJavaAtLeast[A](version: String)(yesRun: => A) = new TestUnderJavaAtLeast(version, { yesRun })
+
+  /** Debugger interest only below this line **/
+  def isDebug                = sys.props.contains("partest.debug") || sys.env.contains("PARTEST_DEBUG")
+  def debugSettings          = sys.props.getOrElse("partest.debug.settings", "")
+  def log(msg: => Any): Unit = if (isDebug) Console.err.println(msg)
 }

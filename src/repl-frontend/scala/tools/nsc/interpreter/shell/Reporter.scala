@@ -14,18 +14,18 @@ package scala.tools.nsc.interpreter.shell
 
 import java.io.PrintWriter
 
+import scala.reflect.internal
 import scala.reflect.internal.util.{NoSourceFile, Position, StringOps}
-import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 import scala.tools.nsc.interpreter.{Naming, ReplReporter, ReplRequest}
-import scala.tools.nsc.reporters.{AbstractReporter, DisplayReporter}
-
+import scala.tools.nsc.reporters.{FilteringReporter, Reporter}
+import scala.tools.nsc.{ConsoleWriter, NewLinePrintWriter, Settings}
 
 object ReplReporterImpl {
   val defaultOut = new NewLinePrintWriter(new ConsoleWriter, true)
 }
 
 // settings are for AbstractReporter (noWarnings, isVerbose, isDebug)
-class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Settings, writer: PrintWriter = ReplReporterImpl.defaultOut) extends AbstractReporter with ReplReporter  {
+class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Settings, writer: PrintWriter = ReplReporterImpl.defaultOut) extends FilteringReporter with ReplReporter {
   def this(settings: Settings, writer: PrintWriter) = this(ShellConfig(settings), settings, writer)
   def this(settings: Settings) = this(ShellConfig(settings), settings)
 
@@ -128,17 +128,12 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   var currentRequest: ReplRequest = _
 
-  def printUntruncatedMessage(msg: String): Unit = withoutTruncating(printMessage(msg))
-
-  override def warning(pos: Position, msg: String): Unit = withoutTruncating(super.warning(pos, msg))
-  override def error(pos: Position, msg: String): Unit   = withoutTruncating(super.error(pos, msg))
-
-  import scala.io.AnsiColor.{ RED, YELLOW, RESET }
+  import scala.io.AnsiColor.{RED, RESET, YELLOW}
 
   private def label(severity: Severity): String = severity match {
-    case ERROR   => "error"
-    case WARNING => "warning"
-    case INFO    => ""
+    case internal.Reporter.ERROR   => "error"
+    case internal.Reporter.WARNING => "warning"
+    case internal.Reporter.INFO    => ""
   }
 
   protected def clabel(severity: Severity): String = label(severity) match {
@@ -147,12 +142,12 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   def severityColor(severity: Severity): String = severity match {
-    case ERROR   => RED
-    case WARNING => YELLOW
-    case INFO    => RESET
+    case internal.Reporter.ERROR   => RED
+    case internal.Reporter.WARNING => YELLOW
+    case internal.Reporter.INFO    => RESET
   }
 
-  def print(pos: Position, msg: String, severity: Severity): Unit = {
+  def doReport(pos: Position, msg: String, severity: Severity): Unit = withoutTruncating {
     val prefix =
       if (colorOk) severityColor(severity) + clabel(severity) + RESET
       else clabel(severity)
@@ -166,7 +161,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
   // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
   def printMessage(posIn: Position, msg0: String): Unit = {
-    val msg = DisplayReporter.explanation(msg0)
+    val msg = Reporter.explanation(msg0)
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)
     else if (posIn.source.file.name == "<console>" && posIn.line == 1) {
       // If there's only one line of input, and it's already printed on the console (as indicated by the position's source file name),
@@ -204,13 +199,14 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
       if (isSynthetic) printMessage("\n(To diagnose errors in synthetic code, try adding `// show` to the end of your input.)")
     }
+    if (settings.prompt) displayPrompt()
   }
 
   def printMessage(msg: String): Unit =
     if (!totalSilence) printlnAndFlush(msg)
     else if (isTrace) printlnAndFlush("[silent] " + msg)
 
-  override def displayPrompt(): Unit =
+  def displayPrompt(): Unit =
     if (!totalSilence) {
       out.println()
       out.print("a)bort, s)tack, r)esume: ")
@@ -230,17 +226,9 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String): String =
     s"; for details, enable `:setting $name' or `:replay $name'"
 
-  def display(pos: Position, msg: String, severity: Severity): Unit = {
-    val ok = severity match {
-      case ERROR   => ERROR.count   <= settings.maxerrs.value
-      case WARNING => WARNING.count <= settings.maxwarns.value
-      case _     => true
-    }
-    if (ok) print(pos, msg, severity)
+  override def finish() = {
+    if (hasWarnings) printMessage(s"${StringOps.countElementsAsString(warningCount, label(WARNING))} found")
+    if (hasErrors) printMessage(s"${StringOps.countElementsAsString(errorCount, label(ERROR))} found")
   }
-
-  override def finish() =
-    for (k <- List(WARNING, ERROR) if k.count > 0)
-      printMessage(s"${StringOps.countElementsAsString(k.count, label(k))} found")
 
 }

@@ -95,7 +95,7 @@ class CallGraphTest extends BytecodeTesting {
       "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t1(LC;)I contains more values",
       "C::f4()I is annotated @inline but could not be inlined:\nThe operand stack at the callsite in Test::t2(LD;)I contains more values")
     var msgCount = 0
-    val checkMsg = (m: StoreReporter#Info) => {
+    val checkMsg = (m: StoreReporter.Info) => {
       msgCount += 1
       ok exists (m.msg contains _)
     }

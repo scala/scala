@@ -12,12 +12,12 @@
 
 package scala.tools.partest
 
-import scala.tools.nsc._
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc.doc.{ DocFactory, Universe }
+import scala.tools.nsc._
+import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._
-import scala.tools.nsc.doc.base.comment._
+import scala.tools.nsc.doc.{DocFactory, Universe}
 import scala.tools.nsc.reporters.ConsoleReporter
 
 /** A class for testing scaladoc model generation
@@ -99,9 +99,6 @@ abstract class ScaladocModelTest extends DirectTest {
 
   // compile with scaladoc and output the result
   def model: Option[Universe] = newDocFactory.makeUniverse(Right(code))
-
-  // so we don't get the newSettings warning
-  override def isDebug = false
 
   // finally, enable easy navigation inside the entities
   object access {

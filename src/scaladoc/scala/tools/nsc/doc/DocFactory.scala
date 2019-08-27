@@ -101,7 +101,8 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
 
   val documentError: PartialFunction[Throwable, Unit] = {
     case NoCompilerRunException =>
-      reporter.info(null, "No documentation generated with unsuccessful compiler run", force = false)
+      if (settings.verbose)
+        reporter.echo(null, "No documentation generated with unsuccessful compiler run")
     case e @ (_:ClassNotFoundException | _:IllegalAccessException | _:InstantiationException | _:SecurityException | _:ClassCastException) =>
       reporter.error(null, s"Cannot load the doclet class ${settings.docgenerator.value} (specified with ${settings.docgenerator.name}): $e. Leaving the default settings will generate the html version of scaladoc.")
   }

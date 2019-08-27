@@ -69,7 +69,7 @@ trait PresentationCompilation { self: IMain =>
       s.YpresentationAnyThread.value = true
       s
     }
-    val storeReporter: StoreReporter = new StoreReporter
+    val storeReporter: StoreReporter = new StoreReporter(copySettings)
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
       def mergedFlatClasspath = {
         val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings, closeableRegistry)

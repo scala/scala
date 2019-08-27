@@ -245,9 +245,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       sym.isErroneous
     }
 
+  private lazy val noReporter = new NoReporter(settings)
   @inline private def withoutReporting[T](fn : => T) = {
     val currentReporter = reporter
-    reporter = NoReporter
+    reporter = noReporter
     try fn finally reporter = currentReporter
   }
 

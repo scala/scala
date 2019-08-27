@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 
 class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 
-  val reporter = new StoreReporter
+  val reporter = new StoreReporter(settings)
   val compiler = new Global(settings, reporter)
 
   def askAndListen[T, U](msg: String,  arg: T, op: (T, Response[U]) => Unit): Unit = {
@@ -165,7 +165,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
     print("new round with "+changes.length+" changes:")
     changes foreach (_.deleteAll())
     otherTest()
-    def errorCount() = compiler.ask(() => reporter.ERROR.count)
+    def errorCount() = compiler.ask(() => reporter.errorCount)
 //    println("\nhalf test round: "+errorCount())
     changes.view.reverse foreach (_.insertAll())
     otherTest()
@@ -177,7 +177,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
   }
 
   case class ErrorTrace(
-    sfidx: Int, changes: scala.collection.Seq[Change], infos: scala.collection.Set[reporter.Info], content: Array[Char]) {
+    sfidx: Int, changes: scala.collection.Seq[Change], infos: scala.collection.Set[StoreReporter.Info], content: Array[Char]) {
     override def toString =
       "Sourcefile: "+inputs(sfidx)+
       "\nChanges:\n  "+changes.mkString("\n  ")+
