@@ -15,7 +15,7 @@ package scala.annotation
 /** An annotation to be applied to a match expression.  If present,
  *  the compiler will verify that the match has been compiled to a
  *  [[http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-3.html#jvms-3.10 tableswitch or lookupswitch]]
- *  and issue an error if it instead compiles into a series of conditional expressions.
+ *  and issue a warning if it instead compiles into a series of conditional expressions.
  *  Example usage:
 {{{
   val Constant = 'Q'
