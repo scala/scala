@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
- package scala.tools.testkit
+package scala.tools.testkit
 
 import java.io.{IOException, File}
 

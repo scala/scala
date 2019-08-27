@@ -645,7 +645,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
 
 
 lazy val testkit = configureAsSubproject(project)
-  .dependsOn(library)
+  .dependsOn(compiler)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.testkit"))
   .settings(
