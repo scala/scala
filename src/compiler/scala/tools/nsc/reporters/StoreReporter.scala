@@ -20,6 +20,8 @@ import scala.tools.nsc.reporters.StoreReporter._
 
 /** This class implements a Reporter that stores its reports in the set `infos`. */
 class StoreReporter(val settings: Settings) extends FilteringReporter {
+  @deprecated("use the constructor with a `Settings` parameter", "2.13.1")
+  def this() = this(new Settings())
   val infos = new mutable.LinkedHashSet[Info]
 
   def doReport(pos: Position, msg: String, severity: Severity): Unit =
