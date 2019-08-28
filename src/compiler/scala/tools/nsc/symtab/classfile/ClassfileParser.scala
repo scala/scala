@@ -15,8 +15,10 @@ package tools.nsc
 package symtab
 package classfile
 
-import java.io.IOException
+import java.io.{ByteArrayOutputStream, IOException}
 import java.lang.Integer.toHexString
+import java.net.URLClassLoader
+import java.util.UUID
 
 import scala.collection.{immutable, mutable}
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
@@ -24,10 +26,11 @@ import scala.annotation.switch
 import scala.reflect.internal.JavaAccFlags
 import scala.reflect.internal.pickling.ByteCodecs
 import scala.reflect.internal.util.ReusableInstance
-import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.tasty.{TastyHeaderUnpickler, TastyReader}
 import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
@@ -75,6 +78,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var classTParams = Map[Name,Symbol]()
   protected var srcfile0 : Option[AbstractFile] = None
   protected def moduleClass: Symbol = staticModule.moduleClass
+  protected val TASTYUUIDLength: Int = 16
   private var sawPrivateConstructor = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
@@ -1089,6 +1093,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
     var innersStart = -1
     var runtimeAnnotStart = -1
+    var TASTYAnnotStart = -1
+    var TASTYAnnotLen = -1
 
     val numAttrs = u2()
     var i = 0
@@ -1104,6 +1110,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           i = numAttrs
         case tpnme.TASTYATTR =>
           isTASTY = true
+          TASTYAnnotLen = attrLen
+          TASTYAnnotStart = in.bp
           i = numAttrs
         case tpnme.InnerClassesATTR =>
           innersStart = in.bp
@@ -1180,7 +1188,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       assert(runtimeAnnotStart != -1, s"No RuntimeVisibleAnnotations in classfile with ScalaSignature attribute: $clazz")
       in.bp = runtimeAnnotStart
-      val numAnnots = u2
+      val numAnnots = u2()
       var i = 0
       var bytes: Array[Byte] = null
       while (i < numAnnots && bytes == null) {
@@ -1201,7 +1209,57 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       assert(bytes != null, s"No Scala(Long)Signature annotation in classfile with ScalaSignature attribute: $clazz")
       unpickler.unpickle(bytes, 0, clazz, staticModule, file.name)
     } else if (isTASTY) {
-      assert(assertion = false, "TASTY source") // works!
+
+      def parseTASTYFile(): Array[Byte] = file.underlyingSource match { // TODO: simplify when #3552 is fixed
+        case None =>
+          reporter.error(NoPosition, "Could not load TASTY from .tasty for virtual file " + file)
+          Array.empty
+        case Some(jar: ZipArchive) => // We are in a jar
+          val cl = new URLClassLoader(Array(jar.toURL), /*parent =*/ null)
+          val path = file.path.stripSuffix(".class") + ".tasty"
+          val stream = cl.getResourceAsStream(path)
+          if (stream != null) {
+            val tastyOutStream = new ByteArrayOutputStream()
+            val buffer = new Array[Byte](1024)
+            var read = stream.read(buffer, 0, buffer.length)
+            while (read != -1) {
+              tastyOutStream.write(buffer, 0, read)
+              read = stream.read(buffer, 0, buffer.length)
+            }
+            tastyOutStream.flush()
+            tastyOutStream.toByteArray
+          } else {
+            reporter.error(NoPosition, s"Could not find $path in $jar")
+            Array.empty
+          }
+        case _ =>
+          val plainFile = new PlainFile(io.File(file.path).changeExtension("tasty"))
+          if (plainFile.exists) plainFile.toByteArray
+          else {
+            reporter.error(NoPosition, "Could not find " + plainFile)
+            Array.empty
+          }
+      }
+
+      def parseTASTYBytes(): Array[Byte] = {
+        assert(TASTYAnnotLen == TASTYUUIDLength, "TASTY Attribute is not a UUID")
+        assert(TASTYAnnotStart != -1, "no TASTY Annotation position")
+        in.bp = TASTYAnnotStart
+        val TASTY = in.nextBytes(TASTYUUIDLength)
+        val tastyBytes = parseTASTYFile()
+        if (tastyBytes.isEmpty) {
+          reporter.error(NoPosition, s"No Tasty file found for classfile $file with TASTY Attribute")
+        }
+        val reader = new TastyReader(TASTY, 0, TASTYUUIDLength)
+        val expectedUUID = new UUID(reader.readUncompressedLong(), reader.readUncompressedLong())
+        val tastyUUID = new TastyHeaderUnpickler(tastyBytes).readHeader()
+        if (expectedUUID != tastyUUID) {
+          reporter.error(NoPosition, s"Tasty UUID ($tastyUUID) file did not correspond the tasty UUID ($expectedUUID) declared in the classfile $file.")
+        }
+        reporter.echo(NoPosition, s"Tasty UUID = $tastyUUID for classfile $file.") // works!
+        TASTY
+      }
+      parseTASTYBytes()
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

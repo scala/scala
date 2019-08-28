@@ -1,5 +1,5 @@
-//package scala.tools.nsc
-//package tasty
+package scala.tools.nsc
+package tasty
 //
 //import scala.collection.mutable
 //import TastyFormat.NameTags._
@@ -7,9 +7,9 @@
 //import Names.{TermName, termName, EmptyTermName}
 //import NameKinds._
 //
-//object TastyUnpickler {
-//  class UnpickleException(msg: String) extends RuntimeException(msg)
-//
+object TastyUnpickler {
+  class UnpickleException(msg: String) extends RuntimeException(msg)
+
 //  abstract class SectionUnpickler[R](val name: String) {
 //    def unpickle(reader: TastyReader, nameAtRef: NameTable): R
 //  }
@@ -20,7 +20,7 @@
 //    def apply(ref: NameRef): TermName = names(ref.index)
 //    def contents: Iterable[TermName] = names
 //  }
-//}
+}
 //
 //import TastyUnpickler._
 //

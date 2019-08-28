@@ -1,23 +1,23 @@
-//package scala.tools.nsc
-//package tasty
-//
+package scala.tools.nsc
+package tasty
+
 //import TastyBuffer._
 //import collection.mutable
-//
-///** A byte array buffer that can be filled with bytes or natural numbers in TASTY format,
-// *  and that supports reading and patching addresses represented as natural numbers.
-// *
-// *  @param bytes    The array containing data
-// *  @param start    The position from which to read
-// *  @param end      The position one greater than the last byte to be read
-// *  @param base     The index referenced by the logical zero address Addr(0)
-// */
-//class TastyReader(val bytes: Array[Byte], start: Int, end: Int, val base: Int = 0) {
-//
-//  def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
-//
-//  private[this] var bp: Int = start
-//
+
+/** A byte array buffer that can be filled with bytes or natural numbers in TASTY format,
+ *  and that supports reading and patching addresses represented as natural numbers.
+ *
+ *  @param bytes    The array containing data
+ *  @param start    The position from which to read
+ *  @param end      The position one greater than the last byte to be read
+ *  @param base     The index referenced by the logical zero address Addr(0)
+ */
+class TastyReader(val bytes: Array[Byte], start: Int, end: Int, val base: Int = 0) {
+
+  def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
+
+  private[this] var bp: Int = start
+
 //  def addr(idx: Int): Addr = Addr(idx - base)
 //  def index(addr: Addr): Int = addr.index + base
 //
@@ -30,8 +30,8 @@
 //  /** the address one greater than the last brte to read */
 //  def endAddr: Addr = addr(end)
 //
-//  /** Have all bytes been read? */
-//  def isAtEnd: Boolean = bp == end
+  /** Have all bytes been read? */
+  def isAtEnd: Boolean = bp == end
 //
 //  /** A new reader over the same array with the same address base, but with
 //   *  specified start and end positions
@@ -39,12 +39,12 @@
 //  def subReader(start: Addr, end: Addr): TastyReader =
 //    new TastyReader(bytes, index(start), index(end), base)
 //
-//  /** Read a byte of data. */
-//  def readByte(): Int = {
-//    val result = bytes(bp) & 0xff
-//    bp += 1
-//    result
-//  }
+  /** Read a byte of data. */
+  def readByte(): Int = {
+    val result = bytes(bp) & 0xff
+    bp += 1
+    result
+  }
 //
 //  /** Returns the next byte of data as a natural number without advancing the read position */
 //  def nextByte: Int = bytes(bp) & 0xff
@@ -57,30 +57,30 @@
 //    result
 //  }
 //
-//  /** Read a natural number fitting in an Int in big endian format, base 128.
-//   *  All but the last digits have bit 0x80 set.
-//   */
-//  def readNat(): Int = readLongNat().toInt
+  /** Read a natural number fitting in an Int in big endian format, base 128.
+   *  All but the last digits have bit 0x80 set.
+   */
+  def readNat(): Int = readLongNat().toInt
 //
 //  /** Read an integer number in 2's complement big endian format, base 128.
 //   *  All but the last digits have bit 0x80 set.
 //   */
 //  def readInt(): Int = readLongInt().toInt
 //
-//  /** Read a natural number fitting in a Long in big endian format, base 128.
-//   *  All but the last digits have bit 0x80 set.
-//   */
-//  def readLongNat(): Long = {
-//    var b = 0L
-//    var x = 0L
-//    while ({
-//      b = bytes(bp)
-//      x = (x << 7) | (b & 0x7f)
-//      bp += 1
-//      (b & 0x80) == 0
-//    }) ()
-//    x
-//  }
+  /** Read a natural number fitting in a Long in big endian format, base 128.
+   *  All but the last digits have bit 0x80 set.
+   */
+  def readLongNat(): Long = {
+    var b = 0L
+    var x = 0L
+    while ({
+      b = bytes(bp)
+      x = (x << 7) | (b & 0x7f)
+      bp += 1
+      (b & 0x80) == 0
+    }) ()
+    x
+  }
 //
 //  /** Read a long integer number in 2's complement big endian format, base 128. */
 //  def readLongInt(): Long = {
@@ -95,13 +95,13 @@
 //    x
 //  }
 //
-//  /** Read an uncompressed Long stored in 8 bytes in big endian format */
-//  def readUncompressedLong(): Long = {
-//    var x: Long = 0
-//    for (i <- 0 to 7)
-//      x = (x << 8) | (readByte() & 0xff)
-//    x
-//  }
+  /** Read an uncompressed Long stored in 8 bytes in big endian format */
+  def readUncompressedLong(): Long = {
+    var x: Long = 0
+    for (_ <- 0 to 7)
+      x = (x << 8) | (readByte() & 0xff)
+    x
+  }
 //
 //  /** Read a natural number and return as a NameRef */
 //  def readNameRef(): NameRef = NameRef(readNat())
@@ -136,4 +136,4 @@
 //    while (cond) buf += op
 //    buf.toList
 //  }
-//}
+}
