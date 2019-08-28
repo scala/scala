@@ -30,7 +30,13 @@ class SourceTest {
   }
   @Test def loadFromResource() = {
     val res = Source.fromResource("rootdoc.txt")
-    assertTrue("No classpath resource found", res.getLines().size > 5)
+    val ls = res.getLines()
+    ls.next match {
+      case "The Scala compiler and reflection APIs." =>
+      case "This is the documentation for the Scala standard library." =>
+      case l =>
+        assertTrue(s"$l\n${ls.mkString("\n")}", false)
+    }
   }
   @Test def canCustomizeReporting() = {
     class CapitalReporting(is: InputStream) extends BufferedSource(is) {
