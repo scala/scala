@@ -819,8 +819,6 @@ abstract class Inliner {
       nullOutLocals.add(new VarInsnNode(ASTORE, i))
     }
 
-    val hasNullOutInsn = nullOutLocals.size > 0
-
     clonedInstructions.insert(argStores)
 
     // label for the exit of the inlined functions. xRETURNs are replaced by GOTOs to this label.
@@ -899,8 +897,13 @@ abstract class Inliner {
         new VarInsnNode(opc, returnValueIndex)
       }
       clonedInstructions.insert(postCallLabel, retVarLoad)
+      if (retVarLoad.getOpcode == ALOAD) {
+        nullOutLocals.add(new InsnNode(ACONST_NULL))
+        nullOutLocals.add(new VarInsnNode(ASTORE, returnValueIndex))
+      }
     }
 
+    val hasNullOutInsn = nullOutLocals.size > 0 // save here, the next line sets the size to 0
     clonedInstructions.add(nullOutLocals)
 
     callsiteMethod.instructions.insert(callsiteInstruction, clonedInstructions)
@@ -929,12 +932,20 @@ abstract class Inliner {
       callee.maxStack + callsiteStackHeight - numStoredArgs
     }
     val stackHeightAtNullCheck = {
-      // When adding a null check for the receiver, a DUP is inserted, which might cause a new maxStack.
-      // If the callsite has other argument values than the receiver on the stack, these are pop'ed
-      // and stored into locals before the null check, so in that case the maxStack doesn't grow.
       val stackSlotForNullCheck =
-        if (!skipReceiverNullCheck && calleeParamTypes.isEmpty) 1
-        else if (hasNullOutInsn) 1 // TODO this is probably too conservative, could be narrowed down
+        if (!skipReceiverNullCheck && calleeParamTypes.isEmpty) {
+          // When adding a null check for the receiver, a DUP is inserted, which might cause a new maxStack.
+          // If the callsite has other argument values than the receiver on the stack, these are pop'ed
+          // and stored into locals before the null check, so in that case the maxStack doesn't grow.
+          1
+        }
+        else if (hasNullOutInsn) {
+          // after the return value is laoded, local variables and the return local variable are
+          // nulled out, which means `null` is loaded to the stack. the max stack height is the
+          // callsite stack height +1 (receiver consumed, result produced, null loaded), but +2
+          // for static calls
+          if (isStatic) 2 else 1
+        }
         else 0
       callsiteStackHeight + stackSlotForNullCheck
     }
