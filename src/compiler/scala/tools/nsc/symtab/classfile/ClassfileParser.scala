@@ -68,6 +68,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected var staticScope: Scope = _         // the scope of all static definitions
   protected var pool: ConstantPool = _         // the classfile's constant pool
   protected var isScala: Boolean = _           // does class file describe a scala class?
+  protected var isTASTY: Boolean = _           // is this class accompanied by a TASTY file?
   protected var isScalaRaw: Boolean = _        // this class file is a scala class with no pickled info
   protected var busy: Symbol = _               // lock to detect recursive reads
   protected var currentClass: String = _       // JVM name of the current class
@@ -1089,17 +1090,20 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     var innersStart = -1
     var runtimeAnnotStart = -1
 
-    val numAttrs = u2
+    val numAttrs = u2()
     var i = 0
     while (i < numAttrs) {
       val attrName = readTypeName()
-      val attrLen = u4
+      val attrLen = u4()
       attrName match {
         case tpnme.ScalaSignatureATTR =>
           isScala = true
           if (runtimeAnnotStart != -1) i = numAttrs
         case tpnme.ScalaATTR =>
           isScalaRaw = true
+          i = numAttrs
+        case tpnme.TASTYATTR =>
+          isTASTY = true
           i = numAttrs
         case tpnme.InnerClassesATTR =>
           innersStart = in.bp
@@ -1112,22 +1116,29 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       i += 1
     }
 
+    // To understand the situation, it's helpful to know that:
+    // - Scalac emits the `ScalaSignature` attribute for classfiles with pickled information
+    // and the `Scala` attribute for everything else.
+    // - Dotty emits the `TASTY` attribute for classfiles with pickled information
+    // and the `Scala` attribute for _every_ classfile.
+    isScalaRaw &= !isTASTY
+
     if (isScala) {
       def parseScalaSigBytes(): Array[Byte] = {
-        val tag = u1
+        val tag = u1()
         assert(tag == STRING_TAG, tag)
-        pool.getBytes(u2)
+        pool.getBytes(u2())
       }
 
       def parseScalaLongSigBytes(): Array[Byte] = {
-        val tag = u1
+        val tag = u1()
         assert(tag == ARRAY_TAG, tag)
-        val stringCount = u2
+        val stringCount = u2()
         val entries =
-          for (i <- 0 until stringCount) yield {
-            val stag = u1
+          for (_ <- 0 until stringCount) yield {
+            val stag = u1()
             assert(stag == STRING_TAG, stag)
-            u2
+            u2()
           }
         pool.getBytes(entries.toList)
       }
@@ -1189,11 +1200,13 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       assert(bytes != null, s"No Scala(Long)Signature annotation in classfile with ScalaSignature attribute: $clazz")
       unpickler.unpickle(bytes, 0, clazz, staticModule, file.name)
+    } else if (isTASTY) {
+      assert(assertion = false, "TASTY source") // works!
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
-      val entries = u2
-      for (i <- 0 until entries) {
-        val innerIndex, outerIndex, nameIndex = u2
+      val entries = u2()
+      for (_ <- 0 until entries) {
+        val innerIndex, outerIndex, nameIndex = u2()
         val jflags = readInnerClassFlags()
         if (innerIndex != 0 && outerIndex != 0 && nameIndex != 0)
           innerClasses add InnerClassEntry(pool.getClassName(innerIndex), pool.getClassName(outerIndex), pool.getName(nameIndex), jflags)
