@@ -2229,6 +2229,10 @@ trait Types
     override def termSymbol = if (this ne normalize) normalize.termSymbol else super.termSymbol
     override def typeSymbol = if (this ne normalize) normalize.typeSymbol else sym
 
+    // Avoid calling super.isError when we're a type constructor, as that will eta-expand, which can cause spurious cycles,
+    // without resulting in additional information about our error state in any case
+    override def isError: Boolean = sym.isError || !isHigherKinded && super.isError
+
     override protected[Types] def parentsImpl: List[Type] = normalize.parents map relativize
 
     // `baseClasses` is sensitive to type args when referencing type members
