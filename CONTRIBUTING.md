@@ -175,6 +175,8 @@ and therefore:
 * if you're working on the compiler, you must write a partest, or a `BytecodeTesting` JUnit test which invokes the compiler programmatically; however
 * if you're working on the library, a JUnit and/or ScalaCheck is better.
 
+If you're working on Partest itself, note that some of its source files are part of Scala's sbt build, and are compiled when sbt is launched, not via its `compile` command.
+
 #### exploring with REPL
 
 Before or during the test, you might get better insight of the code by starting a REPL session
