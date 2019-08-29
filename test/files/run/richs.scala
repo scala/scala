@@ -1,4 +1,4 @@
-trait RichTest {
+trait RichTest extends Runnable {
   val s1 = """abc"""
   val s2 = """abc\txyz\n"""
   val s3 = """abc
@@ -7,44 +7,108 @@ trait RichTest {
               |xyz"""
   val s5 = """abc
               #xyz"""
-  def getObjectName: String = {
-    val cn = this.getClass().getName()
-    cn.substring(0, cn.length-1)
+  def getObjectName: String = getClass.getName.init
+  def test(): Unit
+  override final def run() = {
+    println(s"\n$getObjectName:")
+    test()
   }
   def length[A](it: Iterator[A]) = it.toList.length
   def length[A](it: Iterable[A]) = it.toList.length
-  def run(): Unit
 }
-object RichCharTest1 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
-    println('1'.asDigit == 1)
-    println('A'.asDigit == 10)
+
+// documents undesirable sign extension
+object RichByteTest extends RichTest {
+  override def test() = {
+    val sixteen = 16.toByte
+    println(sixteen.toBinaryString)
+    println(sixteen.toHexString)
+    println(sixteen.toOctalString)
+    val max = 0x7F.toByte
+    println(max.toBinaryString)
+    println(max.toHexString)
+    println(max.toOctalString)
+    val extended = 0x80.toByte
+    println(extended.toBinaryString)
+    println(extended.toHexString)
+    println(extended.toOctalString)
+    val neg = -1.toByte
+    println(neg.toBinaryString)
+    println(neg.toHexString)
+    println(neg.toOctalString)
   }
 }
-// object RichCharTest2 extends RichTest {
-//   case class C(s: String) {
-//     private val it = s.iterator
-//     private var c: Char = _
-//     def ch(): Char = c
-//     def nextch(): Unit = { c = if (it.hasNext) it.next() else ';' }
-//     def err(msg: String) = println(msg)
-//     nextch()
-//   }
-//   def run {
-//     println("\n" + getObjectName + ":")
-//     val c1 = C("x4A;")
-//     val s1 = xml.Utility.parseCharRef(c1.ch, c1.nextch, c1.err)
-//     val c2 = C("74;")
-//     val s2 = xml.Utility.parseCharRef(c2.ch, c2.nextch, c2.err)
-//     println(s1 == s2)
-//   }
-// }
+
+object RichCharTest extends RichTest {
+  override def test() = {
+    println('1'.asDigit == 1)
+    println('A'.asDigit == 10)
+    val sixteen = 16.toChar
+    println(sixteen.toBinaryString)
+    println(sixteen.toHexString)
+    println(sixteen.toOctalString)
+    val max = 0x7FFF.toChar
+    println(max.toBinaryString)
+    println(max.toHexString)
+    println(max.toOctalString)
+    val extended = 0x8000.toChar
+    println(extended.toBinaryString)
+    println(extended.toHexString)
+    println(extended.toOctalString)
+    val neg = -1.toChar
+    println(neg.toBinaryString)
+    println(neg.toHexString)
+    println(neg.toOctalString)
+  }
+}
+
+// documents undesirable sign extension
+object RichShortTest extends RichTest {
+  override def test() = {
+    val sixteen = 16.toShort
+    println(sixteen.toBinaryString)
+    println(sixteen.toHexString)
+    println(sixteen.toOctalString)
+    val max = 0x7FFF.toShort
+    println(max.toBinaryString)
+    println(max.toHexString)
+    println(max.toOctalString)
+    val extended = 0x8000.toShort
+    println(extended.toBinaryString)
+    println(extended.toHexString)
+    println(extended.toOctalString)
+    val neg = -1.toShort
+    println(neg.toBinaryString)
+    println(neg.toHexString)
+    println(neg.toOctalString)
+  }
+}
+
+object RichLongTest extends RichTest {
+  override def test() = {
+    val sixteen = 16L
+    println(sixteen.toBinaryString)
+    println(sixteen.toHexString)
+    println(sixteen.toOctalString)
+    val max = 0x7FFFL
+    println(max.toBinaryString)
+    println(max.toHexString)
+    println(max.toOctalString)
+    val extended = 0x8000L
+    println(extended.toBinaryString)
+    println(extended.toHexString)
+    println(extended.toOctalString)
+    val neg = -1L
+    println(neg.toBinaryString)
+    println(neg.toHexString)
+    println(neg.toOctalString)
+  }
+}
+
 object RichIntTest extends RichTest {
   private val n = 10
   private val m = -2
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     println(length(0 until n))
     println(length(0 to n))
     println(length(m until n))
@@ -52,17 +116,16 @@ object RichIntTest extends RichTest {
     println(length(n until m))
     println(length(n to m))
 
-    println(16.toBinaryString) // should be "10000"
-    println(16.toHexString)    // should be "10"
-    println(16.toOctalString)  // should be "20"
+    println(16.toBinaryString)
+    println(16.toHexString)
+    println(16.toOctalString)
 
-    println(65537.toHexString) // should be "10001"
-    println((-1).toHexString)  // should be "ffffffff"
+    println(65537.toHexString)
+    println((-1).toHexString)
   }
 }
 object RichStringTest1 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     println("s1: " + s1)
     println("s2: " + s2)
     println("s3: " + s3)
@@ -71,8 +134,7 @@ object RichStringTest1 extends RichTest {
   }
 }
 object RichStringTest2 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     Console.print("s1: "); s1.linesIterator foreach println
     Console.print("s2: "); s2.linesIterator foreach println
     Console.print("s3: "); s3.linesIterator foreach println
@@ -81,8 +143,7 @@ object RichStringTest2 extends RichTest {
   }
 }
 object RichStringTest3 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     println("s1: " + s1.stripLineEnd)
     println("s2: " + s2.stripLineEnd)
     println("s3: " + s3.stripLineEnd)
@@ -91,8 +152,7 @@ object RichStringTest3 extends RichTest {
   }
 }
 object RichStringTest4 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     println("s1: " + s1.stripMargin)
     println("s2: " + s2.stripMargin)
     println("s3: " + s3.stripMargin)
@@ -101,8 +161,7 @@ object RichStringTest4 extends RichTest {
   }
 }
 object RichStringTest5 extends RichTest {
-  def run(): Unit = {
-    println("\n" + getObjectName + ":")
+  def test(): Unit = {
     println("s1: " + s3.stripMargin('#'))
     println("s2: " + s3.stripMargin('#'))
     println("s3: " + s3.stripMargin('#'))
@@ -111,7 +170,7 @@ object RichStringTest5 extends RichTest {
   }
 }
 object RichStringTest6 extends RichTest {
-  def run(): Unit = {
+  def test(): Unit = {
     println("a:b:c:d".split(':').toList)
     println("a.b.c.d".split('.').toList)
     println("a$b$c$d".split('$').toList)
@@ -121,17 +180,19 @@ object RichStringTest6 extends RichTest {
     println("a:b.c$d".split(Array(':', '.', '$')).toList)
   }
 }
-/** xxx */
 object Test {
-  def main(args: Array[String]): Unit = {
-    RichCharTest1.run()
-    //RichCharTest2.run
-    RichIntTest.run()
-    RichStringTest1.run()
-    RichStringTest2.run()
-    RichStringTest3.run()
-    RichStringTest4.run()
-    RichStringTest5.run()
-    RichStringTest6.run()
-  }
+  def main(args: Array[String]): Unit =
+    List(
+      RichByteTest,
+      RichShortTest,
+      RichCharTest,
+      RichIntTest,
+      RichLongTest,
+      RichStringTest1,
+      RichStringTest2,
+      RichStringTest3,
+      RichStringTest4,
+      RichStringTest5,
+      RichStringTest6,
+    ).foreach(_.run())
 }
