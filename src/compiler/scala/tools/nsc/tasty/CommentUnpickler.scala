@@ -1,4 +1,4 @@
-//package scala.tools.nsc.tasty
+package scala.tools.nsc.tasty
 //
 //import dotty.tools.dotc.core.Comments.Comment
 //import dotty.tools.dotc.core.tasty.TastyBuffer.Addr
@@ -8,7 +8,7 @@
 //
 //import java.nio.charset.Charset
 //
-//class CommentUnpickler(reader: TastyReader) {
+class CommentUnpickler(reader: TastyReader) {
 //  import reader._
 //
 //  private[tasty] lazy val comments: Map[Addr, Comment] = {
@@ -29,4 +29,4 @@
 //  def commentAt(addr: Addr): Option[Comment] =
 //    comments.get(addr)
 //
-//}
+}

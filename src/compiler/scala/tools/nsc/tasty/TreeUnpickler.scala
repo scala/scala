@@ -1,6 +1,10 @@
-//package scala.tools.nsc
-//package tasty
-//
+package scala.tools.nsc
+package tasty
+
+import scala.reflect.internal.SymbolTable
+import TastyUnpickler.NameTable
+import TastyBuffer._
+
 //import Comments.CommentsContext
 //import Contexts._
 //import Symbols._
@@ -22,7 +26,6 @@
 //import Trees._
 //import Decorators._
 //import transform.SymUtils._
-//import TastyBuffer._
 //
 //import scala.annotation.{switch, tailrec}
 //import scala.collection.mutable.ListBuffer
@@ -35,19 +38,20 @@
 //import scala.internal.quoted.{TastyTreeExpr, TreeType}
 //import scala.annotation.constructorOnly
 //import scala.annotation.internal.sharable
-//
-///** Unpickler for typed trees
-// *  @param reader              the reader from which to unpickle
-// *  @param posUnpicklerOpt     the unpickler for positions, if it exists
-// *  @param commentUnpicklerOpt the unpickler for comments, if it exists
-// *  @param splices
-// */
-//class TreeUnpickler(reader: TastyReader,
-//                    nameAtRef: NameRef => TermName,
-//                    posUnpicklerOpt: Option[PositionUnpickler],
-//                    commentUnpicklerOpt: Option[CommentUnpickler],
-//                    splices: Seq[Any]) {
-//  import TastyFormat._
+
+/** Unpickler for typed trees
+ *  @param reader              the reader from which to unpickle
+ *  @param posUnpicklerOpt     the unpickler for positions, if it exists
+ *  @param commentUnpicklerOpt the unpickler for comments, if it exists
+ *  @param splices
+ */
+abstract class TreeUnpickler(reader: TastyReader,
+                            nameAtRef: NameTable,
+                            posUnpicklerOpt: Option[PositionUnpickler],
+                            commentUnpicklerOpt: Option[CommentUnpickler],
+                            splices: Seq[Any]) extends TASTYUniverse {
+  import symbolTable._
+  import TastyFormat._
 //  import TreeUnpickler._
 //  import tpd._
 //
@@ -65,33 +69,33 @@
 //   *  from within themselves (i.e. RecTypes, LambdaTypes).
 //   */
 //  private val typeAtAddr = new mutable.HashMap[Addr, Type]
-//
-//  /** The root symbol denotation which are defined by the Tasty file associated with this
-//   *  TreeUnpickler. Set by `enterTopLevel`.
-//   */
-//  private[this] var roots: Set[SymDenotation] = null
-//
+
+  /** The root symbol denotation which are defined by the Tasty file associated with this
+   *  TreeUnpickler. Set by `enterTopLevel`.
+   */
+  private[this] var roots: Set[Symbol] = null
+
 //  /** The root symbols that are defined in this Tasty file. This
 //   *  is a subset of `roots.map(_.symbol)`.
 //   */
 //  private[this] var seenRoots: Set[Symbol] = Set()
-//
-//  /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
-//  private[this] var ownerTree: OwnerTree = _
-//
+
+  /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
+  private[this] var ownerTree: OwnerTree = _
+
 //  private def registerSym(addr: Addr, sym: Symbol) =
 //    symAtAddr(addr) = sym
-//
-//  /** Enter all toplevel classes and objects into their scopes
-//   *  @param roots          a set of SymDenotations that should be overwritten by unpickling
-//   */
-//  def enter(roots: Set[SymDenotation])(implicit ctx: Context): Unit = {
-//    this.roots = roots
-//    val rdr = new TreeReader(reader).fork
-//    ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
-//    if (rdr.isTopLevel)
-//      rdr.indexStats(reader.endAddr)
-//  }
+
+  /** Enter all toplevel classes and objects into their scopes
+   *  @param roots          a set of SymDenotations that should be overwritten by unpickling
+   */
+  def enter(roots: Set[Symbol]): Unit = {
+    this.roots = roots
+    val rdr = new TreeReader(reader).fork
+    ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
+    if (rdr.isTopLevel)
+      rdr.indexStats(reader.endAddr)
+  }
 //
 //  /** The unpickled trees */
 //  def unpickle(mode: UnpickleMode)(implicit ctx: Context): List[Tree] = {
@@ -115,11 +119,11 @@
 //    }
 //  }
 //
-//  class TreeReader(val reader: TastyReader) {
-//    import reader._
-//
-//    def forkAt(start: Addr): TreeReader = new TreeReader(subReader(start, endAddr))
-//    def fork: TreeReader = forkAt(currentAddr)
+  class TreeReader(val reader: TastyReader) {
+    import reader._
+
+    def forkAt(start: Addr): TreeReader = new TreeReader(subReader(start, endAddr))
+    def fork: TreeReader = forkAt(currentAddr)
 //
 //    def skipTree(tag: Int): Unit =
 //      if (tag >= firstLengthTreeTag) goto(readEnd())
@@ -659,12 +663,12 @@
 //          Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
 //    }
 //
-//    /** Create symbols for the definitions in the statement sequence between
-//     *  current address and `end`.
-//     *  @return  the largest subset of {NoInits, PureInterface} that a
-//     *           trait owning the indexed statements can have as flags.
-//     */
-//    def indexStats(end: Addr)(implicit ctx: Context): FlagSet = {
+    /** Create symbols for the definitions in the statement sequence between
+     *  current address and `end`.
+     *  @return  the largest subset of {NoInits, PureInterface} that a
+     *           trait owning the indexed statements can have as flags.
+     */
+    def indexStats(end: Addr): FlagSet = {
 //      var initsFlags = NoInitsInterface
 //      while (currentAddr.index < end.index) {
 //        nextByte match {
@@ -687,7 +691,8 @@
 //      }
 //      assert(currentAddr.index == end.index)
 //      initsFlags
-//    }
+      NoFlags
+    }
 //
 //    /** Process package with given operation `op`. The operation takes as arguments
 //     *   - a `RefTree` representing the `pid` of the package,
@@ -913,8 +918,8 @@
 //      }
 //    }
 //
-//    def isTopLevel(implicit ctx: Context): Boolean =
-//      nextByte == IMPORT || nextByte == PACKAGE
+    def isTopLevel: Boolean =
+      nextByte == IMPORT || nextByte == PACKAGE
 //
 //    def readTopLevel()(implicit ctx: Context): List[Tree] = {
 //      @tailrec def read(acc: ListBuffer[Tree]): List[Tree] = {
@@ -1347,7 +1352,7 @@
 //      if (span.exists) tree.span = span
 //      tree
 //    }
-//  }
+  }
 //
 //  class LazyReader[T <: AnyRef](
 //      reader: TreeReader, owner: Symbol, mode: Mode, source: SourceFile,
@@ -1362,19 +1367,19 @@
 //    }
 //  }
 //
-//  /** A lazy datastructure that records how definitions are nested in TASTY data.
-//   *  The structure is lazy because it needs to be computed only for forward references
-//   *  to symbols that happen before the referenced symbol is created (see `symbolAt`).
-//   *  Such forward references are rare.
-//   *
-//   *  @param   addr    The address of tree representing an owning definition, NoAddr for root tree
-//   *  @param   tag     The tag at `addr`. Used to determine which subtrees to scan for children
-//   *                   (i.e. if `tag` is template, don't scan member defs, as these belong already
-//   *                    to enclosing class).
-//   *  @param   reader  The reader to be used for scanning for children
-//   *  @param   end     The end of the owning definition
-//   */
-//  class OwnerTree(val addr: Addr, tag: Int, reader: TreeReader, val end: Addr) {
+  /** A lazy datastructure that records how definitions are nested in TASTY data.
+   *  The structure is lazy because it needs to be computed only for forward references
+   *  to symbols that happen before the referenced symbol is created (see `symbolAt`).
+   *  Such forward references are rare.
+   *
+   *  @param   addr    The address of tree representing an owning definition, NoAddr for root tree
+   *  @param   tag     The tag at `addr`. Used to determine which subtrees to scan for children
+   *                   (i.e. if `tag` is template, don't scan member defs, as these belong already
+   *                    to enclosing class).
+   *  @param   reader  The reader to be used for scanning for children
+   *  @param   end     The end of the owning definition
+   */
+  class OwnerTree(val addr: Addr, tag: Int, reader: TreeReader, val end: Addr) {
 //
 //    private var myChildren: List[OwnerTree] = null
 //
@@ -1419,36 +1424,36 @@
 //
 //    override def toString: String =
 //      s"OwnerTree(${addr.index}, ${end.index}, ${if (myChildren == null) "?" else myChildren.mkString(" ")})"
-//  }
-//}
-//
-//object TreeUnpickler {
-//
-//  /** Define the expected format of the tasty bytes
-//   *   - TopLevel: Tasty that contains a full class nested in its package
-//   *   - Term: Tasty that contains only a term tree
-//   *   - TypeTree: Tasty that contains only a type tree or a reference to a type
-//   */
-//  sealed trait UnpickleMode
-//  object UnpickleMode {
-//    /** Unpickle a full class in some package */
-//    object TopLevel extends UnpickleMode
-//    /** Unpickle as a TermTree */
-//    object Term extends UnpickleMode
-//    /** Unpickle as a TypeTree */
-//    object TypeTree extends UnpickleMode
-//  }
-//
+  }
+}
+
+object TreeUnpickler {
+
+  /** Define the expected format of the tasty bytes
+   *   - TopLevel: Tasty that contains a full class nested in its package
+   *   - Term: Tasty that contains only a term tree
+   *   - TypeTree: Tasty that contains only a type tree or a reference to a type
+   */
+  sealed trait UnpickleMode
+  object UnpickleMode {
+    /** Unpickle a full class in some package */
+    object TopLevel extends UnpickleMode
+    /** Unpickle as a TermTree */
+    object Term extends UnpickleMode
+    /** Unpickle as a TypeTree */
+    object TypeTree extends UnpickleMode
+  }
+
 //  /** A marker value used to detect cyclic reference while unpickling definitions. */
 //  @sharable val PoisonTree: tpd.Tree = new EmptyTree
-//
-//  /** An enumeration indicating which subtrees should be added to an OwnerTree. */
-//  type MemberDefMode = Int
-//  final val MemberDefsOnly = 0   // add only member defs; skip other statements
-//  final val NoMemberDefs = 1     // add only statements that are not member defs
-//  final val AllDefs = 2          // add everything
-//
-//  class TreeWithoutOwner extends Exception
-//}
-//
-//
+
+  /** An enumeration indicating which subtrees should be added to an OwnerTree. */
+  type MemberDefMode = Int
+  final val MemberDefsOnly = 0   // add only member defs; skip other statements
+  final val NoMemberDefs = 1     // add only statements that are not member defs
+  final val AllDefs = 2          // add everything
+
+  class TreeWithoutOwner extends Exception
+}
+
+

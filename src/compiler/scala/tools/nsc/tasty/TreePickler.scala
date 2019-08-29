@@ -1,6 +1,6 @@
-//package scala.tools.nsc
-//package tasty
-//
+package scala.tools.nsc
+package tasty
+
 //import ast.Trees._
 //import ast.{untpd, tpd}
 //import TastyFormat._
@@ -14,17 +14,17 @@
 //import printing.Texts._
 //import util.SourceFile
 //import annotation.constructorOnly
-//
-//object TreePickler {
-//
-//  val sectionName = "ASTs"
-//
+
+object TreePickler {
+
+  val sectionName = "ASTs"
+
 //  case class Hole(idx: Int, args: List[tpd.Tree])(implicit @constructorOnly src: SourceFile) extends tpd.Tree {
 //    override def fallbackToText(printer: Printer): Text =
 //      s"[[$idx|" ~~ printer.toTextGlobal(args, ", ") ~~ "]]"
 //  }
-//}
-//
+}
+
 //class TreePickler(pickler: TastyPickler) {
 //  val buf: TreeBuffer = new TreeBuffer
 //  pickler.newSection(TreePickler.sectionName, buf)
