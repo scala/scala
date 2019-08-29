@@ -1548,6 +1548,7 @@ trait Contexts { self: Analyzer =>
 
     def issue(err: AbsTypeError)(implicit context: Context): Unit = error(context.fixPosition(err.errPos), addDiagString(err.errMsg))
 
+    def echo(msg: String): Unit                   = echo(NoPosition, msg)
     def echo(pos: Position, msg: String): Unit    = reporter.echo(pos, msg)
     def warning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
     def error(pos: Position, msg: String): Unit

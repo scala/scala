@@ -89,7 +89,8 @@ abstract class FilteringReporter extends Reporter {
   // this should be the abstract method all the way up in reflect.internal.Reporter, but sbt compat
   def doReport(pos: Position, msg: String, severity: Severity): Unit
 
-  final protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = doReport(pos, msg, severity)
+  @deprecatedOverriding("override doReport instead", "2.13.1") // overridden in scalameta for example
+  protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = doReport(pos, msg, severity)
 
   private lazy val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
   private lazy val messages  = mutable.Map[Position, List[String]]() withDefaultValue Nil
