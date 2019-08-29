@@ -108,49 +108,49 @@ class IteratorTest {
     val step = 100000000
     val numExpectedSamples = 22
     def createIterator = Iterator.range(0, Int.MaxValue, step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, 0)
-    assertEquals(createIterator.max, (numExpectedSamples - 1) * step)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals(0, createIterator.min)
+    assertEquals((numExpectedSamples - 1) * step, createIterator.max)
   }
   @Test def rangeOverflow2() : Unit = {
     val step = (Int.MaxValue / 2) + 1
     val numExpectedSamples = 2
     def createIterator = Iterator.range(0, Int.MaxValue, step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, 0)
-    assertEquals(createIterator.max, step)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals(0, createIterator.min)
+    assertEquals(step, createIterator.max)
   }
   @Test def rangeOverflow3() : Unit = {
     val step = 1000000000
     val numExpectedSamples = 5
-    def createIterator = Iterator.range(Int.MinValue +10,Int.MaxValue - 10,step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, Int.MinValue + 10)
-    assertEquals(createIterator.max, Int.MinValue + 10 + (numExpectedSamples - 1) * step)
+    def createIterator = Iterator.range(Int.MinValue +10,Int.MaxValue - 10, step)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals(Int.MinValue + 10, createIterator.min)
+    assertEquals(Int.MinValue + 10 + (numExpectedSamples - 1) * step, createIterator.max)
   }
   @Test def rangeUnderflow() : Unit = {
     val step = -100000000
     val numExpectedSamples = 22
     def createIterator = Iterator.range(0, -Int.MaxValue, step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, (numExpectedSamples - 1) * step)
-    assertEquals(createIterator.max, 0)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals((numExpectedSamples - 1) * step, createIterator.min)
+    assertEquals(0, createIterator.max)
   }
   @Test def rangeUnderflow2() : Unit = {
     val step = -(Int.MaxValue / 2) - 1
     val numExpectedSamples = 2
     def createIterator = Iterator.range(0, -Int.MaxValue, step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, step)
-    assertEquals(createIterator.max, 0)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals(step, createIterator.min)
+    assertEquals(0, createIterator.max)
   }
   @Test def rangeUnderflow3() : Unit = {
     val step = -1000000000
     val numExpectedSamples = 5
     def createIterator = Iterator.range(Int.MaxValue -10,Int.MinValue + 10,step)
-    assertEquals(createIterator.size, numExpectedSamples)
-    assertEquals(createIterator.min, Int.MaxValue - 10 + (numExpectedSamples - 1) * step)
-    assertEquals(createIterator.max, Int.MaxValue - 10)
+    assertEquals(numExpectedSamples, createIterator.count(_ => true))
+    assertEquals(Int.MaxValue - 10 + (numExpectedSamples - 1) * step, createIterator.min)
+    assertEquals(Int.MaxValue - 10, createIterator.max)
   }
   @Test def take(): Unit = {
     assertEquals(10, (Iterator from 0 take 10).size)
@@ -366,6 +366,107 @@ class IteratorTest {
     indexedSeq(Range(start = 9, end = 2, step = -2))
     indexedSeq(immutable.NumericRange(start = 1, end = 3, step = 1))
     indexedSeq(immutable.NumericRange(start = -10, end = -5, step = 1))
+  }
+
+  private def knownSizeDecreases[A](it: Iterator[A]): Unit = {
+    val size = it.knownSize
+    it.next
+    assertEquals(size - 1, it.knownSize)
+  }
+
+  @Test
+  def knownSize2: Unit = {
+    assertEquals(10, Iterator.fill(10)(1).knownSize)
+    assertEquals(0, Iterator.fill(-10)(1).knownSize)
+    knownSizeDecreases(Iterator.fill(10)(1))
+
+    assertEquals(10, Iterator.tabulate(10)(_.toString).knownSize)
+    assertEquals(0, Iterator.tabulate(-10)(_.toString).knownSize)
+    knownSizeDecreases(Iterator.tabulate(10)(_.toString))
+
+    assertEquals(10, Iterator.range(1, 11).knownSize)
+    knownSizeDecreases(Iterator.range(1, 11))
+    assertEquals(5, Iterator.range(1, 11, 2).knownSize)
+    assertEquals(4, Iterator.range(1, 11, 3).knownSize)
+    assertEquals(5, Iterator.range(1, 10, 2).knownSize)
+    assertEquals(3, Iterator.range(1, 10, 3).knownSize)
+    knownSizeDecreases(Iterator.range(1, 10, 3))
+    assertEquals(4, Iterator.range(-5, 5, 3).knownSize)
+    assertEquals(4, Iterator.range(-15, -5, 3).knownSize)
+    assertEquals(-1, Iterator.range(Int.MinValue, Int.MaxValue).knownSize)
+    assertEquals(-1, Iterator.range(Int.MinValue, Int.MaxValue, 2).knownSize)
+    assertEquals(1431655765, Iterator.range(Int.MinValue, Int.MaxValue, 3).knownSize)
+    assertEquals(Int.MaxValue, Iterator.range(Int.MinValue, Int.MaxValue - 1, 2).knownSize)
+  }
+
+  @Test
+  def knownSize3: Unit = {
+    def it = Iterator.fill(10)(1)
+
+    val buf = it.buffered
+    assertEquals(10, buf.knownSize)
+    buf.head
+    assertEquals(10, buf.knownSize)
+    knownSizeDecreases(buf)
+    val buf2 = Iterator.continually(1).buffered
+    assertEquals(-1, buf2.knownSize)
+    buf2.head
+    assertEquals(-1, buf2.knownSize)
+
+    assertEquals(10, it.padTo(5, 0).knownSize)
+    assertEquals(15, it.padTo(15, 0).knownSize)
+    knownSizeDecreases(it.padTo(15, 0))
+
+    val sl = it.scanLeft(0)(_ + _)
+    assertEquals(11, sl.knownSize)
+    knownSizeDecreases(sl)
+    knownSizeDecreases(sl) // first element is special so check twice
+
+    assertEquals(10, it.map(_ + 1).knownSize)
+    knownSizeDecreases(it.map(_ + 1))
+
+    assertEquals(5, it.zip(it.take(5)).knownSize)
+    assertEquals(5, it.take(5).zip(it).knownSize)
+    knownSizeDecreases(it.zip(it.take(5)))
+
+    assertEquals(10, it.zipAll(it.take(5), 2, 3).knownSize)
+    assertEquals(10, it.take(5).zipAll(it, 2, 3).knownSize)
+    knownSizeDecreases(it.zipAll(it.take(5), 2, 3))
+
+    val (a, b) = it.duplicate
+    assertEquals(10, a.knownSize)
+    assertEquals(10, b.knownSize)
+    knownSizeDecreases(a)
+    assertEquals(10, b.knownSize)
+    knownSizeDecreases(b)
+    knownSizeDecreases(b)
+    assertEquals(9, a.knownSize)
+
+    assertEquals(10, it.zipWithIndex.knownSize)
+    knownSizeDecreases(it.zipWithIndex)
+  }
+
+  @Test
+  def sliceKnownSize: Unit = {
+    def it = Iterator.fill(10)(1)
+
+    assertEquals(4, it.take(4).knownSize)
+    assertEquals(10, it.take(30).knownSize)
+
+    assertEquals(6, it.drop(4).knownSize)
+    assertEquals(0, it.drop(15).knownSize)
+
+    assertEquals(2, it.slice(4, 6).knownSize)
+    assertEquals(2, it.slice(8, 15).knownSize)
+    assertEquals(5, it.slice(-5, 5).knownSize)
+
+    assertEquals(-1, Iterator.continually(1).take(5).knownSize)
+    assertEquals(-1, List.fill(10)(1).take(5).knownSize)
+
+    assertEquals(3, new Iterator.SliceIterator(it, 7, -1).knownSize)
+
+    knownSizeDecreases(it.slice(2, 9))
+    knownSizeDecreases(new Iterator.SliceIterator(it, 7, -1))
   }
 
   @Test
