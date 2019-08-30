@@ -96,10 +96,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
    * The previous "-source" option is intended to be used mainly
    * though this helper.
    */
-  private[this] val version212 = ScalaVersion("2.12.0")
-  def isScala212: Boolean = source.value >= version212
-  private[this] val version213 = ScalaVersion("2.13.0")
-  def isScala213: Boolean = source.value >= version213
   private[this] val version214 = ScalaVersion("2.14.0")
   def isScala214: Boolean = source.value >= version214
   private[this] val version300 = ScalaVersion("3.0.0")

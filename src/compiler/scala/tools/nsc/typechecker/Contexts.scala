@@ -1038,7 +1038,7 @@ trait Contexts { self: Analyzer =>
       ) &&
       !(imported && {
         val e = scope.lookupEntry(name)
-        (e ne null) && (e.owner == scope) && (!currentRun.isScala212 || e.sym.exists)
+        (e ne null) && (e.owner == scope) && e.sym.exists
       })
 
     /** Do something with the symbols with name `name` imported via the import in `imp`,

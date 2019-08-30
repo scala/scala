@@ -955,7 +955,6 @@ trait Definitions extends api.StandardDefinitions {
       (sym eq PartialFunctionClass) || (sym eq AbstractPartialFunctionClass)
     }
 
-    private[this] val doSam = settings.isScala212
     private[this] val samCache = perRunCaches.newAnyRefMap[Symbol, Symbol]()
     /** The single abstract method declared by type `tp` (or `NoSymbol` if it cannot be found).
       *
@@ -968,7 +967,7 @@ trait Definitions extends api.StandardDefinitions {
       * It's kind of strange that erasure sees deferredMembers that typer does not (see commented out assert below)
       */
     def samOf(tp: Type): Symbol =
-      if (doSam && isNonRefinementClassType(unwrapToClass(tp))) { // TODO: is this really faster than computing tpSym below? how about just `tp.typeSymbol.isClass` (and !tpSym.isRefinementClass)?
+      if (isNonRefinementClassType(unwrapToClass(tp))) { // TODO: is this really faster than computing tpSym below? how about just `tp.typeSymbol.isClass` (and !tpSym.isRefinementClass)?
         // look at erased type because we (only) care about what ends up in bytecode
         // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
         val tpSym = erasure.javaErasure(tp).typeSymbol

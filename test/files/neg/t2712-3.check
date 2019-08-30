@@ -1,6 +1,13 @@
-t2712-3.scala:19: error: type mismatch;
- found   : test.One[test.X3]
- required: test.Two[test.X1,test.X2]
-  test1(foo): Two[X1, X2] // fails with -Xsource:2.12
+t2712-3.scala:18: error: type mismatch;
+ found   : test.Foo
+ required: test.Two[test.X1,Object]
+Note: test.X2 <: Object (and test.Foo <: test.Two[test.X1,test.X2]), but trait Two is invariant in type B.
+You may wish to define B as +B instead. (SLS 4.5)
+  test1(foo): One[X3]     // fails
+        ^
+t2712-3.scala:18: error: type mismatch;
+ found   : test.Two[test.X1,Object]
+ required: test.One[test.X3]
+  test1(foo): One[X3]     // fails
        ^
-one error found
+two errors found

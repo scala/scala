@@ -60,6 +60,6 @@ private[reflect] class Settings extends MutableSettings {
   val YstatisticsEnabled    = new BooleanSetting(false)
 
   val Yrecursion        = new IntSetting(0)
-  def isScala212        = true
-  private[scala] def isScala213 = true
+  // private[scala] def isScala214 = true
+  // private[scala] def isScala300 = true
 }

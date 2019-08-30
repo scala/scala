@@ -1,4 +1,4 @@
-// scalac: -Xelide-below WARNING -Xsource:2.13
+// scalac: -Xelide-below WARNING
 //
 import annotation._, elidable._
 

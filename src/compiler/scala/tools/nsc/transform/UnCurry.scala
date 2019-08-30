@@ -442,8 +442,7 @@ abstract class UnCurry extends InfoTransform
       def checkIsElidable(sym: Symbol): Boolean = (sym ne null) && sym.elisionLevel.exists { level =>
           if (sym.isMethod) level < settings.elidebelow.value
           else {
-            // TODO: report error? It's already done in RefChecks. https://github.com/scala/scala/pull/5539#issuecomment-331376887
-            if (currentRun.isScala213) reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
+            reporter.error(sym.pos, s"${sym.name}: Only methods can be marked @elidable.")
             false
           }
         }

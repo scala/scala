@@ -1088,12 +1088,7 @@ trait Implicits {
           result
         }
 
-        if (currentRun.isScala213) matches
-        else {
-          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
-          // compilation order variation in whether a search succeeds or diverges.
-          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
-        }
+        matches
       }
 
       /** Sorted list of eligible implicits.
@@ -1167,15 +1162,8 @@ trait Implicits {
         }
       }
 
-      val eligible: List[ImplicitInfo] = {
-        val matches = if (shadowerUseOldImplementation) eligibleOld else eligibleNew
-        if (currentRun.isScala213) matches
-        else {
-          // most frequent one first under Scala 2.12 mode. We've turned this optimization off to avoid
-          // compilation order variation in whether a search succeeds or diverges.
-          matches sortBy (x => if (isView) -x.useCountView else -x.useCountArg)
-        }
-      }
+      val eligible: List[ImplicitInfo] =
+        if (shadowerUseOldImplementation) eligibleOld else eligibleNew
 
       if (eligible.nonEmpty)
         printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
@@ -1216,7 +1204,7 @@ trait Implicits {
               foreach2(undetParams, savedInfos){ (up, si) => up.setInfo(si) }
             }
           }
-          if (typedFirstPending.isFailure && currentRun.isScala213)
+          if (typedFirstPending.isFailure)
             undoLog.undoTo(mark) // Don't accumulate constraints from typechecking or type error message creation for failed candidates
 
           // Pass the errors to `DivergentImplicitRecovery` so that it can note
@@ -1317,7 +1305,6 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
-      val isScala213 = currentRun.isScala213
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.
@@ -1368,8 +1355,7 @@ trait Implicits {
       def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]): Unit = {
         if (seen add tp) tp match {
           case TypeRef(pre, sym, args) =>
-            if (sym.isClass && !sym.isRoot &&
-                (isScala213 || !sym.isAnonOrRefinementClass)) {
+            if (sym.isClass && !sym.isRoot) {
               if (sym.isStatic && !(pending contains sym))
                 infoMap ++= {
                   infoMapCache get sym match {
@@ -1392,13 +1378,11 @@ trait Implicits {
               //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.upperBound)
 
-              if (isScala213) {
-                //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
-                args foreach getParts
+              //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
+              args foreach getParts
 
-                //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-                getParts(pre)
-              }
+              //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
+              getParts(pre)
             }
           case ThisType(_) =>
             getParts(tp.widen)

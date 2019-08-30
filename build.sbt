@@ -91,6 +91,8 @@ val mimaFilterSettings = Seq(
   mimaBinaryIssueFilters ++= Seq(
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.isScala212"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.isScala213"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl"),

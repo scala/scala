@@ -605,11 +605,9 @@ trait Scanners extends ScannersCommon {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
-                if (isEmptyCharLit && currentRun.isScala213)
+                if (isEmptyCharLit)
                   syntaxError("empty character literal (use '\\'' for single quote)")
                 else {
-                  if (isEmptyCharLit)
-                    deprecationWarning("deprecated syntax for character literal (use '\\'' for single quote)", "2.12.2")
                   nextChar()
                   token = CHARLIT
                   setStrVal()
