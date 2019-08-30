@@ -105,7 +105,7 @@ package object util {
     /** Format the stack trace, returning the prefix consisting of frames that satisfy
      *  a given predicate.
      *  The format is similar to the typical case described in the Javadoc
-     *  for [[java.lang.Throwable#printStackTrace]].
+     *  for [[java.lang.Throwable#printStackTrace()*]].
      *  If a stack trace is truncated, it will be followed by a line of the form
      *  `... 3 elided`, by analogy to the lines `... 3 more` which indicate
      *  shared stack trace segments.

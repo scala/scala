@@ -663,7 +663,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   /**
    * Return the quotient of this duration and the given integer factor.
    *
-   * @throws ArithmeticException if the factor is 0
+   * @throws java.lang.ArithmeticException if the factor is 0
    */
   def /(divisor: Long): FiniteDuration = fromNanos(toNanos / divisor)
 
@@ -697,7 +697,7 @@ final class FiniteDuration(val length: Long, val unit: TimeUnit) extends Duratio
   /**
    * Return the quotient of this duration and the given integer factor.
    *
-   * @throws ArithmeticException if the factor is 0
+   * @throws java.lang.ArithmeticException if the factor is 0
    */
   def div(divisor: Long): FiniteDuration = this / divisor
 

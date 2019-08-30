@@ -380,7 +380,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Float {
     /** An ordering for `Float`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Float` values; it behaves
-      * the same as [[java.lang.Float.compare()]].
+      * the same as [[java.lang.Float#compare]].
       *
       * $floatOrdering
       *
@@ -401,7 +401,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Float.compare()]].
+      *   - `compare` behaves the same as [[java.lang.Float#compare]].
       *
       * $floatOrdering
       *
@@ -440,7 +440,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Double {
     /** An ordering for `Double`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Double` values; it behaves
-      * the same as [[java.lang.Double.compare()]].
+      * the same as [[java.lang.Double#compare]].
       *
       * $doubleOrdering
       *
@@ -461,7 +461,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Double.compare()]].
+      *   - `compare` behaves the same as [[java.lang.Double#compare]].
       *
       * $doubleOrdering
       *

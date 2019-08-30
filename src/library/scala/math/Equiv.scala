@@ -149,7 +149,7 @@ object Equiv extends LowPriorityEquiv {
   object Float {
     /** An equivalence for `Float`s which is reflexive (treats all `NaN`s
       * as equivalent), and treats `-0.0` and `0.0` as not equivalent; it
-      * behaves the same as [[java.lang.Float.compare()]].
+      * behaves the same as [[java.lang.Float#compare]].
       *
       * $floatEquiv
       *
@@ -193,7 +193,7 @@ object Equiv extends LowPriorityEquiv {
   object Double {
     /** An equivalence for `Double`s which is reflexive (treats all `NaN`s
       * as equivalent), and treats `-0.0` and `0.0` as not equivalent; it
-      * behaves the same as [[java.lang.Double.compare()]].
+      * behaves the same as [[java.lang.Double#compare]].
       *
       * $doubleEquiv
       *
