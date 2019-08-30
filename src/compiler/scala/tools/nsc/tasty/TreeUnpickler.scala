@@ -1,8 +1,6 @@
 package scala.tools.nsc
 package tasty
 
-import scala.reflect.internal.SymbolTable
-import TastyUnpickler.NameTable
 import TastyBuffer._
 
 //import Comments.CommentsContext
@@ -26,14 +24,14 @@ import TastyBuffer._
 //import Trees._
 //import Decorators._
 //import transform.SymUtils._
-//
+
 //import scala.annotation.{switch, tailrec}
 //import scala.collection.mutable.ListBuffer
 //import scala.collection.mutable
 //import config.Printers.pickling
 //import core.quoted.PickledQuotes
 //import dotty.tools.dotc.quoted.ToolboxImpl
-//
+
 //import scala.quoted
 //import scala.internal.quoted.{TastyTreeExpr, TreeType}
 //import scala.annotation.constructorOnly
@@ -46,10 +44,10 @@ import TastyBuffer._
  *  @param splices
  */
 abstract class TreeUnpickler(reader: TastyReader,
-                            nameAtRef: NameTable,
-                            posUnpicklerOpt: Option[PositionUnpickler],
-                            commentUnpicklerOpt: Option[CommentUnpickler],
-                            splices: Seq[Any]) extends TASTYUniverse {
+                             nameAtRef: NameRef => TastyUnpickler.TermName,
+                             posUnpicklerOpt: Option[PositionUnpickler],
+                             commentUnpicklerOpt: Option[CommentUnpickler],
+                             splices: Seq[Any]) extends TASTYUniverse {
   import symbolTable._
   import TastyFormat._
 //  import TreeUnpickler._

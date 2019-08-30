@@ -2,7 +2,7 @@ package scala.tools.nsc
 package tasty
 
 import TreeUnpickler.UnpickleMode
-import TastyUnpickler.{NameTable, SectionUnpickler}
+import TastyUnpickler.{NameTable, SectionUnpickler, TermName}
 import scala.util.control.NonFatal
 
 object ScalacUnpickler {
@@ -12,19 +12,19 @@ object ScalacUnpickler {
 
   class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](posUnpickler: Option[PositionUnpickler], commentUnpickler: Option[CommentUnpickler] = None, symbolTable: SymbolTable)
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }](TreePickler.sectionName) { self =>
-    def unpickle(reader: TastyReader, nameAtRef: NameTable): TreeUnpickler { val symbolTable: SymbolTable } =
+    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): TreeUnpickler { val symbolTable: SymbolTable } =
       new TreeUnpickler(reader, nameAtRef, posUnpickler, commentUnpickler, Seq.empty) {
         override val symbolTable: SymbolTable = self.symbolTable
       }
   }
 
-  class PositionsSectionUnpickler[TermName] extends SectionUnpickler[PositionUnpickler]("Positions") {
-    def unpickle(reader: TastyReader, nameAtRef: NameTable): PositionUnpickler =
+  class PositionsSectionUnpickler extends SectionUnpickler[PositionUnpickler]("Positions") {
+    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): PositionUnpickler =
       new PositionUnpickler(reader, nameAtRef)
   }
 
-  class CommentsSectionUnpickler[TermName] extends SectionUnpickler[CommentUnpickler]("Comments") {
-    def unpickle(reader: TastyReader, nameAtRef: NameTable): CommentUnpickler =
+  class CommentsSectionUnpickler extends SectionUnpickler[CommentUnpickler]("Comments") {
+    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): CommentUnpickler =
       new CommentUnpickler(reader)
   }
 }

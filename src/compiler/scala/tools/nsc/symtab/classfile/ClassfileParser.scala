@@ -1252,24 +1252,24 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         assert(TASTYAnnotStart != -1, "no TASTY Annotation position")
         in.bp = TASTYAnnotStart
         val TASTY = in.nextBytes(TASTYUUIDLength)
-        val tastyBytes = parseTASTYFile()
-        if (tastyBytes.isEmpty) {
+        val TASTYBytes = parseTASTYFile()
+        if (TASTYBytes.isEmpty) {
           reporter.error(NoPosition, s"No Tasty file found for classfile $file with TASTY Attribute")
         }
         val reader = new TastyReader(TASTY, 0, TASTYUUIDLength)
         val expectedUUID = new UUID(reader.readUncompressedLong(), reader.readUncompressedLong())
-        val tastyUUID = new TastyHeaderUnpickler(tastyBytes).readHeader()
+        val tastyUUID = new TastyHeaderUnpickler(TASTYBytes).readHeader()
         if (expectedUUID != tastyUUID) {
           reporter.error(NoPosition, s"Tasty UUID ($tastyUUID) file did not correspond the tasty UUID ($expectedUUID) declared in the classfile $file.")
         }
         reporter.echo(NoPosition, s"Tasty UUID = $tastyUUID for classfile $file.") // works!
-        tastyBytes
+        TASTYBytes
       }
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
-      val tastyBytes = parseTASTYBytes()
-      reporter.echo(NoPosition, s"PARSING FOR $clazz, $staticModule, ${file.name.stripSuffix(".class") + ".tasty"}")
-      new TASTYUnpickler(tastyBytes).unpickle(clazz, staticModule, file.name.stripSuffix(".class") + ".tasty")
+      val bytes = parseTASTYBytes()
+      reporter.echo(NoPosition, s"PARSING FOR $clazz, $staticModule, ${s"${file.name.stripSuffix(".class")}.tasty"}")
+      new TASTYUnpickler(bytes).unpickle(clazz, staticModule, s"${file.name.stripSuffix(".class")}.tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

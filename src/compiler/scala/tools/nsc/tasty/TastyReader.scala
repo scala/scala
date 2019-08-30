@@ -21,8 +21,8 @@ class TastyReader(val bytes: Array[Byte], start: Int, end: Int, val base: Int = 
   def addr(idx: Int): Addr = Addr(idx - base)
   def index(addr: Addr): Int = addr.index + base
 
-//  /** The address of the first byte to read, respectively byte that was read */
-//  def startAddr: Addr = addr(start)
+  /** The address of the first byte to read, respectively byte that was read */
+  def startAddr: Addr = addr(start)
 
   /** The address of the next byte to read */
   def currentAddr: Addr = addr(bp)

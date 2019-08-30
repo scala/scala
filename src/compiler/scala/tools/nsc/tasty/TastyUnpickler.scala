@@ -1,26 +1,27 @@
 package scala.tools.nsc
 package tasty
-//
+
 import scala.collection.mutable
 import scala.reflect.internal.SymbolTable
 import TastyFormat.NameTags._
 import TastyBuffer.NameRef
-//import Names.{TermName, termName, EmptyTermName}
-//import NameKinds._
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
-    def unpickle(reader: TastyReader, nameAtRef: NameTable): R
+    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): R
   }
 
-  class NameTable {
-    private val names = new mutable.ArrayBuffer[SymbolTable#TermName]
-    def add(name: SymbolTable#TermName): mutable.ArrayBuffer[SymbolTable#TermName] = names += name
-    def apply(ref: NameRef): SymbolTable#TermName = names(ref.index)
-    def contents: Iterable[SymbolTable#TermName] = names
+  type TermName = SymbolTable#TermName
+
+  trait NameTable[TermName <: TastyUnpickler.TermName] extends (NameRef => TermName) {
+    private val names = new mutable.ArrayBuffer[TermName]
+    def add(name: TermName): mutable.ArrayBuffer[TermName] = names += name
+    def apply(ref: NameRef): TermName = names(ref.index)
+    def contents: Iterable[TermName] = names
   }
+
 }
 
 import TastyUnpickler._
@@ -29,12 +30,15 @@ class TastyUnpickler(val symbolTable: reflect.internal.SymbolTable, reader: Tast
   import symbolTable._
   import reader._
 
+  final class NameTableImpl extends TastyUnpickler.NameTable[TermName]
+
   def this(symbolTable: reflect.internal.SymbolTable, bytes: Array[Byte]) = this(symbolTable, new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
-  val nameAtRef: NameTable = new NameTable
 
-  private def readName(): SymbolTable#TermName = nameAtRef(readNameRef())
+  val nameAtRef: NameTableImpl = new NameTableImpl
+
+  private def readName(): TermName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString
 
   private def readParamSig(): Signature.ParamSig = {
@@ -45,7 +49,7 @@ class TastyUnpickler(val symbolTable: reflect.internal.SymbolTable, reader: Tast
       Right(nameAtRef(NameRef(ref)).toTypeName)
   }
 
-  private def readNameContents(): SymbolTable#TermName = {
+  private def readNameContents(): TermName = {
     val tag = readByte()
     val length = readNat()
     val start = currentAddr
@@ -55,7 +59,9 @@ class TastyUnpickler(val symbolTable: reflect.internal.SymbolTable, reader: Tast
         goto(end)
         newTermName(bytes, start.index, length)
       case QUALIFIED | EXPANDED | EXPANDPREFIX =>
-        sys.error("qualifiedNameKindOfTag")
+        readName()
+        readName()
+//        sys.error("qualifiedNameKindOfTag")
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
         val separator = readName().toString
@@ -72,10 +78,12 @@ class TastyUnpickler(val symbolTable: reflect.internal.SymbolTable, reader: Tast
         val result = readName().toTypeName
         val paramsSig = until(end)(readParamSig())
         val sig = Signature(paramsSig, result)
-        sys.error("SignedName")
+//        sys.error("SignedName")
+        original
 //        SignedName(original, sig)
       case _ =>
-        sys.error("simpleNameKindOfTag")
+//        sys.error("simpleNameKindOfTag")
+        readName()
 //        simpleNameKindOfTag(tag)(readName())
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")

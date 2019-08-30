@@ -2,6 +2,9 @@ package scala.tools.nsc
 package tasty
 
 /************************************************************
+
+This was adapted from https://github.com/lampepfl/dotty/blob/master/compiler/src/dotty/tools/dotc/core/tasty/TastyFormat.scala
+
 Notation:
 
 We use BNF notation. Terminal symbols start with at least two
@@ -501,7 +504,6 @@ object TastyFormat {
        | DEFAULTparameterized
        | STABLE
        | EXTENSION
-       | GIVEN
        | PARAMsetter
        | EXPORTED
        | ANNOTATION
