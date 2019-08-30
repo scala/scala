@@ -1,0 +1,14 @@
+t11681.scala:9: error: object bar is not a member of package com.example
+    def foobar: String = example.bar   // not a usage
+                                 ^
+t11681.scala:10: error: object Detest is not a member of package com.example
+    def detest = example.Detest        // not a usage
+                         ^
+t11681.scala:14: warning: private method bar in package object example is never used
+  private def bar: String = "bar"
+              ^
+t11681.scala:17: warning: private object Detest in package object example is never used
+  private object Detest
+                 ^
+two warnings found
+two errors found

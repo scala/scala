@@ -656,7 +656,9 @@ trait TypeDiagnostics {
       unusedPrivates.traverse(body)
 
       if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
-        def shouldWarnOn(sym: Symbol) = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
+        def shouldWarnOn(sym: Symbol) =
+          if (sym.isPrivate) settings.warnUnusedPrivates && !sym.isTopLevel
+          else settings.warnUnusedLocals
         val valAdvice = "is never updated: consider using immutable val"
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
