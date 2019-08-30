@@ -715,15 +715,16 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     hashingobj = in.readObject().asInstanceOf[Hashing[K]]
     equalityobj = in.readObject().asInstanceOf[Equiv[K]]
 
-    var obj: AnyRef = null
-    do {
+    var obj: AnyRef = in.readObject()
+
+    while (obj != TrieMapSerializationEnd) {
       obj = in.readObject()
       if (obj != TrieMapSerializationEnd) {
         val k = obj.asInstanceOf[K]
         val v = in.readObject().asInstanceOf[V]
         update(k, v)
       }
-    } while (obj != TrieMapSerializationEnd)
+    }
   }
 
   private def CAS_ROOT(ov: AnyRef, nv: AnyRef) = rootupdater.compareAndSet(this, ov, nv)
