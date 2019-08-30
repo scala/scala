@@ -121,9 +121,13 @@ class TastyReader(val bytes: Array[Byte], start: Int, end: Int, val base: Int = 
   /** Perform `op` until `end` address is reached and collect results in a list. */
   def until[T](end: Addr)(op: => T): List[T] = {
     val buf = new mutable.ListBuffer[T]
-    while (bp < index(end)) buf += op
-    assert(bp == index(end))
+    doUntil(end)(buf += op)
     buf.toList
+  }
+
+  def doUntil(end: Addr)(op: => Unit): Unit = {
+    while (bp < index(end)) op
+    assert(bp == index(end))
   }
 
   /** If before given `end` address, the result of `op`, otherwise `default` */

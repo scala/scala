@@ -2,7 +2,8 @@ package scala.tools.nsc
 package tasty
 
 import TreeUnpickler.UnpickleMode
-import TastyUnpickler.{NameTable, SectionUnpickler, TermName}
+import TastyUnpickler.SectionUnpickler
+import scala.tools.nsc.tasty.TastyBuffer.NameRef
 import scala.util.control.NonFatal
 
 object ScalacUnpickler {
@@ -12,19 +13,23 @@ object ScalacUnpickler {
 
   final class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](posUnpickler: Option[PositionUnpickler], commentUnpickler: Option[CommentUnpickler] = None)(implicit symbolTable: SymbolTable)
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }](TreePickler.sectionName) { self =>
-    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): TreeUnpickler { val symbolTable: SymbolTable } =
-      new TreeUnpickler(reader, nameAtRef, posUnpickler, commentUnpickler, Seq.empty) {
+    def unpickle(reader: TastyReader, nameTable: TASTYNameTable with TASTYUniverse): TreeUnpickler { val symbolTable: SymbolTable } =
+      new TreeUnpickler(reader, posUnpickler, commentUnpickler, Seq.empty) {
         final val symbolTable: SymbolTable = self.symbolTable
+        final val nameAtRef: NameRef => symbolTable.TermName = {
+          assert(nameTable.symbolTable eq self.symbolTable, "Unsafe creation of name ref mapper without shared underlying symbol table")
+          nameTable.nameAtRef.asInstanceOf[NameRef => symbolTable.TermName]
+        }
       }
   }
 
   final class PositionsSectionUnpickler extends SectionUnpickler[PositionUnpickler]("Positions") {
-    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): PositionUnpickler =
-      new PositionUnpickler(reader, nameAtRef)
+    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): PositionUnpickler =
+      new PositionUnpickler(reader, nameAtRef.nameAtRef)
   }
 
   final class CommentsSectionUnpickler extends SectionUnpickler[CommentUnpickler]("Comments") {
-    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): CommentUnpickler =
+    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): CommentUnpickler =
       new CommentUnpickler(reader)
   }
 }
@@ -51,7 +56,7 @@ abstract class ScalacUnpickler(bytes: Array[Byte], mode: UnpickleMode = Unpickle
    */
   def unpickle(classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
     try {
-      treeUnpickler.enter(roots = Set(classRoot, moduleRoot))
+      treeUnpickler.enter(moduleRoot, classRoot)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()

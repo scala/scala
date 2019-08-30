@@ -2,6 +2,7 @@ package scala.tools.nsc
 package tasty
 
 import TastyBuffer._
+import scala.collection.mutable
 
 //import Comments.CommentsContext
 //import Contexts._
@@ -12,7 +13,7 @@ import TastyBuffer._
 //import Names._
 //import NameOps._
 //import StdNames._
-//import Flags._
+//import scala.reflect.internal.Flags._
 //import Constants._
 //import Annotations._
 //import NameKinds._
@@ -44,18 +45,17 @@ import TastyBuffer._
  *  @param splices
  */
 abstract class TreeUnpickler(reader: TastyReader,
-                             nameAtRef: NameRef => TastyUnpickler.TermName,
                              posUnpicklerOpt: Option[PositionUnpickler],
                              commentUnpicklerOpt: Option[CommentUnpickler],
-                             splices: Seq[Any]) extends TASTYUniverse {
+                             splices: Seq[Any]) extends TASTYUniverse with TASTYNameTable { self =>
   import symbolTable._
   import TastyFormat._
 //  import TreeUnpickler._
 //  import tpd._
-//
-//  /** A map from addresses of definition entries to the symbols they define */
-//  private val symAtAddr  = new mutable.HashMap[Addr, Symbol]
-//
+
+  /** A map from addresses of definition entries to the symbols they define */
+  private val symAtAddr = new mutable.HashMap[Addr, Symbol]
+
 //  /** A temporary map from addresses of definition entries to the trees they define.
 //   *  Used to remember trees of symbols that are created by a completion. Emptied
 //   *  once the tree is inlined into a larger tree.
@@ -71,7 +71,7 @@ abstract class TreeUnpickler(reader: TastyReader,
   /** The root symbol denotation which are defined by the Tasty file associated with this
    *  TreeUnpickler. Set by `enterTopLevel`.
    */
-  private[this] var roots: Set[Symbol] = null
+  private[this] var roots: Set[Symbol] = _
 
 //  /** The root symbols that are defined in this Tasty file. This
 //   *  is a subset of `roots.map(_.symbol)`.
@@ -81,20 +81,25 @@ abstract class TreeUnpickler(reader: TastyReader,
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
 
+  class Context(val owner: Symbol) {
+    def withOwner(owner: Symbol): Context = new Context(owner)
+  }
+
 //  private def registerSym(addr: Addr, sym: Symbol) =
 //    symAtAddr(addr) = sym
 
   /** Enter all toplevel classes and objects into their scopes
-   *  @param roots          a set of SymDenotations that should be overwritten by unpickling
    */
-  def enter(roots: Set[Symbol]): Unit = {
-    this.roots = roots
+  def enter(moduleRoot: Symbol, classRoot: Symbol): Unit = {
+    this.roots = Set(moduleRoot, classRoot)
+    val loadingMirror = mirrorThatLoaded(classRoot)
+    implicit val ctx: Context = new Context(loadingMirror.RootClass.owner)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     if (rdr.isTopLevel)
       rdr.indexStats(reader.endAddr)
   }
-//
+
 //  /** The unpickled trees */
 //  def unpickle(mode: UnpickleMode)(implicit ctx: Context): List[Tree] = {
 //    assert(roots != null, "unpickle without previous enterTopLevel")
@@ -122,14 +127,15 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def forkAt(start: Addr): TreeReader = new TreeReader(subReader(start, endAddr))
     def fork: TreeReader = forkAt(currentAddr)
-//
-//    def skipTree(tag: Int): Unit =
-//      if (tag >= firstLengthTreeTag) goto(readEnd())
-//      else if (tag >= firstNatASTTreeTag) { readNat(); skipTree() }
-//      else if (tag >= firstASTTreeTag) skipTree()
-//      else if (tag >= firstNatTreeTag) readNat()
-//    def skipTree(): Unit = skipTree(readByte())
-//
+
+    def skipTree(tag: Int): Unit =
+      if (tag >= firstLengthTreeTag) goto(readEnd())
+      else if (tag >= firstNatASTTreeTag) { readNat(); skipTree() }
+      else if (tag >= firstASTTreeTag) skipTree()
+      else if (tag >= firstNatTreeTag) readNat()
+
+    def skipTree(): Unit = skipTree(readByte())
+
 //    def skipParams(): Unit =
 //      while (nextByte == PARAMS || nextByte == TYPEPARAM) skipTree()
 //
@@ -199,9 +205,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //      else tag
 //    }
-//
-//    def readName(): TermName = nameAtRef(readNameRef())
-//
+
+    def readName(): TermName = nameAtRef(readNameRef())
+
 //// ------ Reading types -----------------------------------------------------
 //
 //    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
@@ -228,16 +234,17 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        ctx.log(i"forward reference to $sym")
 //        sym
 //    }
-//
-//    /** The symbol defined by current definition */
-//    def symbolAtCurrent()(implicit ctx: Context): Symbol = symAtAddr.get(currentAddr) match {
-//      case Some(sym) =>
-//        assert(ctx.owner == sym.owner, i"owner discrepancy for $sym, expected: ${ctx.owner}, found: ${sym.owner}")
-//        sym
-//      case None =>
+
+    /** The symbol defined by current definition */
+    def symbolAtCurrent()(implicit ctx: Context): Symbol = symAtAddr.get(currentAddr) match {
+      case Some(sym) =>
+        assert(ctx.owner == sym.owner, s"owner discrepancy for $sym, expected: ${ctx.owner}, found: ${sym.owner}")
+        sym
+      case None =>
 //        createSymbol()
-//    }
-//
+        ???
+    }
+
 //    def readConstant(tag: Int)(implicit ctx: Context): Constant = (tag: @switch) match {
 //      case UNITconst =>
 //        Constant(())
@@ -479,7 +486,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case TYPEBOUNDS | TYPEBOUNDStpt => true
 //      case _ => false
 //    }
-//
+
 //    /** Create symbol of definition node and enter in symAtAddr map
 //     *  @return  the created symbol
 //     */
@@ -495,7 +502,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case tag =>
 //        throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
 //    }
-//
+
 //    private def createBindSymbol()(implicit ctx: Context): Symbol = {
 //      val start = currentAddr
 //      val tag = readByte()
@@ -660,38 +667,42 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        owner =>
 //          Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
 //    }
-//
+
+    object FlagSets {
+      val NoInitsInterface: FlagSet = Flag.INTERFACE
+    }
+
     /** Create symbols for the definitions in the statement sequence between
      *  current address and `end`.
      *  @return  the largest subset of {NoInits, PureInterface} that a
      *           trait owning the indexed statements can have as flags.
      */
-    def indexStats(end: Addr): FlagSet = {
-//      var initsFlags = NoInitsInterface
-//      while (currentAddr.index < end.index) {
-//        nextByte match {
-//          case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
-//            val sym = symbolAtCurrent()
-//            skipTree()
+    def indexStats(end: Addr)(implicit ctx: Context): FlagSet = {
+      import FlagSets._
+      var initsFlags: FlagSet = NoInitsInterface
+      while (currentAddr.index < end.index) {
+        nextByte match {
+          case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
+            val sym = symbolAtCurrent()
+            skipTree()
 //            if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
-//              initsFlags = EmptyFlags
+//              initsFlags = NoFlags
 //            else if (sym.isClass ||
 //              sym.is(Method, butNot = Deferred) && !sym.isConstructor)
 //              initsFlags &= NoInits
-//          case IMPORT =>
-//            skipTree()
+          case IMPORT =>
+            skipTree()
 //          case PACKAGE =>
 //            processPackage { (pid, end) => implicit ctx => indexStats(end) }
-//          case _ =>
-//            skipTree()
-//            initsFlags = EmptyFlags
-//        }
-//      }
-//      assert(currentAddr.index == end.index)
-//      initsFlags
-      NoFlags
+          case _ =>
+            skipTree()
+            initsFlags = NoFlags
+        }
+      }
+      assert(currentAddr.index == end.index)
+      initsFlags
     }
-//
+
 //    /** Process package with given operation `op`. The operation takes as arguments
 //     *   - a `RefTree` representing the `pid` of the package,
 //     *   - an end address,

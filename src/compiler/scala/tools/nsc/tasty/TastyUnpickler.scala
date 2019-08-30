@@ -10,33 +10,32 @@ object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
-    def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): R
+    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): R
   }
 
   type TermName = SymbolTable#TermName
+}
 
-  trait NameTable[TermName <: TastyUnpickler.TermName] extends (NameRef => TermName) {
+import TastyUnpickler._
+
+class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TASTYUniverse with TASTYNameTable { self =>
+  import symbolTable._
+  import reader._
+
+  final class NameTable extends (NameRef => TermName) with TASTYUniverse with TASTYNameTable {
+    val symbolTable: self.symbolTable.type = self.symbolTable
+    val nameAtRef: NameRef => self.symbolTable.TermName = this
     private val names = new mutable.ArrayBuffer[TermName]
     def add(name: TermName): mutable.ArrayBuffer[TermName] = names += name
     def apply(ref: NameRef): TermName = names(ref.index)
     def contents: Iterable[TermName] = names
   }
 
-}
-
-import TastyUnpickler._
-
-class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TASTYUniverse { self =>
-  import symbolTable._
-  import reader._
-
-  final class NameTableImpl extends TastyUnpickler.NameTable[TermName]
-
   def this(bytes: Array[Byte])(implicit symbolTable: SymbolTable) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
-  val nameAtRef: NameTableImpl = new NameTableImpl
+  val nameAtRef: NameTable = new NameTable
 
   private def readName(): TermName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString
@@ -71,20 +70,17 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         sys.error("uniqueNameKindOfSeparator")
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
-        sys.error("numberedNameKindOfTag")
-//        numberedNameKindOfTag(tag)(readName(), readNat())
+        val result = readName()
+        readNat()
+        result // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original = readName()
         val result = readName().toTypeName
         val paramsSig = until(end)(readParamSig())
         val sig = Signature(paramsSig, result)
-//        sys.error("SignedName")
-        original
-//        SignedName(original, sig)
+        original // SignedName(original, sig)
       case _ =>
-//        sys.error("simpleNameKindOfTag")
-        readName()
-//        simpleNameKindOfTag(tag)(readName())
+        readName() // simpleNameKindOfTag(tag)(readName())
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
     result
@@ -93,7 +89,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
   new TastyHeaderUnpickler(reader).readHeader()
 
   locally {
-    until(readEnd()) { nameAtRef.add(readNameContents()) }
+    doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
     while (!isAtEnd) {
       val secName = readString()
       val secEnd = readEnd()
