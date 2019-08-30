@@ -26,13 +26,13 @@ object TastyUnpickler {
 
 import TastyUnpickler._
 
-class TastyUnpickler(val symbolTable: reflect.internal.SymbolTable, reader: TastyReader) extends TASTYUniverse { self =>
+class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TASTYUniverse { self =>
   import symbolTable._
   import reader._
 
   final class NameTableImpl extends TastyUnpickler.NameTable[TermName]
 
-  def this(symbolTable: reflect.internal.SymbolTable, bytes: Array[Byte]) = this(symbolTable, new TastyReader(bytes))
+  def this(bytes: Array[Byte])(implicit symbolTable: SymbolTable) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 

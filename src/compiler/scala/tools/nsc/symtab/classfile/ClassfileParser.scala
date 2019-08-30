@@ -112,7 +112,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   private class TASTYUnpickler(bytes: Array[Byte], mode: UnpickleMode = UnpickleMode.TopLevel)
     extends {
-      val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
+      final val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
     } with tasty.ScalacUnpickler(bytes, mode) with tasty.TASTYUniverse
 
   private def handleMissing(e: MissingRequirementError) = {

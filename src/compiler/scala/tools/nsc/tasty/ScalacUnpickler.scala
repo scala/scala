@@ -10,20 +10,20 @@ object ScalacUnpickler {
   /** Exception thrown if classfile is corrupted */
   class BadSignature(msg: String) extends RuntimeException(msg)
 
-  class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](posUnpickler: Option[PositionUnpickler], commentUnpickler: Option[CommentUnpickler] = None, symbolTable: SymbolTable)
+  final class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](posUnpickler: Option[PositionUnpickler], commentUnpickler: Option[CommentUnpickler] = None)(implicit symbolTable: SymbolTable)
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }](TreePickler.sectionName) { self =>
     def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): TreeUnpickler { val symbolTable: SymbolTable } =
       new TreeUnpickler(reader, nameAtRef, posUnpickler, commentUnpickler, Seq.empty) {
-        override val symbolTable: SymbolTable = self.symbolTable
+        final val symbolTable: SymbolTable = self.symbolTable
       }
   }
 
-  class PositionsSectionUnpickler extends SectionUnpickler[PositionUnpickler]("Positions") {
+  final class PositionsSectionUnpickler extends SectionUnpickler[PositionUnpickler]("Positions") {
     def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): PositionUnpickler =
       new PositionUnpickler(reader, nameAtRef)
   }
 
-  class CommentsSectionUnpickler extends SectionUnpickler[CommentUnpickler]("Comments") {
+  final class CommentsSectionUnpickler extends SectionUnpickler[CommentUnpickler]("Comments") {
     def unpickle[T <: TermName](reader: TastyReader, nameAtRef: NameTable[T]): CommentUnpickler =
       new CommentUnpickler(reader)
   }
@@ -37,7 +37,7 @@ abstract class ScalacUnpickler(bytes: Array[Byte], mode: UnpickleMode = Unpickle
   import symbolTable._
   import ScalacUnpickler._
 
-  val unpickler: TastyUnpickler = new TastyUnpickler(symbolTable, bytes)
+  val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
 
   private val posUnpicklerOpt = unpickler.unpickle(new PositionsSectionUnpickler)
   private val commentUnpicklerOpt = unpickler.unpickle(new CommentsSectionUnpickler)
@@ -60,7 +60,7 @@ abstract class ScalacUnpickler(bytes: Array[Byte], mode: UnpickleMode = Unpickle
   }
 
   protected def treeSectionUnpickler(posUnpicklerOpt: Option[PositionUnpickler], commentUnpicklerOpt: Option[CommentUnpickler]): TreeSectionUnpickler[self.symbolTable.type] = {
-    new TreeSectionUnpickler(posUnpicklerOpt, commentUnpicklerOpt, symbolTable)
+    new TreeSectionUnpickler(posUnpicklerOpt, commentUnpicklerOpt)
   }
 
 //  protected def computeRootTrees(implicit ctx: Context): List[Tree] = treeUnpickler.unpickle(mode)
