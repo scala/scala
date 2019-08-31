@@ -1,5 +1,22 @@
-// scalac: -Ystop-after:refchecks -verbose -Ydebug -uniqid
-package java.lang
+
+import scala.tools.partest.DirectTest
+
+object Test extends DirectTest {
+
+  override def show() = {
+    val global = newCompiler(
+      "-usejavacp",
+      "-Ystop-after:refchecks",
+      //"-verbose",
+      //"-Ydebug",
+      "-uniqid",
+    )
+    compileString(global)(code)
+    assert(global.nameTableSize < 80_000) // is that a lot?
+  }
+
+  override def code = """
+package java.lang {
 
 /* This is a pretty random test that very indirectly tests `unique`ing of `ObjectTpeJavaRef`
 It's minimize from scala-js, where CI chanced on a compilation order that would first
@@ -60,4 +77,8 @@ object System {
 
 trait Iterable[T] {
   def iterator():  java.util.Iterator[T]
+}
+}
+"""
+
 }
