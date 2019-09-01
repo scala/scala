@@ -71,7 +71,7 @@ private[internal] trait GlbLubs {
     *                  (except that type constructors have been applied to their dummyArgs)
     *  @see baseTypeSeq  for a definition of sorted and upwards closed.
     */
-  def lubList(ts: List[Type], depth: Depth): List[Type] = {
+  private def lubList(ts: List[Type], depth: Depth): List[Type] = {
     var lubListDepth = Depth.Zero
     // This catches some recursive situations which would otherwise
     // befuddle us, e.g. pos/hklub0.scala
@@ -147,7 +147,7 @@ private[internal] trait GlbLubs {
     }
 
   /** A minimal type list which has a given list of types as its base type sequence */
-  def spanningTypes(ts: List[Type]): List[Type] = ts match {
+  private def spanningTypes(ts: List[Type]): List[Type] = ts match {
     case List() => List()
     case first :: rest =>
       first :: spanningTypes(
