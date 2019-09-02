@@ -73,12 +73,18 @@ private[process] trait ProcessBuilderImpl {
   /** Represents a simple command without any redirection or combination. */
   private[process] class Simple(p: JProcessBuilder) extends AbstractBuilder {
     override def run(io: ProcessIO): Process = {
-      import io._
+      import java.lang.ProcessBuilder.Redirect.{INHERIT => Inherit}
+      import io.{daemonizeThreads, processError, processOutput, writeInput}
+
+      val inherit = writeInput eq BasicIO.connectToStdIn
+      if (inherit) p.redirectInput(Inherit)
 
       val process = p.start() // start the external process
 
       // spawn threads that process the input, output, and error streams using the functions defined in `io`
-      val inThread  = Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
+      val inThread =
+        if (inherit || (writeInput eq BasicIO.connectNoOp)) null
+        else Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
       val outThread = Spawn("Simple-output", daemonizeThreads)(processOutput(process.getInputStream))
       val errorThread =
         if (p.redirectErrorStream) Nil

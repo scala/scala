@@ -244,16 +244,22 @@ private[process] trait ProcessImpl {
     override def destroy(): Unit = { }
   }
 
-  /** A thin wrapper around a java.lang.Process.  `outputThreads` are the Threads created to read from the
-  * output and error streams of the process.  `inputThread` is the Thread created to write to the input stream of
-  * the process.
-  * The implementation of `exitValue` interrupts `inputThread` and then waits until all I/O threads die before
-  * returning. */
+  /** A thin wrapper around a java.lang.Process.
+   *
+   *  `outputThreads` are the Threads created to read from the
+   *  output and error streams of the process.
+   *
+   *  `inputThread` is the Thread created to write to the input stream of
+   *  the process. It may be null if stdin was inherited.
+   *
+   *  The implementation of `exitValue` interrupts `inputThread`
+   *  and then waits until all I/O threads die before returning.
+   */
   private[process] class SimpleProcess(p: JProcess, inputThread: Thread, outputThreads: List[Thread]) extends Process {
     override def isAlive() = p.isAlive()
     override def exitValue() = {
       try p.waitFor()                   // wait for the process to terminate
-      finally inputThread.interrupt()   // we interrupt the input thread to notify it that it can terminate
+      finally interrupt()
       outputThreads foreach (_.join())  // this ensures that all output is complete before returning (waitFor does not ensure this)
 
       p.exitValue()
@@ -263,8 +269,10 @@ private[process] trait ProcessImpl {
         outputThreads foreach (_.interrupt()) // on destroy, don't bother consuming any more output
         p.destroy()
       }
-      finally inputThread.interrupt()
+      finally interrupt()
     }
+    // we interrupt the input thread to notify it that it can terminate
+    private[this] def interrupt(): Unit = if (inputThread != null) inputThread.interrupt()
   }
   private[process] final class ThreadProcess(thread: Thread, success: SyncVar[Boolean]) extends Process {
     override def isAlive()   = thread.isAlive()
