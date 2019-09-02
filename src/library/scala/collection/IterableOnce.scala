@@ -584,6 +584,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Counts the number of elements in the $coll which satisfy a predicate.
     *
+    *  $willNotTerminateInf
+    * 
     *  @param p     the predicate  used to test elements.
     *  @return      the number of elements satisfying the predicate `p`.
     */
@@ -884,6 +886,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Sums up the elements of this collection.
     *
+    *   $willNotTerminateInf
+    *
     *   @param   num  an implicit parameter defining a set of numeric operations
     *                 which includes the `+` operator to be used in forming the sum.
     *   @tparam  B    the result type of the `+` operator.
@@ -893,6 +897,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Multiplies up the elements of this collection.
     *
+    *  $willNotTerminateInf
+    *
     *   @param   num  an implicit parameter defining a set of numeric operations
     *                 which includes the `*` operator to be used in forming the product.
     *   @tparam  B   the result type of the `*` operator.
@@ -901,6 +907,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   def product[B >: A](implicit num: Numeric[B]): B = if (isEmpty) num.one else reduce(num.times)
 
   /** Finds the smallest element.
+    *
+    *  $willNotTerminateInf
     *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
@@ -916,6 +924,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Finds the smallest element.
     *
+    *  $willNotTerminateInf
+    *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
     *  @return   an option value containing the smallest element of this $coll
@@ -930,6 +940,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Finds the largest element.
     *
+    *  $willNotTerminateInf
+    *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
     *  @throws   UnsupportedOperationException if this $coll is empty.
@@ -942,6 +954,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Finds the largest element.
+    *
+    *  $willNotTerminateInf
     *
     *  @param    ord   An ordering to be used for comparing elements.
     *  @tparam   B    The type over which the ordering is defined.
@@ -956,6 +970,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Finds the first element which yields the largest value measured by function f.
+    *
+    *  $willNotTerminateInf
     *
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
@@ -985,6 +1001,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Finds the first element which yields the largest value measured by function f.
     *
+    *  $willNotTerminateInf
+    *
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
     *  @param    f     The measuring function.
@@ -999,6 +1017,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Finds the first element which yields the smallest value measured by function f.
+    *
+    *  $willNotTerminateInf
     *
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
@@ -1027,6 +1047,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
   }
 
   /** Finds the first element which yields the smallest value measured by function f.
+    *
+    *  $willNotTerminateInf
     *
     *  @param    cmp   An ordering to be used for comparing elements.
     *  @tparam   B     The result type of the function f.
@@ -1072,6 +1094,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   /** Tests whether every element of this collection's iterator relates to the
    *  corresponding element of another collection by satisfying a test predicate.
+   *
+   *  $willNotTerminateInf
    *
    *  @param   that    the other collection
    *  @param   p       the test predicate, which relates elements from both collections

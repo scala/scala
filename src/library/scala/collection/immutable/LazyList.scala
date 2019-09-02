@@ -43,6 +43,11 @@ import scala.runtime.Statics
   *  // 2
   *  // 3
   *  }}}
+  * 
+  *  A `LazyList`, like the one in the example above, may be infinite in length.
+  *  Aggregate methods, such as `count`, `sum`, `max` or `min` on such infinite length 
+  *  sequences will not terminate. Filtered infinite lazy lists are also effectively
+  *  infinite in length.
   *
   *  Elements of a `LazyList` are memoized; that is, the value of each element
   *  is computed only once.
