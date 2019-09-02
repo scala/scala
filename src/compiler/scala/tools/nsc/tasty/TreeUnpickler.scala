@@ -2,7 +2,9 @@ package scala.tools.nsc
 package tasty
 
 import TastyBuffer._
+import scala.annotation.switch
 import scala.collection.mutable
+import scala.reflect.io.AbstractFile
 
 //import Comments.CommentsContext
 //import Contexts._
@@ -61,39 +63,50 @@ abstract class TreeUnpickler(reader: TastyReader,
 //   *  once the tree is inlined into a larger tree.
 //   */
 //  private val treeAtAddr = new mutable.HashMap[Addr, Tree]
-//
-//  /** A map from addresses of type entries to the types they define.
-//   *  Currently only populated for types that might be recursively referenced
-//   *  from within themselves (i.e. RecTypes, LambdaTypes).
-//   */
-//  private val typeAtAddr = new mutable.HashMap[Addr, Type]
+
+  /** A map from addresses of type entries to the types they define.
+   *  Currently only populated for types that might be recursively referenced
+   *  from within themselves (i.e. RecTypes, LambdaTypes).
+   */
+  private val typeAtAddr = new mutable.HashMap[Addr, Type]
 
   /** The root symbol denotation which are defined by the Tasty file associated with this
    *  TreeUnpickler. Set by `enterTopLevel`.
    */
   private[this] var roots: Set[Symbol] = _
 
-//  /** The root symbols that are defined in this Tasty file. This
-//   *  is a subset of `roots.map(_.symbol)`.
-//   */
-//  private[this] var seenRoots: Set[Symbol] = Set()
+  /** The root symbols that are defined in this Tasty file. This
+   *  is a subset of `roots.map(_.symbol)`.
+   */
+  private[this] var seenRoots: Set[Symbol] = Set()
 
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
 
-  class Context(val owner: Symbol) {
-    def withOwner(owner: Symbol): Context = new Context(owner)
+  class Context(val owner: Symbol, val source: AbstractFile) {
+    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: LazyType {
+      def complete(denot: Symbol): Unit
+    }): TermSymbol = {
+      val sym = owner.newTermSymbol(name.toTermName, NoPosition, flags)
+      sym.info = completer
+      sym
+    }
+
+    final def withOwner(owner: Symbol): Context = new Context(owner, source)
+    final def fresh: FreshContext = new FreshContext(this)
   }
 
-//  private def registerSym(addr: Addr, sym: Symbol) =
-//    symAtAddr(addr) = sym
+  class FreshContext(val outer: Context) extends Context(outer.owner, outer.source)
+
+  private def registerSym(addr: Addr, sym: Symbol) =
+    symAtAddr(addr) = sym
 
   /** Enter all toplevel classes and objects into their scopes
    */
   def enter(moduleRoot: Symbol, classRoot: Symbol): Unit = {
     this.roots = Set(moduleRoot, classRoot)
     val loadingMirror = mirrorThatLoaded(classRoot)
-    implicit val ctx: Context = new Context(loadingMirror.RootClass.owner)
+    implicit val ctx: Context = new Context(loadingMirror.RootClass.owner, classRoot.associatedFile)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     if (rdr.isTopLevel)
@@ -136,9 +149,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def skipTree(): Unit = skipTree(readByte())
 
-//    def skipParams(): Unit =
-//      while (nextByte == PARAMS || nextByte == TYPEPARAM) skipTree()
-//
+    def skipParams(): Unit =
+      while (nextByte == PARAMS || nextByte == TYPEPARAM) skipTree()
+
 //    /** Record all directly nested definitions and templates in current tree
 //     *  as `OwnerTree`s in `buf`.
 //     *  A complication concerns member definitions. These are lexically nested in a
@@ -194,17 +207,17 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      while (currentAddr.index < end.index) scanTree(buf, mode)
 //      assert(currentAddr.index == end.index)
 //    }
-//
-//    /** The next tag, following through SHARED tags */
-//    def nextUnsharedTag: Int = {
-//      val tag = nextByte
-//      if (tag == SHAREDtype || tag == SHAREDterm) {
-//        val lookAhead = fork
-//        lookAhead.reader.readByte()
-//        forkAt(lookAhead.reader.readAddr()).nextUnsharedTag
-//      }
-//      else tag
-//    }
+
+    /** The next tag, following through SHARED tags */
+    def nextUnsharedTag: Int = {
+      val tag = nextByte
+      if (tag == SHAREDtype || tag == SHAREDterm) {
+        val lookAhead = fork
+        lookAhead.reader.readByte()
+        forkAt(lookAhead.reader.readAddr()).nextUnsharedTag
+      }
+      else tag
+    }
 
     def readName(): TermName = nameAtRef(readNameRef())
 
@@ -241,8 +254,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         assert(ctx.owner == sym.owner, s"owner discrepancy for $sym, expected: ${ctx.owner}, found: ${sym.owner}")
         sym
       case None =>
-//        createSymbol()
-        ???
+        createSymbol()
     }
 
 //    def readConstant(tag: Int)(implicit ctx: Context): Constant = (tag: @switch) match {
@@ -275,18 +287,18 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case ENUMconst =>
 //        Constant(readTermRef().termSymbol)
 //    }
-//
-//    /** Read a type */
-//    def readType()(implicit ctx: Context): Type = {
-//      val start = currentAddr
-//      val tag = readByte()
-//      pickling.println(s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
-//
-//      def registeringType[T](tp: Type, op: => T): T = {
-//        typeAtAddr(start) = tp
-//        op
-//      }
-//
+
+    /** Read a type */
+    def readType()(implicit ctx: Context): Type = {
+      val start = currentAddr
+      val tag = readByte()
+      reporter.echo(NoPosition, s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
+
+      def registeringType[T](tp: Type, op: => T): T = {
+        typeAtAddr(start) = tp
+        op
+      }
+
 //      def readLengthType(): Type = {
 //        val end = readEnd()
 //
@@ -372,7 +384,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        assert(currentAddr == end, s"$start $currentAddr $end ${astTagToString(tag)}")
 //        result
 //      }
-//
+
 //      def readSimpleType(): Type = (tag: @switch) match {
 //        case TYPEREFdirect | TERMREFdirect =>
 //          NamedType(NoPrefix, readSymRef())
@@ -416,9 +428,10 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        case _ =>
 //          ConstantType(readConstant(tag))
 //      }
-//
+
 //      if (tag < firstLengthTreeTag) readSimpleType() else readLengthType()
-//    }
+      ???
+    }
 //
 //    private def readSymNameRef()(implicit ctx: Context): Type = {
 //      val sym = readSymRef()
@@ -447,133 +460,135 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      readType().asInstanceOf[TermRef]
 //
 //// ------ Reading definitions -----------------------------------------------------
-//
-//    private def nothingButMods(end: Addr): Boolean =
-//      currentAddr == end || isModifierTag(nextByte)
-//
-//    private def localContext(owner: Symbol)(implicit ctx: Context) =
-//      ctx.fresh.setOwner(owner)
-//
-//    private def normalizeFlags(tag: Int, givenFlags: FlagSet, name: Name, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
-//      val lacksDefinition =
-//        rhsIsEmpty &&
-//          name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
-//        isAbsType
-//      var flags = givenFlags
-//      if (lacksDefinition && tag != PARAM) flags |= Deferred
-//      if (tag == DEFDEF) flags |= Method
-//      if (givenFlags.is(Module))
-//        flags = flags | (if (tag == VALDEF) ModuleValCreationFlags else ModuleClassCreationFlags)
-//      if (ctx.owner.isClass) {
-//        if (tag == TYPEPARAM) flags |= Param
-//        else if (tag == PARAM) {
-//          flags |= ParamAccessor
-//          if (!rhsIsEmpty) // param alias
-//            flags |= Method
-//        }
-//      }
-//      else if (isParamTag(tag)) flags |= Param
-//      flags
-//    }
-//
-//    def isAbstractType(ttag: Int)(implicit ctx: Context): Boolean = nextUnsharedTag match {
-//      case LAMBDAtpt =>
-//        val rdr = fork
-//        rdr.reader.readByte()  // tag
-//        rdr.reader.readNat()   // length
-//        rdr.skipParams()       // tparams
-//        rdr.isAbstractType(rdr.nextUnsharedTag)
-//      case TYPEBOUNDS | TYPEBOUNDStpt => true
-//      case _ => false
-//    }
 
-//    /** Create symbol of definition node and enter in symAtAddr map
-//     *  @return  the created symbol
-//     */
-//    def createSymbol()(implicit ctx: Context): Symbol = nextByte match {
-//      case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
-//        createMemberSymbol()
-//      case BIND =>
-//        createBindSymbol()
+    private def nothingButMods(end: Addr): Boolean =
+      currentAddr == end || isModifierTag(nextByte)
+
+    private def localContext(owner: Symbol)(implicit ctx: Context): Context =
+      ctx.fresh.withOwner(owner)
+
+    private def normalizeFlags(tag: Int, givenFlags: FlagSet, name: Name, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
+      import NameOps._
+      import FlagSets._
+      val lacksDefinition =
+        rhsIsEmpty &&
+          name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
+        isAbsType
+      var flags = givenFlags
+      if (lacksDefinition && tag != PARAM) flags |= Deferred
+      if (tag == DEFDEF) flags |= Method
+      if (givenFlags.is(Module))
+        flags = flags | (if (tag == VALDEF) ModuleValCreationFlags else ModuleClassCreationFlags)
+      if (ctx.owner.isClass) {
+        if (tag == TYPEPARAM) flags |= Param
+        else if (tag == PARAM) {
+          flags |= ParamAccessor
+          if (!rhsIsEmpty) // param alias
+            flags |= Method
+        }
+      }
+      else if (isParamTag(tag)) flags |= Param
+      flags
+    }
+
+    def isAbstractType(ttag: Int)(implicit ctx: Context): Boolean = nextUnsharedTag match {
+      case LAMBDAtpt =>
+        val rdr = fork
+        rdr.reader.readByte()  // tag
+        rdr.reader.readNat()   // length
+        rdr.skipParams()       // tparams
+        rdr.isAbstractType(rdr.nextUnsharedTag)
+      case TYPEBOUNDS | TYPEBOUNDStpt => true
+      case _ => false
+    }
+
+    /** Create symbol of definition node and enter in symAtAddr map
+     *  @return  the created symbol
+     */
+    def createSymbol()(implicit ctx: Context): Symbol = nextByte match {
+      case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
+        createMemberSymbol()
+      case BIND =>
+        createBindSymbol()
 //      case TEMPLATE =>
 //        val localDummy = ctx.newLocalDummy(ctx.owner)
 //        registerSym(currentAddr, localDummy)
 //        localDummy
-//      case tag =>
-//        throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
-//    }
+      case tag =>
+        throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
+    }
 
-//    private def createBindSymbol()(implicit ctx: Context): Symbol = {
-//      val start = currentAddr
-//      val tag = readByte()
-//      val end = readEnd()
-//      var name: Name = readName()
-//      nextUnsharedTag match {
-//        case TYPEBOUNDS | TYPEALIAS => name = name.toTypeName
-//        case _ =>
-//      }
-//      val typeReader = fork
-//      val completer = new LazyType {
-//        def complete(denot: SymDenotation)(implicit ctx: Context) =
-//          denot.info = typeReader.readType()
-//      }
-//      val sym = ctx.newSymbol(ctx.owner, name, Flags.Case, completer, coord = coordAt(start))
-//      registerSym(start, sym)
-//      sym
-//    }
-//
-//    /** Create symbol of member definition or parameter node and enter in symAtAddr map
-//     *  @return  the created symbol
-//     */
-//    def createMemberSymbol()(implicit ctx: Context): Symbol = {
-//      val start = currentAddr
-//      val tag = readByte()
-//      val end = readEnd()
-//      var name: Name = readName()
-//      if (tag == TYPEDEF || tag == TYPEPARAM) name = name.toTypeName
-//      skipParams()
-//      val ttag = nextUnsharedTag
-//      val isAbsType = isAbstractType(ttag)
-//      val isClass = ttag == TEMPLATE
-//      val templateStart = currentAddr
-//      skipTree() // tpt
-//      val rhsStart = currentAddr
-//      val rhsIsEmpty = nothingButMods(end)
-//      if (!rhsIsEmpty) skipTree()
-//      val (givenFlags, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
-//      pickling.println(i"creating symbol $name at $start with flags $givenFlags")
-//      val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
+    private def createBindSymbol()(implicit ctx: Context): Symbol = {
+      val start = currentAddr
+      val tag = readByte()
+      val end = readEnd()
+      var name: Name = readName()
+      nextUnsharedTag match {
+        case TYPEBOUNDS | TYPEALIAS => name = name.toTypeName
+        case _ =>
+      }
+      val typeReader = fork
+      val completer = new LazyType {
+        def complete(denot: Symbol)(implicit ctx: Context): Unit =
+          denot.info = typeReader.readType()
+      }
+      val sym = ctx.newSymbol(ctx.owner, name, FlagSets.Case, completer)
+      registerSym(start, sym)
+      sym
+    }
+
+    /** Create symbol of member definition or parameter node and enter in symAtAddr map
+     *  @return  the created symbol
+     */
+    def createMemberSymbol()(implicit ctx: Context): Symbol = {
+      val start = currentAddr
+      val tag = readByte()
+      val end = readEnd()
+      var name: Name = readName()
+      if (tag == TYPEDEF || tag == TYPEPARAM) name = name.toTypeName
+      skipParams()
+      val ttag = nextUnsharedTag
+      val isAbsType = isAbstractType(ttag)
+      val isClass = ttag == TEMPLATE
+      val templateStart = currentAddr
+      skipTree() // tpt
+      val rhsStart = currentAddr
+      val rhsIsEmpty = nothingButMods(end)
+      if (!rhsIsEmpty) skipTree()
+      val (givenFlags, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
+      reporter.echo(NoPosition, s"creating symbol $name at $start with flags $givenFlags")
+      val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
 //      def adjustIfModule(completer: LazyType) =
 //        if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
 //      val coord = coordAt(start)
-//      val sym =
-//        roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
-//          case Some(rootd) =>
-//            pickling.println(i"overwriting ${rootd.symbol} # ${rootd.hashCode}")
-//            rootd.symbol.coord = coord
+      val sym =
+        roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
+          case Some(rootd) =>
+            reporter.echo(NoPosition, s"overwriting $rootd # ${rootd.hashCode}")
+//            rootd.coord = coord
 //            rootd.info = adjustIfModule(
 //                new Completer(subReader(start, end)) with SymbolLoaders.SecondCompleter)
 //            rootd.flags = flags &~ Touched // allow one more completion
-//            rootd.setPrivateWithin(privateWithin)
-//            seenRoots += rootd.symbol
-//            rootd.symbol
-//          case _ =>
+            rootd.setPrivateWithin(privateWithin)
+            seenRoots += rootd
+            rootd
+          case _ =>
 //            val completer = adjustIfModule(new Completer(subReader(start, end)))
-//            if (isClass)
-//              ctx.newClassSymbol(ctx.owner, name.asTypeName, flags, completer, privateWithin, coord)
-//            else
-//              ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin, coord)
-//        }
-//      sym.annotations = annotFns.map(_(sym))
-//      ctx.owner match {
-//        case cls: ClassSymbol => cls.enter(sym)
-//        case _ =>
-//      }
-//      registerSym(start, sym)
-//      if (isClass) {
-//        sym.completer.withDecls(newScope)
-//        forkAt(templateStart).indexTemplateParams()(localContext(sym))
-//      }
+            if (isClass)
+              ??? //ctx.newClassSymbol(ctx.owner, name.asTypeName, flags, completer, privateWithin, coord)
+            else
+              ??? //ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin, coord)
+        }
+      sym.setAnnotations(annotFns.map(_(sym)))
+      ctx.owner match {
+        case cls: ClassSymbol => cls.info.decls.enter(sym)
+        case _ =>
+      }
+      registerSym(start, sym)
+      if (isClass) {
+        sym.info = new ClassInfoType(sym.info.parents, newScope, sym.info.typeSymbol)
+        forkAt(templateStart).indexTemplateParams()(localContext(sym))
+      }
 //      else if (sym.isInlineMethod)
 //        sym.addAnnotation(LazyBodyAnnotation { ctx0 =>
 //          val ctx1 = localContext(sym)(ctx0).addMode(Mode.ReadPositions)
@@ -581,95 +596,155 @@ abstract class TreeUnpickler(reader: TastyReader,
 //            // avoids space leaks by not capturing the current context
 //          forkAt(rhsStart).readTerm()
 //        })
-//      goto(start)
-//      sym
-//    }
-//
-//    /** Read modifier list into triplet of flags, annotations and a privateWithin
-//     *  boundary symbol.
-//     */
-//    def readModifiers[WithinType, AnnotType]
-//        (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
-//        (implicit ctx: Context): (FlagSet, List[Symbol => AnnotType], WithinType) = {
-//      var flags: FlagSet = EmptyFlags
-//      var annotFns: List[Symbol => AnnotType] = Nil
-//      var privateWithin = defaultWithin
-//      while (currentAddr.index != end.index) {
-//        def addFlag(flag: FlagSet) = {
-//          flags |= flag
-//          readByte()
-//        }
-//        nextByte match {
-//          case PRIVATE => addFlag(Private)
-//          case INTERNAL => ??? // addFlag(Internal)
-//          case PROTECTED => addFlag(Protected)
-//          case ABSTRACT =>
-//            readByte()
-//            nextByte match {
-//              case OVERRIDE => addFlag(AbsOverride)
-//              case _ => flags |= Abstract
-//            }
-//          case FINAL => addFlag(Final)
-//          case SEALED => addFlag(Sealed)
-//          case CASE => addFlag(Case)
-//          case IMPLICIT => addFlag(Implicit)
-//          case ERASED => addFlag(Erased)
-//          case LAZY => addFlag(Lazy)
-//          case OVERRIDE => addFlag(Override)
-//          case INLINE => addFlag(Inline)
-//          case INLINEPROXY => addFlag(InlineProxy)
-//          case MACRO => addFlag(Macro)
-//          case OPAQUE => addFlag(Opaque)
-//          case STATIC => addFlag(JavaStatic)
-//          case OBJECT => addFlag(Module)
-//          case TRAIT => addFlag(Trait)
-//          case ENUM => addFlag(Enum)
-//          case LOCAL => addFlag(Local)
-//          case SYNTHETIC => addFlag(Synthetic)
-//          case ARTIFACT => addFlag(Artifact)
-//          case MUTABLE => addFlag(Mutable)
-//          case FIELDaccessor => addFlag(Accessor)
-//          case CASEaccessor => addFlag(CaseAccessor)
-//          case COVARIANT => addFlag(Covariant)
-//          case CONTRAVARIANT => addFlag(Contravariant)
-//          case SCALA2X => addFlag(Scala2x)
-//          case DEFAULTparameterized => addFlag(DefaultParameterized)
-//          case STABLE => addFlag(StableRealizable)
-//          case EXTENSION => addFlag(Extension)
-//          case GIVEN => addFlag(Given)
-//          case PARAMsetter => addFlag(ParamAccessor)
-//          case EXPORTED => addFlag(Exported)
-//          case PRIVATEqualified =>
-//            readByte()
-//            privateWithin = readWithin(ctx)
-//          case PROTECTEDqualified =>
-//            addFlag(Protected)
-//            privateWithin = readWithin(ctx)
-//          case ANNOTATION =>
-//            annotFns = readAnnot(ctx) :: annotFns
-//          case tag =>
-//            assert(false, s"illegal modifier tag $tag at $currentAddr, end = $end")
-//        }
-//      }
-//      (flags, annotFns.reverse, privateWithin)
-//    }
-//
-//    private val readTypedWithin: Context => Symbol =
-//      implicit ctx => readType().typeSymbol
-//
-//    private val readTypedAnnot: Context => Symbol => Annotation = {
-//      implicit ctx =>
-//        readByte()
-//        val end = readEnd()
-//        val tp = readType()
-//        val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-//
-//        owner =>
-//          Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
-//    }
+      goto(start)
+      sym
+    }
+
+    /** Read modifier list into triplet of flags, annotations and a privateWithin
+     *  boundary symbol.
+     */
+    def readModifiers[WithinType, AnnotType]
+        (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
+        (implicit ctx: Context): (FlagSet, List[Symbol => AnnotType], WithinType) = {
+      import FlagSets._
+      var flags: FlagSet = EmptyFlags
+      var annotFns: List[Symbol => AnnotType] = Nil
+      var privateWithin = defaultWithin
+      while (currentAddr.index != end.index) {
+        def addFlag(flag: FlagSet) = {
+          flags |= flag
+          readByte()
+        }
+        nextByte match {
+          case PRIVATE => addFlag(Private)
+          case INTERNAL => ??? // addFlag(Internal)
+          case PROTECTED => addFlag(Protected)
+          case ABSTRACT =>
+            readByte()
+            nextByte match {
+              case OVERRIDE => addFlag(AbsOverride)
+              case _ => flags |= Abstract
+            }
+          case FINAL => addFlag(Final)
+          case SEALED => addFlag(Sealed)
+          case CASE => addFlag(Case)
+          case IMPLICIT => addFlag(Implicit)
+          case ERASED => addFlag(Erased)
+          case LAZY => addFlag(Lazy)
+          case OVERRIDE => addFlag(Override)
+          case INLINE => addFlag(Inline)
+          case INLINEPROXY => addFlag(InlineProxy)
+          case MACRO => addFlag(Macro)
+          case OPAQUE => addFlag(Opaque)
+          case STATIC => addFlag(JavaStatic)
+          case OBJECT => addFlag(Module)
+          case TRAIT => addFlag(Trait)
+          case ENUM => addFlag(Enum)
+          case LOCAL => addFlag(Local)
+          case SYNTHETIC => addFlag(Synthetic)
+          case ARTIFACT => addFlag(Artifact)
+          case MUTABLE => addFlag(Mutable)
+          case FIELDaccessor => addFlag(Accessor)
+          case CASEaccessor => addFlag(CaseAccessor)
+          case COVARIANT => addFlag(Covariant)
+          case CONTRAVARIANT => addFlag(Contravariant)
+          case SCALA2X => addFlag(Scala2x)
+          case DEFAULTparameterized => addFlag(DefaultParameterized)
+          case STABLE => addFlag(StableRealizable)
+          case EXTENSION => addFlag(Extension)
+          case GIVEN => addFlag(Given)
+          case PARAMsetter => addFlag(ParamAccessor)
+          case EXPORTED => addFlag(Exported)
+          case PRIVATEqualified =>
+            readByte()
+            privateWithin = readWithin(ctx)
+          case PROTECTEDqualified =>
+            addFlag(Protected)
+            privateWithin = readWithin(ctx)
+          case ANNOTATION =>
+            annotFns = readAnnot(ctx) :: annotFns
+          case tag =>
+            assert(assertion = false, s"illegal modifier tag $tag at $currentAddr, end = $end")
+        }
+      }
+      (flags, annotFns.reverse, privateWithin)
+    }
+
+    private val readTypedWithin: Context => Symbol =
+      implicit ctx => readType().typeSymbol
+
+    private val readTypedAnnot: Context => Symbol => Annotation = {
+      implicit ctx =>
+        readByte()
+        val end = readEnd()
+        val tp = readType()
+        val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
+
+        owner =>
+          Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
+    }
 
     object FlagSets {
+      import scala.reflect.internal.{Flags, ModifierFlags}
+
       val NoInitsInterface: FlagSet = Flag.INTERFACE
+      val EmptyFlags: FlagSet = NoFlags
+
+      val Private: FlagSet = Flag.PRIVATE
+      val Protected: FlagSet = Flag.PROTECTED
+      val AbsOverride: FlagSet = Flag.ABSOVERRIDE
+      val Abstract: FlagSet = Flag.ABSTRACT
+      val Final: FlagSet = Flag.FINAL
+
+      val Sealed: FlagSet = Flag.SEALED
+      val Case: FlagSet = Flag.CASE
+      val Implicit: FlagSet = ModifierFlags.IMPLICIT
+      def Erased: FlagSet = sys.error("Erased Flag")
+      val Lazy: FlagSet = Flag.LAZY
+      val Override: FlagSet = Flag.OVERRIDE
+      def Inline: FlagSet = sys.error("Inline Flag")
+      def InlineProxy: FlagSet = sys.error("InlineProxy Flag")
+      val Macro: FlagSet = Flag.MACRO
+      def Opaque: FlagSet = sys.error("Opaque Flag")
+      val JavaStatic: FlagSet = ModifierFlags.STATIC
+      val Module: FlagSet = Flags.MODULE
+      val Trait: FlagSet = Flag.TRAIT
+      val Enum: FlagSet = Flag.ENUM
+      val Local: FlagSet = Flag.LOCAL
+      val Synthetic: FlagSet = Flag.SYNTHETIC
+      val Artifact: FlagSet = Flag.ARTIFACT
+      val Mutable: FlagSet = Flag.MUTABLE
+      val Accessor: FlagSet = Flags.ACCESSOR
+      val CaseAccessor: FlagSet = Flag.CASEACCESSOR
+      val Covariant: FlagSet = Flag.COVARIANT
+      val Contravariant: FlagSet = Flag.CONTRAVARIANT
+      def Scala2x: FlagSet = sys.error("Scala2x Flag")
+      val DefaultParameterized: FlagSet = Flag.DEFAULTPARAM
+      val StableRealizable: FlagSet = Flag.STABLE
+      def Extension: FlagSet = sys.error("Extension Flag")
+      def Given: FlagSet = sys.error("Given Flag")
+      val ParamAccessor: FlagSet = Flag.PARAMACCESSOR
+      val Param: FlagSet = Flag.PARAM
+      val Deferred: FlagSet = Flag.DEFERRED
+      val Method: FlagSet = Flags.METHOD
+      def Exported: FlagSet = sys.error("Exported Flag")
+      val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
+
+      val TermParamOrAccessor: FlagSet = Param | ParamAccessor
+      val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
+      val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
+
+      implicit class FlagSetOps(private val flagSet: FlagSet) {
+        private def flags: FlagSet = {
+          val fs = flagSet & phase.flagMask
+          (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
+        }
+        private def getFlag(mask: FlagSet): FlagSet = {
+          mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
+        }
+        def is(mask: FlagSet): Boolean = getFlag(mask) != 0
+        def isOneOf(mask: FlagSet): Boolean = is(mask)
+      }
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -686,7 +761,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             val sym = symbolAtCurrent()
             skipTree()
 //            if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
-//              initsFlags = NoFlags
+//              initsFlags = EmptyFlags
 //            else if (sym.isClass ||
 //              sym.is(Method, butNot = Deferred) && !sym.isConstructor)
 //              initsFlags &= NoInits
@@ -696,7 +771,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //            processPackage { (pid, end) => implicit ctx => indexStats(end) }
           case _ =>
             skipTree()
-            initsFlags = NoFlags
+            initsFlags = EmptyFlags
         }
       }
       assert(currentAddr.index == end.index)
@@ -716,26 +791,26 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      val pid = ref(readTermRef()).asInstanceOf[RefTree]
 //      op(pid, end)(localContext(pid.symbol.moduleClass))
 //    }
-//
-//    /** Create symbols the longest consecutive sequence of parameters with given
-//     *  `tag` starting at current address.
-//     */
-//    def indexParams(tag: Int)(implicit ctx: Context): Unit =
-//      while (nextByte == tag) {
-//        symbolAtCurrent()
-//        skipTree()
-//      }
-//
-//    /** Create symbols for all type and value parameters of template starting
-//     *  at current address.
-//     */
-//    def indexTemplateParams()(implicit ctx: Context): Unit = {
-//      assert(readByte() == TEMPLATE)
-//      readEnd()
-//      indexParams(TYPEPARAM)
-//      indexParams(PARAM)
-//    }
-//
+
+    /** Create symbols the longest consecutive sequence of parameters with given
+     *  `tag` starting at current address.
+     */
+    def indexParams(tag: Int)(implicit ctx: Context): Unit =
+      while (nextByte == tag) {
+        symbolAtCurrent()
+        skipTree()
+      }
+
+    /** Create symbols for all type and value parameters of template starting
+     *  at current address.
+     */
+    def indexTemplateParams()(implicit ctx: Context): Unit = {
+      assert(readByte() == TEMPLATE)
+      readEnd()
+      indexParams(TYPEPARAM)
+      indexParams(PARAM)
+    }
+
 //    /** If definition was already read by a completer, return the previously read tree
 //     *  or else read definition.
 //     */

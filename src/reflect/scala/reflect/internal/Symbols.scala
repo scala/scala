@@ -310,7 +310,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         rawFlagString
       )
     )
-
 // ------ creators -------------------------------------------------------------------
 
     final def newValue(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol =
