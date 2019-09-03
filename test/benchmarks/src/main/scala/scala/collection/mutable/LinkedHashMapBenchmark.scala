@@ -1,10 +1,9 @@
 package scala.collection.mutable
 
+import java.util.concurrent.TimeUnit
+
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra._
-import org.openjdk.jmh.runner.IterationType
-import benchmark._
-import java.util.concurrent.TimeUnit
 
 @BenchmarkMode(Array(Mode.AverageTime))
 @Fork(2)
@@ -13,7 +12,7 @@ import java.util.concurrent.TimeUnit
 @Measurement(iterations = 10)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-class HashMapBenchmark {
+class LinkedHashMapBenchmark {
   @Param(Array("10", "100", "1000"))
   var size: Int = _
   @Param(Array("true"))
@@ -35,54 +34,10 @@ class HashMapBenchmark {
     missingKeys = (size to 2 * size).toArray.map(_.toString)
   }
 
-  var map: collection.mutable.HashMap[Any, Any] = null
+  var map: collection.mutable.LinkedHashMap[Any, Any] = null
 
   @Setup(Level.Trial) def initialize = {
-    map = collection.mutable.HashMap(existingKeys.map(x => (x, x)) : _*)
-  }
-
-  @Benchmark def contains(bh: Blackhole): Unit = {
-    var i = 0;
-    while (i < size) {
-      bh.consume(map.contains(existingKeys(i)))
-      if (useMissingValues) {
-        bh.consume(map.contains(missingKeys(i)))
-      }
-      i += 1
-    }
-  }
-
-  @Benchmark def get(bh: Blackhole): Unit = {
-    var i = 0;
-    while (i < size) {
-      bh.consume(map.get(existingKeys(i)))
-      if (useMissingValues) {
-        bh.consume(map.get(missingKeys(i)))
-      }
-      i += 1
-    }
-  }
-
-  @Benchmark def getOrElse(bh: Blackhole): Unit = {
-    var i = 0;
-    while (i < size) {
-      bh.consume(map.getOrElse(existingKeys(i), ""))
-      if (useMissingValues) {
-        bh.consume(map.getOrElse(missingKeys(i), ""))
-      }
-      i += 1
-    }
-  }
-
-  @Benchmark def getOrElseUpdate(bh: Blackhole): Unit = {
-    var i = 0;
-    while (i < size) {
-      bh.consume(map.getOrElseUpdate(existingKeys(i), ""))
-      if (useMissingValues) {
-        bh.consume(map.getOrElse(missingKeys(i), ""))
-      }
-      i += 1
-    }
+    map = collection.mutable.LinkedHashMap(existingKeys.map(x => (x, x)) : _*)
   }
 
   @Benchmark def updateWith(bh: Blackhole): Unit = {

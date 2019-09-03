@@ -124,6 +124,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Stream.find"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectNoOp"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.BasicIO.connectToStdIn"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashTable.removeEntry0"),
   ),
 }
 
