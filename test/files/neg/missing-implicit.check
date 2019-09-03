@@ -1,10 +1,10 @@
-missing-implicit.scala:23: error: foo
+missing-implicit.scala:23: error: could not find implicit value for parameter e: TC[String]{type Int} (foo)
   implicitly[TC[String] { type Int}]
             ^
 missing-implicit.scala:24: error: bar
   implicitly[XC[String]]
             ^
-missing-implicit.scala:25: error: nope
+missing-implicit.scala:25: error: could not find implicit value for parameter e: U (nope)
   implicitly[U]
             ^
 missing-implicit.scala:26: error: no way
@@ -16,4 +16,16 @@ missing-implicit.scala:31: error: no way
 missing-implicit.scala:32: error: huh
   g
   ^
-6 errors found
+missing-implicit.scala:49: error: No F of Int
+  implicitly[F[Int]]
+            ^
+missing-implicit.scala:50: error: could not find implicit value for parameter e: M[Int] (No F of Int)
+  implicitly[M[Int]]
+            ^
+missing-implicit.scala:51: error: could not find implicit value for parameter e: AX (No F of String)
+  implicitly[AX]
+            ^
+missing-implicit.scala:52: error: could not find implicit value for parameter e: X0 (Missing X3 of Char and Int and String)
+  implicitly[X0]
+            ^
+10 errors found
