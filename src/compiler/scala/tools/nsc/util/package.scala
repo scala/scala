@@ -64,7 +64,7 @@ package object util {
     writer.toString()
   }
 
-  /** Generate a string using a routine that wants to write on a stream. */
+  /** Generate a string using a routine that wants to write on a writer. */
   def stringFromWriter(writer: PrintWriter => Unit): String = {
     val stringWriter = new StringWriter()
     val stream = new NewLinePrintWriter(stringWriter)
@@ -72,23 +72,25 @@ package object util {
     stream.close()
     stringWriter.toString
   }
+  /** Generate a string using a routine that wants to write on a stream. */
   def stringFromStream(stream: OutputStream => Unit): String = {
+    val utf8 = java.nio.charset.StandardCharsets.UTF_8
     val bs = new ByteArrayOutputStream()
-    val ps = new PrintStream(bs)
+    val ps = new PrintStream(bs, /*autoflush=*/ false, utf8.name)    // use Charset directly in jdk10
     stream(ps)
     ps.close()
-    bs.toString()
+    bs.toString(utf8.name)
   }
-  def stackTraceString(ex: Throwable): String = stringFromWriter(ex printStackTrace _)
+  def stackTraceString(t: Throwable): String = stringFromWriter(t.printStackTrace(_))
 
   /** A one line string which contains the class of the exception, the
    *  message if any, and the first non-Predef location in the stack trace
    *  (to exclude assert, require, etc.)
    */
-  def stackTraceHeadString(ex: Throwable): String = {
-    val frame = ex.getStackTrace.dropWhile(_.getClassName contains "Predef") take 1 mkString ""
-    val msg   = ex.getMessage match { case null | "" => "" ; case s => s"""("$s")""" }
-    val clazz = ex.getClass.getName.split('.').last
+  def stackTraceHeadString(t: Throwable): String = {
+    val frame = t.getStackTrace.dropWhile(_.getClassName contains "Predef").take(1).mkString("")
+    val msg   = t.getMessage match { case null | "" => "" ; case s => s"""("$s")""" }
+    val clazz = t.getClass.getName.split('.').last
 
     s"$clazz$msg @ $frame"
   }
