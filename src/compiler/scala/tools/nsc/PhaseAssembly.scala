@@ -110,8 +110,18 @@ trait PhaseAssembly {
         throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
       }
 
-      if (node.level < lvl) node.level = lvl
-
+      val initLevel = node.level
+      val levelUp = initLevel < lvl
+      if (levelUp) {
+        node.level = lvl
+      }
+      if (initLevel != 0) {
+        if (!levelUp) {
+          // no need to revisit
+          node.visited = false
+          return
+        }
+      }
       var befores = node.before
       def hasHardLinks() = befores.exists(_.hard)
       while (hasHardLinks()) {
