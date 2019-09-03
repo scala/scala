@@ -1029,9 +1029,6 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     !aSym.isSynthetic && (!isPrivate || settings.visibilityPrivate.value && !aSym.isTopLevel)
   }
 
-  // the classes that are excluded from the index should also be excluded from the diagrams
-  def classExcluded(clazz: TemplateEntity): Boolean = settings.hardcoded.isExcluded(clazz.qualifiedName)
-
   // the implicit conversions that are excluded from the pages should not appear in the diagram
   def implicitExcluded(convertorMethod: String): Boolean = settings.hiddenImplicits(convertorMethod)
 

@@ -59,7 +59,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         // superclasses
         val superclasses: List[Node] =
           tpl.parentTypes.collect {
-            case p: (TemplateEntity, TypeEntity) if !classExcluded(p._1) => NormalNode(p._2, Some(p._1))()
+            case p: (TemplateEntity, TypeEntity) => NormalNode(p._2, Some(p._1))()
           }.reverse
 
         // incoming implicit conversions
@@ -71,7 +71,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         // subclasses
         var subclasses: List[Node] =
           tpl.directSubClasses.collect {
-            case d: TemplateImpl if !classExcluded(d) => NormalNode(makeType(d.sym.tpe, tpl), Some(d))()
+            case d: TemplateImpl => NormalNode(makeType(d.sym.tpe, tpl), Some(d))()
           }.sortBy(_.tpl.get.name)(implicitly[Ordering[String]].reverse)
 
         // outgoing implicit conversions
@@ -144,7 +144,7 @@ trait DiagramFactory extends DiagramDirectiveParser {
         }
 
         // for each node, add its subclasses
-        for (node <- nodesAll if !classExcluded(node)) {
+        for (node <- nodesAll) {
           node match {
             case dnode: MemberTemplateImpl =>
               val superClasses = listSuperClasses(dnode)
