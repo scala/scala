@@ -13,6 +13,7 @@
 package scala.tools.nsc
 
 import scala.collection.mutable
+import scala.language.postfixOps
 
 /** Converts an unordered morass of components into an order that
  *  satisfies their mutual constraints.
@@ -39,7 +40,7 @@ trait PhaseAssembly {
       var phaseobj: Option[List[SubComponent]] = None
       val after = new mutable.HashSet[Edge]()
       var before = new mutable.HashSet[Edge]()
-      var visited: VisitStatus = NotVisited
+      var visited = false
       var level = 0
 
       def allPhaseNames(): String = phaseobj match {
@@ -47,10 +48,6 @@ trait PhaseAssembly {
         case Some(lst) => lst.map(_.phaseName).reduceLeft(_+","+_)
       }
     }
-    sealed abstract class VisitStatus
-    case object NotVisited extends VisitStatus
-    case object Visiting extends VisitStatus
-    case object Visited extends VisitStatus
 
     val nodes = new mutable.HashMap[String,Node]()
     val edges = new mutable.HashSet[Edge]()
@@ -107,69 +104,45 @@ trait PhaseAssembly {
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
      */
-    def collapseHardLinks(): Unit = {
-      for (node <- nodes.valuesIterator.toList) {
-        val hardBefores = node.before.iterator.filter(_.hard).toList
-        for (hl <- hardBefores) {
-          val effectiveNode: Node = if (nodes.contains(node.name)) node else {
-            nodes.find(_._2.phaseobj.exists(_.exists(_.phaseName == node.name))).get._2
-          }
-          effectiveNode.phaseobj = Some(effectiveNode.phaseobj.get ++ hl.frm.phaseobj.get)
-          effectiveNode.before = hl.frm.before
-          nodes -= hl.frm.phasename
-          edges -= hl
+    def collapseHardLinksAndLevels(node: Node, lvl: Int) {
+      if (node.visited) {
+        dump("phase-cycle")
+        throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
+      }
+
+      val initLevel = node.level
+      val levelUp = initLevel < lvl
+      if (levelUp) {
+        node.level = lvl
+      }
+      if (initLevel != 0) {
+        if (!levelUp) {
+          // no need to revisit
+          node.visited = false
+          return
         }
       }
-    }
-
-    /* Test if there are cycles in the graph, assign levels to the nodes
-     * and collapse hard links into nodes
-     */
-    def assignLevelsAndDetectCycles(node: Node) {
-      val stack = mutable.ArrayStack[Node]()
-      def visitNode(node: Node): Unit = {
-        node.visited = Visiting
-        for (edge <- node.before) {
-          val from = edge.frm
-          from.visited match {
-            case NotVisited =>
-              visitNode(edge.frm)
-            case Visiting =>
-              dump("phase-cycle")
-              throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
-            case Visited =>
+      var befores = node.before
+      def hasHardLinks() = befores.exists(_.hard)
+      while (hasHardLinks()) {
+        for (hl <- befores) {
+          if (hl.hard) {
+            node.phaseobj = Some(node.phaseobj.get ++ hl.frm.phaseobj.get)
+            node.before = hl.frm.before
+            nodes -= hl.frm.phasename
+            edges -= hl
+            for (edge <- node.before) edge.to = node
           }
         }
-        node.visited = Visited
-        stack.push(node)
+        befores = node.before
       }
-      try {
-        visitNode(node)
-      } finally {
-        nodes.values.foreach(_.visited = NotVisited)
+      node.visited = true
+
+      for (edge <- node.before) {
+        collapseHardLinksAndLevels( edge.frm, lvl + 1)
       }
 
-      val topoSort: Map[Node, Int] = stack.zipWithIndex.toMap
-      val root = node
-      assert(stack.head == root, stack)
-      root.level = 1
-
-      // Nodes that have been collapsed into their hard-linked predecessor
-      val collapsed: Map[String, Node] = stack.iterator.flatMap(p => p.phaseobj.toList.flatMap(_.map(x => (x.phaseName, p)))).toMap
-      def followHard(node: Node): Node = collapsed.getOrElse(node.phasename, node)
-
-      // find the longest path to the root node to assign as the level.
-      stack.iterator.drop(1).foreach { node =>
-        var n = node
-        var level = 1
-        while (n != root && n.after.nonEmpty) {
-          n = n.after.maxBy(edge => topoSort.get(followHard(edge.to))).to
-          level += 1
-        }
-        node.level = level
-      }
-      def phaseDebug = stack.toSeq.groupBy(_.level).toList.sortBy(_._1).map { case (level, nodes) => (level,  nodes.sortBy(_.phasename).map(_.phaseobj.map(_.map(_.phaseName).mkString(":")).mkString(" ")).mkString(" "))}.mkString("\n")
-      debuglog("Phase assembly levels: " + phaseDebug)
+      node.visited = false
     }
 
     /* Find all edges in the given graph that are hard links. For each hard link we
@@ -193,7 +166,7 @@ trait PhaseAssembly {
           val sanity = Nil ++ hl.to.before.filter(_.hard)
           if (sanity.length == 0) {
             throw new FatalError("There is no runs right after dependency, where there should be one! This is not supposed to happen!")
-          } else if (sanity.lengthIs > 1) {
+          } else if (sanity.length > 1) {
             dump("phase-order")
             val following = (sanity map (_.frm.phasename)).sorted mkString ","
             throw new FatalError(s"Multiple phases want to run right after ${sanity.head.to.phasename}; followers: $following; created phase-order.dot")
@@ -262,15 +235,10 @@ trait PhaseAssembly {
 
     dump(3)
 
-    // collapse hard links into nodes
-    graph.collapseHardLinks()
+    // test for cycles, assign levels and collapse hard links into nodes
+    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
 
     dump(4)
-
-    // test for cycles, assign levels
-    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
-
-    dump(5)
 
     // assemble the compiler
     graph.compilerPhaseList()
@@ -320,7 +288,7 @@ trait PhaseAssembly {
    * file showing its structure.
    * Plug-in supplied phases are marked as green nodes and hard links are marked as blue edges.
    */
-  private def graphToDotFile(graph: DependencyGraph, filename: String): Unit = {
+  private def graphToDotFile(graph: DependencyGraph, filename: String) {
     val sbuf = new StringBuilder
     val extnodes = new mutable.HashSet[graph.Node]()
     val fatnodes = new mutable.HashSet[graph.Node]()
