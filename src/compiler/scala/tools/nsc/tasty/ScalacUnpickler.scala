@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package tasty
 
-import TreeUnpickler.UnpickleMode
+//import TreeUnpickler.UnpickleMode
 import TastyUnpickler.SectionUnpickler
 import scala.tools.nsc.tasty.TastyBuffer.NameRef
 import scala.util.control.NonFatal
@@ -36,9 +36,8 @@ object ScalacUnpickler {
 
 /** A class for unpickling Tasty trees and symbols.
  *  @param bytes         the bytearray containing the Tasty file from which we unpickle
- *  @param mode          the tasty file contains package (TopLevel), an expression (Term) or a type (TypeTree)
  */
-abstract class ScalacUnpickler(bytes: Array[Byte], mode: UnpickleMode = UnpickleMode.TopLevel) extends TASTYUniverse { self =>
+abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TASTYUniverse { self =>
   import symbolTable._
   import ScalacUnpickler._
 
@@ -55,12 +54,16 @@ abstract class ScalacUnpickler(bytes: Array[Byte], mode: UnpickleMode = Unpickle
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
+    import treeUnpickler.Context
     try {
+      implicit val ctx: Context = {
+        new Context.InitialContext(classRoot, mirrorThatLoaded(classRoot).RootClass.owner, classRoot.associatedFile)
+      }
       treeUnpickler.enter(moduleRoot, classRoot)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()
-        throw new RuntimeException("error reading Scala signature of "+filename+": "+ex.getMessage())
+        throw new RuntimeException("error reading TASTy from "+filename+": "+ex.getMessage())
     }
   }
 

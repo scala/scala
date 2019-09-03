@@ -30,7 +30,6 @@ import scala.tools.nsc.Reporting.WarningCategory
 import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.tasty.TreeUnpickler.UnpickleMode
 import scala.tools.nsc.tasty.{TastyHeaderUnpickler, TastyReader}
 import scala.util.control.NonFatal
 
@@ -110,10 +109,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
   }
 
-  private class TASTYUnpickler(bytes: Array[Byte], mode: UnpickleMode = UnpickleMode.TopLevel)
+  private class TASTYUnpickler(bytes: Array[Byte])
     extends {
       final val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
-    } with tasty.ScalacUnpickler(bytes, mode) with tasty.TASTYUniverse
+    } with tasty.ScalacUnpickler(bytes) with tasty.TASTYUniverse
 
   private def handleMissing(e: MissingRequirementError) = {
     if (settings.debug) e.printStackTrace

@@ -2,43 +2,9 @@ package scala.tools.nsc
 package tasty
 
 import TastyBuffer._
-import scala.annotation.switch
+import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-
-//import Comments.CommentsContext
-//import Contexts._
-//import Symbols._
-//import Types._
-//import Scopes._
-//import SymDenotations._
-//import Names._
-//import NameOps._
-//import StdNames._
-//import scala.reflect.internal.Flags._
-//import Constants._
-//import Annotations._
-//import NameKinds._
-//import typer.ConstFold
-//import typer.Checking.checkNonCyclic
-//import util.Spans._
-//import util.SourceFile
-//import ast.{TreeTypeMap, Trees, tpd, untpd}
-//import Trees._
-//import Decorators._
-//import transform.SymUtils._
-
-//import scala.annotation.{switch, tailrec}
-//import scala.collection.mutable.ListBuffer
-//import scala.collection.mutable
-//import config.Printers.pickling
-//import core.quoted.PickledQuotes
-//import dotty.tools.dotc.quoted.ToolboxImpl
-
-//import scala.quoted
-//import scala.internal.quoted.{TastyTreeExpr, TreeType}
-//import scala.annotation.constructorOnly
-//import scala.annotation.internal.sharable
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -52,17 +18,24 @@ abstract class TreeUnpickler(reader: TastyReader,
                              splices: Seq[Any]) extends TASTYUniverse with TASTYNameTable { self =>
   import symbolTable._
   import TastyFormat._
+  import FlagSets._
+  import NameOps._
 //  import TreeUnpickler._
-//  import tpd._
+  type TermRef = RefTree
+
+  protected def errorScalaNext(msg: String)(implicit ctx: Context): Nothing =
+    throw new RuntimeException("Scala 2 incompatible TASTy signature of " + ctx.classRoot.name + " at " + reader.currentAddr + "; " + msg)
+
+  protected def errorConstructTASTyTree: Nothing = sys.error("Trying to Construct a Tree from TASTy")
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
 
-//  /** A temporary map from addresses of definition entries to the trees they define.
-//   *  Used to remember trees of symbols that are created by a completion. Emptied
-//   *  once the tree is inlined into a larger tree.
-//   */
-//  private val treeAtAddr = new mutable.HashMap[Addr, Tree]
+  /** A temporary map from addresses of definition entries to the trees they define.
+   *  Used to remember trees of symbols that are created by a completion. Emptied
+   *  once the tree is inlined into a larger tree.
+   */
+  private val treeAtAddr = new mutable.HashMap[Addr, Tree]
 
   /** A map from addresses of type entries to the types they define.
    *  Currently only populated for types that might be recursively referenced
@@ -83,30 +56,156 @@ abstract class TreeUnpickler(reader: TastyReader,
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
 
-  class Context(val owner: Symbol, val source: AbstractFile) {
-    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: LazyType {
-      def complete(denot: Symbol): Unit
-    }): TermSymbol = {
+  sealed abstract class Context {
+    final def picklerPhase: Phase = symbolTable.picklerPhase
+
+    import Context._
+
+    type ThisContext <: Context
+
+    def owner: Symbol
+    def source: AbstractFile
+
+    final lazy val classRoot: Symbol = initialContext.baseClassRoot
+
+    def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(NoPosition)
+
+    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: LazyType, privateWithin: Symbol = NoSymbol): TermSymbol = {
       val sym = owner.newTermSymbol(name.toTermName, NoPosition, flags)
       sym.info = completer
+      sym.privateWithin = privateWithin
       sym
     }
 
-    final def withOwner(owner: Symbol): Context = new Context(owner, source)
+    def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: LazyType, privateWithin: Symbol): ClassSymbol = {
+      val sym = owner.newClassSymbol(name = typeName, newFlags = flags)
+      sym.info = completer
+      sym.privateWithin = privateWithin
+      sym
+    }
+
+    final def withPhaseNoLater(otherPhase: Phase): Context = {
+      if (otherPhase ne NoPhase) {
+        assert(phase.id >= otherPhase.id, "Phase difference")
+      }
+      this
+    }
+
+    @tailrec
+    final def initialContext: InitialContext = this match {
+      case ctx: InitialContext => ctx
+      case ctx: FreshContext => ctx.outer.initialContext
+    }
+
+    final def withOwner(owner: Symbol): Context =
+      if (owner ne this.owner) fresh.setOwner(owner) else this
+
     final def fresh: FreshContext = new FreshContext(this)
   }
 
-  class FreshContext(val outer: Context) extends Context(outer.owner, outer.source)
+  object Context {
+    final class InitialContext(val baseClassRoot: Symbol, val owner: Symbol, val source: AbstractFile) extends Context {
+      type ThisContext = InitialContext
+    }
+
+    private[Context] final class FreshContext(val outer: Context) extends Context {
+      type ThisContext = FreshContext
+      private[this] var _owner = outer.owner
+      def source: AbstractFile = outer.source
+      def owner: Symbol = _owner
+      def setOwner(owner: Symbol): ThisContext = { _owner = owner; this }
+    }
+  }
+
+  object NameOps {
+    implicit class NameDecorator(name: Name) {
+      def isConstructorName: Boolean = symbolTable.nme.isConstructorName(name.asInstanceOf)
+    }
+  }
+
+  object FlagSets {
+    import scala.reflect.internal.{Flags, ModifierFlags}
+
+    val EmptyFlags: FlagSet = NoFlags
+
+    val Private: FlagSet = Flag.PRIVATE
+    val Protected: FlagSet = Flag.PROTECTED
+    val AbsOverride: FlagSet = Flag.ABSOVERRIDE
+    val Abstract: FlagSet = Flag.ABSTRACT
+    val Final: FlagSet = Flag.FINAL
+
+    val Interface: FlagSet = Flag.INTERFACE
+    val Sealed: FlagSet = Flag.SEALED
+    val Case: FlagSet = Flag.CASE
+    val Implicit: FlagSet = ModifierFlags.IMPLICIT
+    def Erased(implicit ctx: Context): FlagSet = errorScalaNext("Erased Flag")
+    val Lazy: FlagSet = Flag.LAZY
+    val Override: FlagSet = Flag.OVERRIDE
+    def Internal(implicit ctx: Context): FlagSet = errorScalaNext("Internal Flag")
+    def Inline(implicit ctx: Context): FlagSet = errorScalaNext("Inline Flag")
+    def InlineProxy(implicit ctx: Context): FlagSet = errorScalaNext("InlineProxy Flag")
+    val Macro: FlagSet = Flag.MACRO
+    def Opaque(implicit ctx: Context): FlagSet = errorScalaNext("Opaque Flag")
+    val JavaStatic: FlagSet = ModifierFlags.STATIC
+    val Module: FlagSet = Flags.MODULE
+    val Trait: FlagSet = Flag.TRAIT
+    val Enum: FlagSet = Flag.ENUM
+    val Local: FlagSet = Flag.LOCAL
+    val Synthetic: FlagSet = Flag.SYNTHETIC
+    val Artifact: FlagSet = Flag.ARTIFACT
+    val Mutable: FlagSet = Flag.MUTABLE
+    val Accessor: FlagSet = Flags.ACCESSOR
+    val CaseAccessor: FlagSet = Flag.CASEACCESSOR
+    val Covariant: FlagSet = Flag.COVARIANT
+    val Contravariant: FlagSet = Flag.CONTRAVARIANT
+    def Scala2x(implicit ctx: Context): FlagSet = errorScalaNext("Scala2x Flag")
+    val DefaultParameterized: FlagSet = Flag.DEFAULTPARAM
+    val StableRealizable: FlagSet = Flag.STABLE
+    def Extension(implicit ctx: Context): FlagSet = errorScalaNext("Extension Flag")
+    def Given(implicit ctx: Context): FlagSet = errorScalaNext("Given Flag")
+    val ParamAccessor: FlagSet = Flag.PARAMACCESSOR
+    val Param: FlagSet = Flag.PARAM
+    val Deferred: FlagSet = Flag.DEFERRED
+    val Method: FlagSet = Flags.METHOD
+    def Exported(implicit ctx: Context): FlagSet = errorScalaNext("Exported Flag")
+    val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
+    val NoInits: FlagSet = EmptyFlags // doesn't exist so far
+
+    val NoInitsInterface: FlagSet = Interface | NoInits
+    val TermParamOrAccessor: FlagSet = Param | ParamAccessor
+    val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
+    val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
+    val DeferredOrLazyOrMethod: FlagSet = Deferred | Lazy | Method
+
+    implicit class FlagSetOps(private val flagSet: FlagSet) {
+      private def flags: FlagSet = {
+        val fs = flagSet & phase.flagMask
+        (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
+      }
+      private def getFlag(mask: FlagSet): FlagSet = {
+        mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
+      }
+      def is(mask: FlagSet): Boolean = getFlag(mask) != 0
+      def isOneOf(mask: FlagSet): Boolean = is(mask)
+    }
+  }
+
+  implicit class SymbolOps(private val sym: Symbol) {
+    def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
+    def is(mask: FlagSet, butNot: FlagSet = EmptyFlags): Boolean =
+      if (butNot == EmptyFlags)
+        sym.hasFlag(mask)
+      else
+        sym.hasFlag(mask) && sym.hasNoFlags(butNot)
+  }
 
   private def registerSym(addr: Addr, sym: Symbol) =
     symAtAddr(addr) = sym
 
   /** Enter all toplevel classes and objects into their scopes
    */
-  def enter(moduleRoot: Symbol, classRoot: Symbol): Unit = {
+  def enter(moduleRoot: Symbol, classRoot: Symbol)(implicit ctx: Context): Unit = {
     this.roots = Set(moduleRoot, classRoot)
-    val loadingMirror = mirrorThatLoaded(classRoot)
-    implicit val ctx: Context = new Context(loadingMirror.RootClass.owner, classRoot.associatedFile)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     if (rdr.isTopLevel)
@@ -123,18 +222,18 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case UnpickleMode.TypeTree => rdr.readTpt() :: Nil
 //    }
 //  }
-//
-//  class Completer(reader: TastyReader)(implicit @constructorOnly ctx: Context) extends LazyType {
-//    import reader._
+
+  class Completer(reader: TastyReader)(implicit ctx: Context) extends LazyType {
+    import reader._
 //    val owner = ctx.owner
 //    val source = ctx.source
-//    def complete(denot: SymDenotation)(implicit ctx: Context): Unit = {
-//      treeAtAddr(currentAddr) =
-//        new TreeReader(reader).readIndexedDef()(
-//          ctx.withPhaseNoLater(ctx.picklerPhase).withOwner(owner).withSource(source))
-//    }
-//  }
-//
+    override def complete(denot: Symbol): Unit = {
+      treeAtAddr(currentAddr) =
+        new TreeReader(reader).readIndexedDef()( // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
+          ctx.withPhaseNoLater(ctx.picklerPhase))//.withOwner(owner).withSource(source))
+    }
+  }
+
   class TreeReader(val reader: TastyReader) {
     import reader._
 
@@ -221,8 +320,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def readName(): TermName = nameAtRef(readNameRef())
 
-//// ------ Reading types -----------------------------------------------------
-//
+// ------ Reading types -----------------------------------------------------
+
 //    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
 //    def readParamNames(end: Addr): List[Name] =
 //      until(end) {
@@ -230,14 +329,14 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        skipTree()
 //        name
 //      }
-//
+
 //    /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
 //    def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
 //      until(end) { readNat(); readType().asInstanceOf[T] }
-//
+
 //    /** Read reference to definition and return symbol created at that definition */
 //    def readSymRef()(implicit ctx: Context): Symbol = symbolAt(readAddr())
-//
+
 //    /** The symbol at given address; createa new one if none exists yet */
 //    def symbolAt(addr: Addr)(implicit ctx: Context): Symbol = symAtAddr.get(addr) match {
 //      case Some(sym) =>
@@ -290,15 +389,15 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     /** Read a type */
     def readType()(implicit ctx: Context): Type = {
-      val start = currentAddr
-      val tag = readByte()
-      reporter.echo(NoPosition, s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
-
-      def registeringType[T](tp: Type, op: => T): T = {
-        typeAtAddr(start) = tp
-        op
-      }
-
+//      val start = currentAddr
+//      val tag = readByte()
+//      reporter.echo(NoPosition, s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
+//
+//      def registeringType[T](tp: Type, op: => T): T = {
+//        typeAtAddr(start) = tp
+//        op
+//      }
+//
 //      def readLengthType(): Type = {
 //        val end = readEnd()
 //
@@ -384,7 +483,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        assert(currentAddr == end, s"$start $currentAddr $end ${astTagToString(tag)}")
 //        result
 //      }
-
+//
 //      def readSimpleType(): Type = (tag: @switch) match {
 //        case TYPEREFdirect | TERMREFdirect =>
 //          NamedType(NoPrefix, readSymRef())
@@ -430,7 +529,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 
 //      if (tag < firstLengthTreeTag) readSimpleType() else readLengthType()
-      ???
+      sys.error("Reading a Type")
     }
 //
 //    private def readSymNameRef()(implicit ctx: Context): Type = {
@@ -455,21 +554,19 @@ abstract class TreeUnpickler(reader: TastyReader,
 //
 //    def readTypeRef(): Type =
 //      typeAtAddr(readAddr())
-//
-//    def readTermRef()(implicit ctx: Context): TermRef =
-//      readType().asInstanceOf[TermRef]
-//
-//// ------ Reading definitions -----------------------------------------------------
+
+    def readTermRef()(implicit ctx: Context): TermRef =
+      readType().asInstanceOf[TermRef]
+
+// ------ Reading definitions -----------------------------------------------------
 
     private def nothingButMods(end: Addr): Boolean =
       currentAddr == end || isModifierTag(nextByte)
 
     private def localContext(owner: Symbol)(implicit ctx: Context): Context =
-      ctx.fresh.withOwner(owner)
+      ctx.fresh.setOwner(owner)
 
     private def normalizeFlags(tag: Int, givenFlags: FlagSet, name: Name, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
-      import NameOps._
-      import FlagSets._
       val lacksDefinition =
         rhsIsEmpty &&
           name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
@@ -510,10 +607,10 @@ abstract class TreeUnpickler(reader: TastyReader,
         createMemberSymbol()
       case BIND =>
         createBindSymbol()
-//      case TEMPLATE =>
-//        val localDummy = ctx.newLocalDummy(ctx.owner)
-//        registerSym(currentAddr, localDummy)
-//        localDummy
+      case TEMPLATE =>
+        val localDummy = ctx.newLocalDummy(ctx.owner)
+        registerSym(currentAddr, localDummy)
+        localDummy
       case tag =>
         throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
     }
@@ -529,7 +626,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       val typeReader = fork
       val completer = new LazyType {
-        def complete(denot: Symbol)(implicit ctx: Context): Unit =
+        override def complete(denot: Symbol): Unit =
           denot.info = typeReader.readType()
       }
       val sym = ctx.newSymbol(ctx.owner, name, FlagSets.Case, completer)
@@ -558,26 +655,28 @@ abstract class TreeUnpickler(reader: TastyReader,
       val (givenFlags, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
       reporter.echo(NoPosition, s"creating symbol $name at $start with flags $givenFlags")
       val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
-//      def adjustIfModule(completer: LazyType) =
-//        if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
-//      val coord = coordAt(start)
+      def adjustIfModule(completer: LazyType) = {
+        // if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
+        completer
+      }
+      //      val coord = coordAt(start)
       val sym =
         roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
           case Some(rootd) =>
             reporter.echo(NoPosition, s"overwriting $rootd # ${rootd.hashCode}")
 //            rootd.coord = coord
-//            rootd.info = adjustIfModule(
-//                new Completer(subReader(start, end)) with SymbolLoaders.SecondCompleter)
+            rootd.info = adjustIfModule(
+                new Completer(subReader(start, end)))
 //            rootd.flags = flags &~ Touched // allow one more completion
             rootd.setPrivateWithin(privateWithin)
             seenRoots += rootd
             rootd
           case _ =>
-//            val completer = adjustIfModule(new Completer(subReader(start, end)))
+            val completer = adjustIfModule(new Completer(subReader(start, end)))
             if (isClass)
-              ??? //ctx.newClassSymbol(ctx.owner, name.asTypeName, flags, completer, privateWithin, coord)
+              ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
             else
-              ??? //ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin, coord)
+              ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
         }
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
@@ -606,7 +705,6 @@ abstract class TreeUnpickler(reader: TastyReader,
     def readModifiers[WithinType, AnnotType]
         (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
         (implicit ctx: Context): (FlagSet, List[Symbol => AnnotType], WithinType) = {
-      import FlagSets._
       var flags: FlagSet = EmptyFlags
       var annotFns: List[Symbol => AnnotType] = Nil
       var privateWithin = defaultWithin
@@ -617,7 +715,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
         nextByte match {
           case PRIVATE => addFlag(Private)
-          case INTERNAL => ??? // addFlag(Internal)
+          case INTERNAL => addFlag(Internal)
           case PROTECTED => addFlag(Protected)
           case ABSTRACT =>
             readByte()
@@ -679,72 +777,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         val end = readEnd()
         val tp = readType()
         val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-
-        owner =>
-          Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
-    }
-
-    object FlagSets {
-      import scala.reflect.internal.{Flags, ModifierFlags}
-
-      val NoInitsInterface: FlagSet = Flag.INTERFACE
-      val EmptyFlags: FlagSet = NoFlags
-
-      val Private: FlagSet = Flag.PRIVATE
-      val Protected: FlagSet = Flag.PROTECTED
-      val AbsOverride: FlagSet = Flag.ABSOVERRIDE
-      val Abstract: FlagSet = Flag.ABSTRACT
-      val Final: FlagSet = Flag.FINAL
-
-      val Sealed: FlagSet = Flag.SEALED
-      val Case: FlagSet = Flag.CASE
-      val Implicit: FlagSet = ModifierFlags.IMPLICIT
-      def Erased: FlagSet = sys.error("Erased Flag")
-      val Lazy: FlagSet = Flag.LAZY
-      val Override: FlagSet = Flag.OVERRIDE
-      def Inline: FlagSet = sys.error("Inline Flag")
-      def InlineProxy: FlagSet = sys.error("InlineProxy Flag")
-      val Macro: FlagSet = Flag.MACRO
-      def Opaque: FlagSet = sys.error("Opaque Flag")
-      val JavaStatic: FlagSet = ModifierFlags.STATIC
-      val Module: FlagSet = Flags.MODULE
-      val Trait: FlagSet = Flag.TRAIT
-      val Enum: FlagSet = Flag.ENUM
-      val Local: FlagSet = Flag.LOCAL
-      val Synthetic: FlagSet = Flag.SYNTHETIC
-      val Artifact: FlagSet = Flag.ARTIFACT
-      val Mutable: FlagSet = Flag.MUTABLE
-      val Accessor: FlagSet = Flags.ACCESSOR
-      val CaseAccessor: FlagSet = Flag.CASEACCESSOR
-      val Covariant: FlagSet = Flag.COVARIANT
-      val Contravariant: FlagSet = Flag.CONTRAVARIANT
-      def Scala2x: FlagSet = sys.error("Scala2x Flag")
-      val DefaultParameterized: FlagSet = Flag.DEFAULTPARAM
-      val StableRealizable: FlagSet = Flag.STABLE
-      def Extension: FlagSet = sys.error("Extension Flag")
-      def Given: FlagSet = sys.error("Given Flag")
-      val ParamAccessor: FlagSet = Flag.PARAMACCESSOR
-      val Param: FlagSet = Flag.PARAM
-      val Deferred: FlagSet = Flag.DEFERRED
-      val Method: FlagSet = Flags.METHOD
-      def Exported: FlagSet = sys.error("Exported Flag")
-      val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
-
-      val TermParamOrAccessor: FlagSet = Param | ParamAccessor
-      val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
-      val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
-
-      implicit class FlagSetOps(private val flagSet: FlagSet) {
-        private def flags: FlagSet = {
-          val fs = flagSet & phase.flagMask
-          (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
-        }
-        private def getFlag(mask: FlagSet): FlagSet = {
-          mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
-        }
-        def is(mask: FlagSet): Boolean = getFlag(mask) != 0
-        def isOneOf(mask: FlagSet): Boolean = is(mask)
-      }
+        owner => Annotation(lazyAnnotTree(owner)) //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -753,22 +786,21 @@ abstract class TreeUnpickler(reader: TastyReader,
      *           trait owning the indexed statements can have as flags.
      */
     def indexStats(end: Addr)(implicit ctx: Context): FlagSet = {
-      import FlagSets._
       var initsFlags: FlagSet = NoInitsInterface
       while (currentAddr.index < end.index) {
         nextByte match {
           case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
             val sym = symbolAtCurrent()
             skipTree()
-//            if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
-//              initsFlags = EmptyFlags
-//            else if (sym.isClass ||
-//              sym.is(Method, butNot = Deferred) && !sym.isConstructor)
-//              initsFlags &= NoInits
+            if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
+              initsFlags = EmptyFlags
+            else if (sym.isClass ||
+              sym.is(Method, butNot = Deferred) && !sym.isConstructor)
+              initsFlags &= NoInits
           case IMPORT =>
             skipTree()
-//          case PACKAGE =>
-//            processPackage { (pid, end) => implicit ctx => indexStats(end) }
+          case PACKAGE =>
+            processPackage { (_, end) => implicit ctx => indexStats(end) }
           case _ =>
             skipTree()
             initsFlags = EmptyFlags
@@ -778,19 +810,21 @@ abstract class TreeUnpickler(reader: TastyReader,
       initsFlags
     }
 
-//    /** Process package with given operation `op`. The operation takes as arguments
-//     *   - a `RefTree` representing the `pid` of the package,
-//     *   - an end address,
-//     *   - a context which has the processed package as owner
-//     */
-//    def processPackage[T](op: (RefTree, Addr) => Context => T)(implicit ctx: Context): T = {
-//      val sctx = sourceChangeContext()
-//      if (sctx `ne` ctx) return processPackage(op)(sctx)
-//      readByte()
-//      val end = readEnd()
-//      val pid = ref(readTermRef()).asInstanceOf[RefTree]
-//      op(pid, end)(localContext(pid.symbol.moduleClass))
-//    }
+    /** Process package with given operation `op`. The operation takes as arguments
+     *   - a `RefTree` representing the `pid` of the package,
+     *   - an end address,
+     *   - a context which has the processed package as owner
+     */
+    def processPackage[T](op: (RefTree, Addr) => Context => T)(implicit ctx: Context): T = {
+      val sctx = sourceChangeContext()
+      if (sctx `ne` ctx) return processPackage(op)(sctx)
+      readByte()
+      val end = readEnd()
+      val pid = ref(readTermRef()).asInstanceOf[RefTree]
+      op(pid, end)(localContext(pid.symbol.moduleClass))
+    }
+
+    def ref[T <: NameTree](tp: T): Tree = tp
 
     /** Create symbols the longest consecutive sequence of parameters with given
      *  `tag` starting at current address.
@@ -811,23 +845,23 @@ abstract class TreeUnpickler(reader: TastyReader,
       indexParams(PARAM)
     }
 
-//    /** If definition was already read by a completer, return the previously read tree
-//     *  or else read definition.
-//     */
-//    def readIndexedDef()(implicit ctx: Context): Tree = treeAtAddr.remove(currentAddr) match {
-//      case Some(tree) =>
-//        assert(tree != PoisonTree, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in unit ${ctx.compilationUnit}")
-//        skipTree()
-//        tree
-//      case none =>
-//        val start = currentAddr
-//        treeAtAddr(start) = PoisonTree
-//        val tree = readNewDef()
-//        treeAtAddr.remove(start)
-//        tree
-//    }
-//
-//    private def readNewDef()(implicit ctx: Context): Tree = {
+    /** If definition was already read by a completer, return the previously read tree
+     *  or else read definition.
+     */
+    def readIndexedDef()(implicit ctx: Context): Tree = treeAtAddr.remove(currentAddr) match {
+      case Some(tree) =>
+        assert(tree != PoisonTree, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
+        skipTree()
+        tree
+      case none =>
+        val start = currentAddr
+        treeAtAddr(start) = PoisonTree
+        val tree = readNewDef()
+        treeAtAddr.remove(start)
+        tree
+    }
+
+    private def readNewDef()(implicit ctx: Context): Tree = {
 //      val sctx = sourceChangeContext()
 //      if (sctx `ne` ctx) return readNewDef()(sctx)
 //      val start = currentAddr
@@ -943,8 +977,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //
 //      tree.setDefTree
-//    }
-//
+      errorConstructTASTyTree
+    }
+
 //    private def readTemplate(implicit ctx: Context): Template = {
 //      val start = currentAddr
 //      assert(sourcePathAt(start).isEmpty)
@@ -994,17 +1029,17 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        untpd.Template(constr, mappedParents, Nil, self, lazyStats)
 //          .withType(localDummy.termRef))
 //    }
-//
+
 //    def skipToplevel()(implicit ctx: Context): Unit= {
 //      if (!isAtEnd && isTopLevel) {
 //        skipTree()
 //        skipToplevel()
 //      }
 //    }
-//
+
     def isTopLevel: Boolean =
       nextByte == IMPORT || nextByte == PACKAGE
-//
+
 //    def readTopLevel()(implicit ctx: Context): List[Tree] = {
 //      @tailrec def read(acc: ListBuffer[Tree]): List[Tree] = {
 //        if (isTopLevel) {
@@ -1016,7 +1051,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //      read(new ListBuffer[tpd.Tree])
 //    }
-//
+
 //    def readIndexedStat(exprOwner: Symbol)(implicit ctx: Context): Tree = nextByte match {
 //      case TYPEDEF | VALDEF | DEFDEF =>
 //        readIndexedDef()
@@ -1030,7 +1065,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case _ =>
 //        readTerm()(ctx.withOwner(exprOwner))
 //    }
-//
+
 //    def readImport()(implicit ctx: Context): Tree = {
 //      val start = currentAddr
 //      assert(sourcePathAt(start).isEmpty)
@@ -1041,7 +1076,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      val expr = readTerm()
 //      setSpan(start, Import(importGiven, expr, readSelectors()))
 //    }
-//
+
 //    def readSelectors()(implicit ctx: Context): List[untpd.Tree] = nextByte match {
 //      case IMPORTED =>
 //        val start = currentAddr
@@ -1065,26 +1100,26 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      case _ =>
 //        Nil
 //    }
-//
+
 //    def readIndexedStats(exprOwner: Symbol, end: Addr)(implicit ctx: Context): List[Tree] =
 //      until(end)(readIndexedStat(exprOwner))
-//
+
 //    def readStats(exprOwner: Symbol, end: Addr)(implicit ctx: Context): List[Tree] = {
 //      fork.indexStats(end)
 //      readIndexedStats(exprOwner, end)
 //    }
-//
+
 //    def readIndexedParams[T <: MemberDef](tag: Int)(implicit ctx: Context): List[T] =
 //      collectWhile(nextByte == tag) { readIndexedDef().asInstanceOf[T] }
-//
+
 //    def readParams[T <: MemberDef](tag: Int)(implicit ctx: Context): List[T] = {
 //      fork.indexParams(tag)
 //      readIndexedParams(tag)
 //    }
-//
-//// ------ Reading trees -----------------------------------------------------
-//
-//    def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
+
+// ------ Reading trees -----------------------------------------------------
+
+    def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
 //      val sctx = sourceChangeContext()
 //      if (sctx `ne` ctx) return readTerm()(sctx)
 //      val start = currentAddr
@@ -1294,8 +1329,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      if (!tree.isInstanceOf[TypTree]) // FIXME: Necessary to avoid self-type cyclic reference in tasty_tools
 //        tree.overwriteType(tree.tpe.simplified)
 //      setSpan(start, tree)
-//    }
-//
+      errorConstructTASTyTree
+    }
+
 //    def readTpt()(implicit ctx: Context): Tree = {
 //      val sctx = sourceChangeContext()
 //      if (sctx `ne` ctx) return readTpt()(sctx)
@@ -1326,7 +1362,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //      setSpan(start, tree)
 //    }
-//
+
 //    def readCases(end: Addr)(implicit ctx: Context): List[CaseDef] =
 //      collectWhile((nextUnsharedTag == CASEDEF) && currentAddr != end) {
 //        if (nextByte == SHAREDterm) {
@@ -1335,7 +1371,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        }
 //        else readCase()(ctx.fresh.setNewScope)
 //      }
-//
+
 //    def readCase()(implicit ctx: Context): CaseDef = {
 //      val sctx = sourceChangeContext()
 //      if (sctx `ne` ctx) return readCase()(sctx)
@@ -1347,16 +1383,15 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      val guard = ifBefore(end)(readTerm(), EmptyTree)
 //      setSpan(start, CaseDef(pat, guard, rhs))
 //    }
-//
+
 //    def readLater[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Trees.Lazy[T] =
 //      readLaterWithOwner(end, op)(ctx)(ctx.owner)
-//
-//    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Trees.Lazy[T] = {
-//      val localReader = fork
-//      goto(end)
-//      owner => new LazyReader(localReader, owner, ctx.mode, ctx.source, op)
-//    }
-//
+
+    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Tree = {
+      goto(end)
+      _ => sys.error("Trying to generate tree from TASTY")
+    }
+
 //    def readHole(end: Addr, isType: Boolean)(implicit ctx: Context): Tree = {
 //      val idx = readNat()
 //      val args = until(end)(readTerm())
@@ -1407,8 +1442,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        indexCoord(addr.index)
 //    }
 //
-//    /** Pickled source path at `addr`. */
-//    def sourcePathAt(addr: Addr)(implicit ctx: Context): String =
+    /** Pickled source path at `addr`. */
+    def sourcePathAt(addr: Addr)(implicit ctx: Context): String = ""
 //      if (ctx.mode.is(Mode.ReadPositions)) {
 //        posUnpicklerOpt match {
 //          case Some(posUnpickler) =>
@@ -1417,19 +1452,19 @@ abstract class TreeUnpickler(reader: TastyReader,
 //            ""
 //        }
 //      } else ""
-//
-//    /** If currentAddr carries a source path, the current context with
-//     *  the source of that path, otherwise the current context itself.
-//     */
-//    def sourceChangeContext(addr: Addr = currentAddr)(implicit ctx: Context): Context = {
-//      val path = sourcePathAt(addr)
-//      if (path.nonEmpty) {
-//        pickling.println(i"source change at $addr: $path")
-//        ctx.withSource(ctx.getSource(path))
-//      }
-//      else ctx
-//    }
-//
+
+    /** If currentAddr carries a source path, the current context with
+     *  the source of that path, otherwise the current context itself.
+     */
+    def sourceChangeContext(addr: Addr = currentAddr)(implicit ctx: Context): Context = {
+      val path = sourcePathAt(addr)
+      if (!path.isEmpty) {
+        reporter.echo(NoPosition, s"source change at $addr: $path")
+        ??? // ctx.withSource(ctx.getSource(path))
+      }
+      else ctx
+    }
+
 //    /** Set position of `tree` at given `addr`. */
 //    def setSpan[T <: untpd.Tree](addr: Addr, tree: T)(implicit ctx: Context): tree.type = {
 //      val span = spanAt(addr)
@@ -1509,35 +1544,35 @@ abstract class TreeUnpickler(reader: TastyReader,
 //    override def toString: String =
 //      s"OwnerTree(${addr.index}, ${end.index}, ${if (myChildren == null) "?" else myChildren.mkString(" ")})"
   }
+
+  /** A marker value used to detect cyclic reference while unpickling definitions. */
+  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
 }
 
-object TreeUnpickler {
-
-  /** Define the expected format of the tasty bytes
-   *   - TopLevel: Tasty that contains a full class nested in its package
-   *   - Term: Tasty that contains only a term tree
-   *   - TypeTree: Tasty that contains only a type tree or a reference to a type
-   */
-  sealed trait UnpickleMode
-  object UnpickleMode {
-    /** Unpickle a full class in some package */
-    object TopLevel extends UnpickleMode
-    /** Unpickle as a TermTree */
-    object Term extends UnpickleMode
-    /** Unpickle as a TypeTree */
-    object TypeTree extends UnpickleMode
-  }
-
-//  /** A marker value used to detect cyclic reference while unpickling definitions. */
-//  @sharable val PoisonTree: tpd.Tree = new EmptyTree
-
-  /** An enumeration indicating which subtrees should be added to an OwnerTree. */
-  type MemberDefMode = Int
-  final val MemberDefsOnly = 0   // add only member defs; skip other statements
-  final val NoMemberDefs = 1     // add only statements that are not member defs
-  final val AllDefs = 2          // add everything
-
-  class TreeWithoutOwner extends Exception
-}
+//object TreeUnpickler {
+//
+//  /** Define the expected format of the tasty bytes
+//   *   - TopLevel: Tasty that contains a full class nested in its package
+//   *   - Term: Tasty that contains only a term tree
+//   *   - TypeTree: Tasty that contains only a type tree or a reference to a type
+//   */
+//  sealed trait UnpickleMode
+//  object UnpickleMode {
+//    /** Unpickle a full class in some package */
+//    object TopLevel extends UnpickleMode
+//    /** Unpickle as a TermTree */
+//    object Term extends UnpickleMode
+//    /** Unpickle as a TypeTree */
+//    object TypeTree extends UnpickleMode
+//  }
+//
+//  /** An enumeration indicating which subtrees should be added to an OwnerTree. */
+//  type MemberDefMode = Int
+//  final val MemberDefsOnly = 0   // add only member defs; skip other statements
+//  final val NoMemberDefs = 1     // add only statements that are not member defs
+//  final val AllDefs = 2          // add everything
+//
+//  class TreeWithoutOwner extends Exception
+//}
 
 
