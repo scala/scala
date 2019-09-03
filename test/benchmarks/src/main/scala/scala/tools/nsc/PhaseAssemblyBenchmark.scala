@@ -47,8 +47,8 @@ class PhaseAssemblyBenchmark {
     val g = s.global
     val graph = g.phasesSetToDepGraph(s.components.reverse)
     graph.removeDanglingNodes()
-    graph.collapseHardLinks()
-    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
+    graph.validateAndEnforceHardlinks()
+    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
     graph
   }
 }

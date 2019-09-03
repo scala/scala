@@ -33,10 +33,9 @@ class PhaseAssemblyTest {
 
     val graph = global.phasesSetToDepGraph(components.reverse)
     graph.removeDanglingNodes()
-    graph.collapseHardLinks()
-    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
-    val result: List[String] =graph.compilerPhaseList().map(_.phaseName).filter(_.startsWith("phase_"))
+    graph.validateAndEnforceHardlinks()
+    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
+    val result: List[String] = graph.compilerPhaseList().map(_.phaseName).filter(_.startsWith("phase_"))
     assertEquals(names.toList, result)
   }
-
 }
