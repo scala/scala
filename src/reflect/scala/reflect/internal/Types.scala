@@ -3674,13 +3674,7 @@ trait Types
 
       if (suspended) tp =:= origin
       else if (instValid) checkIsSameType(tp)
-      else isRelatable(tp) && {
-        val newInst = wildcardToTypeVarMap(tp)
-        (constr isWithinBounds newInst) && {
-          setInst(newInst)
-          instValid
-        }
-      }
+      else isRelatable(tp) && constr.isWithinBounds(tp) && setInst(tp).instValid
     }
 
     /**

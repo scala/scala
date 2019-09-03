@@ -59,17 +59,15 @@ object Test extends App {
   val y: (C[X], C[Y]) forSome { type X; type Y } = x
 
    def foo(x : Counter[T] { def name : String } forSome { type T }) = x match {
-     case ctr: Counter[t] =>
+     case ctr =>
        val c = ctr.newCounter
        println(ctr.name+" "+ctr.get(ctr.inc(ctr.inc(c))))
-     case _ =>
    }
 
    def fooW(x : Counter[T] { def name : String } forSome { type T }) = x match {
-     case ctr: Counter[t] =>
+     case ctr =>
        val c = ctr.newCounter
        println(ctr.name+" "+ctr.get(ctr.inc(ctr.inc(c))))
-     case _ =>
    }
 
    val ci = new Counter[Int] {
