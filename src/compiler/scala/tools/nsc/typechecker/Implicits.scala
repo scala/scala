@@ -1761,7 +1761,8 @@ trait Implicits {
               if (out.annotations.isEmpty && (outSym == ObjectClass || outSym == AnyValClass))
                 maybeInvalidConversionError(s"the result type of an implicit conversion must be more specific than $out")
               else if (in.annotations.isEmpty && in.typeSymbol == NullClass)
-                maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
+                //maybeInvalidConversionError("an expression of type Null is ineligible for implicit conversion")
+                false
               else false
 
             if (fail) result = SearchFailure

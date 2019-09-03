@@ -1,7 +1,0 @@
-t4158.scala:2: error: an expression of type Null is ineligible for implicit conversion
-  var x: Int = null
-               ^
-t4158.scala:3: error: an expression of type Null is ineligible for implicit conversion
-  var y = null: Int
-          ^
-two errors found
