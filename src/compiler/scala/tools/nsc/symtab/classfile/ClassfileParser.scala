@@ -1261,13 +1261,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         if (expectedUUID != tastyUUID) {
           reporter.error(NoPosition, s"Tasty UUID ($tastyUUID) file did not correspond the tasty UUID ($expectedUUID) declared in the classfile $file.")
         }
-        reporter.echo(NoPosition, s"Tasty UUID = $tastyUUID for classfile $file.") // works!
         TASTYBytes
       }
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       val bytes = parseTASTYBytes()
-      reporter.echo(NoPosition, s"PARSING FOR $clazz, $staticModule, ${s"${file.name.stripSuffix(".class")}.tasty"}")
       new TASTYUnpickler(bytes).unpickle(clazz, staticModule, s"${file.name.stripSuffix(".class")}.tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart

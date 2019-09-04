@@ -57,10 +57,13 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
       case UTF8 =>
         goto(end)
         newTermName(bytes, start.index, length)
-      case QUALIFIED | EXPANDED | EXPANDPREFIX =>
-        readName()
-        readName()
-//        sys.error("qualifiedNameKindOfTag")
+      case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
+        val sep = tag match {
+          case QUALIFIED    => "."
+          case EXPANDED     => "$$"
+          case EXPANDPREFIX => "$"
+        }
+        newTermName("" + readName() + sep + readName())
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
         val separator = readName().toString

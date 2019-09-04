@@ -3,6 +3,7 @@ package tasty
 
 //import TreeUnpickler.UnpickleMode
 import TastyUnpickler.SectionUnpickler
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyBuffer.NameRef
 import scala.util.control.NonFatal
 
@@ -57,13 +58,14 @@ abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = Unpick
     import treeUnpickler.Context
     try {
       implicit val ctx: Context = {
-        new Context.InitialContext(classRoot, mirrorThatLoaded(classRoot).RootClass.owner, classRoot.associatedFile)
+        val loadingMirror = mirrorThatLoaded(classRoot)
+        new Context.InitialContext(classRoot, loadingMirror, loadingMirror.RootClass.owner, AbstractFile.getFile(filename))
       }
       treeUnpickler.enter(moduleRoot, classRoot)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()
-        throw new RuntimeException("error reading TASTy from "+filename+": "+ex.getMessage())
+        throw new RuntimeException(s"error reading TASTy from $filename: ${ex.getMessage()}")
     }
   }
 
