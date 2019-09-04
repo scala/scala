@@ -79,6 +79,14 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   override def isEmpty: Boolean = true
 
   def get(key: A): Option[B] = None
+  private[immutable] final def foreachKV[U](f: (A, B) => U): Unit = {
+    def process(n: ListMap[_, _]): Unit = if (!n.isEmpty) {
+      f(n.key, n.value)
+      process(n.next)
+    }
+
+    process(this)
+  }
 
   override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
 

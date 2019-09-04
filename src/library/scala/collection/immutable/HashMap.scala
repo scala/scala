@@ -51,6 +51,24 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   def iterator: Iterator[(A,B)] = Iterator.empty
 
   override def foreach[U](f: ((A, B)) => U): Unit = ()
+  private[HashMap] def foreachKV[U](f: (A, B) => U): Unit = ()
+  override def hashCode(): Int = {
+    import scala.util.hashing.MurmurHash3
+    var a, b, n = 0
+    var c = 1
+    this foreachKV { (k,v) =>
+      val h = MurmurHash3.product2Hash(k,v)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      n += 1
+    }
+    var h = MurmurHash3.mapSeed
+    h = MurmurHash3.mix(h, a)
+    h = MurmurHash3.mix(h, b)
+    h = MurmurHash3.mixLast(h, c)
+    MurmurHash3.finalizeHash(h, n)
+  }
 
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
@@ -232,6 +250,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
+    override private[HashMap] def foreachKV[U](f: (A, B) => U): Unit = f(key, value)
+
     // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
@@ -293,6 +313,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
+    override private[HashMap] final def foreachKV[U](f: (A, B) => U): Unit = kvs.foreachKV(f)
     override def split: Seq[HashMap[A, B]] = {
       val (x, y) = kvs.splitAt(kvs.size / 2)
       def newhm(lm: ListMap[A, B @uV]) = {
@@ -469,6 +490,14 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         i += 1
       }
     }
+    override private[HashMap] def foreachKV[U](f: (A, B) => U): Unit = {
+      var i = 0
+      while (i < elems.length) {
+        elems(i).foreachKV(f)
+        i += 1
+      }
+    }
+
 
     private def posOf(n: Int, bm: Int) = {
       var left = n

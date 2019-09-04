@@ -203,4 +203,23 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)
 
   override def foreach[U](f : ((A,B)) => U) = RB.foreach(tree, f)
+
+  private[TreeMap] def foreachKV[U](f: (A, B) => U): Unit = RB.foreachKV(tree, f)
+  override def hashCode(): Int = {
+    import scala.util.hashing.MurmurHash3
+    var a, b, n = 0
+    var c = 1
+    this foreachKV { (k,v) =>
+      val h = MurmurHash3.product2Hash(k,v)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      n += 1
+    }
+    var h = MurmurHash3.mapSeed
+    h = MurmurHash3.mix(h, a)
+    h = MurmurHash3.mix(h, b)
+    h = MurmurHash3.mixLast(h, c)
+    MurmurHash3.finalizeHash(h, n)
+  }
 }
