@@ -19,7 +19,7 @@ class PhaseAssemblyBenchmark {
   var data: Data[_] = _
 
   @Param(Array("1", "4", "8", "16"))
-  var size: Int = 16
+  var size: Int = 0
 
   @Setup
   def setup(): Unit = {
@@ -47,8 +47,7 @@ class PhaseAssemblyBenchmark {
     val g = s.global
     val graph = g.phasesSetToDepGraph(s.components.reverse)
     graph.removeDanglingNodes()
-    graph.collapseHardLinks()
-    graph.assignLevelsAndDetectCycles(graph.getNodeByPhase("parser"))
+    graph.collapseHardLinksAndLevels(graph.getNodeByPhase("parser"), 1)
     graph
   }
 }
