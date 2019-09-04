@@ -111,12 +111,11 @@ trait Types
   private object substTypeMapCache {
     private[this] var cached: SubstTypeMap = new SubstTypeMap(Nil, Nil)
 
-    def apply(from: List[Symbol], to: List[Type]): SubstTypeMap = {
+    def apply(from: List[Symbol], to: List[Type]): SubstTypeMap = if (isCompilerUniverse) {
       if ((cached.from ne from) || (cached.to ne to))
         cached = new SubstTypeMap(from, to)
-
       cached
-    }
+    } else new SubstTypeMap(from, to)
   }
 
   /** The current skolemization level, needed for the algorithms
