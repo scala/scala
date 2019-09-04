@@ -199,6 +199,7 @@ trait GenTraversableOnce[+A] extends Any {
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
+  @deprecated("Use foldLeft instead of /:", "2.12.10")
   def /:[B](z: B)(op: (B, A) => B): B
 
   /** Applies a binary operator to all elements of this $coll and a start value,
@@ -234,6 +235,7 @@ trait GenTraversableOnce[+A] extends Any {
    *           }}}
    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
    */
+  @deprecated("Use foldRight instead of :\\", "2.12.10")
   def :\[B](z: B)(op: (A, B) => B): B
 
   /** Applies a binary operator to a start value and all elements of this $coll,
