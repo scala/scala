@@ -37,6 +37,7 @@ object PartestUtil {
       "--instrumented", "--presentation", "--failed", "--update-check", "--no-exec",
       "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--help")
     val srcPathOption = "--srcpath"
+    val compilerPathOption = "--compilerpath"
     val grepOption = "--grep"
 
     // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
@@ -93,9 +94,14 @@ object PartestUtil {
         opt + " " + path
     }
 
+   val CompilerPath = ((token(compilerPathOption) <~ Space) ~ token(NotSpace)) map {
+     case opt ~ path =>
+       opt + " " + path
+   }
+
     val ScalacOptsParser = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
 
-    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep | ScalacOptsParser
+    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | CompilerPath | TestPathParser | Grep | ScalacOptsParser
     (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse(""))
   }
 }
