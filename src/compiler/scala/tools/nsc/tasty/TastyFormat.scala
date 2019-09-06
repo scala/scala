@@ -3,7 +3,9 @@ package tasty
 
 /************************************************************
 
-This was adapted from https://github.com/lampepfl/dotty/blob/master/compiler/src/dotty/tools/dotc/core/tasty/TastyFormat.scala
+The files in this directory was adapted from https://github.com/lampepfl/dotty.git commit #af66579749e567c8319863cc25cc7e6eac093114
+
+  - this file adapted from https://github.com/lampepfl/dotty/blob/master/compiler/src/dotty/tools/dotc/core/tasty/TastyFormat.scala
 
 Notation:
 

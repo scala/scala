@@ -25,7 +25,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
   final class NameTable extends (NameRef => TermName) with TASTYUniverse with TASTYNameTable {
     val symbolTable: self.symbolTable.type = self.symbolTable
     val nameAtRef: NameRef => self.symbolTable.TermName = this
-    private val names = new mutable.ArrayBuffer[TermName]
+    private[TastyUnpickler] val names = new mutable.ArrayBuffer[TermName]
     def add(name: TermName): mutable.ArrayBuffer[TermName] = names += name
     def apply(ref: NameRef): TermName = names(ref.index)
     def contents: Iterable[TermName] = names
@@ -56,14 +56,18 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
     val result = tag match {
       case UTF8 =>
         goto(end)
-        newTermName(bytes, start.index, length)
+        val res = newTermName(bytes, start.index, length)
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: UTF8 name: $res")
+        res
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
           case QUALIFIED    => "."
           case EXPANDED     => "$$"
           case EXPANDPREFIX => "$"
         }
-        newTermName("" + readName() + sep + readName())
+        val res = newTermName("" + readName() + sep + readName())
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
+        res
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
         val separator = readName().toString
@@ -74,16 +78,20 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
         val result = readName()
-        readNat()
+        val nat = readNat()
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: DEFAULTGETTER | VARIANT name: $result[$nat]")
         result // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original = readName()
         val result = readName().toTypeName
         val paramsSig = until(end)(readParamSig())
         val sig = Signature(paramsSig, result)
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: SIGNED name: SignedName($original, $sig)")
         original // SignedName(original, sig)
       case _ =>
-        readName() // simpleNameKindOfTag(tag)(readName())
+        val res = readName() // simpleNameKindOfTag(tag)(readName())
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: ${TastyFormat.astTagToString(tag)} name: $res")
+        res
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
     result
