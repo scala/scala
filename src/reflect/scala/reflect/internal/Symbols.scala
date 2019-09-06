@@ -1535,14 +1535,22 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 //          activeLocks += 1
  //         lockedSyms += this
         }
-        val current = phase
-        try {
-          assertCorrectThread()
-          phase = phaseOf(infos.validFrom)
-          tp.complete(this)
-        } finally {
-          unlock()
-          phase = current
+        if (isCompilerUniverse) {
+          val current = phase
+          try {
+            assertCorrectThread()
+            phase = phaseOf(infos.validFrom)
+            tp.complete(this)
+          } finally {
+            unlock()
+            phase = current
+          }
+        } else {
+          try {
+            tp.complete(this)
+          } finally {
+            unlock()
+          }
         }
         cnt += 1
         // allow for two completions:
