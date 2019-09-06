@@ -198,6 +198,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.wildcardExtrapolation
     this.IsDependentCollector
     this.ApproximateDependentMap
+    this.wildcardToTypeVarMap
     this.typeVarToOriginMap
     this.ErroneousCollector
     this.adaptToNewRunMap
