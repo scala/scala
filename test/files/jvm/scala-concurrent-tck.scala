@@ -45,9 +45,11 @@ trait TestBase {
   def await[A](value: Awaitable[A]): A = {
     var a: A = null.asInstanceOf[A]
     def check = {
-      val tried = Try(Await.result(value, Duration(500, "ms")))
-      tried.foreach(x => a = x)
-      tried.isSuccess
+      Try(Await.result(value, Duration(500, "ms"))) match {
+        case Success(x) => a = x ; true
+        case Failure(_: TimeoutException) => false
+        case Failure(t) => throw t
+      }
     }
     waitForIt(check, progress = Fast, label = "concurrent-tck test result")
     a
@@ -664,14 +666,14 @@ class FutureProjections extends TestBase {
     done =>
     val cause = new RuntimeException
     val f = Future { throw cause }
-    done(Await.result(f.failed, Duration(500, "ms")) == cause)
+    done(await(f.failed) == cause)
   }
 
   def testFailedSuccessAwait(): Unit = once {
     done =>
     val f = Future { 0 }
     try {
-      Await.result(f.failed, Duration(500, "ms"))
+      await(f.failed)
       done(false)
     } catch {
       case nsee: NoSuchElementException => done(true)
@@ -685,6 +687,7 @@ class FutureProjections extends TestBase {
     Future {
       assertThrows[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
       p.success(0)
+      await(f)
       Await.ready(f, Duration.Zero)
       Await.ready(f, Duration(500, "ms"))
       Await.ready(f, Duration.Inf)
@@ -727,7 +730,7 @@ class Blocking extends TestBase {
     val cause = new RuntimeException
     val f = Future { throw cause }
     try {
-      Await.result(f, Duration(500, "ms"))
+      await(f)
       done(false)
     } catch {
       case  t: Throwable => done(t == cause)
@@ -749,9 +752,7 @@ class BlockContexts extends TestBase {
   import ExecutionContext.Implicits._
   import scala.concurrent.{ Await, Awaitable, BlockContext }
 
-  private def getBlockContext(body: => BlockContext): BlockContext = {
-    Await.result(Future { body }, Duration(500, "ms"))
-  }
+  private def getBlockContext(body: => BlockContext): BlockContext = await(Future(body))
 
   // test outside of an ExecutionContext
   def testDefaultOutsideFuture(): Unit = {
