@@ -12,7 +12,7 @@ import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 import scala.reflect.{ classTag, ClassTag }
-import scala.tools.partest.TestUtil.intercept
+import scala.tools.testkit.AssertUtil.assertThrows
 import scala.annotation.tailrec
 
 trait TestBase {
@@ -670,7 +670,7 @@ class FutureProjections extends TestBase {
     val p = Promise[Int]()
     val f = p.future
     Future {
-      intercept[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
+      assertThrows[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
       p.success(0)
       Await.ready(f, Duration.Zero)
       Await.ready(f, Duration(500, "ms"))
@@ -682,9 +682,9 @@ class FutureProjections extends TestBase {
   def testAwaitNegativeDuration(): Unit = once { done =>
     val f = Promise().future
     Future {
-      intercept[TimeoutException] { Await.ready(f, Duration.Zero) }
-      intercept[TimeoutException] { Await.ready(f, Duration.MinusInf) }
-      intercept[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration.Zero) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration.MinusInf) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
       done(true)
     } onComplete { case Failure(x) => done(throw x); case _ => }
   }
