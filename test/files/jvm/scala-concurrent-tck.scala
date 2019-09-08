@@ -19,18 +19,19 @@ trait TestBase {
   trait Done { def apply(proof: => Boolean): Unit }
   def once(body: Done => Unit): Unit = {
     import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
+    import TimeUnit.{MILLISECONDS => Milliseconds}
     import scala.tools.testkit.AssertUtil.{Slow, waitForIt}
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
-    waitForIt(
-      Option(q.poll(5000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false),
-      progress = Slow,
-      label = "concurrent-tck"
-    )
+    var tried: Try[Boolean] = null
+    def check = { tried = q.poll(5000, Milliseconds) ; tried != null }
+    waitForIt(check, progress = Slow, label = "concurrent-tck")
+    assert(tried.isSuccess)
+    assert(tried.get)
     // Check that we don't get more than one completion
-    assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
+    assert(q.poll(50, Milliseconds) eq null)
   }
 
   def test[T](name: String)(body: => T): T = {
