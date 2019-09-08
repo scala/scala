@@ -6,6 +6,7 @@ import scala.concurrent.{
   ExecutionContext,
   CanAwait,
   Await,
+  Awaitable,
   blocking
 }
 import scala.util.{ Try, Success, Failure }
@@ -16,11 +17,11 @@ import scala.tools.testkit.AssertUtil.assertThrows
 import scala.annotation.tailrec
 
 trait TestBase {
+  import scala.tools.testkit.AssertUtil.{Fast, Slow, waitForIt}
   trait Done { def apply(proof: => Boolean): Unit }
   def once(body: Done => Unit): Unit = {
     import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
     import TimeUnit.{MILLISECONDS => Milliseconds}
-    import scala.tools.testkit.AssertUtil.{Slow, waitForIt}
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
@@ -39,6 +40,17 @@ trait TestBase {
     val r = body
     println(s"finished $name")
     r
+  }
+
+  def await[A](value: Awaitable[A]): A = {
+    var a: A = null.asInstanceOf[A]
+    def check = {
+      val tried = Try(Await.result(value, Duration(500, "ms")))
+      tried.foreach(x => a = x)
+      tried.isSuccess
+    }
+    waitForIt(check, progress = Fast, label = "concurrent-tck test result")
+    a
   }
 }
 
@@ -707,7 +719,7 @@ class Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = Future { 0 }
-    done(Await.result(f, Duration(500, "ms")) == 0)
+    done(await(f) == 0)
   }
 
   def testAwaitFailure(): Unit = once {
@@ -725,7 +737,7 @@ class Blocking extends TestBase {
   def testFQCNForAwaitAPI(): Unit = once {
     done =>
     done(classOf[CanAwait].getName == "scala.concurrent.CanAwait" &&
-         Await.getClass.getName == "scala.concurrent.Await")
+         Await.getClass.getName == "scala.concurrent.Await$")
   }
 
   test("testAwaitSuccess")(testAwaitSuccess())
@@ -1073,6 +1085,7 @@ extends App {
   new FutureCombinators
   new FutureProjections
   new Promises
+  new Blocking
   new BlockContexts
   new Exceptions
   new GlobalExecutionContext
@@ -1081,4 +1094,3 @@ extends App {
 
   System.exit(0)
 }
-
