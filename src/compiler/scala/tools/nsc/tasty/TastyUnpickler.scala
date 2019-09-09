@@ -74,7 +74,9 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         val num = readNat()
         val originals = until(end)(readName())
         val original = if (originals.isEmpty) termNames.EMPTY else originals.head
-        sys.error("uniqueNameKindOfSeparator")
+        val res = newTermName("" + original + separator + num)
+        reporter.echo(NoPosition, s"${nameAtRef.names.size}: UNIQUE name: $res")
+        res
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
         val result = readName()

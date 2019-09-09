@@ -56,6 +56,8 @@ abstract class TreeUnpickler(reader: TastyReader,
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
 
+  //----------------- dotc API adapters --------------------------------------------------------------------------------
+
   sealed abstract class Context {
 
     def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
@@ -79,14 +81,14 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(NoPosition)
 
-    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: LazyType, privateWithin: Symbol = NoSymbol): TermSymbol = {
+    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): TermSymbol = {
       val sym = owner.newTermSymbol(name.toTermName, NoPosition, flags)
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
       sym
     }
 
-    def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: LazyType, privateWithin: Symbol): ClassSymbol = {
+    def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
       val sym = owner.newClassSymbol(name = typeName, newFlags = flags)
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
@@ -135,6 +137,11 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   object SymbolOps {
     implicit class SymbolDecorator(sym: Symbol) {
+      def completer: TastyLazyType = {
+        assert(sym.rawInfo.isInstanceOf[TastyLazyType], "Expected TastyLazyType rawInfo")
+        sym.rawInfo.asInstanceOf[TastyLazyType]
+      }
+      def ensureCompleted(): Unit = sym.info
       def typeRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
       def termRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
     }
@@ -148,6 +155,31 @@ abstract class TreeUnpickler(reader: TastyReader,
     trait Lazy[+T <: AnyRef] {
       def complete(implicit ctx: Context): T
     }
+  }
+
+  /**
+   * Ported from dotc
+   */
+  abstract class TastyLazyType extends LazyType with FlagAgnosticCompleter { self =>
+    private[this] val NoSymbolFn = (_: Context) => NoSymbol
+    private[this] var myDecls: Scope = EmptyScope
+    private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
+    private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
+
+    /** The type parameters computed by the completer before completion has finished */
+    def completerTypeParams(sym: Symbol): List[Symbol] = sym.info.typeParams
+    //      if (sym.is(Touched)) Nil // return `Nil` instead of throwing a cyclic reference
+    //      else sym.info.typeParams
+
+    override def decls: Scope = myDecls
+    def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
+    def moduleClass(implicit ctx: Context): Symbol = myModuleClassFn(ctx)
+
+    def withDecls(decls: Scope): this.type = { myDecls = decls; this }
+    def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
+    def withModuleClass(moduleClassFn: Context => Symbol): this.type = { myModuleClassFn = moduleClassFn; this }
+
+    override def load(sym: Symbol): Unit = complete(sym)
   }
 
   object FlagSets {
@@ -228,6 +260,8 @@ abstract class TreeUnpickler(reader: TastyReader,
         sym.hasFlag(mask) && sym.hasNoFlags(butNot)
   }
 
+  //---------------- unpickling trees ----------------------------------------------------------------------------------
+
   private def registerSym(addr: Addr, sym: Symbol) =
     symAtAddr(addr) = sym
 
@@ -239,7 +273,6 @@ abstract class TreeUnpickler(reader: TastyReader,
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     if (rdr.isTopLevel)
       rdr.indexStats(reader.endAddr)
-    ctx.log("exit enter")
   }
 
 //  /** The unpickled trees */
@@ -253,18 +286,16 @@ abstract class TreeUnpickler(reader: TastyReader,
 //    }
 //  }
 
-  class Completer(reader: TastyReader)(implicit ctx: Context) extends LazyType {
+  class Completer(reader: TastyReader)(implicit ctx: Context) extends TastyLazyType {
     import reader._
 //    val owner = ctx.owner
 //    val source = ctx.source
     override def complete(sym: Symbol): Unit = {
-//      treeAtAddr(currentAddr) =
-//        Context.withPhaseNoLater(ctx.picklerPhase){ implicit ctx => // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
-//          new TreeReader(reader).readIndexedDef()//(ctx.withOwner(owner).withSource(source))
-//        }
+      treeAtAddr(currentAddr) =
+        Context.withPhaseNoLater(ctx.picklerPhase){ implicit ctx => // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
+          new TreeReader(reader).readIndexedDef()//(ctx.withOwner(owner).withSource(source))
+        }
     }
-
-    override def load(sym: Symbol): Unit = complete(sym)
   }
 
   class TreeReader(val reader: TastyReader) {
@@ -661,7 +692,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         case _ =>
       }
       val typeReader = fork
-      val completer = new LazyType {
+      val completer = new TastyLazyType {
         override def complete(sym: Symbol): Unit =
           sym.info = typeReader.readType()
       }
@@ -674,6 +705,7 @@ abstract class TreeUnpickler(reader: TastyReader,
      *  @return  the created symbol
      */
     def createMemberSymbol()(implicit ctx: Context): Symbol = {
+      import SymbolOps._
       ctx.log(s"will create sym in owner ${ctx.owner}")
       val start = currentAddr
       val tag = readByte()
@@ -691,8 +723,8 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (!rhsIsEmpty) skipTree()
       val (givenFlags, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
       val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
-      ctx.log(s"creating symbol $name at $start with flags ${show(givenFlags)}")
-      def adjustIfModule(completer: LazyType) = {
+      ctx.log(s"creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags ${show(givenFlags)}")
+      def adjustIfModule(completer: TastyLazyType) = {
 //        if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
         completer
       }
@@ -725,11 +757,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       registerSym(start, sym)
       ctx.log(s"updated $sym in ${sym.owner} with decls ${sym.owner.info.decls}")
       if (isClass) {
-        sym.info = new ClassInfoType(sym.rawInfo.parents, newScope, sym.rawInfo.typeSymbol)
-        val localCtx = localContext(sym)
-        val templateFork = forkAt(templateStart)
-        templateFork.indexTemplateParams()(localCtx)
-        templateFork.indexStats(rhsStart)(localCtx) // TODO: (SCALAC: indexing members) when should types be added?
+        sym.completer.withDecls(newScope)
+        forkAt(templateStart).indexTemplateParams()(localContext(sym))
+        sym.ensureCompleted()
       }
 //      else if (sym.isInlineMethod)
 //        sym.addAnnotation(LazyBodyAnnotation { ctx0 =>
@@ -891,20 +921,17 @@ abstract class TreeUnpickler(reader: TastyReader,
       indexParams(PARAM)
     }
 
-    /** If definition was already read by a completer, return the previously read tree
-     *  or else read definition.
-     */
     def readIndexedDef()(implicit ctx: Context): Tree = treeAtAddr.remove(currentAddr) match {
-      case Some(tree) =>
-        assert(tree != PoisonTree, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
+      case Some(noCycle) =>
+        assert(noCycle != PoisonTree, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
         skipTree()
-        tree
+        noCycle
       case _ =>
         val start = currentAddr
         treeAtAddr(start) = PoisonTree
-        val tree = readNewDef()
+        val noCycle = readNewDef()
         treeAtAddr.remove(start)
-        tree
+        noCycle
     }
 
     private def readNewDef()(implicit ctx: Context): Tree = {
