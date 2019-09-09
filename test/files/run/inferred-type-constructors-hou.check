@@ -1,4 +1,3 @@
-warning: there were two feature warnings; re-run with -feature for details
                 p.Iterable[Int]
                 p.Set[Int]
                 p.Seq[Int]

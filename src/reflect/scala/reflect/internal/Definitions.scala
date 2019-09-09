@@ -1705,7 +1705,10 @@ trait Definitions extends api.StandardDefinitions {
       lazy val PostfixOpsFeature          = getLanguageFeature("postfixOps")
       lazy val ReflectiveCallsFeature     = getLanguageFeature("reflectiveCalls")
       lazy val ImplicitConversionsFeature = getLanguageFeature("implicitConversions")
+
+      @deprecated("scala.language.higherKinds no longer needs to be imported explicitly", "2.13.1")
       lazy val HigherKindsFeature         = getLanguageFeature("higherKinds")
+
       lazy val ExistentialsFeature        = getLanguageFeature("existentials")
 
       lazy val ApiUniverseReify = ApiUniverseClass.map(sym => getDeclIfDefined(sym, nme.reify))

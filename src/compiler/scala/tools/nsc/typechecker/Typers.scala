@@ -2436,9 +2436,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           case _                                        => ()
         }
 
-      if (tdef.symbol.isDeferred && tdef.symbol.info.isHigherKinded)
-        checkFeature(tdef.pos, currentRun.runDefinitions.HigherKindsFeature)
-
       treeCopy.TypeDef(tdef, typedMods, tdef.name, tparams1, rhs1) setType NoType
     }
 
