@@ -17,7 +17,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
-import PartialFunction.condOpt
+import PartialFunction.{cond, condOpt}
 import scala.annotation.tailrec
 
 /** An interface to enable higher configurability of diagnostic messages
@@ -570,8 +570,9 @@ trait TypeDiagnostics {
             }
           }
           // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-          for (p <- t.tpe.prefix) condOpt(p) {
+          t.tpe.prefix foreach {
             case SingleType(_, sym) => targets += sym
+            case _                  => ()
           }
         }
         super.traverse(t)
@@ -584,9 +585,13 @@ trait TypeDiagnostics {
           && (m.isPrivate || m.isLocalToBlock)
           && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
         )
-      def isSyntheticWarnable(sym: Symbol) = (
-        sym.isDefaultGetter
-        )
+      def isSyntheticWarnable(sym: Symbol) = {
+        def rescindPrivateConstructorDefault: Boolean =
+          cond(nme.splitDefaultGetterName(sym.name)) {
+            case (nme.CONSTRUCTOR, _) => true
+          }
+        sym.isDefaultGetter && !rescindPrivateConstructorDefault
+      }
       def isUnusedTerm(m: Symbol): Boolean = (
         m.isTerm
           && !isSuppressed(m)
