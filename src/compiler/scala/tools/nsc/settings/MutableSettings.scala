@@ -38,8 +38,8 @@ class MutableSettings(val errorFn: String => Unit)
   }
 
   def copyInto(settings: MutableSettings): Unit = {
-    allSettings foreach { thisSetting =>
-      val otherSetting = settings.allSettings find { _.name == thisSetting.name }
+    allSettings.valuesIterator foreach { thisSetting =>
+      val otherSetting = settings.allSettings.get(thisSetting.name)
       otherSetting foreach { otherSetting =>
         if (thisSetting.isSetByUser || otherSetting.isSetByUser) {
           otherSetting.value = thisSetting.value.asInstanceOf[otherSetting.T]
@@ -113,7 +113,7 @@ class MutableSettings(val errorFn: String => Unit)
   /** A list of settings which act based on prefix rather than an exact
    *  match.  This is basically -D and -J.
    */
-  lazy val prefixSettings = allSettings collect { case x: PrefixSetting => x }
+  lazy val prefixSettings = allSettings.valuesIterator.collect { case x: PrefixSetting => x }.toList
 
   /** Split the given line into parameters.
    */
@@ -210,7 +210,7 @@ class MutableSettings(val errorFn: String => Unit)
 
   // a wrapper for all Setting creators to keep our list up to date
   private def add[T <: Setting](s: T): T = {
-    allSettings += s
+    allSettings(s.name) = s
     s
   }
 

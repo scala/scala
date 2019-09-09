@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.backend.jvm
 
-import java.io.{BufferedOutputStream, DataOutputStream, FileOutputStream, IOException}
+import java.io.{DataOutputStream, IOException}
 import java.nio.ByteBuffer
 import java.nio.channels.{ClosedByInterruptException, FileChannel}
 import java.nio.charset.StandardCharsets
