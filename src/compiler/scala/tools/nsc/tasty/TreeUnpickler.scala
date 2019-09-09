@@ -35,7 +35,7 @@ abstract class TreeUnpickler(reader: TastyReader,
    *  Used to remember trees of symbols that are created by a completion. Emptied
    *  once the tree is inlined into a larger tree.
    */
-  private val treeAtAddr = new mutable.HashMap[Addr, Tree]
+  private val cycleAtAddr = new mutable.HashMap[Addr, Cycle]
 
   /** A map from addresses of type entries to the types they define.
    *  Currently only populated for types that might be recursively referenced
@@ -286,14 +286,24 @@ abstract class TreeUnpickler(reader: TastyReader,
 //    }
 //  }
 
+  private def completeClassTpe1(implicit ctx: Context): ClassSymbol = {
+    import SymbolOps._
+    val cls = ctx.owner.asClass
+    val assumedSelfType =
+      if (cls.is(Module) && cls.owner.isClass) TypeRef(cls.owner.thisType, cls.name)
+      else NoType
+    cls.info = new ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbol)
+    cls
+  }
+
   class Completer(reader: TastyReader)(implicit ctx: Context) extends TastyLazyType {
     import reader._
 //    val owner = ctx.owner
 //    val source = ctx.source
     override def complete(sym: Symbol): Unit = {
-      treeAtAddr(currentAddr) =
+      cycleAtAddr(currentAddr) =
         Context.withPhaseNoLater(ctx.picklerPhase){ implicit ctx => // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
-          new TreeReader(reader).readIndexedDef()//(ctx.withOwner(owner).withSource(source))
+          new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
         }
     }
   }
@@ -921,20 +931,66 @@ abstract class TreeUnpickler(reader: TastyReader,
       indexParams(PARAM)
     }
 
-    def readIndexedDef()(implicit ctx: Context): Tree = treeAtAddr.remove(currentAddr) match {
+    def readIndexedMember()(implicit ctx: Context): Cycle = cycleAtAddr.remove(currentAddr) match {
       case Some(noCycle) =>
-        assert(noCycle != PoisonTree, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
+        assert(noCycle ne Tombstone, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
         skipTree()
         noCycle
       case _ =>
         val start = currentAddr
-        treeAtAddr(start) = PoisonTree
-        val noCycle = readNewDef()
-        treeAtAddr.remove(start)
+        cycleAtAddr(start) = Tombstone
+        val noCycle = readNewMember()
+        cycleAtAddr.remove(start)
         noCycle
     }
 
-    private def readNewDef()(implicit ctx: Context): Tree = {
+    private def showName(name: Name, sym: Symbol): String = if (sym.is(Module)) s"module($name)" else name.toString
+
+    private def readNewMember()(implicit ctx: Context): Cycle = {
+      import SymbolOps._
+      val sctx = sourceChangeContext()
+      if (sctx `ne` ctx) return readNewMember()(sctx)
+      val start = currentAddr
+      val sym = symAtAddr(start)
+      val tag = readByte()
+      val end = readEnd()
+
+      val localCtx = localContext(sym)
+
+      val name = readName()
+      ctx.log(s"reading def of ${showName(name, sym)} at $start")
+
+      val noCycle: Cycle = tag match {
+        case TYPEDEF | TYPEPARAM if sym.isClass =>
+          sym.owner.ensureCompleted()
+          readTemplate(localCtx)
+        case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
+      }
+
+      goto(end)
+      noCycle
+    }
+
+    private def readTemplate(implicit ctx: Context): Cycle = {
+      val cls = completeClassTpe1
+      val localDummy = symbolAtCurrent()
+      val parentCtx = ctx.withOwner(localDummy)
+      assert(readByte() == TEMPLATE)
+      val end = readEnd()
+      // TODO: read params
+      val bodyFlags = {
+        val bodyIndexer = fork
+        // The first DEFDEF corresponds to the primary constructor
+        while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()
+        bodyIndexer.indexStats(end)
+      }
+      // TODO: Read parents (using parentCtx)
+      // TODO: Read self-type
+      // TODO: Update info with parents and self-type
+      ???
+    }
+
+//    private def readNewDef()(implicit ctx: Context): Tree = {
 //      val sctx = sourceChangeContext()
 //      if (sctx `ne` ctx) return readNewDef()(sctx)
 //      val start = currentAddr
@@ -1050,8 +1106,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //
 //      tree.setDefTree
-      errorConstructTASTyTree
-    }
+//      errorConstructTASTyTree
+//    }
 
 //    private def readTemplate(implicit ctx: Context): Template = {
 //      val start = currentAddr
@@ -1620,8 +1676,12 @@ abstract class TreeUnpickler(reader: TastyReader,
       s"OwnerTree(${addr.index}, ${end.index}, ${if (myChildren == null) "?" else myChildren.mkString(" ")})"
   }
 
-  /** A marker value used to detect cyclic reference while unpickling definitions. */
-  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
+//  /** A marker value used to detect cyclic reference while unpickling definitions. */
+//  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
+
+  sealed trait Cycle
+  case object Tombstone extends Cycle
+  case object NoCycle extends Cycle
 }
 
 object TreeUnpickler {
