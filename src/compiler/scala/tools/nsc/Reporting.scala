@@ -15,14 +15,14 @@ package tools
 package nsc
 
 import scala.collection.mutable
-import scala.reflect.internal.util.StringOps.countElementsAsString
+import scala.reflect.internal, internal.util.StringOps.countElementsAsString
 
 /** Provides delegates to the reporter doing the actual work.
  * PerRunReporting implements per-Run stateful info tracking and reporting
  *
  * TODO: make reporting configurable
  */
-trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions with CompilationUnits with scala.reflect.internal.Symbols =>
+trait Reporting extends internal.Reporting { self: ast.Positions with CompilationUnits with internal.Symbols =>
   def settings: Settings
 
   // not deprecated yet, but a method called "error" imported into
@@ -113,10 +113,16 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
+      // maybe pos.source.file.file.getParentFile.getName or Path(source.file.file).parent.name
+      def parentFileName(source: internal.util.SourceFile) =
+        Option(source.file)
+          .flatMap(f => Option(f.file))
+          .flatMap(f => Option(f.getParentFile))
+          .map(_.getName)
       // don't error on postfix in pre-0.13.18 xsbt/Compat.scala
       def isSbtCompat = (featureName == "postfixOps"
         && pos.source.file.name == "Compat.scala"
-        && pos.source.file.file.getParentFile.getName == "xsbt"
+        && parentFileName(pos.source).getOrElse("") == "xsbt"
         && Thread.currentThread.getStackTrace.exists(_.getClassName.startsWith("sbt."))
       )
       if (required && !isSbtCompat) reporter.error(pos, msg) else featureWarning(pos, msg)
