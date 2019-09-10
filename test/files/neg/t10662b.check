@@ -1,0 +1,6 @@
+px_2.scala:16: error: reference to X is ambiguous;
+it is both defined in package p and imported subsequently by
+import r.X
+      implicitly[T[X]]   // ambiguous
+                   ^
+one error found
