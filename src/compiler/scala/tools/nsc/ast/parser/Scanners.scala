@@ -846,12 +846,12 @@ trait Scanners extends ScannersCommon {
           val replaced = StringContext.processUnicode(strVal)
           if(replaced != strVal) {
             val diffPosition = replaced.zip(strVal).zipWithIndex.collectFirst{ case ((r, o), i) if r != o => i}.getOrElse(replaced.length - 1)
-            deprecationWarning(offset + 3 + diffPosition, "Unicode escapes in triple quoted strings are deprecated, use the literal character instead", since="2.13.1")
+            deprecationWarning(offset + 3 + diffPosition, "Unicode escapes in triple quoted strings are deprecated, use the literal character instead", since="2.13.2")
           }
           strVal = replaced
         } catch {
           case ue: StringContext.InvalidUnicodeEscapeException => {
-            syntaxError(offset + ue.index, ue.getMessage())
+            syntaxError(offset + 3 + ue.index, ue.getMessage())
           }
         }
       }

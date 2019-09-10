@@ -137,7 +137,7 @@ case class StringContext(parts: String*) {
    *  For example, the raw processed string `raw"a\nb"` is equal to the scala string `"a\\nb"`.
    *
    *  ''Note:'' Even when using the raw interpolator, Scala will process Unicode escapes.
-   *  Unicode processing in the raw interpolator is deprecated as of scala 2.13.1 and
+   *  Unicode processing in the raw interpolator is deprecated as of scala 2.13.2 and
    *  will be removed in scala 2.14
    *  For example:
    *  {{{
@@ -345,12 +345,12 @@ object StringContext {
           (codepoint.asInstanceOf[Char], usRead + digitsRead)
         }
         else if (dindex + uindex >= len)
-          throw new InvalidUnicodeEscapeException(src, startindex, dindex + uindex)
+          throw new InvalidUnicodeEscapeException(src, startindex, uindex + dindex)
         else {
           val ch = src(dindex + uindex)
           val e = ch.asDigit
           if(e >= 0 && e <= 15) loopCP(dindex + 1, (codepoint << 4) + e)
-          else throw new InvalidUnicodeEscapeException(src, startindex, dindex + uindex)
+          else throw new InvalidUnicodeEscapeException(src, startindex, uindex + dindex)
         }
       }
       if(uindex >= len) throw new InvalidUnicodeEscapeException(src, startindex, uindex - 1)
