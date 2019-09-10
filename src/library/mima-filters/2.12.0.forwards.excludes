@@ -46,3 +46,14 @@ ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map2
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map3.serialVersionUID")
 ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map4.serialVersionUID")
 ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.GenTraversableOnce.toList")
+
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.foreachEntry")
+ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$HashCodeAccumulator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.foreachEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.foreachEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.foreachEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.foreachEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.foreachEntry")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.product2Hash")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.emptyMapHash")
