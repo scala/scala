@@ -497,7 +497,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       if (!c.isInstanceOf[StubSymbol] && c != clazz) mismatchError(c)
     }
 
-    if (isScala) {
+    if (isScala || isTASTY) {
       () // We're done
     } else if (isScalaRaw) {
       val decls = clazz.enclosingPackage.info.decls
