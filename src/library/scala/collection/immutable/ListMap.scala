@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import scala.annotation.tailrec
+import scala.collection.immutable.Map.HashcodeHelper
 
 /**
   * $factoryInfo
@@ -41,7 +42,9 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
 
   @SerialVersionUID(-8256686706655863282L)
-  private object EmptyListMap extends ListMap[Any, Nothing]
+  private object EmptyListMap extends ListMap[Any, Nothing] {
+    override def hashCode: Int = -1609326920
+  }
 }
 
 /**
@@ -79,6 +82,21 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   override def isEmpty: Boolean = true
 
   def get(key: A): Option[B] = None
+
+  private[immutable] def includeHash(hasher: HashcodeHelper) = {
+    var current = this
+    while (!current.isEmpty) {
+      hasher(current.key, current.value)
+      current = current.next
+    }
+  }
+
+  override def hashCode(): Int = {
+    val hasher = new HashcodeHelper()
+
+    includeHash(hasher)
+    hasher.finalizeHash
+  }
 
   override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
 

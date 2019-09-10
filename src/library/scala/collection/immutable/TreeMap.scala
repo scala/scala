@@ -17,6 +17,7 @@ package immutable
 import generic._
 import immutable.{RedBlackTree => RB}
 import mutable.Builder
+import scala.collection.immutable.Map.HashcodeHelper
 
 /** $factoryInfo
  *  @define Coll immutable.TreeMap
@@ -203,4 +204,12 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)
 
   override def foreach[U](f : ((A,B)) => U) = RB.foreach(tree, f)
+
+  private[immutable] def includeHash(hasher: HashcodeHelper): Unit = ()
+  override def hashCode(): Int = {
+    val hasher = new HashcodeHelper()
+    RB.includeHash(tree, hasher)
+    hasher.finalizeHash
+  }
+
 }

@@ -16,6 +16,7 @@ package immutable
 
 import scala.annotation.tailrec
 import scala.annotation.meta.getter
+import scala.collection.immutable.Map.HashcodeHelper
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
  *
@@ -97,11 +98,18 @@ object RedBlackTree {
 
 
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
+  private[immutable] def includeHash[A,B](tree:Tree[A,B], hasher: HashcodeHelper): Unit =
+    if (tree ne null) _includeHash(tree, hasher)
 
   private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U) {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
     if (tree.right ne null) _foreach(tree.right, f)
+  }
+  private[this] def _includeHash[A, B](tree: Tree[A, B], hasher: HashcodeHelper) {
+    if (tree.left ne null) _includeHash(tree.left, hasher)
+    hasher(tree.key, tree.value)
+    if (tree.right ne null) _includeHash(tree.right, hasher)
   }
 
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)
