@@ -44,7 +44,7 @@ case class VirtualDirectoryClassPath(dir: VirtualDirectory) extends ClassPath wi
     Option(AbstractFileClassLoader.lookupPath(dir)(relativePath.split('/').toIndexedSeq, directory = false))
   }
 
-  private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] = files(inPackage)
+  private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = files(inPackage)
 
   protected def createFileEntry(file: AbstractFile): ClassFileEntryImpl = ClassFileEntryImpl(file)
   protected def isMatchingFile(f: AbstractFile): Boolean = f.isClass

@@ -31,7 +31,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   self: MutableSettings =>
 
   /** Set of settings */
-  protected[scala] lazy val allSettings = mutable.HashSet[Setting]()
+  protected[scala] lazy val allSettings = mutable.LinkedHashMap[String, Setting]()
 
   /** The user class path, specified by `-classpath` or `-cp`,
    *  defaults to the value of CLASSPATH env var if it is set, as in Java,
@@ -43,10 +43,10 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   def infoSettings = List[Setting](version, help, Vhelp, Whelp, Xhelp, Yhelp, showPlugins, showPhases, genPhaseGraph, printArgs)
 
   /** Is an info setting set? Any -option:help? */
-  def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.exists(_.isHelping)
+  def isInfo = infoSettings.exists(_.isSetByUser) || allSettings.valuesIterator.exists(_.isHelping)
 
   /** Disable a setting */
-  def disable(s: Setting) = allSettings -= s
+  def disable(s: Setting) = allSettings -= s.name
 
   val jvmargs  = PrefixSetting("-J<flag>", "-J", "Pass <flag> directly to the runtime system.")
   val defines  = PrefixSetting("-Dproperty=value", "-D", "Pass -Dproperty=value directly to the runtime system.")

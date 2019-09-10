@@ -1636,7 +1636,7 @@ abstract class RefChecks extends Transform {
         // type bounds (bug #935), issues deprecation warnings for symbols used
         // inside annotations.
         applyRefchecksToAnnotations(tree)
-        var result: Tree = tree match {
+        val result: Tree = tree match {
           // NOTE: a val in a trait is now a DefDef, with the RHS being moved to an Assign in Constructors
           case tree: ValOrDefDef =>
             checkDeprecatedOvers(tree)
@@ -1755,7 +1755,7 @@ abstract class RefChecks extends Transform {
         }
 
         // skip refchecks in patterns....
-        result = result match {
+        val result1 = result match {
           case CaseDef(pat, guard, body) =>
             val pat1 = savingInPattern {
               inPattern = true
@@ -1765,20 +1765,20 @@ abstract class RefChecks extends Transform {
           case _ =>
             result.transform(this)
         }
-        result match {
+        result1 match {
           case ClassDef(_, _, _, _)
              | TypeDef(_, _, _, _)
              | ModuleDef(_, _, _) =>
-            if (result.symbol.isLocalToBlock || result.symbol.isTopLevel)
-              varianceValidator.traverse(result)
+            if (result1.symbol.isLocalToBlock || result1.symbol.isTopLevel)
+              varianceValidator.traverse(result1)
           case tt @ TypeTree() if tt.original != null =>
             varianceValidator.traverse(tt.original) // See scala/bug#7872
           case _ =>
         }
 
-        checkUnexpandedMacro(result)
+        checkUnexpandedMacro(result1)
 
-        result
+        result1
       } catch {
         case ex: TypeError =>
           if (settings.debug) ex.printStackTrace()

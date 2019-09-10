@@ -252,7 +252,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       buffer.substring(0, cursor) match {
         case trailingWord(s) =>
           val maybes = intp.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
-                               .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).toList.sorted
+                               .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).sorted
           if (maybes.isEmpty) NoCompletions else CompletionResult(cursor - s.length, maybes)
         case _ => NoCompletions
       }
@@ -504,7 +504,8 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   private def changeSettings(line: String): Result = {
-    def showSettings() = for (s <- { intp.userSetSettings }.toSeq.sorted) echo(s.toString)
+    val intp = this.intp
+    def showSettings() = for (s <- { intp.userSetSettings }.toSeq.sorted(Ordering.ordered[intp.Setting])) echo(s.toString)
     if (line.isEmpty) showSettings()
     else { intp.updateSettings(words(line)) ; () }
   }

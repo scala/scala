@@ -13,11 +13,11 @@
 package scala.tools.nsc.classpath
 
 import java.net.URL
+
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.util.ClassPath
-import scala.tools.nsc.util.ClassRepresentation
+import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
 
 /**
  * A classpath unifying multiple class- and sourcepath entries.
@@ -30,13 +30,13 @@ import scala.tools.nsc.util.ClassRepresentation
 case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def findClassFile(className: String): Option[AbstractFile] = {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
-    aggregatesForPackage(pkg).iterator.map(_.findClassFile(className)).collectFirst {
+    aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClassFile(className)).collectFirst {
       case Some(x) => x
     }
   }
   private[this] val packageIndex: collection.mutable.Map[String, Seq[ClassPath]] = collection.mutable.Map()
-  private def aggregatesForPackage(pkg: String): Seq[ClassPath] = packageIndex.synchronized {
-    packageIndex.getOrElseUpdate(pkg, aggregates.filter(_.hasPackage(pkg)))
+  private def aggregatesForPackage(pkg: PackageName): Seq[ClassPath] = packageIndex.synchronized {
+    packageIndex.getOrElseUpdate(pkg.dottedString, aggregates.filter(_.hasPackage(pkg)))
   }
 
   // This method is performance sensitive as it is used by SBT's ExtractDependencies phase.
@@ -44,7 +44,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
     def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
-      aggregatesForPackage(pkg).iterator.map(_.findClass(className)).collectFirst {
+      aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClass(className)).collectFirst {
         case Some(s: SourceFileEntry) if isSource => s
         case Some(s: ClassFileEntry) if !isSource => s
       }
@@ -65,31 +65,45 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def asClassPathStrings: Seq[String] = aggregates.map(_.asClassPathString).distinct
 
   override def asSourcePathString: String = ClassPath.join(aggregates map (_.asSourcePathString): _*)
-  override private[nsc] def packages(inPackage: String): Seq[PackageEntry] = {
+
+  override private[nsc] def packages(inPackage: PackageName): Seq[PackageEntry] = {
     val aggregatedPackages = aggregates.flatMap(_.packages(inPackage)).distinct
     aggregatedPackages
   }
 
-  override private[nsc] def classes(inPackage: String): Seq[ClassFileEntry] =
+  override private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] =
     getDistinctEntries(_.classes(inPackage))
 
-  override private[nsc] def sources(inPackage: String): Seq[SourceFileEntry] =
+  override private[nsc] def sources(inPackage: PackageName): Seq[SourceFileEntry] =
     getDistinctEntries(_.sources(inPackage))
 
-  override private[nsc] def hasPackage(pkg: String) = aggregates.exists(_.hasPackage(pkg))
-  override private[nsc] def list(inPackage: String): ClassPathEntries = {
-    val (packages, classesAndSources) = aggregates.map { cp =>
+  override private[nsc] def hasPackage(pkg: PackageName) = aggregates.exists(_.hasPackage(pkg))
+  override private[nsc] def list(inPackage: PackageName): ClassPathEntries = {
+    val packages: java.util.HashSet[PackageEntry] = new java.util.HashSet[PackageEntry]()
+    val classesAndSourcesBuffer = collection.mutable.ArrayBuffer[ClassRepresentation]()
+    val onPackage: PackageEntry => Unit = packages.add(_)
+    val onClassesAndSources: ClassRepresentation => Unit = classesAndSourcesBuffer += _
+
+    aggregates.foreach { cp =>
       try {
-        cp.list(inPackage)
+        cp match {
+          case ecp: EfficientClassPath =>
+            ecp.list(inPackage, onPackage, onClassesAndSources)
+          case _ =>
+            val entries = cp.list(inPackage)
+            entries._1.foreach(entry => packages.add(entry))
+            classesAndSourcesBuffer ++= entries._2
+        }
       } catch {
         case ex: java.io.IOException =>
           val e = FatalError(ex.getMessage)
           e.initCause(ex)
           throw e
       }
-    }.unzip
-    val distinctPackages = packages.flatten.distinct
-    val distinctClassesAndSources = mergeClassesAndSources(classesAndSources)
+    }
+
+    val distinctPackages: Seq[PackageEntry] = if (packages == null) Nil else packages.toArray(new Array[PackageEntry](packages.size()))
+    val distinctClassesAndSources = mergeClassesAndSources(classesAndSourcesBuffer)
     ClassPathEntries(distinctPackages, distinctClassesAndSources)
   }
 
@@ -98,18 +112,16 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
    * creates an entry containing both of them. If there would be more than one class or source
    * entries for the same class it always would use the first entry of each type found on a classpath.
    */
-  private def mergeClassesAndSources(entries: scala.collection.Seq[scala.collection.Seq[ClassRepresentation]]): Seq[ClassRepresentation] = {
+  private def mergeClassesAndSources(entries: scala.collection.Seq[ClassRepresentation]): Seq[ClassRepresentation] = {
     var count = 0
-    val indices = collection.mutable.HashMap[String, Int]()
-    val mergedEntries = new ArrayBuffer[ClassRepresentation](1024)
-
+    val indices = new java.util.HashMap[String, Int]((entries.size * 1.25).toInt)
+    val mergedEntries = new ArrayBuffer[ClassRepresentation](entries.size)
     for {
-      partOfEntries <- entries
-      entry <- partOfEntries
+      entry <- entries
     } {
       val name = entry.name
-      if (indices contains name) {
-        val index = indices(name)
+      if (indices.containsKey(name)) {
+        val index = indices.get(name)
         val existing = mergedEntries(index)
 
         if (existing.binary.isEmpty && entry.binary.isDefined)
@@ -118,7 +130,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
           mergedEntries(index) = ClassAndSourceFilesEntry(existing.binary.get, entry.source.get)
       }
       else {
-        indices(name) = count
+        indices.put(name, count)
         mergedEntries += entry
         count += 1
       }

@@ -77,7 +77,6 @@ trait ReplCore {
 trait Repl extends ReplCore {
   val settings: Settings
   type Setting = settings.Setting
-  type SettingSet = scala.collection.Set[Setting]
 
   def reporter: ReplReporter
 
@@ -86,9 +85,9 @@ trait Repl extends ReplCore {
   // Apply a temporary label for compilation (for example, script name)
   def withLabel[A](temp: String)(body: => A): A
 
-  def visibleSettings: SettingSet
+  def visibleSettings: List[Setting]
 
-  def userSetSettings: SettingSet
+  def userSetSettings: List[Setting]
 
   def updateSettings(arguments: List[String]): Boolean
 

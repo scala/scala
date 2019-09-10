@@ -108,8 +108,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     try body finally label = saved
   }
 
-  override def visibleSettings: SettingSet = settings.visibleSettings
-  override def userSetSettings: SettingSet = settings.userSetSettings
+  override def visibleSettings: List[Setting] = settings.visibleSettings
+  override def userSetSettings: List[Setting] = settings.userSetSettings
   override def updateSettings(arguments: List[String]): Boolean = {
     val (ok, rest) = settings.processArguments(arguments, processAll = false)
     ok && rest.isEmpty
