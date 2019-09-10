@@ -21,6 +21,8 @@ object Literals {
   def firstFailure = ("\""+"""([^"\x00-\x1F\x7F\\]|\\[\\'"bfnrt]|\\u[a-fA-F0-9]{4})*"""+"\"")
   def badString = """bad\"""
   def escapedQuotesInInterpolation = s"\u0022_\u0022"
+  def escapedQuotesInSingleQuotedString = "\u0022"
+  def escapedQuotesInCharLit = '\u0027'
 
 
   def supported = List(
@@ -88,6 +90,10 @@ object Test {
     println(Literals.after2slashess.toList)
     println(Literals.firstFailure.toList)
     println(Literals.badString.toList)
+    
+    println("quotes are not interpreted from escape")
     println(Literals.escapedQuotesInInterpolation.toList)
+    println(Literals.escapedQuotesInSingleQuotedString.toList)
+    println(Literals.escapedQuotesInCharLit)
   }
 }
