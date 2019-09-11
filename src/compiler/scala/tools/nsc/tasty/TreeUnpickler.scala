@@ -102,7 +102,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(NoPosition)
 
     def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): TermSymbol = {
-      val sym = owner.newTermSymbol(name.toTermName, NoPosition, flags)
+      val sym = owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: when is methodSymbol safe over termSymbol?
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
       sym
@@ -264,6 +264,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       private def getFlag(mask: FlagSet): FlagSet = {
         mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
       }
+      def not(mask: FlagSet): Boolean = getFlag(mask) == 0
       def is(mask: FlagSet): Boolean = getFlag(mask) != 0
       def isOneOf(mask: FlagSet): Boolean = is(mask)
     }
@@ -978,13 +979,21 @@ abstract class TreeUnpickler(reader: TastyReader,
       val name = readName()
       ctx.log(s"reading member $name at $start. (sym=${showSym(sym)})")
       val noCycle: Cycle = tag match {
+        case DEFDEF =>
+          // TODO: read type params
+          // TODO: read value params
+          val tpt = readTpt()(localCtx)
+          val resType = internal.nullaryMethodType(tpt.tpe)
+          sym.info = resType
+          NoCycle
+        case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
+          val tpe = readTpt()(localCtx).tpe
+          sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
+          ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
+          NoCycle
         case TYPEDEF | TYPEPARAM if sym.isClass =>
           sym.owner.ensureCompleted()
           readTemplate(localCtx)
-        case VALDEF =>
-          sym.info = readTpt()(localCtx).tpe
-          ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
-          NoCycle
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
 
@@ -1289,7 +1298,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           case path: TypeRef => TypeTree(path)
 //          case path: TermRef => ref(path)
           case path: ThisType => new This(nme.EMPTY.toTypeName).setType(path)
-          case path: ConstantType => Literal(path.value)
+          case path: ConstantType => Literal(path.value).setType(path)
         }
       }
 
@@ -1344,8 +1353,9 @@ abstract class TreeUnpickler(reader: TastyReader,
           New(tpt).setType(tpt.tpe)
 //        case THROW =>
 //          Throw(readTerm())
-//        case SINGLETONtpt =>
-//          SingletonTypeTree(readTerm())
+       case SINGLETONtpt =>
+         val tpt = readTerm()
+         SingletonTypeTree(tpt).setType(tpt.tpe)
 //        case BYNAMEtpt =>
 //          ByNameTypeTree(readTpt())
 //        case NAMEDARG =>
@@ -1449,17 +1459,15 @@ abstract class TreeUnpickler(reader: TastyReader,
 //              val parent = readTpt()
 //              val refinements = readStats(refineCls, end)(localContext(refineCls))
 //              RefinedTypeTree(parent, refinements, refineCls)
-//            case APPLIEDtpt =>
-//              // If we do directly a tpd.AppliedType tree we might get a
-//              // wrong number of arguments in some scenarios reading F-bounded
-//              // types. This came up in #137 of collection strawman.
-//              val tycon = readTpt()
-//              val args = until(end)(readTpt())
-//              val ownType =
-//                if (tycon.symbol == defn.andType) AndType(args(0).tpe, args(1).tpe)
-//                else if (tycon.symbol == defn.orType) OrType(args(0).tpe, args(1).tpe)
-//                else tycon.tpe.safeAppliedTo(args.tpes)
-//              untpd.AppliedTypeTree(tycon, args).withType(ownType)
+           case APPLIEDtpt =>
+             // If we do directly a tpd.AppliedType tree we might get a
+             // wrong number of arguments in some scenarios reading F-bounded
+             // types. This came up in #137 of collection strawman.
+             val tycon = readTpt()
+             val args = until(end)(readTpt())
+             val ownType =
+               typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbol, args.map(_.tpe))
+             AppliedTypeTree(tycon, args).setType(ownType)
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())
 //            case LAMBDAtpt =>
