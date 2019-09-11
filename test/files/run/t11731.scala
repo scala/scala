@@ -70,7 +70,7 @@ object Test extends DirectTest {
     fakeSbt.run {
       withRun(global)(_.compileSources(virtually("Compat.scala", "xsbt") :: Nil))
     }
-    checkErr()
+    checkWarn()
     fakeSbt.run {
       withRun(global)(_.compileSources(noFile :: Nil))
     }

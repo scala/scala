@@ -115,10 +115,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
       // maybe pos.source.file.file.getParentFile.getName or Path(source.file.file).parent.name
       def parentFileName(source: internal.util.SourceFile) =
-        Option(source.file)
-          .flatMap(f => Option(f.file))
-          .flatMap(f => Option(f.getParentFile))
-          .map(_.getName)
+        Option(java.nio.file.Paths.get(source.path).getParent).map(_.getFileName.toString)
       // don't error on postfix in pre-0.13.18 xsbt/Compat.scala
       def isSbtCompat = (featureName == "postfixOps"
         && pos.source.file.name == "Compat.scala"
