@@ -47,25 +47,6 @@ private[collection] object RedBlackTree {
   }
 
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
-  /**
-    * Count all the nodes with keys greater than or equal to the lower bound and less than the upper bound.
-    * The two bounds are optional.
-    */
-  def countInRange[A](tree: Tree[A, _], from: Option[A], to:Option[A])(implicit ordering: Ordering[A]) : Int =
-    if (tree eq null) 0 else
-      (from, to) match {
-        // with no bounds use this node's count
-        case (None, None) => tree.count
-        // if node is less than the lower bound, try the tree on the right, it might be in range
-        case (Some(lb), _) if ordering.lt(tree.key, lb) => countInRange(tree.right, from, to)
-        // if node is greater than or equal to the upper bound, try the tree on the left, it might be in range
-        case (_, Some(ub)) if ordering.gteq(tree.key, ub) => countInRange(tree.left, from, to)
-        // node is in range so the tree on the left will all be less than the upper bound and the tree on the
-        // right will all be greater than or equal to the lower bound. So 1 for this node plus
-        // count the subtrees by stripping off the bounds that we don't need any more
-        case _ => 1 + countInRange(tree.left, from, None) + countInRange(tree.right, None, to)
-
-      }
   def update[A: Ordering, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean): Tree[A, B1] = blacken(upd(tree, k, v, overwrite))
   def delete[A: Ordering, B](tree: Tree[A, B], k: A): Tree[A, B] = blacken(del(tree, k))
   def rangeImpl[A: Ordering, B](tree: Tree[A, B], from: Option[A], until: Option[A]): Tree[A, B] = (from, until) match {
