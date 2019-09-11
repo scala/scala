@@ -353,6 +353,8 @@ class BitSet(protected[collection] final var elems: Array[Long])
     }
     this
   }
+
+  override def toBitMask: Array[Long] = elems.clone()
 }
 
 @SerialVersionUID(3L)
