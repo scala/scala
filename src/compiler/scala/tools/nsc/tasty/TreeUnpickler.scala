@@ -312,7 +312,15 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
   }
 
-  def TypeRef(tpe: Type, name: Name): Type = typeRef(tpe, tpe.typeSymbol.info.member(name), Nil)
+  def TypeRef(tpe: Type, name: Name): Type = {
+    val name1 = {
+      if (tpe.members.containsName(name.encode))
+        name.encode
+      else
+        name
+    }
+    typeRef(tpe, tpe.member(name1), Nil)
+  }
 
   implicit class SymbolOps(private val sym: Symbol) {
     def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
@@ -1070,10 +1078,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               override def completerTypeParams(sym: Symbol)(implicit ctx: Context) =
                 rhs.tpe.typeParams
             }
-            sym.info = rhs.tpe match {
-              case _: TypeBounds | _: ClassInfoType => rhs.tpe // TODO: cyclic references, dotc calls checkNonCyclic(sym, rhs.tpe, reportErrors = false)
-              case _ => rhs.tpe.toBounds
-            }
+            sym.info = rhs.tpe
             // sym.normalizeOpaque()
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)
@@ -1430,7 +1435,10 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        case IDENT =>
 //          untpd.Ident(readName()).withType(readType())
         case IDENTtpt =>
-          Ident(readName().toTypeName).setType(readType())
+          val name = readName().toTypeName
+          val tpe = readType()
+          ctx.log(s"identtpe $name : $tpe")
+          Ident(name).setType(tpe)
         case SELECT =>
           completeSelect(readName())
 //          readName() match { // TODO: make signed name table that delegates to normal name table if does not exist
@@ -1559,16 +1567,21 @@ abstract class TreeUnpickler(reader: TastyReader,
              // wrong number of arguments in some scenarios reading F-bounded
              // types. This came up in #137 of collection strawman.
              val tycon = readTpt()
+             ctx.log(s"tycon=$tycon of tpe=${tycon.tpe}")
              val args = until(end)(readTpt())
              val ownType =
                typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbol, args.map(_.tpe))
              AppliedTypeTree(tycon, args).setType(ownType)
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())
-//            case LAMBDAtpt =>
-//              val tparams = readParams[TypeDef](TYPEPARAM)
-//              val body = readTpt()
-//              LambdaTypeTree(tparams, body)
+           case LAMBDAtpt =>
+             val tparams = readParams[NoCycle](TYPEPARAM)
+             val body = readTpt()
+             val typeParams = tparams.map(symFromNoCycle)
+             val tpe = polyType(typeParams, body.tpe)
+             ctx.log(s"lambda tpe $tpe = [$typeParams] => $body")
+             TypeTree(tpe).setType(tpe)
+            //  LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()
 //              val (bound, scrut) =

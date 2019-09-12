@@ -305,6 +305,7 @@ trait Variances {
       case AnnotatedType(annots, _) if unchecked(annots)   => Bivariant
       case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
       case SuperType(thistpe, supertpe)                    => inType(thistpe)      & inType(supertpe)
+      case p: PackageClassInfoType                         => reporter.warning(NoPosition, s"Trying to find variance of package ${p.typeSymbol.name} # ${p.typeSymbol.hashCode}"); Invariant // TODO: TASTy reader: why is this code path being hit with the root package
     }
 
     def apply(tp: Type, tparam: Symbol, considerUnchecked: Boolean): Variance = {
