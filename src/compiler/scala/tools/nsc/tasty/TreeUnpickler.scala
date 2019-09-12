@@ -20,7 +20,10 @@ abstract class TreeUnpickler(reader: TastyReader,
   import TastyFormat._
   import FlagSets._
   import NameOps._
+  import TypeOps._
   import TreeUnpickler._
+  import MaybeCycle._
+
   type TermRef = TypeRef
 
   protected def errorScalaNext(msg: String)(implicit ctx: Context): Nothing =
@@ -35,7 +38,7 @@ abstract class TreeUnpickler(reader: TastyReader,
    *  Used to remember trees of symbols that are created by a completion. Emptied
    *  once the tree is inlined into a larger tree.
    */
-  private val cycleAtAddr = new mutable.HashMap[Addr, Cycle]
+  private val cycleAtAddr = new mutable.HashMap[Addr, MaybeCycle]
 
   /** A map from addresses of type entries to the types they define.
    *  Currently only populated for types that might be recursively referenced
@@ -59,6 +62,8 @@ abstract class TreeUnpickler(reader: TastyReader,
   //----------------- dotc API adapters --------------------------------------------------------------------------------
 
   sealed abstract class Context {
+    import SymbolOps._
+
     def adjustModuleCompleter(completer: TastyLazyType, name: Name): TastyLazyType = {
       val scope = this.effectiveScope
       if (name.isTermName)
@@ -101,8 +106,16 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(NoPosition)
 
-    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): TermSymbol = {
-      val sym = owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: when is methodSymbol safe over termSymbol?
+    def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): Symbol = {
+      val sym = {
+        if (flags.is(Param))
+          if (name.isTypeName)
+            owner.newTypeParameter(name.toTypeName, NoPosition, flags)
+          else
+            owner.newValueParameter(name.toTermName, NoPosition, flags)
+        else
+          owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
+      }
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
       sym
@@ -113,6 +126,34 @@ abstract class TreeUnpickler(reader: TastyReader,
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
       sym
+    }
+
+    /** if isConstructor, make sure it has one non-implicit parameter list */
+    def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
+      if (isConstructor &&
+        (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.is(Implicit)))
+        Nil :: termParamss
+      else
+        termParamss
+
+    /** The given type, unless `sym` is a constructor, in which case the
+     *  type of the constructed instance is returned
+     */
+    def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
+      if (sym.name == nme.CONSTRUCTOR) sym.owner.typeRef(typeParams.map(_.typeRef))
+      else givenTp
+
+    /** The method type corresponding to given parameters and result type */
+    def methodType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type, isJava: Boolean = false): Type = {
+      if (isJava)
+        valueParamss.foreach(vs => vs.headOption.foreach(v => assert(v.flags.not(Implicit))))
+      val monotpe = valueParamss.foldRight(resultType)((ts, f) => internal.methodType(ts, f))
+      if (typeParams.nonEmpty)
+        internal.polyType(typeParams, monotpe)
+      else if (valueParamss.nonEmpty)
+        monotpe
+      else
+        internal.nullaryMethodType(monotpe)
     }
 
     @tailrec
@@ -162,6 +203,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
+      def typeRef(args: List[Type]): Type = symbolTable.typeRef(sym.owner.info, sym, args)
       def typeRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
       def termRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
     }
@@ -187,7 +229,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
 
     /** The type parameters computed by the completer before completion has finished */
-    def completerTypeParams(sym: Symbol): List[Symbol] = sym.info.typeParams
+    def completerTypeParams(sym: Symbol)(implicit ctx: Context): List[Symbol] = sym.info.typeParams
     //      if (sym.is(Touched)) Nil // return `Nil` instead of throwing a cyclic reference
     //      else sym.info.typeParams
 
@@ -281,6 +323,15 @@ abstract class TreeUnpickler(reader: TastyReader,
         sym.hasFlag(mask) && sym.hasNoFlags(butNot)
   }
 
+  object TypeOps {
+    implicit class AddToBounds(private val self: Type) {
+      final def toBounds(implicit ctx: Context): TypeBounds = self match {
+        case self: TypeBounds => self // this can happen for wildcard args
+        case _ => TypeBounds.empty
+      }
+    }
+  }
+
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
   private def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"
@@ -329,6 +380,11 @@ abstract class TreeUnpickler(reader: TastyReader,
           new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
         }
     }
+  }
+
+  /** A missing completer - from dotc */
+  trait NoCompleter extends TastyLazyType {
+    override def complete(sym: Symbol): Unit = throw new UnsupportedOperationException("complete")
   }
 
   class TreeReader(val reader: TastyReader) {
@@ -784,10 +840,10 @@ abstract class TreeUnpickler(reader: TastyReader,
           if (!cls.info.decls.containsName(name)) {
             cls.info.decls.enter(sym)
           }
-        case _ => ctx.log(s"owner ${ctx.owner} is of class ${ctx.owner.getClass}")
+        case _ => ctx.log(s"(owner=${ctx.owner}) is of class ${ctx.owner.getClass.getName()}")
       }
       registerSym(start, sym)
-      ctx.log(s"updated $sym in ${sym.owner} with decls ${sym.owner.info.decls}")
+      ctx.log(s"updated $sym in ${sym.owner} with decls ${sym.owner.rawInfo.decls}")
       if (isClass) {
         sym.completer.withDecls(newScope)
         forkAt(templateStart).indexTemplateParams()(localContext(sym))
@@ -952,11 +1008,11 @@ abstract class TreeUnpickler(reader: TastyReader,
       indexParams(PARAM)
     }
 
-    def readIndexedMember()(implicit ctx: Context): Cycle = cycleAtAddr.remove(currentAddr) match {
-      case Some(noCycle) =>
-        assert(noCycle ne Tombstone, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
+    def readIndexedMember()(implicit ctx: Context): NoCycle = cycleAtAddr.remove(currentAddr) match {
+      case Some(maybeCycle) =>
+        assert(maybeCycle ne Tombstone, s"Cyclic reference while unpickling definition at address ${currentAddr.index} in file ${ctx.source}")
         skipTree()
-        noCycle
+        maybeCycle.asInstanceOf[NoCycle]
       case _ =>
         val start = currentAddr
         cycleAtAddr(start) = Tombstone
@@ -965,43 +1021,82 @@ abstract class TreeUnpickler(reader: TastyReader,
         noCycle
     }
 
-    private def readNewMember()(implicit ctx: Context): Cycle = {
+    private def readNewMember()(implicit ctx: Context): NoCycle = {
       import SymbolOps._
       val sctx = sourceChangeContext()
       if (sctx `ne` ctx) return readNewMember()(sctx)
-      val start = currentAddr
-      val sym = symAtAddr(start)
-      val tag = readByte()
-      val end = readEnd()
+      val symAddr = currentAddr
+      val sym     = symAtAddr(symAddr)
+      val tag     = readByte()
+      val end     = readEnd()
+
+      def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = {
+        collectWhile(nextByte == PARAMS) {
+          readByte()
+          readEnd()
+          readParams(PARAM)
+        }
+     }
 
       val localCtx = localContext(sym)
 
       val name = readName()
-      ctx.log(s"reading member $name at $start. (sym=${showSym(sym)})")
-      val noCycle: Cycle = tag match {
+      ctx.log(s"reading member $name at $symAddr. (sym=${showSym(sym)})")
+      val noCycle = tag match {
         case DEFDEF =>
-          // TODO: read type params
-          // TODO: read value params
+          val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
+          val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
-          val resType = internal.nullaryMethodType(tpt.tpe)
-          sym.info = resType
-          NoCycle
+          val typeParams = tparams.map(symFromNoCycle)
+          val valueParamss = ctx.normalizeIfConstructor(
+            vparamss.map(_.map(symFromNoCycle)), name == nme.CONSTRUCTOR)
+          val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
+          sym.info = ctx.methodType(typeParams, valueParamss, resType)
+          NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val tpe = readTpt()(localCtx).tpe
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
-          ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
-          NoCycle
-        case TYPEDEF | TYPEPARAM if sym.isClass =>
-          sym.owner.ensureCompleted()
-          readTemplate(localCtx)
+          NoCycle(at = symAddr)
+        case TYPEDEF | TYPEPARAM =>
+          if (sym.isClass) {
+            sym.owner.ensureCompleted()
+            readTemplate(symAddr)(localCtx)
+          }
+          else {
+            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see i3816.scala
+            // sym.setFlag(Provisional)
+            val rhs = readTpt()(localCtx)
+            sym.info = new NoCompleter {
+              override def completerTypeParams(sym: Symbol)(implicit ctx: Context) =
+                rhs.tpe.typeParams
+            }
+            sym.info = rhs.tpe match {
+              case _: TypeBounds | _: ClassInfoType => rhs.tpe // TODO: cyclic references, dotc calls checkNonCyclic(sym, rhs.tpe, reportErrors = false)
+              case _ => rhs.tpe.toBounds
+            }
+            // sym.normalizeOpaque()
+            // sym.resetFlag(Provisional)
+            NoCycle(at = symAddr)
+          }
+        case PARAM =>
+          val tpt = readTpt()(localCtx)
+          if (nothingButMods(end)) {
+            sym.info = tpt.tpe
+            NoCycle(at = symAddr)
+          }
+          else {
+            sym.info = NullaryMethodType(tpt.tpe)
+            ctx.log(s"reading param alias $name -> $currentAddr")
+            NoCycle(at = symAddr)
+          }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-
+      ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
       goto(end)
       noCycle
     }
 
-    private def readTemplate(implicit ctx: Context): Cycle = {
+    private def readTemplate(symAddr: Addr)(implicit ctx: Context): NoCycle = {
       val cls = completeClassTpe1
       val localDummy = symbolAtCurrent()
       val parentCtx = ctx.withOwner(localDummy)
@@ -1024,7 +1119,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.rawInfo.typeSymbol)
       // TODO: Read self-type
       // TODO: Update info with parents and self-type
-      NoCycle
+      NoCycle(at = symAddr)
     }
 
 //    private def readNewDef()(implicit ctx: Context): Tree = {
@@ -1275,13 +1370,13 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      readIndexedStats(exprOwner, end)
 //    }
 
-//    def readIndexedParams[T <: MemberDef](tag: Int)(implicit ctx: Context): List[T] =
-//      collectWhile(nextByte == tag) { readIndexedDef().asInstanceOf[T] }
+   def readIndexedParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
+     collectWhile(nextByte == tag) { readIndexedMember().asInstanceOf[T] }
 
-//    def readParams[T <: MemberDef](tag: Int)(implicit ctx: Context): List[T] = {
-//      fork.indexParams(tag)
-//      readIndexedParams(tag)
-//    }
+   def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] = {
+     fork.indexParams(tag)
+     readIndexedParams(tag)
+   }
 
 // ------ Reading trees -----------------------------------------------------
 
@@ -1479,10 +1574,10 @@ abstract class TreeUnpickler(reader: TastyReader,
 //              val (bound, scrut) =
 //                if (nextUnsharedTag == CASEDEF) (EmptyTree, fst) else (fst, readTpt())
 //              MatchTypeTree(bound, scrut, readCases(end))
-//            case TYPEBOUNDStpt =>
-//              val lo = readTpt()
-//              val hi = if (currentAddr == end) lo else readTpt()
-//              TypeBoundsTree(lo, hi)
+           case TYPEBOUNDStpt =>
+             val lo = readTpt()
+             val hi = if (currentAddr == end) lo else readTpt()
+             TypeBoundsTree(lo, hi)
 //            case HOLE =>
 //              readHole(end, isType = false)
 //            case _ =>
@@ -1713,16 +1808,11 @@ abstract class TreeUnpickler(reader: TastyReader,
       s"OwnerTree(${addr.index}, ${end.index}, ${if (myChildren == null) "?" else myChildren.mkString(" ")})"
   }
 
-//  /** A marker value used to detect cyclic reference while unpickling definitions. */
-//  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
-
-  sealed trait Cycle
-  case object Tombstone extends Cycle
-  case object NoCycle extends Cycle
+  def symFromNoCycle(noCycle: NoCycle): Symbol = symAtAddr(noCycle.at)
 }
 
 object TreeUnpickler {
-//
+
 //  /** Define the expected format of the tasty bytes
 //   *   - TopLevel: Tasty that contains a full class nested in its package
 //   *   - Term: Tasty that contains only a term tree
@@ -1737,6 +1827,15 @@ object TreeUnpickler {
 //    /** Unpickle as a TypeTree */
 //    object TypeTree extends UnpickleMode
 //  }
+
+  sealed trait MaybeCycle
+  object MaybeCycle {
+    case class  NoCycle(at: Addr) extends MaybeCycle
+    case object Tombstone         extends MaybeCycle
+  }
+
+  //  /** A marker value used to detect cyclic reference while unpickling definitions. */
+  //  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
 
   /** An enumeration indicating which subtrees should be added to an OwnerTree. */
   type MemberDefMode = Int
