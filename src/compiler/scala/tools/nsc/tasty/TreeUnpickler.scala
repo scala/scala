@@ -1577,7 +1577,7 @@ abstract class TreeUnpickler(reader: TastyReader,
            case TYPEBOUNDStpt =>
              val lo = readTpt()
              val hi = if (currentAddr == end) lo else readTpt()
-             TypeBoundsTree(lo, hi)
+             TypeBoundsTree(lo, hi).setType(internal.typeBounds(lo.tpe, hi.tpe))
 //            case HOLE =>
 //              readHole(end, isType = false)
 //            case _ =>
