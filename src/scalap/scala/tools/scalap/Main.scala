@@ -218,6 +218,6 @@ object Main extends Main {
       AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
-      new PathResolver(settings, closeableRegistry).result
+      settings.pathResolver(closeableRegistry).result
   }
 }

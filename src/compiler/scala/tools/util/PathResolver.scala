@@ -204,14 +204,17 @@ object PathResolver {
         registry.close()
       }
     }
+
+  def apply(settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry): PathResolver =
+    new PathResolver(settings, closeableRegistry)
 }
 
-final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry) {
+class PathResolver protected (settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry) {
 
   @deprecated("for bincompat in 2.12.x series", "2.12.9")  // TODO remove from 2.13.x
   def this(settings: Settings) = this(settings, new CloseableRegistry)
 
-  private val classPathFactory = new ClassPathFactory(settings, closeableRegistry)
+  protected val classPathFactory = new ClassPathFactory(settings, closeableRegistry)
 
   import PathResolver.{ AsLines, Defaults, ppcp }
 
@@ -311,6 +314,6 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
   @deprecated("Use resultAsURLs instead of this one", "2.11.5")
   def asURLs: List[URL] = resultAsURLs.toList
 
-  private def computeResult(): ClassPath = AggregateClassPath(containers.toIndexedSeq)
+  protected def computeResult(): ClassPath = AggregateClassPath(containers.toIndexedSeq)
 }
 

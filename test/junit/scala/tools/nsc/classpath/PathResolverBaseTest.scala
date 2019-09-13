@@ -59,7 +59,7 @@ class PathResolverBaseTest {
   def deleteTempDir: Unit = tempDir.delete()
 
   private def createFlatClassPath(settings: Settings) =
-    new PathResolver(settings, new CloseableRegistry).result
+    settings.pathResolver().result
 
   @Test
   def testEntriesFromListOperationAgainstSeparateMethods: Unit = {
