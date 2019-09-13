@@ -631,6 +631,7 @@ class IteratorTest {
 
   @Test def `flatMap is memory efficient in previous element`(): Unit = {
     import java.lang.ref._
+    import scala.util.chaining._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
     // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
     class C extends Iterable[String] {
@@ -641,11 +642,7 @@ class IteratorTest {
 
         def hasNext = i < ss.length
 
-        def next() =
-          if (hasNext) {
-            val res = ss(i); i += 1; res
-          }
-          else Iterator.empty.next()
+        def next() = if (hasNext) ss(i).tap(_ => i += 1) else Iterator.empty.next()
       }
 
       def apply(i: Int) = ss(i)
@@ -654,13 +651,13 @@ class IteratorTest {
     val seq2 = List("third")
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
-      case 1 => seq1.get
+      case 1 => Option(seq1.get).getOrElse(Nil)
       case _ => check(); seq2
     }
 
     def check() = assertNotReachable(seq1.get, it)(())
 
-    def checkHasElement() = assertNotReachable(seq1.get.apply(1), it)(())
+    def checkHasElement() = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(())
 
     assert(it.hasNext)
     assertEquals("first", it.next())
