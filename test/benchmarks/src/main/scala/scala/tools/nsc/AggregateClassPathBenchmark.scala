@@ -28,7 +28,7 @@ class AggregateClassPathBenchmark {
     if (classpathString.startsWith("@"))
       classpathString = new String(Files.readAllBytes(Paths.get(classpathString.drop(1))))
     settings.classpath.value = classpathString
-    val resolver = new PathResolver(settings, closeableRegistry)
+    val resolver = settings.pathResolver(closeableRegistry)
     classpath = resolver.result
     classpath.list("")
   }

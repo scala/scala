@@ -100,7 +100,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   def compilerClasspath: Seq[java.net.URL] = (
     if (isInitializeComplete) global.classPath.asURLs
-    else new PathResolver(settings, global.closeableRegistry).resultAsURLs  // the compiler's classpath
+    else settings.pathResolver(global.closeableRegistry).resultAsURLs  // the compiler's classpath
   )
   def settings = initialSettings
   // Run the code body with the given boolean settings flipped to true.

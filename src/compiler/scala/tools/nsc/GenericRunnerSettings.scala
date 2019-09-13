@@ -19,7 +19,7 @@ class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
   lazy val classpathURLs: Seq[URL] = {
     val registry = new CloseableRegistry
     try {
-      new PathResolver(this, registry).resultAsURLs
+      pathResolver(registry).resultAsURLs
     } finally {
       registry.close()
     }

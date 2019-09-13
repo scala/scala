@@ -12,12 +12,19 @@
 
 package scala.tools.nsc
 
+import scala.tools.util.PathResolver
 import settings.MutableSettings
 
 /** A compatibility stub.
  */
 class Settings(errorFn: String => Unit) extends MutableSettings(errorFn) {
   def this() = this(Console.println)
+
+  var pathResolverFactory: (Settings, CloseableRegistry) => PathResolver =
+    PathResolver.apply
+
+  def pathResolver(closeableRegistry: CloseableRegistry = new CloseableRegistry) =
+    pathResolverFactory(this, closeableRegistry)
 
   override def withErrorFn(errorFn: String => Unit): Settings = {
     val settings = new Settings(errorFn)

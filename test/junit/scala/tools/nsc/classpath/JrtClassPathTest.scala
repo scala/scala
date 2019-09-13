@@ -23,7 +23,7 @@ class JrtClassPathTest {
     val cp: ClassPath =
       if (specVersion == "" || specVersion == "1.8") {
         val settings = new Settings()
-        val resolver = new PathResolver(settings, closeableRegistry)
+        val resolver = settings.pathResolver(closeableRegistry)
         val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(resolver.Calculated.javaBootClassPath)
         AggregateClassPath(elements)
       }
