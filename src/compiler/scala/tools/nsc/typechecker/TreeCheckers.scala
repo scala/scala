@@ -51,7 +51,7 @@ abstract class TreeCheckers extends Analyzer {
     case _                            => diffTrees(t1, t2).toString // "<error: different tree classes>"
   }
 
-  private def clean_s(s: String) = s.replaceAllLiterally("scala.collection.", "s.c.")
+  private def clean_s(s: String) = s.replace("scala.collection.", "s.c.")
   private def typestr(x: Type)    = " (tpe = " + x + ")"
   private def treestr(t: Tree)    = t + " [" + classString(t) + "]" + typestr(t.tpe)
   private def ownerstr(s: Symbol) = "'" + s + "'" + s.locationString

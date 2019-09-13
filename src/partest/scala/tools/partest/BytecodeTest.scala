@@ -84,7 +84,7 @@ abstract class BytecodeTest {
     }
     else ms1.lazyZip(ms2).forall { (m1, m2) =>
       val c1 = f(m1)
-      val c2 = f(m2).replaceAllLiterally(name2, name1)
+      val c2 = f(m2).replace(name2, name1)
       if (c1 == c2)
         println(s"[ok] $m1")
       else

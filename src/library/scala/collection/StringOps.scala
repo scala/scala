@@ -728,12 +728,13 @@ final class StringOps(private val s: String) extends AnyVal {
     else s
 
   /** Replace all literal occurrences of `literal` with the literal string `replacement`.
-    *  This method is equivalent to [[java.lang.String#replace(CharSequence,CharSequence)]].
+    * This method is equivalent to [[java.lang.String#replace(CharSequence,CharSequence)]].
     *
-    *  @param    literal     the string which should be replaced everywhere it occurs
-    *  @param    replacement the replacement string
-    *  @return               the resulting string
+    * @param    literal     the string which should be replaced everywhere it occurs
+    * @param    replacement the replacement string
+    * @return               the resulting string
     */
+  @deprecated("Use `s.replace` as an exact replacement", "2.13.2")
   def replaceAllLiterally(literal: String, replacement: String): String = s.replace(literal, replacement)
 
   /** For every line in this string:
