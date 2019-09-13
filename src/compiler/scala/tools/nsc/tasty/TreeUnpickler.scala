@@ -813,7 +813,15 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (!rhsIsEmpty) skipTree()
       val (givenFlags, tastyFlagSet, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
       val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
-      ctx.log(s"creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags ${show(flags)}")
+      def showFlags = {
+        if (tastyFlagSet.isEmpty)
+          show(flags)
+        else if (givenFlags == EmptyFlags)
+          showTASTY(tastyFlagSet)
+        else
+          show(flags) + " | " + showTASTY(tastyFlagSet)
+      }
+      ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
       }
