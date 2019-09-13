@@ -19,10 +19,10 @@ trait TASTYFlags { self =>
   val Given: TASTYFlagSet
   val Exported: TASTYFlagSet
 
-  def map[A](f: TASTYFlagSet => A)(as: TASTYFlagSet): Iterable[A]
-  def union(as: TASTYFlagSet, bs: TASTYFlagSet): TASTYFlagSet
-  def has(set: TASTYFlagSet, mask: TASTYFlagSet): Boolean
-  def remove(set: TASTYFlagSet, mask: TASTYFlagSet): TASTYFlagSet
+  protected def map[A](f: TASTYFlagSet => A)(as: TASTYFlagSet): Iterable[A]
+  protected def union(as: TASTYFlagSet, bs: TASTYFlagSet): TASTYFlagSet
+  protected def is(set: TASTYFlagSet, mask: TASTYFlagSet): Boolean
+  protected def remove(set: TASTYFlagSet, mask: TASTYFlagSet): TASTYFlagSet
 
   final def showTASTY(set: TASTYFlagSet): String = set match {
     case EmptyTASTYFlagSet => "Empty"
@@ -41,7 +41,7 @@ trait TASTYFlags { self =>
   implicit final class TASTYFlagSetOps(private val flagset: TASTYFlagSet) {
     @inline final def map[A](f: TASTYFlagSet => A): Iterable[A] = self.map(f)(flagset)
     @inline final def | (other: TASTYFlagSet): TASTYFlagSet     = self.union(flagset, other)
-    @inline final def has (mask: TASTYFlagSet): Boolean         = self.has(flagset, mask)
+    @inline final def is (mask: TASTYFlagSet): Boolean          = self.is(flagset, mask)
     @inline final def &~ (mask: TASTYFlagSet): TASTYFlagSet     = self.remove(flagset, mask)
     @inline final def isEmpty: Boolean                          = flagset == EmptyTASTYFlagSet
   }
@@ -70,7 +70,7 @@ object TASTYFlags {
 
     @inline final def map[A](f: TASTYFlagSet => A)(as: TASTYFlagSet) = as.view.map(cache andThen f)
     @inline final def union(a: TASTYFlagSet, b: TASTYFlagSet)        = a concat b
-    @inline final def has(set: TASTYFlagSet, mask: TASTYFlagSet)     = (set intersect mask).nonEmpty
+    @inline final def is(set: TASTYFlagSet, mask: TASTYFlagSet)      = (set intersect mask).nonEmpty
     @inline final def remove(set: TASTYFlagSet, mask: TASTYFlagSet)  = set diff mask
 
     private[this] def register(): TASTYFlagSet = {

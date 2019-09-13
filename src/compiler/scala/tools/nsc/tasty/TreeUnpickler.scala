@@ -27,8 +27,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   type TermRef = TypeRef
 
-  protected def errorScalaNext(msg: String)(implicit ctx: Context): Nothing =
-    throw new RuntimeException("Scala 2 incompatible TASTy signature of " + ctx.classRoot.name + " in owner " + showSym(ctx.owner) + "; " + msg)
+  protected def errorScalaNext(msg: String)(implicit ctx: Context): Unit =
+    reporter.error(NoPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
 
   protected def errorConstructTASTyTree: Nothing = sys.error("Trying to Construct a Tree from TASTy")
 
@@ -238,6 +238,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     override def decls: Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
     def moduleClass(implicit ctx: Context): Symbol = myModuleClassFn(ctx)
+    def tastyFlagSet: TASTYFlagSet = myTASTYFlagSet
 
     def withDecls(decls: Scope): this.type = { myDecls = decls; this }
     def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
@@ -537,8 +538,6 @@ abstract class TreeUnpickler(reader: TastyReader,
         Constant(null)
       case CLASSconst =>
         Constant(readType())
-      case ENUMconst =>
-        errorScalaNext("Enum Constant") //Constant(readTermRef().termSymbol)
     }
 
     /** Read a type */
@@ -681,6 +680,9 @@ abstract class TreeUnpickler(reader: TastyReader,
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
             appliedType(definitions.ByNameParamClass, readType()) // ExprType(readType())
+          case ENUMconst =>
+            errorScalaNext("Enum Constant") //Constant(readTermRef().termSymbol)
+            ErrorType
           case _ =>
             ConstantType(readConstant(tag))
         }
@@ -1039,10 +1041,11 @@ abstract class TreeUnpickler(reader: TastyReader,
       import SymbolOps._
       val sctx = sourceChangeContext()
       if (sctx `ne` ctx) return readNewMember()(sctx)
-      val symAddr = currentAddr
-      val sym     = symAtAddr(symAddr)
-      val tag     = readByte()
-      val end     = readEnd()
+      val symAddr   = currentAddr
+      val sym       = symAtAddr(symAddr)
+      val tag       = readByte()
+      val end       = readEnd()
+      val completer = sym.completer
 
       def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = {
         collectWhile(nextByte == PARAMS) {
@@ -1068,7 +1071,10 @@ abstract class TreeUnpickler(reader: TastyReader,
           sym.info = ctx.methodType(typeParams, valueParamss, resType)
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
+          val isInline = completer.tastyFlagSet.is(Inline)
           val tpe = readTpt()(localCtx).tpe
+          if (isInline && !tpe.isInstanceOf[ConstantType])
+            errorScalaNext(s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
