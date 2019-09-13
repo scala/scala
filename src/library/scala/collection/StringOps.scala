@@ -727,6 +727,9 @@ final class StringOps(private val s: String) extends AnyVal {
     if (s endsWith suffix) s.substring(0, s.length - suffix.length)
     else s
 
+  /** Remove all occurrences of the given substring. */
+  @`inline` def strip(substring: String) = s.replace(substring, "")
+
   /** Replace all literal occurrences of `literal` with the literal string `replacement`.
     *  This method is equivalent to [[java.lang.String#replace(CharSequence,CharSequence)]].
     *
