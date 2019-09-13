@@ -16,6 +16,7 @@ object ScalacUnpickler {
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }](TreePickler.sectionName) { self =>
     def unpickle(reader: TastyReader, nameTable: TASTYNameTable with TASTYUniverse): TreeUnpickler { val symbolTable: SymbolTable } =
       new TreeUnpickler(reader, posUnpickler, commentUnpickler, Seq.empty) {
+        final val tastyFlags: TASTYFlags = TASTYFlags.Live
         final val symbolTable: SymbolTable = self.symbolTable
         final val nameAtRef: NameRef => symbolTable.TermName = {
           assert(nameTable.symbolTable eq self.symbolTable, "Unsafe creation of name ref mapper without shared underlying symbol table")
