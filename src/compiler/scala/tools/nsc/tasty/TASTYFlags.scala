@@ -44,13 +44,14 @@ trait TASTYFlags { self =>
     @inline final def is (mask: TASTYFlagSet): Boolean          = self.is(flagset, mask)
     @inline final def &~ (mask: TASTYFlagSet): TASTYFlagSet     = self.remove(flagset, mask)
     @inline final def isEmpty: Boolean                          = flagset == EmptyTASTYFlagSet
+    @inline final def nonEmpty: Boolean                         = flagset != EmptyTASTYFlagSet
   }
 }
 
 object TASTYFlags {
   val Live: TASTYFlags = new TASTYFlags {
 
-    type TASTYFlagSet = BitSet
+    type TASTYFlagSet = BitSet // TODO optimise to Int
 
     private[this] val cache = mutable.ArrayBuffer.empty[TASTYFlagSet]
 

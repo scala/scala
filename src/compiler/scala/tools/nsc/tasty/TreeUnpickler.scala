@@ -1061,6 +1061,8 @@ abstract class TreeUnpickler(reader: TastyReader,
       ctx.log(s"reading member $name at $symAddr. (sym=${showSym(sym)})")
       val noCycle = tag match {
         case DEFDEF =>
+          if (completer.tastyFlagSet.nonEmpty)
+            errorScalaNext(s"unsupported flags on def: ${showTASTY(completer.tastyFlagSet)}")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
@@ -1071,13 +1073,18 @@ abstract class TreeUnpickler(reader: TastyReader,
           sym.info = ctx.methodType(typeParams, valueParamss, resType)
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
-          val isInline = completer.tastyFlagSet.is(Inline)
-          val tpe = readTpt()(localCtx).tpe
+          val isInline      = completer.tastyFlagSet.is(Inline)
+          val withoutInline = completer.tastyFlagSet &~ Inline
+          val tpe           = readTpt()(localCtx).tpe
           if (isInline && !tpe.isInstanceOf[ConstantType])
             errorScalaNext(s"inline val ${sym.nameString} with non-constant type $tpe")
+          if (withoutInline.nonEmpty)
+            errorScalaNext(s"unsupported flags on val: ${showTASTY(withoutInline)}")
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
+          if (completer.tastyFlagSet.nonEmpty)
+            errorScalaNext(s"unsupported flags on type: ${showTASTY(completer.tastyFlagSet)}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
@@ -1096,6 +1103,8 @@ abstract class TreeUnpickler(reader: TastyReader,
             NoCycle(at = symAddr)
           }
         case PARAM =>
+          if (completer.tastyFlagSet.nonEmpty)
+            errorScalaNext(s"unsupported flags on parameter: ${showTASTY(completer.tastyFlagSet)}")
           val tpt = readTpt()(localCtx)
           if (nothingButMods(end)) {
             sym.info = tpt.tpe
