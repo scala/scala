@@ -652,7 +652,8 @@ class IteratorTest {
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
       case 1 => Option(seq1.get).getOrElse(Nil)
-      case _ => check(); seq2
+      case 2 => check(); seq2
+      case _ => ???
     }
 
     def check() = assertNotReachable(seq1.get, it)(())
