@@ -1,0 +1,4 @@
+multiLineOps-b.scala:7: error: ';' expected but integer literal found.
+    */*one more*/22 // error: end of statement expected
+                 ^
+1 error
