@@ -39,6 +39,8 @@ object AssertUtil {
     else if (!b)
       println(s"assert not $msg")
 
+  def assertFails(body: => Any) = assertThrows[AssertionError](body)
+
   private final val timeout = 60 * 1000L                 // wait a minute
 
   private implicit class `ref helper`[A](val r: Reference[A]) extends AnyVal {
