@@ -507,6 +507,21 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     this
   }
 
+  // TODO in 2.14: rename to `mapValuesInPlace` and override the base version (not binary compatible)
+  private[mutable] def mapValuesInPlaceImpl(f: (K, V) => V): this.type = {
+    val len = table.length
+    var i = 0
+    while (i < len) {
+      var n = table(i)
+      while (n ne null) {
+        n.value = f(n.key, n.value)
+        n = n.next
+      }
+      i += 1
+    }
+    this
+  }
+
   override def mapFactory: MapFactory[HashMap] = HashMap
 
   override protected[this] def stringPrefix = "HashMap"
