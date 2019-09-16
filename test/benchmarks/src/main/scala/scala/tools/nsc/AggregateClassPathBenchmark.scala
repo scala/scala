@@ -41,3 +41,30 @@ class AggregateClassPathBenchmark {
     classpath.list("")._1.foreach(entry => bh.consume(classpath.list(entry.name)))
   }
 }
+@BenchmarkMode(Array(jmh.annotations.Mode.AverageTime))
+@Fork(2)
+@Threads(1)
+@Warmup(iterations = 10)
+@Measurement(iterations = 10)
+@OutputTimeUnit(TimeUnit.NANOSECONDS)
+@State(Scope.Benchmark)
+class OpenClassPathBenchmark {
+  @Param(Array(""))
+  var classpathString: String = _
+  var classpath: ClassPath = _
+  val closeableRegistry = new CloseableRegistry
+  val settings = new nsc.Settings()
+
+  @Setup def setup(): Unit = {
+    if (classpathString.startsWith("@"))
+      classpathString = new String(Files.readAllBytes(Paths.get(classpathString.drop(1))))
+    settings.classpath.value = classpathString
+  }
+
+  @Benchmark def test(bh: Blackhole) = {
+    val resolver = new PathResolver(settings, closeableRegistry)
+    classpath = resolver.result
+    bh.consume (classpath.list(""))
+    closeableRegistry.close()
+  }
+}
