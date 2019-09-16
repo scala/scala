@@ -79,10 +79,29 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
 
   override private[nsc] def hasPackage(pkg: PackageName) = aggregates.exists(_.hasPackage(pkg))
   override private[nsc] def list(inPackage: PackageName): ClassPathEntries = {
-    val packages: java.util.HashSet[PackageEntry] = new java.util.HashSet[PackageEntry]()
-    val classesAndSourcesBuffer = collection.mutable.ArrayBuffer[ClassRepresentation]()
+    val packages = new java.util.HashSet[PackageEntry]()
+    val classesAndSources = new java.util.HashMap[String, ClassRepresentation]()
     val onPackage: PackageEntry => Unit = packages.add(_)
-    val onClassesAndSources: ClassRepresentation => Unit = classesAndSourcesBuffer += _
+    /**
+     * Only one entry for each name. Merges existing and new entry, but doesnt overwrite source or binary of an existing entry
+     */
+    val onClassesAndSources: ClassRepresentation => Unit = { entry =>
+      val existing = classesAndSources.putIfAbsent(entry.name, entry)
+      if (existing ne null) {
+        val existingBinary = existing.binary
+        val existingSource = existing.source
+        
+        var entryBinary: Option[AbstractFile] = null
+        if (existingBinary.isEmpty && { entryBinary = entry.binary; entryBinary.isDefined})
+          classesAndSources.put(entry.name, ClassAndSourceFilesEntry(entryBinary.get, existingSource.get))
+        else {
+
+          var entrySource: Option[AbstractFile] = null
+          if (existingSource.isEmpty && { entrySource = entry.source; entrySource.isDefined})
+            classesAndSources.put(entry.name, ClassAndSourceFilesEntry(existingBinary.get, entrySource.get))
+        }
+      }
+    }
 
     aggregates.foreach { cp =>
       try {
@@ -91,8 +110,8 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
             ecp.list(inPackage, onPackage, onClassesAndSources)
           case _ =>
             val entries = cp.list(inPackage)
-            entries._1.foreach(entry => packages.add(entry))
-            classesAndSourcesBuffer ++= entries._2
+            entries._1 foreach onPackage
+            entries._2 foreach onClassesAndSources
         }
       } catch {
         case ex: java.io.IOException =>
@@ -102,41 +121,9 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
       }
     }
 
-    val distinctPackages: Seq[PackageEntry] = if (packages == null) Nil else packages.toArray(new Array[PackageEntry](packages.size()))
-    val distinctClassesAndSources = mergeClassesAndSources(classesAndSourcesBuffer)
-    ClassPathEntries(distinctPackages, distinctClassesAndSources)
+    ClassPathEntries(toSeq(packages), toSeq(classesAndSources.values))
   }
-
-  /**
-   * Returns only one entry for each name. If there's both a source and a class entry, it
-   * creates an entry containing both of them. If there would be more than one class or source
-   * entries for the same class it always would use the first entry of each type found on a classpath.
-   */
-  private def mergeClassesAndSources(entries: Seq[ClassRepresentation]): Seq[ClassRepresentation] = {
-    var count = 0
-    val indices = new java.util.HashMap[String, Int]((entries.size * 1.25).toInt)
-    val mergedEntries = new ArrayBuffer[ClassRepresentation](entries.size)
-    for {
-      entry <- entries
-    } {
-      val name = entry.name
-      if (indices.containsKey(name)) {
-        val index = indices.get(name)
-        val existing = mergedEntries(index)
-
-        if (existing.binary.isEmpty && entry.binary.isDefined)
-          mergedEntries(index) = ClassAndSourceFilesEntry(entry.binary.get, existing.source.get)
-        if (existing.source.isEmpty && entry.source.isDefined)
-          mergedEntries(index) = ClassAndSourceFilesEntry(existing.binary.get, entry.source.get)
-      }
-      else {
-        indices.put(name, count)
-        mergedEntries += entry
-        count += 1
-      }
-    }
-    if (mergedEntries isEmpty) Nil else mergedEntries.toIndexedSeq
-  }
+  private def toSeq[T <: AnyRef: Manifest](data: java.util.Collection[T]): Seq[T] = if (data isEmpty) Nil else data.toArray(new Array[T](data.size()))
 
   private def getDistinctEntries[EntryType <: ClassRepresentation](getEntries: ClassPath => Seq[EntryType]): Seq[EntryType] = {
     val seenNames = collection.mutable.HashSet[String]()

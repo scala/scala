@@ -19,6 +19,7 @@ import java.io.{ByteArrayInputStream, FilterInputStream, IOException, InputStrea
 import java.io.{File => JFile}
 import java.util.zip.{ZipEntry, ZipFile, ZipInputStream}
 import java.util.jar.Manifest
+import java.util.regex.Pattern
 
 import scala.collection.mutable
 import scala.collection.JavaConverters._
@@ -36,7 +37,12 @@ import scala.reflect.internal.JDK9Reflectors
  *  ''Note:  This library is considered experimental and should not be used unless you know what you are doing.''
  */
 object ZipArchive {
-  private[io] val closeZipFile = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
+  private val autoCloseAnyZipFiles = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
+  private val stableZipFiles: Seq[Pattern] = sys.props.get("scala.classpath.stablePattern").
+    map(_.split(JFile.pathSeparator).toSeq.map(Pattern.compile(_))).getOrElse(Nil)
+  private def fileIsStable(archive: ZipArchive): Boolean =
+    stableZipFiles.exists(_.matcher(archive.canonicalPath).matches)
+  private [io] def closeZipFile(zip: ZipArchive) = autoCloseAnyZipFiles && !fileIsStable(zip)
 
   /**
    * @param   file  a File
@@ -77,6 +83,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
   def this(file: JFile) = this(file, None)
 
   override lazy val canonicalPath = super.canonicalPath
+  lazy val closeZipFile = ZipArchive.closeZipFile(this)
 
   override def underlyingSource = Some(this)
   def isDirectory = true
@@ -178,6 +185,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     dirs.put("/", root)
     val zipFile = openZipFile()
     val enum    = zipFile.entries()
+    val closeZipFile = ZipArchive.closeZipFile(this)
 
     try {
       while (enum.hasMoreElements) {
@@ -190,7 +198,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
           if (!zipEntry.isDirectory) {
             val dir = getDir(dirs, zipEntry)
             val f =
-              if (ZipArchive.closeZipFile)
+              if (closeZipFile)
                 new LazyEntry(
                   zipEntry.getName,
                   zipEntry.getTime,
@@ -203,7 +211,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
         }
       }
     } finally {
-      if (ZipArchive.closeZipFile) zipFile.close()
+      if (closeZipFile) zipFile.close()
       else closeables ::= zipFile
     }
     root

@@ -48,7 +48,11 @@ trait ClassPath {
   private[nsc] def hasPackage(pkg: PackageName): Boolean
   private[nsc] def packages(inPackage: PackageName): Seq[PackageEntry]
   private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry]
+  private[nsc] def clazz(inPackage: PackageName, className:String): Option[ClassFileEntry] =
+    classes(inPackage).find(_.name == className)
   private[nsc] def sources(inPackage: PackageName): Seq[SourceFileEntry]
+  private[nsc] def source(inPackage: PackageName, className:String): Option[SourceFileEntry] =
+    sources(inPackage).find(_.name == className)
 
   /**
    * Returns packages and classes (source or classfile) that are members of `inPackage` (not
@@ -77,8 +81,8 @@ trait ClassPath {
     val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
 
     val packageName = PackageName(pkg)
-    val foundClassFromClassFiles = classes(packageName).find(_.name == simpleClassName)
-    def findClassInSources = sources(packageName).find(_.name == simpleClassName)
+    val foundClassFromClassFiles = clazz(packageName, simpleClassName)
+    def findClassInSources = source(packageName, simpleClassName)
 
     foundClassFromClassFiles orElse findClassInSources
   }
