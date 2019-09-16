@@ -199,8 +199,17 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     * @return   the map itself.
     */
   def mapValuesInPlace(f: (K, V) => V): this.type = {
-    iterator foreach {
-      case (key, value) => update(key, f(key, value))
+    if (nonEmpty) this match {
+      case hm: mutable.HashMap[K, V] => hm.mapValuesInPlaceImpl(f)
+      case _ =>
+        val array = this.toArray[Any]
+        val arrayLength = array.length
+        var i = 0
+        while (i < arrayLength) {
+          val (k, v) = array(i).asInstanceOf[(K, V)]
+          update(k, f(k, v))
+          i += 1
+        }
     }
     this
   }

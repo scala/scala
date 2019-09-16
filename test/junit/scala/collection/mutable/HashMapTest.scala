@@ -251,6 +251,13 @@ class HashMapTest {
     assertEquals(hashMapCount4.updateWith(countingKey2)(transform), None)
     assertEquals(2, count) // once during hashtable construction, once during updateWith
     assertEquals(hashMapCount4, mutable.HashMap(countingKey1 -> "a"))
+  }
 
+  @Test
+  def t11737(): Unit = {
+    val m = mutable.HashMap(
+      0 -> 1, 1 -> 1, 2 -> 1, 3 -> 1, 4 -> 1, 5 -> 1, 6 -> 1, 7 -> 1, 8 -> 1, 9 -> 1, 241 -> 1)
+      .mapValuesInPlace((_, _) => -1)
+    assertTrue(m.toString, m.forall(_._2 == -1))
   }
 }
