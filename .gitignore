@@ -55,3 +55,7 @@
 /build-sbt/
 local.sbt
 jitwatch.out
+
+# metals
+.metals
+.bloop
