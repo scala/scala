@@ -219,9 +219,10 @@ abstract class TreeUnpickler(reader: TastyReader,
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
-      def typeRef(args: List[Type]): Type = symbolTable.typeRef(NoPrefix, sym, args)
-      def typeRef: Type = symbolTable.typeRef(NoPrefix, sym, Nil)
-      def termRef: Type = symbolTable.typeRef(NoPrefix, sym, Nil)
+      def typeRef(args: List[Type]): Type = symbolTable.typeRef(sym.owner.toType, sym, args)
+      def typeRef: Type = symbolTable.typeRef(sym.owner.toType, sym, Nil)
+      def termRef: Type = symbolTable.typeRef(sym.owner.toType, sym, Nil)
+      def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
     }
   }
 
@@ -1162,8 +1163,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         readTpt()
       }
       cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.rawInfo.typeSymbol)
-      val constr = readIndexedMember()
-      symFromNoCycle(constr).ensureCompleted()
+      readIndexedMember() // ctor
       NoCycle(at = symAddr)
     }
 
