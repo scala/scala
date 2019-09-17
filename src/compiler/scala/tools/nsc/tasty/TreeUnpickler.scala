@@ -15,22 +15,30 @@ import scala.reflect.io.AbstractFile
 abstract class TreeUnpickler(reader: TastyReader,
                              posUnpicklerOpt: Option[PositionUnpickler],
                              commentUnpicklerOpt: Option[CommentUnpickler],
-                             splices: Seq[Any]) extends TASTYUniverse with TASTYNameTable with TASTYFlagSets { self =>
+                             splices: Seq[Any]) extends TASTYUniverse with TASTYNameTable { self =>
   import symbolTable._
   import TastyFormat._
   import FlagSets._
-  import tastyFlags._
   import NameOps._
   import TypeOps._
   import TreeUnpickler._
   import MaybeCycle._
+  import TASTYFlags.Live._
 
   type TermRef = TypeRef
 
-  protected def errorScalaNext(msg: String)(implicit ctx: Context): Unit =
+  @inline
+  final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
+    if (!cond) {
+      errorTasty(msg)
+    }
+
+  @inline
+  final protected def errorTasty(msg: String)(implicit ctx: Context): Unit =
     reporter.error(NoPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
 
-  protected def errorConstructTASTyTree: Nothing = sys.error("Trying to Construct a Tree from TASTy")
+  @inline
+  final protected def errorConstructTASTyTree: Nothing = sys.error("Trying to Construct a Tree from TASTy")
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
@@ -681,7 +689,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           case BYNAMEtype =>
             appliedType(definitions.ByNameParamClass, readType()) // ExprType(readType())
           case ENUMconst =>
-            errorScalaNext("Enum Constant") //Constant(readTermRef().termSymbol)
+            errorTasty("Enum Constant") //Constant(readTermRef().termSymbol)
             ErrorType
           case _ =>
             ConstantType(readConstant(tag))
@@ -819,9 +827,9 @@ abstract class TreeUnpickler(reader: TastyReader,
         if (tastyFlagSet.isEmpty)
           show(flags)
         else if (givenFlags == EmptyFlags)
-          showTASTY(tastyFlagSet)
+          tastyFlagSet.show
         else
-          show(flags) + " | " + showTASTY(tastyFlagSet)
+          show(flags) + " | " + tastyFlagSet.show
       }
       ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
@@ -1061,8 +1069,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       ctx.log(s"reading member $name at $symAddr. (sym=${showSym(sym)})")
       val noCycle = tag match {
         case DEFDEF =>
-          if (completer.tastyFlagSet.nonEmpty)
-            errorScalaNext(s"unsupported flags on def: ${showTASTY(completer.tastyFlagSet)}")
+          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
@@ -1073,18 +1080,14 @@ abstract class TreeUnpickler(reader: TastyReader,
           sym.info = ctx.methodType(typeParams, valueParamss, resType)
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
-          val isInline      = completer.tastyFlagSet.is(Inline)
-          val withoutInline = completer.tastyFlagSet &~ Inline
-          val tpe           = readTpt()(localCtx).tpe
-          if (isInline && !tpe.isInstanceOf[ConstantType])
-            errorScalaNext(s"inline val ${sym.nameString} with non-constant type $tpe")
-          if (withoutInline.nonEmpty)
-            errorScalaNext(s"unsupported flags on val: ${showTASTY(withoutInline)}")
+          val (isInline, exceptInline) = completer.tastyFlagSet.except(Inline)
+          assertTasty(exceptInline.isEmpty, s"unsupported flags on val: ${exceptInline.show}")
+          val tpe = readTpt()(localCtx).tpe
+          if (isInline) assertTasty(tpe.isInstanceOf[ConstantType], s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          if (completer.tastyFlagSet.nonEmpty)
-            errorScalaNext(s"unsupported flags on type: ${showTASTY(completer.tastyFlagSet)}")
+          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on type: ${completer.tastyFlagSet.show}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
@@ -1103,8 +1106,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             NoCycle(at = symAddr)
           }
         case PARAM =>
-          if (completer.tastyFlagSet.nonEmpty)
-            errorScalaNext(s"unsupported flags on parameter: ${showTASTY(completer.tastyFlagSet)}")
+          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on parameter: ${completer.tastyFlagSet.show}")
           val tpt = readTpt()(localCtx)
           if (nothingButMods(end)) {
             sym.info = tpt.tpe
