@@ -16,10 +16,12 @@ trait TASTYFlags { self =>
   val Extension: TASTYFlagSet
   val Given: TASTYFlagSet
   val Exported: TASTYFlagSet
+  val NoInits: TASTYFlagSet
 
   protected def toSingletonSets(multiset: TASTYFlagSet): SingletonSets[TASTYFlagSet]
   protected def map[A](set: SingletonSets[TASTYFlagSet], f: TASTYFlagSet => A): Iterable[A]
   protected def union(as: TASTYFlagSet, bs: TASTYFlagSet): TASTYFlagSet
+  protected def intersect(as: TASTYFlagSet, bs: TASTYFlagSet): TASTYFlagSet
   protected def is(set: TASTYFlagSet, mask: TASTYFlagSet, butNot: TASTYFlagSet): Boolean
   protected def is(set: TASTYFlagSet, mask: TASTYFlagSet): Boolean
   protected def equal(set: TASTYFlagSet, other: TASTYFlagSet): Boolean
@@ -40,6 +42,7 @@ object TASTYFlags {
     final def ===(set: TASTYFlagSet): Boolean              = Live.equal(flagset, set)
     final def not(mask: TASTYFlagSet): Boolean             = Live.not(flagset, mask)
     final def &~(mask: TASTYFlagSet): TASTYFlagSet         = Live.remove(flagset, mask)
+    final def &(mask: TASTYFlagSet): TASTYFlagSet          = Live.intersect(flagset, mask)
     final def isEmpty: Boolean                             = Live.isEmpty(flagset)
     final def nonEmpty: Boolean                            = !Live.isEmpty(flagset)
 
@@ -56,6 +59,7 @@ object TASTYFlags {
         case f if f === Extension   => "Extension"
         case f if f === Given       => "Given"
         case f if f === Exported    => "Exported"
+        case f if f === NoInits     => "NoInits"
       }.mkString(" | ")
     }
 
@@ -85,13 +89,15 @@ object TASTYFlags {
     val Extension         = 1 << 6
     val Given             = 1 << 7
     val Exported          = 1 << 8
+    val NoInits           = 1 << 9
 
-    final def union(a: TASTYFlagSet, b: TASTYFlagSet)       = a | b
-    final def is(set: TASTYFlagSet, mask: TASTYFlagSet)     = (set & mask) != 0
-    final def equal(set: TASTYFlagSet, other: TASTYFlagSet) = set == other
-    final def not(set: TASTYFlagSet, mask: TASTYFlagSet)    = (set & mask) == 0
-    final def remove(set: TASTYFlagSet, mask: TASTYFlagSet) = set & ~mask
-    final def isEmpty(set: TASTYFlagSet)                    = set == 0
+    final def union(a: TASTYFlagSet, b: TASTYFlagSet)                   = a | b
+    final def intersect(a: TASTYFlagSet, b: TASTYFlagSet): TASTYFlagSet = a & b
+    final def is(set: TASTYFlagSet, mask: TASTYFlagSet)                 = (set & mask) != 0
+    final def equal(set: TASTYFlagSet, other: TASTYFlagSet)             = set == other
+    final def not(set: TASTYFlagSet, mask: TASTYFlagSet)                = (set & mask) == 0
+    final def remove(set: TASTYFlagSet, mask: TASTYFlagSet)             = set & ~mask
+    final def isEmpty(set: TASTYFlagSet)                                = set == 0
 
     final def is(set: TASTYFlagSet, mask: TASTYFlagSet, butNot: TASTYFlagSet): Boolean =
       ((set & mask) != 0) && ((set & butNot) == 0)
@@ -101,7 +107,7 @@ object TASTYFlags {
     final def map[A](set: SingletonSets[TASTYFlagSet], f: TASTYFlagSet => A) = {
       val buf = Iterable.newBuilder[A]
       var i = 0
-      while (i <= 8) {
+      while (i <= 9) {
         val flag = 1 << i
         if ((flag & set) != 0) {
           buf += f(flag)

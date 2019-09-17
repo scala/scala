@@ -117,13 +117,20 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): Symbol = {
       val sym = {
-        if (flags.is(Param))
-          if (name.isTypeName)
+        if (flags.is(Param)) {
+          if (name.isTypeName) {
             owner.newTypeParameter(name.toTypeName, NoPosition, flags)
-          else
+          }
+          else {
             owner.newValueParameter(name.toTermName, NoPosition, flags)
-        else
+          }
+        }
+        else if (name == nme.CONSTRUCTOR) {
+          owner.newConstructor(NoPosition, flags)
+        }
+        else {
           owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
+        }
       }
       sym.setPrivateWithin(privateWithin)
       sym.info = completer
@@ -212,9 +219,9 @@ abstract class TreeUnpickler(reader: TastyReader,
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
-      def typeRef(args: List[Type]): Type = symbolTable.typeRef(sym.owner.info, sym, args)
-      def typeRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
-      def termRef: Type = symbolTable.typeRef(sym.owner.info, sym, Nil)
+      def typeRef(args: List[Type]): Type = symbolTable.typeRef(NoPrefix, sym, args)
+      def typeRef: Type = symbolTable.typeRef(NoPrefix, sym, Nil)
+      def termRef: Type = symbolTable.typeRef(NoPrefix, sym, Nil)
     }
   }
 
@@ -293,9 +300,8 @@ abstract class TreeUnpickler(reader: TastyReader,
     val Deferred: FlagSet = Flag.DEFERRED
     val Method: FlagSet = Flags.METHOD
     val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
-    val NoInits: FlagSet = EmptyFlags // doesn't exist so far
 
-    val NoInitsInterface: FlagSet = Interface | NoInits
+    val NoInitsInterface: (FlagSet, TASTYFlagSet) = (Interface, NoInits)
     val TermParamOrAccessor: FlagSet = Param | ParamAccessor
     val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
     val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
@@ -969,29 +975,33 @@ abstract class TreeUnpickler(reader: TastyReader,
      *  @return  the largest subset of {NoInits, PureInterface} that a
      *           trait owning the indexed statements can have as flags.
      */
-    def indexStats(end: Addr)(implicit ctx: Context): FlagSet = {
-      var initsFlags: FlagSet = NoInitsInterface
+    def indexStats(end: Addr)(implicit ctx: Context): (FlagSet, TASTYFlagSet) = {
+      var (initsFlags, initsTASTYFlags) = NoInitsInterface
+      def clearFlags() = {
+        initsFlags      = EmptyFlags
+        initsTASTYFlags = EmptyTASTYFlagSet
+      }
       while (currentAddr.index < end.index) {
         nextByte match {
           case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
             val sym = symbolAtCurrent()
             skipTree()
             if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
-              initsFlags = EmptyFlags
+              clearFlags()
             else if (sym.isClass ||
               sym.is(Method, butNot = Deferred) && !sym.isConstructor)
-              initsFlags &= NoInits
+              initsTASTYFlags &= NoInits
           case IMPORT =>
             skipTree()
           case PACKAGE =>
             processPackage { (_, end) => implicit ctx => indexStats(end) }
           case _ =>
             skipTree()
-            initsFlags = EmptyFlags
+            clearFlags()
         }
       }
       assert(currentAddr.index == end.index)
-      initsFlags
+      (initsFlags, initsTASTYFlags)
     }
 
     /** Process package with given operation `op`. The operation takes as arguments
@@ -1125,13 +1135,15 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
 
     private def readTemplate(symAddr: Addr)(implicit ctx: Context): NoCycle = {
+      import SymbolOps._
       val cls = completeClassTpe1
       val localDummy = symbolAtCurrent()
       val parentCtx = ctx.withOwner(localDummy)
       assert(readByte() == TEMPLATE)
       val end = readEnd()
-      // TODO: read params
-      val bodyFlags = {
+      // val tparams = readIndexedParams[NoCycle](TYPEPARAM)
+      // val vparams = readIndexedParams[NoCycle](PARAM)
+      val (bodyFlags, bodyTASTYFlags) = {
         val bodyIndexer = fork
         // The first DEFDEF corresponds to the primary constructor
         while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()
@@ -1144,9 +1156,14 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
       }
       val parentTypes = parents.map(_.tpe.dealias)
+      if (nextByte == SELFDEF) {
+        readByte()
+        readName()
+        readTpt()
+      }
       cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.rawInfo.typeSymbol)
-      // TODO: Read self-type
-      // TODO: Update info with parents and self-type
+      val constr = readIndexedMember()
+      symFromNoCycle(constr).ensureCompleted()
       NoCycle(at = symAddr)
     }
 
