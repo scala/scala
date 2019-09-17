@@ -1,3 +1,5 @@
+// scalac: -Yno-predef
+
 import scala.Predef.implicitly
 
 class A(val a: Int)
