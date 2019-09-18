@@ -126,7 +126,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
         }
         else if (name == nme.CONSTRUCTOR) {
-          owner.newConstructor(NoPosition, flags)
+          owner.newConstructor(NoPosition, flags & ~Flag.STABLE)
         }
         else {
           owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
@@ -1162,7 +1162,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         readName()
         readTpt()
       }
-      cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.rawInfo.typeSymbol)
+      cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
       readIndexedMember() // ctor
       NoCycle(at = symAddr)
     }
