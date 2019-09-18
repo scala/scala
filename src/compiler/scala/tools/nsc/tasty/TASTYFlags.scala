@@ -38,7 +38,7 @@ object TASTYFlags {
     final def ===(set: TASTYFlagSet): Boolean                       = Live.equal(flagset, set)
     final def &~(mask: TASTYFlagSet): TASTYFlagSet                  = Live.remove(flagset, mask)
     final def isEmpty: Boolean                                      = flagset === Live.EmptyTASTYFlagSet
-    final def is(mask: TASTYFlagSet): Boolean                       = (flagset & mask).isEmpty
+    final def is(mask: TASTYFlagSet): Boolean                       = (flagset & mask).nonEmpty
     final def is(mask: TASTYFlagSet, butNot: TASTYFlagSet): Boolean = is(mask) && not(butNot)
     final def not(mask: TASTYFlagSet): Boolean                      = !is(mask)
     final def nonEmpty: Boolean                                     = !isEmpty
