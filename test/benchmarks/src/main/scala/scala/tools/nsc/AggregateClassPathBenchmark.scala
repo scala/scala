@@ -12,14 +12,14 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.util.PathResolver
 
 @BenchmarkMode(Array(jmh.annotations.Mode.AverageTime))
-@Fork(2)
+@Fork(0)
 @Threads(1)
-@Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Warmup(iterations = 0)
+@Measurement(iterations = 1)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 class AggregateClassPathBenchmark {
-  @Param(Array(""))
+  @Param(Array("@s:/scala/classpath.txt"))
   var classpathString: String = _
   var classpath: ClassPath = _
   val closeableRegistry = new CloseableRegistry
@@ -45,11 +45,11 @@ class AggregateClassPathBenchmark {
 @Fork(2)
 @Threads(1)
 @Warmup(iterations = 10)
-@Measurement(iterations = 10)
+@Measurement(iterations = 10000)
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
-class OpenClassPathBenchmark {
-  @Param(Array(""))
+class AggregateClassPathBenchmark2 {
+  @Param(Array("@s:/scala/classpath.txt"))
   var classpathString: String = _
   var classpath: ClassPath = _
   val closeableRegistry = new CloseableRegistry
@@ -65,6 +65,23 @@ class OpenClassPathBenchmark {
     val resolver = new PathResolver(settings, closeableRegistry)
     classpath = resolver.result
     bh.consume (classpath.list(""))
+    closeableRegistry.close()
+  }
+}
+object Mike extends App {
+  var classpathString: String = "@s:/scala/classpath.txt"
+  var classpath: ClassPath = _
+  val closeableRegistry = new CloseableRegistry
+  val settings = new nsc.Settings()
+
+  if (classpathString.startsWith("@"))
+    classpathString = new String(Files.readAllBytes(Paths.get(classpathString.drop(1))))
+  settings.classpath.value = classpathString
+
+  while (true) {
+    val resolver = new PathResolver(settings, closeableRegistry)
+    classpath = resolver.result
+    println(classpath.list(""))
     closeableRegistry.close()
   }
 }
