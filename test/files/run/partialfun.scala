@@ -108,7 +108,7 @@ object Test {
     takePartialFunction { case s: String => s.reverse }
     println()
 
-    println("test case: a method that is overloaded for Funtion1 and PartialFunction")
+    println("test case: a method that is overloaded for Function1 and PartialFunction")
     takeFunctionLike(_.reverse)
     takeFunctionLike { case s => s.reverse }
     takeFunctionLike { case s: String => s.reverse }
@@ -132,7 +132,7 @@ object Test {
   //takePartialFunction(reverse)          // can't pass a method to a method that takes a PartialFunction
     println()
 
-    println("test case: a method that is overloaded for Funtion1 and PartialFunction")
+    println("test case: a method that is overloaded for Function1 and PartialFunction")
     takeFunctionLike(x => reverse(x))
     takeFunctionLike(reverse(_))
     takeFunctionLike(reverse _)
