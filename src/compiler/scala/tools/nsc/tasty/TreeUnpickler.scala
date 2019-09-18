@@ -164,12 +164,16 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (isJava)
         valueParamss.foreach(vs => vs.headOption.foreach(v => assert(v.flags.not(Implicit))))
       val monotpe = valueParamss.foldRight(resultType)((ts, f) => internal.methodType(ts, f))
+      val exprMonotpe = {
+        if (valueParamss.nonEmpty)
+          monotpe
+        else
+          internal.nullaryMethodType(monotpe)
+      }
       if (typeParams.nonEmpty)
-        internal.polyType(typeParams, monotpe)
-      else if (valueParamss.nonEmpty)
-        monotpe
+        internal.polyType(typeParams, exprMonotpe)
       else
-        internal.nullaryMethodType(monotpe)
+        exprMonotpe
     }
 
     @tailrec
@@ -215,7 +219,7 @@ abstract class TreeUnpickler(reader: TastyReader,
   object SymbolOps {
     implicit class SymbolDecorator(sym: Symbol) {
       def completer: TastyLazyType = {
-        assert(sym.rawInfo.isInstanceOf[TastyLazyType], "Expected TastyLazyType rawInfo")
+        assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${showRaw(sym.rawInfo)} ")
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
@@ -1064,7 +1068,6 @@ abstract class TreeUnpickler(reader: TastyReader,
       val sym       = symAtAddr(symAddr)
       val tag       = readByte()
       val end       = readEnd()
-      val completer = sym.completer
 
       def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = {
         collectWhile(nextByte == PARAMS) {
@@ -1072,12 +1075,16 @@ abstract class TreeUnpickler(reader: TastyReader,
           readEnd()
           readParams(PARAM)
         }
-     }
+      }
 
       val localCtx = localContext(sym)
 
       val name = readName()
+
       ctx.log(s"reading member $name at $symAddr. (sym=${showSym(sym)})")
+
+      val completer = sym.completer
+
       val noCycle = tag match {
         case DEFDEF =>
           assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
@@ -1160,10 +1167,12 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (nextByte == SELFDEF) {
         readByte()
         readName()
-        readTpt()
+        val selfTpe = readTpt().tpe
+        ctx.log(s"adding self type of ${showRaw(selfTpe)}")
+        cls.typeOfThis = selfTpe
       }
-      cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
       readIndexedMember() // ctor
+      cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
       NoCycle(at = symAddr)
     }
 

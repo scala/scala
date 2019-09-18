@@ -32,6 +32,7 @@ object TASTYFlags {
   type SingletonSets[T] = Live.SingletonSets[T]
 
   implicit final class TASTYFlagSetAPI(private val flagset: TASTYFlagSet) extends AnyVal {
+
     final def toSingletonSets: SingletonSets[TASTYFlagSet]          = Live.toSingletonSets(flagset)
     final def |(other: TASTYFlagSet): TASTYFlagSet                  = Live.union(flagset, other)
     final def &(mask: TASTYFlagSet): TASTYFlagSet                   = Live.intersect(flagset, mask)
