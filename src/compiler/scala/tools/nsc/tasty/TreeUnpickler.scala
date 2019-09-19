@@ -72,6 +72,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   sealed abstract class Context {
     import SymbolOps._
+    import Context._
+
+    type ThisContext <: Context
 
     def adjustModuleCompleter(completer: TastyLazyType, name: Name): TastyLazyType = {
       val scope = this.effectiveScope
@@ -96,13 +99,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
 
-    final def log(str: String): Unit = reporter.echo(NoPosition, str)
+    final def log(str: => String): Unit = logTASTY(s"#${self.hashCode.toHexString.take(4)}: $str")
 
     final def picklerPhase: Phase = symbolTable.picklerPhase
-
-    import Context._
-
-    type ThisContext <: Context
 
     def owner: Symbol
     def source: AbstractFile
@@ -190,8 +189,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   object Context {
     final class InitialContext(val baseClassRoot: Symbol, val baseLoadingMirror: Mirror, val source: AbstractFile) extends Context {
-      val owner: Symbol = baseClassRoot.owner
       type ThisContext = InitialContext
+      val owner: Symbol = baseClassRoot.owner
     }
 
     private[Context] final class FreshContext(val outer: Context) extends Context {
@@ -1064,10 +1063,15 @@ abstract class TreeUnpickler(reader: TastyReader,
       import SymbolOps._
       val sctx = sourceChangeContext()
       if (sctx `ne` ctx) return readNewMember()(sctx)
-      val symAddr   = currentAddr
-      val sym       = symAtAddr(symAddr)
-      val tag       = readByte()
-      val end       = readEnd()
+      val symAddr = currentAddr
+      val sym     = symAtAddr(symAddr)
+      val tag     = readByte()
+      val end     = readEnd()
+      val name    = readName()
+
+      ctx.log(s"completing member $name at $symAddr. (sym=${showSym(sym)})")
+
+      val completer = sym.completer
 
       def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = {
         collectWhile(nextByte == PARAMS) {
@@ -1078,14 +1082,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
 
       val localCtx = localContext(sym)
-
-      val name = readName()
-
-      ctx.log(s"reading member $name at $symAddr. (sym=${showSym(sym)})")
-
-      val completer = sym.completer
-
-      val noCycle = tag match {
+      val noCycle  = tag match {
         case DEFDEF =>
           assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
@@ -1151,12 +1148,14 @@ abstract class TreeUnpickler(reader: TastyReader,
       val end = readEnd()
       // val tparams = readIndexedParams[NoCycle](TYPEPARAM)
       // val vparams = readIndexedParams[NoCycle](PARAM)
+      ctx.log(s"Template: indexing members of $cls")
       val (bodyFlags, bodyTASTYFlags) = {
         val bodyIndexer = fork
         // The first DEFDEF corresponds to the primary constructor
         while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()
         bodyIndexer.indexStats(end)
       }
+      ctx.log(s"Template: adding parents of $cls")
       val parents = collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
         nextUnsharedTag match {
           case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentCtx)
@@ -1165,12 +1164,14 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       val parentTypes = parents.map(_.tpe.dealias)
       if (nextByte == SELFDEF) {
+        ctx.log(s"Template: adding self-type of $cls")
         readByte()
         readName()
         val selfTpe = readTpt().tpe
-        ctx.log(s"adding self type of ${showRaw(selfTpe)}")
+        ctx.log(s"Template: self-type is $selfTpe")
         cls.typeOfThis = selfTpe
       }
+      ctx.log(s"Template: reading constructor of $cls")
       readIndexedMember() // ctor
       cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
       NoCycle(at = symAddr)
