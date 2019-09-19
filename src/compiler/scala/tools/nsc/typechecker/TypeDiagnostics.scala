@@ -15,6 +15,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.chaining._
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction.condOpt
@@ -283,9 +284,7 @@ trait TypeDiagnostics {
 
   // For found/required errors where AnyRef would have sufficed:
   // explain in greater detail.
-  def explainAnyVsAnyRef(found: Type, req: Type): String = {
-    if (AnyRefTpe <:< req) notAnyRefMessage(found) else ""
-  }
+  def explainAnyVsAnyRef(found: Type, req: Type): String = if (AnyRefTpe <:< req) notAnyRefMessage(found).pipe(msg => if (msg.isEmpty) "" else "\n" + msg) else ""
 
   def finalOwners(tpe: Type): Boolean = (tpe.prefix == NoPrefix) || recursivelyFinal(tpe)
 
