@@ -62,7 +62,8 @@ abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = Unpick
         val loadingMirror = mirrorThatLoaded(classRoot)
         new Context.InitialContext(classRoot, loadingMirror, AbstractFile.getFile(filename))
       }
-      treeUnpickler.enter(moduleRoot, classRoot)
+      ctx.log(s"Entering roots ($classRoot, $moduleRoot) with owner ${ctx.owner}")
+      treeUnpickler.enter(classRoot, moduleRoot)
     } catch {
       case NonFatal(ex) =>
         ex.printStackTrace()

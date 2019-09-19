@@ -25,8 +25,6 @@ abstract class TreeUnpickler(reader: TastyReader,
   import MaybeCycle._
   import TASTYFlags.Live._
 
-  type TermRef = TypeRef
-
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
@@ -357,7 +355,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   /** Enter all toplevel classes and objects into their scopes
    */
-  def enter(moduleRoot: Symbol, classRoot: Symbol)(implicit ctx: Context): Unit = {
+  def enter(classRoot: Symbol, moduleRoot: Symbol)(implicit ctx: Context): Unit = {
     this.roots = Set(moduleRoot, classRoot)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
@@ -699,7 +697,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           case BYNAMEtype =>
             appliedType(definitions.ByNameParamClass, readType()) // ExprType(readType())
           case ENUMconst =>
-            errorTasty("Enum Constant") //Constant(readTermRef().termSymbol)
+            errorTasty("Enum Constant") //Constant(readTypeRef().termSymbol)
             ErrorType
           case _ =>
             ConstantType(readConstant(tag))
@@ -732,8 +730,8 @@ abstract class TreeUnpickler(reader: TastyReader,
 //    def readTypeRef(): Type =
 //      typeAtAddr(readAddr())
 
-    def readTermRef()(implicit ctx: Context): TermRef =
-      readType().asInstanceOf[TermRef]
+    def readTypeRef()(implicit ctx: Context): TypeRef =
+      readType().asInstanceOf[TypeRef]
 
 // ------ Reading definitions -----------------------------------------------------
 
@@ -1018,9 +1016,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (sctx `ne` ctx) return processPackage(op)(sctx)
       readByte()
       val end = readEnd()
-      val pid = ref(readTermRef()).asInstanceOf[RefTree]
-      val localCtx = if (pid.name.toTermName == nme.EMPTY_PACKAGE_NAME) ctx else localContext(pid.symbol.moduleClass)
-      op(pid, end)(localCtx)
+      val tpe = readTypeRef()
+      val pid = ref(tpe).asInstanceOf[RefTree]
+      op(pid, end)(localContext(tpe.typeSymbol.moduleClass))
     }
 
     def ref[T <: TypeRef](tp: T): Tree = {
