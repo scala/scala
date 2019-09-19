@@ -1160,7 +1160,11 @@ abstract class TreeUnpickler(reader: TastyReader,
           case _ => readTpt()(parentCtx)
         }
       }
-      val parentTypes = parents.map(_.tpe.dealias)
+      val parentTypes = parents.map { tpt =>
+        val tpe = tpt.tpe.dealias
+        if (tpe.typeSymbol == definitions.ObjectClass) definitions.AnyRefTpe
+        else tpe
+      }
       if (nextByte == SELFDEF) {
         ctx.log(s"Template: adding self-type of $cls")
         readByte()
