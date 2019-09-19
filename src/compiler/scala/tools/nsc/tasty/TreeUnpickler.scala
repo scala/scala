@@ -25,6 +25,11 @@ abstract class TreeUnpickler(reader: TastyReader,
   import MaybeCycle._
   import TASTYFlags.Live._
 
+  type SigName = SignedName[TermName, TypeName]
+  val  SigName = SignedName
+  type Sig     = Signature[TypeName]
+  val  Sig     = Signature
+
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
@@ -350,8 +355,10 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   private def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"
 
-  private def registerSym(addr: Addr, sym: Symbol) =
+  private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
+    ctx.log(s"registered $sym in ${sym.owner} at $addr")
     symAtAddr(addr) = sym
+  }
 
   /** Enter all toplevel classes and objects into their scopes
    */
@@ -490,6 +497,10 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
 
     def readName(): TermName = nameAtRef(readNameRef())
+    def readSigName(): Either[SigName, TermName] = {
+      val ref = readNameRef()
+      signedNameAtRef(ref).toLeft(nameAtRef(ref))
+    }
 
 // ------ Reading types -----------------------------------------------------
 
@@ -814,7 +825,6 @@ abstract class TreeUnpickler(reader: TastyReader,
      */
     def createMemberSymbol()(implicit ctx: Context): Symbol = {
       import SymbolOps._
-      ctx.log(s"will create sym in owner ${ctx.owner}")
       val start = currentAddr
       val tag = readByte()
       val end = readEnd()
@@ -864,13 +874,12 @@ abstract class TreeUnpickler(reader: TastyReader,
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
         case cls: ClassSymbol =>
-          if (!cls.info.decls.containsName(name)) {
-            cls.info.decls.enter(sym)
+          if (!cls.rawInfo.decls.containsName(name)) {
+            cls.rawInfo.decls.enter(sym)
           }
         case _ => ctx.log(s"(owner=${ctx.owner}) is of class ${ctx.owner.getClass.getName()}")
       }
       registerSym(start, sym)
-      ctx.log(s"updated $sym in ${sym.owner} with decls ${sym.owner.rawInfo.decls}")
       if (isClass) {
         sym.completer.withDecls(newScope)
         forkAt(templateStart).indexTemplateParams()(localContext(sym))
@@ -1144,8 +1153,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       val parentCtx = ctx.withOwner(localDummy)
       assert(readByte() == TEMPLATE)
       val end = readEnd()
-      // val tparams = readIndexedParams[NoCycle](TYPEPARAM)
-      // val vparams = readIndexedParams[NoCycle](PARAM)
+      ctx.log(s"Template: reading parameters of $cls")
+      val tparams = readIndexedParams[NoCycle](TYPEPARAM)
+      val vparams = readIndexedParams[NoCycle](PARAM)
       ctx.log(s"Template: indexing members of $cls")
       val (bodyFlags, bodyTASTYFlags) = {
         val bodyIndexer = fork
@@ -1454,7 +1464,8 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
       }
 
-      def completeSelect(name: Name): Select = {
+      def completeSelect(name: Name, sig: Sig): Select = {
+        ctx.log(if (sig eq Sig.NotAMethod) s"complete select on $name" else s"complete select on $name: ${sig.show}")
         val localCtx = ctx // if (name == nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
         val qual = readTerm()(localCtx)
         val qualType = qual.tpe.widen
@@ -1489,14 +1500,13 @@ abstract class TreeUnpickler(reader: TastyReader,
         case IDENTtpt =>
           Ident(readName().toTypeName).setType(readType())
         case SELECT =>
-          completeSelect(readName())
-//          readName() match { // TODO: make signed name table that delegates to normal name table if does not exist
-//            case SignedName(name, sig) => completeSelect(name, sig)
-//            case name => completeSelect(name, Signature.NotAMethod)
-//          }
+         readSigName() match {
+           case Left(SigName(name, sig)) => completeSelect(name, sig)
+           case Right(name)              => completeSelect(name, Sig.NotAMethod)
+         }
         case SELECTtpt =>
           val name = readName().toTypeName
-          completeSelect(name)
+          completeSelect(name, Sig.NotAMethod)
 //        case QUALTHIS =>
 //          val (qual, tref) = readQualId()
 //          untpd.This(qual).withType(ThisType.raw(tref))

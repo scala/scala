@@ -5,6 +5,7 @@ import scala.collection.mutable
 import scala.reflect.internal.SymbolTable
 import TastyFormat.NameTags._
 import TastyBuffer.NameRef
+import scala.collection.immutable.LongMap
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
@@ -14,6 +15,13 @@ object TastyUnpickler {
   }
 
   type TermName = SymbolTable#TermName
+
+  final class Table[T] extends (NameRef => T) {
+    private[TastyUnpickler] val names = new mutable.ArrayBuffer[T]
+    def add(name: T): mutable.ArrayBuffer[T] = names += name
+    def apply(ref: NameRef): T = names(ref.index)
+    def contents: Iterable[T] = names
+  }
 }
 
 import TastyUnpickler._
@@ -22,25 +30,22 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
   import symbolTable._
   import reader._
 
-  final class NameTable extends (NameRef => TermName) with TASTYUniverse with TASTYNameTable {
-    val symbolTable: self.symbolTable.type = self.symbolTable
-    val nameAtRef: NameRef => self.symbolTable.TermName = this
-    private[TastyUnpickler] val names = new mutable.ArrayBuffer[TermName]
-    def add(name: TermName): mutable.ArrayBuffer[TermName] = names += name
-    def apply(ref: NameRef): TermName = names(ref.index)
-    def contents: Iterable[TermName] = names
-  }
+  type ParamSig = Signature.ParamSig[TypeName]
 
   def this(bytes: Array[Byte])(implicit symbolTable: SymbolTable) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
-  val nameAtRef: NameTable = new NameTable
+  val nameAtRef: Table[TermName] = new Table
+
+  val signedNameTable: mutable.LongMap[SignedName[TermName, TypeName]] = mutable.LongMap.empty
+
+  val signedNameAtRef: NameRef => Option[SignedName[TermName, TypeName]] = ref => signedNameTable.get(ref.index)
 
   private def readName(): TermName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString
 
-  private def readParamSig(): Signature.ParamSig = {
+  private def readParamSig(): ParamSig = {
     val ref = readInt()
     if (ref < 0)
       Left(ref.abs)
@@ -88,7 +93,9 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         val result = readName().toTypeName
         val paramsSig = until(end)(readParamSig())
         val sig = Signature(paramsSig, result)
-        logTASTY(s"${nameAtRef.names.size}: SIGNED name: SignedName($original, $sig)")
+        val signed = SignedName(original, sig)
+        signedNameTable(nameAtRef.names.size) = signed
+        logTASTY(s"${nameAtRef.names.size}: SIGNED name: ${signed.show}")
         original // SignedName(original, sig)
       case _ =>
         val res = readName() // simpleNameKindOfTag(tag)(readName())
@@ -103,6 +110,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 
   locally {
     doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
+    signedNameTable.repack()
     while (!isAtEnd) {
       val secName = readString()
       val secEnd = readEnd()
@@ -113,7 +121,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 
   def unpickle[R](sec: SectionUnpickler[R]): Option[R] =
     for (reader <- sectionReader.get(sec.name)) yield
-      sec.unpickle(reader, nameAtRef)
+      sec.unpickle(reader, this)
 
   private[nsc] def bytes: Array[Byte] = reader.bytes
 }
