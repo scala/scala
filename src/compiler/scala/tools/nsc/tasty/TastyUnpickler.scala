@@ -40,7 +40,12 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 
   val signedNameTable: mutable.LongMap[SignedName[TermName, TypeName]] = mutable.LongMap.empty
 
-  val signedNameAtRef: NameRef => Option[SignedName[TermName, TypeName]] = ref => signedNameTable.get(ref.index)
+  val signedNameAtRef: NameRef => Either[SignedName[TermName, TypeName], TermName] =
+    ref =>
+      if (signedNameTable.contains(ref.index))
+        Left(signedNameTable(ref.index))
+      else
+        Right(nameAtRef(ref))
 
   private def readName(): TermName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString

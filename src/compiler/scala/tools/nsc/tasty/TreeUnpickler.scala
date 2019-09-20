@@ -24,11 +24,11 @@ abstract class TreeUnpickler(reader: TastyReader,
   import TreeUnpickler._
   import MaybeCycle._
   import TASTYFlags.Live._
+  import Signature._
 
+  type Sig     = Signature[TypeName]
   type SigName = SignedName[TermName, TypeName]
   val  SigName = SignedName
-  type Sig     = Signature[TypeName]
-  val  Sig     = Signature
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
@@ -497,10 +497,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
 
     def readName(): TermName = nameAtRef(readNameRef())
-    def readSigName(): Either[SigName, TermName] = {
-      val ref = readNameRef()
-      signedNameAtRef(ref).toLeft(nameAtRef(ref))
-    }
+    def readSigName(): Either[SigName, TermName] = signedNameAtRef(readNameRef())
 
 // ------ Reading types -----------------------------------------------------
 
@@ -1465,7 +1462,6 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
 
       def completeSelect(name: Name, sig: Sig): Select = {
-        ctx.log(if (sig eq Sig.NotAMethod) s"complete select on $name" else s"complete select on $name: ${sig.show}")
         val localCtx = ctx // if (name == nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
         val qual = readTerm()(localCtx)
         val qualType = qual.tpe.widen
@@ -1473,9 +1469,38 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        val owner = denot.symbol.maybeOwner
 //        if (owner.isPackageObject && qualType.termSymbol.is(Package))
 //          qualType = qualType.select(owner.sourceModule)
-        val tpe = name match {
-          case name: TypeName => TypeRef(qualType, name)
-          case name: TermName => TypeRef(qualType, name)
+        val tpe = {
+          val tpe0 = name match {
+            case name: TypeName => TypeRef(qualType, name)
+            case name: TermName => TypeRef(qualType, name)
+          }
+          if (sig ne NotAMethod) {
+            ctx.log(s"looking for overloaded method signature on $name of kind ${sig.show}")
+            val MethodSignature(args, ret) = sig
+            val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
+            val argsSyms = args.map {
+              _.fold(
+                idx => Left(idx),
+                nme => Right(ctx.loadingMirror.findMemberFromRoot(nme))
+              )
+            }
+            val alts = tpe0.typeSymbol.asTerm.alternatives
+            val tpe = alts.find { sym =>
+              val method = sym.asMethod
+              method.returnType.typeSymbol == retSym &&
+                method.paramss.length == 1 &&
+                method.paramss.head.length == argsSyms.length &&
+                method.paramss.head.zip(argsSyms).forall {
+                  case (param, Left(i))    => sys.error(s"numbered paramSig $i")
+                  case (param, Right(sym)) => param.tpe.typeSymbol == sym
+                }
+            }.map(_.tpe).getOrElse(tpe0)
+            ctx.log(s"selected $tpe")
+            tpe
+          }
+          else {
+            tpe0
+          }
         }
         Select(qual, name).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
       }
@@ -1502,11 +1527,11 @@ abstract class TreeUnpickler(reader: TastyReader,
         case SELECT =>
          readSigName() match {
            case Left(SigName(name, sig)) => completeSelect(name, sig)
-           case Right(name)              => completeSelect(name, Sig.NotAMethod)
+           case Right(name)              => completeSelect(name, NotAMethod)
          }
         case SELECTtpt =>
           val name = readName().toTypeName
-          completeSelect(name, Sig.NotAMethod)
+          completeSelect(name, NotAMethod)
 //        case QUALTHIS =>
 //          val (qual, tref) = readQualId()
 //          untpd.This(qual).withType(ThisType.raw(tref))
@@ -1537,7 +1562,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             case APPLY =>
               val fn = readTerm()
               val args = until(end)(readTerm())
-              Apply(fn, args).setType(fn.tpe.typeSymbol.asMethod.returnType)
+              Apply(fn, args).setType(fn.tpe.dealiasWiden.finalResultType)
 //            case TYPEAPPLY =>
 //              tpd.TypeApply(readTerm(), until(end)(readTpt()))
 //            case TYPED =>
