@@ -21,7 +21,7 @@ pf only
 pf only
 pf only
 
-test case: a method that is overloaded for Funtion1 and PartialFunction
+test case: a method that is overloaded for Function1 and PartialFunction
 fn wins
 pf wins
 pf wins
@@ -38,7 +38,7 @@ pf only
 pf only
 pf only
 
-test case: a method that is overloaded for Funtion1 and PartialFunction
+test case: a method that is overloaded for Function1 and PartialFunction
 fn wins
 fn wins
 fn wins
