@@ -1106,8 +1106,14 @@ trait MacroAnnotionTreeInfo { self: TreeInfo =>
   final def splitAtSuper(stats: List[Tree], classOnly: Boolean): (List[Tree], List[Tree]) = {
     @tailrec
     def isConstr(tree: Tree): Boolean = tree match {
-      case Block(_, expr) => isConstr(expr) // scala/bug#6481 account for named argument blocks
-      case _              => (tree.symbol ne null) && (if (classOnly) tree.symbol.isClassConstructor else tree.symbol.isConstructor)
+      case Block(_, expr) =>
+        isConstr(expr) // scala/bug#6481 account for named argument blocks
+      case Apply(Select(New(_), _), _) =>
+        false // scala/bug#11736 don't treat `new X` statements as super calls
+      case Apply(fun, _) =>
+        (fun.symbol ne null) && (if (classOnly) fun.symbol.isClassConstructor else fun.symbol.isConstructor)
+      case _ =>
+        false
     }
     val (pre, rest0)       = stats span (!isConstr(_))
     val (supercalls, rest) = rest0 span (isConstr(_))
