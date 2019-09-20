@@ -158,7 +158,7 @@ abstract class TreeUnpickler(reader: TastyReader,
      *  type of the constructed instance is returned
      */
     def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
-      if (sym.name == nme.CONSTRUCTOR) sym.owner.typeRef(typeParams.map(_.typeRef))
+      if (sym.name == nme.CONSTRUCTOR) sym.owner.typeRef(typeParams.map(_.tpe))
       else givenTp
 
     /** The method type corresponding to given parameters and result type */
@@ -250,7 +250,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     private[this] var myDecls: Scope = EmptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
     private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
-    private[this] var myTASTYFlagSet: TASTYFlagSet = EmptyTASTYFlagSet
+    private[this] var myTASTYFlagSet: TASTYFlagSet = EmptyFlags
 
     /** The type parameters computed by the completer before completion has finished */
     def completerTypeParams(sym: Symbol)(implicit ctx: Context): List[Symbol] = sym.info.typeParams
@@ -270,10 +270,59 @@ abstract class TreeUnpickler(reader: TastyReader,
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
+  abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
+    def apply(paramNames: List[N])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
+  }
+
+  abstract class LambdaType extends Type {
+    type ThisName <: Name
+    type PInfo <: Type
+
+    def paramNames: List[ThisName]
+    def paramInfos: List[PInfo]
+    def resType: Type
+
+    private[this] var myParamRefs: List[TypeParamRef] = null
+
+    def paramRefs: List[TypeParamRef] = {
+      if (myParamRefs == null) myParamRefs = paramNames.indices.toList.map(i => new TypeParamRef(this, i))
+      myParamRefs
+    }
+
+    override def safeToString(): String = {
+      val args = paramNames.zip(paramInfos).map {
+        case (name, info) => s"${name}$info"
+      }.mkString("[", ", ", "]")
+      s"$args =>> $resType"
+    }
+  }
+
+  final class TypeParamRef(binder: LambdaType, i: Int) extends Type {
+    override def safeToString(): String = binder.paramNames(i).toString()
+  }
+
+  object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
+    def apply(paramNames: List[TypeName])(
+        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(
+        implicit ctx: Context): HKTypeLambda =
+      new HKTypeLambda(paramNames)(paramInfosExp, resultTypeExp)
+  }
+
+  class HKTypeLambda(val paramNames: List[TypeName])(
+      paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context)
+  extends LambdaType {
+    type ThisName = TypeName
+    type PInfo = TypeBounds
+
+    val paramInfos: List[TypeBounds] = paramInfosExp(this)
+    val resType: Type                = resultTypeExp(this)
+
+    assert(resType.isComplete, this)
+    assert(paramNames.nonEmpty)
+  }
+
   object FlagSets {
     import scala.reflect.internal.{Flags, ModifierFlags}
-
-    val EmptyFlags: FlagSet = NoFlags
 
     val Private: FlagSet = Flag.PRIVATE
     val Protected: FlagSet = Flag.PROTECTED
@@ -335,11 +384,12 @@ abstract class TreeUnpickler(reader: TastyReader,
 
   implicit class SymbolOps(private val sym: Symbol) {
     def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
-    def is(mask: FlagSet, butNot: FlagSet = EmptyFlags): Boolean =
-      if (butNot == EmptyFlags)
+    def is(mask: FlagSet, butNot: FlagSet = NoFlags): Boolean =
+      if (butNot == NoFlags)
         sym.hasFlag(mask)
       else
         sym.hasFlag(mask) && sym.hasNoFlags(butNot)
+    def not(mask: FlagSet): Boolean = !is(mask)
   }
 
   object TypeOps {
@@ -501,17 +551,17 @@ abstract class TreeUnpickler(reader: TastyReader,
 
 // ------ Reading types -----------------------------------------------------
 
-//    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
-//    def readParamNames(end: Addr): List[Name] =
-//      until(end) {
-//        val name = readName()
-//        skipTree()
-//        name
-//      }
+   /** Read names in an interleaved sequence of (parameter) names and types/bounds */
+   def readParamNames(end: Addr): List[Name] =
+     until(end) {
+       val name = readName()
+       skipTree()
+       name
+     }
 
-//    /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
-//    def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
-//      until(end) { readNat(); readType().asInstanceOf[T] }
+   /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
+   def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
+     until(end) { readNat(); readType().asInstanceOf[T] }
 
     /** Read reference to definition and return symbol created at that definition */
     def readSymRef()(implicit ctx: Context): Symbol = symbolAt(readAddr())
@@ -570,97 +620,97 @@ abstract class TreeUnpickler(reader: TastyReader,
       val tag = readByte()
       ctx.log(s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
 
-//      def registeringType[T](tp: Type, op: => T): T = {
-//        typeAtAddr(start) = tp
-//        op
-//      }
-//
-//      def readLengthType(): Type = {
-//        val end = readEnd()
-//
-//        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
-//            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N): LT = {
-//          val result = typeAtAddr.getOrElse(start, {
-//              val nameReader = fork
-//              nameReader.skipTree() // skip result
-//              val paramReader = nameReader.fork
-//              val paramNames = nameReader.readParamNames(end).map(nameMap)
-//              companion(paramNames)(
-//                pt => registeringType(pt, paramReader.readParamTypes[PInfo](end)),
-//                pt => readType())
-//            })
-//          goto(end)
-//          result.asInstanceOf[LT]
-//        }
-//
-//        val result =
-//          (tag: @switch) match {
-//            case TERMREFin =>
-//              var sname = readName()
-//              val prefix = readType()
-//              val space = readType()
-//              sname match {
-//                case SignedName(name, sig) =>
-//                  TermRef(prefix, name, space.decl(name).asSeenFrom(prefix).atSignature(sig))
-//                case name =>
-//                  TermRef(prefix, name, space.decl(name).asSeenFrom(prefix))
-//              }
-//            case TYPEREFin =>
-//              val name = readName().toTypeName
-//              val prefix = readType()
-//              val space = readType()
-//              space.decl(name) match {
-//                case symd: SymDenotation if prefix.isArgPrefixOf(symd.symbol) => TypeRef(prefix, symd.symbol)
-//                case _ => TypeRef(prefix, name, space.decl(name).asSeenFrom(prefix))
-//              }
-//            case REFINEDtype =>
-//              var name: Name = readName()
-//              val parent = readType()
-//              val ttag = nextUnsharedTag
-//              if (ttag == TYPEBOUNDS || ttag == TYPEALIAS) name = name.toTypeName
-//              RefinedType(parent, name, readType())
-//                // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
-//                // Eta expansion of the latter puts readType() out of the expression.
-//            case APPLIEDtype =>
-//              readType().appliedTo(until(end)(readType()))
-//            case TYPEBOUNDS =>
-//              val lo = readType()
-//              val hi = readType()
-//              if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo)
-//              else TypeBounds(lo, hi)
-//            case ANNOTATEDtype =>
-//              AnnotatedType(readType(), Annotation(readTerm()))
-//            case ANDtype =>
-//              AndType(readType(), readType())
-//            case ORtype =>
-//              OrType(readType(), readType())
-//            case SUPERtype =>
-//              SuperType(readType(), readType())
-//            case MATCHtype =>
-//              MatchType(readType(), readType(), until(end)(readType()))
-//            case POLYtype =>
-//              readMethodic(PolyType, _.toTypeName)
-//            case METHODtype =>
-//              readMethodic(MethodType, _.toTermName)
-//            case ERASEDMETHODtype =>
-//              readMethodic(ErasedMethodType, _.toTermName)
-//            case GIVENMETHODtype =>
-//              readMethodic(ContextualMethodType, _.toTermName)
-//            case ERASEDGIVENMETHODtype =>
-//              readMethodic(ErasedContextualMethodType, _.toTermName)
-//            case IMPLICITMETHODtype =>
-//              readMethodic(ImplicitMethodType, _.toTermName)
-//            case TYPELAMBDAtype =>
-//              readMethodic(HKTypeLambda, _.toTypeName)
-//            case PARAMtype =>
-//              readTypeRef() match {
-//                case binder: LambdaType => binder.paramRefs(readNat())
-//              }
-//          }
-//        assert(currentAddr == end, s"$start $currentAddr $end ${astTagToString(tag)}")
-//        result
-//      }
-//
+      def registeringType[T](tp: Type, op: => T): T = {
+        typeAtAddr(start) = tp
+        op
+      }
+
+      def readLengthType(): Type = {
+        val end = readEnd()
+
+        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
+            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N): LT = {
+          val result = typeAtAddr.getOrElse(start, {
+            val nameReader = fork
+            nameReader.skipTree() // skip result
+            val paramReader = nameReader.fork
+            val paramNames = nameReader.readParamNames(end).map(nameMap)
+            companion(paramNames)(
+              pt => registeringType(pt, paramReader.readParamTypes[PInfo](end)),
+              pt => readType())
+          })
+          goto(end)
+          result.asInstanceOf[LT]
+        }
+
+        val result =
+          (tag: @switch) match {
+            // case TERMREFin =>
+            //   var sname = readName()
+            //   val prefix = readType()
+            //   val space = readType()
+            //   sname match {
+            //     case SignedName(name, sig) =>
+            //       TermRef(prefix, name, space.decl(name).asSeenFrom(prefix).atSignature(sig))
+            //     case name =>
+            //       TermRef(prefix, name, space.decl(name).asSeenFrom(prefix))
+            //   }
+            // case TYPEREFin =>
+            //   val name = readName().toTypeName
+            //   val prefix = readType()
+            //   val space = readType()
+            //   space.decl(name) match {
+            //     case symd: SymDenotation if prefix.isArgPrefixOf(symd.symbol) => TypeRef(prefix, symd.symbol)
+            //     case _ => TypeRef(prefix, name, space.decl(name).asSeenFrom(prefix))
+            //   }
+            // case REFINEDtype =>
+            //   var name: Name = readName()
+            //   val parent = readType()
+            //   val ttag = nextUnsharedTag
+            //   if (ttag == TYPEBOUNDS || ttag == TYPEALIAS) name = name.toTypeName
+            //   RefinedType(parent, name, readType())
+            //     // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
+            //     // Eta expansion of the latter puts readType() out of the expression.
+            case APPLIEDtype =>
+              val tpe = readType()
+              typeRef(tpe.typeSymbol.owner.tpe, tpe.typeSymbol, until(end)(readType()))
+            case TYPEBOUNDS =>
+              val lo = readType()
+              val hi = readType()
+              TypeBounds(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
+            // case ANNOTATEDtype =>
+            //   AnnotatedType(readType(), Annotation(readTerm()))
+            // case ANDtype =>
+            //   AndType(readType(), readType())
+            // case ORtype =>
+            //   OrType(readType(), readType())
+            // case SUPERtype =>
+            //   SuperType(readType(), readType())
+            // case MATCHtype =>
+            //   MatchType(readType(), readType(), until(end)(readType()))
+            // case POLYtype =>
+            //   readMethodic(PolyType, _.toTypeName)
+            // case METHODtype =>
+            //   readMethodic(MethodType, _.toTermName)
+            // case ERASEDMETHODtype =>
+            //   readMethodic(ErasedMethodType, _.toTermName)
+            // case GIVENMETHODtype =>
+            //   readMethodic(ContextualMethodType, _.toTermName)
+            // case ERASEDGIVENMETHODtype =>
+            //   readMethodic(ErasedContextualMethodType, _.toTermName)
+            // case IMPLICITMETHODtype =>
+            //   readMethodic(ImplicitMethodType, _.toTermName)
+            case TYPELAMBDAtype =>
+              readMethodic(HKTypeLambda, _.toTypeName)
+            case PARAMtype =>
+              readTypeRef() match {
+                case binder: LambdaType => binder.paramRefs(readNat())
+              }
+          }
+        assert(currentAddr == end, s"$start $currentAddr $end ${astTagToString(tag)}")
+        result
+      }
+
       def readSimpleType(): Type = {
         import SymbolOps._
         (tag: @switch) match {
@@ -712,7 +762,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
       }
 
-      if (tag < firstLengthTreeTag) readSimpleType() else sys.error(s"readLengthType(${astTagToString(tag)})") //readLengthType()
+      if (tag < firstLengthTreeTag) readSimpleType() else readLengthType()
     }
 
     private def readSymNameRef()(implicit ctx: Context): Type = {
@@ -735,10 +785,10 @@ abstract class TreeUnpickler(reader: TastyReader,
       else ctx.requiredPackage(name)
     }
 
-//    def readTypeRef(): Type =
-//      typeAtAddr(readAddr())
+   def readTypeRef(): Type =
+     typeAtAddr(readAddr())
 
-    def readTypeRef()(implicit ctx: Context): TypeRef =
+    def readTypeAsTypeRef()(implicit ctx: Context): TypeRef =
       readType().asInstanceOf[TypeRef]
 
 // ------ Reading definitions -----------------------------------------------------
@@ -839,9 +889,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       val (givenFlags, tastyFlagSet, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, NoSymbol)
       val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
       def showFlags = {
-        if (tastyFlagSet.isEmpty)
+        if (!tastyFlagSet)
           show(flags)
-        else if (givenFlags == EmptyFlags)
+        else if (givenFlags == NoFlags)
           tastyFlagSet.show
         else
           show(flags) + " | " + tastyFlagSet.show
@@ -874,7 +924,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           if (!cls.rawInfo.decls.containsName(name)) {
             cls.rawInfo.decls.enter(sym)
           }
-        case _ => ctx.log(s"(owner=${ctx.owner}) is of class ${ctx.owner.getClass.getName()}")
+        case _ =>
       }
       registerSym(start, sym)
       if (isClass) {
@@ -898,8 +948,8 @@ abstract class TreeUnpickler(reader: TastyReader,
     def readModifiers[WithinType, AnnotType]
         (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
         (implicit ctx: Context): (FlagSet, TASTYFlagSet, List[Symbol => AnnotType], WithinType) = {
-      var tastyFlagSet = EmptyTASTYFlagSet
-      var flags: FlagSet = EmptyFlags
+      var tastyFlagSet = EmptyFlags
+      var flags: FlagSet = NoFlags
       var annotFns: List[Symbol => AnnotType] = Nil
       var privateWithin = defaultWithin
       while (currentAddr.index != end.index) {
@@ -986,8 +1036,8 @@ abstract class TreeUnpickler(reader: TastyReader,
     def indexStats(end: Addr)(implicit ctx: Context): (FlagSet, TASTYFlagSet) = {
       var (initsFlags, initsTASTYFlags) = NoInitsInterface
       def clearFlags() = {
-        initsFlags      = EmptyFlags
-        initsTASTYFlags = EmptyTASTYFlagSet
+        initsFlags      = NoFlags
+        initsTASTYFlags = EmptyFlags
       }
       while (currentAddr.index < end.index) {
         nextByte match {
@@ -1022,7 +1072,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (sctx `ne` ctx) return processPackage(op)(sctx)
       readByte()
       val end = readEnd()
-      val tpe = readTypeRef()
+      val tpe = readTypeAsTypeRef()
       val pid = ref(tpe).asInstanceOf[RefTree]
       op(pid, end)(localContext(tpe.typeSymbol.moduleClass))
     }
@@ -1088,7 +1138,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val localCtx = localContext(sym)
       val noCycle  = tag match {
         case DEFDEF =>
-          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
@@ -1100,13 +1150,13 @@ abstract class TreeUnpickler(reader: TastyReader,
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val (isInline, exceptInline) = completer.tastyFlagSet.except(Inline)
-          assertTasty(exceptInline.isEmpty, s"unsupported flags on val: ${exceptInline.show}")
+          assertTasty(!exceptInline, s"unsupported flags on val: ${exceptInline.show}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(tpe.isInstanceOf[ConstantType], s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on type: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported flags on type: ${completer.tastyFlagSet.show}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
@@ -1125,15 +1175,14 @@ abstract class TreeUnpickler(reader: TastyReader,
             NoCycle(at = symAddr)
           }
         case PARAM =>
-          assertTasty(completer.tastyFlagSet.isEmpty, s"unsupported flags on parameter: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported flags on parameter: ${completer.tastyFlagSet.show}")
           val tpt = readTpt()(localCtx)
-          if (nothingButMods(end)) {
+          if (nothingButMods(end) && sym.not(ParamAccessor)) {
             sym.info = tpt.tpe
             NoCycle(at = symAddr)
           }
           else {
             sym.info = NullaryMethodType(tpt.tpe)
-            ctx.log(s"reading param alias $name -> $currentAddr")
             NoCycle(at = symAddr)
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
@@ -1469,54 +1518,62 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        val owner = denot.symbol.maybeOwner
 //        if (owner.isPackageObject && qualType.termSymbol.is(Package))
 //          qualType = qualType.select(owner.sourceModule)
-        val tpe = {
-          val tpe0 = name match {
-            case name: TypeName => TypeRef(qualType, name)
-            case name: TermName => TypeRef(qualType, name)
-          }
-          if (sig ne NotAMethod) {
-            ctx.log(s"looking for overloaded method signature on $name of kind ${sig.show}")
-            val MethodSignature(args, ret) = sig
-            val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
-            val argsSyms = args.map {
-              _.fold(
-                idx => Left(idx),
-                nme => Right(ctx.loadingMirror.findMemberFromRoot(nme))
-              )
-            }
-            val alts = tpe0.typeSymbol.asTerm.alternatives
-            val tpe = alts.find { sym =>
-              val method = sym.asMethod
-              method.returnType.typeSymbol == retSym &&
-                method.paramss.length == 1 &&
-                method.paramss.head.length == argsSyms.length &&
-                method.paramss.head.zip(argsSyms).forall {
-                  case (param, Left(i))    => sys.error(s"numbered paramSig $i")
-                  case (param, Right(sym)) => param.tpe.typeSymbol == sym
-                }
-            }.map(_.tpe).getOrElse(tpe0)
-            ctx.log(s"selected $tpe")
-            tpe
-          }
-          else {
-            tpe0
-          }
+        val tpe = selectFromSig(qualType, name, sig) {
+          case name: TypeName => TypeRef(qualType, name)
+          case name: TermName => TypeRef(qualType, name)
         }
         Select(qual, name).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
       }
-//
+
 //      def readQualId(): (untpd.Ident, TypeRef) = {
 //        val qual = readTerm().asInstanceOf[untpd.Ident]
 //         (untpd.Ident(qual.name).withSpan(qual.span), qual.tpe.asInstanceOf[TypeRef])
 //      }
-//
+
+        def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type) = {
+          if (sig ne NotAMethod) {
+            ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
+            val MethodSignature(args, ret) = sig
+            val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
+            var seenTypeParams = false
+            val argsSyms = args.map {
+              _.fold(
+                idx =>
+                  if (!seenTypeParams) {
+                    seenTypeParams == true
+                    Left(idx)
+                  }
+                  else {
+                    errorTasty(s"Multiple type parameter lists on signature ${sig.show} for member $name.")
+                    Left(-1)
+                  },
+                nme => Right(ctx.loadingMirror.findMemberFromRoot(nme))
+              )
+            }
+            val alts = qualType.member(name).asTerm.alternatives
+            val tpe = alts.find { sym =>
+              val method = sym.asMethod
+              val params = method.paramss.flatten
+              method.returnType.typeSymbol == retSym &&
+                params.length == argsSyms.length &&
+                params.zip(argsSyms).forall {
+                  case (param, Left(i))    => method.typeParams.length == i
+                  case (param, Right(sym)) => param.tpe.typeSymbol == sym
+                }
+            }.map(_.tpe).getOrElse(ifNotOverload(name))
+            ctx.log(s"selected $tpe")
+            tpe
+          }
+          else ifNotOverload(name)
+        }
+
 //      def accessibleDenot(qualType: Type, name: Name, sig: Signature) = {
 //        val pre = ctx.typeAssigner.maybeSkolemizePrefix(qualType, name)
 //        val d = qualType.findMember(name, pre).atSignature(sig)
 //        if (!d.symbol.exists || d.symbol.isAccessibleFrom(pre)) d
 //        else qualType.findMember(name, pre, excluded = Private).atSignature(sig)
 //      }
-//
+
       def readSimpleTerm(): Tree = tag match {
 //        case SHAREDterm =>
 //          forkAt(readAddr()).readTerm()
@@ -1563,8 +1620,8 @@ abstract class TreeUnpickler(reader: TastyReader,
               val fn = readTerm()
               val args = until(end)(readTerm())
               Apply(fn, args).setType(fn.tpe.dealiasWiden.finalResultType)
-//            case TYPEAPPLY =>
-//              tpd.TypeApply(readTerm(), until(end)(readTpt()))
+           case TYPEAPPLY =>
+             TypeApply(readTerm(), until(end)(readTpt()))
 //            case TYPED =>
 //              val expr = readTerm()
 //              val tpt = readTpt()

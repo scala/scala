@@ -6,7 +6,7 @@ trait TASTYFlags { self =>
   type TASTYFlagSet
   type SingletonSets[_]
 
-  val EmptyTASTYFlagSet: TASTYFlagSet
+  val EmptyFlags: TASTYFlagSet
   val Erased: TASTYFlagSet
   val Internal: TASTYFlagSet
   val Inline: TASTYFlagSet
@@ -38,16 +38,16 @@ object TASTYFlags {
     final def &(mask: TASTYFlagSet): TASTYFlagSet                   = Live.intersect(flagset, mask)
     final def ===(set: TASTYFlagSet): Boolean                       = Live.equal(flagset, set)
     final def &~(mask: TASTYFlagSet): TASTYFlagSet                  = Live.remove(flagset, mask)
-    final def isEmpty: Boolean                                      = flagset === Live.EmptyTASTYFlagSet
-    final def is(mask: TASTYFlagSet): Boolean                       = (flagset & mask).nonEmpty
-    final def is(mask: TASTYFlagSet, butNot: TASTYFlagSet): Boolean = is(mask) && not(butNot)
+    final def unary_! : Boolean                                     = flagset === Live.EmptyFlags
+    final def is(mask: TASTYFlagSet): Boolean                       = (flagset & mask).hasFlags
+    final def is(mask: TASTYFlagSet, butNot: TASTYFlagSet): Boolean = if (!butNot) is(mask) else is(mask) && not(butNot)
     final def not(mask: TASTYFlagSet): Boolean                      = !is(mask)
-    final def nonEmpty: Boolean                                     = !isEmpty
+    final def hasFlags: Boolean                                     = !(!flagset)
     final def except(mask: TASTYFlagSet): (Boolean, TASTYFlagSet)   = (is(mask), flagset &~ mask)
 
     final def show: String = {
       import Live._
-      if (flagset.isEmpty) "EmptyTASTYFlagSet"
+      if (!flagset) "EmptyFlags"
       else flagset.toSingletonSets.map {
         case f if f === Erased      => "Erased"
         case f if f === Internal    => "Internal"
@@ -73,7 +73,7 @@ object TASTYFlags {
     type TASTYFlagSet = Int
     type SingletonSets[X] = X
 
-    val EmptyTASTYFlagSet = 0
+    val EmptyFlags = 0
     val Erased            = 1 << 0
     val Internal          = 1 << 1
     val Inline            = 1 << 2
