@@ -169,27 +169,24 @@ letter. However, it is possible to enclose such a variable name in
 backquotes; then it is treated as a stable identifier pattern.
 
 ###### Example
-Consider the following function definition:
+Consider the following class definition:
 
 ```scala
-def f(x: Int, y: Int) = x match {
-  case y => ...
+class C { c =>
+  val x = 42
+  val y = 27
+  val Z = 8
+  def f(x: Int) = x match {
+    case c.x => 1  // matches 42
+    case `y` => 2  // matches 27
+    case Z   => 3  // matches 8
+    case x   => 4  // matches any value
+  }
 }
 ```
 
-Here, `y` is a variable pattern, which matches any value.
-If we wanted to turn the pattern into a stable identifier pattern, this
-can be achieved as follows:
-
-```scala
-def f(x: Int, y: Int) = x match {
-  case `y` => ...
-}
-```
-
-Now, the pattern matches the `y` parameter of the enclosing function `f`.
-That is, the match succeeds only if the `x` argument and the `y`
-argument of `f` are equal.
+Here, the first three patterns are stable identifier patterns, while the last
+one is a variable pattern.
 
 ### Constructor Patterns
 
