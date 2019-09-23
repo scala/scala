@@ -15,8 +15,9 @@ package collection
 package immutable
 
 import generic._
-import scala.annotation.unchecked.{ uncheckedVariance=> uV }
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.immutable.ParHashMap
+import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable maps using a hash trie.
  *
@@ -51,6 +52,15 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   def iterator: Iterator[(A,B)] = Iterator.empty
 
   override def foreach[U](f: ((A, B)) => U): Unit = ()
+  private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = ()
+  override def hashCode(): Int = {
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      val hasher = new Map.HashCodeAccumulator()
+      foreachEntry(hasher)
+      hasher.finalizeHash
+    }
+  }
 
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
@@ -232,6 +242,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = f(key, value)
     // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
@@ -293,6 +304,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = kvs.foreachEntry(f)
     override def split: Seq[HashMap[A, B]] = {
       val (x, y) = kvs.splitAt(kvs.size / 2)
       def newhm(lm: ListMap[A, B @uV]) = {
@@ -466,6 +478,13 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       var i = 0
       while (i < elems.length) {
         elems(i).foreach(f)
+        i += 1
+      }
+    }
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = {
+      var i = 0
+      while (i < elems.length) {
+        elems(i).foreachEntry(f)
         i += 1
       }
     }
