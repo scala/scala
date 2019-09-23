@@ -37,8 +37,8 @@ jobs:
           - deriveModuleVersions
           - removeExistingBuilds $integrationRepoUrl
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-          - buildLocker
-          - buildQuick
+          - travis_wait 90 buildLocker
+          - travis_wait 90 buildQuick
           - triggerScalaDist
 
       # pull request validation (w/ mini-bootstrap)
@@ -46,9 +46,9 @@ jobs:
         name: "JDK 8 pr validation"
         if: type = pull_request
         script:
-          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - travis_wait 90 sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - travis_wait 90 sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
 
       # build the spec using jekyll
       - stage: build
