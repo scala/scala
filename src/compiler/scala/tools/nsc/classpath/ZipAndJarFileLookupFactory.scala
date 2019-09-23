@@ -24,7 +24,9 @@ import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils._
+import scala.tools.nsc.classpath.ClassPathElement.ZipJarClassPathElement
 import scala.tools.nsc.io.Jar
+import scala.tools.util.PathResolverCaching
 
 /**
  * A trait providing an optional cache for classpath entries obtained from zip and jar files.
@@ -34,18 +36,29 @@ import scala.tools.nsc.io.Jar
 sealed trait ZipAndJarFileLookupFactory {
   private val cache = new FileBasedCache[ClassPath with Closeable]
 
-  def create(zipFile: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry): ClassPath = {
-    cache.checkCacheability(zipFile.toURL :: Nil, checkStamps = true, disableCache = settings.YdisableFlatCpCaching.value || zipFile.file == null) match {
+  def create(zipFile: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry, pathResolverCaching: PathResolverCaching): ClassPath = {
+    cache.checkCacheability(zipFile.toURL :: Nil, checkStamps = true, disableCache = settings.YdisableFlatCpCaching || zipFile.file == null) match {
       case Left(_) =>
-        val result: ClassPath with Closeable = createForZipFile(zipFile, settings.releaseValue)
+        val result: ClassPath with Closeable = createForZipFile(zipFile.file, settings.releaseValue)
         closeableRegistry.registerClosable(result)
         result
       case Right(Seq(path)) =>
-        cache.getOrCreate(List(path), () => createForZipFile(zipFile, settings.releaseValue), closeableRegistry, checkStamps = true)
+        cache.getOrCreate(List(path), () => createForZipFile(zipFile.file, settings.releaseValue), closeableRegistry, checkStamps = true)
     }
   }
 
-  protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable
+  def create(zipFile: ZipJarClassPathElement, settings: Settings, closeableRegistry: CloseableRegistry, pathResolverCaching: PathResolverCaching): ClassPath = {
+    if (pathResolverCaching.canCache(zipFile)) {
+      cache.getOrCreate(List(zipFile.path), () => createForZipFile(zipFile.file, settings.releaseValue), closeableRegistry, checkStamps = true)
+    } else {
+      val result: ClassPath with Closeable = createForZipFile(zipFile.file, settings.releaseValue)
+      closeableRegistry.registerClosable(result)
+      result
+    }
+  }
+
+  protected def createForManifest(manifest: ManifestResources): ClassPath with Closeable
+  protected def createForZipFile(zipFile: File, release: Option[String]): ClassPath with Closeable
 }
 
 /**
@@ -157,17 +170,12 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
     case class PackageInfo(packageName: String, subpackages: List[AbstractFile])
   }
 
-  override protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable =
-    if (zipFile.file == null) createWithoutUnderlyingFile(zipFile)
-    else ZipArchiveClassPath(zipFile.file, release)
+  override protected def createForZipFile(zipFile: File, release: Option[String]): ClassPath with Closeable =
+    ZipArchiveClassPath(zipFile, release)
 
-  private def createWithoutUnderlyingFile(zipFile: AbstractFile) = zipFile match {
-    case manifestRes: ManifestResources =>
-      ManifestResourcesClassPath(manifestRes)
-    case _ =>
-      val errorMsg = s"Abstract files which don't have an underlying file and are not ManifestResources are not supported. There was $zipFile"
-      throw new IllegalArgumentException(errorMsg)
-  }
+
+  override protected def createForManifest(manifest: ManifestResources): ClassPath with Closeable =
+      ManifestResourcesClassPath(manifest)
 }
 
 /**
@@ -188,7 +196,9 @@ object ZipAndJarSourcePathFactory extends ZipAndJarFileLookupFactory {
     override protected def isRequiredFileType(file: AbstractFile): Boolean = file.isScalaOrJavaSource
   }
 
-  override protected def createForZipFile(zipFile: AbstractFile, release: Option[String]): ClassPath with Closeable = ZipArchiveSourcePath(zipFile.file)
+  override protected def createForZipFile(zipFile: File, release: Option[String]): ClassPath with Closeable = ZipArchiveSourcePath(zipFile)
+
+  override protected def createForManifest(manifest: ManifestResources): ClassPath with Closeable = ???
 }
 
 final class FileBasedCache[T] {
@@ -257,6 +267,51 @@ final class FileBasedCache[T] {
       else Right(paths)
     }
   }
+  def checkCacheability(url: URL, checkStamps: Boolean, disableCache: Boolean): Either[String, Option[java.nio.file.Path]] = {
+    import scala.reflect.io.{AbstractFile, Path}
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (url.getProtocol == "jrt") Right(None)
+    else {
+      val file = AbstractFile.getURL(url).file
+      if (!checkStamps) Right(Some(Path(file).jfile.toPath))
+      else if ((file eq null) || !Jar.isJarOrZip(file.file))
+        Left(s"caching is disabled because of the following classpath elements: $url.")
+      else Right(Some(Path(file).jfile.toPath))
+    }
+  }
+  def checkCacheability(file: AbstractFile, checkStamps: Boolean, disableCache: Boolean): Either[String, Option[java.nio.file.Path]] = {
+    import scala.reflect.io.{Path}
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (!checkStamps) Right(Some(Path(file.file).jfile.toPath))
+    else if ((file eq null) || !Jar.isJarOrZip(file.file))
+      Left(s"caching is disabled because of the following classpath elements: $file.")
+    else Right(Some(Path(file.file).jfile.toPath))
+  }
+  def checkCacheability2(file: AbstractFile, checkStamps: Boolean, disableCache: Boolean): Either[String, Option[java.nio.file.Path]] = {
+    import scala.reflect.io.{Path}
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (!checkStamps) Right(Some(file.file.toPath))
+    else if ((file eq null) || !Jar.isJarOrZip(file.file))
+      Left(s"caching is disabled because of the following classpath elements: $file.")
+    else Right(Some(file.file.toPath))
+  }
+  def checkCacheability3(file: AbstractFile, checkStamps: Boolean, disableCache: Boolean): Either[String, java.nio.file.Path] = {
+    import scala.reflect.io.{Path}
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if (!checkStamps) Right(file.file.toPath)
+    else if ((file eq null) || !Jar.isJarOrZip(file.file))
+      Left(s"caching is disabled because of the following classpath elements: $file.")
+    else Right(file.file.toPath)
+  }
+  def checkCacheability4(file: AbstractFile, disableCache: Boolean): Either[String, java.nio.file.Path] = {
+    if (disableCache) Left("caching is disabled due to a policy setting")
+    else if ((file eq null) || !Jar.isJarOrZip(file.file))
+      Left(s"caching is disabled because of the following classpath elements: $file.")
+    else Right(file.file.toPath)
+  }
+  def checkCacheability(element: ZipJarClassPathElement, pathResolverCaching: PathResolverCaching): Either[String, java.nio.file.Path] = {
+    if (pathResolverCaching.canCache(element)) Right(element.path) else Left("")
+  }
 
   def getOrCreate(paths: Seq[Path], create: () => T, closeableRegistry: CloseableRegistry, checkStamps: Boolean): T = cache.synchronized {
     val stamps = if (!checkStamps) Nil else paths.map { path =>
@@ -313,7 +368,6 @@ final class FileBasedCache[T] {
     cache.clear()
   }
 }
-
 object FileBasedCache {
   // The tension here is that too long a delay could lead to an error (on Windows) with an inability
   // to overwrite the JAR. To short a delay and the entry could be evicted before a subsequent

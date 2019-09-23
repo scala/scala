@@ -16,7 +16,9 @@ import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.io.Path.string2path
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils.AbstractFileOps
+import scala.tools.nsc.classpath.ClassPathElement.{DirectoryClassPathElement, PathBasedClassPathElement, ZipJarClassPathElement}
 import scala.tools.nsc.util.ClassPath
+import scala.tools.util.{PathResolverCaching, PathResolverNoCaching}
 
 /**
  * Provides factory methods for classpath. When creating classpath instances for a given path,
@@ -30,69 +32,88 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
   /**
     * Create a new classpath based on the abstract file.
     */
-  def newClassPath(file: AbstractFile): ClassPath = ClassPathFactory.newClassPath(file, settings, closeableRegistry)
+  def newClassPath(file: AbstractFile, pathResolverCaching: PathResolverCaching): ClassPath = ClassPathFactory.newClassPath(file, settings, closeableRegistry, pathResolverCaching)
+  /**
+    * Create a new classpath based on the abstract file.
+    */
+  def newClassPath(file: PathBasedClassPathElement, pathResolverCaching: PathResolverCaching): ClassPath = ClassPathFactory.newClassPathSafe(file, settings, closeableRegistry, pathResolverCaching)
 
   /**
     * Creators for sub classpaths which preserve this context.
     */
-  def sourcesInPath(path: String): List[ClassPath] =
-    for {
-      file <- expandPath(path, expandStar = false)
-      dir <- Option(AbstractFile getDirectory file)
-    } yield createSourcePath(dir)
+  def sourcesInPath(path: String, pathResolverCaching: PathResolverCaching): List[ClassPath] =
+     expandPath(path, expandStar = false) collect {case dir:DirectoryClassPathElement => createSourcePath(dir, pathResolverCaching)}
 
+  def expandPath(path: String, expandStar: Boolean = true): List[PathBasedClassPathElement] = scala.tools.nsc.util.ClassPath.expandPath(path, expandStar)
 
-  def expandPath(path: String, expandStar: Boolean = true): List[String] = scala.tools.nsc.util.ClassPath.expandPath(path, expandStar)
+  def expandDir(extdir: PathBasedClassPathElement): List[PathBasedClassPathElement] = scala.tools.nsc.util.ClassPath.expandDir(extdir)
 
-  def expandDir(extdir: String): List[String] = scala.tools.nsc.util.ClassPath.expandDir(extdir)
-
-  def contentsOfDirsInPath(path: String): List[ClassPath] =
+  def contentsOfDirsInPath(path: String, pathResolverCaching: PathResolverCaching): List[ClassPath] =
     for {
       dir <- expandPath(path, expandStar = false)
-      name <- expandDir(dir)
-      entry <- Option(AbstractFile.getDirectory(name))
-    } yield newClassPath(entry)
+      content <- expandDir(dir)
+    } yield newClassPath(content, pathResolverCaching)
 
-  def classesInExpandedPath(path: String): IndexedSeq[ClassPath] =
-    classesInPathImpl(path, expand = true).toIndexedSeq
+  def classesInExpandedPath(path: String, pathResolverCaching: PathResolverCaching) =
+    classesInPathImpl(path, expand = true, pathResolverCaching)
 
-  def classesInPath(path: String) = classesInPathImpl(path, expand = false)
+  def classesInPath(path: String, pathResolverCaching: PathResolverCaching) = classesInPathImpl(path, expand = false, pathResolverCaching)
 
-  def classesInManifest(useManifestClassPath: Boolean) =
-    if (useManifestClassPath) scala.tools.nsc.util.ClassPath.manifests.map(url => newClassPath(AbstractFile getResources url))
+  def classesInManifest(useManifestClassPath: Boolean, pathResolverCaching: PathResolverCaching) =
+    if (useManifestClassPath) scala.tools.nsc.util.ClassPath.manifests.map(url => newClassPath(AbstractFile getResources url, pathResolverCaching))
     else Nil
 
   // Internal
-  protected def classesInPathImpl(path: String, expand: Boolean) =
-    for {
-      file <- expandPath(path, expand)
-      dir <- {
-        def asImage = if (file.endsWith(".jimage")) Some(AbstractFile.getFile(file)) else None
-        Option(AbstractFile.getDirectory(file)).orElse(asImage)
-      }
-    } yield newClassPath(dir)
+  protected def classesInPathImpl(path: String, expand: Boolean, pathResolverCaching: PathResolverCaching) =
+    expandPath(path, expand).collect { case path: PathBasedClassPathElement => newClassPath(path, pathResolverCaching)}
 
-  private def createSourcePath(file: AbstractFile): ClassPath =
+  private def createSourcePath(file: AbstractFile, pathResolverCaching: PathResolverCaching): ClassPath =
     if (file.isJarOrZip)
-      ZipAndJarSourcePathFactory.create(file, settings, closeableRegistry)
+      ZipAndJarSourcePathFactory.create(file, settings, closeableRegistry, pathResolverCaching)
     else if (file.isDirectory)
       DirectorySourcePath(file.file)
     else
       sys.error(s"Unsupported sourcepath element: $file")
+
+  private def createSourcePath(file: PathBasedClassPathElement, pathResolverCaching: PathResolverCaching): ClassPath =
+    file match {
+      case jar: ZipJarClassPathElement =>  ZipAndJarSourcePathFactory.create(jar, settings, closeableRegistry, pathResolverCaching)
+      case dir: DirectoryClassPathElement =>  DirectorySourcePath(file.file)
+      case _  => sys.error(s"Unsupported sourcepath element: $file")
+    }
 }
 
 object ClassPathFactory {
   @deprecated("for bincompat in 2.12.x series", "2.12.9")  // TODO remove from 2.13.x
   def newClassPath(file: AbstractFile, settings: Settings): ClassPath =
-    newClassPath(file, settings, new CloseableRegistry)
-  def newClassPath(file: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry): ClassPath = file match {
+    newClassPath(file, settings, new CloseableRegistry, PathResolverNoCaching)
+
+  def newClassPath(file: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry, pathResolverCaching: PathResolverCaching): ClassPath = file match {
     case vd: VirtualDirectory => VirtualDirectoryClassPath(vd)
     case _ =>
       if (file.isJarOrZip)
-        ZipAndJarClassPathFactory.create(file, settings, closeableRegistry)
+        ZipAndJarClassPathFactory.create(file, settings, closeableRegistry, pathResolverCaching)
       else if (file.isDirectory)
         DirectoryClassPath(file.file)
       else
         sys.error(s"Unsupported classpath element: $file")
+  }
+  import ClassPathElement._
+  def newClassPath(element: ClassPathElement, settings: Settings, closeableRegistry: CloseableRegistry, pathResolverCaching: PathResolverCaching): ClassPath = element match {
+    case vd: VirtualDirectoryClassPathElement => VirtualDirectoryClassPath(vd.dir)
+    case zip: ZipJarClassPathElement =>
+      ZipAndJarClassPathFactory.create(zip, settings, closeableRegistry, pathResolverCaching)
+    case dir: DirectoryClassPathElement =>
+      //TODO allow this to be cached  - e.g. for CI
+      DirectoryClassPath(dir.file)
+    case _ =>
+      sys.error(s"Unsupported classpath element: $element")
+  }
+  def newClassPathSafe(element: PathBasedClassPathElement, settings: Settings, closeableRegistry: CloseableRegistry, pathResolverCaching: PathResolverCaching): ClassPath = element match {
+    case zip: ZipJarClassPathElement =>
+      ZipAndJarClassPathFactory.create(zip, settings, closeableRegistry, pathResolverCaching)
+    case dir: DirectoryClassPathElement =>
+      //TODO allow this to be cached  - e.g. for CI
+      DirectoryClassPath(dir.file)
   }
 }

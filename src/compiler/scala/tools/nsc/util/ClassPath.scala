@@ -16,11 +16,13 @@ package util
 import io.{AbstractFile, Directory, File, Jar}
 import java.net.MalformedURLException
 import java.net.URL
+import java.nio.file.{Files, Path, Paths}
 import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
 import Jar.isJarOrZip
-import scala.tools.nsc.classpath.{ClassPathEntries, PackageEntry, PackageName}
+import scala.tools.nsc.classpath.ClassPathElement.{DirectoryClassPathElement, PathBasedClassPathElement, ZipJarClassPathElement}
+import scala.tools.nsc.classpath.{ClassPathEntries, PackageEntry, PackageName, ClassPathElement}
 
 /**
   * A representation of the compiler's class- or sourcepath.
@@ -112,21 +114,6 @@ trait ClassPath {
   def asSourcePathString: String
 }
 
-trait EfficientClassPath extends ClassPath {
-  private[nsc] def list(inPackage: PackageName, onPackageEntry: PackageEntry => Unit, onClassesAndSources: ClassRepresentation => Unit): Unit
-  override private[nsc] def list(inPackage: PackageName): ClassPathEntries = {
-    val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
-    val classRepBuf = collection.mutable.ArrayBuffer.empty[ClassRepresentation]
-    list(inPackage, packageBuf += _, classRepBuf += _)
-    if (packageBuf.isEmpty && classRepBuf.isEmpty) ClassPathEntries.empty
-    else ClassPathEntries(packageBuf, classRepBuf)
-  }
-}
-trait EfficientClassPathCallBack {
-  def packageEntry(entry: PackageEntry): Unit
-  def classesAndSources(entry: ClassRepresentation): Unit
-}
-
 object ClassPath {
   val RootPackage = ""
 
@@ -149,6 +136,30 @@ object ClassPath {
     }
     else List(pattern)
   }
+  private val wildSuffix = File.separator + "*"
+  /** Expand single path entry */
+  private def expandP(pattern: String): List[PathBasedClassPathElement] = {
+    import scala.collection.JavaConverters._
+
+    /* Get all subdirectories, jars, zips out of a directory. */
+    def lsDir(dir: Path, filt: Option[String => Boolean] = None) = {
+      var files: Iterator[Path] = Files.list(dir).iterator().asScala
+      if (filt.isDefined) files = files.filter( f => filt.get(f.toString))
+      files.flatMap{ClassPathElement.fromPathOption(_)}.toList
+    }
+
+
+    if (pattern == "*") lsDir(Paths.get("."))
+    else if (pattern endsWith wildSuffix) lsDir(Paths.get(pattern dropRight 1))
+    else if (pattern contains '*') {
+      try {
+        val regexp = ("^" + pattern.replaceAllLiterally("""\*""", """.*""") + "$").r
+        lsDir(Paths.get(pattern).getParent, Some(regexp.findFirstIn(_).isDefined))
+      }
+      catch { case _: PatternSyntaxException => ClassPathElement.fromPathOption(pattern).toList }
+    }
+    else ClassPathElement.fromPathOption(pattern).toList
+  }
 
   /** Split classpath using platform-dependent path separator */
   def split(path: String): List[String] = (path split pathSeparator).toList.filterNot(_ == "").distinct
@@ -163,15 +174,22 @@ object ClassPath {
   def map(cp: String, f: String => String): String = join(split(cp) map f: _*)
 
   /** Expand path and possibly expanding stars */
-  def expandPath(path: String, expandStar: Boolean = true): List[String] =
-    if (expandStar) split(path) flatMap expandS
-    else split(path)
+  def expandPath(path: String, expandStar: Boolean = true): List[PathBasedClassPathElement] =
+    if (expandStar) split(path) flatMap expandP
+    else split(path) flatMap {ClassPathElement.fromPathOption(_)}
 
   /** Expand dir out to contents, a la extdir */
   def expandDir(extdir: String): List[String] = {
     AbstractFile getDirectory extdir match {
       case null => Nil
       case dir  => dir.filter(_.isClassContainer).map(x => new java.io.File(dir.file, x.name).getPath).toList
+    }
+  }
+  /** Expand dir out to contents, a la extdir */
+  def expandDir(dir: PathBasedClassPathElement): List[PathBasedClassPathElement] = {
+    dir match {
+      case dir: DirectoryClassPathElement => dir.contents.flatMap{ClassPathElement.fromPathOption(_)}.toList
+      case _ => Nil
     }
   }
 
@@ -204,6 +222,21 @@ object ClassPath {
   @deprecated("shim for sbt's compiler interface", since = "2.12.0")
   sealed abstract class JavaContext
 }
+trait EfficientClassPath extends ClassPath {
+  private[nsc] def list(inPackage: PackageName, onPackageEntry: PackageEntry => Unit, onClassesAndSources: ClassRepresentation => Unit): Unit
+  override private[nsc] def list(inPackage: PackageName): ClassPathEntries = {
+    val packageBuf = collection.mutable.ArrayBuffer.empty[PackageEntry]
+    val classRepBuf = collection.mutable.ArrayBuffer.empty[ClassRepresentation]
+    list(inPackage, packageBuf += _, classRepBuf += _)
+    if (packageBuf.isEmpty && classRepBuf.isEmpty) ClassPathEntries.empty
+    else ClassPathEntries(packageBuf, classRepBuf)
+  }
+}
+trait EfficientClassPathCallBack {
+  def packageEntry(entry: PackageEntry): Unit
+  def classesAndSources(entry: ClassRepresentation): Unit
+}
+
 
 trait ClassRepresentation {
   def name: String

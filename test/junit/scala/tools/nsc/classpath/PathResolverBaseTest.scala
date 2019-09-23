@@ -13,10 +13,16 @@ import org.junit.runners.JUnit4
 
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{CloseableRegistry, Settings}
-import scala.tools.util.PathResolver
+import scala.tools.util.ReuseAllPathResolver
 
+class PathResolverBaseTest_CacheAll extends PathResolverBaseTest{
+  override def configureSettings(): Unit = settings.pathResolverFactory = ReuseAllPathResolver.create _
+}
+class PathResolverBaseTest_Default extends PathResolverBaseTest{
+  override def configureSettings(): Unit = () // default is PathResolver.apply _
+}
 @RunWith(classOf[JUnit4])
-class PathResolverBaseTest {
+abstract class PathResolverBaseTest {
 
   val tempDir = new TemporaryFolder()
 
@@ -34,7 +40,9 @@ class PathResolverBaseTest {
     "scala.reflect.io.TestScalaSource",
     "scala.reflect.io.TestJavaSource")
 
-  private val settings = new Settings
+  protected val settings = new Settings
+
+  def configureSettings(): Unit
 
   @Before
   def initTempDirAndSourcePath: Unit = {
@@ -53,13 +61,14 @@ class PathResolverBaseTest {
 
     settings.usejavacp.value = true
     settings.sourcepath.value = tempDir.getRoot.getAbsolutePath
+    configureSettings()
   }
 
   @After
   def deleteTempDir: Unit = tempDir.delete()
 
   private def createFlatClassPath(settings: Settings) =
-    settings.pathResolver().result
+    settings.pathResolver(new CloseableRegistry).result
 
   @Test
   def testEntriesFromListOperationAgainstSeparateMethods: Unit = {

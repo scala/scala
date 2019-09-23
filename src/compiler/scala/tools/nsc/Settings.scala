@@ -23,7 +23,7 @@ class Settings(errorFn: String => Unit) extends MutableSettings(errorFn) {
   var pathResolverFactory: (Settings, CloseableRegistry) => PathResolver =
     PathResolver.apply
 
-  def pathResolver(closeableRegistry: CloseableRegistry = new CloseableRegistry) =
+  def pathResolver(closeableRegistry: CloseableRegistry) =
     pathResolverFactory(this, closeableRegistry)
 
   override def withErrorFn(errorFn: String => Unit): Settings = {

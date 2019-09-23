@@ -19,7 +19,7 @@ import scala.reflect.NameTransformer
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
-import scala.tools.util.PathResolver
+import scala.tools.util.{PathResolver, PathResolverNoCaching}
 import scalax.rules.scalasig._
 
 /**The main object used to execute scalap on the command-line.
@@ -215,7 +215,7 @@ object Main extends Main {
 
   private def createClassPath(cpArg: Option[String], settings: Settings, closeableRegistry: CloseableRegistry) = cpArg match {
     case Some(cp) =>
-      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp))
+      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp, PathResolverNoCaching ))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
       settings.pathResolver(closeableRegistry).result

@@ -4,7 +4,9 @@ package classpath
 import org.junit.Test
 import java.nio.file._
 import java.nio.file.attribute.FileTime
+
 import scala.reflect.io.AbstractFile
+import scala.tools.util.PathResolverNoCaching
 
 class ZipAndJarFileLookupFactoryTest {
   @Test def cacheInvalidation(): Unit = {
@@ -15,7 +17,7 @@ class ZipAndJarFileLookupFactoryTest {
     val g = new scala.tools.nsc.Global(new scala.tools.nsc.Settings())
     assert(!g.settings.YdisableFlatCpCaching.value) // we're testing with our JAR metadata caching enabled.
     val closeableRegistry = new CloseableRegistry
-    def createCp = ZipAndJarClassPathFactory.create(AbstractFile.getFile(f.toFile), g.settings, closeableRegistry)
+    def createCp = ZipAndJarClassPathFactory.create(AbstractFile.getFile(f.toFile), g.settings, closeableRegistry, PathResolverNoCaching)
     try {
       createZip(f, Array(), "p1/C.class")
       createZip(f, Array(), "p2/X.class")

@@ -360,7 +360,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     override def toString: String = argsFile.toString
     def outputDir: Path = command.settings.outputDirs.getSingleOutput.get.file.toPath.toAbsolutePath.normalize()
     private def expand(s: command.settings.PathSetting): List[Path] = {
-      ClassPath.expandPath(s.value, expandStar = true).map(s => Paths.get(s).toAbsolutePath.normalize())
+      ClassPath.expandPath(s.value, expandStar = true).map(s => s.path.toAbsolutePath.normalize())
     }
     lazy val classPath: Seq[Path] = expand(command.settings.classpath)
     lazy val macroClassPath: Seq[Path] = expand(command.settings.YmacroClasspath)
@@ -613,7 +613,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     if (strategy != Traditional) {
       val classPath = ClassPath.expandPath(settings.classpath.value, expandStar = true)
       val modifiedClassPath = classPath.map { entry =>
-        val entryPath = Paths.get(entry)
+        val entryPath = entry.path
         if (Files.exists(entryPath))
           strippedAndExportedClassPath.getOrElse(entryPath.toRealPath().normalize(), entryPath).toString
         else

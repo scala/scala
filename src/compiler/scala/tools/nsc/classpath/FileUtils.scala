@@ -47,6 +47,9 @@ object FileUtils {
   private val SUFFIX_SCALA = ".scala"
   private val SUFFIX_JAVA = ".java"
   private val SUFFIX_SIG = ".sig"
+  private val SUFFIX_JAR = ".jar"
+  private val SUFFIX_ZIP = ".zip"
+  private val SUFFIX_IMAGE = ".jimage"
 
   def stripSourceExtension(fileName: String): String = {
     if (endsScala(fileName)) stripClassExtension(fileName)
@@ -59,7 +62,13 @@ object FileUtils {
   @inline private def ends (filename:String, suffix:String) = filename.endsWith(suffix) && filename.length > suffix.length
 
   def endsClass(fileName: String): Boolean =
-    ends (fileName, SUFFIX_CLASS) || fileName.endsWith(SUFFIX_SIG)
+    ends (fileName, SUFFIX_CLASS) || ends (fileName, SUFFIX_SIG)
+
+  def endsJarOrZip(fileName: String): Boolean =
+    ends (fileName, SUFFIX_JAR) || ends (fileName, SUFFIX_ZIP)
+
+  def endsJImage(fileName: String): Boolean =
+    ends (fileName, SUFFIX_IMAGE)
 
   def endsScalaOrJava(fileName: String): Boolean =
     endsScala(fileName) || endsJava(fileName)

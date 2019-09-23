@@ -15,6 +15,7 @@ package interpreter
 
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
+import scala.tools.util.PathResolverNoCaching
 import typechecker.Analyzer
 
 /** A layer on top of Global so I can guarantee some extra
@@ -45,7 +46,7 @@ trait ReplGlobal extends Global {
       case None => base
       case Some(out) =>
         // Make bytecode of previous lines available to the inliner
-        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry)
+        val replOutClasspath = ClassPathFactory.newClassPath(settings.outputDirs.getSingleOutput.get, settings, closeableRegistry, PathResolverNoCaching)
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }

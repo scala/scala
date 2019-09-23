@@ -42,9 +42,10 @@ class CachedClassPath(underlying: ClassPath) extends EfficientClassPath {
 
   override def asClassPathString: String = super.asClassPathString
 
-  def forPackage(inPackage: PackageName): PackageInfo = ???
+  def forPackage(inPackage: PackageName): PackageInfo = packageCache.computeIfAbsent(inPackage, p =>
+    PackageInfo(p, underlying.list(p)))
 
-  case class PackageInfo(inPackage: String, entries: ClassPathEntries) {
+  case class PackageInfo(inPackage: PackageName, entries: ClassPathEntries) {
     def isEmpty = entries.packages.isEmpty && entries.classesAndSources.isEmpty
 
     lazy val classesAndSourcesByName: Map[String, ClassRepresentation] = entries.classesAndSources.map(e => e.name -> e)(collection.breakOut)
@@ -53,6 +54,6 @@ class CachedClassPath(underlying: ClassPath) extends EfficientClassPath {
 
   }
 
-  private val packageCache = new ConcurrentHashMap[String, PackageInfo]()
+  private val packageCache = new ConcurrentHashMap[PackageName, PackageInfo]()
 
 }

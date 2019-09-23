@@ -13,7 +13,6 @@
 package scala.tools.nsc
 
 import java.net.URL
-import scala.tools.util.PathResolver
 
 class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
   lazy val classpathURLs: Seq[URL] = {

@@ -41,6 +41,8 @@ import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 import java.io.Closeable
 
+import scala.tools.util.{PathResolverCaching, PathResolverNoCaching}
+
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
     with Closeable
@@ -822,7 +824,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** Extend classpath of `platform` and rescan updated packages. */
   def extendCompilerClassPath(urls: URL*): Unit = {
-    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings, closeableRegistry))
+    val urlClasspaths = urls.map(u => ClassPathFactory.newClassPath(AbstractFile.getURL(u), settings, closeableRegistry, PathResolverNoCaching))
     val newClassPath = AggregateClassPath.createAggregate(platform.classPath +: urlClasspaths : _*)
     platform.currentClassPath = Some(newClassPath)
     invalidateClassPathEntries(urls.map(_.getPath): _*)
@@ -884,7 +886,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       }
       entries(classPath) find matchesCanonical match {
         case Some(oldEntry) =>
-          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry))
+          Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry, PathResolverNoCaching))
         case None =>
           error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None

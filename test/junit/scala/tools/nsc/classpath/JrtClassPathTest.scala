@@ -11,7 +11,7 @@ import org.junit.runners.JUnit4
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.util.ClassPath
-import scala.tools.util.PathResolver
+import scala.tools.util.{PathResolver, PathResolverNoCaching}
 
 @RunWith(classOf[JUnit4])
 class JrtClassPathTest {
@@ -24,7 +24,9 @@ class JrtClassPathTest {
       if (specVersion == "" || specVersion == "1.8") {
         val settings = new Settings()
         val resolver = settings.pathResolver(closeableRegistry)
-        val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(resolver.Calculated.javaBootClassPath)
+        val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(
+          new resolver.DefaultCalculated().javaBootClassPath,
+          PathResolverNoCaching)
         AggregateClassPath(elements)
       }
       else JrtClassPath(None, closeableRegistry).get

@@ -18,6 +18,7 @@ import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.{Settings, interactive}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.classpath._
+import scala.tools.util.PathResolverNoCaching
 
 trait PresentationCompilation {
   self: IMain =>
@@ -71,7 +72,7 @@ trait PresentationCompilation {
     val storeReporter: StoreReporter = new StoreReporter
     val interactiveGlobal = new interactive.Global(copySettings, storeReporter) { self =>
       def mergedFlatClasspath = {
-        val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings, closeableRegistry)
+        val replOutClasspath = ClassPathFactory.newClassPath(replOutput.dir, settings, closeableRegistry, PathResolverNoCaching)
         AggregateClassPath(replOutClasspath :: global.platform.classPath :: Nil)
       }
 

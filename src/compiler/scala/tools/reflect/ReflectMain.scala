@@ -14,13 +14,12 @@ package scala.tools
 package reflect
 
 import scala.reflect.internal.util.ScalaClassLoader
-import scala.tools.nsc.{Driver, Global, CloseableRegistry, Settings}
-import scala.tools.util.PathResolver
+import scala.tools.nsc.{CloseableRegistry, Driver, Global, Settings}
 
 object ReflectMain extends Driver {
 
   private def classloaderFromSettings(settings: Settings) = {
-    val classPathURLs = settings.pathResolver().resultAsURLs
+    val classPathURLs = settings.pathResolver(new CloseableRegistry).resultAsURLs
     ScalaClassLoader.fromURLs(classPathURLs, getClass.getClassLoader)
   }
 
