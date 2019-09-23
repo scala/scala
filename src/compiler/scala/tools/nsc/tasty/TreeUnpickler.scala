@@ -28,10 +28,6 @@ abstract class TreeUnpickler(reader: TastyReader,
   import Signature._
   import Contexts._
 
-  type Sig     = Signature[TypeName]
-  type SigName = SignedName[TermName, TypeName]
-  val  SigName = SignedName
-
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
@@ -41,9 +37,6 @@ abstract class TreeUnpickler(reader: TastyReader,
   @inline
   final protected def errorTasty(msg: String)(implicit ctx: Context): Unit =
     reporter.error(NoPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
-
-  @inline
-  final protected def errorConstructTASTyTree: Nothing = sys.error("Trying to Construct a Tree from TASTy")
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
@@ -1018,7 +1011,6 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      }
 //
 //      tree.setDefTree
-//      errorConstructTASTyTree
 //    }
 
 //    private def readTemplate(implicit ctx: Context): Template = {

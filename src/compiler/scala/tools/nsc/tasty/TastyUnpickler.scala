@@ -11,10 +11,8 @@ object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
-    def unpickle(reader: TastyReader, nameAtRef: TastyNameTable with TastyUniverse): R
+    def unpickle(reader: TastyReader, nameTable: TastyNameTable with TastyUniverse): R
   }
-
-  type TermName = SymbolTable#TermName
 
   final class Table[T] extends (NameRef => T) {
     private[TastyUnpickler] val names = new mutable.ArrayBuffer[T]
@@ -30,17 +28,15 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
   import symbolTable._
   import reader._
 
-  type ParamSig = Signature.ParamSig[TypeName]
-
   def this(bytes: Array[Byte])(implicit symbolTable: SymbolTable) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
   val nameAtRef: Table[TermName] = new Table
 
-  val signedNameTable: mutable.LongMap[SignedName[TermName, TypeName]] = mutable.LongMap.empty
+  val signedNameTable: mutable.LongMap[SigName] = mutable.LongMap.empty
 
-  val signedNameAtRef: NameRef => Either[SignedName[TermName, TypeName], TermName] =
+  val signedNameAtRef: NameRef => Either[SigName, TermName] =
     ref =>
       if (signedNameTable.contains(ref.index))
         Left(signedNameTable(ref.index))
@@ -94,11 +90,11 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         logTasty(s"${nameAtRef.names.size}: DEFAULTGETTER | VARIANT name: $result[$nat]")
         result // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
-        val original = readName()
-        val result = readName().toTypeName
+        val original  = readName()
+        val result    = readName().toTypeName
         val paramsSig = until(end)(readParamSig())
-        val sig = Signature(paramsSig, result)
-        val signed = SignedName(original, sig)
+        val sig       = Sig(paramsSig, result)
+        val signed    = SigName(original, sig)
         signedNameTable(nameAtRef.names.size) = signed
         logTasty(s"${nameAtRef.names.size}: SIGNED name: ${signed.show}")
         original // SignedName(original, sig)

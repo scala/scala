@@ -19,6 +19,12 @@ trait TastyUniverse { self =>
     if (settings.debugTasty) reporter.echo(NoPosition, str)
   }
 
+  type ParamSig = Signature.ParamSig[TypeName]
+  type Sig      = Signature[TypeName]
+  val  Sig      = Signature
+  type SigName  = SignedName[TermName, TypeName]
+  val  SigName  = SignedName
+
   object FlagSets {
     import scala.reflect.internal.{Flags, ModifierFlags}
 
