@@ -107,25 +107,24 @@ object AssertUtil {
    */
   def assertNotReachable[A <: AnyRef](a: => A, roots: AnyRef*)(body: => Unit): Unit = {
     val wkref = new WeakReference(a)
-    def refs(root: AnyRef): mutable.Set[AnyRef] = {
+    // fail if following strong references from root discovers referent. Quit if ref is empty.
+    def assertNoRef(root: AnyRef): Unit = {
       val seen = new IdentityHashMap[AnyRef, Unit]
       def loop(o: AnyRef): Unit =
         if (wkref.nonEmpty && o != null && !seen.containsKey(o)) {
           seen.put(o, ())
+          assertTrue(s"Root $root held reference $o", o ne wkref.get)
           for {
             f <- o.getClass.allFields
             if !Modifier.isStatic(f.getModifiers)
             if !f.getType.isPrimitive
             if !classOf[Reference[_]].isAssignableFrom(f.getType)
-          } loop(f follow o)
+          } loop(f.follow(o))
         }
       loop(root)
-      seen.keySet.asScala
     }
     body
-    for (r <- roots if wkref.nonEmpty) {
-      assertFalse(s"Root $r held reference", refs(r) contains wkref.get)
-    }
+    roots.foreach(assertNoRef)
   }
 
   /** Assert no new threads, with some margin for arbitrary threads to exit. */
