@@ -119,6 +119,37 @@ class BitSetTest {
     assert(BitSet().diff(BitSet()) == BitSet())
   }
 
+  @Test def range(): Unit = {
+    val a = (0 until 512).to(BitSet)
+    assert(a.range(0, 511) == (0 until 511).to(BitSet))
+    assert(a.range(1, 512) == (1 until 512).to(BitSet))
+    assert(a.range(1, 511) == (1 until 511).to(BitSet))
+    assert(a.range(1, 63) == (1 until 63).to(BitSet))
+    assert(a.range(1, 64) == (1 until 64).to(BitSet))
+    assert(a.range(448, 511) == (448 until 511).to(BitSet))
+    assert(a.range(449, 511) == (449 until 511).to(BitSet))
+    assert(a.range(512, 512).isEmpty)
+    assert(a.range(512, 576).isEmpty)
+  }
+
+  @Test def rangeFrom(): Unit = {
+    val a = (0 until 512).to(BitSet)
+    assert(a.rangeFrom(1) == (1 until 512).to(BitSet))
+    assert(a.rangeFrom(63) == (63 until 512).to(BitSet))
+    assert(a.rangeFrom(64) == (64 until 512).to(BitSet))
+    assert(a.rangeFrom(512).isEmpty)
+    assert(a.rangeFrom(-100) == a)
+  }
+
+  @Test def rangeUntil(): Unit = {
+    val a = (0 until 512).to(BitSet)
+    assert(a.rangeUntil(511) == (0 until 511).to(BitSet))
+    assert(a.rangeUntil(448) == (0 until 448).to(BitSet))
+    assert(a.rangeUntil(449) == (0 until 449).to(BitSet))
+    assert(a.rangeUntil(0).isEmpty)
+    assert(a.rangeUntil(-100).isEmpty)
+  }
+
   @Test def buildFromRange(): Unit = {
     import scala.util.chaining._
     assert((1 to 1000).to(BitSet) == BitSet().tap(bs => (1 to 1000).foreach(bs.addOne)))
