@@ -275,6 +275,15 @@ trait TastyUniverse { self =>
     }
   }
 
+  object TypeOps {
+    implicit class TypeDecorator(tpe: Type) {
+      final def toBounds(implicit ctx: Context): TypeBounds = tpe match {
+        case tpe: TypeBounds => tpe // this can happen for wildcard args
+        case _               => TypeBounds.empty
+      }
+    }
+  }
+
   object Trees {
     /** A base trait for lazy tree fields.
      *  These can be instantiated with Lazy instances which
@@ -289,7 +298,7 @@ trait TastyUniverse { self =>
     def apply(paramNames: List[N])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
   }
 
-  abstract class LambdaType extends Type {
+  abstract class LambdaType extends Type with Product {
     type ThisName <: Name
     type PInfo <: Type
 
@@ -310,10 +319,35 @@ trait TastyUniverse { self =>
       }.mkString("[", ", ", "]")
       s"$args =>> $resType"
     }
+
+    /**If the result type is exclusively a typeref that is applied to the same arguments as this lambda, then return it
+     * else this
+     */
+    override def betaReduce: Type =
+      if (resType.typeArgs == paramRefs) resType.typeSymbol.tpe
+      else this
+
+    def productArity: Int = 3
+    def productElement(n: Int): Any = n match {
+      case 0 => paramNames
+      case 1 => paramInfos
+      case 2 => resType
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
+    def canEqual(that: Any): Boolean = that.isInstanceOf[LambdaType]
   }
 
-  final class TypeParamRef(binder: LambdaType, i: Int) extends Type {
+  final class TypeParamRef(binder: LambdaType, i: Int) extends Type with Product {
+
     override def safeToString(): String = binder.paramNames(i).toString()
+
+    override val productPrefix: String = "TypeParamRef"
+    val productArity = 1
+    def productElement(n: Int): Any = n match {
+      case 0 => binder.paramNames(i)
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
+    def canEqual(that: Any): Boolean = that.isInstanceOf[TypeParamRef]
   }
 
   object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
@@ -329,6 +363,7 @@ trait TastyUniverse { self =>
     type ThisName = TypeName
     type PInfo = TypeBounds
 
+    override val productPrefix = "HKTypeLambda"
     val paramInfos: List[TypeBounds] = paramInfosExp(this)
     val resType: Type                = resultTypeExp(this)
 
@@ -339,14 +374,5 @@ trait TastyUniverse { self =>
   def TypeRef(tpe: Type, name: Name): Type = {
     val symName = if (tpe.members.containsName(name)) name else name.encode
     typeRef(tpe, tpe.member(symName), Nil)
-  }
-
-  object TypeOps {
-    implicit class AddToBounds(private val self: Type) {
-      final def toBounds(implicit ctx: Context): TypeBounds = self match {
-        case self: TypeBounds => self // this can happen for wildcard args
-        case _ => TypeBounds.empty
-      }
-    }
   }
 }

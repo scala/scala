@@ -45,10 +45,10 @@ abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = Unpick
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
+    import treeUnpickler.Contexts._
     try {
-      implicit val ctx: treeUnpickler.Contexts.Context = {
-        val loadingMirror = mirrorThatLoaded(classRoot)
-        new treeUnpickler.Contexts.InitialContext(classRoot, loadingMirror, AbstractFile.getFile(filename))
+      implicit val ctx: Context = {
+        new InitialContext(classRoot, mirrorThatLoaded(classRoot), AbstractFile.getFile(filename))
       }
       ctx.log(s"Entering roots ($classRoot, $moduleRoot) with owner ${ctx.owner}")
       treeUnpickler.enter(classRoot, moduleRoot)

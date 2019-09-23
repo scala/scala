@@ -293,7 +293,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         val end = readEnd()
 
         def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
-            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N): LT = {
+            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N): Type = {
           val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
@@ -304,7 +304,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               pt => readType())
           })
           goto(end)
-          result.asInstanceOf[LT]
+          result.betaReduce
         }
 
         val result =
@@ -878,6 +878,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       val parentTypes = parents.map { tpt =>
         val tpe = tpt.tpe.dealias
+        ctx.log(s"parent: $tpe")
         if (tpe.typeSymbol == definitions.ObjectClass) definitions.AnyRefTpe
         else tpe
       }
@@ -891,7 +892,11 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       ctx.log(s"Template: reading constructor of $cls")
       readIndexedMember() // ctor
-      cls.info = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
+      cls.info = {
+        val classInfo = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
+        if (tparams.isEmpty) classInfo
+        else new PolyType(tparams.map(symFromNoCycle), classInfo)
+      }
       NoCycle(at = symAddr)
     }
 
@@ -1195,30 +1200,20 @@ abstract class TreeUnpickler(reader: TastyReader,
             val MethodSignature(args, ret) = sig
             val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
             var seenTypeParams = false
-            val argsSyms = args.map {
-              _.fold(
-                idx =>
-                  if (!seenTypeParams) {
-                    seenTypeParams == true
-                    Left(idx)
-                  }
-                  else {
-                    errorTasty(s"Multiple type parameter lists on signature ${sig.show} for member $name.")
-                    Left(-1)
-                  },
-                nme => Right(ctx.loadingMirror.findMemberFromRoot(nme))
-              )
+            val (tyParamCount, argsSyms) = {
+              val (tyParamCounts, params) = args.partitionMap(identity)
+              assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
+              (tyParamCounts.headOption.getOrElse(0), params.map(ctx.loadingMirror.findMemberFromRoot))
             }
-            val alts = qualType.member(name).asTerm.alternatives
+            val member = qualType.member(name)
+            val alts = member.asTerm.alternatives
             val tpe = alts.find { sym =>
               val method = sym.asMethod
               val params = method.paramss.flatten
               method.returnType.typeSymbol == retSym &&
                 params.length == argsSyms.length &&
-                params.zip(argsSyms).forall {
-                  case (param, Left(i))    => method.typeParams.length == i
-                  case (param, Right(sym)) => param.tpe.typeSymbol == sym
-                }
+                tyParamCount == method.typeParams.length &&
+                params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbol == sym }
             }.map(_.tpe).getOrElse(ifNotOverload(name))
             ctx.log(s"selected $tpe")
             tpe
@@ -1279,8 +1274,10 @@ abstract class TreeUnpickler(reader: TastyReader,
               val fn = readTerm()
               val args = until(end)(readTerm())
               Apply(fn, args).setType(fn.tpe.dealiasWiden.finalResultType)
-           case TYPEAPPLY =>
-             TypeApply(readTerm(), until(end)(readTpt()))
+            case TYPEAPPLY =>
+              val term = readTerm()
+              val args = until(end)(readTpt())
+              TypeApply(term, args).setType(term.tpe.resultType.substituteTypes(term.tpe.typeParams, args.map(_.tpe)))
 //            case TYPED =>
 //              val expr = readTerm()
 //              val tpt = readTpt()
@@ -1362,32 +1359,32 @@ abstract class TreeUnpickler(reader: TastyReader,
 //              val parent = readTpt()
 //              val refinements = readStats(refineCls, end)(localContext(refineCls))
 //              RefinedTypeTree(parent, refinements, refineCls)
-           case APPLIEDtpt =>
-             // If we do directly a tpd.AppliedType tree we might get a
-             // wrong number of arguments in some scenarios reading F-bounded
-             // types. This came up in #137 of collection strawman.
-             val tycon   = readTpt()
-             val args    = until(end)(readTpt())
-             val ownType = typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbol, args.map(_.tpe))
-             AppliedTypeTree(tycon, args).setType(ownType)
+            case APPLIEDtpt =>
+              // If we do directly a tpd.AppliedType tree we might get a
+              // wrong number of arguments in some scenarios reading F-bounded
+              // types. This came up in #137 of collection strawman.
+              val tycon   = readTpt()
+              val args    = until(end)(readTpt())
+              val ownType = typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbol, args.map(_.tpe))
+              AppliedTypeTree(tycon, args).setType(ownType)
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())
-           case LAMBDAtpt =>
-             val tparams    = readParams[NoCycle](TYPEPARAM)
-             val body       = readTpt()
-             val typeParams = tparams.map(symFromNoCycle)
-             val tpe        = polyType(typeParams, body.tpe)
-             TypeTree(tpe).setType(tpe)
+            case LAMBDAtpt =>
+              val tparams    = readParams[NoCycle](TYPEPARAM)
+              val body       = readTpt()
+              val typeParams = tparams.map(symFromNoCycle)
+              val tpe        = polyType(typeParams, body.tpe)
+              TypeTree(tpe).setType(tpe)
             //  LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()
 //              val (bound, scrut) =
 //                if (nextUnsharedTag == CASEDEF) (EmptyTree, fst) else (fst, readTpt())
 //              MatchTypeTree(bound, scrut, readCases(end))
-           case TYPEBOUNDStpt =>
-             val lo = readTpt()
-             val hi = if (currentAddr == end) lo else readTpt()
-             TypeBoundsTree(lo, hi).setType(internal.typeBounds(lo.tpe, hi.tpe))
+            case TYPEBOUNDStpt =>
+              val lo = readTpt()
+              val hi = if (currentAddr == end) lo else readTpt()
+              TypeBoundsTree(lo, hi).setType(internal.typeBounds(lo.tpe, hi.tpe))
 //            case HOLE =>
 //              readHole(end, isType = false)
 //            case _ =>
