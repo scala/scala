@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package tasty
 
-import TastyBuffer._
+import TastyRefs._
 import collection.mutable
 
 /** A byte array buffer that can be filled with bytes or natural numbers in TASTY format,

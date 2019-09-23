@@ -3,7 +3,7 @@ package tasty
 
 //import util.Spans._
 //import collection.{mutable, Map}
-import TastyBuffer.NameRef
+import TastyRefs.NameRef
 //import TastyFormat.SOURCE
 
 /** Unpickler for tree positions */
@@ -57,4 +57,3 @@ class PositionUnpickler(reader: TastyReader, nameAtRef: NameRef => TastyUnpickle
 //  def spanAt(addr: Addr): Span = spans.getOrElse(addr, NoSpan)
 //  def sourcePathAt(addr: Addr): String = sourcePaths.getOrElse(addr, "")
 }
-

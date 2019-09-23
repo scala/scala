@@ -1,10 +1,8 @@
-package scala.tools.nsc
-package tasty
+package scala.tools.nsc.tasty
 
-//import TreeUnpickler.UnpickleMode
 import TastyUnpickler.SectionUnpickler
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.tasty.TastyBuffer.NameRef
+import TastyRefs.NameRef
 import scala.util.control.NonFatal
 
 object ScalacUnpickler {
@@ -14,7 +12,7 @@ object ScalacUnpickler {
 
   final class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](posUnpickler: Option[PositionUnpickler], commentUnpickler: Option[CommentUnpickler] = None)(implicit symbolTable: SymbolTable)
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }](TreePickler.sectionName) { self =>
-    def unpickle(reader: TastyReader, nameTable: TASTYNameTable with TASTYUniverse): TreeUnpickler { val symbolTable: SymbolTable } =
+    def unpickle(reader: TastyReader, nameTable: TastyNameTable with TastyUniverse): TreeUnpickler { val symbolTable: SymbolTable } =
       new TreeUnpickler(reader, posUnpickler, commentUnpickler, Seq.empty) {
 
         assert(nameTable.symbolTable eq self.symbolTable, "Unsafe creation of name ref mapper without shared underlying symbol table")
@@ -32,12 +30,12 @@ object ScalacUnpickler {
   }
 
   final class PositionsSectionUnpickler extends SectionUnpickler[PositionUnpickler]("Positions") {
-    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): PositionUnpickler =
+    def unpickle(reader: TastyReader, nameAtRef: TastyNameTable with TastyUniverse): PositionUnpickler =
       new PositionUnpickler(reader, nameAtRef.nameAtRef)
   }
 
   final class CommentsSectionUnpickler extends SectionUnpickler[CommentUnpickler]("Comments") {
-    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): CommentUnpickler =
+    def unpickle(reader: TastyReader, nameAtRef: TastyNameTable with TastyUniverse): CommentUnpickler =
       new CommentUnpickler(reader)
   }
 }
@@ -45,7 +43,7 @@ object ScalacUnpickler {
 /** A class for unpickling Tasty trees and symbols.
  *  @param bytes         the bytearray containing the Tasty file from which we unpickle
  */
-abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TASTYUniverse { self =>
+abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TastyUniverse { self =>
   import symbolTable._
   import ScalacUnpickler._
 
@@ -80,17 +78,4 @@ abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = Unpick
   protected def treeSectionUnpickler(posUnpicklerOpt: Option[PositionUnpickler], commentUnpicklerOpt: Option[CommentUnpickler]): TreeSectionUnpickler[self.symbolTable.type] = {
     new TreeSectionUnpickler(posUnpicklerOpt, commentUnpicklerOpt)
   }
-
-//  protected def computeRootTrees(implicit ctx: Context): List[Tree] = treeUnpickler.unpickle(mode)
-
-//  private[this] var ids: Array[String] = null
-
-//  override def mightContain(id: String)(implicit ctx: Context): Boolean = {
-//    if (ids == null)
-//      ids =
-//        unpickler.nameAtRef.contents.toArray.collect {
-//          case name: SimpleName => name.toString
-//        }.sorted
-//    ids.binarySearch(id) >= 0
-//  }
 }

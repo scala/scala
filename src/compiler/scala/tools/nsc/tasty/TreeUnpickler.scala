@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package tasty
 
-import TastyBuffer._
+import TastyRefs._
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
@@ -15,7 +15,7 @@ import scala.reflect.io.AbstractFile
 abstract class TreeUnpickler(reader: TastyReader,
                              posUnpicklerOpt: Option[PositionUnpickler],
                              commentUnpicklerOpt: Option[CommentUnpickler],
-                             splices: Seq[Any]) extends TASTYUniverse with TASTYNameTable { self =>
+                             splices: Seq[Any]) extends TastyUniverse with TastyNameTable { self =>
   import symbolTable._
   import TastyFormat._
   import FlagSets._
@@ -23,7 +23,7 @@ abstract class TreeUnpickler(reader: TastyReader,
   import TypeOps._
   import TreeUnpickler._
   import MaybeCycle._
-  import TASTYFlags.Live._
+  import TastyFlags.Live._
   import Signature._
 
   type Sig     = Signature[TypeName]
@@ -102,7 +102,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 
     def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
 
-    final def log(str: => String): Unit = logTASTY(s"#${self.hashCode.toHexString.take(4)}: $str")
+    final def log(str: => String): Unit = logTasty(s"#${self.hashCode.toHexString.take(4)}: $str")
 
     final def picklerPhase: Phase = symbolTable.picklerPhase
 
@@ -250,7 +250,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     private[this] var myDecls: Scope = EmptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
     private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
-    private[this] var myTASTYFlagSet: TASTYFlagSet = EmptyFlags
+    private[this] var myTastyFlagSet: TastyFlagSet = EmptyFlags
 
     /** The type parameters computed by the completer before completion has finished */
     def completerTypeParams(sym: Symbol)(implicit ctx: Context): List[Symbol] = sym.info.typeParams
@@ -260,12 +260,12 @@ abstract class TreeUnpickler(reader: TastyReader,
     override def decls: Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
     def moduleClass(implicit ctx: Context): Symbol = myModuleClassFn(ctx)
-    def tastyFlagSet: TASTYFlagSet = myTASTYFlagSet
+    def tastyFlagSet: TastyFlagSet = myTastyFlagSet
 
     def withDecls(decls: Scope): this.type = { myDecls = decls; this }
     def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
     def withModuleClass(moduleClassFn: Context => Symbol): this.type = { myModuleClassFn = moduleClassFn; this }
-    def withTASTYFlagSet(flags: TASTYFlagSet): this.type = { myTASTYFlagSet = flags; this }
+    def withTastyFlagSet(flags: TastyFlagSet): this.type = { myTastyFlagSet = flags; this }
 
     override def load(sym: Symbol): Unit = complete(sym)
   }
@@ -357,7 +357,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     val Method: FlagSet = Flags.METHOD
     val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
 
-    val NoInitsInterface: (FlagSet, TASTYFlagSet) = (Interface, NoInits)
+    val NoInitsInterface: (FlagSet, TastyFlagSet) = (Interface, NoInits)
     val TermParamOrAccessor: FlagSet = Param | ParamAccessor
     val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
     val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
@@ -441,13 +441,13 @@ abstract class TreeUnpickler(reader: TastyReader,
     cls
   }
 
-  class Completer(reader: TastyReader, tastyFlagSet: TASTYFlagSet)(implicit ctx: Context) extends TastyLazyType { self =>
+  class Completer(reader: TastyReader, tastyFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType { self =>
     import reader._
 
     //    val owner = ctx.owner
     //    val source = ctx.source
 
-    self.withTASTYFlagSet(tastyFlagSet)
+    self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
       cycleAtAddr(currentAddr) =
@@ -947,7 +947,7 @@ abstract class TreeUnpickler(reader: TastyReader,
      */
     def readModifiers[WithinType, AnnotType]
         (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
-        (implicit ctx: Context): (FlagSet, TASTYFlagSet, List[Symbol => AnnotType], WithinType) = {
+        (implicit ctx: Context): (FlagSet, TastyFlagSet, List[Symbol => AnnotType], WithinType) = {
       var tastyFlagSet = EmptyFlags
       var flags: FlagSet = NoFlags
       var annotFns: List[Symbol => AnnotType] = Nil
@@ -957,13 +957,13 @@ abstract class TreeUnpickler(reader: TastyReader,
           flags |= flag
           readByte()
         }
-        def addTASTYFlag(flag: TASTYFlagSet) = {
+        def addTastyFlag(flag: TastyFlagSet) = {
           tastyFlagSet |= flag
           readByte()
         }
         nextByte match {
           case PRIVATE => addFlag(Private)
-          case INTERNAL => addTASTYFlag(Internal)
+          case INTERNAL => addTastyFlag(Internal)
           case PROTECTED => addFlag(Protected)
           case ABSTRACT =>
             readByte()
@@ -975,13 +975,13 @@ abstract class TreeUnpickler(reader: TastyReader,
           case SEALED => addFlag(Sealed)
           case CASE => addFlag(Case)
           case IMPLICIT => addFlag(Implicit)
-          case ERASED => addTASTYFlag(Erased)
+          case ERASED => addTastyFlag(Erased)
           case LAZY => addFlag(Lazy)
           case OVERRIDE => addFlag(Override)
-          case INLINE => addTASTYFlag(Inline)
-          case INLINEPROXY => addTASTYFlag(InlineProxy)
+          case INLINE => addTastyFlag(Inline)
+          case INLINEPROXY => addTastyFlag(InlineProxy)
           case MACRO => addFlag(Macro)
-          case OPAQUE => addTASTYFlag(Opaque)
+          case OPAQUE => addTastyFlag(Opaque)
           case STATIC => addFlag(JavaStatic)
           case OBJECT => addFlag(Module)
           case TRAIT => addFlag(Trait)
@@ -994,13 +994,13 @@ abstract class TreeUnpickler(reader: TastyReader,
           case CASEaccessor => addFlag(CaseAccessor)
           case COVARIANT => addFlag(Covariant)
           case CONTRAVARIANT => addFlag(Contravariant)
-          case SCALA2X => addTASTYFlag(Scala2x)
+          case SCALA2X => addTastyFlag(Scala2x)
           case DEFAULTparameterized => addFlag(DefaultParameterized)
           case STABLE => addFlag(StableRealizable)
-          case EXTENSION => addTASTYFlag(Extension)
-          case GIVEN => addTASTYFlag(Given)
+          case EXTENSION => addTastyFlag(Extension)
+          case GIVEN => addTastyFlag(Given)
           case PARAMsetter => addFlag(ParamAccessor)
-          case EXPORTED => addTASTYFlag(Exported)
+          case EXPORTED => addTastyFlag(Exported)
           case PRIVATEqualified =>
             readByte()
             privateWithin = readWithin(ctx)
@@ -1033,11 +1033,11 @@ abstract class TreeUnpickler(reader: TastyReader,
      *  @return  the largest subset of {NoInits, PureInterface} that a
      *           trait owning the indexed statements can have as flags.
      */
-    def indexStats(end: Addr)(implicit ctx: Context): (FlagSet, TASTYFlagSet) = {
-      var (initsFlags, initsTASTYFlags) = NoInitsInterface
+    def indexStats(end: Addr)(implicit ctx: Context): (FlagSet, TastyFlagSet) = {
+      var (initsFlags, initsTastyFlags) = NoInitsInterface
       def clearFlags() = {
         initsFlags      = NoFlags
-        initsTASTYFlags = EmptyFlags
+        initsTastyFlags = EmptyFlags
       }
       while (currentAddr.index < end.index) {
         nextByte match {
@@ -1048,7 +1048,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               clearFlags()
             else if (sym.isClass ||
               sym.is(Method, butNot = Deferred) && !sym.isConstructor)
-              initsTASTYFlags &= NoInits
+              initsTastyFlags &= NoInits
           case IMPORT =>
             skipTree()
           case PACKAGE =>
@@ -1059,7 +1059,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
       }
       assert(currentAddr.index == end.index)
-      (initsFlags, initsTASTYFlags)
+      (initsFlags, initsTastyFlags)
     }
 
     /** Process package with given operation `op`. The operation takes as arguments
@@ -1203,7 +1203,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val tparams = readIndexedParams[NoCycle](TYPEPARAM)
       val vparams = readIndexedParams[NoCycle](PARAM)
       ctx.log(s"Template: indexing members of $cls")
-      val (bodyFlags, bodyTASTYFlags) = {
+      val (bodyFlags, bodyTastyFlags) = {
         val bodyIndexer = fork
         // The first DEFDEF corresponds to the primary constructor
         while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()

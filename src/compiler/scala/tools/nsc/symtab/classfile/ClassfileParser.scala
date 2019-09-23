@@ -109,10 +109,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
   }
 
-  private class TASTYUnpickler(bytes: Array[Byte])
+  private class TastyUnpickler(bytes: Array[Byte])
     extends {
       final val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
-    } with tasty.ScalacUnpickler(bytes) with tasty.TASTYUniverse
+    } with tasty.ScalacUnpickler(bytes) with tasty.TastyUniverse
 
   private def handleMissing(e: MissingRequirementError) = {
     if (settings.debug) e.printStackTrace
@@ -1266,7 +1266,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       val bytes = parseTASTYBytes()
-      new TASTYUnpickler(bytes).unpickle(clazz, staticModule, s"${file.name.stripSuffix(".class")}.tasty")
+      new TastyUnpickler(bytes).unpickle(clazz, staticModule, s"${file.name.stripSuffix(".class")}.tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

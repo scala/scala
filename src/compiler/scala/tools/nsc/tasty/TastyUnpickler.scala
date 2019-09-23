@@ -4,14 +4,14 @@ package tasty
 import scala.collection.mutable
 import scala.reflect.internal.SymbolTable
 import TastyFormat.NameTags._
-import TastyBuffer.NameRef
+import TastyRefs.NameRef
 import scala.collection.immutable.LongMap
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
-    def unpickle(reader: TastyReader, nameAtRef: TASTYNameTable with TASTYUniverse): R
+    def unpickle(reader: TastyReader, nameAtRef: TastyNameTable with TastyUniverse): R
   }
 
   type TermName = SymbolTable#TermName
@@ -26,7 +26,7 @@ object TastyUnpickler {
 
 import TastyUnpickler._
 
-class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TASTYUniverse with TASTYNameTable { self =>
+class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TastyUniverse with TastyNameTable { self =>
   import symbolTable._
   import reader._
 
@@ -67,7 +67,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
       case UTF8 =>
         goto(end)
         val res = newTermName(bytes, start.index, length)
-        logTASTY(s"${nameAtRef.names.size}: UTF8 name: $res")
+        logTasty(s"${nameAtRef.names.size}: UTF8 name: $res")
         res
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
@@ -76,7 +76,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
           case EXPANDPREFIX => "$"
         }
         val res = newTermName("" + readName() + sep + readName())
-        logTASTY(s"${nameAtRef.names.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
+        logTasty(s"${nameAtRef.names.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
         res
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
@@ -85,13 +85,13 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         val originals = until(end)(readName())
         val original = if (originals.isEmpty) termNames.EMPTY else originals.head
         val res = newTermName("" + original + separator + num)
-        logTASTY(s"${nameAtRef.names.size}: UNIQUE name: $res")
+        logTasty(s"${nameAtRef.names.size}: UNIQUE name: $res")
         res
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
         val result = readName()
         val nat = readNat()
-        logTASTY(s"${nameAtRef.names.size}: DEFAULTGETTER | VARIANT name: $result[$nat]")
+        logTasty(s"${nameAtRef.names.size}: DEFAULTGETTER | VARIANT name: $result[$nat]")
         result // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original = readName()
@@ -100,11 +100,11 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         val sig = Signature(paramsSig, result)
         val signed = SignedName(original, sig)
         signedNameTable(nameAtRef.names.size) = signed
-        logTASTY(s"${nameAtRef.names.size}: SIGNED name: ${signed.show}")
+        logTasty(s"${nameAtRef.names.size}: SIGNED name: ${signed.show}")
         original // SignedName(original, sig)
       case _ =>
         val res = readName() // simpleNameKindOfTag(tag)(readName())
-        logTASTY(s"${nameAtRef.names.size}: ${TastyFormat.astTagToString(tag)} name: $res")
+        logTasty(s"${nameAtRef.names.size}: ${TastyFormat.astTagToString(tag)} name: $res")
         res
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
