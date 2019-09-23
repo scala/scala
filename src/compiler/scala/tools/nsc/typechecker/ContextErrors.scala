@@ -129,7 +129,7 @@ trait ContextErrors {
       else
         s"$name extends Any, not AnyRef"
     )
-    if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else "\n" +
+    if (isPrimitiveValueType(found) || isTrivialTopType(tp)) "" else
        sm"""|Note that $what.
             |Such types can participate in value classes, but instances
             |cannot appear in singleton types or in reference comparisons."""
@@ -374,15 +374,13 @@ trait ContextErrors {
           def nameString       = decodeWithKind(name, owner)
           /* Illuminating some common situations and errors a bit further. */
           def addendum         = {
+            def orEmpty(cond: Boolean)(s: => String) = if (cond) s else ""
             val companionSymbol: Symbol = {
               if (name.isTermName && owner.isPackageClass)
                 target.member(name.toTypeName)
               else NoSymbol
             }
-            val companion = {
-              if (companionSymbol == NoSymbol) ""
-              else s"\nnote: $companionSymbol exists, but it has no companion object."
-            }
+            val companion = orEmpty(companionSymbol != NoSymbol)(s"note: $companionSymbol exists, but it has no companion object.")
             // find out all the names available under target within 2 edit distances
             lazy val alternatives: List[String] = {
               val editThreshold = 2
@@ -405,24 +403,24 @@ trait ContextErrors {
             }
             val altStr: String = {
               val maxSuggestions = 4
-              if (companionSymbol != NoSymbol) ""
-              else
+              orEmpty(companionSymbol == NoSymbol) {
                 alternatives match {
                   case Nil => ""
-                  case xs  => "\ndid you mean " + StringUtil.oxford(xs.sorted.take(maxSuggestions), "or") + "?"
+                  case xs  => s"did you mean ${StringUtil.oxford(xs.sorted.take(maxSuggestions), "or")}?"
                 }
+              }
             }
-            val semicolon = (
-              if (linePrecedes(qual, sel))
-                "\npossible cause: maybe a semicolon is missing before `"+nameString+"`?"
-              else
-                ""
-            )
-            val notAnyRef = (
-              if (ObjectClass.info.member(name).exists) notAnyRefMessage(target)
-              else ""
-            )
-            companion + altStr + notAnyRef + semicolon
+            val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
+            val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
+            val javaRules = orEmpty(owner.isJavaDefined && owner.isClass && !owner.isPackage) {
+              val (jtype, jmember) = cx.javaFindMember(target, name, _.isStaticMember)
+              orEmpty(jmember != NoSymbol) {
+                val more = sm"""Static Java members belong to companion objects in Scala;
+                  |they are not inherited, even by subclasses defined in Java."""
+                s"did you mean ${jtype.typeSymbol.fullName}.${jmember.name}? $more"
+              }
+            }
+            List(companion, altStr, notAnyRef, semicolon, javaRules).filter("" != _).map("\n" + _).mkString
           }
           def targetStr = targetKindString + target.directObjectString
           withAddendum(qual.pos)(

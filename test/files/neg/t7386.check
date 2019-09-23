@@ -1,0 +1,7 @@
+MyScalaClass.scala:3: error: value myStaticBaseMethod is not a member of object MyClass
+did you mean myStaticBaseMethead?
+did you mean MyClassBase.myStaticBaseMethod? Static Java members belong to companion objects in Scala;
+they are not inherited, even by subclasses defined in Java.
+  MyClass.myStaticBaseMethod() //no compiles. Wrong!!!
+          ^
+one error found
