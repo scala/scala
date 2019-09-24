@@ -212,25 +212,22 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     val a = coll.toBitMask
     val len = a.length
     if (from.isDefined) {
-      var f = from.get
-      var pos = 0
-      while (f >= 64 && pos < len) {
-        f -= 64
-        a(pos) = 0
-        pos += 1
+      val f = from.get
+      val w = f >> LogWL
+      val b = f & (WordLength - 1)
+      if (w >= 0) {
+        java.util.Arrays.fill(a, 0, math.min(w, len), 0)
+        if (b > 0 && w < len) a(w) &= ~((1L << b) - 1)
       }
-      if (f > 0 && pos < len) a(pos) &= ~((1L << f)-1)
     }
     if (until.isDefined) {
       val u = until.get
-      val w = u / 64
-      val b = u % 64
-      var clearw = w+1
-      while (clearw < len) {
-        a(clearw) = 0
-        clearw += 1
+      val w = u >> LogWL
+      val b = u & (WordLength - 1)
+      if (w < len) {
+        java.util.Arrays.fill(a, math.max(w + 1, 0), len, 0)
+        if (w >= 0) a(w) &= (1L << b) - 1
       }
-      if (w < len) a(w) &= (1L << b)-1
     }
     coll.fromBitMaskNoCopy(a)
   }

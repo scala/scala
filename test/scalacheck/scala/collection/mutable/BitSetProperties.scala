@@ -68,4 +68,8 @@ object BitSetProperties extends Properties("mutable.BitSet") {
     left.subsetOf(leftUnionRight) && right.subsetOf(leftUnionRight)
   }
 
+  property("range") = forAll{ (bs: BitSet, range: Range) =>
+    bs.range(range.start, range.end) ?= bs.filter(b => b >= range.start && b < range.end)
+  }
+
 }
