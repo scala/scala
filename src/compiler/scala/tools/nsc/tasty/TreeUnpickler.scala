@@ -98,7 +98,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     val assumedSelfType =
       if (cls.is(Module) && cls.owner.isClass) TypeRef(cls.owner.thisType, cls.name)
       else NoType
-    cls.info = new ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbol)
+    cls.info = new ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
     cls
   }
 
@@ -334,7 +334,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             //     // Eta expansion of the latter puts readType() out of the expression.
             case APPLIEDtype =>
               val tpe = readType()
-              typeRef(tpe.typeSymbol.owner.tpe, tpe.typeSymbol, until(end)(readType()))
+              typeRef(tpe.typeSymbolDirect.owner.tpe, tpe.typeSymbolDirect, until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
               val hi = readType()
@@ -676,7 +676,7 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
 
     private val readTypedWithin: Context => Symbol =
-      implicit ctx => readType().typeSymbol
+      implicit ctx => readType().typeSymbolDirect
 
     private val readTypedAnnot: Context => Symbol => Annotation = {
       implicit ctx =>
@@ -684,7 +684,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         val end = readEnd()
         val tp = readType()
         val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-        owner => { tp.typeSymbol; Annotation(lazyAnnotTree(owner).complete) }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
+        owner => { tp.typeSymbolDirect; Annotation(lazyAnnotTree(owner).complete) }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -733,7 +733,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val end = readEnd()
       val tpe = readTypeAsTypeRef()
       val pid = ref(tpe).asInstanceOf[RefTree]
-      op(pid, end)(localContext(tpe.typeSymbol.moduleClass))
+      op(pid, end)(localContext(tpe.typeSymbolDirect.moduleClass))
     }
 
     def ref[T <: TypeRef](tp: T): Tree = {
@@ -880,7 +880,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val parentTypes = parents.map { tpt =>
         val tpe = tpt.tpe.dealias
         ctx.log(s"parent: $tpe")
-        if (tpe.typeSymbol == definitions.ObjectClass) definitions.AnyRefTpe
+        if (tpe.typeSymbolDirect == definitions.ObjectClass) definitions.AnyRefTpe
         else tpe
       }
       if (nextByte == SELFDEF) {
@@ -1211,10 +1211,10 @@ abstract class TreeUnpickler(reader: TastyReader,
             val tpe = alts.find { sym =>
               val method = sym.asMethod
               val params = method.paramss.flatten
-              method.returnType.erasure.typeSymbol == retSym &&
+              method.returnType.erasure.typeSymbolDirect == retSym &&
                 params.length == argsSyms.length &&
                 tyParamCount == method.typeParams.length &&
-                params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbol == sym }
+                params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbolDirect == sym }
             }.map(_.tpe).getOrElse(ifNotOverload(name))
             ctx.log(s"selected $tpe")
             tpe
@@ -1366,7 +1366,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               // types. This came up in #137 of collection strawman.
               val tycon   = readTpt()
               val args    = until(end)(readTpt())
-              val ownType = typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbol, args.map(_.tpe))
+              val ownType = typeRef(tycon.tpe.prefix, tycon.tpe.typeSymbolDirect, args.map(_.tpe))
               AppliedTypeTree(tycon, args).setType(ownType)
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())

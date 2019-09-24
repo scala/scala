@@ -320,7 +320,7 @@ trait TastyUniverse { self =>
           paramNames.zip(paramInfos).map {
             case (name, info) => owner.newTypeParameter(name.toTypeName, NoPosition, Param | Deferred).setInfo(info)
           },
-          if (resType.typeSymbol.tpe == definitions.AnyTpe)
+          if (resType.typeSymbolDirect == definitions.AnyClass)
             TypeBounds.empty
           else
             resType.bounds
