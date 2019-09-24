@@ -21,7 +21,6 @@ abstract class TreeUnpickler(reader: TastyReader,
   import FlagSets._
   import NameOps._
   import SymbolOps._
-  import TypeOps._
   import TreeUnpickler._
   import MaybeCycle._
   import TastyFlags.Live._
@@ -67,8 +66,6 @@ abstract class TreeUnpickler(reader: TastyReader,
   private[this] var ownerTree: OwnerTree = _
 
   //---------------- unpickling trees ----------------------------------------------------------------------------------
-
-  private def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"
 
   private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
     ctx.log(s"registered $sym in ${sym.owner} at $addr")
@@ -293,7 +290,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         val end = readEnd()
 
         def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
-            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N): Type = {
+            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: Name => N)(implicit ctx: Context): Type = {
           val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
@@ -304,7 +301,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               pt => readType())
           })
           goto(end)
-          result.betaReduce
+          result.asInstanceOf[LT].asReflectType(ctx.owner)
         }
 
         val result =
@@ -830,7 +827,11 @@ abstract class TreeUnpickler(reader: TastyReader,
               override def completerTypeParams(sym: Symbol)(implicit ctx: Context) =
                 rhs.tpe.typeParams
             }
-            sym.info = rhs.tpe
+            // TODO check for cycles
+            sym.info = rhs.tpe match {
+              case TypeBounds(_, hi: PolyType) => hi
+              case tpe => tpe
+            }
             // sym.normalizeOpaque()
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)
@@ -1210,7 +1211,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             val tpe = alts.find { sym =>
               val method = sym.asMethod
               val params = method.paramss.flatten
-              method.returnType.typeSymbol == retSym &&
+              method.returnType.erasure.typeSymbol == retSym &&
                 params.length == argsSyms.length &&
                 tyParamCount == method.typeParams.length &&
                 params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbol == sym }
@@ -1374,7 +1375,7 @@ abstract class TreeUnpickler(reader: TastyReader,
               val body       = readTpt()
               val typeParams = tparams.map(symFromNoCycle)
               val tpe        = polyType(typeParams, body.tpe)
-              TypeTree(tpe).setType(tpe)
+              TypeTree(tpe)
             //  LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()

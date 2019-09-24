@@ -275,15 +275,6 @@ trait TastyUniverse { self =>
     }
   }
 
-  object TypeOps {
-    implicit class TypeDecorator(tpe: Type) {
-      final def toBounds(implicit ctx: Context): TypeBounds = tpe match {
-        case tpe: TypeBounds => tpe // this can happen for wildcard args
-        case _               => TypeBounds.empty
-      }
-    }
-  }
-
   object Trees {
     /** A base trait for lazy tree fields.
      *  These can be instantiated with Lazy instances which
@@ -320,11 +311,21 @@ trait TastyUniverse { self =>
       s"$args =>> $resType"
     }
 
-    /**If the result type is exclusively a typeref that is applied to the same arguments as this lambda, then return it
-     * else this
+    /**Best effort to transform this to an equivalent [[scala.reflect.api.Type]]
      */
-    override def betaReduce: Type =
-      if (resType.typeArgs == paramRefs) resType.typeSymbol.tpe
+    def asReflectType(owner: Symbol): Type =
+      if (resType.typeArgs == paramRefs) resType.typeConstructor
+      else if (resType.typeArgs.isEmpty) {
+        internal.polyType(
+          paramNames.zip(paramInfos).map {
+            case (name, info) => owner.newTypeParameter(name.toTypeName, NoPosition, Param | Deferred).setInfo(info)
+          },
+          if (resType.typeSymbol.tpe == definitions.AnyTpe)
+            TypeBounds.empty
+          else
+            resType.bounds
+        )
+      }
       else this
 
     def productArity: Int = 3
@@ -375,4 +376,6 @@ trait TastyUniverse { self =>
     val symName = if (tpe.members.containsName(name)) name else name.encode
     typeRef(tpe, tpe.member(symName), Nil)
   }
+
+  def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"
 }
