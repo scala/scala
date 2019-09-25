@@ -311,7 +311,14 @@ trait TastyUniverse { self =>
       s"$args =>> $resType"
     }
 
-    /**Best effort to transform this to an equivalent [[scala.reflect.api.Type]]
+    override def typeParams: List[Symbol] = {
+      if (myTypeParams `eq` null) myTypeParams = paramNames.zip(paramInfos).map {
+        case (name, info) => newFreeTypeSymbol(name.toTypeName, Param | Deferred, name.toString).setInfo(info)
+      }
+      myTypeParams
+    }
+
+    /**Best effort to transform this to an equivalent canonical representation in scalac.
      */
     def asReflectType(owner: Symbol): Type =
       if (resType.typeArgs == paramRefs) resType.typeConstructor
@@ -328,11 +335,10 @@ trait TastyUniverse { self =>
       }
       else this
 
-    def productArity: Int = 3
+    def productArity: Int = 2
     def productElement(n: Int): Any = n match {
       case 0 => paramNames
-      case 1 => paramInfos
-      case 2 => resType
+      case 1 => resType
       case _ => throw new IndexOutOfBoundsException(n.toString)
     }
     def canEqual(that: Any): Boolean = that.isInstanceOf[LambdaType]
