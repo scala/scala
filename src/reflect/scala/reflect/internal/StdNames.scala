@@ -524,6 +524,16 @@ trait StdNames {
       }
     )
 
+    def splitDefaultGetterName(name: Name): (Name, Int) = {
+      val (n, i) =
+        if (name.startsWith(DEFAULT_GETTER_INIT_STRING)) (nme.CONSTRUCTOR, DEFAULT_GETTER_INIT_STRING.length)
+        else name.indexOf(DEFAULT_GETTER_STRING) match {
+          case -1  => (name.toTermName, -1)
+          case idx => (name.toTermName.take(idx), idx + DEFAULT_GETTER_STRING.length)
+        }
+      if (i >= 0) (n, name.encoded.substring(i).toInt) else (n, -1)
+    }
+
     def localDummyName(clazz: Symbol): TermName = newTermName(LOCALDUMMY_PREFIX + clazz.name + ">")
     def superName(name: Name, mix: Name = EMPTY): TermName = newTermName(SUPER_PREFIX_STRING + name + (if (mix.isEmpty) "" else "$" + mix))
 
