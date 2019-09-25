@@ -1004,13 +1004,9 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to convert every occurrence of a wildcard type to a fresh
-    *  type variable */
-  object wildcardToTypeVarMap extends TypeMap {
-    def apply(tp: Type): Type = tp match {
-      case pt: ProtoType => TypeVar(tp, new TypeConstraint(pt.toBounds))
-      case _ => tp.mapOver(this)
-    }
+  /** A map that is conceptually an identity, but in practice may perform some side effects. */
+  object identityTypeMap extends TypeMap {
+    def apply(tp: Type): Type = tp.mapOver(this)
   }
 
   /** A map to convert each occurrence of a type variable to its origin. */
