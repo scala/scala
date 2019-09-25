@@ -116,9 +116,9 @@ Once you've started an `sbt` session you can run one of the core commands:
   - `scalacheck/test` runs scalacheck tests, `scalacheck/testOnly *FloatFormatTest` runs a subset
   - `publishLocal` publishes a distribution locally (can be used as `scalaVersion` in
     other sbt projects)
-    - Optionally `set baseVersionSuffix := "-bin-abcd123-SNAPSHOT"`
+    - Optionally `set baseVersionSuffix := "bin-abcd123-SNAPSHOT"`
       where `abcd123` is the git hash of the revision being published. You can also
-      use something custom like `"-bin-mypatch"`. This changes the version number from
+      use something custom like `"bin-mypatch"`. This changes the version number from
       `2.12.2-SNAPSHOT` to something more stable (`2.12.2-bin-abcd123-SNAPSHOT`).
     - Note that the `-bin` string marks the version binary compatible. Using it in
       sbt will cause the `scalaBinaryVersion` to be `2.12`. If the version is not
