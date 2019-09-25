@@ -179,18 +179,26 @@ trait SyntheticMethods extends ast.TreeDSL {
      * - asInstanceOf if no equality checks need made (see scala/bug#9240, scala/bug#10361)
      */
     def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
-      def usefulEquality(acc: Symbol): Boolean = {
-        val rt = acc.info.resultType
-        rt != NothingTpe && rt != NullTpe && rt != UnitTpe
-      }
-
       val otherName = freshTermName(clazz.name + "$")(freshNameCreatorFor(context))
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
-      //compare primitive fields first, slow equality checks of non-primitive fields can be skipped when primitives differ
-      val accessorsParts = accessors.partition(x => isPrimitiveValueType(x.info.resultType))
-      val pairwise  = (accessorsParts._1 ++ accessorsParts._2) collect {
-        case acc if usefulEquality(acc) =>
-          fn(Select(mkThis, acc), acc.tpe member nme.EQ, Select(Ident(otherSym), acc))
+      val pairwise  = {
+        //compare primitive fields first, slow equality checks of non-primitive fields can be skipped when primitives differ
+        val prims = ListBuffer[Tree]()
+        val refs  = ListBuffer[Tree]()
+        for (acc <- accessors) {
+          val resultType   = acc.info.resultType
+          val usefulEquals = resultType != NothingTpe && resultType != NullTpe && resultType != UnitTpe
+          if (usefulEquals) {
+            val thisAcc  = Select(mkThis, acc)
+            val otherAcc = Select(Ident(otherSym), acc)
+            val op       = acc.tpe.member(nme.EQ)
+            if (isPrimitiveValueType(resultType))
+              prims += fn(thisAcc, op, otherAcc)
+            else
+              refs  += fn(thisAcc, op, otherAcc)   //gen.mkCast(otherAcc, AnyTpe)
+          }
+        }
+        prims.prependToList(refs.toList)      // (prims ++ refs).toList
       }
       val canEq     = gen.mkMethodCall(otherSym, nme.canEqual_, Nil, List(mkThis))
       val tests     = if (clazz.isDerivedValueClass || clazz.isFinal && syntheticCanEqual) pairwise else pairwise :+ canEq
