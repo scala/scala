@@ -176,7 +176,10 @@ object Source {
    *  @return              the buffered source
    */
   def fromResource(resource: String, classLoader: ClassLoader = Thread.currentThread().getContextClassLoader())(implicit codec: Codec): BufferedSource =
-    fromInputStream(classLoader.getResourceAsStream(resource))
+    Option(classLoader.getResourceAsStream(resource)) match {
+      case Some(in) => fromInputStream(in)
+      case None     => throw new IllegalArgumentException(s"resource '$resource' was not found")
+    }
 
 }
 
