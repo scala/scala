@@ -345,6 +345,8 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
         }
       }
     }
+
+    override def toBitMask: Array[Long] = elems.clone()
   }
 
   @SerialVersionUID(3L)
