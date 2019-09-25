@@ -37,7 +37,7 @@ object a {
 
 object Test extends App {
   // strip module name
-  def filtered(s: Any) = s.toString.replaceAllLiterally("java.base/", "")
+  def filtered(s: Any) = s.toString.replace("java.base/", "")
 
   def test(methName: String, arg: Any) = {
     val moduleA = cm.reflect(a)

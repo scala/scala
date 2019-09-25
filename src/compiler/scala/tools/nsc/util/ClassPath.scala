@@ -138,7 +138,7 @@ object ClassPath {
     else if (pattern endsWith wildSuffix) lsDir(Directory(pattern dropRight 2))
     else if (pattern contains '*') {
       try {
-        val regexp = ("^" + pattern.replaceAllLiterally("""\*""", """.*""") + "$").r
+        val regexp = s"^${pattern.replace(raw"\*", ".*")}$$".r
         lsDir(Directory(pattern).parent, regexp.findFirstIn(_).isDefined)
       }
       catch { case _: PatternSyntaxException => List(pattern) }

@@ -45,7 +45,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     val newExtension = if (useJars) ".jar" else ""
     val root = file.getRoot
     // An empty component on Unix, just the drive letter on Windows
-    val validRootPathComponent = root.toString.replaceAllLiterally("/", "").replaceAllLiterally(":", "")
+    val validRootPathComponent = root.toString.replace("/", "").replace(":", "")
     val result = changeExtension(pickleCache.resolve(validRootPathComponent).resolve(root.relativize(file)).normalize(), newExtension)
     if (useJars) Files.createDirectories(result.getParent)
     strippedAndExportedClassPath.put(file.toRealPath().normalize(), result)
