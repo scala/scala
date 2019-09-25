@@ -104,6 +104,12 @@ starting testSuccess
 finished testSuccess
 starting testFailure
 finished testFailure
+starting testAwaitSuccess
+finished testAwaitSuccess
+starting testAwaitFailure
+finished testAwaitFailure
+starting testFQCNForAwaitAPI
+finished testFQCNForAwaitAPI
 starting testDefaultOutsideFuture
 finished testDefaultOutsideFuture
 starting testDefaultFJP

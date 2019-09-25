@@ -18,9 +18,11 @@ import scala.runtime.ScalaRunTime.stringOf
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
+import scala.util.chaining._
 import scala.util.{Failure, Success, Try}
 import scala.util.Properties.isJavaAtLeast
 import scala.util.control.NonFatal
+import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
 import java.lang.ref._
@@ -58,6 +60,25 @@ object AssertUtil {
       f setAccessible true
       f get o
     }
+  }
+
+  /** Result and elapsed duration.
+   */
+  def timed[A](body: => A): (A, Duration) = {
+    val start = System.nanoTime
+    val result = body
+    val end = System.nanoTime
+    (result, Duration.ofNanos(end - start))
+  }
+
+  /** Elapsed duration.
+   */
+  def elapsed[U](body: => U): Duration = timed(body)._2
+
+  /** Elapsed duration.
+   */
+  def withElapsed[A](f: Duration => Unit)(body: => A): A = timed(body).pipe {
+    case (result, duration) => f(duration) ; result
   }
 
   /** Check that throwable T (or a subclass) was thrown during evaluation of `body`,

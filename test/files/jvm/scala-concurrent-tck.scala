@@ -6,26 +6,33 @@ import scala.concurrent.{
   ExecutionContext,
   CanAwait,
   Await,
+  Awaitable,
   blocking
 }
 import scala.util.{ Try, Success, Failure }
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 import scala.reflect.{ classTag, ClassTag }
-import scala.tools.partest.TestUtil.intercept
+import scala.tools.testkit.AssertUtil.assertThrows
 import scala.annotation.tailrec
 
 trait TestBase {
+  import scala.tools.testkit.AssertUtil.{Fast, Slow, waitForIt}
   trait Done { def apply(proof: => Boolean): Unit }
   def once(body: Done => Unit): Unit = {
     import java.util.concurrent.{ LinkedBlockingQueue, TimeUnit }
+    import TimeUnit.{MILLISECONDS => Milliseconds}
     val q = new LinkedBlockingQueue[Try[Boolean]]
     body(new Done {
       def apply(proof: => Boolean): Unit = q offer Try(proof)
     })
-    assert(Option(q.poll(5000, TimeUnit.MILLISECONDS)).map(_.get).getOrElse(false))
+    var tried: Try[Boolean] = null
+    def check = { tried = q.poll(5000, Milliseconds) ; tried != null }
+    waitForIt(check, progress = Slow, label = "concurrent-tck")
+    assert(tried.isSuccess)
+    assert(tried.get)
     // Check that we don't get more than one completion
-    assert(q.poll(50, TimeUnit.MILLISECONDS) eq null)
+    assert(q.poll(50, Milliseconds) eq null)
   }
 
   def test[T](name: String)(body: => T): T = {
@@ -33,6 +40,19 @@ trait TestBase {
     val r = body
     println(s"finished $name")
     r
+  }
+
+  def await[A](value: Awaitable[A]): A = {
+    var a: A = null.asInstanceOf[A]
+    def check = {
+      Try(Await.result(value, Duration(500, "ms"))) match {
+        case Success(x) => a = x ; true
+        case Failure(_: TimeoutException) => false
+        case Failure(t) => throw t
+      }
+    }
+    waitForIt(check, progress = Fast, label = "concurrent-tck test result")
+    a
   }
 }
 
@@ -646,14 +666,14 @@ class FutureProjections extends TestBase {
     done =>
     val cause = new RuntimeException
     val f = Future { throw cause }
-    done(Await.result(f.failed, Duration(500, "ms")) == cause)
+    done(await(f.failed) == cause)
   }
 
   def testFailedSuccessAwait(): Unit = once {
     done =>
     val f = Future { 0 }
     try {
-      Await.result(f.failed, Duration(500, "ms"))
+      await(f.failed)
       done(false)
     } catch {
       case nsee: NoSuchElementException => done(true)
@@ -665,8 +685,9 @@ class FutureProjections extends TestBase {
     val p = Promise[Int]()
     val f = p.future
     Future {
-      intercept[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
+      assertThrows[IllegalArgumentException] { Await.ready(f, Duration.Undefined) }
       p.success(0)
+      await(f)
       Await.ready(f, Duration.Zero)
       Await.ready(f, Duration(500, "ms"))
       Await.ready(f, Duration.Inf)
@@ -677,9 +698,9 @@ class FutureProjections extends TestBase {
   def testAwaitNegativeDuration(): Unit = once { done =>
     val f = Promise().future
     Future {
-      intercept[TimeoutException] { Await.ready(f, Duration.Zero) }
-      intercept[TimeoutException] { Await.ready(f, Duration.MinusInf) }
-      intercept[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration.Zero) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration.MinusInf) }
+      assertThrows[TimeoutException] { Await.ready(f, Duration(-500, "ms")) }
       done(true)
     } onComplete { case Failure(x) => done(throw x); case _ => }
   }
@@ -701,7 +722,7 @@ class Blocking extends TestBase {
   def testAwaitSuccess(): Unit = once {
     done =>
     val f = Future { 0 }
-    done(Await.result(f, Duration(500, "ms")) == 0)
+    done(await(f) == 0)
   }
 
   def testAwaitFailure(): Unit = once {
@@ -709,7 +730,7 @@ class Blocking extends TestBase {
     val cause = new RuntimeException
     val f = Future { throw cause }
     try {
-      Await.result(f, Duration(500, "ms"))
+      await(f)
       done(false)
     } catch {
       case  t: Throwable => done(t == cause)
@@ -719,7 +740,7 @@ class Blocking extends TestBase {
   def testFQCNForAwaitAPI(): Unit = once {
     done =>
     done(classOf[CanAwait].getName == "scala.concurrent.CanAwait" &&
-         Await.getClass.getName == "scala.concurrent.Await")
+         Await.getClass.getName == "scala.concurrent.Await$")
   }
 
   test("testAwaitSuccess")(testAwaitSuccess())
@@ -731,9 +752,7 @@ class BlockContexts extends TestBase {
   import ExecutionContext.Implicits._
   import scala.concurrent.{ Await, Awaitable, BlockContext }
 
-  private def getBlockContext(body: => BlockContext): BlockContext = {
-    Await.result(Future { body }, Duration(500, "ms"))
-  }
+  private def getBlockContext(body: => BlockContext): BlockContext = await(Future(body))
 
   // test outside of an ExecutionContext
   def testDefaultOutsideFuture(): Unit = {
@@ -1067,6 +1086,7 @@ extends App {
   new FutureCombinators
   new FutureProjections
   new Promises
+  new Blocking
   new BlockContexts
   new Exceptions
   new GlobalExecutionContext
@@ -1075,4 +1095,3 @@ extends App {
 
   System.exit(0)
 }
-
