@@ -401,18 +401,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       )
     }
 
-    /** Check that type `tp` is not a subtype of itself.
+    /** Check that type `tp` is not a subtype of itself
      */
     def checkNonCyclic(pos: Position, tp: Type): Boolean = {
-      def checkNotLocked(sym: Symbol) = {
+      def checkNotLocked(sym: Symbol) =
         sym.initialize.lockOK || { CyclicAliasingOrSubtypingError(pos, sym); false }
-      }
+
       tp match {
         case TypeRef(pre, sym, args) =>
-          checkNotLocked(sym) &&
-          ((!sym.isNonClassType) || checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args), sym))
-          // @M! info for a type ref to a type parameter now returns a polytype
-          // @M was: checkNonCyclic(pos, pre.memberInfo(sym).subst(sym.typeParams, args), sym)
+          checkNotLocked(sym) && {
+            !sym.isNonClassType || {
+              sym.lock(())
+              try checkNonCyclic(pos, appliedType(pre.memberInfo(sym), args))
+              finally sym.unlock()
+            }
+          }
 
         case SingleType(_, sym) =>
           checkNotLocked(sym)
@@ -425,19 +428,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
-    def checkNonCyclic(pos: Position, tp: Type, lockedSym: Symbol): Boolean = try {
-      if (!lockedSym.lock(CyclicReferenceError(pos, tp, lockedSym))) false
-      else checkNonCyclic(pos, tp)
-    } finally {
-      lockedSym.unlock()
-    }
-
     def checkNonCyclic(sym: Symbol): Unit = {
       if (!checkNonCyclic(sym.pos, sym.tpe_*)) sym.setInfo(ErrorType)
     }
 
-    def checkNonCyclic(defn: Tree, tpt: Tree): Unit = {
-      if (!checkNonCyclic(defn.pos, tpt.tpe, defn.symbol)) {
+    def checkNonCyclic(defn: ValOrDefDef, tpt: Tree): Unit = {
+      if (!checkNonCyclic(defn.pos, tpt.tpe)) {
         tpt setType ErrorType
         defn.symbol.setInfo(ErrorType)
       }
