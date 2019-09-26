@@ -1,3 +1,3 @@
 package tastytest
 
-trait Functor[F[_]] { def map[A,B](fa: F[A])(f: A => B): F[B] }
+trait Functor[F[_]] { def (fa: F[A]) map[A,B](f: A => B): F[B] }

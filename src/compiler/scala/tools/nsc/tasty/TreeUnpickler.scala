@@ -796,7 +796,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val localCtx = localContext(sym)
       val noCycle  = tag match {
         case DEFDEF =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported flags on def: ${completer.tastyFlagSet.show}")
+          assertTasty(!(completer.tastyFlagSet &~ Extension), s"unsupported flags on def: ${completer.tastyFlagSet.show}")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
