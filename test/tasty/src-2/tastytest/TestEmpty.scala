@@ -1,5 +1,7 @@
 package tastytest
 
+import scala.runtime.ScalaRunTime
+
 object TestEmpty {
 
   def test1 = assert(productString(new EmptyProduct) === "EmptyProduct()")

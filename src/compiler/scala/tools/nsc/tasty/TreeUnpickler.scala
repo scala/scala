@@ -428,13 +428,12 @@ abstract class TreeUnpickler(reader: TastyReader,
     private def readSymNameRef()(implicit ctx: Context): Type = {
       val sym = readSymRef()
       val prefix = readType()
-      val res = typeRef(prefix, sym, Nil)
       prefix match {
         case prefix: ThisType if prefix.sym eq sym.owner /*&& !sym.is(Opaque)*/ =>
-          res //res.withDenot(sym.denot)
+          typeRef(NoPrefix, sym, Nil) //res.withDenot(sym.denot)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
-        case _ => res
+        case _ => typeRef(prefix, sym, Nil)
       }
     }
 
@@ -796,7 +795,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       val localCtx = localContext(sym)
       val noCycle  = tag match {
         case DEFDEF =>
-          assertTasty(!(completer.tastyFlagSet &~ Extension), s"unsupported flags on def: ${completer.tastyFlagSet.show}")
+          val (isExtension, exceptExtension) = completer.tastyFlagSet.except(Extension)
+          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on def: ${exceptExtension.show}")
+          if (isExtension) ctx.log(s"$name is a Scala 3 extension method.")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
@@ -814,7 +815,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported flags on type: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on type: ${completer.tastyFlagSet.show}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)

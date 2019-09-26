@@ -1,16 +1,11 @@
 package tastytest
 
-object TestFunctor {
+object TestMonad {
 
   implicit object ListMonad extends Monad[List] {
-
-    def flatMap[A, B](fa: List[A])(f: A => List[B]): List[B] = fa.flatMap(f)
     def pure[A](x: A): List[A] = x :: Nil
-
-    // error: Missing implementation for:
-    //   def map[A, B](fa: Monad.this.F[A])(f: A => B): Monad.this.F[B] // inherited from trait Functor
+    def flatMap[A, B](fa: List[A])(f: A => List[B]): List[B] = fa.flatMap(f)
     override def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
-
   }
 
   def pureToString[F[_], A](fa: F[A])(implicit F: Monad[F]): F[String] = F.flatMap(fa)(a => F.pure(a.toString))
