@@ -37,11 +37,14 @@ object ReplStrings {
     res.toString
   }
 
+  @inline final def quotedString(str: String) =
+    "\"" + str + "\""
+
   def string2codeQuoted(str: String) =
-    "\"" + string2code(str) + "\""
+    quotedString(string2code(str))
 
   def any2stringOf(x: Any, maxlen: Int) =
-    "_root_.scala.runtime.ScalaRunTime.replStringOf(%s, %s)".format(x, maxlen)
+    s"_root_.scala.runtime.ScalaRunTime.replStringOf($x, $maxlen)"
 
   // no escaped or nested quotes
   private[this] val inquotes = """(['"])(.*?)\1""".r

@@ -1,20 +1,20 @@
 == evaluating lines
-extract: AnyRef => Unit = <function1>
+val extract: AnyRef => Unit = <function1>
   evaluating x
-x: Int = 0
-getX: ()Int
-defined class U
-y: Int = <lazy>
+val x: Int = 0
+def getX(): Int
+class U
+lazy val y: Int // unevaluated
   evaluating z
   evaluating zz
-defined class D
-z: Int = 0
-zz: Int = 0
-defined object O
-defined class A
-defined type alias AA
+class D
+val z: Int = 0
+val zz: Int = 0
+object O
+class A
+type AA
 constructing U
-u: U = U
+val u: U = U
 == evaluating lambda
   evaluating y
   evaluating O

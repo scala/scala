@@ -2,32 +2,32 @@
 scala> // basics
 
 scala> 3+4
-res0: Int = 7
+val res0: Int = 7
 
 scala> def gcd(x: Int, y: Int): Int = {
           if (x == 0) y
           else if (y == 0) x
           else gcd(y%x, x)
 }
-gcd: (x: Int, y: Int)Int
+def gcd(x: Int, y: Int): Int
 
 scala> val five = gcd(15,35)
-five: Int = 5
+val five: Int = 5
 
 scala> var x = 1
-x: Int = 1
+var x: Int = 1
 
 scala> x = 2
-mutated x
+// mutated x
 
 scala> val three = x+1
-three: Int = 3
+val three: Int = 3
 
 scala> type anotherint = Int
-defined type alias anotherint
+type anotherint
 
 scala> val four: anotherint = 4
-four: anotherint = 4
+val four: anotherint = 4
 
 scala> val bogus: anotherint = "hello"
                                ^
@@ -37,11 +37,11 @@ scala> val bogus: anotherint = "hello"
            (which expands to)  Int
 
 scala> trait PointlessTrait
-defined trait PointlessTrait
+trait PointlessTrait
 
 scala> val (x,y) = (2,3)
-x: Int = 2
-y: Int = 3
+val x: Int = 2
+val y: Int = 3
 
 scala> println("hello")
 hello
@@ -51,47 +51,47 @@ scala>
 scala> // ticket #1513
 
 scala> val t1513 = Array(null)
-t1513: Array[Null] = Array(null)
+val t1513: Array[Null] = Array(null)
 
 scala> // overriding toString problem from #1404
 
 scala> class S(override val toString : String)
-defined class S
+class S
 
 scala> val fish = new S("fish")
-fish: S = fish
+val fish: S = fish
 
 scala> // Test that arrays pretty print nicely.
 
 scala> val arr = Array("What's", "up", "doc?")
-arr: Array[String] = Array(What's, up, doc?)
+val arr: Array[String] = Array(What's, up, doc?)
 
 scala> // Test that arrays pretty print nicely, even when we give them type Any
 
 scala> val arrInt : Any = Array(1,2,3)
-arrInt: Any = Array(1, 2, 3)
+val arrInt: Any = Array(1, 2, 3)
 
 scala> // Test that nested arrays are pretty-printed correctly
 
 scala> val arrArrInt : Any = Array(Array(1, 2), Array(3, 4))
-arrArrInt: Any = Array(Array(1, 2), Array(3, 4))
+val arrArrInt: Any = Array(Array(1, 2), Array(3, 4))
 
 scala> 
 
 scala> // implicit conversions
 
 scala> case class Foo(n: Int)
-defined class Foo
+class Foo
 
 scala> case class Bar(n: Int)
-defined class Bar
+class Bar
 
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
 warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
-foo2bar: (foo: Foo)Bar
+def foo2bar(foo: Foo): Bar
 
 scala> val bar: Bar = Foo(3)
-bar: Bar = Bar(3)
+val bar: Bar = Bar(3)
 
 scala> 
 
@@ -101,140 +101,140 @@ scala> import bar._
 import bar._
 
 scala> val m = n
-m: Int = 3
+val m: Int = 3
 
 scala> 
 
 scala> // stressing the imports mechanism
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> val one = 1
-one: Int = 1
+val one: Int = 1
 
 scala> 
 
 scala> 
 
 scala> val x1 = 1
-x1: Int = 1
+val x1: Int = 1
 
 scala> val x2 = 1
-x2: Int = 1
+val x2: Int = 1
 
 scala> val x3 = 1
-x3: Int = 1
+val x3: Int = 1
 
 scala> val x4 = 1
-x4: Int = 1
+val x4: Int = 1
 
 scala> val x5 = 1
-x5: Int = 1
+val x5: Int = 1
 
 scala> val x6 = 1
-x6: Int = 1
+val x6: Int = 1
 
 scala> val x7 = 1
-x7: Int = 1
+val x7: Int = 1
 
 scala> val x8 = 1
-x8: Int = 1
+val x8: Int = 1
 
 scala> val x9 = 1
-x9: Int = 1
+val x9: Int = 1
 
 scala> val x10 = 1
-x10: Int = 1
+val x10: Int = 1
 
 scala> val x11 = 1
-x11: Int = 1
+val x11: Int = 1
 
 scala> val x12 = 1
-x12: Int = 1
+val x12: Int = 1
 
 scala> val x13 = 1
-x13: Int = 1
+val x13: Int = 1
 
 scala> val x14 = 1
-x14: Int = 1
+val x14: Int = 1
 
 scala> val x15 = 1
-x15: Int = 1
+val x15: Int = 1
 
 scala> val x16 = 1
-x16: Int = 1
+val x16: Int = 1
 
 scala> val x17 = 1
-x17: Int = 1
+val x17: Int = 1
 
 scala> val x18 = 1
-x18: Int = 1
+val x18: Int = 1
 
 scala> val x19 = 1
-x19: Int = 1
+val x19: Int = 1
 
 scala> val x20 = 1
-x20: Int = 1
+val x20: Int = 1
 
 scala> 
 
 scala> val two = one + x5
-two: Int = 2
+val two: Int = 2
 
 scala> 
 
@@ -243,26 +243,26 @@ scala> // handling generic wildcard arrays (#2386)
 scala> // It's put here because type feedback is an important part of it.
 
 scala> val xs: Array[_] = Array(1, 2)
-xs: Array[_] = Array(1, 2)
+val xs: Array[_] = Array(1, 2)
 
 scala> xs.size
-res2: Int = 2
+val res2: Int = 2
 
 scala> xs.head
-res3: Any = 1
+val res3: Any = 1
 
 scala> xs filter (_ == 2)
-res4: Array[_] = Array(2)
+val res4: Array[_] = Array(2)
 
 scala> xs map (_ => "abc")
-res5: Array[String] = Array(abc, abc)
+val res5: Array[String] = Array(abc, abc)
 
 scala> xs map (x => x)
-res6: Array[_] = Array(1, 2)
+val res6: Array[_] = Array(1, 2)
 
 scala> xs map (x => (x, x))
 warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
-res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
+val res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 
 scala> 
 
@@ -300,7 +300,7 @@ scala> """
 hello
 there
 """
-res8: String =
+val res8: String =
 "
 hello
 there
@@ -314,19 +314,19 @@ You typed two blank lines.  Starting a new command.
 scala> // defining and using quoted names should work (ticket #323)
 
 scala> def `match` = 1
-match: Int
+def match: Int
 
 scala> val x = `match`
-x: Int = 1
+val x: Int = 1
 
 scala> 
 
 scala> // multiple classes defined on one line
 
 scala> sealed class Exp; class Fact extends Exp; class Term extends Exp
-defined class Exp
-defined class Fact
-defined class Term
+class Exp
+class Fact
+class Term
 
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
@@ -334,11 +334,11 @@ scala> def f(e: Exp) = e match {  // non-exhaustive warning here
                        ^
        warning: match may not be exhaustive.
        It would fail on the following inputs: Exp(), Term()
-f: (e: Exp)Int
+def f(e: Exp): Int
 
 scala> :quit
-plusOne: (x: Int)Int
-res0: Int = 6
-res0: String = after reset
+def plusOne(x: Int): Int
+val res0: Int = 6
+val res0: String = after reset
        ^
        error: not found: value plusOne

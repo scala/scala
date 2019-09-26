@@ -1,14 +1,14 @@
 
 scala> List[Predef.type]()
-res0: List[scala.Predef.type] = List()
+val res0: List[scala.Predef.type] = List()
 
 scala> List[scala.`package`.type]()
-res1: List[scala.type] = List()
+val res1: List[scala.type] = List()
 
 scala> List[List.type]()
-res2: List[scala.collection.immutable.List.type] = List()
+val res2: List[scala.collection.immutable.List.type] = List()
 
 scala> List[Set.type]()
-res3: List[Set.type] = List()
+val res3: List[Set.type] = List()
 
 scala> :quit

@@ -7,7 +7,7 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined object X
+object X
 
 scala> assert(X.getClass.getName.contains("line"))
 

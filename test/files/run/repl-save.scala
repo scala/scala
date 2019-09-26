@@ -4,13 +4,13 @@ object Test extends SessionTest {
   override def session =
 s"""|
     |scala> val i = 7
-    |i: Int = 7
+    |val i: Int = 7
     |
     |scala> val j = 8
-    |j: Int = 8
+    |val j: Int = 8
     |
     |scala> i * j
-    |res0: Int = 56
+    |val res0: Int = 56
     |
     |scala> :save $saveto
     |

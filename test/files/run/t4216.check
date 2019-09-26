@@ -3,33 +3,33 @@ scala> import scala.reflect.ClassTag
 import scala.reflect.ClassTag
 
 scala> def f[A: ClassTag](a: A) = java.util.Arrays.asList(Array(a): _*)
-f: [A](a: A)(implicit evidence$1: scala.reflect.ClassTag[A])java.util.List[A]
+def f[A](a: A)(implicit evidence$1: scala.reflect.ClassTag[A]): java.util.List[A]
 
 scala> f(".")
-res0: java.util.List[String] = [.]
+val res0: java.util.List[String] = [.]
 
 scala> f(0)
-res1: java.util.List[Int] = [0]
+val res1: java.util.List[Int] = [0]
 
 scala> def i(a: Int) = java.util.Arrays.asList(Array(a): _*)
-i: (a: Int)java.util.List[Int]
+def i(a: Int): java.util.List[Int]
 
 scala> i(0)
-res2: java.util.List[Int] = [0]
+val res2: java.util.List[Int] = [0]
 
 scala> def o(a: Any) = java.util.Arrays.asList(Array(a): _*)
-o: (a: Any)java.util.List[Any]
+def o(a: Any): java.util.List[Any]
 
 scala> o(".")
-res3: java.util.List[Any] = [.]
+val res3: java.util.List[Any] = [.]
 
 scala> class V(val a: Int) extends AnyVal
-defined class V
+class V
 
 scala> f(new V(0))
-res4: java.util.List[V] = [V@0]
+val res4: java.util.List[V] = [V@0]
 
 scala> o(new V(0))
-res5: java.util.List[Any] = [V@0]
+val res5: java.util.List[Any] = [V@0]
 
 scala> :quit

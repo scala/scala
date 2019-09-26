@@ -1,12 +1,12 @@
 
 scala> val - = 42
--: Int = 42
+val -: Int = 42
 
 scala> val i = -
-i: Int = 42
+val i: Int = 42
 
 scala> - { 42 }
-res0: Int = -42
+val res0: Int = -42
 
 scala> - if (true) 1 else 2
          ^
@@ -17,21 +17,21 @@ scala> - - 1
        error: ';' expected but integer literal found.
 
 scala> -.-(1)
-res1: Int = 41
+val res1: Int = 41
 
 scala> -
-res2: Int = 42
+val res2: Int = 42
 
 scala> - -
-res3: Int = -42
+val res3: Int = -42
 
 scala> + -
-res4: Int = 42
+val res4: Int = 42
 
 scala> object X { def -(i: Int) = 42 - i ; def f(g: Int => Int) = g(7) ; def j = f(-) }
-defined object X
+object X
 
 scala> X.j
-res5: Int = 35
+val res5: Int = 35
 
 scala> :quit

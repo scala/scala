@@ -5,7 +5,7 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> val s = transformedType(StringClass.toType).asInstanceOf[Type]
-s: $r.intp.global.Type = String
+val s: $r.intp.global.Type = String
 
 scala> { println(exitingPhase(currentRun.erasurePhase)(ConstantType(Constant(s)))) }
 Class[String](classOf[java.lang.String])

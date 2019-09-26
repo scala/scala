@@ -1,11 +1,11 @@
 
 scala> type Id[T] = T
-defined type alias Id
+type Id
 
 scala> def foo(x: Int): Id[x.type] = x
-foo: (x: Int)Id[x.type]
+def foo(x: Int): Id[x.type]
 
 scala> foo(1)
-res0: Id[Int(1)] = 1
+val res0: Id[Int(1)] = 1
 
 scala> :quit

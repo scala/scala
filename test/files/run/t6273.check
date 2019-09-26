@@ -1,11 +1,11 @@
 
 scala> val y = 55
-y: Int = 55
+val y: Int = 55
 
 scala> val x = s"""
   y = $y
 """
-x: String =
+val x: String =
 "
   y = 55
 "

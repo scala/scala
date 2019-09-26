@@ -1,17 +1,17 @@
 
 scala> class M[A]
-defined class M
+class M
 
 scala> implicit def ma0[A](a: A): M[A] = null
 warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
-ma0: [A](a: A)M[A]
+def ma0[A](a: A): M[A]
 
 scala> implicit def ma1[A](a: A): M[A] = null
 warning: there was one feature warning; for details, enable `:setting -feature' or `:replay -feature'
-ma1: [A](a: A)M[A]
+def ma1[A](a: A): M[A]
 
 scala> def convert[F[X <: F[X]]](builder: F[_ <: F[_]]) = 0
-convert: [F[X <: F[X]]](builder: F[_ <: F[_]])Int
+def convert[F[X <: F[X]]](builder: F[_ <: F[_]]): Int
 
 scala> convert(Some[Int](0))
        ^
@@ -32,6 +32,6 @@ scala> Range(1,2).toArray: Seq[_]
         required: Seq[_]
 
 scala> 0
-res2: Int = 0
+val res2: Int = 0
 
 scala> :quit

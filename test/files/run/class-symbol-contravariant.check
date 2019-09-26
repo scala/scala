@@ -5,28 +5,28 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> val u = rootMirror.universe
-u: $r.intp.global.type = <global>
+val u: $r.intp.global.type = <global>
 
 scala> import u._, scala.reflect.internal.Flags
 import u._
 import scala.reflect.internal.Flags
 
 scala> class C
-defined class C
+class C
 
 scala> val sym = u.typeOf[C].typeSymbol
-sym: u.Symbol = class C
+val sym: u.Symbol = class C
 
 scala> sym.isContravariant
-res0: Boolean = false
+val res0: Boolean = false
 
 scala> sym setFlag Flags.INCONSTRUCTOR
-res1: sym.type = class C
+val res1: sym.type = class C
 
 scala> sym.isClassLocalToConstructor
-res2: Boolean = true
+val res2: Boolean = true
 
 scala> sym.isContravariant // was true
-res3: Boolean = false
+val res3: Boolean = false
 
 scala> :quit

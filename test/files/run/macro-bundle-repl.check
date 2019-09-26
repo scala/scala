@@ -6,16 +6,16 @@ scala> import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.blackbox.Context
 
 scala> class Bar(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } };def bar: Unit = macro Bar.impl
-defined class Bar
-defined term macro bar: Unit
+class Bar
+def bar: Unit
 
 scala> bar
 
 scala> class Foo(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } }
-defined class Foo
+class Foo
 
 scala> def foo: Unit = macro Foo.impl
-defined term macro foo: Unit
+def foo: Unit
 
 scala> foo
 

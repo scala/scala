@@ -6,10 +6,10 @@ scala> import scala.reflect.runtime.{currentMirror => cm}
 import scala.reflect.runtime.{currentMirror=>cm}
 
 scala> class A { def foo = ??? }
-defined class A
+class A
 
 scala> val c = cm.classSymbol(classOf[A])
-c: reflect.runtime.universe.ClassSymbol = class A
+val c: reflect.runtime.universe.ClassSymbol = class A
 
 scala> println(c)
 class A

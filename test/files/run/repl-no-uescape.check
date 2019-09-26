@@ -1,5 +1,5 @@
 
 scala> object A
-defined object A
+object A
 
 scala> :quit

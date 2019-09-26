@@ -1,9 +1,9 @@
 
 scala> case class Bippy(x: Int)
-defined class Bippy
+class Bippy
 
 scala> val x = Bippy(1)
-x: Bippy = Bippy(1)
+val x: Bippy = Bippy(1)
 
 scala> $intp.reporter.withoutUnwrapping {
   println($intp.showDirectory)

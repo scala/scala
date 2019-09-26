@@ -1,37 +1,37 @@
 
 scala> (2)
-res0: Int = 2
+val res0: Int = 2
 
 scala> (2 + 2)
-res1: Int = 4
+val res1: Int = 4
 
 scala> ((2 + 2))
-res2: Int = 4
+val res2: Int = 4
 
 scala>   ((2 + 2))
-res3: Int = 4
+val res3: Int = 4
 
 scala>   (  (2 + 2))
-res4: Int = 4
+val res4: Int = 4
 
 scala>   (  (2 + 2 )  )
-res5: Int = 4
+val res5: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res6: Int = 5
+val res6: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-res7: (Int, Int) = (4,4)
+val res7: (Int, Int) = (4,4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-res8: (Int, Int, Int) = (4,4,2)
+val res8: (Int, Int, Int) = (4,4,2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ Iterator(3)).mkString)
-res9: String = 4423
+val res9: String = 4423
 
 scala> 
 
@@ -40,39 +40,39 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res10: (Int, Int, Int) = (1,2,3)
+val res10: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                      ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res11: () => Int = <function0>
+val res11: () => Int = <function0>
 
 scala> 
 
 scala> () => 5
-res12: () => Int = <function0>
+val res12: () => Int = <function0>
 
 scala> 55 ; () => 5
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res13: () => Int = <function0>
+val res13: () => Int = <function0>
 
 scala> () => { class X ; new X }
-res14: () => AnyRef = <function0>
+val res14: () => AnyRef = <function0>
 
 scala> 
 
 scala> def foo(x: Int)(y: Int)(z: Int) = x+y+z
-foo: (x: Int)(y: Int)(z: Int)Int
+def foo(x: Int)(y: Int)(z: Int): Int
 
 scala> foo(5)(10)(15)+foo(5)(10)(15)
-res15: Int = 60
+val res15: Int = 60
 
 scala> 
 
 scala> List(1) ++ List('a')
-res16: List[AnyVal] = List(1, a)
+val res16: List[AnyVal] = List(1, a)
 
 scala> :quit

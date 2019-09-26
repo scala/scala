@@ -8,10 +8,10 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class C
-c: C = C(42)
+class C
+val c: C = C(42)
 
 scala> val d: C = c // shew
-d: C = C(42)
+val d: C = C(42)
 
 scala> :quit

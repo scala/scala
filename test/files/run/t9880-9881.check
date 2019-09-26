@@ -31,6 +31,6 @@ scala>
 scala> // should be able to define this class with the imports above
 
 scala> class C[T](date: Date, rand: Random, typeTag: TypeTag[T])
-defined class C
+class C
 
 scala> :quit

@@ -6,6 +6,6 @@ scala> '\060'
 scala> def foo() { }
                  ^
        warning: procedure syntax is deprecated: instead, add `: Unit =` to explicitly declare `foo`'s return type
-foo: ()Unit
+def foo(): Unit
 
 scala> :quit

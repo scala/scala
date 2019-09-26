@@ -37,6 +37,7 @@ import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.NonFatal
+import scala.annotation.tailrec
 
 
 /** An interpreter for Scala code.
@@ -710,6 +711,30 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
   }
 
+  @inline private final def tyParens[T](ts: Iterable[T]): String       = ts.mkString("[", ", ", "]")
+  @inline private final def implicitParens[T](ts: Iterable[T]): String = ts.mkString("(implicit ", ", ", ")")
+  @inline private final def parens[T](ts: Iterable[T]): String         = ts.mkString("(", ", ", ")")
+
+  private def methodTypeAsDef(tp: Type): String = {
+
+    def withoutImplicit(sym: Symbol): Symbol = sym.cloneSymbol(sym.owner, sym.flags & ~Flag.IMPLICIT)
+
+    def formatParams(params: List[Symbol]): String = {
+      if (params.headOption.exists(_.isImplicit)) implicitParens(params.map(withoutImplicit(_).defString))
+      else parens(params.map(_.defString))
+    }
+
+    @tailrec
+    def loop(tpe: Type, acc: StringBuilder): StringBuilder = tpe match {
+      case NullaryMethodType(resultType)  => acc ++= s": $resultType"
+      case PolyType(tyParams, resultType) => loop(resultType, acc ++= tyParens(tyParams.map(_.defString)))
+      case MethodType(params, resultType) => loop(resultType, acc ++= formatParams(params))
+      case other                          => acc ++= s": $other"
+    }
+
+    loop(tp, new StringBuilder).toString
+  }
+
   /** One line of code submitted by the user for interpretation */
   class Request(val line: String, origTrees: List[Tree], firstXmlPos: Position = NoPosition, generousImports: Boolean = false, synthetic: Boolean = false) extends ReplRequest {
     def defines    = defHandlers flatMap (_.definedSymbols)
@@ -933,6 +958,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
     lazy val typeOf         = typeMap[String](tp => exitingTyper(tp.toString))
+    /** String representations as if a method type. */
+    private[this] lazy val defTypeOfMap = typeMap[String](tp => exitingTyper(methodTypeAsDef(tp)))
+
+    def defTypeOf(name: Name)(implicit show: Name => String): String = show(name) + defTypeOfMap(name)
 
     lazy val definedSymbols = (
       termNames.map(x => x -> applyToResultMember(x, x => x)) ++

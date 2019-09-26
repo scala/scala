@@ -6,7 +6,7 @@ scala> import Wrap._
 import Wrap._
 
 scala> object Bar extends Foo
-defined object Bar
+object Bar
 
 scala> Bar.foo
 ok

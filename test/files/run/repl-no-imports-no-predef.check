@@ -1,22 +1,22 @@
 
 scala> 1
-res0: Int = 1
+val res0: Int = 1
 
 scala> 1.0
-res1: Double = 1.0
+val res1: Double = 1.0
 
 scala> ()
 
 scala> "abc"
-res3: String = abc
+val res3: String = abc
 
 scala> (1, 2)
-res4: (Int, Int) = (1,2)
+val res4: (Int, Int) = (1,2)
 
 scala> 
 
 scala> { import scala.Predef.ArrowAssoc; 1 -> 2 }
-res5: (Int, Int) = (1,2)
+val res5: (Int, Int) = (1,2)
 
 scala> 1 -> 2
          ^
@@ -26,10 +26,10 @@ scala> 1 -> 2
 scala> 
 
 scala> val answer = 42
-answer: Int = 42
+val answer: Int = 42
 
 scala> { import scala.StringContext; s"answer: $answer" }
-res7: String = answer: 42
+val res7: String = answer: 42
 
 scala> s"answer: $answer"
        ^
@@ -38,7 +38,7 @@ scala> s"answer: $answer"
 scala> 
 
 scala> "abc" + true
-res9: String = abctrue
+val res9: String = abctrue
 
 scala> 
 
@@ -49,28 +49,28 @@ scala> true + "abc"
 scala> 
 
 scala> var x = 10
-x: Int = 10
+var x: Int = 10
 
 scala> var y = 11
-y: Int = 11
+var y: Int = 11
 
 scala> x = 12
-mutated x
+// mutated x
 
 scala> y = 13
-mutated y
+// mutated y
 
 scala> 
 
 scala> 2 ; 3
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res11: Int = 3
+val res11: Int = 3
 
 scala> { 2 ; 3 }
          ^
        warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-res12: Int = 3
+val res12: Int = 3
 
 scala> 5 ; 10 ; case object Cow ; 20 ; class Moo { override def toString = "Moooooo" } ; 30 ; def
 bippy = {
@@ -85,59 +85,59 @@ bippy = {
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                                                                                          ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-defined object Cow
-defined class Moo
-bippy: Int
-res13: Int = 105
+object Cow
+class Moo
+def bippy: Int
+val res13: Int = 105
 
 scala> 
 
 scala> object Bovine { var x: scala.List[_] = null } ; case class Ruminant(x: scala.Int) ; bippy * bippy * bippy
-defined object Bovine
-defined class Ruminant
-res14: Int = 216
+object Bovine
+class Ruminant
+val res14: Int = 216
 
 scala> Bovine.x = scala.List(Ruminant(5), Cow, new Moo)
-mutated Bovine.x
+// mutated Bovine.x
 
 scala> Bovine.x
-res15: List[Any] = List(Ruminant(5), Cow, Moooooo)
+val res15: List[Any] = List(Ruminant(5), Cow, Moooooo)
 
 scala> 
 
 scala> (2)
-res16: Int = 2
+val res16: Int = 2
 
 scala> (2 + 2)
-res17: Int = 4
+val res17: Int = 4
 
 scala> ((2 + 2))
-res18: Int = 4
+val res18: Int = 4
 
 scala>   ((2 + 2))
-res19: Int = 4
+val res19: Int = 4
 
 scala>   (  (2 + 2))
-res20: Int = 4
+val res20: Int = 4
 
 scala>   (  (2 + 2 )  )
-res21: Int = 4
+val res21: Int = 4
 
 scala> 5 ;   (  (2 + 2 )  ) ; ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                    ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res22: Int = 5
+val res22: Int = 5
 
 scala> (((2 + 2)), ((2 + 2)))
-res23: (Int, Int) = (4,4)
+val res23: (Int, Int) = (4,4)
 
 scala> (((2 + 2)), ((2 + 2)), 2)
-res24: (Int, Int, Int) = (4,4,2)
+val res24: (Int, Int, Int) = (4,4,2)
 
 scala> (((((2 + 2)), ((2 + 2)), 2).productIterator ++ scala.Iterator(3)).mkString)
-res25: String = 4423
+val res25: String = 4423
 
 scala> 
 
@@ -146,40 +146,40 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                 ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res26: (Int, Int, Int) = (1,2,3)
+val res26: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: scala.Int) => x + 1 ; () => ((5))
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
                            ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res27: () => Int = <function0>
+val res27: () => Int = <function0>
 
 scala> 
 
 scala> () => 5
-res28: () => Int = <function0>
+val res28: () => Int = <function0>
 
 scala> 55 ; () => 5
        ^
        warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-res29: () => Int = <function0>
+val res29: () => Int = <function0>
 
 scala> () => { class X ; new X }
-res30: () => AnyRef = <function0>
+val res30: () => AnyRef = <function0>
 
 scala> 
 
 scala> def foo(x: scala.Int)(y: scala.Int)(z: scala.Int) = x+y+z
-foo: (x: Int)(y: Int)(z: Int)Int
+def foo(x: Int)(y: Int)(z: Int): Int
 
 scala> foo(5)(10)(15)+foo(5)(10)(15)
-res31: Int = 60
+val res31: Int = 60
 
 scala> 
 
 scala> scala.List(1) ++ scala.List('a')
-res32: List[AnyVal] = List(1, a)
+val res32: List[AnyVal] = List(1, a)
 
 scala> 
 
@@ -191,10 +191,10 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class C
+class C
 
 scala> new C().c
-res33: Int = 42
+val res33: Int = 42
 
 scala> :paste <| EOF
 // Entering paste mode (EOF to finish)
@@ -204,10 +204,10 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class D
+class D
 
 scala> new D().d
-res34: Int = 42
+val res34: Int = 42
 
 scala> 
 
@@ -227,28 +227,28 @@ EOF
 
 // Exiting paste mode, now interpreting.
 
-defined class Dingus
-defined object Dingus
+class Dingus
+object Dingus
 
 scala> val x = (new Dingus).y
-x: Int = 110
+val x: Int = 110
 
 scala> 
 
 scala> val x1 = 1
-x1: Int = 1
+val x1: Int = 1
 
 scala> val x2 = 2
-x2: Int = 2
+val x2: Int = 2
 
 scala> val x3 = 3
-x3: Int = 3
+val x3: Int = 3
 
 scala> case class BippyBungus()
-defined class BippyBungus
+class BippyBungus
 
 scala> x1 + x2 + x3
-res35: Int = 6
+val res35: Int = 6
 
 scala> :reset
 Resetting interpreter state.
@@ -316,16 +316,16 @@ scala> x1 + x2 + x3
        error: not found: value x3
 
 scala> val x1 = 4
-x1: Int = 4
+val x1: Int = 4
 
 scala> new BippyBungus
            ^
        error: not found: type BippyBungus
 
 scala> class BippyBungus() { def f = 5 }
-defined class BippyBungus
+class BippyBungus
 
 scala> { new BippyBungus ; x1 }
-res2: Int = 4
+val res2: Int = 4
 
 scala> :quit

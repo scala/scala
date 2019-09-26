@@ -9,51 +9,51 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> val u = rootMirror.universe; import u._, language._
-u: $r.intp.global.type = <global>
+val u: $r.intp.global.type = <global>
 import u._
 import language._
 
 scala> val S1 = typeOf[c.X.S1.type forSome { val c: C[_] }].typeSymbol.tpeHK
-S1: u.Type = C.X.S1.type
+val S1: u.Type = C.X.S1.type
 
 scala> val S2 = typeOf[O.S2].typeSymbol.tpeHK
-S2: u.Type = C.this.S2
+val S2: u.Type = C.this.S2
 
 scala> val S3 = typeOf[O.S3].typeSymbol.tpeHK
-S3: u.Type = O.S3
+val S3: u.Type = O.S3
 
 scala> val S4 = typeOf[S4].typeSymbol.tpeHK
-S4: u.Type = S4
+val S4: u.Type = S4
 
 scala> val F = typeOf[c.F[_] forSome { val c: C[_] }].typeSymbol.tpeHK
-F: u.Type = C.this.F
+val F: u.Type = C.this.F
 
 scala> val fTpe = typeOf[O.type].decl(newTermName("foo")).paramss.head.head.tpe
-fTpe: u.Type = O.F[Int]
+val fTpe: u.Type = O.F[Int]
 
 scala> def memType(sub: Type, scrut: Type): Type =
   nestedMemberType(sub.typeSymbol, scrut.prefix, scrut.typeSymbol.owner)
-memType: (sub: u.Type, scrut: u.Type)u.Type
+def memType(sub: u.Type, scrut: u.Type): u.Type
 
 scala> 
 
 scala> val mt1 = memType(S1, fTpe)
-mt1: u.Type = O.X.S1.type
+val mt1: u.Type = O.X.S1.type
 
 scala> global.typeDeconstruct.show(mt1)
-res0: String =
+val res0: String =
 TypeRef(
   pre = SingleType(pre = ThisType(object O), object X)
   TypeSymbol(class S1 extends C.this.F[T])
 )
 
 scala> memType(S2, fTpe)
-res1: u.Type = O.S2
+val res1: u.Type = O.S2
 
 scala> memType(S3, fTpe)
-res2: u.Type = O.S3
+val res2: u.Type = O.S3
 
 scala> memType(S4, fTpe)
-res3: u.Type = S4
+val res3: u.Type = S4
 
 scala> :quit
