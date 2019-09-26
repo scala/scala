@@ -67,18 +67,10 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
   protected def classesInPathImpl(path: String, expand: Boolean, pathResolverCaching: PathResolverCaching) =
     expandPath(path, expand).collect { case path: PathBasedClassPathElement => newClassPath(path, pathResolverCaching)}
 
-  private def createSourcePath(file: AbstractFile, pathResolverCaching: PathResolverCaching): ClassPath =
-    if (file.isJarOrZip)
-      ZipAndJarSourcePathFactory.create(file, settings, closeableRegistry, pathResolverCaching)
-    else if (file.isDirectory)
-      DirectorySourcePath(file.file)
-    else
-      sys.error(s"Unsupported sourcepath element: $file")
-
   private def createSourcePath(file: PathBasedClassPathElement, pathResolverCaching: PathResolverCaching): ClassPath =
     file match {
       case jar: ZipJarClassPathElement =>  ZipAndJarSourcePathFactory.create(jar, settings, closeableRegistry, pathResolverCaching)
-      case dir: DirectoryClassPathElement =>  DirectorySourcePath(file.file)
+      case dir: DirectoryClassPathElement =>  DirectorySourcePath(dir.file)
       case _  => sys.error(s"Unsupported sourcepath element: $file")
     }
 }

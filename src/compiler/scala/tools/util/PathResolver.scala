@@ -372,7 +372,7 @@ class ReuseAllPathResolver(settings: Settings, closeableRegistry: CloseableRegis
     def cachedTogether(cp: List[ClassPath]) = {
       cp match {
         case Nil => Nil
-        case _ => List(new CachedClassPath(new AggregateClassPath((cp))))
+        case _ => List(new CachedClassPath(new AggregateClassPath(cp)))
       }
     }
     def cachedIndividually(cp: List[ClassPath], individualCache: ConcurrentHashMap[String, CachedClassPath]) = {
@@ -381,7 +381,9 @@ class ReuseAllPathResolver(settings: Settings, closeableRegistry: CloseableRegis
         case cp =>
           val cached = cp map { ele =>
             val key = ele.asClassPathString
-            individualCache.computeIfAbsent(key, k => new CachedClassPath(ele))
+            val newPath = new CachedClassPath(ele)
+            val existingPath = individualCache.computeIfAbsent(key, k => newPath)
+            if (existingPath eq null) newPath else existingPath
           }
           List(new CachedClassPath(new AggregateClassPath(cached)))
       }

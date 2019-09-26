@@ -34,7 +34,7 @@ trait SourceFileEntry extends ClassRepresentation {
 
 case class PackageName(dottedString: String) {
   def isRoot: Boolean = dottedString.isEmpty
-  val dirPathTrailingSlash: String = FileUtils.dirPath(dottedString) + "/"
+  lazy val dirPathTrailingSlash: String = FileUtils.dirPath(dottedString) + "/"
 
   def entryName(entry: String): String = {
     if (isRoot) entry else {

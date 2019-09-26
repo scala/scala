@@ -14,7 +14,8 @@ object ClassPathElement {
 
   def fromPathOption(path: Path): Option[PathBasedClassPathElement] = {
     val base = new BasicPathElement(path)
-    if (base.isJarOrZip) Some(new ZipJarClassPathElement(base))
+    if (!base.exists) None
+    else if (base.isJarOrZip) Some(new ZipJarClassPathElement(base))
     else if (base.isDirectory) Some(new DirectoryClassPathElement(base))
     else if (base.isImage) ??? // Some(new ImagePathElement(base))
     else None
@@ -56,12 +57,14 @@ object ClassPathElement {
   }
 
   private[ClassPathElement] final class BasicPathElement(val path: Path) {
+    val exists = try {attributes; true} catch {case _:java.nio.file.NoSuchFileException => false}
+
     import BasicPathElement._
 
-    val attributes = Files.readAttributes(path, classOf[BasicFileAttributes], noLinkOptions: _*)
+    lazy val attributes = Files.readAttributes(path, classOf[BasicFileAttributes], noLinkOptions: _*)
 
-    def isDirectory: Boolean = attributes.isDirectory
-    def isRegularFile: Boolean = attributes.isRegularFile
+    def isDirectory: Boolean = exists && attributes.isDirectory
+    def isRegularFile: Boolean = exists && attributes.isRegularFile
 
     lazy val filename = path.getFileName.toString
     lazy val absoluePath = path.toAbsolutePath

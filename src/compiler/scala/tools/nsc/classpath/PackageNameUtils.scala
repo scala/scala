@@ -30,6 +30,15 @@ object PackageNameUtils {
     else
       (fullClassName.substring(0, lastDotIndex), fullClassName.substring(lastDotIndex + 1))
   }
+  /**
+   * @param fullClassName full class name with package
+   * @return package
+   */
+  @inline def pkgName(fullClassName: String): String = {
+    val lastDotIndex = fullClassName.lastIndexOf('.')
+    if (lastDotIndex == -1) RootPackage
+    else fullClassName.substring(0, lastDotIndex)
+  }
 
   def packagePrefix(inPackage: String): String = if (inPackage == RootPackage) "" else inPackage + "."
 

@@ -41,23 +41,29 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
 
   // This method is performance sensitive as it is used by SBT's ExtractDependencies phase.
   override def findClass(className: String): Option[ClassRepresentation] = {
-    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    val pkg = PackageNameUtils.pkgName(className)
 
-    def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
-      aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClass(className)).collectFirst {
-        case Some(s: SourceFileEntry) if isSource => s
-        case Some(s: ClassFileEntry) if !isSource => s
+    //manually unrolled for performance
+    var result = Option.empty[ClassRepresentation]
+    var done = false
+    val it = aggregatesForPackage(PackageName(pkg)).iterator.flatMap(_.findClass(className))
+    while (it.hasNext && !done) {
+      val next = it.next()
+      if (result.isEmpty) {
+        result = Some(next)
+        done = next.source.isDefined && next.binary.isDefined
+      } else {
+        val res = result.get
+        if (res.source.isEmpty && next.source.isDefined) {
+          result = Some(ClassAndSourceFilesEntry(res.binary.get, next.source.get))
+          done = true
+        } else if (res.binary.isEmpty && next.binary.isDefined) {
+          result = Some(ClassAndSourceFilesEntry(next.binary.get, res.source.get))
+          done = true
+        }
       }
     }
-
-    val classEntry = findEntry(isSource = false)
-    val sourceEntry = findEntry(isSource = true)
-
-    (classEntry, sourceEntry) match {
-      case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
-      case (c @ Some(_), _) => c
-      case (_, s) => s
-    }
+    result
   }
 
   override def asURLs: Seq[URL] = aggregates.flatMap(_.asURLs)
