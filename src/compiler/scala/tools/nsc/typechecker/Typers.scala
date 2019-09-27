@@ -971,7 +971,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //          > val vparamSymssOrEmptyParamsFromOverride =
         //          This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
-          if (sourceLevel2_14 && !meth.isJavaDefined)
+          if (sourceLevel2_14 && !meth.isJavaDefined && !meth.hasAnnotation(nullaryMethodClass))
             context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
                                                            s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
                                                            s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.14.0")

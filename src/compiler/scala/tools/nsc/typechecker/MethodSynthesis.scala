@@ -72,8 +72,11 @@ trait MethodSynthesis {
     def deriveMethod(original: Symbol, nameFn: Name => Name)(f: Symbol => Tree): Tree =
       cloneInternal(original, f, nameFn(original.name))
 
-    def createMethod(name: Name, paramTypes: List[Type], returnType: Type)(f: Symbol => Tree): Tree =
-      createInternal(name, f, (m: Symbol) => MethodType(m newSyntheticValueParams paramTypes, returnType))
+    def createMethod(name: Name, paramTypes: List[Type], returnType: Type, nullaryOverridingNilary: Boolean = false)(f: Symbol => Tree): Tree =
+      createInternal(name, f, (m: Symbol) => {
+        if (nullaryOverridingNilary) m.addAnnotation(nullaryMethodClass)
+        MethodType(m newSyntheticValueParams paramTypes, returnType)
+      })
 
     def createMethod(name: Name, returnType: Type)(f: Symbol => Tree): Tree =
       createInternal(name, f, NullaryMethodType(returnType))
@@ -81,8 +84,11 @@ trait MethodSynthesis {
     def createMethod(original: Symbol)(f: Symbol => Tree): Tree =
       createInternal(original.name, f, original.info)
 
-    def forwardMethod(original: Symbol, newMethod: Symbol)(transformArgs: List[Tree] => List[Tree]): Tree =
-      createMethod(original)(m => gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident)))
+    def forwardMethod(original: Symbol, newMethod: Symbol, nullaryOverridingNilary: Boolean)(transformArgs: List[Tree] => List[Tree]): Tree =
+      createMethod(original)(m => {
+        if (nullaryOverridingNilary) m.addAnnotation(nullaryMethodClass)
+        gen.mkMethodCall(newMethod, transformArgs(m.paramss.head map Ident))
+      })
 
     def createSwitchMethod(name: Name, range: Seq[Int], returnType: Type)(f: Int => Tree): Tree = {
       def dflt(arg: Tree) = currentRun.runDefinitions.RuntimeStatics_ioobe match {
@@ -104,9 +110,9 @@ trait MethodSynthesis {
     }
 
     // def foo() = constant
-    def constantMethod(name: Name, value: Any): Tree = {
+    def constantMethod(name: Name, value: Any, nullaryOverridingNilary: Boolean): Tree = {
       val constant = Constant(value)
-      createMethod(name, Nil, constant.tpe)(_ => Literal(constant))
+      createMethod(name, Nil, constant.tpe, nullaryOverridingNilary)(_ => Literal(constant))
     }
     // def foo = constant
     def constantNullary(name: Name, value: Any): Tree = {

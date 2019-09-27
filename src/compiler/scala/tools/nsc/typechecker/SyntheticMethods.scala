@@ -29,9 +29,9 @@ import symtab.Flags._
  *  Selectively added to case classes/objects, unless a non-default
  *  implementation already exists:
  *    def equals(other: Any): Boolean
- *    def hashCode(): Int
+ *    def hashCode: Int
  *    def canEqual(other: Any): Boolean
- *    def toString(): String
+ *    def toString: String
  *
  *  Special handling:
  *    protected def writeReplace(): AnyRef
@@ -95,8 +95,8 @@ trait SyntheticMethods extends ast.TreeDSL {
     def accessors = clazz.caseFieldAccessors
     val arity = accessors.size
 
-    def forwardToRuntime(method: Symbol): Tree =
-      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_")))(mkThis :: _)
+    def forwardToRuntime(method: Symbol, nullaryOverridingNilary: Boolean): Tree =
+      forwardMethod(method, getMember(ScalaRunTimeModule, (method.name prepend "_")), nullaryOverridingNilary)(mkThis :: _)
 
     def callStaticsMethodName(name: TermName)(args: Tree*): Tree = {
       val method = RuntimeStaticsModule.info.member(name)
@@ -243,9 +243,9 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     /* The hashcode method for value classes
-     * def hashCode(): Int = this.underlying.hashCode
+     * def hashCode: Int = this.underlying.hashCode
      */
-    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+    def hashCodeDerivedValueClassMethod: Tree = createMethod(nme.hashCode_, Nil, IntTpe, nullaryOverridingNilary = true) { m =>
       Select(mkThisSelect(clazz.derivedValueClassUnbox), nme.hashCode_)
     }
 
@@ -304,7 +304,7 @@ trait SyntheticMethods extends ast.TreeDSL {
     }
 
     def specializedHashcode = {
-      createMethod(nme.hashCode_, Nil, IntTpe) { m =>
+      createMethod(nme.hashCode_, Nil, IntTpe, nullaryOverridingNilary = true) { m =>
         val accumulator = m.newVariable(newTermName("acc"), m.pos, SYNTHETIC) setInfo IntTpe
         val valdef      = ValDef(accumulator, Literal(Constant(0xcafebabe)))
         val mixPrefix   =
@@ -327,7 +327,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       if (accessors exists (x => isPrimitiveValueType(x.tpe.finalResultType)))
         specializedHashcode
       else
-        forwardToRuntime(Object_hashCode)
+        forwardToRuntime(Object_hashCode, nullaryOverridingNilary = true)
     }
 
     def valueClassMethods = List(
@@ -337,17 +337,17 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def caseClassMethods = productClassMethods ++ /*productNMethods ++*/ Seq(
       Object_hashCode -> (() => chooseHashcode),
-      Object_toString -> (() => forwardToRuntime(Object_toString)),
+      Object_toString -> (() => forwardToRuntime(Object_toString, nullaryOverridingNilary = true)),
       Object_equals   -> (() => equalsCaseClassMethod)
     )
 
     def valueCaseClassMethods = productClassMethods ++ /*productNMethods ++*/ valueClassMethods ++ Seq(
-      Any_toString -> (() => forwardToRuntime(Object_toString))
+      Any_toString -> (() => forwardToRuntime(Object_toString, nullaryOverridingNilary = true))
     )
 
     def caseObjectMethods = productMethods ++ Seq(
-      Object_hashCode -> (() => constantMethod(nme.hashCode_, clazz.name.decode.hashCode)),
-      Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode))
+      Object_hashCode -> (() => constantMethod(nme.hashCode_, clazz.name.decode.hashCode, nullaryOverridingNilary = true)),
+      Object_toString -> (() => constantMethod(nme.toString_, clazz.name.decode, nullaryOverridingNilary = true))
       // Not needed, as reference equality is the default.
       // Object_equals   -> (() => createMethod(Object_equals)(m => This(clazz) ANY_EQ Ident(m.firstParam)))
     )
