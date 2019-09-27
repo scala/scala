@@ -8,7 +8,7 @@ trait TastyUniverse { self =>
   val symbolTable: SymbolTable
 
   import symbolTable._
-  import TastyFlags.Live._
+  import TastyFlags._
   import FlagSets._
   import Contexts._
 
@@ -384,4 +384,23 @@ trait TastyUniverse { self =>
   }
 
   def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"
+
+  def show(flags: FlagSet): String = symbolTable.show(flags)
+
+  def show(flags: TastyFlagSet): String =
+    if (!flags) "EmptyFlags"
+    else flags.toSingletonSets.map { f =>
+      (f: @unchecked) match {
+        case Erased      => "Erased"
+        case Internal    => "Internal"
+        case Inline      => "Inline"
+        case InlineProxy => "InlineProxy"
+        case Opaque      => "Opaque"
+        case Scala2x     => "Scala2x"
+        case Extension   => "Extension"
+        case Given       => "Given"
+        case Exported    => "Exported"
+        case NoInits     => "NoInits"
+      }
+    } mkString(" | ")
 }

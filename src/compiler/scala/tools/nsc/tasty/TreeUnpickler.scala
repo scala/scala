@@ -23,7 +23,7 @@ abstract class TreeUnpickler(reader: TastyReader,
   import SymbolOps._
   import TreeUnpickler._
   import MaybeCycle._
-  import TastyFlags.Live._
+  import TastyFlags._
   import Signature._
   import Contexts._
 
@@ -550,9 +550,9 @@ abstract class TreeUnpickler(reader: TastyReader,
         if (!tastyFlagSet)
           show(flags)
         else if (givenFlags == NoFlags)
-          tastyFlagSet.show
+          show(tastyFlagSet)
         else
-          show(flags) + " | " + tastyFlagSet.show
+          show(flags) + " | " + show(tastyFlagSet)
       }
       ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
@@ -796,7 +796,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val noCycle  = tag match {
         case DEFDEF =>
           val (isExtension, exceptExtension) = completer.tastyFlagSet.except(Extension)
-          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on def: ${exceptExtension.show}")
+          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on def: ${show(exceptExtension)}")
           if (isExtension) ctx.log(s"$name is a Scala 3 extension method.")
           val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
           val vparamss = readParamss(localCtx)
@@ -809,13 +809,13 @@ abstract class TreeUnpickler(reader: TastyReader,
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val (isInline, exceptInline) = completer.tastyFlagSet.except(Inline)
-          assertTasty(!exceptInline, s"unsupported flags on val: ${exceptInline.show}")
+          assertTasty(!exceptInline, s"unsupported flags on val: ${show(exceptInline)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(tpe.isInstanceOf[ConstantType], s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on type: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on type: ${show(completer.tastyFlagSet)}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
@@ -838,7 +838,7 @@ abstract class TreeUnpickler(reader: TastyReader,
             NoCycle(at = symAddr)
           }
         case PARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported flags on parameter: ${completer.tastyFlagSet.show}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported flags on parameter: ${show(completer.tastyFlagSet)}")
           val tpt = readTpt()(localCtx)
           if (nothingButMods(end) && sym.not(ParamAccessor)) {
             sym.info = tpt.tpe
