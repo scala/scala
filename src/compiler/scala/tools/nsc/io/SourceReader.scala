@@ -125,7 +125,7 @@ object SourceReader {
       bytes.compact()
       chars
     } else {
-      if (result.isError()) throw new IOException(result.toString())
+      if (result.isError()) throw new IOException(result.toString)
       assert(result.isOverflow())
       decode(decoder, bytes, increaseCapacity(chars), endOfInput)
     }
@@ -143,7 +143,7 @@ object SourceReader {
       chars.flip()
       chars
     } else {
-      if (result.isError()) throw new IOException(result.toString())
+      if (result.isError()) throw new IOException(result.toString)
       assert(result.isOverflow())
       flush(decoder, increaseCapacity(chars))
     }

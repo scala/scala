@@ -228,7 +228,7 @@ class ChampSetSmokeTest {
   private def assertSameEqHash(expected: HashSet[Any], actual: HashSet[Any]) = {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
-    assertEquals(expected.hashCode(), actual.hashCode())
+    assertEquals(expected.hashCode, actual.hashCode)
   }
 
   @Test def testCachedSizeAndHashCode(): Unit = {
@@ -260,6 +260,6 @@ class ChampSetSmokeTest {
   }
 
   @Test def hashCodeCheck(): Unit = {
-    assertEquals(-1075495872, collection.immutable.HashSet(1).hashCode())
+    assertEquals(-1075495872, collection.immutable.HashSet(1).hashCode)
   }
 }

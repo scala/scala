@@ -69,7 +69,7 @@ package object util {
       c = reader.read()
     }
     reader.close()
-    writer.toString()
+    writer.toString
   }
 
   /** Generate a string using a routine that wants to write on a stream. */
@@ -85,7 +85,7 @@ package object util {
     val ps = new PrintStream(bs)
     stream(ps)
     ps.close()
-    bs.toString()
+    bs.toString
   }
   def stackTraceString(ex: Throwable): String = stringFromWriter(ex printStackTrace _)
 

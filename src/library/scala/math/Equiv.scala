@@ -91,7 +91,7 @@ object Equiv extends LowPriorityEquiv {
       case that: IterableEquiv[CC, T]    => this.eqv == that.eqv
       case _                             => false
     }
-    override def hashCode(): Int = eqv.hashCode() * iterableSeed
+    override def hashCode: Int = eqv.hashCode * iterableSeed
   }
 
   trait ExtraImplicits {
@@ -255,7 +255,7 @@ object Equiv extends LowPriorityEquiv {
       case that: OptionEquiv[T]         => this.eqv == that.eqv
       case _                            => false
     }
-    override def hashCode(): Int = eqv.hashCode() * optionSeed
+    override def hashCode: Int = eqv.hashCode * optionSeed
   }
 
   implicit def Tuple2[T1, T2](implicit eqv1: Equiv[T1], eqv2: Equiv[T2]): Equiv[(T1, T2)] =
@@ -274,7 +274,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv2 == that.eqv2
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2).hashCode()
+    override def hashCode: Int = (eqv1, eqv2).hashCode
   }
 
   implicit def Tuple3[T1, T2, T3](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3]) : Equiv[(T1, T2, T3)] =
@@ -296,7 +296,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv3 == that.eqv3
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3).hashCode
   }
 
   implicit def Tuple4[T1, T2, T3, T4](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4]) : Equiv[(T1, T2, T3, T4)] =
@@ -322,7 +322,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv4 == that.eqv4
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4).hashCode
   }
 
   implicit def Tuple5[T1, T2, T3, T4, T5](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4], eqv5: Equiv[T5]): Equiv[(T1, T2, T3, T4, T5)] =
@@ -351,7 +351,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv5 == that.eqv5
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4, eqv5).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4, eqv5).hashCode
   }
 
   implicit def Tuple6[T1, T2, T3, T4, T5, T6](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4], eqv5: Equiv[T5], eqv6: Equiv[T6]): Equiv[(T1, T2, T3, T4, T5, T6)] =
@@ -383,7 +383,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv6 == that.eqv6
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6).hashCode
   }
 
   implicit def Tuple7[T1, T2, T3, T4, T5, T6, T7](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4], eqv5: Equiv[T5], eqv6: Equiv[T6], eqv7: Equiv[T7]): Equiv[(T1, T2, T3, T4, T5, T6, T7)] =
@@ -418,7 +418,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv7 == that.eqv7
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7).hashCode
   }
 
   implicit def Tuple8[T1, T2, T3, T4, T5, T6, T7, T8](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4], eqv5: Equiv[T5], eqv6: Equiv[T6], eqv7: Equiv[T7], eqv8: Equiv[T8]): Equiv[(T1, T2, T3, T4, T5, T6, T7, T8)] =
@@ -456,7 +456,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv8 == that.eqv8
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7, eqv8).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7, eqv8).hashCode
   }
 
   implicit def Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9](implicit eqv1: Equiv[T1], eqv2: Equiv[T2], eqv3: Equiv[T3], eqv4: Equiv[T4], eqv5: Equiv[T5], eqv6: Equiv[T6], eqv7: Equiv[T7], eqv8 : Equiv[T8], eqv9: Equiv[T9]): Equiv[(T1, T2, T3, T4, T5, T6, T7, T8, T9)] =
@@ -497,7 +497,7 @@ object Equiv extends LowPriorityEquiv {
         this.eqv9 == that.eqv9
       case _ => false
     }
-    override def hashCode(): Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7, eqv8, eqv9).hashCode()
+    override def hashCode: Int = (eqv1, eqv2, eqv3, eqv4, eqv5, eqv6, eqv7, eqv8, eqv9).hashCode
   }
 
 }

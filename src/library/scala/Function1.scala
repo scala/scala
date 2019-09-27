@@ -84,5 +84,5 @@ trait Function1[@specialized(Specializable.Arg) -T1, @specialized(Specializable.
    */
   @annotation.unspecialized def andThen[A](g: R => A): T1 => A = { x => g(apply(x)) }
 
-  override def toString(): String = "<function1>"
+  override def toString: String = "<function1>"
 }

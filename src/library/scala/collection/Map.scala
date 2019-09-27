@@ -44,7 +44,7 @@ trait Map[K, +V]
       false
   }
 
-  override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
+  override def hashCode: Int = MurmurHash3.mapHash(toIterable)
 
   // These two methods are not in MapOps so that MapView is not forced to implement them
   @deprecated("Use - or removed on an immutable Map", "2.13.0")
@@ -54,7 +54,7 @@ trait Map[K, +V]
 
   override protected[this] def stringPrefix: String = "Map"
 
-  override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
+  override def toString: String = super[Iterable].toString // Because `Function1` overrides `toString` too
 }
 
 /** Base Map implementation type

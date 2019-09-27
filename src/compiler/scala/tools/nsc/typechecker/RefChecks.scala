@@ -813,7 +813,7 @@ abstract class RefChecks extends Transform {
           // for (bc <- clazz.info.baseClasses.tail) Console.println("" + bc + " has " + bc.info.decl(member.name) + ":" + bc.info.decl(member.name).tpe);//DEBUG
 
           val nonMatching: List[Symbol] = clazz.info.member(member.name).alternatives.filterNot(_.owner == clazz).filterNot(_.isFinal)
-          def issueError(suffix: String) = reporter.error(member.pos, member.toString() + " overrides nothing" + suffix)
+          def issueError(suffix: String) = reporter.error(member.pos, member.toString + " overrides nothing" + suffix)
           nonMatching match {
             case Nil =>
               issueError("")

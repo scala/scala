@@ -248,7 +248,7 @@ class FactoriesTest {
         override def rangeImpl(from: Option[Int], until: Option[Int]): im.SortedMap[Int, Int] = null
         override def get(key: Int): Option[Int] = null
         override def iterator: Iterator[(Int, Int)] = null
-        override def toString(): String = "BogusSortedMap"
+        override def toString: String = "BogusSortedMap"
       }
 
     sortedMapFactoryFromIterableOnceReturnsSameReference(SortedMap, im.SortedMap)(

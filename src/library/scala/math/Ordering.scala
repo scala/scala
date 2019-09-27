@@ -256,7 +256,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       case that: Reverse[T]             => this.outer == that.outer
       case _                            => false
     }
-    override def hashCode(): Int = outer.hashCode() * reverseSeed
+    override def hashCode: Int = outer.hashCode * reverseSeed
   }
 
   private final class IterableOrdering[CC[X] <: Iterable[X], T](private val ord: Ordering[T]) extends Ordering[CC[T]] {
@@ -277,7 +277,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       case that: IterableOrdering[CC, T] => this.ord == that.ord
       case _                             => false
     }
-    override def hashCode(): Int = ord.hashCode() * iterableSeed
+    override def hashCode: Int = ord.hashCode * iterableSeed
   }
 
   trait ExtraImplicits {
@@ -521,7 +521,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       case that: OptionOrdering[T]      => this.optionOrdering == that.optionOrdering
       case _                            => false
     }
-    override def hashCode(): Int = optionOrdering.hashCode() * optionSeed
+    override def hashCode: Int = optionOrdering.hashCode * optionSeed
   }
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
     new OptionOrdering[T] { val optionOrdering = ord }
@@ -554,7 +554,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord2 == that.ord2
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2).hashCode()
+    override def hashCode: Int = (ord1, ord2).hashCode
   }
 
   implicit def Tuple3[T1, T2, T3](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3]) : Ordering[(T1, T2, T3)] =
@@ -579,7 +579,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord3 == that.ord3
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3).hashCode
   }
 
   implicit def Tuple4[T1, T2, T3, T4](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4]) : Ordering[(T1, T2, T3, T4)] =
@@ -609,7 +609,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord4 == that.ord4
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4).hashCode
   }
 
   implicit def Tuple5[T1, T2, T3, T4, T5](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5]): Ordering[(T1, T2, T3, T4, T5)] =
@@ -643,7 +643,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord5 == that.ord5
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4, ord5).hashCode
   }
 
   implicit def Tuple6[T1, T2, T3, T4, T5, T6](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6]): Ordering[(T1, T2, T3, T4, T5, T6)] =
@@ -681,7 +681,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord6 == that.ord6
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4, ord5, ord6).hashCode
   }
 
   implicit def Tuple7[T1, T2, T3, T4, T5, T6, T7](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7]): Ordering[(T1, T2, T3, T4, T5, T6, T7)] =
@@ -723,7 +723,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord7 == that.ord7
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7).hashCode
   }
 
   implicit def Tuple8[T1, T2, T3, T4, T5, T6, T7, T8](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8: Ordering[T8]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8)] =
@@ -769,7 +769,7 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord8 == that.ord8
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8).hashCode
   }
 
   implicit def Tuple9[T1, T2, T3, T4, T5, T6, T7, T8, T9](implicit ord1: Ordering[T1], ord2: Ordering[T2], ord3: Ordering[T3], ord4: Ordering[T4], ord5: Ordering[T5], ord6: Ordering[T6], ord7: Ordering[T7], ord8 : Ordering[T8], ord9: Ordering[T9]): Ordering[(T1, T2, T3, T4, T5, T6, T7, T8, T9)] =
@@ -819,6 +819,6 @@ object Ordering extends LowPriorityOrderingImplicits {
         this.ord9 == that.ord9
       case _ => false
     }
-    override def hashCode(): Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8, ord9).hashCode()
+    override def hashCode: Int = (ord1, ord2, ord3, ord4, ord5, ord6, ord7, ord8, ord9).hashCode
   }
 }

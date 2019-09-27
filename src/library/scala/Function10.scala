@@ -39,5 +39,5 @@ trait Function10[-T1, -T2, -T3, -T4, -T5, -T6, -T7, -T8, -T9, -T10, +R] extends 
   @annotation.unspecialized def tupled: ((T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)) => R = {
     case ((x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)) => apply(x1, x2, x3, x4, x5, x6, x7, x8, x9, x10)
   }
-  override def toString(): String = "<function10>"
+  override def toString: String = "<function10>"
 }

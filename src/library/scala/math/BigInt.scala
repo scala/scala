@@ -112,7 +112,7 @@ final class BigInt(val bigInteger: BigInteger)
     with Ordered[BigInt]
 {
   /** Returns the hash code for this BigInt. */
-  override def hashCode(): Int =
+  override def hashCode: Int =
     if (isValidLong) unifiedPrimitiveHashcode
     else bigInteger.##
 
@@ -391,7 +391,7 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Returns the decimal String representation of this BigInt.
    */
-  override def toString(): String = this.bigInteger.toString()
+  override def toString: String = this.bigInteger.toString
 
   /** Returns the String representation in the specified radix of this BigInt.
    */

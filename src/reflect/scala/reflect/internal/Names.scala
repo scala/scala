@@ -241,7 +241,7 @@ trait Names extends api.Names {
     }
 
     /** @return the hash value of this name */
-    final override def hashCode(): Int = index
+    final override def hashCode: Int = index
 
     /** @return true if the string value of this name is equal
      *  to the string value of the given name or String.

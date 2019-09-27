@@ -104,7 +104,7 @@ class MetaParser(meta: String) {
         parseType
       } while (token == "with")
     }
-    res.toString()
+    res.toString
   }
 
   protected def parseMetaMethod: String = {
@@ -159,14 +159,14 @@ class MetaParser(meta: String) {
       res.append(": ")
       parseType
     }
-    res.toString()
+    res.toString
   }
 
   protected def parseMetaField: String = {
     nextToken
     res.append(": ")
     parseType
-    res.toString()
+    res.toString
   }
 
   protected def parseConstrField: String = {
@@ -182,6 +182,6 @@ class MetaParser(meta: String) {
       res.append(")")
     } else {
     }
-    res.toString()
+    res.toString
   }
 }

@@ -243,9 +243,9 @@ object ImmutableChampHashMapProperties extends Properties("HashMap") {
       // container which tracks the number of times its hashCode() is called
       case class Container(inner: Int) {
         var timesHashed = 0
-        override def hashCode() = {
+        override def hashCode = {
             timesHashed += 1
-            inner.hashCode()
+            inner.hashCode
           }
       }
 

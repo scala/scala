@@ -35,10 +35,10 @@ object MainTokenMetric {
         i += 1
         s.nextToken()
       }
-      Console.println(i.toString + " " + source.toString())
+      Console.println(i.toString + " " + source.toString)
       totale += i
     }
-    Console.println(totale.toString()+" total")
+    Console.println(totale.toString+" total")
   }
 
   def process(args: Array[String]): Unit = {

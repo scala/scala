@@ -227,7 +227,7 @@ class Function(val i: Int) extends Group("Function") with Arity {
    */
   def apply({funArgs}): R
 {moreMethods}
-  override def toString(): String = {toStr}
+  override def toString: String = {toStr}
 }}
 </file>
 }
@@ -351,7 +351,7 @@ class Tuple(val i: Int) extends Group("Tuple") with Arity {
 final case class {className}{covariantArgs}({fields})
   extends {Product.className(i)}{invariantArgs}
 {{
-  override def toString(): String = "(" + {mkToString} + ")"
+  override def toString: String = "(" + {mkToString} + ")"
   {moreMethods}
 }}
 </file>}

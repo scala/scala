@@ -53,7 +53,7 @@ private[page] object JSONFormat {
       }
       i += 1
     }
-    buf.toString()
+    buf.toString
   }
 }
 

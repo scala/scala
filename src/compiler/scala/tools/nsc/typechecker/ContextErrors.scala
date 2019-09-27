@@ -32,7 +32,7 @@ trait ContextErrors {
   sealed abstract class AbsTypeError {
     def errPos: Position
     def errMsg: String
-    override def toString() = "[Type error at:" + errPos + "] " + errMsg
+    override def toString = "[Type error at:" + errPos + "] " + errMsg
   }
 
   abstract class AbsAmbiguousTypeError extends AbsTypeError
@@ -283,10 +283,10 @@ trait ContextErrors {
 
       def AppliedTypeWrongNumberOfArgsError(tree: Tree, tpt: Tree, tparams: List[Symbol]) = {
         val tptSafeString: String = try {
-          tpt.tpe.toString()
+          tpt.tpe.toString
         } catch {
           case _: CyclicReference =>
-            tpt.toString()
+            tpt.toString
         }
         val msg = "wrong number of type arguments for "+tptSafeString+", should be "+tparams.length
         issueNormalTypeError(tree, msg)

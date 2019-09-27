@@ -67,7 +67,7 @@ abstract class Any {
    *
    *  @return   the hash code value for this object.
    */
-  def hashCode(): Int
+  def hashCode: Int
 
   /** Returns a string representation of the object.
    *
@@ -75,7 +75,7 @@ abstract class Any {
    *
    *  @return a string representation of the object.
    */
-  def toString(): String
+  def toString: String
 
   /** Returns the runtime class representation of the object.
    *

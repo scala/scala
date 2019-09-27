@@ -88,7 +88,7 @@ private[scala] object FutureConvertersImpl {
 
     override def get(timeout: Long, unit: TimeUnit): T = scala.concurrent.blocking(super.get(timeout, unit))
 
-    override def toString(): String = super[CompletableFuture].toString
+    override def toString: String = super[CompletableFuture].toString
   }
 
   final class P[T](val wrapped: CompletionStage[T]) extends DefaultPromise[T] with BiConsumer[T, Throwable] {

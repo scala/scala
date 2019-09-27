@@ -245,7 +245,7 @@ object Console extends AnsiColor {
    *  @group console-output
    */
   def print(obj: Any): Unit = {
-    out.print(if (null == obj) "null" else obj.toString())
+    out.print(if (null == obj) "null" else obj.toString)
   }
 
   /** Flushes the output stream. This function is required when partial

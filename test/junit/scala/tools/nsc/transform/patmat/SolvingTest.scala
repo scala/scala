@@ -44,7 +44,7 @@ object TestSolver extends Logic with Solving {
         case _         => false
       }
 
-      override def hashCode(): Int = x.hashCode()
+      override def hashCode: Int = x.hashCode
 
       override def toString: String = {
         s"Var($x)"

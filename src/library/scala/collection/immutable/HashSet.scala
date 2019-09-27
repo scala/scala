@@ -177,7 +177,7 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
 
   override protected[this] def className = "HashSet"
 
-  override def hashCode(): Int = {
+  override def hashCode: Int = {
     val it = new SetHashIterator(rootNode)
     val hash = MurmurHash3.unorderedHash(it, MurmurHash3.setSeed)
     //assert(hash == super.hashCode())
@@ -1399,7 +1399,7 @@ private final class BitmapIndexedSetNode[A](
     }
   }
 
-  override def hashCode(): Int =
+  override def hashCode: Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def copy(): BitmapIndexedSetNode[A] = {
@@ -1808,7 +1808,7 @@ private final class HashCollisionSetNode[A](val originalHash: Int, val hash: Int
       case _ => false
     }
 
-  override def hashCode(): Int =
+  override def hashCode: Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def copy() = new HashCollisionSetNode[A](originalHash, hash, content)
@@ -1889,7 +1889,7 @@ private final class SetReverseIterator[A](rootNode: SetNode[A])
 private final class SetHashIterator[A](rootNode: SetNode[A])
   extends ChampBaseIterator[SetNode[A]](rootNode) with Iterator[AnyRef] {
   private[this] var hash = 0
-  override def hashCode(): Int = hash
+  override def hashCode: Int = hash
 
   def next(): AnyRef = {
     if (!hasNext)

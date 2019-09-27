@@ -15,7 +15,7 @@ package scala.tools.partest.instrumented
 import scala.collection.JavaConverters._
 
 case class MethodCallTrace(className: String, methodName: String, methodDescriptor: String) {
-  override def toString(): String = className + "." + methodName + methodDescriptor
+  override def toString: String = className + "." + methodName + methodDescriptor
 }
 object MethodCallTrace {
   implicit val ordering: Ordering[MethodCallTrace] = Ordering.by(x => (x.className, x.methodName, x.methodDescriptor))

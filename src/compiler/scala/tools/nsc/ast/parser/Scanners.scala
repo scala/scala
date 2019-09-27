@@ -1184,7 +1184,7 @@ trait Scanners extends ScannersCommon {
       token = EOF
     }
 
-    override def toString() = token match {
+    override def toString = token match {
       case IDENTIFIER | BACKQUOTED_IDENT =>
         "id(" + name + ")"
       case CHARLIT =>

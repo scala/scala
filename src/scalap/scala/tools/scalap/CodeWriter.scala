@@ -129,5 +129,5 @@ class CodeWriter(writer: Writer) {
     this
   }
 
-  override def toString(): String = writer.toString()
+  override def toString: String = writer.toString
 }

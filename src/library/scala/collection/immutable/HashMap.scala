@@ -236,7 +236,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
       case _ => super.equals(that)
     }
 
-  override def hashCode(): Int = {
+  override def hashCode: Int = {
     val hashIterator = new MapKeyValueTupleHashIterator(rootNode)
     val hash = MurmurHash3.unorderedHash(hashIterator, MurmurHash3.mapSeed)
     // assert(hash == super.hashCode())
@@ -1276,7 +1276,7 @@ private final class BitmapIndexedMapNode[K, +V](
     }
   }
 
-  override def hashCode(): Int =
+  override def hashCode: Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def concat[V1 >: V](that: MapNode[K, V1], shift: Int): BitmapIndexedMapNode[K, V1] = that match {
@@ -2021,7 +2021,7 @@ private final class HashCollisionMapNode[K, +V ](
 
   override def copy(): HashCollisionMapNode[K, V] = new HashCollisionMapNode[K, V](originalHash, hash, content)
 
-  override def hashCode(): Int =
+  override def hashCode: Int =
     throw new UnsupportedOperationException("Trie nodes do not support hashing.")
 
   override def cachedJavaKeySetHashCode: Int = size * hash
@@ -2091,9 +2091,9 @@ private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
   private[this] var hash = 0
   private[this] var value: V = _
   private[this] val key = new Object {
-    override def hashCode(): Int = hash
+    override def hashCode: Int = hash
   }
-  override def hashCode(): Int = MurmurHash3.productHash(this)
+  override def hashCode: Int = MurmurHash3.productHash(this)
   override def _1: AnyRef = key
   override def _2: V = value
   override def canEqual(that: Any): Boolean = false

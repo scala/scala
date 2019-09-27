@@ -134,7 +134,7 @@ class StreamTest {
     assertEquals(3, i)
     // it's possible to implement `force` with incorrect string representation
     // (to forget about `tlEvaluated` update)
-    assertEquals( "Stream(1, 2, 3)", xs.toString())
+    assertEquals( "Stream(1, 2, 3)", xs.toString)
   }
 
   val cycle1: Stream[Int] = 1 #:: 2 #:: cycle1

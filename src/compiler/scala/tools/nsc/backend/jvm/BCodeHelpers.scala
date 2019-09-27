@@ -565,7 +565,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def emitAssocs(av: asm.AnnotationVisitor, assocs: List[(Name, ClassfileAnnotArg)]): Unit = {
       for ((name, value) <- assocs) {
-        emitArgument(av, name.toString(), value)
+        emitArgument(av, name.toString, value)
       }
       av.visitEnd()
     }

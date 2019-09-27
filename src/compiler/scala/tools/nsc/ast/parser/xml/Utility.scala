@@ -65,12 +65,12 @@ object Utility {
             rfb.append(c)
             c = it.next()
           }
-          val ref = rfb.toString()
+          val ref = rfb.toString
           rfb.clear()
           unescape(ref,sb) match {
             case null =>
               if (sb.nonEmpty) {  // flush buffer
-                nb += text(sb.toString())
+                nb += text(sb.toString)
                 sb.clear()
               }
               nb += entityRef(ref) // add entityref
@@ -82,7 +82,7 @@ object Utility {
     }
 
     if(sb.nonEmpty) // flush buffer
-      nb += text(sb.toString())
+      nb += text(sb.toString)
 
     nb.toList
   }

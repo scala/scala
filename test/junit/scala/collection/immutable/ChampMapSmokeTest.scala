@@ -178,7 +178,7 @@ class ChampMapSmokeTest {
     assertEquals(List.from(actual).size, actual.size)
     assertEquals(expected.size, actual.size)
     assertEquals(expected.rootNode.cachedJavaKeySetHashCode, actual.rootNode.cachedJavaKeySetHashCode)
-    assertEquals(expected.hashCode(), actual.hashCode())
+    assertEquals(expected.hashCode, actual.hashCode)
   }
 
   private def value(i: Int) = new String("" + i)
@@ -254,6 +254,6 @@ class ChampMapSmokeTest {
   }
 
   @Test def hashCodeCheck(): Unit = {
-    assertEquals(2098967416, collection.immutable.HashMap(1 -> 2).hashCode())
+    assertEquals(2098967416, collection.immutable.HashMap(1 -> 2).hashCode)
   }
 }

@@ -52,7 +52,7 @@ class OpenHashMapTest {
     import scala.language.reflectiveCalls
 
     class MyClass {
-      override def hashCode() = 42
+      override def hashCode = 42
     }
 
     val counter = new GraphVisitor() {

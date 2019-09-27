@@ -93,7 +93,7 @@ class ArraySeqTest {
   def t10690(): Unit = {
     val x = Seq[Byte](10)
     val y = Array[Byte](10).toSeq
-    assertEquals(x.hashCode(), y.hashCode())
+    assertEquals(x.hashCode, y.hashCode)
   }
 
   @Test

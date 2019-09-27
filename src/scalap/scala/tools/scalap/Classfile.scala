@@ -73,7 +73,7 @@ class Classfile(in: ByteArrayReader) {
     case class FieldRef(classId: Int, memberId: Int) extends PoolEntry(CONSTANT_FIELDREF)
     case class MethodRef(classId: Int, memberId: Int) extends PoolEntry(CONSTANT_METHODREF) {
       // //Method java/lang/Object."<init>":()V
-      override def toString() = "Method %s.\"%s\"".format(entries(classId), entries(memberId))
+      override def toString = "Method %s.\"%s\"".format(entries(classId), entries(memberId))
     }
     case class IntfMethodRef(classId: Int, memberId: Int) extends PoolEntry(CONSTANT_INTFMETHODREF)
     case class StringConst(strId: Int) extends PoolEntry(CONSTANT_STRING)

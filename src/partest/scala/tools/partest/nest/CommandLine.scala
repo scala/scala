@@ -94,5 +94,5 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
 
   def getOrElse(arg: String, orElse: => String) = if (isSet(arg)) apply(arg) else orElse
 
-  override def toString() = argMap.toString + " " + residualArgs.toString
+  override def toString = argMap.toString + " " + residualArgs.toString
 }

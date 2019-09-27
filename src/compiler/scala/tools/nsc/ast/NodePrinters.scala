@@ -140,7 +140,7 @@ abstract class NodePrinters {
 
     def annotationInfoToString(annot: AnnotationInfo): String = {
       val str = new StringBuilder
-      str.append(annot.atp.toString())
+      str.append(annot.atp.toString)
       if (!annot.args.isEmpty)
         str.append(annot.args.mkString("(", ",", ")"))
       if (!annot.assocs.isEmpty)

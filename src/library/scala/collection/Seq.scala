@@ -45,9 +45,9 @@ trait Seq[+A]
     }
   )
 
-  override def hashCode(): Int = MurmurHash3.seqHash(toIterable)
+  override def hashCode: Int = MurmurHash3.seqHash(toIterable)
 
-  override def toString(): String = super[Iterable].toString()
+  override def toString: String = super[Iterable].toString
 
   override protected[this] def stringPrefix: String = "Seq"
 }

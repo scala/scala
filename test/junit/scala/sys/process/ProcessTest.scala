@@ -77,12 +77,12 @@ class ProcessTest {
 
   @Test def t10696(): Unit = {
     val res1 = Process("false").lazyLines
-    assertEquals("LazyList(<not computed>)", res1.toString())
+    assertEquals("LazyList(<not computed>)", res1.toString)
     val ex = Try(res1.head).failed.get
     assert(ex.isInstanceOf[RuntimeException])
 
     val res2 = Process("true").lazyLines
-    assertEquals("LazyList(<not computed>)", res2.toString())
+    assertEquals("LazyList(<not computed>)", res2.toString)
     assert(res2.isEmpty)
   }
 

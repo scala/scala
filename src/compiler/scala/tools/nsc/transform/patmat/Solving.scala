@@ -31,7 +31,7 @@ case class Lit(val v: Int) {
 
   def positive = v >= 0
 
-  override def toString(): String = s"Lit#$v"
+  override def toString: String = s"Lit#$v"
 
   override val hashCode: Int = v
 }

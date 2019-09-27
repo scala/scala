@@ -902,7 +902,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *           - `"LazyList(1, 2, 3, &lt;cycle&gt;)"`, an infinite lazy list that contains
     *             a cycle at the fourth element.
     */
-  override def toString(): String = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
+  override def toString: String = addStringNoForce(new JStringBuilder(className), "(", ", ", ")").toString
 
   /** @inheritdoc
     *

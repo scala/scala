@@ -35,7 +35,7 @@ trait SymbolTrackers {
     def indentString(indent: String): String
     def symString(sym: Symbol): String
 
-    override def toString() = indentString("")
+    override def toString = indentString("")
   }
   case class Change(
     added: Set[Symbol],

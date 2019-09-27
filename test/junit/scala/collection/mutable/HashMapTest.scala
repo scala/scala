@@ -217,15 +217,15 @@ class HashMapTest {
 
     var count = 0
     val countingKey1 = new Object{
-      override def hashCode() = {
+      override def hashCode = {
         count += 1
-        super.hashCode()
+        super.hashCode
       }
     }
     val countingKey2 = new Object{
-      override def hashCode() = {
+      override def hashCode = {
         count += 1
-        super.hashCode()
+        super.hashCode
       }
     }
 

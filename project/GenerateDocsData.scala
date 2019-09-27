@@ -153,7 +153,7 @@ class SettingsDescriptor extends SettingsDescriptorModel {
       }
     }
     grouped.foreach(emit)
-    sb.toString()
+    sb.toString
   }
 }
 

@@ -365,7 +365,7 @@ class LazyListLazinessTest {
 
   @Test
   def toString_properlyLazy(): Unit = {
-    assertLazyAll(_.toString())
+    assertLazyAll(_.toString)
   }
 
   @Test

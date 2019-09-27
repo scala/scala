@@ -269,6 +269,6 @@ abstract class AbstractFile extends AbstractIterable[AbstractFile] {
   protected def unsupported(msg: String): Nothing = throw new UnsupportedOperationException(msg)
 
   /** Returns the path of this abstract file. */
-  override def toString() = path
+  override def toString = path
 
 }

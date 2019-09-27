@@ -39,5 +39,5 @@ trait Function5[-T1, -T2, -T3, -T4, -T5, +R] extends AnyRef { self =>
   @annotation.unspecialized def tupled: ((T1, T2, T3, T4, T5)) => R = {
     case ((x1, x2, x3, x4, x5)) => apply(x1, x2, x3, x4, x5)
   }
-  override def toString(): String = "<function5>"
+  override def toString: String = "<function5>"
 }

@@ -102,7 +102,7 @@ trait Trees extends api.Trees {
       this
     }
 
-    override def hashCode(): Int = System.identityHashCode(this)
+    override def hashCode: Int = System.identityHashCode(this)
     override def equals(that: Any) = this eq that.asInstanceOf[AnyRef]
 
     override def duplicate: this.type =
@@ -1715,13 +1715,13 @@ trait Trees extends api.Trees {
 
   class TreeTypeSubstituter(val from: List[Symbol], val to: List[Type]) extends TypeMapTreeSubstituter(new SubstTypeMap(from, to)) {
     def isEmpty = from.isEmpty && to.isEmpty
-    override def toString() = "TreeTypeSubstituter("+from+","+to+")"
+    override def toString = "TreeTypeSubstituter("+from+","+to+")"
   }
 
   lazy val EmptyTreeTypeSubstituter = new TreeTypeSubstituter(List(), List())
 
   class TreeSymSubstTraverser(val from: List[Symbol], val to: List[Symbol]) extends TypeMapTreeSubstituter(new SubstSymMap(from, to)) {
-    override def toString() = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
+    override def toString = "TreeSymSubstTraverser/" + substituterString("Symbol", "Symbol", from, to)
   }
 
   /** Substitute symbols in `from` with symbols in `to`. Returns a new
@@ -1784,7 +1784,7 @@ trait Trees extends api.Trees {
       invalidateTreeTpeCaches(tree1, mutatedSymbols)
       tree1.asInstanceOf[T]
     }
-    override def toString() = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
+    override def toString = "TreeSymSubstituter/" + substituterString("Symbol", "Symbol", from, to)
   }
 
 

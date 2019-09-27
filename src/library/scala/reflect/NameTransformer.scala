@@ -92,7 +92,7 @@ object NameTransformer {
       }
       i += 1
     }
-    if (buf eq null) name else buf.toString()
+    if (buf eq null) name else buf.toString
   }
 
   /** Replace `\$opname` by corresponding operator symbol.
@@ -161,7 +161,7 @@ object NameTransformer {
         i += 1
       }
     }
-    //System.out.println("= " + (if (buf == null) name else buf.toString()));//DEBUG
-    if (buf eq null) name else buf.toString()
+    //System.out.println("= " + (if (buf == null) name else buf.toString));//DEBUG
+    if (buf eq null) name else buf.toString
   }
 }

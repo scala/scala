@@ -37,13 +37,13 @@ trait Set[A]
       case _ => false
     }
 
-  override def hashCode(): Int = MurmurHash3.setHash(toIterable)
+  override def hashCode: Int = MurmurHash3.setHash(toIterable)
 
   override def iterableFactory: IterableFactory[Set] = Set
 
   override protected[this] def stringPrefix: String = "Set"
 
-  override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too
+  override def toString: String = super[Iterable].toString // Because `Function1` overrides `toString` too
 }
 
 /** Base trait for set operations

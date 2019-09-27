@@ -167,7 +167,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   /** Returns a string representation of this queue.
     */
-  override def toString() = mkString("Queue(", ", ", ")")
+  override def toString = mkString("Queue(", ", ", ")")
 }
 
 /** $factoryInfo

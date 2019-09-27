@@ -241,7 +241,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
 
     /** Clear buffer and set name */
     private def setName(): Unit = {
-      name = newTermName(cbuf.toString())
+      name = newTermName(cbuf.toString)
       cbuf.setLength(0)
     }
 
@@ -849,7 +849,7 @@ trait JavaScanners extends ast.parser.ScannersCommon {
       token = EOF
     }
 
-    override def toString() = token match {
+    override def toString = token match {
       case IDENTIFIER =>
         "id(" + name + ")"
       case CHARLIT =>

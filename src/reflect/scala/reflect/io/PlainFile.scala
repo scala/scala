@@ -68,7 +68,7 @@ class PlainFile(val givenPath: Path) extends AbstractFile {
     } finally chan.close()
   }
 
-  override def hashCode(): Int = fpath.hashCode()
+  override def hashCode: Int = fpath.hashCode
   override def equals(that: Any): Boolean = that match {
     case x: PlainFile => fpath == x.fpath
     case _            => false
@@ -172,7 +172,7 @@ final class PlainNioFile(val nioPath: java.nio.file.Path) extends AbstractFile {
   override def input = Files.newInputStream(nioPath)
   override def output = Files.newOutputStream(nioPath)
   override def sizeOption = Some(Files.size(nioPath).toInt)
-  override def hashCode(): Int = fpath.hashCode()
+  override def hashCode: Int = fpath.hashCode
   override def equals(that: Any): Boolean = that match {
     case x: PlainNioFile => fpath == x.fpath
     case _               => false

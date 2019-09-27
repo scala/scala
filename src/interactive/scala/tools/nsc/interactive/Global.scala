@@ -599,7 +599,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           ignoredFiles += unit.source.file
           println("[%s] marking unit as crashed (crashedFiles: %s)".format(unit, ignoredFiles))
 
-          reporter.error(unit.body.pos, "Presentation compiler crashed while type checking this file: %s".format(ex.toString()))
+          reporter.error(unit.body.pos, "Presentation compiler crashed while type checking this file: %s".format(ex.toString))
       }
     }
 

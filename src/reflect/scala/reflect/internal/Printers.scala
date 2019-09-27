@@ -649,7 +649,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     protected def removeDefaultClassesFromList(trees: List[Tree], classesToRemove: List[Name] = defaultClasses) =
       originalTypeTrees(trees) filter {
         case Select(Ident(sc), name) => !(classesToRemove.contains(name) && sc == nme.scala_)
-        case tt: TypeTree if tt.tpe != null => !(classesToRemove contains(newTypeName(tt.tpe.toString())))
+        case tt: TypeTree if tt.tpe != null => !(classesToRemove contains(newTypeName(tt.tpe.toString)))
         case _ => true
       }
 

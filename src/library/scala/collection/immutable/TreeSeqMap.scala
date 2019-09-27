@@ -472,7 +472,7 @@ object TreeSeqMap extends MapFactory[TreeSeqMap] {
     final def format: String = {
       val sb = new StringBuilder
       format(sb, "", "")
-      sb.toString()
+      sb.toString
     }
     protected def format(sb: StringBuilder, prefix: String, subPrefix: String): Unit
 

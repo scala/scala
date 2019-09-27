@@ -258,7 +258,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     if (nextId > topId) topId = nextId
     if (i < bottomId) bottomId = i
     def id: Int = i
-    override def toString(): String =
+    override def toString: String =
       if (name != null) name
       else try thisenum.nameOf(i)
       catch { case _: NoSuchElementException => "<Invalid enum: no field for #" + i + ">" }

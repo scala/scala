@@ -261,10 +261,10 @@ class Path private[io] (val jfile: JFile) {
       length == 0
     }
 
-  override def toString() = path
+  override def toString = path
   override def equals(other: Any) = other match {
     case x: Path  => path == x.path
     case _        => false
   }
-  override def hashCode() = path.hashCode()
+  override def hashCode = path.hashCode
 }

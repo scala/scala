@@ -23,7 +23,7 @@ trait CompilationUnits { global: Global =>
   object NoCompilationUnit extends CompilationUnit(NoSourceFile) {
     override val isJava = false
     override def exists = false
-    override def toString() = "NoCompilationUnit"
+    override def toString = "NoCompilationUnit"
   }
 
   /** Creates a `FreshNameCreator` that reports an error if it is used during the typer phase */
@@ -160,6 +160,6 @@ trait CompilationUnits { global: Global =>
     /** Is this about a .java source file? */
     val isJava = source.file.name.endsWith(".java")
 
-    override def toString() = source.toString()
+    override def toString = source.toString
   }
 }

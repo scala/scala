@@ -41,7 +41,7 @@ abstract class SourceFile {
    *  For regular source files, simply return the argument.
    */
   def positionInUltimateSource(position: Position) = position
-  override def toString() = file.name
+  override def toString = file.name
   def path = file.path
 
   def lineToString(index: Int): String = {

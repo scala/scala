@@ -1451,7 +1451,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
     private def printArgs(sources: List[SourceFile]): Unit =
       settings.printArgs.valueSetByUser foreach { value =>
-        val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString())).mkString("", "\n", "\n")
+        val argsFile = (settings.recreateArgs ::: sources.map(_.file.absolute.toString)).mkString("", "\n", "\n")
         value match {
           case "-" =>
             reporter.echo(argsFile)

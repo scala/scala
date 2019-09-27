@@ -109,5 +109,5 @@ class HashSet[T >: Null <: AnyRef](val label: String, initialCapacity: Int) exte
       i += 1
     }
   }
-  override def toString() = "HashSet %s(%d / %d)".format(label, used, table.length)
+  override def toString = "HashSet %s(%d / %d)".format(label, used, table.length)
 }

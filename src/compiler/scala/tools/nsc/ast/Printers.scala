@@ -137,7 +137,7 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
           print(".")
           print(quotedName(name, decode = true))
 
-        // target.toString() ==> target.toString
+        // target.toString ==> target.toString
         case Apply(fn, Nil)   => printTree(fn)
 
         // if a Block only continues one actual statement, just print it.

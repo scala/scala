@@ -74,7 +74,7 @@ class MapWrapperTest {
 
     val mapWrapper = scalaMap.asJava
 
-    assertEquals(jmap.hashCode(), mapWrapper.hashCode())
+    assertEquals(jmap.hashCode, mapWrapper.hashCode)
     assertTrue(jmap == mapWrapper)
     assertTrue(mapWrapper == jmap)
   }

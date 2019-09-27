@@ -368,7 +368,7 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
   // Sane hash code computation (which is surprisingly hard).
   // Note--not lazy val because we can't afford the extra space.
   private final var computedHashCode: Int = BigDecimal.hashCodeNotComputed
-  private final def computeHashCode(): Unit = {
+  private final def computehashCode: Unit = {
     computedHashCode =
       if (isWhole && (precision - scale) < BigDecimal.maximumHashScale) toBigInt.hashCode
       else if (isDecimalDouble) doubleValue.##
@@ -388,8 +388,8 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    *  explicit representation of the `BigInt` form for `BigDecimal` values
    *  with large exponents.
    */
-  override def hashCode(): Int = {
-    if (computedHashCode == BigDecimal.hashCodeNotComputed) computeHashCode()
+  override def hashCode: Int = {
+    if (computedHashCode == BigDecimal.hashCodeNotComputed) computehashCode
     computedHashCode
   }
 

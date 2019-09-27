@@ -24,11 +24,11 @@ package scala
 final class Symbol private (val name: String) extends Serializable {
   /** Converts this symbol to a string.
    */
-  override def toString(): String = "'" + name
+  override def toString: String = "'" + name
 
   @throws(classOf[java.io.ObjectStreamException])
   private def readResolve(): Any = Symbol.apply(name)
-  override def hashCode = name.hashCode()
+  override def hashCode = name.hashCode
   override def equals(other: Any) = this eq other.asInstanceOf[AnyRef]
 }
 

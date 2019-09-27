@@ -186,7 +186,7 @@ object Exception {
       _desc = s
       this
     }
-    override def toString(): String = name + "(" + desc + ")"
+    override def toString: String = name + "(" + desc + ")"
   }
 
   /** A container class for finally code.

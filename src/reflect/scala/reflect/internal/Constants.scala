@@ -229,7 +229,7 @@ trait Constants extends api.Constants {
     def stringValue: String =
       if (value == null) "null"
       else if (tag == ClazzTag) signature(typeValue)
-      else value.toString()
+      else value.toString
 
     def escapedChar(ch: Char): String = (ch: @switch) match {
       case '\b' => "\\b"
@@ -263,8 +263,8 @@ trait Constants extends api.Constants {
             case _ => show(typeValue)
           }
         case CharTag   => "'" + escapedChar(charValue) + "'"
-        case LongTag   => longValue.toString() + "L"
-        case EnumTag   => symbolValue.name.toString()
+        case LongTag   => longValue.toString + "L"
+        case EnumTag   => symbolValue.name.toString
         case _         => String.valueOf(value)
       }
     }
@@ -281,7 +281,7 @@ trait Constants extends api.Constants {
         // We could just use value.hashCode here, at the cost of a collition between different NaNs
         case FloatTag => java.lang.Integer.hashCode(floatToRawIntBits(value.asInstanceOf[Float]))
         case DoubleTag => java.lang.Long.hashCode(doubleToRawLongBits(value.asInstanceOf[Double]))
-        case _ => value.hashCode()
+        case _ => value.hashCode
       }
       h = mix(h, valueHash)
       finalizeHash(h, length = 2)

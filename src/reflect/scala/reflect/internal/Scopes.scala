@@ -46,8 +46,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     var next: ScopeEntry = null
 
     def depth = owner.nestingLevel
-    override def hashCode(): Int = sym.name.start
-    override def toString() = s"$sym (depth=$depth)"
+    override def hashCode: Int = sym.name.start
+    override def toString = s"$sym (depth=$depth)"
     // OPT: compare raw names when pre-flatten, saving needsFlatClasses within the loop
     final def name(flat: Boolean): Name = if (flat) sym.name else sym.rawname
   }
@@ -438,7 +438,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     override def addString(sb: StringBuilder, start: String, sep: String, end: String) =
       toList.map(_.defString).addString(sb, start, sep, end)
 
-    override def toString(): String = mkString("Scope{\n  ", ";\n  ", "\n}")
+    override def toString: String = mkString("Scope{\n  ", ";\n  ", "\n}")
   }
 
   implicit val ScopeTag = ClassTag[Scope](classOf[Scope])

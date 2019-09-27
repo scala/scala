@@ -185,7 +185,7 @@ class LazyListTest {
     assertEquals(3, i)
     // it's possible to implement `force` with incorrect string representation
     // (to forget about `tlEvaluated` update)
-    assertEquals( "LazyList(1, 2, 3)", xs.toString())
+    assertEquals( "LazyList(1, 2, 3)", xs.toString)
   }
 
   val cycle1: LazyList[Int] = 1 #:: 2 #:: cycle1

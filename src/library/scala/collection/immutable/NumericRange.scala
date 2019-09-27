@@ -233,7 +233,7 @@ sealed class NumericRange[T](
     }
   }
 
-  override lazy val hashCode: Int = super.hashCode()
+  override lazy val hashCode: Int = super.hashCode
   override protected final def applyPreferredMaxLength: Int = Int.MaxValue
 
   override def equals(other: Any): Boolean = other match {

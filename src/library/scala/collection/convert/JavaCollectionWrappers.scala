@@ -237,8 +237,8 @@ private[collection] object JavaCollectionWrappers extends Serializable {
             //
             // See https://github.com/scala/bug/issues/10663
             override def hashCode = {
-              (if (k == null) 0 else k.hashCode()) ^
-              (if (v == null) 0 else v.hashCode())
+              (if (k == null) 0 else k.hashCode) ^
+              (if (v == null) 0 else v.hashCode)
             }
 
             override def equals(other: Any) = other match {

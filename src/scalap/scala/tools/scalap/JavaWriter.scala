@@ -31,7 +31,7 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
     if ((flags & 0x0400) != 0)
       if (clazz) buffer.append("abstract ")
           else buffer.append("/*deferred*/ ")
-    buffer.toString()
+    buffer.toString
   }
 
   def nameToClass(str: String): String = {

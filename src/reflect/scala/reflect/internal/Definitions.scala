@@ -38,14 +38,14 @@ trait Definitions extends api.StandardDefinitions {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
     clazz.setInfoAndEnter(ClassInfoType(parents, newScope, clazz)).markAllCompleted
   }
-  private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long): MethodSymbol = {
+  private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long, nullary: Boolean): MethodSymbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    val info = MethodType(params, restpe)
+    val info = if (nullary) NullaryMethodType(restpe) else MethodType(params, restpe)
     msym.setInfo(info).markAllCompleted
   }
-  private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): MethodSymbol =
-    owner.info.decls enter newMethod(owner, name, formals, restpe, flags)
+  private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L, nullary: Boolean = false): MethodSymbol =
+    owner.info.decls enter newMethod(owner, name, formals, restpe, flags, nullary)
 
   // the scala value classes
   trait ValueClassDefinitions {
@@ -1109,9 +1109,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Any_!=       = enterNewMethod(AnyClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
 
     lazy val Any_equals   = enterNewMethod(AnyClass, nme.equals_, AnyTpe :: Nil, BooleanTpe)
-    lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, IntTpe)
-    lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, StringTpe)
-    lazy val Any_##       = enterNewMethod(AnyClass, nme.HASHHASH, Nil, IntTpe, FINAL)
+    lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, IntTpe, nullary = true)
+    lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, StringTpe, nullary = true)
+    lazy val Any_##       = enterNewMethod(AnyClass, nme.HASHHASH, Nil, IntTpe, FINAL, nullary = true)
 
     // Any_getClass requires special handling.  The return type is determined on
     // a per-call-site basis as if the function being called were actually:
@@ -1209,7 +1209,7 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // members of class java.lang.{ Object, String }
-    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, IntTpe, FINAL)
+    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, IntTpe, FINAL, nullary = true)
     lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)
@@ -1571,7 +1571,7 @@ trait Definitions extends api.StandardDefinitions {
         else flatNameString(sym.owner, separator) + nme.NAME_JOIN_STRING + sym.simpleName
       def signature1(etp: Type): String = {
         if (etp.typeSymbol == ArrayClass) "[" + signature1(erasure(etp.dealiasWiden.typeArgs.head))
-        else if (isPrimitiveValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString()
+        else if (isPrimitiveValueClass(etp.typeSymbol)) abbrvTag(etp.typeSymbol).toString
         else "L" + flatNameString(etp.typeSymbol, '/') + ";"
       }
       val etp = erasure(tp)

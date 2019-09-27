@@ -247,9 +247,9 @@ class OrderingTest {
   def orderingEquality(): Unit = {
     def check[T](ord: => Ordering[T]): Unit = {
       assertEquals(ord, ord)
-      assertEquals(ord.hashCode(), ord.hashCode())
+      assertEquals(ord.hashCode, ord.hashCode)
       assertEquals(ord.reverse, ord.reverse)
-      assertEquals(ord.reverse.hashCode(), ord.reverse.hashCode())
+      assertEquals(ord.reverse.hashCode, ord.reverse.hashCode)
     }
 
     check(Ordering[Int])

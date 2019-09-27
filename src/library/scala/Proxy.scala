@@ -16,9 +16,9 @@ package scala
  *  the public, non-final methods defined in class `Any` to another
  *  object self.  Those methods are:
  *  {{{
- *    def hashCode(): Int
+ *    def hashCode: Int
  *    def equals(other: Any): Boolean
- *    def toString(): String
+ *    def toString: String
  *  }}}
  *  '''Note:''' forwarding methods in this way will most likely create
  *  an asymmetric equals method, which is not generally recommended.

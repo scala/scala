@@ -141,7 +141,7 @@ trait Logic extends Debugging  {
         case _         => false
       }
 
-      override def hashCode(): Int = {
+      override def hashCode: Int = {
         variable.hashCode * 41 + const.hashCode
       }
 

@@ -874,7 +874,7 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
       // to verify partnerhood we use reference equality on gap because
       // type testing does not discriminate based on origin.
       private def compareGap(queue: scala.collection.mutable.Queue[A]) = gap eq queue
-      override def hashCode = gap.hashCode()
+      override def hashCode = gap.hashCode
       override def equals(other: Any) = other match {
         case x: Partner   => x.compareGap(gap) && gap.isEmpty
         case _            => super.equals(other)

@@ -37,12 +37,12 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
   def lookupSetting(cmd: String): Option[Setting] = allSettings.valuesIterator find (_ respondsTo cmd)
 
   // two AbsSettings objects are equal if their visible settings are equal.
-  override def hashCode() = visibleSettings.size  // going for cheap
+  override def hashCode = visibleSettings.size  // going for cheap
   override def equals(that: Any) = that match {
     case s: AbsSettings => this.userSetSettings == s.userSetSettings
     case _              => false
   }
-  override def toString() = {
+  override def toString = {
     val uss    = userSetSettings
     val indent = if (uss.nonEmpty) " " * 2 else ""
     uss.mkString(f"Settings {%n$indent", f"%n$indent", f"%n}%n")
@@ -144,8 +144,8 @@ trait AbsSettings extends scala.reflect.internal.settings.AbsSettings {
       case x: AbsSettings#AbsSetting  => (name == x.name) && (value == x.value)
       case _                          => false
     }
-    override def hashCode() = name.hashCode + value.hashCode
-    override def toString() = name + " = " + (if (value == "") "\"\"" else value)
+    override def hashCode = name.hashCode + value.hashCode
+    override def toString = name + " = " + (if (value == "") "\"\"" else value)
   }
 
   trait InternalSetting extends AbsSetting {
