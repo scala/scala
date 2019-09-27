@@ -561,13 +561,14 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      val coord = coordAt(start)
       val sym =
         roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
-          case Some(rootd) =>
+          case Some(found) =>
 //            rootd.coord = coord
+            val rootd = if (flags.is(ModuleClassCreationFlags) && tag == TYPEDEF) found.linkedClassOfClass else found
             rootd.info = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
             rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
             rootd.setPrivateWithin(privateWithin)
             seenRoots += rootd
-            ctx.log(s"replaced info of root ${showSym(rootd)}")
+            ctx.log(s"replaced info of ${showSym(rootd)}")
             rootd
           case _ =>
             val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))

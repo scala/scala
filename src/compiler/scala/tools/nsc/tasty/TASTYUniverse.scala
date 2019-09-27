@@ -77,6 +77,7 @@ trait TastyUniverse { self =>
       }
       def not(mask: FlagSet): Boolean = getFlag(mask) == 0
       def is(mask: FlagSet): Boolean = getFlag(mask) != 0
+      def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
       def isOneOf(mask: FlagSet): Boolean = is(mask)
     }
   }

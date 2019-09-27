@@ -2,9 +2,11 @@ package tastytest
 
 import scala.runtime.ScalaRunTime
 
-object TestEmpty {
+/** Suspended until case classes can be unpickled
+ */
+object TestPair {
 
-  def test1 = assert(productString(new EmptyProduct) === "EmptyProduct()")
+  def test1 = assert(productString(Pair(true, 3)) === "Pair(true,3)")
 
   def productString(p: Product) = ScalaRunTime._toString(p)
 
