@@ -68,7 +68,7 @@ abstract class TreeUnpickler(reader: TastyReader,
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
   private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
-    ctx.log(s"registered $sym in ${sym.owner} at $addr")
+    ctx.log(s"registered ${showSym(sym)} in ${sym.owner} at $addr")
     symAtAddr(addr) = sym
   }
 
@@ -554,6 +554,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         else
           show(flags) + " | " + show(tastyFlagSet)
       }
+      def isModuleClass = flags.is(ModuleClassCreationFlags) && isClass
       ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
@@ -563,7 +564,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
           case Some(found) =>
 //            rootd.coord = coord
-            val rootd = if (flags.is(ModuleClassCreationFlags) && tag == TYPEDEF) found.linkedClassOfClass else found
+            val rootd = if (isModuleClass) found.linkedClassOfClass else found
             rootd.info = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
             rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
             rootd.setPrivateWithin(privateWithin)
@@ -851,7 +852,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
+      ctx.log(s"typed { $sym: ${showRaw(sym.tpe)} } in (owner=${showSym(ctx.owner)})")
       goto(end)
       noCycle
     }
