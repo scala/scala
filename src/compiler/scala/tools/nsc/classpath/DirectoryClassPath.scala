@@ -149,7 +149,7 @@ object JrtClassPath {
             if (Files.notExists(ctSym)) None
             else {
               val classPath = new CtSymClassPath(ctSym, v.toInt)
-              closeableRegistry.registerClosable(classPath)
+              closeableRegistry.registerCloseable(classPath)
               Some(classPath)
             }
           } catch {

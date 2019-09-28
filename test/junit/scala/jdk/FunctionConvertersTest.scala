@@ -21,6 +21,7 @@ import org.junit.runners.JUnit4
 
 import scala.jdk.FunctionConverters._
 import scala.jdk.javaapi.{FunctionConverters => conv}
+import scala.language.implicitConversions
 import scala.tools.testkit.AssertUtil._
 
 @RunWith(classOf[JUnit4])

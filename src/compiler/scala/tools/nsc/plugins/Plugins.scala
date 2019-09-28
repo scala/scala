@@ -101,7 +101,7 @@ trait Plugins { global: Global =>
     cache.checkCacheability(classpath.map(_.toURL), checkStamps, disableCache) match {
       case Left(msg) =>
         val loader = newLoader()
-        closeableRegistry.registerClosable(loader)
+        closeableRegistry.registerCloseable(loader)
         loader
       case Right(paths) =>
         cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)
@@ -206,7 +206,7 @@ trait Plugins { global: Global =>
       case Left(msg) =>
         analyzer.macroLogVerbose(s"macro classloader: $msg.")
         val loader = newLoader()
-        closeableRegistry.registerClosable(loader)
+        closeableRegistry.registerCloseable(loader)
         loader
       case Right(paths) =>
         cache.getOrCreate(paths, newLoader, closeableRegistry, checkStamps)

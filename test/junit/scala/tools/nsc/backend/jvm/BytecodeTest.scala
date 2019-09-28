@@ -307,6 +307,7 @@ class BytecodeTest extends BytecodeTesting {
     ), fs)
     val assignedInConstr = getMethod(k, "<init>").instructions.filter(_.opcode == Opcodes.PUTFIELD) map {
       case f: Field => f.name
+      case _ => ???  // @unchecked
     }
     assertEquals(List("$outer", "x$1", "y$1"), assignedInConstr.sorted)
   }
