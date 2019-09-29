@@ -85,8 +85,8 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
 
   override private[nsc] def hasPackage(pkg: PackageName) = aggregates.exists(_.hasPackage(pkg))
   override private[nsc] def list(inPackage: PackageName): ClassPathEntries = {
-    val packages = new java.util.HashSet[PackageEntry]()
-    val classesAndSources = new java.util.HashMap[String, ClassRepresentation]()
+    val packages = new java.util.LinkedHashSet[PackageEntry]()
+    val classesAndSources = new java.util.LinkedHashMap[String, ClassRepresentation]()
     val onPackage: PackageEntry => Unit = packages.add(_)
     /**
      * Only one entry for each name. Merges existing and new entry, but doesnt overwrite source or binary of an existing entry
@@ -101,7 +101,6 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
         if (existingBinary.isEmpty && { entryBinary = entry.binary; entryBinary.isDefined})
           classesAndSources.put(entry.name, ClassAndSourceFilesEntry(entryBinary.get, existingSource.get))
         else {
-
           var entrySource: Option[AbstractFile] = null
           if (existingSource.isEmpty && { entrySource = entry.source; entrySource.isDefined})
             classesAndSources.put(entry.name, ClassAndSourceFilesEntry(existingBinary.get, entrySource.get))

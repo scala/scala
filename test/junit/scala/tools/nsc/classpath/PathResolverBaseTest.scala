@@ -111,17 +111,5 @@ abstract class PathResolverBaseTest {
     }
   }
 
-  @Test
-  def testFindClass: Unit = {
-    val classPath = createFlatClassPath(settings)
-    classesToFind foreach { className =>
-      assertTrue(s"File for $className should be found", classPath.findClass(className).isDefined)
-    }
-  }
 
-  @Test
-  def testFind1Class: Unit = {
-    val classPath = new CachedClassPath(new DirectoryClassPath(new File("S:\\scala\\quick2\\build\\quick\\classes\\compiler")))
-    assertTrue("", classPath.findClass("scala.tools.util.PathResolver").isDefined)
-  }
 }

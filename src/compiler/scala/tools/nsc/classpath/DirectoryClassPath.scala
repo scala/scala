@@ -134,7 +134,7 @@ object JrtClassPath {
   private lazy val jrtClassPath = {
     try {
       val fs = FileSystems.getFileSystem(URI.create("jrt:/"))
-      Some(new CachedClassPath(new JrtClassPath(fs)))
+      Some(new CachedClassPath(new JrtClassPath(fs), "jrt"))
     } catch {
       case _: ProviderNotFoundException | _: FileSystemNotFoundException => None
     }

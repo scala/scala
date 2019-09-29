@@ -12,16 +12,41 @@
 
 package scala.tools.nsc.classpath
 
+import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.util.ClassRepresentation
+case class ClassPathEntries private (packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepresentation]) {
+  def isEmpty = packages.isEmpty && classesAndSources.isEmpty
 
-case class ClassPathEntries(packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepresentation])
+  lazy val classesAndSourcesByName: Map[String, ClassRepresentation] = classesAndSources.map(e => e.name -> e)(collection.breakOut)
+  lazy val sources: Seq[SourceFileEntry] = collectCompressed { case s: SourceFileEntry => s }
+  lazy val classes: Seq[ClassFileEntry] = collectCompressed { case c: ClassFileEntry => c }
+
+  private def collectCompressed[T <: ClassRepresentation] (fn: PartialFunction[ClassRepresentation, T]): Seq[T] = {
+    val raw = classesAndSources.collect {fn}
+    if (raw.isEmpty) Nil
+    else if (raw.size == classesAndSources.size) classesAndSources.asInstanceOf[Seq[T]] //they are ==
+    else raw
+  }
+
+}
 
 object ClassPathEntries {
   import scala.language.implicitConversions
   // to have working unzip method
   implicit def entry2Tuple(entry: ClassPathEntries): (Seq[PackageEntry], Seq[ClassRepresentation]) = (entry.packages, entry.classesAndSources)
-  val empty = ClassPathEntries(Seq.empty, Seq.empty)
+  val empty = new ClassPathEntries(Seq.empty, Seq.empty)
+  def apply(packages: Seq[PackageEntry], classesAndSources: Seq[ClassRepresentation]): ClassPathEntries = {
+    if (packages.isEmpty && classesAndSources.isEmpty) empty else {
+      def compress[T <: AnyRef: Manifest](seq: Seq[T]): Seq[T] = seq match {
+        case Nil => Nil
+        case List(one) => List(one)
+        case wa : mutable.WrappedArray[T] => wa
+        case _ => new mutable.WrappedArray.ofRef(seq.toArray)
+      }
+      new ClassPathEntries(compress(packages), compress(classesAndSources))
+    }
+  }
 }
 
 trait ClassFileEntry extends ClassRepresentation {
