@@ -52,6 +52,14 @@ private[hashing] class MurmurHash3 {
     h
   }
 
+  private[scala] def tuple2Hash(x: Int, y: Int, seed: Int): Int = {
+    var h = seed
+    h = mix(h, "Tuple2".hashCode)
+    h = mix(h, x)
+    h = mix(h, y)
+    finalizeHash(h, 2)
+  }
+
   /** Compute the hash of a product */
   final def productHash(x: Product, seed: Int, ignorePrefix: Boolean = false): Int = {
     val arr = x.productArity
@@ -334,6 +342,7 @@ object MurmurHash3 extends MurmurHash3 {
   def rangeHash(start: Int, step: Int, last: Int): Int = rangeHash(start, step, last, seqSeed)
 
   private[scala] def arraySeqHash[@specialized T](a: Array[T]): Int = arrayHash(a, seqSeed)
+  private[scala] def tuple2Hash(x: Any, y: Any): Int = tuple2Hash(x.##, y.##, productSeed)
 
   /** To offer some potential for optimization.
    */
@@ -343,7 +352,31 @@ object MurmurHash3 extends MurmurHash3 {
     case xs => orderedHash(xs, seqSeed)
   }
 
-  def mapHash(xs: scala.collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
+  def mapHash(xs: scala.collection.Map[_, _]): Int = {
+    if (xs.isEmpty) emptyMapHash
+    else {
+      class accum extends Function2[Any, Any, Unit] {
+        var a, b, n = 0
+        var c = 1
+        override def apply(k: Any, v: Any): Unit = {
+          val h = tuple2Hash(k, v)
+          a += h
+          b ^= h
+          c *= h | 1
+          n += 1
+        }
+      }
+      val accum = new accum
+      var h = mapSeed
+      xs.foreachEntry(accum)
+      h = mix(h, accum.a)
+      h = mix(h, accum.b)
+      h = mixLast(h, accum.c)
+      finalizeHash(h, accum.n)
+    }
+  }
+
+  private[scala] val emptyMapHash = unorderedHash(Nil, mapSeed)
   def setHash(xs: scala.collection.Set[_]): Int    = unorderedHash(xs, setSeed)
 
   class ArrayHashing[@specialized T] extends Hashing[Array[T]] {

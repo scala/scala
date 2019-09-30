@@ -18,6 +18,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable.ReusableBuilder
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
+import scala.util.hashing.MurmurHash3
 
 /**
   * This class implements immutable maps using a list-based data structure. List map iterators and
@@ -79,6 +80,29 @@ sealed class ListMap[K, +V]
     res
   }
 
+  override def hashCode(): Int = {
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      // Can't efficiently override foreachEntry directly in ListMap because it would need to preserve iteration
+      // order be reversing the list first. But mapHash is symmetric so the reversed order is fine here.
+      val _reversed = new immutable.AbstractMap[K, V] {
+        override def isEmpty: Boolean = ListMap.this.isEmpty
+        override def removed(key: K): Map[K, V] = ListMap.this.removed(key)
+        override def updated[V1 >: V](key: K, value: V1): Map[K, V1] = ListMap.this.updated(key, value)
+        override def get(key: K): Option[V] = ListMap.this.get(key)
+        override def iterator: Iterator[(K, V)] = ListMap.this.iterator
+        override def foreachEntry[U](f: (K, V) => U): Unit = {
+          var curr: ListMap[K, V] = ListMap.this
+          while (curr.nonEmpty) {
+            f(curr.key, curr.value)
+            curr = curr.next
+          }
+        }
+      }
+      MurmurHash3.mapHash(_reversed)
+    }
+  }
+
   private[immutable] def key: K = throw new NoSuchElementException("key of empty map")
   private[immutable] def value: V = throw new NoSuchElementException("value of empty map")
   private[immutable] def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
@@ -109,7 +133,6 @@ object ListMap extends MapFactory[ListMap] {
     private[immutable] var _value: V,
     private[immutable] var _init: ListMap[K, V]
   ) extends ListMap[K, V] {
-
     releaseFence()
 
     override private[immutable] def value: V = _value

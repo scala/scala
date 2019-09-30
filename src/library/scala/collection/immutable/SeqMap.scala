@@ -82,6 +82,9 @@ object SeqMap extends MapFactory[SeqMap] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
     }
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+    }
   }
 
   @SerialVersionUID(3L)
@@ -112,6 +115,10 @@ object SeqMap extends MapFactory[SeqMap] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
+    }
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
     }
   }
 
@@ -148,6 +155,11 @@ object SeqMap extends MapFactory[SeqMap] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
+    }
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
+      f(key3, value3)
     }
   }
 
@@ -202,5 +214,12 @@ object SeqMap extends MapFactory[SeqMap] {
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
     }
+    override def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
+      f(key3, value3)
+      f(key4, value4)
+    }
+    hashCode
   }
 }

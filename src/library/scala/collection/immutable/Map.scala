@@ -19,6 +19,7 @@ import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
+import scala.util.hashing.MurmurHash3
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
@@ -259,6 +260,23 @@ object Map extends MapFactory[Map] {
       if (walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) this.asInstanceOf[Map[K, W]]
       else new Map1(key1, walue1)
     }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 1
+      var c = 1
+
+      var h = MurmurHash3.tuple2Hash(key1, value1)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
+    }
   }
 
   @SerialVersionUID(3L)
@@ -320,6 +338,28 @@ object Map extends MapFactory[Map] {
       if ((walue1.asInstanceOf[AnyRef] eq value1.asInstanceOf[AnyRef]) &&
           (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
       else new Map2(key1, walue1, key2, walue2)
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 2
+      var c = 1
+
+      var h = MurmurHash3.tuple2Hash(key1, value1)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key2, value2)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
     }
   }
 
@@ -390,6 +430,33 @@ object Map extends MapFactory[Map] {
           (walue2.asInstanceOf[AnyRef] eq value2.asInstanceOf[AnyRef]) &&
           (walue3.asInstanceOf[AnyRef] eq value3.asInstanceOf[AnyRef])) this.asInstanceOf[Map[K, W]]
       else new Map3(key1, walue1, key2, walue2, key3, walue3)
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 3
+      var c = 1
+
+      var h = MurmurHash3.tuple2Hash(key1, value1)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key2, value2)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key3, value3)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
     }
   }
 
@@ -473,6 +540,38 @@ object Map extends MapFactory[Map] {
     }
     private[immutable] def buildTo[V1 >: V](builder: HashMapBuilder[K, V1]): builder.type =
       builder.addOne(key1, value1).addOne(key2, value2).addOne(key3, value3).addOne(key4, value4)
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 4
+      var c = 1
+
+      var h = MurmurHash3.tuple2Hash(key1, value1)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key2, value2)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key3, value3)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.tuple2Hash(key4, value4)
+      a += h
+      b ^= h
+      c *= h | 1
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
+    }
   }
 }
 

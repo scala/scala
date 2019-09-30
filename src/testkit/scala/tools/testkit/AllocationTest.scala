@@ -20,7 +20,7 @@ object AllocationTest {
   val allocationCounter = ManagementFactory.getThreadMXBean.asInstanceOf[com.sun.management.ThreadMXBean]
   assertTrue(allocationCounter.isThreadAllocatedMemorySupported)
   allocationCounter.setThreadAllocatedMemoryEnabled(true)
-  val cost = {
+  val costObject = {
     val id = Thread.currentThread().getId
     for (i <- 1 to 1000) yield {
       val before = allocationCounter.getThreadAllocatedBytes(id)
@@ -28,8 +28,14 @@ object AllocationTest {
       (after - before)
     }
   }.min
+  val costInt: Long = {
+    object coster extends AllocationTest
+    val costs = coster.allocationInfoImpl(coster.hashCode(), new AllocationExecution(), 0)
+    costs.min
+  }
 
-  println(s"cost of tracking allocations = $cost")
+
+  println(s"cost of tracking allocations = $costObject")
 }
 
 trait AllocationTest {
@@ -37,23 +43,35 @@ trait AllocationTest {
   import AllocationTest._
 
   def nonAllocatingEqual(expected: Boolean, a: AnyRef, b: AnyRef): Unit = {
-    assertEquals(expected, nonAllocating(a == b))
+    assertEquals(expected, nonAllocating(java.lang.Boolean.valueOf(a == b)))
   }
 
-  def nonAllocating[T](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
-    val result = allocationInfo(fn)
-    val expected = fn
+  def nonAllocating[T: Manifest](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
+    onlyAllocates(0)(fn)
+  }
 
-    if (result.min != 0) {
-      result.allocations foreach {
-        x => println(s"allocation $x")
-      }
+  def onlyAllocates[T: Manifest](size:Int)(fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
+    val result = allocationInfo(fn)
+
+    if (result.min > size) {
+//      result.allocations foreach {
+//        x => println(s"allocation $x")
+//      }
       fail(s"allocating min = ${result.min}")
     }
     result.result
   }
 
-  def allocationInfo[T](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): AllocationInfo[T] = {
+  def allocationInfo[T: Manifest](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): AllocationInfo[T] = {
+    val cls = manifest[T].runtimeClass
+    val cost =
+      if (cls == classOf[Int]) costInt
+      else if (cls.isPrimitive) ???
+      else costObject
+    allocationInfoImpl(fn, execution, cost)
+  }
+
+  private[AllocationTest] def allocationInfoImpl[T](fn: => T, execution: AllocationExecution, cost: Long): AllocationInfo[T] = {
     val expected = fn
     val id = Thread.currentThread().getId
 
