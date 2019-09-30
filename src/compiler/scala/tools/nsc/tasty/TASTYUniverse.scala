@@ -193,6 +193,9 @@ trait TastyUniverse { self =>
           else if (flags.is(Module)) {
             owner.newModuleSymbol(name.toTermName, NoPosition, flags)
           }
+          else if (flags.is(Deferred) && name.isTypeName) {
+            owner.newAbstractType(name.toTypeName, NoPosition, flags)
+          }
           else {
             owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
           }
@@ -244,11 +247,11 @@ trait TastyUniverse { self =>
       @tailrec
       final def initialContext: InitialContext = this match {
         case ctx: InitialContext => ctx
-        case ctx: FreshContext => ctx.outer.initialContext
+        case ctx: FreshContext   => ctx.outer.initialContext
       }
 
       final def withOwner(owner: Symbol): Context =
-        if (owner ne this.owner) fresh.setOwner(owner) else this
+        if (owner `ne` this.owner) fresh.setOwner(owner) else this
 
       final def fresh: FreshContext = new FreshContext(this)
     }

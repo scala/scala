@@ -429,7 +429,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val sym = readSymRef()
       val prefix = readType()
       prefix match {
-        case prefix: ThisType if prefix.sym eq sym.owner /*&& !sym.is(Opaque)*/ =>
+        case prefix: ThisType if (prefix.sym eq sym.owner) && (sym.isTypeParameter) /*&& !sym.is(Opaque)*/ =>
           typeRef(NoPrefix, sym, Nil) //res.withDenot(sym.denot)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
