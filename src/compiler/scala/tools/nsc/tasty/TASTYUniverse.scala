@@ -77,6 +77,7 @@ trait TastyUniverse { self =>
       }
       def not(mask: FlagSet): Boolean = getFlag(mask) == 0
       def is(mask: FlagSet): Boolean = getFlag(mask) != 0
+      def ensuring(when: FlagSet, is: FlagSet): FlagSet = if (flagSet.is(when)) flagSet | is else flagSet
       def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
       def isOneOf(mask: FlagSet): Boolean = is(mask)
     }
@@ -189,6 +190,9 @@ trait TastyUniverse { self =>
           else if (name == nme.CONSTRUCTOR) {
             owner.newConstructor(NoPosition, flags & ~Flag.STABLE)
           }
+          else if (flags.is(Module)) {
+            owner.newModuleSymbol(name.toTermName, NoPosition, flags)
+          }
           else {
             owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
           }
@@ -199,7 +203,7 @@ trait TastyUniverse { self =>
       }
 
       def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
-        val sym = owner.newClassSymbol(name = typeName, newFlags = flags)
+        val sym = owner.newClassSymbol(name = typeName, newFlags = flags.ensuring(when = Trait, is = Abstract))
         sym.setPrivateWithin(privateWithin)
         sym.info = completer
         sym

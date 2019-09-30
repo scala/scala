@@ -814,7 +814,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           assertTasty(!exceptInline, s"unsupported flags on val: ${show(exceptInline)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(tpe.isInstanceOf[ConstantType], s"inline val ${sym.nameString} with non-constant type $tpe")
-          sym.info = if (sym.flags.not(Module)) internal.nullaryMethodType(tpe) else tpe // TODO: really?
+          sym.info = if (sym.isMethod) internal.nullaryMethodType(tpe) else tpe
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
           assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on type: ${show(completer.tastyFlagSet)}")
@@ -852,7 +852,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed { $sym: ${showRaw(sym.tpe)} } in (owner=${showSym(ctx.owner)})")
+      ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
       goto(end)
       noCycle
     }
