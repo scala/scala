@@ -1,5 +1,6 @@
 package scala.tools.nsc.classpath
 
+import java.net.URL
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{Files, LinkOption, Path, Paths}
 
@@ -8,7 +9,7 @@ import scala.tools.nsc.classpath.FileUtils.{endsClass, endsJImage, endsJarOrZip,
 import scala.tools.nsc.util.ClassPath
 
 sealed trait ClassPathElement {
-
+  def url: URL
 }
 object ClassPathElement {
 
@@ -24,6 +25,8 @@ object ClassPathElement {
   def fromPathOption(path: String): Option[PathBasedClassPathElement] = fromPathOption(Paths.get(path))
 
   sealed trait PathBasedClassPathElement extends ClassPathElement {
+    def url: URL = path.toUri.toURL
+
     def isDirectory = false
     def isJarOrZip = false
     def isImage = false
@@ -33,9 +36,15 @@ object ClassPathElement {
     def file = path.toFile
     def path = underlying.path
   }
-  object JrtClassPathElement$ extends ClassPathElement
-  case class VirtualDirectoryClassPathElement(dir: VirtualDirectory) extends ClassPathElement
-  case class ManifestClassPathElement(manifest: ManifestResources) extends ClassPathElement
+  object JrtClassPathElement extends ClassPathElement{
+    def url = new URL("jrt://")
+  }
+  case class VirtualDirectoryClassPathElement(dir: VirtualDirectory) extends ClassPathElement {
+    def url = dir.toURL
+  }
+  case class ManifestClassPathElement(manifest: ManifestResources) extends ClassPathElement {
+    def url = manifest.url
+  }
 
 
   class ZipJarClassPathElement(private[ClassPathElement] val underlying: BasicPathElement) extends PathBasedClassPathElement {

@@ -22,6 +22,7 @@ import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
+import scala.collection.mutable
 import scala.tools.nsc.classpath._
 
 // Loosely based on the draft specification at:
@@ -267,27 +268,43 @@ class PathResolver protected (settings: Settings, closeableRegistry: CloseableRe
 
 
     // Assemble the elements!
-    def basis = List[Traversable[ClassPath]](
-      buildJrt(settings.releaseValue, classPathFactory, PathResolverNoCaching),              // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
-      buildJavaBootClassPath(javaBootClassPath, classPathFactory, PathResolverNoCaching),    // 1. The Java bootstrap class path.
-      buildJavaExtClassPath(javaExtDirs, classPathFactory, PathResolverNoCaching),           // 2. The Java extension class path.
-      buildJavaAppClassPath(javaUserClassPath, classPathFactory, PathResolverNoCaching),     // 3. The Java application class path.
-      buildScalaBootClassPath(scalaBootClassPath, classPathFactory, PathResolverNoCaching),  // 4. The Scala boot class path.
-      buildScalaExtClassPath(scalaExtDirs, classPathFactory, PathResolverNoCaching),         // 5. The Scala extension class path.
-      buildScalaAppClassPath(userClassPath, classPathFactory, PathResolverNoCaching),        // 6. The Scala application class path.
-      buildManifestClassPath(useManifestClassPath, classPathFactory, PathResolverNoCaching), // 8. The Manifest class path.
-      buildSourceClassPath(sourcePath, classPathFactory, PathResolverNoCaching)              // 7. The Scala source path.
-    )
+    def basis = {
+      var included: Set[URL] = Set.empty[URL]
+      def growIncluded(cp: Traversable[ClassPath]): Traversable[ClassPath] = {
+        cp foreach {included ++= _.asURLs}
+        cp
+      }
+      List[Traversable[ClassPath]](
+        growIncluded(buildJrt(settings.releaseValue, classPathFactory, PathResolverNoCaching, included)),               // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
+        growIncluded(buildJavaBootClassPath(javaBootClassPath, classPathFactory, PathResolverNoCaching, included)),     // 1. The Java bootstrap class path.
+        growIncluded(buildJavaExtClassPath(javaExtDirs, classPathFactory, PathResolverNoCaching, included)),            // 2. The Java extension class path.
+        growIncluded(buildJavaAppClassPath(javaUserClassPath, classPathFactory, PathResolverNoCaching, included)),      // 3. The Java application class path.
+        growIncluded(buildScalaBootClassPath(scalaBootClassPath, classPathFactory, PathResolverNoCaching, included)),   // 4. The Scala boot class path.
+        growIncluded(buildScalaExtClassPath(scalaExtDirs, classPathFactory, PathResolverNoCaching, included)),          // 5. The Scala extension class path.
+        growIncluded(buildScalaAppClassPath(userClassPath, classPathFactory, PathResolverNoCaching, included)),         // 6. The Scala application class path.
+        growIncluded(buildManifestClassPath(useManifestClassPath, classPathFactory, PathResolverNoCaching, included)),  // 8. The Manifest class path.
+        growIncluded(buildSourceClassPath(sourcePath, classPathFactory, PathResolverNoCaching, included))               // 7. The Scala source path.
+      )
+    }
 
-    protected def buildJrt(release: Option[String],classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): Option[ClassPath] = JrtClassPath.apply(release, closeableRegistry)
-    protected def buildJavaBootClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.classesInPath(path,pathResolverCaching)
-    protected def buildJavaExtClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.contentsOfDirsInPath(path,pathResolverCaching)
-    protected def buildJavaAppClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.classesInExpandedPath(path,pathResolverCaching)
-    protected def buildScalaBootClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.classesInPath(path,pathResolverCaching)
-    protected def buildScalaExtClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.contentsOfDirsInPath(path,pathResolverCaching)
-    protected def buildScalaAppClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.classesInExpandedPath(path,pathResolverCaching)
-    protected def buildManifestClassPath(use:Boolean,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.classesInManifest(use,pathResolverCaching)
-    protected def buildSourceClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = classPathFactory.sourcesInPath(path,pathResolverCaching)
+    protected def buildJrt(release: Option[String],classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): Option[ClassPath] =
+      JrtClassPath.apply(release, closeableRegistry)
+    protected def buildJavaBootClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.classesInPath(path,pathResolverCaching, ignored)
+    protected def buildJavaExtClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.contentsOfDirsInPath(path,pathResolverCaching, ignored)
+    protected def buildJavaAppClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.classesInExpandedPath(path,pathResolverCaching, ignored)
+    protected def buildScalaBootClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.classesInPath(path,pathResolverCaching, ignored)
+    protected def buildScalaExtClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.contentsOfDirsInPath(path,pathResolverCaching, ignored)
+    protected def buildScalaAppClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.classesInExpandedPath(path,pathResolverCaching, ignored)
+    protected def buildManifestClassPath(use:Boolean,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.classesInManifest(use,pathResolverCaching, ignored)
+    protected def buildSourceClassPath(path:String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+      classPathFactory.sourcesInPath(path,pathResolverCaching, ignored)
 
     lazy val containers = basis.flatten.distinct
 
@@ -346,15 +363,15 @@ object ReuseAllPathResolver {
   def create(settings: Settings, closeableRegistry: CloseableRegistry): PathResolver =
     new ReuseAllPathResolver(settings, new CloseableRegistry)
 
-  private val jrtCache = new ConcurrentHashMap[Option[String], Option[ClassPath]]()
-  private val javaRootCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val javaExtCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val javaAppCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val scalaRootCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val scalaExtCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val scalaAppCp = new ConcurrentHashMap[String, List[ClassPath]]()
-  private val scalaManifestCp = new ConcurrentHashMap[Boolean, List[ClassPath]]()
-  private val sourceCp = new ConcurrentHashMap[String, List[ClassPath]]()
+  private val jrtCache = new ConcurrentHashMap[(Option[String], Set[URL]), Option[ClassPath]]()
+  private val javaRootCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val javaExtCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val javaAppCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val scalaRootCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val scalaExtCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val scalaAppCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
+  private val scalaManifestCp = new ConcurrentHashMap[(Boolean, Set[URL]), List[ClassPath]]()
+  private val sourceCp = new ConcurrentHashMap[(String, Set[URL]), List[ClassPath]]()
 
   private def individualSourceCache = new ConcurrentHashMap[String, CachedClassPath]()
   private def individualClassCache = new ConcurrentHashMap[String, CachedClassPath]()
@@ -389,40 +406,59 @@ class ReuseAllPathResolver(settings: Settings, closeableRegistry: CloseableRegis
       }
     }
 
-    override protected def buildJrt(release: Option[String],classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): Option[ClassPath] = {
-      jrtCache.computeIfAbsent(release, r => cached(super.buildJrt(r, classPathFactory, pathResolverCaching), "jrt"))
+    override protected def buildJrt(release: Option[String],classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): Option[ClassPath] = {
+      jrtCache.computeIfAbsent((release, ignored), {
+        case (release, ignored) => cached(super.buildJrt(release, classPathFactory, pathResolverCaching, ignored), "jrt")
+      })
     }
 
-    override protected def buildJavaBootClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      javaRootCp.computeIfAbsent(path, p => cachedTogether(super.buildJavaBootClassPath(p, classPathFactory, pathResolverCaching), "java boot cp"))
+    override protected def buildJavaBootClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      javaRootCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedTogether(super.buildJavaBootClassPath(path, classPathFactory, pathResolverCaching, ignored), "java boot cp")
+      })
     }
 
-    override protected def buildJavaExtClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      javaExtCp.computeIfAbsent(path, p => cachedTogether(super.buildJavaExtClassPath(p, classPathFactory, pathResolverCaching), "java ext cp"))
+    override protected def buildJavaExtClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      javaExtCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedTogether(super.buildJavaExtClassPath(path, classPathFactory, pathResolverCaching, ignored), "java ext cp")
+      })
     }
 
-    override protected def buildJavaAppClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      javaAppCp.computeIfAbsent(path, p => cachedTogether(super.buildJavaAppClassPath(p, classPathFactory, pathResolverCaching), "java app cp"))
+    override protected def buildJavaAppClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      javaAppCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedTogether(super.buildJavaAppClassPath(path, classPathFactory, pathResolverCaching, ignored), "java app cp")
+      })
+
     }
 
-    override protected def buildScalaBootClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      scalaRootCp.computeIfAbsent(path, p => cachedTogether(super.buildScalaBootClassPath(p, classPathFactory, pathResolverCaching), "scala boot cp"))
+    override protected def buildScalaBootClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      scalaRootCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedTogether(super.buildScalaBootClassPath(path, classPathFactory, pathResolverCaching, ignored), "scala boot cp")
+      })
     }
 
-    override protected def buildScalaExtClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      scalaExtCp.computeIfAbsent(path, p => cachedTogether(super.buildScalaExtClassPath(p, classPathFactory, pathResolverCaching), "scala ext cp"))
+    override protected def buildScalaExtClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      scalaExtCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedTogether(super.buildScalaExtClassPath(path, classPathFactory, pathResolverCaching, ignored), "scala ext cp")
+      })
     }
 
-    override protected def buildScalaAppClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      scalaAppCp.computeIfAbsent(path, p => cachedIndividually(super.buildScalaAppClassPath(p, classPathFactory, pathResolverCaching), individualClassCache, "scala app cp"))
+    override protected def buildScalaAppClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      scalaAppCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedIndividually(super.buildScalaAppClassPath(path, classPathFactory, pathResolverCaching, ignored), individualClassCache, "scala app cp")
+      })
     }
 
-    override protected def buildManifestClassPath(use: Boolean,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      scalaManifestCp.computeIfAbsent(use, u => cachedTogether(super.buildManifestClassPath(u, classPathFactory, pathResolverCaching), "manifest cp"))
+    override protected def buildManifestClassPath(use: Boolean,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      scalaManifestCp.computeIfAbsent((use, ignored), {
+        case (use, ignored) => cachedTogether(super.buildManifestClassPath(use, classPathFactory, pathResolverCaching, ignored), "manifest cp")
+      })
     }
 
-    override protected def buildSourceClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching: PathResolverCaching): List[ClassPath] = {
-      sourceCp.computeIfAbsent(path, p => cachedIndividually(super.buildSourceClassPath(p, classPathFactory, pathResolverCaching), individualSourceCache, "source cp"))
+    override protected def buildSourceClassPath(path: String,classPathFactory: ClassPathFactory, pathResolverCaching:PathResolverCaching, ignored: Set[URL]): List[ClassPath] = {
+      sourceCp.computeIfAbsent((path, ignored), {
+        case (path, ignored) => cachedIndividually(super.buildSourceClassPath(path, classPathFactory, pathResolverCaching, ignored), individualSourceCache, "source cp")
+      })
     }
   }
 }

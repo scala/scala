@@ -215,7 +215,7 @@ object Main extends Main {
 
   private def createClassPath(cpArg: Option[String], settings: Settings, closeableRegistry: CloseableRegistry) = cpArg match {
     case Some(cp) =>
-      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp, PathResolverNoCaching ))
+      AggregateClassPath(new ClassPathFactory(settings, closeableRegistry).classesInExpandedPath(cp, PathResolverNoCaching, Set.empty))
     case _ =>
       settings.classpath.value = "." // include '.' in the default classpath scala/bug#6669
       settings.pathResolver(closeableRegistry).result

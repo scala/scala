@@ -12,6 +12,8 @@
 
 package scala.tools.nsc.classpath
 
+import java.net.URL
+
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.reflect.io.Path.string2path
 import scala.tools.nsc.{CloseableRegistry, Settings}
@@ -41,31 +43,36 @@ class ClassPathFactory(settings: Settings, closeableRegistry: CloseableRegistry 
   /**
     * Creators for sub classpaths which preserve this context.
     */
-  def sourcesInPath(path: String, pathResolverCaching: PathResolverCaching): List[ClassPath] =
-     expandPath(path, expandStar = false) collect {case dir:DirectoryClassPathElement => createSourcePath(dir, pathResolverCaching)}
+  def sourcesInPath(path: String, pathResolverCaching: PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
+     expandPath(path, expandStar = false) collect {case dir:DirectoryClassPathElement if !ignored.contains(dir.url) => createSourcePath(dir, pathResolverCaching)}
 
   def expandPath(path: String, expandStar: Boolean = true): List[PathBasedClassPathElement] = scala.tools.nsc.util.ClassPath.expandPath(path, expandStar)
 
   def expandDir(extdir: PathBasedClassPathElement): List[PathBasedClassPathElement] = scala.tools.nsc.util.ClassPath.expandDir(extdir)
 
-  def contentsOfDirsInPath(path: String, pathResolverCaching: PathResolverCaching): List[ClassPath] =
+  def contentsOfDirsInPath(path: String, pathResolverCaching: PathResolverCaching, ignored: Set[URL]): List[ClassPath] =
     for {
       dir <- expandPath(path, expandStar = false)
       content <- expandDir(dir)
+      if (!ignored.contains (content.url))
     } yield newClassPath(content, pathResolverCaching)
 
-  def classesInExpandedPath(path: String, pathResolverCaching: PathResolverCaching) =
-    classesInPathImpl(path, expand = true, pathResolverCaching)
+  def classesInExpandedPath(path: String, pathResolverCaching: PathResolverCaching, ignored: Set[URL]) =
+    classesInPathImpl(path, expand = true, pathResolverCaching, ignored)
 
-  def classesInPath(path: String, pathResolverCaching: PathResolverCaching) = classesInPathImpl(path, expand = false, pathResolverCaching)
+  def classesInPath(path: String, pathResolverCaching: PathResolverCaching, ignored: Set[URL]) =
+    classesInPathImpl(path, expand = false, pathResolverCaching, ignored)
 
-  def classesInManifest(useManifestClassPath: Boolean, pathResolverCaching: PathResolverCaching) =
-    if (useManifestClassPath) scala.tools.nsc.util.ClassPath.manifests.map(url => newClassPath(AbstractFile getResources url, pathResolverCaching))
+  def classesInManifest(useManifestClassPath: Boolean, pathResolverCaching: PathResolverCaching, ignored: Set[URL]) =
+    if (useManifestClassPath) scala.tools.nsc.util.ClassPath.manifests.collect {
+      case url if !ignored.contains(url) => newClassPath(AbstractFile getResources url, pathResolverCaching)
+    }
     else Nil
 
   // Internal
-  protected def classesInPathImpl(path: String, expand: Boolean, pathResolverCaching: PathResolverCaching) =
-    expandPath(path, expand).collect { case path: PathBasedClassPathElement => newClassPath(path, pathResolverCaching)}
+  protected def classesInPathImpl(path: String, expand: Boolean, pathResolverCaching: PathResolverCaching, ignored: Set[URL]) =
+    expandPath(path, expand).collect { case path: PathBasedClassPathElement if !ignored.contains (path.url) => newClassPath(path, pathResolverCaching)}
+
 
   private def createSourcePath(file: PathBasedClassPathElement, pathResolverCaching: PathResolverCaching): ClassPath =
     file match {

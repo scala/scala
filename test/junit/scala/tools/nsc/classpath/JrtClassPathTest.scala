@@ -26,7 +26,7 @@ class JrtClassPathTest {
         val resolver = settings.pathResolver(closeableRegistry)
         val elements = new ClassPathFactory(settings, closeableRegistry).classesInPath(
           new resolver.DefaultCalculated().javaBootClassPath,
-          PathResolverNoCaching)
+          PathResolverNoCaching, Set.empty)
         AggregateClassPath(elements)
       }
       else JrtClassPath(None, closeableRegistry).get

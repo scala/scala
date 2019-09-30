@@ -149,7 +149,7 @@ abstract class BytecodeTest {
     val factory = new ClassPathFactory(new Settings(), new CloseableRegistry)
     val containers = factory.classesInExpandedPath(
       sys.props("partest.output") + java.io.File.pathSeparator + Defaults.javaUserClassPath,
-      PathResolverNoCaching)
+      PathResolverNoCaching, Set.empty)
     new AggregateClassPath(containers)
   }
 }
