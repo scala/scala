@@ -1605,7 +1605,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         profiler.afterPhase(Global.InitPhase, snap)
         compileSources(sources)
       }
-      catch { case ex: IOException => globalError(ex.getMessage()) }
+      catch {
+        case ex: InterruptedException => reporter.cancelled = true
+        case ex: IOException => globalError(ex.getMessage())
+      }
     }
 
     /** If this compilation is scripted, convert the source to a script source. */
