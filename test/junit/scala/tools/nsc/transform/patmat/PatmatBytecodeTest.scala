@@ -7,8 +7,11 @@ import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
 import scala.tools.nsc.backend.jvm.AsmUtils._
+import scala.tools.testkit.ASMConverters.Instruction
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
+
+import PartialFunction.cond
 
 @RunWith(classOf[JUnit4])
 class PatmatBytecodeTest extends BytecodeTesting {
@@ -178,5 +181,23 @@ class PatmatBytecodeTest extends BytecodeTesting {
     assertSameSummary(getMethod(c, "t8"), List(ALOAD, "b", IRETURN))
     // C allocation not eliminated - constructor may have side-effects.
     assertSameSummary(getMethod(c, "t9"), List(NEW, DUP, LDC, BIPUSH, "<init>", "a", "toString", ARETURN))
+  }
+
+  @Test
+  def stringSwitch(): Unit = {
+    val code =
+      """import annotation.switch
+        |class Switches {
+        |  val cond = true
+        |  def two   = ("foo" : @switch) match { case "foo" => case "bar" =>                   }
+        |  def guard = ("foo" : @switch) match { case "z"   => case "y"   => case x if cond => }
+        |  def colli = ("foo" : @switch) match { case "DB" =>  case "Ca"  =>                   }
+        |}
+      """.stripMargin
+    val List(switches) = compiler.compileClasses(code)
+    def isSwitchInsn(insn: Instruction) = cond(insn.opcode) { case LOOKUPSWITCH | TABLESWITCH => true }
+    List("two", "guard", "colli") foreach { m =>
+      assert(getInstructions(switches, m).exists(isSwitchInsn))
+    }
   }
 }

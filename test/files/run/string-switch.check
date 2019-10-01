@@ -1,0 +1,29 @@
+fido Success(dog)
+garfield Success(cat)
+wanda Success(fish)
+henry Success(horse)
+felix Failure(scala.MatchError: felix (of class java.lang.String))
+deuteronomy Success(cat)
+=====
+AaAa 2031744 Success(1)
+BBBB 2031744 Success(2)
+BBAa 2031744 Failure(scala.MatchError: BBAa (of class java.lang.String))
+cCCc 3015872 Success(3)
+ddDd 3077408 Success(4)
+EEee 2125120 Failure(scala.MatchError: EEee (of class java.lang.String))
+=====
+A Success(())
+X Failure(scala.MatchError: X (of class java.lang.String))
+=====
+ Success(3)
+null Success(2)
+7 Failure(scala.MatchError: 7 (of class java.lang.String))
+=====
+pig Success(1)
+dog Success(2)
+=====
+Ea 2236 Success(1)
+FB 2236 Success(2)
+cC 3136 Success(3)
+xx 3840 Success(4)
+null 0 Success(4)

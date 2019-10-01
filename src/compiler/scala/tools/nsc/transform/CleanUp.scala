@@ -61,9 +61,6 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     }
     private def mkTerm(prefix: String): TermName = unit.freshTermName(prefix)
 
-    //private val classConstantMeth = new HashMap[String, Symbol]
-    //private val symbolStaticFields = new HashMap[String, (Symbol, Tree, Tree)]
-
     private var localTyper: analyzer.Typer = null
 
     private def typedWithPos(pos: Position)(tree: Tree) =
@@ -383,6 +380,106 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       }
     }
 
+    object StringsPattern {
+      def unapply(arg: Tree): Option[List[String]] = arg match {
+        case Literal(Constant(value: String)) => Some(value :: Nil)
+        case Literal(Constant(null))          => Some(null :: Nil)
+        case Alternative(alts)                => traverseOpt(alts)(unapply).map(_.flatten)
+        case _                                => None
+      }
+    }
+
+    // transform scrutinee of all matches to ints
+    def transformSwitch(sw: Match): Tree = { import CODE._
+      sw.selector.tpe match {
+        case IntTpe => sw // can switch directly on ints
+        case StringTpe =>
+          // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
+          val Match(Typed(selTree: Ident, _), cases) = sw
+          val sel = selTree.symbol
+          val restpe = sw.tpe
+          val swPos = sw.pos.focus
+
+          /* From this:
+           *     string match { case "AaAa" => 1 case "BBBB" | "c" => 2 case _ => 3}
+           * Generate this:
+           *     string.## match {
+           *       case 2031744 =>
+           *         if ("AaAa" equals string) goto match1
+           *         else if ("BBBB" equals string) goto match2
+           *         else goto matchFailure
+           *       case 99 =>
+           *         if ("c" equals string) goto match2
+           *         else goto matchFailure
+           *       case _ => goto matchFailure
+           *     }
+           *     match1: goto matchSuccess (1)
+           *     match2: goto matchSuccess (2)
+           *     matchFailure: goto matchSuccess (3) // would be throw new MatchError(string) if no default was given
+           *     matchSuccess(res: Int): res
+           * This proliferation of labels is needed to handle alternative patterns, since multiple branches in the
+           * resulting switch may need to correspond to a single case body.
+           */
+
+          val stats = mutable.ListBuffer.empty[Tree]
+          var failureBody = Throw(New(definitions.MatchErrorClass.tpe_*, REF(sel))) : Tree
+
+          // genbcode isn't thrilled about seeing labels with Unit arguments, so `success`'s type is one of
+          // `${sw.tpe} => ${sw.tpe}` or `() => Unit` depending.
+          val success = {
+            val lab = currentOwner.newLabel(unit.freshTermName("matchEnd"), swPos)
+            if (restpe =:= UnitTpe) {
+              lab.setInfo(MethodType(Nil, restpe))
+            } else {
+              lab.setInfo(MethodType(lab.newValueParameter(nme.x_1).setInfo(restpe) :: Nil, restpe))
+            }
+          }
+          def succeed(res: Tree): Tree =
+            if (restpe =:= UnitTpe) BLOCK(res, REF(success) APPLY Nil) else REF(success) APPLY res
+
+          val failure = currentOwner.newLabel(unit.freshTermName("matchEnd"), swPos).setInfo(MethodType(Nil, restpe))
+          def fail(): Tree = atPos(swPos) { Apply(REF(failure), Nil) }
+
+          val newSel = atPos(sel.pos) { IF (sel OBJ_EQ NULL) THEN LIT(0) ELSE (Apply(REF(sel) DOT Object_hashCode, Nil)) }
+          val casesByHash =
+            cases.flatMap {
+              case cd@CaseDef(StringsPattern(strs), _, body) =>
+                val jump = currentOwner.newLabel(unit.freshTermName("case"), swPos).setInfo(MethodType(Nil, restpe))
+                stats += LabelDef(jump, Nil, succeed(body))
+                strs.map((_, jump, cd.pat.pos))
+              case cd@CaseDef(Ident(nme.WILDCARD), _, body) =>
+                failureBody = succeed(body)
+                None
+              case cd => globalError(s"unhandled in switch: $cd"); None
+            }.groupBy(_._1.##)
+          val newCases = casesByHash.toList.sortBy(_._1).map {
+            case (hash, cases) =>
+              val newBody = cases.foldLeft(fail()) {
+                case (next, (pat, jump, pos)) =>
+                  val comparison = if (pat == null) Object_eq else Object_equals
+                  atPos(pos) {
+                    IF(LIT(pat) DOT comparison APPLY REF(sel)) THEN (REF(jump) APPLY Nil) ELSE next
+                  }
+              }
+              CaseDef(LIT(hash), EmptyTree, newBody)
+          }
+
+          stats += LabelDef(failure, Nil, failureBody)
+
+          stats += (if (restpe =:= UnitTpe) {
+            LabelDef(success, Nil, gen.mkLiteralUnit)
+          } else {
+            LabelDef(success, success.info.params.head :: Nil, REF(success.info.params.head))
+          })
+
+          stats prepend Match(newSel, newCases :+ CaseDef(Ident(nme.WILDCARD), EmptyTree, fail()))
+
+          val res = Block(stats.result : _*)
+          localTyper.typedPos(sw.pos)(res)
+        case _ => globalError(s"unhandled switch scrutinee type ${sw.selector.tpe}: $sw"); sw
+      }
+    }
+
     override def transform(tree: Tree): Tree = tree match {
       case _: ClassDef if genBCode.codeGen.CodeGenImpl.isJavaEntryPoint(tree.symbol, currentUnit, settings.mainClass.valueSetByUser.map(_.toString)) =>
         // collecting symbols for entry points here (as opposed to GenBCode where they are used)
@@ -497,6 +594,9 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         reducingTransformListApply(rest.elems.length) {
           super.transform(localTyper.typedPos(tree.pos)(consed))
         }
+
+      case switch: Match =>
+        super.transform(transformSwitch(switch))
 
       case _ =>
         super.transform(tree)
