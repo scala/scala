@@ -108,15 +108,23 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
   def iterator: Iterator[Int] = iteratorFrom(0)
 
   def iteratorFrom(start: Int): Iterator[Int] = new AbstractIterator[Int] {
-    private[this] var current = start
-    private[this] val end = nwords * WordLength
-    def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
-      current != end
+    private[this] var currentPos = if (start > 0) start >> LogWL else 0
+    private[this] var currentWord = if (start > 0) word(currentPos) & (-1L << (start & (WordLength - 1))) else word(0)
+    final override def hasNext: Boolean = {
+      while (currentWord == 0) {
+        if (currentPos + 1 >= nwords) return false
+        currentPos += 1
+        currentWord = word(currentPos)
+      }
+      true
     }
-    def next(): Int =
-      if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next()
+    final override def next(): Int = {
+      if (hasNext) {
+        val bitPos = java.lang.Long.numberOfTrailingZeros(currentWord)
+        currentWord &= currentWord - 1
+        (currentPos << LogWL) + bitPos
+      } else Iterator.empty.next()
+    }
   }
 
   override def stepper[S <: Stepper[_]](implicit shape: StepperShape[Int, S]): S with EfficientSplit = {
