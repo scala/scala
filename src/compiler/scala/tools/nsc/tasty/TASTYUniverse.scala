@@ -59,12 +59,11 @@ trait TastyUniverse { self =>
     val Param: FlagSet = Flag.PARAM
     val Deferred: FlagSet = Flag.DEFERRED
     val Method: FlagSet = Flags.METHOD
-    val ModuleVal: FlagSet = Flags.MODULEVAR // different encoding of objects than dotty
 
     val NoInitsInterface: (FlagSet, TastyFlagSet) = (Interface, NoInits)
     val TermParamOrAccessor: FlagSet = Param | ParamAccessor
-    val ModuleValCreationFlags: FlagSet = ModuleVal | Lazy | Final | StableRealizable
-    val ModuleClassCreationFlags: FlagSet = Flags.ModuleFlags | Final
+    val ModuleCreationFlags: FlagSet = Module | Lazy | Final | StableRealizable
+    val ModuleClassCreationFlags: FlagSet = Module | Final
     val DeferredOrLazyOrMethod: FlagSet = Deferred | Lazy | Method
 
     implicit class FlagSetOps(private val flagSet: FlagSet) {
@@ -191,13 +190,13 @@ trait TastyUniverse { self =>
             owner.newConstructor(NoPosition, flags & ~Flag.STABLE)
           }
           else if (flags.is(Module)) {
-            owner.newModuleSymbol(name.toTermName, NoPosition, flags)
+            owner.newModule(name.toTermName, NoPosition, flags)
           }
           else if (flags.is(Deferred) && name.isTypeName) {
             owner.newAbstractType(name.toTypeName, NoPosition, flags)
           }
           else {
-            owner.newMethodSymbol(name.toTermName, NoPosition, flags) // TODO: other kinds of symbols
+            owner.newMethodSymbol(name.toTermName, NoPosition, flags)
           }
         }
         sym.setPrivateWithin(privateWithin)
@@ -224,7 +223,7 @@ trait TastyUniverse { self =>
        *  type of the constructed instance is returned
        */
       def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
-        if (sym.name == nme.CONSTRUCTOR) sym.owner.typeRef(typeParams.map(_.tpe))
+        if (sym.name == nme.CONSTRUCTOR) typeRef(sym.owner.toType.prefix, sym.owner, typeParams.map(_.tpe))
         else givenTp
 
       /** The method type corresponding to given parameters and result type */

@@ -429,7 +429,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       val sym = readSymRef()
       val prefix = readType()
       prefix match {
-        case prefix: ThisType if (prefix.sym eq sym.owner) && (sym.isTypeParameter) /*&& !sym.is(Opaque)*/ =>
+        case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
           typeRef(NoPrefix, sym, Nil) //res.withDenot(sym.denot)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
@@ -467,7 +467,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (tag == DEFDEF) flags |= Method
       if (givenFlags.is(Module))
-        flags = flags | (if (tag == VALDEF) ModuleValCreationFlags else ModuleClassCreationFlags)
+        flags = flags | (if (tag == VALDEF) ModuleCreationFlags else ModuleClassCreationFlags)
       if (ctx.owner.isClass) {
         if (tag == TYPEPARAM) flags |= Param
         else if (tag == PARAM) {
@@ -560,30 +560,39 @@ abstract class TreeUnpickler(reader: TastyReader,
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
       }
 //      val coord = coordAt(start)
-      val sym =
+      val sym = {
+        val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
         roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
           case Some(found) =>
 //            rootd.coord = coord
-            val rootd = if (isModuleClass) found.linkedClassOfClass else found
-            rootd.info = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
+            val rootd   = if (isModuleClass) found.linkedClassOfClass else found
+            rootd.info  = completer
             rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
-            rootd.setPrivateWithin(privateWithin)
+            rootd.privateWithin = privateWithin
             seenRoots += rootd
             ctx.log(s"replaced info of ${showSym(rootd)}")
             rootd
           case _ =>
-            val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
-            if (isClass)
-              ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-            else
-              ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
+            if (isModuleClass) {
+              val module = ctx.owner.rawInfo.decls.lookup(name.toTermName)
+              assert(module.isModule, "unpickling module class from TASTy before its module val.")
+              val moduleClass           = module.moduleClass
+              moduleClass.info          = completer
+              moduleClass.flags         = flags
+              moduleClass.privateWithin = privateWithin
+              moduleClass
+            }
+            else {
+              if (isClass)
+                ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
+              else
+                ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
+            }
         }
+      }
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
-        case cls: ClassSymbol =>
-          if (!cls.rawInfo.decls.containsName(name)) {
-            cls.rawInfo.decls.enter(sym)
-          }
+        case cls: ClassSymbol if !isModuleClass => cls.rawInfo.decls.enterIfNew(sym)
         case _ =>
       }
       registerSym(start, sym)
@@ -852,7 +861,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed { $sym: ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
+      ctx.log(s"typed { $sym: ${sym.tpe} # ${sym.hashCode} } in (owner=${showSym(ctx.owner)})")
       goto(end)
       noCycle
     }
@@ -1193,37 +1202,37 @@ abstract class TreeUnpickler(reader: TastyReader,
         Select(qual, name).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
       }
 
-//      def readQualId(): (untpd.Ident, TypeRef) = {
-//        val qual = readTerm().asInstanceOf[untpd.Ident]
-//         (untpd.Ident(qual.name).withSpan(qual.span), qual.tpe.asInstanceOf[TypeRef])
-//      }
+      def readQualId(): (Ident, TypeRef) = {
+        val qual = readTerm().asInstanceOf[Ident]
+        (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
+      }
 
-        def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type) = {
-          if (sig ne NotAMethod) {
-            ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
-            val MethodSignature(args, ret) = sig
-            val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
-            var seenTypeParams = false
-            val (tyParamCount, argsSyms) = {
-              val (tyParamCounts, params) = args.partitionMap(identity)
-              assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
-              (tyParamCounts.headOption.getOrElse(0), params.map(ctx.loadingMirror.findMemberFromRoot))
-            }
-            val member = qualType.member(name)
-            val alts = member.asTerm.alternatives
-            val tpe = alts.find { sym =>
-              val method = sym.asMethod
-              val params = method.paramss.flatten
-              method.returnType.erasure.typeSymbolDirect == retSym &&
-                params.length == argsSyms.length &&
-                tyParamCount == method.typeParams.length &&
-                params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbolDirect == sym }
-            }.map(_.tpe).getOrElse(ifNotOverload(name))
-            ctx.log(s"selected $tpe")
-            tpe
+      def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type) = {
+        if (sig ne NotAMethod) {
+          ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
+          val MethodSignature(args, ret) = sig
+          val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
+          var seenTypeParams = false
+          val (tyParamCount, argsSyms) = {
+            val (tyParamCounts, params) = args.partitionMap(identity)
+            assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
+            (tyParamCounts.headOption.getOrElse(0), params.map(ctx.loadingMirror.findMemberFromRoot))
           }
-          else ifNotOverload(name)
+          val member = qualType.member(name)
+          val alts = member.asTerm.alternatives
+          val tpe = alts.find { sym =>
+            val method = sym.asMethod
+            val params = method.paramss.flatten
+            method.returnType.erasure.typeSymbolDirect == retSym &&
+              params.length == argsSyms.length &&
+              tyParamCount == method.typeParams.length &&
+              params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbolDirect == sym }
+          }.map(_.tpe).getOrElse(ifNotOverload(name))
+          ctx.log(s"selected $tpe")
+          tpe
         }
+        else ifNotOverload(name)
+      }
 
 //      def accessibleDenot(qualType: Type, name: Name, sig: Signature) = {
 //        val pre = ctx.typeAssigner.maybeSkolemizePrefix(qualType, name)
@@ -1240,24 +1249,24 @@ abstract class TreeUnpickler(reader: TastyReader,
         case IDENTtpt =>
           Ident(readName().toTypeName).setType(readType())
         case SELECT =>
-         readSigName() match {
-           case Left(SigName(name, sig)) => completeSelect(name, sig)
-           case Right(name)              => completeSelect(name, NotAMethod)
-         }
+          readSigName() match {
+            case Left(SigName(name, sig)) => completeSelect(name, sig)
+            case Right(name)              => completeSelect(name, NotAMethod)
+          }
         case SELECTtpt =>
           val name = readName().toTypeName
           completeSelect(name, NotAMethod)
-//        case QUALTHIS =>
-//          val (qual, tref) = readQualId()
-//          untpd.This(qual).withType(ThisType.raw(tref))
+        case QUALTHIS =>
+          val (qual, tref) = readQualId()
+          new This(qual.name.toTypeName).setType(internal.thisType(tref.sym))
         case NEW =>
           val tpt = readTpt()
           New(tpt).setType(tpt.tpe)
 //        case THROW =>
 //          Throw(readTerm())
-       case SINGLETONtpt =>
-         val tpt = readTerm()
-         SingletonTypeTree(tpt).setType(tpt.tpe)
+        case SINGLETONtpt =>
+          val tpt = readTerm()
+          SingletonTypeTree(tpt).setType(tpt.tpe)
 //        case BYNAMEtpt =>
 //          ByNameTypeTree(readTpt())
 //        case NAMEDARG =>
