@@ -20,3 +20,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.io.ZipArchiv
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.ZipArchive.getDir")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.reflect.io.FileZipArchive.allDirs")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$typeConstructor")
+
+ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.scala$reflect$runtime$SynchronizedTypes$$super$defineNormalized")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.defineNormalized")
+ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.defineNormalized")

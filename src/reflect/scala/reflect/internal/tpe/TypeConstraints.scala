@@ -35,8 +35,12 @@ private[internal] trait TypeConstraints {
     //OPT this method is public so we can do `manual inlining`
     var log: UndoPairs = List()
 
-    // register with the auto-clearing cache manager
-    perRunCaches.recordCache(this)
+    if (isCompilerUniverse) {
+      // register with the auto-clearing cache manager
+      // perRunCaches isn't threadsafe so don't do this in runtime reflection, which doesn't (can't)
+      // ever call `perRunCaches.clearAll()` anyway
+      perRunCaches.recordCache(this)
+    }
 
     /** Undo all changes to constraints to type variables up to `limit`. */
     //OPT this method is public so we can do `manual inlining`
