@@ -14,9 +14,6 @@ install:
   - unset JAVA_HOME
   - java -Xmx32m -version
   - javac -J-Xmx32m -version
-  - wget -qO- "https://github.com/crazy-max/travis-wait-enhanced/releases/download/v0.2.1/travis-wait-enhanced_0.2.1_linux_x86_64.tar.gz" | tar -zxvf - travis-wait-enhanced
-  - mv travis-wait-enhanced /home/travis/bin/
-  - if [[ $(sha256sum /home/travis/bin/travis-wait-enhanced | awk '{print $1}') != "beafc50180f359ee870782415613daff6fea134c88dde3a8a5d276d10ca1ddf0" ]]; then exit 1; fi
 
 stages:
   - name: build
@@ -40,8 +37,8 @@ jobs:
           - determineScalaVersion
           - removeExistingBuilds $integrationRepoUrl
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-          - travis-wait-enhanced --interval=9m --timeout=90m -- buildLocker
-          - travis-wait-enhanced --interval=9m --timeout=90m -- buildQuick
+          - travis_wait 90 buildLocker
+          - travis_wait 90 buildQuick
           - triggerScalaDist
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
@@ -51,10 +48,10 @@ jobs:
         if: type = pull_request
         script:
           - set -e
-          - travis-wait-enhanced --interval=9m --timeout=90m -- sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - travis_wait 90 sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - travis-wait-enhanced --interval=9m --timeout=90m -- sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
-          - travis-wait-enhanced --interval=9m --timeout=90m -- sbt -Dscala.build.compileWithDotty=true library/compile
+          - travis_wait 90 sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - travis_wait 90 sbt -Dscala.build.compileWithDotty=true library/compile
 
       # build the spec using jekyll
       - stage: build
