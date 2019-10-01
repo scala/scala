@@ -1546,6 +1546,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
             phase = current
           }
         } else {
+          // In runtime reflection, there is only on phase, so don't mutate Global.phase which would lead to warnings
+          // of data races from when using TSAN to assess thread safety.
           try {
             tp.complete(this)
           } finally {
