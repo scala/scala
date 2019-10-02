@@ -10,6 +10,7 @@ object HelloWorld {
   def the[T](implicit x: T): x.type = x
   def bounded[T >: Null <: String](a: T): String = a + a
   def higher[F[_], G[_]](fInt: F[Int])(implicit ev: F[Int] <:< G[Int]): G[Int] = ev(fInt)
+  def higherBounded[F[_] >: Null <: List[_], A](f: F[A]): F[A] = f
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
 }

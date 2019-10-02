@@ -1383,11 +1383,9 @@ abstract class TreeUnpickler(reader: TastyReader,
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())
             case LAMBDAtpt =>
-              val tparams    = readParams[NoCycle](TYPEPARAM)
-              val body       = readTpt()
-              val typeParams = tparams.map(symFromNoCycle)
-              val tpe        = polyType(typeParams, body.tpe)
-              TypeTree(tpe)
+              val tparams = readParams[NoCycle](TYPEPARAM)
+              val body    = readTpt()
+              TypeTree(TypeParamLambda(tparams.map(symFromNoCycle), body.tpe).asReflectType)
             //  LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()

@@ -11,8 +11,9 @@ object TestHello {
   def test7  = assert(HelloWorld.the[Numeric[Int]].plus(1, 2) === 3)
   def test8  = assert(HelloWorld.bounded("a") === "aa")
   def test9  = assert(HelloWorld.higher[Option, IterableOnce](Some(1)) === (Some(1): IterableOnce[Int]))
-  def test10 = assert(HelloWorld.func(101) === "101")
-  def test11 = assert(HelloWorld.func1(33) === 33)
+  def test10 = assert(HelloWorld.higherBounded(List(1,2,3)) === List(1,2,3))
+  def test11 = assert(HelloWorld.func(101) === "101")
+  def test12 = assert(HelloWorld.func1(33) === 33)
 
   def main(args: Array[String]): Unit = {
     test1
@@ -26,6 +27,7 @@ object TestHello {
     test9
     test10
     test11
+    test12
     println("Suite passed!")
   }
 }

@@ -293,62 +293,99 @@ trait TastyUniverse { self =>
   }
 
   abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
-    def apply(paramNames: List[N])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
+    def apply(paramNames: List[N])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type): LT
+  }
+
+  object TypeParamLambda {
+    def apply(typeParams: List[Symbol], ret: Type): LambdaType = new TypeParamLambda(typeParams, ret)
+  }
+
+  final class TypeParamLambda(override val typeParams: List[Symbol], val resType: Type) extends LambdaType {
+    type ThisName = TypeName
+    type PInfo    = TypeBounds
+
+    val paramNames: List[TypeName]   = typeParams.map(_.name.toTypeName)
+    val paramInfos: List[TypeBounds] = typeParams.map(_.tpe.bounds)
+
+    validateThisLambda()
+
+    override val productPrefix                = "TypeParamLambda"
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[TypeParamLambda]
   }
 
   abstract class LambdaType extends Type with Product {
     type ThisName <: Name
     type PInfo <: Type
 
-    def paramNames: List[ThisName]
-    def paramInfos: List[PInfo]
-    def resType: Type
+    val paramNames: List[ThisName]
+    val paramInfos: List[PInfo]
+    val resType: Type
 
-    private[this] var myParamRefs: List[TypeParamRef] = null
+    private[this] var myParamRefs: List[TypeParamRef] = _
 
-    def paramRefs: List[TypeParamRef] = {
-      if (myParamRefs == null) myParamRefs = paramNames.indices.toList.map(i => new TypeParamRef(this, i))
+    final def paramRefs: List[TypeParamRef] = {
+      if (myParamRefs `eq` null) myParamRefs = paramNames.indices.toList.map(i => new TypeParamRef(this, i))
       myParamRefs
     }
 
-    override def safeToString(): String = {
+    override final def safeToString: String = {
       val args = paramNames.zip(paramInfos).map {
         case (name, info) => s"${name}$info"
       }.mkString("[", ", ", "]")
       s"$args =>> $resType"
     }
 
-    override def typeParams: List[Symbol] = {
-      if (myTypeParams `eq` null) myTypeParams = paramNames.zip(paramInfos).map {
-        case (name, info) => newFreeTypeSymbol(name.toTypeName, Param | Deferred, name.toString).setInfo(info)
-      }
-      myTypeParams
+    def typeParams: List[Symbol] // deferred to final implementation
+
+    final protected def validateThisLambda(): Unit = {
+      assert(resType.isComplete, this)
+      assert(paramNames.nonEmpty, this)
+      assert(paramInfos.length == paramNames.length, this)
     }
 
     /**Best effort to transform this to an equivalent canonical representation in scalac.
      */
-    def asReflectType(owner: Symbol): Type =
-      if (resType.typeArgs == paramRefs) resType.typeConstructor
-      else if (resType.typeArgs.isEmpty) {
+    final def asReflectType: Type = {
+      val resUpper = resType.upperBound
+      val resLower = if (resType `eq` resType.bounds) resType.lowerBound else definitions.NothingTpe
+      if (resUpper.typeArgs.nonEmpty && resUpper.typeArgs == paramInfos) {
+        val resUpperRef = resUpper.asInstanceOf[TypeRef]
         internal.polyType(
-          paramNames.zip(paramInfos).map {
-            case (name, info) => owner.newTypeParameter(name.toTypeName, NoPosition, Param | Deferred).setInfo(info)
-          },
-          if (resType.typeSymbolDirect == definitions.AnyClass)
-            TypeBounds.empty
-          else
-            resType.bounds
+          typeParams,
+          TypeBounds(
+            resLower,
+            internal.existentialType(
+              typeParams,
+              internal.typeRef(resUpperRef.pre, resUpperRef.sym, typeParams.map(_.tpe))
+            )
+          )
         )
       }
-      else this
+      else if (resUpper.typeArgs.isEmpty) {
+        internal.polyType(typeParams, TypeBounds(resLower, resUpper))
+      }
+      else if (resUpper.typeArgs == paramRefs) {
+        resUpper.typeConstructor
+      }
+      else {
+        this
+      }
+    }
 
-    def productArity: Int = 2
-    def productElement(n: Int): Any = n match {
+    final def productArity: Int = 2
+    final def productElement(n: Int): Any = n match {
       case 0 => paramNames
       case 1 => resType
       case _ => throw new IndexOutOfBoundsException(n.toString)
     }
     def canEqual(that: Any): Boolean = that.isInstanceOf[LambdaType]
+    override final def equals(that: Any): Boolean = that match {
+      case lambdaType: LambdaType =>
+        (lambdaType.canEqual(this)
+          && lambdaType.paramNames == paramNames
+          && lambdaType.resType == resType)
+      case _ => false
+    }
   }
 
   final class TypeParamRef(binder: LambdaType, i: Int) extends Type with Product {
@@ -366,23 +403,32 @@ trait TastyUniverse { self =>
 
   object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
     def apply(paramNames: List[TypeName])(
-        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(
-        implicit ctx: Context): HKTypeLambda =
+        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type): HKTypeLambda =
       new HKTypeLambda(paramNames)(paramInfosExp, resultTypeExp)
   }
 
-  class HKTypeLambda(val paramNames: List[TypeName])(
-      paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context)
+  final class HKTypeLambda(val paramNames: List[TypeName])(
+      paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)
   extends LambdaType {
     type ThisName = TypeName
     type PInfo = TypeBounds
 
-    override val productPrefix = "HKTypeLambda"
+    private[this] var myTypeParams: List[Symbol] = _
+
+    override val productPrefix       = "HKTypeLambda"
     val paramInfos: List[TypeBounds] = paramInfosExp(this)
     val resType: Type                = resultTypeExp(this)
 
-    assert(resType.isComplete, this)
-    assert(paramNames.nonEmpty)
+    validateThisLambda()
+
+    override def typeParams: List[Symbol] = {
+      if (myTypeParams `eq` null) myTypeParams = paramNames.zip(paramInfos).map {
+        case (name, info) => newFreeTypeSymbol(name.toTypeName, Param | Deferred, name.toString).setInfo(info)
+      }
+      myTypeParams
+    }
+
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }
 
   def TypeRef(tpe: Type, name: Name): Type = {
