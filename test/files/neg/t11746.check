@@ -1,0 +1,7 @@
+t11746.scala:18: warning: failed to determine if e should be inlined:
+The method e()Ljava/lang/Throwable; could not be found in the class java/lang/Object or any of its parents.
+    case Failure(e) => println(e.toString)
+                 ^
+error: No warnings can be incurred under -Werror.
+one warning found
+one error found
