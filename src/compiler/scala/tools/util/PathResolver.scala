@@ -15,6 +15,7 @@ package tools
 package util
 
 import java.net.URL
+import java.nio.file.{Files, Paths}
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.tools.reflect.WrappedProperties.AccessControl
@@ -22,7 +23,6 @@ import scala.tools.nsc.{CloseableRegistry, Settings}
 import scala.tools.nsc.util.ClassPath
 import scala.reflect.io.{Directory, File, Path}
 import PartialFunction.condOpt
-import scala.collection.mutable
 import scala.tools.nsc.classpath._
 
 // Loosely based on the draft specification at:
@@ -275,11 +275,12 @@ class PathResolver protected (settings: Settings, closeableRegistry: CloseableRe
         cp
       }
       List[Traversable[ClassPath]](
-        growIncluded(buildJrt(settings.releaseValue, classPathFactory, PathResolverNoCaching, included)),               // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
-        growIncluded(buildJavaBootClassPath(javaBootClassPath, classPathFactory, PathResolverNoCaching, included)),     // 1. The Java bootstrap class path.
-        growIncluded(buildJavaExtClassPath(javaExtDirs, classPathFactory, PathResolverNoCaching, included)),            // 2. The Java extension class path.
-        growIncluded(buildJavaAppClassPath(javaUserClassPath, classPathFactory, PathResolverNoCaching, included)),      // 3. The Java application class path.
-        growIncluded(buildScalaBootClassPath(scalaBootClassPath, classPathFactory, PathResolverNoCaching, included)),   // 4. The Scala boot class path.
+        //chech what should be cached, what depends on settings???
+        growIncluded(buildJrt(settings.releaseValue, classPathFactory, PathResolverAllCaching, included)),               // 0. The Java 9+ classpath (backed by the ct.sym or jrt:/ virtual system, if available)
+        growIncluded(buildJavaBootClassPath(javaBootClassPath, classPathFactory, PathResolverAllCaching, included)),     // 1. The Java bootstrap class path.
+        growIncluded(buildJavaExtClassPath(javaExtDirs, classPathFactory, PathResolverAllCaching, included)),            // 2. The Java extension class path.
+        growIncluded(buildJavaAppClassPath(javaUserClassPath, classPathFactory, PathResolverAllCaching, included)),      // 3. The Java application class path.
+        growIncluded(buildScalaBootClassPath(scalaBootClassPath, classPathFactory, PathResolverAllCaching, included)),   // 4. The Scala boot class path.
         growIncluded(buildScalaExtClassPath(scalaExtDirs, classPathFactory, PathResolverNoCaching, included)),          // 5. The Scala extension class path.
         growIncluded(buildScalaAppClassPath(userClassPath, classPathFactory, PathResolverNoCaching, included)),         // 6. The Scala application class path.
         growIncluded(buildManifestClassPath(useManifestClassPath, classPathFactory, PathResolverNoCaching, included)),  // 8. The Manifest class path.
@@ -352,6 +353,53 @@ abstract class PathResolverCaching {
 }
 object PathResolverNoCaching extends PathResolverCaching {
   def canCache(element: ClassPathElement.ZipJarClassPathElement): Boolean = false
+}
+object PathResolverAllCaching extends PathResolverCaching {
+  def canCache(element: ClassPathElement.ZipJarClassPathElement): Boolean = true
+}
+object PathResolverDefaultCaching extends PathResolverCaching {
+  import java.nio.file.Path
+
+  def apply(settings: Settings): PathResolverCaching = {
+    if (settings.YdisableFlatCpCaching) PathResolverNoCaching
+    else PathResolverDefaultCaching
+  }
+
+  val isSafetoCache: List[ ClassPathElement.ZipJarClassPathElement => Boolean] = {
+    def inDir(path: Path, cacheSnapshots: Boolean)(element: ClassPathElement.ZipJarClassPathElement): Boolean = {
+      element.absolutePath.startsWith(path) && (!cacheSnapshots || !element.toString.contains("SNAPSHOT"))
+    }
+
+    var res = List.empty[ClassPathElement.ZipJarClassPathElement => Boolean]
+    sys.env.get("MAVEN_HOME") match {
+      case Some(dir) =>
+        val root = Paths.get(dir)
+        if (Files.exists(root) && Files.isDirectory(root))
+          res ::= inDir(root, false)
+      case _ =>
+    }
+    sys.env.get("IVY_HOME") match {
+      case Some(dir) =>
+        val root = Paths.get(dir)
+        if (Files.exists(root) && Files.isDirectory(root))
+          res ::= inDir(root, false)
+      case _ =>
+    }
+    sys.env.get("SCALAC_STABLE_JARS_ROOT") match {
+      case Some(dir) =>
+        val root = Paths.get(dir)
+        if (Files.exists(root) && Files.isDirectory(root))
+          res ::= inDir(root, true)
+      case _ =>
+    }
+
+    res
+
+  }
+
+  //maybe should be checkStamps/cachePerm??
+  def canCache(element: ClassPathElement.ZipJarClassPathElement): Boolean = {
+    isSafetoCache.exists(_(element))
 }
 
 

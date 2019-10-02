@@ -14,7 +14,6 @@ package scala.tools.nsc
 package plugins
 
 import java.util.jar
-import scala.collection.JavaConverters._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{AbstractFile, File, Path}
 import scala.collection.mutable

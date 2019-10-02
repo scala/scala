@@ -15,7 +15,6 @@ package scala.tools.nsc.classpath
 import java.net.URL
 
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.io.Path.string2path
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils.AbstractFileOps
 import scala.tools.nsc.classpath.ClassPathElement.{DirectoryClassPathElement, PathBasedClassPathElement, ZipJarClassPathElement}

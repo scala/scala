@@ -41,7 +41,7 @@ import scala.tools.nsc.classpath._
 import scala.tools.nsc.profile.Profiler
 import java.io.Closeable
 
-import scala.tools.util.{PathResolverCaching, PathResolverNoCaching}
+import scala.tools.util.PathResolverNoCaching
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable

@@ -288,7 +288,6 @@ final class FileBasedCache[T] {
     else Right(Some(Path(file.file).jfile.toPath))
   }
   def checkCacheability2(file: AbstractFile, checkStamps: Boolean, disableCache: Boolean): Either[String, Option[java.nio.file.Path]] = {
-    import scala.reflect.io.{Path}
     if (disableCache) Left("caching is disabled due to a policy setting")
     else if (!checkStamps) Right(Some(file.file.toPath))
     else if ((file eq null) || !Jar.isJarOrZip(file.file))
@@ -296,7 +295,6 @@ final class FileBasedCache[T] {
     else Right(Some(file.file.toPath))
   }
   def checkCacheability3(file: AbstractFile, checkStamps: Boolean, disableCache: Boolean): Either[String, java.nio.file.Path] = {
-    import scala.reflect.io.{Path}
     if (disableCache) Left("caching is disabled due to a policy setting")
     else if (!checkStamps) Right(file.file.toPath)
     else if ((file eq null) || !Jar.isJarOrZip(file.file))

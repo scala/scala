@@ -6,7 +6,6 @@ import java.nio.file.{Files, LinkOption, Path, Paths}
 
 import scala.reflect.io.{ManifestResources, VirtualDirectory}
 import scala.tools.nsc.classpath.FileUtils.{endsClass, endsJImage, endsJarOrZip, mayBeValidPackage}
-import scala.tools.nsc.util.ClassPath
 
 sealed trait ClassPathElement {
   def url: URL
@@ -35,6 +34,7 @@ object ClassPathElement {
 
     def file = path.toFile
     def path = underlying.path
+    def absolutePath = underlying.path
   }
   object JrtClassPathElement extends ClassPathElement{
     def url = new URL("jrt://")
@@ -77,7 +77,7 @@ object ClassPathElement {
 
     lazy val filename = path.getFileName.toString
     lazy val absoluePath = path.toAbsolutePath
-    lazy val uri = path.toUri
+    lazy val uri = absoluePath.toUri //path.toUri would call absolute, so we may as well cache the answer
     lazy val url = uri.toURL
 
     def isClass: Boolean = isRegularFile && endsClass(filename)
