@@ -8,11 +8,11 @@ object Test {
 
   val DefaultTimeout = Duration(5, TimeUnit.SECONDS)
 
-  def main(args: Array[String]): Unit = {
-    (new FutureTests).check()
-    (new PromiseTests).check()
-    (new TryTests).check()
-  }
+  def main(args: Array[String]): Unit =
+    List(
+      (new FutureTests),
+      (new PromiseTests),
+    ).foreach(_.check())
 
 }
 
