@@ -1,5 +1,4 @@
-package scala.tools.nsc
-package tasty
+package scala.tools.nsc.tasty
 
 import TastyRefs._
 import scala.annotation.{switch, tailrec}
@@ -471,7 +470,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       if (ctx.owner.isClass) {
         if (tag == TYPEPARAM) flags |= Param
         else if (tag == PARAM) {
-          flags |= ParamAccessor
+          flags |= ParamAccessor | Accessor | Stable
           if (!rhsIsEmpty) // param alias
             flags |= Method
         }
@@ -554,7 +553,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         else
           show(flags) + " | " + show(tastyFlagSet)
       }
-      def isModuleClass = flags.is(ModuleClassCreationFlags) && isClass
+      def isModuleClass = flags.is(Module) && isClass
       ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
@@ -665,7 +664,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           case CONTRAVARIANT => addFlag(Contravariant)
           case SCALA2X => addTastyFlag(Scala2x)
           case DEFAULTparameterized => addFlag(DefaultParameterized)
-          case STABLE => addFlag(StableRealizable)
+          case STABLE => addFlag(Stable)
           case EXTENSION => addTastyFlag(Extension)
           case GIVEN => addTastyFlag(Given)
           case PARAMsetter => addFlag(ParamAccessor)
@@ -861,7 +860,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed { $sym: ${sym.tpe} # ${sym.hashCode} } in (owner=${showSym(ctx.owner)})")
+      ctx.log(s"typed { ($sym # ${sym.hashCode}): ${sym.tpe} } in (owner=${showSym(ctx.owner)})")
       goto(end)
       noCycle
     }
@@ -891,9 +890,15 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       val parentTypes = parents.map { tpt =>
         val tpe = tpt.tpe.dealias
-        ctx.log(s"parent: $tpe")
         if (tpe.typeSymbolDirect == definitions.ObjectClass) definitions.AnyRefTpe
         else tpe
+      }
+      for (tpe <- parentTypes.headOption if tpe.typeSymbolDirect == definitions.AnyValClass) {
+        Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
+          // duplicated from scala.tools.nsc.transform.ExtensionMethods
+          cls.primaryConstructor.makeNotPrivate(NoSymbol)
+          cls.info.decls.foreach(sym => if (sym.isParamAccessor && sym.isMethod) sym.makeNotPrivate(cls))
+        }
       }
       if (nextByte == SELFDEF) {
         ctx.log(s"Template: adding self-type of $cls")

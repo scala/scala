@@ -1,5 +1,4 @@
-package scala.tools.nsc
-package tasty
+package scala.tools.nsc.tasty
 
 import scala.collection.mutable
 import scala.reflect.internal.SymbolTable

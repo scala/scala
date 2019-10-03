@@ -15,6 +15,10 @@ There is a small set of test files in `/test/tasty/`, here is the procedure (to 
   - `/test/tasty/suspended/` are for dotty sources that have not yet been feature implemented.
   - Some tests require the Dotty class library on the classpath, to obtain this, just use [coursier](https://get-coursier.io), for example like `scala -classpath out:$(coursier fetch -p ch.epfl.lamp:dotty-library_<VERSION>:<RELEASE>) tastytest.TestHello` to run the `TestHello` suite.
 
+## Notes
+
+comments beginning with `// TODO tasty:` should be considered carefully as they are special accomodations for the TASTy reader that leak out of the classfile parser or `scala.tools.nsc.tasty` package.
+
 # Welcome!
 
 This is the official repository for the [Scala Programming Language](http://www.scala-lang.org)

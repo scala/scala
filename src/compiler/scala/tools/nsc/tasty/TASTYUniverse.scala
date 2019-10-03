@@ -54,7 +54,7 @@ trait TastyUniverse { self =>
     val Covariant: FlagSet = Flag.COVARIANT
     val Contravariant: FlagSet = Flag.CONTRAVARIANT
     val DefaultParameterized: FlagSet = Flag.DEFAULTPARAM
-    val StableRealizable: FlagSet = Flag.STABLE
+    val Stable: FlagSet = Flag.STABLE
     val ParamAccessor: FlagSet = Flag.PARAMACCESSOR
     val Param: FlagSet = Flag.PARAM
     val Deferred: FlagSet = Flag.DEFERRED
@@ -62,7 +62,7 @@ trait TastyUniverse { self =>
 
     val NoInitsInterface: (FlagSet, TastyFlagSet) = (Interface, NoInits)
     val TermParamOrAccessor: FlagSet = Param | ParamAccessor
-    val ModuleCreationFlags: FlagSet = Module | Lazy | Final | StableRealizable
+    val ModuleCreationFlags: FlagSet = Module | Lazy | Final | Stable
     val ModuleClassCreationFlags: FlagSet = Module | Final
     val DeferredOrLazyOrMethod: FlagSet = Deferred | Lazy | Method
 
@@ -164,6 +164,7 @@ trait TastyUniverse { self =>
       final def log(str: => String): Unit = logTasty(s"#${self.hashCode.toHexString.take(4)}: $str")
 
       final def picklerPhase: Phase = symbolTable.picklerPhase
+      final def extmethodsPhase: Phase = symbolTable.findPhaseWithName("extmethods")
 
       def owner: Symbol
       def source: AbstractFile
@@ -199,14 +200,14 @@ trait TastyUniverse { self =>
             owner.newMethodSymbol(name.toTermName, NoPosition, flags)
           }
         }
-        sym.setPrivateWithin(privateWithin)
+        sym.privateWithin = privateWithin
         sym.info = completer
         sym
       }
 
       def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
         val sym = owner.newClassSymbol(name = typeName, newFlags = flags.ensuring(when = Trait, is = Abstract))
-        sym.setPrivateWithin(privateWithin)
+        sym.privateWithin = privateWithin
         sym.info = completer
         sym
       }
