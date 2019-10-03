@@ -57,24 +57,16 @@ abstract class BTypes {
    * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
    * referring to BTypes.
    */
-  sealed trait BType {
-    final override def toString: String = {
+  sealed abstract class BType {
+    override def toString: String = {
       val builder = new java.lang.StringBuilder(64)
       buildString(builder)
       builder.toString
     }
 
     final def buildString(builder: java.lang.StringBuilder): Unit = this match {
-      case UNIT   => builder.append('V')
-      case BOOL   => builder.append('Z')
-      case CHAR   => builder.append('C')
-      case BYTE   => builder.append('B')
-      case SHORT  => builder.append('S')
-      case INT    => builder.append('I')
-      case FLOAT  => builder.append('F')
-      case LONG   => builder.append('J')
-      case DOUBLE => builder.append('D')
-      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
+      case p: PrimitiveBType => builder.append(p)
+      case clazz : ClassBType => builder.append(clazz)
       case ArrayBType(component)    => builder.append('['); component.buildString(builder)
       case MethodBType(args, res)   =>
         builder.append('(')
@@ -268,7 +260,7 @@ abstract class BTypes {
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed trait PrimitiveBType extends BType {
+  sealed class PrimitiveBType(override val toString: String) extends BType {
 
     /**
      * The upper bound of two primitive types. The `other` type has to be either a primitive
@@ -333,15 +325,15 @@ abstract class BTypes {
     }
   }
 
-  case object UNIT   extends PrimitiveBType
-  case object BOOL   extends PrimitiveBType
-  case object CHAR   extends PrimitiveBType
-  case object BYTE   extends PrimitiveBType
-  case object SHORT  extends PrimitiveBType
-  case object INT    extends PrimitiveBType
-  case object FLOAT  extends PrimitiveBType
-  case object LONG   extends PrimitiveBType
-  case object DOUBLE extends PrimitiveBType
+  case object UNIT   extends PrimitiveBType("V")
+  case object BOOL   extends PrimitiveBType("Z")
+  case object CHAR   extends PrimitiveBType("C")
+  case object BYTE   extends PrimitiveBType("B")
+  case object SHORT  extends PrimitiveBType("S")
+  case object INT    extends PrimitiveBType("I")
+  case object FLOAT  extends PrimitiveBType("F")
+  case object LONG   extends PrimitiveBType("J")
+  case object DOUBLE extends PrimitiveBType("D")
 
   sealed trait RefBType extends BType {
     /**
@@ -618,6 +610,7 @@ abstract class BTypes {
    * infos using `get`, but it reports inliner warnings for missing infos that prevent inlining.
    */
   sealed abstract class ClassBType protected(val internalName: InternalName) extends RefBType {
+    override val toString = "L" + internalName+';'
     def fromSymbol: Boolean
     /**
      * Write-once variable allows initializing a cyclic graph of infos. This is required for
