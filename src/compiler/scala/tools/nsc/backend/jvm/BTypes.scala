@@ -777,6 +777,7 @@ abstract class BTypes {
       fcs
     }
 
+    override val toASMType: asm.Type = super.toASMType
     override val toString: String = super.toString
   }
 
