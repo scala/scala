@@ -74,9 +74,9 @@ trait TastyUniverse { self =>
       private def getFlag(mask: FlagSet): FlagSet = {
         mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
       }
-      def not(mask: FlagSet): Boolean = getFlag(mask) == 0
-      def is(mask: FlagSet): Boolean = getFlag(mask) != 0
-      def ensuring(when: FlagSet, is: FlagSet): FlagSet = if (flagSet.is(when)) flagSet | is else flagSet
+      def not(mask: FlagSet): Boolean = !isOneOf(mask)
+      def is(mask: FlagSet): Boolean = getFlag(mask) == mask
+      def ensuring(is: FlagSet, when: FlagSet): FlagSet = if (flagSet.is(when)) (flagSet | is) else flagSet
       def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
       def isOneOf(mask: FlagSet): Boolean = is(mask)
     }
@@ -206,7 +206,7 @@ trait TastyUniverse { self =>
       }
 
       def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
-        val sym = owner.newClassSymbol(name = typeName, newFlags = flags.ensuring(when = Trait, is = Abstract))
+        val sym = owner.newClassSymbol(name = typeName, newFlags = flags.ensuring(Abstract, when = Trait))
         sym.privateWithin = privateWithin
         sym.info = completer
         sym

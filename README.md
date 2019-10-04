@@ -10,7 +10,7 @@ There is a small set of test files in `/test/tasty/`, here is the procedure (to 
   - Compile sources in `/test/tasty/src-2/` with `sc`.
     - Use option `Ydebug-tasty` to print information specific to unpickling TASTy files.
   - Compile sources in `/test/tasty/src-3/` with a build of `dotc` that outputs version `17.0` of TASTy.
-  - Files matching `/test/tasty/src-2/Test*.scala` are designed to test that symbols from TASTy files are unpickled correctly, so depend on symbols that are defined in `/test/tasty/src-3/*`.
+  - Files matching `/test/tasty/src-2/**/Test*.scala` are designed to test that symbols from TASTy files are unpickled correctly, so depend on symbols that are defined in `/test/tasty/src-3/*`.
     - These are required to pass before they can be committed. (i.e. print "_Suite passed!_" when their main function is run.)
   - `/test/tasty/suspended/` are for dotty sources that have not yet been feature implemented.
   - Some tests require the Dotty class library on the classpath, to obtain this, just use [coursier](https://get-coursier.io), for example like `scala -classpath out:$(coursier fetch -p ch.epfl.lamp:dotty-library_<VERSION>:<RELEASE>) tastytest.TestHello` to run the `TestHello` suite.

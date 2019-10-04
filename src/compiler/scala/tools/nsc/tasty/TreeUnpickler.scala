@@ -531,9 +531,10 @@ abstract class TreeUnpickler(reader: TastyReader,
     def createMemberSymbol()(implicit ctx: Context): Symbol = {
       val start = currentAddr
       val tag = readByte()
+      def isTypeTag = tag == TYPEDEF || tag == TYPEPARAM
       val end = readEnd()
       var name: Name = readName()
-      if (tag == TYPEDEF || tag == TYPEPARAM) name = name.toTypeName
+      if (isTypeTag) name = name.toTypeName
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -554,6 +555,8 @@ abstract class TreeUnpickler(reader: TastyReader,
           show(flags) + " | " + show(tastyFlagSet)
       }
       def isModuleClass = flags.is(Module) && isClass
+      def isTypeParameter = flags.is(Param) && isTypeTag
+      def canEnterInClass = !isModuleClass && !isTypeParameter
       ctx.log(s"""creating symbol $name${if (privateWithin ne NoSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
@@ -591,7 +594,7 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
-        case cls: ClassSymbol if !isModuleClass => cls.rawInfo.decls.enterIfNew(sym)
+        case cls: ClassSymbol if canEnterInClass => cls.rawInfo.decls.enterIfNew(sym)
         case _ =>
       }
       registerSym(start, sym)
