@@ -1,10 +1,7 @@
 package tastytest
 
-import java.lang.{Enum => _}
 import Enums._
 
-/** Suspended due to assertion error caused by having an arbitrary implicit parameter in a constructor with type params.
- */
 object TestEnum {
 
   final class Colour(name: String, ordinal: Int) extends Enum[Colour](name, ordinal)

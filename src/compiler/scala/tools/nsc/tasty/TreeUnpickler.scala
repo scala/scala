@@ -139,6 +139,9 @@ abstract class TreeUnpickler(reader: TastyReader,
     def skipParams(): Unit =
       while (nextByte == PARAMS || nextByte == TYPEPARAM) skipTree()
 
+    def skipTypeParams(): Unit =
+      while (nextByte == TYPEPARAM) skipTree()
+
     /** Record all directly nested definitions and templates in current tree
      *  as `OwnerTree`s in `buf`.
      *  A complication concerns member definitions. These are lexically nested in a
@@ -563,33 +566,40 @@ abstract class TreeUnpickler(reader: TastyReader,
       }
 //      val coord = coordAt(start)
       val sym = {
-        val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
-        roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
-          case Some(found) =>
-//            rootd.coord = coord
-            val rootd   = if (isModuleClass) found.linkedClassOfClass else found
-            rootd.info  = completer
-            rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
-            rootd.privateWithin = privateWithin
-            seenRoots += rootd
-            ctx.log(s"replaced info of ${showSym(rootd)}")
-            rootd
-          case _ =>
-            if (isModuleClass) {
-              val module = ctx.owner.rawInfo.decls.lookup(name.toTermName)
-              assert(module.isModule, "unpickling module class from TASTy before its module val.")
-              val moduleClass           = module.moduleClass
-              moduleClass.info          = completer
-              moduleClass.flags         = flags
-              moduleClass.privateWithin = privateWithin
-              moduleClass
-            }
-            else {
-              if (isClass)
-                ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-              else
-                ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
-            }
+        if (ctx.owner.name == nme.CONSTRUCTOR && tag == TYPEPARAM) {
+          ctx.owner.owner.typeParams.find(_.name == name).getOrElse {
+            throw new AssertionError(s"${ctx.owner.owner} has no type params.")
+          }
+        }
+        else {
+          val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
+          roots.find(root => (root.owner eq ctx.owner) && root.name == name) match {
+            case Some(found) =>
+  //            rootd.coord = coord
+              val rootd   = if (isModuleClass) found.linkedClassOfClass else found
+              rootd.info  = completer
+              rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
+              rootd.privateWithin = privateWithin
+              seenRoots += rootd
+              ctx.log(s"replaced info of ${showSym(rootd)}")
+              rootd
+            case _ =>
+              if (isModuleClass) {
+                val module = ctx.owner.rawInfo.decls.lookup(name.toTermName)
+                assert(module.isModule, "unpickling module class from TASTy before its module val.")
+                val moduleClass           = module.moduleClass
+                moduleClass.info          = completer
+                moduleClass.flags         = flags
+                moduleClass.privateWithin = privateWithin
+                moduleClass
+              }
+              else {
+                if (isClass)
+                  ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
+                else
+                  ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
+              }
+          }
         }
       }
       sym.setAnnotations(annotFns.map(_(sym)))
@@ -811,14 +821,21 @@ abstract class TreeUnpickler(reader: TastyReader,
           val (isExtension, exceptExtension) = completer.tastyFlagSet.except(Extension)
           assertTasty(!exceptExtension, s"unsupported Scala 3 flags on def: ${show(exceptExtension)}")
           if (isExtension) ctx.log(s"$name is a Scala 3 extension method.")
-          val tparams = readParams[NoCycle](TYPEPARAM)(localCtx)
+          val typeParams = {
+            if (sym.name == nme.CONSTRUCTOR) {
+              skipTypeParams()
+              sym.owner.typeParams
+            }
+            else {
+              readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
+            }
+          }
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
-          val typeParams = tparams.map(symFromNoCycle)
           val valueParamss = ctx.normalizeIfConstructor(
             vparamss.map(_.map(symFromNoCycle)), name == nme.CONSTRUCTOR)
           val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
-          sym.info = ctx.methodType(typeParams, valueParamss, resType)
+          sym.info = ctx.methodType(if (name == nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val (isInline, exceptInline) = completer.tastyFlagSet.except(Inline)
@@ -876,6 +893,9 @@ abstract class TreeUnpickler(reader: TastyReader,
       val end = readEnd()
       ctx.log(s"Template: reading parameters of $cls")
       val tparams = readIndexedParams[NoCycle](TYPEPARAM)
+      if (tparams.nonEmpty) {
+        cls.info = new PolyType(tparams.map(symFromNoCycle), cls.info)
+      }
       val vparams = readIndexedParams[NoCycle](PARAM)
       ctx.log(s"Template: indexing members of $cls")
       val (bodyFlags, bodyTastyFlags) = {
@@ -897,6 +917,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         else tpe
       }
       for (tpe <- parentTypes.headOption if tpe.typeSymbolDirect == definitions.AnyValClass) {
+        // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
         Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(NoSymbol)
@@ -1215,7 +1236,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type) = {
+      def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type): Type = {
         if (sig ne NotAMethod) {
           ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
           val MethodSignature(args, ret) = sig
@@ -1228,14 +1249,17 @@ abstract class TreeUnpickler(reader: TastyReader,
           }
           val member = qualType.member(name)
           val alts = member.asTerm.alternatives
-          val tpe = alts.find { sym =>
+          val tpeOpt = alts.find { sym =>
             val method = sym.asMethod
             val params = method.paramss.flatten
             method.returnType.erasure.typeSymbolDirect == retSym &&
               params.length == argsSyms.length &&
-              tyParamCount == method.typeParams.length &&
+              ((name == nme.CONSTRUCTOR && tyParamCount == member.owner.typeParams.length)
+                || tyParamCount == method.typeParams.length) &&
               params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbolDirect == sym }
-          }.map(_.tpe).getOrElse(ifNotOverload(name))
+          }.map(_.tpe).ensuring(_.isDefined, s"No matching overload of $name with signature ${sig.show}")
+          var Some(tpe) = tpeOpt
+          if (name == nme.CONSTRUCTOR && tyParamCount > 0) tpe = internal.polyType(member.owner.typeParams, tpe)
           ctx.log(s"selected $tpe")
           tpe
         }
