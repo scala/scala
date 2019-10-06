@@ -1549,7 +1549,7 @@ trait Contexts { self: Analyzer =>
   /** A `Context` focussed on an `Import` tree */
   trait ImportContext extends Context {
     private val impInfo: ImportInfo = {
-      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
+      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
       info
@@ -1734,10 +1734,11 @@ trait Contexts { self: Analyzer =>
     def error(pos: Position, msg: String): Unit = onTreeCheckerError(pos, msg)
   }
 
-  class ImportInfo(val tree: Import, val depth: Int, val isRootImport: Boolean) {
+  class ImportInfo(val tree: Import, val depth: Int) {
     def pos = tree.pos
     def posOf(sel: ImportSelector) =
       if (sel.namePos >= 0) tree.pos withPoint sel.namePos else tree.pos
+    def isRootImport = !tree.pos.isDefined
 
     /** The prefix expression */
     def qual: Tree = tree.symbol.info match {
