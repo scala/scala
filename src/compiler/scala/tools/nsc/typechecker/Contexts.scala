@@ -69,16 +69,28 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
 
-  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
-    for (imps <- allImportInfos.remove(unit)) {
-      for ((imp, owner) <- imps.distinct.reverse) {
-        val used = allUsedSelectors(imp)
-        for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
-          runReporting.warning(imp.posOf(sel), "Unused import", WarningCategory.UnusedImports, site = owner)
-      }
-      allUsedSelectors --= imps.iterator.map(_._1)
+  @tailrec private def warnUnusedImportInfos(infos: List[(ImportInfo, Symbol)]): Unit =
+    infos match {
+      case (info, owner) :: rest =>
+        val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
+        @tailrec def loop(selectors: List[ImportSelector]): Unit =
+          selectors match {
+            case selector :: rest =>
+              if (!selector.isMask && !used(selector))
+                runReporting.warning(info.posOf(selector), "Unused import", WarningCategory.UnusedImports, site = owner)
+              loop(rest)
+            case _ =>
+          }
+        loop(info.tree.selectors)
+        warnUnusedImportInfos(rest)
+      case _ =>
     }
-  }
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava)
+    allImportInfos.remove(unit) match {
+      case Some(importInfos) =>
+        warnUnusedImportInfos(importInfos.distinct.reverse)
+      case _ =>
+    }
 
   var lastAccessCheckDetails: String = ""
 
@@ -1571,7 +1583,7 @@ trait Contexts { self: Analyzer =>
     private[this] val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
-        allImportInfos(unit) ::= (info, owner)
+        allImportInfos(unit) ::= ((info, owner))
       info
     }
     override final def imports      = impInfo :: super.imports
