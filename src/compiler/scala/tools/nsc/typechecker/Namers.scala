@@ -582,10 +582,7 @@ trait Namers extends MethodSynthesis {
           // more than one hidden name, the second will not be warned.
           // So it is the position of the actual hidden name.
           //
-          // Note: java imports have precedence over definitions in the same package
-          //       so don't warn for them. There is a corresponding special treatment
-          //       in the shadowing rules in typedIdent to (scala/bug#7232). In any case,
-          //       we shouldn't be emitting warnings for .java source files.
+          // Note: we shouldn't be emitting warnings for .java source files.
           if (!context.unit.isJava)
             checkNotRedundant(tree.pos withPoint fromPos, from, to)
         }
