@@ -778,7 +778,15 @@ abstract class BTypes {
     }
 
     override val toASMType: asm.Type = super.toASMType
-    override val toString: String = super.toString
+    private[this] var cachedToString: String = null
+    override def toString: String = {
+      val cached = cachedToString
+      if (cached == null) {
+        val computed = super.toString
+        cachedToString = computed
+        computed
+      } else cached
+    }
   }
 
   object ClassBType {
