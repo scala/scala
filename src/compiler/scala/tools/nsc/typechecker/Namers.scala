@@ -539,8 +539,7 @@ trait Namers extends MethodSynthesis {
       else enterSyntheticSym(atPos(cdef.pos.focus)(creator(cdef)))
     }
 
-    private def checkSelectors(tree: Import): Unit = {
-      import DuplicatesErrorKinds._
+    def checkShadowedSelectors(tree: Import): Unit = {
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
@@ -588,21 +587,22 @@ trait Namers extends MethodSynthesis {
         }
       }
       selectors foreach checkSelector
+    }
 
-      def noDuplicates(): Unit = {
-        def loop(xs: List[ImportSelector]): Unit = xs match {
-          case Nil      => ()
-          case hd :: tl =>
-            if (!hd.isWildcard && tl.exists(x => !x.isWildcard && x.name == hd.name))
-              DuplicatesError(tree, hd.name, RenamedTwice)
-            else if (hd.isRename && tl.exists(x => x.isRename && x.rename == hd.rename))
-              DuplicatesError(tree, hd.rename, AppearsTwice)
-            else loop(tl)
-        }
-        loop(selectors)
+    private def checkDuplicateSelectors(tree: Import): Unit = {
+      import DuplicatesErrorKinds._
+      val Import(_, selectors) = tree
+
+      def loop(xs: List[ImportSelector]): Unit = xs match {
+        case Nil      => ()
+        case hd :: tl =>
+          if (!hd.isWildcard && tl.exists(x => !x.isWildcard && x.name == hd.name))
+            DuplicatesError(tree, hd.name, RenamedTwice)
+          else if (hd.isRename && tl.exists(x => x.isRename && x.rename == hd.rename))
+            DuplicatesError(tree, hd.rename, AppearsTwice)
+          else loop(tl)
       }
-      // checks on the whole set
-      noDuplicates()
+      loop(selectors)
     }
 
     def copyMethodCompleter(copyDef: DefDef): TypeCompleter = {
@@ -1804,7 +1804,8 @@ trait Namers extends MethodSynthesis {
         }
 
         val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
-        checkSelectors(newImport)
+        checkShadowedSelectors(newImport)
+        checkDuplicateSelectors(newImport)
         context.unit.transformed(imp) = newImport
         registerImport(context, newImport)
         // copy symbol and type attributes back into old expression
