@@ -1,4 +1,3 @@
-import scala.language.higherKinds
 
 trait Foo[C[_]]
 

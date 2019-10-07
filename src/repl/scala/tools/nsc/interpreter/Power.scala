@@ -135,7 +135,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
 
   val initImports = List(
     "import scala.tools.nsc._",
-    "import scala.collection.JavaConverters._",
+    "import scala.jdk.CollectionConverters._",
     "import intp.global.{ error => _, _ }",
     "import definitions.{ getClass => _, _ }",
     "import power.rutil._",

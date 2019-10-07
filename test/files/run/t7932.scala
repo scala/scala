@@ -1,4 +1,3 @@
-import scala.language.higherKinds
 
 class Category[M[_, _]]
 

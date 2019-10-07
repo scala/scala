@@ -1,4 +1,3 @@
-import scala.language.higherKinds
 
 object Test extends App {
   var x = 0

@@ -1,4 +1,3 @@
-import scala.language.higherKinds
 import java.io._
 import scala.reflect.runtime.universe._
 import scala.reflect.runtime.{universe => ru}

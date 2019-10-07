@@ -1,5 +1,5 @@
 
-import scala.language.{ higherKinds, existentials }
+import scala.language.existentials
 
 object Test extends App {
   def get[T](x: T) = { println("get: "+ x); x }

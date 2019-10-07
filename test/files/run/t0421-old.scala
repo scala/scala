@@ -1,11 +1,10 @@
-import scala.reflect.ClassManifest
 
 // ticket #421
 
-import scala.tools.partest.Util.ArrayDeep
-
 @deprecated("Suppress warnings", since="2.11")
 object Test extends App {
+  import scala.reflect.ClassManifest
+  import scala.tools.partest.Util.ArrayDeep
 
   def transpose[A: ClassManifest](xss: Array[Array[A]]) = {
     for (i <- Array.range(0, xss(0).length)) yield
