@@ -70,16 +70,29 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
-  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
-    for (imps <- allImportInfos.remove(unit)) {
-      for (imp <- imps.distinct.reverse) {
-        val used = allUsedSelectors(imp)
-        for (sel <- imp.tree.selectors if !sel.isMask && !used(sel))
-          reporter.warning(imp.posOf(sel), "Unused import")
-      }
-      allUsedSelectors --= imps
+  @tailrec private def warnUnusedImportInfos(infos: List[ImportInfo]): Unit =
+    infos match {
+      case info :: rest =>
+        val used = allUsedSelectors(info)
+        @tailrec def loop(selectors: List[ImportSelector]): Unit =
+          selectors match {
+            case selector :: rest =>
+              if (!selector.isMask && !used(selector))
+                reporter.warning(info.posOf(selector), "Unused import")
+              loop(rest)
+            case _ =>
+          }
+        loop(info.tree.selectors)
+        warnUnusedImportInfos(rest)
+      case _ =>
     }
-  }
+  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava)
+    allImportInfos.remove(unit) match {
+      case Some(importInfos) =>
+        warnUnusedImportInfos(importInfos.distinct.reverse)
+        allUsedSelectors --= importInfos
+      case _ =>
+    }
 
   var lastAccessCheckDetails: String = ""
 
