@@ -43,4 +43,16 @@ class SearchingTest {
     assertEquals(Found(5), coll.search(5))
     assertEquals(Set(3, 5), coll.elementsAccessed)
   }
+
+  @Test def searchWorks(): Unit = {
+    val ls = List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13)
+    assertEquals(Found(2), ls.search(3))
+    assertEquals(Found(4), ls.search(5, 3, 8))
+    assertEquals(InsertionPoint(10), ls.search(12))
+
+    val is = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13)
+    assertEquals(Found(2), is.search(3))
+    assertEquals(Found(4), is.search(5, 3, 8))
+    assertEquals(InsertionPoint(10), is.search(12))
+  }
 }
