@@ -1,9 +1,10 @@
-import scala.reflect.ClassManifest
 
 /** Test matrix multiplication with specialization.
  */
 
 @deprecated("Suppress warnings", since="2.11")
+object Test {
+import scala.reflect.ClassManifest
 class Matrix[@specialized A: ClassManifest](val rows: Int, val cols: Int) {
   private val arr: Array[Array[A]] = Array.ofDim[A](rows, cols)
 
@@ -28,8 +29,6 @@ class Matrix[@specialized A: ClassManifest](val rows: Int, val cols: Int) {
   }
 }
 
-@deprecated("Suppress warnings", since="2.11")
-object Test {
   def main(args: Array[String]): Unit = {
     val m = randomMatrix(200, 100)
     val n = randomMatrix(100, 200)

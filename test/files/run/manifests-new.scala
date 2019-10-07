@@ -1,6 +1,6 @@
 
 
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.postfixOps
 import scala.reflect.runtime.universe._
 
 object Test

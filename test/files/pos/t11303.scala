@@ -1,5 +1,4 @@
-// scalac: -Xfatal-warnings
-import scala.language.higherKinds
+// scalac: -Werror
 
 object Test {
   sealed trait Gadt[F[_], O, R]

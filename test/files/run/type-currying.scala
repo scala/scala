@@ -1,6 +1,6 @@
 
 
-import scala.language.{ higherKinds, reflectiveCalls }
+import scala.language.reflectiveCalls
 import scala.collection.{ mutable, immutable, generic, Factory }
 
 object Partial {

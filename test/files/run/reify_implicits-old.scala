@@ -1,10 +1,11 @@
 
 import scala.language.{ implicitConversions, reflectiveCalls }
-import scala.reflect.ClassManifest
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.Eval
 
+@deprecated("","")
 object Test extends App {
+  import scala.reflect.ClassManifest
   reify {
     implicit def arrayWrapper[A : ClassManifest](x: Array[A]) =
       new {

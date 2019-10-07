@@ -1,7 +1,7 @@
-import scala.reflect.ClassManifest
 
 @deprecated("Suppress warnings", since="2.11")
 object Test {
+  import scala.reflect.ClassManifest
   def main(args: Array[String]): Unit = {
     assert(implicitly[ClassManifest[Array[String]]].typeArguments contains implicitly[ClassManifest[String]])
     assert(implicitly[ClassManifest[Array[Int]]].typeArguments contains implicitly[ClassManifest[Int]])

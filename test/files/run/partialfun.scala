@@ -1,8 +1,6 @@
 import collection._
 import collection.generic._
 
-import scala.language.higherKinds
-
 object Test {
   def collectIDA[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {
     val repr: Repr = _this.asInstanceOf[Repr]

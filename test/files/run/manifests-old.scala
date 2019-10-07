@@ -1,4 +1,4 @@
-import scala.language.{ higherKinds, postfixOps }
+import scala.language.postfixOps
 
 @deprecated("Suppress warnings", since="2.11")
 object Test

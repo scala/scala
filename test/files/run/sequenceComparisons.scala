@@ -1,5 +1,6 @@
+// scalac: -deprecation
 import scala.collection.{ mutable, immutable }
-import collection.{ Seq, Traversable }
+import collection.Seq
 
 object Test {
   // TODO:

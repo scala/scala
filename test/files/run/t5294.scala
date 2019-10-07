@@ -1,4 +1,3 @@
-import scala.language.higherKinds
 
 package p {
   trait T[+A, +CC] {
