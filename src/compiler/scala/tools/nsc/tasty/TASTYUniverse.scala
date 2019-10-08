@@ -196,6 +196,9 @@ trait TastyUniverse { self =>
           else if (flags.is(Deferred) && name.isTypeName) {
             owner.newAbstractType(name.toTypeName, NoPosition, flags)
           }
+          else if (name.isTypeName) {
+            owner.newAliasType(name.toTypeName, NoPosition, flags)
+          }
           else {
             owner.newMethodSymbol(name.toTermName, NoPosition, flags)
           }
@@ -432,9 +435,10 @@ trait TastyUniverse { self =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }
 
-  def TypeRef(tpe: Type, name: Name): Type = {
+  def TypeRef(tpe: Type, name: Name, isModule: Boolean = false): Type = {
     val symName = if (tpe.members.containsName(name)) name else name.encode
-    typeRef(tpe, tpe.member(symName), Nil)
+    val member  = tpe.member(symName)
+    typeRef(tpe, if (isModule) member.linkedClassOfClass else member, Nil) // TODO tasty: refactor
   }
 
   def showSym(sym: Symbol): String = s"$sym # ${sym.hashCode}"

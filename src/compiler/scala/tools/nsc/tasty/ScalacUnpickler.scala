@@ -23,6 +23,9 @@ object ScalacUnpickler {
         final val signedNameAtRef: NameRef => Either[SigName, symbolTable.TermName] =
           nameTable.signedNameAtRef.asInstanceOf[NameRef => Either[SigName, symbolTable.TermName]]
 
+        final val moduleRefs: NameRef => Boolean =
+          nameTable.moduleRefs.asInstanceOf[NameRef => Boolean]
+
       }
   }
 }

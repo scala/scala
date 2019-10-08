@@ -42,6 +42,10 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
       else
         Right(nameAtRef(ref))
 
+  val modulesAtRefs: mutable.HashSet[Int] = mutable.HashSet.empty
+
+  val moduleRefs: NameRef => Boolean = ref => modulesAtRefs(ref.index)
+
   private def readName(): TermName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString
 
@@ -99,6 +103,9 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
         original // SignedName(original, sig)
       case _ =>
         val res = readName() // simpleNameKindOfTag(tag)(readName())
+        if (tag == OBJECTCLASS) {
+          modulesAtRefs += nameAtRef.names.size
+        }
         logTasty(s"${nameAtRef.names.size}: ${TastyFormat.astTagToString(tag)} name: $res")
         res
     }

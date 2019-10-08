@@ -8,10 +8,10 @@ object TastyTest extends App {
 
   def Which(command: String)    = exec("which", command).filter(!_.contains(" not found"))
   def Coursier(library: String) = exec("echo", "coursier", "fetch", "-p", library).map(_.lazyLines.last.trim)
-  def Scalac(sources: String*)  = exec("../../build/quick/bin/scalac" +: sharedOpts, sources:_*)
-  def Dotc(sources: String*)    = exec("dotc" +: sharedOpts, sources:_*)
+  def Scalac(dcp: String, sources: String*)  = exec("../../build/quick/bin/scalac" +: sharedOpts(dcp), sources:_*)
+  def Dotc(dcp: String, sources: String*)    = exec("dotc" +: sharedOpts(dcp), sources:_*)
 
-  val sharedOpts = Seq("-d", "out", "-classpath", "out")
+  def sharedOpts(dcp: String) = Seq("-d", "out", "-classpath", s"out:$dcp")
 
   def getFiles(dir: String) = Try {
     var stream: DirectoryStream[Path] = null
@@ -59,9 +59,9 @@ object TastyTest extends App {
     dcp       <- Coursier("ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1")
     src2      <- getFiles("src-2/tastytest")
     src3      <- getFiles("src-3/tastytest")
-    _         <- Scalac("src-2/tastytest/package.scala")
-    _         <- Dotc(src3:_*)
-    _         <- Scalac(src2:_*)
+    _         <- Scalac(dcp, "src-2/tastytest/package.scala")
+    _         <- Dotc(dcp, src3:_*)
+    _         <- Scalac(dcp, src2:_*)
     testFiles <- getFiles("src-2/tastytest")
     testNames = testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
   } yield runTests(dcp, testNames:_*)

@@ -210,6 +210,10 @@ abstract class TreeUnpickler(reader: TastyReader,
     }
 
     def readName(): TermName = nameAtRef(readNameRef())
+    def readNameWithModule(): (TermName, Boolean) = {
+      val ref = readNameRef()
+      nameAtRef(ref) -> moduleRefs(ref)
+    }
     def readSigName(): Either[SigName, TermName] = signedNameAtRef(readNameRef())
 
 // ------ Reading types -----------------------------------------------------
@@ -385,8 +389,8 @@ abstract class TreeUnpickler(reader: TastyReader,
           case TERMREFpkg =>
             readPackageRef().termRef
           case TYPEREF =>
-            val name = readName().toTypeName
-            TypeRef(readType(), name)
+            val name -> isModule = readNameWithModule()
+            TypeRef(readType(), name.toTypeName, isModule)
           case TERMREF =>
             val sname = readName()
             val prefix = readType()
