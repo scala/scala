@@ -13,4 +13,5 @@ object HelloWorld {
   def higherBounded[F[_] >: Null <: List[_], A](f: F[A]): F[A] = f
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
+  final lazy val lzy = "lazy"
 }

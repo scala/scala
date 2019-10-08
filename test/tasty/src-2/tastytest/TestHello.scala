@@ -14,6 +14,7 @@ object TestHello {
   def test10 = assert(HelloWorld.higherBounded(List(1,2,3)) === List(1,2,3))
   def test11 = assert(HelloWorld.func(101) === "101")
   def test12 = assert(HelloWorld.func1(33) === 33)
+  def test13 = assert((HelloWorld.lzy: "lazy") === "lazy")
 
   def main(args: Array[String]): Unit = {
     test1
@@ -28,6 +29,7 @@ object TestHello {
     test10
     test11
     test12
+    test13
     println("Suite passed!")
   }
 }
