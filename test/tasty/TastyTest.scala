@@ -6,11 +6,14 @@ import scala.util.Try
 
 object TastyTest extends App {
 
-  val sharedOpts = Seq("-d", "out", "-classpath", "out")
-  val Scalac = "../../build/quick/bin/scalac" +: sharedOpts
-  val Dotc   = "dotc" +: sharedOpts
+  def Which(command: String)    = exec("which", command).filter(!_.contains(" not found"))
+  def Coursier(library: String) = exec("echo", "coursier", "fetch", "-p", library).map(_.lazyLines.last.trim)
+  def Scalac(sources: String*)  = exec("../../build/quick/bin/scalac" +: sharedOpts, sources:_*)
+  def Dotc(sources: String*)    = exec("dotc" +: sharedOpts, sources:_*)
 
-  def getFiles(dir: String): Seq[String] = {
+  val sharedOpts = Seq("-d", "out", "-classpath", "out")
+
+  def getFiles(dir: String) = Try {
     var stream: DirectoryStream[Path] = null
     try {
       stream = Files.newDirectoryStream(Paths.get(dir))
@@ -22,70 +25,60 @@ object TastyTest extends App {
     }
   }
 
-  try {
-    val coursier = "which coursier".!!
-    if (coursier.contains(" not found")) {
-      System.err.println(coursier)
-      sys.exit(1)
-    }
-    val dotc = "which dotc".!!
-    if (dotc.contains(" not found")) {
-      System.err.println(dotc)
-      sys.exit(1)
-    }
-    val dcp = "echo coursier fetch -p ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1".!!.lazyLines.last.trim
-    val _1 = (Scalac :+ "src-2/tastytest/package.scala").!
-    if (_1 == 0) {
-      val _2 = (Dotc :++ getFiles("src-3/tastytest")).!
-      if (_2 == 0) {
-        val _3 = (Scalac :++ getFiles("src-2/tastytest")).!
-        if (_3 == 0) {
-          val testNames = {
-            getFiles("src-2/tastytest")
-              .map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala"))
-              .filter(_.startsWith("Test"))
+  def exec(command: String, args: String*): Try[String]      = exec(Seq(command), args:_*)
+  def exec(command: Seq[String], args: String*): Try[String] = Try((command :++ args).!!)
+
+  def runTests(dcp: String, names: String*): mutable.ArrayBuffer[String] = {
+    val errors = mutable.ArrayBuffer.empty[String]
+    for (test <- names) {
+      exec("../../build/quick/bin/scala", "-classpath", s"out:$dcp", s"tastytest.$test").fold(
+        err => {
+          errors += test
+          val msg = {
+            if (err.getMessage.contains("Nonzero exit value"))
+              s"$test failed."
+            else
+              s"$test failed, error: `${err.getMessage()}`"
           }
-          val errors = mutable.ArrayBuffer.empty[String]
-          println("compiled all")
-          for (test <- testNames) {
-            val command = Seq("../../build/quick/bin/scala", "-classpath", s"out:$dcp", s"tastytest.$test")
-            val output = Try(command.!!)
-            output.fold(
-              err => {
-                errors += test
-                System.err.println(s"$test failed, error: `${err.getMessage()}`")
-              },
-              content => {
-                if (content.trim != "Suite passed!") {
-                  errors += test
-                  System.err.println(s"$test failed, unexpected output: `$content`")
-                }
-              }
-            )
-          }
-          if (errors.size > 0) {
-            val str = if (errors.size == 1) "error" else "errors"
-            println(s"${errors.length} $str. Fix ${errors.mkString(",")}.")
-            sys.exit(1)
-          }
-          else {
-            println("All passed!")
+          System.err.println(msg)
+        },
+        content => {
+          if (content.trim != "Suite passed!") {
+            errors += test
+            System.err.println(s"$test failed, unexpected output: `$content`")
           }
         }
-        else {
-          sys.exit(_3)
-        }
+      )
+    }
+    errors
+  }
+
+  val program = for {
+    _         <- Which("coursier")
+    _         <- Which("dotc")
+    dcp       <- Coursier("ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1")
+    src2      <- getFiles("src-2/tastytest")
+    src3      <- getFiles("src-3/tastytest")
+    _         <- Scalac("src-2/tastytest/package.scala")
+    _         <- Dotc(src3:_*)
+    _         <- Scalac(src2:_*)
+    testFiles <- getFiles("src-2/tastytest")
+    testNames = testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
+  } yield runTests(dcp, testNames:_*)
+
+  program.fold(
+    err => {
+      System.err.println(err.getMessage)
+      sys.exit(1)
+    },
+    failed => {
+      if (failed.size > 0) {
+        val str = if (failed.size == 1) "error" else "errors"
+        println(s"${failed.length} $str. Fix ${failed.mkString(",")}.")
       }
       else {
-        sys.exit(_2)
+        println("All passed!")
       }
     }
-    else {
-      sys.exit(_1)
-    }
-  } catch {
-    case e: java.io.IOException =>
-      System.err.println(e.getMessage)
-      sys.exit(1)
-  }
+  )
 }
