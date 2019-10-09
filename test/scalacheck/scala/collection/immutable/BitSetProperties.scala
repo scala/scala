@@ -53,4 +53,11 @@ object BitSetProperties extends Properties("immutable.BitSet") {
     val (left, right) = bs.partition(p)
     (left ?= bs.filter(p)) && (right ?= bs.filterNot(p))
   }
+
+  property("iteratorFrom") = forAll(
+    listOfN(200, oneOf(0 to 10000)).map(_.to(Set)),
+    Gen.chooseNum[Int](0, 10000)) { (xs: Set[Int], start: Int) =>
+    val bs = xs.to(BitSet)
+    bs.iteratorFrom(start).to(Set) ?= xs.filter(_ >= start)
+  }
 }

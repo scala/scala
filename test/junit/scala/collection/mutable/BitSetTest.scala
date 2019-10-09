@@ -153,6 +153,20 @@ class BitSetTest {
   @Test def buildFromRange(): Unit = {
     import scala.util.chaining._
     assert((1 to 1000).to(BitSet) == BitSet().tap(bs => (1 to 1000).foreach(bs.addOne)))
-
   }
+
+  @Test def iteratorFrom(): Unit = {
+    val a = (0 to 127).to(BitSet)
+    assertEquals(0 to 127, a.iteratorFrom(0).toSeq)
+    assertEquals(1 to 127, a.iteratorFrom(1).toSeq)
+    assertEquals(63 to 127, a.iteratorFrom(63).toSeq)
+    assertEquals(64 to 127, a.iteratorFrom(64).toSeq)
+    assertEquals(0 to 127, a.iteratorFrom(-1).toSeq)
+    assertEquals(0 to 127, a.iteratorFrom(-100).toSeq)
+    assertEquals(Seq(0), BitSet(0).iteratorFrom(0).toSeq)
+    assertTrue(a.iteratorFrom(128).isEmpty)
+    assertTrue(BitSet.empty.iteratorFrom(0).isEmpty)
+    assertThrows[NoSuchElementException](BitSet.empty.iteratorFrom(0).next)
+  }
+
 }
