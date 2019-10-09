@@ -177,7 +177,7 @@ object Test extends App {
   // test unit labels
   for ((unit, labels) <- Seq(
     DAYS         -> "d day days",
-    HOURS        -> "h hour hours",
+    HOURS        -> "h hr hrs hour hours",
     MINUTES      -> "m min mins minute minutes",
     SECONDS      -> "s sec secs second seconds",
     MILLISECONDS -> "ms milli millis millisecond milliseconds",
