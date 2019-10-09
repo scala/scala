@@ -1,0 +1,21 @@
+t11758.scala:4: warning: Unused import; import of deprecated lazy value higherKinds: higherKinds no longer needs to be imported explicitly
+import language.higherKinds
+                ^
+t11758.scala:20: warning: Unused import; import from deprecated object outer: no outer
+  import outer.other
+               ^
+t11758.scala:22: warning: Unused import; import of deprecated object inner: no inner; import from deprecated object outer: no outer
+  import outer.{inner => odder}
+                ^
+t11758.scala:24: warning: object inner in object outer is deprecated: no inner
+  def f = inner
+          ^
+t11758.scala:24: warning: object outer is deprecated: no outer
+  def f = inner
+          ^
+t11758.scala:27: warning: class C in object nest is deprecated: no see
+  def g = new C
+              ^
+error: No warnings can be incurred under -Werror.
+6 warnings found
+one error found

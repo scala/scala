@@ -777,7 +777,7 @@ trait Trees { self: Universe =>
     def name: Name
 
     /** Offset of the position of the importing part of the selector in the source file.
-     *  Is equal to -1 is the position is unknown.
+     *  Is equal to -1 if the position is unknown.
      */
     def namePos: Int
 
@@ -787,7 +787,7 @@ trait Trees { self: Universe =>
     def rename: Name
 
     /** Offset of the position of the renaming part of the selector in the source file.
-     *  Is equal to -1 is the position is unknown.
+     *  Is equal to -1 if the position is unknown.
      */
     def renamePos: Int
 

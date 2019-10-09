@@ -15,7 +15,7 @@ package typechecker
 
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, SomeOfNil }
+import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, SomeOfNil}
 import scala.reflect.internal.Reporter
 
 /**
@@ -70,6 +70,15 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
 
+  private def checkDeprecatedImport(qual: Tree, selector: ImportSelector): List[String] = {
+    var messages: List[String] = Nil
+    if (qual.symbol.isDeprecated)
+      messages = s"import from deprecated ${qual.symbol}${qual.symbol.deprecationMessage.map(": " + _).getOrElse("")}" :: messages
+    Iterator(selector.name, selector.name.toTypeName).map(qual.tpe.member(_)).collectFirst {
+      case m if m.isDeprecated => s"import of deprecated $m${m.deprecationMessage.map(": " + _).getOrElse("")}"
+    }.foreach(s => messages = s :: messages)
+    messages
+  }
   @tailrec private def warnUnusedImportInfos(infos: List[ImportInfo]): Unit =
     infos match {
       case info :: rest =>
@@ -77,12 +86,15 @@ trait Contexts { self: Analyzer =>
         @tailrec def loop(selectors: List[ImportSelector]): Unit =
           selectors match {
             case selector :: rest =>
-              if (!selector.isMask && !used(selector))
-                reporter.warning(info.posOf(selector), "Unused import")
+              if (!selector.isMask && !used(selector)) {
+                val more = if (selector.isSpecific) checkDeprecatedImport(info.qual, selector) else Nil
+                reporter.warning(info.posOf(selector), ("Unused import" :: more).mkString("; "))
+              }
               loop(rest)
             case _ =>
           }
-        loop(info.tree.selectors)
+        if (!info.qual.symbol.isInterpreterWrapper)
+          loop(info.tree.selectors)
         warnUnusedImportInfos(rest)
       case _ =>
     }
@@ -1775,7 +1787,9 @@ trait Contexts { self: Analyzer =>
       allUsedSelectors(this) += sel
     }
 
-    /** If requireExplicit is true, wildcard imports are not considered. */
+    /** If requireExplicit is true, wildcard imports are not considered.
+     *  #2733: consider only non-local members for imports
+     */
     def importedSymbol(name: Name, requireExplicit: Boolean, record: Boolean): Symbol = {
       var result: Symbol = NoSymbol
       var renamed = false
@@ -1783,8 +1797,7 @@ trait Contexts { self: Analyzer =>
       @inline def current = selectors.head
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name))
-          result = qual.tpe.nonLocalMember( // #2733: consider only non-local members for imports
-            if (name.isTypeName) current.name.toTypeName else current.name)
+          result = qual.tpe.nonLocalMember(if (name.isTypeName) current.name.toTypeName else current.name)
         else if (!current.isWildcard && current.hasName(name))
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)
@@ -1793,7 +1806,7 @@ trait Contexts { self: Analyzer =>
         if (result == NoSymbol)
           selectors = selectors.tail
       }
-      if (record && settings.warnUnusedImport && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
+      if (record && settings.warnUnusedImport && result != NoSymbol && selectors.nonEmpty && pos != NoPosition)
         recordUsage(current, result)
 
       // Harden against the fallout from bugs like scala/bug#6745

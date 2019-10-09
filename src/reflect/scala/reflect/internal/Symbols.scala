@@ -701,7 +701,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Does this symbol denote a wrapper created by the repl? */
     final def isInterpreterWrapper = (
          (this hasFlag MODULE)
-      && isTopLevel
+      && isStatic
       && nme.isReplWrapperName(name)
     )
 
