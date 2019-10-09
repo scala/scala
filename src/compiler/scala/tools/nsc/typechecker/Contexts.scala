@@ -39,7 +39,6 @@ trait Contexts { self: Analyzer =>
 
     override val depth = 0
     override def enclosingContextChain: List[Context] = Nil
-    override def implicitss: List[List[ImplicitInfo]] = Nil
     override def imports: List[ImportInfo] = Nil
     override def firstImport: Option[ImportInfo] = None
     override def toString = "NoContext"
@@ -793,25 +792,6 @@ trait Contexts { self: Analyzer =>
       currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required)
 
 
-    // nextOuter determines which context is searched next for implicits
-    // (after `this`, which contributes `newImplicits` below.) In
-    // most cases, it is simply the outer context: if we're owned by
-    // a constructor, the actual current context and the conceptual
-    // context are different when it comes to scoping. The current
-    // conceptual scope is the context enclosing the blocks which
-    // represent the constructor body (TODO: why is there more than one
-    // such block in the outer chain?)
-    private def nextOuter = {
-      // Drop the constructor body blocks, which come in varying numbers.
-      // -- If the first statement is in the constructor, scopingCtx == (constructor definition)
-      // -- Otherwise, scopingCtx == (the class which contains the constructor)
-      val scopingCtx =
-        if (owner.isConstructor) nextEnclosing(c => !c.tree.isInstanceOf[Block])
-        else this
-
-      scopingCtx.outer
-    }
-
     @tailrec
     final def nextEnclosing(p: Context => Boolean): Context =
       if (this eq NoContext) this else if (p(this)) this else outer.nextEnclosing(p)
@@ -1088,37 +1068,46 @@ trait Contexts { self: Analyzer =>
      * `implicitss` will return implicit conversions defined inside the class. These are
      * filtered out later by `eligibleInfos` (scala/bug#4270 / 9129cfe9), as they don't type-check.
      */
-    def implicitss: List[List[ImplicitInfo]] = {
-      val nextOuter = this.nextOuter
-      def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] =
-        is match {
-          case Nil => nextOuter.implicitss
-          case _   => is :: nextOuter.implicitss
+    final def implicitss: List[List[ImplicitInfo]] = implicitssImpl(NoSymbol)
+
+    private def implicitssImpl(skipClass: Symbol): List[List[ImplicitInfo]] = {
+      if (this == NoContext) Nil
+      else if (owner == skipClass) outer.implicitssImpl(NoSymbol)
+      else {
+        def withOuter(is: List[ImplicitInfo]): List[List[ImplicitInfo]] = {
+          // In a constructor super call, the members of the constructed class are not in scope. We
+          // need to skip over the context of that class when searching for implicits. See PR #8441.
+          val nextSkipClass = if (owner.isPrimaryConstructor && inSelfSuperCall) owner.owner else skipClass
+          is match {
+            case Nil => outer.implicitssImpl(nextSkipClass)
+            case _ => is :: outer.implicitssImpl(nextSkipClass)
+          }
         }
 
-      val CycleMarker = NoRunId - 1
-      if (implicitsRunId == CycleMarker) {
-        debuglog(s"cycle while collecting implicits at owner ${owner}, probably due to an implicit without an explicit return type. Continuing with implicits from enclosing contexts.")
-        withOuter(Nil)
-      } else if (implicitsRunId != currentRunId) {
-        implicitsRunId = CycleMarker
-        implicits(nextOuter) match {
-          case None =>
-            implicitsRunId = NoRunId
-            withOuter(Nil)
-          case Some(is) =>
-            implicitsRunId = currentRunId
-            implicitsCache = is
-            withOuter(is)
+        val CycleMarker = NoRunId - 1
+        if (implicitsRunId == CycleMarker) {
+          debuglog(s"cycle while collecting implicits at owner ${owner}, probably due to an implicit without an explicit return type. Continuing with implicits from enclosing contexts.")
+          withOuter(Nil)
+        } else if (implicitsRunId != currentRunId) {
+          implicitsRunId = CycleMarker
+          implicits match {
+            case None =>
+              implicitsRunId = NoRunId
+              withOuter(Nil)
+            case Some(is) =>
+              implicitsRunId = currentRunId
+              implicitsCache = is
+              withOuter(is)
+          }
         }
+        else withOuter(implicitsCache)
       }
-      else withOuter(implicitsCache)
     }
 
     /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
-    private def implicits(nextOuter: Context): Option[List[ImplicitInfo]] = {
+    private def implicits: Option[List[ImplicitInfo]] = {
       val firstImport = this.firstImport
-      if (owner != nextOuter.owner && owner.isClass && !owner.isPackageClass && !inSelfSuperCall) {
+      if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
           // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
@@ -1126,12 +1115,12 @@ trait Contexts { self: Analyzer =>
           //     remedied nonetheless.
           Some(collectImplicits(owner.thisType.implicitMembers, owner.thisType))
         }
-      } else if (scope != nextOuter.scope && !owner.isPackageClass) {
+      } else if (scope != outer.scope && !owner.isPackageClass) {
         debuglog("collect local implicits " + scope.toList)//DEBUG
         Some(collectImplicits(scope, NoPrefix))
-      } else if (firstImport != nextOuter.firstImport) {
+      } else if (firstImport != outer.firstImport) {
         if (isDeveloper)
-          assert(imports.tail.headOption == nextOuter.firstImport, (imports, nextOuter.imports))
+          assert(imports.tail.headOption == outer.firstImport, (imports, outer.imports))
         Some(collectImplicitImports(firstImport.get))
       } else if (owner.isPackageClass) {
         // the corresponding package object may contain implicit members.
