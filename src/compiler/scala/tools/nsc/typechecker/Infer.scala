@@ -941,6 +941,9 @@ trait Infer extends Checkable {
       || isProperSubClassOrObject(sym1.safeOwner, sym2.owner)
     )
 
+    // Note that this doesn't consider undetparams -- any type params in `ftpe1/2` need to be bound by their type (i.e. in a PolyType)
+    // since constructors of poly classes do not have their own polytype in their infos, this must be fixed up
+    // before calling this method (see memberTypeForSpecificity)
     def isStrictlyMoreSpecific(ftpe1: Type, ftpe2: Type, sym1: Symbol, sym2: Symbol): Boolean = {
       // ftpe1 / ftpe2 are OverloadedTypes (possibly with one single alternative) if they
       // denote the type of an "apply" member method (see "followApply")
@@ -1338,6 +1341,25 @@ trait Infer extends Checkable {
 
     /* -- Overload Resolution ---------------------------------------------- */
 
+    /** Adjust polymorphic class's constructor info to be polymorphic as well
+     *
+     * Normal polymorphic methods have a PolyType as their info, but a constructor reuses the type params of the class.
+     * We wrap them in a PolyType here so that we get consistent behavior in determining specificity.
+     *
+     * @param pre
+     * @param sym must not be overloaded!
+     * @return `pre memberType sym`, unless `sym`` is a polymorphic class's constructor,
+     *         in which case a `PolyType` is wrapped around the ctor's info
+     */
+    private def memberTypeForSpecificity(pre: Type, sym: Symbol) = {
+      val tparsToAdd = if (sym.isConstructor) sym.owner.info.typeParams else Nil
+
+      if (tparsToAdd.isEmpty) pre memberType sym
+      // Need to make sure tparsToAdd are owned by sym (the constructor), and not the class (`sym.owner`).
+      // Otherwise, asSeenFrom will rewrite them to the corresponding symbols in `pre` (the new this type for `sym.owner`).
+      else createFromClonedSymbolsAtOwner(tparsToAdd, sym, sym.info)(PolyType(_, _)).asSeenFrom(pre, sym.owner)
+    }
+
     /** Assign `tree` the symbol and type of the alternative which
      *  matches prototype `pt`, if it exists.
      *  If several alternatives match `pt`, take parameterless one.
@@ -1350,8 +1372,8 @@ trait Infer extends Checkable {
           val alts0 = alts filter (alt => isWeaklyCompatible(pre memberType alt, pt))
           val alts1 = if (alts0.isEmpty) alts else alts0
           val bests = bestAlternatives(alts1) { (sym1, sym2) =>
-            val tp1 = pre memberType sym1
-            val tp2 = pre memberType sym2
+            val tp1 = memberTypeForSpecificity(pre, sym1)
+            val tp2 = memberTypeForSpecificity(pre, sym2)
 
             (    (tp2 eq ErrorType)
               || isWeaklyCompatible(tp1, pt) && !isWeaklyCompatible(tp2, pt)
@@ -1463,7 +1485,7 @@ trait Infer extends Checkable {
           case tp               => tp
         }
 
-        private def followType(sym: Symbol) = followApply(pre memberType sym)
+        private def followType(sym: Symbol) = followApply(memberTypeForSpecificity(pre, sym))
         // separate method to help the inliner
         private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
         private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
