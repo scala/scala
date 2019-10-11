@@ -426,6 +426,15 @@ extends AbstractMap[K, V]
     this
   }
 
+  override def clear(): Unit = {
+    import java.util.Arrays.fill
+    fill(_keys, null)
+    fill(_values, null)
+    fill(_hashes, 0)
+    _size = 0
+    _vacant = 0
+  }
+
 }
 
 object AnyRefMap {
