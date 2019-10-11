@@ -795,8 +795,16 @@ class ExtractAPI[GlobalType <: Global](
           ann.atp.typeSymbol isNonBottomSubClass definitions.StaticAnnotationClass
       }
       implicit def compat(ann: AnnotationInfo): IsStatic = new IsStatic(ann)
-      annotations.filter(_.isStatic)
+
+      // scala/bug#11679 annotations of inherited members may be absent from the compile time classpath
+      // so avoid calling `isNonBottomSubClass` on these stub symbols which would trigger a fatal error.
+      annotations.filter(ann => !isStub(ann.atp.typeSymbol) && ann.isStatic)
     }
+
+  private def isStub(sym: Symbol): Boolean = sym match {
+    case _: StubSymbol => true
+    case _             => false
+  }
 }
 
 object ExtractAPI {
