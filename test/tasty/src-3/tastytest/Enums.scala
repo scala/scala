@@ -45,7 +45,7 @@ object Enums {
       case _ => throw new IllegalArgumentException(s"${value.getClass} is not ${implicitly[ClassTag[E]]}.")
     }
 
-    def valueOf[E <: Enum[E]](name: String)(implicit companion: EnumCompanion[E]) = companion.valueOf(name)
-    def values[E <: Enum[E]: ClassTag](implicit companion: EnumCompanion[E]): Array[E] = companion.values
+    def valueOf[E <: Enum[E]: EnumCompanion](name: String) = implicitly[EnumCompanion[E]].valueOf(name)
+    def values[E <: Enum[E]: EnumCompanion]: Array[E] = implicitly[EnumCompanion[E]].values
   }
 }

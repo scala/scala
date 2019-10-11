@@ -6,12 +6,25 @@ import scala.util.Try
 
 object TastyTest extends App {
 
-  def Which(command: String)    = exec("which", command).filter(!_.contains(" not found"))
-  def Coursier(library: String) = exec("echo", "coursier", "fetch", "-p", library).map(_.lazyLines.last.trim)
-  def Scalac(dcp: String, sources: String*)  = exec("../../build/quick/bin/scalac" +: sharedOpts(dcp), sources:_*)
-  def Dotc(dcp: String, sources: String*)    = exec("dotc" +: sharedOpts(dcp), sources:_*)
+  // TODO: programatically invoke dotc using dotty.tools.dotc.Main.process once overloads can be unpickled from TASTy.
 
-  def sharedOpts(dcp: String) = Seq("-d", "out", "-classpath", s"out:$dcp")
+  def program = for {
+    _         <- ensureDirExists("out")
+    dcp       <- Coursier("ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1")
+    src2      <- getFiles("src-2/tastytest")
+    src3      <- getFiles("src-3/tastytest")
+    _         <- Dotc(dcp, src3:_*)
+    _         <- Scalac(dcp, src2:_*)
+    testFiles <- getFiles("src-2/tastytest")
+    testNames = testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
+  } yield runTests(dcp, testNames:_*)
+
+  def Coursier(library: String) = exec("echo", "coursier", "fetch", "-p", library).map(_.lazyLines.last.trim)
+  def Scalac(dcp: String, sources: String*) = exec("../../build/quick/bin/scalac", (sharedOpts(dcp) ++ sources):_*)
+  def Dotc(dcp: String, sources: String*) = exec("dotc", (sharedOpts(dcp) ++ sources):_*)
+
+  def sharedOpts(dcp: String) = Seq("-d", "out", "-classpath", paths("out", dcp))
+  def paths(paths: String*) = paths.mkString(":")
 
   def getFiles(dir: String) = Try {
     var stream: DirectoryStream[Path] = null
@@ -25,13 +38,25 @@ object TastyTest extends App {
     }
   }
 
-  def exec(command: String, args: String*): Try[String]      = exec(Seq(command), args:_*)
-  def exec(command: Seq[String], args: String*): Try[String] = Try((command :++ args).!!)
+  def ensureDirExists(dir: String) = Try {
+    val path = Paths.get(dir)
+    if (Files.exists(path)) {
+      if (!Files.isDirectory(path)) {
+        throw new IllegalStateException(s"${path.toAbsolutePath} is not a directory, please review.")
+      }
+    }
+    else {
+      Files.createDirectory(path)
+      ()
+    }
+  }
+
+  def exec(command: String, args: String*): Try[String] = Try((command +: args).!!)
 
   def runTests(dcp: String, names: String*): mutable.ArrayBuffer[String] = {
     val errors = mutable.ArrayBuffer.empty[String]
     for (test <- names) {
-      exec("../../build/quick/bin/scala", "-classpath", s"out:$dcp", s"tastytest.$test").fold(
+      exec("../../build/quick/bin/scala", "-classpath", paths("out", dcp), s"tastytest.$test").fold(
         err => {
           errors += test
           val msg = {
@@ -53,22 +78,9 @@ object TastyTest extends App {
     errors
   }
 
-  val program = for {
-    _         <- Which("coursier")
-    _         <- Which("dotc")
-    dcp       <- Coursier("ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1")
-    src2      <- getFiles("src-2/tastytest")
-    src3      <- getFiles("src-3/tastytest")
-    _         <- Scalac(dcp, "src-2/tastytest/package.scala")
-    _         <- Dotc(dcp, src3:_*)
-    _         <- Scalac(dcp, src2:_*)
-    testFiles <- getFiles("src-2/tastytest")
-    testNames = testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
-  } yield runTests(dcp, testNames:_*)
-
   program.fold(
     err => {
-      System.err.println(err.getMessage)
+      System.err.println(s"ERROR: ${err.getMessage}")
       sys.exit(1)
     },
     failed => {
