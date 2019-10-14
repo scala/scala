@@ -1291,9 +1291,9 @@ trait Types
     private def toWild(tp: Type): Type = tp match {
       case PolyType(tparams, tp) =>
         val undets = tparams ++ origUndets
-        new SubstTypeMap(undets, undets map (_ => WildcardType)).apply(tp)
+        new SubstByWildcardTypeMap(undets).apply(tp)
       case tp                    =>
-        new SubstTypeMap(origUndets, origUndets map (_ => WildcardType)).apply(tp)
+        new SubstByWildcardTypeMap(origUndets).apply(tp)
     }
 
     private lazy val sameTypesFolded = {

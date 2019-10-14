@@ -2132,7 +2132,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
             val tparams = sym.owner.skipConstructor.info.typeParams
-            val subst = new SubstTypeMap(tparams, tparams map (_ => WildcardType)) {
+            val subst = new SubstByWildcardTypeMap(tparams) {
               override def matches(sym: Symbol, sym1: Symbol) =
                 if (sym.isSkolem) matches(sym.deSkolemize, sym1)
                 else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)

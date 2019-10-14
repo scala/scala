@@ -663,9 +663,8 @@ private[internal] trait TypeMaps {
   }
 
   /** A base class to compute all substitutions */
-  abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
-    // OPT this check was 2-3% of some profiles, demoted to -Xdev
-    if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
+  abstract class AbstractSubstMap[T] extends TypeMap {
+    protected val from: List[Symbol]
 
     private[this] var fromHasTermSymbol = false
     private[this] var fromMin = Int.MaxValue
@@ -698,12 +697,21 @@ private[internal] trait TypeMaps {
         tp
     }
 
-    @tailrec private def subst(tp: Type, sym: Symbol, from: List[Symbol], to: List[T]): Type = (
-      if (from.isEmpty) tp
-      // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(tp, from))
-      else if (matches(from.head, sym)) toType(tp, to.head)
-      else subst(tp, sym, from.tail, to.tail)
-      )
+    private[this] def subst(tp: Type, sym: Symbol): Type = {
+      val found = find(sym)
+      if (found == null) tp else toType(tp, found)
+    }
+
+    protected def find(sym: Symbol): T
+
+    protected def findIndex(sym: Symbol): Int = {
+      @tailrec def loop(syms: List[Symbol], ix: Int, sym: Symbol): Int = syms match {
+        case Nil => -1
+        case x :: _ if matches(x, sym) => ix
+        case _ :: xs => loop(xs, ix+1, sym)
+      }
+      loop(from, 0, sym)
+    }
 
     private def fromContains(syms: List[Symbol]): Boolean = {
       def fromContains(sym: Symbol): Boolean = {
@@ -726,7 +734,7 @@ private[internal] trait TypeMaps {
 
     def apply(tp0: Type): Type = if (from.isEmpty) tp0 else {
       val tp                    = renameBoundSyms(tp0).mapOver(this)
-      def substFor(sym: Symbol) = subst(tp, sym, from, to)
+      def substFor(sym: Symbol) = subst(tp, sym)
 
       tp match {
         // @M
@@ -758,21 +766,20 @@ private[internal] trait TypeMaps {
     }
   }
 
-  /** A map to implement the `substSym` method. */
-  class SubstSymMap(from: List[Symbol], to: List[Symbol]) extends SubstMap(from, to) {
-    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+  abstract class SubstMap[T >: Null](override val from: List[Symbol], to: List[T]) extends AbstractSubstMap[T] {
+    // OPT this check was 2-3% of some profiles, demoted to -Xdev
+    if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
-    protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
-      case TypeRef(pre, _, args) => copyTypeRef(fromtp, pre, sym, args)
-      case SingleType(pre, _) => singleType(pre, sym)
-    }
-    @tailrec private def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol = (
-      if (from.isEmpty) sym
+    protected def find(sym: Symbol): T = findAux(sym, from, to)
+
+    @tailrec private def findAux(sym: Symbol, from: List[Symbol], to: List[T]): T =
+      if (from.isEmpty) (null: T)
       // else if (to.isEmpty) error("Unexpected substitution on '%s': from = %s but to == Nil".format(sym, from))
       else if (matches(from.head, sym)) to.head
-      else subst(sym, from.tail, to.tail)
-      )
-    private def substFor(sym: Symbol) = subst(sym, from, to)
+      else findAux(sym, from.tail, to.tail)
+  }
+
+  abstract class AbstractSubstSymMap extends AbstractSubstMap[Symbol] {
 
     override def apply(tp: Type): Type = (
       if (from.isEmpty) tp
@@ -789,6 +796,26 @@ private[internal] trait TypeMaps {
           super.apply(tp)
       }
       )
+
+    private def substFor(sym: Symbol) = {
+      val found = find(sym)
+      if (found == null) sym else found
+    }
+  }
+
+  /** A map to implement the `substSym` method. */
+  class SubstSymMap(override val from: List[Symbol], to: List[Symbol]) extends AbstractSubstSymMap {
+    def this(pairs: (Symbol, Symbol)*) = this(pairs.toList.map(_._1), pairs.toList.map(_._2))
+
+    override protected def find(sym: Symbol): Symbol = findIndex(sym) match {
+      case -1 => null
+      case ix => to(ix)
+    }
+
+    protected def toType(fromtp: Type, sym: Symbol) = fromtp match {
+      case TypeRef(pre, _, args) => copyTypeRef(fromtp, pre, sym, args)
+      case SingleType(pre, _) => singleType(pre, sym)
+    }
 
     object mapTreeSymbols extends TypeMapTransformer {
       val strictCopy = newStrictTreeCopier
@@ -827,8 +854,9 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(val from: List[Symbol], val to: List[Type]) extends SubstMap(from, to) {
-    protected def toType(fromtp: Type, tp: Type) = tp
+  abstract class AbstractSubstTypeMap extends AbstractSubstMap[Type] {
+    protected def toAt(idx: Int): Type
+    override protected def toType(fromtp: Type, tp: Type) = tp
 
     override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {
       object trans extends TypeMapTransformer {
@@ -837,7 +865,7 @@ private[internal] trait TypeMaps {
             from indexOf tree.symbol match {
               case -1   => super.transform(tree)
               case idx  =>
-                val totpe = to(idx)
+                val totpe = toAt(idx)
                 if (totpe.isStable) tree.duplicate setType totpe
                 else giveup()
             }
@@ -847,6 +875,22 @@ private[internal] trait TypeMaps {
       }
       trans.transform(tree)
     }
+  }
+
+  /** A map to implement the `subst` method. */
+  class SubstTypeMap(override val from: List[Symbol], val to: List[Type]) extends AbstractSubstTypeMap {
+    override def toAt(idx: Int): Type = to(idx)
+    override def find(sym: Symbol): Type =
+      findIndex(sym) match {
+        case -1   => null
+        case idx  => to(idx)
+      }
+  }
+
+  class SubstByWildcardTypeMap(override val from: List[Symbol]) extends AbstractSubstTypeMap {
+    override def toAt(idx: Int): Type = WildcardType
+    override def find(sym: Symbol): Type =
+      if (findIndex(sym) >= 0) WildcardType else null
   }
 
   /** A map to implement the `substThis` method. */
