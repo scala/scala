@@ -8,13 +8,13 @@ There is a small set of test files in `/test/tasty/`, which are simply run with 
   - `dotc` is on the PATH and is compatible with version `0.19.0-RC1`.
   - `coursier` is also on the PATH. [Get coursier](https://get-coursier.io)
 
-The testing framework relies upon tests being defined in the `tastytest` package in a class with a main method and a name matching `Test*`. A successful test should print the single line `Suite passed!`. Tests should be defined in `src-2` so that they are compiled with `scalac` and
+The testing framework relies upon tests being defined in the `src-2` root within an executable class with a name matching `tastytest.Test*`. A successful test should print the single line `Suite passed!`. Tests should be defined in `src-2` so that they are compiled with `scalac` and
 depend on classes which are defined in `src-3` which are compiled with `dotc`. Tests that fail should be put in `suspended` to document that they are incompatible at present.
 
 
 ## Notes
 
-comments beginning with `// TODO tasty:` should be considered carefully as they are special accomodations for the TASTy reader that leak out of the classfile parser or `scala.tools.nsc.tasty` package.
+comments beginning with `// TODO tasty:` should be considered carefully as they are special accomodations for the TASTy reader that are particulary expensive, or leak out of the classfile parser or `scala.tools.nsc.tasty` package.
 
 # Welcome!
 
