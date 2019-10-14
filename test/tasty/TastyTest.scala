@@ -2,29 +2,47 @@ import scala.sys.process._
 import java.nio.file.{Files, Paths, Path, DirectoryStream}
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Try, Success, Failure}
+import scala.util.Properties
 
-object TastyTest extends App {
+object TastyTest {
 
-  // TODO: programatically invoke dotc using dotty.tools.dotc.Main.process once overloads can be unpickled from TASTy.
-
-  def program = for {
-    _         <- ensureDirExists("out")
-    dcp       <- Coursier("ch.epfl.lamp:dotty-library_0.19:0.19.0-RC1")
+  def run(args: Seq[String]) = for {
+    dcp       <- findArg(args, "--dotty-library")
+    dccp      <- findArg(args, "--dotty-compiler")
+    out       <- tempDir("tastytest")
     src2      <- getFiles("src-2/tastytest")
     src3      <- getFiles("src-3/tastytest")
-    _         <- Dotc(dcp, src3:_*)
-    _         <- Scalac(dcp, src2:_*)
+    _         <- Dotc(out, dcp, dccp, src3:_*)
+    _         <- Scalac(out, dcp, src2:_*)
     testFiles <- getFiles("src-2/tastytest")
-    testNames = testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
-  } yield runTests(dcp, testNames:_*)
+    testNames =  testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
+    _         <- runTests(out, dcp, testNames:_*)
+  } yield ()
 
-  def Coursier(library: String) = exec("echo", "coursier", "fetch", "-p", library).map(_.lazyLines.last.trim)
-  def Scalac(dcp: String, sources: String*) = exec("../../build/quick/bin/scalac", (sharedOpts(dcp) ++ sources):_*)
-  def Dotc(dcp: String, sources: String*) = exec("dotc", (sharedOpts(dcp) ++ sources):_*)
+  val scalac = "../../build/quick/bin/scalac"
+  val scala  = "../../build/quick/bin/scala"
 
-  def sharedOpts(dcp: String) = Seq("-d", "out", "-classpath", paths("out", dcp))
+  def Java(javaArgs: Seq[String], compilerArgs: Seq[String]) = exec("java", (javaArgs ++ compilerArgs):_*)
+  def Scalac(out: String, dcp: String, sources: String*) = exec(scalac, (sharedOpts(out, dcp) ++ sources):_*)
+  def Dotc(out: String, dcp: String, dccp: String, sources: String*) =
+    Java(
+      javaArgs     = Seq("-classpath", dccp, "dotty.tools.dotc.Main"),
+      compilerArgs = sharedOpts(out, dcp) ++ sources
+    )
+
   def paths(paths: String*) = paths.mkString(":")
+
+  def findArg(args: Seq[String], arg: String) =
+    args.sliding(2)
+        .filter(_.length == 2)
+        .find(_.head == arg)
+        .map(_.last)
+        .fold[Try[String]](
+          Failure(new IllegalArgumentException(s"please provide argument: $arg")))(
+          Success(_))
+
+  def sharedOpts(out: String, dcp: String) = Seq("-d", out, "-classpath", paths(out, dcp))
 
   def getFiles(dir: String) = Try {
     var stream: DirectoryStream[Path] = null
@@ -38,59 +56,48 @@ object TastyTest extends App {
     }
   }
 
-  def ensureDirExists(dir: String) = Try {
-    val path = Paths.get(dir)
-    if (Files.exists(path)) {
-      if (!Files.isDirectory(path)) {
-        throw new IllegalStateException(s"${path.toAbsolutePath} is not a directory, please review.")
-      }
-    }
-    else {
-      Files.createDirectory(path)
-      ()
-    }
-  }
+  def tempDir(dir: String) = Try(Files.createTempDirectory(dir)).map(_.toString)
 
   def exec(command: String, args: String*): Try[String] = Try((command +: args).!!)
 
-  def runTests(dcp: String, names: String*): mutable.ArrayBuffer[String] = {
+  def runTests(out: String, dcp: String, names: String*) = {
     val errors = mutable.ArrayBuffer.empty[String]
     for (test <- names) {
-      exec("../../build/quick/bin/scala", "-classpath", paths("out", dcp), s"tastytest.$test").fold(
+      exec(scala, "-classpath", paths(out, dcp), s"tastytest.$test").fold(
         err => {
           errors += test
           val msg = {
             if (err.getMessage.contains("Nonzero exit value"))
-              s"$test failed."
+              s"ERROR: $test failed."
             else
-              s"$test failed, error: `${err.getMessage()}`"
+              s"ERROR: $test failed, error: `${err.getMessage()}`"
           }
           System.err.println(msg)
         },
         content => {
           if (content.trim != "Suite passed!") {
             errors += test
-            System.err.println(s"$test failed, unexpected output: `$content`")
+            System.err.println(s"ERROR: $test failed, unexpected output: `$content`")
           }
         }
       )
     }
-    errors
+    if (errors.size > 0) {
+      val str = if (errors.size == 1) "error" else "errors"
+      Failure(new IllegalStateException(s"${errors.length} $str. Fix ${errors.mkString(",")}."))
+    }
+    else {
+      Success(())
+    }
   }
 
-  program.fold(
+  def main(args: Array[String]): Unit = run(args.toList).fold(
     err => {
       System.err.println(s"ERROR: ${err.getMessage}")
       sys.exit(1)
     },
-    failed => {
-      if (failed.size > 0) {
-        val str = if (failed.size == 1) "error" else "errors"
-        println(s"${failed.length} $str. Fix ${failed.mkString(",")}.")
-      }
-      else {
-        println("All passed!")
-      }
+    _ => {
+      println("All passed!")
     }
   )
 }
