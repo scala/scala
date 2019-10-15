@@ -3594,13 +3594,14 @@ trait Types
               //
               // A more "natural" unifier might be M[t] = [t][t => t]. There's lots of scope for
               // experimenting with alternatives here.
-              val (captured, abstractedArgs) = tpTypeArgs.splitAt(numCaptured)
+              val abstractedArgs = tpTypeArgs.drop(numCaptured)
 
               val (lhs, rhs) =
                 if (isLowerBound) (abstractedArgs, typeArgs)
                 else (typeArgs, abstractedArgs)
 
               isSubArgs(lhs, rhs, params, AnyDepth) && {
+                val captured = tpTypeArgs.take(numCaptured)
                 val clonedParams = abstractedTypeParams.map(_.cloneSymbol(tpSym))
                 addBound(PolyType(clonedParams, appliedType(tp.typeConstructor, captured ++ clonedParams.map(_.tpeHK))))
                 true
