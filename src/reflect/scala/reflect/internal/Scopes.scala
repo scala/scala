@@ -63,6 +63,19 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
   }
 
+  /** A default Scope iterator, that retrieves elements in the order given by ScopeEntry. */
+  private[Scopes] class ScopeIterator(owner: Scope) extends Iterator[Symbol] {
+    private[this] var elem: ScopeEntry = owner.elems
+
+    def hasNext: Boolean = (elem ne null) && (elem.owner == this.owner)
+    def next: Symbol =
+      if (hasNext){
+        val res = elem
+        elem = elem.next
+        res.sym
+      } else throw new NoSuchElementException
+  }
+
   /** Note: constructor is protected to force everyone to use the factory methods newScope or newNestedScope instead.
    *  This is necessary because when run from reflection every scope needs to have a
    *  SynchronizedScope as mixin.
@@ -385,7 +398,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
         }
         entryContainsSym(this lookupEntry sym.name)
       }
-      other.toList forall scopeContainsSym
+      other.reverseIterator.forall(scopeContainsSym)
     }
 
     /** Return all symbols as a list in the order they were entered in this scope.
@@ -417,6 +430,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** Return all symbols as an iterator in the order they were entered in this scope.
      */
     def iterator: Iterator[Symbol] = toList.iterator
+
+    def reverseIterator: Iterator[Symbol] = new ScopeIterator(this)
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 

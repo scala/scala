@@ -594,7 +594,7 @@ abstract class RefChecks extends Transform {
         def checkNoAbstractMembers(): Unit = {
           // Avoid spurious duplicates: first gather any missing members.
           def memberList = clazz.info.nonPrivateMembersAdmitting(VBRIDGE)
-          val (missing, rest) = memberList partition (m => m.isDeferred && !ignoreDeferred(m))
+          val missing = memberList.reverseIterator.filter(m => m.isDeferred && !ignoreDeferred(m)).toList.reverse
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
           val grouped = missing groupBy (_.name.getterName)
@@ -712,7 +712,10 @@ abstract class RefChecks extends Transform {
           }
 
           // Check the remainder for invalid absoverride.
-          for (member <- rest ; if (member.isAbstractOverride && member.isIncompleteIn(clazz))) {
+          val rest = memberList.reverseIterator.filter { m =>
+            (!m.isDeferred || ignoreDeferred(m) ) && m.isAbstractOverride && m.isIncompleteIn(clazz)
+          }
+          rest.toList.reverse.foreach { member =>
             val other = member.superSymbolIn(clazz)
             val explanation =
               if (other != NoSymbol) " and overrides incomplete superclass member\n" + infoString(other)
