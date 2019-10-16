@@ -1,10 +1,19 @@
-varargs.scala:16: error: A method with a varargs annotation produces a forwarder method with the same signature (a: Int, b: Array[String])Int as an existing method.
-    @varargs def v1(a: Int, b: String*) = a + b.length
+varargs.scala:11: error: A method annotated with @varargs produces a forwarder method with the same signature (a: Int, b: Array[String])Int as an existing method.
+    @varargs def v1(a: Int, b: String*) = a + b.length // nok
                  ^
-varargs.scala:19: error: A method without repeated parameters cannot be annotated with the `varargs` annotation.
-  @varargs def nov(a: Int) = 0
+varargs.scala:14: error: A method annotated with @varargs must have a single repeated parameter in its last parameter list.
+  @varargs def nov(a: Int) = 0 // nok
                ^
-varargs.scala:21: error: A method with a varargs annotation produces a forwarder method with the same signature (a: Int, b: Array[String])Int as an existing method.
-  @varargs def v2(a: Int, b: String*) = 0
+varargs.scala:16: error: A method annotated with @varargs produces a forwarder method with the same signature (a: Int, b: Array[String])Int as an existing method.
+  @varargs def v2(a: Int, b: String*) = 0 // nok
                ^
-three errors found
+varargs.scala:19: error: A method annotated with @varargs must have a single repeated parameter in its last parameter list.
+  @varargs def v3(a: String*)(b: Int) = b + a.length // nok
+               ^
+varargs.scala:20: error: A method annotated with @varargs must have a single repeated parameter in its last parameter list.
+  @varargs def v4(a: String)(b: Int) = b + a.length // nok
+               ^
+varargs.scala:23: error: A method annotated with @varargs must have a single repeated parameter in its last parameter list.
+  @varargs def v6: Int = 1 // nok
+               ^
+6 errors found

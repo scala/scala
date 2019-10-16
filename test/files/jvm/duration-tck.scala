@@ -174,6 +174,20 @@ object Test extends App {
   (1.second + 1.millisecond).unit mustBe MILLISECONDS
 
 
+  // test unit labels
+  for ((unit, labels) <- Seq(
+    DAYS         -> "d day days",
+    HOURS        -> "h hr hrs hour hours",
+    MINUTES      -> "m min mins minute minutes",
+    SECONDS      -> "s sec secs second seconds",
+    MILLISECONDS -> "ms milli millis millisecond milliseconds",
+    MICROSECONDS -> "µs micro micros microsecond microseconds",
+    NANOSECONDS  -> "ns nano nanos nanosecond nanoseconds"
+  ); label <- labels.split(" ")) {
+    Duration("1" + label).unit mustBe unit
+  }
+
+
   // test Deadline
   val dead = 2.seconds.fromNow
   val dead2 = 2 seconds fromNow

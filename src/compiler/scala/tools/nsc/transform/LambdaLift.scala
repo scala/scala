@@ -180,7 +180,8 @@ abstract class LambdaLift extends InfoTransform {
             renamable += sym
             changedFreeVars = true
             debuglog(s"$sym is free in $enclosure")
-            if (sym.isVariable) sym setFlag CAPTURED
+            if (sym.isVariable && !sym.hasStableFlag) // write-once synthetic case vars are marked STABLE
+              sym setFlag CAPTURED
           }
           !enclosure.isClass
         }

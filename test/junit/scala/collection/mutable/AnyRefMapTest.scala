@@ -39,4 +39,43 @@ class AnyRefMapTest {
     val m2 = m + (("birds", 2))
     assertEquals(Map("fish" -> 3, "birds" -> 2), (m2: collection.mutable.AnyRefMap[String, Int]))
   }
+
+  @Test
+  def testClear: Unit = {
+    val map = new AnyRefMap[String, String]()
+    map("greeting") = "hi"
+    map("farewell") = "bye"
+    assertEquals(2, map.size)
+    map.clear()
+    assertEquals(0, map.size)
+    map("greeting") = "howdy"
+    assertEquals(1, map.size)
+    map("farewell") = "auf Wiedersehen"
+    map("good day") = "labdien"
+    assertEquals(3, map.size)
+  }
+
+  @Test
+  def testClearMemoryReuse: Unit = { // otherwise there's no point to the override
+    val map = new AnyRefMap[String, Int]
+    def getField[T <: AnyRef](name: String): T =
+      reflect.ensureAccessible(map.getClass.getDeclaredField("scala$collection$mutable$AnyRefMap$$" + name)).get(map).asInstanceOf[T]
+    def hashesSz = getField[Array[Int]]("_hashes").length
+    def keysSz = getField[Array[AnyRef]]("_keys").length
+    def valuesSz = getField[Array[AnyRef]]("_values").length
+    def assertArraysSize(sz: Int) = {
+      assertEquals(sz, hashesSz)
+      assertEquals(sz, keysSz)
+      assertEquals(sz, valuesSz)
+    }
+    for (i <- (1 to 1000000)) map(i.toString) = i
+    assertEquals(1000000, map.size)
+    assertArraysSize(1 << 21)
+    map.clear()
+    assertEquals(0, map.size)
+    assertArraysSize(1 << 21)
+    for (i <- (-10000 to 10000)) map(i.toString) = i
+    assertEquals(20001, map.size)
+    assertArraysSize(1 << 21)
+  }
 }

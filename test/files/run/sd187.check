@@ -7,7 +7,7 @@
     };
     [107]def commonSubPattern([124]x: [127]<type: [127]scala.Any>): [107]AnyVal = [205]{
       [205]<synthetic> var rc6: [205]Boolean = [205]false;
-      [205]<synthetic> var x3: [205]String = [205][205][205]null.asInstanceOf[[205]String];
+      [205]<synthetic> <stable> var x3: [205]String = [205][205][205]null.asInstanceOf[[205]String];
       [205]{
         [205]case <synthetic> val x1: [205]Any = [205]x;
         [205]case8(){
