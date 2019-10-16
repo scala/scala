@@ -1538,13 +1538,23 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         _rawflags |= LOCKED
       }
       val current = phase
-      try {
-        assertCorrectThread()
-        phase = phaseOf(infos.validFrom)
-        tp.complete(this)
-      } finally {
-        unlock()
-        phase = current
+      if (isCompilerUniverse) {
+        try {
+          assertCorrectThread()
+          phase = phaseOf(infos.validFrom)
+          tp.complete(this)
+        } finally {
+          unlock()
+          phase = current
+        }
+      } else {
+          // In runtime reflection, there is only on phase, so don't mutate Global.phase which would lead to warnings
+        // of data races from when using TSAN to assess thread safety.
+        try {
+          tp.complete(this)
+        } finally {
+          unlock()
+        }
       }
     } catch {
       case ex: CyclicReference =>
