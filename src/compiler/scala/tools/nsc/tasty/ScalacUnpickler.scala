@@ -4,6 +4,7 @@ import TastyUnpickler.SectionUnpickler
 import scala.reflect.io.AbstractFile
 import TastyRefs.NameRef
 import scala.util.control.NonFatal
+import scala.reflect.internal.SymbolTable
 
 object ScalacUnpickler {
 
@@ -33,7 +34,7 @@ object ScalacUnpickler {
 /** A class for unpickling Tasty trees and symbols.
  *  @param bytes         the bytearray containing the Tasty file from which we unpickle
  */
-abstract class ScalacUnpickler(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TastyUniverse { self =>
+abstract class ScalacUnpickler[S <: SymbolTable with Singleton](val symbolTable: S, bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TastyUniverse { self =>
   import symbolTable._
   import ScalacUnpickler._
 
