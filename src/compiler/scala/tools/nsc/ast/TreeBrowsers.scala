@@ -576,12 +576,12 @@ abstract class TreeBrowsers {
       case WildcardType => "WildcardType()"
       case NoType => "NoType()"
       case NoPrefix => "NoPrefix()"
-      case ThisType(s) => "ThisType(" + s.name + ")"
+      case ThisType(s) => "ThisType(" + s.nameString + ")"
 
       case SingleType(pre, sym) =>
         Document.group(
           Document.nest(4, "SingleType(" :/:
-                      toDocument(pre) :: ", " :/: sym.name.toString :: ")")
+                      toDocument(pre) :: ", " :/: sym.nameString :: ")")
         )
 
       case ConstantType(value) =>
@@ -591,7 +591,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4, "TypeRef(" :/:
                         toDocument(pre) :: ", " :/:
-                        sym.name.toString + sym.idString :: ", " :/:
+                        sym.nameString :: ", " :/:
                         "[ " :: toDocument(args) ::"]" :: ")")
         )
 
@@ -612,7 +612,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4,"ClassInfoType(" :/:
                         toDocument(parents) :: ", " :/:
-                        clazz.name.toString + clazz.idString :: ")")
+                        clazz.nameString :: ")")
         )
 
       case MethodType(params, result) =>
@@ -661,6 +661,13 @@ abstract class TreeBrowsers {
           Document.nest(4, "SuperType(" :/:
                         toDocument(thistpe) :/: ", " :/:
                         toDocument(supertpe) ::")"))
+
+      case ErasedValueType(clazz, erased) =>
+        Document.group(
+          Document.nest(4, "ErasedValueType(" :/:
+                        clazz.nameString :/: ", " :/:
+                        toDocument(erased) :: ")"))
+
       case _ =>
         sys.error("Unknown case: " + t.toString +", "+ t.getClass)
     }
