@@ -1,54 +1,70 @@
 import scala.sys.process._
-import java.nio.file.{Files, Paths, Path, DirectoryStream}
+import java.nio.file.{Files, Paths, Path, DirectoryStream, FileSystems}
 import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.util.{Try, Success, Failure}
 import scala.util.Properties
 
+import scala.tools.nsc
+
 object TastyTest {
 
-  def run(args: Seq[String]) = for {
-    dcp       <- findArg(args, "--dotty-library")
-    dccp      <- findArg(args, "--dotty-compiler")
-    out       <- tempDir("tastytest")
-    src2      <- getFiles("src-2/tastytest")
-    src3      <- getFiles("src-3/tastytest")
-    _         <- Dotc(out, dcp, dccp, src3:_*)
-    _         <- Scalac(out, dcp, src2:_*)
-    testFiles <- getFiles("src-2/tastytest")
-    testNames =  testFiles.map(_.stripPrefix("src-2/tastytest/").stripSuffix(".scala")).filter(_.startsWith("Test"))
-    _         <- runTests(out, dcp, testNames:_*)
-  } yield ()
+  def tastytest(dottyLibrary: String, dottyCompiler: String, src2dir: String, src3dir: String, pkgName: String): Try[Unit] = {
+    val pkgPath = pkgName.replace(".", FileSystems.getDefault().getSeparator())
+    for {
+      src2      <- getFiles(s"$src2dir/$pkgPath")
+      src3      <- getFiles(s"$src3dir/$pkgPath")
+      out       <- tempDir(pkgName)
+      _         <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
+      _         <- scalac(out, dottyLibrary, src2:_*)
+      testFiles <- getFiles(s"$src2dir/$pkgPath")
+      testNames =  testFiles.map(getSourceAsName(src2dir, pkgPath)).filter(_.startsWith("Test"))
+      _         <- runTests(out, dottyLibrary, pkgName, testNames:_*)
+    } yield println("All passed!")
+  }
 
-  val scalac = "../../build/quick/bin/scalac"
-  val scala  = "../../build/quick/bin/scala"
+  private def scalac(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
+    val args = Array(
+      "-d", out,
+      "-classpath", paths(out, dottyLibrary)
+    ) ++ sources
+    successWhen(nsc.Main.process(args))("scalac failed to compile sources.")
+  }
 
-  def Java(javaArgs: Seq[String], compilerArgs: Seq[String]) = exec("java", (javaArgs ++ compilerArgs):_*)
-  def Scalac(out: String, dcp: String, sources: String*) = exec(scalac, (sharedOpts(out, dcp) ++ sources):_*)
-  def Dotc(out: String, dcp: String, dccp: String, sources: String*) =
-    Java(
-      javaArgs     = Seq("-classpath", dccp, "dotty.tools.dotc.Main"),
-      compilerArgs = sharedOpts(out, dcp) ++ sources
+  private def dotc(out: String, dottyLibrary: String, dottyCompiler: String, sources: String*): Try[Unit] = {
+    val dotc = (
+         "java"
+      +: "-classpath" +: dottyCompiler
+      +: "dotty.tools.dotc.Main"
+      +: "-d" +: out
+      +: "-classpath" +: paths(out, dottyLibrary)
+      +: sources
     )
+    successWhen(dotc.! == 0)("dotc failed to compile sources.")
+  }
 
-  def paths(paths: String*) = paths.mkString(":")
+  private def paths(paths: String*): String = paths.mkString(":")
 
-  def findArg(args: Seq[String], arg: String) =
-    args.sliding(2)
-        .filter(_.length == 2)
-        .find(_.head == arg)
-        .map(_.last)
-        .fold[Try[String]](
-          Failure(new IllegalArgumentException(s"please provide argument: $arg")))(
-          Success(_))
+  private def optionalArg(arg: String, default: => String)(implicit args: Seq[String]): String =
+    findArg(arg).getOrElse(default)
 
-  def sharedOpts(out: String, dcp: String) = Seq("-d", out, "-classpath", paths(out, dcp))
+  private def requiredArg(arg: String)(implicit args: Seq[String]): Try[String] =
+    failOnEmpty(findArg(arg))(s"please provide argument: $arg")
 
-  def getFiles(dir: String) = Try {
+  private def booleanArg(arg: String)(implicit args: Seq[String]): Boolean =
+    args.contains(arg)
+
+  private def findArg(arg: String)(implicit args: Seq[String]): Option[String] =
+    args.sliding(2).filter(_.length == 2).find(_.head == arg).map(_.last)
+
+  private def getSourceAsName(src2dir: String, pkgPath: String)(path: String): String =
+    path.stripPrefix(s"$src2dir/$pkgPath/").stripSuffix(".scala")
+
+  private def getFiles(dir: String): Try[Seq[String]] = Try {
     var stream: DirectoryStream[Path] = null
     try {
       stream = Files.newDirectoryStream(Paths.get(dir))
-      stream.iterator().asScala.map(_.toString).toSeq
+      stream.iterator.asScala.map(_.toString).toSeq
     } finally {
       if (stream != null) {
         stream.close()
@@ -56,48 +72,98 @@ object TastyTest {
     }
   }
 
-  def tempDir(dir: String) = Try(Files.createTempDirectory(dir)).map(_.toString)
+  private def tempDir(dir: String): Try[String] = Try(Files.createTempDirectory(dir)).map(_.toString)
 
-  def exec(command: String, args: String*): Try[String] = Try((command +: args).!!)
+  private def successWhen(cond: Boolean)(ifFalse: => String): Try[Unit] =
+    failOnEmpty(Option.when(cond)(()))(ifFalse)
 
-  def runTests(out: String, dcp: String, names: String*) = {
+  private def failOnEmpty[A](opt: Option[A])(ifEmpty: => String): Try[A] =
+    opt.toRight(new IllegalStateException(ifEmpty)).toTry
+
+  private def runTests(out: String, dottyLibrary: String, pkgName: String, names: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     for (test <- names) {
-      exec(scala, "-classpath", paths(out, dcp), s"tastytest.$test").fold(
-        err => {
-          errors += test
-          val msg = {
-            if (err.getMessage.contains("Nonzero exit value"))
-              s"ERROR: $test failed."
-            else
-              s"ERROR: $test failed, error: `${err.getMessage()}`"
+      val buf = new StringBuilder(50)
+      val success = {
+        val byteArrayStream = new java.io.ByteArrayOutputStream(50)
+        try {
+          val success = Console.withOut(byteArrayStream) {
+            nsc.MainGenericRunner.process(Array("-classpath", paths(out, dottyLibrary), s"$pkgName.$test"))
           }
-          System.err.println(msg)
-        },
-        content => {
-          if (content.trim != "Suite passed!") {
-            errors += test
-            System.err.println(s"ERROR: $test failed, unexpected output: `$content`")
-          }
+          byteArrayStream.flush()
+          buf.append(byteArrayStream.toString)
+          success
         }
-      )
+        finally {
+          byteArrayStream.close()
+        }
+      }
+      if (!success) {
+        errors += test
+        System.err.println(s"ERROR: $test failed.")
+      }
+      else {
+        val output = buf.toString
+        if ("Suite passed!" != output.trim) {
+          errors += test
+          System.err.println(s"ERROR: $test failed, unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;")
+        }
+      }
     }
-    if (errors.size > 0) {
+    successWhen(errors.isEmpty) {
       val str = if (errors.size == 1) "error" else "errors"
-      Failure(new IllegalStateException(s"${errors.length} $str. Fix ${errors.mkString(",")}."))
-    }
-    else {
-      Success(())
+      s"${errors.length} $str. Fix ${errors.mkString(", ")}."
     }
   }
 
-  def main(args: Array[String]): Unit = run(args.toList).fold(
+  private val helpText: String = """|# TASTy Test Help
+  |
+  |This runner can be used to test compilation and runtime behaviour of Scala 2 sources that depend on sources compiled with Scala 3.
+  |
+  |The following arguments are available to TASTy Test:
+  |
+  |  -help                      *optional*          Display this help.
+  |  --dotty-library   <paths>  *required*          Paths separated by `:`, the classpath for the dotty library.
+  |  --dotty-compiler  <paths>  *required*          Paths separated by `:`, the classpath for the dotty compiler.
+  |  --src-2           <path>   *default=src-2*     The path to scala 2 sources that depend on dotty compiled code.
+  |  --src-3           <path>   *default=src-3*     The path to scala 3 sources that will be compiled by dotty.
+  |  --package         <pkg>    *default=tastytest* The package for all classes, must match source directory structure.
+  |
+  |* This runner should be invoked with the `scala-compiler` module on the classpath, easily acheived by using the `scala` shell command.
+  |* During compilation of both source directories, and during test execution, `--dotty-library` is on the classpath.
+  |* TASTy Test operates in this order:
+  |  1. Compile sources in `$src-3$/$package$` with the Dotty compiler in a separate process, using `--dotty-compiler` as the JVM classpath.
+  |  2. Compile sources in `$src-2$/$package$` with the Scala 2 compiler, classes compiled in (1) are now on the classpath.
+  |  3. Classes with name `/Test.*/` are assumed to be test cases and their main methods are executed sequentially.
+  |     - A successful test should print the single line `Suite passed!` and not have any runtime exceptions.
+  |
+  |Note: Failing tests without a fix should be put in a sibling directory, such as `suspended`, to document that they are incompatible at present.""".stripMargin
+
+  def run(implicit args: Seq[String]): Boolean = process.fold(
     err => {
-      System.err.println(s"ERROR: ${err.getMessage}")
-      sys.exit(1)
+      val prefix = err match {
+        case _: IllegalStateException => ""
+        case _                        => s" ${err.getClass.getSimpleName}:"
+      }
+      System.err.println(s"ERROR:$prefix ${err.getMessage}")
+      true
     },
-    _ => {
-      println("All passed!")
-    }
+    _ => false
   )
+
+  def process(implicit args: Seq[String]): Try[Unit] = {
+    if (booleanArg("-help")) {
+      Success(println(helpText))
+    }
+    else for {
+      dottyLibrary  <- requiredArg("--dotty-library")
+      dottyCompiler <- requiredArg("--dotty-compiler")
+      src2dir       =  optionalArg("--src-2", "src-2")
+      src3dir       =  optionalArg("--src-3", "src-3")
+      pkgName       =  optionalArg("--package", "tastytest")
+      _             <- tastytest(dottyLibrary, dottyCompiler, src2dir, src3dir, pkgName)
+    } yield ()
+  }
+
+  def main(args: Array[String]): Unit = sys.exit(if (run(args.toList)) 1 else 0)
 }

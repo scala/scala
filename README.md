@@ -4,14 +4,7 @@ This branch is the home for development of the Scala Center project [**TASTy Rea
 
 ## Testing
 
-There is a small set of test files in `/test/tasty/`, which are simply run with the `TastyTest` runner, which outputs "All passed!" if there are no errors. There are two string arguments required to be passed to the main method of `TastyTest`:
-  - `--dotty-library`: the classpath for the Dotty library, version `0.19.0-RC1`. This is required to compile functions and case classes in Scala 3, and to run dotty code.
-  - `--dotty-compiler`: the classpath for the `dotc` compiler, version `0.19.0-RC1`.
-  - These can both be resolved using coursier ([Get coursier](https://get-coursier.io)).
-
-The testing framework relies upon tests being defined in the `src-2` root within an executable class with a name matching `tastytest.Test*`. A successful test should print the single line `Suite passed!`. Tests should be defined in `src-2` so that they are compiled with `scalac` and
-depend on classes which are defined in `src-3` which are compiled with `dotc`. Tests that fail should be put in `suspended` to document that they are incompatible at present.
-
+There is a small set of test files in `/test/tasty/`, which are simply run with the `TastyTest` runner, which outputs "All passed!" if there are no errors. It is invoked with `scala TastyTest.scala`, with an optional `-help` argument. It can also be ran programatically with the `TastyTest.process` method.
 
 ## Notes
 
