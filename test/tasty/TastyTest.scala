@@ -10,23 +10,22 @@ import scala.tools.nsc
 object TastyTest {
 
   def tastytest(dottyLibrary: String, dottyCompiler: String, src2dir: String, src3dir: String, pkgName: String): Try[Unit] = {
-    val pkgPath = pkgName.replace(".", FileSystems.getDefault().getSeparator())
+    val pkgPath = pkgName.split(raw"\.").toIndexedSeq
     for {
-      src2      <- getFiles(s"$src2dir/$pkgPath")
-      src3      <- getFiles(s"$src3dir/$pkgPath")
+      src2      <- getFiles(path(src2dir, pkgPath:_*))
+      src3      <- getFiles(path(src3dir, pkgPath:_*))
       out       <- tempDir(pkgName)
       _         <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
       _         <- scalac(out, dottyLibrary, src2:_*)
-      testFiles <- getFiles(s"$src2dir/$pkgPath")
-      testNames =  testFiles.map(getSourceAsName(src2dir, pkgPath)).filter(_.startsWith("Test"))
-      _         <- runTests(out, dottyLibrary, pkgName, testNames:_*)
+      testNames =  src2.map(getSourceAsName).filter(_.startsWith("Test")).map(pkgName + "." + _)
+      _         <- runTests(out, dottyLibrary, testNames:_*)
     } yield println("All passed!")
   }
 
   private def scalac(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
     val args = Array(
       "-d", out,
-      "-classpath", paths(out, dottyLibrary)
+      "-classpath", classpaths(out, dottyLibrary)
     ) ++ sources
     successWhen(nsc.Main.process(args))("scalac failed to compile sources.")
   }
@@ -37,13 +36,14 @@ object TastyTest {
       +: "-classpath" +: dottyCompiler
       +: "dotty.tools.dotc.Main"
       +: "-d" +: out
-      +: "-classpath" +: paths(out, dottyLibrary)
+      +: "-classpath" +: classpaths(out, dottyLibrary)
       +: sources
     )
     successWhen(dotc.! == 0)("dotc failed to compile sources.")
   }
 
-  private def paths(paths: String*): String = paths.mkString(":")
+  private def classpaths(paths: String*): String = paths.mkString(":")
+  private def path(part: String, parts: String*): String = (part +: parts).mkString(pathSep)
 
   private def optionalArg(arg: String, default: => String)(implicit args: Seq[String]): String =
     findArg(arg).getOrElse(default)
@@ -57,8 +57,8 @@ object TastyTest {
   private def findArg(arg: String)(implicit args: Seq[String]): Option[String] =
     args.sliding(2).filter(_.length == 2).find(_.head == arg).map(_.last)
 
-  private def getSourceAsName(src2dir: String, pkgPath: String)(path: String): String =
-    path.stripPrefix(s"$src2dir/$pkgPath/").stripSuffix(".scala")
+  private def getSourceAsName(path: String): String =
+    path.split(pathSep).last.stripSuffix(".scala")
 
   private def getFiles(dir: String): Try[Seq[String]] = Try {
     var stream: DirectoryStream[Path] = null
@@ -80,15 +80,15 @@ object TastyTest {
   private def failOnEmpty[A](opt: Option[A])(ifEmpty: => String): Try[A] =
     opt.toRight(new IllegalStateException(ifEmpty)).toTry
 
-  private def runTests(out: String, dottyLibrary: String, pkgName: String, names: String*): Try[Unit] = {
+  private def runTests(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
-    for (test <- names) {
+    for (test <- tests) {
       val buf = new StringBuilder(50)
       val success = {
         val byteArrayStream = new java.io.ByteArrayOutputStream(50)
         try {
           val success = Console.withOut(byteArrayStream) {
-            nsc.MainGenericRunner.process(Array("-classpath", paths(out, dottyLibrary), s"$pkgName.$test"))
+            nsc.MainGenericRunner.process(Array("-classpath", classpaths(out, dottyLibrary), test))
           }
           byteArrayStream.flush()
           buf.append(byteArrayStream.toString)
@@ -115,6 +115,8 @@ object TastyTest {
       s"${errors.length} $str. Fix ${errors.mkString(", ")}."
     }
   }
+
+  private val pathSep: String = FileSystems.getDefault.getSeparator
 
   private val helpText: String = """|# TASTy Test Help
   |
