@@ -377,7 +377,7 @@ trait Collections {
   /** True if two lists have the same length.  Since calling length on linear sequences
     *  is O(n), it is an inadvisable way to test length equality.
     */
-  final def sameLength(xs1: List[_], xs2: List[_]) = compareLengths(xs1, xs2) == 0
+  final def sameLength(xs1: List[_], xs2: List[_]) = (xs1 eq xs2) || compareLengths(xs1, xs2) == 0
   @tailrec final def compareLengths(xs1: List[_], xs2: List[_]): Int =
     if (xs1.isEmpty) { if (xs2.isEmpty) 0 else -1 }
     else if (xs2.isEmpty) 1

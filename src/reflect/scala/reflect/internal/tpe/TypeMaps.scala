@@ -728,7 +728,7 @@ private[internal] trait TypeMaps {
   }
 
   /** A base class to compute all substitutions */
-  abstract class SubstMap[T](from: List[Symbol], to: List[T]) extends TypeMap {
+  abstract class SubstMap[T](val from: List[Symbol], val to: List[T]) extends TypeMap {
     // OPT this check was 2-3% of some profiles, demoted to -Xdev
     if (isDeveloper) assert(sameLength(from, to), "Unsound substitution from "+ from +" to "+ to)
 
@@ -892,7 +892,7 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `subst` method. */
-  class SubstTypeMap(val from: List[Symbol], val to: List[Type]) extends SubstMap(from, to) {
+  class SubstTypeMap(from: List[Symbol], to: List[Type]) extends SubstMap(from, to) {
     protected def toType(fromtp: Type, tp: Type) = tp
 
     override def mapOver(tree: Tree, giveup: () => Nothing): Tree = {

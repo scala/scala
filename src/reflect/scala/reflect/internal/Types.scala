@@ -117,6 +117,15 @@ trait Types
       cached
     } else new SubstTypeMap(from, to)
   }
+  private object substSymMapCache {
+    private[this] var cached: SubstSymMap = new SubstSymMap(Nil, Nil)
+
+    def apply(from: List[Symbol], to: List[Symbol]): SubstSymMap = if (isCompilerUniverse) {
+      if ((cached.from ne from) || (cached.to ne to))
+        cached = new SubstSymMap(from, to)
+      cached
+    } else new SubstSymMap(from, to)
+  }
 
   /** The current skolemization level, needed for the algorithms
    *  in isSameType, isSubType that do constraint solving under a prefix.
@@ -754,7 +763,7 @@ trait Types
      */
     def substSym(from: List[Symbol], to: List[Symbol]): Type =
       if ((from eq to) || from.isEmpty) this
-      else new SubstSymMap(from, to) apply this
+      else substSymMapCache(from, to)(this)
 
     /** Substitute all occurrences of `ThisType(from)` in this type by `to`.
      *
