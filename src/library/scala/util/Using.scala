@@ -26,9 +26,12 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *
   * Example:
   * {{{
+  * import java.io.{BufferedReader, FileReader}
+  * import scala.util.{Try, Using}
+  *
   * val lines: Try[Seq[String]] =
   *   Using(new BufferedReader(new FileReader("file.txt"))) { reader =>
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
+  *     Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
   *   }
   * }}}
   *
@@ -38,6 +41,9 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *
   * Example:
   * {{{
+  * import java.io.{BufferedReader, FileReader}
+  * import scala.util.{Try, Using}
+  *
   * val lines: Try[Seq[String]] = Using.Manager { use =>
   *   val r1 = use(new BufferedReader(new FileReader("file1.txt")))
   *   val r2 = use(new BufferedReader(new FileReader("file2.txt")))
@@ -45,8 +51,9 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *   val r4 = use(new BufferedReader(new FileReader("file4.txt")))
   *
   *   // use your resources here
-  *   def lines(reader: BufferedReader): Iterator[String] =
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ()))
+  *   def lines(reader: BufferedReader): Iterator[String] = {
+  *     Iterator.continually(reader.readLine()).takeWhile(_ != null)
+  *   }
   *
   *   (lines(r1) ++ lines(r2) ++ lines(r3) ++ lines(r4)).toList
   * }
@@ -57,9 +64,12 @@ import scala.util.control.{ControlThrowable, NonFatal}
   *
   * Example:
   * {{{
+  * import java.io.{BufferedReader, FileReader}
+  * import scala.util.Using
+  *
   * val lines: Seq[String] =
   *   Using.resource(new BufferedReader(new FileReader("file.txt"))) { reader =>
-  *     Iterator.unfold(())(_ => Option(reader.readLine()).map(_ -> ())).toList
+  *     Iterator.continually(reader.readLine()).takeWhile(_ != null).toSeq
   *   }
   * }}}
   *
