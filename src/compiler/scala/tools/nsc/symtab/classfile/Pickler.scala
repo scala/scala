@@ -16,6 +16,7 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
+import java.util.Arrays.fill
 
 import scala.io.Codec
 import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
@@ -28,7 +29,7 @@ import scala.reflect.io.PlainFile
 /**
  * Serialize a top-level module and/or class.
  *
- * @see EntryTags.scala for symbol table attribute format.
+ * @see [[PickleFormat]] for symbol table attribute format.
  *
  * @author Martin Odersky
  * @version 1.0
@@ -57,21 +58,21 @@ abstract class Pickler extends SubComponent {
             val sym = tree.symbol
             def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
             if (shouldPickle(sym)) {
-              val pickle = new Pickle(sym)
-              def reserveDeclEntries(sym: Symbol): Unit = {
-                pickle.reserveEntry(sym)
-                if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
-                else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
-              }
+              val pickle = initPickle(sym) { pickle =>
+                def reserveDeclEntries(sym: Symbol): Unit = {
+                  pickle.reserveEntry(sym)
+                  if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
+                  else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
+                }
 
-              val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
-              val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
-              syms.foreach(reserveDeclEntries)
-              syms.foreach { sym =>
-                pickle.putSymbol(sym)
-                currentRun.symData(sym) = pickle
+                val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
+                val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
+                syms.foreach(reserveDeclEntries)
+                syms.foreach { sym =>
+                  pickle.putSymbol(sym)
+                  currentRun.symData(sym) = pickle
+                }
               }
-              pickle.writeArray()
               writeSigFile(sym, pickle)
               currentRun registerPickle sym
             }
@@ -102,7 +103,11 @@ abstract class Pickler extends SubComponent {
 
     override def run(): Unit = {
       try super.run()
-      finally closeSigWriter()
+      finally {
+        closeSigWriter()
+        _index = null
+        _entries = null
+      }
     }
 
     private def writeSigFile(sym: Symbol, pickle: PickleBuffer): Unit = {
@@ -124,13 +129,29 @@ abstract class Pickler extends SubComponent {
     override protected def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value
   }
 
-  private class Pickle(root: Symbol) extends PickleBuffer(new Array[Byte](4096), -1, 0) {
+  type Index   = mutable.AnyRefMap[AnyRef, Int] // a map from objects (symbols, types, names, ...) to indices into Entries
+  type Entries = Array[AnyRef]
+
+  final val InitEntriesSize = 256
+  private[this] var _index: Index = _
+  private[this] var _entries: Entries = _
+
+  final def initPickle(root: Symbol)(f: Pickle => Unit): Pickle = {
+    if (_index eq null)   { _index   = new Index(InitEntriesSize) }
+    if (_entries eq null) { _entries = new Entries(InitEntriesSize) }
+    val pickle = new Pickle(root, _index, _entries)
+    try f(pickle) finally { pickle.close(); _index.clear(); fill(_entries, null) }
+    pickle
+  }
+
+  class Pickle private[Pickler](root: Symbol, private var index: Index, private var entries: Entries)
+      extends PickleBuffer(new Array[Byte](4096), -1, 0) {
     private val rootName  = root.name.toTermName
     private val rootOwner = root.owner
-    private var entries   = new Array[AnyRef](256)
     private var ep        = 0
-    private val index     = new mutable.AnyRefMap[AnyRef, Int]
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
+
+    def close(): Unit = { writeArray(); index = null; entries = null }
 
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
@@ -177,19 +198,22 @@ abstract class Pickler extends SubComponent {
      *
      *  @return      true iff entry is new.
      */
-    private def putEntry(entry: AnyRef): Boolean = index.get(entry) match {
-      case Some(i) =>
-        reserved.remove(i)
-      case None =>
-        if (ep == entries.length) {
-          val entries1 = new Array[AnyRef](ep * 2)
-          System.arraycopy(entries, 0, entries1, 0, ep)
-          entries = entries1
-        }
-        entries(ep) = entry
-        index(entry) = ep
-        ep = ep + 1
-        true
+    private def putEntry(entry: AnyRef): Boolean = {
+      assert(index ne null, this)
+      index.get(entry) match {
+        case Some(i) =>
+          reserved.remove(i)
+        case None =>
+          if (ep == entries.length) {
+            val entries1 = new Array[AnyRef](ep * 2)
+            System.arraycopy(entries, 0, entries1, 0, ep)
+            entries = entries1
+          }
+          entries(ep) = entry
+          index(entry) = ep
+          ep = ep + 1
+          true
+      }
     }
 
     private def deskolemizeTypeSymbols(ref: AnyRef): AnyRef = ref match {
@@ -390,6 +414,7 @@ abstract class Pickler extends SubComponent {
     /** Write a reference to object, i.e., the object's number in the map index.
      */
     private def writeRef(ref: AnyRef) {
+      assert(index ne null, this)
       writeNat(index(deskolemizeTypeSymbols(ref)))
     }
     private def writeRefs(refs: List[AnyRef]): Unit = refs foreach writeRef
@@ -577,8 +602,9 @@ abstract class Pickler extends SubComponent {
     }
 
     /** Write byte array */
-    def writeArray() {
+    private def writeArray() {
       assert(writeIndex == 0)
+      assert(index ne null, this)
       writeNat(MajorVersion)
       writeNat(MinorVersion)
       writeNat(ep)
