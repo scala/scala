@@ -176,13 +176,15 @@ trait TypeComparers {
   )
 
   private def equalTypeParamsAndResult(tparams1: List[Symbol], res1: Type, tparams2: List[Symbol], res2: Type) = {
-    def subst(info: Type) = info.substSym(tparams2, tparams1)
+    sameLength(tparams1, tparams2) && {
     // corresponds does not check length of two sequences before checking the predicate,
     // but SubstMap assumes it has been checked (scala/bug#2956)
-    (     sameLength(tparams1, tparams2)
-      && (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= subst(p2.info))
-      && (res1 =:= subst(res2))
-    )
+      val substMap = new SubstSymMap(tparams2, tparams1)
+      (
+        (tparams1 corresponds tparams2)((p1, p2) => methodHigherOrderTypeParamsSameVariance(p1, p2) && p1.info =:= substMap(p2.info))
+          && (res1 =:= substMap(res2))
+      )
+    }
   }
 
   // scala/bug#2066 This prevents overrides with incompatible variance in higher order type parameters.
@@ -350,18 +352,16 @@ trait TypeComparers {
     val PolyType(tparams1, res1) = tp1
     val PolyType(tparams2, res2) = tp2
 
-    sameLength(tparams1, tparams2) && {
+    sameLength(tparams1, tparams2) && (tparams2 corresponds tparams1)(methodHigherOrderTypeParamsSubVariance) && {
       // fast-path: polymorphic method type -- type params cannot be captured
       val isMethod = tparams1.head.owner.isMethod
       //@M for an example of why we need to generate fresh symbols otherwise, see neg/tcpoly_ticket2101.scala
       val substitutes = if (isMethod) tparams1 else cloneSymbols(tparams1)
-      def sub1(tp: Type) = if (isMethod) tp else tp.substSym(tparams1, substitutes)
-      def sub2(tp: Type) = tp.substSym(tparams2, substitutes)
-      def cmp(p1: Symbol, p2: Symbol) = (
-            methodHigherOrderTypeParamsSubVariance(p2, p1)
-         && sub2(p2.info) <:< sub1(p1.info)
-      )
 
+      val sub1: Type => Type = if (isMethod) (tp => tp) else new SubstSymMap(tparams1, substitutes)
+      val sub2: Type => Type = new SubstSymMap(tparams2, substitutes)
+
+      def cmp(p1: Symbol, p2: Symbol) = sub2(p2.info) <:< sub1(p1.info)
       (tparams1 corresponds tparams2)(cmp) && (sub1(res1) <:< sub2(res2))
     }
   }
