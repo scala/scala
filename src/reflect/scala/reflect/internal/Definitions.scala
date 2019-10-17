@@ -913,13 +913,13 @@ trait Definitions extends api.StandardDefinitions {
       def isVolatileRefinedType: Boolean = {
         val RefinedType(parents, decls)         = tp
         def isVisibleDeferred(m: Symbol)        = m.isDeferred && ((tp nonPrivateMember m.name).alternatives contains m)
-        def contributesAbstractMembers(p: Type) = p.deferredMembers exists isVisibleDeferred
+        def contributesAbstractMembers(p: Type) = p.deferredMembers.reverseIterator exists isVisibleDeferred
         def dropConcreteParents                 = parents dropWhile (p => !p.typeSymbol.isAbstractType)
 
         (parents exists isVolatile) || {
           dropConcreteParents match {
             case Nil => false
-            case ps  => (ps ne parents) || (ps.tail exists contributesAbstractMembers) || (decls exists isVisibleDeferred)
+            case ps  => (ps ne parents) || (ps.tail exists contributesAbstractMembers) || (decls.reverseIterator exists isVisibleDeferred)
           }
         }
       }

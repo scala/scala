@@ -470,7 +470,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
     /** Map lazy values to the fields they should null after initialization. */
     def lazyValNullables(clazz: Symbol, templStats: List[Tree]): Map[Symbol, List[Symbol]] = {
       // if there are no lazy fields, take the fast path and save a traversal of the whole AST
-      if (!clazz.info.decls.exists(_.isLazy)) Map()
+      if (!clazz.info.decls.reverseIterator.exists(_.isLazy)) Map()
       else {
         // A map of single-use fields to the lazy value that uses them during initialization.
         // Each field has to be private and defined in the enclosing class, and there must
