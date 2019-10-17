@@ -80,7 +80,7 @@ abstract class TreeBrowsers {
   }
 
   /** Tree model for abstract syntax trees */
-  class ASTTreeModel(val program: Tree) extends TreeModel {
+  class ASTTreeModel(val program: ProgramTree) extends TreeModel {
     var listeners: List[TreeModelListener] = Nil
 
     /** Add a listener to this tree */
@@ -279,6 +279,29 @@ abstract class TreeBrowsers {
         }
       )
       jmView add jmiCollapse
+      val jmiGoto = new JMenuItem(
+        new AbstractAction("Go to unit") {
+          putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuKey, false))
+          override def actionPerformed(actionEvent: ActionEvent) {
+            val query = JOptionPane.showInputDialog("Go to unit:", frame.getOwner)
+            if (query ne null) { // "Cancel" returns null
+              val units = treeModel.program.units
+              units.find(_.unit.source.file.name startsWith query) foreach { unit =>
+                // skip through 1-ary trees
+                def expando(tree: Tree): List[Tree] = tree.children match {
+                  case only :: Nil => only :: expando(only)
+                  case other => tree :: Nil
+                }
+
+                val path = new TreePath((treeModel.getRoot :: unit :: expando(unit.unit.body)).toArray[AnyRef]) // targ necessary to disambiguate Object and Object[] ctors
+                jTree.expandPath(path)
+                jTree.setSelectionPath(path)
+              }
+            }
+          }
+        }
+      )
+      jmView add jmiGoto
       add(jmView)
     }
 
