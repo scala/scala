@@ -431,6 +431,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def iterator: Iterator[Symbol] = toList.iterator
 
+    /** Returns all symbols as an iterator, in an order reversed to that in which they
+      * were entered: symbols first in the scopes are last out of the iterator.
+      * NOTE: when using the `reverseIterator`, it is not safe to mutate the Scope.
+      *  So, be careful not to use this when you do need to mutate this Scope. */
     def reverseIterator: Iterator[Symbol] = new ScopeIterator(this)
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
