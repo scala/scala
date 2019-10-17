@@ -1669,7 +1669,7 @@ trait Types
     override def narrow: Type = typeSymbol.thisType
 
     override def isStructuralRefinement: Boolean =
-      typeSymbol.isAnonOrRefinementClass && (decls exists symbolIsPossibleInRefinement)
+      typeSymbol.isAnonOrRefinementClass && (decls.reverseIterator exists symbolIsPossibleInRefinement)
 
     protected def shouldForceScope = settings.debug || parents.isEmpty || !decls.isEmpty
     protected def initDecls        = fullyInitializeScope(decls)
