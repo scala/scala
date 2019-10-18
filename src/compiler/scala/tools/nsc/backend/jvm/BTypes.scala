@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.{util => ju}
+import java.lang.{StringBuilder, ThreadLocal}
 import scala.annotation.tailrec
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -54,21 +55,7 @@ abstract class BTypes {
     recordPerRunJavaMapCache(new ju.concurrent.ConcurrentHashMap[InternalName, ClassBType])
 
   sealed abstract class BType {
-    override def toString: String = {
-      val builder = new java.lang.StringBuilder(64)
-      buildString(builder)
-      builder.toString
-    }
-    final def buildString(builder: java.lang.StringBuilder): Unit = this match {
-      case p: PrimitiveBType        => builder.append(p.desc)
-      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
-      case ArrayBType(component)    => builder.append('['); component.buildString(builder)
-      case MethodBType(args, res)   =>
-        builder.append('(')
-        args.foreach(_.buildString(builder))
-        builder.append(')')
-        res.buildString(builder)
-    }
+    override def toString: String = BTypeExporter.btypeToString(this)
 
     /**
      * @return The Java descriptor of this type. Examples:
@@ -899,6 +886,30 @@ abstract class BTypes {
   }
 
   final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+
+  object BTypeExporter {
+    private[this] val builderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){
+      override protected val initialValue: StringBuilder = new StringBuilder(64)
+    }
+
+    final def btypeToString(btype: BType): String = {
+      val builder = builderTL.get()
+      builder.setLength(0)
+      appendBType(builder, btype)
+      builder.toString
+    }
+
+    final def appendBType(builder: StringBuilder, btype: BType): Unit = btype match {
+      case p: PrimitiveBType        => builder.append(p.desc)
+      case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
+      case ArrayBType(component)    => builder.append('['); appendBType(builder, component)
+      case MethodBType(args, res)   =>
+        builder.append('(')
+        args.foreach(appendBType(builder, _))
+        builder.append(')')
+        appendBType(builder, res)
+    }
+  }
 
   /* Some definitions that are required for the implementation of BTypes. They are abstract because
    * initializing them requires information from types / symbols, which is not accessible here in
