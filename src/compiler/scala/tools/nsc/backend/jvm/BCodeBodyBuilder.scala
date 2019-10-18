@@ -1356,9 +1356,25 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor,
           /* itf = */ isInterface)
-      val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
-      val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
-      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
+      val numCaptured = lambdaTarget.paramss.head.length - arity
+      val invokedType = {
+        val capturedParams = lambdaTarget.paramss.head.take(numCaptured)
+        val numArgs = if (isStaticMethod) numCaptured else 1 + numCaptured
+        val argsArray: Array[asm.Type] = new Array[asm.Type](numArgs)
+        var i = 0
+        if (! isStaticMethod) {
+          argsArray(0) = typeToBType(lambdaTarget.owner.info).toASMType
+          i = 1
+        }
+        var xs = lambdaTarget.paramss.head
+        while (i < numArgs && (!xs.isEmpty)) {
+          argsArray(i) = typeToBType(xs.head.info).toASMType
+          i += 1
+          xs = xs.tail
+        }
+        asm.Type.getMethodDescriptor(asmType(functionalInterface), argsArray:_*)
+      }
+      val lambdaParams = lambdaTarget.paramss.head.drop(numCaptured)
       val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
@@ -1386,12 +1402,28 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       else overriddenMethodTypes
     ).distinct.filterNot(_ == samMethodType)
 
-    /* We're saving on precious BSM arg slots by not passing 0 as the bridge count */
-    val bridgeArgs = if (bridges.nonEmpty) Int.box(bridges.length) +: bridges else Nil
-
     def flagIf(b: Boolean, flag: Int): Int = if (b) flag else 0
     val flags = flagIf(serializable, FLAG_SERIALIZABLE) | flagIf(bridges.nonEmpty, FLAG_BRIDGES)
-    val bsmArgs = Seq(samMethodType, implMethodHandle, instantiatedMethodType, Int.box(flags)) ++ bridgeArgs
+    val bsmArgs: Array[AnyRef] = {
+      val len = if (bridges.nonEmpty) 1 + bridges.length else 0
+      val bsmArgsArray = new Array[AnyRef](4+len)
+      bsmArgsArray(0) = samMethodType
+      bsmArgsArray(1) = implMethodHandle
+      bsmArgsArray(2) = instantiatedMethodType
+      bsmArgsArray(3) = Int.box(flags)
+      if (bridgesNonEmpty) {
+        /* We're saving on precious BSM arg slots by not passing 0 as the bridge count */
+        bsmArgsArray(4) = Int.box(bridges.length)
+        var i = 0
+        var bs = bridges
+        while (i < len-1 && !bs.isEmpty){
+          bsmArgsArray(i+5) = bs.head
+          i += 1
+          bs = bs.tail
+        }
+      }
+      bsmArgsArray
+    }
 
     jmethod.visitInvokeDynamicInsn(samName, invokedType, lambdaMetaFactoryAltMetafactoryHandle, bsmArgs: _*)
   }
