@@ -3339,14 +3339,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             (!sym.isModule || shouldAddAsModule) && (inBlock || !context.isInPackageObject(sym, context.owner))
           }
-          for (sym <- scope)
+          for (sym <- scope)  context.unit.synthetics.get(sym) match {
             // OPT: shouldAdd is usually true. Call it here, rather than in the outer loop
-            for (tree <- context.unit.synthetics.get(sym) if shouldAdd(sym)) {
+            case Some(tree) if shouldAdd(sym) =>
               // if the completer set the IS_ERROR flag, retract the stat (currently only used by applyUnapplyMethodCompleter)
               if (!sym.initialize.hasFlag(IS_ERROR))
                 newStats += typedStat(tree) // might add even more synthetics to the scope
               context.unit.synthetics -= sym
-            }
+            case _ => ()
+          }
           // the type completer of a synthetic might add more synthetics. example: if the
           // factory method of a case class (i.e. the constructor) has a default.
           moreToAdd = scope.elems ne initElems
