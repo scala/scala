@@ -2132,7 +2132,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // When typechecking default parameter, replace all type parameters in the expected type by Wildcard.
             // This allows defining "def foo[T](a: T = 1)"
             val tparams = sym.owner.skipConstructor.info.typeParams
-            val subst = new SubstTypeMap(tparams, tparams map (_ => WildcardType)) {
+            val subst = new SubstTypeMap(tparams, WildcardType.fillList(tparams.length)) {
               override def matches(sym: Symbol, sym1: Symbol) =
                 if (sym.isSkolem) matches(sym.deSkolemize, sym1)
                 else if (sym1.isSkolem) matches(sym, sym1.deSkolemize)
@@ -3125,7 +3125,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           else {
             // We're looking for a method (as indicated by FUNmode in the silent typed below),
             // so let's make sure our expected type is a MethodType (of the right arity, but we can't easily say more about the argument types)
-            val methArgs = NoSymbol.newSyntheticValueParams(args map { case _ => WildcardType })
+            val methArgs = NoSymbol.newSyntheticValueParams(WildcardType.fillList(args.length))
 
             silent(_.typed(meth, mode.forFunMode, MethodType(methArgs, resProto))).fold(EmptyTree: Tree) { methTyped =>
               // if context.undetparams is not empty, the method was polymorphic,
@@ -4768,7 +4768,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val etaPt =
               pt match {
                 case pt: ProtoType =>
-                  pt.asFunctionType orElse functionType(tp.params.map(_ => WildcardType), WildcardType) orElse WildcardType // arity overflow --> NoType
+                  pt.asFunctionType orElse functionType(WildcardType.fillList(tp.params.length), WildcardType) orElse WildcardType // arity overflow --> NoType
                 case _             => pt
               }
 
