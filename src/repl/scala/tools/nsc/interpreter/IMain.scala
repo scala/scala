@@ -118,6 +118,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   object replOutput extends ReplOutput(settings.Yreploutdir) { }
 
+  override def outputDir = replOutput.dir
+
   // Used in a test case.
   def showDirectory: String = {
     val writer = new StringWriter()

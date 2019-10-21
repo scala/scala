@@ -17,6 +17,7 @@ import java.io.PrintWriter
 import java.net.URL
 
 import scala.reflect.ClassTag
+import scala.reflect.io.AbstractFile
 import scala.reflect.internal.util.{AbstractFileClassLoader, Position, SourceFile}
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.Results.Result
@@ -193,6 +194,10 @@ trait Repl extends ReplCore {
   // like beQuietDuring, but also turn off noisy settings.
   // this requires access to both settings and the global compiler
   def withSuppressedSettings(body: => Unit): Unit
+
+  def compilerClasspath: Seq[URL]
+
+  def outputDir: AbstractFile
 }
 
 /**
