@@ -2399,11 +2399,12 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *
      *  @param baseClass is a base class of this symbol's owner.
      */
-    final def overriddenSymbol(baseClass: Symbol): Symbol = (
+    final def overriddenSymbol(baseClass: Symbol): Symbol = {
       // concrete always overrides abstract, so don't let an abstract definition
       // claim to be overriding an inherited concrete one.
-      matchingInheritedSymbolIn(baseClass) filter (res => res.isDeferred || !this.isDeferred)
-    )
+      val matching = matchingInheritedSymbolIn(baseClass)
+      if (isDeferred) matching.filter(_.isDeferred) else matching
+    }
 
     private def matchingInheritedSymbolIn(baseClass: Symbol): Symbol =
       if (canMatchInheritedSymbols) matchingSymbol(baseClass, owner.thisType) else NoSymbol
