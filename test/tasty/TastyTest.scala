@@ -8,18 +8,34 @@ import scala.util.Properties
 import scala.tools.nsc
 
 object TastyTest {
+  import Tests.Suite
 
-  def tastytest(dottyLibrary: String, dottyCompiler: String, src2dir: String, src3dir: String, pkgName: String): Try[Unit] = {
-    val pkgPath = pkgName.split(raw"\.").toIndexedSeq
-    for {
-      src2      <- getFiles(path(src2dir, pkgPath:_*))
-      src3      <- getFiles(path(src3dir, pkgPath:_*))
-      out       <- tempDir(pkgName)
-      _         <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
-      _         <- scalac(out, dottyLibrary, src2:_*)
-      testNames =  src2.map(getSourceAsName).filter(_.startsWith("Test")).map(pkgName + "." + _)
-      _         <- runTests(out, dottyLibrary, testNames:_*)
-    } yield println("All passed!")
+  def tastytest(dottyLibrary: String, dottyCompiler: String, srcRoot: String, pkgName: String, run: Suite): Try[Unit] =
+    Tests.suite(run)(
+      for {
+        src2      <- getFiles(srcRoot/"run"/"src-2"/pkgName.**/)
+        src3      <- getFiles(srcRoot/"run"/"src-3"/pkgName.**/)
+        out       <- tempDir(pkgName)
+        _         <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
+        _         <- scalac(out, dottyLibrary, src2:_*)
+        testNames =  src2.map(getSourceAsName).filter(_.startsWith("Test")).map(pkgName + "." + _)
+        _         <- runMainOn(classpaths(out, dottyLibrary), testNames:_*)
+      } yield println("run suite passed!")
+    )
+
+  object Tests { self =>
+
+    class Suite(val name: String, val willRun: Boolean) {
+      override def toString(): String = s"$name suite"
+    }
+
+    def suite(suite: Suite)(runner: => Try[Unit]): Try[Unit] = {
+      if (suite.willRun)
+        Try(println(s"Performing $suite")).flatMap(_ => runner)
+      else
+        Try(println(s"Skipping $suite"))
+    }
+
   }
 
   private def scalac(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
@@ -72,6 +88,12 @@ object TastyTest {
     }
   }
 
+  implicit final class PathOps(val s: String) extends AnyVal {
+    @inline final def / (part: String) = path(s, part)
+    @inline final def / (parts: Seq[String]) = path(s, parts:_*)
+    @inline final def **/ = s.split(raw"\.").toIndexedSeq
+  }
+
   private def tempDir(dir: String): Try[String] = Try(Files.createTempDirectory(dir)).map(_.toString)
 
   private def successWhen(cond: Boolean)(ifFalse: => String): Try[Unit] =
@@ -80,7 +102,7 @@ object TastyTest {
   private def failOnEmpty[A](opt: Option[A])(ifEmpty: => String): Try[A] =
     opt.toRight(new IllegalStateException(ifEmpty)).toTry
 
-  private def runTests(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
+  private def runMainOn(cp: String, tests: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     for (test <- tests) {
       val buf = new StringBuilder(50)
@@ -88,7 +110,7 @@ object TastyTest {
         val byteArrayStream = new java.io.ByteArrayOutputStream(50)
         try {
           val success = Console.withOut(byteArrayStream) {
-            nsc.MainGenericRunner.process(Array("-classpath", classpaths(out, dottyLibrary), test))
+            nsc.MainGenericRunner.process(Array("-classpath", cp, test))
           }
           byteArrayStream.flush()
           buf.append(byteArrayStream.toString)
@@ -125,23 +147,23 @@ object TastyTest {
   |The following arguments are available to TASTy Test:
   |
   |  -help                      *optional*          Display this help.
+  |  -run                       *optional*          Perform the run test.
   |  --dotty-library   <paths>  *required*          Paths separated by `:`, the classpath for the dotty library.
   |  --dotty-compiler  <paths>  *required*          Paths separated by `:`, the classpath for the dotty compiler.
-  |  --src-2           <path>   *default=src-2*     The path to scala 2 sources that depend on dotty compiled code.
-  |  --src-3           <path>   *default=src-3*     The path to scala 3 sources that will be compiled by dotty.
+  |  --src             <path>   *default=.*         The path that contains all compilation sources.
   |  --package         <pkg>    *default=tastytest* The package for all classes, must match source directory structure.
   |
   |* This runner should be invoked with the `scala-compiler` module on the classpath, easily acheived by using the `scala` shell command.
-  |* During compilation of both source directories, and during test execution, `--dotty-library` is on the classpath.
-  |* TASTy Test operates in this order:
-  |  1. Compile sources in `$src-3$/$package$` with the Dotty compiler in a separate process, using `--dotty-compiler` as the JVM classpath.
-  |  2. Compile sources in `$src-2$/$package$` with the Scala 2 compiler, classes compiled in (1) are now on the classpath.
+  |* During compilation of test sources, and during run test execution, `--dotty-library` is on the classpath.
+  |* TASTy Test currently supports run tests, which execute as follows:
+  |  1. Compile sources in `$src$/run/src-3/$package$` with the Dotty compiler in a separate process, using `--dotty-compiler` as the JVM classpath.
+  |  2. Compile sources in `$src$/run/src-2/$package$` with the Scala 2 compiler, classes compiled in (1) are now on the classpath.
   |  3. Classes with name `/Test.*/` are assumed to be test cases and their main methods are executed sequentially.
   |     - A successful test should print the single line `Suite passed!` and not have any runtime exceptions.
   |
   |Note: Failing tests without a fix should be put in a sibling directory, such as `suspended`, to document that they are incompatible at present.""".stripMargin
 
-  def run(implicit args: Seq[String]): Boolean = process.fold(
+  def run(args: Seq[String]): Boolean = process(args).fold(
     err => {
       val prefix = err match {
         case _: IllegalStateException => ""
@@ -160,10 +182,10 @@ object TastyTest {
     else for {
       dottyLibrary  <- requiredArg("--dotty-library")
       dottyCompiler <- requiredArg("--dotty-compiler")
-      src2dir       =  optionalArg("--src-2", "src-2")
-      src3dir       =  optionalArg("--src-3", "src-3")
+      srcRoot       =  optionalArg("--src", FileSystems.getDefault.getPath(".").toString)
       pkgName       =  optionalArg("--package", "tastytest")
-      _             <- tastytest(dottyLibrary, dottyCompiler, src2dir, src3dir, pkgName)
+      run           =  new Tests.Suite("run", booleanArg("-run"))
+      _             <- tastytest(dottyLibrary, dottyCompiler, srcRoot, pkgName, run)
     } yield ()
   }
 
