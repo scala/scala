@@ -1138,6 +1138,11 @@ trait Types
   case object WildcardType extends ProtoType {
     override def safeToString: String = "?"
     override def kind = "WildcardType"
+
+    /** Equivalent to `List.fill(WildcardType)`, but more efficient as short lists are drawn from a cache. */
+    def fillList(n: Int): List[WildcardType.type] = if (n < FillListCacheLimit) FillListCache(n) else List.fill(n)(WildcardType)
+    private[this] final val FillListCacheLimit = 32
+    private[this] lazy val FillListCache: Array[List[WildcardType.type]] = Array.iterate(List[WildcardType.type](), FillListCacheLimit)(WildcardType :: _)
   }
   /** BoundedWildcardTypes, used only during type inference, are created in
    *  two places that I can find:
@@ -1291,9 +1296,9 @@ trait Types
     private def toWild(tp: Type): Type = tp match {
       case PolyType(tparams, tp) =>
         val undets = tparams ++ origUndets
-        new SubstTypeMap(undets, undets map (_ => WildcardType)).apply(tp)
+        new SubstTypeMap(undets, WildcardType.fillList(undets.length)).apply(tp)
       case tp                    =>
-        new SubstTypeMap(origUndets, origUndets map (_ => WildcardType)).apply(tp)
+        new SubstTypeMap(origUndets, WildcardType.fillList(origUndets.length)).apply(tp)
     }
 
     private lazy val sameTypesFolded = {

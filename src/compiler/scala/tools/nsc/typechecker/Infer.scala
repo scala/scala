@@ -477,7 +477,7 @@ trait Infer extends Checkable {
           catch { case ex: NoInstance => WildcardType }
         )
       else
-        tvars map (_ => WildcardType)
+        WildcardType.fillList(tvars.length)
     }
 
     /** Retract arguments that were inferred to Nothing because inference failed. Correct types for repeated params.
@@ -1147,7 +1147,7 @@ trait Infer extends Checkable {
 
       def inferForApproxPt =
         if (isFullyDefined(pt)) {
-          inferFor(pt.instantiateTypeParams(ptparams, ptparams map (x => WildcardType))) flatMap { targs =>
+          inferFor(pt.instantiateTypeParams(ptparams, WildcardType.fillList(ptparams.length))) flatMap { targs =>
             val ctorTpInst = tree.tpe.instantiateTypeParams(undetparams, targs)
             val resTpInst  = skipImplicit(ctorTpInst.finalResultType)
             val ptvars     =

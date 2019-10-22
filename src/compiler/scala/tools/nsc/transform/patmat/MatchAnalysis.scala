@@ -108,7 +108,7 @@ trait TreeAndTypeAnalysis extends Debugging {
               // however, must approximate abstract types in
 
               val memberType = nestedMemberType(sym, pre, tpApprox.typeSymbol.owner)
-              val subTp = appliedType(memberType, sym.typeParams.map(_ => WildcardType))
+              val subTp = appliedType(memberType, WildcardType.fillList(sym.typeParams.length))
               val subTpApprox = analyzer.approximateAbstracts(subTp) // TODO: needed?
               // debug.patmat("subtp"+(subTpApprox <:< tpApprox, subTpApprox, tpApprox))
               if (subTpApprox <:< tpApprox) Some(checkableType(subTp))
@@ -175,7 +175,7 @@ trait TreeAndTypeAnalysis extends Debugging {
         // See neg/t6771b.scala for elaboration
         def apply(tp: Type): Type = tp.dealias match {
           case TypeRef(pre, sym, args) if args.nonEmpty && (sym ne ArrayClass) =>
-            TypeRef(pre, sym, args map (_ => WildcardType))
+            TypeRef(pre, sym, WildcardType.fillList(args.length))
           case _ =>
             mapOver(tp)
         }
