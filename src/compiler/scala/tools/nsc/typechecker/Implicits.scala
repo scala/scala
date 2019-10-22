@@ -190,16 +190,6 @@ trait Implicits {
     improvesCache.clear()
   }
 
-  /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
-   * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate de Bruijn index types
-   * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
-   * so we have to approximate (otherwise it is excluded a priori).
-   */
-  private def depoly(tp: Type): Type = tp match {
-    case PolyType(tparams, restpe) => deriveTypeWithWildcards(tparams)(ApproximateDependentMap(restpe))
-    case _                         => ApproximateDependentMap(tp)
-  }
-
   /** The result of an implicit search
    *  @param  tree    The tree representing the implicit
    *  @param  subst   A substituter that represents the undetermined type parameters
@@ -237,12 +227,28 @@ trait Implicits {
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
     private var tpeCache: Type = null
+    private var depolyCache: Type = null
     private var isErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
-    def tpe: Type = {
+    final def tpe: Type = {
       if (tpeCache eq null) tpeCache = pre.memberType(sym)
       tpeCache
+    }
+
+    /* Map a polytype to one in which all type parameters and argument-dependent types are replaced by wildcards.
+     * Consider `implicit def b(implicit x: A): x.T = error("")`. We need to approximate de Bruijn index types
+     * when checking whether `b` is a valid implicit, as we haven't even searched a value for the implicit arg `x`,
+     * so we have to approximate (otherwise it is excluded a priori).
+     */
+    final def depoly: Type = {
+      if (depolyCache eq null) {
+        depolyCache = tpe match {
+          case PolyType(tparams, restpe) => deriveTypeWithWildcards(tparams)(ApproximateDependentMap(restpe))
+          case _                         => ApproximateDependentMap(tpe)
+        }
+      }
+      depolyCache
     }
 
     def dependsOnPrefix: Boolean = pre match {
@@ -654,7 +660,7 @@ trait Implicits {
       result
     }
     private def matchesPt(info: ImplicitInfo): Boolean = (
-      info.isStablePrefix && matchesPt(depoly(info.tpe), wildPt, Nil)
+      info.isStablePrefix && matchesPt(info.depoly, wildPt, Nil)
     )
 
     private def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean = tp match {
