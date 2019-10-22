@@ -793,7 +793,7 @@ abstract class BTypes {
     )
     def unapply(cr:ClassBType) = Some(cr.internalName)
 
-    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]): ClassBType = {
+    final def apply[T](internalName: InternalName, t: T, fromSymbol: Boolean)(init: (ClassBType, T) => Either[NoClassBTypeInfo, ClassInfo]): ClassBType = {
       val cached = classBTypeCache.get(internalName)
       if (cached ne null) cached
       else {
@@ -805,7 +805,7 @@ abstract class BTypes {
         newRes.synchronized {
           classBTypeCache.putIfAbsent(internalName, newRes) match {
             case null =>
-              newRes._info = init(newRes)
+              newRes._info = init(newRes, t)
               newRes.checkInfoConsistency()
               newRes
           case old =>
