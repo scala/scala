@@ -105,6 +105,7 @@ abstract class GenBCode extends SubComponent {
     private def close(): Unit = {
       postProcessor.classfileWriter.close()
       generatedClassHandler.close()
+      bTypes.BTypeExporter.close()
     }
   }
 }
