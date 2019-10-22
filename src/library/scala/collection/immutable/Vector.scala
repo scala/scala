@@ -1016,13 +1016,13 @@ private[immutable] trait VectorPointer[+T] {
         throw new IllegalArgumentException()
       }
     }
-  private[immutable] final def gotoNewBlockStart(index: Int, depth: Int): Unit = {
-    if (depth > 5) display4 = display5((index >>> 25) & 31)
-    if (depth > 4) display3 = display4((index >>> 20) & 31)
-    if (depth > 3) display2 = display3((index >>> 15) & 31)
-    if (depth > 2) display1 = display2((index >>> 10) & 31)
-    if (depth > 1) display0 = display1((index >>> 5) & 31)
-  }
+    private[immutable] final def gotoNewBlockStart(index: Int, depth: Int): Unit = {
+      if (depth > 5) display4 = display5((index >>> 25) & 31)
+      if (depth > 4) display3 = display4((index >>> 20) & 31)
+      if (depth > 3) display2 = display3((index >>> 15) & 31)
+      if (depth > 2) display1 = display2((index >>> 10) & 31)
+      if (depth > 1) display0 = display1((index >>> 5) & 31)
+    }
 
     // USED BY BUILDER
 
