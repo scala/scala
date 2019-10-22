@@ -46,59 +46,59 @@ private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer 
 }
 
 private[concurrent] object Promise {
+  /**
+   * Link represents a completion dependency between 2 DefaultPromises.
+   * As the DefaultPromise referred to by a Link can itself be linked to another promise
+   * `relink` traverses such chains and compresses them so that the link always points
+   * to the root of the dependency chain.
+   *
+   * In order to conserve memory, the owner of a Link (a DefaultPromise) is not stored
+   * on the Link, but is instead passed in as a parameter to the operation(s).
+   *
+   * If when compressing a chain of Links it is discovered that the root has been completed,
+   * the `owner`'s value is completed with that value, and the Link chain is discarded.
+   **/
+  private[concurrent] final class Link[T](to: DefaultPromise[T]) extends AtomicReference[DefaultPromise[T]](to) {
     /**
-     * Link represents a completion dependency between 2 DefaultPromises.
-     * As the DefaultPromise referred to by a Link can itself be linked to another promise
-     * `relink` traverses such chains and compresses them so that the link always points
-     * to the root of the dependency chain.
-     *
-     * In order to conserve memory, the owner of a Link (a DefaultPromise) is not stored
-     * on the Link, but is instead passed in as a parameter to the operation(s).
-     *
-     * If when compressing a chain of Links it is discovered that the root has been completed,
-     * the `owner`'s value is completed with that value, and the Link chain is discarded.
+     * Compresses this chain and returns the currently known root of this chain of Links.
      **/
-    private[concurrent] final class Link[T](to: DefaultPromise[T]) extends AtomicReference[DefaultPromise[T]](to) {
-      /**
-       * Compresses this chain and returns the currently known root of this chain of Links.
-       **/
-      final def promise(owner: DefaultPromise[T]): DefaultPromise[T] = {
-        val c = get()
-        compressed(current = c, target = c, owner = owner)
-      }
-
-      /**
-       * The combination of traversing and possibly unlinking of a given `target` DefaultPromise.
-       **/
-      @inline @tailrec private[this] final def compressed(current: DefaultPromise[T], target: DefaultPromise[T], owner: DefaultPromise[T]): DefaultPromise[T] = {
-        val value = target.get()
-        if (value.isInstanceOf[Callbacks[T]]) {
-          if (compareAndSet(current, target)) target // Link
-          else compressed(current = get(), target = target, owner = owner) // Retry
-        } else if (value.isInstanceOf[Link[T]]) compressed(current = current, target = value.asInstanceOf[Link[T]].get(), owner = owner) // Compress
-        else /*if (value.isInstanceOf[Try[T]])*/ {
-          owner.unlink(value.asInstanceOf[Try[T]]) // Discard links
-          owner
-        }
-      }
+    final def promise(owner: DefaultPromise[T]): DefaultPromise[T] = {
+      val c = get()
+      compressed(current = c, target = c, owner = owner)
     }
 
     /**
-     * The process of "resolving" a Try is to validate that it only contains
-     * those values which makes sense in the context of Futures.
+     * The combination of traversing and possibly unlinking of a given `target` DefaultPromise.
      **/
-    // requireNonNull is paramount to guard against null completions
-    private[this] final def resolve[T](value: Try[T]): Try[T] =
-      if (requireNonNull(value).isInstanceOf[Success[T]]) value
-      else {
-        val t = value.asInstanceOf[Failure[T]].exception
-        if (t.isInstanceOf[ControlThrowable] || t.isInstanceOf[InterruptedException] || t.isInstanceOf[Error]) {
-          if (t.isInstanceOf[NonLocalReturnControl[T @unchecked]])
-            Success(t.asInstanceOf[NonLocalReturnControl[T]].value)
-          else
-            Failure(new ExecutionException("Boxed Exception", t))
-        } else value
+    @inline @tailrec private[this] final def compressed(current: DefaultPromise[T], target: DefaultPromise[T], owner: DefaultPromise[T]): DefaultPromise[T] = {
+      val value = target.get()
+      if (value.isInstanceOf[Callbacks[T]]) {
+        if (compareAndSet(current, target)) target // Link
+        else compressed(current = get(), target = target, owner = owner) // Retry
+      } else if (value.isInstanceOf[Link[T]]) compressed(current = current, target = value.asInstanceOf[Link[T]].get(), owner = owner) // Compress
+      else /*if (value.isInstanceOf[Try[T]])*/ {
+        owner.unlink(value.asInstanceOf[Try[T]]) // Discard links
+        owner
       }
+    }
+  }
+
+  /**
+   * The process of "resolving" a Try is to validate that it only contains
+   * those values which makes sense in the context of Futures.
+   **/
+  // requireNonNull is paramount to guard against null completions
+  private[this] final def resolve[T](value: Try[T]): Try[T] =
+    if (requireNonNull(value).isInstanceOf[Success[T]]) value
+    else {
+      val t = value.asInstanceOf[Failure[T]].exception
+      if (t.isInstanceOf[ControlThrowable] || t.isInstanceOf[InterruptedException] || t.isInstanceOf[Error]) {
+        if (t.isInstanceOf[NonLocalReturnControl[T @unchecked]])
+          Success(t.asInstanceOf[NonLocalReturnControl[T]].value)
+        else
+          Failure(new ExecutionException("Boxed Exception", t))
+      } else value
+    }
 
   // Left non-final to enable addition of extra fields by Java/Scala converters in scala-java8-compat.
   class DefaultPromise[T] private[this] (initial: AnyRef) extends AtomicReference[AnyRef](initial) with scala.concurrent.Promise[T] with scala.concurrent.Future[T] with (Try[T] => Unit) {

@@ -33,14 +33,14 @@ package util.control
  * }}}
  */
 object NonFatal {
-   /**
-    * Returns true if the provided `Throwable` is to be considered non-fatal, or false if it is to be considered fatal
-    */
-   def apply(t: Throwable): Boolean = t match {
-     // VirtualMachineError includes OutOfMemoryError and other fatal errors
-     case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable => false
-     case _ => true
-   }
+  /**
+   * Returns true if the provided `Throwable` is to be considered non-fatal, or false if it is to be considered fatal
+   */
+  def apply(t: Throwable): Boolean = t match {
+    // VirtualMachineError includes OutOfMemoryError and other fatal errors
+    case _: VirtualMachineError | _: ThreadDeath | _: InterruptedException | _: LinkageError | _: ControlThrowable => false
+    case _ => true
+  }
   /**
    * Returns Some(t) if NonFatal(t) == true, otherwise None
    */
