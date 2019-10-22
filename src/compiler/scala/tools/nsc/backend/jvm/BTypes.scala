@@ -889,7 +889,7 @@ abstract class BTypes {
 
   object BTypeExporter {
     private[this] val builderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){
-      override protected val initialValue: StringBuilder = new StringBuilder(64)
+      override protected def initialValue: StringBuilder = new StringBuilder(64)
     }
 
     final def btypeToString(btype: BType): String = {
@@ -908,6 +908,12 @@ abstract class BTypes {
         args.foreach(appendBType(builder, _))
         builder.append(')')
         appendBType(builder, res)
+    }
+    def close(): Unit = {
+      // This will eagerly remove the thread local from the calling thread's ThreadLocalMap. It won't
+      // do the same for other threads used by `-Ybackend-parallelism=N`, but in practice this doesn't
+      // matter as that thread pool is shutdown at the end of compilation.
+      builderTL.remove()
     }
   }
 
