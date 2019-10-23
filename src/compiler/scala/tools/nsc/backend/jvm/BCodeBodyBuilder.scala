@@ -1072,7 +1072,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       import InvokeStyle._
       if (style == Super) {
         if (receiverClass.isTrait && !method.isJavaDefined) {
-          val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
+          val args = new Array[BType](bmType.argumentTypes.length + 1)
+          args(0) = typeToBType(method.owner.info)
+          bmType.argumentTypes.copyToArray(args, 1)
+          val staticDesc = MethodBType(args, bmType.returnType).descriptor
           val staticName = traitSuperAccessorName(method)
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
         } else {
@@ -1374,7 +1377,9 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         asm.Type.getMethodDescriptor(asmType(functionalInterface), argsArray:_*)
       }
       val lambdaParams = lambdaTarget.paramss.head.drop(numCaptured)
-      val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
+      val lambdaParamsBTypes = new Array[BType](lambdaParams.size)
+      lambdaParams.iterator.map(p => typeToBType(p.tpe)).copyToArray(lambdaParamsBTypes)
+      val constrainedType = MethodBType(lambdaParamsBTypes, typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable)

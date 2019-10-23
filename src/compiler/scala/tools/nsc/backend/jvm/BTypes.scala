@@ -885,7 +885,17 @@ abstract class BTypes {
     }
   }
 
-  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: Array[BType], returnType: BType) extends BType {
+
+  }
+  object MethodBType {
+    val emptyBTypeArray = Array[BType]()
+    @deprecated("Use primary constructor")
+    def apply(argumentTypes: List[BType], returnType: BType): MethodBType = {
+      val argumentTypesArray = if (argumentTypes.isEmpty) emptyBTypeArray else argumentTypes.toArray
+      new MethodBType(argumentTypesArray, returnType)
+    }
+  }
 
   object BTypeExporter {
     private[this] val builderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){

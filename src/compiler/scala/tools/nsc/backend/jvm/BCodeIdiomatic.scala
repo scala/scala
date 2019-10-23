@@ -206,7 +206,7 @@ abstract class BCodeIdiomatic {
         case BYTE | SHORT                                             => INT
         case pt: PrimitiveBType                                       => pt
       }
-      val bt = MethodBType(List(paramType), jlStringBuilderRef)
+      val bt = MethodBType(Array(paramType), jlStringBuilderRef)
       invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 

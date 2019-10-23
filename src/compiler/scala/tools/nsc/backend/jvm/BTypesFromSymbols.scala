@@ -129,7 +129,17 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val resultType: BType =
       if (isConstructor) UNIT
       else typeToBType(tpe.resultType)
-    MethodBType(tpe.paramTypes map typeToBType, resultType)
+    val params = tpe.params
+    // OPT allocation hotspot
+    val paramBTypes = new Array[BType](params.length)
+    var i = 0
+    var these = params
+    while (i < paramBTypes.length) {
+      paramBTypes(i) = typeToBType(these.head.tpe)
+      i += 1
+      these = these.tail
+    }
+    MethodBType(paramBTypes, resultType)
   }
 
   def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
