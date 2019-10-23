@@ -1359,7 +1359,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor,
           /* itf = */ isInterface)
-      val numCaptured = lambdaTarget.paramss.head.length - arity
+      val lambdaTargetParamss = lambdaTarget.paramss
+      val numCaptured = lambdaTargetParamss.head.length - arity
       val invokedType = {
         val numArgs = if (isStaticMethod) numCaptured else 1 + numCaptured
         val argsArray: Array[asm.Type] = new Array[asm.Type](numArgs)
@@ -1368,7 +1369,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           argsArray(0) = typeToBType(lambdaTarget.owner.info).toASMType
           i = 1
         }
-        var xs = lambdaTarget.paramss.head
+        var xs = lambdaTargetParamss.head
         while (i < numArgs && (!xs.isEmpty)) {
           argsArray(i) = typeToBType(xs.head.info).toASMType
           i += 1
@@ -1376,7 +1377,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         }
         asm.Type.getMethodDescriptor(asmType(functionalInterface), argsArray:_*)
       }
-      val lambdaParams = lambdaTarget.paramss.head.drop(numCaptured)
+      val lambdaParams = lambdaTargetParamss.head.drop(numCaptured)
       val lambdaParamsBTypes = new Array[BType](lambdaParams.size)
       lambdaParams.iterator.map(p => typeToBType(p.tpe)).copyToArray(lambdaParamsBTypes)
       val constrainedType = MethodBType(lambdaParamsBTypes, typeToBType(lambdaTarget.tpe.resultType)).toASMType
