@@ -155,7 +155,7 @@ trait Erasure {
           if (restpe.typeSymbol == UnitClass) UnitTpe
           // this replaces each typeref that refers to an argument
           // by the type `p.tpe` of the actual argument p (p in params)
-          else apply(mt.resultType(mt.paramTypes)))
+          else apply(mt.resultTypeOwnParamTypes))
       case RefinedType(parents, decls) =>
         apply(mergeParents(parents))
       case AnnotatedType(_, atp) =>

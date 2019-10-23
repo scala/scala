@@ -2872,9 +2872,16 @@ trait Types
 
     override def paramTypes = mapList(params)(symTpe) // OPT use mapList rather than .map
 
+    final def resultTypeOwnParamTypes: Type =
+      if (isTrivial || phase.erasedTypes) resultType
+      else resultType0(paramTypes)
+
     override def resultType(actuals: List[Type]) =
       if (isTrivial || phase.erasedTypes) resultType
-      else if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
+      else resultType0(actuals)
+
+    private def resultType0(actuals: List[Type]): Type =
+      if (/*isDependentMethodType &&*/ sameLength(actuals, params)) {
         val idm = new InstantiateDependentMap(params, actuals)
         val res = idm(resultType).deconst
         existentialAbstraction(idm.existentialsNeeded, res)
