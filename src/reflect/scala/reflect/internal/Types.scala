@@ -4540,6 +4540,21 @@ trait Types
     i.isEmpty && j.isEmpty
   }
 
+  /** Are `tps1` and `tps2` lists of pairwise equivalent symbols according to `_.tpe` ? */
+  def isSameSymbolTypes(syms1: List[Symbol], syms2: List[Symbol]): Boolean = {
+    // OPT: hand inlined (syms1 corresponds syms1)((x, y) (x.tpe =:= y.tpe)) to avoid cost of boolean unboxing (which includes
+    // a null check)
+    var i = syms1
+    var j = syms2
+    while (!(i.isEmpty || j.isEmpty)) {
+      if (!(i.head.tpe =:= j.head.tpe))
+        return false
+      i = i.tail
+      j = j.tail
+    }
+    i.isEmpty && j.isEmpty
+  }
+
   private[this] var _basetypeRecursions: Int = 0
   def basetypeRecursions = _basetypeRecursions
   def basetypeRecursions_=(value: Int) = _basetypeRecursions = value
