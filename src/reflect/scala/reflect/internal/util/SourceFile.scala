@@ -13,8 +13,8 @@
 package scala
 package reflect.internal.util
 
-import scala.reflect.io.{ AbstractFile, VirtualFile }
-import scala.collection.mutable.ArrayBuffer
+import scala.reflect.io.{AbstractFile, VirtualFile}
+import scala.collection.mutable.ArrayBuilder
 import scala.annotation.tailrec
 import java.util.regex.Pattern
 import java.io.IOException
@@ -172,11 +172,16 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
 
   private lazy val lineIndices: Array[Int] = {
     def calculateLineIndices(cs: Array[Char]) = {
-      val buf = new ArrayBuffer[Int]
-      buf += 0
-      for (i <- 0 until cs.length) if (isAtEndOfLine(i)) buf += i + 1
-      buf += cs.length // sentinel, so that findLine below works smoother
-      buf.toArray
+      val buf = ArrayBuilder.make[Int]
+      buf.sizeHint(cs.length / 60)       // suitable for this source file, how about yours?
+      buf.addOne(0)
+      var i = 0
+      while (i < cs.length) {
+        if (isAtEndOfLine(i)) buf.addOne(i + 1)
+        i += 1
+      }
+      buf.addOne(cs.length)              // sentinel, so that findLine below works smoother
+      buf.result()
     }
     calculateLineIndices(content)
   }
