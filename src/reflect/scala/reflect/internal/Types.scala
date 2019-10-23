@@ -4381,7 +4381,7 @@ trait Types
     && isRawIfWithoutArgs(sym)
   )
 
-  def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(hi :: SingletonClass.tpe :: Nil))
+  def singletonBounds(hi: Type) = TypeBounds.upper(intersectionType(hi :: ListOfSingletonClassTpe))
 
   /**
    * A more persistent version of `Type#memberType` which does not require
