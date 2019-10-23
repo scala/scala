@@ -705,8 +705,11 @@ trait Contexts { self: Analyzer =>
       else make(tree, owner, scope, unit)
 
     /** Make a child context that represents a new nested scope */
-    def makeNewScope(tree: Tree, owner: Symbol, reporter: ContextReporter = this.reporter): Context =
-      make(tree, owner, newNestedScope(scope), reporter = reporter)
+    def makeNewScope(tree: Tree, owner: Symbol, reporter: ContextReporter = this.reporter): Context = {
+      // OPT Erasure typer doesn't need new scopes
+      val nestedScope = if (globalPhase.isErasurePhase) scope else newNestedScope(scope)
+      make(tree, owner, nestedScope, reporter = reporter)
+    }
 
     /** Make a child context that buffers errors and warnings into a fresh report buffer. */
     def makeSilent(reportAmbiguousErrors: Boolean = ambiguousErrors, newtree: Tree = tree): Context = {

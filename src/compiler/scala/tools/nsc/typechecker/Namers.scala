@@ -221,7 +221,7 @@ trait Namers extends MethodSynthesis {
     )
 
     private def allowsOverload(sym: Symbol) = (
-      sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel
+      globalPhase.isErasurePhase || (sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel)
     )
 
     private def inCurrentScope(m: Symbol): Boolean = {
