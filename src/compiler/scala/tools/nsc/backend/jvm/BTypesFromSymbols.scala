@@ -131,14 +131,8 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       else typeToBType(tpe.resultType)
     val params = tpe.params
     // OPT allocation hotspot
-    val paramBTypes = new Array[BType](params.length)
-    var i = 0
-    var these = params
-    while (i < paramBTypes.length) {
-      paramBTypes(i) = typeToBType(these.head.tpe)
-      i += 1
-      these = these.tail
-    }
+    val paramBTypes = BType.newArray(params.length)
+    mapToArray(params, paramBTypes, 0)(param => typeToBType(param.tpe))
     MethodBType(paramBTypes, resultType)
   }
 

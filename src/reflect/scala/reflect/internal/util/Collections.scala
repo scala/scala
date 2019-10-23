@@ -407,6 +407,16 @@ trait Collections {
     }
     result
   }
+
+  final def mapToArray[A, B](as: List[A], arr: Array[B], i: Int)(f: A => B): Unit = {
+    var these = as
+    var index = i
+    while (!these.isEmpty) {
+      arr(index) = f(these.head)
+      index += 1
+      these = these.tail
+    }
+  }
 }
 
 object Collections extends Collections

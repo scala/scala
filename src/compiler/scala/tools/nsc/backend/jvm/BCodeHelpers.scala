@@ -750,9 +750,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
 
       val moduleName     = internalName(moduleClass)
       val methodInfo     = moduleClass.thisType.memberInfo(m)
-      val paramTypes = methodInfo.paramTypes
-      val paramJavaTypes = new Array[BType](paramTypes.length)
-      paramTypes.iterator.map(typeToBType).copyToArray(paramJavaTypes)
+      val paramTypes     = methodInfo.paramTypes
+      val paramJavaTypes = BType.newArray(paramTypes.length)
+      mapToArray(paramTypes, paramJavaTypes, 0)(typeToBType)
       // val paramNames     = 0 until paramJavaTypes.length map ("x_" + _)
 
       /* Forwarders must not be marked final,
@@ -974,7 +974,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       )
 
       // INVOKEVIRTUAL `moduleName`.CREATOR() : android.os.Parcelable$Creator;
-      val bt = MethodBType(MethodBType.emptyBTypeArray, androidCreatorType)
+      val bt = MethodBType(BType.emptyArray, androidCreatorType)
       clinit.visitMethodInsn(
         asm.Opcodes.INVOKEVIRTUAL,
         moduleName,

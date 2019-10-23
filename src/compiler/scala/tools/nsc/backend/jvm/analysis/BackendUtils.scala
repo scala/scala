@@ -62,10 +62,10 @@ abstract class BackendUtils extends PerRunInit {
     primitiveBoxConstructors.map(ownerDesc).toSet ++
       srRefConstructors.map(ownerDesc) ++
       tupleClassConstructors.map(ownerDesc) ++ Set(
-      (ObjectRef.internalName, MethodBType(MethodBType.emptyBTypeArray, UNIT).descriptor),
-      (StringRef.internalName, MethodBType(MethodBType.emptyBTypeArray, UNIT).descriptor),
-      (StringRef.internalName, MethodBType(Array[BType](StringRef), UNIT).descriptor),
-      (StringRef.internalName, MethodBType(Array[BType](ArrayBType(CHAR)), UNIT).descriptor))
+      (ObjectRef.internalName, MethodBType(BType.emptyArray, UNIT).descriptor),
+      (StringRef.internalName, MethodBType(BType.emptyArray, UNIT).descriptor),
+      (StringRef.internalName, MethodBType(Array(StringRef), UNIT).descriptor),
+      (StringRef.internalName, MethodBType(Array(ArrayBType(CHAR)), UNIT).descriptor))
   }
 
   private[this] lazy val classesOfSideEffectFreeConstructors: LazyVar[Set[String]] = perRunLazy(this)(sideEffectFreeConstructors.get.map(_._1))
@@ -120,7 +120,7 @@ abstract class BackendUtils extends PerRunInit {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val serlamObjDesc = MethodBType(Array[BType](jliSerializedLambdaRef), ObjectRef).descriptor
+    val serlamObjDesc = MethodBType(Array(jliSerializedLambdaRef), ObjectRef).descriptor
     val implMethodsArray = implMethods.toArray
 
     val mv = cw.visitMethod(ACC_PRIVATE + ACC_STATIC + ACC_SYNTHETIC, "$deserializeLambda$", serlamObjDesc, null, null)
