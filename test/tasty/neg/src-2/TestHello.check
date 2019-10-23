@@ -1,0 +1,2 @@
+error: Scala 2 incompatible TASTy signature of HelloWorld.tasty in object HelloWorld: inline val msg with non-constant type String
+one error found

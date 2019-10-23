@@ -4,7 +4,7 @@ This branch is the home for development of the Scala Center project [**TASTy Rea
 
 ## Testing
 
-There is a small set of test files in `/test/tasty/`, which are simply run with the `TastyTest` runner, which outputs "All passed!" if there are no errors. It is invoked with `scala TastyTest.scala`, with an optional `-help` argument. It can also be ran programatically with the `TastyTest.process` method.
+The functionality of the TASTy reader can be tested in `neg` and `run` modes by using the `TastyTest` runner. See documentation with `scala TastyTest.scala -help`. It can also be ran programatically with the `TastyTest.process` method, which preserves errors.
 
 ## Notes
 
