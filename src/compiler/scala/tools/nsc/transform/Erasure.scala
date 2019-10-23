@@ -107,8 +107,8 @@ abstract class Erasure extends InfoTransform
   private def isTypeParameterInSig(sym: Symbol, initialSymbol: Symbol) = (
     !sym.isHigherOrderTypeParameter &&
     sym.isTypeParameterOrSkolem && (
-      (initialSymbol.enclClassChain.exists(sym isNestedIn _)) ||
-      (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym))
+      (initialSymbol.isMethod && initialSymbol.typeParams.contains(sym)) ||
+      (initialSymbol.ownersIterator.exists(encl => encl.isClass && !encl.hasPackageFlag && sym.isNestedIn(encl)))
     )
   )
 
