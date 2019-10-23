@@ -576,7 +576,8 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       emitParamNames(mnode, params)
       emitAnnotations(mnode, others)
-      emitParamAnnotations(mnode, params.map(_.annotations))
+      if (params.exists(_.annotations.nonEmpty))
+        emitParamAnnotations(mnode, params.map(_.annotations))
 
     } // end of method initJMethod
 
