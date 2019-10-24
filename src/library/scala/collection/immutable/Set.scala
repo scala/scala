@@ -168,6 +168,9 @@ object Set extends IterableFactory[Set] {
     override def foreach[U](f: A => U): Unit = f(elem1)
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] =
+      if (pred(elem1) != isFlipped) this else Set.empty
+
     override def find(p: A => Boolean): Option[A] =
       if (p(elem1)) Some(elem1)
       else None
@@ -202,6 +205,18 @@ object Set extends IterableFactory[Set] {
     }
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2)
+    }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1; n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => this
+      }
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -241,6 +256,20 @@ object Set extends IterableFactory[Set] {
     }
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2) && p(elem3)
+    }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1, r2: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1;                             n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2 else             r2 = elem2; n += 1}
+      if (pred(elem3) != isFlipped) { if (n == 0) r1 = elem3 else if (n == 1) r2 = elem3; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => new Set2(r1, r2)
+        case 3 => this
+      }
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -283,6 +312,23 @@ object Set extends IterableFactory[Set] {
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2) && p(elem3) && p(elem4)
     }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1, r2, r3: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1;                                                         n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2 else             r2 = elem2;                             n += 1}
+      if (pred(elem3) != isFlipped) { if (n == 0) r1 = elem3 else if (n == 1) r2 = elem3 else             r3 = elem3; n += 1}
+      if (pred(elem4) != isFlipped) { if (n == 0) r1 = elem4 else if (n == 1) r2 = elem4 else if (n == 2) r3 = elem4; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => new Set2(r1, r2)
+        case 3 => new Set3(r1, r2, r3)
+        case 4 => this
+      }
+    }
+
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
       else if (p(elem2)) Some(elem2)
