@@ -6,41 +6,65 @@ import scala.util.{Try, Success, Failure}
 import scala.util.Properties
 
 import scala.tools.nsc
+import scala.reflect.internal.util.ScalaClassLoader
 import java.util.stream.Collectors
+import java.lang.reflect.Modifier
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, dottyCompiler: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean): Try[Unit] =
-    for {
-      _ <- Tests.suite("run", run)(
+  def tastytest(dottyLibrary: String, dottyCompiler: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
+    val results = Map(
+      "run" -> Tests.suite("run", run)(
         for {
           (pre, src2, src3) <- getSources(srcRoot/"run")
-          out               <- tempDir(pkgName)
-          _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
-          _                 <- scalacPos(out, dottyLibrary, src2:_*)
-          testNames         <- visibleClasses(out, pkgName, src2:_*)
-          _                 <- runMainOn(classpaths(out, dottyLibrary), testNames:_*)
-        } yield printsuccessln("run suite passed!")
-      )
-      _ <- Tests.suite("neg", neg)(
+          preClean          =  whitelist(check = false, paths = pre:_*)
+          src2Clean         =  whitelist(check = false, paths = src2:_*)
+          src3Clean         =  whitelist(check = false, paths = src3:_*)
+          out               <- outDir.fold(tempDir(pkgName))(dir)
+          _                 <- scalacPos(out, dottyLibrary, preClean:_*)
+          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3Clean:_*)
+          _                 <- scalacPos(out, dottyLibrary, src2Clean:_*)
+          testNames         <- visibleClasses(out, pkgName, src2Clean:_*)
+          _                 <- runMainOn(out, dottyLibrary, testNames:_*)
+        } yield ()
+      ),
+      "neg" -> Tests.suite("neg", neg)(
         for {
           (pre, src2, src3) <- getSources(srcRoot/"neg")
-          out               <- tempDir(pkgName)
-          _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotc(out, dottyLibrary, dottyCompiler, src3:_*)
-          _                 <- scalacNeg(out, dottyLibrary, src2:_*)
-        } yield printsuccessln("neg suite passed!")
+          preClean          =  whitelist(check = false, paths = pre:_*)
+          src2Clean         =  whitelist(check = true, paths = src2:_*)
+          src3Clean         =  whitelist(check = false, paths = src3:_*)
+          out               <- outDir.fold(tempDir(pkgName))(dir)
+          _                 <- scalacPos(out, dottyLibrary, preClean:_*)
+          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3Clean:_*)
+          _                 <- scalacNeg(out, dottyLibrary, src2Clean:_*)
+        } yield ()
       )
-    } yield ()
+    )
+    successWhen(results.values.forall(identity))({
+      val failures = results.filter(!_._2)
+      val str = if (failures.size == 1) "suite" else "suites"
+      s"${failures.size} $str failed: ${failures.map(_._1).mkString(", ")}."
+    })
+  }
 
   object Tests {
 
-    def suite(name: String, willRun: Boolean)(runner: => Try[Unit]): Try[Unit] = {
-      if (willRun)
-        Try(println(s"Performing suite $name")).flatMap(_ => runner)
-      else
-        Try(println(s"Skipping suite $name"))
+    def printSummary(suite: String, result: Try[Unit]) = result match {
+      case Success(_)   => printsuccessln(s"$suite suite passed!")
+      case Failure(err) => printerrln(s"ERROR: $suite suite failed: ${err.getClass.getSimpleName} ${err.getMessage}")
+    }
+
+    def suite(name: String, willRun: Boolean)(runner: => Try[Unit]): Boolean = {
+      if (willRun) {
+        println(s"Performing suite $name")
+        val result = runner
+        printSummary(name, result)
+        result.isSuccess
+      }
+      else {
+        true
+      }
     }
 
   }
@@ -138,7 +162,7 @@ object TastyTest {
     }
   }
 
-  private def dotc(out: String, dottyLibrary: String, dottyCompiler: String, sources: String*): Try[Unit] = {
+  private def dotcPos(out: String, dottyLibrary: String, dottyCompiler: String, sources: String*): Try[Unit] = {
     val dotc = (
          "java"
       +: "-classpath" +: dottyCompiler
@@ -169,6 +193,12 @@ object TastyTest {
     path.split(pathSep).last.stripSuffix(".scala")
 
   private val negScalaSource = "_fail.scala"
+
+  private def isScala(path: String) = path.endsWith(".scala")
+  private def isCheck(path: String) = path.endsWith(".check")
+
+  private def whitelist(check: Boolean, paths: String*) =
+    paths.filter(if (check) p => isScala(p) || isCheck(p) else isScala)
 
   private def getSources(root: String): Try[(Seq[String], Seq[String], Seq[String])] = for {
     pre  <- getFiles(root/"pre")
@@ -237,10 +267,20 @@ object TastyTest {
     @inline final def / (part: String): String = path(s, part)
     @inline final def / (parts: Seq[String]): String = path(s, parts:_*)
     @inline final def **/ : IndexedSeq[String] = s.split(raw"\.").toIndexedSeq
-    @inline final def *->/ : String = s.replaceAllLiterally(raw"\.", pathSep) + "/"
+    @inline final def *->/ : String = s.replace(raw"\.", pathSep) + "/"
   }
 
   private def tempDir(dir: String): Try[String] = Try(Files.createTempDirectory(dir)).map(_.toString)
+
+  private def dir(dir: String): Try[String] = Try {
+    val path = Paths.get(dir)
+    if (Files.isDirectory(path)) {
+      Success(path.normalize.toString)
+    }
+    else {
+      Failure(new IllegalArgumentException(s"$path is not a directory."))
+    }
+  }.flatten
 
   private def successWhen(cond: Boolean)(ifFalse: => String): Try[Unit] =
     failOnEmpty(Option.when(cond)(()))(ifFalse)
@@ -248,42 +288,67 @@ object TastyTest {
   private def failOnEmpty[A](opt: Option[A])(ifEmpty: => String): Try[A] =
     opt.toRight(new IllegalStateException(ifEmpty)).toTry
 
-  private def runMainOn(cp: String, tests: String*): Try[Unit] = {
-    val errors = mutable.ArrayBuffer.empty[String]
-    for (test <- tests) {
-      val buf = new StringBuilder(50)
-      val success = {
-        val byteArrayStream = new java.io.ByteArrayOutputStream(50)
-        try {
-          val success = Console.withOut(byteArrayStream) {
-            Console.withErr(byteArrayStream) {
-              nsc.MainGenericRunner.process(Array("-classpath", cp, test))
+  private def classloadFrom(cp: String): Try[ScalaClassLoader] =
+    for (classpath <- Try(cp.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL)))
+    yield ScalaClassLoader.fromURLs(classpath.toIndexedSeq)
+
+  private final class Runner private (classloader: ScalaClassLoader) {
+
+    def run(name: String): Try[String] = {
+      def kernel(out: java.io.OutputStream, err: java.io.OutputStream): Try[Unit] = Try {
+        val objClass = Class.forName(name, true, classloader)
+        val main     = objClass.getMethod("main", classOf[Array[String]])
+        if (!Modifier.isStatic(main.getModifiers))
+          throw new NoSuchMethodException(name + ".main is not static")
+        classloader.asContext[Unit] {
+          Console.withOut(out) {
+            Console.withErr(err) {
+              main.invoke(null, Array.empty[String])
             }
           }
-          byteArrayStream.flush()
-          buf.append(byteArrayStream.toString)
-          success
-        }
-        finally {
-          byteArrayStream.close()
         }
       }
-      if (!success) {
-        errors += test
-        printerrln(s"ERROR: $test failed.")
+      val byteArrayStream = new java.io.ByteArrayOutputStream(50)
+      try {
+        val result = kernel(byteArrayStream, byteArrayStream)
+        byteArrayStream.flush()
+        result.map(_ => byteArrayStream.toString)
       }
-      else {
-        val output = buf.toString
-        if ("Suite passed!" != output.trim) {
-          errors += test
-          printerrln(s"ERROR: $test failed, unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;")
+      finally {
+        byteArrayStream.close()
+      }
+    }
+  }
+
+  private object Runner {
+    def loadFrom(classloader: ScalaClassLoader): Try[Runner] = Try(new Runner(classloader))
+  }
+
+  private def runMainOn(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
+    def runTests(errors: mutable.ArrayBuffer[String], runner: Runner): Try[Unit] = Try {
+      for (test <- tests) {
+        runner.run(test) match {
+          case Success(output) =>
+            if ("Suite passed!" != output.trim) {
+              errors += test
+              printerrln(s"ERROR: $test failed, unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;")
+            }
+          case Failure(err) =>
+            errors += test
+            printerrln(s"ERROR: $test failed: ${err.getMessage}")
         }
       }
     }
-    successWhen(errors.isEmpty) {
-      val str = if (errors.size == 1) "error" else "errors"
-      s"${errors.length} $str. Fix ${errors.mkString(", ")}."
-    }
+    for {
+      classloader     <- classloadFrom(classpaths(out, dottyLibrary))
+      instrumentor    <- Runner.loadFrom(classloader)
+      errors          =  mutable.ArrayBuffer.empty[String]
+      _               <- runTests(errors, instrumentor)
+      _               <- successWhen(errors.isEmpty)({
+                        val str = if (errors.size == 1) "error" else "errors"
+                        s"${errors.length} $str. Fix ${errors.mkString(", ")}."
+                      })
+    } yield ()
   }
 
   private val pathSep: String = FileSystems.getDefault.getSeparator
@@ -300,6 +365,7 @@ object TastyTest {
   |  --dotty-library   <paths>    Paths separated by `:`, the classpath for the dotty library.
   |  --dotty-compiler  <paths>    Paths separated by `:`, the classpath for the dotty compiler.
   |  --src             <path = .> The path that contains all compilation sources across test kinds.
+  |  --out             <path = .> output for classpaths, optional.
   |  --package         <pkg : ""> The package containing run tests.
   |
   |* This runner should be invoked with the `scala-compiler` module on the classpath, easily acheived by using the `scala` shell command.
@@ -351,7 +417,8 @@ object TastyTest {
       pkgName       =  optionalArg("--package", "tastytest")
       run           =  booleanArg("-run")
       neg           =  booleanArg("-neg")
-      _             <- tastytest(dottyLibrary, dottyCompiler, srcRoot, pkgName, run, neg)
+      out           =  findArg("--out")
+      _             <- tastytest(dottyLibrary, dottyCompiler, srcRoot, pkgName, run, neg, out)
     } yield ()
   }
 
