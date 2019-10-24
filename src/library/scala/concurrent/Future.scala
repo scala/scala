@@ -566,7 +566,7 @@ object Future {
    */
   object never extends Future[Nothing] {
 
-    private[this] final val notGoingToHappen = new CountDownLatch(1)
+    private[this] final lazy val notGoingToHappen = new CountDownLatch(1)
 
     @throws[TimeoutException]
     @throws[InterruptedException]
