@@ -127,6 +127,30 @@ object Set extends IterableFactory[Set] {
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
+  @SerialVersionUID(3L)
+  private abstract class SetNIterator[A](n: Int) extends AbstractIterator[A] with Serializable {
+    private[this] var current = 0
+    private[this] var remainder = n
+    override def knownSize: Int = remainder
+    def hasNext = remainder > 0
+    def apply(i: Int): A
+    def next(): A =
+      if (hasNext) {
+        val r = apply(current)
+        current += 1
+        remainder -= 1
+        r
+      } else Iterator.empty.next()
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) {
+        current += n
+        remainder = Math.max(0, remainder - n)
+      }
+      this
+    }
+  }
+
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(3L)
   final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
@@ -165,7 +189,11 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
@@ -200,7 +228,11 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -237,7 +269,11 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: elem4 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 case 3 => elem4 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
