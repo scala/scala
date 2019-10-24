@@ -17,6 +17,8 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
+resolvers += Resolver.url("bintray",
+  new java.net.URL("https://dl.bintray.com/typesafe/sbt-plugins"))(Resolver.defaultIvyPatterns)
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
 
 libraryDependencies ++= Seq(
