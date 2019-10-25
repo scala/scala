@@ -14,7 +14,6 @@ package scala.tools.nsc
 package plugins
 
 import java.util.jar
-import scala.collection.JavaConverters._
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{AbstractFile, File, Path}
 import scala.collection.mutable
@@ -96,8 +95,8 @@ abstract class Plugin {
    * A callback to allow a plugin to customise the manifest of a jar. This is only called if the output is a jar.
    * In the case of a multi-output compile, it is called once for each output (if the output is a jar).
    * Typically this extension point is to avoid the build system having an additional step
-   * to add this information, while would otherwise require the jar to be re-built ( as the manifest is required
-   * to be the first entry in a jar.
+   * to add this information, while would otherwise require the jar to be rebuilt (as the manifest is required
+   * to be the first entry in a jar).
    * The default implementation is a NO-OP
    *
    * @param file the file that will contains this manifest. Int the case of a multi-output compile, the plugin can
@@ -108,11 +107,6 @@ abstract class Plugin {
 
 }
 
-/** ...
- *
- *  @author Lex Spoon
- *  @version 1.0, 2007-5-21
- */
 object Plugin {
 
   val PluginXML = "scalac-plugin.xml"

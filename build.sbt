@@ -953,23 +953,6 @@ lazy val root: Project = (project in file("."))
       state
     },
 
-    testRun := (testOnly in IntegrationTest in testP).toTask(" -- run").result.value,
-
-    testPosPres := (testOnly in IntegrationTest in testP).toTask(" -- pos presentation").result.value,
-
-    testRest := ScriptCommands.sequence[Result[Unit]](List(
-          (mimaReportBinaryIssues in library).result,
-          (mimaReportBinaryIssues in reflect).result,
-          (Keys.test in Test in junit).result,
-          (Keys.test in Test in scalacheck).result,
-          (testOnly in IntegrationTest in testP).toTask(" -- neg jvm").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- instrumented").result,
-          (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result,
-          (Keys.test in Test in osgiTestFelix).result,
-          (Keys.test in Test in osgiTestEclipse).result)).value,
-
-    // all of testRun, testPosPres, testRest and more
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         (Keys.test in Test in junit).result map (_ -> "junit/test"),
@@ -1108,10 +1091,6 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
-
-lazy val testRun = taskKey[Unit]("Run compute intensive test tasks sequentially")
-lazy val testPosPres = taskKey[Unit]("Run compilation test (pos + presentation) sequentially")
-lazy val testRest = taskKey[Unit]("Run the remaining test tasks sequentially")
 
 // Defining these settings is somewhat redundant as we also redefine settings that depend on them.
 // However, IntelliJ's project import works better when these are set correctly.
