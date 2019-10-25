@@ -13,8 +13,9 @@
 package scala.concurrent
 
 import scala.language.higherKinds
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.LockSupport
 
 import scala.util.control.{NonFatal, NoStackTrace}
 import scala.util.{Failure, Success, Try}
@@ -566,18 +567,29 @@ object Future {
    */
   object never extends Future[Nothing] {
 
-    private[this] final val notGoingToHappen = new CountDownLatch(1)
-
     @throws[TimeoutException]
     @throws[InterruptedException]
     override final def ready(atMost: Duration)(implicit permit: CanAwait): this.type = {
       import Duration.{Undefined, Inf, MinusInf}
       atMost match {
         case u if u eq Undefined => throw new IllegalArgumentException("cannot wait for Undefined period")
-        case `Inf`               => notGoingToHappen.await()
+        case `Inf`               =>
+          while(!Thread.interrupted()) {
+            LockSupport.park(this)
+          }
+          throw new InterruptedException
         case `MinusInf`          => // Drop out
-        case f: FiniteDuration   =>
-          if (f > Duration.Zero) notGoingToHappen.await(f.toNanos, TimeUnit.NANOSECONDS)
+        case f: FiniteDuration if f > Duration.Zero  =>
+          var now = System.nanoTime()
+          val deadline = now + f.toNanos
+          while((deadline - now) > 0) {
+            LockSupport.parkNanos(this, deadline - now)
+            if (Thread.interrupted())
+              throw new InterruptedException
+            now = System.nanoTime()
+          }
+          // Done waiting, drop out
+          case _: FiniteDuration => // Drop out if 0 or less
       }
       throw new TimeoutException(s"Future timed out after [$atMost]")
     }
