@@ -90,7 +90,7 @@ private object DelegatingReporter {
     def makePosition(pos: Position): xsbti.Position = {
       val src = pos.source
       val sourcePath = src.file.path
-      val sourceFile = src.file.file
+      val sourceFile = new File(src.file.path)
       val line = pos.line
       val lineContent = pos.lineContent.stripLineEnd
       val offset = pos.point

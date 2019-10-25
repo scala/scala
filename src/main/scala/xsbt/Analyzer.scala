@@ -11,8 +11,9 @@
 
 package xsbt
 
+import java.nio.file.Path
 import java.io.File
-
+import xsbti.VirtualFile
 import scala.tools.nsc.Phase
 import scala.collection.JavaConverters._
 
@@ -49,8 +50,11 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
-        val sourceFile = unit.source.file
-        lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile).file
+        val sourceFile0: VirtualFileWrap = unit.source.file match {
+          case v: VirtualFileWrap => v
+        }
+        val sourceFile: VirtualFile = sourceFile0.underlying
+        lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile0).file
         for (iclass <- unit.icode) {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
@@ -66,7 +70,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
               // Use own map of local classes computed before lambdalift to ascertain class locality
               if (localToNonLocalClass.isLocal(sym).getOrElse(true)) {
                 // Inform callback about local classes, non-local classes have been reported in API
-                callback.generatedLocalClass(sourceFile.file, classFile)
+                callback.generatedLocalClass(sourceFile, classFile.toPath)
               }
             }
           }
@@ -90,7 +94,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
       if (classFile.exists()) Some(classFile) else None
     }
 
-    private def locateClassInJar(sym: Symbol, jar: File, sepRequired: Boolean): Option[File] = {
+    private def locateClassInJar(sym: Symbol, jar: Path, sepRequired: Boolean): Option[File] = {
       val classFile = pathToClassFile(sym, sepRequired)
       val classInJar = JarUtils.classNameInJar(jar, classFile)
       if (!classesWrittenByGenbcode.contains(classInJar)) None

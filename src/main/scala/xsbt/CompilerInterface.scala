@@ -11,10 +11,11 @@
 
 package xsbt
 
-import xsbti.{ AnalysisCallback, Logger, Problem, Reporter }
+import xsbti.{ AnalysisCallback, Logger, Problem, Reporter, VirtualFile }
 import xsbti.compile._
 import scala.tools.nsc.Settings
 import scala.collection.mutable
+import scala.reflect.io.AbstractFile
 import Log.debug
 import java.io.File
 
@@ -28,7 +29,7 @@ final class CompilerInterface {
     new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
 
   def run(
-      sources: Array[File],
+      sources: Array[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,
       log: Logger,
@@ -75,10 +76,13 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     case multi: MultipleOutput =>
       for (out <- multi.getOutputGroups)
         settings.outputDirs
-          .add(out.getSourceDirectory.getAbsolutePath, out.getOutputDirectory.getAbsolutePath)
+          .add(
+            out.getSourceDirectory.toAbsolutePath.toString,
+            out.getOutputDirectory.toAbsolutePath.toString
+          )
     case single: SingleOutput =>
-      val outputFilepath = single.getOutputDirectory.getAbsolutePath
-      settings.outputDirs.setSingleOutput(outputFilepath)
+      val outputFilepath = single.getOutputDirectory.toAbsolutePath
+      settings.outputDirs.setSingleOutput(outputFilepath.toString)
   }
 
   val command = Command(args.toList, settings)
@@ -112,7 +116,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
   def run(
-      sources: Array[File],
+      sources: Array[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,
       log: Logger,
@@ -132,7 +136,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     args.mkString("[zinc] The Scala compiler is invoked with:\n\t", "\n\t", "")
   private val StopInfoError = "Compiler option supplied that disabled Zinc compilation."
   private[this] def run(
-      sources: List[File],
+      sources: List[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,
       log: Logger,
@@ -149,8 +153,11 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       debug(log, prettyPrintCompilationArguments(args))
       compiler.set(callback, underlyingReporter)
       val run = new compiler.ZincRun(compileProgress)
-      val sortedSourceFiles = sources.map(_.getAbsolutePath).sortWith(_ < _)
-      run.compile(sortedSourceFiles)
+
+      val wrappedFiles = sources.map(new VirtualFileWrap(_))
+      val sortedSourceFiles: List[AbstractFile] =
+        wrappedFiles.sortWith(_.underlying.id < _.underlying.id)
+      run.compileFiles(sortedSourceFiles)
       processUnreportedWarnings(run)
       underlyingReporter.problems.foreach(
         p => callback.problem(p.category, p.position, p.message, p.severity, true)

@@ -12,9 +12,11 @@
 package xsbt
 
 import java.io.PrintWriter
+import java.nio.file.Path
 import xsbti.compile.Output
 import scala.reflect.{ internal => sri }
 import scala.reflect.internal.{ util => sriu }
+import scala.reflect.io.AbstractFile
 import scala.tools.nsc.{ Global, Settings }
 import scala.tools.nsc.interactive.RangePositions
 import scala.tools.nsc.symtab.Flags, Flags._
@@ -164,6 +166,8 @@ trait ZincGlobalCompat {
 }
 
 object Compat {
+  type PlainNioFile = xsbt.PlainNioFile
+
   // IR is renamed to Results
   val Results = scala.tools.nsc.interpreter.IR
 
@@ -184,6 +188,8 @@ object Compat {
     // Missing in 2.10
     @inline final def finalPosition: sriu.Position = self.source positionInUltimateSource self
   }
+
+  def plainNioFile(path: Path): AbstractFile = new PlainNioFile(path)
 }
 
 private trait CachedCompilerCompat { self: CachedCompiler0 =>

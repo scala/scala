@@ -14,6 +14,7 @@ package xsbt
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
 import xsbti.api._
+import xsbti.VirtualFile
 
 object API {
   val name = "xsbt-api"
@@ -45,7 +46,9 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     def apply(unit: global.CompilationUnit): Unit = processUnit(unit)
     private def processUnit(unit: CompilationUnit) = if (!unit.isJava) processScalaUnit(unit)
     private def processScalaUnit(unit: CompilationUnit): Unit = {
-      val sourceFile = unit.source.file.file
+      val sourceFile: VirtualFile = unit.source.file match {
+        case v: VirtualFileWrap => v.underlying
+      }
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
@@ -114,8 +117,12 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
   def registerGeneratedClasses(classSymbols: Iterator[Symbol]): Unit = {
     classSymbols.foreach { symbol =>
       val sourceFile = symbol.sourceFile
-      val sourceJavaFile =
-        if (sourceFile == null) symbol.enclosingTopLevelClass.sourceFile.file else sourceFile.file
+      val sourceJavaFile0 =
+        if (sourceFile == null) symbol.enclosingTopLevelClass.sourceFile
+        else sourceFile
+      val sourceJavaFile: VirtualFile = sourceJavaFile0 match {
+        case v: VirtualFileWrap => v.underlying
+      }
 
       def registerProductNames(names: FlattenedNames): Unit = {
         // Guard against a local class in case it surreptitiously leaks here
@@ -130,10 +137,14 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
                 new java.io.File(outputDir, pathToClassFile)
             }
           }
-
           val zincClassName = names.className
           val srcClassName = classNameAsString(symbol)
-          callback.generatedNonLocalClass(sourceJavaFile, classFile, zincClassName, srcClassName)
+          callback.generatedNonLocalClass(
+            sourceJavaFile,
+            classFile.toPath,
+            zincClassName,
+            srcClassName
+          )
         } else ()
       }
 

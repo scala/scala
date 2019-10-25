@@ -11,9 +11,9 @@
 
 package xsbt
 
-import java.io.File
 import java.util.{ Arrays, Comparator }
 import scala.tools.nsc.symtab.Flags
+import xsbti.VirtualFile
 import xsbti.api._
 
 import scala.annotation.tailrec
@@ -55,7 +55,7 @@ class ExtractAPI[GlobalType <: Global](
     val global: GlobalType,
     // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
     // This is used when recording inheritance dependencies.
-    sourceFile: File
+    sourceFile: VirtualFile
 ) extends Compat
     with ClassName
     with GlobalHelpers {

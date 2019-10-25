@@ -12,18 +12,24 @@
 package xsbt
 
 import java.io.PrintWriter
+import java.nio.file.Path
 import xsbti.compile.Output
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
+import scala.reflect.io.AbstractFile
 
 abstract class Compat
 object Compat {
+  type PlainNioFile = scala.reflect.io.PlainNioFile
+
   // IR is renanmed to Results
   val Results = scala.tools.nsc.interpreter.Results
 
   // IMain in 2.13 accepts ReplReporter
   def replReporter(settings: Settings, writer: PrintWriter) =
     new ReplReporterImpl(settings, writer)
+
+  def plainNioFile(path: Path): AbstractFile = new PlainNioFile(path)
 }
 
 /** Defines compatibility utils for [[ZincCompiler]]. */

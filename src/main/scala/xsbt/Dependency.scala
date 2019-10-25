@@ -11,8 +11,8 @@
 
 package xsbt
 
-import java.io.File
-
+import java.nio.file.{ Path, Paths }
+import xsbti.VirtualFile
 import xsbti.api.DependencyContext
 import DependencyContext._
 
@@ -74,7 +74,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       None
     }
 
-    private val sourceFile = unit.source.file.file
+    private val sourceFile: VirtualFile = unit.source.file match {
+      case v: VirtualFileWrap => v.underlying
+    }
     private val responsibleOfImports = firstClassOrModuleClass(unit.body)
     private var orphanImportsReported = false
 
@@ -114,9 +116,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     ): Unit = {
       val fromClassName = classNameAsString(dep.from)
 
-      def binaryDependency(file: File, binaryClassName: String) =
+      def binaryDependency(file: Path, binaryClassName: String) = {
         callback.binaryDependency(file, binaryClassName, fromClassName, sourceFile, context)
-
+      }
       import scala.tools.nsc.io.AbstractFile
       def processExternalDependency(binaryClassName: String, at: AbstractFile): Unit = {
         at match {
@@ -126,17 +128,19 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               zip <- zipEntry.underlyingSource
               jarFile <- Option(zip.file)
               if !jarFile.isDirectory // workaround for JDK9 and Scala 2.10/2.11, see https://github.com/sbt/sbt/pull/3701
-            } binaryDependency(jarFile, binaryClassName)
+            } binaryDependency(jarFile.toPath, binaryClassName)
+          case pf: xsbt.Compat.PlainNioFile =>
+            // The dependency comes from a class file
+            binaryDependency(Paths.get(pf.path), binaryClassName)
           case pf: PlainFile =>
             // The dependency comes from a class file
-            binaryDependency(pf.file, binaryClassName)
+            binaryDependency(pf.file.toPath, binaryClassName)
           case _ =>
           // On Scala 2.10 you get Internal error: <none> comes from unknown origin null
           // if you uncomment the following:
-
           // reporter.error(
           //   NoPosition,
-          //   s"Internal error: ${binaryClassName} comes from unknown origin ${at}"
+          //   s"Internal error: ${binaryClassName} comes from unknown origin ${at} (${at.getClass})"
           // )
         }
       }
@@ -171,12 +175,17 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               }
           }
         }
-      } else if (onSource.file != sourceFile || allowLocal) {
-        // We cannot ignore dependencies coming from the same source file because
-        // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
-        val onClassName = classNameAsString(dep.to)
-        callback.classDependency(onClassName, fromClassName, context)
-      } else ()
+      } else {
+        val onSourceFile: VirtualFile = onSource match {
+          case v: VirtualFileWrap => v.underlying
+        }
+        if (onSourceFile != sourceFile || allowLocal) {
+          // We cannot ignore dependencies coming from the same source file because
+          // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
+          val onClassName = classNameAsString(dep.to)
+          callback.classDependency(onClassName, fromClassName, context)
+        } else ()
+      }
     }
   }
 

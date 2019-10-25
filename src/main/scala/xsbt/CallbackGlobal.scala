@@ -16,7 +16,7 @@ import xsbti.compile._
 
 import scala.tools.nsc._
 import io.AbstractFile
-import java.io.File
+import java.nio.file.{ Files, Path }
 
 import scala.reflect.io.PlainFile
 
@@ -37,7 +37,7 @@ sealed abstract class CallbackGlobal(
       includePackageObjectClassNames: Boolean
   ): String
 
-  lazy val outputDirs: Iterable[File] = {
+  lazy val outputDirs: Iterable[Path] = {
     output match {
       case single: SingleOutput => List(single.getOutputDirectory)
       // Use Stream instead of List because Analyzer maps intensively over the directories
@@ -171,7 +171,10 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
         case None => // The compiler outputs class files in a classes directory (the default)
           // This lookup could be improved if a hint where to look is given.
-          outputDirs.map(new File(_, classFilePath)).find(_.exists()).map(AbstractFile.getFile(_))
+          outputDirs
+            .map(_.resolve(classFilePath))
+            .find(Files.exists(_))
+            .map(Compat.plainNioFile(_))
       }
     }
 

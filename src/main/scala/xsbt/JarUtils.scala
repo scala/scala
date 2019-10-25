@@ -12,6 +12,7 @@
 package xsbt
 
 import java.io.File
+import java.nio.file.Path
 
 /**
  * This is a utility class that provides a set of functions that
@@ -21,7 +22,7 @@ import java.io.File
  * duplicates some of the code, as it is difficult to share it. Any change
  * in the logic of this file must be applied to the other `JarUtils` too!
  */
-final class JarUtils(outputDirs: Iterable[File]) {
+final class JarUtils(outputDirs: Iterable[Path]) {
   // This is an equivalent of asking if it runs on Windows where the separator is `\`
   private val isSlashSeparator: Boolean = File.separatorChar == '/'
 
@@ -29,10 +30,10 @@ final class JarUtils(outputDirs: Iterable[File]) {
    * The jar file that is used as output for classes. If the output is
    * not set to a single .jar file, value of this field is [[None]].
    */
-  val outputJar: Option[File] = {
+  val outputJar: Option[Path] = {
     outputDirs match {
-      case Seq(file) if file.getName.endsWith(".jar") => Some(file)
-      case _                                          => None
+      case Seq(file) if file.toString.endsWith(".jar") => Some(file)
+      case _                                           => None
     }
   }
 
@@ -42,7 +43,7 @@ final class JarUtils(outputDirs: Iterable[File]) {
    * It follows the format to encode inter-jar dependencies that
    * is established in [[sbt.internal.inc.JarUtils.ClassInJar]].
    */
-  def classNameInJar(jar: File, classFilePath: String): String = {
+  def classNameInJar(jar: Path, classFilePath: String): String = {
     s"$jar!${if (isSlashSeparator) classFilePath else classFilePath.replace('/', File.separatorChar)}"
   }
 }

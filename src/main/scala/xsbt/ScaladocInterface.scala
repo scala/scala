@@ -11,14 +11,21 @@
 
 package xsbt
 
-import xsbti.Logger
+import xsbti.{ Logger, VirtualFile }
+import scala.reflect.io.AbstractFile
 import Log.debug
 
 class ScaladocInterface {
-  def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) =
-    (new Runner(args, log, delegate)).run
+  def run(sources: Array[VirtualFile], args: Array[String], log: Logger, delegate: xsbti.Reporter) =
+    (new Runner(sources, args, log, delegate)).run
 }
-private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter) {
+
+private class Runner(
+    sources: Array[VirtualFile],
+    args: Array[String],
+    log: Logger,
+    delegate: xsbti.Reporter
+) {
   import scala.tools.nsc.{ doc, Global, reporters }
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
@@ -35,24 +42,21 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
     }
     reporter.printSummary()
     if (!noErrors)
-      throw new InterfaceCompileFailed(args, reporter.problems, "Scaladoc generation failed")
+      throw new InterfaceCompileFailed(
+        args ++ sources.map(_.toString),
+        reporter.problems,
+        "Scaladoc generation failed"
+      )
   }
 
   object forScope {
-    class DocFactory(reporter: Reporter, docSettings: doc.Settings) // 2.7 compatibility
-    {
-      // see https://github.com/paulp/scala-full/commit/649823703a574641407d75d5c073be325ea31307
-      trait GlobalCompat {
-        def onlyPresentation = false
+    class DocFactory(reporter: Reporter, docSettings: doc.Settings) {
+      object compiler extends Global(command.settings, reporter) {
+        // override def onlyPresentation = true
+        // override def forScaladoc = true
 
-        def forScaladoc = false
-      }
-
-      object compiler extends Global(command.settings, reporter) with GlobalCompat {
-        override def onlyPresentation = true
-        override def forScaladoc = true
-        class DefaultDocDriver // 2.8 source compatibility
-        {
+        // 2.8 source compatibility
+        class DefaultDocDriver {
           assert(false)
           def process(units: Iterator[CompilationUnit]) = error("for 2.8 compatibility only")
         }
@@ -60,8 +64,10 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
       def document(ignore: Seq[String]): Unit = {
         import compiler._
         val run = new Run
-        run compile command.files
-
+        val wrappedFiles = sources.toList.map(new VirtualFileWrap(_))
+        val sortedSourceFiles: List[AbstractFile] =
+          wrappedFiles.sortWith(_.underlying.id < _.underlying.id)
+        run.compileFiles(sortedSourceFiles)
         val generator = {
           new DefaultDocDriver {
             lazy val global: compiler.type = compiler
