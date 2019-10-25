@@ -477,19 +477,18 @@ trait NamesDefaults { self: Analyzer =>
     val i = param.owner.paramss.flatten.indexWhere(p => p.name == param.name) + 1
     if (i > 0) {
       val defGetterName = nme.defaultGetterName(param.owner.name, i)
-      if (param.owner.isConstructor) {
+      // isClass also works for methods in objects, owner is the ModuleClassSymbol
+      val res = if (param.owner.owner.isClass) {
+        param.owner.owner.info.member(defGetterName)
+      } else {
+        // the owner of the method is another method. find the default getter in the context.
+        context.lookupSibling(param.owner, defGetterName)
+      }
+      res.orElse(if (param.owner.isConstructor) {
+        // support calling defaults in companions for old classfiles, until restarr
         val mod = companionSymbolOf(param.owner.owner, context)
         mod.info.member(defGetterName)
-      }
-      else {
-        // isClass also works for methods in objects, owner is the ModuleClassSymbol
-        if (param.owner.owner.isClass) {
-          param.owner.owner.info.member(defGetterName)
-        } else {
-          // the owner of the method is another method. find the default getter in the context.
-          context.lookupSibling(param.owner, defGetterName)
-        }
-      }
+      } else NoSymbol)
     } else NoSymbol
   }
 

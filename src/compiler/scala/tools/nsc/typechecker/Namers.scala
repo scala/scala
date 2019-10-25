@@ -1471,7 +1471,7 @@ trait Namers extends MethodSynthesis {
 
           search.createAndEnter { owner: Symbol =>
             methOwner.resetFlag(INTERFACE) // there's a concrete member now
-            val default = owner.newMethodSymbol(name, vparam.pos, paramFlagsToDefaultGetter(meth.flags))
+            val default = owner.newMethodSymbol(name, vparam.pos, paramFlagsToDefaultGetter(meth.flags) | (if (meth.isConstructor) STATIC else 0))
             default.setPrivateWithin(meth.privateWithin)
             default.referenced = meth
             default.setInfo(ErrorType)
@@ -1504,7 +1504,12 @@ trait Namers extends MethodSynthesis {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
-      def rtparams  = rtparams0.map(_.duplicate)
+      def rtparams  =
+        if (meth.isConstructor) {
+          val ClassDef(_, _, rctparams0, _) = resetAttrs(deriveClassDef(context.nextEnclosing(_.tree.isInstanceOf[ClassDef]).tree)(_ => Template(Nil, noSelfType, Nil)).duplicate)
+          rctparams0.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
+        }
+        else rtparams0.map(_.duplicate)
       def rvparamss = rvparamss0.map(_.map(_.duplicate))
       val search    = DefaultGetterNamerSearch(context, meth, initCompanionModule = true)
       val overrides = overridden != NoSymbol && !overridden.isOverloaded
@@ -1557,6 +1562,7 @@ trait Namers extends MethodSynthesis {
             //    Still far from ideal, but at least enables things like run/macro-default-params that were previously impossible.
 
             val oflag = if (baseHasDefault) OVERRIDE else 0
+            val sflag = if (meth.isConstructor) STATIC else 0
             val name = nme.defaultGetterName(meth.name, posCounter)
 
             val defVparamss = mmap(rvparamss.take(previous.length)){ rvp =>
@@ -1586,7 +1592,7 @@ trait Namers extends MethodSynthesis {
                 val defRhs = rvparam.rhs
 
                 val defaultTree = atPos(vparam.pos.focus) {
-                  DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag, name, defTparams, defVparamss, defTpt, defRhs)
+                  DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag | sflag, name, defTparams, defVparamss, defTpt, defRhs)
                 }
                 def referencesThis(sym: Symbol) = sym match {
                   case term: TermSymbol => term.referenced == meth
@@ -1613,8 +1619,8 @@ trait Namers extends MethodSynthesis {
     }
 
     private object DefaultGetterNamerSearch {
-      def apply(c: Context, meth: Symbol, initCompanionModule: Boolean) = if (meth.isConstructor) new DefaultGetterInCompanion(c, meth, initCompanionModule)
-      else new DefaultMethodInOwningScope(c, meth)
+      def apply(c: Context, meth: Symbol, initCompanionModule: Boolean) = /*if (meth.isConstructor) new DefaultGetterInCompanion(c, meth, initCompanionModule)
+      else*/ new DefaultMethodInOwningScope(c, meth)
     }
     private abstract class DefaultGetterNamerSearch {
       def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit
