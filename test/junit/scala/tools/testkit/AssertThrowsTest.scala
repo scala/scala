@@ -31,14 +31,15 @@ class AssertThrowsTest {
   def catchSubclass = assertThrows[Foo] { throw new SubFoo }
 
   @Test
-  def rethrowBar =
-    assertTrue("exception wasn't rethrown", {
+  def wrongThrow =
+    assertTrue("Wrong exception thrown", {
       try {
         assertThrows[Foo] { throw new Bar }
         false
       } catch {
-        case bar: Bar => true
-        case e: Throwable => fail(s"expected Bar but got $e"); false
+        case b: Bar => fail("Bar shouldn't have been rethrown"); false
+        case e: AssertionError => true
+        case t: Throwable => fail(s"expected AssertionError but got $t"); false
       }
     })
 
@@ -71,7 +72,7 @@ class AssertThrowsTest {
     } catch {
       case ae: AssertionError =>
         assertEquals(1, ae.getSuppressed.length)
-        assertEquals("Exception not a scala.tools.testkit.AssertThrowsTest$Foo: scala.tools.testkit.AssertThrowsTest$Bar", ae.getMessage)
+        assertEquals("Wrong exception: expected scala.tools.testkit.AssertThrowsTest$Foo but was scala.tools.testkit.AssertThrowsTest$Bar", ae.getMessage)
         assertEquals(classOf[Bar], ae.getSuppressed.head.getClass)
       case t: Throwable => fail("Expected an AssertionError: $t")
     }
