@@ -3269,9 +3269,9 @@ trait Types
       bound.decls enter bsym
       bound
     }
-    def unapply(tp: Type): Option[(TypeName, Type)] = tp match {
-      case RefinedType(List(WildcardType), Scope(sym)) => Some((sym.name.toTypeName, sym.info))
-      case _ => None
+    def unapply(tp: Type): Boolean = tp match {
+      case RefinedType(List(WildcardType), scope) => scope.size == 1
+      case _ => false
     }
   }
 
