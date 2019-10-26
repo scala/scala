@@ -61,7 +61,7 @@ abstract class Pickler extends SubComponent {
               val pickle = initPickle(sym) { pickle =>
                 def reserveDeclEntries(sym: Symbol): Unit = {
                   pickle.reserveEntry(sym)
-                  if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
+                  if (sym.isClass) sym.info.decls.reverseIterator.foreach(reserveDeclEntries)
                   else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
                 }
 
@@ -317,7 +317,7 @@ abstract class Pickler extends SubComponent {
         case tp: CompoundType =>
           putSymbol(tp.typeSymbol)
           putTypes(tp.parents)
-          putSymbols(tp.decls.toList)
+          tp.decls.reverseIterator.foreach(putSymbol)
         case MethodType(params, restpe) =>
           putType(restpe)
           putSymbols(params)

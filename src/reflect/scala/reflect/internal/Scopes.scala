@@ -401,6 +401,10 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       other.reverseIterator.forall(scopeContainsSym)
     }
 
+    override def last: Symbol =
+      if (elems ne null) elems.sym
+      else throw new NoSuchElementException("last symbol of empty context")
+
     /** Return all symbols as a list in the order they were entered in this scope.
      */
     override def toList: List[Symbol] = {

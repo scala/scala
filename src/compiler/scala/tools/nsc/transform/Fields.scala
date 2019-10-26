@@ -318,11 +318,9 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // none of this is actually undone when travelling back in time using atPhase)
       case tp@ClassInfoType(parents, decls, clazz) if clazz.isTrait =>
         // setters for trait vars or module accessor
-        val newDecls = collection.mutable.ListBuffer[Symbol]()
-        val origDecls = decls.toList
-
+        var newDecls: List[Symbol] = Nil
         // strict, memoized accessors will receive an implementation in first real class to extend this trait
-        origDecls.foreach { member =>
+        decls.reverseIterator.foreach { member =>
           if (member hasFlag ACCESSOR) {
             val fieldMemoization = fieldMemoizationIn(member, clazz)
             // check flags before calling makeNotPrivate
@@ -351,7 +349,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
               synthesizeImplInSubclasses(member)
 
               if ((member hasFlag STABLE) && !(member hasFlag LAZY))
-                newDecls += newTraitSetter(member, clazz)
+                newDecls ::= newTraitSetter(member, clazz)
             }
           } else if (member hasFlag MODULE) {
             nonStaticModuleToMethod(member)
@@ -363,7 +361,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
         if (newDecls.nonEmpty) {
           val allDecls = newScope
-          origDecls foreach allDecls.enter
+          decls.reverseIterator foreach allDecls.enter
           newDecls  foreach allDecls.enter
           ClassInfoType(parents, allDecls, clazz)
         } else tp

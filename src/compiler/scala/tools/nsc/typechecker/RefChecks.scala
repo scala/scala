@@ -665,9 +665,9 @@ abstract class RefChecks extends Transform {
                 sameLength(m.tpe.typeParams, underlying.tpe.typeParams)
               }
 
-              matchingArity match {
+              if (matchingArity.size == 1){
                 // So far so good: only one candidate method
-                case Scope(concrete) =>
+                  val concrete = matchingArity.last
                   val aplIter = abstractParamLists .iterator.flatten
                   val cplIter = concrete.paramLists.iterator.flatten
                   def mismatch(apl: Symbol, cpl: Symbol): Option[(Type, Type)] =
@@ -708,8 +708,7 @@ abstract class RefChecks extends Transform {
                       msg
                     case _ => ""
                   }
-                case _ => ""
-              }
+              } else ""
             }
             else ""
           }

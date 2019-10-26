@@ -681,7 +681,7 @@ trait Definitions extends api.StandardDefinitions {
           sym.allOverriddenSymbols.contains(MacroContextPrefixType)
 
         tp.dealias match {
-          case RefinedType(List(tp), Scope(sym)) if isOneOfContextTypes(tp) && isPrefix(sym) => Some(tp)
+          case RefinedType(List(tp), scope) if isOneOfContextTypes(tp) && scope.size == 1 && isPrefix(scope.last) => Some(tp)
           case tp if isOneOfContextTypes(tp) => Some(tp)
           case _ => None
         }

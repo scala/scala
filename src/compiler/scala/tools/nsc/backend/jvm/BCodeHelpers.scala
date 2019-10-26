@@ -330,9 +330,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
    *  must-single-thread
    */
   def fieldSymbols(cls: Symbol): List[Symbol] = {
-    for (f <- cls.info.decls.toList ;
-         if !f.isMethod && f.isTerm && !f.isModule
-    ) yield f
+    var res: List[Symbol] = Nil
+    cls.info.decls.reverseIterator.foreach { f =>
+      if (!f.isMethod && f.isTerm && !f.isModule)
+        res ::= f
+    }
+    res
   }
 
   /*
