@@ -335,6 +335,12 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
     ) yield f
   }
 
+  def fieldSymbolsForeach(cls: Symbol)(act: Symbol => Unit): Unit =
+    cls.info.decls.reverseIterator.foreach { sym =>
+      if (!sym.isMethod && sym.isTerm && !sym.isModule)
+        act(sym)
+    }
+
   /*
    * can-multi-thread
    */

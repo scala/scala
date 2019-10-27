@@ -119,9 +119,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
         // TODO should we do this transformation earlier, say in Constructors? Or would that just cause
         // pain for scala-{js, native}?
 
-        for (f <- fieldSymbols(claszSymbol)) {
-          f.setFlag(Flags.STATIC)
-        }
+        fieldSymbolsForeach(claszSymbol)(_.setFlag(Flags.STATIC))
         val constructorDefDef = treeInfo.firstConstructor(cd0.impl.body).asInstanceOf[DefDef]
         val (uptoSuperStats, remainingConstrStats) = treeInfo.splitAtSuper(constructorDefDef.rhs.asInstanceOf[Block].stats, classOnly = true)
         val clInitSymbol = claszSymbol.newMethod(nme.CLASS_CONSTRUCTOR, claszSymbol.pos, Flags.STATIC).setInfo(NullaryMethodType(definitions.UnitTpe))
@@ -263,7 +261,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     }
 
     def addClassFields(): Unit = {
-      for (f <- fieldSymbols(claszSymbol)) {
+      fieldSymbolsForeach(claszSymbol) { f =>
         val javagensig = getGenericSignature(f, claszSymbol)
         val flags = javaFieldFlags(f)
 
