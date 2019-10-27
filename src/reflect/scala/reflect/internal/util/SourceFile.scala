@@ -171,12 +171,29 @@ class BatchSourceFile(val file : AbstractFile, content0: Array[Char]) extends So
   }
 
   private lazy val lineIndices: Array[Int] = {
+    def countEOL(cs: Array[Char]): Int = {
+      var i, c = 0
+      while (i < cs.length) {
+        if (isAtEndOfLine(i))
+          c += 1
+        i += 1
+      }
+      c
+    }
     def calculateLineIndices(cs: Array[Char]) = {
-      val buf = new ArrayBuffer[Int]
-      buf += 0
-      for (i <- 0 until cs.length) if (isAtEndOfLine(i)) buf += i + 1
-      buf += cs.length // sentinel, so that findLine below works smoother
-      buf.toArray
+      // count EOL characters in cs
+      val res = new Array[Int](countEOL(cs) + 2)
+      res(0) = 0
+      res(res.length - 1) = cs.length  // sentinel, so that findLine below works smoother
+      var i, j = 0
+      while(i < cs.length && j < res.length - 1) {
+        if (isAtEndOfLine(i)) {
+          j += 1
+          res(j) = i + 1
+        }
+        i += 1
+      }
+      res
     }
     calculateLineIndices(content)
   }
