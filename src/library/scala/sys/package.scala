@@ -61,7 +61,10 @@ package object sys {
    *
    *  @return   a Map containing the system environment variables.
    */
-  def env: immutable.Map[String, String] = immutable.Map.from(System.getenv().asScala)
+  def env: immutable.Map[String, String] = {
+    immutable.Map.from(System.getenv().asScala)
+      .withDefault(System.getenv)
+  }
 
   /** Register a shutdown hook to be run when the VM exits.
    *  The hook is automatically registered: the returned value can be ignored,
