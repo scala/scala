@@ -155,11 +155,6 @@ abstract class UnPickler {
       tag == CHILDREN
     }
 
-    private def maybeReadSymbol(): Either[Int, Symbol] = readNat() match {
-      case index if isSymbolRef(index) => Right(at(index, () => readSymbol()))
-      case index                       => Left(index)
-    }
-
     /** Does entry represent a refinement symbol?
      *  pre: Entry is a class symbol
      */
@@ -288,9 +283,15 @@ abstract class UnPickler {
       val owner        = readSymbolRef()
       val flags        = pickledToRawFlags(readLongNat())
 
-      val (privateWithin, inforef) = maybeReadSymbol() match {
-        case Left(index) => NoSymbol -> index
-        case Right(sym)  => sym -> readNat()
+      var privateWithin: Symbol = null
+      var inforef: Int = 0
+      readNat() match {
+        case index if isSymbolRef(index) =>
+          privateWithin = at(index, () => readSymbol())
+          inforef = readNat()
+        case index =>
+          privateWithin = NoSymbol
+          inforef = index
       }
 
       def isModuleFlag      = (flags & MODULE) != 0L
