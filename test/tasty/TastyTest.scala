@@ -17,27 +17,21 @@ object TastyTest {
       "run" -> Tests.suite("run", run)(
         for {
           (pre, src2, src3) <- getSources(srcRoot/"run")
-          preClean          =  whitelist(check = false, paths = pre:_*)
-          src2Clean         =  whitelist(check = false, paths = src2:_*)
-          src3Clean         =  whitelist(check = false, paths = src3:_*)
           out               <- outDir.fold(tempDir(pkgName))(dir)
-          _                 <- scalacPos(out, dottyLibrary, preClean:_*)
-          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3Clean:_*)
-          _                 <- scalacPos(out, dottyLibrary, src2Clean:_*)
-          testNames         <- visibleClasses(out, pkgName, src2Clean:_*)
+          _                 <- scalacPos(out, dottyLibrary, pre:_*)
+          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3:_*)
+          _                 <- scalacPos(out, dottyLibrary, src2:_*)
+          testNames         <- visibleClasses(out, pkgName, src2:_*)
           _                 <- runMainOn(out, dottyLibrary, testNames:_*)
         } yield ()
       ),
       "neg" -> Tests.suite("neg", neg)(
         for {
-          (pre, src2, src3) <- getSources(srcRoot/"neg")
-          preClean          =  whitelist(check = false, paths = pre:_*)
-          src2Clean         =  whitelist(check = true, paths = src2:_*)
-          src3Clean         =  whitelist(check = false, paths = src3:_*)
+          (pre, src2, src3) <- getSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
           out               <- outDir.fold(tempDir(pkgName))(dir)
-          _                 <- scalacPos(out, dottyLibrary, preClean:_*)
-          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3Clean:_*)
-          _                 <- scalacNeg(out, dottyLibrary, src2Clean:_*)
+          _                 <- scalacPos(out, dottyLibrary, pre:_*)
+          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3:_*)
+          _                 <- scalacNeg(out, dottyLibrary, src2:_*)
         } yield ()
       )
     )
@@ -76,14 +70,14 @@ object TastyTest {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
     val failMap = {
-      val (sources, rest) = files.partition(_.endsWith(negScalaSource))
+      val (sources, rest) = files.partition(ScalaFail.filter)
       sources.map({ s =>
-        val check = s.stripSuffix(negScalaSource) + ".check"
+        val check = s.stripSuffix(ScalaFail.name) + ".check"
         s -> rest.find(_ == check)
       }).toMap
     }
     if (failMap.isEmpty) {
-      printwarnln(s"Warning: there are no source files marked as fail tests. (**/*$negScalaSource)")
+      printwarnln(s"Warning: there are no source files marked as fail tests. (**/*${ScalaFail.name})")
     }
     for (source <- files.filter(_.endsWith(".scala"))) {
       val buf = new StringBuilder(50)
@@ -115,7 +109,7 @@ object TastyTest {
           case None =>
             unexpectedFail += source
             System.err.println(output)
-            printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*$negScalaSource)")
+            printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
           case Some(checkFileOpt) =>
             checkFileOpt match {
               case Some(checkFile) =>
@@ -192,19 +186,24 @@ object TastyTest {
   private def getSourceAsName(path: String): String =
     path.split(pathSep).last.stripSuffix(".scala")
 
-  private val negScalaSource = "_fail.scala"
+  sealed abstract class SourceKind(val name: String)(val filter: String => Boolean = _.endsWith(name))
+  case object NoSource extends SourceKind("")(filter = _ => false)
+  case object Scala extends SourceKind(".scala")()
+  case object ScalaFail extends SourceKind("_fail.scala")()
+  case object Check extends SourceKind(".check")()
 
-  private def isScala(path: String) = path.endsWith(".scala")
-  private def isCheck(path: String) = path.endsWith(".check")
+  private def whitelist(kinds: Set[SourceKind], paths: String*): Seq[String] =
+    if (kinds.isEmpty) Nil
+    else paths.filter(kinds.foldLeft(NoSource.filter)((filter, kind) => p => kind.filter(p) || filter(p)))
 
-  private def whitelist(check: Boolean, paths: String*) =
-    paths.filter(if (check) p => isScala(p) || isCheck(p) else isScala)
-
-  private def getSources(root: String): Try[(Seq[String], Seq[String], Seq[String])] = for {
-    pre  <- getFiles(root/"pre")
-    src2 <- getFiles(root/"src-2")
-    src3 <- getFiles(root/"src-3")
-  } yield (pre, src2, src3)
+  private def getSources(
+      root: String, preFilters: Set[SourceKind] = Set(Scala), src2Filters: Set[SourceKind] = Set(Scala),
+      src3Filters: Set[SourceKind] = Set(Scala)): Try[(Seq[String], Seq[String], Seq[String])] =
+    for {
+      pre  <- getFiles(root/"pre")
+      src2 <- getFiles(root/"src-2")
+      src3 <- getFiles(root/"src-3")
+    } yield (whitelist(preFilters, pre:_*), whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3:_*))
 
   private def getFiles(dir: String): Try[Seq[String]] = Try {
     var stream: java.util.stream.Stream[Path] = null
@@ -213,7 +212,7 @@ object TastyTest {
       val files = {
         stream.filter(!Files.isDirectory(_))
               .map(_.normalize.toString)
-              .collect(Collectors.toList[String])
+              .iterator
               .asScala
               .toSeq
       }
