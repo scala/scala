@@ -217,19 +217,12 @@ trait NamesDefaults { self: Analyzer =>
 
       def moduleQual(pos: Position, classType: Type) = {
         // prefix does 'normalize', which fixes #3384
-        val pre = classType.prefix
-        if (pre == NoType) {
-          None
-        } else {
-          val module = companionSymbolOf(baseFun.symbol.owner, context)
-          if (module == NoSymbol) None
-          else {
-            val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
-            if (treeInfo.admitsTypeSelection(ref))  // fixes #4524. the type checker does the same for
-              ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
-            Some(ref)
-          }
-        }
+        val pre = gen.mkAttributedQualifier(classType.prefix)
+        val clazz = baseFun.symbol.owner
+        // This is a funny tree shape: it selects the class that's the owner of the constructor
+        // that's of course not a correct term, but since we're building a selection of a static member,
+        // we get back to sanity :-)
+        Some(atPos(pos.focus)(Select(pre, clazz) setType classType))
       }
 
       baseFun1 match {
