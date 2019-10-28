@@ -81,7 +81,13 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def slice(from: Int, until: Int): C = fromSpecific(new IndexedSeqView.Slice(this, from, until))
 
+  override def head: A = apply(0)
+
+  override def headOption: Option[A] = if (isEmpty) None else Some(head)
+
   override def last: A = apply(length - 1)
+
+  // We already inherit an efficient `lastOption = if (isEmpty) None else Some(last)`
 
   override final def lengthCompare(len: Int): Int = Integer.compare(length, len)
 
