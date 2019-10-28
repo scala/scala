@@ -237,10 +237,15 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     }
 
   override def hashCode(): Int = {
-    val hashIterator = new MapKeyValueTupleHashIterator(rootNode)
-    val hash = MurmurHash3.unorderedHash(hashIterator, MurmurHash3.mapSeed)
-    // assert(hash == super.hashCode())
-    hash
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      // Optimized to avoid recomputation of key hashcodes as these are cached in the nodes and can be assumed to be
+      // immutable.
+      val hashIterator = new MapKeyValueTupleHashIterator(rootNode)
+      val hash = MurmurHash3.unorderedHash(hashIterator, MurmurHash3.mapSeed)
+      // assert(hash == super.hashCode())
+      hash
+    }
   }
 
   override protected[this] def className = "HashMap"
@@ -2087,17 +2092,10 @@ private final class MapKeyValueTupleReverseIterator[K, V](rootNode: MapNode[K, V
 }
 
 private final class MapKeyValueTupleHashIterator[K, V](rootNode: MapNode[K, V])
-  extends ChampBaseReverseIterator[MapNode[K, V]](rootNode) with Iterator[Product2[AnyRef, V]] with Product2[AnyRef, V] {
+  extends ChampBaseReverseIterator[MapNode[K, V]](rootNode) with Iterator[Any] {
   private[this] var hash = 0
   private[this] var value: V = _
-  private[this] val key = new Object {
-    override def hashCode(): Int = hash
-  }
-  override def hashCode(): Int = MurmurHash3.productHash(this)
-  override def _1: AnyRef = key
-  override def _2: V = value
-  override def canEqual(that: Any): Boolean = false
-  override def productPrefix: String = "Tuple2"
+  override def hashCode(): Int = MurmurHash3.tuple2Hash(hash, value.##, MurmurHash3.productSeed)
   def next() = {
     if (!hasNext)
       throw new NoSuchElementException
