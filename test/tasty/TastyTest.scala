@@ -291,9 +291,8 @@ object TastyTest {
     for (classpath <- Try(cp.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL)))
     yield ScalaClassLoader.fromURLs(classpath.toIndexedSeq)
 
-  private final class Runner private (classloader: ScalaClassLoader) {
-
-    def run(name: String): Try[String] = {
+  private object Runner {
+    def run(name: String)(implicit classloader: ScalaClassLoader): Try[String] = {
       def kernel(out: java.io.OutputStream, err: java.io.OutputStream): Try[Unit] = Try {
         val objClass = Class.forName(name, true, classloader)
         val main     = objClass.getMethod("main", classOf[Array[String]])
@@ -319,14 +318,10 @@ object TastyTest {
     }
   }
 
-  private object Runner {
-    def loadFrom(classloader: ScalaClassLoader): Try[Runner] = Try(new Runner(classloader))
-  }
-
   private def runMainOn(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
-    def runTests(errors: mutable.ArrayBuffer[String], runner: Runner): Try[Unit] = Try {
+    def runTests(errors: mutable.ArrayBuffer[String])(implicit classloader: ScalaClassLoader): Try[Unit] = Try {
       for (test <- tests) {
-        runner.run(test) match {
+        Runner.run(test) match {
           case Success(output) =>
             if ("Suite passed!" != output.trim) {
               errors += test
@@ -340,9 +335,8 @@ object TastyTest {
     }
     for {
       classloader     <- classloadFrom(classpaths(out, dottyLibrary))
-      instrumentor    <- Runner.loadFrom(classloader)
       errors          =  mutable.ArrayBuffer.empty[String]
-      _               <- runTests(errors, instrumentor)
+      _               <- runTests(errors)(classloader)
       _               <- successWhen(errors.isEmpty)({
                         val str = if (errors.size == 1) "error" else "errors"
                         s"${errors.length} $str. Fix ${errors.mkString(", ")}."
