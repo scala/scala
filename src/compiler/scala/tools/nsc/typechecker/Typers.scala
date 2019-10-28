@@ -5514,7 +5514,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * a constructor default, the resulting typer has a constructor context (fixes scala/bug#5543).
        */
       def defDefTyper(ddef: DefDef) = {
-        val isConstrDefaultGetter = ddef.mods.hasDefault && sym.owner.isModuleClass &&
+        val isConstrDefaultGetter = ddef.mods.hasDefault &&
             nme.defaultGetterToMethod(sym.name) == nme.CONSTRUCTOR
         newTyper(context.makeNewScope(ddef, sym)).constrTyperIf(isConstrDefaultGetter)
       }
