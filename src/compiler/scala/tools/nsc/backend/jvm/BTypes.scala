@@ -53,7 +53,10 @@ abstract class BTypes {
   // Note usage should be private to this file, except for tests
   val classBTypeCache: ju.concurrent.ConcurrentHashMap[InternalName, ClassBType] =
     recordPerRunJavaMapCache(new ju.concurrent.ConcurrentHashMap[InternalName, ClassBType])
-
+  object BType {
+    val emptyArray = Array[BType]()
+    def newArray(n: Int): Array[BType] = if (n == 0) emptyArray else new Array[BType](n)
+  }
   sealed abstract class BType {
     override def toString: String = BTypeExporter.btypeToString(this)
 
@@ -793,7 +796,21 @@ abstract class BTypes {
     )
     def unapply(cr:ClassBType) = Some(cr.internalName)
 
-    def apply(internalName: InternalName, fromSymbol: Boolean)(init: (ClassBType) => Either[NoClassBTypeInfo, ClassInfo]): ClassBType = {
+    /**
+     * Retrieve the `ClassBType` for the class with the given internal name, creating the entry if it doesn't
+     * already exist
+     *
+     * @param internalName The name of the class
+     * @param t            A value that will be passed to the `init` function. For efficiency, callers should use this
+     *                     value rather than capturing it in the `init` lambda, allowing that lambda to be hoisted.
+     * @param fromSymbol   Is this type being initialized from a `Symbol`, rather than from byte code?
+     * @param init         Function to initialize the info of this `BType`. During execution of this function,
+     *                     code _may_ reenter into `apply(internalName, ...)` and retrieve the initializing
+     *                     `ClassBType`.
+     * @tparam T           The type of the state that will be threaded into the `init` function.
+     * @return             The `ClassBType`
+     */
+    final def apply[T](internalName: InternalName, t: T, fromSymbol: Boolean)(init: (ClassBType, T) => Either[NoClassBTypeInfo, ClassInfo]): ClassBType = {
       val cached = classBTypeCache.get(internalName)
       if (cached ne null) cached
       else {
@@ -805,7 +822,7 @@ abstract class BTypes {
         newRes.synchronized {
           classBTypeCache.putIfAbsent(internalName, newRes) match {
             case null =>
-              newRes._info = init(newRes)
+              newRes._info = init(newRes, t)
               newRes.checkInfoConsistency()
               newRes
           case old =>
@@ -885,7 +902,7 @@ abstract class BTypes {
     }
   }
 
-  final case class MethodBType(argumentTypes: List[BType], returnType: BType) extends BType
+  final case class MethodBType(argumentTypes: Array[BType], returnType: BType) extends BType
 
   object BTypeExporter {
     private[this] val builderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){

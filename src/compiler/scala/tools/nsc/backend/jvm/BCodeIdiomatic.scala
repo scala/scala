@@ -40,7 +40,7 @@ abstract class BCodeIdiomatic {
   val EMPTY_STRING_ARRAY   = Array.empty[String]
   val EMPTY_INT_ARRAY      = Array.empty[Int]
   val EMPTY_LABEL_ARRAY    = Array.empty[asm.Label]
-  val EMPTY_BTYPE_ARRAY    = Array.empty[BType]
+  val EMPTY_BTYPE_ARRAY    = BType.emptyArray
 
   /* can-multi-thread */
   final def mkArray(xs: List[BType]): Array[BType] = {
@@ -206,7 +206,7 @@ abstract class BCodeIdiomatic {
         case BYTE | SHORT                                             => INT
         case pt: PrimitiveBType                                       => pt
       }
-      val bt = MethodBType(List(paramType), jlStringBuilderRef)
+      val bt = MethodBType(Array(paramType), jlStringBuilderRef)
       invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)
     }
 

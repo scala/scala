@@ -1072,7 +1072,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       import InvokeStyle._
       if (style == Super) {
         if (receiverClass.isTrait && !method.isJavaDefined) {
-          val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
+          val args = new Array[BType](bmType.argumentTypes.length + 1)
+          args(0) = typeToBType(method.owner.info)
+          bmType.argumentTypes.copyToArray(args, 1)
+          val staticDesc = MethodBType(args, bmType.returnType).descriptor
           val staticName = traitSuperAccessorName(method)
           bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
         } else {
@@ -1356,7 +1359,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor,
           /* itf = */ isInterface)
-      val numCaptured = lambdaTarget.paramss.head.length - arity
+      val lambdaTargetParamss = lambdaTarget.paramss
+      val numCaptured = lambdaTargetParamss.head.length - arity
       val invokedType = {
         val numArgs = if (isStaticMethod) numCaptured else 1 + numCaptured
         val argsArray: Array[asm.Type] = new Array[asm.Type](numArgs)
@@ -1365,7 +1369,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           argsArray(0) = typeToBType(lambdaTarget.owner.info).toASMType
           i = 1
         }
-        var xs = lambdaTarget.paramss.head
+        var xs = lambdaTargetParamss.head
         while (i < numArgs && (!xs.isEmpty)) {
           argsArray(i) = typeToBType(xs.head.info).toASMType
           i += 1
@@ -1373,8 +1377,10 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         }
         asm.Type.getMethodDescriptor(asmType(functionalInterface), argsArray:_*)
       }
-      val lambdaParams = lambdaTarget.paramss.head.drop(numCaptured)
-      val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
+      val lambdaParams = lambdaTargetParamss.head.drop(numCaptured)
+      val lambdaParamsBTypes = BType.newArray(lambdaParams.size)
+      mapToArray(lambdaParams, lambdaParamsBTypes, 0)(symTpeToBType)
+      val constrainedType = MethodBType(lambdaParamsBTypes, typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val overriddenMethods = bridges.map(b => methodBTypeFromSymbol(b).toASMType)
       visitInvokeDynamicInsnLMF(bc.jmethod, sam.name.toString, invokedType, samMethodType, implMethodHandle, constrainedType, overriddenMethods, isSerializable)
@@ -1384,6 +1390,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       }
     }
   }
+
+  private val symTpeToBType = (p: Symbol) => typeToBType(p.tpe) // OPT hoisted to save allocation
 
   private def visitInvokeDynamicInsnLMF(jmethod: MethodNode, samName: String, invokedType: String, samMethodType: asm.Type,
                                         implMethodHandle: asm.Handle, instantiatedMethodType: asm.Type, overriddenMethodTypes: Seq[asm.Type],

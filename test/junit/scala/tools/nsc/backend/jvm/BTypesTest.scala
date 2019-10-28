@@ -26,7 +26,7 @@ class BTypesTest extends BytecodeTesting {
   def o = classBTFS(jlo)
   def s = classBTFS(jls)
   def oArr = ArrayBType(o)
-  def method = MethodBType(List(oArr, INT, DOUBLE, s), UNIT)
+  def method = MethodBType(Array(oArr, INT, DOUBLE, s), UNIT)
 
   @Test
   def classBTypesEquality(): Unit = {

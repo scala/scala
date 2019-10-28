@@ -102,16 +102,17 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       val internalName = classSym.javaBinaryNameString
       // The new ClassBType is added to the map via its apply, before we set its info. This
       // allows initializing cyclic dependencies, see the comment on variable ClassBType._info.
-      val btype = ClassBType(internalName, fromSymbol = true) { res:ClassBType =>
-        if (completeSilentlyAndCheckErroneous(classSym))
-          Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
-        else computeClassInfo(classSym, res)
-      }
+      val btype = ClassBType.apply(internalName, classSym, fromSymbol = true)(classBTypeFromSymbolInit)
       if (currentRun.compiles(classSym))
         assert(btype.fromSymbol, s"ClassBType for class being compiled was already created from a classfile: ${classSym.fullName}")
       btype
     }
   }
+
+  private val classBTypeFromSymbolInit = (res: ClassBType, classSym: Symbol) =>
+    if (completeSilentlyAndCheckErroneous(classSym))
+      Left(NoClassBTypeInfoClassSymbolInfoFailedSI9111(classSym.fullName))
+    else computeClassInfo(classSym, res)
 
   /**
    * Builds a [[MethodBType]] for a method symbol.
@@ -128,7 +129,11 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     val resultType: BType =
       if (isConstructor) UNIT
       else typeToBType(tpe.resultType)
-    MethodBType(tpe.paramTypes map typeToBType, resultType)
+    val params = tpe.params
+    // OPT allocation hotspot
+    val paramBTypes = BType.newArray(params.length)
+    mapToArray(params, paramBTypes, 0)(param => typeToBType(param.tpe))
+    MethodBType(paramBTypes, resultType)
   }
 
   def bootstrapMethodArg(t: Constant, pos: Position): AnyRef = t match {
@@ -158,7 +163,10 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      */
     def primitiveOrClassToBType(sym: Symbol): BType = {
       assertClassNotArray(sym)
-      primitiveTypeToBType.getOrElse(sym, classBTypeFromSymbol(sym))
+      primitiveTypeToBType.getOrElse(sym, null) match {
+        case null => classBTypeFromSymbol(sym)
+        case res => res
+      }
     }
 
     /**
@@ -612,7 +620,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   def mirrorClassClassBType(moduleClassSym: Symbol): ClassBType = {
     assert(isTopLevelModuleClass(moduleClassSym), s"not a top-level module class: $moduleClassSym")
     val internalName = moduleClassSym.javaBinaryNameString.stripSuffix(nme.MODULE_SUFFIX_STRING)
-    ClassBType(internalName, fromSymbol = true) { c: ClassBType =>
+    ClassBType(internalName, moduleClassSym, fromSymbol = true) { (c: ClassBType, moduleClassSym) =>
       val shouldBeLazy = moduleClassSym.isJavaDefined || !currentRun.compiles(moduleClassSym)
       val nested = Lazy.withLockOrEager(shouldBeLazy, exitingPickler(memberClassesForInnerClassTable(moduleClassSym)) map classBTypeFromSymbol)
       Right(ClassInfo(

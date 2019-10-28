@@ -374,7 +374,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.jliLambdaMetafactoryRef.internalName, sn.Metafactory.toString,
       MethodBType(
-        List(
+        Array(
           coreBTypes.jliMethodHandlesLookupRef,
           coreBTypes.StringRef,
           coreBTypes.jliMethodTypeRef,
@@ -391,7 +391,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.jliLambdaMetafactoryRef.internalName, sn.AltMetafactory.toString,
       MethodBType(
-        List(
+        Array(
           coreBTypes.jliMethodHandlesLookupRef,
           coreBTypes.StringRef,
           coreBTypes.jliMethodTypeRef,
@@ -406,7 +406,7 @@ abstract class CoreBTypesFromSymbols[G <: Global] extends CoreBTypes {
     new Handle(Opcodes.H_INVOKESTATIC,
       coreBTypes.srLambdaDeserialize.internalName, sn.Bootstrap.toString,
       MethodBType(
-        List(
+        Array(
           coreBTypes.jliMethodHandlesLookupRef,
           coreBTypes.StringRef,
           coreBTypes.jliMethodTypeRef,
