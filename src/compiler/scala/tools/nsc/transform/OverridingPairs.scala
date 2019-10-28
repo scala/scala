@@ -32,6 +32,7 @@ abstract class OverridingPairs extends SymbolPairs {
          sym.isPrivateLocal
       || sym.isArtifact
       || sym.isConstructor
+      || sym.isStaticMember
       || (sym.isPrivate && sym.owner != base) // Privates aren't inherited. Needed for pos/t7475a.scala
     )
 
