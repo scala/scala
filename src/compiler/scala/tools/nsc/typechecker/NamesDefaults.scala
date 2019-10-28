@@ -52,6 +52,7 @@ trait NamesDefaults { self: Analyzer =>
   }
 
   case class NamedApplyInfo(
+    staticQual: Option[Tree], // only while we're staying compatible with code compiled by old starr, later just put it in qual
     qual:       Option[Tree],
     targs:      List[Tree],
     vargss:     List[List[Tree]],
@@ -205,24 +206,41 @@ trait NamesDefaults { self: Analyzer =>
 
         val b = Block(List(vd), baseFunTransformed)
                   .setType(baseFunTransformed.tpe).setPos(baseFun.pos.makeTransparent)
-        b.updateAttachment(NamedApplyInfo(Some(newQual), defaultTargs, Nil, blockTyper))
+        b.updateAttachment(NamedApplyInfo(None, Some(newQual), defaultTargs, Nil, blockTyper))
         b
       }
 
-      def blockWithoutQualifier(defaultQual: Option[Tree]) = {
+      def blockWithoutQualifier(defaultQual: (Option[Tree], Option[Tree])) = {
         val b = atPos(baseFun.pos)(Block(Nil, baseFun).setType(baseFun.tpe))
-        b.updateAttachment(NamedApplyInfo(defaultQual, defaultTargs, Nil, blockTyper))
+        b.updateAttachment(NamedApplyInfo(defaultQual._1, defaultQual._2, defaultTargs, Nil, blockTyper))
         b
       }
 
-      def moduleQual(pos: Position, classType: Type) = {
-        // prefix does 'normalize', which fixes #3384
-        val pre = gen.mkAttributedQualifier(classType.prefix)
-        val clazz = baseFun.symbol.owner
-        // This is a funny tree shape: it selects the class that's the owner of the constructor
-        // that's of course not a correct term, but since we're building a selection of a static member,
-        // we get back to sanity :-)
-        Some(atPos(pos.focus)(Select(pre, clazz) setType classType))
+      def moduleQual(pos: Position, classType: Type): (Option[Tree], Option[Tree]) = {
+        ({
+          // prefix does 'normalize', which fixes #3384
+          val pre = gen.mkAttributedQualifier(classType.prefix)
+          val clazz = baseFun.symbol.owner
+          // This is a funny tree shape: it selects the class that's the owner of the constructor
+          // that's of course not a correct term, but since we're building a selection of a static member,
+          // we get back to sanity :-)
+          Some(atPos(pos.focus)(Select(pre, clazz) setType classType))
+        }, { // support using defaults compiled by old reference compiler until restarr
+          // prefix does 'normalize', which fixes #3384
+          val pre = classType.prefix
+          if (pre == NoType) {
+            None
+          } else {
+            val module = companionSymbolOf(baseFun.symbol.owner, context)
+            if (module == NoSymbol) None
+            else {
+              val ref = atPos(pos.focus)(gen.mkAttributedRef(pre, module))
+              if (treeInfo.admitsTypeSelection(ref))  // fixes #4524. the type checker does the same for
+                ref.setType(singleType(pre, module))  // typedSelect, it calls "stabilize" on the result.
+              Some(ref)
+            }
+          }
+        })
       }
 
       baseFun1 match {
@@ -263,11 +281,11 @@ trait NamesDefaults { self: Analyzer =>
         // other method calls
 
         case Ident(_) =>
-          blockWithoutQualifier(None)
+          blockWithoutQualifier((None, None))
 
         case Select(qual, name) =>
           if (treeInfo.isExprSafeToInline(qual))
-            blockWithoutQualifier(Some(qual.duplicate))
+            blockWithoutQualifier((None, Some(qual.duplicate)))
           else
             blockWithQualifier(qual, name)
       }
@@ -338,7 +356,7 @@ trait NamesDefaults { self: Analyzer =>
         val transformedFun = transformNamedApplication(typer, mode, pt)(fun, x => x)
         if (transformedFun.isErroneous) setError(tree)
         else {
-          val NamedApplyBlock(NamedApplyInfo(qual, targs, vargss, blockTyper)) = transformedFun
+          val NamedApplyBlock(NamedApplyInfo(staticQual, qual, targs, vargss, blockTyper)) = transformedFun
           val Block(stats, funOnly) = transformedFun
 
           // type the application without names; put the arguments in definition-site order
@@ -374,7 +392,7 @@ trait NamesDefaults { self: Analyzer =>
               val res = blockTyper.doTypedApply(tree, expr, refArgs, mode, pt)
               res.setPos(res.pos.makeTransparent)
               val block = Block(stats ::: valDefs.flatten, res).setType(res.tpe).setPos(tree.pos.makeTransparent)
-              block.updateAttachment(NamedApplyInfo(qual, targs, vargss :+ refArgs, blockTyper))
+              block.updateAttachment(NamedApplyInfo(staticQual, qual, targs, vargss :+ refArgs, blockTyper))
               block
             case _ => tree
           }
@@ -431,7 +449,7 @@ trait NamesDefaults { self: Analyzer =>
    *   foo(y = "lt")
    * the argument list (y = "lt") is transformed to (y = "lt", x = foo\$default\$1())
    */
-  def addDefaults(givenArgs: List[Tree], qual: Option[Tree], targs: List[Tree],
+  def addDefaults(givenArgs: List[Tree], staticQual: Option[Tree], qual: Option[Tree], targs: List[Tree],
                   previousArgss: List[List[Tree]], params: List[Symbol],
                   pos: scala.reflect.internal.util.Position, context: Context): (List[Tree], List[Symbol]) = {
     if (givenArgs.length < params.length) {
@@ -442,7 +460,7 @@ trait NamesDefaults { self: Analyzer =>
           // TODO #3649 can create spurious errors when companion object is gone (because it becomes unlinked from scope)
           if (defGetter == NoSymbol) None // prevent crash in erroneous trees, #3649
           else {
-            var default1: Tree = qual match {
+            var default1: Tree = (if (defGetter.isStaticMember) staticQual else qual) match {
               case Some(q) => gen.mkAttributedSelect(q.duplicate, defGetter)
               case None    => gen.mkAttributedRef(defGetter)
 
