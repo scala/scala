@@ -2,14 +2,11 @@ package tastytest
 
 import scala.runtime.ScalaRunTime
 
-object TestBox {
+object TestBox extends Suite("TestBox") {
 
-  def test1 = assert(productString(Box(true)) === "Box(true)")
+  test("test1") { implicit ctx =>
+    assert(productString(Box(true)) === "Box(true)")
+  }
 
   def productString(p: Product) = ScalaRunTime._toString(p)
-
-  def main(args: Array[String]): Unit = {
-    test1
-    println("Suite passed!")
-  }
 }

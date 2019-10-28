@@ -150,7 +150,8 @@ object TastyTest {
     sources.isEmpty || {
       val args = Array(
         "-d", out,
-        "-classpath", classpaths(out, dottyLibrary)
+        "-classpath", classpaths(out, dottyLibrary),
+        "-deprecation"
       ) ++ sources
       nsc.Main.process(args)
     }
@@ -294,15 +295,9 @@ object TastyTest {
   private object Runner {
     def run(name: String)(implicit classloader: ScalaClassLoader): Try[String] = {
       def kernel(out: java.io.OutputStream, err: java.io.OutputStream): Try[Unit] = Try {
-        val objClass = Class.forName(name, true, classloader)
-        val main     = objClass.getMethod("main", classOf[Array[String]])
-        if (!Modifier.isStatic(main.getModifiers))
-          throw new NoSuchMethodException(name + ".main is not static")
-        classloader.asContext[Unit] {
-          Console.withOut(out) {
-            Console.withErr(err) {
-              main.invoke(null, Array.empty[String])
-            }
+        Console.withOut(out) {
+          Console.withErr(err) {
+            classloader.run(name, Nil)
           }
         }
       }
@@ -329,7 +324,7 @@ object TastyTest {
             }
           case Failure(err) =>
             errors += test
-            printerrln(s"ERROR: $test failed: ${err.getMessage}")
+            printerrln(s"ERROR: $test failed: ${err.getClass.getSimpleName} ${err.getMessage}")
         }
       }
     }
