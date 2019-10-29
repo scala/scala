@@ -405,6 +405,13 @@ object Test extends App {
   def f8177(a: Int = 0, b: Int = 0, c: Int = 0) = s"$a $b $c"
   println(f8177(a = 1, 1))
 
+  locally {
+    val c11 = new C11
+    println(new c11.K())
+    println(new c11.K(33, 44))
+    println(new c11.M())
+  }
+
   // DEFINITIONS
   def test1(a: Int, b: String) = println(s"$a: $b")
   def test2(u: Int, v: Int)(k: String, l: Int) = println(l.toString +": "+ k +", "+ (u + v))
@@ -505,3 +512,14 @@ class B5 extends A5(y = 20, x = 2)() {
 // overriding default can be less specific (but has to conform to argument type!)
 class A6 { def foo(a: Object = "dlkf") = 0 }
 class B6 extends A6 { override def foo(a: Object = new Object) = 1 }
+
+class C11 {
+  val x = 1
+  class K(i: Int = x) { // static default getter gets outer parameter
+    def this(a: Int, b: Int) = this() // test secondary constructor using primary's default
+    override def toString = s"$i"
+  }
+  class M(x: M = new M(null)) {
+    override def toString = s"$x"
+  }
+}
