@@ -170,7 +170,7 @@ trait TypeComparers {
   }
 
   private def isSameMethodType(mt1: MethodType, mt2: MethodType) = (
-       isSameTypes(mt1.paramTypes, mt2.paramTypes)
+       isSameSymbolTypes(mt1.params, mt2.params)
     && (mt1.resultType =:= mt2.resultType.substSym(mt2.params, mt1.params))
     && (mt1.isImplicit == mt2.isImplicit)
   )

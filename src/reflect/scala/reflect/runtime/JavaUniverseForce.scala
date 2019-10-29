@@ -274,6 +274,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DelayedInitClass
     definitions.TypeConstraintClass
     definitions.SingletonClass
+    definitions.ListOfSingletonClassTpe
     definitions.SerializableClass
     definitions.ComparableClass
     definitions.JavaCloneableClass
