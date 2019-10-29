@@ -312,8 +312,7 @@ class BytecodeTest extends BytecodeTesting {
     assertEquals(List("$outer", "x$1", "y$1"), assignedInConstr.sorted)
   }
 
-  @Test
-  def t11641(): Unit = {
+  @Test def t11641(): Unit = {
     val code =
       """class B { val b = 0 }
         |class C extends DelayedInit {
@@ -335,5 +334,13 @@ class BytecodeTest extends BytecodeTesting {
     assertInvoke(getMethod(cs.find(_.name == "D").get, "<init>"), "scala/runtime/Statics", "releaseFence")
     assertInvoke(getMethod(cs.find(_.name == "E").get, "<init>"), "scala/runtime/Statics", "releaseFence")
     assertDoesNotInvoke(getMethod(cs.find(_.name == "F").get, "<init>"), "releaseFence")
+  }
+
+  @Test def t11718(): Unit = {
+    val code = """class A11718 { private val a = ""; lazy val b = a }"""
+    val cs = compileClasses(code)
+    val A = cs.find(_.name == "A11718").get
+    val a = A.fields.asScala.find(_.name == "a").get
+    assertEquals(0, a.access & Opcodes.ACC_FINAL)
   }
 }
