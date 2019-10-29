@@ -4,7 +4,7 @@ import scala.runtime.ScalaRunTime
 
 object TestBox extends Suite("TestBox") {
 
-  test("test1") { implicit ctx =>
+  test("productString(Box(true)) is Box(true)") {
     assert(productString(Box(true)) === "Box(true)")
   }
 

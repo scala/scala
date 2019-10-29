@@ -46,7 +46,7 @@ object TastyTest {
 
     def printSummary(suite: String, result: Try[Unit]) = result match {
       case Success(_)   => printsuccessln(s"$suite suite passed!")
-      case Failure(err) => printerrln(s"ERROR: $suite suite failed: ${err.getClass.getSimpleName} ${err.getMessage}")
+      case Failure(err) => printerrln(s"ERROR: $suite suite failed: ${err.getMessage}")
     }
 
     def suite(name: String, willRun: Boolean)(runner: => Try[Unit]): Boolean = {

@@ -3,22 +3,35 @@ package tastytest
 import scala.collection.mutable
 
 import tastytest.Suite.Context
+import scala.util.control.NonFatal
 
 class Suite(val name: String) {
-  private[this] val tests = mutable.ArrayBuffer.empty[(Context, Context => Unit)]
+  private[this] val counts = mutable.Map.empty[String, Int]
+  private[this] val tests = mutable.ArrayBuffer.empty[(Context, () => Unit)]
 
-  def test(name: String)(code: Context => Unit): Unit = {
-    tests += Suite.context(name) -> code
+  def test(name: String)(code: => Unit): Unit = {
+    val count = counts.getOrElse(name, 0)
+    val name1 = if (count == 0) name else s"$name($count)"
+    tests += Suite.context(name1) -> (() => code)
+    counts.update(name, count + 1)
   }
 
-  def assert(test: Boolean)(implicit ctx: Context): Unit =
-    if (!test) {
-      throw new AssertionError(s"in `$name.${ctx.name}`")
-    }
+  def test(code: => Unit): Unit = test("test")(code)
 
   def main(args: Array[String]): Unit = {
+    val errors = mutable.ArrayBuffer.empty[(Context, Throwable)]
     for ((ctx, test) <- tests) {
-      test(ctx)
+      try test()
+      catch {
+        case NonFatal(err) => errors += (ctx -> err)
+      }
+    }
+    if (errors.nonEmpty) {
+      val msg = if (errors.size == 1) "error" else "errors"
+      val msgs = errors.map {
+        case (ctx, err) => s"${err.getClass.getSimpleName} in `$name.${ctx.name}`: ${err.getMessage}"
+      }
+      throw new AssertionError(msgs.mkString(s"${errors.size} $msg:\n", "\n", ""))
     }
     println("Suite passed!")
   }

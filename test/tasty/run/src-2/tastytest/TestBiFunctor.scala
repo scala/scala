@@ -1,6 +1,6 @@
 package tastytest
 
-object TestBiFunctor {
+object TestBiFunctor extends Suite("TestBiFunctor") {
 
   implicit object Tuple2BiFunctor extends BiFunctor[Tuple2] {
     def bimap[A,B,C,D](fab: (A,B))(f: A => C, g: B => D): (C,D) = (f(fab._1), g(fab._2))
@@ -16,12 +16,7 @@ object TestBiFunctor {
   def toStringOnBiFunctorT2[F[_,_] <: Tuple2[_,_]: BiFunctorT2, A,B](fab: F[A,B]): F[String, String] =
     implicitly[BiFunctorT2[F]].bimap(fab)(_.toString, _.toString)
 
-  def test1 = assert(toStringOnBiFunctor((true,1)) === ("true","1"))
-  def test2 = assert(toStringOnBiFunctorT2((true,1)) === ("true","1"))
+  test(assert(toStringOnBiFunctor((true,1)) === ("true","1")))
+  test(assert(toStringOnBiFunctorT2((true,1)) === ("true","1")))
 
-  def main(args: Array[String]): Unit = {
-    test1
-    test2
-    println("Suite passed!")
-  }
 }
