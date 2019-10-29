@@ -75,7 +75,7 @@ abstract class TreeBrowsers {
   }
 
   /** Tree model for abstract syntax trees */
-  class ASTTreeModel(val program: Tree) extends TreeModel {
+  class ASTTreeModel(val program: ProgramTree) extends TreeModel {
     var listeners: List[TreeModelListener] = Nil
 
     /** Add a listener to this tree */
@@ -273,6 +273,29 @@ abstract class TreeBrowsers {
         }
       )
       jmView add jmiCollapse
+      val jmiGoto = new JMenuItem(
+        new AbstractAction("Go to unit") {
+          putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuKey, false))
+          override def actionPerformed(actionEvent: ActionEvent) {
+            val query = JOptionPane.showInputDialog("Go to unit:", frame.getOwner)
+            if (query ne null) { // "Cancel" returns null
+              val units = treeModel.program.units
+              units.find(_.unit.source.file.name startsWith query) foreach { unit =>
+                // skip through 1-ary trees
+                def expando(tree: Tree): List[Tree] = tree.children match {
+                  case only :: Nil => only :: expando(only)
+                  case other => tree :: Nil
+                }
+
+                val path = new TreePath((treeModel.getRoot :: unit :: expando(unit.unit.body)).toArray[AnyRef]) // targ necessary to disambiguate Object and Object[] ctors
+                jTree.expandPath(path)
+                jTree.setSelectionPath(path)
+              }
+            }
+          }
+        }
+      )
+      jmView add jmiGoto
       add(jmView)
     }
 
@@ -570,12 +593,12 @@ abstract class TreeBrowsers {
       case WildcardType => "WildcardType()"
       case NoType => "NoType()"
       case NoPrefix => "NoPrefix()"
-      case ThisType(s) => "ThisType(" + s.name + ")"
+      case ThisType(s) => "ThisType(" + s.nameString + ")"
 
       case SingleType(pre, sym) =>
         Document.group(
           Document.nest(4, "SingleType(" :/:
-                      toDocument(pre) :: ", " :/: sym.name.toString :: ")")
+                      toDocument(pre) :: ", " :/: sym.nameString :: ")")
         )
 
       case ConstantType(value) =>
@@ -585,7 +608,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4, "TypeRef(" :/:
                         toDocument(pre) :: ", " :/:
-                        sym.name.toString + sym.idString :: ", " :/:
+                        sym.nameString :: ", " :/:
                         "[ " :: toDocument(args) ::"]" :: ")")
         )
 
@@ -606,7 +629,7 @@ abstract class TreeBrowsers {
         Document.group(
           Document.nest(4,"ClassInfoType(" :/:
                         toDocument(parents) :: ", " :/:
-                        clazz.name.toString + clazz.idString :: ")")
+                        clazz.nameString :: ")")
         )
 
       case MethodType(params, result) =>
@@ -655,6 +678,13 @@ abstract class TreeBrowsers {
           Document.nest(4, "SuperType(" :/:
                         toDocument(thistpe) :/: ", " :/:
                         toDocument(supertpe) ::")"))
+
+      case ErasedValueType(clazz, erased) =>
+        Document.group(
+          Document.nest(4, "ErasedValueType(" :/:
+                        clazz.nameString :/: ", " :/:
+                        toDocument(erased) :: ")"))
+
       case _ =>
         abort("Unknown case: " + t.toString +", "+ t.getClass)
     }

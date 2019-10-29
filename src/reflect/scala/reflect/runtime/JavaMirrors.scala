@@ -28,6 +28,7 @@ import java.lang.reflect.{
   ParameterizedType, WildcardType, AnnotatedElement }
 import java.lang.annotation.{Annotation => jAnnotation}
 import java.io.IOException
+import java.lang.ref.{WeakReference => jWeakReference}
 import scala.reflect.internal.{ MissingRequirementError, JavaAccFlags }
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
@@ -106,20 +107,26 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private[this] val fieldCache       = new TwoWayCache[jField, TermSymbol]
     private[this] val tparamCache      = new TwoWayCache[jTypeVariable[_ <: GenericDeclaration], TypeSymbol]
 
-    private[this] object typeTagCache extends ClassValue[TypeTag[_]]() {
+    private[this] object typeTagCache extends ClassValue[jWeakReference[TypeTag[_]]]() {
       val typeCreator = new ThreadLocal[TypeCreator]()
 
-      override protected def computeValue(cls: jClass[_]): TypeTag[_] = {
+      override protected def computeValue(cls: jClass[_]): jWeakReference[TypeTag[_]] = {
         val creator = typeCreator.get()
         assert(creator.getClass == cls, (creator, cls))
-        TypeTagImpl[AnyRef](thisMirror.asInstanceOf[Mirror], creator)
+        new jWeakReference(TypeTagImpl[AnyRef](thisMirror.asInstanceOf[Mirror], creator))
       }
     }
 
     final def typeTag(typeCreator: TypeCreator): TypeTag[_] = {
       typeTagCache.typeCreator.set(typeCreator)
       try {
-        typeTagCache.get(typeCreator.getClass)
+        val ref = typeTagCache.get(typeCreator.getClass)
+        var tag = ref.get
+        if (tag == null) {
+          typeTagCache.remove(typeCreator.getClass)
+          tag = TypeTagImpl[AnyRef](thisMirror.asInstanceOf[Mirror], typeCreator)
+        }
+        tag
       } finally  {
         typeTagCache.typeCreator.remove()
       }
