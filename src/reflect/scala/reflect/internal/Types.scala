@@ -1096,7 +1096,8 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def boundSyms: Set[Symbol] = emptySymbolSet
+   @deprecated("No longer used in the compiler implementation", since = "2.12.3")
+   override def boundSyms: Set[Symbol] = emptySymbolSet
  }
 
   /** A base class for types that represent a single value
