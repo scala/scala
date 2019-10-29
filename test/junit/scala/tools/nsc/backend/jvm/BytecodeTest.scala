@@ -228,9 +228,8 @@ class BytecodeTest extends BytecodeTesting {
       val List(_, _, pm) = compileClasses(code)
       assertEquals(pm.name, "Person$")
       assertEquals(pm.methods.asScala.map(_.name).toList,
-        // after typer, `"$lessinit$greater$default$1"` is next to `<init>`, but the constructor phase
-        // and code gen change module constructors around. the second `apply` is a bridge, created in erasure.
-        List("<clinit>", "$lessinit$greater$default$1", "toString", "apply", "apply$default$1", "unapply", "writeReplace", "apply", "<init>"))
+        // the second `apply` is a bridge, created in erasure.
+        List("<clinit>", "toString", "apply", "apply$default$1", "unapply", "writeReplace", "apply", "<init>"))
     }
     check(s"$main\n$person")
     check(s"$person\n$main")
