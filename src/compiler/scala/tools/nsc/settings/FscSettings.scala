@@ -17,7 +17,7 @@ package settings
 import util.ClassPath
 import io.{ Path, AbstractFile }
 
-class FscSettings(error: String => Unit) extends Settings(error) {
+class FscSettings(error: String => Unit, pathFactory: PathFactory = DefaultPathFactory) extends Settings(error, pathFactory) {
   outer =>
 
   locally {
