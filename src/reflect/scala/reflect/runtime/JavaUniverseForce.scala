@@ -45,7 +45,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.perRunCaches
     this.compat
     this.treeBuild
-    this.FreshNameExtractor
     this.FixedMirrorTreeCreator
     this.FixedMirrorTypeCreator
     this.CompoundTypeTreeOriginalAttachment
@@ -190,7 +189,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.unwrapToStableClass
     this.unwrapWrapperTypes
     this.RecoverableCyclicReference
-    this.TypeConstraint
     this.normalizeAliases
     this.dropSingletonType
     this.abstractTypesToBounds

@@ -794,11 +794,6 @@ trait Namers extends MethodSynthesis {
         val m = ensureCompanionObject(tree, caseModuleDef)
         m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
       }
-      val hasDefault = impl.body exists treeInfo.isConstructorWithDefault
-      if (hasDefault) {
-        val m = ensureCompanionObject(tree)
-        m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
-      }
       val owner = tree.symbol.owner
       if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
         reporter.warning(tree.pos,
@@ -1210,20 +1205,6 @@ trait Namers extends MethodSynthesis {
         }
       }
 
-      // if default getters (for constructor defaults) need to be added to that module, here's the namer
-      // to use. clazz is the ModuleClass. sourceModule works also for classes defined in methods.
-      val module = clazz.sourceModule
-      for (cda <- module.attachments.get[ConstructorDefaultsAttachment]) {
-        debuglog(s"Storing the template namer in the ConstructorDefaultsAttachment of ${module.debugLocationString}.")
-        if (cda.defaults.nonEmpty) {
-          for (sym <- cda.defaults) {
-            decls.enter(sym)
-          }
-          cda.defaults.clear()
-        }
-        cda.companionModuleClassNamer = templateNamer
-      }
-
       val classTp = ClassInfoType(parents, decls, clazz)
       templateNamer.expandMacroAnnotations(templ.body)
       pluginsTypeSig(classTp, templateNamer.typer, templ, WildcardType)
@@ -1456,62 +1437,78 @@ trait Namers extends MethodSynthesis {
       pluginsTypeSig(methSig, typer, ddef, resTpGiven)
     }
 
-    /**
-     * For every default argument, insert a method symbol computing that default
-     */
+    /** Create and enter symbols for default getters. This is done eagerly when the corresponding
+      * method is entered (not later when its type is completed) in order to ensure stability of
+      * scope members (scala/scala#6286 / scala/scala-dev#405).
+      * The symbols are assigned `ErrorType`. The correct type is computed when the method's type is
+      * completed: `methodSig` invokes `addDefaultGetters`, which creates the default getter DefDef
+      * and assigns the correct type to the symbols created here.
+      */
     def enterDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef]): Unit = {
-      val methOwner  = meth.owner
-      val search = DefaultGetterNamerSearch(context, meth, initCompanionModule = false)
+      val owner = meth.owner
+      lazy val ownerNamer: Namer = {
+        val ctx = context.nextEnclosing(c => c.scope.toList.contains(meth)) // TODO use lookup rather than toList.contains
+        assert(ctx != NoContext, meth)
+        newNamer(ctx)
+      }
       var posCounter = 1
-
-      mforeach(vparamss){(vparam) =>
+      mforeach(vparamss) { vparam =>
         // true if the corresponding parameter of the base class has a default argument
         if (vparam.mods.hasDefault) {
           val name = nme.defaultGetterName(meth.name, posCounter)
-
-          search.createAndEnter { owner: Symbol =>
-            methOwner.resetFlag(INTERFACE) // there's a concrete member now
-            val default = owner.newMethodSymbol(name, vparam.pos, paramFlagsToDefaultGetter(meth.flags) | (if (meth.isConstructor) STATIC else 0))
-            default.setPrivateWithin(meth.privateWithin)
-            default.referenced = meth
-            default.setInfo(ErrorType)
-            if (meth.name == nme.apply && meth.hasAllFlags(CASE | SYNTHETIC)) {
-              val att = meth.attachments.get[CaseApplyDefaultGetters].getOrElse({
-                val a = new CaseApplyDefaultGetters()
-                meth.updateAttachment(a)
-                a
-              })
-              att.defaultGetters += default
-            }
-            if (default.owner.isTerm)
-              saveDefaultGetter(meth, default)
-            default
+          owner.resetFlag(INTERFACE) // there's a concrete member now
+          val default = owner.newMethodSymbol(name, vparam.pos, paramFlagsToDefaultGetter(meth.flags) | (if (meth.isConstructor) STATIC else 0))
+          default.setPrivateWithin(meth.privateWithin)
+          default.referenced = meth  // used to find default getter symbols for meth in addDefaultGetters
+          default.setInfo(ErrorType) // correct type is assigned when meth is completed, in addDefaultGetters
+          if (meth.name == nme.apply && meth.hasAllFlags(CASE | SYNTHETIC)) {
+            val att = meth.attachments.get[CaseApplyDefaultGetters].getOrElse({
+              val a = new CaseApplyDefaultGetters()
+              meth.updateAttachment(a)
+              a
+            })
+            att.defaultGetters += default
           }
+          if (owner.isTerm)
+            saveDefaultGetter(meth, default)
+          ownerNamer.enterInScope(default)
         }
         posCounter += 1
       }
     }
 
-    /**
-     * For every default argument, insert a method computing that default
-     *
-     * Also adds the "override" and "defaultparam" (for inherited defaults) flags
-     * Typer is too late, if an inherited default is used before the method is
-     * typechecked, the corresponding param would not yet have the "defaultparam"
-     * flag.
-     */
+    /** For every default argument, create a method computing that default.
+      *
+      * This method is called when the type of a method with defaults is being completed. The
+      * symbols for default getters are created early, when the method is entered in scope
+      * (enterDefaultGetters). This method then generates the DefDef, calls enterSyntheticSym and
+      * assigns the correct type to the default getter symbol (it has `ErrorType` before).
+      *
+      * Also adds the "override" and "defaultparam" (for inherited defaults) flags
+      * Typer is too late, if an inherited default is used before the method is
+      * typechecked, the corresponding param would not yet have the "defaultparam"
+      * flag.
+      */
     private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol): Unit = {
       val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate)
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
-      def rtparams  =
+      def rtparams =
         if (meth.isConstructor) {
           val ClassDef(_, _, rctparams0, _) = resetAttrs(deriveClassDef(context.nextEnclosing(_.tree.isInstanceOf[ClassDef]).tree)(_ => Template(Nil, noSelfType, Nil)).duplicate)
           rctparams0.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
         }
         else rtparams0.map(_.duplicate)
       def rvparamss = rvparamss0.map(_.map(_.duplicate))
-      val search    = DefaultGetterNamerSearch(context, meth, initCompanionModule = true)
+
+
+      val owner = meth.owner
+      lazy val ownerNamer: Namer = {
+        val ctx = context.nextEnclosing(c => c.scope.toList.contains(meth)) // TODO use lookup rather than toList.contains
+        assert(ctx != NoContext, meth)
+        newNamer(ctx)
+      }
+
       val overrides = overridden != NoSymbol && !overridden.isOverloaded
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {
@@ -1568,42 +1565,43 @@ trait Namers extends MethodSynthesis {
             val defVparamss = mmap(rvparamss.take(previous.length)){ rvp =>
               copyValDef(rvp)(mods = rvp.mods &~ DEFAULTPARAM, rhs = EmptyTree)
             }
-            search.addGetter(rtparams) {
-              (parentNamer: Namer, defTparams: List[TypeDef]) =>
-                val defTpt =
-                // don't mess with tpt's of case copy default getters, because assigning something other than TypeTree()
-                // will break the carefully orchestrated naming/typing logic that involves copyMethodCompleter and caseClassCopyMeth
-                  if (meth.isCaseCopy) TypeTree()
-                  else {
-                    // If the parameter type mentions any type parameter of the method, let the compiler infer the
-                    // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
-                    // This is better than always using Wildcard for inferring the result type, for example in
-                    //    def f(i: Int, m: Int => Int = identity _) = m(i)
-                    // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
-                    // TODO: this is a very brittle approach; I sincerely hope that Denys's research into hygiene
-                    //       will open the doors to a much better way of doing this kind of stuff
-                    val eraseAllMentionsOfTparams = new TypeTreeSubstituter(x => defTparams.exists(_.name == x))
-                    eraseAllMentionsOfTparams(rvparam.tpt match {
-                      // default getter for by-name params
-                      case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
-                      case t => t
-                    })
-                  }
-                val defRhs = rvparam.rhs
 
-                val defaultTree = atPos(vparam.pos.focus) {
-                  DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag | sflag, name, defTparams, defVparamss, defTpt, defRhs)
-                }
-                def referencesThis(sym: Symbol) = sym match {
-                  case term: TermSymbol => term.referenced == meth
-                  case _ => false
-                }
-                val defaultGetterSym = parentNamer.context.scope.lookup(name).filter(referencesThis)
-                assert(defaultGetterSym != NoSymbol, (parentNamer.owner, name))
-                defaultTree.setSymbol(defaultGetterSym)
-                defaultGetterSym.setInfo(parentNamer.completerOf(defaultTree))
-                defaultTree
+            val defTparams = rtparams
+
+            val defTpt =
+            // don't mess with tpt's of case copy default getters, because assigning something other than TypeTree()
+            // will break the carefully orchestrated naming/typing logic that involves copyMethodCompleter and caseClassCopyMeth
+              if (meth.isCaseCopy) TypeTree()
+              else {
+                // If the parameter type mentions any type parameter of the method, let the compiler infer the
+                // return type of the default getter => allow "def foo[T](x: T = 1)" to compile.
+                // This is better than always using Wildcard for inferring the result type, for example in
+                //    def f(i: Int, m: Int => Int = identity _) = m(i)
+                // if we use Wildcard as expected, we get "Nothing => Nothing", and the default is not usable.
+                // TODO: this is a very brittle approach; I sincerely hope that Denys's research into hygiene
+                //       will open the doors to a much better way of doing this kind of stuff
+                val eraseAllMentionsOfTparams = new TypeTreeSubstituter(x => defTparams.exists(_.name == x))
+                eraseAllMentionsOfTparams(rvparam.tpt match {
+                  // default getter for by-name params
+                  case AppliedTypeTree(_, List(arg)) if sym.hasFlag(BYNAMEPARAM) => arg
+                  case t => t
+                })
+              }
+            val defRhs = rvparam.rhs
+
+            val defaultTree = atPos(vparam.pos.focus) {
+              DefDef(Modifiers(paramFlagsToDefaultGetter(meth.flags), ddef.mods.privateWithin) | oflag | sflag, name, defTparams, defVparamss, defTpt, defRhs)
             }
+            def referencesThis(sym: Symbol) = sym match {
+              case term: TermSymbol => term.referenced == meth
+              case _ => false
+            }
+            val defaultGetterSym = ownerNamer.context.scope.lookup(name).filter(referencesThis)
+            assert(defaultGetterSym != NoSymbol, (owner, name))
+            defaultTree.setSymbol(defaultGetterSym)
+            defaultGetterSym.setInfo(ownerNamer.completerOf(defaultTree))
+            // standardEnterSym: if the tree has a symbol already, no symbol is created nor entered in scope
+            ownerNamer.enterSyntheticSym(defaultTree)
           }
           else if (baseHasDefault) {
             // the parameter does not have a default itself, but the
@@ -1615,68 +1613,6 @@ trait Namers extends MethodSynthesis {
         }
         if (overrides) baseParamss = baseParamss.tail
         previous :+ vparams
-      }
-    }
-
-    private object DefaultGetterNamerSearch {
-      def apply(c: Context, meth: Symbol, initCompanionModule: Boolean) = /*if (meth.isConstructor) new DefaultGetterInCompanion(c, meth, initCompanionModule)
-      else*/ new DefaultMethodInOwningScope(c, meth)
-    }
-    private abstract class DefaultGetterNamerSearch {
-      def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit
-
-      def createAndEnter(f: Symbol => Symbol): Unit
-    }
-    private class DefaultGetterInCompanion(c: Context, meth: Symbol, initCompanionModule: Boolean) extends DefaultGetterNamerSearch {
-      private val module = companionSymbolOf(meth.owner, context)
-      if (initCompanionModule) module.initialize
-      private val cda: Option[ConstructorDefaultsAttachment] = module.attachments.get[ConstructorDefaultsAttachment]
-      private val moduleNamer = cda.flatMap(x => Option(x.companionModuleClassNamer))
-
-      def createAndEnter(f: Symbol => Symbol): Unit = {
-        val default = f(module.moduleClass)
-        moduleNamer match {
-          case Some(namer) =>
-            namer.enterInScope(default)
-          case None =>
-            cda match {
-              case Some(attachment) =>
-                // defer entry until the companion module body it type completed
-                attachment.defaults += default
-              case None =>
-              // ignore error to fix #3649 (prevent crash in erroneous source code)
-            }
-        }
-      }
-      def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit = {
-        cda match {
-          case Some(attachment) =>
-            moduleNamer match {
-              case Some(namer) =>
-                val cdef = attachment.classWithDefault
-                val ClassDef(_, _, rtparams, _) = resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate)
-                val defTparams = rtparams.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
-                val tree = create(namer, defTparams)
-                namer.enterSyntheticSym(tree)
-              case None =>
-            }
-          case None =>
-        }
-
-      }
-    }
-    private class DefaultMethodInOwningScope(c: Context, meth: Symbol) extends DefaultGetterNamerSearch {
-      private lazy val ownerNamer: Namer = {
-        val ctx = context.nextEnclosing(c => c.scope.toList.contains(meth)) // TODO use lookup rather than toList.contains
-        assert(ctx != NoContext, meth)
-        newNamer(ctx)
-      }
-      def createAndEnter(f: Symbol => Symbol): Unit = {
-        ownerNamer.enterInScope(f(ownerNamer.context.owner))
-      }
-      def addGetter(rtparams0: List[TypeDef])(create: (Namer, List[TypeDef]) => Tree): Unit = {
-        val tree = create(ownerNamer, rtparams0)
-        ownerNamer.enterSyntheticSym(tree)
       }
     }
 

@@ -6,8 +6,6 @@ object Test {
 
     println(4)
     ser(new o4.Inner(1))
-    o4.Inner
-    ser(new o4.Inner(1))
 
     println(2)
     ser(new o5.Inner(1))

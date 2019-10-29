@@ -1,7 +1,0 @@
-t3649.scala:1: error: C is already defined as (compiler-generated) case class companion object C
-object T { class C(s: String = ""); val C = 0 }
-                                        ^
-t3649.scala:2: error: C is already defined as (compiler-generated) case class companion object C
-object U { class C(val s: String = ""); val C = new C() {} }
-                                            ^
-two errors found

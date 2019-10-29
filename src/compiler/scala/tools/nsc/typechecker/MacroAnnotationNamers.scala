@@ -234,11 +234,6 @@ trait MacroAnnotationNamers { self: Analyzer =>
               val m = ensureCompanionObject(tree, caseModuleDef)
               m.moduleClass.updateAttachment(new ClassForCaseCompanionAttachment(tree))
             }
-            val hasDefault = impl.body exists treeInfo.isConstructorWithDefault
-            if (hasDefault) {
-              val m = ensureCompanionObject(tree)
-              m.updateAttachment(new ConstructorDefaultsAttachment(tree, null))
-            }
             val owner = tree.symbol.owner
             if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
               reporter.warning(tree.pos,

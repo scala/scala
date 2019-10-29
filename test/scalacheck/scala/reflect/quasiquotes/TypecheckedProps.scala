@@ -74,7 +74,7 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked")
 
   property("class with param (2)") = test {
     val paramName = TermName("y")
-    val q"{class $_($param)}" = typecheck(q"class Test(val $paramName: Int = 3)")
+    val q"class $_($param)" = typecheck(q"class Test(val $paramName: Int = 3)")
 
     assert(param.name == paramName)
     assert(param.rhs ≈ q"3")
@@ -83,7 +83,7 @@ object TypecheckedProps extends QuasiquoteProperties("typechecked")
   property("class with params") = test {
     val pName1 = TermName("x1")
     val pName2 = TermName("x2")
-    val q"{class $_($param1)(..$params2)}" = typecheck(q"class Test(val x0: Float)(val $pName1: Int = 3, $pName2: String)")
+    val q"class $_($param1)(..$params2)" = typecheck(q"class Test(val x0: Float)(val $pName1: Int = 3, $pName2: String)")
 
     val List(p1, p2, _*) = params2
 

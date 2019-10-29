@@ -28,15 +28,6 @@ trait NamesDefaults { self: Analyzer =>
   import NamesDefaultsErrorsGen._
   import treeInfo.WildcardStarArg
 
-  // Default getters of constructors are added to the companion object in the
-  // typeCompleter of the constructor (methodSig). To compute the signature,
-  // we need the ClassDef. To create and enter the symbols into the companion
-  // object, we need the templateNamer of that module class. These two are stored
-  // as an attachment in the companion module symbol
-  class ConstructorDefaultsAttachment(val classWithDefault: ClassDef, var companionModuleClassNamer: Namer) {
-    val defaults = mutable.ListBuffer[Symbol]()
-  }
-
   // Attached to the synthetic companion `apply` method symbol generated for case classes, holds
   // the set contains all default getters for that method. If the synthetic `apply` is unlinked in
   // its completer because there's a user-defined matching method (PR #5730), we have to unlink the
