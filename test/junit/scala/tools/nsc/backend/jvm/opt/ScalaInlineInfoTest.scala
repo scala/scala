@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.JavaConverters._
+import scala.collection.immutable.TreeMap
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.testkit.BytecodeTesting
@@ -20,7 +21,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
 
   def inlineInfo(c: ClassNode): InlineInfo = c.attrs.asScala.collect({ case a: InlineInfoAttribute => a.inlineInfo }).head
 
-  def mapDiff[A, B](a: Map[A, B], b: Map[A, B]) = {
+  def mapDiff[A, B](a: collection.Map[A, B], b: collection.Map[A, B]) = {
     val r = new StringBuilder
     for ((a, av) <- a) {
       if (!b.contains(a)) r.append(s"missing in b: $a\n")
@@ -32,7 +33,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     r.toString
   }
 
-  def assertSameMethods(c: ClassNode, nameAndSigs: Set[String]): Unit = {
+  def assertSameMethods(c: ClassNode, nameAndSigs: collection.Set[String]): Unit = {
     val r = new StringBuilder
     val inClass = c.methods.iterator.asScala.map(m => m.name + m.desc).toSet
     for (m <- inClass.diff(nameAndSigs)) r.append(s"method in classfile found, but no inline info: $m")
@@ -83,7 +84,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     val expectT = InlineInfo (
       false, // final class
       None, // not a sam
-      Map(
+      TreeMap(
         (("O", "()LT$O$;"),                                                 MethodInlineInfo(false,false,false)),
         (("T$$super$toString", "()Ljava/lang/String;"),                     MethodInlineInfo(true ,false,false)),
         (("T$_setter_$x1_$eq", "(I)V"),                                     MethodInlineInfo(false,false,false)),
@@ -118,7 +119,7 @@ class ScalaInlineInfoTest extends BytecodeTesting {
     assertSameMethods(t, expectT.methodInfos.keySet.map(x => x._1 + x._2))
 
     val infoC = inlineInfo(c)
-    val expectC = InlineInfo(false, None, Map(
+    val expectC = InlineInfo(false, None, TreeMap(
       ("O", "()LT$O$;")                             -> MethodInlineInfo(true ,false,false),
       ("f1", "()I")                                 -> MethodInlineInfo(false,false,false),
       ("f3", "()I")                                 -> MethodInlineInfo(false,false,false),

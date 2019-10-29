@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.collection.mutable
 import scala.tools.asm._
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, MethodInlineInfo}
 import scala.tools.nsc.backend.jvm.BackendReporting.UnknownScalaInlineInfoVersion
@@ -67,19 +68,20 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
     }
 
     // The method count fits in a short (the methods_count in a classfile is also a short)
-    result.putShort(inlineInfo.methodInfosSorted.size)
+    result.putShort(inlineInfo.methodInfos.size)
 
     // Sort the methodInfos for stability of classfiles
-    for (((name, desc), info) <- inlineInfo.methodInfosSorted) {
-      result.putShort(cw.newUTF8(name))
-      result.putShort(cw.newUTF8(desc))
+    inlineInfo.methodInfos.foreachEntry {
+      case ((name, desc), info) =>
+        result.putShort(cw.newUTF8(name))
+        result.putShort(cw.newUTF8(desc))
 
-      var inlineInfo = 0
-      if (info.effectivelyFinal)  inlineInfo |= 1
-      //                          inlineInfo |= 2 // no longer written
-      if (info.annotatedInline)   inlineInfo |= 4
-      if (info.annotatedNoInline) inlineInfo |= 8
-      result.putByte(inlineInfo)
+        var inlineInfo = 0
+        if (info.effectivelyFinal)  inlineInfo |= 1
+        //                          inlineInfo |= 2 // no longer written
+        if (info.annotatedInline)   inlineInfo |= 4
+        if (info.annotatedNoInline) inlineInfo |= 8
+        result.putByte(inlineInfo)
     }
     result
   }
@@ -114,7 +116,8 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
       }
 
       val numEntries = nextShort()
-      val infos = (0 until numEntries).map(_ => {
+      val infos = new mutable.TreeMap[(String, String), MethodInlineInfo]
+      (0 until numEntries).foreach{ _ =>
         val name = nextUTF8()
         val desc = nextUTF8()
 
@@ -123,8 +126,8 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
         //             = (inlineInfo & 2) != 0 // no longer used
         val isInline   = (inlineInfo & 4) != 0
         val isNoInline = (inlineInfo & 8) != 0
-        ((name, desc), MethodInlineInfo(isFinal, isInline, isNoInline))
-      }).toMap
+        infos((name, desc)) = MethodInlineInfo(isFinal, isInline, isNoInline)
+      }
 
       val info = InlineInfo(isFinal, sam, infos, None)
       InlineInfoAttribute(info)
