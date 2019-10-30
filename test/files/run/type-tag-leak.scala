@@ -1,5 +1,7 @@
 import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
+import scala.tools.nsc.interpreter._
+import java.io._
 
 class Test {
 
@@ -17,7 +19,8 @@ object Test extends Test {
       val settings = new scala.tools.nsc.Settings
       settings.Xnojline.value = true
       settings.usejavacp.value = true
-      val intp = new scala.tools.nsc.interpreter.IMain(settings)
+
+      val intp = new IMain(settings, new shell.ReplReporterImpl(settings, new PrintWriter(new StringWriter)))
 
       try {
         intp.quietRun("object C { val data = new Array[Byte](16 * 1024 * 1024) }")
