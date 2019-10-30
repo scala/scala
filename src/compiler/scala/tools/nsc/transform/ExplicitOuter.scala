@@ -447,7 +447,8 @@ abstract class ExplicitOuter extends InfoTransform
           if (sym.isProtected && //(4)
               (qsym.isTrait || !(qual.isInstanceOf[Super] || (qsym isSubClass currentClass))))
             sym setFlag notPROTECTED
-          super.transform(tree)
+          if (sym.isStaticMember) tree
+          else super.transform(tree)
 
         case treeInfo.Applied(sel @ Select(qual, name), _, List(args)) if (name == nme.CONSTRUCTOR || sel.symbol.isStaticMember) && isInner(sel.symbol.owner) =>
           val outerVal = atPos(tree.pos)(qual match {
