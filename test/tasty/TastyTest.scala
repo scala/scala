@@ -1,14 +1,16 @@
 import scala.sys.process._
-import java.nio.file.{Files, Paths, Path, DirectoryStream, FileSystems}
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
-import scala.util.{Try, Success, Failure}
-import scala.util.Properties
-
-import scala.tools.nsc
+import scala.io.{ Source, BufferedSource }
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.ScalaClassLoader
-import java.util.stream.Collectors
-import java.lang.reflect.Modifier
+import scala.reflect.runtime.ReflectionUtils
+import scala.tools.nsc
+import scala.util.{ Try, Success, Failure }
+
+import java.nio.file.{ Files, Paths, Path, DirectoryStream, FileSystems }
+import java.io.{ OutputStream, ByteArrayOutputStream }
+import java.{ lang => jl, util => ju }
+import jl.reflect.Modifier
 
 object TastyTest {
 
@@ -35,8 +37,11 @@ object TastyTest {
         } yield ()
       )
     )
-    successWhen(results.values.forall(identity))({
-      val failures = results.filter(!_._2)
+    if (results.values.forall(_.isEmpty)) {
+      printwarnln("No suites to run.")
+    }
+    successWhen(results.values.forall(_.getOrElse(true)))({
+      val failures = results.filter(_._2.exists(!_))
       val str = if (failures.size == 1) "suite" else "suites"
       s"${failures.size} $str failed: ${failures.map(_._1).mkString(", ")}."
     })
@@ -49,15 +54,15 @@ object TastyTest {
       case Failure(err) => printerrln(s"ERROR: $suite suite failed: ${err.getMessage}")
     }
 
-    def suite(name: String, willRun: Boolean)(runner: => Try[Unit]): Boolean = {
+    def suite(name: String, willRun: Boolean)(runner: => Try[Unit]): Option[Boolean] = {
       if (willRun) {
         println(s"Performing suite $name")
         val result = runner
         printSummary(name, result)
-        result.isSuccess
+        Some(result.isSuccess)
       }
       else {
-        true
+        None
       }
     }
 
@@ -82,7 +87,7 @@ object TastyTest {
     for (source <- files.filter(_.endsWith(".scala"))) {
       val buf = new StringBuilder(50)
       val compiled = {
-        val byteArrayStream = new java.io.ByteArrayOutputStream(50)
+        val byteArrayStream = new ByteArrayOutputStream(50)
         try {
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
@@ -113,7 +118,7 @@ object TastyTest {
           case Some(checkFileOpt) =>
             checkFileOpt match {
               case Some(checkFile) =>
-                var lines: java.util.stream.Stream[String] = null
+                var lines: ju.stream.Stream[String] = null
                 try {
                   lines = Files.lines(Paths.get(checkFile))
                   val check = lines.iterator().asScala.mkString("", System.lineSeparator, System.lineSeparator)
@@ -151,21 +156,23 @@ object TastyTest {
       val args = Array(
         "-d", out,
         "-classpath", classpaths(out, dottyLibrary),
-        "-deprecation"
+        "-deprecation",
+        "-Xfatal-warnings"
       ) ++ sources
       nsc.Main.process(args)
     }
   }
 
   private def dotcPos(out: String, dottyLibrary: String, dottyCompiler: String, sources: String*): Try[Unit] = {
-    val dotc = (
-         "java"
-      +: "-classpath" +: dottyCompiler
-      +: "dotty.tools.dotc.Main"
-      +: "-d" +: out
-      +: "-classpath" +: classpaths(out, dottyLibrary)
-      +: sources
-    )
+    val dotc = Seq(
+      "java",
+      "-classpath", dottyCompiler,
+      "dotty.tools.dotc.Main",
+      "-d", out,
+      "-classpath", classpaths(out, dottyLibrary),
+      "-deprecation",
+      "-Xfatal-warnings"
+    ) ++ sources
     successWhen(sources.isEmpty || dotc.! == 0)("dotc failed to compile sources.")
   }
 
@@ -207,7 +214,7 @@ object TastyTest {
     } yield (whitelist(preFilters, pre:_*), whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3:_*))
 
   private def getFiles(dir: String): Try[Seq[String]] = Try {
-    var stream: java.util.stream.Stream[Path] = null
+    var stream: ju.stream.Stream[Path] = null
     try {
       stream = Files.walk(Paths.get(dir))
       val files = {
@@ -242,7 +249,7 @@ object TastyTest {
             .stripPrefix(prefix)
             .stripSuffix(".class")
       }
-      var stream: java.util.stream.Stream[Path] = null
+      var stream: ju.stream.Stream[Path] = null
       try {
         stream = Files.walk(cp)
         stream.filter(p => !Files.isDirectory(p) && matcher.matches(p))
@@ -294,14 +301,14 @@ object TastyTest {
 
   private object Runner {
     def run(name: String)(implicit classloader: ScalaClassLoader): Try[String] = {
-      def kernel(out: java.io.OutputStream, err: java.io.OutputStream): Try[Unit] = Try {
+      def kernel(out: OutputStream, err: OutputStream): Try[Unit] = Try {
         Console.withOut(out) {
           Console.withErr(err) {
             classloader.run(name, Nil)
           }
         }
       }
-      val byteArrayStream = new java.io.ByteArrayOutputStream(50)
+      val byteArrayStream = new ByteArrayOutputStream(50)
       try {
         val result = kernel(byteArrayStream, byteArrayStream)
         byteArrayStream.flush()
