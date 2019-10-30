@@ -337,7 +337,7 @@ trait StdNames {
     val BITMAP_PREFIX                  = "bitmap$"
     val CHECK_IF_REFUTABLE_STRING      = "check$ifrefutable$"
     val DEFAULT_GETTER_STRING          = "$default$"
-    val DEFAULT_GETTER_INIT_STRING     = NameTransformer.encode("<init>") + DEFAULT_GETTER_STRING
+    val DEFAULT_GETTER_INIT_STRING     = "new" + DEFAULT_GETTER_STRING
     val DO_WHILE_PREFIX                = "doWhile$"
     val EVIDENCE_PARAM_PREFIX          = "evidence$"
     val EXCEPTION_RESULT_PREFIX        = "exceptionResult"

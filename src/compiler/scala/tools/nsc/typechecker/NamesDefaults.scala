@@ -484,7 +484,7 @@ trait NamesDefaults { self: Analyzer =>
       res.orElse(if (param.owner.isConstructor) {
         // support calling defaults in companions for old classfiles, until restarr
         val mod = companionSymbolOf(param.owner.owner, context)
-        mod.info.member(defGetterName)
+        mod.info.member(newTermName("$lessinit$greater" + defGetterName.toString.substring(3)))
       } else NoSymbol)
     } else NoSymbol
   }

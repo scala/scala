@@ -185,6 +185,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.UnrolledBuffer$Unrolled$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.util.control.Exception$Catch$"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("*.<init>$default$*"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("*.new$default$*"),
   ),
 }
 
