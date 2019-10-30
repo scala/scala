@@ -7,6 +7,9 @@ import scala.reflect.runtime.ReflectionUtils
 import scala.tools.nsc
 import scala.util.{ Try, Success, Failure }
 
+import dotty.tools.dotc
+import dotc.reporting.{ Reporter => DottyReporter }
+
 import java.nio.file.{ Files, Paths, Path, DirectoryStream, FileSystems }
 import java.io.{ OutputStream, ByteArrayOutputStream }
 import java.{ lang => jl, util => ju }
@@ -14,14 +17,14 @@ import jl.reflect.Modifier
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, dottyCompiler: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
+  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
     val results = Map(
       "run" -> Tests.suite("run", run)(
         for {
           (pre, src2, src3) <- getSources(srcRoot/"run")
           out               <- outDir.fold(tempDir(pkgName))(dir)
           _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3:_*)
+          _                 <- dotcPos(out, dottyLibrary, src3:_*)
           _                 <- scalacPos(out, dottyLibrary, src2:_*)
           testNames         <- visibleClasses(out, pkgName, src2:_*)
           _                 <- runMainOn(out, dottyLibrary, testNames:_*)
@@ -32,7 +35,7 @@ object TastyTest {
           (pre, src2, src3) <- getSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
           out               <- outDir.fold(tempDir(pkgName))(dir)
           _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotcPos(out, dottyLibrary, dottyCompiler, src3:_*)
+          _                 <- dotcPos(out, dottyLibrary, src3:_*)
           _                 <- scalacNeg(out, dottyLibrary, src2:_*)
         } yield ()
       )
@@ -163,17 +166,23 @@ object TastyTest {
     }
   }
 
-  private def dotcPos(out: String, dottyLibrary: String, dottyCompiler: String, sources: String*): Try[Unit] = {
-    val dotc = Seq(
-      "java",
-      "-classpath", dottyCompiler,
-      "dotty.tools.dotc.Main",
-      "-d", out,
-      "-classpath", classpaths(out, dottyLibrary),
-      "-deprecation",
-      "-Xfatal-warnings"
-    ) ++ sources
-    successWhen(sources.isEmpty || dotc.! == 0)("dotc failed to compile sources.")
+  // TODO call it directly when we can unpickle overloads
+  private[this] lazy val dotcProcess: Array[String] => Boolean = {
+    val process = classOf[dotc.Driver].getMethod("process", classOf[Array[String]])
+    args => !process.invoke(dotc.Main, args).asInstanceOf[DottyReporter].hasErrors
+  }
+
+  private def dotcPos(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
+    val result = sources.isEmpty || {
+      val args = Array(
+        "-d", out,
+        "-classpath", classpaths(out, dottyLibrary),
+        "-deprecation",
+        "-Xfatal-warnings"
+      ) ++ sources
+      dotcProcess(args)
+    }
+    successWhen(result)("dotc failed to compile sources.")
   }
 
   private def classpaths(paths: String*): String = paths.mkString(":")
@@ -354,21 +363,20 @@ object TastyTest {
   |
   |The following arguments are available to TASTy Test:
   |
-  |  -help                        Display this help.
-  |  -run                         Perform the run test.
-  |  -neg                         Perform the neg test.
-  |  --dotty-library   <paths>    Paths separated by `:`, the classpath for the dotty library.
-  |  --dotty-compiler  <paths>    Paths separated by `:`, the classpath for the dotty compiler.
-  |  --src             <path = .> The path that contains all compilation sources across test kinds.
-  |  --out             <path = .> output for classpaths, optional.
-  |  --package         <pkg : ""> The package containing run tests.
+  |  -help                            Display this help.
+  |  -run                             Perform the run test.
+  |  -neg                             Perform the neg test.
+  |  --dotty-library  <paths>         Paths separated by `:`, the classpath for the dotty library.
+  |  --src            <path=.>        The path that contains all compilation sources across test kinds.
+  |  --out            <path=.>        output for classpaths, optional.
+  |  --package        <pkg=tastytest> The package containing run tests.
   |
   |* This runner should be invoked with the `scala-compiler` module on the classpath, easily acheived by using the `scala` shell command.
   |* During compilation of test sources, and during run test execution, `--dotty-library` is on the classpath.
   |* TASTy Test currently supports run and neg tests.
   |* run tests execute as follows:
   |  1. Compile sources in `$src$/run/pre/**` with the Scala 2 compiler, to be shared accross both compilers.
-  |  2. Compile sources in `$src$/run/src-3/**` with the Dotty compiler in a separate process, using `--dotty-compiler` as the JVM classpath.
+  |  2. Compile sources in `$src$/run/src-3/**` with the Dotty compiler.
   |     - Classes compiled in (1) are now on the classpath.
   |  3. Compile sources in `$src$/run/src-2/**` with the Scala 2 compiler.
   |     - Classes compiled in (1) and (2) are now on the classpath.
@@ -377,7 +385,7 @@ object TastyTest {
   |     - The class will not be executed if there is no source file in `$src$/run/src-2/**` that matches the simple name of the class.
   |* neg tests execute as follows:
   |  1. Compile sources in `$src$/neg/pre/**` with the Scala 2 compiler, to be shared accross both compilers.
-  |  2. Compile sources in `$src$/neg/src-3/**` with the Dotty compiler in a separate process, using `--dotty-compiler` as the JVM classpath.
+  |  2. Compile sources in `$src$/neg/src-3/**` with the Dotty compiler.
   |     - Classes compiled in (1) are now on the classpath.
   |  3. Compile sources in `$src$/neg/src-2/**` with the Scala 2 compiler.
   |     - Classes compiled in (1) and (2) are now on the classpath.
@@ -407,13 +415,12 @@ object TastyTest {
     }
     else for {
       dottyLibrary  <- requiredArg("--dotty-library")
-      dottyCompiler <- requiredArg("--dotty-compiler")
       srcRoot       =  optionalArg("--src", FileSystems.getDefault.getPath(".").toString)
       pkgName       =  optionalArg("--package", "tastytest")
       run           =  booleanArg("-run")
       neg           =  booleanArg("-neg")
       out           =  findArg("--out")
-      _             <- tastytest(dottyLibrary, dottyCompiler, srcRoot, pkgName, run, neg, out)
+      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, neg, out)
     } yield ()
   }
 
