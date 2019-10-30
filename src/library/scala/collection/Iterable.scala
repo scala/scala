@@ -275,7 +275,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
         var i = 0
         val it = iterator
         while (it.hasNext) {
-          if (i == otherSize) return if (it.hasNext) 1 else 0
+          if (i == otherSize) return 1
           it.next()
           i += 1
         }
