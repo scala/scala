@@ -1167,7 +1167,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
-          assert(!context.inTypeConstructorAllowed, context) //@M
+          // This used to have
+          //     assert(!context.inTypeConstructorAllowed, context)
+          // but that's not guaranteed to be true in the face of erroneous code; errors in typedApply might mean we
+          // never get around to inferring them, and they leak out and wind up here.
           instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         else if (tree.tpe <:< pt)
