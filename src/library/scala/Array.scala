@@ -61,8 +61,7 @@ object Array extends FallbackArrayBuilding {
   val emptyShortArray   = new Array[Short](0)
   val emptyObjectArray  = new Array[Object](0)
 
-  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] = {
-    val tag = implicitly[ClassTag[T]]
+  implicit def canBuildFrom[T](implicit tag: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] = {
     val cls = tag.runtimeClass
     (if (cls.isPrimitive) {
       cls match {
