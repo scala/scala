@@ -316,7 +316,7 @@ abstract class UnCurry extends InfoTransform
               else sequenceToArray(tree)
             else
               if (tree.tpe.typeSymbol isSubClass SeqClass) tree
-              else arrayToSequence(tree, varargsElemType, copy = isNewCollections) // existing array, make a defensive copy
+              else arrayToSequence(tree, varargsElemType, copy = true) // existing array, make a defensive copy
           }
           else {
             def mkArray = mkArrayValue(args drop (params.length - 1), varargsElemType)
