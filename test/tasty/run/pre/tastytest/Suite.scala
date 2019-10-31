@@ -9,7 +9,7 @@ class Suite(val name: String) {
   private[this] val counts = mutable.Map.empty[String, Int]
   private[this] val tests = mutable.ArrayBuffer.empty[(Context, () => Unit)]
 
-  def reps: Int = 1
+  val reps: Int = 1
 
   def test(name: String)(code: => Unit): Unit = {
     val count = counts.getOrElse(name, 0)

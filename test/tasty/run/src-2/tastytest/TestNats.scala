@@ -12,13 +12,13 @@ object TestNats extends Suite("TestNats") {
 
   import Longs.Laws._
 
-  test(assert(additiveIdentity(getRandom)))
-  test(assert(additiveCommutativity(getRandom, getRandom)))
-  test(assert(additiveAssociativity(getRandom, getRandom, getRandom)))
-  test(assert(multiplicativeIdentity(getRandom)))
-  test(assert(multiplicativeCommutativity(getRandom, getRandom)))
-  test(assert(multiplicativeAssociativity(getRandom, getRandom, getRandom)))
-  test(assert(multiplicativeDistributivity(getRandom, getRandom, getRandom)))
+  test(assert(additiveIdentity(getRandomNat)))
+  test(assert(additiveCommutativity(getRandomNat, getRandomNat)))
+  test(assert(additiveAssociativity(getRandomNat, getRandomNat, getRandomNat)))
+  test(assert(multiplicativeIdentity(getRandomNat)))
+  test(assert(multiplicativeCommutativity(getRandomNat, getRandomNat)))
+  test(assert(multiplicativeAssociativity(getRandomNat, getRandomNat, getRandomNat)))
+  test(assert(multiplicativeDistributivity(getRandomNat, getRandomNat, getRandomNat)))
 
-  override def reps = 1_000_000
+  override val reps = 1_000_000
 }
