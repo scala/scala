@@ -329,11 +329,8 @@ class MutableSettings(val errorFn: String => Unit)
         classFile.path.startsWith(outDir.path)
 
       singleOutDir match {
-        case Some(d) =>
-          d match {
-              case _: VirtualDirectory | _: io.ZipArchive => Nil
-              case _                   => List(d.lookupPathUnchecked(srcPath, directory = false))
-          }
+        case Some(_: VirtualDirectory | _: io.ZipArchive) => Nil
+        case Some(d) => List(d.lookupPathUnchecked(srcPath, directory = false))
         case None =>
           (outputs filter (isBelow _).tupled) match {
             case Nil => Nil

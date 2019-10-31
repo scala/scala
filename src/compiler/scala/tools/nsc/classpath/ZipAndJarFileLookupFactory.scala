@@ -20,6 +20,7 @@ import java.util.{Timer, TimerTask}
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.annotation.tailrec
+import scala.collection.mutable
 import scala.reflect.io.{AbstractFile, FileZipArchive, ManifestResources}
 import scala.tools.nsc.util.{ClassPath, ClassRepresentation}
 import scala.tools.nsc.{CloseableRegistry, Settings}
@@ -38,7 +39,7 @@ sealed trait ZipAndJarFileLookupFactory {
     cache.checkCacheability(zipFile.toURL :: Nil, checkStamps = true, disableCache = settings.YdisableFlatCpCaching.value || zipFile.file == null) match {
       case Left(_) =>
         val result: ClassPath with Closeable = createForZipFile(zipFile, settings.releaseValue)
-        closeableRegistry.registerClosable(result)
+        closeableRegistry.registerCloseable(result)
         result
       case Right(Seq(path)) =>
         cache.getOrCreate(List(path), () => createForZipFile(zipFile, settings.releaseValue), closeableRegistry, checkStamps = true)
@@ -106,32 +107,28 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
      * when we need subpackages of a given package or its classes, we traverse once and cache only packages.
      * Classes for given package can be then easily loaded when they are needed.
      */
-    private lazy val cachedPackages: collection.mutable.HashMap[String, PackageFileInfo] = {
-      val packages = collection.mutable.HashMap[String, PackageFileInfo]()
-
-      def getSubpackages(dir: AbstractFile): List[AbstractFile] =
-        List.from(for (file <- dir.iterator if file.isPackage) yield file)
-
-      @tailrec
-      def traverse(packagePrefix: String,
-                   filesForPrefix: List[AbstractFile],
-                   subpackagesQueue: collection.mutable.Queue[PackageInfo]): Unit = filesForPrefix match {
-        case pkgFile :: remainingFiles =>
-          val subpackages = getSubpackages(pkgFile)
-          val fullPkgName = packagePrefix + pkgFile.name
-          packages.put(fullPkgName, PackageFileInfo(pkgFile, subpackages))
-          val newPackagePrefix = fullPkgName + "."
-          subpackagesQueue.enqueue(PackageInfo(newPackagePrefix, subpackages))
-          traverse(packagePrefix, remainingFiles, subpackagesQueue)
-        case Nil if subpackagesQueue.nonEmpty =>
+    private lazy val cachedPackages: mutable.HashMap[String, PackageFileInfo] = {
+      val packages = mutable.HashMap[String, PackageFileInfo]()
+      def getSubpackages(dir: AbstractFile): List[AbstractFile] = dir.iterator.filter(_.isPackage).toList
+      def traverse(subpackagesQueue: mutable.Queue[PackageInfo]): Unit =
+        while (subpackagesQueue.nonEmpty) {
           val PackageInfo(packagePrefix, filesForPrefix) = subpackagesQueue.dequeue()
-          traverse(packagePrefix, filesForPrefix, subpackagesQueue)
-        case _ =>
-      }
-
+          @tailrec def loop(remainingFiles: List[AbstractFile]): Unit = remainingFiles match {
+            case pkgFile :: rest =>
+              val subpackages = getSubpackages(pkgFile)
+              val fullPkgName = packagePrefix + pkgFile.name
+              packages.put(fullPkgName, PackageFileInfo(pkgFile, subpackages))
+              val newPackagePrefix = fullPkgName + "."
+              subpackagesQueue.enqueue(PackageInfo(newPackagePrefix, subpackages))
+              loop(rest)
+            case Nil =>
+          }
+          loop(filesForPrefix)
+        }
       val subpackages = getSubpackages(file)
       packages.put(ClassPath.RootPackage, PackageFileInfo(file, subpackages))
-      traverse(ClassPath.RootPackage, subpackages, collection.mutable.Queue())
+      val infos = mutable.Queue(PackageInfo(ClassPath.RootPackage, subpackages))
+      traverse(infos)
       packages
     }
 
@@ -143,10 +140,8 @@ object ZipAndJarClassPathFactory extends ZipAndJarFileLookupFactory {
 
     override private[nsc] def classes(inPackage: PackageName): Seq[ClassFileEntry] = cachedPackages.get(inPackage.dottedString) match {
       case None => Seq.empty
-      case Some(PackageFileInfo(pkg, _)) =>
-        Seq.from(for (file <- pkg.iterator if file.isClass) yield ClassFileEntryImpl(file))
+      case Some(PackageFileInfo(pkg, _)) => pkg.iterator.filter(_.isClass).map(ClassFileEntryImpl(_)).toList
     }
-
 
     override private[nsc] def hasPackage(pkg: PackageName) = cachedPackages.contains(pkg.dottedString)
     override private[nsc] def list(inPackage: PackageName): ClassPathEntries = ClassPathEntries(packages(inPackage), classes(inPackage))
@@ -284,7 +279,7 @@ final class FileBasedCache[T] {
           // Cache hit
           val count = e.referenceCount.incrementAndGet()
           assert(count > 0, (stamps, count))
-          closeableRegistry.registerClosable(referenceCountDecrementer(e, paths))
+          closeableRegistry.registerCloseable(referenceCountDecrementer(e, paths))
           cached
         } else {
           // Cache miss: we found an entry but the underlying files have been modified
@@ -299,7 +294,7 @@ final class FileBasedCache[T] {
           val value = create()
           val entry = Entry(stamps, value)
           cache.put(paths, entry)
-          closeableRegistry.registerClosable(referenceCountDecrementer(entry, paths))
+          closeableRegistry.registerCloseable(referenceCountDecrementer(entry, paths))
           value
         }
       case _ =>
@@ -307,7 +302,7 @@ final class FileBasedCache[T] {
         val value = create()
         val entry = Entry(stamps, value)
         cache.put(paths, entry)
-        closeableRegistry.registerClosable(referenceCountDecrementer(entry, paths))
+        closeableRegistry.registerCloseable(referenceCountDecrementer(entry, paths))
         value
     }
   }

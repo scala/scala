@@ -1,10 +1,15 @@
 package scala.tools.nsc
 package classpath
 
+import org.junit.Assert._
 import org.junit.Test
+import java.io.Closeable
 import java.nio.file._
 import java.nio.file.attribute.FileTime
+import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.util.ClassPath
+import scala.util.Using
 
 class ZipAndJarFileLookupFactoryTest {
   @Test def cacheInvalidation(): Unit = {
@@ -12,11 +17,10 @@ class ZipAndJarFileLookupFactoryTest {
 
     val f = Files.createTempFile("test-", ".jar")
     Files.delete(f)
-    val g = new scala.tools.nsc.Global(new scala.tools.nsc.Settings())
+    val g = new Global(new Settings())
     assert(!g.settings.YdisableFlatCpCaching.value) // we're testing with our JAR metadata caching enabled.
-    val closeableRegistry = new CloseableRegistry
-    def createCp = ZipAndJarClassPathFactory.create(AbstractFile.getFile(f.toFile), g.settings, closeableRegistry)
-    try {
+    Using.resources(new CloseableRegistry, ForDeletion(f)) { (closeableRegistry, _) =>
+      def createCp = ZipAndJarClassPathFactory.create(AbstractFile.getFile(f.toFile), g.settings, closeableRegistry)
       createZip(f, Array(), "p1/C.class")
       createZip(f, Array(), "p2/X.class")
       createZip(f, Array(), "p3/Y.class")
@@ -42,9 +46,6 @@ class ZipAndJarFileLookupFactoryTest {
       // And that instance should see D, not C, in package p1.
       assert(cp3.findClass("p1.C").isEmpty)
       assert(cp3.findClass("p1.D").isDefined)
-    } finally {
-      Files.delete(f)
-      closeableRegistry.close()
     }
   }
 
@@ -53,18 +54,50 @@ class ZipAndJarFileLookupFactoryTest {
     env.put("create", String.valueOf(Files.notExists(zipLocation)))
     val fileUri = zipLocation.toUri
     val zipUri = new java.net.URI("jar:" + fileUri.getScheme, fileUri.getPath, null)
-    val zipfs = FileSystems.newFileSystem(zipUri, env)
-    try {
-      try {
-        val internalTargetPath = zipfs.getPath(internalPath)
-        Files.createDirectories(internalTargetPath.getParent)
-        Files.write(internalTargetPath, content)
-      } finally {
-        if (zipfs != null) zipfs.close()
+    Using.resource(FileSystems.newFileSystem(zipUri, env)) { zipfs =>
+      val internalTargetPath = zipfs.getPath(internalPath)
+      Files.createDirectories(internalTargetPath.getParent)
+      Files.write(internalTargetPath, content)
+    }
+  }
+
+  case class ForDeletion(path: Path)
+  object ForDeletion {
+    import Using.Releasable
+    implicit val deleteOnRelease: Releasable[ForDeletion] = new Releasable[ForDeletion] {
+      override def release(releasee: ForDeletion) = Files.delete(releasee.path)
+    }
+  }
+
+  @Test def `manifest classpath entry works`(): Unit = {
+    import java.util.jar.{Attributes, Manifest, JarEntry, JarOutputStream}
+    import scala.reflect.io.ManifestResources
+
+    def createTestJar(): Path = {
+      val f = Files.createTempFile("junit", ".jar")
+      val man = new Manifest()
+      man.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
+      man.getEntries().put("foo.class", new Attributes(0))
+      man.getEntries().put("p/bar.class", new Attributes(0))
+      Using.resource(new JarOutputStream(Files.newOutputStream(f), man)) { jout =>
+        val bytes = "hello, world".getBytes
+        jout.putNextEntry(new JarEntry("foo.class"))
+        jout.write(bytes, 0, bytes.length)
+        jout.putNextEntry(new JarEntry("p/bar.class"))
+        jout.write(bytes, 0, bytes.length)
       }
-    } finally {
-      zipfs.close()
+      f
+    }
+    val j = createTestJar();
+    Using.resources(new CloseableRegistry, ForDeletion(j)) { (closeableRegistry, _) =>
+      val url = j.toUri.toURL;
+      val cl = ScalaClassLoader.fromURLs(List(url), null)
+      val res = cl.getResource("META-INF/MANIFEST.MF");
+      val arch = new ManifestResources(res)   // ZipArchive.fromManifestURL(res)
+      val settings = new Settings
+      val cp = ZipAndJarClassPathFactory.create(arch, settings, closeableRegistry)
+      assertTrue(cp.findClass("foo").isDefined)
+      assertTrue(cp.findClass("p.bar").isDefined)
     }
   }
 }
-
