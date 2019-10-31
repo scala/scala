@@ -1,6 +1,6 @@
 package tastytest
 
-object TestError {
+object TestError extends Suite("TestError") {
 
   final class ConcreteError extends AbsError("ConcreteError")
 
@@ -8,10 +8,6 @@ object TestError {
     case e: ConcreteError => e.getMessage()
   }
 
-  def test1 = assert((try throw new ConcreteError catch handler) === "ConcreteError")
+  test(assert((try throw new ConcreteError catch handler) === "ConcreteError"))
 
-  def main(args: Array[String]): Unit = {
-    test1
-    println("Suite passed!")
-  }
 }

@@ -1,6 +1,6 @@
 package tastytest
 
-object TestFunctor {
+object TestFunctor extends Suite("TestFunctor") {
 
   implicit object ListFunctor extends Functor[List] {
     def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
@@ -18,14 +18,8 @@ object TestFunctor {
   def toStringOnFunctor[F[_]: Functor, A](fa: F[A]): F[String]   = implicitly[Functor[F]].map(fa)(_.toString())
   def hashOnFunctorI[F[_]: FunctorI, A <: Int](fa: F[A]): F[Int] = implicitly[FunctorI[F]].map(fa)(_.##)
 
-  def test1 = assert(toStringOnFunctor(List(true,false)) === List("true","false"))
-  def test2 = assert(hashOnFunctorI(List(1,2)) === List(1,2))
-  def test3 = assert(toStringOnFunctorL(List(true,false)) === List("true","false"))
+  test(assert(toStringOnFunctor(List(true,false)) === List("true","false")))
+  test(assert(hashOnFunctorI(List(1,2)) === List(1,2)))
+  test(assert(toStringOnFunctorL(List(true,false)) === List("true","false")))
 
-  def main(args: Array[String]): Unit = {
-    test1
-    test2
-    test3
-    println("Suite passed!")
-  }
 }

@@ -162,14 +162,14 @@ object TastyTest {
         "-deprecation",
         "-Xfatal-warnings"
       ) ++ sources
-      nsc.Main.process(args)
+      Try(nsc.Main.process(args)).getOrElse(false)
     }
   }
 
   // TODO call it directly when we can unpickle overloads
   private[this] lazy val dotcProcess: Array[String] => Boolean = {
     val process = classOf[dotc.Driver].getMethod("process", classOf[Array[String]])
-    args => !process.invoke(dotc.Main, args).asInstanceOf[DottyReporter].hasErrors
+    args => Try(!process.invoke(dotc.Main, args).asInstanceOf[DottyReporter].hasErrors).getOrElse(false)
   }
 
   private def dotcPos(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {

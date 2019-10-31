@@ -1,6 +1,6 @@
 package tastytest
 
-object TestNats {
+object TestNats extends Suite("TestNats") {
 
   object Longs extends Nats {
     type Nat                = Long
@@ -12,24 +12,13 @@ object TestNats {
 
   import Longs.Laws._
 
-  def test1 = assert(additiveIdentity(getRandom))
-  def test2 = assert(additiveCommutativity(getRandom, getRandom))
-  def test3 = assert(additiveAssociativity(getRandom, getRandom, getRandom))
-  def test4 = assert(multiplicativeIdentity(getRandom))
-  def test5 = assert(multiplicativeCommutativity(getRandom, getRandom))
-  def test6 = assert(multiplicativeAssociativity(getRandom, getRandom, getRandom))
-  def test7 = assert(multiplicativeDistributivity(getRandom, getRandom, getRandom))
+  test(assert(additiveIdentity(getRandom)))
+  test(assert(additiveCommutativity(getRandom, getRandom)))
+  test(assert(additiveAssociativity(getRandom, getRandom, getRandom)))
+  test(assert(multiplicativeIdentity(getRandom)))
+  test(assert(multiplicativeCommutativity(getRandom, getRandom)))
+  test(assert(multiplicativeAssociativity(getRandom, getRandom, getRandom)))
+  test(assert(multiplicativeDistributivity(getRandom, getRandom, getRandom)))
 
-  def main(args: Array[String]): Unit = {
-    for (_ <- 1 to 1000000) {
-      test1
-      test2
-      test3
-      test4
-      test5
-      test6
-      test7
-    }
-    println("Suite passed!")
-  }
+  override def reps = 1_000_000
 }

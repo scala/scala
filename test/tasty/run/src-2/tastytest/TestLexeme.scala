@@ -1,13 +1,8 @@
 package tastytest
 
-object TestLexeme {
+object TestLexeme extends Suite("TestLexeme") {
 
-  def test1 = assert(Lexeme.empty < Lexeme("abc").get)
-  def test2 = assert(Lexeme("aaa").get < Lexeme("ab").get)
+  test(assert(Lexeme.empty < Lexeme("abc").get))
+  test(assert(Lexeme("aaa").get < Lexeme("ab").get))
 
-  def main(args: Array[String]): Unit = {
-    test1
-    test2
-    println("Suite passed!")
-  }
 }
