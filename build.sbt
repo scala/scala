@@ -1394,3 +1394,8 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
 whitesourceProduct               := "Lightbend Reactive Platform"
 whitesourceAggregateProjectName  := "scala-2.13-stable"
 whitesourceIgnoredScopes         := Vector("test", "scala-tool")
+
+{
+  scala.build.TravisOutput.installIfOnTravis()
+  Nil
+}

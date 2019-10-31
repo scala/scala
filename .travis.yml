@@ -37,8 +37,8 @@ jobs:
           - determineScalaVersion
           - removeExistingBuilds $integrationRepoUrl
           - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-          - travis_wait 90 buildLocker
-          - travis_wait 90 buildQuick
+          - buildLocker
+          - buildQuick
           - triggerScalaDist
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
@@ -48,10 +48,10 @@ jobs:
         if: type = pull_request
         script:
           - set -e
-          - travis_wait 90 sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
+          - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - travis_wait 90 sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
-          - travis_wait 90 sbt -Dscala.build.compileWithDotty=true library/compile
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - sbt -Dscala.build.compileWithDotty=true library/compile
 
       # build the spec using jekyll
       - stage: build
