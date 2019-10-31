@@ -14,7 +14,7 @@ package scala
 package collection
 
 import generic._
-import TraversableView.NoBuilder
+import TraversableView.noBuilder
 
 /** A base trait for non-strict views of `Iterable`s.
  *  $iterableViewInfo
@@ -27,8 +27,9 @@ trait IterableView[+A, +Coll] extends IterableViewLike[A, Coll, IterableView[A, 
 object IterableView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]] =
-    new CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]] {
-      def apply(from: Coll) = new NoBuilder
-      def apply() = new NoBuilder
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, IterableView[A, Iterable[_]]]]
+  private[this] val ReusableCBF = new CanBuildFrom[Coll, Any, IterableView[Any, Iterable[_]]] {
+      def apply(from: Coll) = noBuilder[Any]
+      def apply() = noBuilder
     }
 }

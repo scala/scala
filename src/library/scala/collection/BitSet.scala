@@ -32,6 +32,7 @@ object BitSet extends BitSetFactory[BitSet] {
   def newBuilder = immutable.BitSet.newBuilder
 
   /** $canBuildFromInfo */
-  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
+  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = ReusableCBF
+  private[this] val ReusableCBF = bitsetCanBuildFrom
 }
 

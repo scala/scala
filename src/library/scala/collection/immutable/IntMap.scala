@@ -14,8 +14,8 @@ package scala
 package collection
 package immutable
 
-import scala.collection.generic.{ CanBuildFrom, BitOperations }
-import scala.collection.mutable.{ Builder, MapBuilder }
+import scala.collection.generic.{BitOperations, CanBuildFrom}
+import scala.collection.mutable.{Builder, MapBuilder}
 import scala.annotation.tailrec
 
 /** Utility class for integer maps.
@@ -50,9 +50,11 @@ import IntMapUtils._
  */
 object IntMap {
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] {
-    def apply(from: IntMap[A]): Builder[(Int, B), IntMap[B]] = apply()
-    def apply(): Builder[(Int, B), IntMap[B]] = new MapBuilder[Int, B, IntMap[B]](empty[B])
+  implicit def canBuildFrom[A, B]: CanBuildFrom[IntMap[A], (Int, B), IntMap[B]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[IntMap[A], (Int, B), IntMap[B]]]
+  private val ReusableCBF = new CanBuildFrom[IntMap[Any], (Int, Any), IntMap[Any]] {
+    def apply(from: IntMap[Any]): Builder[(Int, Any), IntMap[Any]] = apply()
+    def apply(): Builder[(Int, Any), IntMap[Any]] = new MapBuilder[Int, Any, IntMap[Any]](empty[Any])
   }
 
   def empty[T] : IntMap[T]  = IntMap.Nil

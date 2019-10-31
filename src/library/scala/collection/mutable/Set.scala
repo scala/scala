@@ -40,7 +40,9 @@ trait Set[A] extends Iterable[A]
  *  @define Coll `mutable.Set`
  */
 object Set extends MutableSetFactory[Set] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
   override def empty[A]: Set[A] = HashSet.empty[A]
 }
 

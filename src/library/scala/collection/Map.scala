@@ -45,7 +45,9 @@ object Map extends MapFactory[Map] {
   def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), Map[K, V]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
 
   /** An abstract shell used by { mutable, immutable }.Map but not by collection.Map
    *  because of variance issues.

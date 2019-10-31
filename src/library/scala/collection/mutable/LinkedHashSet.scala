@@ -135,7 +135,9 @@ class LinkedHashSet[A] extends AbstractSet[A]
  *  @define coll linked hash set
  */
 object LinkedHashSet extends MutableSetFactory[LinkedHashSet] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedHashSet[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, LinkedHashSet[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, LinkedHashSet[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
   override def empty[A]: LinkedHashSet[A] = new LinkedHashSet[A]
 
   /** Class for the linked hash set entry, used internally.

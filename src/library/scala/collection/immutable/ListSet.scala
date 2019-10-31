@@ -34,7 +34,8 @@ object ListSet extends ImmutableSetFactory[ListSet] {
     * $setCanBuildFromInfo
     */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, ListSet[A]] =
-    setCanBuildFrom[A]
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, ListSet[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
 
   @SerialVersionUID(5010379588739277132L)
   private object EmptyListSet extends ListSet[Any]

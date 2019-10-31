@@ -50,9 +50,11 @@ import LongMapUtils._
  */
 object LongMap {
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[LongMap[A], (Long, B), LongMap[B]] {
-    def apply(from: LongMap[A]): Builder[(Long, B), LongMap[B]] = apply()
-    def apply(): Builder[(Long, B), LongMap[B]] = new MapBuilder[Long, B, LongMap[B]](empty[B])
+  implicit def canBuildFrom[A, B]: CanBuildFrom[LongMap[A], (Long, B), LongMap[B]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[LongMap[A], (Long, B), LongMap[B]]]
+  private[this] val ReusableCBF = new CanBuildFrom[LongMap[Any], (Long, Any), LongMap[Any]] {
+    def apply(from: LongMap[Any]): Builder[(Long, Any), LongMap[Any]] = apply()
+    def apply(): Builder[(Long, Any), LongMap[Any]] = new MapBuilder[Long, Any, LongMap[Any]](empty[Any])
   }
 
   def empty[T]: LongMap[T]  = LongMap.Nil

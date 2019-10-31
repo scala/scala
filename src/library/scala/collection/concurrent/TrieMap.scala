@@ -970,7 +970,9 @@ extends scala.collection.concurrent.Map[K, V]
 object TrieMap extends MutableMapFactory[TrieMap] {
   val inodeupdater = AtomicReferenceFieldUpdater.newUpdater(classOf[INodeBase[_, _]], classOf[MainNode[_, _]], "mainnode")
 
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), TrieMap[K, V]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), TrieMap[K, V]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
 
   def empty[K, V]: TrieMap[K, V] = new TrieMap[K, V]
 

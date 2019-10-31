@@ -59,17 +59,20 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 
   /** Produces a new array with element type `T` and length `len` */
   override def newArray(len: Int): Array[T] = {
-    runtimeClass match {
-      case java.lang.Byte.TYPE      => new Array[Byte](len).asInstanceOf[Array[T]]
-      case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]
-      case java.lang.Character.TYPE => new Array[Char](len).asInstanceOf[Array[T]]
-      case java.lang.Integer.TYPE   => new Array[Int](len).asInstanceOf[Array[T]]
-      case java.lang.Long.TYPE      => new Array[Long](len).asInstanceOf[Array[T]]
-      case java.lang.Float.TYPE     => new Array[Float](len).asInstanceOf[Array[T]]
-      case java.lang.Double.TYPE    => new Array[Double](len).asInstanceOf[Array[T]]
-      case java.lang.Boolean.TYPE   => new Array[Boolean](len).asInstanceOf[Array[T]]
-      case java.lang.Void.TYPE      => new Array[Unit](len).asInstanceOf[Array[T]]
-      case _                        => java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+    if (runtimeClass.isPrimitive) {
+      runtimeClass match {
+        case java.lang.Byte.TYPE      => new Array[Byte](len).asInstanceOf[Array[T]]
+        case java.lang.Short.TYPE     => new Array[Short](len).asInstanceOf[Array[T]]
+        case java.lang.Character.TYPE => new Array[Char](len).asInstanceOf[Array[T]]
+        case java.lang.Integer.TYPE   => new Array[Int](len).asInstanceOf[Array[T]]
+        case java.lang.Long.TYPE      => new Array[Long](len).asInstanceOf[Array[T]]
+        case java.lang.Float.TYPE     => new Array[Float](len).asInstanceOf[Array[T]]
+        case java.lang.Double.TYPE    => new Array[Double](len).asInstanceOf[Array[T]]
+        case java.lang.Boolean.TYPE   => new Array[Boolean](len).asInstanceOf[Array[T]]
+        case java.lang.Void.TYPE      => new Array[Unit](len).asInstanceOf[Array[T]]
+      }
+    } else {
+      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
     }
   }
 

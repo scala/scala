@@ -83,7 +83,9 @@ trait Map[K, +V] extends Iterable[(K, V)]
 object Map extends ImmutableMapFactory[Map] {
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), Map[K, V]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
 

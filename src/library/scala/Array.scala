@@ -61,10 +61,79 @@ object Array extends FallbackArrayBuilding {
   val emptyShortArray   = new Array[Short](0)
   val emptyObjectArray  = new Array[Object](0)
 
-  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
+  implicit def canBuildFrom[T](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] = {
+    val tag = implicitly[ClassTag[T]]
+    val cls = tag.runtimeClass
+    (if (cls.isPrimitive) {
+      cls match {
+        case java.lang.Byte.TYPE      => cbfByteArray
+        case java.lang.Short.TYPE     => cbfShortArray
+        case java.lang.Character.TYPE => cbfCharArray
+        case java.lang.Integer.TYPE   => cbfIntArray
+        case java.lang.Long.TYPE      => cbfLongArray
+        case java.lang.Float.TYPE     => cbfFloatArray
+        case java.lang.Double.TYPE    => cbfDoubleArray
+        case java.lang.Boolean.TYPE   => cbfBooleanArray
+        case java.lang.Void.TYPE      => cbfUnitArray
+      }
+    } else if (cls == ObjectClass) {
+      cbfObjectArray
+    } else {
+      refCBF[T with AnyRef](tag.asInstanceOf[ClassTag[T with AnyRef]])
+    }).asInstanceOf[CanBuildFrom[Array[_], T, Array[T]]]
+  }
+  private[this] val ObjectClass = classOf[Object]
+
+  private[this] val cbfBooleanArray = new CanBuildFrom[Array[_], Boolean, Array[Boolean]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofBoolean()
+    def apply() = new ArrayBuilder.ofBoolean()
+  }
+
+  private[this] val cbfByteArray    = new CanBuildFrom[Array[_], Byte, Array[Byte]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofByte()
+    def apply() = new ArrayBuilder.ofByte()
+  }
+
+  private[this] val cbfCharArray    = new CanBuildFrom[Array[_], Char, Array[Char]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofChar()
+    def apply() = new ArrayBuilder.ofChar()
+  }
+
+  private[this] val cbfDoubleArray  = new CanBuildFrom[Array[_], Double, Array[Double]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofDouble()
+    def apply() = new ArrayBuilder.ofDouble()
+  }
+
+  private[this] val cbfFloatArray   = new CanBuildFrom[Array[_], Float, Array[Float]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofFloat()
+    def apply() = new ArrayBuilder.ofFloat()
+  }
+
+  private[this] val cbfIntArray     = new CanBuildFrom[Array[_], Int, Array[Int]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofInt()
+    def apply() = new ArrayBuilder.ofInt()
+  }
+
+  private[this] val cbfLongArray    = new CanBuildFrom[Array[_], Long, Array[Long]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofLong()
+    def apply() = new ArrayBuilder.ofLong()
+  }
+
+  private[this] val cbfShortArray   = new CanBuildFrom[Array[_], Short, Array[Short]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofShort()
+    def apply() = new ArrayBuilder.ofShort()
+  }
+
+  private[this] val cbfUnitArray    = new CanBuildFrom[Array[_], Unit, Array[Unit]] {
+    def apply(from: Array[_]) = new ArrayBuilder.ofUnit()
+    def apply() = new ArrayBuilder.ofUnit()
+  }
+
+  private[this] val cbfObjectArray  = refCBF[Object]
+  private[this] def refCBF[T <: AnyRef](implicit t: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] =
     new CanBuildFrom[Array[_], T, Array[T]] {
-      def apply(from: Array[_]) = ArrayBuilder.make[T]()(t)
-      def apply() = ArrayBuilder.make[T]()(t)
+      def apply(from: Array[_]) = new ArrayBuilder.ofRef[T]()(t)
+      def apply() = new ArrayBuilder.ofRef[T]()(t)
     }
 
   /**

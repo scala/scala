@@ -25,6 +25,9 @@ trait TraversableView[+A, +Coll] extends TraversableViewLike[A, Coll, Traversabl
  *  `TraversableView`s work. Its definitions are generally not accessed directly by clients.
  */
 object TraversableView {
+  private[this] val reusedNoBuilder = new NoBuilder[Any]
+  private[collection] def noBuilder[A] = reusedNoBuilder.asInstanceOf[NoBuilder[A]]
+  //should be private
   class NoBuilder[A] extends Builder[A, Nothing] {
     def +=(elem: A): this.type = this
     def iterator: Iterator[A] = Iterator.empty
@@ -34,7 +37,7 @@ object TraversableView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] =
     new CanBuildFrom[Coll, A, TraversableView[A, Traversable[_]]] {
-      def apply(from: Coll) = new NoBuilder
-      def apply() = new NoBuilder
+      def apply(from: Coll) = noBuilder
+      def apply() = noBuilder
     }
 }
