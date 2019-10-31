@@ -1456,11 +1456,12 @@ trait Namers extends MethodSynthesis {
         // true if the corresponding parameter of the base class has a default argument
         if (vparam.mods.hasDefault) {
           val name = nme.defaultGetterName(meth.name, posCounter)
-          owner.resetFlag(INTERFACE) // there's a concrete member now
           val default = owner.newMethodSymbol(name, vparam.pos, paramFlagsToDefaultGetter(meth.flags) | (if (meth.isConstructor) STATIC else 0))
           default.setPrivateWithin(meth.privateWithin)
           default.referenced = meth  // used to find default getter symbols for meth in addDefaultGetters
           default.setInfo(ErrorType) // correct type is assigned when meth is completed, in addDefaultGetters
+          if (!default.isStaticMember)
+            owner.resetFlag(INTERFACE) // there's a concrete member now
           if (meth.name == nme.apply && meth.hasAllFlags(CASE | SYNTHETIC)) {
             val att = meth.attachments.get[CaseApplyDefaultGetters].getOrElse({
               val a = new CaseApplyDefaultGetters()

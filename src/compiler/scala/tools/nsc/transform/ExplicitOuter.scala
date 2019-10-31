@@ -47,6 +47,9 @@ abstract class ExplicitOuter extends InfoTransform
   private def isInner(clazz: Symbol) =
     !clazz.isPackageClass && !clazz.outerClass.isStaticOwner
 
+  private def needsOuterParam(sym: Symbol) =
+    (sym.isClassConstructor || sym.isDefaultGetter && sym.isStaticMember) && isInner(sym.owner)
+
   private def haveSameOuter(parent: Type, clazz: Symbol) = {
     val owner = clazz.owner
     val parentSym = parent.typeSymbol
@@ -166,7 +169,7 @@ abstract class ExplicitOuter extends InfoTransform
       val resTpTransformed = transformInfo(sym, resTp)
 
       val paramsWithOuter =
-        if ((sym.isClassConstructor || sym.isStaticMember) && isInner(sym.owner)) // 1
+        if (needsOuterParam(sym)) // 1
           sym.newValueParameter(nme.OUTER_ARG, sym.pos, ARTIFACT).setInfo(sym.owner.outerClass.thisType) :: params
         else params
 
@@ -293,7 +296,7 @@ abstract class ExplicitOuter extends InfoTransform
         tree match {
           case Template(_, _, _) =>
             outerParam = NoSymbol
-          case DefDef(_, _, _, (param :: _) :: _, _, _) if (sym.isClassConstructor || sym.isStaticMember) && isInner(sym.owner) =>
+          case DefDef(_, _, _, (param :: _) :: _, _, _) if needsOuterParam(sym) =>
             outerParam = param.symbol
             assert(outerParam.name startsWith nme.OUTER, outerParam.name)
           case _ =>
@@ -315,17 +318,17 @@ abstract class ExplicitOuter extends InfoTransform
     * (1) An class which is not an interface and is not static gets an outer accessor (@see outerDefs).
     * (1a) A class which is not a trait gets an outer field.
     *
-    * (4) A constructor or static method of a non-trait inner class gets an outer parameter.
+    * (4) A constructor or static constructor default getter of a non-trait inner class gets an outer
+    *     parameter.
     *
     * (5) A reference C.this where C refers to an outer class is replaced by a selection
     *     `this.\$outer\$\$C1 ... .\$outer\$\$Cn` (@see outerPath)
     *
-    * (7) A call to a constructor or static method Q.(args) or Q.\$init\$(args) where Q != this and
-    *     the constructor belongs to a non-static class is augmented by an outer argument.
-    *     E.g. Q.(OUTER, args) where OUTER
-    *     is the qualifier corresponding to the singleton type Q.
+    * (7) A call to a constructor or static constructor default getter Q.(args) or Q.\$init\$(args) where
+    *     Q != this and the constructor belongs to a non-static class is augmented by an outer argument.
+    *     E.g. Q.(OUTER, args) where OUTER is the qualifier corresponding to the singleton type Q.
     *
-    * (8) A call to a constructor or static method this.(args) in a
+    * (8) A call to a constructor or static constructor default getter this.(args) in a
     *     secondary constructor is augmented to this.(OUTER, args)
     *     where OUTER is the last parameter of the secondary constructor.
     *
@@ -412,17 +415,16 @@ abstract class ExplicitOuter extends InfoTransform
             )
           )
         case DefDef(_, _, _, vparamss, _, rhs) =>
-          if (sym.isClassConstructor || sym.isStaticMember) {
+          if (needsOuterParam(sym)) { // (4)
             val clazz = sym.owner
-            val vparamss1 =
-              if (isInner(clazz)) { // (4)
-                if (isUnderConstruction(clazz.outerClass)) {
-                  reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
-                }
-                val outerParam =
-                  sym.newValueParameter(nme.OUTER, sym.pos, ARTIFACT) setInfo clazz.outerClass.thisType
-                ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
-              } else vparamss
+            val vparamss1 = {
+              if (isUnderConstruction(clazz.outerClass)) {
+                reporter.error(tree.pos, s"Implementation restriction: ${clazz.fullLocationString} requires premature access to ${clazz.outerClass}.")
+              }
+              val outerParam =
+                sym.newValueParameter(nme.OUTER, sym.pos, ARTIFACT) setInfo clazz.outerClass.thisType
+              ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
+            }
             super.transform(copyDefDef(tree)(vparamss = vparamss1))
           } else
             super.transform(tree)
@@ -450,7 +452,7 @@ abstract class ExplicitOuter extends InfoTransform
           if (sym.isStaticMember) tree
           else super.transform(tree)
 
-        case treeInfo.Applied(sel @ Select(qual, name), _, List(args)) if (name == nme.CONSTRUCTOR || sel.symbol.isStaticMember) && isInner(sel.symbol.owner) =>
+        case treeInfo.Applied(sel @ Select(qual, name), _, List(args)) if needsOuterParam(sel.symbol) =>
           val outerVal = atPos(tree.pos)(qual match {
             // it's a call between constructors of same class
             case _: This  =>

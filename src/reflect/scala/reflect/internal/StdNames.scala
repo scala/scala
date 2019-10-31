@@ -507,14 +507,14 @@ trait StdNames {
     } else
     (name, "", "")
 
-    // Nominally, name$default$N, encoded for <init>
+    // Nominally, name$default$N, but new$default$N for constructors
     def defaultGetterName(name: Name, pos: Int): TermName = (
       if (isConstructorName(name))
         DEFAULT_GETTER_INIT_STRING + pos
       else
         name.toString + DEFAULT_GETTER_STRING + pos
     )
-    // Nominally, name from name$default$N, CONSTRUCTOR for <init>
+    // Nominally, name from name$default$N, CONSTRUCTOR for new$default$N
     def defaultGetterToMethod(name: Name): TermName = (
       if (name startsWith DEFAULT_GETTER_INIT_STRING)
         nme.CONSTRUCTOR

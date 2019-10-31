@@ -8,6 +8,6 @@ object Test {
 }
 /* Test compiles to
     public static {
-        new C.K(MODULE$.c(), C.K.new$default$1());
+        new C.K(MODULE$.c(), C.K.new$default$1(MODULE$.c()));
     }
 */
