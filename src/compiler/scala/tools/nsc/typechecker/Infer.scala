@@ -1348,11 +1348,17 @@ trait Infer extends Checkable {
      *
      * @param pre
      * @param sym must not be overloaded!
-     * @return `pre memberType sym`, unless `sym`` is a polymorphic class's constructor,
+     * @return `pre memberType sym`, unless `sym` is a polymorphic class's constructor that we're invoking using `new`,
      *         in which case a `PolyType` is wrapped around the ctor's info
+     *         (since a self-constructor invocation `this(...)` cannot supply type params, we do not wrap the type params then)
      */
-    private def memberTypeForSpecificity(pre: Type, sym: Symbol) = {
-      val tparsToAdd = if (sym.isConstructor) sym.owner.info.typeParams else Nil
+    private def memberTypeForSpecificity(pre: Type, sym: Symbol, tree: Tree) = {
+      // Need to add type params for a polymorphic constructor invoked using `new C(...)` (but not `this(...)`)
+      val tparsToAdd =
+        tree match {
+          case Select(New(_), _) => sym.owner.info.typeParams // for a well-formed program, we know `sym.isConstructor`
+          case _ => Nil
+        }
 
       if (tparsToAdd.isEmpty) pre memberType sym
       // Need to make sure tparsToAdd are owned by sym (the constructor), and not the class (`sym.owner`).
@@ -1372,8 +1378,8 @@ trait Infer extends Checkable {
           val alts0 = alts filter (alt => isWeaklyCompatible(pre memberType alt, pt))
           val alts1 = if (alts0.isEmpty) alts else alts0
           val bests = bestAlternatives(alts1) { (sym1, sym2) =>
-            val tp1 = memberTypeForSpecificity(pre, sym1)
-            val tp2 = memberTypeForSpecificity(pre, sym2)
+            val tp1 = memberTypeForSpecificity(pre, sym1, tree)
+            val tp2 = memberTypeForSpecificity(pre, sym2, tree)
 
             (    (tp2 eq ErrorType)
               || isWeaklyCompatible(tp1, pt) && !isWeaklyCompatible(tp2, pt)
@@ -1485,7 +1491,7 @@ trait Infer extends Checkable {
           case tp               => tp
         }
 
-        private def followType(sym: Symbol) = followApply(memberTypeForSpecificity(pre, sym))
+        private def followType(sym: Symbol) = followApply(memberTypeForSpecificity(pre, sym, tree))
         // separate method to help the inliner
         private def isAltApplicable(pt: Type)(alt: Symbol) = context inSilentMode { isApplicable(undetparams, followType(alt), argtpes, pt) && !context.reporter.hasErrors }
         private def rankAlternatives(sym1: Symbol, sym2: Symbol) = isStrictlyMoreSpecific(followType(sym1), followType(sym2), sym1, sym2)
