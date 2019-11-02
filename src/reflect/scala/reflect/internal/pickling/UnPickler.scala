@@ -41,7 +41,12 @@ abstract class UnPickler {
   def unpickle(bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
     try {
       assert(classRoot != NoSymbol && moduleRoot != NoSymbol, s"The Unpickler expects a class and module symbol: $classRoot - $moduleRoot")
-      new Scan(bytes, offset, classRoot, moduleRoot, filename).run()
+      if (cachedScan == null || cachedScan.hasLazy)
+        cachedScan = new Scan(bytes, offset, classRoot, moduleRoot, filename)
+      else
+        cachedScan.reset(bytes, offset, classRoot, moduleRoot, filename)
+
+      cachedScan.run()
     } catch {
       case NonFatal(ex) =>
         /*if (settings.debug.value)*/ ex.printStackTrace()
@@ -49,30 +54,51 @@ abstract class UnPickler {
     }
   }
 
+  private[this] var cachedScan: Scan = null
+
   /** Keep track of the symbols pending to be initialized.
     *
     * Useful for reporting on stub errors and cyclic errors.
     */
   private[this] val completingStack = new mutable.ArrayBuffer[Symbol](24)
 
-  class Scan(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String) extends PickleBuffer(_bytes, offset, -1) {
+  class Scan(_bytes: Array[Byte], offset: Int, var classRoot: ClassSymbol, var moduleRoot: ModuleSymbol, var filename: String) extends PickleBuffer(_bytes, offset, -1) {
     //println("unpickle " + classRoot + " and " + moduleRoot)//debug
 
     protected def debug = settings.debug.value
 
     checkVersion()
 
-    private[this] val loadingMirror = mirrorThatLoaded(classRoot)
+    private[this] var loadingMirror = mirrorThatLoaded(classRoot)
 
     /** A map from entry numbers to array offsets */
-    private[this] val index = createIndex
+    private[this] def index = createIndex
 
     /** A map from entry numbers to symbols, types, or annotations */
-    private[this] val entries = new Array[AnyRef](index.length)
+    private[this] var entries = new Array[AnyRef](getIndexSize)
 
     /** A map from symbols to their associated `decls` scopes */
     private[this] val symScopes = mutable.HashMap[Symbol, Scope]()
 
+    private[this] var _hasLazy: Boolean = false
+    def hasLazy: Boolean = _hasLazy
+
+    def reset(_bytes: Array[Byte], offset: Int, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
+      // the effect of a reset must be the _same_ as that of creating a new item, but for the fact that arrays may not
+      // be deallocated immediately.
+      super.reset(_bytes, offset, -1)
+      this.classRoot = classRoot
+      loadingMirror = mirrorThatLoaded(classRoot) // TODO can be avoided if classRoot is not changeSd? 
+      this.moduleRoot = moduleRoot
+      this.filename = filename
+      if (entries.length < getIndexSize)
+        entries = new Array[AnyRef](getIndexSize)
+      else
+        fillArray(entries, null)
+
+      symScopes.clear
+      _hasLazy = false
+    }
     private def expect(expected: Int, msg: => String): Unit = {
       val tag = readByte()
       if (tag != expected)
@@ -89,8 +115,9 @@ abstract class UnPickler {
 
     // Laboriously unrolled for performance.
     def run(): Unit = {
+      val len = getIndexSize
       var i = 0
-      while (i < index.length) {
+      while (i < len) {
         if (entries(i) == null && isSymbolEntry(i))
           runAtIndex(i)(entries(i) = readSymbol())
 
@@ -99,7 +126,7 @@ abstract class UnPickler {
 
       // read children last, fix for #3951
       i = 0
-      while (i < index.length) {
+      while (i < len) {
         if (entries(i) == null) {
           if (isSymbolAnnotationEntry(i))
             runAtIndex(i)(readSymbolAnnotation())
@@ -703,8 +730,14 @@ abstract class UnPickler {
 
     def inferMethodAlternative(fun: Tree, argtpes: List[Type], restpe: Type): Unit = {} // can't do it; need a compiler for that.
 
-    def newLazyTypeRef(i: Int): LazyType = new LazyTypeRef(i)
-    def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = new LazyTypeRefAndAlias(i, j)
+    private def newLazyTypeRef(i: Int): LazyType = {
+      _hasLazy = true
+      new LazyTypeRef(i)
+    }
+    private def newLazyTypeRefAndAlias(i: Int, j: Int): LazyType = {
+      _hasLazy = true
+      new LazyTypeRefAndAlias(i, j)
+    }
 
     /** Convert to a type error, that is printed gracefully instead of crashing.
      *

@@ -417,6 +417,14 @@ trait Collections {
       these = these.tail
     }
   }
+
+  final def fillArray[A <: AnyRef](arr: Array[A], value: A): Unit = {
+    var ix = 0
+    while (ix < arr.length) {
+      arr(ix) = value
+      ix += 1
+    }
+  }
 }
 
 object Collections extends Collections

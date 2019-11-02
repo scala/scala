@@ -25,9 +25,22 @@ import scala.annotation.tailrec
  */
 class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
 
+  private var dataCopy = data
   var bytes = data
   var readIndex = from
   var writeIndex = to
+
+  /** A map from entry numbers to array offsets */
+  private var cachedIndex: Array[Int] = null
+  private var indexSize: Int = -1  // negative size means it has to be recreated
+
+  protected def reset(newData: Array[Byte], newFrom: Int, newTo: Int) = {
+    dataCopy   = newData
+    bytes      = newData
+    readIndex  = newFrom
+    writeIndex = newTo
+    indexSize  = -1
+  }
 
   @inline
   private def growTo(targetCapacity: Int): Unit = {
@@ -151,7 +164,7 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
     result.indices foreach { index =>
       val tag = readNat()
       val len = readNat()
-      val bytes = data.slice(readIndex, len + readIndex)
+      val bytes = dataCopy.slice(readIndex, len + readIndex)
       readIndex += len
 
       result(index) = tag -> bytes
@@ -183,12 +196,22 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
    *  the byte array where the entries start.
    */
   def createIndex: Array[Int] = {
-    val index = new Array[Int](readNat()) // nbEntries_Nat
-    for (i <- 0 until index.length) {
-      index(i) = readIndex
+    if (indexSize < 0) recreateIndex()
+    cachedIndex
+  }
+   def getIndexSize: Int = {
+    if (indexSize < 0) recreateIndex()
+    indexSize
+  }
+
+  private final def recreateIndex(): Unit = {
+    indexSize = readNat() // nbEntries_Nat
+    if (cachedIndex == null || cachedIndex.length < indexSize)
+      cachedIndex = new Array[Int](indexSize)
+    for (i <- 0 until indexSize) {
+      cachedIndex(i) = readIndex
       readByte() // skip type_Nat
       readIndex = readNat() + readIndex // read length_Nat, jump to next entry
     }
-    index
   }
 }

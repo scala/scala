@@ -127,6 +127,7 @@ object ShowPickled extends Names {
   def printFile(buf: PickleBuffer, out: PrintStream): Unit = {
     out.println("Version " + buf.readNat() + "." + buf.readNat())
     val index = buf.createIndex
+    val indexSize = buf.getIndexSize
     val entryList = makeEntryList(buf, index)
     buf.readIndex = 0
 
@@ -278,7 +279,7 @@ object ShowPickled extends Names {
       }
     }
 
-    for (i <- 0 until index.length) printEntry(i)
+    for (i <- 0 until indexSize) printEntry(i)
   }
 
   def fromFile(path: String) = fromBytes(io.File(path).toByteArray())
