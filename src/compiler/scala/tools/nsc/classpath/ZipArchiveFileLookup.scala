@@ -50,11 +50,15 @@ trait ZipArchiveFileLookup[FileEntryType <: ClassRepresentation] extends Efficie
     } yield createFileEntry(entry)
 
   protected def file(inPackage: PackageName, name: String): Option[FileEntryType] =
-    for {
-      dirEntry <- findDirEntry(inPackage)
-      entry <- Option(dirEntry.lookupName(name, directory = false))
-      if isRequiredFileType(entry)
-    } yield createFileEntry(entry)
+    findDirEntry(inPackage) match {
+      case Some(dirEntry) =>
+        val entry = dirEntry.lookupName(name, directory = false)
+        if (entry != null && isRequiredFileType(entry))
+          Some(createFileEntry(entry))
+        else
+          None
+      case _ => None
+    }
 
   override private[nsc] def hasPackage(pkg: PackageName) = findDirEntry(pkg).isDefined
 
