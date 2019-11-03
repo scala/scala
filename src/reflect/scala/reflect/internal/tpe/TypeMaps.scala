@@ -500,9 +500,11 @@ private[internal] trait TypeMaps {
       *  @param   lhs    its symbol is a type parameter of `clazz`
       *  @param   rhs    a type application constructed from `clazz`
       */
-    private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
-      val TypeRef(_, lhsSym, lhsArgs) = lhs
-      val TypeRef(_, rhsSym, rhsArgs) = rhs
+    private def correspondingTypeArgument(lhs: TypeRef, rhs: TypeRef): Type = {
+      val lhsSym  = lhs.sym
+      val lhsArgs = lhs.args
+      val rhsSym  = rhs.sym
+      val rhsArgs = rhs.args
       require(lhsSym.owner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
       // Find the type parameter position; we'll use the corresponding argument.
@@ -651,7 +653,7 @@ private[internal] trait TypeMaps {
     }
 
     private def singleTypeAsSeen(tp: SingleType): Type = {
-      val SingleType(pre, sym) = tp
+      import tp.{pre, sym}
 
       val pre1 = this(pre)
       if (pre1 eq pre) tp
