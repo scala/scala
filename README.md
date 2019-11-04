@@ -109,6 +109,7 @@ Once you've started an `sbt` session you can run one of the core commands:
   - `compile` compiles all sub-projects (library, reflect, compiler, scaladoc, etc)
   - `scala` / `scalac` run the REPL / compiler directly from sbt (accept options /
     arguments)
+  - `enableOptimizer` reloads the build with the Scala optimizer enabler. Our releases are build in this way. Enable this when working on compiler performance improvements.
   - `dist/mkBin` generates runner scripts (`scala`, `scalac`, etc) in `build/quick/bin`
   - `dist/mkPack` creates a build in the Scala distribution format in `build/pack`
   - `test` runs the JUnit test, `testOnly *immutable.ListTest` runs a subset
