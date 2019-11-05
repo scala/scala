@@ -27,7 +27,7 @@ object SavedLogs {
 
   def clearSavedLogsImpl(): Unit = synchronized { savedLogs.clear() }
 
-  class MyAppender(val name: String) extends AbstractAppender(name, null, null, true) {
+  class MyAppender(val name: String) extends AbstractAppender(name, null, null, true, Array()) {
     start()
     val buf = new mutable.ArrayBuffer[StringEvent]
     override def append(logEvent: core.LogEvent): Unit = {

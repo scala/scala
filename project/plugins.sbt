@@ -17,7 +17,7 @@ buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
 buildInfoPackage := "scalabuild"
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.3.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.1")
 
 libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
@@ -31,13 +31,11 @@ concurrentRestrictions in Global := Seq(
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.3")
 
-scalaVersion := "2.12.7"
-
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.0.0")
 
 // See DottySupport.scala
 if (Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false))
-  Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.3"))
+  Seq(addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.3.4"))
 else
   Seq()
 
