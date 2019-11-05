@@ -13,9 +13,11 @@
 package xsbt
 
 import xsbti.Logger
+
+import scala.tools.nsc.incremental.Message
 import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.interpreter.shell.{ ILoop, ShellConfig, ReplReporterImpl }
-import scala.tools.nsc.{ GenericRunnerCommand, Settings }
+import scala.tools.nsc.interpreter.shell.{ILoop, ReplReporterImpl, ShellConfig}
+import scala.tools.nsc.{GenericRunnerCommand, Settings}
 
 class ConsoleInterface {
   def commandArguments(

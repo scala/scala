@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import java.io.File
 import java.util.{ Arrays, Comparator }
@@ -57,8 +59,7 @@ class ExtractAPI[GlobalType <: Global](
     // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
     // This is used when recording inheritance dependencies.
     sourceFile: File
-) extends Compat
-    with ClassName
+) extends ClassName
     with GlobalHelpers {
 
   import global._

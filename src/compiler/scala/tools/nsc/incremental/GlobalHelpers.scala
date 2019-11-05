@@ -10,12 +10,14 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import scala.tools.nsc.Global
 import java.util.HashSet
 
-trait GlobalHelpers { self: Compat =>
+trait GlobalHelpers {
   val global: Global
   import global._
 
@@ -42,7 +44,7 @@ trait GlobalHelpers { self: Compat =>
     }
   }
 
-  private[xsbt] abstract class TypeDependencyTraverser extends TypeTraverser {
+  abstract class TypeDependencyTraverser extends TypeTraverser {
     def addDependency(symbol: Symbol): Unit
 
     /** Add type dependency ignoring packages and inheritance info from classes. */

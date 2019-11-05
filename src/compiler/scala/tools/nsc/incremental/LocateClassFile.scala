@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import scala.reflect.io.NoAbstractFile
 import scala.tools.nsc.io.AbstractFile
@@ -20,7 +22,7 @@ import java.io.File
 /**
  * Contains utility methods for looking up class files corresponding to Symbols.
  */
-abstract class LocateClassFile extends Compat with ClassName {
+abstract class LocateClassFile extends ClassName {
   val global: CallbackGlobal
   import global._
 

@@ -12,12 +12,15 @@
 
 package xsbt
 
-import xsbti.{ AnalysisCallback, Logger, Problem, Reporter }
-import xsbti.compile._
-import scala.tools.nsc.Settings
-import scala.collection.mutable
-import Log.debug
 import java.io.File
+
+import xsbti.compile._
+import xsbti.{AnalysisCallback, Logger, Problem, Reporter}
+
+import scala.collection.mutable
+import scala.tools.nsc.Settings
+import scala.tools.nsc.incremental.Log.debug
+import scala.tools.nsc.incremental._
 
 final class CompilerInterface {
   def newCompiler(
@@ -49,21 +52,8 @@ class InterfaceCompileFailed(
 class InterfaceCompileCancelled(val arguments: Array[String], override val toString: String)
     extends xsbti.CompileCancelled
 
-private final class WeakLog(private[this] var log: Logger, private[this] var delegate: Reporter) {
-  def apply(message: String): Unit = {
-    assert(log ne null, "Stale reference to logger")
-    log.error(Message(message))
-  }
-  def logger: Logger = log
-  def reporter: Reporter = delegate
-  def clear(): Unit = {
-    log = null
-    delegate = null
-  }
-}
-
-private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
-    extends CachedCompiler
+final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
+  extends CachedCompiler
     with CachedCompilerCompat
     with java.io.Closeable {
 
@@ -192,5 +182,18 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     val warnings = run.allConditionalWarnings
     if (warnings.nonEmpty)
       compiler.logUnreportedWarnings(warnings.map(cw => ("" /*cw.what*/, cw.warnings.toList)))
+  }
+}
+
+final class WeakLog(private[this] var log: Logger, private[this] var delegate: Reporter) {
+  def apply(message: String): Unit = {
+    assert(log ne null, "Stale reference to logger")
+    log.error(Message(message))
+  }
+  def logger: Logger = log
+  def reporter: Reporter = delegate
+  def clear(): Unit = {
+    log = null
+    delegate = null
   }
 }

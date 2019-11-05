@@ -10,15 +10,15 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import java.util.{ HashMap => JavaMap }
 import java.util.{ HashSet => JavaSet }
 import java.util.EnumSet
 
 import xsbti.UseScope
-// Left for compatibility
-import Compat._
 
 /**
  * Extracts simple names used in given compilation unit.
@@ -57,8 +57,7 @@ import Compat._
  *
  */
 class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
-    extends Compat
-    with ClassName
+    extends ClassName
     with GlobalHelpers {
 
   import global._

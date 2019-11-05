@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import java.util.function.Supplier
 

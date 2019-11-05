@@ -12,15 +12,15 @@
 
 package xsbt
 
-import java.io.{ PrintWriter, StringWriter }
+import java.io.{PrintWriter, StringWriter}
 
-import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.{ GenericRunnerCommand, Settings }
-
+import xsbt.Compat._
+import xsbt.InteractiveConsoleHelper._
 import xsbti.Logger
 
-import Compat._
-import InteractiveConsoleHelper._
+import scala.tools.nsc.incremental.Message
+import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.{GenericRunnerCommand, Settings}
 
 class InteractiveConsoleInterface(
     args: Array[String],

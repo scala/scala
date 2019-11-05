@@ -12,7 +12,7 @@
 
 package xsbt
 
-import Compat._
+import xsbt.Compat._
 import xsbti.InteractiveConsoleResult
 
 object InteractiveConsoleHelper {

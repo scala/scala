@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import xsbti.{ AnalysisCallback, Severity }
 import xsbti.compile._
@@ -54,7 +56,7 @@ sealed abstract class CallbackGlobal(
    * in [[xsbt.LocalToNonLocalClass]] to make sure the we don't resolve local
    * classes before we reach this phase.
    */
-  private[xsbt] val sbtDependency: SubComponent
+  val sbtDependency: SubComponent
 
   /**
    * A map from local classes to non-local class that contains it.
@@ -69,7 +71,7 @@ sealed abstract class CallbackGlobal(
    * internally for backed purposes (generation of EnclosingClass attributes) but
    * that internal mapping doesn't have a stable interface we could rely on.
    */
-  private[xsbt] val localToNonLocalClass = new LocalToNonLocalClass[this.type](this)
+  val localToNonLocalClass = new LocalToNonLocalClass[this.type](this)
 }
 
 /** Defines the implementation of Zinc with all its corresponding phases. */
@@ -259,7 +261,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   }
 
   // Scala 2.10.x and later
-  private[xsbt] def logUnreportedWarnings(seq: Seq[(String, List[(Position, String)])]): Unit = {
+  def logUnreportedWarnings(seq: Seq[(String, List[(Position, String)])]): Unit = {
     for ((what, warnings) <- seq; (pos, msg) <- warnings)
       yield callback.problem(what, DelegatingReporter.convert(pos), msg, Severity.Warn, false)
     ()

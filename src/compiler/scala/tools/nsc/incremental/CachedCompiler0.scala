@@ -14,7 +14,9 @@ package scala.tools
 package nsc
 package incremental
 
-/** Defines compatibility utils for [[ZincCompiler]]. */
-trait ZincGlobalCompat {
-  protected def superDropRun(): Unit = ()
-}
+import xsbti.{ AnalysisCallback, Logger, Problem, Reporter }
+import xsbti.compile._
+import scala.tools.nsc.Settings
+import scala.collection.mutable
+import Log.debug
+import java.io.File

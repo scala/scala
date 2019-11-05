@@ -10,16 +10,16 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import java.io.File
 import java.util.Optional
 
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
-// Left for compatibility
-import Compat._
 
-private object DelegatingReporter {
+object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
     new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
 
@@ -65,21 +65,21 @@ private object DelegatingReporter {
   }
 
   import java.lang.{ Integer => I }
-  private[xsbt] def o2oi(opt: Option[Int]): Optional[I] = {
+  def o2oi(opt: Option[Int]): Optional[I] = {
     opt match {
       case Some(s) => Optional.ofNullable[I](s: I)
       case None    => Optional.empty[I]
     }
   }
 
-  private[xsbt] def o2jo[A](o: Option[A]): Optional[A] = {
+  def o2jo[A](o: Option[A]): Optional[A] = {
     o match {
       case Some(v) => Optional.ofNullable(v)
       case None    => Optional.empty[A]()
     }
   }
 
-  private[xsbt] def convert(dirtyPos: Position): xsbti.Position = {
+  def convert(dirtyPos: Position): xsbti.Position = {
     def cleanPos(pos: Position) = {
       Option(pos) match {
         case None | Some(NoPosition) => None
@@ -140,7 +140,7 @@ private object DelegatingReporter {
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
 // Based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
-private final class DelegatingReporter(
+final class DelegatingReporter(
     warnFatal: Boolean,
     noWarn: Boolean,
     private[this] var delegate: xsbti.Reporter

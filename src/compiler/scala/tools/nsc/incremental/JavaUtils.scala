@@ -10,9 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
-
-private[xsbt] object JavaUtils {
+package scala.tools
+package nsc
+package incremental
+object JavaUtils {
   implicit class JavaForEach[T](val iterable: java.lang.Iterable[T]) extends AnyVal {
 
     @inline

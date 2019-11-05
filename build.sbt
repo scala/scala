@@ -606,7 +606,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .dependsOn(repl)
 
 lazy val compilerBridge = configureAsSubproject(Project("compiler-bridge", file("src") / "compiler-bridge"))
-  .dependsOn(compiler % Provided)
+  .dependsOn(compiler % Provided, replFrontend % Provided, replFrontend % Provided, scaladoc % Provided)
   .settings(
     commonSettings,
     libraryDependencies += compilerInterfaceDep % Provided,

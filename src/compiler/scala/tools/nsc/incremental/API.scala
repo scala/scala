@@ -10,7 +10,9 @@
  * additional information regarding copyright ownership.
  */
 
-package xsbt
+package scala.tools
+package nsc
+package incremental
 
 import scala.tools.nsc.Phase
 import scala.tools.nsc.symtab.Flags
@@ -20,7 +22,7 @@ object API {
   val name = "xsbt-api"
 }
 
-final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers with ClassName {
+final class API(val global: CallbackGlobal) extends GlobalHelpers with ClassName {
   import global._
 
   import scala.collection.mutable

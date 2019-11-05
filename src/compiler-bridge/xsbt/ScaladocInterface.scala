@@ -13,14 +13,16 @@
 package xsbt
 
 import xsbti.Logger
-import Log.debug
+
+import scala.tools.nsc.incremental.Log.debug
+import scala.tools.nsc.incremental.{Command, DelegatingReporter, Log}
 
 class ScaladocInterface {
   def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) =
     (new Runner(args, log, delegate)).run
 }
 private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter) {
-  import scala.tools.nsc.{ doc, Global, reporters }
+  import scala.tools.nsc.{Global, doc, reporters}
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
   val command = Command(args.toList, docSettings)
