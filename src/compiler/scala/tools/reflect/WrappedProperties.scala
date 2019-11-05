@@ -35,7 +35,7 @@ trait WrappedProperties extends PropertiesTrait {
   override def envOrSome(name: String, alt: => Option[String]) = wrap(super.envOrNone(name)).flatten orElse alt
 
   def systemProperties: List[(String, String)] = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     wrap {
       // scala/bug#7269,7775 Avoid `ConcurrentModificationException` and nulls if another thread modifies properties
       val props = System.getProperties

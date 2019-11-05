@@ -196,29 +196,35 @@ trait Mirrors extends api.Mirrors {
         case _                                                   => MissingRequirementError.notFound("package " + fullname)
       }
 
-    @deprecated("Use overload that accepts a String.", "2.13.0")
+    @deprecated("use overload that accepts a String.", since = "2.13.0")
     def getPackage(fullname: TermName): ModuleSymbol =
       getPackage(fullname.toString)
     def getPackage(fullname: String): ModuleSymbol =
       ensurePackageSymbol(fullname, getModuleOrClass(fullname, newTermName(_)), allowModules = true)
 
+    @deprecated("use overload that accepts a String.", since = "2.12.11")
     def getPackageIfDefined(fullname: TermName): Symbol =
+      getPackageIfDefined(fullname.toString)
+    def getPackageIfDefined(fullname: String): Symbol =
       wrapMissing(getPackage(fullname))
 
-    @deprecated("use getPackage", "2.11.0") def getRequiredPackage(fullname: String): ModuleSymbol =
-      getPackage(newTermNameCached(fullname))
+    @deprecated("use getPackage", "2.11.0")
+    def getRequiredPackage(fullname: String): ModuleSymbol =
+      getPackage(fullname)
 
-    def getPackageObject(fullname: String): ModuleSymbol = getPackageObject(newTermName(fullname))
+    @deprecated("use overload that accepts a String.", since = "2.12.11")
     def getPackageObject(fullname: TermName): ModuleSymbol =
-      (getPackage(fullname).packageObject) match {
+      getPackageObject(fullname.toString)
+    def getPackageObject(fullname: String): ModuleSymbol =
+      getPackage(fullname).packageObject match {
         case x: ModuleSymbol => x
         case _               => MissingRequirementError.notFound("package object " + fullname)
       }
 
-    def getPackageObjectIfDefined(fullname: String): Symbol =
-      getPackageObjectIfDefined(newTermNameCached(fullname))
-
+    @deprecated("use overload that accepts a String.", since = "2.12.11")
     def getPackageObjectIfDefined(fullname: TermName): Symbol =
+      getPackageObjectIfDefined(fullname.toString)
+    def getPackageObjectIfDefined(fullname: String): Symbol =
       wrapMissing(getPackageObject(fullname))
 
     override def staticPackage(fullname: String): ModuleSymbol =

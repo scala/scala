@@ -15,8 +15,7 @@ package typechecker
 
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, SomeOfNil }
-import scala.reflect.internal.Reporter
+import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil }
 
 /**
  *  @author  Martin Odersky

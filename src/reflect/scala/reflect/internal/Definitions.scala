@@ -322,8 +322,8 @@ trait Definitions extends api.StandardDefinitions {
       def AnyVal_getClass = getMemberMethod(AnyValClass, nme.getClass_)
 
     // bottom types
-    lazy val RuntimeNothingClass  = getClassByName(fulltpnme.RuntimeNothing)
-    lazy val RuntimeNullClass     = getClassByName(fulltpnme.RuntimeNull)
+    lazy val RuntimeNothingClass = requiredClass[scala.runtime.Nothing$]
+    lazy val RuntimeNullClass    = requiredClass[scala.runtime.Null$]
 
     sealed abstract class BottomClassSymbol(name: TypeName, parent: Symbol) extends ClassSymbol(ScalaPackageClass, NoPosition, name) {
       locally {
@@ -522,7 +522,7 @@ trait Definitions extends api.StandardDefinitions {
 
     // XML
     lazy val ScalaXmlTopScope = getModuleIfDefined("scala.xml.TopScope")
-    lazy val ScalaXmlPackage  = getPackageIfDefined(TermName("scala.xml"))
+    lazy val ScalaXmlPackage  = getPackageIfDefined("scala.xml")
 
     // scala.reflect
     lazy val ReflectPackage              = requiredModule[scala.reflect.`package`.type]

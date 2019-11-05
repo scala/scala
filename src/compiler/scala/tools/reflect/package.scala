@@ -14,6 +14,7 @@ package scala.tools
 
 import scala.language.implicitConversions
 import scala.reflect.api.JavaUniverse
+import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.{ConsoleReporter, FilteringReporter}
@@ -77,14 +78,14 @@ package object reflect {
   private[reflect] def frontEndToReporter(frontEnd: FrontEnd, settings0: Settings): FilteringReporter = new FilteringReporter {
     val settings = settings0
 
-    val API_INFO = frontEnd.INFO
+    val API_INFO    = frontEnd.INFO
     val API_WARNING = frontEnd.WARNING
-    val API_ERROR = frontEnd.ERROR
+    val API_ERROR   = frontEnd.ERROR
 
-    type NscSeverity = Severity
-    val NSC_INFO = INFO
-    val NSC_WARNING = WARNING
-    val NSC_ERROR = ERROR
+    type NscSeverity = Reporter.Severity
+    val NSC_INFO     = Reporter.INFO
+    val NSC_WARNING  = Reporter.WARNING
+    val NSC_ERROR    = Reporter.ERROR
 
     def doReport(pos: Position, msg: String, nscSeverity: NscSeverity): Unit =
       frontEnd.log(pos, msg, nscSeverity match {

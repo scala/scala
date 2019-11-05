@@ -55,7 +55,7 @@ object PathResolver {
   /** Values found solely by inspecting environment or property variables.
    */
   object Environment {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     private def searchForBootClasspath: String = {
       val props = System.getProperties

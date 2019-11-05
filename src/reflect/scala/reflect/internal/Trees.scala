@@ -1848,11 +1848,11 @@ trait Trees extends api.Trees {
   }
 
   trait TreeStackTraverser extends Traverser {
-    import collection.mutable
-    val path: mutable.Stack[Tree] = mutable.Stack()
+    var path: List[Tree] = Nil
     abstract override def traverse(t: Tree) = {
-      path push t
-      try super.traverse(t) finally path.pop()
+      path ::= t
+      try super.traverse(t)
+      finally path = path.tail
     }
   }
 

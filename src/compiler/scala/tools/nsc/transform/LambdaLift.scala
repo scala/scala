@@ -214,7 +214,7 @@ abstract class LambdaLift extends InfoTransform {
             }
           case Ident(name) =>
             if (sym == NoSymbol) {
-              assert(name == nme.WILDCARD)
+              assert(name == nme.WILDCARD, name)
             } else if (sym.isLocalToBlock) {
               val owner = logicallyEnclosingMember(currentOwner)
               if (sym.isTerm && !sym.isMethod) markFree(sym, owner)
