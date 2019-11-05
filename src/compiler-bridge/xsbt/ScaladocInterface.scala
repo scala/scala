@@ -15,7 +15,7 @@ package xsbt
 import xsbti.Logger
 
 import scala.tools.nsc.incremental.Log.debug
-import scala.tools.nsc.incremental.{Command, DelegatingReporter, Log}
+import scala.tools.nsc.incremental.{Command, ZincDelegatingReporter, Log}
 
 class ScaladocInterface {
   def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) =
@@ -26,7 +26,7 @@ private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter)
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
   val command = Command(args.toList, docSettings)
-  val reporter = DelegatingReporter(docSettings, delegate)
+  val reporter = ZincDelegatingReporter(docSettings, delegate)
   def noErrors = !reporter.hasErrors && command.ok
 
   def run(): Unit = {

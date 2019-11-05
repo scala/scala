@@ -17,7 +17,7 @@ import java.io.PrintWriter
 import xsbti.compile.Output
 
 import scala.tools.nsc.Settings
-import scala.tools.nsc.incremental.{DelegatingReporter, ZincCompiler}
+import scala.tools.nsc.incremental.{ZincDelegatingReporter, ZincGlobal}
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 object Compat {
@@ -30,6 +30,6 @@ object Compat {
 }
 
 trait CachedCompilerCompat { self: CachedCompiler0 =>
-  def newCompiler(settings: Settings, reporter: DelegatingReporter, output: Output): ZincCompiler =
-    new ZincCompiler(settings, reporter, output)
+  def newCompiler(settings: Settings, reporter: ZincDelegatingReporter, output: Output): ZincGlobal =
+    new ZincGlobal(settings, reporter, output)
 }

@@ -48,7 +48,7 @@ sealed abstract class CallbackGlobal(
     }
   }
 
-  lazy val JarUtils = new JarUtils(outputDirs)
+  lazy val jarUtils = new JarUtils(outputDirs)
 
   /**
    * Defines the sbt phase in which the dependency analysis is performed.
@@ -75,7 +75,7 @@ sealed abstract class CallbackGlobal(
 }
 
 /** Defines the implementation of Zinc with all its corresponding phases. */
-sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, output: Output)
+sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, output: Output)
     extends CallbackGlobal(settings, dreporter, output)
     with ZincGlobalCompat {
 
@@ -90,25 +90,25 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
   /** Phase that analyzes the generated class files and maps them to sources. */
   object sbtAnalyzer extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
-    val phaseName = Analyzer.name
+    val global: ZincGlobal.this.type = ZincGlobal.this
+    val phaseName = ZincAnalyzer.name
     val runsAfter = List("jvm")
     override val runsBefore = List("terminal")
     val runsRightAfter = None
   } with SubComponent {
-    val analyzer = new Analyzer(global)
+    val analyzer = new ZincAnalyzer(global)
     def newPhase(prev: Phase) = analyzer.newPhase(prev)
     def name = phaseName
   }
 
   /** Phase that extracts dependency information */
   object sbtDependency extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
+    val global: ZincGlobal.this.type = ZincGlobal.this
     val phaseName = Dependency.name
-    val runsAfter = List(API.name)
+    val runsAfter = List(APIExtractor.name)
     override val runsBefore = List("refchecks")
     // Keep API and dependency close to each other -- we may want to merge them in the future.
-    override val runsRightAfter = Some(API.name)
+    override val runsRightAfter = Some(APIExtractor.name)
   } with SubComponent {
     val dependency = new Dependency(global)
     def newPhase(prev: Phase) = dependency.newPhase(prev)
@@ -122,15 +122,15 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
    *       irrespective of whether we typecheck from source or unpickle previously compiled classes.
    */
   object apiExtractor extends {
-    val global: ZincCompiler.this.type = ZincCompiler.this
-    val phaseName = API.name
+    val global: ZincGlobal.this.type = ZincGlobal.this
+    val phaseName = APIExtractor.name
     val runsAfter = List("typer")
     override val runsBefore = List("erasure")
     // TODO: Consider migrating to "uncurry" for `runsBefore`.
     // TODO: Consider removing the system property to modify which phase is used for API extraction.
     val runsRightAfter = Option(System.getProperty("sbt.api.phase")) orElse Some("pickler")
   } with SubComponent {
-    val api = new API(global)
+    val api = new APIExtractor(global)
     def newPhase(prev: Phase) = api.newPhase(prev)
     def name = phaseName
   }
@@ -155,7 +155,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
       // This class file path is relative to the output jar/directory and computed from class name
       val classFilePath = name.replace('.', '/') + ".class"
 
-      JarUtils.outputJar match {
+      jarUtils.outputJar match {
         case Some(outputJar) =>
           if (!callback.classesInOutputJar().contains(classFilePath)) None
           else {
@@ -169,7 +169,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
              * If scalac breaks this contract (the check for existence is done when creating
              * a normal reflect file but not a plain file), Zinc will not work correctly.
              */
-            Some(new PlainFile(JarUtils.classNameInJar(outputJar, classFilePath)))
+            Some(new PlainFile(jarUtils.classNameInJar(outputJar, classFilePath)))
           }
 
         case None => // The compiler outputs class files in a classes directory (the default)
@@ -245,7 +245,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   /** Returns the active analysis callback, set by [[set]] and cleared by [[clear]]. */
   def callback: AnalysisCallback = callback0
 
-  final def set(callback: AnalysisCallback, dreporter: DelegatingReporter): Unit = {
+  final def set(callback: AnalysisCallback, dreporter: ZincDelegatingReporter): Unit = {
     this.callback0 = callback
     reporter = dreporter
   }
@@ -263,12 +263,12 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
   // Scala 2.10.x and later
   def logUnreportedWarnings(seq: Seq[(String, List[(Position, String)])]): Unit = {
     for ((what, warnings) <- seq; (pos, msg) <- warnings)
-      yield callback.problem(what, DelegatingReporter.convert(pos), msg, Severity.Warn, false)
+      yield callback.problem(what, ZincDelegatingReporter.convert(pos), msg, Severity.Warn, false)
     ()
   }
 }
 
 import scala.reflect.internal.Positions
-final class ZincCompilerRangePos(settings: Settings, dreporter: DelegatingReporter, output: Output)
-    extends ZincCompiler(settings, dreporter, output)
+final class ZincGlobalRangePos(settings: Settings, dreporter: ZincDelegatingReporter, output: Output)
+    extends ZincGlobal(settings, dreporter, output)
     with Positions

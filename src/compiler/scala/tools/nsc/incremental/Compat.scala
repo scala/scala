@@ -14,7 +14,7 @@ package scala.tools
 package nsc
 package incremental
 
-/** Defines compatibility utils for [[ZincCompiler]]. */
+/** Defines compatibility utils for [[ZincGlobal]]. */
 trait ZincGlobalCompat {
   protected def superDropRun(): Unit = ()
 }

@@ -73,7 +73,7 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
   }
 
   val command = Command(args.toList, settings)
-  private[this] val dreporter = DelegatingReporter(settings, initialLog.reporter)
+  private[this] val dreporter = ZincDelegatingReporter(settings, initialLog.reporter)
   try {
     if (!noErrors(dreporter)) {
       dreporter.printSummary()
@@ -82,7 +82,7 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
   } finally initialLog.clear()
 
   /** Instance of the underlying Zinc compiler. */
-  val compiler: ZincCompiler = newCompiler(command.settings, dreporter, output)
+  val compiler: ZincGlobal = newCompiler(command.settings, dreporter, output)
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,7 +93,7 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
     }
   }
 
-  def noErrors(dreporter: DelegatingReporter) = !dreporter.hasErrors && command.ok
+  def noErrors(dreporter: ZincDelegatingReporter) = !dreporter.hasErrors && command.ok
 
   def commandArguments(sources: Array[File]): Array[String] =
     (command.settings.recreateArgs ++ sources.map(_.getAbsolutePath)).toArray[String]
@@ -111,7 +111,7 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
       progress: CompileProgress
   ): Unit = synchronized {
     debug(log, infoOnCachedCompiler(hashCode().toLong.toHexString))
-    val dreporter = DelegatingReporter(settings, delegate)
+    val dreporter = ZincDelegatingReporter(settings, delegate)
     try {
       run(sources.toList, changes, callback, log, dreporter, progress)
     } finally {
@@ -127,7 +127,7 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
       changes: DependencyChanges,
       callback: AnalysisCallback,
       log: Logger,
-      underlyingReporter: DelegatingReporter,
+      underlyingReporter: ZincDelegatingReporter,
       compileProgress: CompileProgress
   ): Unit = {
 
@@ -159,12 +159,12 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
       handleCompilationCancellation(underlyingReporter, log)
   }
 
-  def handleErrors(dreporter: DelegatingReporter, log: Logger): Nothing = {
+  def handleErrors(dreporter: ZincDelegatingReporter, log: Logger): Nothing = {
     debug(log, "Compilation failed (CompilerInterface)")
     throw new InterfaceCompileFailed(args, dreporter.problems, "Compilation failed")
   }
 
-  def handleCompilationCancellation(dreporter: DelegatingReporter, log: Logger): Nothing = {
+  def handleCompilationCancellation(dreporter: ZincDelegatingReporter, log: Logger): Nothing = {
     assert(dreporter.cancelled, "We should get here only if when compilation got cancelled")
     debug(log, "Compilation cancelled (CompilerInterface)")
     throw new InterfaceCompileCancelled(args, "Compilation has been cancelled")

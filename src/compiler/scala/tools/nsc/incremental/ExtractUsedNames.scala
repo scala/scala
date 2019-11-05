@@ -20,6 +20,8 @@ import java.util.EnumSet
 
 import xsbti.UseScope
 
+import scala.jdk.CollectionConverters._
+
 /**
  * Extracts simple names used in given compilation unit.
  *
@@ -61,7 +63,6 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     with GlobalHelpers {
 
   import global._
-  import JavaUtils._
 
   private final class NamesUsedInClass {
     // Default names and other scopes are separated for performance reasons
@@ -71,12 +72,12 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     // We have to leave with commas on ends
     override def toString(): String = {
       val builder = new StringBuilder(": ")
-      defaultNames.foreach { name =>
+      defaultNames.asScala.foreach { name =>
         builder.append(name.decoded.trim)
         val otherScopes = scopedNames.get(name)
         if (otherScopes != null) {
           builder.append(" in [")
-          otherScopes.foreach(scope => builder.append(scope.name()).append(", "))
+          otherScopes.asScala.foreach(scope => builder.append(scope.name()).append(", "))
           builder.append("]")
         }
         builder.append(", ")
@@ -109,7 +110,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
           val scopedNamesInFirstClass = namesInFirstClass.scopedNames
 
           namesInFirstClass.defaultNames.addAll(defaultNamesTopLevel)
-          scopedNamesTopLevel.foreach { (topLevelName, topLevelScopes) =>
+          scopedNamesTopLevel.asScala.foreach { case (topLevelName, topLevelScopes) =>
             val existingScopes = scopedNamesInFirstClass.get(topLevelName)
             if (existingScopes == null)
               scopedNamesInFirstClass.put(topLevelName, topLevelScopes)
@@ -125,7 +126,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     debuglog {
       val msg = s"The ${unit.source} contains the following used names:\n"
       val builder = new StringBuilder(msg)
-      traverser.usedNamesFromClasses.foreach { (name, usedNames) =>
+      traverser.usedNamesFromClasses.asScala.foreach { case (name, usedNames) =>
         builder
           .append(name.toString.trim)
           .append(": ")
@@ -137,9 +138,9 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     }
 
     // Handle names circumscribed to classes
-    traverser.usedNamesFromClasses.foreach { (rawClassName, usedNames) =>
+    traverser.usedNamesFromClasses.asScala.foreach { case (rawClassName, usedNames) =>
       val className = rawClassName.toString.trim
-      usedNames.defaultNames.foreach { rawUsedName =>
+      usedNames.defaultNames.asScala.foreach { rawUsedName =>
         val useName = rawUsedName.decoded.trim
         val existingScopes = usedNames.scopedNames.get(rawUsedName)
         val useScopes = {

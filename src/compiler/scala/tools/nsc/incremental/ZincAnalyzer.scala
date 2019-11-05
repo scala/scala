@@ -19,18 +19,18 @@ import java.io.File
 import scala.tools.nsc.Phase
 import scala.collection.JavaConverters._
 
-object Analyzer {
+object ZincAnalyzer {
   def name = "xsbt-analyzer"
 }
 
-final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
+final class ZincAnalyzer(val global: CallbackGlobal) extends LocateClassFile {
   import global._
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
   private class AnalyzerPhase(prev: Phase) extends GlobalPhase(prev) {
     override def description =
       "Finds concrete instances of provided superclasses, and application entry points."
-    def name = Analyzer.name
+    def name = ZincAnalyzer.name
 
     /**
      * When straight-to-jar compilation is enabled, returns the classes
@@ -42,10 +42,10 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
      * unnecessary if there are no local classes in a compilation unit.
      */
     private lazy val classesWrittenByGenbcode: Set[String] = {
-      JarUtils.outputJar match {
+      jarUtils.outputJar match {
         case Some(jar) =>
           val classes = global.callback.classesInOutputJar().asScala
-          classes.map(JarUtils.classNameInJar(jar, _)).toSet
+          classes.map(jarUtils.classNameInJar(jar, _)).toSet
         case None => Set.empty
       }
     }
@@ -58,7 +58,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
           val sym = iclass.symbol
           def addGenerated(separatorRequired: Boolean): Unit = {
             val locatedClass = {
-              JarUtils.outputJar match {
+              jarUtils.outputJar match {
                 case Some(outputJar) => locateClassInJar(sym, outputJar, separatorRequired)
                 case None            => locatePlainClassFile(sym, outputDir, separatorRequired)
               }
@@ -95,7 +95,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     private def locateClassInJar(sym: Symbol, jar: File, sepRequired: Boolean): Option[File] = {
       val classFile = pathToClassFile(sym, sepRequired)
-      val classInJar = JarUtils.classNameInJar(jar, classFile)
+      val classInJar = jarUtils.classNameInJar(jar, classFile)
       if (!classesWrittenByGenbcode.contains(classInJar)) None
       else Some(new File(classInJar))
     }

@@ -19,9 +19,9 @@ import java.util.Optional
 
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 
-object DelegatingReporter {
-  def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
-    new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
+object ZincDelegatingReporter {
+  def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): ZincDelegatingReporter =
+    new ZincDelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
 
   class PositionImpl(
       sourcePath0: Option[String],
@@ -140,7 +140,7 @@ object DelegatingReporter {
 // Copyright 2002-2009 LAMP/EPFL
 // Original author: Martin Odersky
 // Based on scala.tools.nsc.reporters.{AbstractReporter, ConsoleReporter}
-final class DelegatingReporter(
+final class ZincDelegatingReporter(
     warnFatal: Boolean,
     noWarn: Boolean,
     private[this] var delegate: xsbti.Reporter
@@ -153,7 +153,7 @@ final class DelegatingReporter(
   override def hasErrors = delegate.hasErrors
   override def hasWarnings = delegate.hasWarnings
   override def comment(pos: Position, msg: String): Unit =
-    delegate.comment(DelegatingReporter.convert(pos), msg)
+    delegate.comment(ZincDelegatingReporter.convert(pos), msg)
   override def reset(): Unit = {
     super.reset()
     delegate.reset()
@@ -163,7 +163,7 @@ final class DelegatingReporter(
     val skip = rawSeverity == WARNING && noWarn
     if (!skip) {
       val severity = if (warnFatal && rawSeverity == WARNING) ERROR else rawSeverity
-      delegate.log(new CompileProblem(DelegatingReporter.convert(pos), msg, convert(severity)))
+      delegate.log(new CompileProblem(ZincDelegatingReporter.convert(pos), msg, convert(severity)))
     }
   }
 
