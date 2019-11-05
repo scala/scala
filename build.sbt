@@ -94,6 +94,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.debugTasty"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl"),
@@ -891,6 +892,33 @@ lazy val partest = configureAsSubproject(project)
     )
   )
 
+lazy val tastytest = configureAsSubproject(project)
+  .dependsOn(library, reflect, compiler)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.tastytest"))
+  .settings(
+    name := "scala-tastytest",
+    description := "Scala TASTy Integration Testing Tool",
+    libraryDependencies ++= List(/*testInterfaceDep,*/ diffUtilsDep, DottySupport.dottyCompiler),
+    pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
+    fixPom(
+      "/project/name" -> <name>Scala TASTyTest</name>,
+      "/project/description" -> <description>Scala TASTy Integration Testing Tool</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    )
+  )
+
+// ??? TODO [tasty]: WTF is this?
+lazy val scalacheckLib = project.in(file("src") / "scalacheck")
+  .dependsOn(library)
+  .settings(commonSettings)
+  .settings(disableDocs)
+  .settings(skip in publish := true)
+  .settings(
+    name := "scalacheck-lib",
+    libraryDependencies += testInterfaceDep
+  )
+
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
 lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
@@ -979,6 +1007,28 @@ lazy val junit = project.in(file("test") / "junit")
     Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
 
+lazy val tasty = project.in(file("test") / "tasty")
+  .dependsOn(tastytest)
+  // .settings(commonSettings)
+  // .settings(disableDocs)
+  // .settings(skip in publish := true)
+  .settings(
+    fork in Test := true,
+    // javaOptions in Test += "-Xss1M",
+    // (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
+    // (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
+    libraryDependencies ++= Seq(junitInterfaceDep, diffUtilsDep),
+    (libraryDependencies in Test) ++= Seq(DottySupport.dottyLibrary),
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
+    testOptions in Test += Tests.Argument(
+      s"-Dtastytest.dotty-library=${(Test / externalDependencyClasspath).value.map(_.data.toString).mkString(":")}",
+      s"-Dtastytest.src=${baseDirectory.value}",
+      s"-Dtastytest.packageName=tastytest"
+    ),
+    // sourceDirectory in Test := baseDirectory.value/"src",
+    // unmanagedSourceDirectories in Compile := Nil,
+    // unmanagedSourceDirectories in Test := Nil
+  )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc)

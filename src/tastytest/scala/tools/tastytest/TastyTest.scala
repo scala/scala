@@ -1,3 +1,5 @@
+package scala.tools.tastytest
+
 import scala.sys.process._
 import scala.collection.mutable
 import scala.io.{ Source, BufferedSource }
@@ -7,38 +9,19 @@ import scala.reflect.runtime.ReflectionUtils
 import scala.tools.nsc
 import scala.util.{ Try, Success, Failure }
 
-import dotty.tools.dotc
-import dotc.reporting.{ Reporter => DottyReporter }
-
 import java.nio.file.{ Files, Paths, Path, DirectoryStream, FileSystems }
 import java.io.{ OutputStream, ByteArrayOutputStream }
 import java.{ lang => jl, util => ju }
 import jl.reflect.Modifier
+import scala.util.control.NonFatal
+import java.lang.reflect.Method
 
 object TastyTest {
 
   def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
     val results = Map(
-      "run" -> Tests.suite("run", run)(
-        for {
-          (pre, src2, src3) <- getSources(srcRoot/"run")
-          out               <- outDir.fold(tempDir(pkgName))(dir)
-          _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotcPos(out, dottyLibrary, src3:_*)
-          _                 <- scalacPos(out, dottyLibrary, src2:_*)
-          testNames         <- visibleClasses(out, pkgName, src2:_*)
-          _                 <- runMainOn(out, dottyLibrary, testNames:_*)
-        } yield ()
-      ),
-      "neg" -> Tests.suite("neg", neg)(
-        for {
-          (pre, src2, src3) <- getSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
-          out               <- outDir.fold(tempDir(pkgName))(dir)
-          _                 <- scalacPos(out, dottyLibrary, pre:_*)
-          _                 <- dotcPos(out, dottyLibrary, src3:_*)
-          _                 <- scalacNeg(out, dottyLibrary, src2:_*)
-        } yield ()
-      )
+      "run" -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
+      "neg" -> Tests.suite("neg", neg)(negSuite(dottyLibrary, srcRoot, pkgName, outDir))
     )
     if (results.values.forall(_.isEmpty)) {
       printwarnln("No suites to run.")
@@ -49,6 +32,24 @@ object TastyTest {
       s"${failures.size} $str failed: ${failures.map(_._1).mkString(", ")}."
     })
   }
+
+  def runSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+    (pre, src2, src3) <- getSources(srcRoot/"run")
+    out               <- outDir.fold(tempDir(pkgName))(dir)
+    _                 <- scalacPos(out, dottyLibrary, pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, src2:_*)
+    testNames         <- visibleClasses(out, pkgName, src2:_*)
+    _                 <- runMainOn(out, dottyLibrary, testNames:_*)
+  } yield ()
+
+  def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+    (pre, src2, src3) <- getSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
+    out               <- outDir.fold(tempDir(pkgName))(dir)
+    _                 <- scalacPos(out, dottyLibrary, pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, src3:_*)
+    _                 <- scalacNeg(out, dottyLibrary, src2:_*)
+  } yield ()
 
   object Tests {
 
@@ -124,10 +125,12 @@ object TastyTest {
                 var lines: ju.stream.Stream[String] = null
                 try {
                   lines = Files.lines(Paths.get(checkFile))
-                  val check = lines.iterator().asScala.mkString("", System.lineSeparator, System.lineSeparator)
-                  if (check != output) {
+                  val checkLines  = lines.iterator().asScala.toSeq
+                  val outputLines = Diff.splitIntoLines(output)
+                  val diff        = Diff.compareContents(checkLines, outputLines)
+                  if (diff.nonEmpty) {
                     errors += source
-                    printerrln(s"ERROR: $source failed, unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;<<<;EXPECT;\n${check}\n;EXPECT;")
+                    printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
                   }
                 }
                 finally if (lines != null) {
@@ -136,7 +139,8 @@ object TastyTest {
               case None =>
                 if (output.nonEmpty) {
                   errors += source
-                  printerrln(s"ERROR: $source failed, no check file found for unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;")
+                  val diff = Diff.compareContents("", output)
+                  printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
                 }
             }
         }
@@ -166,10 +170,18 @@ object TastyTest {
     }
   }
 
-  // TODO call it directly when we can unpickle overloads
+  // TODO call it directly when we are bootstrapped
   private[this] lazy val dotcProcess: Array[String] => Boolean = {
-    val process = classOf[dotc.Driver].getMethod("process", classOf[Array[String]])
-    args => Try(!process.invoke(dotc.Main, args).asInstanceOf[DottyReporter].hasErrors).getOrElse(false)
+    val mainClass = Class.forName("dotty.tools.dotc.Main")
+    val reporterClass = Class.forName("dotty.tools.dotc.reporting.Reporter")
+    val Main_process = mainClass.getMethod("process", classOf[Array[String]])
+    assert(Modifier.isStatic(Main_process.getModifiers), "dotty.tools.dotc.Main.process is not static!")
+    val Reporter_hasErrors = reporterClass.getMethod("hasErrors")
+    args => Try {
+      val reporter  = Main_process.invoke(null, args)
+      val hasErrors = Reporter_hasErrors.invoke(reporter).asInstanceOf[Boolean]
+      !hasErrors
+    }.getOrElse(false)
   }
 
   private def dotcPos(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
@@ -304,17 +316,20 @@ object TastyTest {
   private def failOnEmpty[A](opt: Option[A])(ifEmpty: => String): Try[A] =
     opt.toRight(new IllegalStateException(ifEmpty)).toTry
 
-  private def classloadFrom(cp: String): Try[ScalaClassLoader] =
-    for (classpath <- Try(cp.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL)))
-    yield ScalaClassLoader.fromURLs(classpath.toIndexedSeq)
+  private class Runner(classloader: ScalaClassLoader) {
 
-  private object Runner {
-    def run(name: String)(implicit classloader: ScalaClassLoader): Try[String] = {
+    val Runner_run: Method = {
+      val internal_Runner = Class.forName(Runner.name, true, classloader)
+      val run = internal_Runner.getMethod("run", classOf[String], classOf[OutputStream], classOf[OutputStream])
+      assert(Modifier.isStatic(run.getModifiers), s"${Runner.name}.run is not static")
+      run
+    }
+
+    def run(name: String): Try[String] = {
       def kernel(out: OutputStream, err: OutputStream): Try[Unit] = Try {
-        Console.withOut(out) {
-          Console.withErr(err) {
-            classloader.run(name, Nil)
-          }
+        try classloader.asContext[Unit](Runner_run.invoke(null, name, out, err))
+        catch {
+          case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
         }
       }
       val byteArrayStream = new ByteArrayOutputStream(50)
@@ -329,14 +344,31 @@ object TastyTest {
     }
   }
 
+  private object Runner {
+
+    val name = "scala.tools.tastytest.internal.Runner"
+
+    private def internalRunnerPath: Try[java.net.URL] = Try {
+      internal.Runner.getClass.getProtectionDomain.getCodeSource.getLocation
+    }
+
+    def classloadFrom(classpath: String): Try[Runner] = for {
+      internalRunner <- internalRunnerPath
+      classpaths     <- Try(classpath.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL))
+      classloader    <- Try(ScalaClassLoader.fromURLs(internalRunner +: classpaths.toIndexedSeq))
+      runner         <- Try(new Runner(classloader))
+    } yield runner
+  }
+
   private def runMainOn(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
-    def runTests(errors: mutable.ArrayBuffer[String])(implicit classloader: ScalaClassLoader): Try[Unit] = Try {
+    def runTests(errors: mutable.ArrayBuffer[String], runner: Runner): Try[Unit] = Try {
       for (test <- tests) {
-        Runner.run(test) match {
+        runner.run(test) match {
           case Success(output) =>
-            if ("Suite passed!" != output.trim) {
+            val diff = Diff.compareContents("Suite passed!", output)
+            if (diff.nonEmpty) {
               errors += test
-              printerrln(s"ERROR: $test failed, unexpected output <<<;OUTPUT;\n${output}\n;OUTPUT;")
+              printerrln(s"ERROR: $test failed, unexpected output.\n$diff")
             }
           case Failure(err) =>
             errors += test
@@ -345,13 +377,13 @@ object TastyTest {
       }
     }
     for {
-      classloader     <- classloadFrom(classpaths(out, dottyLibrary))
-      errors          =  mutable.ArrayBuffer.empty[String]
-      _               <- runTests(errors)(classloader)
-      _               <- successWhen(errors.isEmpty)({
-                        val str = if (errors.size == 1) "error" else "errors"
-                        s"${errors.length} $str. Fix ${errors.mkString(", ")}."
-                      })
+      runner <- Runner.classloadFrom(classpaths(out, dottyLibrary))
+      errors =  mutable.ArrayBuffer.empty[String]
+      _      <- runTests(errors, runner)
+      _      <- successWhen(errors.isEmpty)({
+                  val str = if (errors.size == 1) "error" else "errors"
+                  s"${errors.length} $str. Fix ${errors.mkString(", ")}."
+                })
     } yield ()
   }
 
