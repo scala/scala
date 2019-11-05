@@ -32,7 +32,7 @@
  *   - to modularize the Scala compiler or library further
  */
 
-import sbt.TestResult
+import sbt.{Global, TestResult}
 
 import scala.build._
 import VersionUtil._
@@ -110,7 +110,211 @@ headerLicense in ThisBuild  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
-mimaReferenceVersion in Global := Some("2.12.0")
+Global / mimaReferenceVersion := Some("2.12.0")
+
+import com.typesafe.tools.mima.core._
+val mimaFilterSettings = Seq {
+  mimaBinaryIssueFilters ++= Seq(
+    ProblemFilters.exclude[IncompatibleSignatureProblem]("*"),
+    ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.debug"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorBuilder.debug"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorPointer.debug"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.debug"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.OpenHashMap.nextPositivePowerOfTwo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashTable.powerOfTwo"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.concurrent.impl.ExecutionContextImpl$AdaptedForkJoinTask"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessImpl#CompoundProcess.getExitValue"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessImpl#CompoundProcess.futureValue"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.ProcessImpl#CompoundProcess.futureThread"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashTable.nextPositivePowerOfTwo"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.wrappedBytesHash"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.wrappedArrayHash"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.contains0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.contains0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.contains0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.contains0"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.showAsInfix$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.showAsInfix"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.PropertiesTrait.coloredOutputEnabled"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.coloredOutputEnabled"),
+
+    // https://github.com/scala/scala/pull/6101
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyRef"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyDouble"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyChar"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyUnit"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyShort"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyInt"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyByte"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyLong"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyBoolean"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.runtime.LazyFloat"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyRef.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyDouble.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyChar.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyUnit.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyShort.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyInt.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyByte.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyLong.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyBoolean.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.runtime.LazyFloat.serialVersionUID"),
+
+    // https://github.com/scala/scala/pull/6138
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#EmptyMap.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map1.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map2.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map3.serialVersionUID"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.Map#Map4.serialVersionUID"),
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.GenTraversableOnce.toList"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.foreachEntry"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$HashCodeAccumulator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.product2Hash"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.emptyMapHash"),
+
+    // Some static forwarder changes detected after a MiMa upgrade.
+    // e.g. static method apply(java.lang.Object)java.lang.Object in class scala.Symbol does not have a correspondent in current version
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Symbol.apply"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.Process.Future"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.Process.Spawn"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.takeWhile"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.slice"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.drop"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.take"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.toSeq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.reverse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.toCollection"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.thisCollection"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.andThen"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.view"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.view"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.dropRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.takeRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.takeWhile"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.drop"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.take"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.slice"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.head"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.thisCollection"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.reversed"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.view"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.view"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.dropWhile"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.tail"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.thisCollection"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Nil.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.List.empty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Queue.empty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.empty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Stream.iterate"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Stream.range"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Stream.tabulate"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Stream.fill"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Stream.empty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.LinkedList.empty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.scalaProps"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.propFilename"),
+
+    //
+    // scala-relect
+    //
+    ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.unpickleClass"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.SymbolLoaders#TopClassCompleter.this"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps#SynchronizedBaseTypeSeq.lateMap"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$exists"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$getFlag"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$privateWithin"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$annotations"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.IOStats$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.reflect.runtime.JavaUniverse"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.io.ZipArchive.close"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.ZipArchive.getDir"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.reflect.io.FileZipArchive.allDirs"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.scala$reflect$runtime$SynchronizedSymbols$SynchronizedSymbol$$super$typeConstructor"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.scala$reflect$runtime$SynchronizedTypes$$super$defineNormalized"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.defineNormalized"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.defineNormalized"),
+
+    ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.unpickleClass"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.SymbolLoaders#TopClassCompleter.this"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.Yvirtpatmat"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.PlainNioFile"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedOps.newMappedBaseTypeSeq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.newMappedBaseTypeSeq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.statistics"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror#JavaAnnotationProxy.transformArgs"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LazyEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.closeZipFile"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.FileZipArchive$LeakyEntry"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.exists"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.getFlag"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.privateWithin"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.annotations"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.isScala213"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.this"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.this"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.getDir"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.allDirsByDottedName"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.RootPath"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.io.RootPath$"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.URLZipArchive.close"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.FileZipArchive.close"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ManifestResources.close"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.close"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.macros.Attachments$"),
+
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.io.ZipArchive.getDir"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.reflect.io.FileZipArchive.allDirs"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedSymbols#SynchronizedSymbol.typeConstructor"),
+
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.scala$reflect$runtime$SynchronizedTypes$$super$defineNormalized"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.defineNormalized"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.defineNormalized"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.AbstractFile.unsafeToByteArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.VirtualFile.unsafeToByteArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive#Entry.unsafeToByteArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.unsafeToByteArray"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.seq"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
+  )
+}
 
 scalaVersion in Global         := versionProps("starr.version")
 
@@ -127,7 +331,7 @@ lazy val instanceSettings = Seq[Setting[_]](
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
       import sbt.internal.inc.ScalaInstance
-      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJar, s.compilerJar, s.allJars, Some(s.actualVersion))
+      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJars, s.compilerJar, s.allJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
@@ -372,7 +576,8 @@ lazy val library = configureAsSubproject(project)
     // Remove the dependency on "forkjoin" from the POM because it is included in the JAR:
     pomDependencyExclusions += ((organization.value, "forkjoin")),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaFilterSettings,
   )
   .settings(filterDocSources("*.scala" -- (regexFileFilter(".*/runtime/.*\\$\\.scala") ||
                                            regexFileFilter(".*/runtime/ScalaRunTime\\.scala") ||
@@ -382,6 +587,7 @@ lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.reflect"))
+  .settings(mimaFilterSettings)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
@@ -399,7 +605,8 @@ lazy val reflect = configureAsSubproject(project)
       "/project/packaging" -> <packaging>jar</packaging>
     ),
     mimaPreviousArtifacts := mimaReferenceVersion.value.map(organization.value % name.value % _).toSet,
-    mimaCheckDirection := "both"
+    mimaCheckDirection := "both",
+    mimaFilterSettings,
   )
   .dependsOn(library)
 
@@ -439,7 +646,7 @@ lazy val compiler = configureAsSubproject(project)
     // (with strings) to deal with mutual recursion
     products in Compile in packageBin :=
       (products in Compile in packageBin).value ++
-        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key) == Some(asmDep)).get.data) ++
+        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)).contains((asmDep.organization, asmDep.name, asmDep.revision))).get.data) ++
         (products in Compile in packageBin in LocalProject("interactive")).value ++
         (products in Compile in packageBin in LocalProject("scaladoc")).value ++
         (products in Compile in packageBin in LocalProject("repl")).value ++
