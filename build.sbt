@@ -89,6 +89,8 @@ Global / mimaReferenceVersion := Some("2.13.0")
 import com.typesafe.tools.mima.core._
 val mimaFilterSettings = Seq {
   mimaBinaryIssueFilters ++= Seq(
+    ProblemFilters.exclude[IncompatibleSignatureProblem]("*"),
+    ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
@@ -193,7 +195,7 @@ lazy val instanceSettings = Seq[Setting[_]](
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
       import sbt.internal.inc.ScalaInstance
-      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJar, s.compilerJar, s.allJars, Some(s.actualVersion))
+      val s2 = new ScalaInstance(s.version, s.loader, s.loaderLibraryOnly, s.libraryJars, s.compilerJar, s.allJars, Some(s.actualVersion))
       assert(s2.isManagedVersion)
       s2
     }
