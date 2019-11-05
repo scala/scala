@@ -1,6 +1,7 @@
 /*
- * Zinc - The incremental compiler for Scala.
- * Copyright Lightbend, Inc. and Mark Harrah
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
  *
  * Licensed under Apache License 2.0
  * (http://www.apache.org/licenses/LICENSE-2.0).
