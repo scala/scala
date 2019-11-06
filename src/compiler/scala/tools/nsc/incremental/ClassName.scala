@@ -27,7 +27,7 @@ trait ClassName {
    * Creates a flat (binary) name for a class symbol `s`.
    */
   protected def flatname(s: Symbol, separator: Char) =
-    enteringPhase(currentRun.flattenPhase.next) { s fullName separator }
+    exitingFlatten { s fullName separator }
 
   /**
    * Create a (source) name for a class symbol `s`.
@@ -81,7 +81,7 @@ trait ClassName {
    * original names, we need to use `unexpandedName`.
    */
   protected def classNameAsSeenIn(in: Symbol, s: Symbol): String =
-    enteringPhase(currentRun.picklerPhase.next) {
+    exitingPickler {
       if (in.isRoot || in.isRootPackage || in == NoSymbol || in.isEffectiveRoot)
         s.simpleName.toString
       else if (in.isPackageObjectOrClass)
@@ -91,14 +91,15 @@ trait ClassName {
     }
 
   private def pickledName(s: Symbol): Name =
-    enteringPhase(currentRun.picklerPhase.next) { s.fullNameAsName('.') }
+    exitingPickler { s.fullNameAsName('.') }
 
   private def pickledNameAsString(s: Symbol): String =
-    enteringPhase(currentRun.picklerPhase.next) { s.fullName }
+    exitingPickler { s.fullName }
 
   protected def isTopLevelModule(sym: Symbol): Boolean =
-    enteringPhase(currentRun.picklerPhase.next) {
-      sym.isModuleClass && !sym.isImplClass && !sym.isNestedClass
+    exitingPickler {
+      // uncomment `isImplClass` when backporting this to 2.11
+      sym.isModuleClass && !sym.isNestedClass // && !sym.isImplClass
     }
 
   protected def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =
