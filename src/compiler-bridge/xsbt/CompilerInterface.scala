@@ -194,7 +194,7 @@ final class CachedCompiler0(args: Array[String], output: Output, log: Logger, de
 final class WeakLog(private[this] var log: Logger, private[this] var delegate: Reporter) {
   def apply(message: String): Unit = {
     assert(log ne null, "Stale reference to logger")
-    log.error(Message(message))
+    log.error(() => message)
   }
   def logger: Logger = log
   def reporter: Reporter = delegate

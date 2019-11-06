@@ -18,7 +18,6 @@ import xsbt.Compat._
 import xsbt.InteractiveConsoleHelper._
 import xsbti.Logger
 
-import scala.tools.nsc.incremental.Message
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.{GenericRunnerCommand, Settings}
 
@@ -63,7 +62,7 @@ class InteractiveConsoleInterface(
     interpreter.reset()
   }
 
-  private def onError(str: String) = log error Message(str)
+  private def onError(str: String): Unit = log.error(() => str)
 }
 
 object InteractiveMakeSettings {

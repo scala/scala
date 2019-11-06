@@ -14,7 +14,6 @@ package xsbt
 
 import xsbti.Logger
 
-import scala.tools.nsc.incremental.Message
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.interpreter.shell.{ILoop, ReplReporterImpl, ShellConfig}
 import scala.tools.nsc.{GenericRunnerCommand, Settings}
@@ -42,8 +41,8 @@ class ConsoleInterface {
     lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
     val compilerSettings = MakeSettings.sync(args, bootClasspathString, classpathString, log)
 
-    log.info(Message("Starting scala interpreter..."))
-    log.info(Message(""))
+    log.info(() => "Starting scala interpreter...")
+    log.info(() => "")
 
     val loop = new ILoop(ShellConfig(interpreterSettings)) {
       override def createInterpreter(interpreterSettings: Settings) = {
@@ -85,7 +84,7 @@ class ConsoleInterface {
 
 object MakeSettings {
   def apply(args: List[String], log: Logger): Settings = {
-    val command = new GenericRunnerCommand(args, message => log.error(Message(message)))
+    val command = new GenericRunnerCommand(args, message => log.error(() => message))
     if (command.ok)
       command.settings
     else

@@ -15,7 +15,7 @@ package nsc
 package incremental
 
 object Log {
-  def debug(log: xsbti.Logger, msg: => String) = log.debug(Message(msg))
+  def debug(log: xsbti.Logger, msg: => String): Unit = log.debug(() => msg)
   def settingsError(log: xsbti.Logger): String => Unit =
-    s => log.error(Message(s))
+    s => log.error(() => s)
 }

@@ -160,7 +160,7 @@ class ExtractAPI[GlobalType <: Global](
    * the value is forced and therefore references to thunk's classes will be garbage collected.
    */
   private def lzy[S <: AnyRef](s: => S): xsbti.api.Lazy[S] = {
-    val lazyImpl = xsbti.api.SafeLazy.apply(Message(s))
+    val lazyImpl = xsbti.api.SafeLazy.apply[S](() => s)
     pending += lazyImpl
     lazyImpl
   }
