@@ -28,8 +28,12 @@ final class CompilerInterface {
       output: Output,
       initialLog: Logger,
       initialDelegate: Reporter
-  ): CachedCompiler =
-    new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
+  ): CachedCompiler = {
+    val bridgeLoader = this.getClass.getClassLoader
+    val fixedLoader = CompilerClassLoader.fixBridgeLoader(bridgeLoader)
+    val ccClass = fixedLoader.loadClass("xsbt.CachedCompiler0")
+    ccClass.getConstructors.apply(0).newInstance(options, output, initialLog, initialDelegate).asInstanceOf[CachedCompiler]
+  }
 
   def run(
       sources: Array[File],
@@ -52,7 +56,7 @@ class InterfaceCompileFailed(
 class InterfaceCompileCancelled(val arguments: Array[String], override val toString: String)
     extends xsbti.CompileCancelled
 
-final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
+final class CachedCompiler0(args: Array[String], output: Output, log: Logger, delegate: Reporter)
   extends CachedCompiler
     with CachedCompilerCompat
     with java.io.Closeable {
@@ -60,6 +64,8 @@ final class CachedCompiler0(args: Array[String], output: Output, initialLog: Wea
   /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////// INITIALIZATION CODE ////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////
+
+  private val initialLog = new WeakLog(log, delegate)
 
   val settings = new Settings(s => initialLog(s))
   output match {
