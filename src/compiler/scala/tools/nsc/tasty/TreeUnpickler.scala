@@ -137,7 +137,10 @@ abstract class TreeUnpickler(reader: TastyReader,
     def skipTree(): Unit = skipTree(readByte())
 
     def skipParams(): Unit =
-      while (nextByte == PARAMS || nextByte == TYPEPARAM) skipTree()
+      while ({
+        val tag = nextByte
+        tag == PARAM || tag == TYPEPARAM || tag == PARAMEND
+      }) skipTree()
 
     def skipTypeParams(): Unit =
       while (nextByte == TYPEPARAM) skipTree()
@@ -811,12 +814,12 @@ abstract class TreeUnpickler(reader: TastyReader,
 
       val completer = sym.completer
 
-      def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = {
-        collectWhile(nextByte == PARAMS) {
-          readByte()
-          readEnd()
-          readParams(PARAM)
-        }
+      def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = nextByte match {
+        case PARAM | PARAMEND =>
+          readParams[NoCycle](PARAM) ::
+            (if (nextByte == PARAMEND) { readByte(); readParamss } else Nil)
+
+        case _ => Nil
       }
 
       val localCtx = localContext(sym)
@@ -954,12 +957,12 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      val tag = readByte()
 //      val end = readEnd()
 //
-//      def readParamss(implicit ctx: Context): List[List[ValDef]] = {
-//        collectWhile(nextByte == PARAMS) {
-//          readByte()
-//          readEnd()
-//          readParams[ValDef](PARAM)
-//        }
+//      def readParamss(implicit ctx: Context): List[List[ValDef]] = nextByte match {
+//        case PARAM | PARAMEND =>
+//          readParams[ValDef](PARAM) ::
+//            (if (nextByte == PARAMEND) { readByte(); readParamss } else Nil)
+//
+//        case _ => Nil
 //      }
 //
 //      val localCtx = localContext(sym)
@@ -1193,13 +1196,16 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      readIndexedStats(exprOwner, end)
 //    }
 
-   def readIndexedParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
-     collectWhile(nextByte == tag) { readIndexedMember().asInstanceOf[T] }
+  def readIndexedParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
+    collectWhile(nextByte == tag) { readIndexedMember().asInstanceOf[T] }
 
-   def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] = {
-     fork.indexParams(tag)
-     readIndexedParams(tag)
-   }
+  def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
+    if (nextByte == tag) {
+      fork.indexParams(tag)
+      readIndexedParams(tag)
+    }
+    else Nil
+
 
 // ------ Reading trees -----------------------------------------------------
 
