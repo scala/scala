@@ -579,7 +579,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("erasure")
+    val runsAfter = List("posterasure")
     val runsRightAfter = None
   } with LambdaLift
 

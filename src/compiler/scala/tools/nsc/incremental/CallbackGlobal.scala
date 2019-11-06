@@ -86,19 +86,21 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
       if (!compileProgress.advance(current, total)) cancel else ()
   }
 
-  object dummy // temporary fix for #4426
-
-  /** Phase that analyzes the generated class files and maps them to sources. */
-  object sbtAnalyzer extends {
+  /**
+    * Phase that walks the trees and constructs a representation of the public API.
+    *
+    * @note It extracts the API information after picklers to see the same symbol information
+    *       irrespective of whether we typecheck from source or unpickle previously compiled classes.
+    */
+  object apiExtractor extends {
     val global: ZincGlobal.this.type = ZincGlobal.this
-    val phaseName = ZincAnalyzer.name
-    val runsAfter = List("jvm")
-    override val runsBefore = List("terminal")
+    val phaseName = APIExtractor.name
+    val runsAfter = List(Option(System.getProperty("sbt.api.phase")).getOrElse("pickler"))
+    override val runsBefore = List(Dependency.name)
     val runsRightAfter = None
   } with SubComponent {
-    val analyzer = new ZincAnalyzer(global)
-    def newPhase(prev: Phase) = analyzer.newPhase(prev)
-    def name = phaseName
+    val api = new APIExtractor(global)
+    def newPhase(prev: Phase) = api.newPhase(prev)
   }
 
   /** Phase that extracts dependency information */
@@ -107,36 +109,26 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
     val phaseName = Dependency.name
     val runsAfter = List(APIExtractor.name)
     override val runsBefore = List("refchecks")
-    // Keep API and dependency close to each other -- we may want to merge them in the future.
-    override val runsRightAfter = Some(APIExtractor.name)
+    override val runsRightAfter = None
   } with SubComponent {
     val dependency = new Dependency(global)
     def newPhase(prev: Phase) = dependency.newPhase(prev)
-    def name = phaseName
   }
 
-  /**
-   * Phase that walks the trees and constructs a representation of the public API.
-   *
-   * @note It extracts the API information after picklers to see the same symbol information
-   *       irrespective of whether we typecheck from source or unpickle previously compiled classes.
-   */
-  object apiExtractor extends {
+  /** Phase that analyzes the generated class files and maps them to sources. */
+  object zincAnalyzer extends {
     val global: ZincGlobal.this.type = ZincGlobal.this
-    val phaseName = APIExtractor.name
-    val runsAfter = List("typer")
-    override val runsBefore = List("erasure")
-    // TODO: Consider migrating to "uncurry" for `runsBefore`.
-    // TODO: Consider removing the system property to modify which phase is used for API extraction.
-    val runsRightAfter = Option(System.getProperty("sbt.api.phase")) orElse Some("pickler")
+    val phaseName = ZincAnalyzer.name
+    val runsAfter = List("jvm")
+    override val runsBefore = List("terminal")
+    val runsRightAfter = None
   } with SubComponent {
-    val api = new APIExtractor(global)
-    def newPhase(prev: Phase) = api.newPhase(prev)
-    def name = phaseName
+    val analyzer = new ZincAnalyzer(global)
+    def newPhase(prev: Phase) = analyzer.newPhase(prev)
   }
 
   override lazy val phaseDescriptors = {
-    phasesSet += sbtAnalyzer
+    phasesSet += zincAnalyzer
     if (callback.enabled()) {
       phasesSet += sbtDependency
       phasesSet += apiExtractor
