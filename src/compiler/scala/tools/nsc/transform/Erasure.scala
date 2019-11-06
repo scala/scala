@@ -365,7 +365,7 @@ abstract class Erasure extends InfoTransform
           else
             jsig(erasure(sym0)(tp), existentiallyBound, toplevel, unboxedVCs)
         case PolyType(tparams, restpe) =>
-          assert(tparams.nonEmpty)
+          assert(tparams.nonEmpty, tparams)
           if (toplevel) polyParamSig(tparams)
           jsig(restpe)
 

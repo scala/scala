@@ -17,8 +17,7 @@ import java.nio
 import java.nio.file.Files
 import java.nio.file.spi.FileSystemProvider
 
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-
+import scala.jdk.CollectionConverters._
 
 abstract class RootPath extends Closeable {
   def root: nio.file.Path

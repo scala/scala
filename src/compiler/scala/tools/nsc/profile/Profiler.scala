@@ -117,7 +117,7 @@ private [profile] object NoOpProfiler extends Profiler {
   override def finished(): Unit = ()
 }
 private [profile] object RealProfiler {
-  import scala.collection.JavaConverters._
+  import scala.jdk.CollectionConverters._
   val runtimeMx = ManagementFactory.getRuntimeMXBean
   val memoryMx = ManagementFactory.getMemoryMXBean
   val gcMx = ManagementFactory.getGarbageCollectorMXBeans.asScala.toList

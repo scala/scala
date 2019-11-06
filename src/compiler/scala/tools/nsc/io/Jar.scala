@@ -16,7 +16,7 @@ package io
 import java.io.{DataOutputStream, InputStream, OutputStream}
 import java.util.jar._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import Attributes.Name
 
 import scala.annotation.tailrec
