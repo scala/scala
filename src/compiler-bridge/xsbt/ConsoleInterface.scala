@@ -25,7 +25,7 @@ class ConsoleInterface {
       classpathString: String,
       log: Logger
   ): Array[String] =
-    MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
+    MakeSettings(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
 
   def run(
       args: Array[String],
@@ -38,14 +38,14 @@ class ConsoleInterface {
       bindValues: Array[Any],
       log: Logger
   ): Unit = {
-    lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
-    val compilerSettings = MakeSettings.sync(args, bootClasspathString, classpathString, log)
+    lazy val interpreterSettings = MakeSettings(args, log)
+    val compilerSettings = MakeSettings(args, bootClasspathString, classpathString, log)
 
     log.info(() => "Starting scala interpreter...")
     log.info(() => "")
 
     val loop = new ILoop(ShellConfig(interpreterSettings)) {
-      override def createInterpreter(interpreterSettings: Settings) = {
+      override def createInterpreter(interpreterSettings: Settings): Unit = {
         if (loader ne null) {
           val reporter = new ReplReporterImpl(interpreterSettings)
           intp = new IMain(interpreterSettings, reporter) {
@@ -53,7 +53,6 @@ class ConsoleInterface {
               if (loader eq null) super.parentClassLoader
               else loader
           }
-          intp.setContextClassLoader()
         } else
           super.createInterpreter(interpreterSettings)
 
@@ -66,8 +65,6 @@ class ConsoleInterface {
 
         if (!initialCommands.isEmpty)
           intp.interpret(initialCommands)
-
-        ()
       }
 
       override def closeInterpreter(): Unit = {
@@ -78,35 +75,28 @@ class ConsoleInterface {
     }
 
     loop.run(compilerSettings)
-    ()
   }
 }
 
 object MakeSettings {
-  def apply(args: List[String], log: Logger): Settings = {
-    val command = new GenericRunnerCommand(args, message => log.error(() => message))
+  def apply(args: Array[String], log: Logger): Settings = {
+    val command = new GenericRunnerCommand(args.toList, message => log.error(() => message))
     if (command.ok)
       command.settings
     else
       throw new InterfaceCompileFailed(Array(), Array(), command.usageMsg)
   }
 
-  def sync(
+  def apply(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
       log: Logger
   ): Settings = {
-    val compilerSettings = sync(args.toList, log)
+    val compilerSettings = apply(args, log)
     if (!bootClasspathString.isEmpty)
       compilerSettings.bootclasspath.value = bootClasspathString
     compilerSettings.classpath.value = classpathString
     compilerSettings
-  }
-
-  def sync(options: List[String], log: Logger): Settings = {
-    val settings = apply(options, log)
-    settings.Yreplsync.value = true
-    settings
   }
 }

@@ -18,10 +18,16 @@ import scala.tools.nsc.incremental.Log.debug
 import scala.tools.nsc.incremental.{Command, ZincDelegatingReporter, Log}
 
 class ScaladocInterface {
-  def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) =
-    (new Runner(args, log, delegate)).run
+  def run(args: Array[String], log: Logger, delegate: xsbti.Reporter) = {
+    val bridgeLoader = this.getClass.getClassLoader
+    val fixedLoader = CompilerClassLoader.fixBridgeLoader(bridgeLoader)
+    val rClass = fixedLoader.loadClass("xsbt.ScaladocRunner")
+    val runner = rClass.getConstructors.apply(0).newInstance(args, log, delegate)
+    rClass.getMethod("run").invoke(runner)
+  }
 }
-private class Runner(args: Array[String], log: Logger, delegate: xsbti.Reporter) {
+
+final class ScaladocRunner(args: Array[String], log: Logger, delegate: xsbti.Reporter) {
   import scala.tools.nsc.{Global, doc, reporters}
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
