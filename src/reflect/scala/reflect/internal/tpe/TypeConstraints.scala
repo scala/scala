@@ -139,7 +139,7 @@ private[internal] trait TypeConstraints {
     def checkWidening(tp: Type): Unit = {
       if (TypeVar.precludesWidening(tp)) stopWidening()
       else tp match {
-        case HasTypeMember(_, _) => stopWidening()
+        case HasTypeMember() => stopWidening()
         case _ =>
       }
     }
