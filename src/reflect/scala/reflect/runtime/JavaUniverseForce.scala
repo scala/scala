@@ -296,7 +296,6 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.JavaStringBuilderClass
     definitions.JavaStringBufferClass
     definitions.JavaCharSequenceClass
-    definitions.TraversableClass
     definitions.ListModule
     definitions.NilModule
     definitions.SeqModule

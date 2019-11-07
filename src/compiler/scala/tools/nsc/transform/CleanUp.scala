@@ -475,7 +475,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       case app@Apply(TypeApply(fun, _), args) if fun.symbol == Object_synchronized =>
         treeCopy.Apply(app, fun, args).transform(this)
 
-      // Replaces `Array(<Predef-or-ScalaRunTime>.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
+      // Replaces `Array(<ScalaRunTime>.wrapArray(ArrayValue(...).$asInstanceOf[...]), <tag>)`
       // with just `ArrayValue(...).$asInstanceOf[...]`
       //
       // See scala/bug#6611; we must *only* do this for literal vararg arrays.
