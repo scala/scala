@@ -304,7 +304,7 @@ TypeDef    ::=  id [TypeParamClause] ‘=’ Type
 
 A _type declaration_ `type $t$[$\mathit{tps}\,$] >: $L$ <: $U$` declares
 $t$ to be an abstract type with lower bound type $L$ and upper bound
-type $U$. If the type parameter clause `[$\mathit{tps}\,$]` is omitted, $t$ abstracts over a first-order type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause.
+type $U$. If the type parameter clause `[$\mathit{tps}\,$]` is omitted, $t$ abstracts over a proper type, otherwise $t$ stands for a type constructor that accepts type arguments as described by the type parameter clause.
 
 If a type declaration appears as a member declaration of a
 type, implementations of the type may implement $t$ with any type $T$
@@ -406,7 +406,7 @@ definitions with lower bounds `>: $L$` and upper bounds
 `: $U$` and view bounds `<% $U$`
 is deferred to [here](07-implicits.html#context-bounds-and-view-bounds).
 
-The most general form of a first-order type parameter is
+The most general form of a proper type parameter is
 `$@a_1 \ldots @a_n$ $\pm$ $t$ >: $L$ <: $U$`.
 Here, $L$, and $U$ are lower and upper bounds that
 constrain possible type arguments for the parameter.  It is a
