@@ -33,6 +33,7 @@
  */
 
 import sbt.TestResult
+import sbt.librarymanagement.{DependencyResolution, UnresolvedWarning, UnresolvedWarningConfiguration, UpdateConfiguration}
 import sbt.testing.TestSelector
 
 import scala.build._
@@ -198,6 +199,10 @@ lazy val instanceSettings = Seq[Setting[_]](
       assert(s2.isManagedVersion)
       s2
     }
+  },
+  scalaCompilerBridgeBinaryJar := {
+    val bridgeModuleID = ("org.scala-lang" % "scala-compiler-bridge" % scalaVersion.value).cross(CrossVersion.full)
+    getArtifact(dependencyResolution.value, bridgeModuleID, Logger.Null).toOption
   },
   // sbt endeavours to align both scalaOrganization and scalaVersion
   // in the Scala artefacts, for example scala-library and scala-compiler.
@@ -607,10 +612,18 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val compilerBridge = configureAsSubproject(Project("compiler-bridge", file("src") / "compiler-bridge"))
   .dependsOn(compiler % Provided, replFrontend % Provided, replFrontend % Provided, scaladoc % Provided)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.compilerbridge"))
   .settings(
-    commonSettings,
+    name := "scala-compiler-bridge",
+    description := "Bridge for zinc to invoke the compiler",
     libraryDependencies += compilerInterfaceDep % Provided,
-    Test / Keys.test := (LocalProject("compiler-bridge-test") / Test / Keys.test).value
+    Test / Keys.test := (LocalProject("compiler-bridge-test") / Test / Keys.test).value,
+    fixPom(
+      "/project/name" -> <name>Scala Compiler Bridge</name>,
+      "/project/description" -> <description>Scala Compiler Bridge</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    )
   )
 
 lazy val compilerBridgeTest = Project("compiler-bridge-test", file("test") / "compiler-bridge")
@@ -1093,7 +1106,7 @@ lazy val root: Project = (project in file("."))
     setIncOptions
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
-    scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
+    scaladoc, scalap, compilerBridge, testkit, partest, junit, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
@@ -1424,6 +1437,20 @@ intellijToSample := {
 def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File]] = {
   def extract(m: ModuleID) = (m.organization, m.name)
   files.find(_.get(moduleID.key).map(extract _) == Some(extract(dep)))
+}
+
+def getArtifact(depResolver: DependencyResolution, m: ModuleID, log: Logger): Either[UnresolvedWarning, File] = {
+  val md = depResolver.wrapDependencyInModule(m)
+  val updateConf = UpdateConfiguration().withLogging(UpdateLogging.DownloadOnly)
+  depResolver.update(md, updateConf, UnresolvedWarningConfiguration(), log) map { updateReport =>
+    val allFiles = for {
+      conf <- updateReport.configurations
+      module <- conf.modules
+      (artifact, file) <- module.artifacts
+      if artifact.name == m.name
+    } yield file
+    allFiles.head
+  }
 }
 
 // WhiteSource
