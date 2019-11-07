@@ -215,6 +215,7 @@ Standard-Section: "ASTs" TopLevelStat*
                   EXTENSION                                                        -- An extension method
                   PARAMsetter                                                      -- The setter part `x_=` of a var parameter `x` which itself is pickled as a PARAM
                   EXPORTED                                                         -- An export forwarder
+                  OPEN                                                             -- an open class
                   Annotation
 
   Annotation    = ANNOTATION     Length tycon_Type fullAnnotation_Term             -- An annotation, given (class) type of constructor, and full application tree
@@ -336,7 +337,7 @@ object TastyFormat {
   final val GIVEN = 37
   final val PARAMsetter = 38
   final val EXPORTED = 39
-  // final val OPEN = 40
+  final val OPEN = 40
   final val PARAMEND = 41
 
   // Cat. 2:    tag Nat
@@ -509,6 +510,7 @@ object TastyFormat {
        | EXTENSION
        | PARAMsetter
        | EXPORTED
+       | OPEN
        | ANNOTATION
        | PRIVATEqualified
        | PROTECTEDqualified => true
@@ -569,7 +571,7 @@ object TastyFormat {
     case GIVEN => "GIVEN"
     case PARAMsetter => "PARAMsetter"
     case EXPORTED => "EXPORTED"
-    // case OPEN => "OPEN"
+    case OPEN => "OPEN"
     case PARAMEND => "PARAMEND"
 
     case SHAREDterm => "SHAREDterm"

@@ -459,6 +459,7 @@ trait TastyUniverse { self =>
         case Given       => "Given"
         case Exported    => "Exported"
         case NoInits     => "NoInits"
+        case Open        => "Open"
       }
     } mkString(" | ")
 }
