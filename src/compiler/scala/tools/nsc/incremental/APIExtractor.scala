@@ -14,9 +14,9 @@ package scala.tools
 package nsc
 package incremental
 
-import scala.tools.nsc.Phase
-import scala.tools.nsc.symtab.Flags
 import xsbti.api._
+
+import scala.tools.nsc.symtab.Flags
 
 object APIExtractor {
   val name = "xsbt-api"

@@ -58,7 +58,6 @@ class InterfaceCompileCancelled(val arguments: Array[String], override val toStr
 
 final class CachedCompiler0(args: Array[String], output: Output, log: Logger, delegate: Reporter)
   extends CachedCompiler
-    with CachedCompilerCompat
     with java.io.Closeable {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +87,7 @@ final class CachedCompiler0(args: Array[String], output: Output, log: Logger, de
   } finally initialLog.clear()
 
   /** Instance of the underlying Zinc compiler. */
-  val compiler: ZincGlobal = newCompiler(command.settings, dreporter, output)
+  val compiler: ZincGlobal = new ZincGlobal(command.settings, dreporter, output)
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
 

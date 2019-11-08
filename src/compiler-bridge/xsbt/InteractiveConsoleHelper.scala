@@ -12,8 +12,9 @@
 
 package xsbt
 
-import xsbt.Compat._
 import xsbti.InteractiveConsoleResult
+
+import scala.tools.nsc.interpreter.Results
 
 object InteractiveConsoleHelper {
   implicit def toConsoleResult(ir: Results.Result): InteractiveConsoleResult =

@@ -14,11 +14,11 @@ package xsbt
 
 import java.io.{PrintWriter, StringWriter}
 
-import xsbt.Compat._
 import xsbt.InteractiveConsoleHelper._
 import xsbti.Logger
 
 import scala.tools.nsc.interpreter.IMain
+import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 import scala.tools.nsc.{GenericRunnerCommand, Settings}
 
 class InteractiveConsoleInterface(
@@ -44,7 +44,7 @@ class InteractiveConsoleInterface(
   val poutWriter: PrintWriter = new PrintWriter(outWriter)
 
   val interpreter: IMain =
-    new IMain(compilerSettings, replReporter(compilerSettings, new PrintWriter(outWriter)))
+    new IMain(compilerSettings, new ReplReporterImpl(compilerSettings, new PrintWriter(outWriter)))
 
   def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
     clearBuffer()
