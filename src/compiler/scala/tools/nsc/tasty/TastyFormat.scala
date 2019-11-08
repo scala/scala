@@ -63,13 +63,13 @@ Standard-Section: "ASTs" TopLevelStat*
   Stat          = Term
                   ValOrDefDef
                   TYPEDEF        Length NameRef (type_Term | Template) Modifier*   -- modifiers type name (= type | bounds)  |  moifiers class name template
-                  IMPORT         Length [GIVEN] qual_Term Selector*                -- import given? qual selectors
+                  IMPORT         Length qual_Term Selector*                        -- import qual selectors
   ValOrDefDef   = VALDEF         Length NameRef type_Term rhs_Term? Modifier*      -- modifiers val name : type (= rhs)?
                   DEFDEF         Length NameRef TypeParam* Params* returnType_Term rhs_Term?
                                         Modifier*                                  -- modifiers def name [typeparams] paramss : returnType (= rhs)?
-  Selector      = IMPORTED              name_NameRef                               -- name
+  Selector      = IMPORTED              name_NameRef                               -- name, "_" for normal wildcards, "" for given wildcards
                   RENAMED               to_NameRef                                 -- => name
-                  BOUNDED               type_Term?                                 -- for type
+                  BOUNDED               type_Term                                  -- type bound
 
   TypeParam     = TYPEPARAM      Length NameRef type_Term Modifier*                -- modifiers name bounds
   Param         = PARAM          Length NameRef type_Term rhs_Term? Modifier*      -- modifiers name : type (= rhs_Term)?. `rhsTerm` is present in the case of an aliased class parameter
@@ -171,7 +171,7 @@ Standard-Section: "ASTs" TopLevelStat*
                   METHODtype     Length result_Type NamesTypes                     -- A method type `(NamesTypes)result`, needed for refinements
                   ERASEDMETHODtype      Length result_Type NamesTypes              -- A method type `erased (NamesTypes)result`, needed for refinements
                   GIVENMETHODtype       Length result_Type NamesTypes              -- A method type `given (NamesTypes)result`, needed for refinements
-                  ERASEDGIVENMETHODtype Length result_Type NamesTypes              -- A method type `given erased (NamesTypes)result`, needed for refinements
+                  ERASEDGIVENMETHODtype Length result_Type NamesTypes              -- A method type `given(erased NamesTypes)result`, needed for refinements
                   IMPLICITMETHODtype    Length result_Type NamesTypes              -- A method type `(implicit NamesTypes)result`, needed for refinements
   // TODO: remove ERASEDIMPLICITMETHODtype
                   TYPELAMBDAtype Length result_Type NamesTypes                     -- A type lambda `[NamesTypes] => result`, variance encoded using VARIANT names
@@ -399,7 +399,7 @@ object TastyFormat {
   final val TYPEDEF = 131
   final val IMPORT = 132
   final val TYPEPARAM = 133
-  final val PARAM = 135
+  final val PARAM = 134
   final val APPLY = 136
   final val TYPEAPPLY = 137
   final val TYPED = 138
