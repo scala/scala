@@ -39,10 +39,5 @@ class ScopeTest {
     // Symbols entered in the nested scope aren't visible in the outer.
     assertTrue(nested.containsName(baz.name))
     assertTrue(!outer.containsName(baz.name))
-
-    // Unlinking a symbol in the inner scope doesn't modify the outer
-    nested.unlink(bar)
-    assertFalse(nested.containsName(bar.name))
-    assertTrue(outer.containsName(bar.name))
   }
 }

@@ -221,6 +221,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** remove entry
      */
     def unlink(e: ScopeEntry): Unit = {
+      require(e.owner == this, "Scope entries may not be unlinked via nested scopes.")
       if (elems == e) {
         elems = e.next
       } else {
