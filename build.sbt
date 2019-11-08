@@ -564,7 +564,7 @@ lazy val compiler = configureAsSubproject(project)
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
     ),
     Osgi.headers ++= Seq(
-      "Import-Package" -> ("jline.*;resolution:=optional," +
+      "Import-Package" -> ("xsbti.*;resolution:=optional,jline.*;resolution:=optional," +
                            raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
                            "*"),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
