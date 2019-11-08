@@ -14,6 +14,8 @@ package scala
 package reflect
 package internal
 
+import java.util.ConcurrentModificationException
+
 import scala.annotation.tailrec
 import scala.collection.{AbstractIterable, AbstractIterator}
 import scala.collection.mutable.Clearable
@@ -37,13 +39,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   case object LookupNotFound extends NameLookup { def symbol = NoSymbol }
 
   class ScopeEntry(val sym: Symbol, val owner: Scope) {
-    /** the next entry in the hash bucket
-     */
+    /** the next entry in the hash bucket */
     var tail: ScopeEntry = null
 
-    /** the next entry in this scope
-     */
+    /** the next entry in this scope */
     var next: ScopeEntry = null
+    /** the previous entry in this scope that shares `owner`. */
+    var prev: ScopeEntry = null
 
     def depth = owner.nestingLevel
     override def hashCode(): Int = sym.name.start
@@ -55,7 +57,9 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   private def newScopeEntry(sym: Symbol, owner: Scope): ScopeEntry = {
     val e = new ScopeEntry(sym, owner)
     e.next = owner.elems
+    if (owner.elems != null) owner.elems.prev = e
     owner.elems = e
+    if (owner.lastElems == null) owner.lastElems = e
     e
   }
 
@@ -63,15 +67,35 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def unapplySeq(decls: Scope): Some[Seq[Symbol]] = Some(decls.toList)
   }
 
+  private def newConcurrentModificationException: ConcurrentModificationException = new ConcurrentModificationException("Scopes may not be mutated during iteration")
   /** A default Scope iterator, that retrieves elements in the order given by ScopeEntry. */
-  private[Scopes] class ScopeIterator(owner: Scope) extends Iterator[Symbol] {
+  private[Scopes] class ReverseScopeIterator(owner: Scope) extends Iterator[Symbol] {
     private[this] var elem: ScopeEntry = owner.elems
+    private[this] val modCount = owner.modCount
 
-    def hasNext: Boolean = (elem ne null) && (elem.owner == this.owner)
+    def hasNext: Boolean = {
+      if (owner.modCount != modCount) throw newConcurrentModificationException
+      (elem ne null) && (elem.owner == this.owner)
+    }
     def next(): Symbol =
-      if (hasNext) {
+      if (hasNext){
         val res = elem
         elem = elem.next
+        res.sym
+      } else throw new NoSuchElementException
+  }
+  private[Scopes] class ForwardScopeIterator(owner: Scope) extends Iterator[Symbol] {
+    private[this] val modCount = owner.modCount
+    private[this] var elem: ScopeEntry = owner.lastElems
+
+    def hasNext: Boolean = {
+      if (owner.modCount != modCount) throw newConcurrentModificationException
+      (elem ne null) && (elem.owner == this.owner)
+    }
+    def next: Symbol =
+      if (hasNext){
+        val res = elem
+        elem = elem.prev
         res.sym
       } else throw new NoSuchElementException
   }
@@ -84,6 +108,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
     scopeCount += 1
     private[scala] var elems: ScopeEntry = _
+    private[this]  var _size: Int = 0
+    private[scala] var lastElems: ScopeEntry = _
 
     /** The number of times this scope is nested in another
      */
@@ -92,15 +118,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** the hash table
      */
     private[Scopes] var hashtable: Array[ScopeEntry] = null
-
-    /** a cache for all elements, to be used by symbol iterator.
-     */
-    private[this] var elemsCache: List[Symbol] = null
-    private[this] var cachedSize = -1
-    private def flushElemsCache(): Unit = {
-      elemsCache = null
-      cachedSize = -1
-    }
+    private[Scopes] var modCount = 0
 
     /** size and mask of hash tables
      *  todo: make hashtables grow?
@@ -118,27 +136,16 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** is the scope empty? */
     override def isEmpty: Boolean = elems eq null
 
-    /** the number of entries in this scope */
+    /** the number of entries in this scope (does not count entries in the outer scope, consistent with `.iterator.size`) */
     override def size: Int = {
-      if (cachedSize < 0)
-        cachedSize = directSize
-
-      cachedSize
-    }
-    private def directSize: Int = {
-      var s = 0
-      var e = elems
-      while (e ne null) {
-        s += 1
-        e = e.next
-      }
-      s
+      _size
     }
 
     /** enter a scope entry
      */
     protected def enterEntry(e: ScopeEntry): Unit = {
-      flushElemsCache()
+      modCount += 1
+      _size += 1
       if (hashtable ne null)
         enterInHash(e)
       else if (size >= MIN_HASH)
@@ -222,12 +229,16 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def unlink(e: ScopeEntry): Unit = {
       require(e.owner == this, "Scope entries may not be unlinked via nested scopes.")
+      modCount += 1
+      _size -= 1
       if (elems == e) {
         elems = e.next
+        if (e.next != null && e.next.owner == this) e.next.prev = null
       } else {
         var e1 = elems
         while (e1.next != e) e1 = e1.next
         e1.next = e.next
+        if (e.next != null && e.next.owner == this) e.next.prev = e1
       }
       if (hashtable ne null) {
         val index = e.sym.name.start & HASHMASK
@@ -239,7 +250,8 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
           e1.tail = e.tail
         }
       }
-      flushElemsCache()
+      if (lastElems == e)
+        lastElems = lastElems.prev
     }
 
     /** remove symbol */
@@ -405,19 +417,13 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     /** Return all symbols as a list in the order they were entered in this scope.
      */
     override def toList: List[Symbol] = {
-      if (elemsCache eq null) {
-        var symbols: List[Symbol] = Nil
-        var count = 0
-        var e = elems
-        while ((e ne null) && e.owner == this) {
-          count += 1
-          symbols ::= e.sym
-          e = e.next
-        }
-        elemsCache = symbols
-        cachedSize = count
+      var symbols: List[Symbol] = Nil
+      var e = elems
+      while ((e ne null) && e.owner == this) {
+        symbols ::= e.sym
+        e = e.next
       }
-      elemsCache
+      symbols
     }
 
     /** Vanilla scope - symbols are stored in declaration order.
@@ -429,14 +435,17 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     def nestingLevel = nestinglevel
 
     /** Return all symbols as an iterator in the order they were entered in this scope.
+     *
+     * @note Mutation of this scope during iteration is not supported and will result in a `ConcurrentModificationException`.
      */
-    def iterator: Iterator[Symbol] = toList.iterator
+    def iterator: Iterator[Symbol] = new ForwardScopeIterator(this)
 
     /** Returns all symbols as an iterator, in an order reversed to that in which they
-      * were entered: symbols first in the scopes are last out of the iterator.
-      * NOTE: when using the `reverseIterator`, it is not safe to mutate the Scope.
-      *  So, be careful not to use this when you do need to mutate this Scope. */
-    def reverseIterator: Iterator[Symbol] = new ScopeIterator(this)
+     * were entered: symbols first in the scopes are last out of the iterator.
+     *
+     * @note Mutation of this scope during iteration is not supported and will result in a `ConcurrentModificationException`.
+     */
+    def reverseIterator: Iterator[Symbol] = new ReverseScopeIterator(this)
 
     override def foreach[U](p: Symbol => U): Unit = toList foreach p
 

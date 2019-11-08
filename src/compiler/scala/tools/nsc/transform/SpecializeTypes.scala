@@ -1035,6 +1035,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *  this method will return List('apply\$mcII\$sp')
    */
   private def specialOverrides(clazz: Symbol) = logResultIf[List[Symbol]]("specialized overrides in " + clazz, _.nonEmpty) {
+
     /* Return the overridden symbol in syms that needs a specialized overriding symbol,
      * together with its specialization environment. The overridden symbol may not be
      * the closest to 'overriding', in a given hierarchy.
@@ -1043,7 +1044,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *   * m overrides a method whose type contains specialized type variables
      *   * there is a valid specialization environment that maps the overridden method type to m's type.
      */
-    def needsSpecialOverride(overriding: Symbol): (Symbol, TypeEnv) = {
+    import NeedsSpecialOverrideResult._
+    def needsSpecialOverride(overriding: Symbol): NeedsSpecialOverrideResult = {
       def checkOverriddenTParams(overridden: Symbol): Unit = {
         foreach2(overridden.info.typeParams, overriding.info.typeParams) { (baseTvar, derivedTvar) =>
           val missing = concreteTypes(baseTvar).toSet diff concreteTypes(derivedTvar).toSet
@@ -1070,73 +1072,82 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
             if (TypeEnv.restrict(env, stvars).nonEmpty && TypeEnv.isValid(env, overridden) && atNext != NoSymbol) {
               debuglog("  " + pp(env) + " found " + atNext)
-              return (overridden, env)
+              return Override(overriding, overridden, env)
             }
           }
         }
       }
-      (NoSymbol, emptyEnv)
+      if (overriding.isSuperAccessor) {
+        val alias = overriding.alias
+        debuglog(s"checking special overload for super accessor: ${overriding.fullName}, alias for ${alias.fullName}")
+        needsSpecialOverride(alias) match {
+          case NoOverride => NoOverride
+          case Override(overriding, overriden, env) => OverrideSuperAccessor(overriding, alias, overriden, env)
+          case x => throw new IllegalStateException(x.toString)
+        }
+      } else
+        NoOverride
     }
-    (clazz.info.decls flatMap { overriding =>
-      needsSpecialOverride(overriding) match {
-        case (NoSymbol, _)     =>
-          // run/t4996.scala, see the amazing commit message in 9733f56
-          if (overriding.isSuperAccessor) {
-            val alias = overriding.alias
-            debuglog(s"checking special overload for super accessor: ${overriding.fullName}, alias for ${alias.fullName}")
-            needsSpecialOverride(alias) match {
-              case nope @ (NoSymbol, _) => None
-              case (overridden, env) =>
-                val om = specializedOverload(clazz, overriding, env, overridden)
-                om.setName(nme.superName(om.name))
-                om.asInstanceOf[TermSymbol].setAlias(info(alias).target)
-                om.owner.info.decls.enter(om)
-                info(om) = SpecialSuperAccessor(om)
-                om.makeNotPrivate(om.owner)
-                newOverload(overriding, om, env)
-                Some(om)
-            }
-          } else None
-        case (overridden, env) =>
-          val om = specializedOverload(clazz, overridden, env)
-          clazz.info.decls.enter(om)
-          foreachWithIndex(om.paramss) { (params, i) =>
-            foreachWithIndex(params) { (param, j) =>
-              param.name = overriding.paramss(i)(j).name // scala/bug#6555 Retain the parameter names from the subclass.
-            }
-          }
-          debuglog(s"specialized overload $om for ${overriding.name.decode} in ${pp(env)}: ${om.info}")
-          om.setFlag(overriding.flags & (ABSOVERRIDE | SYNCHRONIZED))
-          om.withAnnotations(overriding.annotations.filter(_.symbol == ScalaStrictFPAttr))
-          typeEnv(om) = env
-          addConcreteSpecMethod(overriding)
-          if (overriding.isDeferred) { // abstract override
-            debuglog("abstract override " + overriding.fullName + " with specialized " + om.fullName)
-            info(om) = Forward(overriding)
-          }
-          else {
-            // if the override is a normalized member, 'om' gets the
-            // implementation from its original target, and adds the
-            // environment of the normalized member (that is, any
-            // specialized /method/ type parameter bindings)
-            info get overriding match {
-              case Some(NormalizedMember(target)) =>
-                typeEnv(om) = env ++ typeEnv(overriding)
-                info(om) = Forward(target)
-              case _ =>
-                info(om) = SpecialOverride(overriding)
-            }
-            info(overriding) = Forward(om setPos overriding.pos)
-          }
 
-          newOverload(overriding, om, env)
-          ifDebug(exitingSpecialize(assert(
-            overridden.owner.info.decl(om.name) != NoSymbol,
-            "Could not find " + om.name + " in " + overridden.owner.info.decls))
-          )
-          Some(om)
-      }
-    }).toList
+    val overrides = clazz.info.decls.iterator.map(sym => needsSpecialOverride(sym)).filter(_ != NoOverride).toList
+    overrides.map {
+      case OverrideSuperAccessor(overriding, alias, overridden, env)  =>
+        // run/t4996.scala, see the amazing commit message in 9733f56
+        val om = specializedOverload(clazz, overriding, env, overridden)
+        om.setName(nme.superName(om.name))
+        om.asInstanceOf[TermSymbol].setAlias(info(alias).target)
+        om.owner.info.decls.enter(om)
+        info(om) = SpecialSuperAccessor(om)
+        om.makeNotPrivate(om.owner)
+        newOverload(overriding, om, env)
+        om
+      case Override(overriding, overridden, env) =>
+        val om = specializedOverload(clazz, overridden, env)
+        clazz.info.decls.enter(om)
+        foreachWithIndex(om.paramss) { (params, i) =>
+          foreachWithIndex(params) { (param, j) =>
+            param.name = overriding.paramss(i)(j).name // scala/bug#6555 Retain the parameter names from the subclass.
+          }
+        }
+        debuglog(s"specialized overload $om for ${overriding.name.decode} in ${pp(env)}: ${om.info}")
+        om.setFlag(overriding.flags & (ABSOVERRIDE | SYNCHRONIZED))
+        om.withAnnotations(overriding.annotations.filter(_.symbol == ScalaStrictFPAttr))
+        typeEnv(om) = env
+        addConcreteSpecMethod(overriding)
+        if (overriding.isDeferred) { // abstract override
+          debuglog("abstract override " + overriding.fullName + " with specialized " + om.fullName)
+          info(om) = Forward(overriding)
+        }
+        else {
+          // if the override is a normalized member, 'om' gets the
+          // implementation from its original target, and adds the
+          // environment of the normalized member (that is, any
+          // specialized /method/ type parameter bindings)
+          info get overriding match {
+            case Some(NormalizedMember(target)) =>
+              typeEnv(om) = env ++ typeEnv(overriding)
+              info(om) = Forward(target)
+            case _ =>
+              info(om) = SpecialOverride(overriding)
+          }
+          info(overriding) = Forward(om setPos overriding.pos)
+        }
+
+        newOverload(overriding, om, env)
+        ifDebug(exitingSpecialize(assert(
+          overridden.owner.info.decl(om.name) != NoSymbol,
+          "Could not find " + om.name + " in " + overridden.owner.info.decls))
+        )
+        om
+      case _ =>
+        throw new IllegalStateException()
+    }
+  }
+  private sealed abstract class NeedsSpecialOverrideResult
+  private object NeedsSpecialOverrideResult{
+    case class Override(overriding: Symbol, overriden: Symbol, env: TypeEnv) extends NeedsSpecialOverrideResult
+    case class OverrideSuperAccessor(overriding: Symbol, superAccessor: Symbol, overriden: Symbol, env: TypeEnv) extends NeedsSpecialOverrideResult
+    case object NoOverride extends NeedsSpecialOverrideResult
   }
 
   case object UnifyError extends scala.util.control.ControlThrowable
@@ -1928,11 +1939,10 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 //        for (m <- specialOverrides(specializedClass)) specializedClass.info.decls.enter(m)
       val mbrs = new mutable.ListBuffer[Tree]
       var hasSpecializedFields = false
-
-      for (m <- sClass.info.decls
-             if m.hasFlag(SPECIALIZED)
-                 && (m.sourceFile ne null)
-                 && satisfiable(typeEnv(m), !sClass.hasFlag(SPECIALIZED))) {
+      val declsToSpecialize = sClass.info.decls.iterator.filter(m =>
+         m.hasFlag(SPECIALIZED) && (m.sourceFile ne null) && satisfiable(typeEnv(m), !sClass.hasFlag(SPECIALIZED))
+      ).toList
+      for (m <- declsToSpecialize) {
         debuglog("creating tree for " + m.fullName)
         if (m.isMethod)  {
           if (info(m).target.hasAccessorFlag) hasSpecializedFields = true
