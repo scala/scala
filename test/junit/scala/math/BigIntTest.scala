@@ -2,6 +2,7 @@ package scala.math
 
 import java.math.{BigInteger => BI, MathContext => MC}
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -13,4 +14,5 @@ class BigIntTest {
   def testIsComparable(): Unit = {
     assert(BigInt(1).isInstanceOf[java.lang.Comparable[_]])
   }
+
 }

@@ -11,7 +11,7 @@ class DoubleTest {
 
   /* Test for scala/bug#11386 */
   @Test
-  def tesDoubleSign: Unit = {
+  def testDoubleSign: Unit = {
     assertTrue(Double.NaN.sign.isNaN)
     assertEquals(doubleToLongBits(1.0), doubleToLongBits(Double.MaxValue.sign))
     assertEquals(doubleToLongBits(1.0), doubleToLongBits(Double.PositiveInfinity.sign))
@@ -22,7 +22,7 @@ class DoubleTest {
   }
 
   @Test
-  def tesDoubleSignum: Unit = {
+  def testDoubleSignum: Unit = {
     assertEquals(0, Double.NaN.signum)
     assertEquals(1, Double.MaxValue.signum)
     assertEquals(1, Double.PositiveInfinity.signum)
