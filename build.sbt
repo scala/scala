@@ -200,17 +200,21 @@ lazy val instanceSettings = Seq[Setting[_]](
       s2
     }
   },
-  scalaCompilerBridgeBinaryJar := {
-    val bridgeModuleID = ("org.scala-lang" % "scala-compiler-bridge" % scalaVersion.value).cross(CrossVersion.full)
-    getArtifact(dependencyResolution.value, bridgeModuleID, Logger.Null).toOption
-  },
   // sbt endeavours to align both scalaOrganization and scalaVersion
   // in the Scala artefacts, for example scala-library and scala-compiler.
   // This doesn't work in the scala/scala build because the version of scala-library and the scalaVersion of
   // scala-library are correct to be different. So disable overriding.
   scalaModuleInfo ~= (_ map (_ withOverrideScalaVersion false)),
   Quiet.silenceScalaBinaryVersionWarning
-)
+) ++ {
+  if (DottySupport.compileWithDotty) Seq()
+  else Seq(
+    scalaCompilerBridgeBinaryJar := {
+      val bridgeModuleID = ("org.scala-lang" % "scala-compiler-bridge" % scalaVersion.value).cross(CrossVersion.full)
+      getArtifact(dependencyResolution.value, bridgeModuleID, Logger.Null).toOption
+    }
+  )
+}
 
 
 lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories ++ publishSettings ++ Seq[Setting[_]](
