@@ -48,7 +48,7 @@ val asmDep            = "org.scala-lang.modules"         % "scala-asm"          
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
 val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % "1.12"
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
-val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.3.0-beta1"
+val compilerInterfaceDep = "org.scala-sbt"               % "compiler-interface"               % "1.3.1"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
 lazy val publishSettings : Seq[Setting[_]] = Seq(
