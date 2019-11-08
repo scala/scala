@@ -409,8 +409,10 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
             deriveDefDef(dd) {
               case blk@Block(stats, expr) =>
                 assert(dd.symbol.originalOwner.isClass, dd.symbol)
-                def nullify(sym: Symbol) =
+                def nullify(sym: Symbol) = {
+                  sym.accessedOrSelf.setFlag(MUTABLE)
                   Select(gen.mkAttributedThis(sym.enclClass), sym.accessedOrSelf) === NULL
+                }
                 val stats1 = stats ::: fieldsToNull.map(nullify)
                 treeCopy.Block(blk, stats1, expr)
               case tree =>
