@@ -1009,25 +1009,19 @@ lazy val junit = project.in(file("test") / "junit")
 
 lazy val tasty = project.in(file("test") / "tasty")
   .dependsOn(tastytest)
-  // .settings(commonSettings)
-  // .settings(disableDocs)
-  // .settings(skip in publish := true)
+  .settings(disableDocs)
+  .settings(skip in publish := true)
   .settings(
     fork in Test := true,
-    // javaOptions in Test += "-Xss1M",
-    // (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    // (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    libraryDependencies ++= Seq(junitInterfaceDep, diffUtilsDep),
-    (libraryDependencies in Test) ++= Seq(DottySupport.dottyLibrary),
+    libraryDependencies ++= Seq(junitInterfaceDep),
+    libraryDependencies in Test += DottySupport.dottyLibrary,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     testOptions in Test += Tests.Argument(
       s"-Dtastytest.dotty-library=${(Test / externalDependencyClasspath).value.map(_.data.toString).mkString(":")}",
       s"-Dtastytest.src=${baseDirectory.value}",
       s"-Dtastytest.packageName=tastytest"
     ),
-    // sourceDirectory in Test := baseDirectory.value/"src",
-    // unmanagedSourceDirectories in Compile := Nil,
-    // unmanagedSourceDirectories in Test := Nil
+    sourceDirectory in Test := baseDirectory.value/"test"
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
