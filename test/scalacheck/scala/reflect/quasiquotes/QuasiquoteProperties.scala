@@ -68,7 +68,7 @@ trait Helpers {
       } catch {
         case u: Throwable =>
           if (!clazz.isAssignableFrom(u.getClass))
-            assert(false, s"wrong exception: $u")
+            assert(false, s"wrong exception: expected ${clazz.getName} but was ${u.getClass.getName}")
           true
       }
     if(!thrown)

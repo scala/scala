@@ -87,12 +87,7 @@ object AssertUtil {
    */
   def assertThrows[T <: Throwable: ClassTag](body: => Any,
       checkMessage: String => Boolean = s => true): Unit = {
-    try {
-      body
-      fail("Expression did not throw!")
-    } catch {
-      case e: T if checkMessage(e.getMessage) =>
-    }
+    assertThrown[T](t => checkMessage(t.getMessage))(body)
   }
 
   def assertThrown[T <: Throwable: ClassTag](checker: T => Boolean)(body: => Any): Unit =
@@ -106,7 +101,7 @@ object AssertUtil {
         ae.addSuppressed(failed)
         throw ae
       case NonFatal(other) =>
-        val ae = new AssertionError(s"Exception not a ${implicitly[ClassTag[T]]}: $other")
+        val ae = new AssertionError(s"Wrong exception: expected ${implicitly[ClassTag[T]]} but was ${other.getClass.getName}")
         ae.addSuppressed(other)
         throw ae
     }
