@@ -337,6 +337,15 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       null
     }
 
+    final def lookupSymbolEntryNoOuterScope(sym: Symbol): ScopeEntry = {
+      var e = lookupEntry(sym.name)
+      while (e ne null) {
+        if (e.sym == sym && e.owner == this) return e
+        e = lookupNextEntry(e)
+      }
+      null
+    }
+
     /** lookup a symbol entry matching given name.
      *  @note from Martin: I believe this is a hotspot or will be one
      *  in future versions of the type system. I have reverted the previous
@@ -447,18 +456,19 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def reverseIterator: Iterator[Symbol] = new ReverseScopeIterator(this)
 
-    override def foreach[U](p: Symbol => U): Unit = toList foreach p
+    override def foreach[U](p: Symbol => U): Unit = iterator foreach p
 
     override def filterNot(p: Symbol => Boolean): Scope = {
-      val result = toList
-      val filtered = result.filterNot(p)
-      if (result eq filtered) this
-      else newScopeWith(filtered: _*)
+      var changed = false
+      val filtered = iterator.filterNot { sym => p(sym) || {changed = true; false}}
+      val newScope = newScopeWith(filtered)
+      if (changed) newScope else this
     }
     override def filter(p: Symbol => Boolean): Scope = {
-      val result = toList
-      val filtered = result.filter(p)
-      if (sameLength(result, filtered)) this else newScopeWith(filtered: _*)
+      var changed = false
+      val filtered = iterator.filter { sym => p(sym) && {changed = true; true}}
+      val newScope = newScopeWith(filtered)
+      if (changed) newScope else this
     }
 
     @deprecated("use `toList.reverse` instead", "2.10.0") // Used in sbt 0.12.4
@@ -522,6 +532,14 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
 
   /** Create a new scope with given initial elements */
   def newScopeWith(elems: Symbol*): Scope = {
+    val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
+    val scope = newScope
+    elems foreach scope.enter
+    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.scopePopulationTime, startTime)
+    scope
+  }
+
+  def newScopeWith(elems: Iterator[Symbol]): Scope = {
     val startTime = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.scopePopulationTime) else null
     val scope = newScope
     elems foreach scope.enter

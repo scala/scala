@@ -995,8 +995,9 @@ trait Definitions extends api.StandardDefinitions {
             // must filter out "universal" members (getClass is deferred for some reason)
             val deferredMembers =
               tpSym.info.membersBasedOnFlags(excludedFlags = BridgeAndPrivateFlags, requiredFlags = METHOD)
-              .toList
+              .iterator
               .filter(mem => mem.isDeferred && !isUniversalMember(mem))
+              .toList
 
             // if there is only one, it's monomorphic and has a single argument list
             if (deferredMembers.lengthCompare(1) == 0 &&
@@ -1340,7 +1341,7 @@ trait Definitions extends api.StandardDefinitions {
       val sym = RuntimePackageClass.newClassSymbol(tpnme.AnnotationDefaultATTR, NoPosition, 0L)
       sym setInfo ClassInfoType(List(StaticAnnotationClass.tpe), newScope, sym)
       markAllCompleted(sym)
-      RuntimePackageClass.info.decls.toList.filter(_.name == sym.name) match {
+      RuntimePackageClass.info.decls.lookup(sym.name).alternatives match {
         case existing :: _ =>
           existing.asInstanceOf[ClassSymbol]
         case _ =>

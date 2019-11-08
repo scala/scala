@@ -374,15 +374,12 @@ trait Implicits {
       memberWildcardType(name, mtpe)
     }
     def unapply(pt: Type): Option[(Name, List[Type], Type)] = pt match {
-      case RefinedType(List(WildcardType), decls) =>
-        decls.toList match {
-          case List(sym) =>
-            sym.tpe match {
-              case MethodType(params, restpe)
-              if (params forall (_.tpe.isInstanceOf[BoundedWildcardType])) =>
-                Some((sym.name, params map (_.tpe.lowerBound), restpe))
-              case _ => None
-            }
+      case RefinedType(List(WildcardType), decls) if decls.size == 1 =>
+        val sym = decls.elems.sym
+        sym.tpe match {
+          case MethodType(params, restpe)
+          if (params forall (_.tpe.isInstanceOf[BoundedWildcardType])) =>
+            Some((sym.name, params map (_.tpe.lowerBound), restpe))
           case _ => None
         }
       case _ => None

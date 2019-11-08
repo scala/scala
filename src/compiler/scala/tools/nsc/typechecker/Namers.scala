@@ -467,7 +467,8 @@ trait Namers extends MethodSynthesis {
         //      opening up the package object on the classpath at all if one exists in source.
         if (existingModule.isPackageObject) {
           val packageScope = existingModule.enclosingPackageClass.rawInfo.decls
-          packageScope.foreach(mem => if (mem.owner != existingModule.enclosingPackageClass) packageScope unlink mem)
+          val toRemove = packageScope.iterator.filter(mem => mem.owner != existingModule.enclosingPackageClass).toList
+          toRemove.foreach(packageScope.unlink(_))
         }
         updatePosFlags(existingModule, tree.pos, moduleFlags)
         setPrivateWithin(tree, existingModule)
@@ -1680,7 +1681,7 @@ trait Namers extends MethodSynthesis {
     }
     private class DefaultMethodInOwningScope(c: Context, meth: Symbol) extends DefaultGetterNamerSearch {
       private lazy val ownerNamer: Namer = {
-        val ctx = context.nextEnclosing(c => c.scope.toList.contains(meth)) // TODO use lookup rather than toList.contains
+        val ctx = context.nextEnclosing(c => c.scope.lookupSymbolEntryNoOuterScope(meth) != null)
         assert(ctx != NoContext, meth)
         newNamer(ctx)
       }

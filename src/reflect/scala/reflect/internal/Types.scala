@@ -4462,6 +4462,7 @@ trait Types
 
   private def infoTypeDepth(sym: Symbol): Depth = typeDepth(sym.info)
   private def symTypeDepth(syms: List[Symbol]): Depth  = Depth.maximumBy(syms)(infoTypeDepth)
+  private def symTypeDepthIterator(syms: Iterator[Symbol]): Depth = Depth.maximumBy(syms)(infoTypeDepth)
   private def baseTypeSeqDepth(tps: List[Type]): Depth = Depth.maximumBy(tps)((t: Type) => t.baseTypeSeqDepth)
 
   /** Is intersection of given types populated? That is,
@@ -5287,7 +5288,7 @@ trait Types
   /** The maximum depth of type `tp` */
   final def typeDepth(tp: Type): Depth = tp match {
     case TypeRef(pre, sym, args)          => typeDepth(pre) max maxDepth(args).incr
-    case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepth(decls.toList).incr
+    case RefinedType(parents, decls)      => maxDepth(parents) max symTypeDepthIterator(decls.iterator).incr
     case TypeBounds(lo, hi)               => typeDepth(lo) max typeDepth(hi)
     case MethodType(paramtypes, result)   => typeDepth(result)
     case NullaryMethodType(result)        => typeDepth(result)

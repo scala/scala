@@ -62,4 +62,12 @@ object Depth {
     }
     mm
   }
+
+  def maximumBy[A](iterator: Iterator[A])(ff: DepthFunction[A]): Depth = {
+    var mm: Depth = Zero
+    while (iterator.hasNext){
+      mm = mm max ff(iterator.next())
+    }
+    mm
+  }
 }
