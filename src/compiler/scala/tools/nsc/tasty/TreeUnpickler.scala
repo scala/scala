@@ -699,7 +699,7 @@ abstract class TreeUnpickler(reader: TastyReader,
           case ANNOTATION =>
             annotFns = readAnnot(ctx) :: annotFns
           case tag =>
-            assert(assertion = false, s"illegal modifier tag $tag at $currentAddr, end = $end")
+            assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
       (flags, tastyFlagSet, /*annotFns.reverse,*/ Nil, privateWithin)
@@ -1159,13 +1159,13 @@ abstract class TreeUnpickler(reader: TastyReader,
 //      assert(sourcePathAt(start).isEmpty)
 //      readByte()
 //      readEnd()
-//      val importGiven = nextByte == GIVEN
+//      val importGiven = nextByte == GIVEN // TODO: drop the next time we bump Tasty versions
 //      if (importGiven) readByte()
 //      val expr = readTerm()
-//      setSpan(start, Import(importGiven, expr, readSelectors()))
+//      setSpan(start, Import(expr, expr, readSelectors()))
 //    }
 
-//    def readSelectors()(implicit ctx: Context): List[untpd.Tree] = nextByte match {
+//    def readSelectors()(implicit ctx: Context): List[untpd.Tree] = nextByte match { // TODO fetch latest
 //      case IMPORTED =>
 //        val start = currentAddr
 //        assert(sourcePathAt(start).isEmpty)
