@@ -209,6 +209,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NoSymbol
     this.CyclicReference
     this.SymbolOps
+    this.NameOps
     this.TermName
     this.TypeName
     this.Liftable

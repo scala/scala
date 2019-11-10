@@ -53,7 +53,7 @@ trait MemberHandlers {
           //   scala> val xxx = ""
           //   scala> def foo: x<TAB>
           if (name.endsWith(IMain.DummyCursorFragment)) {
-            val stripped = name.stripSuffix(IMain.DummyCursorFragment)
+            val stripped = NameOps.stripSuffix(name, IMain.DummyCursorFragment)
             importVars += stripped
           }
         }
@@ -212,7 +212,7 @@ trait MemberHandlers {
     private def isFlattenedSymbol(sym: Symbol) =
       sym.owner.isPackageClass &&
         sym.name.containsName(nme.NAME_JOIN_STRING) &&
-        sym.owner.info.member(sym.name.take(sym.name.indexOf(nme.NAME_JOIN_STRING))) != NoSymbol
+        sym.owner.info.member(NameOps.take(sym.name, sym.name.indexOf(nme.NAME_JOIN_STRING)) ) != NoSymbol
 
     private def importableTargetMembers =
       importableMembers(exitingTyper(targetType)).filterNot(isFlattenedSymbol).toList

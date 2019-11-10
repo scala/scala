@@ -479,7 +479,7 @@ abstract class TreeInfo {
       case _: ValDef | _: TypeDef => true
       // keep valdef or getter for val/var
       case dd: DefDef if dd.mods.hasAccessorFlag => !nme.isSetterName(dd.name) && !tbody.exists {
-        case vd: ValDef => dd.name == vd.name.dropLocal
+        case vd: ValDef => dd.name == NameOps.dropLocal(vd.name)
         case _ => false
       }
       case md: MemberDef => !md.mods.isSynthetic
@@ -495,7 +495,7 @@ abstract class TreeInfo {
     def recoverBody(body: List[Tree]) = body map {
       case vd @ ValDef(vmods, vname, _, vrhs) if nme.isLocalName(vname) =>
         tbody find {
-          case dd: DefDef => dd.name == vname.dropLocal
+          case dd: DefDef => dd.name == NameOps.dropLocal(vname)
           case _ => false
         } map { dd =>
           val DefDef(dmods, dname, _, _, _, drhs) = dd

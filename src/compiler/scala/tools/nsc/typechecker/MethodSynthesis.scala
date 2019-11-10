@@ -215,7 +215,7 @@ trait MethodSynthesis {
 
           val rhs =
             if (tree.mods.isDeferred) EmptyTree
-            else if (isSetter) Apply(Ident(tree.name.setterName), List(Ident(setterParam)))
+            else if (isSetter) Apply(Ident(NameOps.setterName(tree.name)), List(Ident(setterParam)))
             else Select(This(owner), tree.name)
 
           val sym = createMethod(tree, name, derivedPos, tree.mods.flags & BeanPropertyFlags)

@@ -479,7 +479,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     def usesSpecializedField = intoConstructor.usesSpecializedField
 
     // The constructor parameter corresponding to an accessor
-    def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
+    def parameter(acc: Symbol): Symbol = parameterNamed(NameOps.getterName(acc.unexpandedName))
 
     // The constructor parameter with given name. This means the parameter
     // has given name, or starts with given name, and continues with a `$` afterwards.
@@ -726,7 +726,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
         // sometimes acc is a field with a local name (when it's a val/var constructor param) --> exclude the `acc` itself when looking for conflicting decl
         // sometimes it's not (just a constructor param) --> any conflicting decl is a problem
-        val conflict = clazz.info.decl(acc.name.localName).filter(sym => sym ne acc)
+        val conflict = clazz.info.decl(NameOps.localName(acc.name)).filter(sym => sym ne acc)
         if (conflict ne NoSymbol) {
           val orig = exitingTyper(clazz.info.nonPrivateMember(acc.name).filter(_ hasFlag ACCESSOR))
           reporter.error(acc.pos, s"parameter '${acc.name}' requires field but conflicts with ${(orig orElse conflict).fullLocationString}")

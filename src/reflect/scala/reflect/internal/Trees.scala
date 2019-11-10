@@ -263,9 +263,9 @@ trait Trees extends api.Trees {
 
   trait NameTree extends Tree with NameTreeApi {
     def name: Name
-    def getterName: TermName = name.getterName
-    def setterName: TermName = name.setterName
-    def localName: TermName = name.localName
+    def getterName: TermName = NameOps.getterName(name)
+    def setterName: TermName = NameOps.setterName(name)
+    def localName: TermName = NameOps.localName(name)
   }
 
   trait RefTree extends SymTree with NameTree with RefTreeApi {

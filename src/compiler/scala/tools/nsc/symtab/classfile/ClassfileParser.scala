@@ -185,8 +185,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
   def getClassSymbol(name: String): Symbol = {
     name match {
-      case name if name.endsWith(nme.MODULE_SUFFIX_STRING) => rootMirror getModuleByName newTermName(name).dropModule
-      case name                           => classNameToSymbol(name)
+      case name if name.endsWith(nme.MODULE_SUFFIX_STRING) =>
+        rootMirror getModuleByName NameOps.dropModule(newTermName(name))
+      case name =>
+        classNameToSymbol(name)
     }
   }
 

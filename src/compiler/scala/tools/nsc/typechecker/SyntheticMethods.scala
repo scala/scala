@@ -127,7 +127,9 @@ trait SyntheticMethods extends ast.TreeDSL {
 
     def productElementNameMethod = {
       val constrParamAccessors = clazz.constrParamAccessors
-      createSwitchMethod(nme.productElementName, constrParamAccessors.indices, StringTpe)(idx => LIT(constrParamAccessors(idx).name.dropLocal.decode))
+      createSwitchMethod(nme.productElementName, constrParamAccessors.indices, StringTpe){ idx =>
+        LIT(NameOps.dropLocal(constrParamAccessors(idx).name).decode)
+      }
     }
 
     var syntheticCanEqual = false

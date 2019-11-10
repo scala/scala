@@ -312,7 +312,7 @@ trait StdNames {
 
     final val scala_ : NameType = "scala"
 
-    def dropSingletonName(name: Name): TypeName = (name dropRight SINGLETON_SUFFIX.length).toTypeName
+    def dropSingletonName(name: Name): TypeName = NameOps.dropRight(name, SINGLETON_SUFFIX.length).toTypeName
     def singletonName(name: Name): TypeName     = (name append SINGLETON_SUFFIX).toTypeName
   }
 
@@ -389,7 +389,7 @@ trait StdNames {
     val MIXIN_CONSTRUCTOR: NameType        = "$init$"
     val MODULE_INSTANCE_FIELD: NameType    = NameTransformer.MODULE_INSTANCE_NAME  // "MODULE$"
     val OUTER: NameType                    = "$outer"
-    val OUTER_LOCAL: NameType              = OUTER.localName
+    val OUTER_LOCAL: NameType              = NameOps.localName(OUTER)
     val OUTER_ARG: NameType                = "arg" + OUTER
     val OUTER_SYNTH: NameType              = "<outer>" // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
     val ROOTPKG: NameType                  = "_root_"
@@ -461,17 +461,17 @@ trait StdNames {
         var idx = idx0
         while (idx > 0 && name.charAt(idx - 1) == '$')
           idx -= 1
-        name drop idx + 2
+        NameOps.drop(name, idx + 2)
     }
 
     @deprecated("use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
-    @deprecated("use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = name.dropModule
-    @deprecated("use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = name.dropLocal
-    @deprecated("use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = name.dropLocal
-    @deprecated("use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = name.localName
-    @deprecated("use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = name.setterName
-    @deprecated("use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = name.getterName
-    @deprecated("use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = name.getterName
+    @deprecated("use Name#dropModule", "2.11.0") def stripModuleSuffix(name: Name): Name      = NameOps.dropModule(name)
+    @deprecated("use Name#dropLocal", "2.11.0") def localToGetter(name: TermName): TermName   = NameOps.dropLocal(name)
+    @deprecated("use Name#dropLocal", "2.11.0") def dropLocalSuffix(name: Name): TermName     = NameOps.dropLocal(name)
+    @deprecated("use Name#localName", "2.11.0") def getterToLocal(name: TermName): TermName   = NameOps.localName(name)
+    @deprecated("use Name#setterName", "2.11.0") def getterToSetter(name: TermName): TermName = NameOps.setterName(name)
+    @deprecated("use Name#getterName", "2.11.0") def getterName(name: TermName): TermName     = NameOps.getterName(name)
+    @deprecated("use Name#getterName", "2.11.0") def setterToGetter(name: TermName): TermName = NameOps.getterName(name)
 
     /**
      * Convert `Tuple2$mcII` to `Tuple2`, or `T1$sp` to `T1`.
@@ -497,7 +497,7 @@ trait StdNames {
     def splitSpecializedName(name: Name): (Name, String, String) =
       // DUPLICATED LOGIC WITH `unspecializedName`
     if (name endsWith SPECIALIZED_SUFFIX) {
-      val name1 = name dropRight SPECIALIZED_SUFFIX.length
+      val name1 = NameOps.dropRight(name, SPECIALIZED_SUFFIX.length)
       val idxC  = name1 lastIndexOf 'c'
       val idxM  = name1 lastIndexOf 'm'
 
@@ -520,7 +520,7 @@ trait StdNames {
         nme.CONSTRUCTOR
       else name indexOf DEFAULT_GETTER_STRING match {
         case -1  => name.toTermName
-        case idx => name.toTermName take idx
+        case idx => NameOps.take(name.toTermName, idx)
       }
     )
 
@@ -529,7 +529,7 @@ trait StdNames {
         if (name.startsWith(DEFAULT_GETTER_INIT_STRING)) (nme.CONSTRUCTOR, DEFAULT_GETTER_INIT_STRING.length)
         else name.indexOf(DEFAULT_GETTER_STRING) match {
           case -1  => (name.toTermName, -1)
-          case idx => (name.toTermName.take(idx), idx + DEFAULT_GETTER_STRING.length)
+          case idx => (NameOps.take(name.toTermName, idx), idx + DEFAULT_GETTER_STRING.length)
         }
       if (i >= 0) (n, name.encoded.substring(i).toInt) else (n, -1)
     }
@@ -942,7 +942,7 @@ trait StdNames {
     val toCharacter: NameType = "toCharacter"
     val toInteger: NameType   = "toInteger"
 
-    def newLazyValSlowComputeName(lzyValName: Name) = (lzyValName stripSuffix MODULE_VAR_SUFFIX append LAZY_SLOW_SUFFIX).toTermName
+    def newLazyValSlowComputeName(lzyValName: Name) = (NameOps.stripSuffix(lzyValName, MODULE_VAR_SUFFIX) append LAZY_SLOW_SUFFIX).toTermName
 
     // ASCII names for operators
     val ADD       = encode("+")

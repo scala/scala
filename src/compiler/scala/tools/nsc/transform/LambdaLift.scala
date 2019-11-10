@@ -298,11 +298,11 @@ abstract class LambdaLift extends InfoTransform {
 
                   // TODO do we need to preserve pre-erasure info for the accessors (and a NullaryMethodType for the getter)?
                   // can't have a field in the trait, so add a setter
-                  val setter = owner.newMethod(nme.expandedSetterName(proxyName.setterName, owner), fv.pos, accessorFlags)
+                  val setter = owner.newMethod(nme.expandedSetterName(NameOps.setterName(proxyName), owner), fv.pos, accessorFlags)
                   setter setInfoAndEnter MethodType(setter.newSyntheticValueParams(List(fv.info)), UnitTpe)
 
                   // the getter serves as the proxy -- entered below
-                  owner.newMethod(proxyName.getterName, fv.pos, accessorFlags | STABLE) setInfo MethodType(Nil, fv.info)
+                  owner.newMethod(NameOps.getterName(proxyName), fv.pos, accessorFlags | STABLE) setInfo MethodType(Nil, fv.info)
                 } else
                   owner.newValue(proxyName.toTermName, fv.pos, newFlags.toLong | PrivateLocal) setInfo fv.info
 

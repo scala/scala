@@ -481,31 +481,35 @@ trait Names extends api.Names {
     }
   }
 
-  implicit def AnyNameOps(name: Name): NameOps[Name]          = new NameOps(name)
-  implicit def TermNameOps(name: TermName): NameOps[TermName] = new NameOps(name)
-  implicit def TypeNameOps(name: TypeName): NameOps[TypeName] = new NameOps(name)
-
-  /** FIXME: This is a good example of something which is pure "value class" but cannot
-   *  reap the benefits because an (unused) \$outer pointer so it is not single-field.
-   */
-  final class NameOps[T <: Name](name: T) {
+  object NameOps {
     import NameTransformer._
-    def stripSuffix(suffix: String): T = if (name endsWith suffix) dropRight(suffix.length) else name // OPT avoid creating a Name with `suffix`
-    def stripSuffix(suffix: Name): T   = if (name endsWith suffix) dropRight(suffix.length) else name
-    def take(n: Int): T                = name.subName(0, n).asInstanceOf[T]
-    def drop(n: Int): T                = name.subName(n, name.length).asInstanceOf[T]
-    def dropRight(n: Int): T           = name.subName(0, name.length - n).asInstanceOf[T]
-    def dropLocal: TermName            = name.toTermName stripSuffix LOCAL_SUFFIX_STRING
-    def dropSetter: TermName           = name.toTermName stripSuffix SETTER_SUFFIX_STRING
-    def dropModule: T                  = this stripSuffix MODULE_SUFFIX_STRING
-    def localName: TermName            = getterName append LOCAL_SUFFIX_STRING
-    def setterName: TermName           = getterName append SETTER_SUFFIX_STRING
-    def getterName: TermName           = dropTraitSetterSeparator.dropSetter.dropLocal
 
-    private def dropTraitSetterSeparator: TermName =
+    def stripSuffix[T <: Name](name: T, suffix: String): T =
+      if (name endsWith suffix) dropRight(name, suffix.length) else name // OPT avoid creating a Name with `suffix`
+    def stripSuffix[T <: Name](name: T, suffix: Name): T =
+      if (name endsWith suffix) dropRight(name, suffix.length) else name
+    def take[T <: Name](name: T, n: Int): T =
+      name.subName(0, n).asInstanceOf[T]
+    def drop[T <: Name](name: T, n: Int): T =
+      name.subName(n, name.length).asInstanceOf[T]
+    def dropRight[T <: Name](name: T, n: Int): T =
+      name.subName(0, name.length - n).asInstanceOf[T]
+    def dropLocal[T <: Name](name: T): TermName =
+      stripSuffix(name.toTermName, LOCAL_SUFFIX_STRING)
+    def dropSetter[T <: Name](name: T): TermName =
+      stripSuffix(name.toTermName, SETTER_SUFFIX_STRING)
+    def dropModule[T <: Name](name: T): T =
+      stripSuffix(name, MODULE_SUFFIX_STRING)
+    def localName[T <: Name](name: T): TermName =
+      getterName(name) append LOCAL_SUFFIX_STRING
+    def setterName[T <: Name](name: T): TermName =
+      getterName(name) append SETTER_SUFFIX_STRING
+    def getterName[T <: Name](name: T): TermName =
+      dropLocal(dropSetter(dropTraitSetterSeparator(name)))
+    private def dropTraitSetterSeparator[T <: Name](name: T): TermName =
       name indexOf TRAIT_SETTER_SEPARATOR_STRING match {
         case -1  => name.toTermName
-        case idx => name.toTermName drop idx drop TRAIT_SETTER_SEPARATOR_STRING.length
+        case idx => drop(name.toTermName, idx + TRAIT_SETTER_SEPARATOR_STRING.length)
       }
   }
 

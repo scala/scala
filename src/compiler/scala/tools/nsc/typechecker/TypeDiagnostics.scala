@@ -682,13 +682,13 @@ trait TypeDiagnostics {
             else if (
               sym.isVar
                 || sym.isGetter && (sym.accessed.isVar || (sym.owner.isTrait && !sym.hasFlag(STABLE)))
-            ) s"var ${sym.name.getterName.decoded}"
+            ) s"var ${NameOps.getterName(sym.name).decoded}"
             else if (
               sym.isVal
                 || sym.isGetter && (sym.accessed.isVal || (sym.owner.isTrait && sym.hasFlag(STABLE)))
                 || sym.isLazy
             ) s"val ${sym.name.decoded}"
-            else if (sym.isSetter) { cond = valAdvice ; s"var ${sym.name.getterName.decoded}" }
+            else if (sym.isSetter) { cond = valAdvice ; s"var ${NameOps.getterName(sym.name).decoded}" }
             else if (sym.isMethod) s"method ${sym.name.decoded}"
             else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"

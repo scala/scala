@@ -980,7 +980,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val ownerModule: ModuleSymbol =
         if (split > 0) packageNameToScala(fullname take split) else this.RootPackage
       val owner = ownerModule.moduleClass
-      val name = TermName(fullname) drop split + 1
+      val name = NameOps.drop(TermName(fullname), split + 1)
       // Be tolerant of clashes between, e.g. a subpackage and a package object member. These could arise
       // under separate compilation.
       val opkg = owner.info.decl(name).filter(_.hasPackageFlag)
@@ -1029,10 +1029,10 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
         def lookupClass = {
           def coreLookup(name: Name): Symbol =
             owner.info.decl(name) orElse {
-              if (name.startsWith(nme.NAME_JOIN_STRING)) coreLookup(name drop 1) else NoSymbol
+              if (name.startsWith(nme.NAME_JOIN_STRING)) coreLookup(NameOps.drop(name, 1)) else NoSymbol
             }
           if (nme.isModuleName(simpleName))
-            coreLookup(simpleName.dropModule.toTermName) map (_.moduleClass)
+            coreLookup(NameOps.dropModule(simpleName).toTermName) map (_.moduleClass)
           else
             coreLookup(simpleName)
         }
@@ -1316,7 +1316,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
      */
     def fieldToJava(fld: TermSymbol): jField = fieldCache.toJava(fld) {
       val jclazz = classToJava(fld.owner.asClass)
-      val jname = fld.name.dropLocal.toString
+      val jname = NameOps.dropLocal(fld.name).toString
       try jclazz getDeclaredField jname
       catch {
         case ex: NoSuchFieldException => jclazz getDeclaredField expandedName(fld)
@@ -1329,7 +1329,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     def methodToJava(meth: MethodSymbol): jMethod = methodCache.toJava(meth) {
       val jclazz = classToJava(meth.owner.asClass)
       val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
-      val jname = meth.name.dropLocal.toString
+      val jname = NameOps.dropLocal(meth.name).toString
       try jclazz getDeclaredMethod (jname, paramClasses: _*)
       catch {
         case ex: NoSuchMethodException =>

@@ -37,8 +37,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
 
   private def symNameInternal(tree: Tree, name: Name, decoded: Boolean): String = {
     val sym     = tree.symbol
-    def qname   = quotedName(name.dropLocal, decoded)
-    def qowner  = quotedName(sym.owner.name.dropLocal, decoded)
+    def qname   = quotedName(NameOps.dropLocal(name), decoded)
+    def qowner  = quotedName(NameOps.dropLocal(sym.owner.name), decoded)
     def qsymbol = quotedName(sym.nameString)
 
     if (sym == null || sym == NoSymbol)

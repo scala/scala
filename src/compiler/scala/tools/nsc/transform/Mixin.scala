@@ -506,7 +506,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
           // only consider usages from non-transient lazy vals (scala/bug#9365)
           val singlyUsedIn = usedIn.filter {
             case (_, member :: Nil) if member.name.endsWith(nme.LAZY_SLOW_SUFFIX) =>
-              val lazyAccessor = member.owner.info.decl(member.name.stripSuffix(nme.LAZY_SLOW_SUFFIX))
+              val lazyAccessor = member.owner.info.decl(NameOps.stripSuffix(member.name, nme.LAZY_SLOW_SUFFIX))
               !lazyAccessor.accessedOrSelf.hasAnnotation(TransientAttr)
             case _ => false
           }.toMap

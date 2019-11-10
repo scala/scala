@@ -262,7 +262,7 @@ trait Reshape {
             val name = defdef.name.toString.substring(prefix.length)
             def uncapitalize(s: String) = if (s.length == 0) "" else { val chars = s.toCharArray; chars(0) = chars(0).toLower; new String(chars) }
             def findValDef(name: String) = symdefs.values collectFirst {
-              case vdef: ValDef if vdef.name.dropLocal string_== name => vdef
+              case vdef: ValDef if NameOps.dropLocal(vdef.name) string_== name => vdef
             }
             val valdef = findValDef(name).orElse(findValDef(uncapitalize(name))).orNull
             if (valdef != null) accessors(valdef) = accessors.getOrElse(valdef, Nil) :+ defdef
@@ -290,7 +290,7 @@ trait Reshape {
             mods
           }
           val mods2 = toPreTyperModifiers(mods1, vdef.symbol)
-          val name1 = name.dropLocal
+          val name1 = NameOps.dropLocal(name)
           val vdef1 = ValDef(mods2, name1.toTermName, tpt, rhs)
           if (reifyDebug) println("resetting visibility of field: %s => %s".format(vdef, vdef1))
           Some(vdef1) // no copyAttrs here, because new ValDef and old symbols are now out of sync

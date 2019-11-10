@@ -3374,7 +3374,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
             // ValDef and Accessor
             case (ValDef(_, cname, _, _), DefDef(_, dname, _, _, _, _)) =>
-              cname.getterName == dname.getterName
+              NameOps.getterName(cname) == NameOps.getterName(dname)
 
             case _ => false
           }
@@ -4576,7 +4576,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (treeInfo.mayBeVarGetter(varsym)) {
           lhs1 match {
             case treeInfo.Applied(Select(qual, _), _, _) =>
-              val sel = Select(qual, varsym.name.setterName) setPos lhs.pos
+              val sel = Select(qual, NameOps.setterName(varsym.name)) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
               return typed(app, mode, pt)
 
@@ -4994,7 +4994,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       def convertToAssignment(fun: Tree, qual: Tree, name: Name, args: List[Tree]): Tree = {
-        val prefix = name.toTermName stripSuffix nme.EQL
+        val prefix = NameOps.stripSuffix(name.toTermName, nme.EQL)
         def mkAssign(vble: Tree): Tree =
           Assign(
             vble,

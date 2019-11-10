@@ -1200,7 +1200,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
       {
         candidate: Name =>
-          def candidateChunks = camelComponents(candidate.dropLocal.toString, allowSnake)
+          def candidateChunks = camelComponents(NameOps.dropLocal(candidate).toString, allowSnake)
           // Loosely based on IntelliJ's autocompletion: the user can just write everything in
           // lowercase, as we'll let `isl` match `GenIndexedSeqLike` or `isLovely`.
           def lenientMatch(entered: String, candidate: List[String], matchCount: Int): Boolean = {

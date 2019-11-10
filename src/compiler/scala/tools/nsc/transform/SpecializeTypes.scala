@@ -379,9 +379,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     if (name == nme.CONSTRUCTOR || (types1.isEmpty && types2.isEmpty))
       name.toTermName
     else if (nme.isSetterName(name))
-      specializedName(name.getterName, types1, types2).setterName
+      NameOps.setterName(specializedName(NameOps.getterName(name), types1, types2))
     else if (nme.isLocalName(name))
-      specializedName(name.getterName, types1, types2).localName
+      NameOps.localName(specializedName(NameOps.getterName(name), types1, types2))
     else {
       val (base, cs, ms) = nme.splitSpecializedName(name)
       newTermName(base.toString + "$"

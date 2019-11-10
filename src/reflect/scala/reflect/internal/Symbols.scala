@@ -1278,7 +1278,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     )
     /** These should be moved somewhere like JavaPlatform.
      */
-    def javaSimpleName: Name = addModuleSuffix(simpleName.dropLocal)
+    def javaSimpleName: Name = addModuleSuffix(NameOps.dropLocal(simpleName))
     def javaBinaryName: Name = name.newName(javaBinaryNameString)
     def javaBinaryNameString: String = {
       if (javaBinaryNameStringCache == null)
@@ -2119,7 +2119,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       //
       // The slightly more principled approach of using the paramss of the
       // primary constructor leads to cycles in, for example, pos/t5084.scala.
-      val primaryNames = constrParamAccessors map (_.name.dropLocal)
+      val primaryNames = constrParamAccessors map (x => NameOps.dropLocal(x.name))
       def nameStartsWithOrigDollar(name: Name, prefix: Name) =
         name.startsWith(prefix) && name.length > prefix.length + 1 && name.charAt(prefix.length) == '$'
       caseFieldAccessorsUnsorted.sortBy { acc =>
@@ -2517,9 +2517,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def getterIn(base: Symbol): Symbol =
       base.info decl getterName filter (_.hasAccessorFlag)
 
-    def getterName: TermName = name.getterName
-    def setterName: TermName = name.setterName
-    def localName: TermName  = name.localName
+    def getterName: TermName = NameOps.getterName(name)
+    def setterName: TermName = NameOps.setterName(name)
+    def localName: TermName  = NameOps.localName(name)
 
     @deprecated("use `setterIn` instead", "2.11.0")
     final def setter(base: Symbol, hasExpandedName: Boolean = needsExpandedSetterName): Symbol =
@@ -2721,7 +2721,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
-      val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
+      val name_s = if (settings.debug.value) "" + unexpandedName else NameOps.dropLocal(unexpandedName).decode
       val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
 
       name_s + idString + kind_s
@@ -2754,7 +2754,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         val kind = kindString
         val _name: String =
           if (hasMeaninglessName) owner.decodedName + idString
-          else if (simplifyNames && (kind == "variable" || kind == "value")) unexpandedName.getterName.decode.toString // TODO: make condition less gross?
+          else if (simplifyNames && (kind == "variable" || kind == "value"))
+            NameOps.getterName(unexpandedName).decode.toString // TODO: make condition less gross?
           else nameString
 
         compose(kind, _name)

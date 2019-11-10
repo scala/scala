@@ -272,7 +272,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
     }
     val ownerName = nonLocalEnclosingMember(fun.symbol.originalOwner).name match {
       case nme.CONSTRUCTOR => nme.NEWkw // do as javac does for the suffix, prefer "new" to "$lessinit$greater$1"
-      case x => x.dropLocal
+      case x => NameOps.dropLocal(x)
     }
     val newName = nme.ANON_FUN_NAME.append(nme.NAME_JOIN_STRING).append(ownerName)
     mkMethodForFunctionBody(localTyper)(owner, fun, newName)(additionalFlags = ARTIFACT)

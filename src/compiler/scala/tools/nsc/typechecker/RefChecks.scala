@@ -605,7 +605,7 @@ abstract class RefChecks extends Transform {
           }
           // Group missing members by the name of the underlying symbol,
           // to consolidate getters and setters.
-          val grouped = missing groupBy (_.name.getterName)
+          val grouped = missing groupBy (x => NameOps.getterName(x.name))
           val missingMethods = grouped.toList flatMap {
             case (name, syms) =>
               if (syms exists (_.isSetter)) syms filterNot (_.isGetter)
@@ -641,7 +641,7 @@ abstract class RefChecks extends Transform {
 
             // Give a specific error message for abstract vars based on why it fails:
             // It could be unimplemented, have only one accessor, or be uninitialized.
-            val groupedAccessors = grouped.getOrElse(member.name.getterName, Nil)
+            val groupedAccessors = grouped.getOrElse(NameOps.getterName(member.name), Nil)
             val isMultiple = groupedAccessors.size > 1
 
             if (groupedAccessors.exists(_.isSetter) || (member.isGetter && !isMultiple && member.setterIn(member.owner).exists)) {

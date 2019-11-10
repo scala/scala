@@ -265,7 +265,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
       // Add setter for an immutable, memoizing getter
       // (can't emit during namers because we don't yet know whether it's going to be memoized or not)
       val setterFlags = (getter.flags & ~(STABLE | PrivateLocal | OVERRIDE | IMPLICIT | FINAL)) | MUTABLE | ACCESSOR | TRAIT_SETTER_FLAGS
-      val setterName  = nme.expandedSetterName(getter.name.setterName, clazz)
+      val setterName  = nme.expandedSetterName(NameOps.setterName(getter.name), clazz)
       val setter      = clazz.newMethod(setterName, getter.pos.focus, setterFlags)
       val fieldTp     = fieldTypeForGetterIn(getter, clazz.thisType)
       // println(s"newTraitSetter in $clazz for $getter = $setterName : $fieldTp")
