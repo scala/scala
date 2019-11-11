@@ -352,7 +352,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
        |    ~>'s kind is X[-F1[A1],+F2[A2]]
        |
        |This shows that `~>` accepts something of `F[A]` kind, such as
-       |`List` or `Vector`.
+       |`List` or `Vector`. It's an example of a type constructor that
+       |abstracts over type constructors, also known as a higher-order
+       |type constructor or a higher-kinded type.
        |""".stripMargin
 
   private def kindCommand(expr: String): Result = {

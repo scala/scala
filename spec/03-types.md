@@ -29,8 +29,8 @@ chapter: 3
   Types             ::=  Type {‘,’ Type}
 ```
 
-We distinguish between first-order types and type constructors, which
-take type parameters and yield types. A subset of first-order types
+We distinguish between proper types and type constructors, which
+take type parameters and yield types. A subset of proper types
 called _value types_ represents sets of (first-class) values.
 Value types are either _concrete_ or _abstract_.
 
@@ -55,7 +55,7 @@ Non-value types capture properties of identifiers that
 [are not values](#non-value-types). For example, a
 [type constructor](#type-constructors) does not directly specify a type of
 values. However, when a type constructor is applied to the correct type
-arguments, it yields a first-order type, which may be a value type.
+arguments, it yields a proper type, which may be a value type.
 
 Non-value types are expressed indirectly in Scala. E.g., a method type is
 described by writing down a method signature, which in itself is not a real
