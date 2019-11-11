@@ -4,9 +4,9 @@ This branch is the home for development of the Scala Center project [**TASTy Rea
 
 ## Testing
 
-The functionality of the TASTy reader can be tested in `neg` and `run` modes by using the `TastyTest.scala` script. See documentation with `scala -classpath <dotty-compiler> TastyTest.scala -help`.
+The framework for testing TASTy reader is contained in the `tastytest` project, which may be published locally to run it as a script, or depended upon for invoking it programmatically. A description of its functionality is provided at [tastytest.md](doc/internal/tastytest.md)
 
-`TastyTest.scala` should be run with a scala script runner that can read tasty files, such as `build/quick/bin/scala` after running `sbt dist/mkBin`. The dotty compiler library (`0.20.0-RC1`) must be on the scala classpath when running as a script.
+The `tasty` project is an example project depending on `tastytest`, used to test the functionality of the TASTy reader. Test sources are placed in the `test/tasty` directory of this repository.
 
 ## Notes
 
