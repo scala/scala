@@ -121,7 +121,7 @@ object Plugin {
     try {
       Success[AnyClass](loader loadClass classname)
     } catch {
-      case NonFatal(e) =>
+      case NonFatal (_) =>
         Failure(new PluginLoadException(classname, s"Error: unable to load class: $classname"))
       case e: NoClassDefFoundError =>
         Failure(new PluginLoadException(classname, s"Error: class not found: ${e.getMessage} required by $classname"))
@@ -157,10 +157,10 @@ object Plugin {
 
     val seen = mutable.HashSet[String]()
     val enabled = fromLoaders map {
-      case Success((pd, loader)) if seen(pd.classname)        =>
+      case Success((pd, _)) if seen(pd.classname)        =>
         // a nod to scala/bug#7494, take the plugin classes distinctly
         Failure(new PluginLoadException(pd.name, s"Ignoring duplicate plugin ${pd.name} (${pd.classname})"))
-      case Success((pd, loader)) if ignoring contains pd.name =>
+      case Success((pd, _)) if ignoring contains pd.name =>
         Failure(new PluginLoadException(pd.name, s"Disabling plugin ${pd.name}"))
       case Success((pd, loader)) =>
         seen += pd.classname

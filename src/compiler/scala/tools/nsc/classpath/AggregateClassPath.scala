@@ -29,7 +29,7 @@ import scala.tools.nsc.util.{ClassPath, ClassRepresentation, EfficientClassPath}
  */
 case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
   override def findClassFile(className: String): Option[AbstractFile] = {
-    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    val (pkg, _) = PackageNameUtils.separatePkgAndClassNames(className)
     aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClassFile(className)).collectFirst {
       case Some(x) => x
     }
@@ -41,7 +41,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
 
   // This method is performance sensitive as it is used by SBT's ExtractDependencies phase.
   override def findClass(className: String): Option[ClassRepresentation] = {
-    val (pkg, simpleClassName) = PackageNameUtils.separatePkgAndClassNames(className)
+    val (pkg, _) = PackageNameUtils.separatePkgAndClassNames(className)
 
     def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
       aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClass(className)).collectFirst {
