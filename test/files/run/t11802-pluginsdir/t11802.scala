@@ -37,7 +37,7 @@ object Test extends DirectTest {
     (out / "scalac-plugin.xml").toFile writeAll xml
 
     // copy Ploogin classes, replace under --debug which doesn't remove the output dir
-    (testOutput / "t11802").toDirectory.files.foreach(f => Files.copy(f.jfile.toPath, out.jfile.toPath.resolve(s"t11802/${f.name}"), Replace))
+    (testOutput / "t11802").toDirectory.files.foreach(f => Files.copy(f.jfile.toPath, out.jfile.toPath.resolve("t11802").resolve(f.name), Replace))
 
     // create jar in myplugins
     val plugindir = (testOutput / "myplugins").createDirectory()
@@ -45,7 +45,7 @@ object Test extends DirectTest {
     val jout = new JarOutputStream(Files.newOutputStream(jar.jfile.toPath))
     def writeJarEntry(f: File) = {
       val rel = out.jfile.toPath.relativize(f.jfile.toPath)
-      jout.putNextEntry(new JarEntry(rel.toString))
+      jout.putNextEntry(new JarEntry(rel.toString.replace("\\", "/")))  // fix evil windows backslash
       Files.copy(f.jfile.toPath, jout)
     }
     try out.deepFiles.foreach(writeJarEntry) finally jout.close()

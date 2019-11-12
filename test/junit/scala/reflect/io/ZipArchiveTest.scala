@@ -1,7 +1,7 @@
 package scala.reflect.io
 
 import java.io.IOException
-import java.net.URL
+import java.net.{URI, URL}
 import java.nio.file.{Files, Path, Paths}
 import java.util.jar.{Attributes, Manifest, JarEntry, JarFile, JarOutputStream}
 import org.junit.Assert._
@@ -11,6 +11,9 @@ import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.testkit.AssertUtil._
+import scala.tools.testkit.ForDeletion
+import scala.tools.testkit.Releasables._
+import scala.util.chaining._
 import scala.util.Using
 
 @RunWith(classOf[JUnit4])
@@ -34,23 +37,21 @@ class ZipArchiveTest {
     assertThrown[IOException](_.getMessage.contains(f.toString))(fza.iterator)
   }
 
+  private def manifestAt(location: URI): URL = ScalaClassLoader.fromURLs(List(location.toURL), null).getResource("META-INF/MANIFEST.MF");
+
+  // ZipArchive.fromManifestURL(URL)
   @Test def `manifest resources just works`(): Unit = {
-    val j = createTestJar();
-    try {
-      val url = j.toUri.toURL;
-      val cl = ScalaClassLoader.fromURLs(List(url), null)
-      val res = cl.getResource("META-INF/MANIFEST.MF");
-      val arch = new ManifestResources(res)   // ZipArchive.fromManifestURL(res)
-      val it = arch.iterator
+    val jar = createTestJar()
+    Using.resources(ForDeletion(jar), new ManifestResources(manifestAt(jar.toUri))) { (_, archive) =>
+      val it = archive.iterator
       assertTrue(it.hasNext)
       val f = it.next()
       assertFalse(it.hasNext)
       assertEquals("foo.class", f.name)
-    } finally Files.delete(j)
+    }
   }
 
-  private def createTestJar(): Path = {
-    val f = Files.createTempFile("junit", ".jar")
+  private def createTestJar(): Path = Files.createTempFile("junit", ".jar").tap { f =>
     val man = new Manifest()
     man.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0")
     man.getEntries().put("foo.class", new Attributes(0))
@@ -58,28 +59,24 @@ class ZipArchiveTest {
       jout.putNextEntry(new JarEntry("foo.class"))
       val bytes = "hello, world".getBytes
       jout.write(bytes, 0, bytes.length)
-      jout.close()
-      f
+      ()
     }
   }
 
+  // ZipArchive.fromURL(URL)
   @Test def `URL archive works`(): Unit = {
     val z = createTestZip()
-    try {
-      val url = z.toUri.toURL;
-      val zip = new URLZipArchive(url)        // ZipArchive.fromURL(res)
+    Using.resources(ForDeletion(z), new URLZipArchive(z.toUri.toURL)) { (_, zip) =>
       val zit = zip.iterator
       assertTrue(zit.hasNext)
       val f = zit.next()
       assertFalse(zit.hasNext)
       assertEquals("foo.class", f.name)
-    } finally Files.delete(z)
+    }
   }
 
-  private def createTestZip(): Path = {
+  private def createTestZip(): Path = Files.createTempFile("junit", ".zip").tap { f =>
     import java.util.zip._
-    import scala.util.chaining._
-    val f = Files.createTempFile("junit", ".zip")
     Using.resource(new ZipOutputStream(Files.newOutputStream(f))) { zout =>
       zout.setLevel(Deflater.NO_COMPRESSION)
       zout.setMethod(ZipOutputStream.STORED)
@@ -91,7 +88,7 @@ class ZipArchiveTest {
       zout.putNextEntry(entry)
       zout.write(bytes, 0, bytes.length)
       zout.closeEntry()
-      f
+      ()
     }
   }
   /* zipfs doesn't write size field in file header as required by URLZipArchive
