@@ -85,14 +85,14 @@ class TypesTest {
     import rootMirror.EmptyPackageClass
 
     // class M[A]
-    val MClass = EmptyPackageClass.newClass("M")
-    val A = MClass.newTypeParameter("A").setInfo(TypeBounds.empty)
+    val MClass = EmptyPackageClass.newClass(TypeName("M"))
+    val A = MClass.newTypeParameter(TypeName("A")).setInfo(TypeBounds.empty)
     MClass.setInfo(PolyType(A :: Nil, ClassInfoType(ObjectClass.tpeHK :: Nil, newScopeWith(), MClass)))
 
     // (M[Int] with M[X] { def m: Any }) forSome { type X }
-    val X = NoSymbol.newExistential("X").setInfo(TypeBounds.empty)
+    val X = NoSymbol.newExistential(TypeName("X")).setInfo(TypeBounds.empty)
     val T: Type = {
-      val decls = newScopeWith(MClass.newMethod("m").setInfo(NullaryMethodType(AnyClass.tpeHK)))
+      val decls = newScopeWith(MClass.newMethod(TermName("m")).setInfo(NullaryMethodType(AnyClass.tpeHK)))
       val refined = refinedType(appliedType(MClass, IntClass.tpeHK) :: appliedType(MClass, X.tpeHK) :: Nil, NoSymbol, decls, NoPosition)
       newExistentialType(X :: Nil, refined)
     }
