@@ -587,8 +587,10 @@ trait Infer extends Checkable {
       // explicitly anywhere amongst the formal, argument, result, or expected type.
       // ...or lower bound of a type param, since they're asking for it.
       def canWarnAboutAny = {
-        val coll = new ContainsAnyCollector(topTypes)
-        def containsAny(t: Type) = t.dealiasWidenChain.exists(coll.collect)
+        val collector = new ContainsAnyCollector(topTypes) {
+          override def apply(t: Type) = if (!result) t.dealiasWidenChain.foreach(super.apply)
+        }
+        @`inline` def containsAny(t: Type) = collector.collect(t)
         val hasAny = containsAny(pt) || containsAny(restpe) ||
           formals.exists(containsAny) ||
           argtpes.exists(containsAny) ||
