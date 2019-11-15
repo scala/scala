@@ -14,10 +14,11 @@ package scala.tools.nsc
 package plugins
 
 import java.util.jar
+import scala.collection.mutable
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.{AbstractFile, File, Path}
-import scala.collection.mutable
 import scala.tools.nsc.classpath.FileBasedCache
+import scala.tools.nsc.io.Jar
 import scala.util.{Failure, Success, Try}
 
 /** Information about a plugin loaded from a jar file.
@@ -144,7 +145,7 @@ object Plugin {
   {
     type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
 
-    val fromLoaders = paths.map {path =>
+    def targeted(targets: List[List[Path]]) = targets.map { path =>
       val loader = findPluginClassloader(path)
       loader.getResource(PluginXML) match {
         case null => Failure(new MissingPluginException(path))
@@ -157,6 +158,10 @@ object Plugin {
           }
       }
     }
+    def dirList(dir: Path) = if (dir.isDirectory) dir.toDirectory.files.filter(Jar.isJarOrZip).toList.sortBy(_.name) else Nil
+
+    // ask plugin loaders for plugin resources, but ignore if none in -Xpluginsdir
+    val fromLoaders = targeted(paths) ++ targeted(dirs.map(dirList)).filter(_.isSuccess)
 
     val seen = mutable.HashSet[String]()
     val enabled = fromLoaders map {
