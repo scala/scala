@@ -39,7 +39,7 @@ abstract class TreeGen extends scala.reflect.internal.TreeGen with TreeDSL {
   def mkImport(qualSym: Symbol, name: Name, toName: Name): Import =
     mkImportFromSelector(qualSym, ImportSelector(name, 0, toName, 0) :: Nil)
 
-  private def mkImportFromSelector(qualSym: Symbol, selector: List[ImportSelector]): Import = {
+  def mkImportFromSelector(qualSym: Symbol, selector: List[ImportSelector]): Import = {
     assert(qualSym ne null, this)
     val qual = gen.mkAttributedStableRef(qualSym)
     val importSym = (

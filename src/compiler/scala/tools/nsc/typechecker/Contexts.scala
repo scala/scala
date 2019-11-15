@@ -13,16 +13,17 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil }
+import scala.collection.{immutable, mutable}
+import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, ListOfNil, SomeOfNil}
+import scala.util.chaining._
 
 /**
  *  @author  Martin Odersky
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
+  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage, isUniversalMember}
   import ContextMode._
   import scala.reflect.internal.Flags._
 
@@ -137,7 +138,16 @@ trait Contexts { self: Analyzer =>
   }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) => c.make(gen.mkWildcardImport(sym), unit = unit))
+    val rootImportsContext = rootImports(unit).foldLeft(startContext) { (c, sym) =>
+      if (sym.isPackage) c.make(gen.mkWildcardImport(sym), unit = unit)
+      else {
+        val universals = sym.typeSignature.members.filter(isUniversalMember).map(_.name).toSet
+        val sels = universals.iterator
+          .map(ImportSelector.mask).toList
+          .appended(ImportSelector.wild)
+        c.make(gen.mkImportFromSelector(sym, sels), unit = unit)
+      }
+    }
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -150,10 +160,7 @@ trait Contexts { self: Analyzer =>
       if (!unit.hasXml || ScalaXmlTopScope == NoSymbol) rootImportsContext
       else rootImportsContext.make(gen.mkImport(ScalaXmlPackage, nme.TopScope, nme.dollarScope))
 
-    val c = contextWithXML.make(tree, unit = unit)
-
-    c.initRootContext(throwing, checking)
-    c
+    contextWithXML.make(tree, unit = unit).tap(_.initRootContext(throwing, checking))
   }
 
   def rootContextPostTyper(unit: CompilationUnit, tree: Tree = EmptyTree): Context =
