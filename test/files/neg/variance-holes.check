@@ -1,0 +1,22 @@
+variance-holes.scala:9: error: covariant type x occurs in contravariant position in type [+x, +y] >: F[x,y] of type F2
+    def asWiden[F2[+x, +y] >: F[x, y]]: F2[Int, Int] = v
+                ^
+variance-holes.scala:2: error: contravariant type A occurs in covariant position in type [-A] >: List[A] of type Lower1
+  type Lower1[-A] >: List[A]
+       ^
+variance-holes.scala:5: error: covariant type x occurs in contravariant position in type [+x] >: F[x] of type G
+    type G[+x] >: F[x]
+         ^
+variance-holes.scala:13: error: covariant type A occurs in contravariant position in type AnyRef{type T >: A} of method foo
+    def foo: { type T >: A }
+        ^
+variance-holes.scala:17: error: covariant type A occurs in contravariant position in type AnyRef{type T <: A} of value x
+    def foo(x: { type T <: A }): Unit
+            ^
+variance-holes.scala:20: error: covariant type A occurs in contravariant position in type  <: AnyRef{type T >: A} of type x
+  class RefinedLower[+A, x <: { type T >: A }]
+                         ^
+variance-holes.scala:21: error: covariant type A occurs in contravariant position in type A of value x_=
+  private[this] class PrivateThis[+A](var x: A)
+                                          ^
+7 errors

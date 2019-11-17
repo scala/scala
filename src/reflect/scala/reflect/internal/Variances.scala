@@ -49,15 +49,18 @@ trait Variances {
       else escapedLocals += sym
     }
 
-    protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = ()
+    protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance, tpe: Type): Unit = ()
 
     // Flip occurrences of type parameters and parameters, unless
     //  - it's a constructor, or case class factory or extractor
+    //  - it's a type parameter / parameter of a local definition
     //  - it's a type parameter of tvar's owner.
     def shouldFlip(sym: Symbol, tvar: Symbol) = (
          sym.isParameter
+      && !sym.owner.isLocalToThis
       && !(tvar.isTypeParameterOrSkolem && sym.isTypeParameterOrSkolem && tvar.owner == sym.owner)
     )
+
     // Is `sym` is local to a term or is private[this] or protected[this]?
     def isExemptFromVariance(sym: Symbol): Boolean = !sym.owner.isClass || (
          (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
@@ -66,6 +69,7 @@ trait Variances {
 
     private object ValidateVarianceMap extends VariancedTypeMap {
       private[this] var base: Symbol = _
+      private[this] var lowerBoundStack: List[Symbol] = Nil
 
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
@@ -85,12 +89,14 @@ trait Variances {
           else v
 
         @tailrec
-        def loop(sym: Symbol, v: Variance): Variance = (
-          if (sym == tvar.owner || v.isBivariant) v
+        def loop(sym: Symbol, v: Variance): Variance =
+          if (v.isBivariant) v
+          else if (sym == tvar.owner) if (lowerBoundStack.contains(sym)) v.flip else v
           else loop(sym.owner, nextVariance(sym, v))
-        )
+
         loop(base, Covariant)
       }
+
       def isUncheckedVariance(tp: Type) = tp match {
         case AnnotatedType(annots, _)    => annots exists (_ matches definitions.uncheckedVarianceClass)
         case _                           => false
@@ -104,17 +110,19 @@ trait Variances {
           def base_s = s"$base in ${base.owner}" + (if (base.owner.isClass) "" else " in " + base.owner.enclClass)
           log(s"verifying $sym_s is $required at $base_s")
           if (sym.variance != required)
-            issueVarianceError(base, sym, required)
+            issueVarianceError(base, sym, required, base.info)
         }
       }
+
       override def mapOver(decls: Scope): Scope = {
         decls foreach (sym => withVariance(if (sym.isAliasType) Invariant else variance)(this(sym.info)))
         decls
       }
+
       private def resultTypeOnly(tp: Type) = tp match {
-        case mt: MethodType => !inRefinement
-        case pt: PolyType   => true
-        case _              => false
+        case _: MethodType => !inRefinement
+        case _: PolyType   => true
+        case _             => false
       }
 
       /** For PolyTypes, type parameters are skipped because they are defined
@@ -125,12 +133,12 @@ trait Variances {
       def apply(tp: Type): Type = {
         tp match {
           case _ if isUncheckedVariance(tp)                    =>
-          case _ if resultTypeOnly(tp)                         => this(tp.resultType)
-          case TypeRef(_, sym, _) if shouldDealias(sym)        => this(tp.normalize)
-          case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym) ; tp.mapOver(this)
+          case _ if resultTypeOnly(tp)                         => apply(tp.resultType)
+          case TypeRef(_, sym, _) if shouldDealias(sym)        => apply(tp.normalize)
+          case TypeRef(_, sym, _) if !sym.variance.isInvariant => checkVarianceOfSymbol(sym); tp.mapOver(this)
           case RefinedType(_, _)                               => withinRefinement(tp.mapOver(this))
-          case ClassInfoType(parents, _, _)                    => parents foreach this
-          case mt @ MethodType(_, result)                      => flipped(mt.paramTypes foreach this) ; this(result)
+          case ClassInfoType(parents, _, _)                    => parents.foreach(apply)
+          case mt @ MethodType(_, result)                      => flipped(mt.paramTypes.foreach(apply)); apply(result)
           case _                                               => tp.mapOver(this)
         }
         // We're using TypeMap here for type traversal only. To avoid wasteful symbol
@@ -138,24 +146,65 @@ trait Variances {
         // than the result of the pattern match above, which normalizes types.
         tp
       }
+
       private def shouldDealias(sym: Symbol): Boolean = {
         // The RHS of (private|protected)[this] type aliases are excluded from variance checks. This is
         // implemented in relativeVariance.
         // As such, we need to expand references to them to retain soundness. Example: neg/t8079a.scala
         sym.isAliasType && isExemptFromVariance(sym)
       }
+
+      /** Validate the variance of types in the definition of `base`. */
       def validateDefinition(base: Symbol): Unit = {
-        val saved = this.base
         this.base = base
-        try apply(base.info)
-        finally this.base = saved
+        base.info match {
+          case PolyType(_, TypeBounds(lo, hi)) =>
+            lowerBoundStack ::= base
+            try flipped(apply(lo))
+            finally lowerBoundStack = lowerBoundStack.tail
+            apply(hi)
+          case other =>
+            apply(other)
+        }
       }
     }
 
-    /** Validate variance of info of symbol `base` */
-    private def validateVariance(base: Symbol): Unit = {
-      ValidateVarianceMap validateDefinition base
+    private object PolyTypeVarianceMap extends TypeMap {
+
+      private def ownerOf(pt: PolyType): Symbol =
+        pt.typeParams.head.owner
+
+      private def checkPolyTypeParam(pt: PolyType, tparam: Symbol, tpe: Type): Unit =
+        if (!tparam.isInvariant) {
+          val required = varianceInType(tpe)(tparam)
+          if (!required.isBivariant && tparam.variance != required)
+            issueVarianceError(ownerOf(pt), tparam, required, pt)
+        }
+
+      def apply(tp: Type): Type = {
+        tp match {
+          case pt @ PolyType(typeParams, TypeBounds(lo, hi)) =>
+            typeParams.foreach { tparam =>
+              checkPolyTypeParam(pt, tparam, lo)
+              checkPolyTypeParam(pt, tparam, hi)
+            }
+
+            pt.mapOver(this)
+
+          case pt @ PolyType(typeParams, resultType) =>
+            typeParams.foreach(checkPolyTypeParam(pt, _, resultType))
+            pt.mapOver(this)
+
+          case _ =>
+            tp.mapOver(this)
+        }
+
+        tp
+      }
     }
+
+    def validateVarianceOfPolyTypesIn(tpe: Type): Unit =
+      PolyTypeVarianceMap(tpe)
 
     override def traverse(tree: Tree): Unit = {
       def sym = tree.symbol
@@ -163,37 +212,36 @@ trait Variances {
       // Or constructors, or case class factory or extractor.
       def skip = (
            sym == NoSymbol
-        || sym.isLocalToThis
-        || sym.owner.isConstructor
-        || sym.owner.isCaseApplyOrUnapply
+        || sym.owner.isConstructor                  // FIXME: this is unsound - scala/bug#8737
+        || sym.owner.isCaseApplyOrUnapply           // same treatment as constructors
+        || sym.isParamAccessor && sym.isLocalToThis // local class parameters are construction only
       )
+
       tree match {
-        case defn: MemberDef if skip =>
+        case _: MemberDef if skip =>
           debuglog(s"Skipping variance check of ${sym.defString}")
         case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) =>
-          validateVariance(sym)
+          ValidateVarianceMap.validateDefinition(sym)
           tree.traverse(this)
         case ModuleDef(_, _, _) =>
-          validateVariance(sym.moduleClass)
+          ValidateVarianceMap.validateDefinition(sym.moduleClass)
           tree.traverse(this)
         case ValDef(_, _, _, _) =>
-          validateVariance(sym)
+          ValidateVarianceMap.validateDefinition(sym)
         case DefDef(_, _, tparams, vparamss, _, _) =>
-          validateVariance(sym)
+          ValidateVarianceMap.validateDefinition(sym)
           traverseTrees(tparams)
           traverseTreess(vparamss)
         case Template(_, _, _) =>
           tree.traverse(this)
-        case CompoundTypeTree(templ) =>
+        case CompoundTypeTree(_) =>
           tree.traverse(this)
-
         // scala/bug#7872 These two cases make sure we don't miss variance exploits
         // in originals, e.g. in `foo[({type l[+a] = List[a]})#l]`
         case tt @ TypeTree() if tt.original != null =>
           tt.original.traverse(this)
-        case tt : TypTree =>
+        case tt: TypTree =>
           tt.traverse(this)
-
         case _ =>
       }
     }
@@ -230,7 +278,7 @@ trait Variances {
       case ThisType(_) | ConstantType(_)                   => Bivariant
       case TypeRef(_, tparam, _) if tparam eq this.tparam  => Covariant
       case NullaryMethodType(restpe)                       => inType(restpe)
-      case SingleType(pre, sym)                            => inType(pre)
+      case SingleType(pre, _)                              => inType(pre)
       case TypeRef(pre, _, _) if tp.isHigherKinded         => inType(pre)          // a type constructor cannot occur in tp's args
       case TypeRef(pre, sym, args)                         => inType(pre)          & inArgs(sym, args)
       case TypeBounds(lo, hi)                              => inType(lo).flip      & inType(hi)
