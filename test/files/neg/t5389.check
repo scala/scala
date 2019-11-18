@@ -1,0 +1,4 @@
+t5389.scala:2: error: not found: object ne
+import ne.scala
+       ^
+one error found

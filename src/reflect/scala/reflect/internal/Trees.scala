@@ -498,6 +498,7 @@ trait Trees extends api.Trees {
     val wild     = ImportSelector(nme.WILDCARD, -1, null, -1)
     val wildList = List(wild) // OPT This list is shared for performance.
     def wildAt(pos: Int) = ImportSelector(nme.WILDCARD, pos, null, -1)
+    def mask(name: Name) = ImportSelector(name, -1, nme.WILDCARD, -1)
   }
 
   case class Import(expr: Tree, selectors: List[ImportSelector])
