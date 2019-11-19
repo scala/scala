@@ -499,18 +499,32 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         }
     }
 
-    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker {
-      val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe)
+    class RegularSwitchMaker(scrutSym: Symbol, matchFailGenOverride: Option[Tree => Tree], val unchecked: Boolean) extends SwitchMaker { import CODE._
+      val switchableTpe = Set(ByteTpe, ShortTpe, IntTpe, CharTpe, StringTpe)
       val alternativesSupported = true
       val canJump = true
 
       // Constant folding sets the type of a constant tree to `ConstantType(Constant(folded))`
       // The tree itself can be a literal, an ident, a selection, ...
       object SwitchablePattern { def unapply(pat: Tree): Option[Tree] = pat.tpe match {
-        case const: ConstantType if const.value.isIntRange =>
-          Some(Literal(Constant(const.value.intValue))) // TODO: Java 7 allows strings in switches
+        case const: ConstantType =>
+          if (const.value.isIntRange)
+            Some(LIT(const.value.intValue) setPos pat.pos)
+          else if (const.value.tag == StringTag)
+            Some(LIT(const.value.stringValue) setPos pat.pos)
+          else if (const.value.tag == NullTag)
+            Some(LIT(null) setPos pat.pos)
+          else None
         case _ => None
       }}
+
+      def scrutRef(scrut: Symbol): Tree = dealiasWiden(scrut.tpe) match {
+        case subInt if subInt =:= IntTpe =>
+          REF(scrut)
+        case subInt if definitions.isNumericSubClass(subInt.typeSymbol, IntClass) =>
+          REF(scrut) DOT nme.toInt
+        case _ => REF(scrut)
+      }
 
       object SwitchableTreeMaker extends SwitchableTreeMakerExtractor {
         def unapply(x: TreeMaker): Option[Tree] = x match {
@@ -525,8 +539,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       def defaultSym: Symbol = scrutSym
-      def defaultBody: Tree  = { import CODE._; matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
-      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { import CODE._; atPos(body.pos) {
+      def defaultBody: Tree  = { matchFailGenOverride map (gen => gen(REF(scrutSym))) getOrElse Throw(MatchErrorClass.tpe, REF(scrutSym)) }
+      def defaultCase(scrutSym: Symbol = defaultSym, guard: Tree = EmptyTree, body: Tree = defaultBody): CaseDef = { atPos(body.pos) {
         (DEFAULT IF guard) ==> body
       }}
     }
@@ -539,12 +553,9 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         if (caseDefsWithDefault.isEmpty) None // not worth emitting a switch.
         else {
           // match on scrutSym -- converted to an int if necessary -- not on scrut directly (to avoid duplicating scrut)
-          val scrutToInt: Tree =
-            if (scrutSym.tpe =:= IntTpe) REF(scrutSym)
-            else (REF(scrutSym) DOT (nme.toInt))
           Some(BLOCK(
             ValDef(scrutSym, scrut),
-            Match(scrutToInt, caseDefsWithDefault) // a switch
+            Match(regularSwitchMaker.scrutRef(scrutSym), caseDefsWithDefault) // a switch
           ))
         }
       } else None

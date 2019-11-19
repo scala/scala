@@ -1,0 +1,73 @@
+[[syntax trees at end of                    patmat]] // newSource1.scala
+[6]package [6]<empty> {
+  [6]class Switch extends [13][187]scala.AnyRef {
+    [187]def <init>(): [13]Switch = [187]{
+      [187][187][187]Switch.super.<init>();
+      [13]()
+    };
+    [21]def switch([28]s: [31]<type: [31]scala.Predef.String>, [39]cond: [45]<type: [45]scala.Boolean>): [21]Int = [56]{
+      [56]case <synthetic> val x1: [56]String = [56]s;
+      [56][56]x1 match {
+        [56]case [75]"AaAa" => [93]1
+        [56]case [104]"asdf" => [122]2
+        [133]case [133]"BbBb" => [133]if ([143]cond)
+          [151]3
+        else
+          [180]4
+        [56]case [56]_ => [56]throw [56][56][56]new [56]MatchError([56]x1)
+      }
+    }
+  }
+}
+
+[[syntax trees at end of                   cleanup]] // newSource1.scala
+[6]package [6]<empty> {
+  [6]class Switch extends [13][13]Object {
+    [21]def switch([28]s: [31]<type: [31]scala.Predef.String>, [39]cond: [45]<type: [45]scala.Boolean>): [21]Int = [56]{
+      [56]case <synthetic> val x1: [56]String = [56]s;
+      [56]{
+        [56][56]if ([56][56]x1.eq([56]null))
+          [56]0
+        else
+          [56][56]x1.hashCode() match {
+          [56]case [56]2031744 => [75]if ([75][75][75]"AaAa".equals([75]x1))
+            [75][75]case1()
+          else
+            [56][56]matchEnd2()
+          [56]case [56]2062528 => [133]if ([133][133][133]"BbBb".equals([133]x1))
+            [133][133]case3()
+          else
+            [56][56]matchEnd2()
+          [56]case [56]3003444 => [104]if ([104][104][104]"asdf".equals([104]x1))
+            [104][104]case2()
+          else
+            [56][56]matchEnd2()
+          [56]case [56]_ => [56][56]matchEnd2()
+        };
+        [56]case1(){
+          [56][56]matchEnd1([93]1)
+        };
+        [56]case2(){
+          [56][56]matchEnd1([122]2)
+        };
+        [56]case3(){
+          [56][56]matchEnd1([133]if ([143]cond)
+            [151]3
+          else
+            [180]4)
+        };
+        [56]matchEnd2(){
+          [56][56]matchEnd1([56]throw [56][56][56]new [56]MatchError([56]x1))
+        };
+        [56]matchEnd1(x$1: [NoPosition]Int){
+          [56]x$1
+        }
+      }
+    };
+    [187]def <init>(): [13]Switch = [187]{
+      [187][187][187]Switch.super.<init>();
+      [13]()
+    }
+  }
+}
+

@@ -1285,7 +1285,7 @@ abstract class Erasure extends InfoTransform
           treeCopy.Template(tree, parents, noSelfType, addBridgesToTemplate(body, currentOwner))
 
         case Match(selector, cases) =>
-          Match(Typed(selector, TypeTree(selector.tpe)), cases)
+          treeCopy.Match(tree, Typed(selector, TypeTree(selector.tpe)), cases)
 
         case Literal(ct) =>
           // We remove the original tree attachments in pre-erasure to free up memory
