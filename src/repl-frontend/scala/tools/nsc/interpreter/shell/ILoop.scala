@@ -18,14 +18,14 @@ import java.io.{BufferedReader, PrintWriter}
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
-import scala.PartialFunction.{cond => when}
+import scala.PartialFunction.cond
 import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 import scala.util.Properties.jdkHome
 import scala.reflect.classTag
 import scala.reflect.internal.util.ScalaClassLoader._
-import scala.reflect.internal.util.{BatchSourceFile, NoPosition, ScalaClassLoader}
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.{AbstractFile, Directory, File, Path}
 import scala.tools.asm.ClassReader
 import scala.tools.util.PathResolver
@@ -36,7 +36,7 @@ import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.nsc.interpreter.StdReplTags._
 import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.control.ControlThrowable
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 
 
@@ -252,7 +252,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       buffer.substring(0, cursor) match {
         case trailingWord(s) =>
           val maybes = intp.visibleSettings.filter(_.name.startsWith(s)).map(_.name)
-                               .filterNot(when(_) { case "-"|"-X"|"-Y" => true }).sorted
+                               .filterNot(cond(_) { case "-"|"-X"|"-Y" => true }).sorted
           if (maybes.isEmpty) NoCompletions else CompletionResult(cursor - s.length, maybes)
         case _ => NoCompletions
       }
@@ -262,38 +262,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   private def importsCommand(line: String): Result =
     intp.importsCommandInternal(words(line)) mkString ("\n")
-
-
-  private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
-
-  private def addToolsJarToLoader() = {
-    val cl = findToolsJar() match {
-      case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
-      case _           => intp.classLoader
-    }
-    if (Javap.isAvailable(cl)) {
-      repldbg(":javap available.")
-      cl
-    }
-    else {
-      repldbg(":javap unavailable: no tools.jar at " + jdkHome)
-      intp.classLoader
-    }
-  }
-
-  protected def newJavap() = JavapClass(addToolsJarToLoader(), intp.reporter.out, intp)
-
-  private lazy val javap =
-    try newJavap()
-    catch {
-      case t: ControlThrowable => throw t
-      case t: Throwable =>
-        repldbg("javap: " + rootCause(t))
-        repltrace(stackTraceString(rootCause(t)))
-        NoJavap
-    }
-
-
 
   private def implicitsCommand(line: String): Result = {
     val (implicits, res) = intp.implicitsCommandInternal(line)
@@ -371,17 +339,11 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
-  private def javapCommand(line: String): Result = {
-    if (javap == null)
-      s":javap unavailable, no tools.jar at $jdkHome.  Set JDK_HOME."
-    else if (line == "")
-      Javap.helpText
-    else
-      javap(words(line)) foreach { res =>
-        if (res.isError) return s"Failed: ${res.value}"
-        else res.show()
-      }
-  }
+  private def javapCommand(line: String): Result =
+    Javap(intp)(words(line): _*) foreach { res =>
+      if (res.isError) return s"${res.value}"
+      else res.show()
+    }
 
   private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
 
