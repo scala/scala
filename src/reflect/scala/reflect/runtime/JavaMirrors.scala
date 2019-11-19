@@ -1134,7 +1134,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       case japplied: ParameterizedType =>
         // http://stackoverflow.com/questions/5767122/parameterizedtype-getrawtype-returns-j-l-r-type-not-class
         val sym = classToScala(japplied.getRawType.asInstanceOf[jClass[_]])
-        val pre = sym.owner.thisType
+        val pre = if (japplied.getOwnerType ne null) typeToScala(japplied.getOwnerType) else sym.owner.thisType
         val args0 = japplied.getActualTypeArguments
         val (args, bounds) = targsToScala(pre.typeSymbol, args0.toList)
         newExistentialType(bounds, typeRef(pre, sym, args))

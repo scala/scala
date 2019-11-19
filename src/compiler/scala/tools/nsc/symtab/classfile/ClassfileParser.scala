@@ -708,9 +708,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           while (sig.charAt(index) == '.') {
             accept('.')
             val name = newTypeName(subName(c => c == ';' || c == '<' || c == '.'))
-            val clazz = tpe.member(name)
+            val member = if (tpe.typeSymbol == clazz) instanceScope.lookup(name) else tpe.member(name)
             val dummyArgs = Nil // the actual arguments are added in processClassType
-            val inner = typeRef(pre = tpe, sym = clazz, args = dummyArgs)
+            val inner = typeRef(pre = tpe, sym = member, args = dummyArgs)
             tpe = processClassType(inner)
           }
           accept(';')
