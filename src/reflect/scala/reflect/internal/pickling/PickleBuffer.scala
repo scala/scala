@@ -29,21 +29,26 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   var readIndex = from
   var writeIndex = to
 
-  /** Double bytes array */
-  private def dble(): Unit = {
-    val bytes1 = new Array[Byte](bytes.length * 2)
+  @inline
+  private def growTo(targetCapacity: Int): Unit = {
+    val bytes1 = new Array[Byte](targetCapacity)
     Array.copy(bytes, 0, bytes1, 0, writeIndex)
     bytes = bytes1
   }
 
   def ensureCapacity(capacity: Int) =
-    while (bytes.length < writeIndex + capacity) dble()
+    if (bytes.length < writeIndex + capacity) {
+      var newCapacity = bytes.length
+      while (newCapacity < writeIndex + capacity) newCapacity <<= 1
+      growTo(newCapacity)
+    }
 
   // -- Basic output routines --------------------------------------------
 
   /** Write a byte of data */
   def writeByte(b: Int): Unit = {
-    if (writeIndex == bytes.length) dble()
+    if (writeIndex == bytes.length)
+      growTo(bytes.length << 1)
     bytes(writeIndex) = b.toByte
     writeIndex += 1
   }
