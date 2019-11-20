@@ -337,7 +337,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         val macroImplRef = macroCompiler.resolveMacroImpl
         if (macroImplRef.isEmpty) fail() else {
           def hasTypeTag = {
-            val marker = NoSymbol.newErrorValue("restricted")
+            val marker = NoSymbol.newErrorValue(TermName("restricted"))
             val xformed = transformTypeTagEvidenceParams(macroImplRef, (_, _) => marker)
             xformed.nonEmpty && xformed.last.contains(marker)
           }

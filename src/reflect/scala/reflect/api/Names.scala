@@ -41,19 +41,27 @@ import scala.language.implicitConversions
  *  @group ReflectionAPI
  */
 trait Names {
-  /** An implicit conversion from String to TermName.
-   * Enables an alternative notation `"map": TermName` as opposed to `TermName("map")`.
-   * @group Names
+  /** A former implicit conversion from String to TermName.
+   *
+   *  This used to be an implicit conversion, enabling an alternative notation
+   *  `"map": TermName` as opposed to `TermName("map")`. It is only kept for
+   *  binary compatibility reasons, and should not be used anymore.
+   *
+   *  @group Names
    */
-  @deprecated("use explicit `TermName(s)` instead", "2.11.0")
-  implicit def stringToTermName(s: String): TermName = TermName(s)
+  @deprecated("use `TermName(s)` instead", "2.11.0")
+  def stringToTermName(s: String): TermName = TermName(s)
 
-  /** An implicit conversion from String to TypeName.
-   * Enables an alternative notation `"List": TypeName` as opposed to `TypeName("List")`.
-   * @group Names
+  /** A former implicit conversion from String to TypeName.
+   *
+   *  This used to be an implicit conversion, enabling an alternative notation
+   *  `"List": TypeName` as opposed to `TypeName("List")`. It is only kept for
+   *  binary compatibility reasons, and should not be used anymore.
+   *
+   *  @group Names
    */
-  @deprecated("use explicit `TypeName(s)` instead", "2.11.0")
-  implicit def stringToTypeName(s: String): TypeName = TypeName(s)
+  @deprecated("use `TypeName(s)` instead", "2.11.0")
+  def stringToTypeName(s: String): TypeName = TypeName(s)
 
   /** The abstract type of names.
    *  @group Names
