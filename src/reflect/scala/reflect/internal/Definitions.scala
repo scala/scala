@@ -250,7 +250,7 @@ trait Definitions extends api.StandardDefinitions {
      *  - constructors, because <init> is not a real name
      *  - private[this] members, which cannot be referenced from anywhere else
      *  - members of Any or Object, because every instance will inherit a
-     *    definition which supersedes the imported one
+     *    definition which supersedes the imported one, unless renamed
      */
     def isUnimportable(sym: Symbol) = (
          (sym eq NoSymbol)
