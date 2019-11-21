@@ -23,7 +23,7 @@ import scala.util.chaining._
  */
 trait Contexts { self: Analyzer =>
   import global._
-  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage, isUniversalMember}
+  import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._
 
@@ -138,16 +138,9 @@ trait Contexts { self: Analyzer =>
   }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext) { (c, sym) =>
-      if (sym.isPackage) c.make(gen.mkWildcardImport(sym), unit = unit)
-      else {
-        val universals = sym.typeSignature.members.filter(isUniversalMember).map(_.name).toSet
-        val sels = universals.iterator
-          .map(ImportSelector.mask).toList
-          .appended(ImportSelector.wild)
-        c.make(gen.mkImportFromSelector(sym, sels), unit = unit)
-      }
-    }
+    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) =>
+      c.make(gen.mkWildcardImport(sym), unit = unit)
+    )
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)
@@ -1748,6 +1741,10 @@ trait Contexts { self: Analyzer =>
     def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false, record = true)
 
     private def recordUsage(sel: ImportSelector, result: Symbol): Unit = {
+      @inline def selectorString(s: ImportSelector): String =
+        if (s.isWildcard) "_"
+        else if (s.isRename) s.name + " => " + s.rename
+        else "" + s.name
       debuglog(s"In $this at ${ pos.source.file.name }:${ posOf(sel).line }, selector '${ selectorString(sel)
         }' resolved to ${
           if (tree.symbol.hasCompleteInfo) s"(qual=$qual, $result)"
@@ -1777,28 +1774,28 @@ trait Contexts { self: Analyzer =>
       if (record && settings.warnUnusedImport && selectors.nonEmpty && result != NoSymbol && pos != NoPosition)
         recordUsage(current, result)
 
-      // Harden against the fallout from bugs like scala/bug#6745
+      // Harden against the fallout from bugs like scala/bug#6745 and #5389
+      // Enforce no importing universal members from root import Predef modules.
       //
       // [JZ] I considered issuing a devWarning and moving the
       //      check inside the above loop, as I believe that
       //      this always represents a mistake on the part of
       //      the caller.
-      if (definitions isImportable result) result
-      else NoSymbol
-    }
-    private def selectorString(s: ImportSelector): String = {
-      if (s.isWildcard) "_"
-      else if (s.isRename) s.name + " => " + s.rename
-      else "" + s.name
+      result.filter(sym =>
+        if (isRootImport) !definitions.isUnimportableUnlessRenamed(sym)
+        else definitions.isImportable(sym)
+      )
     }
 
     def allImportedSymbols: Iterable[Symbol] =
-      importableMembers(qual.tpe) flatMap (transformImport(tree.selectors, _))
+      importableMembers(qual.tpe).flatMap(transformImport(tree.selectors, _))
 
     @tailrec
     private def transformImport(selectors: List[ImportSelector], sym: Symbol): List[Symbol] = selectors match {
       case Nil => Nil
-      case sel :: Nil if sel.isWildcard => List(sym)
+      case sel :: Nil if sel.isWildcard =>
+        if (isRootImport && definitions.isUnimportableUnlessRenamed(sym)) Nil
+        else List(sym)
       case (sel @ ImportSelector(from, _, to, _)) :: _ if from == (if (from.isTermName) sym.name.toTermName else sym.name.toTypeName) =>
         if (sel.isMask) Nil
         else List(sym.cloneSymbol(sym.owner, sym.rawflags, to))
