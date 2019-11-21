@@ -101,6 +101,6 @@ class ClassNameUtils[G <: Global](val global: G) {
       sym.isModuleClass && !sym.isNestedClass // && !sym.isImplClass
     }
 
-  def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =
-    flatname(s, sep) + (if (dollarRequired) "$" else "")
+  def flatclassName(s: Symbol, sep: Char, addModuleSuffix: Boolean): String =
+    flatname(s, sep) + (if (addModuleSuffix) "$" else "")
 }

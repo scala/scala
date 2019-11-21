@@ -302,7 +302,7 @@ class ExtractUsedNames[G <: ZincGlobal](val global: G) {
     @inline private def resolveNonLocal(from: Symbol): Symbol = {
       val fromClass = enclOrModuleClass(from)
       if (ignoredSymbol(fromClass) || fromClass.hasPackageFlag) NoSymbol
-      else localToNonLocalClass.resolveNonLocal(fromClass)
+      else enclosingNonLocalClassMap(fromClass)
     }
 
     @inline private def namesInClass(nonLocalClass: Symbol): NamesUsedInClass = {

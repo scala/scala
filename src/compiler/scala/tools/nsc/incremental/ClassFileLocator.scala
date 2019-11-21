@@ -47,9 +47,12 @@ class ClassFileLocator[G <: ZincGlobal](val global: G) {
       }
     }
 
-  def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
-    new File(outputDirectory, classNameUtils.flatclassName(s, File.separatorChar, separatorRequired) + ".class")
+  def fileForClass(outputDirectory: File, s: Symbol, addModuleSuffix: Boolean): Option[File] = {
+    val f = new File(outputDirectory, classNameUtils.flatclassName(s, File.separatorChar, addModuleSuffix) + ".class")
+    if (f.exists()) Some(f) else None
+  }
 
-  def pathToClassFile(s: Symbol, separatorRequired: Boolean): String =
-    classNameUtils.flatclassName(s, File.separatorChar, separatorRequired) + ".class"
+
+  def pathToClassFile(s: Symbol, addModuleSuffix: Boolean): String =
+    classNameUtils.flatclassName(s, File.separatorChar, addModuleSuffix) + ".class"
 }

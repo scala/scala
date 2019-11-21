@@ -44,19 +44,59 @@ class ZincGlobal(
   lazy val classFileLocator = new ClassFileLocator[this.type](this)
 
   /**
-   * A map from local classes to non-local class that contains it.
-   *
-   * This map is used by both Dependency and Analyzer phase so it has to be
-   * exposed here. The Analyzer phase uses the cached lookups performed by
-   * the Dependency phase. By the time Analyzer phase is run (close to backend
-   * phases), original owner chains are lost so Analyzer phase relies on
-   * information saved before.
-   *
-   * The LocalToNonLocalClass duplicates the tracking that Scala compiler does
-   * internally for backed purposes (generation of EnclosingClass attributes) but
-   * that internal mapping doesn't have a stable interface we could rely on.
+   * A map from local classes to non-local class that contains it, see its documentation.
    */
-  val localToNonLocalClass = new LocalToNonLocalClass[this.type](this)
+  val enclosingNonLocalClassMap = new EnclosingNonLocalClassMap[this.type](this)
+
+  /**
+    * When straight-to-jar compilation is enabled, returns the classes
+    * that are found in the jar of the last compilation. This method
+    * gets the existing classes from the analysis callback and adapts
+    * it for consumption in the compiler bridge.
+    *
+    * The zip read, which may be unnecessary if there are no local classes in a
+    * compilation unit, is lazy through `perRunCaches.newGeneric`.
+    */
+  private val classesWrittenByGenbcode = perRunCaches.newGeneric[Set[String]] {
+    jarUtils.outputJar match {
+      case Some(jar) =>
+        val classes = callback.classesInOutputJar().asScala
+        classes.map(jarUtils.classNameInJar(jar, _)).toSet
+      case None => Set.empty
+    }
+  }
+
+  private def locateClassInJar(sym: Symbol, jar: File, addModuleSuffix: Boolean): Option[File] = {
+    val classFile = classFileLocator.pathToClassFile(sym, addModuleSuffix)
+    val classInJar = jarUtils.classNameInJar(jar, classFile)
+    if (!classesWrittenByGenbcode().contains(classInJar)) None
+    else Some(new File(classInJar))
+  }
+
+  override def zincCallbackGeneratedClass(sym: Symbol): Unit =
+    if (enclosingNonLocalClassMap.isLocal(sym)) {
+      val sourceFile = currentUnit.source.file
+      lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile).file
+      def notifyLocalClass(addModuleSuffix: Boolean): Unit = {
+        val classFile: Option[File] = jarUtils.outputJar match {
+          case Some(outputJar) => locateClassInJar(sym, outputJar, addModuleSuffix)
+          case _ => classFileLocator.fileForClass(outputDir, sym, addModuleSuffix)
+        }
+        for (f <- classFile) {
+          assert(sym.isClass, s"${sym.fullName} is not a class")
+          // Inform callback about local classes, non-local classes have been reported in API
+          callback.generatedLocalClass(sourceFile.file, f)
+        }
+      }
+      if (sym.isModuleClass) {
+        notifyLocalClass(addModuleSuffix = true)
+        if (classNameUtils.isTopLevelModule(sym) && sym.companionClass == NoSymbol) {
+          notifyLocalClass(addModuleSuffix = false) // mirror class
+        }
+      } else
+        notifyLocalClass(addModuleSuffix = false)
+    }
+
 
   final class ZincRun(compileProgress: CompileProgress) extends Run {
     override def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit =
@@ -94,20 +134,7 @@ class ZincGlobal(
     def newPhase(prev: Phase) = dependency.newPhase(prev)
   }
 
-  /** Phase that analyzes the generated class files and maps them to sources. */
-  object zincAnalyzer extends {
-    val global: ZincGlobal.this.type = ZincGlobal.this
-    val phaseName = ZincAnalyzer.name
-    val runsAfter = List("jvm")
-    override val runsBefore = List("terminal")
-    val runsRightAfter = None
-  } with SubComponent {
-    val analyzer = new ZincAnalyzer(global)
-    def newPhase(prev: Phase) = analyzer.newPhase(prev)
-  }
-
   override lazy val phaseDescriptors = {
-    phasesSet += zincAnalyzer
     if (callback.enabled()) {
       phasesSet += sbtDependency
       phasesSet += apiExtractor

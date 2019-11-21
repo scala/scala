@@ -201,7 +201,7 @@ final class Dependency(val global: ZincGlobal) {
       val fromClass = enclOrModuleClass(from)
       if (fromClass == NoSymbol || fromClass.hasPackageFlag) (fromClass, false)
       else {
-        val nonLocal = localToNonLocalClass.resolveNonLocal(fromClass)
+        val nonLocal = enclosingNonLocalClassMap(fromClass)
         (nonLocal, fromClass != nonLocal)
       }
     }
@@ -442,7 +442,7 @@ final class Dependency(val global: ZincGlobal) {
         // make sure we cache lookups for all classes declared in the compilation unit; the recorded information
         // will be used in Analyzer phase
         val sym = if (tree.symbol.isModule) tree.symbol.moduleClass else tree.symbol
-        localToNonLocalClass.resolveNonLocal(sym)
+        enclosingNonLocalClassMap(sym)
         super.traverse(tree)
       case other => super.traverse(other)
     }
