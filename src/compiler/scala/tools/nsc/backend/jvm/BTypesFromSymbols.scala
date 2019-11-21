@@ -565,13 +565,13 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
 
     // Primitive methods cannot be inlined, so there's no point in building a MethodInlineInfo. Also, some
     // primitive methods (e.g., `isInstanceOf`) have non-erased types, which confuses [[typeToBType]].
-    val methodInlineInfos = Map.from(methods.iterator.flatMap({
-      case methodSym =>
+    val methodInlineInfos = new collection.mutable.TreeMap[(String, String), MethodInlineInfo]()
+    methods.foreach {
+      methodSym =>
         if (completeSilentlyAndCheckErroneous(methodSym)) {
           // Happens due to scala/bug#9111. Just don't provide any MethodInlineInfo for that method, we don't need fail the compiler.
           if (!classSym.isJavaDefined) devWarning("scala/bug#9111 should only be possible for Java classes")
           warning = Some(ClassSymbolInfoFailureSI9111(classSym.fullName))
-          Nil
         } else {
           val name = methodSym.javaSimpleName.toString // same as in genDefDef
           val signature = (name, methodBTypeFromSymbol(methodSym).descriptor)
@@ -600,14 +600,13 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
               effectivelyFinal = true,
               annotatedInline = info.annotatedInline,
               annotatedNoInline = info.annotatedNoInline)
-            if (methodSym.isMixinConstructor)
-              (staticMethodSignature, staticMethodInfo) :: Nil
-            else
-              (signature, info) :: (staticMethodSignature, staticMethodInfo) :: Nil
+            methodInlineInfos(staticMethodSignature) = staticMethodInfo
+            if (!methodSym.isMixinConstructor)
+              methodInlineInfos(signature) = info
           } else
-            (signature, info) :: Nil
+            methodInlineInfos(signature) = info
         }
-    }))
+    }
 
     InlineInfo(isEffectivelyFinal, sam, methodInlineInfos, warning)
   }

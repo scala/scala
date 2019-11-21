@@ -15,7 +15,9 @@ package backend.jvm
 
 import java.{util => ju}
 import java.lang.{StringBuilder, ThreadLocal}
+
 import scala.annotation.tailrec
+import scala.collection.SortedMap
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
@@ -1133,17 +1135,21 @@ object BTypes {
    */
   final case class InlineInfo(isEffectivelyFinal: Boolean,
                               sam: Option[String],
-                              methodInfos: Map[(String, String), MethodInlineInfo],
+                              methodInfos: collection.SortedMap[(String, String), MethodInlineInfo],
                               warning: Option[ClassInlineInfoWarning]) {
     lazy val methodInfosSorted: IndexedSeq[((String, String), MethodInlineInfo)] = {
       val result = new Array[((String, String), MethodInlineInfo)](methodInfos.size)
-      methodInfos.copyToArray(result)
+      var i = 0
+      methodInfos.foreachEntry { (ownerAndName, info) =>
+        result(i) = (ownerAndName, info)
+        i += 1
+      }
       scala.util.Sorting.quickSort(result)(Ordering.by(_._1))
       result
     }
   }
 
-  val EmptyInlineInfo = InlineInfo(false, None, Map.empty, None)
+  val EmptyInlineInfo = InlineInfo(false, None, SortedMap.empty, None)
 
   /**
    * Metadata about a method, used by the inliner.
