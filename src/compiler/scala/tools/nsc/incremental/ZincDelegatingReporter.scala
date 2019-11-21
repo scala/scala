@@ -17,11 +17,11 @@ package incremental
 import java.io.File
 import java.util.Optional
 
-import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
+import scala.reflect.internal.util.{FakePos, NoPosition, Position}
 
 object ZincDelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): ZincDelegatingReporter =
-    new ZincDelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
+    new ZincDelegatingReporter(settings.fatalWarnings.value, settings.nowarn.value, delegate)
 
   class PositionImpl(
       sourcePath0: Option[String],
@@ -64,7 +64,7 @@ object ZincDelegatingReporter {
       new PositionImpl(None, None, None, "", None, None, None, None, None, None, None, None, None)
   }
 
-  import java.lang.{ Integer => I }
+  import java.lang.{Integer => I}
   def o2oi(opt: Option[Int]): Optional[I] = {
     opt match {
       case Some(s) => Optional.ofNullable[I](s: I)
@@ -167,7 +167,7 @@ final class ZincDelegatingReporter(
     }
   }
 
-  import xsbti.Severity.{ Info, Warn, Error }
+  import xsbti.Severity.{Error, Info, Warn}
   private[this] def convert(sev: Severity): xsbti.Severity = {
     sev match {
       case INFO    => Info
@@ -177,7 +177,7 @@ final class ZincDelegatingReporter(
   }
 
   // Define our own problem because the bridge should not depend on sbt util-logging.
-  import xsbti.{ Problem => XProblem, Position => XPosition, Severity => XSeverity }
+  import xsbti.{Position => XPosition, Problem => XProblem, Severity => XSeverity}
   private final class CompileProblem(
       pos: XPosition,
       msg: String,

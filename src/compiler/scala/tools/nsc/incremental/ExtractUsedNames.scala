@@ -58,11 +58,10 @@ import scala.jdk.CollectionConverters._
  * The tree walking algorithm walks into TypeTree.original explicitly.
  *
  */
-class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
-    extends ClassName
-    with GlobalHelpers {
+class ExtractUsedNames[G <: ZincGlobal](val global: G) {
 
   import global._
+  import globalHelpers._
 
   private final class NamesUsedInClass {
     // Default names and other scopes are separated for performance reasons
@@ -105,7 +104,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
         case Some(classOrModuleDef) =>
           val sym = classOrModuleDef.symbol
           val firstClassSymbol = enclOrModuleClass(sym)
-          val firstClassName = className(firstClassSymbol)
+          val firstClassName = classNameUtils.className(firstClassSymbol)
           val namesInFirstClass = traverser.usedNamesFromClass(firstClassName)
           val scopedNamesInFirstClass = namesInFirstClass.scopedNames
 
@@ -177,7 +176,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     val addSymbol: (JavaSet[Name], Symbol) => Unit = { (names: JavaSet[Name], symbol: Symbol) =>
       // Synthetic names are no longer included. See https://github.com/sbt/sbt/issues/2537
       if (!ignoredSymbol(symbol) && !isEmptyName(symbol.name)) {
-        names.add(mangledName(symbol))
+        names.add(classNameUtils.mangledName(symbol))
         ()
       }
     }
@@ -212,7 +211,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
     private object PatMatDependencyTraverser extends TypeDependencyTraverser {
       override def addDependency(symbol: global.Symbol): Unit = {
         if (!ignoredSymbol(symbol) && symbol.isSealed) {
-          val name = mangledName(symbol)
+          val name = classNameUtils.mangledName(symbol)
           if (!isEmptyName(name)) {
             val existingScopes = _currentScopedNamesCache.get(name)
             if (existingScopes == null)
@@ -308,7 +307,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
 
     @inline private def namesInClass(nonLocalClass: Symbol): NamesUsedInClass = {
       if (nonLocalClass == NoSymbol) namesUsedAtTopLevel
-      else usedNamesFromClass(ExtractUsedNames.this.className(nonLocalClass))
+      else usedNamesFromClass(classNameUtils.className(nonLocalClass))
     }
 
     /**

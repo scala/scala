@@ -37,7 +37,7 @@ import collection.mutable.Map
  *
  * Additionally, you can query whether a given class is local. Check `isLocal`'s documentation.
  */
-class LocalToNonLocalClass[G <: CallbackGlobal](val global: G) {
+class LocalToNonLocalClass[G <: ZincGlobal](val global: G) {
   import global._
   private val cache: Map[Symbol, Symbol] = perRunCaches.newMap()
 

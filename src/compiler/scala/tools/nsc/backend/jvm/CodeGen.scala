@@ -68,7 +68,7 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
   }
 
   def genClass(cd: ClassDef, unit: CompilationUnit): ClassNode = {
-    addSbtIClassShim(cd)
+    global.zincCallbackGeneratedClass(cd.symbol)
 
     // TODO: do we need a new builder for each class? could we use one per run? or one per Global compiler instance?
     val b = new CodeGenImpl.SyncAndTryBuilder(unit)
@@ -78,14 +78,6 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
 
   def genMirrorClass(classSym: Symbol, unit: CompilationUnit): ClassNode = {
     mirrorCodeGen.get.genMirrorClass(classSym, unit)
-  }
-
-
-  private def addSbtIClassShim(cd: ClassDef): Unit = {
-    // shim for SBT, see https://github.com/sbt/sbt/issues/2076
-    // TODO put this closer to classfile writing once we have closure elimination
-    // TODO create a nicer public API to find out the correspondence between sourcefile and ultimate classfiles
-    currentUnit.icode += new icodes.IClass(cd.symbol)
   }
 
   object CodeGenImpl extends {

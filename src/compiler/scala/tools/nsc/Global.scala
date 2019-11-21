@@ -162,6 +162,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     class IClass(val symbol: Symbol)
   }
 
+  // For compatibility with the compiler bridge that zinc compiles from source. ZincGlobal in this
+  // repository overrides the method to report to zinc directly instead of adding to the collection.
+  def zincCallbackGeneratedClass(sym: Symbol): Unit = {
+    currentUnit.icode += new icodes.IClass(sym)
+  }
+
   // TODO: move to the backend, make it a component
   /** Scala primitives, used the backend */
   object scalaPrimitives extends {

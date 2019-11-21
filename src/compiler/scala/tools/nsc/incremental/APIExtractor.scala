@@ -22,7 +22,7 @@ object APIExtractor {
   val name = "xsbt-api"
 }
 
-final class APIExtractor(val global: CallbackGlobal) extends GlobalHelpers with ClassName {
+final class APIExtractor(val global: ZincGlobal) {
   import global._
 
   import scala.collection.mutable
@@ -112,7 +112,7 @@ final class APIExtractor(val global: CallbackGlobal) extends GlobalHelpers with 
    * and registering their stamps. However, to be on the safe side, we will continue to
    * register the local products in `Analyzer`.
    *
-   * @param allClassSymbols The class symbols found in all the compilation units.
+   * @param classSymbols The class symbols found in all the compilation units.
    */
   def registerGeneratedClasses(classSymbols: Iterator[Symbol]): Unit = {
     classSymbols.foreach { symbol =>
@@ -135,7 +135,7 @@ final class APIExtractor(val global: CallbackGlobal) extends GlobalHelpers with 
           }
 
           val zincClassName = names.className
-          val srcClassName = classNameAsString(symbol)
+          val srcClassName = classNameUtils.classNameAsString(symbol)
           callback.generatedNonLocalClass(sourceJavaFile, classFile, zincClassName, srcClassName)
         } else ()
       }
@@ -184,7 +184,7 @@ final class APIExtractor(val global: CallbackGlobal) extends GlobalHelpers with 
       }
     }
     def isTopLevel(sym: Symbol): Boolean = {
-      !ignoredSymbol(sym) &&
+      !globalHelpers.ignoredSymbol(sym) &&
       sym.isStatic &&
       !sym.isImplClass &&
       !sym.hasFlag(Flags.JAVA) &&

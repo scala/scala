@@ -19,25 +19,24 @@ import scala.tools.nsc.Global
 /**
  * Utility methods for creating (source|binary) class names for a Symbol.
  */
-trait ClassName {
-  val global: Global
-  import global._
+class ClassNameUtils[G <: Global](val global: G) {
+ import global._
 
   /**
    * Creates a flat (binary) name for a class symbol `s`.
    */
-  protected def flatname(s: Symbol, separator: Char) =
+  def flatname(s: Symbol, separator: Char) =
     exitingFlatten { s fullName separator }
 
   /**
    * Create a (source) name for a class symbol `s`.
    */
-  protected def className(s: Symbol): Name = pickledName(s)
+  def className(s: Symbol): Name = pickledName(s)
 
   /**
    * Create a String (source) name for a class symbol `s`.
    */
-  protected def classNameAsString(s: Symbol): String = pickledNameAsString(s)
+  def classNameAsString(s: Symbol): String = pickledNameAsString(s)
 
   /**
    * Given a class symbol `cls`, construct a name representing this constructor.
@@ -58,13 +57,13 @@ trait ClassName {
   protected def constructorName(cls: Symbol): Name =
     newTermName(constructorNameAsString(cls))
 
-  protected def constructorNameAsString(cls: Symbol): String =
+  def constructorNameAsString(cls: Symbol): String =
     cls.fullName(';') ++ ";init;"
 
   /**
    * Mangle a JVM symbol name in a format better suited for internal uses by sbt.
    */
-  protected def mangledName(s: Symbol): Name =
+  def mangledName(s: Symbol): Name =
     if (s.name == nme.CONSTRUCTOR)
       constructorName(s.enclClass)
     else
@@ -80,7 +79,7 @@ trait ClassName {
    * (like qualified privates `private[qualifier]`). In order to get the right
    * original names, we need to use `unexpandedName`.
    */
-  protected def classNameAsSeenIn(in: Symbol, s: Symbol): String =
+  def classNameAsSeenIn(in: Symbol, s: Symbol): String =
     exitingPickler {
       if (in.isRoot || in.isRootPackage || in == NoSymbol || in.isEffectiveRoot)
         s.simpleName.toString
@@ -96,12 +95,12 @@ trait ClassName {
   private def pickledNameAsString(s: Symbol): String =
     exitingPickler { s.fullName }
 
-  protected def isTopLevelModule(sym: Symbol): Boolean =
+  def isTopLevelModule(sym: Symbol): Boolean =
     exitingPickler {
       // uncomment `isImplClass` when backporting this to 2.11
       sym.isModuleClass && !sym.isNestedClass // && !sym.isImplClass
     }
 
-  protected def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =
+  def flatclassName(s: Symbol, sep: Char, dollarRequired: Boolean): String =
     flatname(s, sep) + (if (dollarRequired) "$" else "")
 }

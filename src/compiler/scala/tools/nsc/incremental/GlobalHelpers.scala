@@ -14,11 +14,9 @@ package scala.tools
 package nsc
 package incremental
 
-import scala.tools.nsc.Global
 import java.util.HashSet
 
-trait GlobalHelpers {
-  val global: Global
+class GlobalHelpers[G <: ZincGlobal](val global: G) {
   import global._
 
   /** Return true if type shall be ignored, false otherwise. */

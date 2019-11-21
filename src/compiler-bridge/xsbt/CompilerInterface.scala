@@ -18,9 +18,9 @@ import xsbti.compile._
 import xsbti.{AnalysisCallback, Logger, Problem, Reporter}
 
 import scala.collection.mutable
-import scala.tools.nsc.Settings
 import scala.tools.nsc.incremental.Log.debug
 import scala.tools.nsc.incremental._
+import scala.tools.nsc.{CompilerCommand, Settings}
 
 final class CompilerInterface {
   def newCompiler(
@@ -77,7 +77,7 @@ final class CachedCompiler0(args: Array[String], output: Output, log: Logger, de
       settings.outputDirs.setSingleOutput(outputFilepath)
   }
 
-  val command = Command(args.toList, settings)
+  val command = new CompilerCommand(args.toList, settings)
   private[this] val dreporter = ZincDelegatingReporter(settings, initialLog.reporter)
   try {
     if (!noErrors(dreporter)) {

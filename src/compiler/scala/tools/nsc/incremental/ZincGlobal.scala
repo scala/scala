@@ -14,31 +14,21 @@ package scala.tools
 package nsc
 package incremental
 
-import xsbti.{ AnalysisCallback, Severity }
-import xsbti.compile._
-
-import scala.tools.nsc._
-import io.AbstractFile
 import java.io.File
 
+import xsbti.compile._
+import xsbti.{AnalysisCallback, Severity}
+
+import scala.jdk.CollectionConverters._
 import scala.reflect.io.PlainFile
+import scala.tools.nsc.io.AbstractFile
 
-/** Defines the interface of the incremental compiler hiding implementation details. */
-sealed abstract class CallbackGlobal(
+/** Defines the implementation of Zinc with all its corresponding phases. */
+class ZincGlobal(
     settings: Settings,
-    reporter: reporters.Reporter,
+    dreporter: ZincDelegatingReporter,
     output: Output
-) extends Global(settings, reporter) {
-
-  def callback: AnalysisCallback
-  def findAssociatedFile(name: String): Option[(AbstractFile, Boolean)]
-
-  def fullName(
-      symbol: Symbol,
-      separator: Char,
-      suffix: CharSequence,
-      includePackageObjectClassNames: Boolean
-  ): String
+) extends Global(settings, dreporter) {
 
   lazy val outputDirs: Iterable[File] = {
     output match {
@@ -49,14 +39,9 @@ sealed abstract class CallbackGlobal(
   }
 
   lazy val jarUtils = new JarUtils(outputDirs)
-
-  /**
-   * Defines the sbt phase in which the dependency analysis is performed.
-   * The reason why this is exposed in the callback global is because it's used
-   * in [[xsbt.LocalToNonLocalClass]] to make sure the we don't resolve local
-   * classes before we reach this phase.
-   */
-  val sbtDependency: SubComponent
+  lazy val globalHelpers = new GlobalHelpers[this.type](this)
+  lazy val classNameUtils = new ClassNameUtils[this.type](this)
+  lazy val classFileLocator = new ClassFileLocator[this.type](this)
 
   /**
    * A map from local classes to non-local class that contains it.
@@ -72,12 +57,6 @@ sealed abstract class CallbackGlobal(
    * that internal mapping doesn't have a stable interface we could rely on.
    */
   val localToNonLocalClass = new LocalToNonLocalClass[this.type](this)
-}
-
-/** Defines the implementation of Zinc with all its corresponding phases. */
-sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, output: Output)
-    extends CallbackGlobal(settings, dreporter, output)
-    with ZincGlobalCompat {
 
   final class ZincRun(compileProgress: CompileProgress) extends Run {
     override def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit =
@@ -103,7 +82,7 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
     def newPhase(prev: Phase) = api.newPhase(prev)
   }
 
-  /** Phase that extracts dependency information */
+  /** Defines the sbt phase in which the dependency analysis is performed. */
   object sbtDependency extends {
     val global: ZincGlobal.this.type = ZincGlobal.this
     val phaseName = Dependency.name
@@ -202,7 +181,7 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
    * @param includePackageObjectClassNames Include package object class names or not.
    * @return The full name.
    */
-  override def fullName(
+  def fullName(
       symbol: Symbol,
       separator: Char,
       suffix: CharSequence,
@@ -238,13 +217,12 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
   def callback: AnalysisCallback = callback0
 
   final def set(callback: AnalysisCallback, dreporter: ZincDelegatingReporter): Unit = {
-    this.callback0 = callback
+    callback0 = callback
     reporter = dreporter
   }
 
   final def clear(): Unit = {
     callback0 = null
-    superDropRun()
     reporter = null
     this match {
       case c: java.io.Closeable => c.close()
@@ -259,8 +237,3 @@ sealed class ZincGlobal(settings: Settings, dreporter: ZincDelegatingReporter, o
     ()
   }
 }
-
-import scala.reflect.internal.Positions
-final class ZincGlobalRangePos(settings: Settings, dreporter: ZincDelegatingReporter, output: Output)
-    extends ZincGlobal(settings, dreporter, output)
-    with Positions

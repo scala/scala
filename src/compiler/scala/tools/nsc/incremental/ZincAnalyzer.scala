@@ -23,7 +23,7 @@ object ZincAnalyzer {
   def name = "xsbt-analyzer"
 }
 
-final class ZincAnalyzer(val global: CallbackGlobal) extends LocateClassFile {
+final class ZincAnalyzer(val global: ZincGlobal) {
   import global._
 
   def newPhase(prev: Phase): Phase = new AnalyzerPhase(prev)
@@ -75,7 +75,7 @@ final class ZincAnalyzer(val global: CallbackGlobal) extends LocateClassFile {
           }
 
           if (sym.isModuleClass && !sym.isImplClass) {
-            if (isTopLevelModule(sym) && sym.companionClass == NoSymbol)
+            if (classNameUtils.isTopLevelModule(sym) && sym.companionClass == NoSymbol)
               addGenerated(false)
             addGenerated(true)
           } else
@@ -89,12 +89,12 @@ final class ZincAnalyzer(val global: CallbackGlobal) extends LocateClassFile {
         outputDir: File,
         separatorRequired: Boolean
     ): Option[File] = {
-      val classFile = fileForClass(outputDir, sym, separatorRequired)
+      val classFile = classFileLocator.fileForClass(outputDir, sym, separatorRequired)
       if (classFile.exists()) Some(classFile) else None
     }
 
     private def locateClassInJar(sym: Symbol, jar: File, sepRequired: Boolean): Option[File] = {
-      val classFile = pathToClassFile(sym, sepRequired)
+      val classFile = classFileLocator.pathToClassFile(sym, sepRequired)
       val classInJar = jarUtils.classNameInJar(jar, classFile)
       if (!classesWrittenByGenbcode.contains(classInJar)) None
       else Some(new File(classInJar))

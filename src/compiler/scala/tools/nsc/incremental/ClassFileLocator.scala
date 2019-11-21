@@ -22,12 +22,11 @@ import java.io.File
 /**
  * Contains utility methods for looking up class files corresponding to Symbols.
  */
-abstract class LocateClassFile extends ClassName {
-  val global: CallbackGlobal
+class ClassFileLocator[G <: ZincGlobal](val global: G) {
   import global._
 
   private[this] final val classSeparator = '.'
-  protected def classFile(sym: Symbol): Option[(AbstractFile, String)] =
+  def classFile(sym: Symbol): Option[(AbstractFile, String)] =
     // package can never have a corresponding class file; this test does not
     // catch package objects (that do not have this flag set)
     if (sym hasFlag scala.tools.nsc.symtab.Flags.PACKAGE) None
@@ -35,7 +34,7 @@ abstract class LocateClassFile extends ClassName {
       val file = sym.associatedFile
 
       if (file == NoAbstractFile) {
-        if (isTopLevelModule(sym)) {
+        if (classNameUtils.isTopLevelModule(sym)) {
           val linked = sym.companionClass
           if (linked == NoSymbol)
             None
@@ -44,13 +43,13 @@ abstract class LocateClassFile extends ClassName {
         } else
           None
       } else {
-        Some((file, flatname(sym, classSeparator) + sym.moduleSuffix))
+        Some((file, classNameUtils.flatname(sym, classSeparator) + sym.moduleSuffix))
       }
     }
 
-  protected def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
-    new File(outputDirectory, flatclassName(s, File.separatorChar, separatorRequired) + ".class")
+  def fileForClass(outputDirectory: File, s: Symbol, separatorRequired: Boolean): File =
+    new File(outputDirectory, classNameUtils.flatclassName(s, File.separatorChar, separatorRequired) + ".class")
 
-  protected def pathToClassFile(s: Symbol, separatorRequired: Boolean): String =
-    flatclassName(s, File.separatorChar, separatorRequired) + ".class"
+  def pathToClassFile(s: Symbol, separatorRequired: Boolean): String =
+    classNameUtils.flatclassName(s, File.separatorChar, separatorRequired) + ".class"
 }

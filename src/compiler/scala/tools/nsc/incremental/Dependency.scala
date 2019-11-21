@@ -15,15 +15,12 @@ package nsc
 package incremental
 
 import java.io.File
+import java.util.{HashMap => JavaMap, HashSet => JavaSet}
 
 import xsbti.api.DependencyContext
-import DependencyContext._
+import xsbti.api.DependencyContext._
 
-import scala.tools.nsc.io.{ PlainFile, ZipArchive }
-import scala.tools.nsc.Phase
-
-import java.util.{ HashSet => JavaSet }
-import java.util.{ HashMap => JavaMap }
+import scala.tools.nsc.io.{PlainFile, ZipArchive}
 
 object Dependency {
   def name = "xsbt-dependency"
@@ -39,8 +36,9 @@ object Dependency {
  * where it originates from. The Symbol -> Classfile mapping is implemented by
  * LocateClassFile that we inherit from.
  */
-final class Dependency(val global: CallbackGlobal) extends LocateClassFile with GlobalHelpers {
+final class Dependency(val global: ZincGlobal) {
   import global._
+  import globalHelpers._
 
   def newPhase(prev: Phase): Phase = new DependencyPhase(prev)
   private class DependencyPhase(prev: Phase) extends GlobalPhase(prev) {
@@ -115,7 +113,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
     def processDependency(context: DependencyContext, allowLocal: Boolean)(
         dep: ClassDependency
     ): Unit = {
-      val fromClassName = classNameAsString(dep.from)
+      val fromClassName = classNameUtils.classNameAsString(dep.from)
 
       def binaryDependency(file: File, binaryClassName: String) =
         callback.binaryDependency(file, binaryClassName, fromClassName, sourceFile, context)
@@ -152,7 +150,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
         // Ignore `Any` which by default has no `associatedFile`
         else if (targetSymbol == definitions.AnyClass) ()
         else {
-          classFile(targetSymbol) match {
+          classFileLocator.classFile(targetSymbol) match {
             case Some((at, binaryClassName)) =>
               // Associated file is set, so we know which classpath entry it came from
               processExternalDependency(binaryClassName, at)
@@ -177,7 +175,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       } else if (onSource.file != sourceFile || allowLocal) {
         // We cannot ignore dependencies coming from the same source file because
         // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
-        val onClassName = classNameAsString(dep.to)
+        val onClassName = classNameUtils.classNameAsString(dep.to)
         callback.classDependency(onClassName, fromClassName, context)
       } else ()
     }

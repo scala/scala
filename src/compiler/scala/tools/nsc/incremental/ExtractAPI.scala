@@ -54,14 +54,11 @@ import scala.PartialFunction.cond
  * an example.
  *
  */
-class ExtractAPI[GlobalType <: Global](
-    val global: GlobalType,
+class ExtractAPI[G <: ZincGlobal](
+    val global: G,
     // Tracks the source file associated with the CompilationUnit currently being processed by the API phase.
     // This is used when recording inheritance dependencies.
-    sourceFile: File
-) extends ClassName
-    with GlobalHelpers {
-
+    sourceFile: File) {
   import global._
 
   private def error(msg: String) = throw new RuntimeException(msg)
@@ -705,7 +702,7 @@ class ExtractAPI[GlobalType <: Global](
     val anns = annotations(in, c)
     val modifiers = getModifiers(c)
     val acc = getAccess(c)
-    val name = classNameAsSeenIn(in, c)
+    val name = classNameUtils.classNameAsSeenIn(in, c)
     val tParams = typeParameters(in, sym) // look at class symbol
     val selfType = lzy(this.selfType(in, sym))
     def constructClass(structure: xsbti.api.Lazy[Structure]): ClassLike = {
@@ -784,7 +781,7 @@ class ExtractAPI[GlobalType <: Global](
 
   private def simpleName(s: Symbol): String = {
     val n = s.unexpandedName
-    val n2 = if (n == nme.CONSTRUCTOR) constructorNameAsString(s.enclClass) else n.decode.toString
+    val n2 = if (n == nme.CONSTRUCTOR) classNameUtils.constructorNameAsString(s.enclClass) else n.decode.toString
     n2.trim
   }
 
