@@ -1115,55 +1115,57 @@ object Iterator extends IterableFactory[Iterator] {
   }
 
   /** Creates an iterator to which other iterators can be appended efficiently.
-    *  Nested ConcatIterators are merged to avoid blowing the stack.
-    */
+   *  Nested ConcatIterators are merged to avoid blowing the stack.
+   */
   private final class ConcatIterator[+A](private var current: Iterator[A @uncheckedVariance]) extends AbstractIterator[A] {
     private var tail: ConcatIteratorCell[A @uncheckedVariance] = null
     private var last: ConcatIteratorCell[A @uncheckedVariance] = null
     private var currentHasNextChecked = false
 
-    // Advance current to the next non-empty iterator
-    // current is set to null when all iterators are exhausted
-    @tailrec
-    private[this] def advance(): Boolean = {
-      if (tail eq null) {
-        current = null
-        last = null
-        false
+    @`inline` private def mergeAndAdvance(): Boolean = {
+      // Advance current to the next non-empty iterator
+      // current is set to null when all iterators are exhausted
+      @tailrec def advance(): Boolean = {
+        if (tail == null) {
+          current = null
+          last = null
+          false
+        }
+        else {
+          current = tail.headIterator
+          tail = tail.tail
+          merge()
+          if (currentHasNextChecked) true
+          else if (current != null && current.hasNext) {
+            currentHasNextChecked = true
+            true
+          } else advance()
+        }
       }
-      else {
-        current = tail.headIterator
-        tail = tail.tail
-        merge()
-        if (currentHasNextChecked) true
-        else if ((current ne null) && current.hasNext) {
-          currentHasNextChecked = true
-          true
-        } else advance()
-      }
-    }
 
-    // If the current iterator is a ConcatIterator, merge it into this one
-    @tailrec
-    private[this] def merge(): Unit =
-    if (current.isInstanceOf[ConcatIterator[_]]) {
-      val c = current.asInstanceOf[ConcatIterator[A]]
-      current = c.current
-      currentHasNextChecked = c.currentHasNextChecked
-      if (c.tail ne null) {
-        c.last.tail = tail
-        tail = c.tail
-      }
-      merge()
+      // If the current iterator is a ConcatIterator, merge it into this one
+      @tailrec def merge(): Unit =
+        if (current.isInstanceOf[ConcatIterator[_]]) {
+          val c = current.asInstanceOf[ConcatIterator[A]]
+          current = c.current
+          currentHasNextChecked = c.currentHasNextChecked
+          if (c.tail != null) {
+            c.last.tail = tail
+            tail = c.tail
+          }
+          merge()
+        }
+
+      advance()
     }
 
     def hasNext =
       if (currentHasNextChecked) true
-      else if (current eq null) false
+      else if (current == null) false
       else if (current.hasNext) {
         currentHasNextChecked = true
         true
-      } else advance()
+      } else mergeAndAdvance()
 
     def next()  =
       if (hasNext) {
@@ -1173,14 +1175,14 @@ object Iterator extends IterableFactory[Iterator] {
 
     override def concat[B >: A](that: => IterableOnce[B]): Iterator[B] = {
       val c = new ConcatIteratorCell[B](that, null).asInstanceOf[ConcatIteratorCell[A]]
-      if(tail eq null) {
+      if (tail == null) {
         tail = c
         last = c
       } else {
         last.tail = c
         last = c
       }
-      if(current eq null) current = Iterator.empty
+      if (current == null) current = Iterator.empty
       this
     }
   }
