@@ -798,4 +798,20 @@ class IteratorTest {
       case _ => Nil
     }, Array.from(1 to 15))
   }
+
+  @Test
+  def `t11807 multiply-merged concat iterators`(): Unit = {
+    val it0 = Array(1).iterator
+    val it1 = Array(2).iterator ++ Array(3).iterator
+    val it2 = it0 ++ it1
+
+    assertEquals(1, it2.next())
+    assertTrue(it2.hasNext)
+
+    val it3 = it2 ++ Array(4).iterator
+    assertEquals(2, it3.next())
+    assertEquals(3, it3.next())
+    assertTrue("concatted tail of it3 should be next", it3.hasNext)
+  }
+
 }
