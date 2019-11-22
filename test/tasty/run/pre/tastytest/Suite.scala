@@ -23,7 +23,10 @@ class Suite(val name: String) {
   def main(args: Array[String]): Unit = {
     require(reps > 0, s"reps <= 0")
     val errors = mutable.ArrayBuffer.empty[(Context, Throwable)]
-    for (i <- 0 to reps) {
+    if (reps == 1) {
+      runImpl(errors, 0)
+    }
+    else for (i <- 0 to reps) {
       runImpl(errors, i)
     }
     println("Suite passed!")

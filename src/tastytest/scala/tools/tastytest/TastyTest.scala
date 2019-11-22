@@ -37,9 +37,9 @@ object TastyTest {
   def runSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/"run")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, src2:_*)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
   } yield ()
@@ -47,12 +47,14 @@ object TastyTest {
   def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (src2, src3)      <- getNegSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- dotcPos(out, dottyLibrary, src3:_*)
+    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
     _                 <- scalacNeg(out, dottyLibrary, src2:_*)
   } yield ()
 
-  private def scalacPos(out: String, dottyLibrary: String, sources: String*): Try[Unit] =
+  private def scalacPos(out: String, dottyLibrary: String, dir: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(dir)} with scalac.")
     successWhen(scalac(out, dottyLibrary, sources:_*))("scalac failed to compile sources.")
+  }
 
   private def scalacNeg(out: String, dottyLibrary: String, files: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
@@ -67,11 +69,14 @@ object TastyTest {
     if (failMap.isEmpty) {
       printwarnln(s"Warning: there are no source files marked as fail tests. (**/*${ScalaFail.name})")
     }
-    for (source <- files.filter(_.endsWith(".scala"))) {
+    for (source <- files.filter(Scala.filter)) {
       val buf = new StringBuilder(50)
       val compiled = {
         val byteArrayStream = new ByteArrayOutputStream(50)
         try {
+          if (ScalaFail.filter(source)) {
+            println(s"neg test ${cyan(source.stripSuffix(ScalaFail.name))} started")
+          }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
               scalac(out, dottyLibrary, source)
@@ -158,7 +163,8 @@ object TastyTest {
     }.getOrElse(false)
   }
 
-  private def dotcPos(out: String, dottyLibrary: String, sources: String*): Try[Unit] = {
+  private def dotcPos(out: String, dottyLibrary: String, dir: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(dir)} with dotc.")
     val result = sources.isEmpty || {
       val args = Array(
         "-d", out,
@@ -237,6 +243,11 @@ object TastyTest {
   private def runMainOn(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
     def runTests(errors: mutable.ArrayBuffer[String], runner: Runner): Try[Unit] = Try {
       for (test <- tests) {
+        val (pkgs, name) = {
+          val names = test.split('.')
+          names.init.mkString(".") -> names.last
+        }
+        println(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
         runner.run(test) match {
           case Success(output) =>
             val diff = Diff.compareContents("Suite passed!", output)

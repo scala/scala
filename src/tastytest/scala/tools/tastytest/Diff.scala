@@ -16,8 +16,8 @@ object Diff {
     else
       difflib.DiffUtils
         .generateUnifiedDiff(
-          "output",
           "check",
+          "output",
           check.asJava,
           diff,
           1

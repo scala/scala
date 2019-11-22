@@ -8,9 +8,14 @@ import scala.util.Try
 
 import Files.pathSep
 
-  def printerrln(str: String): Unit = System.err.println(Console.RED + str + Console.RESET)
-  def printwarnln(str: String): Unit = System.err.println(Console.YELLOW + str + Console.RESET)
-  def printsuccessln(str: String): Unit = System.err.println(Console.GREEN + str + Console.RESET)
+  def printerrln(str: String): Unit = System.err.println(red(str))
+  def printwarnln(str: String): Unit = System.err.println(yellow(str))
+  def printsuccessln(str: String): Unit = System.err.println(green(str))
+
+  def cyan(str: String): String = Console.CYAN + str + Console.RESET
+  def yellow(str: String): String = Console.YELLOW + str + Console.RESET
+  def red(str: String): String = Console.RED + str + Console.RESET
+  def green(str: String): String = Console.GREEN + str + Console.RESET
 
   implicit final class PathOps(val s: String) extends AnyVal {
     @inline final def / (part: String): String = path(s, part)
