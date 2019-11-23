@@ -192,6 +192,7 @@ object Iterator {
       }
       else {
         current = tail.headIterator
+        if (last eq tail) last = last.tail
         tail = tail.tail
         merge()
         if (currentHasNextChecked) true
@@ -210,6 +211,7 @@ object Iterator {
         current = c.current
         currentHasNextChecked = c.currentHasNextChecked
         if (c.tail ne null) {
+          if (last eq null) last = c.last
           c.last.tail = tail
           tail = c.tail
         }
