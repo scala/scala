@@ -1269,7 +1269,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     *  -c complete - leave nothing out
     */
   override def typeCommandInternal(expr: String, verbose: Boolean): (String, String) = {
-    symbolOfLine(expr) match {
+
+    // first assume that most user entering into :type command would put in an existing term name
+    // rather than some expression that requires additional interpretation.
+    (symbolOfTerm(expr) orElse symbolOfLine(expr)) match {
       case NoSymbol => ("", "")
       case sym => exitingTyper {
         (getterToResultTp(sym).toString, if (verbose) deconstruct.show(getterToResultTp(sym)).toString else "")
