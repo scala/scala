@@ -28,7 +28,7 @@ trait ExprTyper {
     try interpretSynthetic(code) finally phase = savedPhase
   }
 
-  def symbolOfLine(code: String): Symbol = {
+  def symbolOfLine(code: String, allowInterpretTwice: Boolean = false): Symbol = {
     def asExpr(): Symbol = {
       val name  = freshInternalVarName()
       // Typing it with a lazy val would give us the right type, but runs
@@ -40,7 +40,28 @@ trait ExprTyper {
         case Success =>
           val sym0 = symbolOfTerm(name)
           // drop NullaryMethodType
-          sym0.cloneSymbol setInfo exitingTyper(sym0.tpe_*.finalResultType)
+          sym0.cloneSymbol setInfo exitingTyper {
+            val tp = sym0.tpe_*
+            if (tp.resultType.isTrivial && allowInterpretTwice) {
+              val origSym = symbolOfTerm(code)
+              if (origSym.isAccessor && !origSym.isMutableVal) {
+                // when we know it's safe to to use a 'final val' to represent
+                // the expression so that we could infer an unwidened type by
+                // interpreting the 'code' again
+
+                // 'val x: 23 = 23' would be a MethodSymbol after repl's
+                // interpret, otherwise we could just use origSym.isVal
+                val name1 = freshInternalVarName()
+                val line1 = "final val " + name1 + " = " + code
+                doInterpret(line1) match {
+                  case Success =>
+                    val sym1 = symbolOfTerm(name1)
+                    sym1.cloneSymbol.tpe_*.finalResultType
+                  case _ => tp.finalResultType
+                }
+              } else tp.finalResultType
+            } else tp.finalResultType
+          }
         case _          => NoSymbol
       }
     }

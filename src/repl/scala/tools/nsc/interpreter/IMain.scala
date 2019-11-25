@@ -1151,7 +1151,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
   def symbolOfLine(code: String): Symbol =
-    exprTyper.symbolOfLine(code)
+    // specific to :type command, it might need interpret code again with
+    // 'final val' instead of 'def', to infer literal type
+    exprTyper.symbolOfLine(code, allowInterpretTwice = true)
 
   def typeOfExpression(expr: String, silent: Boolean = true): Type =
     exprTyper.typeOfExpression(expr, silent)
