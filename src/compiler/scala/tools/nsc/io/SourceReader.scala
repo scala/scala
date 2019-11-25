@@ -59,7 +59,7 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
     try file match {
       case p: PlainFile        => read(p.file)
       case z: ZipArchive#Entry => read(Channels.newChannel(z.input))
-      case _                   => read(ByteBuffer.wrap(file.toByteArray))
+      case _                   => read(ByteBuffer.wrap(file.unsafeToByteArray))
     }
     catch {
       case ex: InterruptedException => throw ex
