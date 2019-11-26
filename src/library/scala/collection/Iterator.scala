@@ -1122,52 +1122,50 @@ object Iterator extends IterableFactory[Iterator] {
     private var last: ConcatIteratorCell[A @uncheckedVariance] = null
     private var currentHasNextChecked = false
 
-    @`inline` private def mergeAndAdvance(): Boolean = {
-      // Advance current to the next non-empty iterator
-      // current is set to null when all iterators are exhausted
-      @tailrec def advance(): Boolean = {
-        if (tail == null) {
-          current = null
-          last = null
-          false
-        }
-        else {
-          current = tail.headIterator
-          if (last eq tail) last = last.tail
-          tail = tail.tail
-          merge()
-          if (currentHasNextChecked) true
-          else if (current != null && current.hasNext) {
-            currentHasNextChecked = true
-            true
-          } else advance()
-        }
-      }
-
-      // If the current iterator is a ConcatIterator, merge it into this one
-      @tailrec def merge(): Unit =
-        if (current.isInstanceOf[ConcatIterator[_]]) {
-          val c = current.asInstanceOf[ConcatIterator[A]]
-          current = c.current
-          currentHasNextChecked = c.currentHasNextChecked
-          if (c.tail != null) {
-            if (last == null) last = c.last
-            c.last.tail = tail
-            tail = c.tail
-          }
-          merge()
-        }
-
-      advance()
-    }
-
     def hasNext =
       if (currentHasNextChecked) true
       else if (current == null) false
       else if (current.hasNext) {
         currentHasNextChecked = true
         true
-      } else mergeAndAdvance()
+      }
+      else {
+        // If we advanced the current iterator to a ConcatIterator, merge it into this one
+        @tailrec def merge(): Unit =
+          if (current.isInstanceOf[ConcatIterator[_]]) {
+            val c = current.asInstanceOf[ConcatIterator[A]]
+            current = c.current
+            currentHasNextChecked = c.currentHasNextChecked
+            if (c.tail != null) {
+              if (last == null) last = c.last
+              c.last.tail = tail
+              tail = c.tail
+            }
+            merge()
+          }
+
+        // Advance current to the next non-empty iterator
+        // current is set to null when all iterators are exhausted
+        @tailrec def advance(): Boolean =
+          if (tail == null) {
+            current = null
+            last = null
+            false
+          }
+          else {
+            current = tail.headIterator
+            if (last eq tail) last = last.tail
+            tail = tail.tail
+            merge()
+            if (currentHasNextChecked) true
+            else if (current != null && current.hasNext) {
+              currentHasNextChecked = true
+              true
+            } else advance()
+          }
+
+        advance()
+      }
 
     def next()  =
       if (hasNext) {
@@ -1180,7 +1178,8 @@ object Iterator extends IterableFactory[Iterator] {
       if (tail == null) {
         tail = c
         last = c
-      } else {
+      }
+      else {
         last.tail = c
         last = c
       }
