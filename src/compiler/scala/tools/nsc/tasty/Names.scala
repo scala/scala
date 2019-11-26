@@ -4,10 +4,20 @@ import scala.annotation.tailrec
 object Names {
 
   object TastyName {
+
     final case class SimpleName(raw: String)                                                extends TastyName
     final case class ModuleName(base: TastyName)                                            extends TastyName
-    final case class QualifiedName(qual: TastyName, name: SimpleName)                       extends TastyName
+    final case class QualifiedName(qual: TastyName, sep: SimpleName, name: SimpleName)      extends TastyName
     final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[TastyName]) extends TastyName
+    final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                 extends TastyName
+    final case class DefaultName(qual: TastyName, num: Int)                                 extends TastyName
+    final case class VariantName(qual: TastyName, contravariant: Boolean)                   extends TastyName
+
+    val Empty: SimpleName = SimpleName("")
+    val PathSep: SimpleName = SimpleName(".")
+    val ExpandedSep: SimpleName = SimpleName("$$")
+    val ExpandPrefixSep: SimpleName = SimpleName("$")
+
   }
 
   /** class to represent Names as defined in TASTy, with methods to extract scala identifiers
@@ -23,24 +33,28 @@ object Names {
 
     final def isModuleName: Boolean = self.isInstanceOf[ModuleName]
 
-    /** Get the part of this name that represents a Scala identifier
-     */
-    @tailrec
-    final def identifierPart: SimpleName = self match {
-      case name: SimpleName       => name
-      case QualifiedName(_, name) => name
-      case ModuleName(name)       => name.identifierPart
-      case SignedName(name,_)     => name.identifierPart
+    final def asSimpleName: SimpleName = self match {
+      case self: SimpleName => self
+      case _                => throw new AssertionError(s"not simplename: ${self.show}")
     }
 
-    /** Get the optional qualifier if this name forms a path
-     */
-    @tailrec
-    final def qualifierPart: Option[TastyName] = self match {
-      case name: SimpleName       => None
-      case QualifiedName(qual, _) => Some(qual)
-      case ModuleName(name)       => name.qualifierPart
-      case SignedName(name,_)     => name.qualifierPart
+    final def export: String = {
+      self match {
+        case SimpleName(raw) => raw
+        case _ =>
+          val sb = new StringBuilder(10)
+          def inner(name: TastyName): Unit = name match {
+            case SimpleName(raw)                => sb.append(raw)
+            case QualifiedName(qual, sep, name) => inner(qual); inner(sep); inner(name)
+            case ModuleName(name)               => inner(name)
+            case SignedName(name,_)             => inner(name)
+            case UniqueName(qual, sep, num)     => inner(qual); inner(sep); sb.append(num)
+            case DefaultName(qual, num)         => inner(qual); sb.append("$default$"); sb.append(num + 1)
+            case VariantName(qual, contra)      => sb.append(if (contra) '-' else '+'); inner(qual)
+          }
+          inner(self)
+          sb.toString
+      }
     }
 
     /** How to display the name in a TASTy file.
@@ -51,10 +65,13 @@ object Names {
         case _ =>
           val sb = new StringBuilder(10)
           def inner(name: TastyName): Unit = name match {
-            case name: SimpleName          => sb.append(name.raw)
-            case QualifiedName(qual, name) => inner(qual); sb.append("[Qualified . "); inner(name); sb.append(']')
-            case ModuleName(name)          => inner(name); sb.append("[ModuleClass]")
-            case SignedName(name,sig)      => inner(name); sb.append("[Signed "); sb.append(sig.show); sb.append(']')
+            case name: SimpleName               => sb.append(name.raw)
+            case QualifiedName(qual, sep, name) => inner(qual); sb.append("[Qualified "); inner(sep); sb.append(' '); inner(name); sb.append(']')
+            case ModuleName(name)               => inner(name); sb.append("[ModuleClass]")
+            case SignedName(name,sig)           => inner(name); sb.append("[Signed "); sig.mergeShow(sb).append(']')
+            case UniqueName(qual, sep, num)     => inner(qual); sb.append("[Unique "); inner(sep); sb.append(" ").append(num).append(']')
+            case DefaultName(qual, num)         => inner(qual); sb.append("[Default "); sb.append(num + 1).append(']')
+            case VariantName(qual, contra)      => inner(qual); sb.append("[Variant ").append(if (contra) '-' else '+').append(']')
           }
           inner(self)
           sb.toString
@@ -62,13 +79,27 @@ object Names {
     }
 
     final def stripModulePart: TastyName = self match {
-      case ModuleName(name)                                       => name
-      case name @ (_:SimpleName | _:QualifiedName | _:SignedName) => name
+      case ModuleName(name) => name
+      case name @ (
+        _:SimpleName
+      | _:QualifiedName
+      | _:SignedName
+      | _:UniqueName
+      | _:DefaultName
+      | _:VariantName
+      ) => name
     }
 
     final def signature: Signature[TastyName] = self match {
-      case SignedName(_, signature)                       => signature
-      case _:SimpleName | _:QualifiedName |  _:ModuleName => Signature.NotAMethod
+      case SignedName(_, signature) => signature
+      case (
+        _:SimpleName
+      | _:QualifiedName
+      | _:ModuleName
+      | _:UniqueName
+      | _:DefaultName
+      | _:VariantName
+      ) => Signature.NotAMethod
     }
   }
 }

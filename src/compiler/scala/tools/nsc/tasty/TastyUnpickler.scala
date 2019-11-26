@@ -4,60 +4,48 @@ import scala.collection.mutable
 import scala.reflect.internal.SymbolTable
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
-import scala.collection.immutable.LongMap
+import scala.tools.nsc.tasty.Names.TastyName
+import TastyName._
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
-    def unpickle(reader: TastyReader, nameTable: TastyNameTable with TastyUniverse): R
+    def unpickle(reader: TastyReader, nameTable: NameRef => TastyName): R
   }
 
   final class Table[T] extends (NameRef => T) {
-    private[TastyUnpickler] val names = new mutable.ArrayBuffer[T]
+    private[this] val names = new mutable.ArrayBuffer[T]
     def add(name: T): mutable.ArrayBuffer[T] = names += name
     def apply(ref: NameRef): T = names(ref.index)
-    def contents: Iterable[T] = names
+    def size: Int = names.size
   }
 }
 
 import TastyUnpickler._
 
-class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable) extends TastyUniverse with TastyNameTable { self =>
-  import symbolTable._
+class TastyUnpickler(reader: TastyReader)(implicit u: TastyUniverse) { self =>
+  import u.logTasty
   import reader._
 
-  def this(bytes: Array[Byte])(implicit symbolTable: SymbolTable) = this(new TastyReader(bytes))
+  def this(bytes: Array[Byte])(implicit u: TastyUniverse) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
-  val nameAtRef: Table[TermName] = new Table
+  val nameAtRef = new Table[TastyName]
 
-  val signedNameTable: mutable.LongMap[SigName] = mutable.LongMap.empty
-
-  val signedNameAtRef: NameRef => Either[SigName, TermName] =
-    ref =>
-      if (signedNameTable.contains(ref.index))
-        Left(signedNameTable(ref.index))
-      else
-        Right(nameAtRef(ref))
-
-  val modulesAtRefs: mutable.HashSet[Int] = mutable.HashSet.empty
-
-  val moduleRefs: NameRef => Boolean = ref => modulesAtRefs(ref.index)
-
-  private def readName(): TermName = nameAtRef(readNameRef())
+  private def readName(): TastyName = nameAtRef(readNameRef())
   private def readString(): String = readName().toString
 
-  private def readParamSig(): ParamSig = {
+  private def readParamSig(): Signature.ParamSig[TastyName] = {
     val ref = readInt()
     if (ref < 0)
       Left(ref.abs)
     else
-      Right(nameAtRef(NameRef(ref)).toTypeName)
+      Right(nameAtRef(NameRef(ref)))
   }
 
-  private def readNameContents(): TermName = {
+  private def readNameContents(): TastyName = {
     val tag = readByte()
     val length = readNat()
     val start = currentAddr
@@ -65,48 +53,52 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
     val result = tag match {
       case UTF8 =>
         goto(end)
-        val res = newTermName(bytes, start.index, length)
-        logTasty(s"${nameAtRef.names.size}: UTF8 name: $res")
+        val res = SimpleName(new String(bytes.slice(start.index, start.index + length), "UTF-8"))
+        logTasty(s"${nameAtRef.size}: UTF8 name: $res")
         res
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
-          case QUALIFIED    => "."
-          case EXPANDED     => "$$"
-          case EXPANDPREFIX => "$"
+          case QUALIFIED    => TastyName.PathSep
+          case EXPANDED     => TastyName.ExpandedSep
+          case EXPANDPREFIX => TastyName.ExpandPrefixSep
         }
-        val res = newTermName("" + readName() + sep + readName())
-        logTasty(s"${nameAtRef.names.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
+        val res = QualifiedName(readName(), sep, readName().asSimpleName)
+        logTasty(s"${nameAtRef.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
         res
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
-        val separator = readName().toString
+        val separator = readName().asSimpleName
         val num = readNat()
         val originals = until(end)(readName())
-        val original = if (originals.isEmpty) termNames.EMPTY else originals.head
-        val res = newTermName("" + original + separator + num)
-        logTasty(s"${nameAtRef.names.size}: UNIQUE name: $res")
+        val original = if (originals.isEmpty) TastyName.Empty else originals.head
+        val res = UniqueName(original, separator, num)
+        logTasty(s"${nameAtRef.size}: UNIQUE name: $res")
         res
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
-        val result = readName()
+        val qual = readName()
         val nat = readNat()
-        logTasty(s"${nameAtRef.names.size}: DEFAULTGETTER | VARIANT name: $result[$nat]")
-        result // numberedNameKindOfTag(tag)(readName(), readNat())
+        val res = {
+          if (tag == DEFAULTGETTER) DefaultName(qual, nat)
+          else VariantName(qual, contravariant = nat == 0)
+        }
+        logTasty(s"${nameAtRef.size}: DEFAULTGETTER | VARIANT name: $res")
+        res// numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original  = readName()
-        val result    = readName().toTypeName
+        val result    = readName()
         val paramsSig = until(end)(readParamSig())
-        val sig       = Sig(paramsSig, result)
-        val signed    = SigName(original, sig)
-        signedNameTable(nameAtRef.names.size) = signed
-        logTasty(s"${nameAtRef.names.size}: SIGNED name: ${signed.show}")
-        original // SignedName(original, sig)
+        val sig       = Signature(paramsSig, result)
+        val signed    = SignedName(original, sig)
+        logTasty(s"${nameAtRef.size}: SIGNED name: $signed")
+        signed
       case _ =>
-        val res = readName() // simpleNameKindOfTag(tag)(readName())
-        if (tag == OBJECTCLASS) {
-          modulesAtRefs += nameAtRef.names.size
+        val qual = readName() // simpleNameKindOfTag(tag)(readName())
+        val res = {
+          if (tag == OBJECTCLASS) ModuleName(qual)
+          else qual
         }
-        logTasty(s"${nameAtRef.names.size}: ${TastyFormat.astTagToString(tag)} name: $res")
+        logTasty(s"${nameAtRef.size}: ${TastyFormat.astTagToString(tag)} name: $res")
         res
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
@@ -117,7 +109,6 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 
   locally {
     doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
-    signedNameTable.repack()
     while (!isAtEnd) {
       val secName = readString()
       val secEnd = readEnd()
@@ -128,7 +119,7 @@ class TastyUnpickler(reader: TastyReader)(implicit val symbolTable: SymbolTable)
 
   def unpickle[R](sec: SectionUnpickler[R]): Option[R] =
     for (reader <- sectionReader.get(sec.name)) yield
-      sec.unpickle(reader, this)
+      sec.unpickle(reader, nameAtRef)
 
   private[nsc] def bytes: Array[Byte] = reader.bytes
 }

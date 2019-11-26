@@ -3,6 +3,8 @@ package scala.tools.nsc.tasty
 import scala.reflect.internal._
 import scala.reflect.io.AbstractFile
 import scala.annotation.tailrec
+import scala.tools.nsc.tasty.Names.TastyName
+import scala.tools.nsc.tasty.Names.TastyName.SimpleName
 
 trait TastyUniverse { self =>
   val symbolTable: SymbolTable
@@ -12,18 +14,12 @@ trait TastyUniverse { self =>
   import FlagSets._
   import Contexts._
 
+  final implicit val thisUniverse: self.type = self
   final implicit val symbolTablePrecise: self.symbolTable.type = self.symbolTable
 
   final def logTasty(str: => String): Unit = {
-    import symbolTable._
     if (settings.debugTasty) reporter.echo(NoPosition, str)
   }
-
-  type ParamSig = Signature.ParamSig[TypeName]
-  type Sig      = Signature[TypeName]
-  val  Sig      = Signature
-  type SigName  = SignedName[TermName, TypeName]
-  val  SigName  = SignedName
 
   object FlagSets {
     import scala.reflect.internal.{Flags, ModifierFlags}
@@ -462,4 +458,11 @@ trait TastyUniverse { self =>
         case Open        => "Open"
       }
     } mkString(" | ")
+
+  implicit class TastyNameDecorator(private val tastyName: TastyName) {
+    def toTermName: TermName = tastyName.export match {
+      case ""  => termNames.EMPTY
+      case raw => raw
+    }
+  }
 }

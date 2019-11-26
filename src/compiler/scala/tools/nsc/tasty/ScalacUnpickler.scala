@@ -5,28 +5,15 @@ import scala.reflect.io.AbstractFile
 import TastyRefs.NameRef
 import scala.util.control.NonFatal
 import scala.reflect.internal.SymbolTable
+import scala.tools.nsc.tasty.Names.TastyName
 
 object ScalacUnpickler {
 
   final class TreeSectionUnpickler[SymbolTable <: reflect.internal.SymbolTable](implicit symbolTable: SymbolTable)
   extends SectionUnpickler[TreeUnpickler { val symbolTable: SymbolTable }]("ASTs") { self =>
-    def unpickle(reader: TastyReader, nameTable: TastyNameTable with TastyUniverse): TreeUnpickler { val symbolTable: SymbolTable } =
-      new TreeUnpickler(reader, None, None, Seq.empty) {
-
-        assert(nameTable.symbolTable `eq` self.symbolTable, "Unsafe creation of name ref mapper without shared underlying symbol table")
-
-        final val symbolTable: SymbolTable =
-          self.symbolTable
-
-        final val nameAtRef: NameRef => symbolTable.TermName =
-          nameTable.nameAtRef.asInstanceOf[NameRef => symbolTable.TermName]
-
-        final val signedNameAtRef: NameRef => Either[SigName, symbolTable.TermName] =
-          nameTable.signedNameAtRef.asInstanceOf[NameRef => Either[SigName, symbolTable.TermName]]
-
-        final val moduleRefs: NameRef => Boolean =
-          nameTable.moduleRefs.asInstanceOf[NameRef => Boolean]
-
+    def unpickle(reader: TastyReader, nameAtRef: NameRef => TastyName ): TreeUnpickler { val symbolTable: SymbolTable } =
+      new TreeUnpickler(reader, nameAtRef, None, None, Seq.empty) {
+        final val symbolTable: SymbolTable = self.symbolTable
       }
   }
 }

@@ -4,6 +4,7 @@ import TastyRefs._
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.tasty.Names.TastyName
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -12,9 +13,10 @@ import scala.reflect.io.AbstractFile
  *  @param splices
  */
 abstract class TreeUnpickler(reader: TastyReader,
+                             nameAtRef: NameRef => TastyName,
                              posUnpicklerOpt: Option[PositionUnpickler],
                              commentUnpicklerOpt: Option[CommentUnpickler],
-                             splices: Seq[Any]) extends TastyUniverse with TastyNameTable { self =>
+                             splices: Seq[Any]) extends TastyUniverse { self =>
   import symbolTable._
   import TastyFormat._
   import FlagSets._
@@ -212,12 +214,12 @@ abstract class TreeUnpickler(reader: TastyReader,
       else tag
     }
 
-    def readName(): TermName = nameAtRef(readNameRef())
+    def readTastyName(): TastyName = nameAtRef(readNameRef())
+    def readName(): TermName = readTastyName().toTermName
     def readNameWithModule(): (TermName, Boolean) = {
-      val ref = readNameRef()
-      nameAtRef(ref) -> moduleRefs(ref)
+      val ref = readTastyName()
+      ref.toTermName -> ref.isModuleName
     }
-    def readSigName(): Either[SigName, TermName] = signedNameAtRef(readNameRef())
 
 // ------ Reading types -----------------------------------------------------
 
@@ -1227,7 +1229,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         }
       }
 
-      def completeSelect(name: Name, sig: Sig): Select = {
+      def completeSelect(name: Name, sig: Signature[TypeName]): Select = {
         val localCtx = ctx // if (name == nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
         val qual = readTerm()(localCtx)
         val qualType = qual.tpe.widen
@@ -1247,7 +1249,7 @@ abstract class TreeUnpickler(reader: TastyReader,
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def selectFromSig(qualType: Type, name: Name, sig: Sig)(ifNotOverload: Name => Type): Type = {
+      def selectFromSig(qualType: Type, name: Name, sig: Signature[TypeName])(ifNotOverload: Name => Type): Type = {
         if (sig ne NotAMethod) {
           ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
           val MethodSignature(args, ret) = sig
@@ -1292,9 +1294,10 @@ abstract class TreeUnpickler(reader: TastyReader,
         case IDENTtpt =>
           Ident(readName().toTypeName).setType(readType())
         case SELECT =>
-          readSigName() match {
-            case Left(SigName(name, sig)) => completeSelect(name, sig)
-            case Right(name)              => completeSelect(name, NotAMethod)
+          readTastyName() match {
+            case TastyName.SignedName(qual, sig) =>
+              completeSelect(qual.toTermName, sig.map(_.toTermName.toTypeName))
+            case name: TastyName => completeSelect(name.toTermName, NotAMethod)
           }
         case SELECTtpt =>
           val name = readName().toTypeName
