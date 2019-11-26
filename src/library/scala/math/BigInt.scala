@@ -55,6 +55,11 @@ object BigInt {
     new BigInt(new BigInteger(x))
 
   /** Translates the sign-magnitude representation of a BigInt into a BigInt.
+   *
+   * @param  signum    signum of the number (-1 for negative, 0 for zero, 1
+   *                   for positive).
+   * @param  magnitude big-endian binary representation of the magnitude of
+   *                   the number.
    */
   def apply(signum: Int, magnitude: Array[Byte]): BigInt =
     new BigInt(new BigInteger(signum, magnitude))
@@ -234,6 +239,7 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Returns a BigInt whose value is (this mod that).
    *  This method differs from `%` in that it always returns a non-negative BigInt.
+   *  @param that A positive number
    */
   def mod (that: BigInt): BigInt = new BigInt(this.bigInteger.mod(that.bigInteger))
 
