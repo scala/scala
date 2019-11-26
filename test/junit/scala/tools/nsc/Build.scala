@@ -19,8 +19,18 @@ final class Build(base: Path, name: String) {
     val src = createDir(base, "src")
     val scalacOptions = mutable.ListBuffer[String]()
     scalacOptions += "-usejavacp"
-    val classpath = mutable.ListBuffer[Path]()
     val sources = mutable.ListBuffer[Path]()
+    object classpath {
+      val value = mutable.ListBuffer[String]()
+      def +=(path: Path): classpath.type = {
+        value += path.toString
+        this
+      }
+      def +=(path: String): classpath.type = {
+        value += path
+        this
+      }
+    }
     def withSource(relativePath: String)(code: String): this.type = {
       val srcFile = src.resolve(relativePath)
       Files.createDirectories(srcFile.getParent)
@@ -28,8 +38,8 @@ final class Build(base: Path, name: String) {
       sources += srcFile
       this
     }
-    def argsFile(extraOpts: List[String], printArgs: Boolean): Path = {
-      val cp = List("-cp", if (classpath.isEmpty) "__DUMMY__" else classpath.mkString(File.pathSeparator)) // Dummy to avoid default classpath of "."
+    def argsFile(extraOpts: List[String] = Nil, printArgs: Boolean = false): Path = {
+      val cp = List("-cp", if (classpath.value.isEmpty) "__DUMMY__" else classpath.value.mkString(File.pathSeparator)) // Dummy to avoid default classpath of "."
       val printArgsOpt = if (printArgs) List("-Xprint-args", "-") else Nil
       val entries = List(
         Build.this.scalacOptions.toList,
