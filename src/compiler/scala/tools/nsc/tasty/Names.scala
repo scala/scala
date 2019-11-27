@@ -1,4 +1,5 @@
 package scala.tools.nsc.tasty
+
 import scala.annotation.tailrec
 
 object Names {

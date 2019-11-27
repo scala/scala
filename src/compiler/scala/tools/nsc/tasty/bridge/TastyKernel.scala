@@ -6,9 +6,6 @@ trait TastyKernel { self =>
 
   val symbolTable: SymbolTable
 
-  final implicit val thisUniverse: self.type = self
-  final implicit val symbolTablePrecise: self.symbolTable.type = self.symbolTable
-
   type Context <: AnyRef
 
   type FlagSet = symbolTable.FlagSet

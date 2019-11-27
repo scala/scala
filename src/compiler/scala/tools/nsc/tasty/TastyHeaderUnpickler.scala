@@ -2,8 +2,8 @@ package scala.tools.nsc.tasty
 
 import java.util.UUID
 
-import scala.tools.nsc.tasty.TastyFormat.{MajorVersion, MinorVersion, header}
-import scala.tools.nsc.tasty.TastyUnpickler.UnpickleException
+import TastyFormat.{MajorVersion, MinorVersion, header}
+import TastyUnpickler.UnpickleException
 
 class TastyHeaderUnpickler(reader: TastyReader) {
   import reader._

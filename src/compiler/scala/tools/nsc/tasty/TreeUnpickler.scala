@@ -4,7 +4,7 @@ import TastyRefs._
 import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.tasty.Names.TastyName
+import Names.TastyName
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -12,11 +12,14 @@ import scala.tools.nsc.tasty.Names.TastyName
  *  @param commentUnpicklerOpt the unpickler for comments, if it exists
  *  @param splices
  */
-abstract class TreeUnpickler(reader: TastyReader,
-                             nameAtRef: NameRef => TastyName,
-                             posUnpicklerOpt: Option[PositionUnpickler],
-                             commentUnpicklerOpt: Option[CommentUnpickler],
-                             splices: Seq[Any]) extends TastyUniverse { self =>
+class TreeUnpickler[Tasty <: TastyUniverse](
+    reader: TastyReader,
+    nameAtRef: NameRef => TastyName,
+    posUnpicklerOpt: Option[PositionUnpickler],
+    commentUnpicklerOpt: Option[CommentUnpickler],
+    splices: Seq[Any])(implicit
+    val tasty: Tasty) { self =>
+  import tasty._
   import TastyFormat._
   import FlagSets._
   import NameOps._
@@ -1236,10 +1239,7 @@ abstract class TreeUnpickler(reader: TastyReader,
 //        val owner = denot.symbol.maybeOwner
 //        if (owner.isPackageObject && qualType.termSymbol.is(Package))
 //          qualType = qualType.select(owner.sourceModule)
-        val tpe = selectFromSig(qualType, name, sig) {
-          case name: TypeName => TypeRef(qualType, name)
-          case name: TermName => TypeRef(qualType, name)
-        }
+        val tpe = selectFromSig(qualType, name, sig)(TypeRef(qualType,_))
         Select(qual, name).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
       }
 

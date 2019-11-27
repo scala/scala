@@ -1,9 +1,6 @@
 package scala.tools.nsc.tasty
 
-import scala.reflect.internal.SymbolTable
-import scala.tools.nsc.tasty.Signature.ParamSig
-import scala.tools.nsc.tasty.Signature.MethodSignature
-import scala.tools.nsc.tasty.Signature.NotAMethod
+import Signature._
 
 sealed trait Signature[+T] { self =>
 

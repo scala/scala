@@ -1,8 +1,8 @@
 package scala.tools.nsc.tasty
 
-import scala.tools.nsc.tasty.bridge._
+import bridge._
 
-trait TastyUniverse extends TastyKernel
+abstract class TastyUniverse extends TastyKernel
   with LoggingOps
   with FlagOps
   with TypeOps

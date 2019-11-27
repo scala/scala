@@ -1,11 +1,10 @@
 package scala.tools.nsc.tasty
 
 import scala.collection.mutable
-import scala.reflect.internal.SymbolTable
+
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
-import scala.tools.nsc.tasty.Names.TastyName
-import TastyName._
+import Names.TastyName, Names.TastyName._
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)
@@ -24,18 +23,17 @@ object TastyUnpickler {
 
 import TastyUnpickler._
 
-class TastyUnpickler(reader: TastyReader)(implicit u: TastyUniverse) { self =>
-  import u.logTasty
+class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self =>
+  import tasty.logTasty
   import reader._
 
-  def this(bytes: Array[Byte])(implicit u: TastyUniverse) = this(new TastyReader(bytes))
+  def this(bytes: Array[Byte])(implicit tasty: TastyUniverse) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
   val nameAtRef = new Table[TastyName]
 
   private def readName(): TastyName = nameAtRef(readNameRef())
-  private def readString(): String = readName().toString
 
   private def readParamSig(): Signature.ParamSig[TastyName] = {
     val ref = readInt()
@@ -110,7 +108,7 @@ class TastyUnpickler(reader: TastyReader)(implicit u: TastyUniverse) { self =>
   locally {
     doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
     while (!isAtEnd) {
-      val secName = readString()
+      val secName = readName().asSimpleName.raw
       val secEnd = readEnd()
       sectionReader(secName) = new TastyReader(bytes, currentAddr.index, secEnd.index, currentAddr.index)
       goto(secEnd)
