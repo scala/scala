@@ -1,4 +1,4 @@
-ScalaMain.scala:6: error: variable STATIC_PROTECTED_FIELD in class JavaClass cannot be accessed in object test.JavaClass
+ScalaMain.scala:6: error: variable STATIC_PROTECTED_FIELD in class JavaClass cannot be accessed as a member of object test.JavaClass
  Access to protected variable STATIC_PROTECTED_FIELD not permitted because
  enclosing object ScalaMain in package test2 is not a subclass of
  class JavaClass in package test where target is defined

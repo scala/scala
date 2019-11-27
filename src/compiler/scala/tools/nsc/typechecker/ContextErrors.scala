@@ -1091,11 +1091,10 @@ trait ContextErrors {
         AccessError(tree, sym, ctx.enclClass.owner.thisType, ctx.enclClass.owner, explanation)
 
       def AccessError(tree: Tree, sym: Symbol, pre: Type, owner0: Symbol, explanation: String): AbsTypeError = {
-        def errMsg = {
-          val location = if (sym.isClassConstructor) owner0 else pre.widen.directObjectString
+        val errMsg = {
+          val location = if (sym.isClassConstructor) s"in $owner0" else s"as a member of ${pre.widen.directObjectString}"
 
-          underlyingSymbol(sym).fullLocationString + " cannot be accessed in " +
-          location + explanation
+          underlyingSymbol(sym).fullLocationString + " cannot be accessed " + location + explanation
         }
         AccessTypeError(tree, errMsg)
       }
