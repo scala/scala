@@ -22,7 +22,7 @@ object ScalacUnpickler {
  *  @param bytes         the bytearray containing the Tasty file from which we unpickle
  */
 abstract class ScalacUnpickler[S <: SymbolTable with Singleton](val symbolTable: S, bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/) extends TastyUniverse { self =>
-  import symbolTable._
+  // import symbolTable._
   import ScalacUnpickler._
 
   val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
@@ -36,9 +36,9 @@ abstract class ScalacUnpickler[S <: SymbolTable with Singleton](val symbolTable:
    *  @param filename   filename associated with bytearray, only used for error messages
    */
   def unpickle(classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
-    import treeUnpickler.Contexts._
+    import treeUnpickler.Contexts.InitialContext
     try {
-      implicit val ctx: Context = {
+      implicit val ctx: treeUnpickler.Context = {
         new InitialContext(classRoot, mirrorThatLoaded(classRoot), AbstractFile.getFile(filename))
       }
       treeUnpickler.enter(classRoot, moduleRoot)
