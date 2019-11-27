@@ -119,13 +119,13 @@ object WrappedArray {
     val cls = tag.runtimeClass
     (if (cls.isPrimitive) {
       tag.runtimeClass match {
-        case java.lang.Byte.TYPE => cbfByteArray
-        case java.lang.Short.TYPE => cbfShortArray
-        case java.lang.Character.TYPE => cbfCharArray
         case java.lang.Integer.TYPE => cbfIntArray
+        case java.lang.Double.TYPE => cbfDoubleArray
         case java.lang.Long.TYPE => cbfLongArray
         case java.lang.Float.TYPE => cbfFloatArray
-        case java.lang.Double.TYPE => cbfDoubleArray
+        case java.lang.Character.TYPE => cbfCharArray
+        case java.lang.Byte.TYPE => cbfByteArray
+        case java.lang.Short.TYPE => cbfShortArray
         case java.lang.Boolean.TYPE => cbfBooleanArray
         case java.lang.Void.TYPE => cbfUnitArray
       }

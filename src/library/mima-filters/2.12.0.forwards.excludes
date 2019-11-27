@@ -57,5 +57,3 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.H
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.foreachEntry")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.product2Hash")
 ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.emptyMapHash")
-
-ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.TraversableView.noBuilder")

@@ -16,7 +16,7 @@ package mutable
 
 import generic._
 
-import TraversableView.noBuilder
+import TraversableView.NoBuilder
 
 /** A non-strict view of a mutable `IndexedSeq`.
  *  $viewInfo
@@ -107,17 +107,13 @@ self =>
 object IndexedSeqView {
   type Coll = TraversableView[_, C] forSome {type C <: Traversable[_]}
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] =
-    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, SeqView[A, Seq[_]]]]
-  private[this] val ReusableCBF =
-    new CanBuildFrom[Coll, Any, SeqView[Any, Seq[_]]] {
-      def apply(from: Coll) = noBuilder
-      def apply() = noBuilder
+    new CanBuildFrom[Coll, A, SeqView[A, Seq[_]]] {
+      def apply(from: Coll) = new NoBuilder
+      def apply() = new NoBuilder
     }
   implicit def arrCanBuildFrom[A]: CanBuildFrom[TraversableView[_, Array[_]], A, SeqView[A, Array[A]]] =
-    arrayReusableCBF.asInstanceOf[CanBuildFrom[TraversableView[_, Array[_]], A, SeqView[A, Array[A]]]]
-  private[this] val arrayReusableCBF =
-    new CanBuildFrom[TraversableView[_, Array[_]], Any, SeqView[Any, Array[_]]]  {
-      def apply(from: TraversableView[_, Array[_]]) = noBuilder
-      def apply() = noBuilder
+    new CanBuildFrom[TraversableView[_, Array[_]], A, SeqView[A, Array[A]]] {
+      def apply(from: TraversableView[_, Array[_]]) = new NoBuilder
+      def apply() = new NoBuilder
     }
 }
