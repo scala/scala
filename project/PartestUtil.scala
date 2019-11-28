@@ -58,13 +58,23 @@ object PartestUtil {
     val Grep = {
       def expandGrep(x: String): Seq[String] = {
         val matchingFileContent = try {
-          val Pattern = ("(?i)" + x).r
+          import scala.util.matching.Regex
+          val re = raw"(?i)${Regex.quote(x)}".r
           testFiles.allTestCases.filter {
             case (testFile, testPath) =>
-              val assocFiles = List(".check", ".flags").map(testFile.getParentFile / _)
+              def sibling(suffix: String) = {
+                val name = testFile.name
+                val prefix = name.lastIndexOf('.') match {
+                  case -1 => name
+                  case i  => name.substring(0, i)
+                }
+                val next = prefix + suffix
+                testFile.getParentFile / next
+              }
+              val assocFiles = List(".check", ".flags").map(sibling)
               val sourceFiles = if (testFile.isFile) List(testFile) else testFile.**(AllPassFilter).get.toList
               val allFiles = testFile :: assocFiles ::: sourceFiles
-              allFiles.exists { f => f.exists && f.isFile && Pattern.findFirstIn(IO.read(f)).isDefined }
+              allFiles.exists(f => f.isFile && re.findFirstIn(IO.read(f)).isDefined)
           }
         } catch {
           case _: Throwable => Nil

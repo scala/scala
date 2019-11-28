@@ -1,7 +1,7 @@
-t9849.scala:14: error: method h in object O cannot be accessed in object p.O
+t9849.scala:14: error: method h in object O cannot be accessed as a member of object p.O from object Test in package p
   O.h()
     ^
-t9849.scala:15: error: method h$default$1 in object O cannot be accessed in object p.O
+t9849.scala:15: error: method h$default$1 in object O cannot be accessed as a member of object p.O from object Test in package p
   O.h$default$1
     ^
 two errors found

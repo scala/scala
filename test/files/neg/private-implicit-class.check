@@ -1,4 +1,4 @@
-private-implicit-class.scala:6: error: method BarExtender in class ImplicitsPrivate cannot be accessed in ImplicitsPrivate
+private-implicit-class.scala:6: error: method BarExtender in class ImplicitsPrivate cannot be accessed as a member of ImplicitsPrivate from class TestPrivate
   override implicit def BarExtender(bar: Int) = super.BarExtender(bar) // error
                                                       ^
 one error found

@@ -1,4 +1,4 @@
-t11607.scala:2: error: class migration in package annotation cannot be accessed in package annotation
+t11607.scala:2: error: class migration in package annotation cannot be accessed as a member of package annotation from package <empty>
 @migration("", "") class C
  ^
 one error found
