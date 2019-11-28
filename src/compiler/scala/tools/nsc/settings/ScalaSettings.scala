@@ -59,7 +59,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
   val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
-  val d             = OutputSetting     (outputDirs, ".")
+  val outdir        = OutputSetting     (outputDirs, ".")
   val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.") withAbbreviation "--no-specialization"
 
   // Would be nice to build this dynamically from scala.languageFeature.
@@ -185,7 +185,8 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   def debuginfo = g
   def dependenciesFile = dependencyfile
   def nowarnings = nowarn
-  def outdir = d
+  @deprecated("Use outdir instead.", since="2.13.2")
+  def d = outdir
   def printLate = print
 
   /**
