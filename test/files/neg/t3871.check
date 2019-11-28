@@ -1,4 +1,4 @@
-t3871.scala:4: error: variable foo in class Sub2 cannot be accessed as a member of Sub2
+t3871.scala:4: error: variable foo in class Sub2 cannot be accessed as a member of Sub2 from class Base
  Access to protected variable foo not permitted because
  enclosing class Base is not a subclass of
  class Sub2 where target is defined

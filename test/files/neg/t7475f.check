@@ -1,4 +1,4 @@
-t7475f.scala:12: error: method c1 in class C cannot be accessed as a member of C[T]
+t7475f.scala:12: error: method c1 in class C cannot be accessed as a member of C[T] from trait D
   c1 // a member, but inaccessible.
   ^
 t7475f.scala:13: error: not found: value c2
