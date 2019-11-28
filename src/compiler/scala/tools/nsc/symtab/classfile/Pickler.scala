@@ -87,7 +87,7 @@ abstract class Pickler extends SubComponent {
                 if (writeToSigFile)
                   writeSigFile(sym, pickle)
               }
-              if (sigWriter.isDefined && settings.YpickleWriteNoPrivate) {
+              if (sigWriter.isDefined && settings.YpickleWriteApiOnly) {
                 pickle(noPrivates = false, writeToSymData = true, writeToSigFile = false)
                 pickle(noPrivates = true, writeToSymData = false, writeToSigFile = true)
               } else {

@@ -58,7 +58,7 @@ class PickleWriteTest {
     val p1ApiVirtual = VirtualFilePathFactory.path("p1")
     p1.scalacOptions ++= List(
       "-Ypickle-write", p1ApiVirtual, // write .sig files to the virtual directory
-      "-Ypickle-write-no-private",    // Only export the public API in the .sig files
+      "-Ypickle-write-api-only",      // Only export the public API in the .sig files
       "-Ystop-after:pickler"          // Don't bother creating .class files.
     )
     p1.withSource("b1/p1/C.scala")(

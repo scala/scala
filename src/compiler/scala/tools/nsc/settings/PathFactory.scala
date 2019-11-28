@@ -17,7 +17,22 @@ import scala.reflect.io.{AbstractFile, PlainFile}
 /** Converts paths provided in compiler options (e.g elements of `-classpath` or the target directory of `-d`) to
  *  an `AbstractFile`. */
 trait PathFactory {
+  /**
+   * Convert the given path into an `AbstractFile` representing an existing directory-like structure, such as a
+   * directory on disk, a JAR, or a `VirtualDirectory`. Calling this method will _not_ create the directory
+   * if it is absent.
+   *
+   * @param path The string representing the directory-like path
+   * @return the `AbstractFile`, or `null` if the path does not exist or does not represent a directory.
+   */
   def getDirectory(path: String): AbstractFile
+
+  /**
+   * Convert the given path into an `AbstractFile` representing an file.
+   *
+   * @param path The string representing the file path
+   * @return the `AbstractFile`
+   */
   def getFile(path: String): AbstractFile
 }
 
