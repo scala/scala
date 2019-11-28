@@ -3,6 +3,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.Names.TastyName
 
 trait NameOps extends TastyKernel {
+
   object NameOps {
     implicit class NameDecorator(name: Name) {
       def isConstructorName: Boolean = symbolTable.nme.isConstructorName(name)
@@ -15,4 +16,5 @@ trait NameOps extends TastyKernel {
       case raw => mkTermName(raw)
     }
   }
+
 }

@@ -1,6 +1,9 @@
 package scala.tools.nsc.tasty.bridge
 
-trait TreeOps extends TastyKernel {
+import scala.tools.nsc.tasty.TastyUniverse
+
+trait TreeOps extends TastyKernel { self: TastyUniverse =>
+  import Contexts._
 
   object Trees {
     /** A base trait for lazy tree fields.

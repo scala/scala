@@ -14,37 +14,32 @@ object ScalacUnpickler {
     def unpickle(reader: TastyReader, nameAtRef: NameRef => TastyName ): TreeUnpickler[Tasty] =
       new TreeUnpickler(reader, nameAtRef, None, None, Seq.empty)
   }
-}
 
-/** A class for unpickling Tasty trees and symbols.
- *  @param bytes         the bytearray containing the Tasty file from which we unpickle
- */
-class ScalacUnpickler[Tasty <: TastyUniverse](bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/)(implicit val tasty: Tasty) { self =>
-  import tasty._
-  import ScalacUnpickler._
-
-  val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
-
-  private val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get
-
-  /** Unpickle symbol table information descending from a class and/or module root
+   /** Unpickle symbol table information descending from a class and/or module root
    *  from an array of bytes.
    *  @param classRoot  the top-level class which is unpickled
    *  @param moduleRoot the top-level module which is unpickled
    *  @param filename   filename associated with bytearray, only used for error messages
    */
-  def unpickle(classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
-    import Contexts.InitialContext
-    try {
-      implicit val ctx: Context = {
-        new InitialContext(classRoot, mirrorThatLoaded(classRoot), AbstractFile.getFile(filename))
+  implicit final class Unpickler[Tasty <: TastyUniverse](private val tasty: Tasty) extends AnyVal {
+    import tasty._
+    def unpickle(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
+      import Contexts._
+      implicit val thisTasty: tasty.type = tasty
+      try {
+        val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
+
+        val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get
+
+        implicit val ctx: Context = {
+          new InitialContext(classRoot, mirrorThatLoaded(classRoot), AbstractFile.getFile(filename))
+        }
+        treeUnpickler.enter(classRoot, moduleRoot)
+      } catch {
+        case NonFatal(ex) =>
+          ex.printStackTrace()
+          throw new RuntimeException(s"error reading TASTy from $filename: ${ex.getMessage()}")
       }
-      treeUnpickler.enter(classRoot, moduleRoot)
-    } catch {
-      case NonFatal(ex) =>
-        ex.printStackTrace()
-        throw new RuntimeException(s"error reading TASTy from $filename: ${ex.getMessage()}")
     }
   }
-
 }

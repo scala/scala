@@ -4,6 +4,7 @@ import scala.tools.nsc.tasty.TastyFlags
 import TastyFlags._
 
 trait FlagOps extends TastyKernel {
+
   object FlagSets {
     import scala.reflect.internal.{Flags, ModifierFlags}
 

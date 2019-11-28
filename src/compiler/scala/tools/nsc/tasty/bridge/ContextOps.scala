@@ -3,11 +3,10 @@ package scala.tools.nsc.tasty.bridge
 import scala.annotation.tailrec
 
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.tasty.TastyUniverse
 
-trait ContextOps extends TastyKernel with FlagOps with SymbolOps with LoggingOps { self =>
+trait ContextOps extends TastyKernel { self: TastyUniverse =>
   import FlagSets._
-
-  type Context = Contexts.Context
 
   object Contexts {
 

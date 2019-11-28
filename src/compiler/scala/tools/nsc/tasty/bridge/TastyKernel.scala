@@ -2,11 +2,9 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.reflect.internal.SymbolTable
 
-trait TastyKernel { self =>
+trait TastyKernel {
 
   val symbolTable: SymbolTable
-
-  type Context <: AnyRef
 
   type FlagSet = symbolTable.FlagSet
   def  Flag    = symbolTable.Flag

@@ -1,6 +1,8 @@
 package scala.tools.nsc.tasty.bridge
 
-trait SymbolOps extends TastyKernel with TypeOps {
+import scala.tools.nsc.tasty.TastyUniverse
+
+trait SymbolOps extends TastyKernel { self: TastyUniverse =>
 
   object SymbolOps {
     implicit class SymbolDecorator(sym: Symbol) {

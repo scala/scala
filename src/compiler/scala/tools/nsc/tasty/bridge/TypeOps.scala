@@ -1,9 +1,13 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.{TastyFlagSet, EmptyFlags}
+import scala.tools.nsc.tasty.TastyUniverse
 
-trait TypeOps extends TastyKernel with FlagOps {
+trait TypeOps extends TastyKernel { self: TastyUniverse =>
+  import Contexts._
   import FlagSets._
+
+  def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
   /**
    * Ported from dotc
