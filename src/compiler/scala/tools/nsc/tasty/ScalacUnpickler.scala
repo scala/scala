@@ -15,14 +15,19 @@ object ScalacUnpickler {
       new TreeUnpickler(reader, nameAtRef, None, None, Seq.empty)
   }
 
-   /** Unpickle symbol table information descending from a class and/or module root
-   *  from an array of bytes.
-   *  @param classRoot  the top-level class which is unpickled
-   *  @param moduleRoot the top-level module which is unpickled
-   *  @param filename   filename associated with bytearray, only used for error messages
-   */
-  implicit final class Unpickler[Tasty <: TastyUniverse](private val tasty: Tasty) extends AnyVal {
+  object Unpickler {
+    def tasty[Tasty <: TastyUniverse](implicit tasty: Tasty) = tasty
+  }
+
+  final implicit class Unpickler[Tasty <: TastyUniverse](private val tasty: Tasty) extends AnyVal {
     import tasty._
+
+    /** Unpickle symbol table information descending from a class and/or module root
+     *  from an array of bytes.
+     *  @param classRoot  the top-level class which is unpickled
+     *  @param moduleRoot the top-level module which is unpickled
+     *  @param filename   filename associated with bytearray, only used for error messages
+     */
     def unpickle(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
       import Contexts._
       implicit val thisTasty: tasty.type = tasty

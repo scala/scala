@@ -3,7 +3,6 @@
 TASTy Test is a testing framework for scala 2 code that depends on code compiled with the `dotc`, the Scala 3 compiler, which outputs TASTy trees. The framework supports `run` and `neg` suites.
 
 ## `run`
-
 A `run` suite tests the runtime behaviour of Scala 2 code that may extend or call into code compiled with `dotc`, and is specified as follows:
   1) Compile sources in `run/pre/**/` with the Scala 2 compiler, this step may be used to create helper methods or embedded test runners.
   2) Compile sources in `run/src-3/**/` with the Dotty compiler. Classes compiled in `(1)` are now on the classpath.
@@ -12,6 +11,10 @@ A `run` suite tests the runtime behaviour of Scala 2 code that may extend or cal
      - A test class must have a static method named `main` and with descriptor `([Ljava.lang.String;)V`.
      - The `out` and `err` print streams of `scala.Console` are intercepted before executing the `main` method.
      - A successful test should print the single line `Suite passed!` to the `Console` and not throw any runtime exceptions that escape `main`.
+
+## `pos`
+A `pos` suite tests behaves exactly the same as `run`, except that sources are within the sibling `pos` directory and step 4 is skipped. It is typically used to assert that symbols can be unpickled as expected in Scala 2, but with the knowledge that runtime behaviour is unspecified or broken, due to binary incompatibilities. Once the runtime behaviour is known, sources can be moved unchanged to the `run` directory.
+
 ## `neg`
 A `neg` suite asserts which Scala 2 code is not compatible with code compiled with `dotc`, and is specified as follows:
   1) Compile sources in `neg/src-3/**/` with the Dotty compiler.

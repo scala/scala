@@ -1,7 +1,7 @@
 package tastytest
 
 /**
- * blocked by https://github.com/lampepfl/dotty/issues/7328
+ * suspended from run test until we fix https://github.com/lampepfl/dotty/issues/7328
  */
 object TestReader extends Suite("TestReader") {
 

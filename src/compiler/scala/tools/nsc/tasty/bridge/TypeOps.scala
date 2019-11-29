@@ -64,7 +64,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[TypeParamLambda]
   }
 
-  abstract class LambdaType extends Type with Product {
+  abstract class LambdaType extends Type with Product { lambdaTpe =>
     type ThisName <: Name
     type PInfo <: Type
 
@@ -119,7 +119,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         resUpper.typeConstructor
       }
       else {
-        this
+        mkPolyType(typeParams, resUpper)
       }
     }
 
@@ -181,4 +181,6 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }
+
+  def showRaw(tpe: Type): String = symbolTable.showRaw(tpe)
 }

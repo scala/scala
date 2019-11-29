@@ -14,6 +14,13 @@ class TastyTestJUnit {
     outDir       = None
   ).get
 
+  @Test def pos(): Unit = TastyTest.posSuite(
+    dottyLibrary = assertPropIsSet(propDottyLibrary),
+    srcRoot      = assertPropIsSet(propSrc),
+    pkgName      = assertPropIsSet(propPkgName),
+    outDir       = None
+  ).get
+
   @Test def neg(): Unit = TastyTest.negSuite(
     dottyLibrary = assertPropIsSet(propDottyLibrary),
     srcRoot      = assertPropIsSet(propSrc),

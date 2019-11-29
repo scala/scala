@@ -19,9 +19,10 @@ import Files._
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
+  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
     val results = Map(
       "run" -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
+      "pos" -> Tests.suite("pos", pos)(posSuite(dottyLibrary, srcRoot, pkgName, outDir)),
       "neg" -> Tests.suite("neg", neg)(negSuite(dottyLibrary, srcRoot, pkgName, outDir))
     )
     if (results.values.forall(_.isEmpty)) {
@@ -42,6 +43,14 @@ object TastyTest {
     _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
+  } yield ()
+
+  def posSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+    (pre, src2, src3) <- getRunSources(srcRoot/"pos")
+    out               <- outDir.fold(tempDir(pkgName))(dir)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
   } yield ()
 
   def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
@@ -280,6 +289,7 @@ object TastyTest {
   |
   |  -help                            Display this help.
   |  -run                             Perform the run test.
+  |  -pos                             Perform the pos test.
   |  -neg                             Perform the neg test.
   |  --dotty-library  <paths>         Paths separated by `:`, the classpath for the dotty library.
   |  --src            <path=.>        The path that contains all compilation sources across test kinds.
@@ -303,9 +313,10 @@ object TastyTest {
       srcRoot       =  optionalArg("--src", currentDir)
       pkgName       =  optionalArg("--package", "tastytest")
       run           =  booleanArg("-run")
+      pos           =  booleanArg("-pos")
       neg           =  booleanArg("-neg")
       out           =  findArg("--out")
-      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, neg, out)
+      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, out)
     } yield ()
   }
 

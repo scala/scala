@@ -46,6 +46,8 @@ trait TastyKernel {
     def unapply(tpe: TypeBounds): Option[(Type, Type)] = symbolTable.TypeBounds.unapply(tpe)
   }
 
+  type TypeRef = symbolTable.TypeRef
+
   object defn {
 
     def NothingTpe = symbolTable.definitions.NothingTpe
@@ -69,8 +71,6 @@ trait TastyKernel {
   object termNames {
     def EMPTY: TermName = symbolTable.termNames.EMPTY
   }
-
-  type TypeRef = symbolTable.TypeRef
 
   private[bridge] type LazyType = symbolTable.LazyType
   private[bridge] type FlagAgnosticCompleter = symbolTable.FlagAgnosticCompleter
@@ -96,7 +96,7 @@ trait TastyKernel {
   type TypeName = symbolTable.TypeName
 
   def showRaw(flags: Long): String = symbolTable.showRaw(flags)
-  def showRaw(any: Any): String = symbolTable.showRaw(any)
+  def showRaw(any: Product): String = symbolTable.showRaw(any)
 
   def mkTermName(str: String): TermName = {
     import symbolTable._
