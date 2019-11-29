@@ -1,6 +1,6 @@
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.TastyFlags.{TastyFlagSet, EmptyFlags}
+import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
 
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
@@ -9,15 +9,24 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
+  object TypeOps {
+    implicit final class StripOps(tpe: Type) {
+      def stripLowerBoundsIfPoly: Type = tpe match {
+        case symbolTable.TypeBounds(_, hi: PolyType) => hi
+        case tpe => tpe
+      }
+    }
+  }
+
   /**
    * Ported from dotc
    */
   abstract class TastyLazyType extends LazyType with FlagAgnosticCompleter { self =>
-    private[this] val NoSymbolFn = (_: Context) => NoSymbol
-    private[this] var myDecls: Scope = EmptyScope
+    private[this] val NoSymbolFn = (_: Context) => noSymbol
+    private[this] var myDecls: Scope = emptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
     private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
-    private[this] var myTastyFlagSet: TastyFlagSet = EmptyFlags
+    private[this] var myTastyFlagSet: TastyFlagSet = emptyTastyFlags
 
     /** The type parameters computed by the completer before completion has finished */
     def completerTypeParams(sym: Symbol)(implicit ctx: Context): List[Symbol] = sym.info.typeParams
@@ -37,7 +46,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
-  def TypeRef(tpe: Type, name: Name, isModule: Boolean = false): Type = {
+  def mkTypeRef(tpe: Type, name: Name, isModule: Boolean = false): Type = {
     val symName = if (tpe.members.containsName(name)) name else name.encode
     val member  = tpe.member(symName)
     mkTypeRef(tpe, if (isModule) member.linkedClassOfClass else member, Nil) // TODO tasty: refactor

@@ -18,7 +18,7 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
       def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
       def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
       def is(mask: FlagSet, butNot: FlagSet): Boolean =
-        if (butNot == NoFlags)
+        if (isEmpty(butNot))
           sym.hasFlag(mask)
         else
           sym.hasFlag(mask) && sym.hasNoFlags(butNot)

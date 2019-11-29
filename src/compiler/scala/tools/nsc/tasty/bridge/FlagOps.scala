@@ -6,6 +6,7 @@ import TastyFlags._
 trait FlagOps extends TastyKernel {
 
   object FlagSets {
+    import symbolTable.Flag
     import scala.reflect.internal.{Flags, ModifierFlags}
 
     val Private: FlagSet = Flag.PRIVATE

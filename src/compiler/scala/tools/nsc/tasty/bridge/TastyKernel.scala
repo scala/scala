@@ -1,84 +1,92 @@
 package scala.tools.nsc.tasty.bridge
 
-import scala.reflect.internal.SymbolTable
+import scala.reflect.internal
+import internal.SymbolTable, internal.settings.MutableSettings
+
+import scala.tools.nsc.tasty.TastyFlags.{ EmptyTastyFlags, TastyFlagSet }
 
 trait TastyKernel {
 
   val symbolTable: SymbolTable
 
   type FlagSet = symbolTable.FlagSet
-  def  Flag    = symbolTable.Flag
-  def  NoFlags = symbolTable.NoFlags
 
-  def reporter = symbolTable.reporter
+  def isEmpty(flags: FlagSet): Boolean = flags == symbolTable.NoFlags
+  def emptyFlags: FlagSet = symbolTable.NoFlags
+  def emptyTastyFlags: TastyFlagSet = EmptyTastyFlags
+
+  type Reporter = internal.Reporter
+  def reporter: Reporter = symbolTable.reporter
 
   type Postion = symbolTable.Position
-  def NoPosition: Postion = symbolTable.NoPosition
+  def noPosition: Postion = symbolTable.NoPosition
 
-  private[bridge] def settings = symbolTable.settings
+  type Settings = MutableSettings
+  private[bridge] def settings: Settings = symbolTable.settings
   private[bridge] def phase: Phase = symbolTable.phase
 
   type Type = symbolTable.Type
   type ClassInfoType = symbolTable.ClassInfoType
   type ExistentialType = symbolTable.ExistentialType
+  type NullaryMethodType = symbolTable.NullaryMethodType
   type MethodType = symbolTable.MethodType
   type PolyType = symbolTable.PolyType
-
-  type NullaryMethodType = symbolTable.NullaryMethodType
-
-  object NullaryMethodType {
-    def apply(tpe: Type): NullaryMethodType = symbolTable.NullaryMethodType(tpe)
-  }
+  type ThisType = symbolTable.ThisType
+  type TypeRef = symbolTable.TypeRef
 
   type ConstantType = symbolTable.ConstantType
   def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
-  def ConstantType = symbolTable.ConstantType
 
-  def ErrorType = symbolTable.ErrorType
+  def errorType: Type = symbolTable.ErrorType
+  def noType: Type = symbolTable.NoType
 
-  type ThisType = symbolTable.ThisType
+  def isError(tpe: Type): Boolean = tpe `eq` symbolTable.ErrorType
+  def isNoType(tpe: Type): Boolean = tpe `eq` symbolTable.NoType
 
-  def NoPrefix = symbolTable.NoPrefix
+  def noPrefix: Type = symbolTable.NoPrefix
 
   type TypeBounds = symbolTable.TypeBounds
-  object TypeBounds {
-    def empty = symbolTable.TypeBounds.empty
-    def unapply(tpe: TypeBounds): Option[(Type, Type)] = symbolTable.TypeBounds.unapply(tpe)
-  }
+  def emptyTypeBounds: TypeBounds = symbolTable.TypeBounds.empty
 
-  type TypeRef = symbolTable.TypeRef
+  def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
+  def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
+  def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
+  def mkTypeRef(tpe: Type, sym: Symbol, args: List[Type]): Type = symbolTable.typeRef(tpe, sym, args)
+  def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
+  def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
+  def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
+  def mkAppliedType(tyconsym: Symbol, args: Type*): Type = symbolTable.appliedType(tyconsym, args:_*)
+  def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
+  def mkTypeBounds(lo: Type, hi: Type): TypeBounds = symbolTable.internal.typeBounds(lo, hi)
+  def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
 
   object defn {
-
-    def NothingTpe = symbolTable.definitions.NothingTpe
-    def AnyRefTpe = symbolTable.definitions.AnyRefTpe
-
-    def ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
-
-    def ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
-    def AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
-
+    val NothingTpe: Type = symbolTable.definitions.NothingTpe
+    val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
+    val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
+    val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
+    val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
   }
 
   object nme {
-    def EMPTY: TermName = symbolTable.nme.EMPTY
-    def CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
-    def ROOT: TermName = symbolTable.nme.ROOT
-    def ROOTPKG: TermName = symbolTable.nme.ROOTPKG
-    def EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
+    val EMPTY: TermName = symbolTable.nme.EMPTY
+    val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
+    val ROOT: TermName = symbolTable.nme.ROOT
+    val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
+    val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
   }
 
   object termNames {
-    def EMPTY: TermName = symbolTable.termNames.EMPTY
+    val EMPTY: TermName = symbolTable.termNames.EMPTY
   }
 
   private[bridge] type LazyType = symbolTable.LazyType
   private[bridge] type FlagAgnosticCompleter = symbolTable.FlagAgnosticCompleter
 
-  def NoSymbol = symbolTable.NoSymbol
+  def noSymbol: Symbol = symbolTable.NoSymbol
 
   type Scope = symbolTable.Scope
-  def EmptyScope: Scope = symbolTable.EmptyScope
+  def emptyScope: Scope = symbolTable.EmptyScope
 
   type Symbol = symbolTable.Symbol
   type TermSymbol = symbolTable.TermSymbol
@@ -87,7 +95,7 @@ trait TastyKernel {
   type FreeTypeSymbol = symbolTable.FreeTypeSymbol
 
   type Constant = symbolTable.Constant
-  def  Constant = symbolTable.Constant
+  def Constant(value: Any): Constant = symbolTable.Constant(value)
 
   type Mirror = symbolTable.Mirror
 
@@ -106,7 +114,7 @@ trait TastyKernel {
   type Tree = symbolTable.Tree
 
   type RefTree = symbolTable.RefTree
-  def RefTree = symbolTable.RefTree
+  def RefTree(qual: Tree, name: Name): RefTree = symbolTable.RefTree(qual, name)
 
   type TypeTree = symbolTable.TypeTree
   def TypeTree(tp: Type): TypeTree = symbolTable.TypeTree(tp)
@@ -114,40 +122,39 @@ trait TastyKernel {
   type This = symbolTable.This
 
   type Literal = symbolTable.Literal
-  def  Literal = symbolTable.Literal
+  def Literal(c: Constant): Literal = symbolTable.Literal(c)
 
   type Ident = symbolTable.Ident
-  def Ident(name: Name) = symbolTable.Ident.apply(name)
+  def Ident(name: Name): Ident = symbolTable.Ident(name)
 
-  def New(tpt: Tree) = symbolTable.New.apply(tpt)
+  type New = symbolTable.New
+  def New(tpt: Tree): New = symbolTable.New(tpt)
 
   type Select = symbolTable.Select
-  def Select(qual: Tree, name: Name) = symbolTable.Select.apply(qual, name)
+  def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
   type Annotation = symbolTable.Annotation
-  def Annotation  = symbolTable.Annotation
+  def Annotation(tree: Tree): Annotation = symbolTable.Annotation(tree)
 
   type Phase = reflect.internal.Phase
-  def NoPhase: Phase = reflect.internal.NoPhase
+  def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase
 
-  def SingletonTypeTree = symbolTable.SingletonTypeTree
-  def Apply(fun: Tree, args: List[Tree]) = symbolTable.Apply.apply(fun, args)
-  def TypeApply = symbolTable.TypeApply
-  def AppliedTypeTree = symbolTable.AppliedTypeTree
-  def TypeBoundsTree(lo: Tree, hi: Tree) = symbolTable.TypeBoundsTree.apply(lo, hi)
+  type SingletonTypeTree = symbolTable.SingletonTypeTree
+  def SingletonTypeTree(ref: Tree): SingletonTypeTree = symbolTable.SingletonTypeTree(ref)
 
-  def EmptyTree = symbolTable.EmptyTree
+  type Apply = symbolTable.Apply
+  def Apply(fun: Tree, args: List[Tree]): Apply = symbolTable.Apply(fun, args)
 
-  def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
-  def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
-  def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
-  def mkTypeRef(tpe: Type, sym: Symbol, args: List[Type]): Type = symbolTable.typeRef(tpe, sym, args)
-  def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
-  def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
-  def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
-  def mkAppliedType(tyconsym: Symbol, args: Type*): Type = symbolTable.appliedType(tyconsym, args:_*)
-  def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
-  def mkTypeBounds(lo: Type, hi: Type): TypeBounds = symbolTable.internal.typeBounds(lo, hi)
+  type TypeApply = symbolTable.TypeApply
+  def TypeApply(fun: Tree, args: List[Tree]): TypeApply = symbolTable.TypeApply(fun, args)
+
+  type AppliedTypeTree = symbolTable.AppliedTypeTree
+  def AppliedTypeTree(tpt: Tree, args: List[Tree]): AppliedTypeTree = symbolTable.AppliedTypeTree(tpt, args)
+
+  type TypeBoundsTree = symbolTable.TypeBoundsTree
+  def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
+
+  def emptyTree: Tree = symbolTable.EmptyTree
 
   def mkScope: Scope = symbolTable.newScope
 
@@ -156,7 +163,4 @@ trait TastyKernel {
   def mkNewFreeTypeSymbol(name: TypeName, flags: FlagSet, origin: String): FreeTypeSymbol = symbolTable.newFreeTypeSymbol(name, flags, origin)
 
   def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
-
-  def NoType: Type = symbolTable.NoType
-
 }

@@ -26,7 +26,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       private def findModuleBuddy(name: Name, scope: Scope)(implicit ctx: Context): Symbol = {
         val it = scope.lookupAll(name).filter(_.is(Module))
         if (it.hasNext) it.next()
-        else NoSymbol
+        else noSymbol
       }
 
       /** Either empty scope, or, if the current context owner is a class,
@@ -34,7 +34,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
        */
       def effectiveScope: Scope =
         if (owner != null && owner.isClass) owner.rawInfo.decls
-        else EmptyScope
+        else emptyScope
 
       def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
 
@@ -52,32 +52,32 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       final lazy val loadingMirror: Mirror = initialContext.baseLoadingMirror
       final lazy val classRoot: Symbol = initialContext.baseClassRoot
 
-      def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(NoPosition)
+      def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(noPosition)
 
-      def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = NoSymbol): Symbol = {
+      def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
         val sym = {
           if (flags.is(Param)) {
             if (name.isTypeName) {
-              owner.newTypeParameter(name.toTypeName, NoPosition, flags)
+              owner.newTypeParameter(name.toTypeName, noPosition, flags)
             }
             else {
-              owner.newValueParameter(name.toTermName, NoPosition, flags)
+              owner.newValueParameter(name.toTermName, noPosition, flags)
             }
           }
           else if (name == nme.CONSTRUCTOR) {
-            owner.newConstructor(NoPosition, flags & ~Flag.STABLE)
+            owner.newConstructor(noPosition, flags & ~Stable)
           }
           else if (flags.is(Module)) {
-            owner.newModule(name.toTermName, NoPosition, flags)
+            owner.newModule(name.toTermName, noPosition, flags)
           }
           else if (flags.is(Deferred) && name.isTypeName) {
-            owner.newAbstractType(name.toTypeName, NoPosition, flags)
+            owner.newAbstractType(name.toTypeName, noPosition, flags)
           }
           else if (name.isTypeName) {
-            owner.newAliasType(name.toTypeName, NoPosition, flags)
+            owner.newAliasType(name.toTypeName, noPosition, flags)
           }
           else {
-            owner.newMethodSymbol(name.toTermName, NoPosition, flags)
+            owner.newMethodSymbol(name.toTermName, noPosition, flags)
           }
         }
         sym.privateWithin = privateWithin
@@ -150,7 +150,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
     }
 
     final def withPhaseNoLater[T](otherPhase: scala.tools.nsc.Phase)(op: Context => T)(implicit ctx: Context): T = {
-      if ((otherPhase ne NoPhase) && phase.id > otherPhase.id)
+      if (!isNoPhase(otherPhase) && phase.id > otherPhase.id)
         enteringPhase(otherPhase) { op(ctx) }
       else
         op(ctx)
