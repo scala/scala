@@ -387,16 +387,15 @@ self =>
      *  by compilationUnit().
      */
     def scriptBody(): Tree = {
-      val stmts = parseStats()
 
-      def mainModuleName = newTermName(settings.script.value)
+      val stmts = parseStats()
 
       /* If there is only a single object template in the file and it has a
        * suitable main method, we will use it rather than building another object
        * around it.  Since objects are loaded lazily the whole script would have
        * been a no-op, so we're not taking much liberty.
        */
-      def searchForMain(): Tree = {
+      def searchForMain(mainModuleName: Name): Tree = {
         import PartialFunction.cond
 
         /* Have to be fairly liberal about what constitutes a main method since
@@ -418,24 +417,18 @@ self =>
         val newStmts = stmts.map {
           case md @ ModuleDef(mods, name, template) if !seenModule && (isApp(template) || md.exists(isMainMethod)) =>
             seenModule = true
-            /* This slightly hacky situation arises because we have no way to communicate
-             * back to the scriptrunner what the name of the program is.  Even if we were
-             * willing to take the sketchy route of settings.script.value = progName, that
-             * does not work when using fsc.  And to find out in advance would impose a
-             * whole additional parse.  So instead, if the actual object's name differs from
-             * what the script is expecting, we transform it to match.
-             */
+            // If we detect a main module with an arbitrary name, rename it to the expected name.
             if (name == mainModuleName) md
             else treeCopy.ModuleDef(md, mods, mainModuleName, template)
           case md @ ModuleDef(_, _, _)   => md
           case cd @ ClassDef(_, _, _, _) => cd
           case t  @ Import(_, _)         => t
           case t =>
-            /* If we see anything but the above, fail. */
+            // If we see anything but the above, fail.
             if (disallowed.isEmpty) disallowed = t
             EmptyTree
         }
-        if (disallowed.isEmpty) makeEmptyPackage(0, newStmts)
+        if (seenModule && disallowed.isEmpty) makeEmptyPackage(0, newStmts)
         else {
           if (seenModule)
             warning(disallowed.pos.point, "Script has a main object but statement is disallowed", WarningCategory.Other)
@@ -443,24 +436,24 @@ self =>
         }
       }
 
-      def mainModule: Tree =
-        if (mainModuleName == newTermName(ScriptRunner.defaultScriptMain)) searchForMain() else EmptyTree
+      // usually `-Xscript` is why we're here, so expect to search for main
+      def mainModule: Tree = settings.script.valueSetByUser.map(name => searchForMain(TermName(name))).getOrElse(EmptyTree)
 
+      /*  Here we are building an AST representing the following source fiction,
+       *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
+       *  the result of parsing the script file.
+       *
+       *  {{{
+       *  object moduleName {
+       *    def main(args: Array[String]): Unit =
+       *      new AnyRef {
+       *        stmts
+       *      }
+       *  }
+       *  }}}
+       */
       def repackaged: Tree = {
-        /*  Here we are building an AST representing the following source fiction,
-         *  where `moduleName` is from -Xscript (defaults to "Main") and <stmts> are
-         *  the result of parsing the script file.
-         *
-         *  {{{
-         *  object moduleName {
-         *    def main(args: Array[String]): Unit =
-         *      new AnyRef {
-         *        stmts
-         *      }
-         *  }
-         *  }}}
-         */
-        def emptyInit   = DefDef(
+        val emptyInit   = DefDef(
           NoMods,
           nme.CONSTRUCTOR,
           Nil,
@@ -470,19 +463,20 @@ self =>
         )
 
         // def main
-        def mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
-        def mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
-        def mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
+        val mainParamType = AppliedTypeTree(Ident(tpnme.Array), List(Ident(tpnme.String)))
+        val mainParameter = List(ValDef(Modifiers(Flags.PARAM), nme.args, mainParamType, EmptyTree))
+        val mainDef       = DefDef(NoMods, nme.main, Nil, List(mainParameter), scalaDot(tpnme.Unit), gen.mkAnonymousNew(stmts))
 
         // object Main
-        def moduleName  = newTermName(ScriptRunner scriptMain settings)
-        def moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
-        def moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
+        val moduleName  = TermName(settings.script.value)
+        val moduleBody  = Template(atInPos(scalaAnyRefConstr) :: Nil, noSelfType, List(emptyInit, mainDef))
+        val moduleDef   = ModuleDef(NoMods, moduleName, moduleBody)
 
         // package <empty> { ... }
         makeEmptyPackage(0, moduleDef :: Nil)
       }
 
+      // either there is an entry point (a main method either detected or specified) or wrap it up
       mainModule orElse repackaged
     }
 

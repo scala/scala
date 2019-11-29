@@ -13,10 +13,16 @@ class ScriptRunnerTest {
     s.usejavacp.value = true
 
     // scala -e ''
-    assertTrue(ScriptRunner(s).runScriptText("", Nil).isEmpty)
+    ScriptRunner(s).runScriptText("", Nil) match {
+      case Some(e) => throw e
+      case None    => ()
+    }
 
     // scala -save -e ''
     s.save.value = true
-    assertTrue(ScriptRunner(s).runScriptText("", Nil).isEmpty)
+    ScriptRunner(s).runScriptText("", Nil) match {
+      case Some(e) => throw e
+      case None    => ()
+    }
   }
 }

@@ -12,9 +12,13 @@
 
 package scala.tools.nsc
 
-import scala.reflect.io.{Directory, File}
+import scala.reflect.io.{Directory, File, Path}
+import scala.tools.nsc.CloseableRegistry
 import scala.tools.nsc.classpath.DirectoryClassPath
+import scala.tools.nsc.classpath.ZipAndJarClassPathFactory
+import scala.tools.nsc.io.Jar
 import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
+import scala.util.chaining._
 import scala.util.control.NonFatal
 import java.io.IOException
 
@@ -83,57 +87,69 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
    */
   private def withCompiledScript(scriptFile: String)(handler: String => Option[Throwable]): Option[Throwable] = {
 
-    /* Compiles the script file, and returns the directory with the compiled
-     * class files, if the compilation succeeded.
+    /* Compiles the script file, with the output set to either
+     * the user-specified location (jar or dir), or a temp dir.
+     * Returns the output location on success.
      */
-    def compile: Option[Directory] = {
-      val compiledPath = Directory.makeTemp("scalascript")
+    def compile: Option[Path] = {
+      val outpath =
+        if (settings.outdir.isSetByUser)
+          Path(settings.outdir.value)
+        else
+          Directory.makeTemp("scalascript").tap { tmp =>
+            // delete the directory after the user code has finished
+            Runtime.getRuntime.addShutdownHook(new Thread(() => tmp.deleteRecursively()))
+            settings.outdir.value = tmp.path
+          }
 
-      // delete the directory after the user code has finished
-      Runtime.getRuntime.addShutdownHook(new Thread(() => compiledPath.deleteRecursively()))
-
-      settings.outdir.value = compiledPath.path
-
-      if (doCompile(scriptFile)) Some(compiledPath) else None
+      if (doCompile(scriptFile)) Some(outpath) else None
     }
 
-    def hasClassToRun(d: Directory): Boolean = DirectoryClassPath(d.jfile).findClass(mainClass).isDefined
+    def hasClassToRun(location: Path): Boolean = {
+      val cp =
+        if (Jar.isJarOrZip(location)) {
+          import scala.reflect.io.AbstractFile
+          val fil = AbstractFile.getFile(location)
+          val reg = new CloseableRegistry
+          ZipAndJarClassPathFactory.create(fil, settings, reg)
+        }
+        else DirectoryClassPath(location.jfile)
+      cp.findClass(mainClass).isDefined
+    }
 
+    // under -save, compile to a jar, specified either by -d or based on script name.
+    // if -d specifies a dir, assemble the jar by hand.
     def withLatestJar(): Option[Throwable] = {
-      /** Choose a jar filename to hold the compiled version of a script. */
-      def jarFileFor(scriptFile: String) = File(
-        if (scriptFile endsWith ".jar") scriptFile
-        else scriptFile.stripSuffix(".scala") + ".jar"
+      val outputToJar = settings.outdir.value.endsWith(".jar")
+      def stripped = List(".scala", ".sc").find(scriptFile.endsWith).map(scriptFile.stripSuffix).getOrElse(scriptFile)
+      val jarFile = File(
+        if (outputToJar) settings.outdir.value
+        else s"$stripped.jar".tap(j => if (!settings.outdir.isSetByUser) settings.outdir.value = j)
       )
-      val jarFile = jarFileFor(scriptFile)
-      def jarOK   = jarFile.canRead && (jarFile isFresher File(scriptFile))
+      def jarOK = jarFile.canRead && jarFile.isFresher(File(scriptFile))
 
       def recompile(): Option[Throwable] = {
         jarFile.delete()
 
         compile match {
           case Some(compiledPath) =>
-            if (!hasClassToRun(compiledPath)) {
-              // it compiled ok, but there is nothing to run;
-              // running an empty script should succeed
-              None
-            } else {
-              try io.Jar.create(jarFile, compiledPath, mainClass)
-              catch { case NonFatal(_) => jarFile.delete() }
-
-              if (jarOK) {
-                compiledPath.deleteRecursively()
-                handler(jarFile.toAbsolute.path)
-              }
-              // jar failed; run directly from the class files
-              else handler(compiledPath.path)
-            }
+            if (hasClassToRun(compiledPath)) {
+              // user -d mydir -save means assemble script.jar, don't delete mydir
+              if (!Jar.isJarOrZip(compiledPath)) {
+                try {
+                  Jar.create(jarFile, compiledPath.toDirectory, mainClass)
+                  None
+                } catch {
+                  case NonFatal(e) => jarFile.delete() ; Some(e)
+                }
+              } else None
+            } else Some(NoScriptError)
           case _  => Some(ScriptCompileError)
         }
       }
 
-      if (jarOK) handler(jarFile.toAbsolute.path) // pre-compiled jar is current
-      else recompile()                            // jar old - recompile the script.
+      val err = if (!jarOK) recompile else None
+      err orElse handler(jarFile.toAbsolute.path) filterNot { case NoScriptError => true case _ => false }
     }
 
     /* The script runner calls System.exit to communicate a return value, but this must
@@ -144,8 +160,9 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
       if (settings.save) withLatestJar()
       else {
         compile match {
-          case Some(cp) => if (hasClassToRun(cp)) handler(cp.path) else None
-          case _        => Some(ScriptCompileError)
+          case Some(cp) if hasClassToRun(cp) => handler(cp.path)
+          case Some(_)                       => None
+          case _                             => Some(ScriptCompileError)
         }
       }
     }
@@ -189,10 +206,7 @@ object ScriptRunner {
   val defaultScriptMain = "Main"
 
   /** Pick a main object name from the specified settings */
-  def scriptMain(settings: Settings) = settings.script.value match {
-    case "" => defaultScriptMain
-    case x  => x
-  }
+  def scriptMain(settings: Settings): String = settings.script.valueSetByUser.getOrElse(defaultScriptMain)
 
   def apply(settings: GenericRunnerSettings): ScriptRunner =
     settings.Yscriptrunner.value match {
@@ -206,3 +220,4 @@ object ScriptRunner {
 }
 
 object ScriptCompileError extends scala.util.control.ControlThrowable
+object NoScriptError extends scala.util.control.ControlThrowable
