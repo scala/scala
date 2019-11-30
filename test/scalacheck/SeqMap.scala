@@ -9,6 +9,15 @@ import scala.collection.mutable.ListBuffer
 
 object SeqMapTest extends Properties("SeqMap") {
 
+  property("overrides stringPrefix") = {
+    new SeqMap[Int, String] {
+      def removed(key: Int): SeqMap[Int, String] = ???
+      def updated[V1 >: String](key: Int, value: V1): SeqMap[Int, V1] = ???
+      override def get(key: Int): Option[String] = ???
+      override def iterator: Iterator[(Int, String)] = Iterator(1 -> "hi")
+    }.toString == "SeqMap(1 -> hi)"
+  }
+
   property("ordering") = forAll { (m: Map[Int, Int]) =>
     val list = m.toList
     val sm = SeqMap.from(list)

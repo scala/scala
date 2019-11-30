@@ -28,6 +28,8 @@ package scala.collection
 trait SeqMap[K, +V] extends Map[K, V]
   with MapOps[K, V, SeqMap, SeqMap[K, V]]
   with MapFactoryDefaults[K, V, SeqMap, Iterable] {
+  override protected[this] def stringPrefix: String = "SeqMap"
+
   override def mapFactory: MapFactory[SeqMap] = SeqMap
 }
 
