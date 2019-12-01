@@ -45,7 +45,7 @@ class which is not a trait. It is possible to write a list of
 parents that starts with a trait reference, e.g.
 `$mt_1$ with $\ldots$ with $mt_n$`. In that case the list
 of parents is implicitly extended to include the supertype of $mt_1$
-as first parent type. The new supertype must have at least one
+as the first parent type. The new supertype must have at least one
 constructor that does not take parameters.  In the following, we will
 always assume that this implicit extension has been performed, so that
 the first parent class of a template is a regular superclass
@@ -133,7 +133,7 @@ consists of the following steps.
 The initialization code of an object or class (but not a trait) that follows
 the superclass
 constructor invocation and the mixin-evaluation of the template's base
-classes is passed to a special hook, which is inaccessible from user
+classes are passed to a special hook, which is inaccessible from user
 code. Normally, that hook simply executes the code that is passed to
 it. But templates inheriting the `scala.DelayedInit` trait
 can override the hook by re-implementing the `delayedInit`
@@ -435,13 +435,13 @@ An early definition is type-checked and evaluated in the scope which
 is in effect just before the template being defined, augmented by any
 type parameters of the enclosing class and by any early definitions
 preceding the one being defined. In particular, any reference to
-`this` in the right-hand side of an early definition refers
+`this` on the right-hand side of an early definition refers
 to the identity of `this` just outside the template. Consequently, it
 is impossible that an early definition refers to the object being
 constructed by the template, or refers to one of its fields and
 methods, except for any other preceding early definition in the same
 section. Furthermore, references to preceding early definitions
-always refer to the value that's defined there, and do not take into account
+always refer to the value that's defined there and do not take into account
 overriding definitions. In other words, a block of early definitions
 is evaluated exactly as if it was a local bock containing a number of value
 definitions.
