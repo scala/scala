@@ -48,7 +48,7 @@ definitions or glue code.
 Scala has been developed from 2001 in the programming methods
 laboratory at EPFL. Version 1.0 was released in November 2003. This
 document describes the second version of the language, which was
-released in March 2006. It acts a reference for the language
+released in March 2006. It acts as a reference for the language
 definition and some core library modules. It is not intended to teach
 Scala or its concepts; for this there are [other documents](14-references.html).
 

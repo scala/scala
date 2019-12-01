@@ -22,7 +22,7 @@ You don't need to submit separate PRs for 2.12.x and 2.13.x. Any change accepted
 
 ### Documentation
 
-Whether you finally decided you couldn't stand that annoying typo anymore, you fixed the outdated code sample in some comment, or you wrote a nice, comprehensive, overview for an under-documented package, some docs for a class or the specifics about a method, your documentation improvement is very much appreciated, and we will do our best to fasttrack it.
+Whether you finally decided you couldn't stand that annoying typo anymore, you fixed the outdated code sample in some comment, or you wrote a nice, comprehensive, overview for an under-documented package, some docs for a class or the specifics about a method, your documentation improvement is very much appreciated, and we will do our best to fast-track it.
 
 You can make these changes directly in your browser in GitHub, or follow the same process as for code. Up to you!
 
@@ -44,7 +44,7 @@ Please make sure the ticket's milestone corresponds to the upcoming milestone fo
 
 #### Enhancement or New Feature
 
-For longer-running development, likely required for this category of code contributions, we suggest you include `topic/` or `wip/` in your branch name, to indicate that this is work in progress, and that others should be prepared to rebase if they branch off your branch.
+For longer-running development, likely required for this category of code contributions, we suggest you include `topic/` or `wip/` in your branch name, to indicate that this is work in progress and that others should be prepared to rebase if they branch off your branch.
 
 Any language change (including bug fixes) must be accompanied by the relevant updates to the spec, which lives in the same repository for this reason.
 
@@ -130,7 +130,7 @@ To run all tests in `neg` categories from sbt shell:
 root> partest --neg
 ```
 
-This might take a couple of minutes to complete. But in a few minutes you could test 1000+ negative examples,
+This might take a couple of minutes to complete. But in a few minutes, you could test 1000+ negative examples,
 so it's totally worth your time if you are working on changing error messages for example.
 
 Suppose you're interested in ranges. Here's how you can grep the partests and run them:
@@ -179,7 +179,7 @@ If you're working on Partest itself, note that some of its source files are part
 
 #### exploring with REPL
 
-Before or during the test, you might get better insight of the code by starting a REPL session
+Before or during the test, you might get better insight into the code by starting a REPL session
 using the freshly built scala. To start a REPL session from the sbt shell:
 
 ```
@@ -223,7 +223,7 @@ Don't violate [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself).
 
 Follow the [Boy Scout Rule](https://martinfowler.com/bliki/OpportunisticRefactoring.html).
 * "Always leave the code behind in a better state than you found it"
-* This translates to using any opportunity possible to improve and cleanup the code in front of you
+* This translates to using any opportunity possible to improve and clean up the code in front of you
 
 Please also have a look at the [Scala Hacker Guide](http://www.scala-lang.org/contribute/hacker-guide.html) by @xeno-by.
 
@@ -243,7 +243,7 @@ For a bugfix, the end of the PR description (that is, the first comment on the P
 
 NOTE: it's best not to add the issue reference to your commit message, as github will pollute the conversation on the ticket with notifications every time you commit.
 
-If a commit purely refactors and is not intended to change behaviour,
+If a commit purely refactors and is not intended to change behavior,
 say so.
 
 Backports should be tagged as "[backport]".

@@ -61,7 +61,7 @@ Java platform, the following annotations have a standard meaning.
     ```
 
   * `@throws(<classlit>)` A Java compiler checks that a program contains handlers for checked exceptions
-    by analyzing which checked exceptions can result from execution of a method or
+    by analyzing which checked exceptions can result from the execution of a method or
     constructor. For each checked exception which is a possible result, the
     `throws`
     clause for the method or constructor must mention the class of that exception
@@ -100,7 +100,7 @@ Java platform, the following annotations have a standard meaning.
 
   * `@unchecked` When applied to the selector of a `match` expression,
     this attribute suppresses any warnings about non-exhaustive pattern
-    matches which would otherwise be emitted. For instance, no warnings
+    matches that would otherwise be emitted. For instance, no warnings
     would be produced for the method definition below.
 
     ```scala

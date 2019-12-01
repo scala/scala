@@ -83,7 +83,7 @@ The rules for pattern matching further distinguish between
 _variable identifiers_, which start with a lower case letter
 or `_`, and _constant identifiers_, which do not.
 
-For this purpose, lower case letter don't only include a-z,
+For this purpose, lower case letters doesn't only include a-z,
 but also all characters in Unicode category Ll (lowercase letter),
 as well as all letters that have contributory property
 Other_Lowercase, except characters in category Nl (letter numerals)
@@ -204,7 +204,7 @@ printable characters), then two `nl` tokens are inserted.
 
 The Scala grammar (given in full [here](13-syntax-summary.html))
 contains productions where optional `nl` tokens, but not
-semicolons, are accepted. This has the effect that a newline in one of these
+semicolons, are accepted. This has the effect that a new line in one of these
 positions does not terminate an expression or statement. These positions can
 be summarized as follows:
 
