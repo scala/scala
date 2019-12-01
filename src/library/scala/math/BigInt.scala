@@ -255,6 +255,13 @@ final class BigInt(val bigInteger: BigInteger)
    */
   def pow (exp: Int): BigInt = new BigInt(this.bigInteger.pow(exp))
 
+  /** Returns a BigInt whose valu between the inclusive range.
+   *  `lower` if `'''this'''` is smaller than `lower`,
+   *  `upper` if `'''this'''` is greater than `upper`,
+   *  otherwise `'''this'''`.
+   */
+  def clamp (lower: BigInt, upper: BigInt): BigInt = lower.max(this.min(upper))
+
   /** Returns a BigInt whose value is
    *  (<tt>this</tt> raised to the power of <tt>exp</tt> modulo <tt>m</tt>).
    */

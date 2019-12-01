@@ -37,6 +37,12 @@ trait ScalaNumberProxy[T] extends Any with ScalaNumericAnyConversions with Typed
   def max(that: T): T = num.max(self, that)
   /** Returns the absolute value of `'''this'''`. */
   def abs             = num.abs(self)
+  /** Returns the value between the inclusive range.
+   *  `lower` if `'''self'''` is smaller than `lower`,
+   *  `upper` if `'''self'''` is greater than `upper`,
+   *  otherwise `'''self'''`.
+   */
+  def clamp(lower: T, upper: T): T
   /**
    * Returns the sign of `'''this'''`.
    * zero if the argument is zero, -zero if the argument is -zero,

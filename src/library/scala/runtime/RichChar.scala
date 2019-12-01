@@ -32,6 +32,7 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
   override def abs: Char             = self
   override def max(that: Char): Char = math.max(self.toInt, that.toInt).toChar
   override def min(that: Char): Char = math.min(self.toInt, that.toInt).toChar
+  override def clamp(lower: Char, upper: Char): Char = math.clamp(lower, upper)(self)
 
   def asDigit: Int                      = Character.digit(self, Character.MAX_RADIX)
 

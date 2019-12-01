@@ -82,6 +82,10 @@ package scala
   *
   * @groupname adjacent-float Adjacent Floats
   * @groupprio adjacent-float 170
+  *
+  * @groupname clamp Clamping values to the range
+  * @groupdesc clamp Ensures values fits in a given numerical range
+  * @groupprio clamp 180
   */
 package object math {
   /** The `Double` value that is closer than any other to `e`, the base of
@@ -435,4 +439,27 @@ package object math {
   /** @group exact */
   def toIntExact(x: Long): Int = java.lang.Math.toIntExact(x)
 
+  /** @group clamp */
+  def clamp(lower: Byte, upper: Byte)(x: Byte): Byte = max(lower, min(x, upper)).toByte
+
+  /** @group clamp */
+  def clamp(lower: Char, upper: Char)(x: Char): Char = max(lower, min(x, upper)).toChar
+
+  /** @group clamp */
+  def clamp(lower: Int, upper: Int)(x: Int): Int = max(lower, min(x, upper))
+
+  /** @group clamp */
+  def clamp(lower: Long, upper: Long)(x: Long): Long = max(lower, min(x, upper))
+
+  /** @group clamp */
+  def clamp(lower: Float, upper: Float)(x: Float): Float = max(lower, min(x, upper))
+
+  /** @group clamp */
+  def clamp(lower: Double, upper: Double)(x: Double): Double = max(lower, min(x, upper))
+
+  /** @group clamp */
+  def clamp(lower: BigInt, upper: BigInt)(x: BigInt): BigInt = lower.max(x.min(upper))
+
+  /** @group clamp */
+  def clamp(lower: BigDecimal, upper: BigDecimal)(x: BigDecimal): BigDecimal = lower.max(x.min(upper))
 }

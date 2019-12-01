@@ -529,6 +529,13 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def pow (n: Int): BigDecimal = new BigDecimal(this.bigDecimal.pow(n, mc), mc)
 
+  /** Returns a BigDecimal whose valu between the inclusive range.
+   *  `lower` if `'''this'''` is smaller than `lower`,
+   *  `upper` if `'''this'''` is greater than `upper`,
+   *  otherwise `'''this'''`.
+   */
+  def clamp (lower: BigDecimal, upper: BigDecimal): BigDecimal = lower.max(this.min(upper))
+
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
   def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(mc), mc)

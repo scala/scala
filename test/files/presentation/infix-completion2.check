@@ -3,7 +3,7 @@ reload: Snippet.scala
 askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
-retrieved 203 members
+retrieved 207 members
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
@@ -185,6 +185,10 @@ final def wait(): Unit
 final def wait(x$1: Long): Unit
 final def wait(x$1: Long, x$2: Int): Unit
 override def abs: Double
+override def clamp(lower: Double, upper: Double): Double
+override def clamp(lower: Float, upper: Float): Float
+override def clamp(lower: Int, upper: Int): Int
+override def clamp(lower: Long, upper: Long): Long
 override def isValidByte: Boolean
 override def isValidChar: Boolean
 override def isValidInt: Boolean
