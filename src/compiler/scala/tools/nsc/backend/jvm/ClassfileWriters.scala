@@ -188,15 +188,20 @@ abstract class ClassfileWriters {
 
   private final class JarEntryWriter(file: AbstractFile, mainClass: Option[String], compressionLevel: Int, jarFactory: JarFactory, plugins: List[Plugin]) extends FileWriter {
     //keep these imports local - avoid confusion with scala naming
-    import java.util.jar.Attributes.Name
+    import java.util.jar.Attributes.Name.{MANIFEST_VERSION, MAIN_CLASS}
     import java.util.jar.{JarOutputStream, Manifest}
 
     val storeOnly = compressionLevel == Deflater.NO_COMPRESSION
 
     val jarWriter: JarOutputStream = {
-      val manifest = new Manifest()
-      mainClass foreach { c => manifest.getMainAttributes.put(Name.MAIN_CLASS, c) }
-      plugins foreach (_.augmentManifest(file, manifest))
+      import scala.util.Properties._
+      val manifest = new Manifest
+      val attrs = manifest.getMainAttributes
+      attrs.put(MANIFEST_VERSION, "1.0")
+      attrs.put(ScalaCompilerVersion, versionNumberString)
+      mainClass.foreach(c => attrs.put(MAIN_CLASS, c))
+      plugins.foreach(_.augmentManifest(file, manifest))
+
       val jar = jarFactory.createJarOutputStream(file, manifest)
       jar.setLevel(compressionLevel)
       if (storeOnly) jar.setMethod(ZipOutputStream.STORED)
