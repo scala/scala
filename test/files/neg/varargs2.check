@@ -1,0 +1,13 @@
+varargs2.scala:7: error: Only methods can be marked @varargs
+  @varargs val x = 42          // nok
+               ^
+varargs2.scala:8: error: Only methods can be marked @varargs
+  def f(@varargs y: Int) = 42  // nok
+                 ^
+varargs2.scala:9: error: Only methods can be marked @varargs
+  def g(z: Int @varargs) = 42  // nok
+                ^
+varargs2.scala:10: error: Only methods can be marked @varargs
+  def h(z: Int) = 42: @varargs // nok
+                       ^
+4 errors
