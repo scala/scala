@@ -4573,16 +4573,27 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (varsym == null)
           return fail()
 
-        if (treeInfo.mayBeVarGetter(varsym)) {
+        def shadowsSetter =
+          lhs1 match {
+            case treeInfo.Applied(Select(qual, _), _, _) =>
+              qual.tpe.member(varsym.name.setterName).exists
+            case _ => false
+          }
+
+        def setterRewrite =
           lhs1 match {
             case treeInfo.Applied(Select(qual, _), _, _) =>
               val sel = Select(qual, varsym.name.setterName) setPos lhs.pos
               val app = Apply(sel, List(rhs)) setPos tree.pos
-              return typed(app, mode, pt)
-
-            case _ =>
+              typed(app, mode, pt)
+            case _ => EmptyTree
           }
+
+        if (treeInfo.mayBeVarGetter(varsym)) {
+          val res = setterRewrite
+          if (!res.isEmpty) return res
         }
+
 //      if (varsym.isVariable ||
 //        // setter-rewrite has been done above, so rule out methods here, but, wait a minute, why are we assigning to non-variables after erasure?!
 //        (phase.erasedTypes && varsym.isValue && !varsym.isMethod)) {
@@ -4595,6 +4606,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             Apply(lhs1, List(rhs))
           }
           wrapErrors(t, _.typed1(t, mode, pt))
+        }
+        else if (shadowsSetter) {
+          val res = setterRewrite
+          if (!res.isEmpty) res else fail()
         }
         else fail()
       }
