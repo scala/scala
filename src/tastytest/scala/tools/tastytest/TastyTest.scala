@@ -48,6 +48,7 @@ object TastyTest {
 
   def posSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/"pos")
+    _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
     _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)

@@ -154,6 +154,8 @@ trait TastyKernel {
   type TypeBoundsTree = symbolTable.TypeBoundsTree
   def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
 
+  def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
+
   def emptyTree: Tree = symbolTable.EmptyTree
 
   def mkScope: Scope = symbolTable.newScope

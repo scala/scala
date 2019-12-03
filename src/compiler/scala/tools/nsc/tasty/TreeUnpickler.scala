@@ -288,7 +288,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case CLASSconst =>
         Constant(readType())
       case _ =>
-        sys.error(s"unknown tag ${astTagToString(tag)} when reading constant.")
+        sys.error(s"unknown tag ${astTagToString(tag)} when reading constant in ${ctx.source}")
     }
 
     /** Read a type */
@@ -1314,8 +1314,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SINGLETONtpt =>
           val tpt = readTerm()
           SingletonTypeTree(tpt).setType(tpt.tpe)
-//        case BYNAMEtpt =>
-//          ByNameTypeTree(readTpt())
+        case BYNAMEtpt =>
+          val tpt = readTpt()
+          mkFunctionTypeTree(Nil, tpt).setType(tpt.tpe)
 //        case NAMEDARG =>
 //          NamedArg(readName(), readTerm())
         case _ =>

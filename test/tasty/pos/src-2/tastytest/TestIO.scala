@@ -1,6 +1,6 @@
 package tastytest
 
-/** Suspended as can't parse by name params yet
+/** Not in run, as IO input is not yet supported in test suites
  */
 object TestIO {
 
