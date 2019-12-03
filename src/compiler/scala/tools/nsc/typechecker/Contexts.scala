@@ -32,11 +32,10 @@ trait Contexts { self: Analyzer =>
   object NoContext
     extends Context(EmptyTree, NoSymbol, EmptyScope, NoCompilationUnit,
       // We can't pass the uninitialized `this`. Instead, we treat null specially in `Context#outer`
-                    null) {
+                    null, 0) {
     enclClass  = this
     enclMethod = this
 
-    override val depth = 0
     override def nextEnclosing(p: Context => Boolean): Context = this
     override def enclosingContextChain: List[Context] = Nil
     override def implicitss: List[List[ImplicitInfo]] = Nil
@@ -191,7 +190,7 @@ trait Contexts { self: Analyzer =>
    * @param _outer The next outer context.
    */
   class Context private[typechecker](val tree: Tree, val owner: Symbol, val scope: Scope,
-                                     val unit: CompilationUnit, _outer: Context,
+                                     val unit: CompilationUnit, _outer: Context, val depth: Int,
                                      private[this] var _reporter: ContextReporter = new ThrowingReporter) {
     private def outerIsNoContext = _outer eq null
     final def outer: Context = if (outerIsNoContext) NoContext else _outer
@@ -237,16 +236,12 @@ trait Contexts { self: Analyzer =>
 
     protected def outerDepth = if (outerIsNoContext) 0 else outer.depth
 
-    val depth: Int = {
-      val increasesDepth = isRootImport || outerIsNoContext || (outer.scope != scope)
-      ( if (increasesDepth) 1 else 0 ) + outerDepth
-    }
-
-    /** The currently visible imports */
+    /** The currently visible imports, from innermost to outermost. */
     def imports: List[ImportInfo] = outer.imports
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
     protected[Contexts] def importOrNull: ImportInfo = null
+    /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ / java.lang._) */
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
@@ -488,11 +483,17 @@ trait Contexts { self: Analyzer =>
         else if (!sameOwner && owner.isTerm) NoPrefix
         else prefix
 
+      def innerDepth(isRootImport: Boolean) = {
+        val increasesDepth = isRootImport || (this == NoContext) || (this.scope != scope)
+        depth + (if (increasesDepth) 1 else 0)
+      }
+
       // The blank canvas
-      val c = if (isImport)
-        new Context(tree, owner, scope, unit, this, reporter) with ImportContext
-      else
-        new Context(tree, owner, scope, unit, this, reporter)
+      val c = if (isImport) {
+        val isRootImport = !tree.pos.isDefined
+        new ImportContext(tree, owner, scope, unit, this, isRootImport, innerDepth(isRootImport), reporter)
+      } else
+        new Context(tree, owner, scope, unit, this, innerDepth(isRootImport = false), reporter)
 
       // Fields that are directly propagated
       c.variance           = variance
@@ -1307,8 +1308,11 @@ trait Contexts { self: Analyzer =>
   }
 
   /** A `Context` focussed on an `Import` tree */
-  trait ImportContext extends Context {
-    private val impInfo: ImportInfo = {
+  final class ImportContext(tree: Tree, owner: Symbol, scope: Scope,
+                            unit: CompilationUnit, outer: Context,
+                            override val isRootImport: Boolean, depth: Int,
+                            reporter: ContextReporter) extends Context(tree, owner, scope, unit, outer, depth, reporter) {
+    private[this] val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
         allImportInfos(unit) ::= info
@@ -1317,7 +1321,7 @@ trait Contexts { self: Analyzer =>
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
     override final def importOrNull = impInfo
-    override final def isRootImport = !tree.pos.isDefined
+
     override final def toString     = s"${super.toString} with ImportContext { $impInfo; outer.owner = ${outer.owner} }"
   }
 
@@ -1466,7 +1470,6 @@ trait Contexts { self: Analyzer =>
     override def makeBuffering: ContextReporter = new BufferingReporter(errorBuffer, warningBuffer)
     protected def handleError(pos: Position, msg: String): Unit = reporter.error(pos, msg)
  }
-
 
   private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
