@@ -125,7 +125,7 @@ object TastyTest {
                 processLines(checkFile) { stream =>
                   val checkLines  = stream.iterator().asScala.toSeq
                   val outputLines = Diff.splitIntoLines(output)
-                  val diff        = Diff.compareContents(checkLines, outputLines)
+                  val diff        = Diff.compareContents(outputLines, checkLines)
                   if (diff.nonEmpty) {
                     errors += source
                     printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
@@ -134,7 +134,7 @@ object TastyTest {
               case None =>
                 if (output.nonEmpty) {
                   errors += source
-                  val diff = Diff.compareContents("", output)
+                  val diff = Diff.compareContents(output, "")
                   printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
                 }
             }
@@ -266,7 +266,7 @@ object TastyTest {
         println(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
         runner.run(test) match {
           case Success(output) =>
-            val diff = Diff.compareContents("Suite passed!", output)
+            val diff = Diff.compareContents(output, "Suite passed!")
             if (diff.nonEmpty) {
               errors += test
               printerrln(s"ERROR: $test failed, unexpected output.\n$diff")

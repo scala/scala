@@ -6,10 +6,10 @@ object Diff {
   def splitIntoLines(string: String): Seq[String] =
     string.trim.replace("\r\n", "\n").split("\n").toSeq
 
-  def compareContents(check: String, output: String): String =
-    compareContents(splitIntoLines(check), splitIntoLines(output))
+  def compareContents(output: String, check: String): String =
+    compareContents(splitIntoLines(output), splitIntoLines(check))
 
-  def compareContents(check: Seq[String], output: Seq[String]): String = {
+  def compareContents(output: Seq[String], check: Seq[String]): String = {
     val diff = difflib.DiffUtils.diff(check.asJava, output.asJava)
     if (diff.getDeltas.isEmpty)
       ""
@@ -18,7 +18,7 @@ object Diff {
         .generateUnifiedDiff(
           "check",
           "output",
-          check.asJava,
+          output.asJava,
           diff,
           1
         )
