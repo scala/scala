@@ -1,5 +1,5 @@
 
-scala> object x { def x={} }
+scala> object x { def x = () }
 defined object x
 
 scala> import x._

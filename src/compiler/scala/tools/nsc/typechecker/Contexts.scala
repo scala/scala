@@ -241,7 +241,7 @@ trait Contexts { self: Analyzer =>
     /** Equivalent to `imports.headOption`, but more efficient */
     def firstImport: Option[ImportInfo] = outer.firstImport
     protected[Contexts] def importOrNull: ImportInfo = null
-    /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ / java.lang._) */
+    /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ and magic REPL imports) */
     def isRootImport: Boolean = false
 
     /** Types for which implicit arguments are currently searched */
@@ -490,7 +490,7 @@ trait Contexts { self: Analyzer =>
 
       // The blank canvas
       val c = if (isImport) {
-        val isRootImport = !tree.pos.isDefined
+        val isRootImport = !tree.pos.isDefined || isReplImportWrapperImport(tree)
         new ImportContext(tree, owner, scope, unit, this, isRootImport, innerDepth(isRootImport), reporter)
       } else
         new Context(tree, owner, scope, unit, this, innerDepth(isRootImport = false), reporter)
@@ -1098,6 +1098,16 @@ trait Contexts { self: Analyzer =>
             case sym => (pre1, sym)
           }
         }.find(_._2 ne NoSymbol).getOrElse(NoJavaMemberFound)
+      }
+    }
+
+
+    private def isReplImportWrapperImport(tree: Tree): Boolean = {
+      tree match {
+        case Import(expr, selector :: Nil) =>
+          // Just a syntactic check to avoid forcing typechecking of imports
+          selector.name.string_==(nme.INTERPRETER_IMPORT_LEVEL_UP) && owner.enclosingTopLevelClass.isInterpreterWrapper
+        case _ => false
       }
     }
 
