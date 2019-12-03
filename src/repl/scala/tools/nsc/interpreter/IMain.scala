@@ -17,7 +17,6 @@ package scala.tools.nsc.interpreter
 import java.io.{PrintWriter, StringWriter, Closeable}
 import java.net.URL
 
-import PartialFunction.cond
 import scala.language.implicitConversions
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -75,6 +74,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def this(interpreterSettings: Settings, reporter: ReplReporter) = this(interpreterSettings, None, interpreterSettings, reporter)
 
   import reporter.{debug => repldbg}
+
+  private[interpreter] lazy val useMagicImport: Boolean = settings.YreplMagicImport.value
 
   private var bindExceptions                  = true        // whether to bind the lastException variable
   private var _executionWrapper               = ""          // code to be wrapped around all lines
@@ -308,13 +309,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   override def originalPath(name: String): String = originalPath(TermName(name))
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
+
   /** For class based repl mode we use an .INSTANCE accessor. */
   val readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String = {
-    if (isClassBased) {
-      val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
-      p.replaceFirst(readName, readName + readInstanceName)
-    } else p
+    if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
   }
   def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
 
@@ -600,14 +599,13 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
       val unwrapped = rootCause(t)
 
-      // Example input: $line3.$read$$iw$$iw$
-      val classNameRegex = s"$lineRegex.*".r
-      def isWrapperCode(x: StackTraceElement) = cond(x.getClassName) {
-        case classNameRegex() =>
-          x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName
+      // Example input: $line3.$read$$iw$
+      val classNameRegex = (lineRegex + ".*").r
+      def isWrapperCode(x: StackTraceElement) = PartialFunction.cond(x.getClassName) {
+        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName => true
       }
-      val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
 
+      val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
       withLastExceptionLock[String]({
         directBind[Throwable]("lastException", unwrapped)(StdReplTags.tagOfThrowable, classTag[Throwable])
         stackTrace
@@ -942,11 +940,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     }
 
     // the type symbol of the owner of the member that supplies the result value
-    lazy val resultSymbol = {
-      val sym = lineRep.resolvePathToSymbol(fullAccessPath)
-      // plow through the INSTANCE member when -Yrepl-class-based
-      if (sym.isTerm && sym.nameString == "INSTANCE") sym.typeSignature.typeSymbol else sym
-    }
+    lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
 
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
@@ -959,7 +953,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
-    lazy val typeOf         = typeMap[String](tp => exitingTyper(tp.toString))
+    lazy val typeOf         = typeMap[String](tp => exitingTyper{
+      val s = tp.toString
+      if (isClassBased) s.stripPrefix("INSTANCE.") else s
+    })
     /** String representations as if a method type. */
     private[this] lazy val defTypeOfMap = typeMap[String](tp => exitingTyper(methodTypeAsDef(tp)))
 
@@ -1016,7 +1013,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def typeOfTerm(id: String): Type = symbolOfTerm(id).tpe
 
   // Given the fullName of the symbol, reflectively drill down the path
-  def valueOfTerm(id: String): Option[Any] = {
+  def valueOfTerm(id: String): Option[Any] = exitingTyper {
     def value(fullName: String) = {
       import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
       val pkg :: rest = (fullName split '.').toList
@@ -1043,7 +1040,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
                 runtimeMirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
               }
               else {
-                assert(false, originalPath(s))
+                assert(false, fullName)
                 inst
               }
             loop(i, s, rest)
@@ -1113,6 +1110,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       )
     )
   }
+  // this is harder than getting the typed trees and fixing up the string to emit that reports types
   def cleanMemberDecl(owner: Symbol, member: Name): Type =
     cleanTypeAfterTyper(owner.info nonPrivateDecl member)
 

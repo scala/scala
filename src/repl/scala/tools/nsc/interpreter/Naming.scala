@@ -45,10 +45,9 @@ object Naming {
   //
   // The two name forms this is catching are the two sides of this assignment:
   //
-  // $line3.$read.$iw.$iw.Bippy =
-  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-  //
-  lazy val lineRegex: String = {
+  // $line3.$read.$iw.Bippy =
+  //   $line3.$read$$iw$$Bippy@4a6a00ca
+  lazy val lineRegex = {
     val sn = sessionNames
     val members = List(sn.read, sn.eval, sn.print) map Regex.quote mkString("(?:", "|", ")")
     Regex.quote(sn.line) + """\d+[./]""" + members + """[$.]"""

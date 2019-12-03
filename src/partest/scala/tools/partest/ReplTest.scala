@@ -50,6 +50,21 @@ abstract class ReplTest extends DirectTest {
 }
 
 
+/** Strip Any.toString's id@abcdef16 hashCodes. These are generally at end of result lines. */
+trait Hashless extends ReplTest {
+  import Hashless._
+  override def normalize(s: String) = {
+    val n = super.normalize(s)
+    n match {
+      case hashless(prefix) => s"$prefix@XXXXXXXX"
+      case _ => n
+    }
+  }
+}
+object Hashless {
+  private val hashless = "(.*)@[a-fA-F0-9]+".r
+}
+
 /** Run a REPL test from a session transcript.
  *  The `session` is read from the `.check` file.
  */
