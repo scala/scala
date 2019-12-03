@@ -1,20 +1,8 @@
-dist: xenial
-group: stable
+version: ~> 1.0 # needed for imports
+
+import: scala/scala-dev:travis/default.yml
+
 language: scala
-
-before_install:
-  # adding $HOME/.sdkman to cache would create an empty directory, which interferes with the initial installation
-  - "[[ -d $HOME/.sdkman/bin/ ]] || rm -rf $HOME/.sdkman/"
-  - curl -sL https://get.sdkman.io | bash
-  - echo sdkman_auto_answer=true > $HOME/.sdkman/etc/config
-  - echo sdkman_auto_selfupdate=true >> $HOME/.sdkman/etc/config
-  - source "$HOME/.sdkman/bin/sdkman-init.sh"
-
-install:
-  - sdk install java $(sdk list java | grep -o "$ADOPTOPENJDK\.[0-9\.]*hs-adpt" | head -1) | true
-  - unset JAVA_HOME
-  - java -Xmx32m -version
-  - javac -J-Xmx32m -version
 
 stages:
   - name: build
@@ -79,16 +67,10 @@ env:
     - secure: "dbAvl6KEuLwZ0MVQPZihFsPzCdiLbX0EFk3so+hcfEbksrmLQ1tn4X5ZM7Wy1UDR8uN9lxngEwHch7a7lKqpugzmXMew9Wnikr9WBWbJT77Z+XJ/jHI6YuiCRpRo+nvxXGp9Ry80tSIgx5eju0J83IaJL41BWlBkvyAd7YAHORI=" # GPG_SUBKEY_SECRET
     - secure: "ee0z/1jehBjFa2M2JlBHRjeo6OEn/zmVl72ukBP1ISeKqz18Cswc4gDI5tV9RW9SlYFLkIlGsR2qnRCyJ/pqgQLcNdrpsCRFFc79oyLhfEtmPdAHlWfj4RSP68zINRtDdFuJ8iSy8XYP0NaqpVIYpkNdv9I6q7N85ljmMQpHO+U=" # TRAVIS_TOKEN (login with GitHub as lrytz)
 
-before_cache:
-  # Cleanup the cached directories to avoid unnecessary cache updates
-  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
-  - find $HOME/.sbt        -name "*.lock"               -print -delete
+# caching for sdkman / sbt / ivy / coursier imported from scala-dev
 cache:
   directories:
-    - $HOME/.ivy2/cache
-    - $HOME/.sbt
-    - $HOME/.rvm/
-    - $HOME/.sdkman
+    - $HOME/.rvm
 
 notifications:
   webhooks: https://scala-ci.typesafe.com/benchq/webhooks/travis
