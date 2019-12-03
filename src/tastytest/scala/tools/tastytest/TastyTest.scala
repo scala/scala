@@ -19,11 +19,12 @@ import Files._
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, outDir: Option[String]): Try[Unit] = {
+  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, negFalse: Boolean, outDir: Option[String]): Try[Unit] = {
     val results = Map(
-      "run" -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
-      "pos" -> Tests.suite("pos", pos)(posSuite(dottyLibrary, srcRoot, pkgName, outDir)),
-      "neg" -> Tests.suite("neg", neg)(negSuite(dottyLibrary, srcRoot, pkgName, outDir))
+      "run"       -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
+      "pos"       -> Tests.suite("pos", pos)(posSuite(dottyLibrary, srcRoot, pkgName, outDir)),
+      "neg"       -> Tests.suite("neg", neg)(negSuite(dottyLibrary, srcRoot, pkgName, outDir)),
+      "neg-false" -> Tests.suite("neg-false", neg)(negFalseSuite(dottyLibrary, srcRoot, pkgName, outDir))
     )
     if (results.values.forall(_.isEmpty)) {
       printwarnln("No suites to run.")
@@ -53,8 +54,14 @@ object TastyTest {
     _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
   } yield ()
 
-  def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
-    (src2, src3)      <- getNegSources(srcRoot/"neg", src2Filters = Set(Scala, Check))
+  def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
+    negSuiteRunner("neg", dottyLibrary, srcRoot, pkgName, outDir)
+
+  def negFalseSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
+    negSuiteRunner("neg-false", dottyLibrary, srcRoot, pkgName, outDir)
+
+  private def negSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+    (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check))
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
     _                 <- scalacNeg(out, dottyLibrary, src2:_*)
@@ -291,6 +298,7 @@ object TastyTest {
   |  -run                             Perform the run test.
   |  -pos                             Perform the pos test.
   |  -neg                             Perform the neg test.
+  |  -neg                             Perform the neg-false test.
   |  --dotty-library  <paths>         Paths separated by `:`, the classpath for the dotty library.
   |  --src            <path=.>        The path that contains all compilation sources across test kinds.
   |  --out            <path=.>        output for classpaths, optional.
@@ -315,8 +323,9 @@ object TastyTest {
       run           =  booleanArg("-run")
       pos           =  booleanArg("-pos")
       neg           =  booleanArg("-neg")
+      negFalse      =  booleanArg("-neg-false")
       out           =  findArg("--out")
-      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, out)
+      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, negFalse, out)
     } yield ()
   }
 

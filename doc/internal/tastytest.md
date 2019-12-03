@@ -24,6 +24,9 @@ A `neg` suite asserts which Scala 2 code is not compatible with code compiled wi
      - If a Scala source fails compilation, check that it is in the set of expected fail cases, and that there is a corresponding check file that matches the compiler output, else collect in the list of failures.
      - If an expected fail case compiles successfully, collect it in the list of failures.
 
+## `neg-false`
+A `neg-false` test runs identically to a `neg` test, but asserts that a test is a false positive.
+
 ## General Notes
 - In each suite, the dotty library is available to all test sources.
 - In either suite's source directory, failing tests without a known fix should be put in a sibling directory to `src-2`, `src-3`, etc., such as `suspended`, to document that they are incompatible at present.
