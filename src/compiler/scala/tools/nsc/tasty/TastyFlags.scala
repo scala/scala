@@ -24,7 +24,7 @@ object TastyFlags {
     def |(other: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(flags | other.flags)
     def &(mask: TastyFlagSet): TastyFlagSet                   = TastyFlagSet(flags & mask.flags)
     def &~(mask: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(flags & ~mask.flags)
-    def unary_! : Boolean                                     = this == EmptyFlags
+    def unary_! : Boolean                                     = this == EmptyTastyFlags
     def is(mask: TastyFlagSet): Boolean                       = (this & mask).hasFlags
     def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean = if (!butNot) is(mask) else is(mask) && not(butNot)
     def not(mask: TastyFlagSet): Boolean                      = !is(mask)
