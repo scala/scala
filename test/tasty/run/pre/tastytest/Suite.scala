@@ -42,7 +42,7 @@ class Suite(val name: String) {
     if (errors.nonEmpty) {
       val msg = if (errors.size == 1) "error" else "errors"
       val msgs = errors.map {
-        case (ctx, err) => s"${err.getClass.getSimpleName} in `$name.${ctx.name}`: ${err.getMessage}"
+        case (ctx, err) => s"${err.getClass.getSimpleName} in $name.`${ctx.name}`: ${err.getMessage}"
       }
       throw new AssertionError(msgs.mkString(s"${errors.size} $msg at iteration $iteration:\n", "\n", ""))
     }

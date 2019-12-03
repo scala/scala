@@ -680,7 +680,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case STATIC => addFlag(JavaStatic)
           case OBJECT => addFlag(Module)
           case TRAIT => addFlag(Trait)
-          case ENUM => addFlag(Enum)
+          case ENUM => addTastyFlag(Enum)
           case LOCAL => addFlag(Local)
           case SYNTHETIC => addFlag(Synthetic)
           case ARTIFACT => addFlag(Artifact)
@@ -853,14 +853,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           sym.info = ctx.methodType(if (name == nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
-          val (isInline, exceptInline) = completer.tastyFlagSet.except(Inline)
-          assertTasty(!exceptInline, s"unsupported flags on val: ${show(exceptInline)}")
+          val isInline = completer.tastyFlagSet.is(Inline)
+          val unsupported = completer.tastyFlagSet &~ (Inline | Enum)
+          assertTasty(!unsupported, s"unsupported flags on val: ${show(unsupported)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.isMethod) mkNullaryMethodType(tpe) else tpe
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on type: ${show(completer.tastyFlagSet)}")
+          val unsupported = completer.tastyFlagSet &~ Enum
+          assertTasty(!unsupported, s"unsupported Scala 3 flags on type: ${show(unsupported)}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)

@@ -1,0 +1,6 @@
+/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/SColourOps_fail.scala:10: warning: unreachable code
+      case SColour.RGB(r,_,_) => r   // error: unreachable code
+                                 ^
+error: No warnings can be incurred under -Werror.
+one warning found
+one error found

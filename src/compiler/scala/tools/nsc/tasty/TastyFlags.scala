@@ -6,18 +6,18 @@ object TastyFlags {
 
   private[this] val maxFlag = 10
 
-  val EmptyTastyFlags: TastyFlagSet = TastyFlagSet(0)
-  val Erased: TastyFlagSet          = TastyFlagSet(1 << 0)
-  val Internal: TastyFlagSet        = TastyFlagSet(1 << 1)
-  val Inline: TastyFlagSet          = TastyFlagSet(1 << 2)
-  val InlineProxy: TastyFlagSet     = TastyFlagSet(1 << 3)
-  val Opaque: TastyFlagSet          = TastyFlagSet(1 << 4)
-  val Scala2x: TastyFlagSet         = TastyFlagSet(1 << 5)
-  val Extension: TastyFlagSet       = TastyFlagSet(1 << 6)
-  val Given: TastyFlagSet           = TastyFlagSet(1 << 7)
-  val Exported: TastyFlagSet        = TastyFlagSet(1 << 8)
-  val NoInits: TastyFlagSet         = TastyFlagSet(1 << 9)
-  val Open: TastyFlagSet            = TastyFlagSet(1 << maxFlag)
+  final val EmptyTastyFlags: TastyFlagSet = TastyFlagSet(0)
+  final val Erased: TastyFlagSet          = TastyFlagSet(1 << 0)
+  final val Internal: TastyFlagSet        = TastyFlagSet(1 << 1)
+  final val Inline: TastyFlagSet          = TastyFlagSet(1 << 2)
+  final val InlineProxy: TastyFlagSet     = TastyFlagSet(1 << 3)
+  final val Opaque: TastyFlagSet          = TastyFlagSet(1 << 4)
+  final val Scala2x: TastyFlagSet         = TastyFlagSet(1 << 5)
+  final val Extension: TastyFlagSet       = TastyFlagSet(1 << 6)
+  final val Given: TastyFlagSet           = TastyFlagSet(1 << 7)
+  final val Exported: TastyFlagSet        = TastyFlagSet(1 << 8)
+  final val NoInits: TastyFlagSet         = TastyFlagSet(1 << 9)
+  final val Enum: TastyFlagSet            = TastyFlagSet(1 << maxFlag)
 
   case class TastyFlagSet private[TastyFlags](private val flags: Int) extends AnyVal {
     def toSingletonSets: SingletonSets                        = SingletonSets(flags)
