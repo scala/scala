@@ -762,8 +762,13 @@ abstract class UnPickler {
         super.completeInternal(sym)
 
         var alias = at(j, readSymbol)
-        if (alias.isOverloaded)
-          alias = slowButSafeEnteringPhase(picklerPhase)((alias suchThat (alt => sym.tpe =:= sym.owner.thisType.memberType(alt))))
+        if (alias.isOverloaded) {
+          alias = slowButSafeEnteringPhase(picklerPhase)(alias suchThat {
+            alt =>
+              if (sym.isParamAccessor) alt.isParamAccessor
+              else sym.tpe =:= sym.owner.thisType.memberType(alt)
+          })
+        }
 
         sym.asInstanceOf[TermSymbol].setAlias(alias)
       }
