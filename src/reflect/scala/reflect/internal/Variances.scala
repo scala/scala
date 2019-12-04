@@ -287,6 +287,7 @@ trait Variances {
       case PolyType(tparams, restpe)                       => inSyms(tparams).flip & inType(restpe)
       case ExistentialType(tparams, restpe)                => inSyms(tparams)      & inType(restpe)
       case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
+      case SuperType(thistpe, supertpe)                    => inType(thistpe)      & inType(supertpe)
     }
 
     def apply(tp: Type, tparam: Symbol): Variance = {
