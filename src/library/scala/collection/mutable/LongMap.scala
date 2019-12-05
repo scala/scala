@@ -526,9 +526,10 @@ object LongMap {
   private val exceptionDefault: Long => Nothing = (k: Long) => throw new NoSuchElementException(k.toString)
 
   implicit def canBuildFrom[V, U]: CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] =
-    new CanBuildFrom[LongMap[V], (Long, U), LongMap[U]] {
-      def apply(from: LongMap[V]): LongMapBuilder[U] = apply()
-      def apply(): LongMapBuilder[U] = new LongMapBuilder[U]
+    ReusableCBF.asInstanceOf[CanBuildFrom[LongMap[V], (Long, U), LongMap[U]]]
+  private[this] val ReusableCBF = new CanBuildFrom[LongMap[Any], (Long, Any), LongMap[Any]] {
+      def apply(from: LongMap[Any]): LongMapBuilder[Any] = apply()
+      def apply(): LongMapBuilder[Any] = new LongMapBuilder[Any]
     }
 
   /** A builder for instances of `LongMap`.

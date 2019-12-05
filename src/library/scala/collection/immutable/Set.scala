@@ -64,7 +64,9 @@ trait Set[A] extends Iterable[A]
  */
 object Set extends ImmutableSetFactory[Set] {
   /** $setCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
 
   /** An optimized representation for immutable empty sets */
   @SerialVersionUID(-2443710944435909512L)

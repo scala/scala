@@ -213,7 +213,9 @@ sealed class HashSet[A] extends AbstractSet[A]
 object HashSet extends ImmutableSetFactory[HashSet] {
 
   /** $setCanBuildFromInfo */
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, HashSet[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
 
   private object EmptyHashSet extends HashSet[Any] {
     override def head: Any = throw new NoSuchElementException("Empty Set")

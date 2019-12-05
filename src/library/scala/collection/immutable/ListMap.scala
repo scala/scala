@@ -37,7 +37,8 @@ object ListMap extends ImmutableMapFactory[ListMap] {
     * $mapCanBuildFromInfo
     */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] =
-    new MapCanBuildFrom[A, B]
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (A, B), ListMap[A, B]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Any, Any]
 
   def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
 

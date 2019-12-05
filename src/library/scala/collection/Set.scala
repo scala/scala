@@ -44,7 +44,9 @@ trait Set[A] extends (A => Boolean)
 object Set extends SetFactory[Set] {
   def newBuilder[A] = immutable.Set.newBuilder[A]
   override def empty[A]: Set[A] = immutable.Set.empty[A]
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
 }
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */

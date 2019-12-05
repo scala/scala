@@ -32,6 +32,6 @@ object BitSet extends BitSetFactory[BitSet] {
   def newBuilder = immutable.BitSet.newBuilder
 
   /** $canBuildFromInfo */
-  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
+  implicit val canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 }
 

@@ -193,7 +193,7 @@ object BitSet extends BitSetFactory[BitSet] {
   def newBuilder: Builder[Int, BitSet] = new GrowingBuilder[Int, BitSet](empty)
 
   /** $bitsetCanBuildFrom */
-  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
+  implicit val canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {

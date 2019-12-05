@@ -200,6 +200,9 @@ extends AbstractMap[A, B]
  *  @define coll mutable hash map
  */
 object HashMap extends MutableMapFactory[HashMap] {
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
+  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] =
+    ReusableCBF.asInstanceOf[MapCanBuildFrom[A, B]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Any, Any]
+
   def empty[A, B]: HashMap[A, B] = new HashMap[A, B]
 }

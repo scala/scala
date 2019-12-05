@@ -1087,7 +1087,9 @@ object Stream extends SeqFactory[Stream] {
    */
   class StreamCanBuildFrom[A] extends GenericCanBuildFrom[A]
 
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] = new StreamCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Stream[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Stream[A]]]
+  private[this] val ReusableCBF = new StreamCanBuildFrom[Any]
 
   /** Creates a new builder for a stream */
   def newBuilder[A]: Builder[A, Stream[A]] = new StreamBuilder[A]

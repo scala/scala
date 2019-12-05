@@ -104,7 +104,9 @@ extends AbstractSet[A]
  *  @define coll mutable hash set
  */
 object HashSet extends MutableSetFactory[HashSet] {
-  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] = setCanBuildFrom[A]
+  implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, HashSet[A]]]
+  private[this] val ReusableCBF = setCanBuildFrom[Any]
   override def empty[A]: HashSet[A] = new HashSet[A]
 }
 
