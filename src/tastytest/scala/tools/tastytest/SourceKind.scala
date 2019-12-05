@@ -1,6 +1,8 @@
 package scala.tools.tastytest
 
-sealed abstract class SourceKind(val name: String)(val filter: String => Boolean = _.endsWith(name))
+sealed abstract class SourceKind(val name: String)(val filter: String => Boolean = _.endsWith(name)) { self =>
+  def fileOf(name: String) = name + self.name
+}
 
 object SourceKind {
 
@@ -8,6 +10,7 @@ object SourceKind {
   case object Scala     extends SourceKind(".scala")()
   case object ScalaFail extends SourceKind("_fail.scala")()
   case object Check     extends SourceKind(".check")()
+  case object SkipCheck extends SourceKind(".skipcheck")()
 
   def whitelist(kinds: Set[SourceKind], paths: String*): Seq[String] =
     if (kinds.isEmpty) Nil

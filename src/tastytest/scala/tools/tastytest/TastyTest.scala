@@ -62,7 +62,7 @@ object TastyTest {
     negSuiteRunner("neg-false", dottyLibrary, srcRoot, pkgName, outDir)
 
   private def negSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
-    (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check))
+    (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
     _                 <- scalacNeg(out, dottyLibrary, src2:_*)
@@ -79,8 +79,11 @@ object TastyTest {
     val failMap = {
       val (sources, rest) = files.partition(ScalaFail.filter)
       sources.map({ s =>
-        val check = s.stripSuffix(ScalaFail.name) + ".check"
-        s -> rest.find(_ == check)
+        val name  = s.stripSuffix(ScalaFail.name)
+        val check = Check.fileOf(name)
+        val skip  = SkipCheck.fileOf(name)
+        val found = rest.find(n => n == check || n == skip)
+        s -> found
       }).toMap
     }
     if (failMap.isEmpty) {
@@ -122,7 +125,7 @@ object TastyTest {
             printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
           case Some(checkFileOpt) =>
             checkFileOpt match {
-              case Some(checkFile) =>
+              case Some(checkFile) if Check.filter(checkFile) =>
                 processLines(checkFile) { stream =>
                   val checkLines  = stream.iterator().asScala.toSeq
                   val outputLines = Diff.splitIntoLines(output)
@@ -132,6 +135,8 @@ object TastyTest {
                     printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
                   }
                 }
+              case Some(skipCheckFile) if SkipCheck.filter(skipCheckFile) =>
+                printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
               case None =>
                 if (output.nonEmpty) {
                   errors += source

@@ -63,6 +63,7 @@ trait TastyKernel {
   object defn {
     val NothingTpe: Type = symbolTable.definitions.NothingTpe
     val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
+    def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
     val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
     val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass

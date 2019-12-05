@@ -1316,7 +1316,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           SingletonTypeTree(tpt).setType(tpt.tpe)
         case BYNAMEtpt =>
           val tpt = readTpt()
-          mkFunctionTypeTree(Nil, tpt).setType(tpt.tpe)
+          mkFunctionTypeTree(Nil, tpt).setType(defn.byNameType(tpt.tpe))
 //        case NAMEDARG =>
 //          NamedArg(readName(), readTerm())
         case _ =>

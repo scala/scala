@@ -1,0 +1,4 @@
+/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/NewJVMEnv_fail.scala:7: error: scala is not a legal prefix for a constructor
+  new Env.JVMEnv {} // error: scala is not a legal prefix for a constructor
+          ^
+one error found
