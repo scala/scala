@@ -81,8 +81,7 @@ object BitSet extends BitSetFactory[BitSet] {
   }
 
   /** $bitsetCanBuildFrom */
-  implicit def canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = ReusableCBF
-  private[this] val ReusableCBF = bitsetCanBuildFrom
+  implicit val canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {
