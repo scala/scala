@@ -75,7 +75,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def showDirectory() = replOutput.show(out)
 
   lazy val isClassBased: Boolean = settings.Yreplclassbased.value
-  private[interpreter] lazy val useMagicImport: Boolean = settings.YreplMagicImport.value
+  private[interpreter] lazy val useMagicImport: Boolean = true
 
   private[nsc] var printResults               = true        // whether to print result lines
   private[nsc] var totalSilence               = false       // whether to print anything
