@@ -1017,7 +1017,7 @@ private[internal] trait TypeMaps {
     }
   }
 
-  abstract class ExistsTypeRefCollector extends TypeCollector(false) {
+  abstract class ExistsTypeRefCollector extends TypeCollector[Boolean](false) {
 
     protected def pred(sym: Symbol): Boolean
 
@@ -1045,23 +1045,21 @@ private[internal] trait TypeMaps {
         }
       }
 
-    private[this] def inTree(t: Tree): Boolean = {
-      if (pred(t.symbol)) result = true else apply(t.tpe)
-      result
-    }
-
-    private[this] object findInTree extends FindTreeTraverser(inTree) {
-      def collect(arg: Tree): Boolean = {
-        result = None // This is the FindTreeTraverser's result
-        traverse(arg)
-        result.isDefined
+    private lazy val findInTree = {
+      def inTree(t: Tree): Boolean = {
+        if (pred(t.symbol)) result = true else apply(t.tpe)
+        result
+      }
+      new FindTreeTraverser(inTree) {
+        def collect(arg: Tree): Boolean = {
+          /*super[FindTreeTraverser].*/ result = None
+          traverse(arg)
+          /*super[FindTreeTraverser].*/ result.isDefined
+        }
       }
     }
 
-    override def foldOver(arg: Tree): Unit = {
-      if (! result)
-        findInTree.collect(arg)
-    }
+    override def foldOver(arg: Tree) = if (!result) findInTree.collect(arg)
   }
 
   /** A map to implement the `contains` method. */

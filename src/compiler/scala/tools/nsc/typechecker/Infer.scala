@@ -554,7 +554,7 @@ trait Infer extends Checkable {
       // The return value isn't used so I'm making it obvious that this side
       // effects, because a function called "isXXX" is not the most obvious
       // side effecter.
-      isConservativelyCompatible(restpeInst, pt)
+      isConservativelyCompatible(restpeInst, pt): Unit
 
       // Return value unused with the following explanation:
       //
@@ -583,26 +583,33 @@ trait Infer extends Checkable {
         }
       }
       val targs = solvedTypes(tvars, tparams, varianceInTypes(formals), upper = false, lubDepth(formals) max lubDepth(argtpes))
-      // Can warn about inferring Any/AnyVal/Object as long as they don't appear
-      // explicitly anywhere amongst the formal, argument, result, or expected type.
-      // ...or lower bound of a type param, since they're asking for it.
-      def canWarnAboutAny = {
-        val collector = new ContainsAnyCollector(topTypes) {
-          override def apply(t: Type) = if (!result) t.dealiasWidenChain.foreach(super.apply)
+      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty) {
+        // Can warn about inferring Any/AnyVal/Object as long as they don't appear
+        // explicitly anywhere amongst the formal, argument, result, or expected type.
+        // ...or lower bound of a type param, since they're asking for it.
+        var checked, warning = false
+        def checkForAny(): Unit = {
+          val collector = new ContainsAnyCollector(topTypes) {
+            val seen = collection.mutable.Set.empty[Type]
+            override def apply(t: Type): Unit = {
+              def saw(dw: Type): Unit =
+                if (!result && !seen(dw)) {
+                  seen += dw
+                  if (!dw.typeSymbol.isRefinementClass) super.apply(dw)
+                }
+              if (!result && !seen(t)) t.dealiasWidenChain.foreach(saw)
+            }
+          }
+          @`inline` def containsAny(t: Type) = collector.collect(t)
+          val hasAny = containsAny(pt) || containsAny(restpe) ||
+            formals.exists(containsAny) ||
+            argtpes.exists(containsAny) ||
+            tparams.exists(x => containsAny(x.info.lowerBound))
+          checked = true
+          warning = !hasAny
         }
-        @`inline` def containsAny(t: Type) = collector.collect(t)
-        val hasAny = containsAny(pt) || containsAny(restpe) ||
-          formals.exists(containsAny) ||
-          argtpes.exists(containsAny) ||
-          tparams.exists(x => containsAny(x.info.lowerBound))
-        !hasAny
-      }
-      if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
-        targs.foreach(_.typeSymbol match {
-          case sym if topTypes contains sym =>
-            reporter.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.")
-          case _ =>
-        })
+        def canWarnAboutAny = { if (!checked) checkForAny() ; warning }
+        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) reporter.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error."))
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }
