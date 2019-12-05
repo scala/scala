@@ -1,0 +1,208 @@
+/Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala:9: error: type mismatch;
+ found   : tastytest.Intersections.A with tastytest.Intersections.B
+ required: tastytest.Intersections.AwithB
+    (which expands to)  tastytest.Intersections.A <none> tastytest.Intersections.B
+  val AwithB: AwithB = new A with B {}
+                       ^
+/Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala:10: error: type mismatch;
+ found   : tastytest.Intersections.A with tastytest.Intersections.B
+ required: tastytest.Intersections.AandB
+    (which expands to)  tastytest.Intersections.A <none> tastytest.Intersections.B
+  val AandB: AandB = new A with B {}
+                     ^
+error:
+  ?NoType$?
+     while compiling: /Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala
+        during phase: typer
+     library version: version 2.13.2-20191203-162733-a42c10c
+    compiler version: version 2.13.2-20191203-162733-a42c10c
+  reconstructed args: -deprecation -Werror -classpath pos/out:/Users/jamie/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.13.1.jar:/Users/jamie/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.13.1.jar:/Users/jamie/.ivy2/cache/org.scala-lang/scala-compiler/jars/scala-compiler-2.13.1.jar:/Users/jamie/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar:/Users/jamie/.ivy2/cache/org.fusesource.jansi/jansi/jars/jansi-1.12.jar:/Users/jamie/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-compiler_0.20/jars/dotty-compiler_0.20-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-interfaces/jars/dotty-interfaces-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-library_0.20/jars/dotty-library_0.20-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-7.0.0-scala-1.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/compiler-interface/jars/compiler-interface-1.2.5.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/util-interface/jars/util-interface-1.2.2.jar:/Users/jamie/.ivy2/cache/org.jline/jline-reader/jars/jline-reader-3.9.0.jar:/Users/jamie/.ivy2/cache/org.jline/jline-terminal/jars/jline-terminal-3.9.0.jar:/Users/jamie/.ivy2/cache/org.jline/jline-terminal-jna/jars/jline-terminal-jna-3.9.0.jar:/Users/jamie/.ivy2/cache/net.java.dev.jna/jna/jars/jna-4.2.2.jar:/Users/jamie/.ivy2/cache/com.novocode/junit-interface/jars/junit-interface-0.11.jar:/Users/jamie/.ivy2/cache/junit/junit/jars/junit-4.11.jar:/Users/jamie/.ivy2/cache/org.hamcrest/hamcrest-core/jars/hamcrest-core-1.3.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar -d pos/out
+
+  last tree to typer: Ident(AwithBPrinter)
+       tree position: line 12 of /Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala
+              symbol: <none>
+   symbol definition: <none> (a NoSymbol)
+      symbol package: <none>
+       symbol owners:
+           call site: object TestIntersections in package tastytest in package tastytest
+
+== Source file context for tree position ==
+
+     9   val AwithB: AwithB = new A with B {}
+    10   val AandB: AandB = new A with B {}
+    11
+    12   assert(AwithBPrinter.println(AwithB) == "AwithB")
+    13   assert(AwithBPrinter.println(AandB) == "AwithB")
+    14
+    15 }
+error: scala.reflect.internal.FatalError:
+  ?NoType$?
+     while compiling: /Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala
+        during phase: typer
+     library version: version 2.13.2-20191203-162733-a42c10c
+    compiler version: version 2.13.2-20191203-162733-a42c10c
+  reconstructed args: -deprecation -Werror -classpath pos/out:/Users/jamie/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.13.1.jar:/Users/jamie/.ivy2/cache/org.scala-lang/scala-reflect/jars/scala-reflect-2.13.1.jar:/Users/jamie/.ivy2/cache/org.scala-lang/scala-compiler/jars/scala-compiler-2.13.1.jar:/Users/jamie/.ivy2/cache/jline/jline/jars/jline-2.14.6.jar:/Users/jamie/.ivy2/cache/org.fusesource.jansi/jansi/jars/jansi-1.12.jar:/Users/jamie/.ivy2/cache/com.googlecode.java-diff-utils/diffutils/jars/diffutils-1.3.0.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-compiler_0.20/jars/dotty-compiler_0.20-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-interfaces/jars/dotty-interfaces-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/ch.epfl.lamp/dotty-library_0.20/jars/dotty-library_0.20-0.20.0-RC1.jar:/Users/jamie/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-7.0.0-scala-1.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/compiler-interface/jars/compiler-interface-1.2.5.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/util-interface/jars/util-interface-1.2.2.jar:/Users/jamie/.ivy2/cache/org.jline/jline-reader/jars/jline-reader-3.9.0.jar:/Users/jamie/.ivy2/cache/org.jline/jline-terminal/jars/jline-terminal-3.9.0.jar:/Users/jamie/.ivy2/cache/org.jline/jline-terminal-jna/jars/jline-terminal-jna-3.9.0.jar:/Users/jamie/.ivy2/cache/net.java.dev.jna/jna/jars/jna-4.2.2.jar:/Users/jamie/.ivy2/cache/com.novocode/junit-interface/jars/junit-interface-0.11.jar:/Users/jamie/.ivy2/cache/junit/junit/jars/junit-4.11.jar:/Users/jamie/.ivy2/cache/org.hamcrest/hamcrest-core/jars/hamcrest-core-1.3.jar:/Users/jamie/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar -d pos/out
+
+  last tree to typer: Ident(AwithBPrinter)
+       tree position: line 12 of /Users/jamie/workspace/scala/test/tasty/pos/src-2/tastytest/TestIntersections.scala
+              symbol: <none>
+   symbol definition: <none> (a NoSymbol)
+      symbol package: <none>
+       symbol owners:
+           call site: object TestIntersections in package tastytest in package tastytest
+
+== Source file context for tree position ==
+
+     9   val AwithB: AwithB = new A with B {}
+    10   val AandB: AandB = new A with B {}
+    11
+    12   assert(AwithBPrinter.println(AwithB) == "AwithB")
+    13   assert(AwithBPrinter.println(AandB) == "AwithB")
+    14
+    15 }
+	at scala.reflect.internal.Reporting.abort(Reporting.scala:69)
+	at scala.reflect.internal.Reporting.abort$(Reporting.scala:65)
+	at scala.reflect.internal.SymbolTable.abort(SymbolTable.scala:28)
+	at scala.reflect.internal.Types.appliedType(Types.scala:4135)
+	at scala.reflect.internal.Types.appliedType$(Types.scala:4110)
+	at scala.reflect.internal.SymbolTable.appliedType(SymbolTable.scala:28)
+	at scala.reflect.internal.Types$TypeRef.relativeInfo(Types.scala:2430)
+	at scala.reflect.internal.Types$TypeRef.baseTypeOfNonClassTypeRef(Types.scala:2504)
+	at scala.reflect.internal.Types$TypeRef.baseType(Types.scala:2495)
+	at scala.reflect.internal.Types$TypeRef.baseTypeOfNonClassTypeRef(Types.scala:2504)
+	at scala.reflect.internal.Types$TypeRef.baseType(Types.scala:2495)
+	at scala.reflect.internal.Types.elementExtract(Types.scala:4280)
+	at scala.reflect.internal.Types.elementExtract$(Types.scala:4278)
+	at scala.reflect.internal.SymbolTable.elementExtract(SymbolTable.scala:28)
+	at scala.reflect.internal.Definitions$DefinitionsClass.dropByName(Definitions.scala:452)
+	at scala.tools.nsc.typechecker.Infer.$anonfun$formalTypes$1(Infer.scala:46)
+	at scala.collection.immutable.List.loop$3(List.scala:445)
+	at scala.collection.immutable.List.mapConserve(List.scala:470)
+	at scala.tools.nsc.typechecker.Infer.formalTypes(Infer.scala:46)
+	at scala.tools.nsc.typechecker.Infer.formalTypes$(Infer.scala:44)
+	at scala.tools.nsc.Global$$anon$5.formalTypes(Global.scala:483)
+	at scala.tools.nsc.typechecker.Typers$Typer.doTypedApply(Typers.scala:3571)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typed1$27(Typers.scala:4876)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$silent$2(Typers.scala:727)
+	at scala.tools.nsc.typechecker.Contexts$ContextReporter.withFreshErrorBuffer(Contexts.scala:1605)
+	at scala.tools.nsc.typechecker.Typers$Typer.silent(Typers.scala:727)
+	at scala.tools.nsc.typechecker.Typers$Typer.tryTypedApply$1(Typers.scala:4876)
+	at scala.tools.nsc.typechecker.Typers$Typer.normalTypedApply$1(Typers.scala:4960)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedApply$1(Typers.scala:4971)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedInAnyMode$1(Typers.scala:5853)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5870)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedQualifier(Typers.scala:5983)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedQualifier(Typers.scala:5989)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedSelectOrSuperCall$1(Typers.scala:5289)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedInAnyMode$1(Typers.scala:5854)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5870)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typed1$40(Typers.scala:4941)
+	at scala.tools.nsc.typechecker.Typers$Typer.silent(Typers.scala:714)
+	at scala.tools.nsc.typechecker.Typers$Typer.normalTypedApply$1(Typers.scala:4943)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedApply$1(Typers.scala:4971)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedInAnyMode$1(Typers.scala:5853)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5870)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typedArg$1(Typers.scala:3412)
+	at scala.tools.nsc.typechecker.Typers$Typer.withCondConstrTyper(Typers.scala:490)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedArg(Typers.scala:3412)
+	at scala.tools.nsc.typechecker.PatternTypers$PatternTyper.typedArgWithFormal$1(PatternTypers.scala:115)
+	at scala.tools.nsc.typechecker.PatternTypers$PatternTyper.$anonfun$typedArgsForFormals$4(PatternTypers.scala:129)
+	at scala.reflect.internal.util.Collections.map2(Collections.scala:102)
+	at scala.reflect.internal.util.Collections.map2$(Collections.scala:97)
+	at scala.reflect.internal.SymbolTable.map2(SymbolTable.scala:28)
+	at scala.tools.nsc.typechecker.PatternTypers$PatternTyper.typedArgsForFormals(PatternTypers.scala:129)
+	at scala.tools.nsc.typechecker.PatternTypers$PatternTyper.typedArgsForFormals$(PatternTypers.scala:110)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedArgsForFormals(Typers.scala:208)
+	at scala.tools.nsc.typechecker.Typers$Typer.handleMonomorphicCall$1(Typers.scala:3720)
+	at scala.tools.nsc.typechecker.Typers$Typer.doTypedApply(Typers.scala:3771)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typed1$27(Typers.scala:4876)
+	at scala.tools.nsc.typechecker.Typers$Typer.silent(Typers.scala:714)
+	at scala.tools.nsc.typechecker.Typers$Typer.tryTypedApply$1(Typers.scala:4876)
+	at scala.tools.nsc.typechecker.Typers$Typer.normalTypedApply$1(Typers.scala:4960)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedApply$1(Typers.scala:4971)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedInAnyMode$1(Typers.scala:5853)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5870)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedByValueExpr(Typers.scala:5963)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:3253)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typedStats$10(Typers.scala:3394)
+	at scala.collection.immutable.List.loop$3(List.scala:445)
+	at scala.collection.immutable.List.mapConserve(List.scala:470)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:3394)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedTemplate(Typers.scala:2049)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedModuleDef(Typers.scala:1924)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedMemberDef$1(Typers.scala:5808)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5869)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedByValueExpr(Typers.scala:5963)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedStat$1(Typers.scala:3253)
+	at scala.tools.nsc.typechecker.Typers$Typer.$anonfun$typedStats$10(Typers.scala:3394)
+	at scala.collection.immutable.List.loop$3(List.scala:445)
+	at scala.collection.immutable.List.mapConserve(List.scala:470)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedStats(Typers.scala:3394)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedPackageDef$1(Typers.scala:5507)
+	at scala.tools.nsc.typechecker.Typers$Typer.typedMemberDef$1(Typers.scala:5810)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed1(Typers.scala:5869)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5899)
+	at scala.tools.nsc.typechecker.Typers$Typer.typed(Typers.scala:5961)
+	at scala.tools.nsc.typechecker.Analyzer$typerFactory$TyperPhase.apply(Analyzer.scala:115)
+	at scala.tools.nsc.Global$GlobalPhase.applyPhase(Global.scala:452)
+	at scala.tools.nsc.typechecker.Analyzer$typerFactory$TyperPhase.run(Analyzer.scala:104)
+	at scala.tools.nsc.Global$Run.compileUnitsInternal(Global.scala:1506)
+	at scala.tools.nsc.Global$Run.compileUnits(Global.scala:1490)
+	at scala.tools.nsc.Global$Run.compileSources(Global.scala:1482)
+	at scala.tools.nsc.Global$Run.compile(Global.scala:1614)
+	at scala.tools.nsc.Driver.doCompile(Driver.scala:48)
+	at scala.tools.nsc.MainClass.doCompile(Main.scala:30)
+	at scala.tools.nsc.Driver.process(Driver.scala:68)
+	at scala.tools.tastytest.TastyTest$.$anonfun$scalac$1(TastyTest.scala:170)
+	at scala.runtime.java8.JFunction0$mcZ$sp.apply(JFunction0$mcZ$sp.scala:17)
+	at scala.util.Try$.apply(Try.scala:210)
+	at scala.tools.tastytest.TastyTest$.scalac(TastyTest.scala:170)
+	at scala.tools.tastytest.TastyTest$.scalacPos(TastyTest.scala:73)
+	at scala.tools.tastytest.TastyTest$.$anonfun$posSuite$9(TastyTest.scala:55)
+	at scala.util.Success.flatMap(Try.scala:258)
+	at scala.tools.tastytest.TastyTest$.$anonfun$posSuite$8(TastyTest.scala:54)
+	at scala.util.Success.flatMap(Try.scala:258)
+	at scala.tools.tastytest.TastyTest$.$anonfun$posSuite$7(TastyTest.scala:53)
+	at scala.util.Success.flatMap(Try.scala:258)
+	at scala.tools.tastytest.TastyTest$.$anonfun$posSuite$4(TastyTest.scala:52)
+	at scala.util.Success.flatMap(Try.scala:258)
+	at scala.tools.tastytest.TastyTest$.posSuite(TastyTest.scala:50)
+	at scala.tools.tastytest.TastyTestJUnit.pos(TastyTestJUnit.scala:21)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.junit.runners.model.FrameworkMethod$1.runReflectiveCall(FrameworkMethod.java:47)
+	at org.junit.internal.runners.model.ReflectiveCallable.run(ReflectiveCallable.java:12)
+	at org.junit.runners.model.FrameworkMethod.invokeExplosively(FrameworkMethod.java:44)
+	at org.junit.internal.runners.statements.InvokeMethod.evaluate(InvokeMethod.java:17)
+	at org.junit.runners.ParentRunner.runLeaf(ParentRunner.java:271)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:70)
+	at org.junit.runners.BlockJUnit4ClassRunner.runChild(BlockJUnit4ClassRunner.java:50)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.junit.runners.Suite.runChild(Suite.java:127)
+	at org.junit.runners.Suite.runChild(Suite.java:26)
+	at org.junit.runners.ParentRunner$3.run(ParentRunner.java:238)
+	at org.junit.runners.ParentRunner$1.schedule(ParentRunner.java:63)
+	at org.junit.runners.ParentRunner.runChildren(ParentRunner.java:236)
+	at org.junit.runners.ParentRunner.access$000(ParentRunner.java:53)
+	at org.junit.runners.ParentRunner$2.evaluate(ParentRunner.java:229)
+	at org.junit.runners.ParentRunner.run(ParentRunner.java:309)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:160)
+	at org.junit.runner.JUnitCore.run(JUnitCore.java:138)
+	at com.novocode.junit.JUnitRunner$1.execute(JUnitRunner.java:132)
+	at sbt.ForkMain$Run.lambda$runTest$1(ForkMain.java:304)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:266)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)

@@ -62,8 +62,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         }
         val res = QualifiedName(readName(), sep, readName().asSimpleName)
         logTasty(s"${nameAtRef.size}: $res")
-        res
-//        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
+        res // qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
         val separator = readName().asSimpleName
         val num = readNat()
@@ -71,8 +70,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val original = if (originals.isEmpty) TastyName.Empty else originals.head
         val res = UniqueName(original, separator, num)
         logTasty(s"${nameAtRef.size}: $res")
-        res
-//        uniqueNameKindOfSeparator(separator)(original, num)
+        res // uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
         val qual = readName()
         val nat = readNat()
@@ -81,7 +79,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
           else VariantName(qual, contravariant = nat == 0)
         }
         logTasty(s"${nameAtRef.size}: $res")
-        res// numberedNameKindOfTag(tag)(readName(), readNat())
+        res // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original  = readName()
         val result    = readName()
@@ -90,14 +88,13 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val signed    = SignedName(original, sig)
         logTasty(s"${nameAtRef.size}: $signed")
         signed
+      case OBJECTCLASS =>
+        val res = ModuleName(readName())
+        logTasty(s"${nameAtRef.size}: $res")
+        res
       case _ =>
         val qual = readName() // simpleNameKindOfTag(tag)(readName())
-        val res = {
-          if (tag == OBJECTCLASS) ModuleName(qual)
-          else qual
-        }
-        logTasty(s"${nameAtRef.size}:${if (tag == OBJECTCLASS) "" else s" ${TastyFormat.astTagToString(tag)} name :"} $res")
-        res
+        sys.error(s"at Addr(${nameAtRef.size}): unknown ${TastyFormat.astTagToString(tag)} name :$qual")
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
     result

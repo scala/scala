@@ -4,6 +4,8 @@ import scala.reflect.internal
 import internal.SymbolTable, internal.settings.MutableSettings
 
 import scala.tools.nsc.tasty.TastyFlags.{ EmptyTastyFlags, TastyFlagSet }
+import scala.tools.nsc.tasty.Names.TastyName
+import TastyName._
 
 trait TastyKernel {
 
@@ -67,9 +69,12 @@ trait TastyKernel {
     val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
     val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
     val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
+    val ScalaPackage: ModuleSymbol = symbolTable.definitions.ScalaPackage
   }
 
   object nme {
+    final val Or = SimpleName("|")
+    final val And = SimpleName("&")
     val EMPTY: TermName = symbolTable.nme.EMPTY
     val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
     val ROOT: TermName = symbolTable.nme.ROOT
