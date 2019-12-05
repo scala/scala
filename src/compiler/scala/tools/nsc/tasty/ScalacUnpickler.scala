@@ -32,6 +32,8 @@ object ScalacUnpickler {
       import Contexts._
       implicit val thisTasty: tasty.type = tasty
       try {
+        logTasty(s"Unpickling $filename")
+
         val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
 
         val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get

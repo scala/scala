@@ -1266,7 +1266,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       val bytes = parseTASTYBytes()
-      Unpickler.tasty.unpickle(bytes, clazz, staticModule, s"${file.name.stripSuffix(".class")}.tasty")
+      Unpickler.tasty.unpickle(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

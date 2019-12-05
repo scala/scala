@@ -52,7 +52,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
       case UTF8 =>
         goto(end)
         val res = SimpleName(new String(bytes.slice(start.index, start.index + length), "UTF-8"))
-        logTasty(s"${nameAtRef.size}: UTF8 name: $res")
+        logTasty(s"${nameAtRef.size}: $res")
         res
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
@@ -61,7 +61,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
           case EXPANDPREFIX => TastyName.ExpandPrefixSep
         }
         val res = QualifiedName(readName(), sep, readName().asSimpleName)
-        logTasty(s"${nameAtRef.size}: QUALIFIED | EXPANDED | EXPANDPREFIX name: $res")
+        logTasty(s"${nameAtRef.size}: $res")
         res
 //        qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
       case UNIQUE =>
@@ -70,7 +70,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val originals = until(end)(readName())
         val original = if (originals.isEmpty) TastyName.Empty else originals.head
         val res = UniqueName(original, separator, num)
-        logTasty(s"${nameAtRef.size}: UNIQUE name: $res")
+        logTasty(s"${nameAtRef.size}: $res")
         res
 //        uniqueNameKindOfSeparator(separator)(original, num)
       case DEFAULTGETTER | VARIANT =>
@@ -80,7 +80,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
           if (tag == DEFAULTGETTER) DefaultName(qual, nat)
           else VariantName(qual, contravariant = nat == 0)
         }
-        logTasty(s"${nameAtRef.size}: DEFAULTGETTER | VARIANT name: $res")
+        logTasty(s"${nameAtRef.size}: $res")
         res// numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>
         val original  = readName()
@@ -88,7 +88,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val paramsSig = until(end)(readParamSig())
         val sig       = Signature(paramsSig, result)
         val signed    = SignedName(original, sig)
-        logTasty(s"${nameAtRef.size}: SIGNED name: $signed")
+        logTasty(s"${nameAtRef.size}: $signed")
         signed
       case _ =>
         val qual = readName() // simpleNameKindOfTag(tag)(readName())
@@ -96,7 +96,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
           if (tag == OBJECTCLASS) ModuleName(qual)
           else qual
         }
-        logTasty(s"${nameAtRef.size}: ${TastyFormat.astTagToString(tag)} name: $res")
+        logTasty(s"${nameAtRef.size}:${if (tag == OBJECTCLASS) "" else s" ${TastyFormat.astTagToString(tag)} name :"} $res")
         res
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")

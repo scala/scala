@@ -38,7 +38,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
 
       def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
 
-      final def log(str: => String): Unit = logTasty(s"#${self.hashCode.toHexString.take(4)}: $str")
+      final def log(str: => String): Unit = logTasty(s"#[${classRoot}]: $str")
 
       final def picklerPhase: Phase = symbolTable.picklerPhase
       final def extmethodsPhase: Phase = symbolTable.findPhaseWithName("extmethods")

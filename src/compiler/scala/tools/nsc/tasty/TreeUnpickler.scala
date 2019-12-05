@@ -288,14 +288,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case CLASSconst =>
         Constant(readType())
       case _ =>
-        sys.error(s"unknown tag ${astTagToString(tag)} when reading constant in ${ctx.source}")
+        sys.error(s"unknown tag ${astTagToString(tag)} when reading constant")
     }
 
     /** Read a type */
     def readType()(implicit ctx: Context): Type = {
       val start = currentAddr
       val tag = readByte()
-      ctx.log(s"reading type ${astTagToString(tag)} at $start, ${ctx.source}")
+      ctx.log(s"reading type ${astTagToString(tag)} at $start")
 
       def registeringType[T](tp: Type, op: => T): T = {
         typeAtAddr(start) = tp
@@ -1221,7 +1221,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (sctx `ne` ctx) return readTerm()(sctx)
       val start = currentAddr
       val tag = readByte()
-      ctx.log(s"reading term ${astTagToString(tag)} at $start, ${ctx.source}")
+      ctx.log(s"reading term ${astTagToString(tag)} at $start")
 
       def readPathTerm(): Tree = {
         goto(start)
