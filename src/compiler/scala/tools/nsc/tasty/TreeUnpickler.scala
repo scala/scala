@@ -395,9 +395,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val tastyName = readTastyName()
             val pre = readType()
             if (pre.typeSymbol === defn.ScalaPackage && ( tastyName === nme.And || tastyName === nme.Or) ) {
-              logTasty(s"found scala.$tastyName at $start")
+              if (tastyName === nme.And) {
+                AndType
+              }
+              else {
+                errorTasty(s"Union types are not currently supported, [found reference to scala.$tastyName at Addr($start) in ${ctx.classRoot}]")
+                errorType
+              }
             }
-            mkTypeRef(pre, tastyName.toTermName.toTypeName, tastyName.isModuleName)
+            else {
+              mkTypeRef(pre, tastyName.toTermName.toTypeName, tastyName.isModuleName)
+            }
           case TERMREF =>
             val sname = readName()
             val prefix = readType()
@@ -1422,8 +1430,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // types. This came up in #137 of collection strawman.
               val tycon   = readTpt()
               val args    = until(end)(readTpt())
-              val ownType = mkTypeRef(tycon.tpe.prefix, tycon.tpe.typeSymbolDirect, args.map(_.tpe))
-              AppliedTypeTree(tycon, args).setType(ownType)
+              if (tycon.tpe === AndType) {
+                val tpe = mkIntersectionType(args.map(_.tpe))
+                CompoundTypeTree(args).setType(tpe)
+              } else {
+                val ownType = mkTypeRef(tycon.tpe.prefix, tycon.tpe.typeSymbolDirect, args.map(_.tpe))
+                AppliedTypeTree(tycon, args).setType(ownType)
+              }
 //            case ANNOTATEDtpt =>
 //              Annotated(readTpt(), readTerm())
             case LAMBDAtpt =>

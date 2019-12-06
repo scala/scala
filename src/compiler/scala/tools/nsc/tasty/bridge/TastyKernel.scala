@@ -61,6 +61,7 @@ trait TastyKernel {
   def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
   def mkTypeBounds(lo: Type, hi: Type): TypeBounds = symbolTable.internal.typeBounds(lo, hi)
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
+  def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
 
   object defn {
     val NothingTpe: Type = symbolTable.definitions.NothingTpe
@@ -159,6 +160,9 @@ trait TastyKernel {
 
   type TypeBoundsTree = symbolTable.TypeBoundsTree
   def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
+
+  type CompoundTypeTree = symbolTable.CompoundTypeTree
+  def CompoundTypeTree(tps: List[Tree]): CompoundTypeTree = symbolTable.CompoundTypeTree(symbolTable.Template(tps, symbolTable.noSelfType, Nil))
 
   def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
 

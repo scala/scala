@@ -2,8 +2,6 @@ package tastytest
 
 import Intersections._
 
-/** Effective minimisation of the ZIO issue with DefaultRuntime
- */
 object TestIntersections {
 
   val AwithB: AwithB = new A with B {}

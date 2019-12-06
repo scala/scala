@@ -1,4 +1,4 @@
-/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/NewJVMEnv_fail.scala:7: error: scala is not a legal prefix for a constructor
-  new Env.JVMEnv {} // error: scala is not a legal prefix for a constructor
+/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/NewJVMEnv_fail.scala:9: error: class type required but tastytest.printing#AnyHash with tastytest.printing#AnyClassName found
+  new Env.JVMEnv {} // error: class type required but tastytest.printing#AnyHash with tastytest.printing#AnyClassName found
           ^
 one error found

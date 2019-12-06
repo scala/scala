@@ -18,6 +18,8 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
+  case object AndType extends Type
+
   /**
    * Ported from dotc
    */

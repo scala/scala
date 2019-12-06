@@ -1,7 +1,0 @@
-warning: an unexpected type representation reached the compiler backend while compiling NewJVMEnvLive_fail.scala: <notype>. If possible, please file a bug on https://github.com/scala/bug/issues.
-error: Error while emitting NewJVMEnvLive_fail.scala
-<notype> (of class scala.reflect.internal.Types$NoType$)
-error: Error while emitting NewJVMEnvLive_fail.scala
-assertion failed: ClassBType.info not yet assigned: Ltastytest/NewJVMEnv$$anon$1;
-one warning found
-two errors found
