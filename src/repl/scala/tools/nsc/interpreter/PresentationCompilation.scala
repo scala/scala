@@ -44,9 +44,12 @@ trait PresentationCompilation { self: IMain =>
       unit.body = pc.mkImporter(global).importTree(origUnit.body)
       import pc._
       val richUnit = new RichCompilationUnit(unit.source)
-      unitOfFile(richUnit.source.file) = richUnit
-      richUnit.body = unit.body
-      enteringTyper(typeCheck(richUnit))
+      // disable brace patching in the parser, the snippet template isn't well-indented and the results can be surprising
+      currentRun.parsing.withIncompleteHandler((pos, msg) => ()) {
+        unitOfFile(richUnit.source.file) = richUnit
+        richUnit.body = unit.body
+        enteringTyper(typeCheck(richUnit))
+      }
       val inputRange = pc.wrappingPos(trees)
       // too bad dependent method types don't work for constructors
       val result = new PresentationCompileResult(pc, inputRange, cursor, buf) { val unit = richUnit ; override val compiler: pc.type = pc }
