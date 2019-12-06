@@ -75,22 +75,13 @@ trait StringOps {
   def countElementsAsString(n: Int, element: String): String =
     n match {
       case 0 => s"no ${element}s"
-      case 1 => s"one ${element}"
+      case 1 => s"1 ${element}"
       case _ => s"${countAsString(n)} ${element}s"
     }
 
-  /** Turns a count into a friendly English description if n<=4.
-   *  Otherwise, a scary math representation.
+  /** String conversion.
    */
-  def countAsString(n: Int): String =
-    n match {
-      case 0 => "none"
-      case 1 => "one"
-      case 2 => "two"
-      case 3 => "three"
-      case 4 => "four"
-      case _ => n.toString
-    }
+  def countAsString(n: Int): String = Integer.toString(n)
 }
 
 object StringOps extends StringOps
