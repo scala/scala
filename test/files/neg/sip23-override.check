@@ -10,4 +10,4 @@ def f5: 4 (defined in trait Overridden);
  required: => 4
   override def f5: 5 = 5
                ^
-two errors found
+2 errors

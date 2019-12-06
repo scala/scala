@@ -22,4 +22,4 @@ class Q(val u: AnyRef with X) extends AnyVal
 t10530.scala:12: error: value class may not wrap another user-defined value class
 class B[T <: A](val a: T) extends AnyVal
                     ^
-8 errors found
+8 errors

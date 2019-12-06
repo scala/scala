@@ -1,4 +1,4 @@
 t8012.scala:4: error: class type required but p.C[_] found
   object `package` extends C[_]
                            ^
-one error found
+1 error

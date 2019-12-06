@@ -1,4 +1,4 @@
 sip23-no-null-type.scala:2: error: identifier expected but 'null' found.
   val nada: null.type = null
             ^
-one error found
+1 error

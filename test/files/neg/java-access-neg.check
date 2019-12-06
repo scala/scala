@@ -13,4 +13,4 @@ S2.scala:47: error: method packageConcrete overrides nothing
 S2.scala:58: error: method packageConcrete overrides nothing
   override def packageConcrete() = ()   // fail
                ^
-5 errors found
+5 errors

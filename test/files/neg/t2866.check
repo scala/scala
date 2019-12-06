@@ -13,5 +13,5 @@ t2866.scala:50: error: ambiguous implicit values:
  match expected type Int
     assert(implicitly[Int] == 2) // !!! Not ambiguous in 2.8.0. Ambiguous in 2.7.6
                      ^
-one warning found
-two errors found
+1 warning
+2 errors

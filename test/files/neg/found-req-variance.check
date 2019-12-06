@@ -182,4 +182,4 @@ Note: AnyRef >: String, but trait Map is invariant in type K.
 You may wish to investigate a wildcard type such as `_ >: String`. (SLS 3.2.10)
   def g2 = Set[Map[String, String]]() + Map[AnyRef, String]()
                                                            ^
-28 errors found
+28 errors

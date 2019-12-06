@@ -4,4 +4,4 @@ t9527a.scala:5: error: ambiguous implicit values:
  match expected type Int => String
     implicitly[Int => String]
               ^
-one error found
+1 error

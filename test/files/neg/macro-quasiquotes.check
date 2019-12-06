@@ -5,4 +5,4 @@ Macros_1.scala:14: error: bundle implementation has incompatible shape:
 type mismatch for parameter x: Impls.this.c.Expr[Int] does not conform to Impls.this.c.universe.Block
   def m3(x: Int): Unit = macro Impls.impl3
                                      ^
-one error found
+1 error

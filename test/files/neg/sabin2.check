@@ -3,4 +3,4 @@ sabin2.scala:22: error: type mismatch;
  required: _1.T where val _1: Test.Base
    a.set(b.get()) // Error
               ^
-one error found
+1 error

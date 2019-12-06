@@ -2,4 +2,4 @@ xml-entityref.scala:4: error: To compile XML syntax, the scala.xml package must 
 Please see https://github.com/scala/scala-xml for details.
     <root>
     ^
-one error found
+1 error

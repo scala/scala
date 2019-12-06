@@ -12,4 +12,4 @@ Note: Int >: Int, but class Array is invariant in type T.
 You may wish to investigate a wildcard type such as `_ >: Int`. (SLS 3.2.10)
   AO_1.f[Int](a)
               ^
-two errors found
+2 errors

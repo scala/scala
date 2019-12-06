@@ -1,4 +1,4 @@
 badtok-2.scala:3: error: unclosed quoted identifier
 `x
 ^
-one error found
+1 error

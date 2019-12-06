@@ -4,4 +4,4 @@ t3346i.scala:28: error: value a is not a member of Test.A[T]
 t3346i.scala:29: error: value a is not a member of Test.A[Nothing]
   (new A[Nothing]).a
                    ^
-two errors found
+2 errors

@@ -28,4 +28,4 @@ badtok-1.scala:19: error: unclosed character literal
 badtok-1.scala:13: error: expected class or object definition
 'abc'
 ^
-10 errors found
+10 errors

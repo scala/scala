@@ -4,4 +4,4 @@ def x(implicit x: Int): Int at line 3
 have same type after erasure: (i: Int)Int
    def x(implicit x: Int) = 5
        ^
-one error found
+1 error

@@ -4,7 +4,7 @@ t6567.scala:10: warning: Suspicious application of an implicit view (Test.this.a
 t6567.scala:12: warning: Suspicious application of an implicit view (Test.this.a2b) in the argument to Option.apply.
   val b: Option[B] = Option(a)
                            ^
-warning: there was one feature warning; re-run with -feature for details
+warning: there was 1 feature warning; re-run with -feature for details
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

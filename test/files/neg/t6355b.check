@@ -8,4 +8,4 @@ error after rewriting to x.<applyDynamic: error>("bippy")
 possible cause: maybe a wrong Dynamic method signature?
     println(x.bippy("42"))
             ^
-two errors found
+2 errors

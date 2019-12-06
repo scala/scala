@@ -1,4 +1,4 @@
 t7294b.scala:1: error: illegal inheritance from final class Tuple2
 class C extends Tuple2[Int, Int](0, 0)
                 ^
-one error found
+1 error

@@ -10,4 +10,4 @@ t6952.scala:3: error: extension of type scala.Dynamic needs to be enabled
 by making the implicit value scala.language.dynamics visible.
 trait C extends A with Dynamic
                        ^
-two errors found
+2 errors

@@ -13,4 +13,4 @@ BBound.this.m's type parameters do not match type m's expected parameters:
 type x (in trait BBound)'s bounds <: String are stricter than type x (in trait A)'s declared bounds >: Nothing <: Any
   type m[+x <: String] = FooBound[x] // error: x with stricter bound
        ^
-three errors found
+3 errors

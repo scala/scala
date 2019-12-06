@@ -4,4 +4,4 @@ and  method f in object Ambiguous of type (x: X)Int
 match argument types (Y) and expected result type Any
   println(Ambiguous.f(new Y))
                     ^
-one error found
+1 error

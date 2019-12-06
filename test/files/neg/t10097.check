@@ -16,4 +16,4 @@ import collection._
 t10097.scala:11: error: case classes must have a parameter list; try 'case class C()' or 'case object C'
 import collection._
                    ^
-6 errors found
+6 errors

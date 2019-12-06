@@ -3,4 +3,4 @@ Test.scala:4: error: type mismatch;
  required: A.P.T
   println(j.foo(new A.T())) // compiles in mixed compilation (it should not)
                 ^
-one error found
+1 error

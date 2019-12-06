@@ -4,4 +4,4 @@ t1705.scala:9: error: can't existentially abstract over parameterized type this.
 t1705.scala:14: error: can't existentially abstract over parameterized type C[String]
     val x1 = {
              ^
-two errors found
+2 errors

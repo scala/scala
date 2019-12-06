@@ -16,4 +16,4 @@ t692.scala:14: error: class Foo takes type parameters
 t692.scala:19: error: class Foo takes type parameters
   class Bar[A <: Foo](implicit tpeA : Type[A]) extends Foo;
                  ^
-6 errors found
+6 errors

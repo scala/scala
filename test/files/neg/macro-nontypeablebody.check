@@ -2,4 +2,4 @@ Macros_Test_2.scala:2: error: value foo2 is not a member of object Impls
 did you mean foo?
   def foo(x: Any) = macro Impls.foo2
                                 ^
-one error found
+1 error

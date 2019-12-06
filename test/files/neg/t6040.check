@@ -6,4 +6,4 @@ See the Scaladoc for value scala.language.dynamics for a discussion
 why the feature needs to be explicitly enabled.
 class X extends Dynamic
                 ^
-one error found
+1 error

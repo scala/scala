@@ -10,7 +10,7 @@ unchecked-refinement.scala:25: warning: a pattern match on a refinement type is 
 unchecked-refinement.scala:26: warning: a pattern match on a refinement type is unchecked
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
                                 ^
-warning: there was one feature warning; re-run with -feature for details
+warning: there was 1 feature warning; re-run with -feature for details
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error

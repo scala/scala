@@ -25,4 +25,4 @@ structural.scala:49: error: Parameter type in structural refinement may not refe
 structural.scala:52: error: Parameter type in structural refinement may not refer to an abstract type defined outside that refinement
   def s3[U >: Null <: Object](p: { def f(p: U): Unit; def u: U }) = ()
                                          ^
-9 errors found
+9 errors

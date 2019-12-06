@@ -1,4 +1,4 @@
 xml-quasiquote2.scala:5: error: input ended while parsing XML
     q"<sample xmlns='ns1'>"
                           ^
-one error found
+1 error

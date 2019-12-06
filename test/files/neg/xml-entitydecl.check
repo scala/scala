@@ -7,4 +7,4 @@ xml-entitydecl.scala:4: error: in XML literal: '-' expected instead of 'O'
 xml-entitydecl.scala:9: error: input ended while parsing XML
 }
  ^
-three errors found
+3 errors

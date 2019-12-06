@@ -1,4 +1,4 @@
 t961.scala:11: error: Temp.B.type does not take parameters
   B() match {
    ^
-one error found
+1 error

@@ -8,5 +8,5 @@ catch-all.scala:8: warning: This catches all Throwables. If this is really inten
   try { "warn" } catch { case _: RuntimeException => ; case x => }
                                                             ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

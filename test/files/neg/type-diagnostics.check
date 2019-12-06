@@ -18,4 +18,4 @@ The argument types of an anonymous function must be fully known. (SLS 8.5)
 Expected type was: ?
   val f = { case 5 => 10 }
           ^
-four errors found
+4 errors

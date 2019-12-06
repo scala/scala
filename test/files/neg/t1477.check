@@ -2,4 +2,4 @@ t1477.scala:13: error: volatile type member cannot override type member with non
 type V <: Middle.this.D (defined in trait C)
     type V <: (D with U)
          ^
-one error found
+1 error

@@ -5,5 +5,5 @@ warn-unused-implicits.scala:33: warning: parameter value s in method i is never 
   def i(implicit s: String, t: Int) = t           // yes, warn
                  ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

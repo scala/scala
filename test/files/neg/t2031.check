@@ -3,4 +3,4 @@ t2031.scala:8: error: polymorphic expression cannot be instantiated to expected 
  required: Ordering[Int]
  res0.map(x => x)(TreeSet.newBuilder)
                           ^
-one error found
+1 error

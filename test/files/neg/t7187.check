@@ -43,5 +43,5 @@ even though trait AcciSamOne is not annotated with `@FunctionalInterface`;
 to suppress warning, add the annotation or write out the equivalent function literal.
   val t5AcciSam: AcciSamOne = zup // ok, but warning
                               ^
-5 warnings found
-6 errors found
+5 warnings
+6 errors

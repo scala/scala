@@ -11,5 +11,5 @@ unit-returns-value.scala:25: warning: a pure expression does nothing in statemen
     i2 // warn
     ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

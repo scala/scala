@@ -3,7 +3,7 @@ scala> @deprecated(message="Please don't do that.", since="Time began.") def dep
 def depp: String
 
 scala> def a = depp
-warning: there was one deprecation warning (since Time began.); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since Time began.); for details, enable `:setting -deprecation' or `:replay -deprecation'
 def a: String
 
 scala> :settings -deprecation

@@ -1,4 +1,4 @@
 t545.scala:4: error: value blah is not a member of Test.Foo
   val x = foo.blah match {
               ^
-one error found
+1 error

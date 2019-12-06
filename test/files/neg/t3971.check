@@ -18,4 +18,4 @@ t3971.scala:11: error: type mismatch;
  required: String
   ({"ab".reverse; "ba".equals})(0): String
                                ^
-four errors found
+4 errors

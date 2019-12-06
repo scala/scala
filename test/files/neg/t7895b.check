@@ -4,4 +4,4 @@ t7895b.scala:4: error: not found: value a
 t7895b.scala:4: error: not found: value b
   foo(a, b)
          ^
-two errors found
+2 errors

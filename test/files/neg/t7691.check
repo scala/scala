@@ -16,4 +16,4 @@ t7691.scala:24: error: value _ is not a member of object W
 t7691.scala:26: error: value _ is not a member of object Q
   def q = Q.`_`       // still not
             ^
-6 errors found
+6 errors

@@ -3,5 +3,5 @@ two.scala:1: warning: Generated class hotDog differs only in case from HotDog (d
 class hotDog
       ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

@@ -13,4 +13,4 @@ t2462c.scala:38: error: I see no C[Foo[Int]]
 t2462c.scala:42: error: String List [?T0, ZZ] -> List[C[_]] Int Option[Long] -- .
   i.m[Option[Long]]
      ^
-5 errors found
+5 errors

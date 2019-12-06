@@ -15,4 +15,4 @@ def bar$default$1: String (defined in class B);
  required: => String
   def bar(i: Int = 129083) = i
           ^
-four errors found
+4 errors

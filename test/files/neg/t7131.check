@@ -4,4 +4,4 @@ t7131.scala:21: error: type mismatch;
  Note: implicit method convertToSimpleMappable is not applicable here because it comes after the application point and it lacks an explicit result type
         x.value.map(f)
                    ^
-one error found
+1 error

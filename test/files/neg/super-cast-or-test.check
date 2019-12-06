@@ -4,4 +4,4 @@ trait A { def f = super.asInstanceOf[AnyRef] }
 super-cast-or-test.scala:2: error: super not allowed here: use this.isInstanceOf instead
 trait B { def g = super.isInstanceOf[AnyRef] }
                         ^
-two errors found
+2 errors

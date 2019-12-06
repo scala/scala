@@ -3,4 +3,4 @@ t515.scala:7: error: type mismatch;
  required: Test.Truc
   val parent: Truc = file.getMachin
                           ^
-one error found
+1 error

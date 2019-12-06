@@ -20,5 +20,5 @@ t7187-2.14.scala:16: warning: An unapplied 0-arity method was eta-expanded (due 
 Write m2() to invoke method m2, or change the expected type.
   val t2Sam: SamZero = m2   // eta-expanded with lint warning
                        ^
-four warnings found
-one error found
+4 warnings
+1 error

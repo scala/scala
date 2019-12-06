@@ -13,4 +13,4 @@ S.scala:8: error: method f2 in class S2 cannot be accessed as a member of bippy.
  class S2 in package bippy where target is defined
     x.f2()
       ^
-three errors found
+3 errors

@@ -1,4 +1,4 @@
 t10938.scala:4: error: object xxx is not a member of package scala
   def f(): scala.xxx.XXX[_, _] = ???
                  ^
-one error found
+1 error

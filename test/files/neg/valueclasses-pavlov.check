@@ -4,4 +4,4 @@ def foo(x: Box2): String at line 8
 have same type after erasure: (x: String)String
   def foo(x: Box2) = "foo(Box2): ok"
       ^
-one error found
+1 error

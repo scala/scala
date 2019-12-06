@@ -11,5 +11,5 @@ t8417.scala:7: warning: adapted the argument list to the expected 2-tuple: add a
   def g = f("hello", "world")("holy", "moly")
                              ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

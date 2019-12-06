@@ -31,4 +31,4 @@ AnnotationTest.scala:13: error: annotation argument needs to be a constant; foun
 AnnotationTest.scala:15: error: annotation argument needs to be a constant; found: Constants.StringAdd
   @StringAnnotation(Constants.StringAdd)
                               ^
-11 errors found
+11 errors

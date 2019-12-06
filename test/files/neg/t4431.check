@@ -5,4 +5,4 @@ def f(): Unit
 t4431.scala:8: error: trait cannot redefine final method from class AnyRef
   trait C { def wait (): Unit }
                 ^
-two errors found
+2 errors

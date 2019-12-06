@@ -4,4 +4,4 @@ t5969.scala:9: error: overloaded method value g with alternatives:
  cannot be applied to (String)
     if (false) List(g(x)) else List[C1]() map g
                     ^
-one error found
+1 error

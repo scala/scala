@@ -19,4 +19,4 @@ primitive-numbers-no-underlying.scala:8: error: value underlying is not a member
 primitive-numbers-no-underlying.scala:9: error: value underlying is not a member of Double
     d.underlying
       ^
-7 errors found
+7 errors

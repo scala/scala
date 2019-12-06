@@ -1,4 +1,4 @@
 t11374.scala:8: error: _ is already defined as value _
   val `_` = 17   // not ok
       ^
-one error found
+1 error

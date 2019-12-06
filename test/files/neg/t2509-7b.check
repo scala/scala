@@ -4,4 +4,4 @@ t2509-7b.scala:30: error: ambiguous implicit values:
  match expected type Both[Y,X]
   get
   ^
-one error found
+1 error

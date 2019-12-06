@@ -13,4 +13,4 @@ t9717.scala:7: error: not found: value f
 t9717.scala:12: error: could not find implicit value for parameter e: Int
   def this() = { this(implicitly[Int]) } // not in scope (spec 5.3.1, scope which is in effect at the point of the enclosing class definition)
                                 ^
-four errors found
+4 errors

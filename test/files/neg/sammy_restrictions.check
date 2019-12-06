@@ -59,4 +59,4 @@ sammy_restrictions.scala:49: error: type mismatch;
     (which expands to)  DerivedOneAbstract with OneAbstract
   def g1 = ((x: Int) => 0): NonClassTypeRefinement
                      ^
-12 errors found
+12 errors

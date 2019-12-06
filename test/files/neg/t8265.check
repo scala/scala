@@ -1,4 +1,4 @@
 t8265.scala:3: error: covariant type CC occurs in invariant position in type CC[_] of type Coll
 class Foo[+CC[X]] { type Coll = CC[_] }
                          ^
-one error found
+1 error

@@ -85,4 +85,4 @@ error after rewriting to Test.this.bad2.updateDynamic("sel")
 possible cause: maybe a wrong Dynamic method signature?
   bad2.sel = 1
   ^
-19 errors found
+19 errors

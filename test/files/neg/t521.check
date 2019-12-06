@@ -14,4 +14,4 @@ t521.scala:15: error: stable, immutable value required to override:
 val path: String (defined in class VirtualFile)
     override def path = "";
                  ^
-four errors found
+4 errors

@@ -3,4 +3,4 @@ t7899.scala:5: error: type mismatch;
  required: (=> Int) => ?
     foo(identity)()
         ^
-one error found
+1 error

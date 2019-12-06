@@ -13,4 +13,4 @@ t5572.scala:18: error: type mismatch;
  required: B
         run(sth, b)
                  ^
-three errors found
+3 errors

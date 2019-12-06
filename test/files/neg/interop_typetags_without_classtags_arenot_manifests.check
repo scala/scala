@@ -3,4 +3,4 @@ however typetag -> manifest conversion requires a class tag for the correspondin
 to proceed add a class tag to the type `T` (e.g. by introducing a context bound) and recompile.
     println(manifest[T])
                     ^
-one error found
+1 error

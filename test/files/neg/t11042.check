@@ -5,4 +5,4 @@ def get: Int (defined in trait Base)
  required: => Int
 class Hi extends Base[Int] with SubBase
       ^
-one error found
+1 error

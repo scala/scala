@@ -154,5 +154,5 @@ names-defaults-neg.scala:147: error: parameter 'a' is already specified at param
 names-defaults-neg.scala:148: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-9 warnings found
-33 errors found
+9 warnings
+33 errors

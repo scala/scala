@@ -22,4 +22,4 @@ protected-constructors.scala:19: error: class Foo3 in object Ding cannot be acce
  object Ding in package dingus where target is defined
     val foo3 = new Ding.Foo3("abc")
                         ^
-5 errors found
+5 errors

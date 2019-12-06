@@ -4,4 +4,4 @@ clashes with definition of the member itself;
 both have erased type ()Object
          class Bar1[A] extends Foo1[Option[A]] { def f(): Option[A] = ??? }
                                                      ^
-one error found
+1 error

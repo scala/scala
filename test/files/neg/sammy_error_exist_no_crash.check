@@ -1,4 +1,4 @@
 sammy_error_exist_no_crash.scala:5: error: value tryParseInt is not a member of String
   bar(_.tryParseInt)
         ^
-one error found
+1 error

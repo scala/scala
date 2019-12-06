@@ -6,4 +6,4 @@ gadts1.scala:20: error: type mismatch;
  required: a
     case Cell[a](x: Int) => c.x = 5
                                   ^
-two errors found
+2 errors

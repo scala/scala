@@ -127,4 +127,4 @@ trait SimpleType2 { def f: (Int, ) }
 trailing-commas.scala:48: error: ')' expected but '}' found.
 trait SimpleType2 { def f: (Int, ) }
                                    ^
-43 errors found
+43 errors

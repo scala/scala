@@ -1,4 +1,4 @@
 badtok-3.scala:2: error: input ended while parsing XML
   <x
     ^
-one error found
+1 error

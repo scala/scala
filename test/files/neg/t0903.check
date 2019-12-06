@@ -5,4 +5,4 @@ t0903.scala:5: error: value += is not a member of Int
 t0903.scala:6: error: reassignment to val
   x = 2
     ^
-two errors found
+2 errors

@@ -103,4 +103,4 @@ t3871b.scala:125: error: method protE in class A cannot be accessed as a member 
  class A in class E where target is defined
     c.protE   // not allowed
       ^
-21 errors found
+21 errors

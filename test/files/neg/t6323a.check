@@ -12,4 +12,4 @@ cannot create a TypeTag referring to class Test.Test local to the reifee: use We
 t6323a.scala:13: error: No TypeTag available for Test
       val value = u.typeOf[Test]
                           ^
-one error found
+1 error

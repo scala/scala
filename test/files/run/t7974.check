@@ -1,4 +1,4 @@
-warning: there were four deprecation warnings (since 2.13.0); re-run with -deprecation for details
+warning: there were 4 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 
   // access flags 0x1
   public someSymbol1()Lscala/Symbol;

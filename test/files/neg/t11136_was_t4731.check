@@ -5,4 +5,4 @@ def foo(arg: java.util.Comparator[String]): Unit (defined in trait Trait1)
  required: (arg: java.util.Comparator[String])Unit
 class Class1 extends Trait2[String] { }
       ^
-one error found
+1 error

@@ -7,4 +7,4 @@ t7636.scala:3: error: type mismatch;
  required: Either[_, _$3(in value <local Main>)] where type _$3(in value <local Main>)
   class C extends ResultTable(Left(5):Either[_,_])(5)
                                      ^
-two errors found
+2 errors

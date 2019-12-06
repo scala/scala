@@ -4,4 +4,4 @@ import O.b
 and import O.{a=>b}
   println(b)
           ^
-one error found
+1 error

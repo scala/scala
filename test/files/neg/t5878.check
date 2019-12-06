@@ -10,4 +10,4 @@ class Foo1(val x: Bar1) extends AnyVal
 t5878.scala:5: error: value class may not wrap another user-defined value class
 class Bar1(val x: Foo1) extends AnyVal
                ^
-four errors found
+4 errors

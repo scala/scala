@@ -31,4 +31,4 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from Object to AnyVal
   new Object() : AnyVal
   ^
-6 errors found
+6 errors

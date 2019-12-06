@@ -2,4 +2,4 @@ t276.scala:6: error: classes can only override abstract types; cannot override:
 type Bar = (Int, Int) (defined in class Foo)
   class Bar
         ^
-one error found
+1 error

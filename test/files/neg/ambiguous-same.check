@@ -3,4 +3,4 @@ it is both defined in object X and imported subsequently by
 import X.x
     x
     ^
-one error found
+1 error

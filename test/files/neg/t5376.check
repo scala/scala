@@ -8,4 +8,4 @@ t5376.scala:22: error: type mismatch;
  required: Int
     "a": Int
     ^
-two errors found
+2 errors

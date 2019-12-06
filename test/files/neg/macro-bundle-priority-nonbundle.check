@@ -5,4 +5,4 @@ macro-bundle-priority-nonbundle.scala:13: error: macro implementation has incomp
 number of parameter sections differ
   def foo: Unit = macro Macros.impl
                                ^
-one error found
+1 error

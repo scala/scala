@@ -4,4 +4,4 @@ def foo(name: Test.u.TermName): Nothing at line 15
 have same type after erasure: (name: Universe#NameApi)Nothing
   def foo(name: TermName) = ???
       ^
-one error found
+1 error

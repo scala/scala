@@ -4,4 +4,4 @@ class C
 D_3.scala:2: error: O is already defined as object O
 object O
        ^
-two errors found
+2 errors

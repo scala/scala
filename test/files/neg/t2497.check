@@ -3,4 +3,4 @@ def eval: Int (defined in class Foo)
   with absoverride def eval: Int (defined in trait DebugNode)
   (new Foo with DebugNode).eval
        ^
-one error found
+1 error

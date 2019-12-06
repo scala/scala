@@ -4,4 +4,4 @@ t4417.scala:11: error: constructor Pixel$mcD$sp in class Pixel$mcD$sp cannot be 
  class Pixel$mcD$sp where target is defined
   def apply(v: Double): Pixel1d = new Pixel1d(v)
                                   ^
-one error found
+1 error

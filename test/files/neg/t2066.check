@@ -28,4 +28,4 @@ def f[T[X[-_]]]: Unit (defined in trait A5);
  required: [T[X[-_]]]=> Unit
   override def f[T[X[_]]] = ()
                ^
-5 errors found
+5 errors

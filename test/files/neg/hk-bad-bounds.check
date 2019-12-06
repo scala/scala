@@ -1,4 +1,4 @@
 hk-bad-bounds.scala:4: error: can't existentially abstract over parameterized type _1[X]
   def f(x: Boolean) = if (x) (null: SeqFactory[List]) else (null: SeqFactory[Set])
                       ^
-one error found
+1 error

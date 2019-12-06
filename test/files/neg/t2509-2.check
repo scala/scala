@@ -4,4 +4,4 @@ t2509-2.scala:26: error: ambiguous implicit values:
  match expected type X[B,U]
   val fb = f(new B)
             ^
-one error found
+1 error

@@ -6,4 +6,4 @@ DerivedScala.scala:7: error: class DerivedScala needs to be abstract. No impleme
 def foo(): Boolean (defined in class Abstract)
 class DerivedScala extends Abstract
       ^
-two errors found
+2 errors

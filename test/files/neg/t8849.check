@@ -4,4 +4,4 @@ t8849.scala:8: error: ambiguous implicit values:
  match expected type scala.concurrent.ExecutionContext
     require(implicitly[ExecutionContext] eq dummy)
                       ^
-one error found
+1 error

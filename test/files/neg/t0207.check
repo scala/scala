@@ -4,4 +4,4 @@ t0207.scala:3: error: type T takes type parameters
 t0207.scala:3: error: type T takes type parameters
   type S = (T with T)[A]
                    ^
-two errors found
+2 errors

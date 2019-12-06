@@ -4,4 +4,4 @@ import scala.collection.immutable._
 and import Bippy._
   def f(x: List[Any]): String = ???  // ambiguous, because Bippy.List is accessible
            ^
-one error found
+1 error

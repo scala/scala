@@ -5,4 +5,4 @@ macro-bundle-priority-bundle.scala:13: error: bundle implementation has incompat
 number of parameter sections differ
   def foo: Unit = macro Macros.impl
                                ^
-one error found
+1 error

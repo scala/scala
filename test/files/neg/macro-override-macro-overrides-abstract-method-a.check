@@ -2,4 +2,4 @@ Impls_Macros_1.scala:12: error: macro cannot override abstract method:
 def foo(x: Int): Int (defined in trait Foo)
   def foo(x: Int): Int = macro Impls.impl
       ^
-one error found
+1 error

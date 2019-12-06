@@ -23,5 +23,5 @@ deprecated.scala:27: warning: method keeper in trait T is deprecated (since 1.0)
   t.keeper  // don't warn because it's an inlined forwarder? maybe just warn.
     ^
 error: No warnings can be incurred under -Werror.
-8 warnings found
-one error found
+8 warnings
+1 error

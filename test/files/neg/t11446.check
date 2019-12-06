@@ -26,4 +26,4 @@ t11446.scala:35: error: object F is not a case class, nor does it have a valid u
 Note: val unapply: Option[Int] exists in object F, but it cannot be used as an extractor: an unapply method must accept a single argument
   "g" match { case F(i) => i }
                    ^
-7 errors found
+7 errors

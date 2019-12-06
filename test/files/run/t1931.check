@@ -3,7 +3,7 @@ scala> val x: Any = 42
 val x: Any = 42
 
 scala> x + " works"
-warning: there was one deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res0: String = 42 works
 
 scala> import Predef.{ any2stringadd => _, _ }
@@ -17,7 +17,7 @@ scala> import Predef._
 import Predef._
 
 scala> x + " works"
-warning: there was one deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res2: String = 42 works
 
 scala> object Predef { def f = 42 }

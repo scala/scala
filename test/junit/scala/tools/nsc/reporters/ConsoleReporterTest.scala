@@ -134,8 +134,8 @@ class ConsoleReporterTest {
     reporter.finish()
     reporter.flush()
     val it = writerOut.toString.linesIterator
-    assertEquals("three warnings found", it.next)
-    assertEquals("10 errors found", it.next)
+    assertEquals("3 warnings", it.next())
+    assertEquals("10 errors", it.next())
     writerOut.reset
   }
 

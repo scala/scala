@@ -4,4 +4,4 @@ ScalaMain.scala:6: error: variable STATIC_PROTECTED_FIELD in class JavaClass can
  class JavaClass in package test where target is defined
     val a = test.JavaClass.STATIC_PROTECTED_FIELD
                            ^
-one error found
+1 error

@@ -23,4 +23,4 @@ abstract-vars.scala:18: error: class Fail5 needs to be abstract. Missing impleme
 (Note that an abstract var requires a getter in addition to the setter)
 class Fail5 extends A {
       ^
-5 errors found
+5 errors

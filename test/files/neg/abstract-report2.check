@@ -69,4 +69,4 @@ Missing implementations for 7 members. Stub implementations follow:
 
 class Dingus extends Bippy[String, Set[Int], List[Int]]
       ^
-four errors found
+4 errors

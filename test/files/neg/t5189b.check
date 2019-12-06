@@ -8,4 +8,4 @@ You may wish to define W as +W instead. (SLS 4.5)
 t5189b.scala:51: error: value foo is not a member of type parameter T
     case Some(xs) => xs.foo // the error message should not refer to a skolem (testing extrapolation)
                         ^
-two errors found
+2 errors

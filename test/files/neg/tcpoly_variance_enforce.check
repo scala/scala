@@ -54,4 +54,4 @@ FooContra's type parameters do not match type m's expected parameters:
 type x (in class FooContra) is contravariant, but type x is declared covariant
   def y: coll[FooContra] = sys.error("foo") // error
          ^
-11 errors found
+11 errors

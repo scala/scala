@@ -7,4 +7,4 @@ t9382.scala:4: error: value x is not a member of (List[Int], List[Int], List[Int
 t9382.scala:5: error: value x is not a member of (Int, Int)
   def huh = (1,2).x
                   ^
-three errors found
+3 errors

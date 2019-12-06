@@ -4,4 +4,4 @@ t3772.scala:7: error: value inner is not a member of object CC
 t3772.scala:14: error: value outer is not a member of object CC
       CC.outer
          ^
-two errors found
+2 errors

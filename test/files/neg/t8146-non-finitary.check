@@ -6,4 +6,4 @@ t8146-non-finitary.scala:6: error: type mismatch;
  required: N[C[Int]]
   def foo(c: C[Int]): N[C[Int]] = c
                                   ^
-two errors found
+2 errors

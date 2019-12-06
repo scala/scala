@@ -28,4 +28,4 @@ t5378.scala:28: error: Parameter type in structural refinement may not refer to 
 t5378.scala:29: error: Type bound in structural refinement may not refer to an abstract type defined outside that refinement
     def apply2[T1 <: T](s: String)(x: Int)(value: T1) = ???
                                            ^
-10 errors found
+10 errors

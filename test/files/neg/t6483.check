@@ -6,4 +6,4 @@ t6483.scala:20: error: implementation restriction: nested class is not allowed i
 This restriction is planned to be removed in subsequent releases.
     class Inner extends T {
           ^
-two errors found
+2 errors

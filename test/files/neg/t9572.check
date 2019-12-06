@@ -4,4 +4,4 @@ t9572.scala:3: error: tuples may not have more than 22 elements, but 23 given
 t9572.scala:5: error: tuples may not have more than 22 elements, but 23 given
   val type23: (Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int) = null
                                                                                                        ^
-two errors found
+2 errors

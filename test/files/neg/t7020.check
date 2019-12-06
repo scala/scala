@@ -15,5 +15,5 @@ It would fail on the following inputs: List((x: Int forSome x not in (1, 2, 4, 5
   List(5) match {
       ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

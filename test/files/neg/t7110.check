@@ -2,5 +2,5 @@ t7110.scala:4: warning: A try without a catch or finally is equivalent to puttin
   try { ??? } // warn
   ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

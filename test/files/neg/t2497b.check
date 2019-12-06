@@ -3,4 +3,4 @@ def f: Int (defined in trait B)
   with override def f: Int (defined in trait AAA)
 class C extends B with AAA
       ^
-one error found
+1 error

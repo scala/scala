@@ -13,4 +13,4 @@ t800.scala:16: error: variable qualification is defined twice;
   the conflicting variable qualification was defined at line 15:7
   var qualification = false;
       ^
-four errors found
+4 errors

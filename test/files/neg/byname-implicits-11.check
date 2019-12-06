@@ -2,4 +2,4 @@ byname-implicits-11.scala:8: error: diverging implicit expansion for type Foo[In
 starting with method foo in object Foo
   implicitly[Foo[Int]]
             ^
-one error found
+1 error

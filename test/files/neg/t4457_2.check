@@ -10,4 +10,4 @@ and  method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAm
 match argument types (Float)
     bFunc(aFunc(4F))
           ^
-two errors found
+2 errors

@@ -2,4 +2,4 @@ b.scala:1: error: Companions 'trait Foo' and 'object Foo' must be defined in sam
   Found in t1286/a.scala and t1286/b.scala
 object Foo extends Foo {
        ^
-one error found
+1 error

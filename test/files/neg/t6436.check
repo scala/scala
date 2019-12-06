@@ -7,4 +7,4 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from StringContext to ?{def q: ?}
   println(q"a")
           ^
-one error found
+1 error

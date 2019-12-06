@@ -5,4 +5,4 @@ Impls_Macros_1.scala:9: error: macro implementation has incompatible shape:
 type mismatch for parameter x: c.Expr[Int] does not conform to Int
   def foo(x: Int): Nothing = macro Impls.foo
                                          ^
-one error found
+1 error

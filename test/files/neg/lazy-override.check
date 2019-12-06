@@ -6,4 +6,4 @@ lazy-override.scala:13: error: value must be lazy when overriding concrete lazy 
 lazy val y: Int (defined in class A)
     override val y: Int = { print("/*B.y*/"); 3 }
                  ^
-two errors found
+2 errors

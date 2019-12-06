@@ -4,4 +4,4 @@ type T <: AnyRef{type S[-U]} (defined in trait A);
  required:  <: AnyRef{type S[-U]}
  type T = { type S[U] = U }
       ^
-one error found
+1 error

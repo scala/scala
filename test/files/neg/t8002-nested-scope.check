@@ -1,4 +1,4 @@
 t8002-nested-scope.scala:8: error: method x in class C cannot be accessed as a member of C from object C
         new C().x
                 ^
-one error found
+1 error

@@ -7,4 +7,4 @@ t10748.scala:5: error: p is not an enclosing class
 t10748.scala:5: error: not found: type Q
   private[p] class D(i: Int = 42) { def f = new Q }
                                                 ^
-three errors found
+3 errors

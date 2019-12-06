@@ -1,4 +1,4 @@
 t10081.scala:2: error: value x is not a member of B[X]
 trait B[X] extends A[B[X @unchecked]] { this.x }
                                              ^
-one error found
+1 error

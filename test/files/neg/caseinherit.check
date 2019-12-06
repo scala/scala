@@ -7,4 +7,4 @@ caseinherit.scala:4: error: case object Bippy has case ancestor foo.A, but case-
 caseinherit.scala:11: error: case class Dingus has case ancestor foo.A, but case-to-case inheritance is prohibited. To overcome this limitation, use extractors to pattern match on non-leaf nodes.
   case class Dingus(y: Int) extends Innocent
              ^
-three errors found
+3 errors

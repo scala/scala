@@ -3,28 +3,28 @@ scala> import scala.reflect.{ClassManifest, classTag}
 import scala.reflect.{ClassManifest, classTag}
 
 scala> implicitly[ClassManifest[scala.List[_]]]
-warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res0: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> classTag[scala.List[_]]
 val res1: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
 
 scala> implicitly[ClassManifest[scala.collection.immutable.List[_]]]
-warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res2: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List[<?>]
 
 scala> classTag[scala.collection.immutable.List[_]]
 val res3: scala.reflect.ClassTag[List[_]] = scala.collection.immutable.List
 
 scala> implicitly[ClassManifest[Predef.Set[_]]]
-warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res4: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set[<?>]
 
 scala> classTag[Predef.Set[_]]
 val res5: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set
 
 scala> implicitly[ClassManifest[scala.collection.immutable.Set[_]]]
-warning: there was one deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
+warning: there was 1 deprecation warning (since 2.10.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val res6: scala.reflect.ClassTag[scala.collection.immutable.Set[_]] = scala.collection.immutable.Set[<?>]
 
 scala> classTag[scala.collection.immutable.Set[_]]

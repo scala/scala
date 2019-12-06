@@ -17,4 +17,4 @@ nested-fn-print.scala:9: error: type mismatch;
  required: Int => Double
     x3 = "c"
          ^
-four errors found
+4 errors

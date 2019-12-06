@@ -1,4 +1,4 @@
 func-max-args.scala:3: error: function values may not have more than 22 parameters, but 23 given
   val func23: (a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w) => Int
                                                            ^
-one error found
+1 error

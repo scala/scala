@@ -1,6 +1,6 @@
 t2070.scala:8: error: The kind of trait T does not conform to the expected kind of type T[X] in trait A.
 t2070.B.T's type parameters do not match type T's expected parameters:
-type X (in object B) has one type parameter, but type X (in trait A) has none
+type X (in object B) has 1 type parameter, but type X (in trait A) has 0
     trait T[X[_]]
           ^
-one error found
+1 error

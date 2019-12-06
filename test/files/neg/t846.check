@@ -3,4 +3,4 @@ t846.scala:9: error: type mismatch;
  required: B
     if (a != null) f(a) else null
                              ^
-one error found
+1 error

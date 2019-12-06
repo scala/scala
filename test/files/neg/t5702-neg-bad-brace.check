@@ -7,4 +7,4 @@ t5702-neg-bad-brace.scala:14: error: illegal start of simple pattern
 t5702-neg-bad-brace.scala:15: error: ')' expected but '}' found.
     }
     ^
-three errors found
+3 errors

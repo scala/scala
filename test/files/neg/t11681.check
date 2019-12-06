@@ -10,5 +10,5 @@ t11681.scala:14: warning: private method bar in package object example is never 
 t11681.scala:17: warning: private object Detest in package object example is never used
   private object Detest
                  ^
-two warnings found
-two errors found
+2 warnings
+2 errors

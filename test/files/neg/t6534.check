@@ -7,4 +7,4 @@ class Bippy4(val x: Int) extends AnyVal { override def hashCode = -1 }          
 t6534.scala:11: error: redefinition of equals method. See SIP-15, criterion 4. is not allowed in value class
 case class Bippy6(val x: Int) extends AnyVal { override def productPrefix = "Dingo" ; override def equals(x: Any) = false } // error
                                                                                                    ^
-three errors found
+3 errors

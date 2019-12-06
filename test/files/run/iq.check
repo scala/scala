@@ -1,4 +1,4 @@
-warning: there were three deprecation warnings (since 2.13.0); re-run with -deprecation for details
+warning: there were 3 deprecation warnings (since 2.13.0); re-run with -deprecation for details
 Empty
 q2: Queue(42, 0)
 qa: Queue(42, 0)

@@ -49,4 +49,4 @@ sammy_wrong_arity.scala:21: error: missing parameter type
 sammy_wrong_arity.scala:21: error: missing parameter type
   def g0 = ((x, y) => 0): T1
                 ^
-13 errors found
+13 errors

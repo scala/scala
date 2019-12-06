@@ -2,4 +2,4 @@ t4727.scala:5: error: an expression of type Null is ineligible for implicit conv
 Error occurred in an application involving default arguments.
     new C[Int]
     ^
-one error found
+1 error

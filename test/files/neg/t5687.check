@@ -7,4 +7,4 @@ type Repr[T] <: Template[T] (defined in class Template);
  required: [T(in type Repr)] <: Template[T(in type Repr)]
   type Repr = CurveTemplate[T]
        ^
-two errors found
+2 errors

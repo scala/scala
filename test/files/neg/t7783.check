@@ -14,5 +14,5 @@ t7783.scala:16: warning: type D in object O is deprecated:
   locally(null.asInstanceOf[O.D])
                               ^
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error

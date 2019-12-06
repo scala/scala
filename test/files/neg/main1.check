@@ -69,5 +69,5 @@ main1.scala:67: warning: not a valid main method for p8.Main,
     def main(args: Array[Int]) = ()
         ^
 error: No warnings can be incurred under -Werror.
-11 warnings found
-one error found
+11 warnings
+1 error

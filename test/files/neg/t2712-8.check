@@ -10,4 +10,4 @@ t2712-8.scala:9: error: type mismatch;
  required: D[D[Boolean]]
   foo(bar)
       ^
-two errors found
+2 errors

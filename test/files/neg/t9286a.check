@@ -4,4 +4,4 @@ private def foo(o: (Any,)): Unit at line 6
 have same type after erasure: (o: Tuple1)Unit
    private def foo(o: Tuple1[Any]) = ()
                ^
-one error found
+1 error

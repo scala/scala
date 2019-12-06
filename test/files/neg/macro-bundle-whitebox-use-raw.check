@@ -14,4 +14,4 @@ Test_2.scala:13: error: I don't like classes that contain integers
 Test_2.scala:17: error: extractor macros can only be whitebox
     case ExtractorMacro(x) => println(x)
                        ^
-four errors found
+4 errors

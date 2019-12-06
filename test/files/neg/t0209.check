@@ -3,4 +3,4 @@ t0209.scala:15: error: type mismatch;
  required: stabilizer$1.type
     (new B: A).f(new C)
                  ^
-one error found
+1 error

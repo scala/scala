@@ -4,4 +4,4 @@ private[trait A] type S <: A.this.T (defined in trait X);
  required:  <: A.this.T
     override private[A] type S = Any;
                              ^
-one error found
+1 error

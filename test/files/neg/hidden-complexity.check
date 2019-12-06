@@ -6,4 +6,4 @@ hidden-complexity.scala:13: error: diverging implicit expansion for type Bar[Lis
 starting with method mkBar in object Bar
   implicitly[Bar[List]]
             ^
-two errors found
+2 errors

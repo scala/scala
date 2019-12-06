@@ -8,4 +8,4 @@ t4271.scala:11: error: value -> is not a member of Int
 did you mean >>>?
   3 -> 5
     ^
-three errors found
+3 errors

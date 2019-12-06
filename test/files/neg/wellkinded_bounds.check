@@ -1,4 +1,4 @@
 wellkinded_bounds.scala:2: error: type List takes type parameters
 class WellKindedWrongSyntax[s <: List] { // must be s[x] <: List[x]
                                  ^
-one error found
+1 error

@@ -45,5 +45,5 @@ t4749.scala:44: warning: not a valid main method for bippy.Win3,
   object Win3 extends WinBippy[Unit] { }
          ^
 error: No warnings can be incurred under -Werror.
-7 warnings found
-one error found
+7 warnings
+1 error

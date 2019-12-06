@@ -4,4 +4,4 @@ t836.scala:9: error: type mismatch;
     (which expands to)  A.this.MyObj#S
   val some: S = any   // compiles => type X is set to scala.Any
                 ^
-one error found
+1 error

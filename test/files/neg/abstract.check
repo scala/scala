@@ -8,4 +8,4 @@ abstract.scala:9: error: type mismatch;
  required: A.this.T
   def foo5: T = baz().baz();
                          ^
-two errors found
+2 errors

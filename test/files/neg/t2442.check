@@ -7,5 +7,5 @@ It would fail on the following input: BLUE
   def g(e: MySecondEnum) = e match {
                            ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

@@ -16,4 +16,4 @@ t7325.scala:19: error: conversions must follow a splice; use %% for literal %, %
 t7325.scala:21: error: conversions must follow a splice; use %% for literal %, %n for newline
   println(f"${0}%%%%%d")
                     ^
-6 errors found
+6 errors

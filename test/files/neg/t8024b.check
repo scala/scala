@@ -3,4 +3,4 @@ it is both defined in object FastComplex and imported subsequently by
 import java.lang.Math.sqrt
     sqrt(0d)
     ^
-one error found
+1 error

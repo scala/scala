@@ -11,4 +11,4 @@ no-predef.scala:5: error: type mismatch;
 no-predef.scala:6: error: value map is not a member of String
   def f3 = "abc" map (_ + 1)
                  ^
-three errors found
+3 errors

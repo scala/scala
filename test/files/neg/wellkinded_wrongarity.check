@@ -1,4 +1,4 @@
-wellkinded_wrongarity.scala:5: error: Tuple2 takes two type parameters, expected: one
+wellkinded_wrongarity.scala:5: error: Tuple2 takes 2 type parameters, expected: 1
 object mp extends Monad[Tuple2]
                         ^
-one error found
+1 error

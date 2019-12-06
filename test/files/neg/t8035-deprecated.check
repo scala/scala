@@ -17,5 +17,5 @@ t8035-deprecated.scala:11: warning: adaptation of an empty argument list by inse
   sdf.format()
             ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

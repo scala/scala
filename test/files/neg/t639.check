@@ -4,4 +4,4 @@ import a._
 t639.scala:5: error: not found: type B
 @B
  ^
-two errors found
+2 errors

@@ -10,4 +10,4 @@ t4879.scala:10: error: pattern type is incompatible with expected type;
 Note: if you intended to match against the class, try `case D(_,_,_)`
     case D  => true
          ^
-two errors found
+2 errors

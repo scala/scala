@@ -28,4 +28,4 @@ missing-implicit.scala:51: error: could not find implicit value for parameter e:
 missing-implicit.scala:52: error: could not find implicit value for parameter e: X0 (Missing X3 of Char and Int and String)
   implicitly[X0]
             ^
-10 errors found
+10 errors

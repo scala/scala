@@ -4,4 +4,4 @@ case class A(private[this] val foo:String) { }
 t1422.scala:1: error: value foo in class A cannot be accessed as a member of A from object A
 case class A(private[this] val foo:String) { }
            ^
-two errors found
+2 errors

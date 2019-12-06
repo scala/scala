@@ -4,4 +4,4 @@ t4541.scala:11: error: variable data in class Sparse cannot be accessed as a mem
  class Sparse$mcI$sp where the access takes place
     that.data
          ^
-one error found
+1 error

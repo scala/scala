@@ -7,4 +7,4 @@ t10803.scala:18: error: not found: type CCC
 t10803.scala:20: error: not found: type CocartesianMonoidalCategory
       val sum = new CocartesianMonoidalCategory[F] {}
                     ^
-three errors found
+3 errors

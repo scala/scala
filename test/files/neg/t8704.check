@@ -7,5 +7,5 @@ class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
 t8704.scala:5: error: multiple implicit parameter sections are not allowed
 class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {
                                  ^
-one warning found
-two errors found
+1 warning
+2 errors

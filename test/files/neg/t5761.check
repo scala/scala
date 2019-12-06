@@ -16,4 +16,4 @@ t5761.scala:13: error: not found: type Tread
 t5761.scala:13: error: value run is not a member of <error>
   new Tread("sth") { }.run()
                        ^
-5 errors found
+5 errors

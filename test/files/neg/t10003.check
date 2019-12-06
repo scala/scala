@@ -1,4 +1,4 @@
 t10003.scala:4: error: illegal cyclic reference involving type List
     new Functor[a] { type List[t] = List[t] }
                                     ^
-one error found
+1 error

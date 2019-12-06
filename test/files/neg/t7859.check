@@ -16,4 +16,4 @@ B_2.scala:8: error: not found: value x
 B_2.scala:8: error: value x in class C cannot be accessed as a member of C from object Test
   new C(x).x
            ^
-6 errors found
+6 errors

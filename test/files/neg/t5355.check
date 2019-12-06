@@ -13,4 +13,4 @@ t5355.scala:5: error: illegal cyclic reference involving value a
 t5355.scala:6: error: illegal cyclic reference involving method a
   val e: { def a: e.type }
                   ^
-5 errors found
+5 errors

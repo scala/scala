@@ -3,5 +3,5 @@ The type parameter B referenced in the message of the @implicitAmbiguous annotat
   implicit def neqAmbig1[A] : A =!= A = null
                ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

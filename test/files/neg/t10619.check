@@ -7,4 +7,4 @@ t10619.scala:5: error: stable identifier required, but Test.this.newOuter found.
 t10619.scala:12: error: stable identifier required, but Test.this.newOuter found.
   val f = new newOuter.Inner
               ^
-three errors found
+3 errors

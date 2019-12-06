@@ -14,4 +14,4 @@ t1183.scala:9: error: name clash: class Foo defines class Bar
 and its companion object Foo also defines class Bar
     case class Bar(i:Int)
                ^
-four errors found
+4 errors

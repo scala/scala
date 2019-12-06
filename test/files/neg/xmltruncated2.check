@@ -1,4 +1,4 @@
 xmltruncated2.scala:2: error: input ended while parsing XML
   val stuff = <![CDATA[aoeu
                            ^
-one error found
+1 error

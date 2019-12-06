@@ -2,4 +2,4 @@ xml-ns-empty.scala:3: error: To compile XML syntax, the scala.xml package must b
 Please see https://github.com/scala/scala-xml for details.
     <a xmlns=""/>
     ^
-one error found
+1 error

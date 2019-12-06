@@ -3,4 +3,4 @@ t5189_inferred.scala:7: error: type mismatch;
  required: ?A1 where type ?A1
   f(Invariant(arr): Covariant[Any])(0) = Nil
                                          ^
-one error found
+1 error

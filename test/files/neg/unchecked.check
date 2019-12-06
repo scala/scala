@@ -17,5 +17,5 @@ unchecked.scala:57: warning: non-variable type argument Array[T] in type pattern
     case ArrayApply(x: Exp[Array[T]], _, _) => x // unchecked
                        ^
 error: No warnings can be incurred under -Werror.
-6 warnings found
-one error found
+6 warnings
+1 error

@@ -17,5 +17,5 @@ unused.scala:8: warning: unreachable code
     case C(_, b, c@_, _) => 2
                             ^
 error: No warnings can be incurred under -Werror.
-6 warnings found
-one error found
+6 warnings
+1 error

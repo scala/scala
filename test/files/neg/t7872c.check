@@ -8,4 +8,4 @@ t7872c.scala:7: error: type mismatch;
  required: F[Object]
   down(List('whatever: Object))
            ^
-two errors found
+2 errors

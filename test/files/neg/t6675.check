@@ -2,5 +2,5 @@ t6675.scala:12: warning: object X expects 3 patterns to hold (Int, Int, Int) but
   "" match { case X(b) => b } // should warn under -Xlint. Not an error because of scala/bug#6111
                   ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

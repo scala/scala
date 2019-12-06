@@ -7,4 +7,4 @@ t8217-local-alias-requires-rhs.scala:6: error: only traits and abstract classes 
 t8217-local-alias-requires-rhs.scala:14: error: only traits and abstract classes can have declared but undefined members
   def this(a: Any) = { this(); type C }
                                     ^
-three errors found
+3 errors

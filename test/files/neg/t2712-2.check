@@ -10,4 +10,4 @@ t2712-2.scala:16: error: type mismatch;
  required: test.One[test.X3]
   test1(foo): One[X3]     // fails without -Xsource:2.12
        ^
-two errors found
+2 errors

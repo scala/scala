@@ -103,4 +103,4 @@ t8667.scala:42: error: can't supply unit value with infix notation because nulla
 t8667.scala:43: error: no arguments allowed for nullary method f0: ()Int
     x.f0(())
          ^
-35 errors found
+35 errors

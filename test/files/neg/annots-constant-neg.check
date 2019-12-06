@@ -109,4 +109,4 @@ Test.scala:73: error: annotation Ann4 is missing argument value
 Test.scala:78: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
   @Ann5(0) def v18 = 0 // err
         ^
-37 errors found
+37 errors

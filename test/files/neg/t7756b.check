@@ -2,5 +2,5 @@ t7756b.scala:5: warning: comparing values of types Int and String using `==` wil
     case _ => 0 == ""
                 ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

@@ -8,5 +8,5 @@ t6011.scala:10: warning: could not emit switch for @switch annotated match
   def f2(ch: Char): Any = (ch: @annotation.switch) match {
                                 ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

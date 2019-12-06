@@ -13,4 +13,4 @@ t10068.scala:9: error: f: Only concrete methods can be marked @elidable. The ann
 t10068.scala:11: error: D: Only concrete methods can be marked @elidable.
 @elidable(INFO) class D
                       ^
-5 errors found
+5 errors

@@ -7,4 +7,4 @@ anytrait.scala:5: error: this statement is not allowed in universal trait extend
 anytrait.scala:9: error: field definition is not allowed in universal trait extending from class Any
   val y: T
       ^
-three errors found
+3 errors

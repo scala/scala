@@ -9,4 +9,4 @@ import p.X._
 and import X.y
           println(s"L21: $y") // reference to `y` is ambiguous here
                           ^
-two errors found
+2 errors

@@ -26,4 +26,4 @@ def empty: Qu[String] (defined in trait ArDqOps)
  required: => Qu[String]
     (new Qu[String]{}: ArDqOps[String, Qu, Qu[String]]).empty.bazza
          ^
-four errors found
+4 errors

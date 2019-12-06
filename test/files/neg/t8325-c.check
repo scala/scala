@@ -4,4 +4,4 @@ t8325-c.scala:3: error: identifier expected but ')' found.
 t8325-c.scala:4: error: ')' expected but '}' found.
 }
 ^
-two errors found
+2 errors

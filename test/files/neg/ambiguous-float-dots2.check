@@ -4,4 +4,4 @@ ambiguous-float-dots2.scala:3: error: identifier expected but '}' found.
 ambiguous-float-dots2.scala:11: error: ';' expected but integer literal found.
   1. + 2
        ^
-two errors found
+2 errors

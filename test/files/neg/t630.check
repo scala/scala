@@ -4,4 +4,4 @@ val foo: Req2 (defined in trait Bar);
  required: Req2
         object foo extends Req1
                ^
-one error found
+1 error

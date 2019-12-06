@@ -8,5 +8,5 @@ t7171b.scala:15: warning: The outer reference in this type test cannot be checke
     case _: A => true; case _ => false
           ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

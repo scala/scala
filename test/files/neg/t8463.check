@@ -24,4 +24,4 @@ t8463.scala:5: error: type mismatch;
  required: Test.Foo[Test.Cell]
   insertCell(Foo(5))
                 ^
-four errors found
+4 errors

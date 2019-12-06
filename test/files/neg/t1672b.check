@@ -13,4 +13,4 @@ t1672b.scala:34: error: could not optimize @tailrec annotated method bez: it con
 t1672b.scala:46: error: could not optimize @tailrec annotated method bar: it contains a recursive call not in tail position
     else 1 + (try {
            ^
-5 errors found
+5 errors

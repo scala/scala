@@ -10,4 +10,4 @@ t6667.scala:9: error: ambiguous implicit values:
  match expected type C
   implicitly[C]       // ambiguity reported, rather than falling back to C.companion
             ^
-two errors found
+2 errors

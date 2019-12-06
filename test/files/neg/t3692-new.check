@@ -11,5 +11,5 @@ t3692-new.scala:18: warning: unreachable code
       case m1: Map[Int, V] => new java.util.HashMap[Integer, V]
                               ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

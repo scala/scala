@@ -8,4 +8,4 @@ t5106.scala:3: error: type mismatch;
  required: Int
     val (n, l): (String, Int) = (4, "")
                                     ^
-two errors found
+2 errors

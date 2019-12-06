@@ -5,4 +5,4 @@ macro-bundle-object.scala:10: error: macro implementation has incompatible shape
 number of parameter sections differ
   def foo: Any = macro Bundle.impl
                               ^
-one error found
+1 error

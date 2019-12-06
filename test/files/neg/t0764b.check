@@ -44,4 +44,4 @@ t0764b.scala:59: error: type mismatch;
  required: p2.t0764.Node{type T = p2.t0764.Node{type T = A}}
       private[this] def f3 = new Main2[Node { type T = A }](v.prepend)   // fail
                                                               ^
-8 errors found
+8 errors

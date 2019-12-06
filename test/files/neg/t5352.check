@@ -10,4 +10,4 @@ t5352.scala:16: error: method f in class Bar1 cannot be accessed as a member of 
  class Bar1 in object boop where target is defined
   (new Bar1).f
              ^
-two errors found
+2 errors

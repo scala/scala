@@ -16,5 +16,5 @@ Switch.scala:4: error: class switch does not extend scala.annotation.Annotation
 TraitAnnotation.scala:6: error: trait TraitAnnotation is abstract; cannot be instantiated
   1: @TraitAnnotation
       ^
-one warning found
-5 errors found
+1 warning
+5 errors

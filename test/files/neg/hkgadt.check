@@ -28,4 +28,4 @@ hkgadt.scala:33: error: type mismatch;
  required: A
     case Baz1() => 1
                    ^
-6 errors found
+6 errors

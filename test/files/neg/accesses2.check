@@ -12,4 +12,4 @@ private[package p2] def f2(): Int (defined in class A)
   override should not be private
     private def f2(): Int = 1
                 ^
-three errors found
+3 errors

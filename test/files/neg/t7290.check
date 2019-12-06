@@ -8,5 +8,5 @@ t7290.scala:8: warning: Pattern contains duplicate alternatives: 4
     case 4 | (_ @ 4) => 0
          ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

@@ -2,5 +2,5 @@ t8015-ffb.scala:12: warning: side-effecting nullary methods are discouraged: sug
   def w = { x\u000c() }       // ^L is colored blue on this screen, hardly visible
       ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

@@ -16,4 +16,4 @@ import uniq1.uniq2.X
 and import uniq1.X
   object Y { def f = X }
                      ^
-three errors found
+3 errors

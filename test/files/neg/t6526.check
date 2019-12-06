@@ -13,4 +13,4 @@ t6526.scala:30: error: could not optimize @tailrec annotated method inner: it co
 t6526.scala:39: error: could not optimize @tailrec annotated method inner: it contains a recursive call not in tail position
     def inner(i: Int): Int = 1 + inner(i)
                                ^
-5 errors found
+5 errors

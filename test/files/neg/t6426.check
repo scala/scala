@@ -1,4 +1,4 @@
 t6426.scala:4: error: not found: value _
   def f = `_`.Buffer(0)
           ^
-one error found
+1 error

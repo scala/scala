@@ -11,5 +11,5 @@ t5762.scala:23: warning: non-variable type argument D[String] in type pattern D[
     case _: D[D[String]]          => 2
             ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

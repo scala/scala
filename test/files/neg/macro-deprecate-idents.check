@@ -67,5 +67,5 @@ macro-deprecate-idents.scala:47: error: '{' expected but '}' found.
 macro-deprecate-idents.scala:54: error: ')' expected but '}' found.
 }
 ^
-one warning found
-22 errors found
+1 warning
+22 errors

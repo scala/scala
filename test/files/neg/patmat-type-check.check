@@ -42,5 +42,5 @@ patmat-type-check.scala:30: error: scrutinee is incompatible with pattern type;
  required: Test.Bop3[Char]
   def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
                                                ^
-three warnings found
-7 errors found
+3 warnings
+7 errors

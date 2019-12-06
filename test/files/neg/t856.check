@@ -8,4 +8,4 @@ Missing implementations for 2 members. Stub implementations follow:
 
 class ComplexRect(val _1:Double, _2:Double) extends Complex {
       ^
-one error found
+1 error

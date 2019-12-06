@@ -10,4 +10,4 @@ t8237-default-pu.scala:5: error: type mismatch;
  required: T[T[List[T[X forSome { type X }]]]]
   test4(test4$default$1)
         ^
-two errors found
+2 errors

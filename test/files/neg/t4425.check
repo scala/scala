@@ -10,4 +10,4 @@ t4425.scala:13: error: object X is not a case class, nor does it have a valid un
 Note: def unapply(x: String)(y: String): Some[(Int, Int)] exists in object X, but it cannot be used as an extractor due to its second non-implicit parameter list
   "" match { case _ X _ => () }
                     ^
-three errors found
+3 errors

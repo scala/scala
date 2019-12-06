@@ -4,4 +4,4 @@ t5182.scala:4: error: unknown annotation argument name: qwe
 t5182.scala:5: error: arguments to Java annotations or subclasses of ConstantAnnotation have to be supplied as named arguments
   @java.lang.Deprecated("wer") def whereAmI(q:Int) = 1
                         ^
-two errors found
+2 errors

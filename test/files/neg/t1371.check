@@ -1,4 +1,4 @@
 t1371.scala:2: error: unbound wildcard type
 trait A[T <: (_)]
               ^
-one error found
+1 error

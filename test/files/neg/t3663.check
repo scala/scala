@@ -1,4 +1,4 @@
 main.scala:11: error: variable foo in class PackageProtected cannot be accessed as a member of test.Test from object Main in package another
       println(t.foo)
                 ^
-one error found
+1 error

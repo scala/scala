@@ -1,4 +1,4 @@
 t7214neg.scala:28: error: not enough patterns for object Extractor offering Any: expected 1, found 0
     case Extractor() =>
          ^
-one error found
+1 error

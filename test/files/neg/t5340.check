@@ -3,4 +3,4 @@ t5340.scala:15: error: type mismatch;
  required: Int
   (new Quux[r.E, s.E]): Int // fails due to pre-stripping implicits which
    ^
-one error found
+1 error

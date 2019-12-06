@@ -4,4 +4,4 @@ t8869.scala:5: error: class Option takes type parameters
 t8869.scala:7: error: class Option takes type parameters
   type l2[x] = Option // error correctly reported
                ^
-two errors found
+2 errors

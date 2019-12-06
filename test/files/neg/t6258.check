@@ -13,4 +13,4 @@ The argument types of an anonymous function must be fully known. (SLS 8.5)
 Expected type was: PartialFunction[?,Any]
   bar[M[Any]] (foo { // undefined param
                    ^
-three errors found
+3 errors

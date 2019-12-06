@@ -6,4 +6,4 @@ See the Scaladoc for value scala.language.postfixOps for a discussion
 why the feature needs to be explicitly enabled.
   def f(): Int = List(1) head
                          ^
-one error found
+1 error

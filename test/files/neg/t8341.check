@@ -24,4 +24,4 @@ t8341.scala:48: error: type mismatch;
  required: CanBuildFrom[Invariant[G]]
   {val c1 = convert2(s); c1.combined}
                     ^
-6 errors found
+6 errors

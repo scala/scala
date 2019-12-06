@@ -2,5 +2,5 @@ t6595.scala:5: warning: early initializers are deprecated; they will be replaced
 class Foo extends {
                   ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

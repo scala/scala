@@ -16,4 +16,4 @@ macro-bundle-polymorphic.scala:41: error: macro bundles must be concrete monomor
 macro-bundle-polymorphic.scala:42: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
   def white3: Any = macro WhiteboxBundle3.impl
                           ^
-6 errors found
+6 errors

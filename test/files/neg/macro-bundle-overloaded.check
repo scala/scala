@@ -1,4 +1,4 @@
 macro-bundle-overloaded.scala:11: error: macro bundles must be concrete monomorphic classes having a single constructor with a `val c: Context` parameter
   def foo = macro Bundle.impl
                   ^
-one error found
+1 error

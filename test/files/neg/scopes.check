@@ -22,5 +22,5 @@ scopes.scala:13: error: x is already defined as value x
 scopes.scala:15: error: x is already defined as value x
     case x::x => x
             ^
-one warning found
-7 errors found
+1 warning
+7 errors

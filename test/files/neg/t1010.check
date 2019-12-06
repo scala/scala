@@ -3,4 +3,4 @@ t1010.scala:14: error: type mismatch;
  required: stabilizer$1.in.Message
    unstable.send(msg) // in.Message becomes unstable.Message, but that's ok since Message is a concrete type member
                  ^
-one error found
+1 error

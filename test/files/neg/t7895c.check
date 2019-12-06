@@ -10,4 +10,4 @@ t7895c.scala:2: error: not found: value bippity
 t7895c.scala:2: error: not found: value bazingo
   def booboo = bong + booble + bippity - bazingo
                                          ^
-four errors found
+4 errors

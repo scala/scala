@@ -16,4 +16,4 @@ t5510.scala:6: error: unclosed multi-line string literal
 t5510.scala:7: error: unclosed multi-line string literal
 }
  ^
-6 errors found
+6 errors

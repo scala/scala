@@ -20,5 +20,5 @@ t5691.scala:23: warning: type parameter List defined in type M shadows type List
   def foo[N[M[List[_]]]] = ???
               ^
 error: No warnings can be incurred under -Werror.
-7 warnings found
-one error found
+7 warnings
+1 error

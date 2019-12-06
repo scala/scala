@@ -3,4 +3,4 @@ t0590.scala:2: error: type mismatch;
  required: T
   implicit def foo[T] : T = null
                             ^
-one error found
+1 error

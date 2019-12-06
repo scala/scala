@@ -25,4 +25,4 @@ suggest-similar.scala:41: error: value bar is not a member of example.Hohokus
 did you mean bar2?
   new Hohokus().bar // don't suggest bar1
                 ^
-7 errors found
+7 errors

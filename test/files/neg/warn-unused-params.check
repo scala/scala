@@ -29,5 +29,5 @@ warn-unused-params.scala:95: warning: parameter value i in anonymous function is
   def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
                ^
 error: No warnings can be incurred under -Werror.
-10 warnings found
-one error found
+10 warnings
+1 error

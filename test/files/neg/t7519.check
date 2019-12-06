@@ -8,4 +8,4 @@ t7519.scala:15: error: type mismatch;
  required: String
       locally(0 : String) // was: "value conversion is not a member of U"
               ^
-two errors found
+2 errors

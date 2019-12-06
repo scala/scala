@@ -1,4 +1,4 @@
 t3189.scala:2: error: bad simple pattern: use _* to match a sequence
   val Array(a,b*) = ("": Any)
                 ^
-one error found
+1 error

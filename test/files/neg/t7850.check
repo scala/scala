@@ -4,4 +4,4 @@ t7850.scala:11: error: an unapply result must have a member `def isEmpty: Boolea
 t7850.scala:12: error: an unapply result must have a member `def isEmpty: Boolean`
     val Dingy(x2) = new Dingy(1)
         ^
-two errors found
+2 errors

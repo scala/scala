@@ -3,5 +3,5 @@ The method e()Ljava/lang/Throwable; could not be found in the class java/lang/Ob
     case Failure(e) => println(e.toString)
                  ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

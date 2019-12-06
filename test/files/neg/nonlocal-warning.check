@@ -5,5 +5,5 @@ nonlocal-warning.scala:4: warning: catch block may intercept non-local return fr
   def foo(l: List[Int]): Int = {
                                ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

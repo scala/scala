@@ -8,4 +8,4 @@ typeerror.scala:6: error: type mismatch;
  required: scala.Long
     else add2(x.head, y.head) :: add(x.tail, y.tail)
                         ^
-two errors found
+2 errors

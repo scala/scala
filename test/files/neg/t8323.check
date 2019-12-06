@@ -4,4 +4,4 @@ def f(x: "Dingo"): String at line 5
 have same type after erasure: (x: String)String
   def f(x: b.type) = x
       ^
-one error found
+1 error

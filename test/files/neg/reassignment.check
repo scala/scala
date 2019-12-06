@@ -10,4 +10,4 @@ reassignment.scala:4: error: not found: value y
 reassignment.scala:6: error: reassignment to val
   z = 51
     ^
-four errors found
+4 errors

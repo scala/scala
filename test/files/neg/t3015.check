@@ -3,4 +3,4 @@ t3015.scala:7: error: scrutinee is incompatible with pattern type;
  required: String
   val b(foo) = "foo"
        ^
-one error found
+1 error

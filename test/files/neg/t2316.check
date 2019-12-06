@@ -4,4 +4,4 @@ t2316.scala:28: error: ambiguous implicit values:
  match expected type test.T1
       val t1 = requireT1
                ^
-one error found
+1 error

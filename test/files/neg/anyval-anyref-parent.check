@@ -20,4 +20,4 @@ trait Foo5 extends AnyVal with Reffy  // fail
 anyval-anyref-parent.scala:12: error: only classes (not traits) are allowed to extend AnyVal
 trait Foo5 extends AnyVal with Reffy  // fail
       ^
-6 errors found
+6 errors

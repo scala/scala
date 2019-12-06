@@ -9,4 +9,4 @@ t414.scala:7: error: type mismatch;
  required: a
                 case _ =>
                        ^
-two errors found
+2 errors

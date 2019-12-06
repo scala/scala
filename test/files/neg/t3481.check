@@ -26,4 +26,4 @@ t3481.scala:25: error: type mismatch;
     (which expands to)  _$4
       b.m("Hello")
           ^
-5 errors found
+5 errors

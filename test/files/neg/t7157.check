@@ -82,4 +82,4 @@ Test_2.scala:60: error: not enough arguments for macro method m2_2_inf: (x: Int,
 Unspecified value parameters y, z.
   m2_2_inf()(1)
             ^
-24 errors found
+24 errors

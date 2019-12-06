@@ -15,4 +15,4 @@ t8322.scala:19: error: type mismatch;
  required: scala.util.Either[?,?]
   Right(0).right.flatMap(_ => new String())
                               ^
-three errors found
+3 errors

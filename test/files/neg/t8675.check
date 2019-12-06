@@ -8,4 +8,4 @@ t8675.scala:22: error: type mismatch;
  required: String
     new X().m(x[A]({new isString(true)})) // !!! allowed
                                  ^
-two errors found
+2 errors

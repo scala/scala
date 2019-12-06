@@ -41,5 +41,5 @@ unchecked2.scala:22: warning: non-variable type argument String => Double in typ
   /*   warn */ (Some(123): Any).isInstanceOf[Option[String => Double]]
                                             ^
 error: No warnings can be incurred under -Werror.
-14 warnings found
-one error found
+14 warnings
+1 error

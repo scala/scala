@@ -9,4 +9,4 @@ type A2 <: Something (defined in class Foo);
  required:  <: Something
   override type A2 = Any
                 ^
-two errors found
+2 errors

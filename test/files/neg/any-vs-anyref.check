@@ -45,4 +45,4 @@ any-vs-anyref.scala:27: error: type mismatch;
  required: Quux{def g(x: Int): Int}
   f(new Quux { def g(x: String) = x })
     ^
-7 errors found
+7 errors

@@ -13,4 +13,4 @@ Test.scala:14: error: `override` modifier required to override concrete member:
 <defaultmethod> def f(): Int (defined in trait A)
   def f() = 9999 // need override modifier
       ^
-three errors found
+3 errors

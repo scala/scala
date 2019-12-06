@@ -4,4 +4,4 @@ S.scala:2: error: overloaded method value m with alternatives:
  cannot be applied to (Int)
   J.m(0)
     ^
-one error found
+1 error

@@ -1,4 +1,4 @@
 t5799.scala:2: error: secondary constructor is not allowed in value class
   def this(s: String) = this(s.toDouble)
       ^
-one error found
+1 error

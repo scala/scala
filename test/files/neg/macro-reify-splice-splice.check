@@ -4,4 +4,4 @@ if you're sure this is not an oversight, add scala-compiler.jar to the classpath
 import `scala.tools.reflect.Eval` and call `<your expr>.eval` instead.
       { c.universe.reify(c.universe.reify("hello world")) }.splice.splice
                                                                    ^
-one error found
+1 error

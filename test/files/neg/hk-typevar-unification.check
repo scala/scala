@@ -19,4 +19,4 @@ hk-typevar-unification.scala:19: error: type mismatch;
  required: TC[F]
   g(tcFoo)
     ^
-four errors found
+4 errors

@@ -1,4 +1,4 @@
 xmltruncated4.scala:2: error: input ended while parsing XML
   val stuff = <!-- comment starts but never ends...
                                                    ^
-one error found
+1 error

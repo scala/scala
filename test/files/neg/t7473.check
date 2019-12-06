@@ -4,4 +4,4 @@ t7473.scala:6: error: '<-' expected but '=' found.
 t7473.scala:6: error: illegal start of simple expression
   (for (x = Option(i); if x == j) yield 42) toList
                      ^
-two errors found
+2 errors

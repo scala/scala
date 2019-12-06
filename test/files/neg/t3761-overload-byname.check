@@ -10,4 +10,4 @@ and  method m2 in object t of type (x: => Any, s: String)Int
 match argument types (Int,String)
   m2(1, "")
   ^
-two errors found
+2 errors

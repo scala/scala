@@ -8,4 +8,4 @@ and import B._
 implicit-shadow.scala:6: error: value isEmpty is not a member of Int
 	1.isEmpty
           ^
-one error found
+1 error

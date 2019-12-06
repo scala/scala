@@ -3,4 +3,4 @@ t0152.scala:10: error: illegal inheritance;
 Value[Int] and Value[String]
  object boom extends Value[java.lang.String]("foo") with PlusOne
         ^
-one error found
+1 error

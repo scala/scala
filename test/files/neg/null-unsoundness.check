@@ -2,4 +2,4 @@ null-unsoundness.scala:8: error: stable identifier required, but A.this.x found.
  Note that value x is not stable because its type, A.this.A with A.this.D, is volatile.
   var y: x.T = new C("abc")
          ^
-one error found
+1 error

@@ -1,4 +1,4 @@
 t2208.scala:7: error: type arguments [Any] do not conform to type Alias's type parameter bounds [X <: Test.A]
 	class C extends Alias[Any]   // not ok, normalisation should check bounds before expanding Alias
                         ^
-one error found
+1 error

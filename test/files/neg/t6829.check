@@ -53,4 +53,4 @@ t6829.scala:53: error: not found: value currentHistory
 Error occurred in an application involving default arguments.
       copy(agents = updatedAgents, state = nextState, pastHistory = currentHistory)
                                                                     ^
-13 errors found
+13 errors

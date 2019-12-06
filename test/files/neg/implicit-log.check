@@ -11,4 +11,4 @@ implicit-log.scala:96: materializing requested reflect.runtime.universe.type.Typ
 implicit-log.scala:100: error: value baa is not a member of Int
   1.baa
     ^
-one error found
+1 error

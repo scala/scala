@@ -43,4 +43,4 @@ class V15(protected[this] val x: Int) extends AnyVal // fail
 valueclasses.scala:36: error: value class needs to have exactly one val parameter
 class V16()(val a: Any) extends AnyVal // fail, was allowed 2.10.x
       ^
-15 errors found
+15 errors

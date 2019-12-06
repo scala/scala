@@ -38,4 +38,4 @@ t7834neg.scala:75: error: type mismatch;
  required: C.this.q.type
   x3 = super[S2].q  // fail
                  ^
-8 errors found
+8 errors

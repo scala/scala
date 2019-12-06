@@ -4,4 +4,4 @@ def str: m[Object] (defined in class A);
  required: => m[Object]
  override def str: m[String]  = sys.error("foo") // since x in m[x] is invariant, ! m[String] <: m[Object]
               ^
-one error found
+1 error

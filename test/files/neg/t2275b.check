@@ -7,4 +7,4 @@ t2275b.scala:2: error:  I encountered a '}' where I didn't expect one, maybe thi
 t2275b.scala:3: error: '}' expected but eof found.
 }
  ^
-three errors found
+3 errors

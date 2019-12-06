@@ -3,4 +3,4 @@ t5189.scala:3: error: type mismatch;
  required: Any => Any
   def f(x: Any): Any => Any = x match { case Foo(bar) => bar }
                                                          ^
-one error found
+1 error

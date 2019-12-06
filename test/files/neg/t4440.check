@@ -11,5 +11,5 @@ t4440.scala:19: warning: The outer reference in this type test cannot be checked
     case _: b.Inner => println("b") // this is the case we want
           ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

@@ -226,4 +226,4 @@ variances2.scala:148: error: contravariant type D occurs in invariant position i
 variances2.scala:149: error: covariant type E occurs in invariant position in supertype Inv[E] of object O17
     object O17 extends Inv[E]
            ^
-76 errors found
+76 errors

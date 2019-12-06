@@ -3,4 +3,4 @@ unit2anyref.scala:2: error: type mismatch;
  required: AnyRef
   val x: AnyRef = ()  // this should not succeed.
                   ^
-one error found
+1 error
