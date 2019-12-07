@@ -12,8 +12,9 @@
 
 package scala
 
-import scala.collection.immutable
+import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
+import java.util.NoSuchElementException
 
 /** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the
@@ -59,9 +60,16 @@ package object sys {
 
   /** An immutable Map representing the current system environment.
    *
+   *  If lookup fails, use `System.getenv(_)` for case-insensitive lookup
+   *  on a certain platform. If that also fails, throw `NoSuchElementException`.
+   *
    *  @return   a Map containing the system environment variables.
    */
-  def env: immutable.Map[String, String] = immutable.Map.from(System.getenv().asScala)
+  def env: Map[String, String] = Map.from(System.getenv().asScala).withDefault { v =>
+    val s = System.getenv(v)
+    if (s == null) throw new NoSuchElementException(v)
+    s
+  }
 
   /** Register a shutdown hook to be run when the VM exits.
    *  The hook is automatically registered: the returned value can be ignored,
@@ -85,6 +93,6 @@ package object sys {
     val tarray = new Array[Thread](num)
     val got    = Thread.enumerate(tarray)
 
-    immutable.ArraySeq.unsafeWrapArray(tarray).take(got)
+    ArraySeq.unsafeWrapArray(tarray).take(got)
   }
 }
