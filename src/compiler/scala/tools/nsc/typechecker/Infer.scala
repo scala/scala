@@ -762,6 +762,24 @@ trait Infer extends Checkable {
           undet.updateInfo(substBounds)
       }
 
+    def enhanceUpperBounds(tparams: List[Symbol], tvars: List[TypeVar], leftUndet: List[Symbol]): Unit =
+      foreach2(tparams, tvars) { (tparam, tvar) =>
+        if (leftUndet.contains(tparam)) {
+          val hiBounds = tvar.constr.hiBounds.filter(_ ne NothingTpe)
+          if (hiBounds.nonEmpty) {
+            val info = tparam.info
+            val upper = info.upperBound
+            val enhanced = glb(upper :: hiBounds)
+            if (upper ne enhanced) {
+              val tparams = tparam.typeParams
+              val targs = tparams.map(_.toType)
+              val bounds = appliedType(TypeBounds(info.lowerBound, enhanced), targs)
+              tparam.updateInfo(genPolyType(tparams, bounds))
+            }
+          }
+        }
+      }
+
     private def isApplicableToMethod(undetparams: List[Symbol], mt: MethodType, argtpes0: List[Type], pt: Type): Boolean = {
       val formals          = formalTypes(mt.paramTypes, argtpes0.length, removeByName = false)
       def missingArgs      = missingParams[Type](argtpes0, mt.params, x => Some(x) collect { case NamedType(n, _) => n })
@@ -1029,6 +1047,7 @@ trait Infer extends Checkable {
         val adjusted = adjustTypeArgs(tparams, tvars, targsStrict)
         import adjusted.{okParams, okArgs, undetParams}
         enhanceBounds(okParams, okArgs, undetParams)
+        enhanceUpperBounds(tparams, tvars, undetParams)
         def solved_s = map2(okParams, okArgs)((p, a) => s"$p=$a") mkString ","
         def undet_s = undetParams match {
           case Nil => ""
