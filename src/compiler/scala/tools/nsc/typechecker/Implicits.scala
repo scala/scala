@@ -1417,10 +1417,12 @@ trait Implicits {
             for (p <- ps) getParts(p)
           case AnnotatedType(_, t) =>
             getParts(t)
-          case ExistentialType(_, t) =>
-            getParts(t)
+          case ExistentialType(_, _) =>
+            getParts(dropExistential(tp))
           case PolyType(_, t) =>
             getParts(t)
+          case BoundedWildcardType(bounds) =>
+            getParts(bounds.hi)
           // not needed, a view's expected type is normalized in typer by normalizeProtoForView:
           // case proto: OverloadedArgProto => getParts(proto.underlying)
           case _ =>
