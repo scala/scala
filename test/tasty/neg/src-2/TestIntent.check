@@ -1,0 +1,2 @@
+error: Scala 2 incompatible TASTy signature of Position.tasty in object Position: unsupported Scala 3 flags on method here: inline | <tastymacro>
+one error found

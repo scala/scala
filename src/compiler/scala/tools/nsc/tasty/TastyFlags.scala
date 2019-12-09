@@ -4,7 +4,7 @@ package scala.tools.nsc.tasty
  */
 object TastyFlags {
 
-  private[this] val maxFlag = 10
+  private[this] val maxFlag = 11
 
   final val EmptyTastyFlags: TastyFlagSet = TastyFlagSet(0)
   final val Erased: TastyFlagSet          = TastyFlagSet(1 << 0)
@@ -17,6 +17,7 @@ object TastyFlags {
   final val Given: TastyFlagSet           = TastyFlagSet(1 << 7)
   final val Exported: TastyFlagSet        = TastyFlagSet(1 << 8)
   final val NoInits: TastyFlagSet         = TastyFlagSet(1 << 9)
+  final val TastyMacro: TastyFlagSet      = TastyFlagSet(1 << 10)
   final val Enum: TastyFlagSet            = TastyFlagSet(1 << maxFlag)
 
   case class TastyFlagSet private[TastyFlags](private val flags: Int) extends AnyVal {

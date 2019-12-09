@@ -78,6 +78,7 @@ trait FlagOps extends TastyKernel {
         case Given       => "given"
         case Exported    => "<exported>"
         case NoInits     => "<noinits>"
+        case TastyMacro  => "<tastymacro>"
         case Enum        => "enum"
       }
     } mkString(" | ")

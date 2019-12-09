@@ -680,7 +680,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case OVERRIDE => addFlag(Override)
           case INLINE => addTastyFlag(Inline)
           case INLINEPROXY => addTastyFlag(InlineProxy)
-          case MACRO => addFlag(Macro)
+          case MACRO => addTastyFlag(TastyMacro) // addFlag(Macro)
           case OPAQUE => addTastyFlag(Opaque)
           case STATIC => addFlag(JavaStatic)
           case OBJECT => addFlag(Module)
