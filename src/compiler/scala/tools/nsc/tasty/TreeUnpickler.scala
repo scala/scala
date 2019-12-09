@@ -698,7 +698,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case DEFAULTparameterized => addFlag(DefaultParameterized)
           case STABLE => addFlag(Stable)
           case EXTENSION => addTastyFlag(Extension)
-          case GIVEN => addTastyFlag(Given)
+          case GIVEN => addFlag(Implicit) //addTastyFlag(Given)
           case PARAMsetter => addFlag(ParamAccessor)
           case EXPORTED => addTastyFlag(Exported)
           case OPEN => addTastyFlag(Open)
