@@ -1,4 +1,4 @@
-warning: there were 16 deprecation warnings (since 2.13.0); re-run with -deprecation for details
+warning: 16 deprecations (since 2.13.0); re-run with -deprecation for details
 new test starting with List()
 10: List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 9: List(2, 3, 4, 5, 6, 7, 8, 9, 10)

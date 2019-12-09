@@ -328,7 +328,7 @@ class BytecodeTest extends BytecodeTesting {
         |}
         |class F extends D
       """.stripMargin
-    val cs = compileClasses(code, allowMessage = _.msg.contains("there were 2 deprecation warnings"))
+    val cs = compileClasses(code, allowMessage = _.msg.contains("2 deprecations"))
 
     assertDoesNotInvoke(getMethod(cs.find(_.name == "B").get, "<init>"), "releaseFence")
     assertDoesNotInvoke(getMethod(cs.find(_.name == "C").get, "<init>"), "releaseFence")
