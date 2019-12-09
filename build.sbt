@@ -2,7 +2,7 @@
  * The new, sbt-based build definition for Scala.
  *
  * What you see below is very much work-in-progress. The following features are implemented:
- *   - Compiling all classses for the compiler and library ("compile" in the respective subprojects)
+ *   - Compiling all classes for the compiler and library ("compile" in the respective subprojects)
  *   - Running JUnit ("junit/test"), ScalaCheck ("scalacheck/test"), and partest ("test/it:test") tests
  *   - Creating build/quick with all compiled classes and launcher scripts ("dist/mkQuick")
  *   - Creating build/pack with all JARs and launcher scripts ("dist/mkPack")
@@ -11,10 +11,10 @@
  *
  * You'll notice that this build definition is much more complicated than your typical sbt build.
  * The main reason is that we are not benefiting from sbt's conventions when it comes project
- * layout. For that reason we have to configure a lot more explicitly. I've tried explain in
+ * layout. For that reason we have to configure a lot more explicitly. I've tried to explain in
  * comments the less obvious settings.
  *
- * This nicely leads me to explaining goal and non-goals of this build definition. Goals are:
+ * This nicely leads me to explain the goal and non-goals of this build definition. Goals are:
  *
  *   - to be easy to tweak it in case a bug or small inconsistency is found
  *   - to be super explicit about any departure from standard sbt settings

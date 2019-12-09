@@ -1,4 +1,4 @@
-This is a fresh start for script tests. The fact that windows exists can
+This is a fresh start for script tests. The fact that Windows exists can
 no longer be allowed to stand in the way of testing the wide range of
 functionality which currently goes completely untested. So I'll just be
 putting self-contained script tests in here to run some way that doesn't
