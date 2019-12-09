@@ -13,11 +13,14 @@ object Names {
     final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                 extends TastyName
     final case class DefaultName(qual: TastyName, num: Int)                                 extends TastyName
     final case class VariantName(qual: TastyName, contravariant: Boolean)                   extends TastyName
+    final case class PrefixName(prefix: SimpleName, qual: TastyName)                        extends TastyName
 
     val Empty: SimpleName = SimpleName("")
     val PathSep: SimpleName = SimpleName(".")
     val ExpandedSep: SimpleName = SimpleName("$$")
     val ExpandPrefixSep: SimpleName = SimpleName("$")
+    val InlinePrefix: SimpleName = SimpleName("inline$")
+    val SuperPrefix: SimpleName = SimpleName("super$")
 
   }
 
@@ -52,6 +55,7 @@ object Names {
             case UniqueName(qual, sep, num)     => inner(qual); inner(sep); sb.append(num)
             case DefaultName(qual, num)         => inner(qual); sb.append("$default$"); sb.append(num + 1)
             case VariantName(qual, contra)      => sb.append(if (contra) '-' else '+'); inner(qual)
+            case PrefixName(prefix, qual)       => inner(prefix); inner(qual)
           }
           inner(self)
           sb.toString
@@ -70,9 +74,10 @@ object Names {
             case QualifiedName(qual, sep, name) => inner(qual); sb.append("[Qualified "); inner(sep); sb.append(' '); inner(name); sb.append(']')
             case ModuleName(name)               => inner(name); sb.append("[ModuleClass]")
             case SignedName(name,sig)           => inner(name); sb.append("[Signed "); sig.mergeShow(sb).append(']')
-            case UniqueName(qual, sep, num)     => inner(qual); sb.append("[Unique "); inner(sep); sb.append(" ").append(num).append(']')
+            case UniqueName(qual, sep, num)     => inner(qual); sb.append("[Unique "); inner(sep); sb.append(' ').append(num).append(']')
             case DefaultName(qual, num)         => inner(qual); sb.append("[Default "); sb.append(num + 1).append(']')
             case VariantName(qual, contra)      => inner(qual); sb.append("[Variant ").append(if (contra) '-' else '+').append(']')
+            case PrefixName(prefix, qual)       => inner(qual); sb.append("[Prefix "); inner(prefix); sb.append(']')
           }
           inner(self)
           sb.toString
@@ -88,6 +93,7 @@ object Names {
       | _:UniqueName
       | _:DefaultName
       | _:VariantName
+      | _:PrefixName
       ) => name
     }
 
@@ -100,6 +106,7 @@ object Names {
       | _:UniqueName
       | _:DefaultName
       | _:VariantName
+      | _:PrefixName
       ) => Signature.NotAMethod
     }
   }

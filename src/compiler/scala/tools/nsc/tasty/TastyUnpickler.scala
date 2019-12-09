@@ -92,6 +92,14 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val res = ModuleName(readName())
         logTasty(s"${nameAtRef.size}: $res")
         res
+      case INLINEACCESSOR | SUPERACCESSOR =>
+        val prefix = tag match {
+          case INLINEACCESSOR => TastyName.InlinePrefix
+          case SUPERACCESSOR  => TastyName.SuperPrefix
+        }
+        val res = PrefixName(prefix, readName())
+        logTasty(s"${nameAtRef.size}: $res")
+        res
       case _ =>
         val qual = readName() // simpleNameKindOfTag(tag)(readName())
         sys.error(s"at Addr(${nameAtRef.size}): unknown ${nameTagToString(tag)} name: $qual")
