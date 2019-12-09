@@ -9,9 +9,15 @@ scala> def pos_impl(c: scala.reflect.macros.blackbox.Context): c.Expr[String] = 
 pos_impl: (c: scala.reflect.macros.blackbox.Context)c.Expr[String]
 
 scala> def pos: String = macro pos_impl
-defined term macro pos: String
+<console>:13: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+       def pos: String = macro pos_impl
+                               ^
 
 scala> pos
-res0: String = class scala.reflect.internal.util.RangePosition
+<console>:13: error: not found: value pos
+       pos
+       ^
 
 scala> :quit

@@ -13,27 +13,27 @@ repl-out-dir-run.obj
     $line2
         $eval$.class
         $eval.class
-        $read$$iw$.class
+        $read$$iw.class
         $read$.class
         $read.class
     $line3
         $eval$.class
         $eval.class
-        $read$$iw$.class
         $read$$iw$Bippy$.class
         $read$$iw$Bippy.class
+        $read$$iw.class
         $read$.class
         $read.class
     $line4
         $eval$.class
         $eval.class
-        $read$$iw$.class
+        $read$$iw.class
         $read$.class
         $read.class
     $line5
         $eval$.class
         $eval.class
-        $read$$iw$.class
+        $read$$iw.class
         $read$.class
         $read.class
     $repl_$init.class

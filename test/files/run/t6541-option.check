@@ -1,0 +1,1 @@
+<console>:11: warning: inferred existential type Option[Class[_$1]] forSome { type _$1 }, which cannot be expressed by wildcards,  should be enabled

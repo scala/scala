@@ -9,12 +9,20 @@ scala>     object GrabContext {
       def impl(c: Context)() = { import c.universe._; System.getProperties.put("lastContext", c); c.Expr[Unit](q"()") }
       def grab(): Unit = macro impl
     }
-defined object GrabContext
+<console>:19: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+             def grab(): Unit = macro impl
+                                      ^
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-defined object Test
+<console>:15: error: not found: value GrabContext
+           object Test { class C(implicit a: Any) { GrabContext.grab } }
+                                                    ^
 
 scala>     object Test { class C(implicit a: Any) { GrabContext.grab } }
-defined object Test
+<console>:15: error: not found: value GrabContext
+           object Test { class C(implicit a: Any) { GrabContext.grab } }
+                                                    ^
 
 scala> :quit

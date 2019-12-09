@@ -4,6 +4,8 @@ g: scala.reflect.internal.SymbolTable = null
 import g.abort
 
 scala> class C(val a: Any) extends AnyVal
-defined class C
+<console>:11: error: value class may not be a member of another class
+       class C(val a: Any) extends AnyVal
+             ^
 
 scala> :quit
