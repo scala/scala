@@ -600,10 +600,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val unwrapped = rootCause(t)
 
       // Example input: $line3.$read$$iw$
-      val classNameRegex = (lineRegex + ".*").r
-      def isWrapperCode(x: StackTraceElement) = PartialFunction.cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName => true
-      }
+      val classNameRegex = lineRegex
+      def isWrapperCode(x: StackTraceElement) =
+        x.getMethodName == nme.CONSTRUCTOR.decoded || x.getMethodName == "<clinit>" || x.getMethodName == printName && classNameRegex.pattern.matcher(x.getClassName).find()
 
       val stackTrace = unwrapped.stackTracePrefixString(!isWrapperCode(_))
       withLastExceptionLock[String]({
