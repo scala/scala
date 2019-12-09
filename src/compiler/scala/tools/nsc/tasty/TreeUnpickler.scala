@@ -838,7 +838,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val noCycle  = tag match {
         case DEFDEF =>
           val (isExtension, exceptExtension) = completer.tastyFlagSet.except(Extension)
-          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on def: ${show(exceptExtension)}")
+          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on $sym: ${show(exceptExtension)}")
           if (isExtension) ctx.log(s"$name is a Scala 3 extension method.")
           val typeParams = {
             if (nme.CONSTRUCTOR === sym.name.toTermName) {
@@ -859,14 +859,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val isInline = completer.tastyFlagSet.is(Inline)
           val unsupported = completer.tastyFlagSet &~ (Inline | Enum)
-          assertTasty(!unsupported, s"unsupported flags on val: ${show(unsupported)}")
+          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = if (sym.isMethod) mkNullaryMethodType(tpe) else tpe
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
           val unsupported = completer.tastyFlagSet &~ Enum
-          assertTasty(!unsupported, s"unsupported Scala 3 flags on type: ${show(unsupported)}")
+          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
@@ -886,7 +886,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             NoCycle(at = symAddr)
           }
         case PARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported flags on parameter: ${show(completer.tastyFlagSet)}")
+          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on parameter $sym: ${show(completer.tastyFlagSet)}")
           val tpt = readTpt()(localCtx)
           if (nothingButMods(end) && sym.not(ParamAccessor)) {
             sym.info = tpt.tpe
