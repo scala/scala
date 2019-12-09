@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty
 
 import scala.collection.mutable
 
-import TastyFormat.NameTags._
+import TastyFormat.NameTags._, TastyFormat.nameTagToString
 import TastyRefs.NameRef
 import Names.TastyName, Names.TastyName._
 
@@ -94,7 +94,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         res
       case _ =>
         val qual = readName() // simpleNameKindOfTag(tag)(readName())
-        sys.error(s"at Addr(${nameAtRef.size}): unknown ${TastyFormat.astTagToString(tag)} name :$qual")
+        sys.error(s"at Addr(${nameAtRef.size}): unknown ${nameTagToString(tag)} name: $qual")
     }
     assert(currentAddr == end, s"bad name $result $start $currentAddr $end")
     result

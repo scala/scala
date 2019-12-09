@@ -291,6 +291,23 @@ object TastyFormat {
   }
   object NameTags extends NameTags
 
+  def nameTagToString(tag: Int) = {
+    import NameTags._
+    tag match {
+      case UTF8 => "UTF8"
+      case QUALIFIED => "QUALIFIED"
+      case EXPANDED => "EXPANDED"
+      case EXPANDPREFIX => "EXPANDPREFIX"
+      case UNIQUE => "UNIQUE"
+      case DEFAULTGETTER => "DEFAULTGETTER"
+      case VARIANT => "VARIANT"
+      case SUPERACCESSOR => "SUPERACCESSOR"
+      case INLINEACCESSOR => "INLINEACCESSOR"
+      case OBJECTCLASS => "OBJECTCLASS"
+      case SIGNED => "SIGNED"
+    }
+  }
+
   // Position header
 
   final val SOURCE = 4
