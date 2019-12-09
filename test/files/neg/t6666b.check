@@ -4,4 +4,4 @@ t6666b.scala:11: error: Implementation restriction: access of method x$1 in clas
 t6666b.scala:22: error: Implementation restriction: access of method x$2 in class C15 from object Nested$3, would require illegal premature access to the unconstructed `this` of class C15
         object Nested { def xx = x}
                                  ^
-two errors found
+2 errors

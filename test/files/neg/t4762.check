@@ -5,5 +5,5 @@ t4762.scala:50: warning: private[this] value x in class Derived shadows mutable 
   class Derived( x : Int ) extends Base( x ) { override def toString = x.toString }
                                                                        ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

@@ -1,4 +1,4 @@
 t3209.scala:2: error: expected start of definition
 package test
 ^
-one error found
+1 error

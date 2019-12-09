@@ -2,5 +2,5 @@ trait_fields_deprecated_overriding.scala:10: warning: overriding value x in trai
   override val x = 2
                ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

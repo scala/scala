@@ -4,4 +4,4 @@ t8892.scala:2: error: type mismatch;
     (which expands to)  String
 class C[B](x: B) extends A { def f: B = x }
                                         ^
-one error found
+1 error

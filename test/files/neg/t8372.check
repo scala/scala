@@ -4,4 +4,4 @@ t8372.scala:7: error: No ClassTag available for A1
 t8372.scala:9: error: No ClassTag available for A1
   def unzip3[T1, T2, T3](a: Array[(T1, T2, T3)]): (Array[T1], Array[T2], Array[T3]) = a.unzip3
                                                                                         ^
-two errors found
+2 errors

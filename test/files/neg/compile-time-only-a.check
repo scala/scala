@@ -79,4 +79,4 @@ compile-time-only-a.scala:75: error: placebo
 compile-time-only-a.scala:75: error: placebo
   @placebo def x = (2: @placebo)
                         ^
-27 errors found
+27 errors

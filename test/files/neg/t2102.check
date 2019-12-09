@@ -3,4 +3,4 @@ t2102.scala:2: error: type mismatch;
  required: Iterator[_]   (in scala.collection)
   val x: Iterator[_] = new java.util.ArrayList[Int]().iterator
                                                       ^
-one error found
+1 error

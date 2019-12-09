@@ -5,4 +5,4 @@ t10935.scala:4: error: value += is not a member of Int
     expansion: a.this.size = a.this.size.+(1.+("foo".<lengt: error>))
   size += 1 + "foo".lengt
        ^
-one error found
+1 error

@@ -3,4 +3,4 @@ t3006.scala:8: error: type mismatch;
  required: Int
   println(A(3) + "H")
                  ^
-one error found
+1 error

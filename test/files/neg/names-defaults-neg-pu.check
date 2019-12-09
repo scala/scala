@@ -142,5 +142,5 @@ names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at pa
 names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-5 warnings found
-33 errors found
+5 warnings
+33 errors

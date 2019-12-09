@@ -13,4 +13,4 @@ t8035-removed.scala:11: error: adaptation of an empty argument list by inserting
   given arguments: <none>
   sdf.format()
             ^
-three errors found
+3 errors

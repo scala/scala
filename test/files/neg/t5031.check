@@ -2,4 +2,4 @@ package.scala:2: error: Companions 'class Test' and 'object Test' must be define
   Found in t5031/package.scala and t5031/Id.scala
   class Test
         ^
-one error found
+1 error

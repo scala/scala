@@ -7,4 +7,4 @@ Test_2.scala:3: error: 2
 Test_2.scala:3: error: 3
   err"123"
         ^
-three errors found
+3 errors

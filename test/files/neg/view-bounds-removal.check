@@ -6,4 +6,4 @@ view-bounds-removal.scala:5: error: view bounds are unsupported; use an implicit
   example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`
   def g[C, B <: C, A <% B : Numeric](a: A) = null
                      ^
-two errors found
+2 errors

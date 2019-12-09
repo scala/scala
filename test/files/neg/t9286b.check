@@ -4,4 +4,4 @@ private def foo[A]: Int at line 2
 have same type after erasure: ()Int
 class D extends C { private def foo[A] = 0 }
                                 ^
-one error found
+1 error

@@ -44,5 +44,5 @@ t8685.scala:55: warning: class K in object J is deprecated (since now): Inner K 
   def l = new J.K(42)
                 ^
 error: No warnings can be incurred under -Werror.
-15 warnings found
-one error found
+15 warnings
+1 error

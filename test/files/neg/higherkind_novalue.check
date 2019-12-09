@@ -4,4 +4,4 @@ higherkind_novalue.scala:2: error: type m takes type parameters
 higherkind_novalue.scala:3: error: type m takes type parameters
   def y: m
          ^
-two errors found
+2 errors

@@ -13,4 +13,4 @@ Test_2.scala:9: error: splice must be enclosed within a reify {} block
 Test_2.scala:10: error: cannot use value except for signatures of macro implementations
     val value = expr.value
                      ^
-5 errors found
+5 errors

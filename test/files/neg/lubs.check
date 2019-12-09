@@ -18,4 +18,4 @@ lubs.scala:25: error: type mismatch;
  required: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A{type T >: Null <: test2.A}}}
   val x4: A { type T >: Null <: A { type T >: Null <: A { type T >: Null <: A } } } = f
                                                                                       ^
-four errors found
+4 errors

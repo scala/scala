@@ -17,4 +17,4 @@ t9138.scala:43: error: object creation impossible. Missing implementation for:
 (overriding member must declare implicit parameter list)
 object Obj extends Model[ImplementingParamTrait] {
        ^
-four errors found
+4 errors

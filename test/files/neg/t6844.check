@@ -3,4 +3,4 @@ t6844.scala:4: error: type mismatch;
  required: reflect.runtime.universe.Tree
   q"def foo($x)"
              ^
-one error found
+1 error

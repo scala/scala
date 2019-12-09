@@ -3,4 +3,4 @@ t963b.scala:25: error: type mismatch;
  required: AnyRef{val y: A}
   B.f(B)
       ^
-one error found
+1 error

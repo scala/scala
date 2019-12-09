@@ -6,4 +6,4 @@ t696.scala:6: error: diverging implicit expansion for type TypeUtil0.Type[X]
 starting with method WithType in object TypeUtil0
   def foo[X]() = as[X](null)
                       ^
-two errors found
+2 errors

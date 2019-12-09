@@ -1,4 +1,4 @@
 t5497.scala:3: error: not found: value sq
     case other => println(null.asInstanceOf[sq.Filter].tableName)
                                             ^
-one error found
+1 error

@@ -28,4 +28,4 @@ t2488.scala:11: error: overloaded method value f with alternatives:
  cannot be applied to (Int)
   println(c.f(2))
             ^
-5 errors found
+5 errors

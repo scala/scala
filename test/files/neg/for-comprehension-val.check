@@ -22,4 +22,4 @@ for-comprehension-val.scala:12: error: `val` keyword in for comprehension is uns
 for-comprehension-val.scala:12: error: `val` keyword in for comprehension is unsupported: instead, bind the value without `val`
   for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
                                              ^
-8 errors found
+8 errors

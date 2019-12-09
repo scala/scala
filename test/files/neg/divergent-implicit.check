@@ -17,4 +17,4 @@ divergent-implicit.scala:15: error: type mismatch;
  required: Test2.Bar
   val y: Bar = new Baz
                ^
-four errors found
+4 errors

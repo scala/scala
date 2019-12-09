@@ -3,4 +3,4 @@ t608.scala:16: error: type mismatch;
  required: hs{type s = hs; type a = ha}
        = g(f(x).bimap(id))
                      ^
-one error found
+1 error

@@ -10,4 +10,4 @@ import baz._
 and import bar._
     def f: Bippy[Int] = ???
            ^
-two errors found
+2 errors

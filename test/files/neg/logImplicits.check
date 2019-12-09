@@ -17,4 +17,4 @@ logImplicits.scala:24: error: class Un needs to be abstract. Missing implementat
   def unimplemented: Int
 class Un {
       ^
-one error found
+1 error

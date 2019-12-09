@@ -7,4 +7,4 @@ t7292-removal.scala:3: error: octal escape literals are unsupported: use \u0053 
 t7292-removal.scala:4: error: octal escape literals are unsupported: use \n instead
   val lf = '\012'
             ^
-three errors found
+3 errors

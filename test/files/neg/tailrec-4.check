@@ -13,4 +13,4 @@ tailrec-4.scala:23: error: could not optimize @tailrec annotated method foo: it 
 tailrec-4.scala:31: error: could not optimize @tailrec annotated method foo: it contains a recursive call not in tail position
           @tailrec def foo: Int = foo + 1
                                       ^
-5 errors found
+5 errors

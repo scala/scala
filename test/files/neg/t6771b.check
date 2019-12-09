@@ -3,4 +3,4 @@ t6771b.scala:12: error: type mismatch;
  required: Test.a.type
   b = b match { case x => x }
                           ^
-one error found
+1 error

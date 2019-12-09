@@ -1,4 +1,4 @@
 t4928.scala:3: error: unknown parameter name: z
   f(z = 0, a = 1)
       ^
-one error found
+1 error

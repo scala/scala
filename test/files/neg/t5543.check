@@ -7,4 +7,4 @@ t5543.scala:11: error: not found: value x
 t5543.scala:18: error: not found: value x
   def this(a: Int = x) { this() }
                     ^
-three errors found
+3 errors

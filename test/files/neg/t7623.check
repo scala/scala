@@ -11,5 +11,5 @@ t7623.scala:15: warning: Sequence wildcard (_*) does not align with repeated cas
   def h = C("") match { case C(s, t, u @ _*) => }    // warn
                              ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

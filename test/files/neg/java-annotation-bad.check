@@ -40,4 +40,4 @@ Test_1.scala:23: error: type mismatch;
  required: scala.annotation.ConstantAnnotation
   val j: ConstantAnnotation = c // nok
                               ^
-10 errors found
+10 errors

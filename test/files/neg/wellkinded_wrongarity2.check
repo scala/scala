@@ -1,13 +1,13 @@
-wellkinded_wrongarity2.scala:5: error: String takes no type parameters, expected: one
+wellkinded_wrongarity2.scala:5: error: String takes no type parameters, expected: 1
 trait ms1 extends Monad[String]        // wrong
                         ^
-wellkinded_wrongarity2.scala:6: error: t takes no type parameters, expected: one
+wellkinded_wrongarity2.scala:6: error: t takes no type parameters, expected: 1
 trait ms2[t] extends Monad[t]          // wrong
                            ^
-wellkinded_wrongarity2.scala:7: error: m[t] takes no type parameters, expected: one
+wellkinded_wrongarity2.scala:7: error: m[t] takes no type parameters, expected: 1
 trait ms3[m[_], t] extends Monad[m[t]] // wrong -- added to check regression on bug
                                  ^
 wellkinded_wrongarity2.scala:12: error: type m takes type parameters
 trait Bar2[m[_]] extends Foo[m] // check that m is properly recognized as kind *->*, while * is expected
                              ^
-four errors found
+4 errors

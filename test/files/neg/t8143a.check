@@ -3,4 +3,4 @@ def f: Int (defined in class Foo)
   override should not be private
 class Bar extends Foo { private def f = 10 }
                                     ^
-one error found
+1 error

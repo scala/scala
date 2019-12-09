@@ -2,5 +2,5 @@ t9953.scala:12: warning: Object and X are unrelated: they will never compare equ
   def b = y == x   // warn
             ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

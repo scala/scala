@@ -5,5 +5,5 @@ constructor-init-order.scala:19: warning: Reference to uninitialized variable ba
   var bar1         = baz     // warn
                      ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

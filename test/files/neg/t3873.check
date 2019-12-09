@@ -3,4 +3,4 @@ t3873.scala:11: error: type mismatch;
  required: a.B where val a: A
   wrongf(new A)(a.b) // should not compile
                   ^
-one error found
+1 error

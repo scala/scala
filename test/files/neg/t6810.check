@@ -25,4 +25,4 @@ t6810.scala:27: error: unclosed character literal
 t6810.scala:25: error: '=' expected.
   val a = '\u000D'    // similar treatment of CR
 ^
-9 errors found
+9 errors

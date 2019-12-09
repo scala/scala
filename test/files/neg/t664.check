@@ -4,4 +4,4 @@ t664.scala:4: error: type Foo is not a member of test.Test
 t664.scala:5: error: type Bar is not a member of AnyRef
     trait Bar extends super.Bar;
                             ^
-two errors found
+2 errors

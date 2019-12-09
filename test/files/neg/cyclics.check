@@ -7,4 +7,4 @@ cyclics.scala:3: error: illegal cyclic reference involving type B
 cyclics.scala:5: error: illegal cyclic reference involving type E
   type C = I { type E = C }
                         ^
-three errors found
+3 errors

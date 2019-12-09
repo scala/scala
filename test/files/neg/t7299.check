@@ -4,4 +4,4 @@ t7299.scala:4: error: functions may not have more than 22 parameters; method f c
 t7299.scala:5: error: functions may not have more than 22 parameters; method g cannot be eta-expanded because it takes 23 arguments
    val eta2 = g[Any] _
                ^
-two errors found
+2 errors

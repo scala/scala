@@ -10,4 +10,4 @@ t10733.scala:9: error: unbound wildcard type
 t10733.scala:10: error: unbound wildcard type
   def y[X >: _ <: Int] = null
              ^
-four errors found
+4 errors

@@ -11,5 +11,5 @@ classmanifests_new_deprecations.scala:8: warning: type ClassManifest in package 
   type RCM[T] = scala.reflect.ClassManifest[T]
                               ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

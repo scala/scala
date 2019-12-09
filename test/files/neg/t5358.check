@@ -4,4 +4,4 @@ t5358.scala:3: error: class C inherits conflicting members:
   (note: this can be resolved by declaring an `override` in class C.)
 class C extends A with B
       ^
-one error found
+1 error

@@ -8,4 +8,4 @@ it is both defined in package object p and imported subsequently by
 import q.X._
       f() + g()
             ^
-two errors found
+2 errors

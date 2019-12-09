@@ -19,4 +19,4 @@ t7289_status_quo.scala:21: error: could not find implicit value for parameter e:
 t7289_status_quo.scala:22: error: could not find implicit value for parameter e: Test1.ExtCov[List[List[List[Int]]]]
   implicitly[ExtCov[List[List[List[Int]]]]]     // fails - not found
             ^
-6 errors found
+6 errors

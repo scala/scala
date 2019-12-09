@@ -6,4 +6,4 @@ t5882.scala:5: error: implementation restriction: nested object is not allowed i
 This restriction is planned to be removed in subsequent releases.
   object Bar
          ^
-two errors found
+2 errors

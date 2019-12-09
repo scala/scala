@@ -1,4 +1,4 @@
 sip23-uninitialized-0.scala:2: error: unbound placeholder parameter
   val f0: 1 = _    // error: unbound placeholder
               ^
-one error found
+1 error

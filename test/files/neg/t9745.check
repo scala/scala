@@ -16,4 +16,4 @@ t9745.scala:19: error: missing parameter type
 t9745.scala:19: error: missing parameter type
   val g = (x, y) => f(42)(x, y)
               ^
-5 errors found
+5 errors

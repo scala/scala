@@ -4,4 +4,4 @@ t10545.scala:32: error: ambiguous implicit values:
  match expected type Bar[Option]
   implicitly[Bar[Option]]
             ^
-one error found
+1 error

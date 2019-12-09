@@ -10,4 +10,4 @@ t3934.scala:20: error: method f2 in class J cannot be accessed as a member of te
  class S2 in package nest where the access takes place
   def g2(x: J) = x.f2()
                    ^
-two errors found
+2 errors

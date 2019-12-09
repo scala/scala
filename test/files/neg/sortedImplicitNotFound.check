@@ -77,4 +77,4 @@ sortedImplicitNotFound.scala:102: error: No implicit Ordering[Object] found to b
 sortedImplicitNotFound.scala:105: error: No implicit Ordering[Object] found to build a SortedMap[Object, Object]. You may want to upcast to a Map[Int, Object] first by calling `unsorted`.
   im.collect{case _ => (o, o)}
             ^
-26 errors found
+26 errors

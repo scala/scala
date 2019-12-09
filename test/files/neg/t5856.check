@@ -28,4 +28,4 @@ t5856.scala:8: error: error in interpolated string: identifier or block expected
 t5856.scala:9: error: error in interpolated string: identifier or block expected
   val s8 = s"$super"
               ^
-10 errors found
+10 errors

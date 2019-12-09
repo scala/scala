@@ -8,4 +8,4 @@ sip23-null.scala:3: error: type mismatch;
  required: x.type
   def foo(x: AnyVal): x.type = null
                                ^
-two errors found
+2 errors

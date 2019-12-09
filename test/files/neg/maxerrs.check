@@ -13,4 +13,4 @@ maxerrs.scala:28: error: type mismatch;
  required: Int
   def h = f("")
             ^
-5 errors found
+5 errors

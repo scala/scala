@@ -10,4 +10,4 @@ t3222.scala:3: error: not found: type C
 t3222.scala:6: error: not found: type E
   @throws(classOf[E])
                   ^
-four errors found
+4 errors

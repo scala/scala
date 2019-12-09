@@ -4,4 +4,4 @@ def asMatch(m: Test.this.Node): Any at line 11
 have same type after erasure: (node: test.Test#NodeImpl)Object
     def asMatch(m : Node) : Any = {
         ^
-one error found
+1 error

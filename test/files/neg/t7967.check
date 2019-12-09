@@ -6,4 +6,4 @@ t7967.scala:8: error: illegal inheritance;
  self-type Test.CC does not conform to Test.CC's selftype Test.CC
   new CC {} // should fail, doesn't
       ^
-two errors found
+2 errors

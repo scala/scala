@@ -13,4 +13,4 @@ t2910.scala:30: error: forward reference extends over definition of value x
 t2910.scala:35: error: forward reference extends over definition of variable x
     lazy val f: Int = g
                       ^
-5 errors found
+5 errors

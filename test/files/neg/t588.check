@@ -10,4 +10,4 @@ def f(brac: Test.this.TypeB): Unit at line 10
 have same type after erasure: (node: Test#TraitA)Unit
   def f(brac : TypeB) : Unit;
       ^
-two errors found
+2 errors

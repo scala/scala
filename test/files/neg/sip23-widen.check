@@ -53,4 +53,4 @@ sip23-widen.scala:75: error: type mismatch;
  required: 1 @unchecked
   annot0: 1 @unchecked
   ^
-11 errors found
+11 errors

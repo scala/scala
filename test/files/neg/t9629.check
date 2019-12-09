@@ -14,4 +14,4 @@ t9629.scala:9: error: pattern must be a value: Option[Int]
 Note: if you intended to match against the class, try `case _: Option[_]`
       case x @ (y @ Option[Int]) =>
                           ^
-four errors found
+4 errors

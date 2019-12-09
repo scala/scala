@@ -1,4 +1,4 @@
 t11337.scala:3: error: trait Foo takes type parameters
   val foo: Foo[Any] { type Bar = Any } = new Foo { def baz(): Any = () }
                                              ^
-one error found
+1 error

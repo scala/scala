@@ -10,4 +10,4 @@ t2275a.scala:4: error: ';' expected but 'else' found.
 t2275a.scala:7: error: '}' expected but eof found.
 }
  ^
-four errors found
+4 errors

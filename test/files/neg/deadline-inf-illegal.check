@@ -12,4 +12,4 @@ deadline-inf-illegal.scala:7: error: overloaded method value - with alternatives
  cannot be applied to (scala.concurrent.duration.Duration)
   Deadline.now - d
                ^
-three errors found
+3 errors

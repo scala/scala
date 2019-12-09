@@ -19,4 +19,4 @@ t4877.scala:17: error: type mismatch;
     (which expands to)  AnyRef{type Mom; def bar(x: Int): this.Mom; def bippy(): List[this.Mom]}
   val x: Bippy = new AnyRef {
                  ^
-four errors found
+4 errors

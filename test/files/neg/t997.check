@@ -1,4 +1,4 @@
 t997.scala:13: error: too many patterns for object Foo offering (String, String): expected 2, found 3
 "x" match { case Foo(a, b, c) => Console.println((a,b,c)) }
                  ^
-one error found
+1 error

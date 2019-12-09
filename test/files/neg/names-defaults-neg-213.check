@@ -12,5 +12,5 @@ names-defaults-neg-213.scala:15: warning: a pure expression does nothing in stat
 names-defaults-neg-213.scala:16: error: unknown parameter name: x
     f2(x = 1) // error (no such parameter). no mention of new semantics in 2.13
          ^
-two warnings found
-two errors found
+2 warnings
+2 errors

@@ -25,4 +25,4 @@ t5702-neg-bad-and-wild.scala:23: error: bad simple pattern: bad use of _* (a seq
 t5702-neg-bad-and-wild.scala:24: error: bad simple pattern: bad use of _* (sequence pattern not allowed)
     val (b, _ * ) = (5,6) // bad use of _* (sequence pattern not allowed)
                 ^
-9 errors found
+9 errors

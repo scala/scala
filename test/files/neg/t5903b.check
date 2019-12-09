@@ -3,4 +3,4 @@ Test_2.scala:4: error: type mismatch;
  required: String
     case t"$x" => println(x)
          ^
-one error found
+1 error

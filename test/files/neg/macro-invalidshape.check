@@ -18,4 +18,4 @@ macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
     def foo = macro impl
                     ^
-four errors found
+4 errors

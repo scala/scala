@@ -10,4 +10,4 @@ t7715.scala:17: error: unbound placeholder parameter
 t7715.scala:17: error: unbound placeholder parameter
   days zip days map s"${_: Int} by ${_: Int}".tupled foreach println
                                      ^
-four errors found
+4 errors

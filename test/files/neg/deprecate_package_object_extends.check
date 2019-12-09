@@ -7,5 +7,5 @@ drop the `extends` clause or use a regular object instead
 package foo2 { object `package` extends C }
                                 ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

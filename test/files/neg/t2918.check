@@ -4,4 +4,4 @@ t2918.scala:2: error: illegal cyclic reference involving type A
 t2918.scala:2: error: cyclic aliasing or subtyping involving type A
   def g[X, A[X] <: A[X]](x: A[X]) = x
            ^
-two errors found
+2 errors

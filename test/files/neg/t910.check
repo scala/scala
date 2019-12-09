@@ -3,4 +3,4 @@ t910.scala:4: error: type mismatch;
  required: Seq[Int]
     val y: Seq[Int] = rest
                       ^
-one error found
+1 error

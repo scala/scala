@@ -7,4 +7,4 @@ t6889.scala:17: error: the result type of an implicit conversion must be more sp
 t6889.scala:18: error: an expression of type Null is ineligible for implicit conversion
   var x: Int = null             // fail - no conversion from Null
                ^
-three errors found
+3 errors

@@ -2,5 +2,5 @@ sip23-uninitialized-1.scala:4: warning: value f1 in object Test does nothing oth
   val f1: 1 = f1   // warning: recursive
               ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

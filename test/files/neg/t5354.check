@@ -4,4 +4,4 @@ t5354.scala:9: error: ambiguous implicit values:
  match expected type foo.Bippy
       implicitly[Bippy]
                 ^
-one error found
+1 error

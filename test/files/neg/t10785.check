@@ -3,4 +3,4 @@ t10785.scala:6: error: type mismatch;
  required: scala.util.Either[?,?]
     y <- 1 + x
       ^
-one error found
+1 error

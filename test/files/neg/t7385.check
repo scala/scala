@@ -7,4 +7,4 @@ t7385.scala:6: error: '(' expected but identifier found.
 t7385.scala:7: error: illegal start of simple expression
 }
 ^
-three errors found
+3 errors

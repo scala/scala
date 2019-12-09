@@ -5,4 +5,4 @@ t1432.scala:12: error: type mismatch;
     (which expands to)  (Int, Unit => Double)
   def test(x: TypeCon[Wrap[Unit]]): TypeCon[Unit] = wrap(x)
                                                         ^
-one error found
+1 error

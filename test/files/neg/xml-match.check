@@ -2,4 +2,4 @@ xml-match.scala:3: error: To compile XML syntax, the scala.xml package must be o
 Please see https://github.com/scala/scala-xml for details.
     case <t>{ _* }</t> => <q/>
          ^
-one error found
+1 error

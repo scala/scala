@@ -7,4 +7,4 @@ t2968.scala:17: error: Missing closing brace `}` assumed here
 t2968.scala:26: error: Missing closing brace `}` assumed here
 } // missing brace
 ^
-three errors found
+3 errors

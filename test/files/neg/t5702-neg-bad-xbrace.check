@@ -4,4 +4,4 @@ t5702-neg-bad-xbrace.scala:19: error: bad simple pattern: bad brace or paren aft
 t5702-neg-bad-xbrace.scala:28: error: bad simple pattern: bad brace or paren after _*
     val <top>{a, z@_*)}</top> = xml
                      ^
-two errors found
+2 errors

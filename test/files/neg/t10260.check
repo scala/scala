@@ -18,4 +18,4 @@ Test.scala:4: error: class IDImpl needs to be abstract. Missing implementation f
 (Note that D does not match D[_ <: String]. To implement this raw type, use D[_])
 class IDImpl extends ID { def foo(a: D[_ <: String]) = ??? }
       ^
-four errors found
+4 errors

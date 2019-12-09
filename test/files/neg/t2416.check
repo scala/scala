@@ -7,4 +7,4 @@ t2416.scala:8: error: type arguments [Boolean] do not conform to type B's type p
 t2416.scala:13: error: type arguments [String] do not conform to type B's type parameter bounds [Z <: Double]
   type C[Z <: A] = Z#B[String] // nuh-uh!
                      ^
-three errors found
+3 errors

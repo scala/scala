@@ -9,4 +9,4 @@ case class test0(x: Int, x: Float)
 dbldef.scala:1: error: in class test0, multiple overloaded alternatives of x define default arguments
 case class test0(x: Int, x: Float)
            ^
-three errors found
+3 errors

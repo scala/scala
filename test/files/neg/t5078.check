@@ -6,4 +6,4 @@ t5078.scala:8: error: object Foo2 is not a case class, nor does it have a valid 
 Note: def unapply(): Option[Int] exists in object Foo2, but it cannot be used as an extractor: an unapply method must accept a single argument
     val Foo2(y2) = 2
         ^
-two errors found
+2 errors

@@ -3,4 +3,4 @@ Note: this is often due in part to a class depending on a definition nested with
 If applicable, you may wish to try moving some members into another object.
 import User.UserStatus._
             ^
-one error found
+1 error

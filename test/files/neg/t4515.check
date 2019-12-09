@@ -13,4 +13,4 @@ t4515.scala:37: error: type mismatch;
  required: Main.PushEventContext[_$2]
         handler.onEvent(target, ctx.getEvent, node, ctx)
                                                     ^
-three errors found
+3 errors

@@ -270,4 +270,4 @@ trait_fields_conflicts.scala:87: error: stable, immutable value required to over
 lazy val x: Int (defined in class CLazy)
 class CDefForCLazyOvr extends CLazy { override def x: Int = 1 } // bad override -- why?
                                                    ^
-68 errors found
+68 errors

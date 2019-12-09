@@ -15,4 +15,4 @@ constrs.scala:16: error: type mismatch;
  required: a
     def this() = this(1)
                       ^
-5 errors found
+5 errors

@@ -23,5 +23,5 @@ t7848-interp-warn.scala:38: warning: possible missing interpolator: detected an 
   def z = "${ baz * 3}"                                       // warn, no expr parsing
           ^
 error: No warnings can be incurred under -Werror.
-8 warnings found
-one error found
+8 warnings
+1 error

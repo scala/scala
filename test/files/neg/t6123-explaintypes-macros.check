@@ -7,4 +7,4 @@ BadMac_2.scala:6: error: macro implementation has incompatible shape:
 type mismatch for parameter params: c.Expr[Any]* does not conform to c.Expr[String]*
   def printf(format: String, params: Any*): Unit = macro printf_impl
                                                          ^
-one error found
+1 error

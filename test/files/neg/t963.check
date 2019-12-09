@@ -9,4 +9,4 @@ t963.scala:14: error: stable identifier required, but y3.x.type found.
 t963.scala:17: error: stable identifier required, but y4.x.type found.
   val w4 : y4.x.type = y4.x
                ^
-three errors found
+3 errors

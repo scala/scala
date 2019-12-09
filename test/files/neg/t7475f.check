@@ -7,4 +7,4 @@ t7475f.scala:13: error: not found: value c2
 t7475f.scala:26: error: value d2 is not a member of D[Any]
     other.d2 // not a member
           ^
-three errors found
+3 errors

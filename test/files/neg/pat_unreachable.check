@@ -13,5 +13,5 @@ pat_unreachable.scala:25: warning: unreachable code
     case c => println("matched c")
                      ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

@@ -4,4 +4,4 @@ trait Foo extends A(22A, Bug!) {}
 t877.scala:3: error: ')' expected but eof found.
 trait Foo extends A(22A, Bug!) {}
                                  ^
-two errors found
+2 errors

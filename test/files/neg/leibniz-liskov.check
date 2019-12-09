@@ -117,4 +117,4 @@ leibniz-liskov.scala:35: error: type mismatch;
     (which expands to)  U => Unit
   def convertConsume2[U, T](c: Consumes[T])(ev: U <:< T): Consumes[U] = ev.substituteCo(c)
                                                                                        ^
-24 errors found
+24 errors

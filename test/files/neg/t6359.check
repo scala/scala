@@ -6,4 +6,4 @@ t6359.scala:4: error: implementation restriction: nested class is not allowed in
 This restriction is planned to be removed in subsequent releases.
       class Y
             ^
-two errors found
+2 errors

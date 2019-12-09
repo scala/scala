@@ -16,4 +16,4 @@ Missing implementations for 4 members. Stub implementations follow:
 
 object Q extends A { }
        ^
-two errors found
+2 errors

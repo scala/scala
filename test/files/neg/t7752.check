@@ -24,4 +24,4 @@ t7752.scala:25: error: overloaded method value foo with alternatives:
  cannot be applied to (Int)
   foo((1))
   ^
-one error found
+1 error

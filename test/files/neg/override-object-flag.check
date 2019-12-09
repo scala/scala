@@ -2,4 +2,4 @@ override-object-flag.scala:3: error: cannot override final member:
 object Foo (defined in trait A)
 trait B extends A  { override object Foo }
                                      ^
-one error found
+1 error

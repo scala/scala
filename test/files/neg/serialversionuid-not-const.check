@@ -7,4 +7,4 @@ serialversionuid-not-const.scala:3: error: annotation argument needs to be a con
 serialversionuid-not-const.scala:4: error: annotation argument needs to be a constant; found: Test.bippy
 @SerialVersionUID(Test.bippy) class C4 extends Serializable
                        ^
-three errors found
+3 errors

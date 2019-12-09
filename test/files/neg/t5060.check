@@ -4,4 +4,4 @@ t5060.scala:2: error: covariant type T occurs in contravariant position in type 
 t5060.scala:6: error: covariant type T occurs in contravariant position in type => AnyRef{def contains(x: T): Unit} of method foo1
   def foo1 = {
       ^
-two errors found
+2 errors

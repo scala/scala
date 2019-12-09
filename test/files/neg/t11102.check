@@ -10,4 +10,4 @@ The underlying error was: type mismatch;
  required: Seq[CollectionCons] (in scala.collection.immutable)
   def f(x: CollectionSeq) = x match {
                               ^
-two errors found
+2 errors

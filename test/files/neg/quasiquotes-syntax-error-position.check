@@ -43,4 +43,4 @@ quasiquotes-syntax-error-position.scala:19: error: ';' expected but '<:' found.
 quasiquotes-syntax-error-position.scala:20: error: '=' expected but '.' found.
   q"def f ( $x  ) . $x"
                   ^
-15 errors found
+15 errors

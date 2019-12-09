@@ -4,4 +4,4 @@ import b._
 and import a._
   val x = f
           ^
-one error found
+1 error

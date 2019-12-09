@@ -2,4 +2,4 @@ S.scala:6: error: Implementation restriction: trait S accesses protected method 
 Add an accessor in a class extending class J as a workaround.
       foo()
       ^
-one error found
+1 error

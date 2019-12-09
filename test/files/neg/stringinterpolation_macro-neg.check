@@ -168,5 +168,5 @@ stringinterpolation_macro-neg.scala:72: error: Missing conversion operator in '%
 stringinterpolation_macro-neg.scala:75: error: conversions must follow a splice; use %% for literal %, %n for newline
   f"${d}random-leading-junk%d"
                            ^
-three warnings found
-45 errors found
+3 warnings
+45 errors

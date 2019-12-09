@@ -3,4 +3,4 @@ t0015.scala:5: error: type mismatch;
  required: Nothing => ?
    Nil.map(f _)
            ^
-one error found
+1 error

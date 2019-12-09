@@ -2,4 +2,4 @@ t0345.scala:2: error: object creation impossible. Missing implementation for:
   def cons(a: Nothing): Unit // inherited from trait Lizt
     val empty = new Lizt[Nothing] {
                     ^
-one error found
+1 error

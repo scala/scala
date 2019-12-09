@@ -13,4 +13,4 @@ tailrec.scala:59: error: could not optimize @tailrec annotated method fail3: it 
 tailrec.scala:63: error: could not optimize @tailrec annotated method fail4: it changes type of 'this' on a polymorphic recursive call
     @tailrec final def fail4[U](other: Tom[U], x: Int): Int = other.fail4[U](other, x - 1)
                                                                     ^
-5 errors found
+5 errors

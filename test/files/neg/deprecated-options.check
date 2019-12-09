@@ -2,5 +2,5 @@ warning: -Xfuture is deprecated: Not used since 2.13.
 warning: -optimize is deprecated: Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.
 warning: -Xexperimental is deprecated: Not used since 2.13.
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

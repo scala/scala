@@ -14,5 +14,5 @@ t8610.scala:10: warning: side-effecting nullary methods are discouraged: suggest
   def u: Unit = ()      // unitarian universalist
       ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

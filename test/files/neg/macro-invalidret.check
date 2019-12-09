@@ -53,5 +53,5 @@ Macros_Test_2.scala:34: warning: a pure expression does nothing in statement pos
 Macros_Test_2.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   bar6
   ^
-two warnings found
-10 errors found
+2 warnings
+10 errors

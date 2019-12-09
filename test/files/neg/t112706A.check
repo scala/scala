@@ -3,4 +3,4 @@ t112706A.scala:5: error: constructor cannot be instantiated to expected type;
  required: String
     case Tuple2(node,_) =>
          ^
-one error found
+1 error

@@ -11,5 +11,5 @@ implicitly-self.scala:13: warning: Implicit resolves to enclosing object tcStrin
   implicit object tcString extends TC[String] { def ix = implicitly[TC[String]].ix + 1 }
                                                                    ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

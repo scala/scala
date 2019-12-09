@@ -9,5 +9,5 @@ Expected type was: ?
 t5887.scala:10: warning: A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.
   def h = List("x") map (s => try { case _ => 7 })
                               ^
-two warnings found
-one error found
+2 warnings
+1 error

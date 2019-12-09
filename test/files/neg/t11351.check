@@ -3,4 +3,4 @@ t11351.scala:17: error: illegal trait super target found for method foo required
  expected: def foo: Y in trait A
 class Fail extends B with C
       ^
-one error found
+1 error

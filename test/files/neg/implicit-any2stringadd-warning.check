@@ -2,5 +2,5 @@ implicit-any2stringadd-warning.scala:4: warning: method any2stringadd in object 
   true + "what"
   ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

@@ -3,4 +3,4 @@ sammy_expected.scala:4: error: type mismatch;
  required: F[Object,Int]
   def wrong: F[Object, Int] = (x: String) => 1
                                           ^
-one error found
+1 error

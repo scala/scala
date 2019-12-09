@@ -71,5 +71,5 @@ warn-unused-privates.scala:102: warning: local var x in method f2 is never updat
     var x = 100 // warn about it being a var
         ^
 error: No warnings can be incurred under -Werror.
-24 warnings found
-one error found
+24 warnings
+1 error

@@ -4,4 +4,4 @@ Make sure that term memberHandlers is in your classpath and check for conflictin
 A full rebuild may help if 'Imports.class' was compiled against an incompatible version of scala.tools.nsc.interpreter.IMain.
 class IMain extends Imports
             ^
-one error found
+1 error

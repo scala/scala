@@ -5,5 +5,5 @@ Unused_2.scala:7: warning: private method g in object Unused is never used
   private def g(): Int = 17
               ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

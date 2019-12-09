@@ -13,4 +13,4 @@ t3736.scala:7: error: super not allowed here: use this.!= instead
 t3736.scala:8: error: super not allowed here: use this.## instead
     def f6 = super.##
                    ^
-5 errors found
+5 errors

@@ -4,4 +4,4 @@ spec-overrides.scala:8: error: Type parameter has to be specialized at least for
 spec-overrides.scala:12: error: Type parameter has to be specialized at least for the same types as in the overridden method. Missing types: Int
   override def a[T](t: T): List[T] = Nil
                  ^
-two errors found
+2 errors

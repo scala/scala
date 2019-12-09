@@ -4,4 +4,4 @@ did you mean MyClassBase.myStaticBaseMethod? Static Java members belong to compa
 they are not inherited, even by subclasses defined in Java.
   MyClass.myStaticBaseMethod() //no compiles. Wrong!!!
           ^
-one error found
+1 error

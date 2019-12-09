@@ -7,4 +7,4 @@ t0899.scala:11: error: super may not be used on variable v
 t0899.scala:12: error: super may not be used on variable v
   println(super.v)
                 ^
-three errors found
+3 errors

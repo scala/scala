@@ -4,4 +4,4 @@ val p = new Par[String]
 t1106.scala:5: error: expected class or object definition
 new Foo[p.type](p) // crashes compiler
 ^
-two errors found
+2 errors

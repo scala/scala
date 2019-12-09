@@ -1,4 +1,4 @@
 t0204.scala:4: error: class type required but Program.A{type T = String} found
  trait C extends B
                  ^
-one error found
+1 error

@@ -14,4 +14,4 @@ t5892.scala:13: error: type mismatch;
 t5892.scala:17: error: not found: value b2s
 @annot(b2s(false)) class F {
        ^
-four errors found
+4 errors

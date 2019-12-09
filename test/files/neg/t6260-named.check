@@ -10,4 +10,4 @@ clashes with definition of the member itself;
 both have erased type (a: Object)Object
   class X extends T[C[Any]] { def apply(a: C[Any]) = a }
                                   ^
-two errors found
+2 errors

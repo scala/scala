@@ -1,4 +1,4 @@
 sip23-uninitialized-2.scala:2: error: default initialization prohibited for literal-typed vars
   var f2: 1 = _    // error: default init prohibited
           ^
-one error found
+1 error

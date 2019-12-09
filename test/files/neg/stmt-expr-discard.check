@@ -5,5 +5,5 @@ stmt-expr-discard.scala:6: warning: a pure expression does nothing in statement 
     - 4
     ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

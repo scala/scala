@@ -22,4 +22,4 @@ case class ClashNoSigPoly private(x: Int)
 userdefined_apply.scala:51: error: ClashNoSigPoly.type does not take parameters
   def apply(x: T) = if (???) ClashNoSigPoly(1) else ???
                                            ^
-8 errors found
+8 errors

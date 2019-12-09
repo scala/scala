@@ -10,4 +10,4 @@ procedure-removal.scala:6: error: procedure syntax is unsupported: instead, add 
 procedure-removal.scala:7: error: procedure syntax is unsupported: instead, add `: Unit =` to explicitly declare `boz`'s return type
   def boz(i: Int, l: Long) {}
                            ^
-four errors found
+4 errors

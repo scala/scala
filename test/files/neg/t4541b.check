@@ -4,4 +4,4 @@ t4541b.scala:13: error: variable data in class SparseArray cannot be accessed as
  class SparseArray$mcI$sp where the access takes place
     use(that.data.clone)
              ^
-one error found
+1 error

@@ -7,5 +7,5 @@ view-bounds-deprecation.scala:5: warning: view bounds are deprecated; use an imp
   def g[C, B <: C, A <% B : Numeric](a: A) = null
                      ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

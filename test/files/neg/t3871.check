@@ -4,4 +4,4 @@ t3871.scala:4: error: variable foo in class Sub2 cannot be accessed as a member 
  class Sub2 where target is defined
     s.foo = true
       ^
-one error found
+1 error

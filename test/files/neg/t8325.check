@@ -12,4 +12,4 @@ t8325.scala:10: error: type mismatch;
 t8325.scala:10: error: a parameter section with a `*`-parameter is not allowed to have default arguments
   def j(is: Int* = 5) = ???
       ^
-four errors found
+4 errors

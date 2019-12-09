@@ -145,4 +145,4 @@ Note: the super classes of class F0 contain the following, non final members nam
 def oneArg(x: String): Any
   override lazy val oneArg = 15    // fail
                     ^
-34 errors found
+34 errors

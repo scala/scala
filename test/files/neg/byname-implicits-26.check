@@ -2,4 +2,4 @@ byname-implicits-26.scala:34: error: diverging implicit expansion for type Test.
 starting with method fooGen in object Foo
   implicitly[Foo[A]]
             ^
-one error found
+1 error

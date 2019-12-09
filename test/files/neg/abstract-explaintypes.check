@@ -12,4 +12,4 @@ abstract-explaintypes.scala:11: error: type mismatch;
                          ^
 A <: A.this.T?
 false
-two errors found
+2 errors

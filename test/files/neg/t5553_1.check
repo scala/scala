@@ -51,4 +51,4 @@ t5553_1.scala:33: error: type mismatch;
  required: Base[T(in method test10)]
   def test10[T]: Base[T] = Foo3[T]
                                ^
-10 errors found
+10 errors

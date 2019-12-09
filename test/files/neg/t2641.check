@@ -4,4 +4,4 @@ t2641.scala:22: error: wrong number of type arguments for ManagedSeq, should be 
 t2641.scala:28: error: value managedIterator is not a member of ManagedSeq[A,Coll]
     override def managedIterator = self.managedIterator slice (0, 0)
                                         ^
-two errors found
+2 errors

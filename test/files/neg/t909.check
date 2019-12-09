@@ -3,4 +3,4 @@ t909.scala:6: error: type mismatch;
  required: Int
                         case Foo("Hello") =>
                                  ^
-one error found
+1 error

@@ -10,4 +10,4 @@ macro-qmarkqmarkqmark.scala:9: error: macro implementation is missing
 macro-qmarkqmarkqmark.scala:12: error: macro implementation is missing
   foo3[Int]
       ^
-four errors found
+4 errors

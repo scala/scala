@@ -16,5 +16,5 @@ Used to return 5
   def g = true.bippy
                ^
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error

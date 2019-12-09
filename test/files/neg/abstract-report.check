@@ -12,4 +12,4 @@ Missing implementations for 6 members. Stub implementations follow:
 
 class Unimplemented extends scala.collection.IterableOps[String, List, List[String]] { }
       ^
-one error found
+1 error

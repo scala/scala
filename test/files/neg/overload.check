@@ -4,4 +4,4 @@ and  method f in class C of type (x: Int)Unit
 match argument types (Int)
   (new D).f(1)
           ^
-one error found
+1 error

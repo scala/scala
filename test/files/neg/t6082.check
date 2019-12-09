@@ -4,4 +4,4 @@ t6082.scala:2: error: arguments to Java annotations or subclasses of ConstantAnn
 t6082.scala:2: error: annotation annot is missing argument notValue
 @annot("") class C
  ^
-two errors found
+2 errors

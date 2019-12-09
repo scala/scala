@@ -10,4 +10,4 @@ valueclasses-impl-restrictions.scala:23: error: implementation restriction: nest
 This restriction is planned to be removed in subsequent releases.
   private[this] class I2(val q: String)
                       ^
-three errors found
+3 errors

@@ -16,4 +16,4 @@ varargs.scala:20: error: A method annotated with @varargs must have a single rep
 varargs.scala:23: error: A method annotated with @varargs must have a single repeated parameter in its last parameter list.
   @varargs def v6: Int = 1 // nok
                ^
-6 errors found
+6 errors

@@ -3,4 +3,4 @@ error after rewriting to X.this.d.applyDynamicNamed("meth")(scala.Tuple2("value1
 possible cause: maybe a wrong Dynamic method signature?
   d.meth(value1 = 10, value2 = 100) // two arguments here, but only one is allowed
                       ^
-one error found
+1 error

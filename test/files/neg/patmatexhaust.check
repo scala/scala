@@ -38,5 +38,5 @@ It would fail on the following input: C1()
     def ma10(x: C) = x match { // not exhaustive: C1 is not abstract.
                      ^
 error: No warnings can be incurred under -Werror.
-10 warnings found
-one error found
+10 warnings
+1 error

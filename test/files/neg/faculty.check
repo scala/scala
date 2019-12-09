@@ -1,4 +1,4 @@
 faculty.scala:3: error: recursive method faculty needs result type
   def faculty(x: Int) = if (x == 0) 1 else x * faculty(x - 1)
                                                ^
-one error found
+1 error

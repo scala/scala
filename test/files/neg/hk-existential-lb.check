@@ -5,4 +5,4 @@ Note: Option <: Any, but class Functor is invariant in type F.
 You may wish to define F as +F instead. (SLS 4.5)
   val someF: Functor[F] forSome { type F[x] >: List[x] } = new Functor[Option]
                                                            ^
-one error found
+1 error

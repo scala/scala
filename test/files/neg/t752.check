@@ -3,4 +3,4 @@ t752.scala:6: error: type mismatch;
  required: Int => Unit
                 f(g _)
                   ^
-one error found
+1 error

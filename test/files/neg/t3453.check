@@ -18,4 +18,4 @@ t3453.scala:64: error: type mismatch;
  required: B
         new A
         ^
-four errors found
+4 errors

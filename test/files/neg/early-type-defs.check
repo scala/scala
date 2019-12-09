@@ -4,5 +4,5 @@ object Test extends { type A1 = Int } with Runnable { def run() = () }
 early-type-defs.scala:4: error: early type members are unsupported: move them to the regular body; the semantics are the same
 object Test extends { type A1 = Int } with Runnable { def run() = () }
                            ^
-one warning found
-one error found
+1 warning
+1 error

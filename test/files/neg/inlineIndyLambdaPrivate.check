@@ -12,5 +12,5 @@ that would cause an IllegalAccessError when inlined into class Test.
   def foo = A_1.test
                 ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

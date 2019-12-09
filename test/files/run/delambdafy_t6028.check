@@ -56,4 +56,4 @@ package <empty> {
   }
 }
 
-warning: there was one feature warning; re-run with -feature for details
+warning: 1 feature warning; re-run with -feature for details

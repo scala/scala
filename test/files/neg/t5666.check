@@ -34,4 +34,4 @@ t5666.scala:12: error: class Unit is abstract; cannot be instantiated
 t5666.scala:13: error: class Nothing is abstract; cannot be instantiated
   new Nothing
   ^
-12 errors found
+12 errors

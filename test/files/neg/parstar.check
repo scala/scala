@@ -4,4 +4,4 @@ parstar.scala:8: error: *-parameter must come last
 parstar.scala:9: error: *-parameter must come last
     def m(a: A*, b: B*) = a.toArray
           ^
-two errors found
+2 errors

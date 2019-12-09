@@ -4,4 +4,4 @@ class C(vr: Int, vl: Int) extends T { def ref = vr + vl }
 t1960.scala:2: error: parameter 'vl' requires field but conflicts with value vl in trait T
 class C(vr: Int, vl: Int) extends T { def ref = vr + vl }
                  ^
-two errors found
+2 errors

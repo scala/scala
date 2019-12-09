@@ -1,3 +1,3 @@
 error: knownDirectSubclasses of Foo observed before subclass Bar registered
 error: knownDirectSubclasses of Foo observed before subclass Baz registered
-two errors found
+2 errors

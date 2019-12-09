@@ -5,5 +5,5 @@ unchecked-knowable.scala:21: warning: fruitless type test: a value of type Bippy
   /*   warn */ (new Bippy).isInstanceOf[B1]
                                        ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

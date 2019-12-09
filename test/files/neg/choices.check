@@ -2,4 +2,4 @@ error: Usage: -Yresolve-term-conflict:<strategy> where <strategy> choices are pa
 error: bad option: '-Yresolve-term-conflict'
 error: bad options: -Yresolve-term-conflict
 error: flags file may only contain compiler options, found: -Yresolve-term-conflict
-four errors found
+4 errors

@@ -3,4 +3,4 @@ t1275.scala:11: error: type mismatch;
  required: s
      = xs f
           ^
-one error found
+1 error

@@ -7,4 +7,4 @@ Note that implicit conversions are not applicable because they are ambiguous:
  are possible conversion functions from String("abc") to Test.Foo[_]
   val a: Foo[_] = "abc"
                   ^
-one error found
+1 error

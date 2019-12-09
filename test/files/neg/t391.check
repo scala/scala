@@ -10,4 +10,4 @@ class E(def x: Int); // the "def x" is illegal
 t391.scala:6: error: ':' expected but eof found.
 class E(def x: Int); // the "def x" is illegal
                                               ^
-four errors found
+4 errors

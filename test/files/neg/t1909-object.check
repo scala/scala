@@ -2,5 +2,5 @@ t1909-object.scala:6: warning: !!! scala/bug#1909 Unable to STATICally lift obje
       object InnerTrouble
              ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

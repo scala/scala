@@ -1,4 +1,4 @@
 saito.scala:10: error: class A cannot be instantiated because it does not conform to its self-type A with B
         val a: A = new A; // should not be allowed
                    ^
-one error found
+1 error

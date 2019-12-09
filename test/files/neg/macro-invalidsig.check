@@ -82,4 +82,4 @@ Macros_Test_2.scala:59: error: macro implementation reference has too few type a
 Macros_Test_2.scala:60: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$7: c.WeakTypeTag[T], implicit evidence$8: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
     def foo16[V]: Unit = macro Impls16.foo[V]
                                           ^
-16 errors found
+16 errors

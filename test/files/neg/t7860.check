@@ -5,5 +5,5 @@ t7860.scala:33: warning: private class C in object Test3 is never used
   private implicit class C(val i: Int) extends AnyVal {       // warn
                          ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

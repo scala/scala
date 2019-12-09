@@ -3,4 +3,4 @@ error after rewriting to CompilerError.this.test.applyDynamicNamed("crushTheComp
 possible cause: maybe a wrong Dynamic method signature?
   test.crushTheCompiler(a = 1, b = 2)
                                ^
-one error found
+1 error

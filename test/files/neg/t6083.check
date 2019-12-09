@@ -1,4 +1,4 @@
 t6083.scala:7: error: annotation argument needs to be a constant; found: conv.i2s(101)
 @annot(101) class C
        ^
-one error found
+1 error

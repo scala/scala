@@ -8,4 +8,4 @@ Test_2.scala:5: error: macro can only be overridden by another macro:
 macro override def t(): Unit (defined in trait C)
   val c4 = new C with A { override def t(): Unit = () }
                                        ^
-two errors found
+2 errors

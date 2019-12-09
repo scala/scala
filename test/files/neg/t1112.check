@@ -1,4 +1,4 @@
 t1112.scala:12: error: too many arguments (2) for method call: (p: Int)(f: => Test.this.Type1)Unit
     call(0,() => System.out.println("here we are"))
               ^
-one error found
+1 error

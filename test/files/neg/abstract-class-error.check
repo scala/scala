@@ -3,4 +3,4 @@ S.scala:1: error: class S needs to be abstract. Missing implementation for:
 (Note that java.util.List does not match java.util.List[String]. To implement this raw type, use java.util.List[_])
 class S extends J {
       ^
-one error found
+1 error

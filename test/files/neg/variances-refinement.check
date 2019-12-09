@@ -19,4 +19,4 @@ variances-refinement.scala:23: error: contravariant type A occurs in covariant p
 variances-refinement.scala:32: error: contravariant type A occurs in covariant position in type ()AnyRef{def f0(x: A): A; def f1(x: A): B; def f2(x: A): C} of method fail7
   def fail7() = { // fail
       ^
-7 errors found
+7 errors

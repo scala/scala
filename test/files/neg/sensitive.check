@@ -1,4 +1,4 @@
 sensitive.scala:17: error: constructor Sensitive in class Sensitive cannot be accessed in object Attacker from object Attacker
   val y = new Sensitive()
           ^
-one error found
+1 error

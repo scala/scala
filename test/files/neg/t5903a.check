@@ -1,4 +1,4 @@
 Test_2.scala:4: error: too many patterns for <$anon: AnyRef> offering (SomeTree.type, SomeTree.type): expected 2, found 3
     case nq"$x + $y + $z" => println((x, y))
          ^
-one error found
+1 error

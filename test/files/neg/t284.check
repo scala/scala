@@ -2,5 +2,5 @@ t284.scala:4: warning: Detected apparent refinement of Unit; are you missing an 
   def f1(a: T): Unit { }
                      ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

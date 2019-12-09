@@ -4,4 +4,4 @@ and  method aFunc in object ImplicitConvAmbiguity2 of type [A](a: ImplicitConvAm
 match argument types (Float)
     val x = aFunc(4F)
             ^
-one error found
+1 error

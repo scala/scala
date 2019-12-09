@@ -8,4 +8,4 @@ t278.scala:4: error: method a is defined twice;
   the conflicting method a was defined at line 3:7
   def a = (p:A) => ()
       ^
-two errors found
+2 errors

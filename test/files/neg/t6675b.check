@@ -33,5 +33,5 @@ t6675b.scala:41: error: constructor cannot be instantiated to expected type;
  required: ((?A1, ?A2), (?A3, ?A4)) where type ?A4 <: A (this is a GADT skolem), type ?A3 <: A (this is a GADT skolem), type ?A2 <: A (this is a GADT skolem), type ?A1 <: A (this is a GADT skolem)
   def f4[A](x: A) = (Left(x -> x): Either[(A, A), (A, A)]) match { case NativelyTwo((a, b, c)) => a  }  // fail
                                                                                     ^
-5 warnings found
-four errors found
+5 warnings
+4 errors

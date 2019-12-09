@@ -1,4 +1,4 @@
 t0117.scala:2: error: Implementation restriction: traits may not select fields or methods from super[C] where C is a class
 trait B extends A { println(super[A].a) }
                             ^
-one error found
+1 error

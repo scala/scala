@@ -14,5 +14,5 @@ warn-inferred-any.scala:37: warning: a type was inferred to be `Object`; this ma
   cs.contains(new C2)             // warns
      ^
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error

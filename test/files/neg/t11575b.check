@@ -4,4 +4,4 @@ private[package <empty>] var counts: Array[Int] (defined in class Cover);
  required: Array[Int]
     override var counts: String = ""
                  ^
-one error found
+1 error

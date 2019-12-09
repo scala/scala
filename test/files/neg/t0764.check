@@ -4,4 +4,4 @@ t0764.scala:13: error: type mismatch;
     (which expands to)  Node{type T = Node{type T = NextType}}
         new Main[AType]( (value: AType).prepend )
                                         ^
-one error found
+1 error

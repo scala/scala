@@ -7,4 +7,4 @@ t6340.scala:16: error: not found: type D
 t6340.scala:17: error: not found: type W
   val w = new W
               ^
-three errors found
+3 errors

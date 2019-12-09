@@ -2,5 +2,5 @@ numeric-add-string-warning.scala:4: warning: method + in class Int is deprecated
   val x = 4 + "2"
             ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

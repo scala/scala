@@ -23,5 +23,5 @@ names-defaults-neg-warn.scala:44: warning: a pure expression does nothing in sta
 names-defaults-neg-warn.scala:45: error: unknown parameter name: x
     f2(x = 1) // 2.12, 2.13: error (no such parameter). no deprecation warning in 2.12, x is not a variable.
          ^
-four warnings found
-three errors found
+4 warnings
+3 errors

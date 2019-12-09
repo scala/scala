@@ -1,4 +1,4 @@
 t0218.scala:10: error: class type required but APQ.this.P found
     List(new PP)
              ^
-one error found
+1 error

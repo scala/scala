@@ -3,4 +3,4 @@ t5735.scala:6: error: type mismatch;
  required: Int
   val z: Int = a
                ^
-one error found
+1 error

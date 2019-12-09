@@ -23,4 +23,4 @@ t3224.scala:48: error: polymorphic expression cannot be instantiated to expected
  required: List[?]
     assert(size(Array()) == 0)
                      ^
-5 errors found
+5 errors

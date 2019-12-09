@@ -4,4 +4,4 @@ t5578.scala:33: error: type mismatch;
     (which expands to)  NumericOpsExp.this.Exp[T]
   def plus[T: Numeric](x: Rep[T], y: Rep[T]): Rep[T] = Plus[T](x,y)
                                                               ^
-one error found
+1 error

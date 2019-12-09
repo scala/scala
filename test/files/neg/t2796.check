@@ -14,5 +14,5 @@ t2796.scala:10: warning: Implementation restriction: early definitions in traits
   val abstractVal = "T1.abstractVal" // warn
       ^
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error

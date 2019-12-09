@@ -10,4 +10,4 @@ t6667b.scala:19: error: ambiguous implicit values:
  match expected type Test.Box
     new Test()
     ^
-two errors found
+2 errors

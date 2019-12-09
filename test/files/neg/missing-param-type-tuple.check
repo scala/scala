@@ -28,4 +28,4 @@ missing-param-type-tuple.scala:7: error: missing parameter type
 missing-param-type-tuple.scala:7: error: missing parameter type
   val z: ((Int, Int, Int)) => Int = (a, NotAVariablePatternName, c) => 0
                                                                  ^
-8 errors found
+8 errors

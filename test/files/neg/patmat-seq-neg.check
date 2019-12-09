@@ -12,4 +12,4 @@ patmat-seq-neg.scala:24: error: error during expansion of this match (this is a 
 The underlying error was: value drop is not a member of Array[Int]
   def t6: Any = 2 match {
                   ^
-three errors found
+3 errors

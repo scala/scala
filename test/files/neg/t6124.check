@@ -25,4 +25,4 @@ t6124.scala:13: error: trailing separator is not allowed
 t6124.scala:13: error: Invalid literal number
   def r = 3.1_4_dd
           ^
-9 errors found
+9 errors

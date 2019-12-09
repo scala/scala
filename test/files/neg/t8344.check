@@ -4,4 +4,4 @@ and  method f in object t of type (x: Object)Int
 match argument types (String)
   t.f("")
     ^
-one error found
+1 error

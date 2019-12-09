@@ -55,5 +55,5 @@ literals.scala:24: error: ';' expected but 'def' found.
 literals.scala:32: error: identifier expected but 'def' found.
   def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
   ^
-8 warnings found
-11 errors found
+8 warnings
+11 errors

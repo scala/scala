@@ -4,4 +4,4 @@ t3769.scala:2: error: in XML literal: expected closing tag of a
 t3769.scala:2: error: start tag was here: a>
   val x = <b> <c><a></c> {"text"} </b>
                   ^
-two errors found
+2 errors

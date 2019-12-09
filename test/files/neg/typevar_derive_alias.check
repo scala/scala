@@ -4,4 +4,4 @@ typevar_derive_alias.scala:14: error: missing parameter type
 typevar_derive_alias.scala:17: error: missing parameter type
   def toSetMap3(ts: Sq[Alias]): St[Alias] = ts.toSt.map(x => x)
                                                         ^
-two errors found
+2 errors

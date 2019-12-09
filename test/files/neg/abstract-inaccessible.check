@@ -11,5 +11,5 @@ Classes which cannot access Bippy may be unable to override overrideMeAlso.
     def overrideMeAlso(x: Map[Int, Set[Bippy]]) = x.keys.head
         ^
 error: No warnings can be incurred under -Werror.
-three warnings found
-one error found
+3 warnings
+1 error

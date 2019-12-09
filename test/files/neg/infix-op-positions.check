@@ -4,4 +4,4 @@ infix-op-positions.scala:2: error: value -! is not a member of Option[Int]
 infix-op-positions.scala:3: error: value -!: is not a member of Option[Int]
   "test" -!: Option(1) // right associative operators
          ^
-two errors found
+2 errors

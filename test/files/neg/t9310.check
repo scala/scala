@@ -3,4 +3,4 @@ error after rewriting to Test.this.c.applyDynamic("m")
 possible cause: maybe a wrong Dynamic method signature?
   def f = c.m(42)
           ^
-one error found
+1 error

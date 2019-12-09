@@ -7,4 +7,4 @@ B.scala:3: error: illegal inheritance from sealed class C
 B.scala:4: error: illegal inheritance from sealed class C
   class C1 extends A.C
                      ^
-three errors found
+3 errors

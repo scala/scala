@@ -8,4 +8,4 @@ it is both defined in class A and imported subsequently by
 import ColumnOption._
     PrimaryKey // was already ambiguous in 2.10.3
     ^
-two errors found
+2 errors

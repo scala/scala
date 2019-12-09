@@ -13,4 +13,4 @@ t3691.scala:7: error: type mismatch;
  required: AnyRef{type A[X]}
   val x = (new { type A = String }): { type A[X] } // not ok
            ^
-three errors found
+3 errors

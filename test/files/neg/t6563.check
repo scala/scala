@@ -1,4 +1,4 @@
 t6563.scala:4: error: not found: value e
     e("f")
     ^
-one error found
+1 error

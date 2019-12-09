@@ -4,4 +4,4 @@ t9535.scala:4: error: not found: type E1
 t9535.scala:6: error: class type required but E found
   @throws(classOf[E]) def g: E = ??? // neg test: classOf requires class type
                   ^
-two errors found
+2 errors

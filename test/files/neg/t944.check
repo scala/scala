@@ -1,4 +1,4 @@
 t944.scala:5: error: functions may not have more than 22 parameters, but 23 given
            a23:Int) => 1
                     ^
-one error found
+1 error

@@ -20,5 +20,5 @@ warn-unused-locals.scala:18: warning: local var x in method f2 is never updated:
     var x = 100 // warn about it being a var
         ^
 error: No warnings can be incurred under -Werror.
-7 warnings found
-one error found
+7 warnings
+1 error

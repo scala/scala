@@ -22,4 +22,4 @@ lazyvals.scala:22: error: lazy not allowed here. Only vals can be lazy
 lazyvals.scala:25: error: lazy modifier not allowed here. Use call-by-name parameters instead
   class A(lazy val obj: Object) {}
                ^
-8 errors found
+8 errors

@@ -8,4 +8,4 @@ type EPC2[X1] = C[X1] (defined in trait A)
    (Equivalent type required when overriding a type alias.)
   override type EPC2[X1 <: String] = C[X1]
                 ^
-two errors found
+2 errors

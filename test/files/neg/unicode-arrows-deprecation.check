@@ -11,5 +11,5 @@ unicode-arrows-deprecation.scala:8: warning: method → in class ArrowAssoc is d
   val c: (Int, Int) = 1 → 1
                         ^
 error: No warnings can be incurred under -Werror.
-four warnings found
-one error found
+4 warnings
+1 error

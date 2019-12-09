@@ -6,4 +6,4 @@ Note: this is often due in part to a class depending on a definition nested with
 If applicable, you may wish to try moving some members into another object.
   import scala.util.Properties.javaClassPath
                     ^
-two errors found
+2 errors

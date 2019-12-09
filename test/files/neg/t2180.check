@@ -8,4 +8,4 @@ t2180.scala:6: error: type mismatch;
  required: Mxml
         case a => List(a)
                        ^
-two errors found
+2 errors

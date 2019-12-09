@@ -52,4 +52,4 @@ t4425b.scala:35: error: too many patterns for object X offering Nothing: expecte
 t4425b.scala:36: error: too many patterns for object X offering Nothing: expected 1, found 2
     println((X: Any) match { case X(_, _) => "ok" ; case _ => "fail" })
                                   ^
-16 errors found
+16 errors

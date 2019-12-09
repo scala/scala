@@ -4,4 +4,4 @@ t10090.scala:4: error: stable identifier required, but X.Y found.
 t10090.scala:6: error: stable identifier required, but X.Y found.
   (null: Any) match { case X.Y.Z => }
                              ^
-two errors found
+2 errors

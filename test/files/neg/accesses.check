@@ -18,4 +18,4 @@ protected[package p1] def f5(): Unit (defined in class A)
   override should at least be protected[p1]
   protected[p2] def f5(): Unit
                     ^
-four errors found
+4 errors

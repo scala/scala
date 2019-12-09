@@ -2,4 +2,4 @@ byname-implicits-16.scala:14: error: diverging implicit expansion for type Test.
 starting with method expande in object Expand
   implicitly[O[Z]]
             ^
-one error found
+1 error

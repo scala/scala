@@ -5,4 +5,4 @@ t5689.scala:6: error: macro implementation has incompatible shape:
 type mismatch for return type: c.Expr[Int] does not conform to c.Expr[String]
   def returnsString(i: Double): String = macro returnsIntImpl
                                                ^
-one error found
+1 error

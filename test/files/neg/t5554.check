@@ -64,4 +64,4 @@ and  method apply in object Foo2 of type (x: Int)Base[T]
 match argument types (Int)
   def test14[T] = Foo2[T](1)
                       ^
-11 errors found
+11 errors

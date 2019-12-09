@@ -10,4 +10,4 @@ t2712-1.scala:9: error: type mismatch;
  required: M[A]
   def test(ma: Two[Int, String]) = foo(ma) // should fail with -Xsource:2.12
                                        ^
-two errors found
+2 errors

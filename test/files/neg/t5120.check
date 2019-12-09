@@ -9,4 +9,4 @@ t5120.scala:25: error: type mismatch;
     (which expands to)  _1
   List(str, num).foreach(h => h.f1 = new Thread())
                                      ^
-two errors found
+2 errors

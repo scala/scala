@@ -2,5 +2,5 @@ patmat-classtag-compound.scala:14: warning: abstract type pattern A is unchecked
     case b: A with Bar => true
             ^
 error: No warnings can be incurred under -Werror.
-one warning found
-one error found
+1 warning
+1 error

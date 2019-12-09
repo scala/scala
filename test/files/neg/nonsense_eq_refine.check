@@ -5,5 +5,5 @@ nonsense_eq_refine.scala:9: warning: SE and String are unrelated: they will most
   if (se == "") ??? // types are still unrelated
          ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

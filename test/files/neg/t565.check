@@ -2,4 +2,4 @@ t565.scala:2: error: only traits and abstract classes can have declared but unde
 (Note that variables need to be initialized to be defined)
   var s0: String
       ^
-one error found
+1 error

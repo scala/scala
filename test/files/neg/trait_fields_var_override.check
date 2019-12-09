@@ -2,4 +2,4 @@ trait_fields_var_override.scala:2: error: mutable variable cannot be overridden:
 protected def end: Int (defined in trait SizeChangeEvent)
 class BackedUpListIterator[E](override protected var end: Int) extends SizeChangeEvent
                                                      ^
-one error found
+1 error

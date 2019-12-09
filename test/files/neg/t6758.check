@@ -25,4 +25,4 @@ t6758.scala:38: error: not found: type typeparam
 t6758.scala:41: error: not found: type valueparam
     @valueparam x: Any
      ^
-9 errors found
+9 errors

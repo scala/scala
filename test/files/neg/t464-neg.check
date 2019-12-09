@@ -13,4 +13,4 @@ t464-neg.scala:10: error: method f3 in class A cannot be accessed as a member of
 t464-neg.scala:11: error: method f3 in class A cannot be accessed as a member of A from class B
   super.f3()
         ^
-5 errors found
+5 errors

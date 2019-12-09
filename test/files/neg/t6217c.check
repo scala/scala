@@ -14,5 +14,5 @@ t6217c.scala:38: warning: _root_ in root position in package definition does not
   package _root_.p {
           ^
 error: No warnings can be incurred under -Werror.
-5 warnings found
-one error found
+5 warnings
+1 error
