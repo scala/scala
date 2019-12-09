@@ -61,6 +61,7 @@ trait TastyKernel {
   def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
   def mkTypeBounds(lo: Type, hi: Type): TypeBounds = symbolTable.internal.typeBounds(lo, hi)
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
+  def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
 
   object defn {

@@ -350,8 +350,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               mkTypeBounds(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
             // case ANNOTATEDtype =>
             //   AnnotatedType(readType(), Annotation(readTerm()))
-            // case ANDtype =>
-            //   AndType(readType(), readType())
+            case ANDtype =>
+              mkIntersectionType(readType(), readType())
             // case ORtype =>
             //   OrType(readType(), readType())
             // case SUPERtype =>

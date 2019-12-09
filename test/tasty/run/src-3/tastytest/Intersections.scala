@@ -14,4 +14,8 @@ object Intersections {
   object AwithBPrinter extends Printer[AwithB] {
     def println(a: AwithB): String = "AwithB"
   }
+
+  object AandBPrinter extends Printer[A & B] {
+    def println(a: A & B): String = "A & B"
+  }
 }

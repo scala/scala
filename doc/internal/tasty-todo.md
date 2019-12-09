@@ -22,3 +22,4 @@ Dotty only
 - [ ] implicitfunction
 - [ ] erasedfunction
 - [ ] givenFunction
+- [ ] scala 3 macros
