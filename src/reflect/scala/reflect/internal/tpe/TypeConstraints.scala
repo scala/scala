@@ -209,12 +209,9 @@ private[internal] trait TypeConstraints {
   def solve(tvars: List[TypeVar], tparams: List[Symbol], getVariance: Variance.Extractor[Symbol], upper: Boolean, depth: Depth): Boolean = {
     assert(tvars.corresponds(tparams)((tvar, tparam) => tvar.origin.typeSymbol eq tparam), (tparams, tvars.map(_.origin.typeSymbol)))
     val areContravariant: BitSet = BitSet.empty
-    foreachWithIndex(tparams){(tparam, ix) =>
-      if (getVariance(tparam).isContravariant) areContravariant += ix
-    }
+    foreachWithIndex(tparams)((tparam, ix) => if (getVariance(tparam).isContravariant) areContravariant += ix)
 
-    @inline def toBound(hi: Boolean, tparam: Symbol) =
-      if (hi) tparam.info.upperBound else tparam.info.lowerBound
+    @inline def toBound(hi: Boolean, tparam: Symbol) = if (hi) tparam.info.upperBound else tparam.info.lowerBound
 
     def solveOne(tvar: TypeVar, isContravariant: Boolean): Unit = {
       if (tvar.constr.inst == NoType) {
