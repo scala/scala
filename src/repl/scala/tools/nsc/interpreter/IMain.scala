@@ -710,10 +710,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       val unwrapped = unwrap(t)
 
       // Example input: $line3.$read$$iw$
-      val classNameRegex = (naming.lineRegex + ".*").r
-      def isWrapperInit(x: StackTraceElement) = PartialFunction.cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
-      }
+      val classNameRegex = naming.lineRegex
+      def isWrapperInit(x: StackTraceElement) =
+        x.getMethodName == nme.CONSTRUCTOR.decoded && classNameRegex.pattern.matcher(x.getClassName).find()
       val stackTrace = unwrapped stackTracePrefixString (!isWrapperInit(_))
 
       withLastExceptionLock[String]({

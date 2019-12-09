@@ -110,7 +110,7 @@ scala> 55 ; ((2 + 2)) ; (1, 2, 3)
 res15: (Int, Int, Int) = (1,2,3)
 
 scala> 55 ; (x: Int) => x + 1 ; () => ((5))
-<console>:13: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+<console>:12: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; (x: Int) => x + 1 ;;
        ^
 res16: () => Int = <function0>
