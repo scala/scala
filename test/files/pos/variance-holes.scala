@@ -29,8 +29,18 @@ object Test {
   class RefinedUpper2[+A, x <: { type T[_ <: A] }]
   trait RefinedLower[+A, x <: { type T[_ >: A] }]
 
-  class PrivateThis[+A] {
+  class PrivateThis1[+A] {
     private[this] object Foo { var x: A = _ }
+  }
+
+  class PrivateThis2[-A] {
+    private[this] val x: Set[A] = Set.empty
+    private[this] var y: Set[A] = Set.empty
+
+    class Escape {
+      println(x)
+      println(y)
+    }
   }
 
   def generic[A]: Unit = ()

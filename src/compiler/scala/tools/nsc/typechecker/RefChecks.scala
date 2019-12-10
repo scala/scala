@@ -1564,8 +1564,6 @@ abstract class RefChecks extends Transform {
 
       if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
-      else if (sym.isLocalToThis)
-        varianceValidator.checkForEscape(sym, currentClass)
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors

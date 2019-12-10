@@ -28,7 +28,6 @@ trait Variances {
    *  TODO - eliminate duplication with varianceInType
    */
   class VarianceValidator extends InternalTraverser {
-    private[this] val escapedLocals = mutable.HashSet[Symbol]()
     // A flag for when we're in a refinement, meaning method parameter types
     // need to be checked.
     private[this] var inRefinement = false
@@ -36,17 +35,6 @@ trait Variances {
       val saved = inRefinement
       inRefinement = true
       try body finally inRefinement = saved
-    }
-
-    /** Is every symbol in the owner chain between `site` and the owner of `sym`
-     *  either a term symbol or private[this]? If not, add `sym` to the set of
-     *  escaped locals.
-     *  @pre  sym.isLocalToThis
-     */
-    @tailrec final def checkForEscape(sym: Symbol, site: Symbol): Unit = {
-      if (site == sym.owner || site == sym.owner.moduleClass || site.hasPackageFlag) () // done
-      else if (site.isTerm || site.isPrivateLocal) checkForEscape(sym, site.owner) // ok - recurse to owner
-      else escapedLocals += sym
     }
 
     protected def issueVarianceError(base: Symbol, sym: Symbol, required: Variance, tpe: Type): Unit = ()
@@ -62,10 +50,9 @@ trait Variances {
     )
 
     // Is `sym` is local to a term or is private[this] or protected[this]?
-    def isExemptFromVariance(sym: Symbol): Boolean = !sym.owner.isClass || (
-         (sym.isLocalToThis || sym.isSuperAccessor) // super accessors are implicitly local #4345
-      && !escapedLocals(sym)
-    )
+    def isExemptFromVariance(sym: Symbol): Boolean =
+      // super accessors are implicitly local #4345
+      !sym.owner.isClass || sym.isLocalToThis || sym.isSuperAccessor
 
     private object ValidateVarianceMap extends VariancedTypeMap {
       private[this] var base: Symbol = _
