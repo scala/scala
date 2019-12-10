@@ -594,7 +594,7 @@ symbolLiteral  ::=  ‘'’ plainid
 ```
 
 A symbol literal `'x` is a shorthand for the expression `scala.Symbol("x")` and
-is of the [literal type](03-types#literal-types) `'x`. `Symbol` is a [case
+is of the [literal type](03-types.html#literal-types) `'x`. `Symbol` is a [case
 class](05-classes-and-objects.html#case-classes), which is defined as follows.
 
 ```scala
