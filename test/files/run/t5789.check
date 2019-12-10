@@ -3,6 +3,6 @@ scala> val n = 2
 n: Int = 2
 
 scala>     () => n
-res0: () => Int = <function0>
+res0: () => Int = <function>
 
 scala> :quit

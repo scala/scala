@@ -1,8 +1,6 @@
-import scala.tools.partest.ReplTest
+import scala.tools.partest._
 
-object Test extends ReplTest {
-  // replace indylambda function names by <function0>
-  override def normalize(s: String) = """\$\$Lambda.*""".r.replaceAllIn(s, "<function0>")
+object Test extends ReplTest with Lambdaless {
 
   def code = """
 (2)

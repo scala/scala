@@ -51,7 +51,11 @@ trait Naming {
     import Regex.{quote => q}
     val lineN = q(sn.line) + """\d+"""
     val lineNRead = lineN + raw"""(${q(sn.read)})?"""
-    (raw"""($lineNRead|${q(sn.read)}(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$|$)""").r
+    // This needs to be aware of LambdaMetafactory generated classnames to strip the correct number of '$' delimiters.
+    // A lambda hosted in a module `$iw` (which has a module class `$iw$` is named `$iw$ $ $Lambda1234` (spaces added
+    // here for clarification.) This differs from an explicitly declared inner classes named `$Foo`, which would be
+    // `$iw$$Foo`.
+    (raw"""($lineNRead|${q(sn.read)}(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
   }
 
   trait SessionNames {
