@@ -1,1 +1,1 @@
--Xmx128M -XX:+ExitOnOutOfMemoryError
+-Xmx192M -XX:+ExitOnOutOfMemoryError
