@@ -10,22 +10,14 @@ scala> def macroImpl[T: c.WeakTypeTag](c: Context)(t: c.Expr[T]): c.Expr[List[T]
 macroImpl: [T](c: scala.reflect.macros.blackbox.Context)(t: c.Expr[T])(implicit evidence$1: c.WeakTypeTag[T])c.Expr[List[T]]
 
 scala> def demo[T](t: T): List[T] = macro macroImpl[T]
-<console>:14: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def demo[T](t: T): List[T] = macro macroImpl[T]
-                                          ^
+defined term macro demo: [T](t: T)List[T]
 
 scala> def m[T](t: T): List[List[T]] =
   demo( List((t,true)) collect { case (x,true) => x } )
-<console>:14: error: not found: value demo
-         demo( List((t,true)) collect { case (x,true) => x } )
-         ^
+m: [T](t: T)List[List[T]]
 
 scala> m(List(1))
-<console>:14: error: not found: value m
-       m(List(1))
-       ^
+res0: List[List[List[Int]]] = List(List(List(1)))
 
 scala> // Showing we haven't added unreachable warnings
 

@@ -251,18 +251,25 @@ sealed class $read extends _root_.java.io.Serializable {
     super.<init>;
     ()
   };
-  import $line44.$read.INSTANCE.$iw.BippyBups;
-  import $line44.$read.INSTANCE.$iw.BippyBups;
-  import $line45.$read.INSTANCE.$iw.PuppyPups;
-  import $line45.$read.INSTANCE.$iw.PuppyPups;
-  import $line46.$read.INSTANCE.$iw.Bingo;
-  import $line46.$read.INSTANCE.$iw.Bingo;
   sealed class $iw extends _root_.java.io.Serializable {
     def <init>() = {
       super.<init>;
       ()
     };
-    val res3 = List(BippyBups, PuppyPups, Bingo)
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line44.$read.INSTANCE.$iw.$iw.BippyBups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line45.$read.INSTANCE.$iw.$iw.PuppyPups;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
+    import $line46.$read.INSTANCE.$iw.$iw.Bingo;
+    sealed class $iw extends _root_.java.io.Serializable {
+      def <init>() = {
+        super.<init>;
+        ()
+      };
+      val res3 = List(BippyBups, PuppyPups, Bingo)
+    };
+    val $iw = new $iw.<init>
   };
   val $iw = new $iw.<init>
 }

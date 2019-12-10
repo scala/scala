@@ -6,31 +6,17 @@ scala> import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.blackbox.Context
 
 scala> class Bar(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } };def bar: Unit = macro Bar.impl
-<console>:12: error: macro definition needs to be enabled
-by making the implicit value scala.language.experimental.macros visible.
-This can be achieved by adding the import clause 'import scala.language.experimental.macros'
-or by setting the compiler option -language:experimental.macros.
-See the Scaladoc for value scala.language.experimental.macros for a discussion
-why the feature needs to be explicitly enabled.
-       class Bar(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } };def bar: Unit = macro Bar.impl
-                                                                                                 ^
+defined class Bar
+defined term macro bar: Unit
 
 scala> bar
-<console>:14: error: not found: value bar
-       bar
-       ^
 
 scala> class Foo(val c: Context) { def impl = { import c.universe._; c.Expr[Unit](q"()") } }
 defined class Foo
 
 scala> def foo: Unit = macro Foo.impl
-<console>:14: error: macro bundles must be static
-       def foo: Unit = macro Foo.impl
-                             ^
+defined term macro foo: Unit
 
 scala> foo
-<console>:14: error: not found: value foo
-       foo
-       ^
 
 scala> :quit

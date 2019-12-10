@@ -11,16 +11,9 @@ scala> def impl1(c: Context) = { import c.universe._; c.Expr[Unit](q"()") }
 impl1: (c: scala.reflect.macros.blackbox.Context)c.Expr[Unit]
 
 scala> def foo1: Unit = macro impl1
-<console>:14: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def foo1: Unit = macro impl1
-                              ^
+defined term macro foo1: Unit
 
 scala> foo1
-<console>:14: error: not found: value foo1
-       foo1
-       ^
 
 scala> 
 
@@ -28,16 +21,9 @@ scala> def impl2(c: Context)() = { import c.universe._; c.Expr[Unit](q"()") }
 impl2: (c: scala.reflect.macros.blackbox.Context)()c.Expr[Unit]
 
 scala> def foo2(): Unit = macro impl2
-<console>:14: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def foo2(): Unit = macro impl2
-                                ^
+defined term macro foo2: ()Unit
 
 scala> foo2()
-<console>:14: error: not found: value foo2
-       foo2()
-       ^
 
 scala> 
 
@@ -45,15 +31,8 @@ scala> def impl3(c: Context)(x: c.Expr[Int])(y: c.Expr[Int]) = { import c.univer
 impl3: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int])(y: c.Expr[Int])c.Expr[Unit]
 
 scala> def foo3(x: Int)(y: Int): Unit = macro impl3
-<console>:14: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def foo3(x: Int)(y: Int): Unit = macro impl3
-                                              ^
+defined term macro foo3: (x: Int)(y: Int)Unit
 
 scala> foo3(2)(3)
-<console>:14: error: not found: value foo3
-       foo3(2)(3)
-       ^
 
 scala> :quit

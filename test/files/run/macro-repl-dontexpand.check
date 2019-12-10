@@ -3,20 +3,12 @@ scala> def bar1(c: scala.reflect.macros.blackbox.Context) = ???
 bar1: (c: scala.reflect.macros.blackbox.Context)Nothing
 
 scala> def foo1 = macro bar1
-<console>:12: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def foo1 = macro bar1
-                        ^
+defined term macro foo1: Nothing
 
 scala> def bar2(c: scala.reflect.macros.whitebox.Context) = ???
 bar2: (c: scala.reflect.macros.whitebox.Context)Nothing
 
 scala> def foo2 = macro bar2
-<console>:12: error: macro implementation reference has wrong shape. required:
-macro [<static object>].<method name>[[<type args>]] or
-macro [<macro bundle>].<method name>[[<type args>]]
-       def foo2 = macro bar2
-                        ^
+defined term macro foo2: Nothing
 
 scala> :quit

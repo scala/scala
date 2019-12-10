@@ -24,18 +24,12 @@ scala> o(".")
 res3: java.util.List[Any] = [.]
 
 scala> class V(val a: Int) extends AnyVal
-<console>:11: error: value class may not be a member of another class
-       class V(val a: Int) extends AnyVal
-             ^
+defined class V
 
 scala> f(new V(0))
-<console>:14: error: not found: type V
-       f(new V(0))
-             ^
+res4: java.util.List[V] = [V@0]
 
 scala> o(new V(0))
-<console>:14: error: not found: type V
-       o(new V(0))
-             ^
+res5: java.util.List[Any] = [V@0]
 
 scala> :quit
