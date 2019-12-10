@@ -2547,7 +2547,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def checkPure(t: Tree, supple: Boolean): Unit =
             if (!explicitlyUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
               val msg = "a pure expression does nothing in statement position"
-              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+              val parens = if (statsTyped.lengthCompare(1 - count) > 0) "multiline expressions might require enclosing parentheses" else ""
               val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
               val text =
                 if (supple) s"${parens}${discard}"
