@@ -315,7 +315,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def translateOriginalPath(p: String): String = {
     if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
   }
-  def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
+  def flatPath(sym: Symbol): String = {
+    val sym1 = if (sym.isModule) sym.moduleClass else sym
+    flatOp shift sym1.javaClassName
+  }
 
   override def translatePath(path: String): Option[String] = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
