@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertSame
+import org.junit.Assert.{assertSame, assertEquals}
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -75,4 +75,22 @@ class ListTest {
   }
 
   @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+
+  @Test def applyOrElse(): Unit = {
+    val f: Int => String = "_" + _.toString
+
+    def slowApplyOrElse(list: List[String], i: Int): String = {
+      if (list.isDefinedAt(i)) list(i)
+      else f(i)
+    }
+
+    def check(list: List[String], i: Int): Unit =
+      assertEquals(s"i=$i, size=${list.size}", slowApplyOrElse(list, i), list.applyOrElse(i, f))
+
+    for {
+      size <- (0 to 10) ++ List(20, 50, 100, 1000)
+      list = List.tabulate(size)(_.toString)
+      i <- List(-1000, -100, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6,7,8,9,10, 100, 1000, 10000, 100000)
+    } check(list, i)
+  }
 }

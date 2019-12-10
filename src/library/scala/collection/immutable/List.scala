@@ -127,6 +127,16 @@ sealed abstract class List[+A]
     these
   }
 
+  override def applyOrElse[A1 <: Int, B1 >: A](x: A1, default: A1 => B1): B1 =
+    if (x >= 0) {
+      drop(x) match {
+        case h :: _ => h
+        case _ => default(x)
+      }
+    } else {
+      default(x)
+    }
+
   override final def isEmpty: Boolean = this eq Nil
 
   override def prepended[B >: A](elem: B): List[B] = elem :: this
