@@ -1,6 +1,6 @@
-import scala.tools.partest.{ReplTest, Hashless}
+import scala.tools.partest._
 
-object Test extends ReplTest with Hashless {
+object Test extends ReplTest with Lambdaless {
   def code = """
 object x { def x = () }
 import x._
