@@ -1,0 +1,15 @@
+byname-implicit.scala:14: warning: Block result was adapted via implicit conversion (method ints are strs) taking a by-name parameter
+      42                      // warn
+      ^
+byname-implicit.scala:25: warning: Block result was adapted via implicit conversion (method bools are strs) taking a by-name parameter
+      true                    // warn
+      ^
+byname-implicit.scala:68: warning: Block result was adapted via implicit conversion (method fromBooleanCheck) taking a by-name parameter
+    false                  // warn
+    ^
+byname-implicit.scala:84: warning: Implicits applied to block expressions after overload resolution may have unexpected semantics
+  Foo.bar { println("barring"); 0 }  // warn
+          ^
+error: No warnings can be incurred under -Werror.
+4 warnings
+1 error

@@ -2544,10 +2544,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case Literal(Constant(()))                     => (0, EmptyTree, false)
               case _                                         => (1, EmptyTree, false)
             }
+          val isMultiline = statsTyped.lengthCompare(1 - count) > 0
           def checkPure(t: Tree, supple: Boolean): Unit =
             if (!explicitlyUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
               val msg = "a pure expression does nothing in statement position"
-              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+              val parens = if (isMultiline) "multiline expressions might require enclosing parentheses" else ""
               val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
               val text =
                 if (supple) s"${parens}${discard}"
@@ -2556,6 +2557,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           statsTyped.foreach(checkPure(_, supple = false))
           if (result0.nonEmpty) checkPure(result0, supple = true)
+          def checkImplicitlyAdaptedBlockResult(t: Tree): Unit =
+            expr1 match {
+              case treeInfo.Applied(f, _, _) if f.symbol != null && f.symbol.isImplicit =>
+                f.symbol.paramLists match {
+                  case (p :: Nil) :: _ if p.isByNameParam => context.warning(t.pos, s"Block result was adapted via implicit conversion (${f.symbol}) taking a by-name parameter")
+                  case _ =>
+                }
+              case _ =>
+            }
+          if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr1)
         }
 
         // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
@@ -3545,8 +3556,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (context.reporter.hasErrors)
               setError(tree)
             else {
+              import scala.util.chaining._
+              // warn about conversions applied to blocks (#9386) in lieu of fixing
+              def checkConversionsToBlockArgs(appl: Tree): Unit =
+                if (settings.warnByNameImplicit) {
+                  val treeInfo.Applied(_, _, argss) = appl
+                  val needsAdjust =
+                    argss.find {
+                      case (aiv: ApplyImplicitView) :: Nil =>
+                        aiv.args match {
+                          case Block(_, _) :: Nil => true
+                          case _ => false
+                        }
+                      case _ => false
+                    }
+                  needsAdjust.foreach(ts => context.warning(ts.head.pos, "Implicits applied to block expressions after overload resolution may have unexpected semantics"))
+                }
               inferMethodAlternative(fun, undetparams, argTpes.toList, pt)
-              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
+              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt).tap(checkConversionsToBlockArgs)
             }
           }
           handleOverloaded

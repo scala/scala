@@ -114,6 +114,7 @@ trait Warnings {
     val EtaZero                = LintWarning("eta-zero",                  "Usage `f` of parameterless `def f()` resulted in eta-expansion, not empty application `f()`.")
     val EtaSam                 = LintWarning("eta-sam",                   "The Java-defined target interface for eta-expansion was not annotated @FunctionalInterface.")
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
+    val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -142,6 +143,7 @@ trait Warnings {
   def warnEtaZero                = lint contains EtaZero
   def warnEtaSam                 = lint contains EtaSam
   def lintDeprecation            = lint contains Deprecation
+  def warnByNameImplicit         = lint contains ByNameImplicit
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
