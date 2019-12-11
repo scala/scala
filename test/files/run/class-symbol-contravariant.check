@@ -5,7 +5,7 @@ import scala.tools.nsc._, intp.global._, definitions._
 Try :help or completions for vals._ and power._
 
 scala> val u = rootMirror.universe
-val u: $r.intp.global.type = <global>
+val u: scala.tools.nsc.interpreter.IMain.<refinement>.type = <global>
 
 scala> import u._, scala.reflect.internal.Flags
 import u._

@@ -42,5 +42,13 @@ trait ReplGlobal extends Global {
     }
   }
 
+  trait ReplAnalyzer extends Analyzer {
+    override def rootImports(unit: global.CompilationUnit) = super.rootImports(unit)
+  }
+
+  override lazy val analyzer = new { val global: ReplGlobal.this.type = ReplGlobal.this } with ReplAnalyzer
+
+  def languageWildcardImports: List[Symbol] = analyzer.rootImports(NoCompilationUnit)
+
   override def toString = "<global>"
 }
