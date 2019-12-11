@@ -138,7 +138,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   // initializes the compiler, returning false if something went wrong
   override def initializeCompiler(): Boolean = global != null
 
-  lazy val global: Global = {
+  lazy val global: Global with ReplGlobal = {
     compilerSettings.outputDirs.setSingleOutput(replOutput.dir)
     compilerSettings.exposeEmptyPackage.value = true
 

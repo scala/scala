@@ -40,8 +40,8 @@ trait Imports {
   self: IMain =>
 
   import global.{Tree, Import, ImportSelector, Select, Ident, TermName, Symbol, NoType, Name, enteringPickler}
-  import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw, INTERPRETER_IMPORT_LEVEL_UP }
-  import global.definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
+  import global.nme.{INTERPRETER_IMPORT_WRAPPER => iw, INTERPRETER_IMPORT_LEVEL_UP}
+  import global.definitions.PredefModule
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
@@ -56,7 +56,7 @@ trait Imports {
   }
 
   /** Symbols whose contents are language-defined to be imported. */
-  private def languageWildcardSyms: List[Symbol] = List(JavaLangPackage, ScalaPackage, PredefModule)
+  private def languageWildcardSyms: List[Symbol] = global.languageWildcardImports
   def languageWildcardHandlers = languageWildcardSyms map makeWildcardImportHandler
 
   /** Tuples of (source, imported symbols) in the order they were imported.

@@ -16,6 +16,7 @@ package interpreter
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
+import typechecker.Analyzer
 
 trait ReplGlobal extends Global {
 
@@ -41,6 +42,14 @@ trait ReplGlobal extends Global {
         AggregateClassPath.createAggregate(platform.classPath, replOutClasspath)
     }
   }
+
+  trait ReplAnalyzer extends Analyzer {
+    override def rootImports(unit: global.CompilationUnit) = super.rootImports(unit)
+  }
+
+  override lazy val analyzer = new { val global: ReplGlobal.this.type = ReplGlobal.this } with ReplAnalyzer
+
+  def languageWildcardImports: List[Symbol] = analyzer.rootImports(NoCompilationUnit)
 
   override def toString = "<global>"
 }
