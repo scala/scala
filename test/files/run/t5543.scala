@@ -40,6 +40,6 @@ object T {
   class D(val x: Any) {
     override def toString() = "D"
     // `this` refers again to T
-    def this(a: Int, b: Int, c: Any = {println(this); this}) { this(c); println(this) } // prints T, then prints D
+    def this(a: Int, b: Int, c: Any = {println(this); this}) = { this(c); println(this) } // prints T, then prints D
   }
 }

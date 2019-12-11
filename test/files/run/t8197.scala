@@ -3,9 +3,7 @@ class A
 class B
 
 class Foo(val x: A = null) {
-  def this(bla: B*) {
-    this(new A)
-  }
+  def this(bla: B*) = this(new A)
 }
 
 object Test extends App {
