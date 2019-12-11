@@ -3556,8 +3556,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (context.reporter.hasErrors)
               setError(tree)
             else {
+              import scala.util.chaining._
+              // warn about conversions applied to blocks (#9386) in lieu of fixing
+              def checkConversionsToBlockArgs(appl: Tree): Unit =
+                if (settings.warnByNameImplicit) {
+                  val treeInfo.Applied(_, _, argss) = appl
+                  val needsAdjust =
+                    argss.find {
+                      case (aiv: ApplyImplicitView) :: Nil =>
+                        aiv.args match {
+                          case Block(_, _) :: Nil => true
+                          case _ => false
+                        }
+                      case _ => false
+                    }
+                  needsAdjust.foreach(ts => context.warning(ts.head.pos, "Implicits applied to block expressions after overload resolution may have unexpected semantics"))
+                }
               inferMethodAlternative(fun, undetparams, argTpes.toList, pt)
-              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt)
+              doTypedApply(tree, adaptAfterOverloadResolution(fun, mode.forFunMode, WildcardType), args1, mode, pt).tap(checkConversionsToBlockArgs)
             }
           }
           handleOverloaded
