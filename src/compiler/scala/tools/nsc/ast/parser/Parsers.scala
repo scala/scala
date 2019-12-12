@@ -2749,12 +2749,13 @@ self =>
     def funDefOrDcl(start : Int, mods: Modifiers): Tree = {
       in.nextToken()
       if (in.token == THIS) {
+        def missingEquals() = deprecationWarning(in.lastOffset, "procedure syntax is deprecated for constructors: add `=`, as in method definition", "2.13.2")
         atPos(start, in.skipToken()) {
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = in.token match {
-            case LBRACE   => atPos(in.offset) { constrBlock(vparamss) }
-            case _        => accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
+            case LBRACE if !currentRun.isScala214 => missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
+            case _                                => accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
           }
           DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         }

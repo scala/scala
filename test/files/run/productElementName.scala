@@ -14,7 +14,7 @@ case class Symbols(:: : String, || : Int)
 case class MultipleParamLists(a: String, b: Int)(c: Boolean)
 
 case class AuxiliaryConstructor(a: String, b: Int) {
-  def this(x: String) {
+  def this(x: String) = {
     this(x, 123)
   }
 }

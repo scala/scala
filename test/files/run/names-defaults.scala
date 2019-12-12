@@ -480,13 +480,13 @@ class A2 {
 // using names / defaults in self constructor call.
 // overloading resolution: calling A3("string") picks the second, method with default is always less specific.
 class A3(x: String, y: Int = 10) {
-  def this(a: Object) {
+  def this(a: Object) = {
     this(y = 10, x = a.toString())
     println(x)
   }
 }
 class A4(x: String, y: Int = 11) {
-  def this(b: Double, sep: String) {
+  def this(b: Double, sep: String) = {
     this(sep + b + sep)
     println(y)
   }

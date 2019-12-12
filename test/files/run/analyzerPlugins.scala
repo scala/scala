@@ -36,7 +36,7 @@ object Test extends DirectTest {
         nested()
       }
 
-      def this(str: String) {
+      def this(str: String) = {
         this(str.toDouble)
         math.random
         count += 1

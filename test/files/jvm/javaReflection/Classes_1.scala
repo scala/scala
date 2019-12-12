@@ -57,7 +57,7 @@ class A {
     (() => "5")
   }
 
-  def this(x: Int) {
+  def this(x: Int) = {
     this()
     class Q
     trait R
