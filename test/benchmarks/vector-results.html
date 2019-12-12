@@ -1,0 +1,93 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style type="text/css">
+    .chart { width: 900px; height: 500px; }
+    .imglink { font-size: 0.8em; margin-left: 2em; margin-bottom: 2em; }
+    .imglink a { color: #b0b0b0 !important; }
+    div.google-visualization-tooltip { padding: 0.9em 0 0 0.9em; font-size: 0.9em; }
+  </style>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <script type="text/javascript" src="vector-bench-data.js"></script>
+  <script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawCharts);
+
+    function ChartData(title, raw) {
+      this.options = {
+        title: title,
+        legend: { position: 'bottom' },
+        colors: [ "#dc3912", "#3366cc" ],
+        intervals: { 'style':'area' },
+        interpolateNulls: false,
+        hAxis: { logScale: true, title: "size", format: "short" },
+        vAxis: { logScale: true, title: "time ("+raw.timeUnit+")", viewWindow: { min: 0 } },
+        series: {
+          0: {
+            pointShape: "triangle",
+            pointSize: 9
+          },
+          1: {
+            pointShape: "circle",
+            pointSize: 6
+          }
+        },
+        tooltip: { isHtml: true }
+      };
+      this.rows = raw.rows;
+      this.names = raw.names;
+    }
+
+    function drawCharts() {
+      if(benchmarkData.Append) drawChart(new ChartData("Append individual elements of same total size", benchmarkData.Append));
+      if(benchmarkData.ApplyRandom) drawChart(new ChartData("Apply with random index 1000000 elements", benchmarkData.ApplyRandom));
+      if(benchmarkData.ApplySequential) drawChart(new ChartData("Apply sequentially 1000000 elements", benchmarkData.ApplySequential));
+      if(benchmarkData.Apprepend) drawChart(new ChartData("Alternating append/prepend elements of same total size", benchmarkData.Apprepend));
+      if(benchmarkData.Build) drawChart(new ChartData("Build with Builder", benchmarkData.Build));
+      if(benchmarkData.BulkAppend100p) drawChart(new ChartData("AppendedAll non-Vector of same size (10 times)", benchmarkData.BulkAppend100p));
+      if(benchmarkData.BulkAppend10p) drawChart(new ChartData("AppendedAll non-Vector of 1/10 the size (100 times)", benchmarkData.BulkAppend10p));
+      if(benchmarkData.BulkAppend2) drawChart(new ChartData("AppendedAll 2 elements (100 times)", benchmarkData.BulkAppend2));
+      if(benchmarkData.BulkAppendSame) drawChart(new ChartData("AppendedAll same Vector (10 times)", benchmarkData.BulkAppendSame));
+      if(benchmarkData.Foreach) drawChart(new ChartData("Iterate with foreach", benchmarkData.Foreach));
+      if(benchmarkData.Head) drawChart(new ChartData("Head (1000 times)", benchmarkData.Head));
+      if(benchmarkData.Last) drawChart(new ChartData("Last (1000 times)", benchmarkData.Last));
+      if(benchmarkData.Iterator) drawChart(new ChartData("Iterate with Iterator", benchmarkData.Iterator));
+      if(benchmarkData.MapIdentity) drawChart(new ChartData("Map(identity)", benchmarkData.MapIdentity));
+      if(benchmarkData.MapNew) drawChart(new ChartData("Map to new value", benchmarkData.MapNew));
+      if(benchmarkData.Prepend) drawChart(new ChartData("Prepend individual elements of same total size", benchmarkData.Prepend));
+      if(benchmarkData.Tail) drawChart(new ChartData("Tail (1000 times)", benchmarkData.Tail));
+      if(benchmarkData.Slice) drawChart(new ChartData("Slice at various points", benchmarkData.Slice));
+      if(benchmarkData.UpdateRandom) drawChart(new ChartData("Update with random index 100 times", benchmarkData.UpdateRandom));
+      if(benchmarkData.UpdateSequential) drawChart(new ChartData("Update sequentially 1000 times", benchmarkData.UpdateSequential));
+    }
+
+    function drawChart(chartData) {
+      var data = new google.visualization.DataTable();
+      data.addColumn('number', 'Size');
+      data.addColumn('number', 'Old Vector (' + chartData.names[0] + ')');
+      data.addColumn({id:'i0', type:'number', role:'interval'});
+      data.addColumn({id:'i1', type:'number', role:'interval'});
+      data.addColumn({id:'t0', type:'string', role:'tooltip', p: { html: true}});
+      data.addColumn('number', 'New Vector (' + chartData.names[1] + ')');
+      data.addColumn({id:'i2', type:'number', role:'interval'});
+      data.addColumn({id:'i3', type:'number', role:'interval'});
+      data.addColumn({id:'t1', type:'string', role:'tooltip', p: { html: true}});
+      data.addRows(chartData.rows);
+      var cont = document.getElementById("chart_container");
+      var div = document.createElement("div");
+      div.className = "chart";
+      cont.appendChild(div);
+      var linkDiv = document.createElement("div");
+      linkDiv.className = "imglink";
+      cont.appendChild(linkDiv);
+      var chart = new google.visualization.LineChart(div);
+      google.visualization.events.addListener(chart, 'ready', function () {
+        linkDiv.innerHTML = '<a href="' + chart.getImageURI() + '">PNG image link</a>';
+      });
+      chart.draw(data, chartData.options);
+    }
+  </script>
+</head>
+<body id="chart_container">
+</body>
+</html>
