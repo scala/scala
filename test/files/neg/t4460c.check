@@ -1,7 +1,7 @@
 t4460c.scala:4: error: multiple constructors for B with alternatives:
   (a: String)B <and>
   (x: Int)B
- cannot be invoked with empty args
+ cannot be invoked with no arguments
   def this(a: String) = this()
                         ^
 1 error

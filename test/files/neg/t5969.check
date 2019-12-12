@@ -1,4 +1,4 @@
-t5969.scala:9: error: overloaded method value g with alternatives:
+t5969.scala:9: error: overloaded method g with alternatives:
   (x: C2)String <and>
   (x: C1)String
  cannot be applied to (String)

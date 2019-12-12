@@ -1,4 +1,4 @@
-t5452-old.scala:28: error: overloaded method value apply with alternatives:
+t5452-old.scala:28: error: overloaded method apply with alternatives:
   ()Queryable[CoffeesTable] <and>
   (t: Tree)(implicit evidence$2: Manifest[CoffeesTable])Nothing <and>
   (implicit evidence$1: Manifest[CoffeesTable])Nothing

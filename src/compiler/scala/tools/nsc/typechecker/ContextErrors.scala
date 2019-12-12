@@ -1042,7 +1042,7 @@ trait ContextErrors {
 
     private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
       def asParams(xs: List[Any]) =
-        if (xs.isEmpty && tree.symbol.isConstructor) "empty args"
+        if (xs.isEmpty && tree.symbol.isConstructor) "no arguments"
         else xs.mkString("(", ", ", ")")
 
       def resType   = if (pt.isWildcard) "" else " with expected result type " + pt

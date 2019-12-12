@@ -1,4 +1,4 @@
-sammy_overload.scala:14: error: overloaded method value m with alternatives:
+sammy_overload.scala:14: error: overloaded method m with alternatives:
   (x: ToString)Int <and>
   (x: Int => String)Int
  cannot be applied to (Int => Int)
