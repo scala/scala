@@ -722,7 +722,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
-    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:**")
+    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala.**")
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 
