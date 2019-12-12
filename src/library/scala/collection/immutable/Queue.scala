@@ -55,13 +55,25 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @throws java.util.NoSuchElementException if the queue is too short.
     */
   override def apply(n: Int): A = {
-    val olen = out.length
-    if (n < olen) out.apply(n)
-    else {
-      val m = n - olen
-      val ilen = in.length
-      if (m < ilen) in.apply(ilen - m - 1)
-      else throw new NoSuchElementException("index out of range")
+    def indexOutOfRange(): Nothing = throw new IndexOutOfBoundsException(n.toString)
+
+    var index = 0
+    var curr = out
+
+    while (index < n && curr.nonEmpty) {
+      index += 1
+      curr = curr.tail
+    }
+
+    if (index == n) {
+      if (curr.nonEmpty) curr.head
+      else if (in.nonEmpty) in.last
+      else indexOutOfRange()
+    } else {
+      val indexFromBack = n - index
+      val inLength = in.length
+      if (indexFromBack >= inLength) indexOutOfRange()
+      else in(inLength - indexFromBack - 1)
     }
   }
 
@@ -96,7 +108,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override protected[this] def className = "Queue"
 
   /** Returns the length of the queue. */
-  override def length = in.length + out.length
+  override def length: Int = in.length + out.length
 
   override def prepended[B >: A](elem: B): Queue[B] = new Queue(in, elem :: out)
 
@@ -105,9 +117,16 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override def appendedAll[B >: A](that: scala.collection.IterableOnce[B]): Queue[B] = {
     val newIn = that match {
       case that: Queue[B] => that.in ++ (that.out reverse_::: this.in)
-      case _ => ListBuffer.from(that).toList reverse_::: this.in
+      case that: List[A] => that reverse_::: this.in
+      case _ =>
+        var result: List[B] = this.in
+        val iter = that.iterator
+        while (iter.hasNext) {
+          result = iter.next() :: result
+        }
+        result
     }
-    new Queue[B](newIn, this.out)
+    if (newIn eq this.in) this else new Queue[B](newIn, this.out)
   }
 
   /** Creates a new queue with element added at the end
@@ -136,7 +155,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *
     *  @param  iter        an iterable object
     */
-  def enqueueAll[B >: A](iter: scala.collection.Iterable[B]) = new Queue(iter.toList reverse_::: in, out)
+  def enqueueAll[B >: A](iter: scala.collection.Iterable[B]): Queue[B] = appendedAll(iter)
 
   /** Returns a tuple with the first element in the queue,
     *  and a new queue with this element removed.
@@ -167,7 +186,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   /** Returns a string representation of this queue.
     */
-  override def toString() = mkString("Queue(", ", ", ")")
+  override def toString(): String = mkString("Queue(", ", ", ")")
 }
 
 /** $factoryInfo
@@ -176,12 +195,14 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   */
 @SerialVersionUID(3L)
 object Queue extends StrictOptimizedSeqFactory[Queue] {
-  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x.toList))
+  def newBuilder[A]: Builder[A, Queue[A]] = new ListBuffer[A] mapResult (x => new Queue[A](Nil, x))
 
   def from[A](source: IterableOnce[A]): Queue[A] = source match {
     case q: Queue[A] => q
-    case _ if source.knownSize == 0 => empty[A]
-    case _ => new Queue[A](Nil, ListBuffer.from(source).toList)
+    case _ =>
+      val list = List.from(source)
+      if (list.isEmpty) empty
+      else new Queue(Nil, list)
   }
 
   def empty[A]: Queue[A] = EmptyQueue
