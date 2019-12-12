@@ -9,19 +9,42 @@ object AllocationTest {
   val allocationCounter = ManagementFactory.getThreadMXBean.asInstanceOf[com.sun.management.ThreadMXBean]
   assertTrue(allocationCounter.isThreadAllocatedMemorySupported)
   allocationCounter.setThreadAllocatedMemoryEnabled(true)
-  val costObject: Long = {
-    object coster extends AllocationTest
-    val costs = coster.allocationInfoImpl("" equals "xx", new AllocationExecution(), 0)
-    costs.min
+
+  private object coster extends AllocationTest {
+    def byte = 1.toByte
+
+    def short = 1.toShort
+
+    def int = 100000000
+
+    def long = 100000000000000L
+
+    def boolean = true
+
+    def char = 's'
+
+    def float = 1F
+
+    def double = 1D
+
+    def unit = ()
   }
-  val costInt: Long = {
-    object coster extends AllocationTest
-    val costs = coster.allocationInfoImpl(coster.hashCode(), new AllocationExecution(), 0)
-    costs.min
+  private def trace(Type:String, value:Long) :Long = {
+    println(s"cost of tracking allocations - cost of $Type   = $value")
+    value
   }
 
-  println(s"cost of tracking allocations - Object = $costObject")
-  println(s"cost of tracking allocations - Int = $costInt")
+  lazy val costObject:  Long = trace("Object", coster.allocationInfoImpl(coster, new AllocationExecution(), 0).min)
+  lazy val costByte:    Long =  trace("Byte", coster.allocationInfoImpl(coster.byte, new AllocationExecution(), 0).min)
+  lazy val costShort:   Long =  trace("Short", coster.allocationInfoImpl(coster.short, new AllocationExecution(), 0).min)
+  lazy val costInt:     Long =  trace("Int", coster.allocationInfoImpl(coster.int, new AllocationExecution(), 0).min)
+  lazy val costLong:    Long =  trace("Long", coster.allocationInfoImpl(coster.long, new AllocationExecution(), 0).min)
+  lazy val costBoolean: Long =  trace("Boolean", coster.allocationInfoImpl(coster.boolean, new AllocationExecution(), 0).min)
+  lazy val costChar:    Long =  trace("Char", coster.allocationInfoImpl(coster.char, new AllocationExecution(), 0).min)
+  lazy val costFloat:   Long =  trace("Float", coster.allocationInfoImpl(coster.float, new AllocationExecution(), 0).min)
+  lazy val costDouble:  Long =  trace("Double", coster.allocationInfoImpl(coster.double, new AllocationExecution(), 0).min)
+  lazy val costUnit:    Long =  trace("Unit", coster.allocationInfoImpl(coster.unit, new AllocationExecution(), 0).min)
+
 }
 
 trait AllocationTest {
@@ -31,7 +54,8 @@ trait AllocationTest {
   def nonAllocating[T: Manifest](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
     onlyAllocates(0)(fn)
   }
-  def onlyAllocates[T: Manifest](size:Int)(fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
+
+  def onlyAllocates[T: Manifest](size: Int)(fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): T = {
     val result = allocationInfo(fn)
 
     if (result.min > size) {
@@ -46,7 +70,15 @@ trait AllocationTest {
   def allocationInfo[T: Manifest](fn: => T)(implicit execution: AllocationExecution = AllocationExecution()): AllocationInfo[T] = {
     val cls = manifest[T].runtimeClass
     val cost =
-      if (cls == classOf[Int]) costInt
+      if (cls == classOf[Byte]) costByte
+      else if (cls == classOf[Short]) costShort
+      else if (cls == classOf[Int]) costInt
+      else if (cls == classOf[Long]) costLong
+      else if (cls == classOf[Boolean]) costBoolean
+      else if (cls == classOf[Char]) costChar
+      else if (cls == classOf[Float]) costFloat
+      else if (cls == classOf[Double]) costDouble
+      else if (cls == classOf[Unit]) costUnit
       else if (cls.isPrimitive) ???
       else costObject
     allocationInfoImpl(fn, execution, cost)

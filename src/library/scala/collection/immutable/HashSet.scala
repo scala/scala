@@ -14,6 +14,8 @@ package scala
 package collection
 package immutable
 
+import java.util
+
 import generic._
 import scala.collection.parallel.immutable.ParHashSet
 import scala.collection.GenSet
@@ -260,12 +262,21 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override protected def get0(key: A, hash: Int, level: Int): Boolean =
       (hash == this.hash && key == this.key)
 
+    override def equals(other: Any): Boolean = {
+      other match {
+        case that: HashSet1[A] =>
+          (this eq that) || (this.hash == that.hash && this.key == that.key)
+        case _ : HashSet[_] => false
+        case _ => super.equals(other)
+      }
+    }
+
     override protected def subsetOf0(that: HashSet[A], level: Int) = {
       // check if that contains this.key
       // we use get0 with our key and hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
       // and in any case would be inefficient because it would require recalculating the hash code
-      that.get0(key, hash, level)
+      (this eq that) || that.get0(key, hash, level)
     }
 
     override private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] =
@@ -330,12 +341,21 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override protected def get0(key: A, hash: Int, level: Int): Boolean =
       if (hash == this.hash) ks.contains(key) else false
 
+    override def equals(other: Any): Boolean = {
+      other match {
+        case that: HashSetCollision1[A] =>
+          (this eq that) || (this.hash == that.hash && this.ks == that.ks)
+        case miss : HashSet[_] => false
+        case _ => super.equals(other)
+      }
+    }
+
     override protected def subsetOf0(that: HashSet[A], level: Int) = {
       // we have to check each element
       // we use get0 with our hash at the correct level instead of calling contains,
       // which would not work since that might not be a top-level HashSet
       // and in any case would be inefficient because it would require recalculating the hash code
-      ks.forall(key => that.get0(key, hash, level))
+      (this eq that) || ks.forall(key => that.get0(key, hash, level))
     }
 
     override private[collection] def updated0(key: A, hash: Int, level: Int): HashSet[A] =
@@ -880,7 +900,17 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
 
-    override protected def subsetOf0(that: HashSet[A], level: Int): Boolean = if (that eq this) true else that match {
+    override def equals(other: Any): Boolean = {
+      other match {
+        case that: HashTrieSet[A] =>
+          (this eq that) || (this.bitmap == that.bitmap && this.size0 == that.size0 &&
+            util.Arrays.equals(this.elems.asInstanceOf[Array[AnyRef]], that.elems.asInstanceOf[Array[AnyRef]]))
+        case _ : HashSet[_] => false
+        case _ => super.equals(other)
+      }
+    }
+
+    override protected def subsetOf0(that: HashSet[A], level: Int): Boolean = (that eq this) || (that match {
       case that: HashTrieSet[A] if this.size0 <= that.size0 =>
         // create local mutable copies of members
         var abm = this.bitmap
@@ -921,7 +951,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
         // if the other set is a HashSetCollision1, we can not be a subset of it because we are a HashTrieSet with at least two different hash codes
         // if the other set is the empty set, we are not a subset of it because we are not empty
         false
-    }
+    })
 
     override protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = {
       // current offset
