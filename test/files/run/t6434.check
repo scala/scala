@@ -3,6 +3,6 @@ scala> def f(x: => Int): Int = x
 f: (x: => Int)Int
 
 scala> f _
-res0: (=> Int) => Int = <function1>
+res0: (=> Int) => Int = <function>
 
 scala> :quit

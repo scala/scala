@@ -536,8 +536,10 @@ trait Namers extends MethodSynthesis {
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
-      def checkNotRedundant(pos: Position, from: Name, to0: Name) {
-        def check(to: Name) = {
+      // warn proactively if specific import loses to definition in scope,
+      // since it may result in desired implicit not imported into scope.
+      def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
+        def check(to: Name): Unit = {
           val e = context.scope.lookupEntry(to)
 
           if (e != null && e.owner == context.scope && e.sym.exists)
@@ -1819,7 +1821,6 @@ trait Namers extends MethodSynthesis {
         ImportType(expr1)
       }
     }
-
 
     /** Given a case class
      *   case class C[Ts] (ps: Us)

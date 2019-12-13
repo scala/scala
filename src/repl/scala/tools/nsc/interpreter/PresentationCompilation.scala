@@ -46,8 +46,12 @@ trait PresentationCompilation {
       val unit = compiler.newCompilationUnit(wrappedCode)
       import compiler._
       val richUnit = new RichCompilationUnit(unit.source)
-      unitOfFile(richUnit.source.file) = richUnit
-      enteringTyper(typeCheck(richUnit))
+      // disable brace patching in the parser, the snippet template isn't well-indented and the results can be surprising
+      currentRun.parsing.withIncompleteHandler((pos, msg) => ()) {
+        unitOfFile(richUnit.source.file) = richUnit
+        enteringTyper(typeCheck(richUnit))
+      }
+
       val result = PresentationCompileResult(compiler)(richUnit, request.ObjectSourceCode.preambleLength + line1.length - line.length)
       Right(result)
     }
