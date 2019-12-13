@@ -125,9 +125,9 @@ A literal type `lit` is a special kind of singleton type which denotes the
 single literal value `lit`.  Thus, the type ascription `1: 1` gives the most
 precise type to the literal value `1`:  the literal type `1`.
 
-At run time, an expression `e` is considered to have literal type `lit` if `e ==
-lit`.  Concretely, the result of `e.isInstanceOf[lit]` and `e match { case _ :
-lit => }` is determined by evaluating `e == lit`.
+At run time, an expression `e` is considered to have literal type `lit` if `e == lit`.
+Concretely, the result of `e.isInstanceOf[lit]` and `e match { case _ : lit => }` is
+determined by evaluating `e == lit`.
 
 Literal types are available for all types for which there is dedicated syntax
 except `Unit`. This includes the numeric types (other than `Byte` and `Short`
