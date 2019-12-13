@@ -6,7 +6,7 @@ deadline-inf-illegal.scala:6: error: type mismatch;
  required: scala.concurrent.duration.FiniteDuration
   Deadline.now + d
                  ^
-deadline-inf-illegal.scala:7: error: overloaded method value - with alternatives:
+deadline-inf-illegal.scala:7: error: overloaded method - with alternatives:
   (other: scala.concurrent.duration.Deadline)scala.concurrent.duration.FiniteDuration <and>
   (other: scala.concurrent.duration.FiniteDuration)scala.concurrent.duration.Deadline
  cannot be applied to (scala.concurrent.duration.Duration)

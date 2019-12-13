@@ -1,4 +1,4 @@
-overload-msg.scala:3: error: overloaded method value + with alternatives:
+overload-msg.scala:3: error: overloaded method + with alternatives:
   (x: Double)Double <and>
   (x: Float)Float <and>
   (x: Long)Long <and>

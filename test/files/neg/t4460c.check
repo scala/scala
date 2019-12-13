@@ -1,7 +1,7 @@
-t4460c.scala:4: error: overloaded method constructor B with alternatives:
+t4460c.scala:4: error: multiple constructors for B with alternatives:
   (a: String)B <and>
   (x: Int)B
- cannot be applied to ()
+ cannot be invoked with no arguments
   def this(a: String) = this()
                         ^
 1 error

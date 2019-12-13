@@ -1041,7 +1041,9 @@ trait ContextErrors {
     self: Inferencer =>
 
     private def applyErrorMsg(tree: Tree, msg: String, argtpes: List[Type], pt: Type) = {
-      def asParams(xs: List[Any]) = xs.mkString("(", ", ", ")")
+      def asParams(xs: List[Any]) =
+        if (xs.isEmpty && tree.symbol.isConstructor) "no arguments"
+        else xs.mkString("(", ", ", ")")
 
       def resType   = if (pt.isWildcard) "" else " with expected result type " + pt
       def allTypes  = (alternatives(tree) flatMap (_.paramTypes)) ++ argtpes :+ pt
@@ -1145,9 +1147,12 @@ trait ContextErrors {
       def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
         val alts = alternatives(tree)
         val widenedArgtpes = widenArgs(argtpes, alts.head.params, alts.tail.head.params)
+        val proscription =
+          if (tree.symbol.isConstructor) " cannot be invoked with "
+          else " cannot be applied to "
 
         issueNormalTypeError(tree,
-          applyErrorMsg(tree, " cannot be applied to ", widenedArgtpes, pt))
+          applyErrorMsg(tree, proscription, widenedArgtpes, pt))
         // since inferMethodAlternative modifies the state of the tree
         // we have to set the type of tree to ErrorType only in the very last
         // fallback action that is done in the inference.

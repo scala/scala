@@ -170,7 +170,9 @@ trait TypeDiagnostics {
 
     def patternMessage    = "pattern " + tree.tpe.finalResultType + valueParamsString(tree.tpe)
     def exprMessage       = "expression of type " + tree.tpe
-    def overloadedMessage = s"overloaded method $sym with alternatives:\n" + alternativesString(tree)
+    def overloadedMessage =
+      if (sym.isConstructor) s"multiple constructors for ${sym.owner.decodedName}${sym.idString} with alternatives:\n${alternativesString(tree)}"
+      else s"overloaded method ${sym.decodedName} with alternatives:\n${alternativesString(tree)}"
     def moduleMessage     = "" + sym
     def defaultMessage    = moduleMessage + preResultString + tree.tpe
     def applyMessage      = defaultMessage + tree.symbol.locationString

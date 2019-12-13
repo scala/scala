@@ -1,4 +1,4 @@
-t5452-new.scala:30: error: overloaded method value apply with alternatives:
+t5452-new.scala:30: error: overloaded method apply with alternatives:
   ()Queryable[CoffeesTable] <and>
   (t: Tree)(implicit evidence$2: scala.reflect.ClassTag[CoffeesTable])Nothing <and>
   (implicit evidence$1: scala.reflect.ClassTag[CoffeesTable])Nothing

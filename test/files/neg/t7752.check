@@ -1,4 +1,4 @@
-t7752.scala:25: error: overloaded method value foo with alternatives:
+t7752.scala:25: error: overloaded method foo with alternatives:
   [A](heading: String, rows: A*)(A,) <and>
   [A, B](heading: (String, String), rows: (A, B)*)(A, B) <and>
   [A, B, C](heading: (String, String, String), rows: (A, B, C)*)(A, B, C) <and>
