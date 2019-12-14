@@ -1,0 +1,7 @@
+t11823.scala:7: error: could not find implicit value for parameter e: Test.Foo[String]
+  val fooString: Foo[String] = implicitly
+                               ^
+t11823.scala:8: error: could not find implicit value for parameter foo: Test.Foo[String]
+  val barString: Bar[String] = bar
+                               ^
+2 errors
