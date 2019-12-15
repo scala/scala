@@ -1144,7 +1144,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    *
    *  If `tparams` is true, then the methods tries to unify over type params in polytypes as well.
    */
-  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean, tparams: Boolean = false): TypeEnv = (tp1, tp2) match {
+  private def unify(tp1: Type, tp2: Type, env: TypeEnv, strict: Boolean, tparams: Boolean): TypeEnv = (tp1, tp2) match {
     case (TypeRef(_, sym1, _), _) if sym1.isSpecialized =>
       debuglog(s"Unify $tp1, $tp2")
       if (isPrimitiveValueClass(tp2.typeSymbol) || isSpecializedAnyRefSubtype(tp2, sym1))
@@ -1183,19 +1183,19 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           foldLeft2(tparams1, tparams2)(env1){ (e, tp1, tp2) => unifyAux(tp1.info, tp2.info, e, strict) }
       }
       else
-        unify(res1, res2, env, strict)
+        unify(res1, res2, env, strict = strict, tparams = false)
     case (TypeBounds(lo1, hi1), TypeBounds(lo2, hi2)) =>
       val env1 = unifyAux(lo1, lo2, env, strict)
       unifyAux(hi1, hi2, env1, strict)
-    case (PolyType(_, res), other)                    => unify(res, other, env, strict)
+    case (PolyType(_, res), other)                    => unify(res, other, env, strict, tparams = false)
     case (ThisType(_), ThisType(_))                   => env
-    case (_, SingleType(_, _))                        => unify(tp1, tp2.underlying, env, strict)
-    case (SingleType(_, _), _)                        => unify(tp1.underlying, tp2, env, strict)
-    case (ThisType(_), _)                             => unify(tp1.widen, tp2, env, strict)
-    case (_, ThisType(_))                             => unify(tp1, tp2.widen, env, strict)
+    case (_, SingleType(_, _))                        => unify(tp1, tp2.underlying, env, strict, tparams = false)
+    case (SingleType(_, _), _)                        => unify(tp1.underlying, tp2, env, strict, tparams = false)
+    case (ThisType(_), _)                             => unify(tp1.widen, tp2, env, strict, tparams = false)
+    case (_, ThisType(_))                             => unify(tp1, tp2.widen, env, strict, tparams = false)
     case (RefinedType(_, _), RefinedType(_, _))       => env
-    case (AnnotatedType(_, tp1), tp2)                 => unify(tp2, tp1, env, strict)
-    case (ExistentialType(_, res1), _)                => unify(tp2, res1, env, strict)
+    case (AnnotatedType(_, tp1), tp2)                 => unify(tp2, tp1, env, strict, tparams = false)
+    case (ExistentialType(_, res1), _)                => unify(tp2, res1, env, strict, tparams = false)
     case _ =>
       debuglog(s"don't know how to unify $tp1 [${tp1.getClass}] with $tp2 [${tp2.getClass}]")
       env
@@ -1208,9 +1208,9 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
 
   private def unifyAux(arg1: Type, arg2: Type, env: TypeEnv, strict: Boolean): TypeEnv =
-    if (!strict) unify(arg1, arg2, env, strict)
+    if (!strict) unify(arg1, arg2, env, strict, tparams = false)
     else {
-      val nenv = unify(arg1, arg2, emptyEnv, strict)
+      val nenv = unify(arg1, arg2, emptyEnv, strict, tparams = false)
       if (env.keySet.intersect(nenv.keySet).isEmpty) env ++ nenv
       else {
         debuglog(s"could not unify: u($arg1, $arg2) yields $nenv, env: $env")
@@ -1518,7 +1518,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           case PolyType(_, resTpe) =>
             debuglog(s"Conformance for anyref - polytype with result type: $resTpe and $treeType\nOrig. sym.: $origSymbol")
             try {
-              val e = unify(origSymbol.tpe, memberType, emptyEnv, true)
+              val e = unify(origSymbol.tpe, memberType, emptyEnv, strict = true, tparams = false)
               debuglog(s"obtained env: $e")
               e.keySet == env.keySet
             } catch {
@@ -1535,7 +1535,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       val symbol = tree.symbol
       /* The specialized symbol of 'tree.symbol' for tree.tpe, if there is one */
       def specSym(qual: Tree): Symbol = {
-        val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
+        val env = unify(symbol.tpe, tree.tpe, emptyEnv, strict = false, tparams = false)
         def isMatch(member: Symbol) = {
           val memberType = qual.tpe memberType member
 
@@ -1580,7 +1580,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           case _                         => copySelect
         }
         else {
-          val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
+          val env = unify(symbol.tpe, tree.tpe, emptyEnv, strict = false, tparams = false)
           overloads(symbol) find (_ matchesEnv env) match {
             case Some(Overload(member, _)) => typedOp(member)
             case _ =>
@@ -1664,7 +1664,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         //   foo(3) // TypeApply(Ident(foo), List(Int)) => foo$mIc$sp(3)
         // }
         case TypeApply(sel @ Ident(name), targs) if name != nme.CONSTRUCTOR =>
-          val env = unify(symbol.tpe, tree.tpe, emptyEnv, false)
+          val env = unify(symbol.tpe, tree.tpe, emptyEnv, strict = false, tparams = false)
           if (env.isEmpty) super.transform(tree)
           else {
             overloads(symbol) find (_ matchesEnv env) match {
