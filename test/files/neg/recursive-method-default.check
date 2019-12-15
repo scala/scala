@@ -1,0 +1,27 @@
+recursive-method-default.scala:5: warning: Recursive call used default arguments.
+    rec1(0)     // warn
+        ^
+recursive-method-default.scala:10: warning: Recursive call used default arguments.
+      rec2(0)   // warn
+          ^
+recursive-method-default.scala:13: warning: Recursive call used default arguments.
+      rec2(0)   // warn
+          ^
+recursive-method-default.scala:16: warning: Recursive call used default arguments.
+      rec2(0)   // warn
+          ^
+recursive-method-default.scala:27: warning: Recursive call used default arguments.
+    rec4(0)()   // warn
+           ^
+recursive-method-default.scala:31: warning: Recursive call used default arguments.
+    rec5(0)()   // warn
+           ^
+recursive-method-default.scala:35: warning: Recursive call used default arguments.
+    rec6()(0)   // warn
+        ^
+recursive-method-default.scala:39: warning: Recursive call used default arguments.
+    rec7()(0)   // one warning only
+        ^
+error: No warnings can be incurred under -Werror.
+8 warnings
+1 error

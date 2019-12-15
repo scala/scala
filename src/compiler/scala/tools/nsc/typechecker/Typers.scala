@@ -23,6 +23,7 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
+import scala.util.chaining._
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -3561,7 +3562,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (context.reporter.hasErrors)
               setError(tree)
             else {
-              import scala.util.chaining._
               // warn about conversions applied to blocks (#9386) in lieu of fixing
               def checkConversionsToBlockArgs(appl: Tree): Unit =
                 if (settings.warnByNameImplicit) {
@@ -3719,7 +3719,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   checkNotMacro()
                   context.set(ContextMode.DiagUsedDefaults)
-                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
+                  def checkRecursive(res: Tree): Unit =
+                    if (settings.warnRecurseWithDefault && !res.isErroneous && context.owner.hasTransOwner(funSym))
+                      context.warning(res.pos, "Recursive call used default arguments.")
+
+                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt).tap(checkRecursive)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
                   tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))
