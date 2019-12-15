@@ -152,7 +152,7 @@ class NullnessFrame(nLocals: Int, nStack: Int) extends AliasingFrame[NullnessVal
   private[this] var ifNullAliases: AliasSet = null
 
   // Auxiliary constructor required for implementing `NullnessAnalyzer.newFrame`
-  def this(src: Frame[_ <: NullnessValue]) {
+  def this(src: Frame[_ <: NullnessValue]) = {
     this(src.getLocals, src.getMaxStackSize)
     init(src)
   }

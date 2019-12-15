@@ -36,7 +36,7 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
   import Opcodes._
 
   // Auxiliary constructor required for implementing `AliasingAnalyzer.newFrame`
-  def this(src: Frame[_ <: V]) {
+  def this(src: Frame[_ <: V]) = {
     this(src.getLocals, src.getMaxStackSize)
     init(src)
   }
