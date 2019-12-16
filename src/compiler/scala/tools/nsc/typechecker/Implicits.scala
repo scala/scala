@@ -469,10 +469,9 @@ trait Implicits {
     def isPlausiblyCompatible(tp: Type, pt: Type) = checkCompatibility(fast = true, tp, pt)
     def normSubType(tp: Type, pt: Type) = checkCompatibility(fast = false, tp, pt)
 
-    /** Does type `dtor` dominate type `dted`?
-     *  This is the case if the stripped cores `dtor1` and `dted1` of both types are
-     *  the same wrt `=:=`, or if they overlap and the complexity of `dtor1` is higher
-     *  than the complexity of `dted1`.
+    /** Does stripped core type `dtor` dominate the stripped core type `dted`?
+     *  This is the case if both types are the same wrt `=:=`, or if they overlap
+     *  and the complexity of `dtor` is higher than the complexity of `dted`.
      *  The _stripped core_ of a type is the type where
      *   - all refinements and annotations are dropped,
      *   - all universal and existential quantification is eliminated
@@ -488,32 +487,33 @@ trait Implicits {
         case h :: t => sumComplexity(acc + complexity(h), t)
         case _: Nil.type => acc
       }
+
       def complexity(tp: Type): Int = tp.dealias match {
         case NoPrefix                => 0
-        case SingleType(pre, sym)    => if (sym.hasPackageFlag) 0 else complexity(tp.dealiasWiden)
+        case SingleType(_, sym)      => if (sym.hasPackageFlag) 0 else complexity(tp.dealiasWiden)
         case ThisType(sym)           => if (sym.hasPackageFlag) 0 else 1
-        case TypeRef(pre, sym, args) => 1 + complexity(pre) + sumComplexity(0, args)
+        case TypeRef(pre, _, args)   => 1 + complexity(pre) + sumComplexity(0, args)
         case RefinedType(parents, _) => 1 + sumComplexity(0, parents)
         case _                       => 1
       }
+
       def overlaps(tp1: Type, tp2: Type): Boolean = (tp1, tp2) match {
         case (RefinedType(parents, _), _) => parents exists (overlaps(_, tp2))
         case (_, RefinedType(parents, _)) => parents exists (overlaps(tp1, _))
         case _                            => tp1.typeSymbol == tp2.typeSymbol
       }
-      val dtor1 = stripped(core(dtor))
-      val dted1 = stripped(core(dted))
-      overlaps(dtor1, dted1) && {
-        complexity(dtor1) compareTo complexity(dted1) match {
-          case 0 => dtor1 =:= dted1
+
+      overlaps(dtor, dted) && {
+        complexity(dtor) compareTo complexity(dted) match {
+          case 0 => dtor =:= dted
           case cmp => cmp > 0
         }
       }
     }
 
     private def core(tp: Type): Type = tp.dealiasWiden match {
-      case RefinedType(parents, defs)         => intersectionType(parents map core, tp.typeSymbol.owner)
-      case AnnotatedType(annots, tp)          => core(tp)
+      case RefinedType(parents, _)            => intersectionType(parents map core, tp.typeSymbol.owner)
+      case AnnotatedType(_, tp)               => core(tp)
       case ExistentialType(tparams, result)   => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
       case PolyType(tparams, result)          => core(result).subst(tparams, tparams map (t => core(t.info.upperBound)))
       case TypeRef(pre, sym, args)            =>
@@ -548,7 +548,8 @@ trait Implicits {
             case _ => loop(tl, hdSym(acc))
           }
         }
-      loop(List(tp), Set())
+
+      loop(List(tp), Set.empty)
     }
 
     /** The expected type with all undetermined type parameters replaced with wildcards. */
@@ -576,28 +577,27 @@ trait Implicits {
       // upon receiving `c.abort` the typechecker will decide that the corresponding implicit search has failed
       // which will fail the entire stack of implicit searches, producing a nice error message provided by the programmer
       val existsDominatedImplicit: Boolean =
-        if(tree == EmptyTree) false
+        if (tree == EmptyTree) false
         else {
-          lazy val spt = stripped(core(pt))
-          lazy val sptSyms = allSymbols(spt)
-          // Are all the symbols of the stripped core of pt contained in the stripped core of tp?
-          def coversPt(tp: Type): Boolean = sptSyms == allSymbols(stripped(core(tp)))
+          lazy val ptStripped = stripped(core(pt))
+          lazy val ptStrippedSyms = allSymbols(ptStripped)
+
+          // Are all the symbols of the stripped core of dominating pt contained in the stripped core of tp?
+          def coversDominatingPt(tp: Type): Boolean = {
+            val tpStripped = stripped(core(tp))
+            dominates(ptStripped, tpStripped) && ptStrippedSyms == allSymbols(tpStripped)
+          }
 
           @tailrec
-          def loop(ois: List[OpenImplicit], belowByName: Boolean): Boolean = {
-            ois match {
-              case Nil => false
-              case (hd@OpenImplicit(info1, tp, tree1)) :: tl =>
-                (if (!info1.sym.isMacro && tree1.symbol == tree.symbol) {
-                  if(belowByName && (tp =:= pt)) Some(false) // if there is a byname argument between tp and pt we can tie the knot
-                  else if (dominates(pt, tp) && coversPt(tp)) Some(true)
-                  else None
-                } else None) match {
-                  case Some(res) => res
-                  case None => loop(tl, hd.isByName || belowByName)
-                }
-            }
+          def loop(ois: List[OpenImplicit], belowByName: Boolean): Boolean = ois match {
+            case Nil => false
+            case (hd @ OpenImplicit(info1, tp, tree1)) :: tl =>
+              val possiblyDominated = !info1.sym.isMacro && tree1.symbol == tree.symbol
+              if (possiblyDominated && belowByName && tp =:= pt) false
+              else if (possiblyDominated && coversDominatingPt(tp)) true
+              else loop(tl, hd.isByName || belowByName)
           }
+
           loop(context.openImplicits, this.isByNamePt)
         }
 
