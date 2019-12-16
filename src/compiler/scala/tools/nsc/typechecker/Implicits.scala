@@ -503,7 +503,12 @@ trait Implicits {
       }
       val dtor1 = stripped(core(dtor))
       val dted1 = stripped(core(dted))
-      overlaps(dtor1, dted1) && (dtor1 =:= dted1 || complexity(dtor1) > complexity(dted1))
+      overlaps(dtor1, dted1) && {
+        complexity(dtor1) compareTo complexity(dted1) match {
+          case 0 => dtor1 =:= dted1
+          case cmp => cmp > 0
+        }
+      }
     }
 
     private def core(tp: Type): Type = tp.dealiasWiden match {
@@ -576,10 +581,7 @@ trait Implicits {
           lazy val spt = stripped(core(pt))
           lazy val sptSyms = allSymbols(spt)
           // Are all the symbols of the stripped core of pt contained in the stripped core of tp?
-          def coversPt(tp: Type): Boolean = {
-            val stp = stripped(core(tp))
-            (stp =:= spt) || (sptSyms == allSymbols(stp))
-          }
+          def coversPt(tp: Type): Boolean = sptSyms == allSymbols(stripped(core(tp)))
 
           @tailrec
           def loop(ois: List[OpenImplicit], belowByName: Boolean): Boolean = {
