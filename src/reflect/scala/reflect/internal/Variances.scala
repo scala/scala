@@ -56,7 +56,7 @@ trait Variances {
 
     private object ValidateVarianceMap extends VariancedTypeMap {
       private[this] var base: Symbol = _
-      private[this] var lowerBoundStack: List[Symbol] = Nil
+      private[this] var inLowerBoundOf: Symbol = _
 
       /** The variance of a symbol occurrence of `tvar` seen at the level of the definition of `base`.
        *  The search proceeds from `base` to the owner of `tvar`.
@@ -78,7 +78,9 @@ trait Variances {
         @tailrec
         def loop(sym: Symbol, v: Variance): Variance =
           if (v.isBivariant) v
-          else if (sym == tvar.owner) if (lowerBoundStack.contains(sym)) v.flip else v
+          else if (sym == tvar.owner)
+            // We can't move this to `shouldFlip`, because it's needed only once at the end.
+            if (inLowerBoundOf == sym) v.flip else v
           else loop(sym.owner, nextVariance(sym, v))
 
         loop(base, Covariant)
@@ -141,14 +143,32 @@ trait Variances {
         sym.isAliasType && isExemptFromVariance(sym)
       }
 
-      /** Validate the variance of types in the definition of `base`. */
+      /** Validate the variance of types in the definition of `base`.
+       *
+       *  Traverse the type signature of `base` and for each type parameter:
+       *    - Calculate the relative variance between `base` and the type parameter's owner by
+       *      walking the owner chain of `base`.
+       *    - Calculate the required variance of the type parameter which is the product of the
+       *      relative variance and the current variance in the type signature of `base`.
+       *    - Ensure that the declared variance of the type parameter is compatible with the
+       *      required variance, otherwise issue an error.
+       *
+       *  Lower bounds need special handling. By default the variance is flipped when entering a
+       *  lower bound. In most cases this is the correct behaviour except for the type parameters
+       *  of higher-kinded types. E.g. in `Foo` below `x` occurs in covariant position:
+       *    `class Foo[F[+_]] { type G[+x] >: F[x] }`
+       *
+       *  To handle this special case, track when entering the lower bound of a HKT in a variable
+       *  and flip the relative variance for its type parameters. (flipping the variance a second
+       *  time negates the first flip).
+       */
       def validateDefinition(base: Symbol): Unit = {
         this.base = base
         base.info match {
           case PolyType(_, TypeBounds(lo, hi)) =>
-            lowerBoundStack ::= base
+            inLowerBoundOf = base
             try flipped(apply(lo))
-            finally lowerBoundStack = lowerBoundStack.tail
+            finally inLowerBoundOf = null
             apply(hi)
           case other =>
             apply(other)
@@ -190,6 +210,14 @@ trait Variances {
       }
     }
 
+    /** Validate the variance of (the type parameters of) PolyTypes in `tpe`.
+     *
+     *  `validateDefinition` cannot handle PolyTypes in arbitrary position, because in general
+     *  the relative variance of such types cannot be computed by walking the owner chain.
+     *
+     *  Instead this method applies a naive algorithm which is correct but less efficient:
+     *  use `varianceInType` to check each type parameter of a PolyType separately.
+     */
     def validateVarianceOfPolyTypesIn(tpe: Type): Unit =
       PolyTypeVarianceMap(tpe)
 
