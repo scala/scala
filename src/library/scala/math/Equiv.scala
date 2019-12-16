@@ -15,8 +15,6 @@ package math
 
 import java.util.Comparator
 
-import scala.language.higherKinds
-
 /** A trait for representing equivalence relations.  It is important to
  *  distinguish between a type that can be compared for equality or
  *  equivalence and a representation of equivalence on some type. This

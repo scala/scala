@@ -14,7 +14,6 @@ package scala
 package collection
 
 import scala.annotation.implicitNotFound
-import scala.language.higherKinds
 
 /** A Map whose keys are sorted according to a [[scala.math.Ordering]]*/
 trait SortedMap[K, +V]

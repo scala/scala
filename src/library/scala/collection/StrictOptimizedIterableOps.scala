@@ -14,7 +14,6 @@ package scala
 package collection
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.higherKinds
 import scala.runtime.Statics
 
 /**

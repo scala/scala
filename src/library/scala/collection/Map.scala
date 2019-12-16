@@ -15,7 +15,6 @@ package collection
 
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
-import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */

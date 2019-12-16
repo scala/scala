@@ -51,7 +51,6 @@ trait IsIterableOnce[Repr] {
 }
 
 object IsIterableOnce extends IsIterableOnceLowPriority {
-  import scala.language.higherKinds
 
   // Straightforward case: IterableOnce subclasses
   implicit def iterableOnceIsIterableOnce[CC0[A] <: IterableOnce[A], A0]: IsIterableOnce[CC0[A0]] { type A = A0 } =

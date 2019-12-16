@@ -13,7 +13,6 @@
 package scala.collection
 
 import scala.collection.immutable.Range
-import scala.language.higherKinds
 import scala.util.hashing.MurmurHash3
 import Searching.{Found, InsertionPoint, SearchResult}
 

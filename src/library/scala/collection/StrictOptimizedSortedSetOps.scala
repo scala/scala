@@ -13,10 +13,8 @@
 package scala
 package collection
 
-
 import scala.annotation.implicitNotFound
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.higherKinds
 
 /**
   * Trait that overrides sorted set operations to take advantage of strict builders.

@@ -13,7 +13,6 @@
 package scala.collection.mutable
 
 import scala.collection.{IterableFactoryDefaults, SeqFactory}
-import scala.language.higherKinds
 
 trait Seq[A]
   extends Iterable[A]

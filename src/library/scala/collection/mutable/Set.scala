@@ -13,7 +13,6 @@
 package scala.collection.mutable
 
 import scala.collection.{IterableFactory, IterableFactoryDefaults, IterableOps}
-import scala.language.higherKinds
 
 /** Base trait for mutable sets */
 trait Set[A]

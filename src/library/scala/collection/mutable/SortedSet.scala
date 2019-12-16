@@ -14,8 +14,6 @@ package scala
 package collection
 package mutable
 
-import scala.language.higherKinds
-
 /**
   * Base type for mutable sorted set collections
   */

@@ -13,7 +13,6 @@
 package scala
 package collection
 
-import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
 import scala.collection.View.{LeftPartitionMapped, RightPartitionMapped}

@@ -16,7 +16,6 @@ package collection
 import scala.annotation.tailrec
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult}
 import scala.collection.Stepper.EfficientSplit
-import scala.language.higherKinds
 import scala.math.Ordering
 
 /** Base trait for indexed sequences that have efficient `apply` and `length` */

@@ -18,7 +18,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
-import scala.language.higherKinds
 
 /** Base type of immutable Maps */
 trait Map[K, +V]

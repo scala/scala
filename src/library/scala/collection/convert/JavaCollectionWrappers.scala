@@ -18,7 +18,6 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
 import scala.jdk.CollectionConverters._
-import scala.language.higherKinds
 
 /** Wrappers for exposing Scala collections as Java collections and vice-versa */
 @SerialVersionUID(3L)

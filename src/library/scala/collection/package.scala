@@ -12,8 +12,6 @@
 
 package scala
 
-import scala.language.higherKinds
-
 package object collection {
   @deprecated("Use Iterable instead of Traversable", "2.13.0")
   type Traversable[+X] = Iterable[X]
