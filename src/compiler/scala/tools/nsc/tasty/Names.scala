@@ -6,6 +6,8 @@ object Names {
 
   object TastyName {
 
+    // TODO tasty: cache chars for Names. SimpleName acts as a cursor
+
     final case class SimpleName(raw: String)                                                extends TastyName
     final case class ModuleName(base: TastyName)                                            extends TastyName
     final case class QualifiedName(qual: TastyName, sep: SimpleName, name: SimpleName)      extends TastyName
