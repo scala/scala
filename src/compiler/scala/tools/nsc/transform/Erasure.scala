@@ -272,6 +272,7 @@ abstract class Erasure extends InfoTransform
 
     @noinline
     def jsig(tp0: Type, existentiallyBound: List[Symbol] = Nil, toplevel: Boolean = false, unboxedVCs: Boolean = true): Unit = {
+      @inline def jsig1(tp0: Type) = jsig(tp0, existentiallyBound = Nil, toplevel = false, unboxedVCs = true)
       val tp = tp0.dealias
       tp match {
         case st: SubType =>
@@ -302,7 +303,7 @@ abstract class Erasure extends InfoTransform
             val preRebound = pre.baseType(sym.owner) // #2585
             if (needsJavaSig(sym, preRebound, Nil)) {
               val i = builder.length()
-              jsig(preRebound, existentiallyBound)
+              jsig(preRebound, existentiallyBound, toplevel = false, unboxedVCs = true)
               if (builder.charAt(i) == 'L') {
                 builder.delete(builder.length() - 1, builder.length())// delete ';'
                 // If the prefix is a module, drop the '$'. Classes (or modules) nested in modules
@@ -331,10 +332,10 @@ abstract class Erasure extends InfoTransform
 
           // If args isEmpty, Array is being used as a type constructor
           if (sym == ArrayClass && args.nonEmpty) {
-            if (unboundedGenericArrayLevel(tp) == 1) jsig(ObjectTpe)
+            if (unboundedGenericArrayLevel(tp) == 1) jsig1(ObjectTpe)
             else {
               builder.append(ARRAY_TAG)
-              args.foreach(jsig(_))
+              args.foreach(jsig1(_))
             }
           }
           else if (isTypeParameterInSig(sym, sym0)) {
@@ -342,22 +343,22 @@ abstract class Erasure extends InfoTransform
             builder.append(TVAR_TAG).append(sym.name).append(';')
           }
           else if (sym == AnyClass || sym == AnyValClass || sym == SingletonClass)
-            jsig(ObjectTpe)
+            jsig1(ObjectTpe)
           else if (sym == UnitClass)
-            jsig(BoxedUnitTpe)
+            jsig1(BoxedUnitTpe)
           else if (sym == NothingClass)
-            jsig(RuntimeNothingClass.tpe)
+            jsig1(RuntimeNothingClass.tpe)
           else if (sym == NullClass)
-            jsig(RuntimeNullClass.tpe)
+            jsig1(RuntimeNullClass.tpe)
           else if (isPrimitiveValueClass(sym)) {
-            if (!unboxedVCs) jsig(ObjectTpe)
-            else if (sym == UnitClass) jsig(BoxedUnitTpe)
+            if (!unboxedVCs) jsig1(ObjectTpe)
+            else if (sym == UnitClass) jsig1(BoxedUnitTpe)
             else builder.append(abbrvTag(sym))
           }
           else if (sym.isDerivedValueClass) {
             if (unboxedVCs) {
               val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
-              jsig(unboxedSeen, existentiallyBound, toplevel)
+              jsig(unboxedSeen, existentiallyBound, toplevel, unboxedVCs = true)
             } else classSig
           }
           else if (sym.isClass)
@@ -367,7 +368,7 @@ abstract class Erasure extends InfoTransform
         case PolyType(tparams, restpe) =>
           assert(tparams.nonEmpty, tparams)
           if (toplevel) polyParamSig(tparams)
-          jsig(restpe)
+          jsig1(restpe)
 
         case MethodType(params, restpe) =>
           builder.append('(')
@@ -383,14 +384,14 @@ abstract class Erasure extends InfoTransform
                   builder.append('['); att.typeParamRef
                 case _ => p.tpe
               }
-              jsig(tp)
+              jsig1(tp)
             }
           })
           builder.append(')')
-          if (restpe.typeSymbol == UnitClass || sym0.isConstructor) builder.append(VOID_TAG) else jsig(restpe)
+          if (restpe.typeSymbol == UnitClass || sym0.isConstructor) builder.append(VOID_TAG) else jsig1(restpe)
 
         case RefinedType(parents, decls) =>
-          jsig(intersectionDominator(parents), unboxedVCs = unboxedVCs)
+          jsig(intersectionDominator(parents), existentiallyBound = Nil, toplevel = false, unboxedVCs = unboxedVCs)
         case ClassInfoType(parents, _, _) =>
           superSig(tp.typeSymbol, parents)
         case AnnotatedType(_, atp) =>
@@ -401,7 +402,7 @@ abstract class Erasure extends InfoTransform
         case _ =>
           val etp = erasure(sym0)(tp)
           if (etp eq tp) throw new UnknownSig
-          else jsig(etp)
+          else jsig1(etp)
       }
     }
     val throwsArgs = sym0.annotations flatMap ThrownException.unapply
