@@ -18,7 +18,7 @@ import mutable.ArrayBuilder
 import immutable.ArraySeq
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.runtime.{BoxedUnit, ScalaRunTime}
+import scala.runtime.BoxedUnit
 import scala.runtime.ScalaRunTime.{array_apply, array_update}
 
 /** Utility methods for operating on arrays.

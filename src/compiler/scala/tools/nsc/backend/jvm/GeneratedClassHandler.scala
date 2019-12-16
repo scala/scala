@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.nio.channels.ClosedByInterruptException
-import java.nio.file.Path
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent._
 

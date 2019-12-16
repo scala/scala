@@ -14,6 +14,7 @@ package scala.tools.nsc
 package interactive
 package tests.core
 
+import scala.annotation.unused
 import scala.tools.nsc.interactive.Response
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.SourceFile
@@ -121,7 +122,7 @@ trait AskTypeAt extends AskCommand {
 trait AskLoadedTyped extends AskCommand {
   import compiler.Tree
 
-  protected def askLoadedTyped(source: SourceFile, keepLoaded: Boolean = false)(implicit reporter: Reporter): Response[Tree] = {
+  protected def askLoadedTyped(source: SourceFile, keepLoaded: Boolean = false)(implicit @unused reporter: Reporter): Response[Tree] = {
     ask {
       compiler.askLoadedTyped(source, keepLoaded, _)
     }

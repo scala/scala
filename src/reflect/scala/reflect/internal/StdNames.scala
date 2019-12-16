@@ -14,8 +14,6 @@ package scala
 package reflect
 package internal
 
-import scala.language.implicitConversions
-
 import java.security.MessageDigest
 import Chars.isOperatorPart
 import scala.annotation.switch

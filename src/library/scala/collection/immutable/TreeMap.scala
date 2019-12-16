@@ -18,7 +18,6 @@ import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.{RedBlackTree => RB}
 import scala.collection.mutable.ReusableBuilder
-import scala.util.hashing.MurmurHash3
 
 /** An immutable SortedMap whose values are stored in a red-black tree.
   *

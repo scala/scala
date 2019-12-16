@@ -13,7 +13,6 @@
 package scala.tools.nsc
 
 import scala.collection.mutable
-import scala.language.postfixOps
 
 /** Converts an unordered morass of components into an order that
  *  satisfies their mutual constraints.

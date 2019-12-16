@@ -19,7 +19,6 @@ import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 import scala.language.higherKinds
-import scala.util.hashing.MurmurHash3
 
 /** Base type of immutable Maps */
 trait Map[K, +V]
