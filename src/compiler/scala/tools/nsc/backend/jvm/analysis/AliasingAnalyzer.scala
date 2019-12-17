@@ -117,6 +117,9 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
       case ILOAD | LLOAD | FLOAD | DLOAD | ALOAD =>
         newAlias(assignee = stackTop, source = insn.asInstanceOf[VarInsnNode].`var`)
 
+      case IINC =>
+        removeAlias(insn.asInstanceOf[IincInsnNode].`var`)
+      
       case DUP =>
         val top = stackTop
         newAlias(assignee = top, source = top - 1)
