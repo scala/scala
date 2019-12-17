@@ -3,6 +3,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.Names.TastyName
 
 trait NameOps extends TastyKernel {
+  import TastyName._
 
   object NameOps {
     implicit class NameDecorator(name: Name) {
@@ -11,9 +12,10 @@ trait NameOps extends TastyKernel {
   }
 
   implicit class TastyNameDecorator(private val tastyName: TastyName) {
-    def toTermName: TermName = tastyName.export match {
-      case ""  => termNames.EMPTY
-      case raw => mkTermName(raw)
+    def toEncodedTermName: TermName = tastyName match {
+      case Empty       => termNames.EMPTY
+      case Constructor => nme.CONSTRUCTOR
+      case name        => mkTermName(name.encoded)
     }
   }
 

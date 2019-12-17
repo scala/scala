@@ -1,6 +1,7 @@
 package scala.tools.nsc.tasty
 
 import scala.annotation.tailrec
+import scala.reflect.NameTransformer
 
 object Names {
 
@@ -10,19 +11,99 @@ object Names {
 
     final case class SimpleName(raw: String)                                                extends TastyName
     final case class ModuleName(base: TastyName)                                            extends TastyName
-    final case class QualifiedName(qual: TastyName, sep: SimpleName, name: SimpleName)      extends TastyName
+    final case class QualifiedName(qual: TastyName, sep: SimpleName, selector: SimpleName)  extends TastyName
     final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[TastyName]) extends TastyName
     final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                 extends TastyName
     final case class DefaultName(qual: TastyName, num: Int)                                 extends TastyName
     final case class VariantName(qual: TastyName, contravariant: Boolean)                   extends TastyName
     final case class PrefixName(prefix: SimpleName, qual: TastyName)                        extends TastyName
 
-    val Empty: SimpleName = SimpleName("")
-    val PathSep: SimpleName = SimpleName(".")
-    val ExpandedSep: SimpleName = SimpleName("$$")
-    val ExpandPrefixSep: SimpleName = SimpleName("$")
-    val InlinePrefix: SimpleName = SimpleName("inline$")
-    val SuperPrefix: SimpleName = SimpleName("super$")
+    final val Empty: SimpleName = SimpleName("")
+    final val PathSep: SimpleName = SimpleName(".")
+    final val ExpandedSep: SimpleName = SimpleName("$$")
+    final val ExpandPrefixSep: SimpleName = SimpleName("$")
+    final val InlinePrefix: SimpleName = SimpleName("inline$")
+    final val SuperPrefix: SimpleName = SimpleName("super$")
+    final val Constructor: SimpleName = SimpleName("<init>")
+
+    trait NameEncoder[U] {
+      final def encode[O](name: TastyName)(init: => U, finish: U => O): O = finish(traverse(init, name))
+      def traverse(u: U, name: TastyName): U
+    }
+
+    trait StringBuilderEncoder extends NameEncoder[StringBuilder] {
+      final def encode(name: TastyName): String = name match {
+        case SimpleName(raw) => raw
+        case _               => super.encode(name)(new StringBuilder(25), _.toString)
+      }
+    }
+
+    /** Converts a name to a representation closest to source code.
+     */
+    object SourceEncoder extends StringBuilderEncoder {
+      def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
+        case name: SimpleName    => sb.append(name.raw)
+        case name: ModuleName    => traverse(sb, name.base)
+        case name: SignedName    => traverse(sb, name.qual)
+        case name: UniqueName    => traverse(traverse(sb, name.qual), name.sep).append(name.num)
+        case name: DefaultName   => traverse(sb, name.qual).append("$default$").append(name.num + 1)
+        case name: VariantName   => traverse(sb.append(if (name.contravariant) '-' else '+'), name.qual)
+        case name: QualifiedName => traverse(traverse(traverse(sb, name.qual), name.sep), name.selector)
+        case name: PrefixName    => traverse(traverse(sb, name.prefix), name.qual)
+      }
+    }
+
+    /** Displays formatted information about the structure of the name
+     */
+    object DebugEncoder extends StringBuilderEncoder {
+
+      def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
+
+        case SimpleName(raw)          => sb.append(raw)
+        case DefaultName(qual, num)   => traverse(sb, qual).append("[Default ").append(num + 1).append(']')
+        case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
+        case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
+        case SignedName(name,sig)     => sig.mergeShow(traverse(sb, name).append("[Signed ")).append(']')
+
+        case VariantName(qual, contra) =>
+          traverse(sb, qual).append("[Variant ").append(if (contra) '-' else '+').append(']')
+
+        case QualifiedName(qual, sep, name) =>
+          traverse(traverse(traverse(sb, qual).append("[Qualified "), sep).append(' '), name).append(']')
+
+        case UniqueName(qual, sep, num) =>
+          traverse(traverse(sb, qual).append("[Unique "), sep).append(' ').append(num).append(']')
+
+      }
+
+    }
+
+    /** Encodes names as expected by the Scala Reflect SymbolTable
+     */
+    object ScalaNameEncoder extends NameEncoder[StringBuilder] {
+
+      final def encode(name: TastyName): String = name match {
+        case SimpleName(raw) => escapeSimple(raw)
+        case _               => super.encode(name)(new StringBuilder(25), _.toString)
+      }
+
+      final def escapeSimple(raw: String) = raw match {
+        case raw @ "<init>" => raw
+        case raw            => NameTransformer.encode(raw)
+      }
+
+      def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
+        case name: SimpleName    => sb.append(escapeSimple(name.raw))
+        case name: ModuleName    => traverse(sb, name.base)
+        case name: SignedName    => traverse(sb, name.qual)
+        case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
+        case name: DefaultName   => traverse(sb, name.qual).append("$default$").append(name.num + 1)
+        case name: VariantName   => traverse(sb, name.qual)
+        case name: QualifiedName => traverse(traverse(sb, name.qual).append(name.sep.raw), name.selector)
+        case name: PrefixName    => traverse(sb.append(name.prefix), name.qual)
+      }
+
+    }
 
   }
 
@@ -31,60 +112,26 @@ object Names {
   sealed trait TastyName extends Product with Serializable { self =>
     import TastyName._
 
-    /** Standard representation of this as a [[scala.Product]].
-     */
-    final def show: String = runtime.ScalaRunTime._toString(self)
-
-    final override def toString: String = debugTasty
+    final override def toString: String = source
 
     final def isModuleName: Boolean = self.isInstanceOf[ModuleName]
 
     final def asSimpleName: SimpleName = self match {
       case self: SimpleName => self
-      case _                => throw new AssertionError(s"not simplename: ${self.show}")
+      case _                => throw new AssertionError(s"not simplename: ${self.debug}")
     }
 
-    final def export: String = {
-      self match {
-        case SimpleName(raw) => raw
-        case _ =>
-          val sb = new StringBuilder(10)
-          def inner(name: TastyName): Unit = name match {
-            case SimpleName(raw)                => sb.append(raw)
-            case QualifiedName(qual, sep, name) => inner(qual); inner(sep); inner(name)
-            case ModuleName(name)               => inner(name)
-            case SignedName(name,_)             => inner(name)
-            case UniqueName(qual, sep, num)     => inner(qual); inner(sep); sb.append(num)
-            case DefaultName(qual, num)         => inner(qual); sb.append("$default$"); sb.append(num + 1)
-            case VariantName(qual, contra)      => sb.append(if (contra) '-' else '+'); inner(qual)
-            case PrefixName(prefix, qual)       => inner(prefix); inner(qual)
-          }
-          inner(self)
-          sb.toString
-      }
-    }
-
-    /** How to display the name in a TASTy file.
+    /** The name as as expected by the Scala Reflect SymbolTable
      */
-    final def debugTasty: String = {
-      self match {
-        case name: SimpleName => name.raw
-        case _ =>
-          val sb = new StringBuilder(10)
-          def inner(name: TastyName): Unit = name match {
-            case name: SimpleName               => sb.append(name.raw)
-            case QualifiedName(qual, sep, name) => inner(qual); sb.append("[Qualified "); inner(sep); sb.append(' '); inner(name); sb.append(']')
-            case ModuleName(name)               => inner(name); sb.append("[ModuleClass]")
-            case SignedName(name,sig)           => inner(name); sb.append("[Signed "); sig.mergeShow(sb).append(']')
-            case UniqueName(qual, sep, num)     => inner(qual); sb.append("[Unique "); inner(sep); sb.append(' ').append(num).append(']')
-            case DefaultName(qual, num)         => inner(qual); sb.append("[Default "); sb.append(num + 1).append(']')
-            case VariantName(qual, contra)      => inner(qual); sb.append("[Variant ").append(if (contra) '-' else '+').append(']')
-            case PrefixName(prefix, qual)       => inner(qual); sb.append("[Prefix "); inner(prefix); sb.append(']')
-          }
-          inner(self)
-          sb.toString
-      }
-    }
+    final def encoded: String = ScalaNameEncoder.encode(self)
+
+    /** The name as represented in source code
+     */
+    final def source: String = SourceEncoder.encode(self)
+
+    /** Debug information about the structure of the name.
+     */
+    final def debug: String = DebugEncoder.encode(self)
 
     final def stripModulePart: TastyName = self match {
       case ModuleName(name) => name
