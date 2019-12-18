@@ -167,6 +167,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.SynchronizedTypes.defineNormalized"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse.defineNormalized"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.RootEntry"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Queue$Many"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Queue$Many$"),
   ),
 }
 

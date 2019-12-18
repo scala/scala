@@ -275,3 +275,4 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
 
   private final case class Many[+A](seq: Seq[A])
 }
+
