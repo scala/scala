@@ -1,0 +1,5 @@
+/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/TestDefaults_fail.scala:5: error: not enough arguments for constructor Defaults: (i: Int, s: String)(b: Boolean)tastytest.Defaults.
+Unspecified value parameters i, s.
+  val defaults = new Defaults()() // error: not enough arguments for constructor
+                 ^
+one error found

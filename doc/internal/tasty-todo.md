@@ -16,6 +16,5 @@ Dotty only
 - [ ] Union types
 - [ ] Function23+
 - [ ] Tuple23+
-- [ ] erasedfunction
 - [ ] givenFunction
 - [ ] scala 3 macros
