@@ -78,43 +78,7 @@ sealed class Queue[+A] protected(protected val in: List[Any /* A | Many[A] */], 
     }
   }
 
-  override def iterator: Iterator[A] =
-    new AbstractIterator[A] {
-      // TODO: build outside of the class
-      private[this] var currentOut: List[A] = out
-      private[this] var currentInIterator: Iterator[Any] = _
-      private[this] var currentManyIterator: Iterator[Any] = _
-
-      private[this] def getCurrentInIterator(): Iterator[Any] = {
-        if (currentInIterator == null) {
-          currentInIterator = in.reverseIterator
-        }
-        currentInIterator
-      }
-
-      override def hasNext: Boolean =
-        currentOut.nonEmpty ||
-          (currentManyIterator != null && currentManyIterator.hasNext) ||
-          getCurrentInIterator().hasNext
-
-      override def next(): A = {
-        if (currentOut.nonEmpty) {
-          val result = currentOut.head
-          currentOut = currentOut.tail
-          result
-        } else if(currentManyIterator != null && currentManyIterator.hasNext) {
-            currentManyIterator.next().asInstanceOf[A]
-        } else {
-          getCurrentInIterator().next() match {
-            case Queue.Many(s) =>
-              currentManyIterator = s.iterator
-              currentManyIterator.next().asInstanceOf[A]
-            case a =>
-              a.asInstanceOf[A]
-          }
-        }
-      }
-    }
+  override def iterator: Iterator[A] = new Queue.QueueIterator[A](in, out)
 
   /** Checks if the queue is empty.
     *
@@ -274,5 +238,70 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
 
   private final case class Many[+A](seq: Seq[A])
+
+  private final class QueueIterator[+A] (private[this] var in: List[Any], private[this] var out: List[A])
+    extends AbstractIterator[A] {
+
+    /** Generated from `in.reverse`
+      *
+      * Until we have completely passed through `out`, `inReverse` will be `null`
+      *
+      * After we have passed  `inReverse`, this Iterator will be exhausted and `inReverse` will remain as `Nil`
+      */
+    private[this] var inReverse: List[Any] = _
+
+    /** If we are currently processing a `Many` sequence from `inReverse`, this will be that `Many`'s current
+      * partially-exhausted Iterator.
+      *
+      * While processing `out`, or while processing non-Many elements of `inReverse`, it should be `null`
+      */
+    private[this] var currentManyIterator: Iterator[Any] = _
+
+    /** Ensures `reverseIn` has been computed, and returns it. */
+    private[this] def getReverseIn(): List[Any] = {
+      if (inReverse == null) {
+        inReverse = in.reverse
+        in = null
+      }
+      inReverse
+    }
+
+    /** Returns true if and only if `currentManyIterator` is non-null and nonEmpty.
+      * Also ensures that if currentManyIterator is empty, that it is set to null
+      */
+    private[this] def currentManyIteratorHasNext(): Boolean = {
+        currentManyIterator != null && {
+          val result = currentManyIterator.hasNext
+          if (!result) {
+            currentManyIterator = null
+          } else {
+          }
+          result
+        }
+    }
+
+    override def hasNext: Boolean =
+      out.nonEmpty || currentManyIteratorHasNext() || getReverseIn().nonEmpty
+
+    override def next(): A = {
+      if (out.nonEmpty) {
+        val result = out.head
+        out = out.tail
+        result
+      } else if(currentManyIteratorHasNext()) {
+        currentManyIterator.next().asInstanceOf[A]
+      } else {
+        getReverseIn() match {
+          case Queue.Many(s) :: _ =>
+            currentManyIterator = s.iterator
+            currentManyIterator.next().asInstanceOf[A]
+          case a :: _ =>
+            a.asInstanceOf[A]
+          case _ =>
+            Iterator.empty.next()
+        }
+      }
+    }
+  }
 }
 
