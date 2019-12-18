@@ -36,7 +36,7 @@ import scala.collection.mutable.{Builder, ListBuffer}
   *  @define willNotTerminateInf
   */
 
-sealed class Queue[+A] protected(protected val in: List[A], protected val out: List[A])
+sealed class Queue[+A] protected(protected val in: List[Any /* A | Many[A] */], protected val out: List[A])
   extends AbstractSeq[A]
     with LinearSeq[A]
     with LinearSeqOps[A, Queue, Queue[A]]
@@ -67,19 +67,59 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
     if (index == n) {
       if (curr.nonEmpty) curr.head
-      else if (in.nonEmpty) in.last
+      else if (in.nonEmpty) in.last match {
+        case Queue.Many(s) => s.head.asInstanceOf[A]
+        case a => a.asInstanceOf[A]
+      }
       else indexOutOfRange()
     } else {
-      val indexFromBack = n - index
-      val inLength = in.length
-      if (indexFromBack >= inLength) indexOutOfRange()
-      else in(inLength - indexFromBack - 1)
+//      val indexFromBack = n - index
+//      val inLength = in.length
+//      if (indexFromBack >= inLength) indexOutOfRange()
+//      else {
+//        in(inLength - indexFromBack - 1)
+//      }
+//      ???
+      iterator.drop(n).next()
     }
   }
 
-  /** Returns the elements in the list as an iterator
-    */
-  override def iterator: Iterator[A] = out.iterator.concat(in.reverse)
+  override def iterator: Iterator[A] =
+    new AbstractIterator[A] {
+      private[this] var currentOut: List[A] = out
+      private[this] var currentInIterator: Iterator[Any] = _
+      private[this] var currentManyIterator: Iterator[Any] = _
+
+      private[this] def getCurrentInIterator(): Iterator[Any] = {
+        if (currentInIterator == null) {
+          currentInIterator = in.reverseIterator
+        }
+        currentInIterator
+      }
+
+      override def hasNext: Boolean =
+        currentOut.nonEmpty ||
+          (currentManyIterator != null && currentManyIterator.hasNext) ||
+          getCurrentInIterator().hasNext
+
+      override def next(): A = {
+        if (currentOut.nonEmpty) {
+          val result = currentOut.head
+          currentOut = currentOut.tail
+          result
+        } else if(currentManyIterator != null && currentManyIterator.hasNext) {
+            currentManyIterator.next().asInstanceOf[A]
+        } else {
+          getCurrentInIterator().next() match {
+            case Queue.Many(s) =>
+              currentManyIterator = s.iterator
+              currentManyIterator.next().asInstanceOf[A]
+            case a =>
+              a.asInstanceOf[A]
+          }
+        }
+      }
+    }
 
   /** Checks if the queue is empty.
     *
@@ -89,26 +129,51 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
 
   override def head: A =
     if (out.nonEmpty) out.head
-    else if (in.nonEmpty) in.last
+    else if (in.nonEmpty) in.last match {
+      case Queue.Many(s) => s.head.asInstanceOf[A]
+      case a => a.asInstanceOf[A]
+    }
     else throw new NoSuchElementException("head on empty queue")
+
+  private[this] def inToOut(): List[A] = {
+    var result: List[Any] = Nil
+    var curr: List[Any] = in
+    while (curr.nonEmpty) {
+      result = curr.head match {
+        case Queue.Many(s) => result.prependedAll(s)
+        case a => a :: result
+      }
+      curr = curr.tail
+    }
+    result.asInstanceOf[List[A]]
+  }
 
   override def tail: Queue[A] =
     if (out.nonEmpty) new Queue(in, out.tail)
-    else if (in.nonEmpty) new Queue(Nil, in.reverse.tail)
+    else if (in.nonEmpty) new Queue(Nil, inToOut().tail)
     else throw new NoSuchElementException("tail on empty queue")
 
   /* This is made to avoid inefficient implementation of iterator. */
   override def forall(p: A => Boolean): Boolean =
-    in.forall(p) && out.forall(p)
+    out.forall(p) && in.forall{
+      case Queue.Many(s) => s.asInstanceOf[Seq[A]].forall(p)
+      case a => p(a.asInstanceOf[A])
+    }
 
   /* This is made to avoid inefficient implementation of iterator. */
   override def exists(p: A => Boolean): Boolean =
-    in.exists(p) || out.exists(p)
+    out.exists(p) || in.exists {
+      case Queue.Many(s) => s.asInstanceOf[Seq[A]].exists(p)
+      case a => p(a.asInstanceOf[A])
+    }
 
   override protected[this] def className = "Queue"
 
   /** Returns the length of the queue. */
-  override def length: Int = in.length + out.length
+  override def length: Int = out.length + in.foldLeft(0){
+    case (i, Queue.Many(s)) => i + s.length
+    case (i, _) => i + 1
+  }
 
   override def prepended[B >: A](elem: B): Queue[B] = new Queue(in, elem :: out)
 
@@ -117,9 +182,12 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   override def appendedAll[B >: A](that: scala.collection.IterableOnce[B]): Queue[B] = {
     val newIn = that match {
       case that: Queue[B] => that.in ++ (that.out reverse_::: this.in)
-      case that: List[A] => that reverse_::: this.in
+      case h :: Nil => h :: this.in
+      case that: Seq[A] if that.isInstanceOf[List[_]] || that.isInstanceOf[Vector[_]] =>
+        if (that.isEmpty) this.in
+        else Queue.Many(that) :: this.in
       case _ =>
-        var result: List[B] = this.in
+        var result: List[Any] = this.in
         val iter = that.iterator
         while (iter.hasNext) {
           result = iter.next() :: result
@@ -164,7 +232,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *  @return the first element of the queue.
     */
   def dequeue: (A, Queue[A]) = out match {
-    case Nil if !in.isEmpty => val rev = in.reverse ; (rev.head, new Queue(Nil, rev.tail))
+    case Nil if !in.isEmpty => val newOut = inToOut() ; (newOut.head, new Queue(Nil, newOut.tail))
     case x :: xs            => (x, new Queue(in, xs))
     case _                  => throw new NoSuchElementException("dequeue on empty queue")
   }
@@ -209,4 +277,6 @@ object Queue extends StrictOptimizedSeqFactory[Queue] {
   override def apply[A](xs: A*): Queue[A] = new Queue[A](Nil, xs.toList)
 
   private object EmptyQueue extends Queue[Nothing](Nil, Nil) { }
+
+  private final case class Many[+A](seq: Seq[A])
 }
