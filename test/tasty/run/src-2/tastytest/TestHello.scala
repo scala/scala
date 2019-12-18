@@ -15,6 +15,6 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
   test(assert((HelloWorld.lzy: "lazy") === "lazy"))
-  // test(assert(HelloWorld.`<init>` === 157)) // looks like we have to unescape unicode and then re-encode?
+  // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
 
 }

@@ -14,5 +14,5 @@ object HelloWorld {
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
   final lazy val lzy = "lazy"
-  def `<init>`: Int = 157
+  // def `<init>`: Int = 157 // broken in https://github.com/lampepfl/dotty/issues/7799
 }
