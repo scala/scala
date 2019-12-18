@@ -73,19 +73,14 @@ sealed class Queue[+A] protected(protected val in: List[Any /* A | Many[A] */], 
       }
       else indexOutOfRange()
     } else {
-//      val indexFromBack = n - index
-//      val inLength = in.length
-//      if (indexFromBack >= inLength) indexOutOfRange()
-//      else {
-//        in(inLength - indexFromBack - 1)
-//      }
-//      ???
+      // TODO: this should be more optimized
       iterator.drop(n).next()
     }
   }
 
   override def iterator: Iterator[A] =
     new AbstractIterator[A] {
+      // TODO: build outside of the class
       private[this] var currentOut: List[A] = out
       private[this] var currentInIterator: Iterator[Any] = _
       private[this] var currentManyIterator: Iterator[Any] = _
