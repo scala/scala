@@ -1,6 +1,6 @@
 package scala.collection.immutable
 
-import org.junit.Assert.assertSame
+import org.junit.Assert._
 import org.junit.{Assert, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -75,4 +75,28 @@ class ListTest {
   }
 
   @Test def checkSearch: Unit = SeqTests.checkSearch(List(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+
+
+  @Test def colonColonColon(): Unit = {
+
+    assertEquals(Nil, Nil ::: Nil)
+    assertEquals(List(1), List(1) ::: List())
+    assertEquals(List(1), List() ::: List(1))
+    assertEquals(List(1, 2), List(1, 2) ::: List())
+    assertEquals(List(1, 2), List(1) ::: List(2))
+    assertEquals(List(1, 2), List() ::: List(1, 2))
+  }
+
+
+  @Test def listFrom(): Unit = {
+    for {
+      dataSize <- 0 to 1000 by 4
+      data = 0 until dataSize
+      vector = data.to(Vector)
+    } {
+      assertEquals(data, List.from(data))
+      assertEquals(vector, List.from(vector))
+    }
+  }
 }
+
