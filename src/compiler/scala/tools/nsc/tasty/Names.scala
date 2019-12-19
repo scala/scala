@@ -26,6 +26,9 @@ object Names {
     final val SuperPrefix: SimpleName = SimpleName("super$")
     final val Constructor: SimpleName = SimpleName("<init>")
 
+    final val DefaultGetterStr     = "$default$"
+    final val DefaultGetterInitStr = NameTransformer.encode("<init>") + DefaultGetterStr
+
     trait NameEncoder[U] {
       final def encode[O](name: TastyName)(init: => U, finish: U => O): O = finish(traverse(init, name))
       def traverse(u: U, name: TastyName): U
@@ -46,7 +49,7 @@ object Names {
         case name: ModuleName    => traverse(sb, name.base)
         case name: SignedName    => traverse(sb, name.qual)
         case name: UniqueName    => traverse(traverse(sb, name.qual), name.sep).append(name.num)
-        case name: DefaultName   => traverse(sb, name.qual).append("$default$").append(name.num + 1)
+        case name: DefaultName   => traverse(sb, name.qual).append(DefaultGetterStr).append(name.num + 1)
         case name: VariantName   => traverse(sb.append(if (name.contravariant) '-' else '+'), name.qual)
         case name: QualifiedName => traverse(traverse(traverse(sb, name.qual), name.sep), name.selector)
         case name: PrefixName    => traverse(traverse(sb, name.prefix), name.qual)
@@ -97,10 +100,13 @@ object Names {
         case name: ModuleName    => traverse(sb, name.base)
         case name: SignedName    => traverse(sb, name.qual)
         case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
-        case name: DefaultName   => traverse(sb, name.qual).append("$default$").append(name.num + 1)
         case name: VariantName   => traverse(sb, name.qual)
         case name: QualifiedName => traverse(traverse(sb, name.qual).append(name.sep.raw), name.selector)
         case name: PrefixName    => traverse(sb.append(name.prefix), name.qual)
+
+        case name: DefaultName if name.qual == Constructor => sb.append(DefaultGetterInitStr).append(name.num + 1)
+
+        case name: DefaultName => traverse(sb, name.qual).append(DefaultGetterStr).append(name.num + 1)
       }
 
     }
@@ -115,6 +121,7 @@ object Names {
     final override def toString: String = source
 
     final def isModuleName: Boolean = self.isInstanceOf[ModuleName]
+    final def isDefaultName: Boolean = self.isInstanceOf[DefaultName]
 
     final def asSimpleName: SimpleName = self match {
       case self: SimpleName => self

@@ -479,7 +479,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def localContext(owner: Symbol)(implicit ctx: Context): Context =
       ctx.fresh.setOwner(owner)
 
-    private def normalizeFlags(tag: Int, givenFlags: FlagSet, name: Name, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
+    private def normalizeFlags(tag: Int, owner: Symbol, givenFlags: FlagSet, name: Name, tname: TastyName, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
       val lacksDefinition =
         rhsIsEmpty &&
           name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
@@ -498,6 +498,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
       else if (isParamTag(tag)) flags |= Param
+      if (tname.isDefaultName || flags.is(Param) && owner.isMethod && owner.is(DefaultParameterized)) {
+        flags |= DefaultParameterized
+      }
       flags
     }
 
@@ -555,7 +558,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
-      var name: Name = readEncodedName()
+      var tname: TastyName = readTastyName()
+      var name: Name = tname.toEncodedTermName
       if (isTypeTag) name = name.toTypeName
       skipParams()
       val ttag = nextUnsharedTag
@@ -567,7 +571,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
       val (givenFlags, tastyFlagSet, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-      val flags = normalizeFlags(tag, givenFlags, name, isAbsType, rhsIsEmpty)
+      val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, tname, isAbsType, rhsIsEmpty)
       def showFlags = {
         if (!tastyFlagSet)
           show(flags)
@@ -749,7 +753,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
       while (currentAddr.index < end.index) {
         nextByte match {
-          case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
+          case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
             val sym = symbolAtCurrent()
             skipTree()
             if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
@@ -828,7 +832,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val sym     = symAtAddr(symAddr)
       val tag     = readByte()
       val end     = readEnd()
-      val name    = readEncodedName()
+      val tname   = readTastyName()
+      val name    = tname.toEncodedTermName
 
       ctx.log(s"completing member $name at $symAddr. (sym=${showSym(sym)})")
 
