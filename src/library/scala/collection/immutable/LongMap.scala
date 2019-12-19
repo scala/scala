@@ -479,7 +479,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
   def flatMap[V2](f: ((Long, T)) => IterableOnce[(Long, V2)]): LongMap[V2] = LongMap.from(new View.FlatMap(coll, f))
 
   override def concat[V1 >: T](that: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] =
-    super.concat(that).asInstanceOf[LongMap[V1]] // Already has corect type but not declared as such
+    super.concat(that).asInstanceOf[LongMap[V1]] // Already has correct type but not declared as such
 
   override def ++ [V1 >: T](that: scala.collection.IterableOnce[(Long, V1)]): LongMap[V1] = concat(that)
 

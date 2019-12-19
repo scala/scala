@@ -167,7 +167,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
         |    d = null
         |  }
         |  b.toString // a, o, b aliases (so they become NotNull), but not c
-        |  // d is null here, assinged in both branches.
+        |  // d is null here, assigned in both branches.
         |}
       """.stripMargin
     val m = compileAsmMethod(code)
@@ -185,7 +185,7 @@ class NullnessAnalyzerTest extends BytecodeTesting {
       (trim, 5, UnknownValue1), // d
 
       (toSt, 2, UnknownValue1), // a, still the same
-      (toSt, 3, UnknownValue1), // b, was re-assinged in both branches to Unknown
+      (toSt, 3, UnknownValue1), // b, was re-assigned in both branches to Unknown
       (toSt, 4, UnknownValue1), // c, was re-assigned in one branch to Unknown
       (toSt, 5, NullValue),     // d, was assigned to null in both branches
 

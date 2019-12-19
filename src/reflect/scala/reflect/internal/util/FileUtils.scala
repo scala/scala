@@ -188,7 +188,7 @@ object FileUtils {
         finally scheduled.set(false)
 
         //we are not scheduled any more
-        //as a last check ensure that we didnt race with an addition to the queue
+        //as a last check ensure that we didn't race with an addition to the queue
         //order is essential - queue is checked before CAS
         if ((!pending.isEmpty) && scheduled.compareAndSet(false, true)) {
           global.execute(background)

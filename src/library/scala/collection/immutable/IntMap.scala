@@ -327,7 +327,7 @@ sealed abstract class IntMap[+T] extends AbstractMap[Int, T]
   def flatMap[V2](f: ((Int, T)) => IterableOnce[(Int, V2)]): IntMap[V2] = intMapFrom(new View.FlatMap(toIterable, f))
 
   override def concat[V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] =
-    super.concat(that).asInstanceOf[IntMap[V1]] // Already has corect type but not declared as such
+    super.concat(that).asInstanceOf[IntMap[V1]] // Already has correct type but not declared as such
 
   override def ++ [V1 >: T](that: collection.IterableOnce[(Int, V1)]): IntMap[V1] = concat(that)
 

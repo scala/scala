@@ -283,7 +283,7 @@ function compilePattern(query) {
     }
 }
 
-/** Searches packages for entites matching the search query using a regex
+/** Searches packages for entities matching the search query using a regex
  *
  * @param {[Object]} pack: package being searched
  * @param {RegExp} regExp: a regular expression for finding matching entities

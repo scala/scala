@@ -751,7 +751,7 @@ trait Infer extends Checkable {
         argtpes
     }
 
-    // This is primarily a duplicte of enhanceBounds in typedAppliedTypeTree
+    // This is primarily a duplicate of enhanceBounds in typedAppliedTypeTree
     // modified to use updateInfo rather than setInfo to avoid wiping out
     // type history.
     def enhanceBounds(okparams: List[Symbol], okargs: List[Type], undets: List[Symbol]): Unit =

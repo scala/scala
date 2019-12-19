@@ -76,7 +76,7 @@ abstract class InlinerHeuristics extends PerRunInit {
           case RefParam =>
             "the callee has a Ref type parameter"
           case KnownArrayOp =>
-            "ScalaRuntime.array_apply and array_update are inlined if the array has a statically knonw type"
+            "ScalaRuntime.array_apply and array_update are inlined if the array has a statically known type"
         }
       }
   }

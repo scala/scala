@@ -496,7 +496,7 @@ object Prop {
 
   /**
    * This handles situations where we have a starting seed in our
-   * paramters.
+   * parameters.
    *
    * If we do, then we remove it from parameters and return it. If
    * not, we create a new random seed. The new parameters from this
