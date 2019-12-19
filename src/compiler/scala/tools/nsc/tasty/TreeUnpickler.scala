@@ -623,7 +623,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
-        case cls: ClassSymbol if canEnterInClass => cls.rawInfo.decls.enterIfNew(sym)
+        case cls: ClassSymbol if canEnterInClass =>
+          val decls = cls.rawInfo.decls
+          if (allowsOverload(sym)) decls.enter(sym)
+          else decls.enterIfNew(sym)
         case _ =>
       }
       registerSym(start, sym)
@@ -641,6 +644,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       goto(start)
       sym
     }
+
+    private def allowsOverload(sym: Symbol) = ( // taken from Namer
+      sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel
+    )
 
     /** Read modifier list into triplet of flags, annotations and a privateWithin
      *  boundary symbol.

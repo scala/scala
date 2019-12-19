@@ -70,11 +70,8 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
           else if (flags.is(Module)) {
             owner.newModule(name.toTermName, noPosition, flags)
           }
-          else if (flags.is(Deferred) && name.isTypeName) {
-            owner.newAbstractType(name.toTypeName, noPosition, flags)
-          }
           else if (name.isTypeName) {
-            owner.newAliasType(name.toTypeName, noPosition, flags)
+            owner.newTypeSymbol(name.toTypeName, noPosition, flags)
           }
           else {
             owner.newMethodSymbol(name.toTermName, noPosition, flags)
