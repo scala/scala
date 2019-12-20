@@ -225,7 +225,7 @@ object TastyTest {
   private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {
     val classes = {
       val matcher = globMatcher(
-        s"$classpath/${if (pkgName.isEmpty) "" else pkgName.*->/}Test*.class"
+        s"$classpath/**/${if (pkgName.isEmpty) "" else pkgName.*->/}Test*.class"
       )
       val visibleTests = src2.map(getSourceAsName)
       val addPkg: String => String = if (pkgName.isEmpty) identity else pkgName + "." + _
