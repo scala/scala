@@ -15,6 +15,8 @@ trait NameOps extends TastyKernel {
     def toEncodedTermName: TermName = tastyName match {
       case Empty       => termNames.EMPTY
       case Constructor => nme.CONSTRUCTOR
+      case EmptyPkg    => nme.EMPTY_PACKAGE_NAME
+      case RootClass   => nme.ROOT
       case name        => mkTermName(name.encoded)
     }
   }

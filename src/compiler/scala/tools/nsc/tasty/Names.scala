@@ -25,6 +25,8 @@ object Names {
     final val InlinePrefix: SimpleName = SimpleName("inline$")
     final val SuperPrefix: SimpleName = SimpleName("super$")
     final val Constructor: SimpleName = SimpleName("<init>")
+    final val EmptyPkg: SimpleName = SimpleName("<empty>")
+    final val RootClass: SimpleName = SimpleName("<root>")
 
     final val DefaultGetterStr     = "$default$"
     final val DefaultGetterInitStr = NameTransformer.encode("<init>") + DefaultGetterStr
@@ -91,8 +93,8 @@ object Names {
       }
 
       final def escapeSimple(raw: String) = raw match {
-        case raw @ "<init>" => raw
-        case raw            => NameTransformer.encode(raw)
+        case raw @ ("<init>" | "<empty>" | "<root>") => raw
+        case raw                                     => NameTransformer.encode(raw)
       }
 
       def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {

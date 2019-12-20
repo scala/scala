@@ -77,11 +77,11 @@ trait TastyKernel {
   object nme {
     final val Or = SimpleName("|")
     final val And = SimpleName("&")
-    val EMPTY: TermName = symbolTable.nme.EMPTY
-    val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
-    val ROOT: TermName = symbolTable.nme.ROOT
-    val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
-    val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
+    final val EMPTY: TermName = symbolTable.nme.EMPTY
+    final val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
+    final val ROOT: TermName = symbolTable.nme.ROOT
+    final val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
+    final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
   }
 
   object termNames {
