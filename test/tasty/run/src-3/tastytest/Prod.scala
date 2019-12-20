@@ -1,14 +1,10 @@
 package tastytest
 
-final class Prod private (private val total: Int) {
+final class Prod private (private val total: Int) extends AnyVal {
 
   def * (other: Prod): Prod = new Prod(total * other.total)
   def mul (other: Prod): Prod = new Prod(total * other.total)
 
-  override def equals(that: Any): Boolean = that match {
-    case that: Prod => that.total == total
-    case _          => false
-  }
 }
 
 object Prod {

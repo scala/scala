@@ -50,6 +50,21 @@ trait TastyKernel {
   type TypeBounds = symbolTable.TypeBounds
   def emptyTypeBounds: TypeBounds = symbolTable.TypeBounds.empty
 
+  def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
+    symbolTable.cloneSymbolsAtOwner(syms,owner)
+
+  def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = symbolTable.defineOriginalOwner(sym, owner)
+
+
+  object GenPolyType {
+    def apply(tparams: List[Symbol], tpe: Type): Type = symbolTable.GenPolyType.apply(tparams,tpe)
+    def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
+  }
+
+  def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
+
+  def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)
+
   def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
   def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
   def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
@@ -65,19 +80,22 @@ trait TastyKernel {
   def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
 
   object defn {
-    val NothingTpe: Type = symbolTable.definitions.NothingTpe
-    val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
-    val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
-    val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
-    val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
-    val ScalaPackage: ModuleSymbol = symbolTable.definitions.ScalaPackage
+    final val NothingTpe: Type = symbolTable.definitions.NothingTpe
+    final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
+    final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
+    final val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
+    final val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
+    final val ScalaPackage: ModuleSymbol = symbolTable.definitions.ScalaPackage
+    final val ScalaStrictFPAttr: ClassSymbol = symbolTable.definitions.ScalaStrictFPAttr
+    final val TailrecClass: ClassSymbol = symbolTable.definitions.TailrecClass
   }
 
   object nme {
     final val Or = SimpleName("|")
     final val And = SimpleName("&")
     final val EMPTY: TermName = symbolTable.nme.EMPTY
+    final val SELF: TermName = symbolTable.nme.SELF
     final val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
     final val ROOT: TermName = symbolTable.nme.ROOT
     final val ROOTPKG: TermName = symbolTable.nme.ROOTPKG

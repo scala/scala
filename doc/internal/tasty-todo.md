@@ -1,6 +1,5 @@
 # Todo Tasty
 
-- [ ] value class Extension methods
 - [ ] classes where parents are in a Block
 - [ ] java.lang.Enum empty ctor parent
 - [ ] deeply recursive bounds on higher kinded types
@@ -8,6 +7,7 @@
 - [ ] Annotations
 - [ ] Ignore open modifier
 - [ ] check that the error in seeing `scala.collection.immutable.List` in `F[_] <: List[_]` is to do with module names
+- [*] value class Extension methods
 - [*] default parameters
 - [*] overloads
 - [*] Operator methods and backtick escaped names (generalize encoders that respect structure of names)
