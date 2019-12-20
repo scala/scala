@@ -6,9 +6,10 @@ object SColourOps {
 
   implicit final class Impl(val c: SColour) extends AnyVal {
     def red: Int = c match {
-      case SColour.Red        => 255
-      case SColour.RGB(r,_,_) => r   // error: unreachable code
-      case _                  => 0
+      case SColour.RGB(r,_,_)     => r
+      case SColour.CMYK(_,y,m,k)  => y*m*k // error: unreachable code
+      case SColour.Red            => 255
+      case SColour.Green          => 0
     }
   }
 

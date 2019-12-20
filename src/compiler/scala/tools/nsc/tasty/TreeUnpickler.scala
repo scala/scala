@@ -969,7 +969,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (tparams.isEmpty) classInfo
         else new PolyType(tparams.map(symFromNoCycle), classInfo)
       }
-      ctx.log(s"Template: Updated info of $cls with parents $parentTypes and decls ${cls.info.decls}.")
+      ctx.log(s"Template: Updated info of $cls with parents $parentTypes.")
       NoCycle(at = symAddr)
     }
 

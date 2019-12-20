@@ -85,9 +85,9 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val result    = readName()
         val paramsSig = until(end)(readParamSig())
         val sig       = Signature(paramsSig, result)
-        val signed    = SignedName(original, sig)
-        logTasty(s"${nameAtRef.size}: $signed")
-        signed
+        val res    = SignedName(original, sig)
+        logTasty(s"${nameAtRef.size}: ${res.debug}")
+        res
       case OBJECTCLASS =>
         val res = ModuleName(readName())
         logTasty(s"${nameAtRef.size}: ${res.debug}")
