@@ -6,7 +6,7 @@
 //   3. scalc *.scala
 //
 // Because the inliner doesn't have access to the bytecode of `bar`, it cannot verify whether the
-// invocation of `bar` can be safely copied to a differnet place, so `flop` is not inlined to `B.g`
+// invocation of `bar` can be safely copied to a different place, so `flop` is not inlined to `B.g`
 // or `C.h`.
 
 class B {

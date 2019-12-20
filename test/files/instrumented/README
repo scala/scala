@@ -3,7 +3,7 @@ they have additional byte-code instrumentation performed for profiling. You
 should put your tests in `instrumented` directory if you are interested in
 method call counts. Examples include tests for specialization (you want to
 count boxing and unboxing method calls) or high-level tests for optimizer
-where you are interested if methods are successfuly inlined (so they should
+where you are interested if methods are successfully inlined (so they should
 not be called at runtime) or closures are eliminated (so no constructors
 of closures are called).
 

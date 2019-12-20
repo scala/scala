@@ -92,7 +92,7 @@ trait IndexedSeq[+A] extends Seq[A]
   }
 
   /** a hint to the runtime when scanning values
-    * [[apply]] is perferred for scan with a max index less than this value
+    * [[apply]] is preferred for scan with a max index less than this value
     * [[iterator]] is preferred for scans above this range
     * @return a hint about when to use [[apply]] or [[iterator]]
     */

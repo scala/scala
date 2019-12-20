@@ -19,7 +19,7 @@ class Test @Ann_0(name = "<init>", value = "constructor") @Ann_0(name = "<init>"
   ) = ()
 
   // todo: annotations on types
-  // todo? annotaitons on packages
+  // todo? annotations on packages
 }
 
 object Test extends App {

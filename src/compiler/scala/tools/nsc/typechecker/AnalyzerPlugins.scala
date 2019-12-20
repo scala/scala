@@ -174,7 +174,7 @@ trait AnalyzerPlugins { self: Analyzer =>
      * Access the implicit search result from Scalac's typechecker.
      *
      * The motivation of this method is to allow analyzer plugins to control when/where
-     * implicit search results are returned, and inspec them for data capturing purposes.
+     * implicit search results are returned, and inspect them for data capturing purposes.
      *
      * @param result The result to a given implicit search.
      */

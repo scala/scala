@@ -543,7 +543,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
         // empty parameter list in uncurry and would therefore be picked as SAM.
         // Similarly, the fields phases adds abstract trait setters, which should not be considered
         // abstract for SAMs (they do disqualify the SAM from LMF treatment,
-        // but an anonymous subclasss can be spun up by scalac after making just the single abstract method concrete)
+        // but an anonymous subclass can be spun up by scalac after making just the single abstract method concrete)
         val samSym = exitingPickler(definitions.samOf(classSym.tpe))
         if (samSym == NoSymbol) None
         else Some(samSym.javaSimpleName.toString + methodBTypeFromSymbol(samSym).descriptor)

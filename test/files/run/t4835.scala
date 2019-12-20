@@ -10,7 +10,7 @@ object Test {
   def testLazyListIterator(num: Int, stream: LazyList[Int]): Unit = {
     val iter = stream.iterator
     print(num)
-    // if num == -1, then steram is infinite sequence
+    // if num == -1, then stream is infinite sequence
     if (num == INFINITE) {
       for(i <- 0 until 10) {
         print(" " + iter.next())

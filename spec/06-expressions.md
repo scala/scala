@@ -1198,7 +1198,7 @@ However, if the function literal has the shape `x => x match { $\ldots$ }`,
 then `isDefinedAt` is derived from the pattern match in the following way:
 each case from the match expression evaluates to `true`,
 and if there is no default case,
-a default case is added that evalutes to `false`.
+a default case is added that evaluates to `false`.
 For more details on how that is implemented see
 ["Pattern Matching Anonymous Functions"](08-pattern-matching.html#pattern-matching-anonymous-functions).
 

@@ -940,7 +940,7 @@ abstract class Inliner {
           1
         }
         else if (hasNullOutInsn) {
-          // after the return value is laoded, local variables and the return local variable are
+          // after the return value is loaded, local variables and the return local variable are
           // nulled out, which means `null` is loaded to the stack. the max stack height is the
           // callsite stack height +1 (receiver consumed, result produced, null loaded), but +2
           // for static calls
