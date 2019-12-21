@@ -66,7 +66,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     override def incl(elem: K): Set[K] = {
       val originalHash = elem.##
       val improvedHash = improve(originalHash)
-      val newNode = rootNode.updated(elem, null, originalHash, improvedHash, 0, replaceValue = false)
+      val newNode = rootNode.updated(elem, null.asInstanceOf[V], originalHash, improvedHash, 0, replaceValue = false)
       newKeySetOrThis(newNode)
     }
     override def excl(elem: K): Set[K] = newKeySetOrThis(HashMap.this - elem)
@@ -332,7 +332,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
     }
 
   override def transform[W](f: (K, V) => W): HashMap[K, W] =
-    newHashMapOrThis(rootNode.transform(f)).asInstanceOf[HashMap[K, W]]
+    newHashMapOrThis(rootNode.transform[Any](f)).asInstanceOf[HashMap[K, W]]
 
   override protected[collection] def filterImpl(pred: ((K, V)) => Boolean, isFlipped: Boolean): HashMap[K, V] = {
     val newRootNode = rootNode.filterImpl(pred, isFlipped)
