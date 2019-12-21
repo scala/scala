@@ -78,7 +78,7 @@ private[collection] object RedBlackTree {
   }
 
   def tail[A, B](tree: Tree[A, B]): Tree[A, B] = {
-    def _tail[A, B](tree: Tree[A, B]): Tree[A, B] =
+    def _tail(tree: Tree[A, B]): Tree[A, B] =
       if(tree eq null) throw new NoSuchElementException("empty tree")
       else if(tree.left eq null) tree.right
       else if(isBlackTree(tree.left)) balLeft(tree.key, tree.value, _tail(tree.left), tree.right)
@@ -87,7 +87,7 @@ private[collection] object RedBlackTree {
   }
 
   def init[A, B](tree: Tree[A, B]): Tree[A, B] = {
-    def _init[A, B](tree: Tree[A, B]): Tree[A, B] =
+    def _init(tree: Tree[A, B]): Tree[A, B] =
       if(tree eq null) throw new NoSuchElementException("empty tree")
       else if(tree.right eq null) tree.left
       else if(isBlackTree(tree.right)) balRight(tree.key, tree.value, tree.left, _init(tree.right))
