@@ -1075,7 +1075,7 @@ private[immutable] trait VectorPointer[+T] {
 
     // STUFF BELOW USED BY APPEND / UPDATE
 
-    private[immutable] final def nullSlotAndCopy[T <: AnyRef](array: Array[Array[T]], index: Int): Array[T] = {
+    private[immutable] final def nullSlotAndCopy[A <: AnyRef](array: Array[Array[A]], index: Int): Array[A] = {
       val x = array(index)
       array(index) = null
       x.clone()
@@ -1225,8 +1225,8 @@ private[immutable] trait VectorPointer[+T] {
 
     // USED IN DROP
 
-    private[immutable] final def copyRange[T <: AnyRef](array: Array[T], oldLeft: Int, newLeft: Int) = {
-      val elems = java.lang.reflect.Array.newInstance(array.getClass.getComponentType, 32).asInstanceOf[Array[T]]
+    private[immutable] final def copyRange[A <: AnyRef](array: Array[A], oldLeft: Int, newLeft: Int): Array[A] = {
+      val elems = java.lang.reflect.Array.newInstance(array.getClass.getComponentType, 32).asInstanceOf[Array[A]]
       java.lang.System.arraycopy(array, oldLeft, elems, newLeft, 32 - Math.max(newLeft, oldLeft))
       elems
     }
