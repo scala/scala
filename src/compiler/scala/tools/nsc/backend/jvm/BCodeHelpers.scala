@@ -64,9 +64,9 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
   def needsStaticImplMethod(sym: Symbol) = sym.hasAttachment[global.mixer.NeedStaticImpl.type]
 
   final def traitSuperAccessorName(sym: Symbol): String = {
-    val name = sym.javaSimpleName
-    if (sym.isMixinConstructor) name.toString
-    else name + nme.NAME_JOIN_STRING
+    val nameString = sym.javaSimpleName.toString
+    if (sym.isMixinConstructor) nameString
+    else nameString + nme.NAME_JOIN_STRING
   }
 
   /**

@@ -21,7 +21,7 @@ import scala.ref.WeakReference
 import mutable.{ListBuffer, LinkedHashSet}
 import Flags._
 import scala.util.control.ControlThrowable
-import scala.annotation.tailrec
+import scala.annotation.{tailrec, unused}
 import util.{Statistics, StatisticsStatics}
 import util.ThreeValues._
 import Variance._
@@ -98,9 +98,9 @@ trait Types
   import statistics._
 
   private[this] var explainSwitch = false
-  private final val emptySymbolSet = immutable.Set.empty[Symbol]
+  @unused private final val emptySymbolSet = immutable.Set.empty[Symbol]
 
-  private final val breakCycles = settings.breakCycles.value
+  @unused private final val breakCycles = settings.breakCycles.value
   /** In case anyone wants to turn on type parameter bounds being used
    *  to seed type constraints.
    */
@@ -2718,7 +2718,7 @@ trait Types
     )
     // Suppressing case class copy method which risks subverting our single point of creation.
     @deprecated("Suppressing case class copy method", since="forever")
-    private def copy = null
+    @unused private def copy = null
     override def kind = "TypeRef"
   }
 

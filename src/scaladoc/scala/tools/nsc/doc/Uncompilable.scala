@@ -51,7 +51,7 @@ trait Uncompilable {
 
     pairs
   }
-  override def toString = pairs.size + " uncompilable symbols:\n" + (
+  override def toString = "" + pairs.size + " uncompilable symbols:\n" + (
     symbols filterNot (_ == NoSymbol) map (x => "  " + x.owner.fullName + " " + x.defString) mkString "\n"
   )
 }

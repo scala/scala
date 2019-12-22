@@ -1094,10 +1094,10 @@ trait Scanners extends ScannersCommon {
         syntaxError("Invalid literal number")
     }
 
-    @inline private def isNumberSeparator(c: Char): Boolean = c == '_' //|| c == '\''
+    @inline private def isNumberSeparator(c: Char): Boolean = c == '_'
 
     @inline private def removeNumberSeparators(s: String): String =
-      if (s.indexOf('_') > 0) s.replaceAllLiterally("_", "") /*.replaceAll("'","")*/ else s
+      if (s.indexOf('_') > 0) s.replace("_", "") else s
 
     // disallow trailing numeric separator char, but let lexing limp along
     def checkNoTrailingSeparator(): Unit =

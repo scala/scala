@@ -1117,7 +1117,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     /** Create a function application of a given view function to `tree` and typechecked it.
      */
     def viewApply(view: SearchResult): Tree = {
-      assert(view.tree != EmptyTree)
+      assert(view.tree != EmptyTree, "view.tree should be non-empty")
       val t = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
       if (!t.tpe.isErroneous) t
@@ -1352,7 +1352,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   class TyperResult(val tree: Tree) extends ControlThrowable
 
-  assert(globalPhase.id == 0)
+  assert(globalPhase.id == 0, "phase at zero")
 
   implicit def addOnTypeError[T](x: => T): OnTypeError[T] = new OnTypeError(x)
 

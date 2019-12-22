@@ -189,7 +189,7 @@ class Tester(ntests: Int, inputs: Array[SourceFile], settings: Settings) {
 
   /**/
   def run(): Unit = {
-    askReload(inputs: _*)
+    askReload(inputs.toIndexedSeq: _*)
     for (i <- 0 until ntests)
       testFileChanges(randomSourceFileIdx())
   }

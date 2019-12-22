@@ -108,7 +108,7 @@ trait Picklers { self: Global =>
           val sym1 = sym.owner.info.decl(sym.name)
           if (sym1.isOverloaded) {
             val index = sym1.alternatives.indexOf(sym)
-            assert(index >= 0, sym1+" not found in alternatives "+sym1.alternatives)
+            assert(index >= 0, s"$sym1 not found in alternatives ${sym1.alternatives}")
             buf += newTermName(index.toString)
           }
         }

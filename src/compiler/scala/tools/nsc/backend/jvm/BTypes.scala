@@ -1145,7 +1145,8 @@ object BTypes {
         i += 1
       }
       scala.util.Sorting.quickSort(result)(Ordering.by(_._1))
-      result
+      import scala.collection.immutable.ArraySeq
+      ArraySeq.unsafeWrapArray(result)
     }
   }
 

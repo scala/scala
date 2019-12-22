@@ -96,11 +96,11 @@ abstract class InteractiveTest
     // ask the presentation compiler to track all sources. We do
     // not wait for the file to be entirely typed because we do want
     // to exercise the presentation compiler on scoped type requests.
-    askReload(sourceFiles)
+    askReload(sourceFiles.toIndexedSeq)
     // make sure all sources are parsed before running the test. This
     // is because test may depend on the sources having been parsed at
     // least once
-    askParse(sourceFiles)
+    askParse(sourceFiles.toIndexedSeq)
   }
 
   /** Run all defined `PresentationCompilerTestDef` */
