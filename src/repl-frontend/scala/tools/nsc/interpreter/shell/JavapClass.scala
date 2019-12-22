@@ -447,8 +447,8 @@ class JavapTask(val loader: ScalaClassLoader, intp: Repl) extends JavapTool {
   import java.io.CharArrayWriter
   import java.util.Locale
   import java.util.concurrent.ConcurrentLinkedQueue
-  import scala.collection.JavaConverters._
-  import scala.collection.generic.Clearable
+  import scala.jdk.CollectionConverters._
+  import scala.collection.mutable.Clearable
   import JavapTool._
   import Javap.{filterLines, showable}
 

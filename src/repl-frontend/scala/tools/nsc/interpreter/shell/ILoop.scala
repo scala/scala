@@ -333,11 +333,19 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
-  private def javapCommand(line: String): Result =
-    Javap(intp)(words(line): _*) foreach { res =>
-      if (res.isError) return s"${res.value}"
-      else res.show()
-    }
+  private def javapCommand(line: String): Result = {
+    def handle(results: List[Javap.JpResult]): Result =
+      results match {
+        case Nil => ()
+        case res :: rest =>
+          if (res.isError) res.value.toString
+          else {
+            res.show()
+            handle(rest)
+          }
+      }
+    handle(Javap(intp)(words(line): _*))
+  }
 
   private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
 

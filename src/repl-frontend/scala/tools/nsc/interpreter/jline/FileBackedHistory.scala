@@ -18,7 +18,7 @@ import java.nio.file.{FileSystems, Files, Path}
 
 import _root_.jline.console.history.PersistentHistory
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.io.Codec
 import scala.reflect.internal.util.OwnerOnlyChmod
 import scala.util.control.NonFatal

@@ -18,7 +18,7 @@ import java.util.Arrays.asList
 import javax.script._
 
 import scala.beans.BeanProperty
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.Position
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.Results.Incomplete

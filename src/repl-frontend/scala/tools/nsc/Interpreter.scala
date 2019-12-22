@@ -92,6 +92,7 @@ class InterpreterLoop {
   //   - https://github.com/sbt/zinc/blob/1.0/internal/compiler-bridge/src/main/scala/xsbt/InteractiveConsoleInterface.scala
   //   - https://github.com/sbt/zinc/blob/1.0/internal/compiler-bridge/src/main/scala/xsbt/ConsoleInterface.scala
   @deprecated("Only here to ensure we don't break the sbt interface.", "2.13.0-M2")
+  @annotation.unused
   private def __SbtConsoleInterface(compilerSettings: Settings, interpreterSettings: Settings, bootClasspathString: String, classpathString: String, initialCommands: String, cleanupCommands: String, loader: ClassLoader, bindNames: Array[String], bindValues: Array[Any]): Unit = {
     import scala.tools.nsc.interpreter.InteractiveReader
     import scala.tools.nsc.reporters.Reporter
