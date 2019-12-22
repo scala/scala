@@ -13,7 +13,7 @@
 package scala.collection
 package mutable
 
-import scala.annotation.{implicitNotFound, tailrec}
+import scala.annotation.{implicitNotFound, tailrec, unused}
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.DefaultSerializationProxy
 import scala.runtime.Statics
@@ -181,7 +181,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   // returns the old value or Statics.pfMarker if not found
   private[this] def remove0(elem: K) : Any = {
     val hash = computeHash(elem)
-    var idx = index(hash)
+    val idx = index(hash)
     table(idx) match {
       case null => Statics.pfMarker
       case t: RBNode =>
@@ -462,7 +462,7 @@ final class CollisionProofHashMap[K, V](initialCapacity: Int, loadFactor: Double
   @`inline` private[this] def isRed(node: RBNode) = (node ne null) && node.red
   @`inline` private[this] def isBlack(node: RBNode) = (node eq null) || !node.red
 
-  @`inline` private[this] def compare(key: K, hash: Int, node: LLNode): Int = {
+  @unused @`inline` private[this] def compare(key: K, hash: Int, node: LLNode): Int = {
     val i = hash - node.hash
     if(i != 0) i else ordering.compare(key, node.key)
   }
@@ -769,7 +769,7 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
     def newBuilder: Builder[(K, V), CollisionProofHashMap[K, V]] = CollisionProofHashMap.newBuilder(tableLength, loadFactor)(ordering)
   }
 
-  @`inline` private def compare[K, V](key: K, hash: Int, node: LLNode[K, V])(implicit ord: Ordering[K]): Int = {
+  @unused @`inline` private def compare[K, V](key: K, hash: Int, node: LLNode[K, V])(implicit ord: Ordering[K]): Int = {
     val i = hash - node.hash
     if(i != 0) i else ord.compare(key, node.key)
   }
@@ -841,7 +841,7 @@ object CollisionProofHashMap extends SortedMapFactory[CollisionProofHashMap] {
     }
   }
 
-  private final class RBNodesIterator[A, B](tree: RBNode[A, B])(implicit ord: Ordering[A]) extends AbstractIterator[RBNode[A, B]] {
+  private final class RBNodesIterator[A, B](tree: RBNode[A, B])(implicit @unused ord: Ordering[A]) extends AbstractIterator[RBNode[A, B]] {
     private[this] var nextNode: RBNode[A, B] = if(tree eq null) null else minNodeNonNull(tree)
 
     def hasNext: Boolean = nextNode ne null

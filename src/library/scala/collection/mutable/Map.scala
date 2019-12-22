@@ -262,5 +262,4 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractMap[K, V] extends scala.collection.AbstractMap[K, V] with Map[K, V]

@@ -220,5 +220,4 @@ trait SetOps[A, +CC[_], +C <: SetOps[A, CC, C]]
 object Set extends IterableFactory.Delegate[Set](immutable.Set)
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractSet[A] extends AbstractIterable[A] with Set[A]

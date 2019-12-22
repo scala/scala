@@ -227,5 +227,4 @@ object Buffer extends SeqFactory.Delegate[Buffer](ArrayBuffer)
 object IndexedBuffer extends SeqFactory.Delegate[IndexedBuffer](ArrayBuffer)
 
 /** Explicit instantiation of the `Buffer` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractBuffer[A] extends AbstractSeq[A] with Buffer[A]
