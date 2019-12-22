@@ -21,7 +21,7 @@ abstract class MemoryTest {
     val rt = Runtime.getRuntime()
     def memUsage() = {
       import java.lang.management._
-      import scala.collection.JavaConverters._
+      import scala.jdk.CollectionConverters._
       val pools = ManagementFactory.getMemoryPoolMXBeans.asScala
       pools.map(_.getUsage.getUsed).sum / 1000000d
     }

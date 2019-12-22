@@ -12,7 +12,7 @@
 
 package scala.tools.partest.instrumented
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 case class MethodCallTrace(className: String, methodName: String, methodDescriptor: String) {
   override def toString(): String = className + "." + methodName + methodDescriptor

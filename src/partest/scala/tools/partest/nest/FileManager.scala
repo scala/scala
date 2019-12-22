@@ -84,7 +84,7 @@ object FileManager {
    *  @return the unified diff of the `origLines` and `newLines` or the empty string if they're equal
    */
   def compareContents(original: Seq[String], revised: Seq[String], originalName: String = "a", revisedName: String = "b"): String = {
-    import collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     val diff = difflib.DiffUtils.diff(original.asJava, revised.asJava)
     if (diff.getDeltas.isEmpty) ""
@@ -113,9 +113,8 @@ class FileManager(val testClassLoader: URLClassLoader) {
 
   lazy val testClassPath = testClassLoader.getURLs().map(url => Path(new File(url.toURI))).toList
 
-  def this(testClassPath: List[Path]) {
+  def this(testClassPath: List[Path]) =
     this(new URLClassLoader(testClassPath.toArray map (_.toURI.toURL)))
-  }
 
   def distKind = {
     val p = libraryUnderTest.getAbsolutePath

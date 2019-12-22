@@ -66,22 +66,27 @@ class CommandLine(val spec: Reference, val originalArgs: List[String]) extends C
         case Nil              => Map()
         case Terminator :: xs => residual(xs)
         case x :: Nil         =>
-          expand(x) foreach (exp => return loop(exp))
-          if (isBinaryOption(x) && enforceArity)
-            errorFn(s"Option '$x' requires argument, found EOF instead.")
+          expand(x) match {
+            case Some(expanded) => loop(expanded)
+            case _ =>
+              if (isBinaryOption(x) && enforceArity)
+                errorFn(s"Option '$x' requires argument, found EOF instead.")
 
-          if (isUnaryOption(x)) mapForUnary(x)
-          else if (isUnknown(x)) Map()
-          else residual(args)
+              if (isUnaryOption(x)) mapForUnary(x)
+              else if (isUnknown(x)) Map()
+              else residual(args)
+          }
 
-        case x1 :: x2 :: xs   =>
-          expand(x1) foreach (exp => return loop(exp ++ args.tail))
-
-          if (x2 == Terminator)         mapForUnary(x1) ++ residual(xs)
-          else if (isUnaryOption(x1))   mapForUnary(x1) ++ loop(args.tail)
-          else if (isBinaryOption(x1))  Map(fromOpt(x1) -> x2) ++ loop(xs)
-          else if (isUnknown(x1))       loop(args.tail)
-          else                          residual(List(x1)) ++ loop(args.tail)
+        case x1 :: (tail @ (x2 :: xs))   =>
+          expand(x1) match {
+            case Some(expanded) => loop(expanded ++ tail)
+            case _ =>
+              if (x2 == Terminator)         mapForUnary(x1) ++ residual(xs)
+              else if (isUnaryOption(x1))   mapForUnary(x1) ++ loop(args.tail)
+              else if (isBinaryOption(x1))  Map(fromOpt(x1) -> x2) ++ loop(xs)
+              else if (isUnknown(x1))       loop(args.tail)
+              else                          residual(List(x1)) ++ loop(args.tail)
+          }
       }
     }
 
