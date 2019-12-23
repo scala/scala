@@ -2533,10 +2533,9 @@ trait Types
     }
 
     // TODO: test case that is compiled in a specific order and in different runs
-    private[Types] final def defineNormalized: Unit = {
-      if (normalized eq null) // In runtime reflection, this null check is part of double-checked locking
-        normalized = normalizeImpl
-    }
+    private[Types] final def defineNormalized() : Unit =
+      // In runtime reflection, this null check is part of double-checked locking
+      if (normalized eq null) normalized = normalizeImpl
 
     override def isGround = (
          sym.isPackageClass
@@ -2662,7 +2661,7 @@ trait Types
        * Therefore, if op is left associative, anything on its right
        * needs to be parenthesized if it's an infix type, and vice versa. */
       // we should only get here after `isShowInfixType` says we have 2 args
-      val l :: r :: Nil = args
+      val l :: r :: Nil = args: @unchecked
 
       val isRightAssoc = typeSymbol.decodedName endsWith ":"
 

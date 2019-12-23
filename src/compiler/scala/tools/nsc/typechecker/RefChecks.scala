@@ -1315,11 +1315,8 @@ abstract class RefChecks extends Transform {
         else "may be unable to override"
 
       reporter.warning(memberSym.pos,
-        "%s%s references %s %s.".format(
-          memberSym.fullLocationString, comparison,
-          accessFlagsToString(otherSym), otherSym
-        ) + "\nClasses which cannot access %s %s %s.".format(
-          otherSym.decodedName, cannot, memberSym.decodedName)
+        s"""|${memberSym.fullLocationString}${comparison} references ${accessFlagsToString(otherSym)} ${otherSym}.
+            |Classes which cannot access ${otherSym.decodedName} ${cannot} ${memberSym.decodedName}.""".stripMargin
       )
     }
 

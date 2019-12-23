@@ -42,9 +42,7 @@ trait Picklers { self: Global =>
       .wrapped[AbstractFile] { new PlainFile(_) } { _.path }
       .asClass (classOf[PlainFile])
 
-  private val sourceFilesSeen = new mutable.HashMap[AbstractFile, Array[Char]] {
-    override def default(key: AbstractFile) = Array()
-  }
+  private val sourceFilesSeen = mutable.HashMap.empty[AbstractFile, Array[Char]].withDefaultValue(Array.empty[Char])
 
   type Diff = (Int /*start*/, Int /*end*/, String /*replacement*/)
 

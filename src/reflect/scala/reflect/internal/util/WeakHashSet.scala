@@ -285,8 +285,9 @@ final class WeakHashSet[A <: AnyRef](val initialCapacity: Int, val loadFactor: D
   override def isEmpty: Boolean = size == 0
   override def foreach[U](f: A => U): Unit = iterator foreach f
 
-  // It has the `()` because iterator runs `removeStaleEntries()`
-  override def toList(): List[A] = iterator.toList
+  // It had the `()` because iterator runs `removeStaleEntries()`.
+  // Instead of just using a different name, keep the name and lose the parens.
+  override def toList: List[A] = iterator.toList
 
   // Iterator over all the elements in this set in no particular order
   override def iterator: Iterator[A] = {

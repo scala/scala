@@ -482,7 +482,7 @@ trait Trees extends api.Trees {
   }
 
   case class ImportSelector(name: Name, namePos: Int, rename: Name, renamePos: Int) extends ImportSelectorApi {
-    assert(name == nme.WILDCARD && rename == null || rename != null)
+    assert(name == nme.WILDCARD && rename == null || rename != null, s"Bad import selector $name => $rename")
     def isWildcard = name == nme.WILDCARD && rename == null
     def isMask = name != nme.WILDCARD && rename == nme.WILDCARD
     def isSpecific = !isWildcard
@@ -857,7 +857,7 @@ trait Trees extends api.Trees {
 
   case class Literal(value: Constant)
         extends TermTree with LiteralApi {
-    assert(value ne null)
+    assert(value ne null, "null value for literal")
     override def transform(transformer: Transformer): Tree =
       transformer.treeCopy.Literal(this, value)
     override def traverse(traverser: Traverser): Unit = {

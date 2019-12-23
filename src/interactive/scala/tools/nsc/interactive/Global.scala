@@ -193,23 +193,22 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   protected val toBeRemovedAfterRun: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
-  class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
-    override def default(key: SourceFile): Set[Response[Tree]] = Set()
-    override def addOne (binding: (SourceFile, Set[Response[Tree]])) = {
+  private def newResponseMap: ResponseMap =
+    mutable.HashMap.empty[SourceFile, Set[Response[Tree]]].withDefaultValue(Set.empty[Response[Tree]])
+  type ResponseMap = mutable.Map[SourceFile, Set[Response[Tree]]]
+  /* TODO restore assert on addOne
       assert(interruptsEnabled, "delayed operation within an ask")
-      super.addOne(binding)
-    }
-  }
+  */
 
   /** A map that associates with each abstract file the set of responses that are waiting
    *  (via waitLoadedTyped) for the unit associated with the abstract file to be loaded and completely typechecked.
    */
-  protected val waitLoadedTypeResponses = new ResponseMap
+  protected val waitLoadedTypeResponses = newResponseMap
 
   /** A map that associates with each abstract file the set of responses that ware waiting
    *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var getParsedEnteredResponses = new ResponseMap
+  protected var getParsedEnteredResponses = newResponseMap
 
   private def cleanResponses(rmap: ResponseMap): Unit = {
     for ((source, rs) <- rmap.toList) {
