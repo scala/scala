@@ -158,7 +158,7 @@ trait CompilationUnits { global: Global =>
     final def comment(pos: Position, msg: String): Unit = {}
 
     /** Is this about a .java source file? */
-    val isJava = source.file.name.endsWith(".java")
+    val isJava: Boolean = source.isJava
 
     override def toString() = source.toString()
   }

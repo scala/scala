@@ -220,6 +220,9 @@ trait Names extends api.Names {
     @deprecated("Use either toTermName or toTypeName", "2.12.9")
     def bothNames: List[Name] = List(toTermName, toTypeName)
 
+    final def asTypeOf[N <: Name](other: N): N =
+      (if (other.isTermName) toTermName else toTypeName).asInstanceOf[N]
+
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name with ThisNameType
     override def subSequence(from: Int, to: Int): CharSequence = subName(from, to)
