@@ -5,8 +5,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.AllocationTest
+
 @RunWith(classOf[JUnit4])
-class SetTest {
+class SetTest extends AllocationTest {
   @Test
   def test_SI8346_toSet_soundness(): Unit = {
     val any2stringadd = "Disabled string conversions so as not to get confused!"
@@ -78,4 +80,50 @@ class SetTest {
     val mapseta = any(mapset)
     assert(mapset eq mapseta)
   }
+
+  def generate(n:Int): Set[String] = {
+    (0 until n).map { i => s"key $i" }(scala.collection.breakOut)
+  }
+  def nonAllocatingEmptyPlusPlusN(n:Int): Unit = {
+    val base = generate(n)
+    assertSame(base, nonAllocating {
+      Set.empty[String] ++ base
+    })
+  }
+  def nonAllocatingEmptyUnionN(n:Int): Unit = {
+    val base = generate(n)
+    assertSame(base, nonAllocating {
+      Set.empty[String] union base
+    })
+  }
+  @Test
+  def testGenerate(): Unit = {
+    assertSame(Set.empty, generate(0))
+    assertEquals(Set("key 0"), generate(1))
+  }
+  @Test
+  def nonAllocatingEmptyUnionEmpty(): Unit = {
+    nonAllocatingEmptyUnionN(0)
+  }
+  @Test
+  def nonAllocatingEmptyPlusPlusEmpty(): Unit = {
+    nonAllocatingEmptyPlusPlusN(0)
+  }
+  @Test
+  def nonAllocatingEmptyUnionSmall(): Unit = {
+    (1 to 4) foreach nonAllocatingEmptyUnionN
+  }
+  @Test
+  def nonAllocatingEmptyPlusPlusSmall(): Unit = {
+    (1 to 4) foreach nonAllocatingEmptyPlusPlusN
+  }
+  @Test
+  def nonAllocatingEmptyUnionLarge(): Unit = {
+    nonAllocatingEmptyUnionN (100)
+  }
+  @Test
+  def nonAllocatingEmptyPlusPlusLarge(): Unit = {
+    nonAllocatingEmptyPlusPlusN(100)
+  }
+
 }

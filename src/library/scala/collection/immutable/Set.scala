@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import parallel.immutable.ParSet
+import scala.collection.mutable.SetBuilder
 
 /** A generic trait for immutable sets.
  *  $setNote
@@ -63,6 +64,13 @@ trait Set[A] extends Iterable[A]
  *  @define coll immutable set
  */
 object Set extends ImmutableSetFactory[Set] {
+  override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilder[A, Set[A]](empty[A]) {
+    override def ++=(xs: TraversableOnce[A]): this.type = {
+      elems = elems ++ xs
+      this
+    }
+  }
+
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
     ReusableCBF.asInstanceOf[CanBuildFrom[Coll, A, Set[A]]]
@@ -78,6 +86,23 @@ object Set extends ImmutableSetFactory[Set] {
     def iterator: Iterator[Any] = Iterator.empty
     override def foreach[U](f: Any => U): Unit = ()
     override def toSet[B >: Any]: Set[B] = this.asInstanceOf[Set[B]]
+
+    override def ++[B >: Any, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Set[Any], B, That]): That = {
+      if (bf eq Set.canBuildFrom) that match {
+        case hs: HashSet[Any] if hs.size > 4 => hs.asInstanceOf[That]
+        case EmptySet => EmptySet.asInstanceOf[That]
+        case hs: Set1[Any] => hs.asInstanceOf[That]
+        case hs: Set2[Any] => hs.asInstanceOf[That]
+        case hs: Set3[Any] => hs.asInstanceOf[That]
+        case hs: Set4[Any] => hs.asInstanceOf[That]
+        case _ => super.++(that)
+      }
+      else if (bf eq HashSet.canBuildFrom) that match {
+        case hs: HashSet[Any] => hs.asInstanceOf[That]
+        case _ => super.++(that)
+      } else super.++(that)
+    }
+
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
