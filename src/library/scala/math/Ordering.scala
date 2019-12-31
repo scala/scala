@@ -422,10 +422,11 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Floats (Ordering.Float.TotalOrdering, " +
-    "Ordering.Float.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
-  implicit object DeprecatedFloatOrdering extends Float.TotalOrdering
+  implicit object DeprecatedFloatOrdering extends Ordering[Float] {
+    override def compare(x: Float, y: Float): Int =
+      if (x != x || y != y) throw new UnsupportedOperationException("no default ordering for NaN; use Ordering.Float.TotalOrdering or Ordering.Float.IeeeOrdering")
+      else java.lang.Float.compare(x, y)
+  }
 
   /** `Ordering`s for `Double`s.
     *
@@ -482,10 +483,11 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, " +
-    "Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
-  implicit object DeprecatedDoubleOrdering extends Double.TotalOrdering
+  implicit object DeprecatedDoubleOrdering extends Ordering[Double] {
+    override def compare(x: Double, y: Double): Int =
+      if (x != x || y != y) throw new UnsupportedOperationException("no default ordering for NaN; use Ordering.Double.TotalOrdering or Ordering.Double.IeeeOrdering")
+      else java.lang.Double.compare(x, y)
+  }
 
   trait BigIntOrdering extends Ordering[BigInt] {
     def compare(x: BigInt, y: BigInt) = x.compare(y)
