@@ -1,0 +1,6 @@
+t4701.scala:9: error: type mismatch;
+ found   : Int
+ required: String
+  hasType[HL[String]](nnn :: HN) // type mismatch error should have position at `nnn`
+                      ^
+one error found
