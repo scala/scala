@@ -380,7 +380,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Float {
     /** An ordering for `Float`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Float` values; it behaves
-      * the same as [[java.lang.Float#compare]].
+      * the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -401,7 +401,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Float#compare]].
+      *   - `compare` treats `-0.0f` and `0.0f` as equal, but otherwise
+      * behaves the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -410,7 +411,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       * @see [[TotalOrdering]]
       */
     trait IeeeOrdering extends Ordering[Float] {
-      def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
+      def compare(x: Float, y: Float) =
+        if (x == 0f && y == 0f) 0 else java.lang.Float.compare(x, y)
 
       override def lteq(x: Float, y: Float): Boolean = x <= y
       override def gteq(x: Float, y: Float): Boolean = x >= y
@@ -440,7 +442,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Double {
     /** An ordering for `Double`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Double` values; it behaves
-      * the same as [[java.lang.Double#compare]].
+      * the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -461,7 +463,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Double#compare]].
+      *   - `compare` treats `-0.0d` and `0.0d` as equal, but otherwise
+      * behaves the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -470,7 +473,8 @@ object Ordering extends LowPriorityOrderingImplicits {
       * @see [[TotalOrdering]]
       */
     trait IeeeOrdering extends Ordering[Double] {
-      def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
+      def compare(x: Double, y: Double) =
+        if (x == 0d && y == 0d) 0 else java.lang.Double.compare(x, y)
 
       override def lteq(x: Double, y: Double): Boolean = x <= y
       override def gteq(x: Double, y: Double): Boolean = x >= y

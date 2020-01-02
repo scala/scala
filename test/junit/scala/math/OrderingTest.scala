@@ -237,6 +237,62 @@ class OrderingTest {
     checkDoubles(doubles: _*)
   }
 
+  @Test
+  def floatDoubleIeeeOrdering(): Unit = {
+    def checkFloats(floats: Float*): Unit = {
+      val O = Ordering.Float.IeeeOrdering
+      for (i <- floats; j <- floats) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
+        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertTrue(msg,
+          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+      }
+    }
+
+    def checkDoubles(doubles: Double*): Unit = {
+      val O = Ordering.Double.IeeeOrdering
+      for (i <- doubles; j <- doubles) {
+        val msg = s"for i=$i, j=$j"
+
+        // consistency with `compare`
+        assertEquals(msg, O.compare(i, j) < 0, O.lt(i, j))
+        assertEquals(msg, O.compare(i, j) <= 0, O.lteq(i, j))
+        assertEquals(msg, O.compare(i, j) == 0, O.equiv(i, j))
+        assertEquals(msg, O.compare(i, j) >= 0, O.gteq(i, j))
+        assertEquals(msg, O.compare(i, j) > 0, O.gt(i, j))
+
+        // consistency with other ops
+        assertTrue(msg, O.lteq(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lteq(i, j) || O.gt(i, j))
+        assertTrue(msg, O.lteq(i, j) != O.gt(i, j))
+        assertTrue(msg, O.lt(i, j) || O.gteq(i, j))
+        assertTrue(msg, O.lt(i, j) != O.gteq(i, j))
+        // exactly one of `lt`, `equiv`, `gt` is true
+        assertTrue(msg,
+          (O.lt(i, j) ^ O.equiv(i, j) ^ O.gt(i, j))
+            && !(O.lt(i, j) && O.equiv(i, j) && O.gt(i, j)))
+      }
+    }
+
+    checkFloats(floats.filterNot(jl.Float.isNaN): _*)
+    checkDoubles(doubles.filterNot(jl.Double.isNaN): _*)
+  }
+
   /* Test for scala/bug#8664 */
   @Test
   def symbolOrdering(): Unit = {
