@@ -134,6 +134,9 @@ trait Repl extends ReplCore {
 
   def interpret(line: String, synthetic: Boolean): Result
 
+  // Error on incomplete input
+  def interpretFinally(line: String): Result
+
   final def beQuietDuring(body: => Unit): Unit = reporter.withoutPrintingResults(body)
 
 

@@ -1,0 +1,6 @@
+scala> val m = status match {
+     |   case 42 => "ok"
+     |   case 27 => {
+     |     println("oops")
+     |     "oops"
+     |   }
