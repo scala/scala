@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.util
 
-import collection.mutable.{ArrayBuffer, ListBuffer}
+import collection.mutable, mutable.ListBuffer
 import java.lang.System.lineSeparator
 
 private[util] trait StackTracing extends Any {
@@ -41,10 +41,9 @@ private[util] trait StackTracing extends Any {
       s"${e.getClass.getName}${txt(e)}"
     }
 
-    val seen = new ArrayBuffer[Throwable](16)
+    val seen = mutable.Set.empty[Throwable]
     def unseen(t: Throwable) = {
-      def inSeen = seen.exists(_ eq t)
-      val interesting = (t != null) && !inSeen
+      val interesting = t != null && !seen(t)
       if (interesting) seen += t
       interesting
     }
