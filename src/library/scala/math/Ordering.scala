@@ -107,6 +107,9 @@ trait Ordering[T] extends Comparator[T] with PartialOrdering[T] with Serializabl
   /** Return `x` if `x` <= `y`, otherwise `y`. */
   def min[U <: T](x: U, y: U): U = if (lteq(x, y)) x else y
 
+  /** Return the value clamped to the inclusive range of `lower` and `upper`. */
+  def clamp[U <: T](lower: U, upper: U)(x: U): U = max(lower, min(x, upper))
+
   /** Return the opposite ordering of this one.
     *
     * Implementations overriding this method MUST override [[isReverseOf]]
@@ -250,6 +253,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     override def equiv(x: T, y: T): Boolean = outer.equiv(y, x)
     override def max[U <: T](x: U, y: U): U = outer.min(x, y)
     override def min[U <: T](x: U, y: U): U = outer.max(x, y)
+    override def clamp[U <: T](lower: U, upper: U)(x: U): U = outer.clamp(lower = upper, upper = lower)(x)
 
     override def equals(obj: scala.Any): Boolean = obj match {
       case that: AnyRef if this eq that => true
@@ -360,6 +364,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   trait IntOrdering extends Ordering[Int] {
     def compare(x: Int, y: Int): Int = java.lang.Integer.compare(x, y)
   }
+  @SerialVersionUID(-8412871093094815037L)
   implicit object Int extends IntOrdering with CachedReverse[Int]
 
   trait LongOrdering extends Ordering[Long] {
@@ -419,6 +424,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def equiv(x: Float, y: Float): Boolean = x == y
       override def max[U <: Float](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
       override def min[U <: Float](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
+      override def clamp[U <: Float](lower: U, upper: U)(x: U): U = math.clamp(lower, upper)(x).asInstanceOf[U]
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
@@ -479,6 +485,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       override def equiv(x: Double, y: Double): Boolean = x == y
       override def max[U <: Double](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
       override def min[U <: Double](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
+      override def clamp[U <: Double](lower: U, upper: U)(x: U): U = math.clamp(lower, upper)(x).asInstanceOf[U]
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
