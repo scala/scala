@@ -380,7 +380,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Float {
     /** An ordering for `Float`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Float` values; it behaves
-      * the same as [[java.lang.Float#compare]].
+      * the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -401,7 +401,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Float#compare]].
+      *   - `compare` behaves the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -422,10 +422,29 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Floats (Ordering.Float.TotalOrdering, " +
-    "Ordering.Float.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
-  implicit object DeprecatedFloatOrdering extends Float.TotalOrdering
+
+  /** This `Ordering` combines the behaviors of
+    * [[Float.TotalOrdering `Float.TotalOrdering`]] and
+    * [[Float.IeeeOrdering `Float.IeeeOrdering`]] in an attempt to provide
+    * the least surprising behavior in most situations.
+    *
+    *   - `min` and `max` are consistent with `math.min` and `math.max`, and
+    * return `NaN` when called with `NaN` as either argument (as in `IeeeOrdering`).
+    *   - `compare` behaves the same as [[java.lang.Float.compare]]
+    * (as in both `TotalOrdering` and `IeeeOrdering`).
+    *   - `lt`, `lteq`, `equiv`, `gteq` and `gt` are consistent with `compare`,
+    * and treat `NaN` as larger than all other `Float` values (as in `TotalOrdering`).
+    *
+    * It is preferable, rather than using this `Ordering`, to use `TotalOrdering`
+    * or `IeeeOrdering` (by using a local import, assigning an implicit val, or
+    * passing one explicitly) depending on the desired behavior.
+    */
+  // No longer deprecated; see scala/bug#11844
+  implicit object DeprecatedFloatOrdering extends Ordering[Float] {
+    def compare(x: Float, y: Float) = java.lang.Float.compare(x, y)
+    override def max[U <: Float](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
+    override def min[U <: Float](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
+  }
 
   /** `Ordering`s for `Double`s.
     *
@@ -440,7 +459,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Double {
     /** An ordering for `Double`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Double` values; it behaves
-      * the same as [[java.lang.Double#compare]].
+      * the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -461,7 +480,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Double#compare]].
+      *   - `compare` behaves the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -482,10 +501,29 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, " +
-    "Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
-  implicit object DeprecatedDoubleOrdering extends Double.TotalOrdering
+
+  /** This `Ordering` combines the behaviors of
+    * [[Double.TotalOrdering `Double.TotalOrdering`]] and
+    * [[Double.IeeeOrdering `Double.IeeeOrdering`]] in an attempt to provide
+    * the least surprising behavior in most situations.
+    *
+    *   - `min` and `max` are consistent with `math.min` and `math.max`, and
+    * return `NaN` when called with `NaN` as either argument (as in `IeeeOrdering`).
+    *   - `compare` behaves the same as [[java.lang.Double.compare]]
+    * (as in both `TotalOrdering` and `IeeeOrdering`).
+    *   - `lt`, `lteq`, `equiv`, `gteq` and `gt` are consistent with `compare`,
+    * and treat `NaN` as larger than all other `Double` values (as in `TotalOrdering`).
+    *
+    * It is preferable, rather than using this `Ordering`, to use `TotalOrdering`
+    * or `IeeeOrdering` (by using a local import, assigning an implicit val, or
+    * passing one explicitly) depending on the desired behavior.
+    */
+  // No longer deprecated; see scala/bug#11844
+  implicit object DeprecatedDoubleOrdering extends Ordering[Double] {
+    def compare(x: Double, y: Double) = java.lang.Double.compare(x, y)
+    override def max[U <: Double](x: U, y: U): U = math.max(x, y).asInstanceOf[U]
+    override def min[U <: Double](x: U, y: U): U = math.min(x, y).asInstanceOf[U]
+  }
 
   trait BigIntOrdering extends Ordering[BigInt] {
     def compare(x: BigInt, y: BigInt) = x.compare(y)
