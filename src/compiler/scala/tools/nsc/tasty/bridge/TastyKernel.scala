@@ -79,6 +79,9 @@ trait TastyKernel {
   def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
 
+  def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
+    symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
+
   object defn {
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe

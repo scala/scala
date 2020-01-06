@@ -1366,6 +1366,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     protected def createValueMemberSymbol(name: TermName, pos: Position, newFlags: Long): TermSymbol =
       new TermSymbol(this, pos, name) initFlags newFlags
 
+    final def newExtensionMethodSymbol(companion: Symbol, pos: Position): MethodSymbol = {
+      val extensionMeth = (
+        companion.moduleClass.newMethod(this.name.extensionName, pos, this.flags & ~OVERRIDE & ~PROTECTED & ~PRIVATE & ~LOCAL | FINAL)
+          setAnnotations this.annotations
+      )
+      defineOriginalOwner(extensionMeth, this.owner)
+      // @strictfp on class means strictfp on all methods, but `setAnnotations` won't copy it
+      if (this.isStrictFP && !extensionMeth.hasAnnotation(ScalaStrictFPAttr))
+        extensionMeth.addAnnotation(ScalaStrictFPAttr)
+      this.removeAnnotation(TailrecClass) // it's on the extension method, now.
+      companion.info.decls.enter(extensionMeth)
+    }
+
     final def newTermSymbol(name: TermName, pos: Position = NoPosition, newFlags: Long = 0L): TermSymbol = {
       // Package before Module, Module before Method, or we might grab the wrong guy.
       if ((newFlags & PACKAGE) != 0)
