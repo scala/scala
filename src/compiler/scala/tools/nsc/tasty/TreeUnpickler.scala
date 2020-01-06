@@ -867,15 +867,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
           val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
           sym.info = ctx.methodType(if (name === nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
-          if ((nme.CONSTRUCTOR !== sym.name.toTermName)
-              && !ctx.owner.is(Module)
-              && ctx.owner.parentSymbols.head === defn.AnyValClass) {
-            ctx.log(s"$name is an anyval extension method")
-            val extensionMeth = sym.newExtensionMethodSymbol(ctx.owner.companion, noPosition)
-            val newInfo       = extensionMethInfo(ctx.owner, extensionMeth, sym.info, ctx.owner)
-            extensionMeth setInfo newInfo
-            ctx.owner.companionModule.info.decls.enter(extensionMeth)
-          }
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val isInline = completer.tastyFlagSet.is(Inline)
@@ -955,12 +946,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
         else tpe
       }
-      for (tpe <- parentTypes.headOption if tpe.typeSymbolDirect === defn.AnyValClass) {
+      if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
         // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
         Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(noSymbol)
-          cls.info.decls.foreach(sym => if (sym.isParamAccessor && sym.isMethod) sym.makeNotPrivate(cls))
+          for (decl <- cls.info.decls if decl.isMethod) {
+            if (decl.isParamAccessor) decl.makeNotPrivate(cls)
+            if (nme.CONSTRUCTOR !== decl.name.toTermName) {
+              val extensionMeth = decl.newExtensionMethodSymbol(cls.companion, noPosition)
+              extensionMeth setInfo extensionMethInfo(cls, extensionMeth, decl.info, cls)
+            }
+          }
         }
       }
       if (nextByte === SELFDEF) {

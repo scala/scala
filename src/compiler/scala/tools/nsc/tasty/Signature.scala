@@ -28,4 +28,5 @@ object Signature {
 
   case object NotAMethod extends Signature[Nothing]
   case class MethodSignature[T] private[Signature] (paramsSig: List[ParamSig[T]], resSig: T) extends Signature[T]
+
 }
