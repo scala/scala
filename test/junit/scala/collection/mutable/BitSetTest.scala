@@ -169,4 +169,36 @@ class BitSetTest {
     assertThrows[NoSuchElementException](BitSet.empty.iteratorFrom(0).next)
   }
 
+  @Test def minAfter(): Unit = {
+    assertEquals(Some(0), (0 to 127).to(BitSet).minAfter(-2))
+    assertEquals(Some(0), (0 to 127).to(BitSet).minAfter(-1))
+    assertEquals(Some(0), (0 to 127).to(BitSet).minAfter(0))
+    assertEquals(Some(1), (0 to 127).to(BitSet).minAfter(1))
+    assertEquals(Some(63), (0 to 127).to(BitSet).minAfter(63))
+    assertEquals(Some(64), (0 to 127).to(BitSet).minAfter(64))
+    assertEquals(Some(2), BitSet(2).minAfter(1))
+    assertEquals(Some(2), BitSet(2).minAfter(2))
+    assertEquals(None, BitSet(2).minAfter(3))
+    assertEquals(None, BitSet(2).minAfter(1000))
+    assertEquals(None, BitSet.empty.minAfter(-1))
+    assertEquals(None, BitSet.empty.minAfter(0))
+    assertEquals(None, BitSet.empty.minAfter(Int.MaxValue))
+  }
+
+  @Test def maxBefore(): Unit = {
+    assertEquals(Some(0), (0 to 127).to(BitSet).maxBefore(1))
+    assertEquals(Some(1), (0 to 127).to(BitSet).maxBefore(2))
+    assertEquals(Some(62), (0 to 127).to(BitSet).maxBefore(63))
+    assertEquals(Some(63), (0 to 127).to(BitSet).maxBefore(64))
+    assertEquals(Some(64), (0 to 127).to(BitSet).maxBefore(65))
+    assertEquals(Some(2), BitSet(2).maxBefore(3))
+    assertEquals(Some(2), BitSet(2).maxBefore(1000))
+    assertEquals(None, BitSet(2).maxBefore(2))
+    assertEquals(None, BitSet(2).maxBefore(1))
+    assertEquals(None, BitSet(2).maxBefore(0))
+    assertEquals(None, BitSet.empty.maxBefore(-1))
+    assertEquals(None, BitSet.empty.maxBefore(0))
+    assertEquals(None, BitSet.empty.maxBefore(Int.MaxValue))
+  }
+
 }

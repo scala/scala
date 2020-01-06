@@ -175,6 +175,38 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     throw new UnsupportedOperationException("empty.largestInt")
   }
 
+  override def minAfter(key: Int): Option[Int] = {
+    val adjustedKey = math.max(key, 0)
+    var i = adjustedKey / WordLength
+    if (i >= nwords) None
+    else {
+      val offset = adjustedKey % WordLength
+      var currentWord = word(i) & (-1L << offset)
+      while (currentWord == 0 && i < nwords - 1) {
+        i += 1
+        currentWord = word(i)
+      }
+      if (currentWord == 0) None
+      else Some(i * WordLength + java.lang.Long.numberOfTrailingZeros(currentWord))
+    }
+  }
+
+  override def maxBefore(key: Int): Option[Int] = {
+    if (key <= 0) None
+    else {
+      val adjustedKey = key - 1
+      var i = math.min(adjustedKey / WordLength, nwords)
+      val offset = WordLength - 1 - adjustedKey % WordLength
+      var currentWord = word(i) & (-1L >>> offset)
+      while (currentWord == 0 && i > 0) {
+        i -= 1
+        currentWord = word(i)
+      }
+      if (currentWord == 0) None
+      else Some(i * WordLength - java.lang.Long.numberOfLeadingZeros(currentWord) + WordLength - 1)
+    }
+  }
+
   override def max[B >: Int](implicit ord: Ordering[B]): Int =
     if (Ordering.Int eq ord) largestInt
     else if (Ordering.Int isReverseOf ord) smallestInt

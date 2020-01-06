@@ -60,4 +60,21 @@ object BitSetProperties extends Properties("immutable.BitSet") {
     val bs = xs.to(BitSet)
     bs.iteratorFrom(start).to(Set) ?= xs.filter(_ >= start)
   }
+
+  property("minAfter") = forAll(
+    listOfN(200, oneOf(0 to 10000)).map(_.to(Set)),
+    Gen.chooseNum[Int](0, 10000)) {
+    (xs: Set[Int], after: Int) =>
+      val bs = xs.to(BitSet)
+      bs.minAfter(after) ?= xs.filter(_ >= after).minOption
+  }
+
+  property("maxBefore") = forAll(
+    listOfN(200, oneOf(0 to 10000)).map(_.to(Set)),
+    Gen.chooseNum[Int](0, 10000)) {
+    (xs: Set[Int], before: Int) =>
+      val bs = xs.to(BitSet)
+      bs.maxBefore(before) ?= xs.filter(_ < before).maxOption
+  }
+
 }
