@@ -30,7 +30,7 @@ import scala.reflect.io.PlainFile
 /**
  * Serialize a top-level module and/or class.
  *
- * @see [[PickleFormat]] for symbol table attribute format.
+ * @see [[scala.reflect.internal.pickling.PickleFormat PickleFormat]] for symbol table attribute format.
  *
  * @author Martin Odersky
  */
