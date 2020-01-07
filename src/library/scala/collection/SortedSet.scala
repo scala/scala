@@ -32,8 +32,6 @@ trait SortedSetOps[A, +CC[X] <: SortedSet[X], +C <: SortedSetOps[A, CC, C]]
   extends SetOps[A, Set, C]
      with SortedOps[A, C] {
 
-  protected type Elem = A
-
   /** The companion object of this sorted set, providing various factory methods.
     *
     * @note When implementing a custom collection type and refining `CC` to the new type, this
