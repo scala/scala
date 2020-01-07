@@ -175,7 +175,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     throw new UnsupportedOperationException("empty.largestInt")
   }
 
-  override def minAfter(key: Int): Option[Int] = {
+  override def minAfter(key: Elem): Option[Elem] = {
     val adjustedKey = math.max(key, 0)
     var i = adjustedKey / WordLength
     if (i >= nwords) None
@@ -191,7 +191,7 @@ trait BitSetOps[+C <: BitSet with BitSetOps[C]]
     }
   }
 
-  override def maxBefore(key: Int): Option[Int] = {
+  override def maxBefore(key: Elem): Option[Elem] = {
     if (key <= 0) None
     else {
       val adjustedKey = key - 1
