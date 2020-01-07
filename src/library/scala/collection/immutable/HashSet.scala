@@ -488,21 +488,6 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     override def iterator: Iterator[A] = ks.iterator
     override def foreach[U](f: A => U): Unit = ks.foreach(f)
 
-    private def writeObject(out: java.io.ObjectOutputStream) {
-      // this cannot work - reading things in might produce different
-      // hash codes and remove the collision. however this is never called
-      // because no references to this class are ever handed out to client code
-      // and HashTrieSet serialization takes care of the situation
-      sys.error("cannot serialize an immutable.HashSet where all items have the same 32-bit hash code")
-      //out.writeObject(kvs)
-    }
-
-    private def readObject(in: java.io.ObjectInputStream) {
-      sys.error("cannot deserialize an immutable.HashSet where all items have the same 32-bit hash code")
-      //kvs = in.readObject().asInstanceOf[ListSet[A]]
-      //hash = computeHash(kvs.)
-    }
-
   }
 
   /**
