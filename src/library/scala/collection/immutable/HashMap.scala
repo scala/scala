@@ -153,7 +153,12 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   }
   override def values: scala.collection.Iterable[B] = new HashMapValues
 
+  override final def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[HashMap[A, B], (A, W), That]): That =
+    if ((bf eq Map.canBuildFrom) || (bf eq HashMap.canBuildFrom)) transformImpl(f).asInstanceOf[That]
+    else super.transform(f)(bf)
 
+  /* `transform` specialized to return a HashMap */
+  protected def transformImpl[W](f: (A, B) => W): HashMap[A, W] = HashMap.empty
 }
 
 /** $factoryInfo
@@ -187,10 +192,12 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   }
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] = new MapCanBuildFrom[A, B]
+  implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), HashMap[A, B]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (A, B), HashMap[A, B]]]
+  private val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
   def empty[A, B]: HashMap[A, B] = EmptyHashMap.asInstanceOf[HashMap[A, B]]
 
-  private object EmptyHashMap extends HashMap[Any, Nothing] { 
+  private object EmptyHashMap extends HashMap[Any, Nothing] {
     override def head: (Any, Nothing) = throw new NoSuchElementException("Empty Map")
     override def tail: HashMap[Any, Nothing] = throw new NoSuchElementException("Empty Map")
   }
@@ -268,7 +275,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def equals(that: Any): Boolean = {
       that match {
-        case hm: HashMap1[_,_] =>
+        case hm: HashMap1[_, _] =>
           (this eq hm) ||
             (hm.hash == hash && hm.key == key && hm.value == value)
         case _: HashMap[_, _] =>
@@ -276,6 +283,12 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         case _ =>
           super.equals(that)
       }
+    }
+
+    protected override def transformImpl[W](f: (A, B) => W): HashMap[A, W] = {
+      val value1 = f(key, value)
+      if (value1.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this.asInstanceOf[HashMap1[A, W]]
+      else new HashMap1(key, hash, value1, null)
     }
   }
 
@@ -361,6 +374,9 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
     }
 
+    protected override def transformImpl[W](f: (A, B) => W): HashMap[A, W] = {
+      new HashMapCollision1[A, W](hash, kvs transform f)
+    }
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
@@ -636,6 +652,19 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
     }
 
+    protected override def transformImpl[W](f: (A, B) => W): HashMap[A, W] = {
+      val elems1 = new Array[HashMap[A, W]](elems.length)
+      var i = 0
+      while (i < elems.length) {
+        val elem = elems(i)
+        if (elem ne null) {
+          val elem1 = elem.transformImpl(f)
+          elems1(i) = elem1
+        }
+        i += 1
+      }
+      new HashTrieMap[A, W](bitmap, elems1, size)
+    }
   }
 
   /**

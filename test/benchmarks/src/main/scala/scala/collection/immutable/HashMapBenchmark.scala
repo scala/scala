@@ -2,8 +2,6 @@ package scala.collection.immutable
 
 import org.openjdk.jmh.annotations._
 import org.openjdk.jmh.infra._
-import org.openjdk.jmh.runner.IterationType
-import benchmark._
 import java.util.concurrent.TimeUnit
 
 @BenchmarkMode(Array(Mode.AverageTime))
@@ -52,5 +50,12 @@ class HashMapBenchmark {
       bh.consume(map.get(missingKeys(i)))
       i += 1
     }
+  }
+
+  @Benchmark def transform(): Unit = {
+    map.transform((_, _) => "")
+  }
+  @Benchmark def transformConserve(): Unit = {
+    map.transform((_, v) => v)
   }
 }
