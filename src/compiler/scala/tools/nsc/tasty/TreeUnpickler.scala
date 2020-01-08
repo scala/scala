@@ -625,7 +625,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }
-      sym.setAnnotations(annotFns.map(_(sym)))
+      sym.setAnnotations(annotFns.flatMap(_(sym)))
       ctx.owner match {
         case cls: ClassSymbol if canEnterInClass =>
           val decls = cls.rawInfo.decls
@@ -725,19 +725,29 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
-      (flags, tastyFlagSet, /*annotFns.reverse,*/ Nil, privateWithin)
+      (flags, tastyFlagSet, Nil/*annotFns.reverse*/, privateWithin)
     }
 
     private val readTypedWithin: Context => Symbol =
       implicit ctx => readType().typeSymbolDirect
 
-    private val readTypedAnnot: Context => Symbol => Annotation = {
+    private val readTypedAnnot: Context => Symbol => Option[Annotation] = {
       implicit ctx =>
         readByte()
         val end = readEnd()
         val tp = readType()
         val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-        owner => { tp.typeSymbolDirect; Annotation(lazyAnnotTree(owner).complete) }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
+        owner => {
+          tp.typeSymbolDirect
+          val annotTree = lazyAnnotTree(owner).complete
+          val annotSym  = annotTree.tpe.typeSymbolDirect
+          if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined) {
+            ctx.log(s"annotation of sym: $annotSym :: $annotTree")
+            Some(Annotation(annotTree))
+          }
+          else
+            None
+        }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -865,6 +875,22 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val tpt = readTpt()(localCtx)
           val valueParamss = ctx.normalizeIfConstructor(
             vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
+          // if (tname === TastyName.SimpleName("apply")
+          //     && sym.is(Synthetic)) {
+          //   sym.flags = sym.flags | Case
+          // }
+          // val retType =
+          //   if (tname === TastyName.SimpleName("unapply")
+          //       && sym.is(Synthetic)) {
+          //     sym.flags = sym.flags | Case
+          //     sym.owner.companion.caseFieldAccessors.map(_.tpe) match {
+          //       case Nil          => defn.BooleanTpe
+          //       case value :: Nil => defn.optionType(dropNullaryMethod(value))
+          //       case values       => defn.optionType(defn.tupleType(values.map(dropNullaryMethod)))
+          //     }
+          //   } else {
+          //     tpt.tpe
+          //   }
           val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
           sym.info = ctx.methodType(if (name === nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
           NoCycle(at = symAddr)

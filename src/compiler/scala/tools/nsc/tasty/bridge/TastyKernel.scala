@@ -92,6 +92,10 @@ trait TastyKernel {
     final val ScalaPackage: ModuleSymbol = symbolTable.definitions.ScalaPackage
     final val ScalaStrictFPAttr: ClassSymbol = symbolTable.definitions.ScalaStrictFPAttr
     final val TailrecClass: ClassSymbol = symbolTable.definitions.TailrecClass
+    final val StaticAnnotationClass: ClassSymbol = symbolTable.definitions.StaticAnnotationClass
+    // final val BooleanTpe: Type = symbolTable.definitions.BooleanTpe
+    // def optionType(value: Type) = symbolTable.definitions.optionType(value)
+    // def tupleType(values: List[Type]) = symbolTable.definitions.tupleType(values)
   }
 
   object nme {
