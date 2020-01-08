@@ -972,7 +972,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
         else tpe
       }
-      if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
+      val firstParent = parentTypes.head.typeSymbolDirect
+      if (firstParent.isSealed) {
+        firstParent.addChild(cls)
+      }
+      if (firstParent === defn.AnyValClass) {
         // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
         Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
           // duplicated from scala.tools.nsc.transform.ExtensionMethods

@@ -19,7 +19,7 @@ import Files._
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, negFalse: Boolean, outDir: Option[String]): Try[Unit] = {
+  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, negFalse: Boolean, posFalse: Boolean, outDir: Option[String]): Try[Unit] = {
     val results = Map(
       "run"       -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
       "pos"       -> Tests.suite("pos", pos)(posSuite(dottyLibrary, srcRoot, pkgName, outDir)),
@@ -46,20 +46,26 @@ object TastyTest {
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
   } yield ()
 
-  def posSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
-    (pre, src2, src3) <- getRunSources(srcRoot/"pos")
-    _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
-    out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
-  } yield ()
+  def posSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
+    posSuiteRunner("pos", dottyLibrary, srcRoot, pkgName, outDir)
+
+  def posFalseSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
+    posSuiteRunner("pos-false", dottyLibrary, srcRoot, pkgName, outDir)
 
   def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
     negSuiteRunner("neg", dottyLibrary, srcRoot, pkgName, outDir)
 
   def negFalseSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
     negSuiteRunner("neg-false", dottyLibrary, srcRoot, pkgName, outDir)
+
+  def posSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+    (pre, src2, src3) <- getRunSources(srcRoot/src)
+    _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
+    out               <- outDir.fold(tempDir(pkgName))(dir)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
+  } yield ()
 
   private def negSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
@@ -304,7 +310,8 @@ object TastyTest {
   |  -run                             Perform the run test.
   |  -pos                             Perform the pos test.
   |  -neg                             Perform the neg test.
-  |  -neg                             Perform the neg-false test.
+  |  -neg-false                       Perform the neg-false test.
+  |  -pos-false                       Perform the pos-false test.
   |  --dotty-library  <paths>         Paths separated by `:`, the classpath for the dotty library.
   |  --src            <path=.>        The path that contains all compilation sources across test kinds.
   |  --out            <path=.>        output for classpaths, optional.
@@ -330,8 +337,9 @@ object TastyTest {
       pos           =  booleanArg("-pos")
       neg           =  booleanArg("-neg")
       negFalse      =  booleanArg("-neg-false")
+      posFalse      =  booleanArg("-pos-false")
       out           =  findArg("--out")
-      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, negFalse, out)
+      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, negFalse, posFalse, out)
     } yield ()
   }
 

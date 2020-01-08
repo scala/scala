@@ -35,6 +35,13 @@ class TastyTestJUnit {
     outDir       = None
   ).get
 
+  @Test def posFalse(): Unit = TastyTest.posFalseSuite(
+    dottyLibrary = assertPropIsSet(propDottyLibrary),
+    srcRoot      = assertPropIsSet(propSrc),
+    pkgName      = assertPropIsSet(propPkgName),
+    outDir       = None
+  ).get
+
   val propDottyLibrary = "tastytest.dotty-library"
   val propSrc          = "tastytest.src"
   val propPkgName      = "tastytest.packageName"
