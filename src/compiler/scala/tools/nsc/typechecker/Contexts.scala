@@ -1548,13 +1548,15 @@ trait Contexts { self: Analyzer =>
         def sameName(name: Name, other: Name) = {
           (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
         }
-        if (sameName(current.rename, name))
-          result = qual.tpe.nonLocalMember( // new to address #2733: consider only non-local members for imports
-            if (name.isTypeName) current.name.toTypeName else current.name)
-        else if (sameName(current.name, name))
+        def tryJavaCompanion(target: Name) =
+          if (pos.source.isJava) qual.tpe.companion nonLocalMember target else NoSymbol
+        if (sameName(current.rename, name)) {
+          val target = current.name asTypeOf name
+          result = qual.tpe nonLocalMember target orElse tryJavaCompanion(target)
+        } else if (sameName(current.name, name))
           renamed = true
         else if (current.name == nme.WILDCARD && !renamed && !requireExplicit)
-          result = qual.tpe.nonLocalMember(name)
+          result = qual.tpe nonLocalMember name orElse tryJavaCompanion(name)
 
         if (result == NoSymbol)
           selectors = selectors.tail
