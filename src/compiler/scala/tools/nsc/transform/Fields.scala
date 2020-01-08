@@ -613,7 +613,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           case _ => tree
         }
 
-      def initialized = Select(Ident(holderSym), initializedSym)
+      def initialized = Apply(Select(Ident(holderSym), initializedSym), Nil)
       def initialize  = Select(Ident(holderSym), initializeSym)
       def getValue    = if (isUnit) UNIT else refineLiteral(Apply(Select(Ident(holderSym), valueSym), Nil))
 
