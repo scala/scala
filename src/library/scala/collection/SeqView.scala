@@ -110,6 +110,7 @@ object SeqView {
     def length = (underlying.size - normN) max 0
     @throws[IndexOutOfBoundsException]
     def apply(i: Int) = underlying.apply(i + normN)
+    override def drop(n: Int): SeqView[A] = new Drop(underlying, this.n + n)
   }
 
   @SerialVersionUID(3L)
