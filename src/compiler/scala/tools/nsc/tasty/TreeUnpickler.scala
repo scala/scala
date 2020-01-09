@@ -144,6 +144,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def skipParams(): Unit =
       while (nextByte === PARAMS || nextByte === TYPEPARAM) skipTree()
 
+    def skipTemplateParams(): Unit =
+      while (nextByte === PARAM || nextByte === TYPEPARAM) skipTree()
+
     def skipTypeParams(): Unit =
       while (nextByte === TYPEPARAM) skipTree()
 
@@ -570,7 +573,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val rhsStart = currentAddr
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (givenFlags, tastyFlagSet, annotFns, privateWithin) = readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
+      val (givenFlags, tastyFlagSet, annotFns, privateWithin) =
+        readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
       val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, tname, isAbsType, rhsIsEmpty)
       def showFlags = {
         if (!tastyFlagSet)
@@ -580,10 +584,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         else
           show(flags) + " | " + show(tastyFlagSet)
       }
-      def isModuleClass = flags.is(Module) && isClass
+      def isModuleClass   = flags.is(Module) && isClass
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isModuleClass && !isTypeParameter
-      ctx.log(s"""creating symbol ${name}${if (privateWithin ne noSymbol) s" private within $privateWithin" else ""} at $start with flags $showFlags""")
+      ctx.log {
+        val msg = if (privateWithin ne noSymbol) s" private within $privateWithin" else ""
+        s"""creating symbol ${name}${msg} at $start with flags $showFlags"""
+      }
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
       }
@@ -636,7 +643,31 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       registerSym(start, sym)
       if (isClass) {
         sym.completer.withDecls(mkScope)
-        forkAt(templateStart).indexTemplateParams()(localContext(sym))
+        val localCtx = localContext(sym)
+        forkAt(templateStart).indexTemplateParams()(localCtx)
+        // TODO tasty: this is an experiment to try and unpickle the first parent to look for sealed subtypes
+        // val fork = forkAt(templateStart)
+        // ctx.log(s"parents: fork begins at ${fork.reader.currentAddr}")
+        // assert(fork.reader.readByte() === TEMPLATE)
+        // ctx.log(s"parents: fork after template at ${fork.reader.currentAddr}")
+        // fork.reader.readEnd()
+        // fork.skipTemplateParams()
+        // ctx.log(s"parents: fork is at ${fork.reader.currentAddr}")
+        // if (fork.reader.nextByte != SELFDEF && fork.reader.nextByte != DEFDEF) {
+        //   val tpt = fork.nextUnsharedTag match {
+        //     case APPLY | TYPEAPPLY | BLOCK => fork.readTerm()(localCtx)
+        //     case _ => fork.readTpt()(localCtx)
+        //   }
+        //   val parentType = {
+        //     val tpe = tpt.tpe.dealias
+        //     if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
+        //     else tpe
+        //   }
+        //   val parent = parentType.typeSymbolDirect
+        //   if (parent.isSealed) {
+        //     parent.addChild(sym)
+        //   }
+        // }
       }
 //      else if (sym.isInlineMethod)
 //        sym.addAnnotation(LazyBodyAnnotation { ctx0 =>
@@ -1285,7 +1316,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
 
-      def completeSelect(name: Name, sig: Signature[TypeName]): Select = {
+      def completeSelect(name: Name, sig: Signature[Type]): Select = {
         val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
         val qual = readTerm()(localCtx)
         val qualType = qual.tpe.widen
@@ -1302,27 +1333,26 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def selectFromSig(qualType: Type, name: Name, sig: Signature[TypeName])(ifNotOverload: Name => Type): Type = {
+      def selectFromSig(qualType: Type, name: Name, sig: Signature[Type])(ifNotOverload: Name => Type): Type = {
         if (sig ne NotAMethod) {
-          ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
+          ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show} at $start")
           val MethodSignature(args, ret) = sig
-          val retSym = ctx.loadingMirror.findMemberFromRoot(ret)
           var seenTypeParams = false
           val (tyParamCount, argsSyms) = {
             val (tyParamCounts, params) = args.partitionMap(identity)
             assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
-            (tyParamCounts.headOption.getOrElse(0), params.map(ctx.loadingMirror.findMemberFromRoot))
+            (tyParamCounts.headOption.getOrElse(0), params)
           }
           val member = qualType.member(name)
           val alts = member.asTerm.alternatives
           val tpeOpt = alts.find { sym =>
             val method = sym.asMethod
             val params = method.paramss.flatten
-            method.returnType.erasure.typeSymbolDirect === retSym &&
+            method.returnType.erasure =:= ret &&
               params.length === argsSyms.length &&
               ((name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length)
                 || tyParamCount === method.typeParams.length) &&
-              params.zip(argsSyms).forall { case (param, sym) => param.tpe.erasure.typeSymbolDirect === sym }
+              params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
           }.map(_.tpe).ensuring(_.isDefined, s"No matching overload of $name with signature ${sig.show}")
           var Some(tpe) = tpeOpt
           if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(member.owner.typeParams, tpe)
@@ -1349,7 +1379,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SELECT =>
           readTastyName() match {
             case TastyName.SignedName(qual, sig) =>
-              completeSelect(qual.toEncodedTermName, sig.map(_.toEncodedTermName.toTypeName))
+              completeSelect(qual.toEncodedTermName, sig.map(erasedNameToErasedType))
             case name: TastyName => completeSelect(name.toEncodedTermName, NotAMethod)
           }
         case SELECTtpt =>

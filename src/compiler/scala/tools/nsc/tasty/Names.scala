@@ -68,7 +68,7 @@ object Names {
         case DefaultName(qual, num)   => traverse(sb, qual).append("[Default ").append(num + 1).append(']')
         case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
         case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
-        case SignedName(name,sig)     => sig.mergeShow(traverse(sb, name).append("[Signed ")).append(']')
+        case SignedName(name,sig)     => sig.map(_.debug).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
 
         case VariantName(qual, contra) =>
           traverse(sb, qual).append("[Variant ").append(if (contra) '-' else '+').append(']')

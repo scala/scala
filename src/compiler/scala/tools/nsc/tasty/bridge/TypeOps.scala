@@ -2,12 +2,40 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.Names.TastyName
+import scala.tools.nsc.tasty.Names.TastyName.QualifiedName
+import scala.tools.nsc.tasty.Names.TastyName.SimpleName
+
+import scala.tools.nsc.tasty._
+import scala.tools.nsc.tasty.Names.TastyName.ModuleName
 
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
   import FlagSets._
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
+
+  def erasedNameToErasedType(name: TastyName)(implicit ctx: Context): Type = {
+    def specialised(terminal: SimpleName) = terminal match {
+      case SimpleName(s"$sel[]") => (true, SimpleName(sel))
+      case sel                   => (false, sel)
+    }
+    def erasedType(isArray: Boolean, erasedName: TastyName) = {
+      val typeName = mkTermName(erasedName.source).toTypeName
+      val sym  = ctx.loadingMirror.findMemberFromRoot(typeName) // TODO tasty: looks like this is too eager, should break name into a path and select each member from a symbol in a way that completes members up to indexing
+      assert(sym !== noSymbol, s"could not find class for $typeName")
+      val tpe0 = sym.tpe.erasure
+      if (isArray) defn.arrayType(tpe0) else tpe0
+    }
+    (name.stripModulePart: @unchecked) match {
+      case terminal: SimpleName =>
+        val (isArray, sel) = specialised(terminal)
+        erasedType(isArray, sel)
+      case QualifiedName(path, TastyName.PathSep, terminal) =>
+        val (isArray, sel) = specialised(terminal)
+        erasedType(isArray, QualifiedName(path, TastyName.PathSep, sel))
+    }
+  }
 
   object TypeOps {
     implicit final class StripOps(tpe: Type) {
