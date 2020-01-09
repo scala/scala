@@ -11,6 +11,7 @@
  */
 
 package scala.tools.nsc.interpreter.shell
+import scala.util.chaining._
 
 trait Tabulator {
   def isAcross: Boolean
@@ -18,7 +19,7 @@ trait Tabulator {
   def marginSize: Int
 
   protected def fits(items: Seq[String], width: Int): Boolean = (
-    (items map (_.length)).sum + (items.length - 1) * marginSize < width
+    (items map (graphemeCount)).sum + (items.length - 1) * marginSize < width
   )
   def tabulate(items: Seq[String]): Seq[Seq[String]] = (
     if (fits(items, width)) Seq(Seq(items mkString " " * marginSize))
@@ -27,7 +28,7 @@ trait Tabulator {
   protected def columnize(ss: Seq[String]): Seq[Seq[String]] = ss map (s => Seq(s))
   protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
     import SimpleMath._
-    val longest     = (items map (_.length)).max
+    val longest     = (items map (graphemeCount)).max
     val columnWidth = longest + marginSize
     val maxcols = (
       if (columnWidth >= width) 1
@@ -36,7 +37,7 @@ trait Tabulator {
     val nrows       = items.size /% maxcols
     val ncols       = items.size /% nrows
     val groupSize   = ncols
-    val padded      = items map (s"%-${columnWidth}s" format _)
+    val padded      = items map (pad(columnWidth, _))
     val xwise       = isAcross || ncols >= items.length
     val grouped: Seq[Seq[String]]    =
       if (groupSize == 1) columnize(items)
@@ -50,14 +51,25 @@ trait Tabulator {
       }
     grouped
   }
+
+  protected def graphemeCount(s: String): Int = {
+    import java.text.BreakIterator
+    val it = BreakIterator.getCharacterInstance
+    it.setText(s)
+    Iterator.continually(it.next()).takeWhile(_ != BreakIterator.DONE).size
+  }
+
+  protected def pad(width: Int, s: String): String = {
+    val count = 0 max (width - graphemeCount(s))
+    s + (" " * count)
+  }
 }
 
 /** Adjust the column width and number of columns to minimize the row count. */
 trait VariColumnTabulator extends Tabulator {
   override protected def printMultiLineColumns(items: Seq[String]): Seq[Seq[String]] = {
     import SimpleMath._
-    val longest  = (items map (_.length)).max
-    val shortest = (items map (_.length)).min
+    val (longest, shortest) = items.map(graphemeCount).pipe(vs => (vs.max, vs.min))
     val fattest  = longest + marginSize
     val skinny   = shortest + marginSize
 
@@ -69,7 +81,7 @@ trait VariColumnTabulator extends Tabulator {
       // max width item in each column
       def maxima(rows: Seq[Seq[String]]) =
         (0 until (ncols min items.size)) map { col =>
-          val widths = for (r <- rows if r.size > col) yield r(col).length
+          val widths = for (r <- rows if r.size > col) yield graphemeCount(r(col))
           widths.max
         }
       def resulting(rows: Seq[Seq[String]]) = {
@@ -105,7 +117,7 @@ trait VariColumnTabulator extends Tabulator {
 
       // format to column width
       sss map (ss => ss.zipWithIndex map {
-        case (s, i) => s"%-${columnWidths(i)}s" format s
+        case (s, i) => pad(columnWidths(i), s)
       })
     }
   }
