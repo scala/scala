@@ -155,6 +155,12 @@ trait TastyKernel {
 
   type This = symbolTable.This
 
+  type SeqLiteral = symbolTable.ArrayValue
+  def SeqLiteral(trees: List[Tree], tpt: Tree) = symbolTable.ArrayValue(tpt, trees)
+
+  type Typed = symbolTable.Typed
+  def Typed(expr: Tree, tpt: Tree): Typed = symbolTable.Typed(expr, tpt)
+
   type Literal = symbolTable.Literal
   def Literal(c: Constant): Literal = symbolTable.Literal(c)
 

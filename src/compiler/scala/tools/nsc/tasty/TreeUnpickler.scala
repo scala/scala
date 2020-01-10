@@ -223,16 +223,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 // ------ Reading types -----------------------------------------------------
 
    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
-   def readParamNames(end: Addr): List[TastyName] =
-     until(end) {
-       val name = readTastyName()
-       skipTree()
-       name
-     }
+    def readParamNames(end: Addr): List[TastyName] =
+      until(end) {
+        val name = readTastyName()
+        skipTree()
+        name
+      }
 
    /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
-   def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
-     until(end) { readNat(); readType().asInstanceOf[T] }
+    def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
+      until(end) { readNat(); readType().asInstanceOf[T] }
 
     /** Read reference to definition and return symbol created at that definition */
     def readSymRef()(implicit ctx: Context): Symbol = symbolAt(readAddr())
@@ -762,23 +762,24 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private val readTypedWithin: Context => Symbol =
       implicit ctx => readType().typeSymbolDirect
 
-    private val readTypedAnnot: Context => Symbol => Option[Annotation] = {
-      implicit ctx =>
-        readByte()
-        val end = readEnd()
-        val tp = readType()
-        val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-        owner => {
-          tp.typeSymbolDirect
-          val annotTree = lazyAnnotTree(owner).complete
-          val annotSym  = annotTree.tpe.typeSymbolDirect
-          if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined) {
-            ctx.log(s"annotation of sym: $annotSym :: $annotTree")
-            Some(Annotation(annotTree))
-          }
-          else
-            None
-        }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
+    private val readTypedAnnot: Context => Symbol => Option[Annotation] = { implicit ctx =>
+      readByte()
+      val end = readEnd()
+      val tp = readType()
+      val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
+      owner => {
+        tp.typeSymbolDirect
+        val annotTree = lazyAnnotTree(owner).complete
+        val annotSym  = annotTree.tpe.typeSymbolDirect
+        if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined) {
+          ctx.log(s"annotation of $annotSym = $annotTree")
+          Some(Annotation(annotTree))
+        }
+        else {
+          ctx.log(s"Ignoring non-static annotation $annotTree")
+          None
+        }
+      }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -1286,15 +1287,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //      readIndexedStats(exprOwner, end)
 //    }
 
-  def readIndexedParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
-    collectWhile(nextByte === tag) { readIndexedMember().asInstanceOf[T] }
+    def readIndexedParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
+      collectWhile(nextByte === tag) { readIndexedMember().asInstanceOf[T] }
 
-  def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] =
-    if (nextByte == tag) {
+    def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] = {
       fork.indexParams(tag)
       readIndexedParams(tag)
     }
-    else Nil
 
 
 // ------ Reading trees -----------------------------------------------------
@@ -1421,10 +1420,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val term = readTerm()
               val args = until(end)(readTpt())
               TypeApply(term, args).setType(term.tpe.resultType.substituteTypes(term.tpe.typeParams, args.map(_.tpe)))
-//            case TYPED =>
-//              val expr = readTerm()
-//              val tpt = readTpt()
-//              Typed(expr, tpt)
+            case TYPED =>
+              val expr = readTerm()
+              val tpt = readTpt()
+              Typed(expr, tpt).setType(tpt.tpe)
 //            case ASSIGN =>
 //              Assign(readTerm(), readTerm())
 //            case BLOCK =>
@@ -1476,9 +1475,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //            case SELECTouter =>
 //              val levels = readNat()
 //              readTerm().outerSelect(levels, SkolemType(readType()))
-//            case REPEATED =>
-//              val elemtpt = readTpt()
-//              SeqLiteral(until(end)(readTerm()), elemtpt)
+            case REPEATED =>
+              val elemtpt = readTpt()
+              SeqLiteral(until(end)(readTerm()), elemtpt).setType(elemtpt.tpe)
 //            case BIND =>
 //              val sym = symAtAddr.getOrElse(start, forkAt(start).createSymbol())
 //              readName()
@@ -1552,9 +1551,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (sctx `ne` ctx) return readTpt()(sctx)
       val start = currentAddr
       val tpt: Tree = nextByte match {
-       case SHAREDterm =>
-         readByte()
-         forkAt(readAddr()).readTpt()
+        case SHAREDterm =>
+          readByte()
+          forkAt(readAddr()).readTpt()
 //        case BLOCK =>
 //          readByte()
 //          val end = readEnd()
