@@ -103,7 +103,7 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     *  @param key    The key to update
     *  @param value  The new value
     */
-  def update(key: K, value: V): Unit = { coll += ((key, value)) }
+  def update(key: K, value: V): Unit = coll.addOne((key, value))
 
   /**
    * Update a mapping for the specified key and its current optionally-mapped value
@@ -121,9 +121,9 @@ trait MapOps[K, V, +CC[X, Y] <: MapOps[X, Y, CC, _], +C <: MapOps[K, V, CC, C]]
     val previousValue = this.get(key)
     val nextValue = remappingFunction(previousValue)
     (previousValue, nextValue) match {
-      case (None, None) => // do nothing
+      case (None, None)    => // do nothing
       case (Some(_), None) => this.remove(key)
-      case (_, Some(v)) => this.update(key,v)
+      case (_, Some(v))    => this.update(key,v)
     }
     nextValue
   }

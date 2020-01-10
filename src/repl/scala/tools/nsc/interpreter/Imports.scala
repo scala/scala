@@ -21,6 +21,7 @@ trait Imports {
   import global.{Type, Tree, Import, ImportSelector, Select, Ident, newTermName, Symbol, TermSymbol, NoType, Name, enteringPickler}
   import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw }
   import global.definitions.PredefModule
+  import global.gen
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
@@ -219,9 +220,43 @@ trait Imports {
     ComputedImports(computedHeader, code.toString, trailingBraces.toString, accessPath.toString)
   }
 
-  private def allReqAndHandlers =
-    prevRequestList flatMap (req => req.handlers map (req -> _))
+  // instead of import text, just generate a list of the history objects to root-import from.
+  // These are appended to root imports, and they are built in reverse order, earliest to latest, which is desired here.
+  // Actually that's OK for $read, but not for import selectors.
+  //
+  protected def importsFromHistory(wanted: Set[Name]): List[Import] = {
+    val imports = mutable.ListBuffer.empty[Import]
 
-  private def membersAtPickler(sym: Symbol): List[Symbol] =
-    enteringPickler(sym.info.nonPrivateMembers.toList)
+    val requests = prevRequestList.reverseIterator
+    val remaining = mutable.Set.empty[Name].addAll(wanted)
+
+    // add imports, or true to trigger import read._
+    //
+    def important(handler: MemberHandler): Boolean =
+      handler match {
+        case h: ImportHandler =>
+          imports.addOne(h.asImport)
+          remaining.addAll(h.referencedNames)
+          remaining.subtractAll(h.definedNames)
+          remaining.subtractAll(h.importedNames)
+          false
+        case h if h.definesImplicit || h.definedNames.exists(d => remaining.exists(need => d.startsWith(need))) =>
+          remaining.subtractAll(h.definedNames)
+          remaining.subtractAll(h.importedNames)
+          true
+        case _ =>
+          false
+      }
+
+    while (remaining.nonEmpty && requests.hasNext) {
+      val request = requests.next()
+      if (request.handlers.foldLeft(false)((tv, h) => important(h) || tv))
+        imports.addOne(gen.mkWildcardImport(request.resultSymbol))
+    }
+    imports.toList
+  }
+
+  private def allReqAndHandlers = prevRequestList.flatMap(req => req.handlers.map(h => (req, h)))
+
+  private def membersAtPickler(sym: Symbol): List[Symbol] = enteringPickler(sym.info.nonPrivateMembers.toList)
 }

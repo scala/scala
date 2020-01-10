@@ -82,24 +82,23 @@ trait Contexts { self: Analyzer =>
 
   var lastAccessCheckDetails: String = ""
 
-  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Import]]
 
   val excludedRootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
 
   // register an import for the narrow purpose of excluding root imports of predef modules
   def registerImport(ctx: Context, imp: Import): Unit = {
     val sym = imp.expr.symbol
-    if (!sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
-      var current = excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
-      current = sym :: current
-      excludedRootImportsCached += ctx.unit -> current
+    if (!sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).exists(_.expr.symbol == sym)) {
+      val exclusions = sym :: excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
+      excludedRootImportsCached.update(ctx.unit, exclusions)
     }
   }
 
-  /** List of symbols to import from in a root context.  By default, that
-   *  is `java.lang`, `scala`, and [[scala.Predef]], in that order.
+  /** List of Imports that define the root context(s).  By default,
+   *  wildcard imports of `java.lang`, `scala`, and [[scala.Predef]], in that order.
    *
-   *  - if option `-Yimports` is supplied, then that specifies the preamble imports
+   *  - if option `-Yimports` is supplied, then that specifies root context imports.
    *  - if the unit body has an import of Predef
    *    among its leading imports, or if the tree is [[scala.Predef]], `Predef` is not imported.
    *    Similarly for any module among the preamble imports.
@@ -107,10 +106,10 @@ trait Contexts { self: Analyzer =>
    *
    *  The root imports for a unit are cached.
    */
-  protected def rootImports(unit: CompilationUnit): List[Symbol] = {
+  protected def rootImports(unit: CompilationUnit): List[Import] = {
     assert(definitions.isDefinitionsInitialized, "definitions uninitialized")
 
-    if (unit.isJava) RootImports.javaList
+    if (unit.isJava) RootImports.javaList.map(gen.mkWildcardImport)
     else rootImportsCached.get(unit).getOrElse {
       val calculated = defaultRootImports
       rootImportsCached += unit -> calculated
@@ -118,29 +117,35 @@ trait Contexts { self: Analyzer =>
     }
   }
 
-  private def defaultRootImports: List[Symbol] = {
+  private def defaultRootImports: List[Import] = {
     import rootMirror.{getModuleIfDefined, getPackageObjectIfDefined, getPackageIfDefined}
+
+    val selection = raw"(.*\.\{.*\})".r
+    def wildly(sym: Symbol) = gen.mkWildcardImport(sym)
+    def parsedImport(sel: String): Import = {
+      ???
+    }
 
     if (settings.imports.isSetByUser)
       settings.imports.value.map {
-        case "java.lang"    => JavaLangPackage
-        case "scala"        => ScalaPackage
-        case "scala.Predef" => PredefModule
-        case s              =>
+        case "java.lang"    => wildly(JavaLangPackage)
+        case "scala"        => wildly(ScalaPackage)
+        case "scala.Predef" => wildly(PredefModule)
+        case selection(sel) => parsedImport(sel)
+        case s              => wildly {
           getModuleIfDefined(s) orElse
           getPackageObjectIfDefined(s) orElse
           getPackageIfDefined(s) orElse {
             error(s"bad preamble import $s")
             NoSymbol
           }
+        }
       }
-    else RootImports.completeList
+    else RootImports.completeList.map(wildly)
   }
 
   def rootContext(unit: CompilationUnit, tree: Tree = EmptyTree, throwing: Boolean = false, checking: Boolean = false): Context = {
-    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, sym) =>
-      c.make(gen.mkWildcardImport(sym), unit = unit)
-    )
+    val rootImportsContext = rootImports(unit).foldLeft(startContext)((c, imp) => c.make(imp, unit = unit))
 
     // there must be a scala.xml package when xml literals were parsed in this unit
     if (unit.hasXml && ScalaXmlPackage == NoSymbol)

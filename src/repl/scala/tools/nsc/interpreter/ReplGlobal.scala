@@ -43,12 +43,16 @@ trait ReplGlobal extends Global {
   }
 
   trait ReplAnalyzer extends Analyzer {
-    override def rootImports(unit: global.CompilationUnit) = super.rootImports(unit)
+    override def rootImports(unit: global.CompilationUnit) = super.rootImports(unit) ++ importedHistory.asInstanceOf[List[this.global.Import]]
+    //import scala.util.chaining._
+    //override def rootImports(unit: global.CompilationUnit) = (super.rootImports(unit) ++ importedHistory.asInstanceOf[List[this.global.Import]]).tap(us => reporter.echo(s"root imports $us"))
   }
+
+  var importedHistory: List[Import] = Nil
 
   override lazy val analyzer = new { val global: ReplGlobal.this.type = ReplGlobal.this } with ReplAnalyzer
 
-  def languageWildcardImports: List[Symbol] = analyzer.rootImports(NoCompilationUnit)
+  def languageWildcardImports: List[Symbol] = analyzer.rootImports(NoCompilationUnit).map(_.expr.symbol)
 
   override def toString = "<global>"
 }

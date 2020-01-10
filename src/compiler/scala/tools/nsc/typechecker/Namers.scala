@@ -1787,7 +1787,7 @@ trait Namers extends MethodSynthesis {
       pluginsTypeSig(res, typer, tdef, WildcardType)
     }
 
-    private def importSig(imp: Import) = {
+    private def importSig(imp: Import): Type = {
       val Import(expr, selectors) = imp
       val expr1 = typer.typedQualifier(expr)
 

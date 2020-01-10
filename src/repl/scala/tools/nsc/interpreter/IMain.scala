@@ -796,10 +796,13 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     /** Code to import bound names from previous lines - accessPath is code to
       * append to objectName to access anything bound by request.
-      */
     lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
       exitingTyper(importsCode(referencedNames.toSet, this, definesClass, generousImports))
+      */
+    val headerPreamble, importsPreamble, importsTrailer, accessPath = ""
 
+    // the $lineN.$read objects from history to root-import
+    lazy val requiredHistory: List[Import] = exitingTyper(importsFromHistory(referencedNames.toSet))
 
     private val USER_CODE_PLACEHOLDER = newTermName("$user_code_placeholder$")
     private object spliceUserCode extends Transformer {
@@ -827,17 +830,20 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     /** generate the source code for the object that computes this request */
     def mkUnit: CompilationUnit = {
+
+      importedHistory = requiredHistory
+
       val readName = newTermName(lineRep.readName)
 
       val stats = ListBuffer.empty[Tree]
 
-      stats ++= parseSynthetic(headerPreamble)
+      //stats ++= parseSynthetic(headerPreamble)
 
       // the imports logic builds up a nesting of object $iw wrappers :-S
       // (have to parse importsPreamble + ... + importsTrailer at once)
       // This will be simplified when we stop wrapping to begin with.
-      val syntheticStats =
-        parseSynthetic(importsPreamble + s"`$USER_CODE_PLACEHOLDER`" + importsTrailer)
+      //val syntheticStats = parseSynthetic(importsPreamble + s"`$USER_CODE_PLACEHOLDER`" + importsTrailer)
+      val syntheticStats = parseSynthetic(s"`$USER_CODE_PLACEHOLDER`")
 
       // don't use empty list of parents, since that triggers a rangepos bug in typer (the synthetic typer tree violates overlapping invariant)
       val parents = List(atPos(wholeUnit.focus)(if (isClassBased) gen.rootScalaDot(tpnme.Serializable) else gen.rootScalaDot(tpnme.AnyRef)))
@@ -926,11 +932,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
         // Assign symbols to the original trees
         // TODO - just use the new trees.
-        defHandlers foreach { dh =>
+        for (dh <- defHandlers) {
           val name = dh.member.name
-          definedSymbols get name foreach { sym =>
+          for (sym <- definedSymbols.get(name)) {
             dh.member setSymbol sym
-            repldbg("Set symbol of " + name + " to " + symbolDefString(sym))
+            repldbg(s"Set symbol of $name to ${symbolDefString(sym)}(${sym.fullLocationString})")
           }
         }
 

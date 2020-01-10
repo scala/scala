@@ -78,7 +78,8 @@ trait MemberHandlers {
     case member: ClassDef                      => new ClassHandler(member)
     case member: TypeDef                       => new TypeAliasHandler(member)
     case member: Assign                        => new AssignHandler(member)
-    case member: Import                        => new ImportHandler(member.duplicate) // duplicate because the same tree will be type checked (which loses info)
+    //case member: Import                        => new ImportHandler(member.duplicate) // duplicate because the same tree will be type checked (which loses info)
+    case member: Import                        => new ImportHandler(member)
     case DocDef(_, documented)                 => chooseHandler(documented)
     case member                                => new GenericHandler(member)
   }
@@ -202,7 +203,7 @@ trait MemberHandlers {
   }
 
   class ImportHandler(imp: Import) extends MemberHandler(imp) {
-    val Import(expr, selectors) = imp
+    val asImport, Import(expr, selectors) = imp
 
     def targetType = intp.global.rootMirror.getModuleIfDefined("" + expr) match {
       case NoSymbol => intp.typeOfExpression("" + expr)
