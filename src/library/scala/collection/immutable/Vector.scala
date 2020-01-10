@@ -129,6 +129,65 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
     if(this.isInstanceOf[Vector0.type]) Vector.emptyIterator
     else new NewVectorIterator(this, length, vectorSliceCount)
 
+  override final protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Vector[A] = {
+    var i = 0
+    val len = prefix1.length
+    while (i != len) {
+      if (pred(prefix1(i).asInstanceOf[A]) == isFlipped) {
+        // each 1 bit indicates that index passes the filter.
+        // all indices < i are also assumed to pass the filter
+        var bitmap = 0
+        var j = i + 1
+        while (j < len) {
+          if (pred(prefix1(j).asInstanceOf[A]) != isFlipped) {
+            bitmap |= (1 << j)
+          }
+          j += 1
+        }
+        val newLen = i + java.lang.Integer.bitCount(bitmap)
+
+        if(this.isInstanceOf[BigVector[_]]) {
+          val b = new VectorBuilder[A]
+          var k = 0
+          while(k < i) {
+            b.addOne(prefix1(k).asInstanceOf[A])
+            k += 1
+          }
+          k = i + 1
+          while (i != newLen) {
+            if (((1 << k) & bitmap) != 0) {
+              b.addOne(prefix1(k).asInstanceOf[A])
+              i += 1
+            }
+            k += 1
+          }
+          this.asInstanceOf[BigVector[A]].foreachRest { v => if(pred(v) != isFlipped) b.addOne(v) }
+          return b.result()
+        } else {
+          if (newLen == 0) return Vector0
+          val newData = new Array[AnyRef](newLen)
+          System.arraycopy(prefix1, 0, newData, 0, i)
+          var k = i + 1
+          while (i != newLen) {
+            if (((1 << k) & bitmap) != 0) {
+              newData(i) = prefix1(k)
+              i += 1
+            }
+            k += 1
+          }
+          return new Vector1[A](newData)
+        }
+      }
+      i += 1
+    }
+    if(this.isInstanceOf[BigVector[_]]) {
+      val b = new VectorBuilder[A]
+      b.initFrom(prefix1)
+      this.asInstanceOf[BigVector[A]].foreachRest { v => if(pred(v) != isFlipped) b.addOne(v) }
+      b.result()
+    } else this
+  }
+
   // Dummy overrides to refine result types for binary compatibility:
   override def updated[B >: A](index: Int, elem: B): Vector[B] = super.updated(index, elem)
   override def appended[B >: A](elem: B): Vector[B] = super.appended(elem)
@@ -234,7 +293,17 @@ private sealed abstract class VectorImpl[+A](_prefix1: Arr1) extends Vector[A](_
 
 
 /** Vector with suffix and length fields; all Vector subclasses except Vector1 extend this */
-private sealed abstract class BigVector[+A](_prefix1: Arr1, private[immutable] val suffix1: Arr1, private[immutable] val length0: Int) extends VectorImpl[A](_prefix1)
+private sealed abstract class BigVector[+A](_prefix1: Arr1, private[immutable] val suffix1: Arr1, private[immutable] val length0: Int) extends VectorImpl[A](_prefix1) {
+
+  protected[immutable] final def foreachRest[U](f: A => U): Unit = {
+    val c = vectorSliceCount
+    var i = 1
+    while(i < c) {
+      foreachRec(vectorSliceDim(c, i)-1, vectorSlice(i), f)
+      i += 1
+    }
+  }
+}
 
 
 /** Empty vector */
@@ -1258,6 +1327,17 @@ final class VectorBuilder[A] extends ReusableBuilder[A, Vector[A]] {
         } else depth = 3
       } else depth = 2
     } else depth = 1
+  }
+
+  private[immutable] def initFrom(prefix1: Arr1): Unit = {
+    depth = 1
+    setLen(prefix1.length)
+    a1 = copyOrUse(prefix1, 0, WIDTH)
+    if(len1 == 0 && lenRest > 0) {
+      // force advance() on next addition:
+      len1 = WIDTH
+      lenRest -= WIDTH
+    }
   }
 
   private[immutable] def initFrom(v: Vector[_]): this.type = {

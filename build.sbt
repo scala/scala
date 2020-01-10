@@ -347,7 +347,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.fillSparse"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.it"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.it_=")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.it_="),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.filterImpl"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.Vector.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.filterImpl")
   ),
 }
 

@@ -247,6 +247,25 @@ class VectorBenchmark2 {
     bh.consume(coll)
   }
 
+  @Benchmark def vFilter100p(bh: Blackhole): Any = {
+    var coll = v
+    bh.consume(coll.filter(x => true))
+  }
+
+  @Benchmark def vFilter50p(bh: Blackhole): Any = {
+    var coll = v
+    var b = false
+    bh.consume(coll.filter { x =>
+      b = !b
+      b
+    })
+  }
+
+  @Benchmark def vFilter0p(bh: Blackhole): Any = {
+    var coll = v
+    bh.consume(coll.filter(x => false))
+  }
+
   /*
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // ArraySeq
@@ -548,5 +567,24 @@ class VectorBenchmark2 {
       i += 1
     }
     bh.consume(coll)
+  }
+
+  @Benchmark def nvFilter100p(bh: Blackhole): Any = {
+    var coll = nv
+    bh.consume(coll.filter(x => true))
+  }
+
+  @Benchmark def nvFilter50p(bh: Blackhole): Any = {
+    var coll = nv
+    var b = false
+    bh.consume(coll.filter { x =>
+      b = !b
+      b
+    })
+  }
+
+  @Benchmark def nvFilter0p(bh: Blackhole): Any = {
+    var coll = nv
+    bh.consume(coll.filter(x => false))
   }
 }
