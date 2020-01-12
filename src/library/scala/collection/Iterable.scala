@@ -850,19 +850,22 @@ object IterableOps {
     * These operations are implemented in terms of
     * [[scala.collection.IterableOps.sizeCompare(Int) `sizeCompare(Int)`]].
     */
-  final class SizeCompareOps private[collection](val it: IterableOps[_, AnyConstr, _]) extends AnyVal {
+  final class SizeCompareOps private[collection](private val coll: IterableOps[_, AnyConstr, _]) extends AnyVal {
     /** Tests if the size of the collection is less than some value. */
-    @inline def <(size: Int): Boolean = it.sizeCompare(size) < 0
+    @inline def <(size: Int): Boolean = coll.sizeCompare(size) < 0
     /** Tests if the size of the collection is less than or equal to some value. */
-    @inline def <=(size: Int): Boolean = it.sizeCompare(size) <= 0
+    @inline def <=(size: Int): Boolean = coll.sizeCompare(size) <= 0
     /** Tests if the size of the collection is equal to some value. */
-    @inline def ==(size: Int): Boolean = it.sizeCompare(size) == 0
+    @inline def ==(size: Int): Boolean = coll.sizeCompare(size) == 0
     /** Tests if the size of the collection is not equal to some value. */
-    @inline def !=(size: Int): Boolean = it.sizeCompare(size) != 0
+    @inline def !=(size: Int): Boolean = coll.sizeCompare(size) != 0
     /** Tests if the size of the collection is greater than or equal to some value. */
-    @inline def >=(size: Int): Boolean = it.sizeCompare(size) >= 0
+    @inline def >=(size: Int): Boolean = coll.sizeCompare(size) >= 0
     /** Tests if the size of the collection is greater than some value. */
-    @inline def >(size: Int): Boolean = it.sizeCompare(size) > 0
+    @inline def >(size: Int): Boolean = coll.sizeCompare(size) > 0
+
+    @deprecated("never meant to be public", "2.13.2")
+    def it: IterableOps[_, AnyConstr, _] = coll
   }
 
   /** A trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
