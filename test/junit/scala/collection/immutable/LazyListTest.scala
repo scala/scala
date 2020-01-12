@@ -350,4 +350,21 @@ class LazyListTest {
     assertEquals(1 to 10, build(_ ++= LazyList.from(1).take(10)))
     assertEquals(1 to 10, build(_ ++= Iterator.from(1).take(10)))
   }
+
+  @Test
+  def selfReferentialFailure(): Unit = {
+    def assertNoStackOverflow[A](lazyList: LazyList[A]): Unit = {
+      // don't hang the test if we've made a programming error in this test
+      val finite = lazyList.take(1000)
+      AssertUtil.assertThrows[RuntimeException](finite.force, _ contains "self-referential")
+    }
+    assertNoStackOverflow { class L { val ll: LazyList[Nothing] = LazyList.empty #::: ll }; (new L).ll }
+    assertNoStackOverflow { class L { val ll: LazyList[Int] = 1 #:: ll.map(_ + 1).filter(_ % 2 == 0) }; (new L).ll }
+    class L {
+      lazy val a: LazyList[Nothing] = LazyList.empty #::: b
+      lazy val b: LazyList[Nothing] = LazyList.empty #::: a
+    }
+    assertNoStackOverflow((new L).a)
+    assertNoStackOverflow((new L).b)
+  }
 }

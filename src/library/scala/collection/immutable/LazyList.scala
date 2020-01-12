@@ -218,9 +218,16 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   @volatile private[this] var stateEvaluated: Boolean = false
   @inline private def stateDefined: Boolean = stateEvaluated
+  private[this] var midEvaluation = false
 
   private lazy val state: State[A] = {
-    val res = lazyState()
+    // if it's already mid-evaluation, we're stuck in an infinite
+    // self-referential loop (also it's empty)
+    if (midEvaluation) {
+      throw new RuntimeException("self-referential LazyList or a derivation thereof has no more elements")
+    }
+    midEvaluation = true
+    val res = try lazyState() finally midEvaluation = false
     // if we set it to `true` before evaluating, we may infinite loop
     // if something expects `state` to already be evaluated
     stateEvaluated = true
@@ -906,7 +913,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   /** @inheritdoc
     *
-    * $evaluatesAllElements
+    * $preservesLaziness
     */
   @deprecated("Check .knownSize instead of .hasDefiniteSize for more actionable information (see scaladoc for details)", "2.13.0")
   override def hasDefiniteSize: Boolean = {
