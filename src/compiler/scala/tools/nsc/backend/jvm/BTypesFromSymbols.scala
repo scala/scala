@@ -403,15 +403,17 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * for A contain both the class B and the module class B.
      * Here we get rid of the module class B, making sure that the class B is present.
      */
-    def nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter(s => {
-      if (s.isJavaDefined && s.isModuleClass) {
-        // We could also search in nestedClassSymbols for s.linkedClassOfClass, but sometimes that
-        // returns NoSymbol, so it doesn't work.
-        val nb = nestedClassSymbols.count(mc => mc.name == s.name && mc.owner == s.owner)
-        assert(nb == 2, s"Java member module without member class: $s - $nestedClassSymbols")
-        false
-      } else true
-    })
+    def nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter { s =>
+      val ok = !(s.isJavaDefined && s.isModuleClass) && !s.isPackage
+      if (!ok)
+        if (!s.isPackage) {
+          // We could also search in nestedClassSymbols for s.linkedClassOfClass, but sometimes that
+          // returns NoSymbol, so it doesn't work.
+          val nb = nestedClassSymbols.count(mc => mc.name == s.name && mc.owner == s.owner)
+          assert(nb == 2, s"Java member module without member class: $s - $nestedClassSymbols")
+        }
+      ok
+    }
 
     val shouldBeLazy = classSym.isJavaDefined || !currentRun.compiles(classSym)
 
