@@ -35,6 +35,7 @@ import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, Repl, IMain, Phase
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.nsc.interpreter.StdReplTags._
 import scala.tools.nsc.util.Exceptional.rootCause
+import scala.util.chaining._
 import scala.util.control.ControlThrowable
 import scala.jdk.CollectionConverters._
 
@@ -632,9 +633,9 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
 
   def withFile[A](filename: String)(action: File => A): Option[A] = intp.withLabel(filename) {
-    val res = Some(File(filename)) filter (_.exists) map action
-    if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename` does not exist.")  // courtesy side-effect
-    res
+    Some(File(filename)).filter(_.exists).map(action).tap(res =>
+      if (res.isEmpty) intp.reporter.warning(NoPosition, s"File `$filename` does not exist.")
+    )
   }
 
   def loadCommand(arg: String): Result = {
@@ -904,12 +905,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
               in.completion.withPartialInput(prefix) {
                 in.readLine(paste.ContinuePrompt) match {
                   case null =>
-                    // we know compilation is going to fail since we're at EOF and the
-                    // parser thinks the input is still incomplete, but since this is
-                    // a file being read non-interactively we want to fail.
-                    // TODO: is this true ^^^^^^^^^^^^^^^^?
-                    // So we send it straight to the compiler for the nice error message.
-                    intp.compileString(code)
+                    // partial input with no input forthcoming,
+                    // so ask again for parse error message.
+                    // This happens at EOF of a :load file.
+                    intp.interpretFinally(code)
                     None
                   case line =>
                     interpretStartingWith(prefix + line) // not in tailpos!

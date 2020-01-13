@@ -449,8 +449,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     prevRequestList collectFirst { case r if r.defines contains sym => r }
   }
 
-  private[interpreter] def requestFromLine(input: String, synthetic: Boolean = false): Either[Result, Request] =
-    parse(input) flatMap {
+  private[interpreter] def requestFromLine(input: String, synthetic: Boolean = false, fatally: Boolean = false): Either[Result, Request] =
+    parse(input, fatally) flatMap {
       case (Nil, _) => Left(Error)
       case (trees, firstXmlPos) =>
         executingRequest = new Request(input, trees, firstXmlPos, synthetic = synthetic)
@@ -472,9 +472,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     *  The return value is whether the line was interpreter successfully,
     *  e.g. that there were no parse errors.
     */
+  override def interpretFinally(line: String): Result = doInterpret(line, synthetic = false, fatally = true)
   override def interpret(line: String): Result = interpret(line, synthetic = false)
   def interpretSynthetic(line: String): Result = interpret(line, synthetic = true)
-  override def interpret(line: String, synthetic: Boolean): Result = {
+  override def interpret(line: String, synthetic: Boolean): Result = doInterpret(line, synthetic, fatally = false)
+  private def doInterpret(line: String, synthetic: Boolean, fatally: Boolean): Result = {
     def loadAndRunReq(req: Request) = classLoader.asContext {
       val res = req.loadAndRun // TODO: move classLoader.asContext into loadAndRun ?
 
@@ -489,13 +491,14 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       }
     }
 
-    compile(line, synthetic).fold(identity, loadAndRunReq)
+    compile(line, synthetic, fatally).fold(identity, loadAndRunReq)
   }
 
   // create a Request and compile it
-  def compile(line: String, synthetic: Boolean): Either[Result, Request] =
+  def compile(line: String, synthetic: Boolean): Either[Result, Request] = compile(line, synthetic, fatally = false)
+  def compile(line: String, synthetic: Boolean, fatally: Boolean): Either[Result, Request] =
     if (global == null) Left(Error)
-    else requestFromLine(line, synthetic).filterOrElse(_.compile, Error)
+    else requestFromLine(line, synthetic, fatally).filterOrElse(_.compile, Error)
 
   /** Bind a specified name to a specified value.  The name may
     *  later be used by expressions passed to interpret.
@@ -1121,9 +1124,11 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   } with ExprTyper { }
 
   /** Parse a line into and return parsing result (error, incomplete or success with list of trees) */
-  def parse(line: String): Either[Result, (List[Tree], Position)] = {
+  def parse(line: String): Either[Result, (List[Tree], Position)] = parse(line, fatally = false)
+  def parse(line: String, fatally: Boolean): Either[Result, (List[Tree], Position)] = {
     var isIncomplete = false
-    currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true) {
+    val handler = if (fatally) null else (_: Position, _: String) => isIncomplete = true
+    currentRun.parsing.withIncompleteHandler(handler) {
       reporter.reset()
       val unit = newCompilationUnit(line, label)
       val trees = newUnitParser(unit).parseStats()

@@ -1,0 +1,21 @@
+
+scala> :load t11838.script
+val args: Array[String] = Array()
+Loading t11838.script...
+
+// Detected repl transcript. Paste more, or ctrl-D to finish.
+
+// Replaying 1 commands from transcript.
+
+scala> val m = status match {
+  case 42 => "ok"
+  case 27 => {
+    println("oops")
+    "oops"
+  }
+
+         }
+          ^
+t11838.script:6: error: '}' expected but eof found.
+
+scala> :quit
