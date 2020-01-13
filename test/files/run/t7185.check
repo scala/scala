@@ -9,13 +9,13 @@ scala> object O { def apply() = 0 }
 object O
 
 scala> val ORef = reify { O }.tree
-val ORef: reflect.runtime.universe.Tree = $read.O
+val ORef: reflect.runtime.universe.Tree = O
 
 scala> val tree = Apply(Block(Nil, Block(Nil, ORef)), Nil)
 val tree: reflect.runtime.universe.Apply =
 {
   {
-    $read.O
+    O
   }
 }()
 
@@ -23,7 +23,7 @@ scala> {val tb = reflect.runtime.currentMirror.mkToolBox(); tb.typecheck(tree): 
 val res0: Any =
 {
   {
-    $read.O.apply()
+    O.apply()
   }
 }
 

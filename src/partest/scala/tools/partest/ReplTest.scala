@@ -50,6 +50,30 @@ abstract class ReplTest extends DirectTest {
 }
 
 
+/** Strip Any.toString's id@abcdef16 hashCodes. These are generally at end of result lines. */
+trait Hashless extends ReplTest {
+  import Hashless._
+  override def normalize(s: String) = {
+    stripIdentityHashCode(super.normalize(s))
+  }
+}
+object Hashless {
+  private val hashless = "@[a-fA-F0-9]+".r
+  private def stripIdentityHashCode(s: String): String = hashless.replaceAllIn(s, "@XXXXXXXX")
+}
+
+/** Strip dynamic parts of LambdaMetafactory synthetic class names. */
+trait Lambdaless extends ReplTest {
+  import Lambdaless._
+  override def normalize(s: String) = {
+    stripLambdaClassName(super.normalize(s))
+  }
+}
+object Lambdaless {
+  private val lambdaless = """\$Lambda\$\d+/\d+(@[a-fA-F0-9]+)?""".r
+  private def stripLambdaClassName(s: String): String = lambdaless.replaceAllIn(s, Regex.quoteReplacement("<function>"))
+}
+
 /** Run a REPL test from a session transcript.
  *  The `session` is read from the `.check` file.
  */

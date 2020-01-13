@@ -6,7 +6,7 @@ scala> println(h()(5))
 6
 
 scala> val f = h() _
-val f: Int => Int = <function1>
+val f: Int => Int = <function>
 
 scala> println(f(10))
 11
