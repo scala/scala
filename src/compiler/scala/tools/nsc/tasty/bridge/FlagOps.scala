@@ -2,8 +2,9 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags
 import TastyFlags._
+import scala.tools.nsc.tasty.TastyUniverse
 
-trait FlagOps extends TastyKernel {
+trait FlagOps extends TastyKernel { self: TastyUniverse =>
 
   object FlagSets {
     import symbolTable.Flag

@@ -237,11 +237,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Read reference to definition and return symbol created at that definition */
     def readSymRef()(implicit ctx: Context): Symbol = symbolAt(readAddr())
 
-    /** The symbol at given address; createa new one if none exists yet */
+    /** The symbol at given address; create a new one if none exists yet */
     def symbolAt(addr: Addr)(implicit ctx: Context): Symbol = symAtAddr.get(addr) match {
       case Some(sym) =>
         sym
       case None =>
+        ctx.log(s"No symbol at $addr")
         val sym = forkAt(addr).createSymbol()(ctx.withOwner(ownerTree.findOwner(addr)))
         ctx.log(s"forward reference to $sym")
         sym
@@ -250,7 +251,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** The symbol defined by current definition */
     def symbolAtCurrent()(implicit ctx: Context): Symbol = symAtAddr.get(currentAddr) match {
       case Some(sym) =>
-        assert(ctx.owner === sym.owner, s"owner discrepancy for $sym, expected: ${ctx.owner}, found: ${sym.owner}")
+        assert(ctx.owner === sym.owner, s"owner discrepancy for $sym, expected: ${showSym(ctx.owner)}, found: ${showSym(sym.owner)}")
         sym
       case None =>
         createSymbol()
@@ -632,7 +633,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }
-      sym.setAnnotations(annotFns.flatMap(_(sym)))
+      sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
         case cls: ClassSymbol if canEnterInClass =>
           val decls = cls.rawInfo.decls
@@ -645,29 +646,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         sym.completer.withDecls(mkScope)
         val localCtx = localContext(sym)
         forkAt(templateStart).indexTemplateParams()(localCtx)
-        // TODO tasty: this is an experiment to try and unpickle the first parent to look for sealed subtypes
-        // val fork = forkAt(templateStart)
-        // ctx.log(s"parents: fork begins at ${fork.reader.currentAddr}")
-        // assert(fork.reader.readByte() === TEMPLATE)
-        // ctx.log(s"parents: fork after template at ${fork.reader.currentAddr}")
-        // fork.reader.readEnd()
-        // fork.skipTemplateParams()
-        // ctx.log(s"parents: fork is at ${fork.reader.currentAddr}")
-        // if (fork.reader.nextByte != SELFDEF && fork.reader.nextByte != DEFDEF) {
-        //   val tpt = fork.nextUnsharedTag match {
-        //     case APPLY | TYPEAPPLY | BLOCK => fork.readTerm()(localCtx)
-        //     case _ => fork.readTpt()(localCtx)
-        //   }
-        //   val parentType = {
-        //     val tpe = tpt.tpe.dealias
-        //     if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
-        //     else tpe
-        //   }
-        //   val parent = parentType.typeSymbolDirect
-        //   if (parent.isSealed) {
-        //     parent.addChild(sym)
-        //   }
-        // }
       }
 //      else if (sym.isInlineMethod)
 //        sym.addAnnotation(LazyBodyAnnotation { ctx0 =>
@@ -756,30 +734,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
-      (flags, tastyFlagSet, Nil/*annotFns.reverse*/, privateWithin)
+      (flags, tastyFlagSet, annotFns.reverse, privateWithin)
     }
 
     private val readTypedWithin: Context => Symbol =
       implicit ctx => readType().typeSymbolDirect
 
-    private val readTypedAnnot: Context => Symbol => Option[Annotation] = { implicit ctx =>
+    private val readTypedAnnot: Context => Symbol => Annotation = { implicit ctx =>
       readByte()
       val end = readEnd()
       val tp = readType()
       val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-      owner => {
-        tp.typeSymbolDirect
-        val annotTree = lazyAnnotTree(owner).complete
-        val annotSym  = annotTree.tpe.typeSymbolDirect
-        if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined) {
-          ctx.log(s"annotation of $annotSym = $annotTree")
-          Some(Annotation(annotTree))
-        }
-        else {
-          ctx.log(s"Ignoring non-static annotation $annotTree")
-          None
-        }
-      }  //Annotation.deferredSymAndTree(tp.typeSymbol)(lazyAnnotTree(owner).complete)
+      owner => Annotation.deferredSymAndTree(owner)(tp.typeSymbolDirect)(lazyAnnotTree(owner).complete)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -1004,11 +970,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
         else tpe
       }
-      val firstParent = parentTypes.head.typeSymbolDirect
-      if (firstParent.isSealed) {
-        firstParent.addChild(cls)
-      }
-      if (firstParent === defn.AnyValClass) {
+      if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
         // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
         Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
           // duplicated from scala.tools.nsc.transform.ExtensionMethods

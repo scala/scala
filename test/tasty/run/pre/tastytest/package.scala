@@ -10,13 +10,16 @@ package object tastytest {
 
   object Macros {
 
-    // def hasStrictFPImpl[T](c: Context)(x: c.Expr[T])(implicit T: c.WeakTypeTag[T]) : c.Expr[Boolean] = {
-    //   import c.universe._
-    //   if (symbolOf[T].annotations.exists(_.tree.tpe === typeOf[scala.annotation.strictfp]))
-    //     c.Expr[Boolean](q"true")
-    //   else
-    //     c.error(x.tree.pos, s"t")
-    // }
+    def hasStaticAnnotImpl[T, A](c: Context)(implicit T: c.WeakTypeTag[T], A: c.WeakTypeTag[A]) : c.Expr[Boolean] = {
+      import c.universe._
+      if (weakTypeOf[T].members.filter(_.isMethod).exists(_.annotations.exists(_.tree.tpe =:= weakTypeOf[A]))) {
+        c.Expr[Boolean](q"true")
+      }
+      else {
+        c.error(NoPosition, s"${weakTypeOf[T]} does not have a member with annotation ${weakTypeOf[A]}")
+        c.Expr[Boolean](q"false")
+      }
+    }
 
   }
 

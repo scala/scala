@@ -1,0 +1,7 @@
+/Users/jamie/workspace/scala/test/tasty/neg/src-2/SColourOps_fail.scala:6: warning: match may not be exhaustive.
+It would fail on the following inputs: Blue, CMYK(_, _, _, _), Green, RGB(_, _, _)
+    def red: Int = c match { // error: non-exhaustive
+                   ^
+error: No warnings can be incurred under -Werror.
+one warning found
+one error found

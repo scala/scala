@@ -64,6 +64,9 @@ trait PatternMatching extends Transform
     override def transform(tree: Tree): Tree = tree match {
       case Match(sel, cases) =>
         val origTp = tree.tpe
+
+        tastyAddChildren(sel)
+
         // setType origTp intended for CPS -- TODO: is it necessary?
         val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
@@ -94,6 +97,18 @@ trait PatternMatching extends Transform
     // as this is the only time TypingTransformer changes it
     def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
       new OptimizingMatchTranslator(localTyper, selectorPos)
+    }
+
+    // TODO tasty: should we do Child logic here?
+    def tastyAddChildren(sel: Tree) {
+      val selSym = sel.tpe.typeSymbolDirect
+      if (!selSym.isSealed) return
+      val ChildAnnotation = mirrorThatLoaded(selSym).getClassIfDefined("scala.annotation.internal.Child")
+      if (ChildAnnotation ne NoSymbol) {
+        for (childAnnot <- selSym.annotations.filter(_.symbol == ChildAnnotation)) {
+          selSym.addChild(childAnnot.tpe.typeArgs.head.typeSymbolDirect)
+        }
+      }
     }
   }
 

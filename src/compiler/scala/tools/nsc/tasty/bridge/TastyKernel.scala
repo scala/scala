@@ -1,13 +1,15 @@
 package scala.tools.nsc.tasty.bridge
 
+import scala.tools.nsc.tasty.SafeEq
 import scala.reflect.internal
 import internal.SymbolTable, internal.settings.MutableSettings
 
 import scala.tools.nsc.tasty.TastyFlags.{ EmptyTastyFlags, TastyFlagSet }
 import scala.tools.nsc.tasty.Names.TastyName
 import TastyName._
+import scala.tools.nsc.tasty.TastyUniverse
 
-trait TastyKernel {
+trait TastyKernel { self: TastyUniverse =>
 
   val symbolTable: SymbolTable
 
@@ -93,6 +95,8 @@ trait TastyKernel {
     final val ScalaStrictFPAttr: ClassSymbol = symbolTable.definitions.ScalaStrictFPAttr
     final val TailrecClass: ClassSymbol = symbolTable.definitions.TailrecClass
     final val StaticAnnotationClass: ClassSymbol = symbolTable.definitions.StaticAnnotationClass
+    def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] =
+      ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
     def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
     // final val BooleanTpe: Type = symbolTable.definitions.BooleanTpe
     // def optionType(value: Type) = symbolTable.definitions.optionType(value)
@@ -174,7 +178,24 @@ trait TastyKernel {
   def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
   type Annotation = symbolTable.Annotation
-  def Annotation(tree: Tree): Annotation = symbolTable.Annotation(tree)
+  object Annotation {
+    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Tree)(implicit ctx: Contexts.Context): Annotation =
+      new symbolTable.LazyAnnotationInfo({
+        val annotSym = symf
+        val isChild = defn.childAnnotationClass.exists(annotSym === _)
+        if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined || isChild) {
+          val annotTree = tree
+          ctx.log(s"annotation of $annotee = $annotTree")
+          if (isChild) symbolTable.AnnotationInfo(annotTree.tpe, Nil, Nil)
+          else symbolTable.treeToAnnotation(annotTree)
+        }
+        else {
+          ctx.log(s"Ignoring non-static annotation $annotSym")
+          symbolTable.UnmappableAnnotation
+        }
+      })
+  }
+  // def Annotation(tree: Tree): Annotation = symbolTable.Annotation.apply(tree)
 
   type Phase = reflect.internal.Phase
   def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase
