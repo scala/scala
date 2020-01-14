@@ -14,6 +14,8 @@ package scala
 package collection
 package immutable
 
+import java.{util => ju}
+
 import generic._
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.immutable.ParHashMap
@@ -248,6 +250,18 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
       that.updated0(key, hash, level, value, kv, merger.invert)
     }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashMap1[_,_] =>
+          (this eq hm) ||
+            (hm.hash == hash && hm.key == key && hm.value == value)
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
+    }
   }
 
   private[collection] class HashMapCollision1[A, +B](private[collection] val hash: Int, val kvs: ListMap[A, B @uV])
@@ -319,6 +333,19 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger.invert)
       m
     }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashMapCollision1[_,_] =>
+          (this eq hm) ||
+            (hm.hash == hash && hm.kvs == kvs)
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
+    }
+
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
@@ -578,6 +605,22 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashTrieMap[_, _] =>
+          (this eq hm) || {
+            this.bitmap == hm.bitmap &&
+              this.size0 == hm.size0 &&
+              ju.Arrays.equals(this.elems.asInstanceOf[Array[AnyRef]], hm.elems.asInstanceOf[Array[AnyRef]])
+          }
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
+    }
+
   }
 
   /**
