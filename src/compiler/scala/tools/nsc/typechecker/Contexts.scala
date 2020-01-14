@@ -88,7 +88,7 @@ trait Contexts { self: Analyzer =>
   // register an import for the narrow purpose of excluding root imports of predef modules
   def registerImport(ctx: Context, imp: Import): Unit = {
     val sym = imp.expr.symbol
-    if (!sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
+    if (sym != null && !sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
       var current = excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
       current = sym :: current
       excludedRootImportsCached += ctx.unit -> current
@@ -1772,14 +1772,15 @@ trait Contexts { self: Analyzer =>
       var renamed = false
       var selectors = tree.selectors
       @inline def current = selectors.head
+      @inline def maybeNonLocalMember(nom: Name): Symbol =
+        if (qual.tpe.isError) NoSymbol else qual.tpe.nonLocalMember(nom)
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name))
-          result = qual.tpe.nonLocalMember( // #2733: consider only non-local members for imports
-            if (name.isTypeName) current.name.toTypeName else current.name)
+          result = maybeNonLocalMember(if (name.isTypeName) current.name.toTypeName else current.name)
         else if (!current.isWildcard && current.hasName(name))
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)
-          result = qual.tpe.nonLocalMember(name)
+          result = maybeNonLocalMember(name)
 
         if (result == NoSymbol)
           selectors = selectors.tail
