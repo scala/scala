@@ -320,8 +320,10 @@ abstract class UnCurry extends InfoTransform
           }
           else {
             def mkArray = mkArrayValue(args drop (params.length - 1), varargsElemType)
+            // if args.length < params.length the repeated argument is empty
+            def emptyVarargs = compareLengths(args, params) < 0
             if (javaStyleVarArgs) mkArray
-            else if (args.isEmpty) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
+            else if (emptyVarargs) gen.mkNil  // avoid needlessly double-wrapping an empty argument list
             else arrayToSequence(mkArray, varargsElemType, copy = false) // fresh array, no need to copy
           }
 
