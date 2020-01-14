@@ -22,6 +22,14 @@ case-collision.scala:16: warning: Generated class foo.wackO differs only in case
   Such classes will overwrite one another on case-insensitive filesystems.
 object wackO
        ^
+case-collision.scala:20: warning: Generated class foo.bar.Package differs only in case from foo.bar.package.
+  Such classes will overwrite one another on case-insensitive filesystems.
+  class Package
+        ^
+case-collision.scala:29: warning: Generated class foo.O$a_$bang$ differs only in case from foo.O$a_$bang$.
+  Such classes will overwrite one another on case-insensitive filesystems.
+    object bang {
+           ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+8 warnings
 1 error
