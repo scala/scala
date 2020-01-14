@@ -15,6 +15,7 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
   test(assert((HelloWorld.lzy: "lazy") === "lazy"))
+  test(assert(HelloWorld.acceptsOnlyMsg3(HelloWorld.msg3) === "Hello, World!Hello, World!"))
   // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
 
 }

@@ -37,6 +37,7 @@ trait TastyKernel { self: TastyUniverse =>
   type PolyType = symbolTable.PolyType
   type ThisType = symbolTable.ThisType
   type TypeRef = symbolTable.TypeRef
+  type SingleType = symbolTable.SingleType
 
   type ConstantType = symbolTable.ConstantType
   def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]

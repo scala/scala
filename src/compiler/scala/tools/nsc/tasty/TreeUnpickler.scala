@@ -56,6 +56,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
    */
   private val typeAtAddr = new mutable.HashMap[Addr, Type]
 
+  private val singleTypeAtSym = new mutable.HashMap[Symbol, Type]
+
   /** The root symbol denotation which are defined by the Tasty file associated with this
    *  TreeUnpickler. Set by `enterTopLevel`.
    */
@@ -453,12 +455,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def readSymNameRef()(implicit ctx: Context): Type = {
       val sym = readSymRef()
       val prefix = readType()
+      ctx.log(s"readSymNameRef, sym=${showSym(sym)}, prefix=$prefix")
       prefix match {
         case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
           mkTypeRef(noPrefix, sym, Nil) //res.withDenot(sym.denot)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
-        case _ => mkTypeRef(prefix, sym, Nil)
+        case _ =>
+          if (sym.isTerm
+            // With this second constraint, we avoid making singleton types for static forwarders to modules
+            // (or you get a stack overflow trying to get sealedDescendents in patmat)
+            // [what do we do about Scala 3 enum constants?]
+            && !sym.is(Method | JavaStatic)) {
+            singleTypeAtSym.getOrElseUpdate(sym, mkSingleType(prefix, sym))
+          }
+          else {
+            mkTypeRef(prefix, sym, Nil)
+          }
       }
     }
 
@@ -1271,7 +1284,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         goto(start)
         readType() match {
           case path: TypeRef => TypeTree(path)
-//          case path: TermRef => ref(path)
+          case path: SingleType => TypeTree(path)
           case path: ThisType => new This(nme.EMPTY.toTypeName).setType(path)
           case path: ConstantType => Literal(path.value).setType(path)
         }
