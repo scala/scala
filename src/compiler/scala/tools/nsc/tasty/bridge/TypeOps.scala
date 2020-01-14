@@ -20,20 +20,27 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       case SimpleName(s"$sel[]") => (true, SimpleName(sel))
       case sel                   => (false, sel)
     }
-    def erasedType(isArray: Boolean, erasedName: TastyName) = {
-      val typeName = mkTermName(erasedName.source).toTypeName
-      val sym  = ctx.loadingMirror.findMemberFromRoot(typeName) // TODO tasty: looks like this is too eager, should break name into a path and select each member from a symbol in a way that completes members up to indexing
-      assert(sym !== noSymbol, s"could not find class for $typeName")
+    def erasedType(isArray: Boolean, isModule: Boolean, erasedName: TastyName) = {
+      val termName = mkTermName(erasedName.source)
+      val sym = {
+        if (isModule) {
+          ctx.loadingMirror.getModuleIfDefined(termName)
+        }
+        else {
+          ctx.loadingMirror.getClassIfDefined(termName.toTypeName)
+        }
+      }
+      assert(sym !== noSymbol, s"could not find ${if (isModule) "object" else "class"} for $termName")
       val tpe0 = sym.tpe.erasure
       if (isArray) defn.arrayType(tpe0) else tpe0
     }
     (name.stripModulePart: @unchecked) match {
       case terminal: SimpleName =>
         val (isArray, sel) = specialised(terminal)
-        erasedType(isArray, sel)
+        erasedType(isArray, name.isModuleName, sel)
       case QualifiedName(path, TastyName.PathSep, terminal) =>
         val (isArray, sel) = specialised(terminal)
-        erasedType(isArray, QualifiedName(path, TastyName.PathSep, sel))
+        erasedType(isArray, name.isModuleName, QualifiedName(path, TastyName.PathSep, sel))
     }
   }
 
