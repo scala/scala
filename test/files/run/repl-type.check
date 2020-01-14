@@ -1,0 +1,38 @@
+
+scala> :type 42
+Int
+
+scala> val x: 23 = 23
+val x: 23 = 23
+
+scala> :type x
+23
+
+scala> :type (23: 23)
+Int
+
+scala> val y = x
+val y: Int = 23
+
+scala> :type y
+Int
+
+scala> final val z = x
+val z: 23 = 23
+
+scala> :type z
+23
+
+scala> def xx: 23 = 23
+def xx: 23
+
+scala> :type xx
+=> 23
+
+scala> final val yy = xx
+val yy: 23 = 23
+
+scala> :type yy
+23
+
+scala> :quit
