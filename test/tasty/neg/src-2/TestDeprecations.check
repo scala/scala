@@ -1,0 +1,9 @@
+/Users/jamie/workspace/scala/test/tasty/neg/src-2/TestDeprecations_fail.scala:5: warning: method unused in class Old is deprecated
+  def test1 = new Deprecations.Old().unused() // error: unused is deprecated
+                                     ^
+/Users/jamie/workspace/scala/test/tasty/neg/src-2/TestDeprecations_fail.scala:6: warning: method completelyUseless in class Old is deprecated: this is useless
+  def test2 = new Deprecations.Old().completelyUseless() // error: completelyUseless is deprecated: this is useless
+                                     ^
+error: No warnings can be incurred under -Werror.
+two warnings found
+one error found

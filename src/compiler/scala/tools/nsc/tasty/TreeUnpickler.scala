@@ -1409,13 +1409,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //              val bindings = readStats(ctx.owner, end).asInstanceOf[List[ValOrDefDef]]
 //              val expansion = exprReader.readTerm() // need bindings in scope, so needs to be read before
 //              Inlined(call, bindings, expansion)
-//            case IF =>
-//              if (nextByte === INLINE) {
-//                readByte()
-//                InlineIf(readTerm(), readTerm(), readTerm())
-//              }
-//              else
-//                If(readTerm(), readTerm(), readTerm())
+            case IF =>
+              if (nextByte === INLINE) {
+                readByte()
+                readTerm(); readTerm(); readTerm() // InlineIf(readTerm(), readTerm(), readTerm())
+                errorTasty("inline if")
+                emptyTree
+              }
+              else {
+                val cond = readTerm()
+                val thenp = readTerm()
+                val elsep = readTerm()
+                If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
+              }
 //            case LAMBDA =>
 //              val meth = readTerm()
 //              val tpt = ifBefore(end)(readTpt(), EmptyTree)

@@ -174,6 +174,9 @@ trait TastyKernel { self: TastyUniverse =>
   type New = symbolTable.New
   def New(tpt: Tree): New = symbolTable.New(tpt)
 
+  type If = symbolTable.If
+  def If(cond: Tree, thenp: Tree, elsep: Tree): If = symbolTable.If(cond, thenp, elsep)
+
   type Select = symbolTable.Select
   def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
@@ -212,4 +215,6 @@ trait TastyKernel { self: TastyUniverse =>
   def mkNewFreeTypeSymbol(name: TypeName, flags: FlagSet, origin: String): FreeTypeSymbol = symbolTable.newFreeTypeSymbol(name, flags, origin)
 
   def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
+
+  def lub(tpe1: Type, tpe2: Type): Type = symbolTable.lub(tpe1 :: tpe2 :: Nil)
 }
