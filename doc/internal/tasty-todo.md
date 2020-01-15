@@ -1,7 +1,6 @@
 # Todo Tasty
 
-- [ ] Any tree possible could be in the parents of a class (e.g. blocks for default params out of order)
-- [ ] arbitrary Annotations
+- [ ] Any tree possible could be in an annotation (need to readapt readIndexedMember to returning trees)
 - [ ] Refinement types
 - [ ] scala 3 enum constants are not in the companion, but are a static field.
 - [ ] java.lang.Enum empty ctor parent

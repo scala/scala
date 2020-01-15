@@ -204,6 +204,21 @@ trait TastyKernel { self: TastyUniverse =>
   type CompoundTypeTree = symbolTable.CompoundTypeTree
   def CompoundTypeTree(tps: List[Tree]): CompoundTypeTree = symbolTable.CompoundTypeTree(symbolTable.Template(tps, symbolTable.noSelfType, Nil))
 
+  type NamedArg = symbolTable.NamedArg
+  def NamedArg(name: Name, value: Tree): NamedArg = symbolTable.NamedArg(Ident(name), value)
+
+  // type Block = symbolTable.Block
+  // def Block(stats: List[Tree], value: Tree): Block = symbolTable.Block((stats :+ value):_*)
+
+  // type CaseDef = symbolTable.CaseDef
+  // def CaseDef(pat: Tree, guard: Tree, body: Tree): CaseDef = symbolTable.CaseDef(pat, guard, body)
+
+  // type Bind = symbolTable.Bind
+  // def Bind(sym: Symbol, body: Tree): Bind = symbolTable.Bind(sym.name, body)
+
+  // type Match = symbolTable.Match
+  // def Match(selector: Tree, cases: List[CaseDef]): Match = symbolTable.Match(selector: Tree, cases: List[CaseDef])
+
   def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
 
   def emptyTree: Tree = symbolTable.EmptyTree
@@ -217,4 +232,5 @@ trait TastyKernel { self: TastyUniverse =>
   def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
 
   def lub(tpe1: Type, tpe2: Type): Type = symbolTable.lub(tpe1 :: tpe2 :: Nil)
+  // def lub(tpes: List[Type]): Type = symbolTable.lub(tpes)
 }

@@ -1338,8 +1338,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm =>
           forkAt(readAddr()).readTerm()
-//        case IDENT =>
-//          untpd.Ident(readName()).withType(readType())
+        // case IDENT =>
+        //   Ident(readEncodedName()).setType(readType())
         case IDENTtpt =>
           Ident(readEncodedName().toTypeName).setType(readType())
         case SELECT =>
@@ -1364,8 +1364,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case BYNAMEtpt =>
           val tpt = readTpt()
           mkFunctionTypeTree(Nil, tpt).setType(defn.byNameType(tpt.tpe))
-//        case NAMEDARG =>
-//          NamedArg(readName(), readTerm())
+        case NAMEDARG =>
+          val name  = readEncodedName()
+          val value = readTerm()
+          NamedArg(name, value).setType(value.tpe)
         case _ =>
           readPathTerm()
       }
@@ -1392,12 +1394,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               Typed(expr, tpt).setType(tpt.tpe)
 //            case ASSIGN =>
 //              Assign(readTerm(), readTerm())
-//            case BLOCK =>
-//              val exprReader = fork
-//              skipTree()
-//              val stats = readStats(ctx.owner, end)
-//              val expr = exprReader.readTerm()
-//              Block(stats, expr)
+            // case BLOCK =>
+            //   val exprReader = fork
+            //   skipTree()
+            //   val stats = readStats(ctx.owner, end)
+            //   val expr = exprReader.readTerm()
+            //   Block(stats, expr).setType(expr.tpe)
 //            case INLINED =>
 //              val exprReader = fork
 //              skipTree()
@@ -1426,16 +1428,24 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //              val meth = readTerm()
 //              val tpt = ifBefore(end)(readTpt(), EmptyTree)
 //              Closure(Nil, meth, tpt)
-//            case MATCH =>
-//              if (nextByte === IMPLICIT) {
-//                readByte()
-//                InlineMatch(EmptyTree, readCases(end))
-//              }
-//              else if (nextByte === INLINE) {
-//                readByte()
-//                InlineMatch(readTerm(), readCases(end))
-//              }
-//              else Match(readTerm(), readCases(end))
+            // case MATCH =>
+            //   if (nextByte === IMPLICIT) {
+            //     readByte()
+            //     readCases(end) //InlineMatch(EmptyTree, readCases(end))
+            //     errorTasty("implicit match")
+            //     emptyTree
+            //   }
+            //   else if (nextByte === INLINE) {
+            //     readByte()
+            //     readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
+            //     errorTasty("inline match")
+            //     emptyTree
+            //   }
+            //   else {
+            //     val sel = readTerm()
+            //     val cases = readCases(end)
+            //     Match(sel, cases).setType(lub(cases.map(_.tpe)))
+            //   }
 //            case RETURN =>
 //              val from = readSymRef()
 //              val expr = ifBefore(end)(readTerm(), EmptyTree)
@@ -1450,11 +1460,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case REPEATED =>
               val elemtpt = readTpt()
               SeqLiteral(until(end)(readTerm()), elemtpt).setType(elemtpt.tpe)
-//            case BIND =>
-//              val sym = symAtAddr.getOrElse(start, forkAt(start).createSymbol())
-//              readName()
-//              readType()
-//              Bind(sym, readTerm())
+            // case BIND =>
+            //   val sym = symAtAddr.getOrElse(start, forkAt(start).createSymbol())
+            //   readTastyName()
+            //   readType()
+            //   val body = readTerm()
+            //   Bind(sym, body).setType(body.tpe)
 //            case ALTERNATIVE =>
 //              Alternative(until(end)(readTerm()))
 //            case UNAPPLY =>
@@ -1548,26 +1559,26 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       tpt
     }
 
-//    def readCases(end: Addr)(implicit ctx: Context): List[CaseDef] =
-//      collectWhile((nextUnsharedTag === CASEDEF) && currentAddr != end) {
-//        if (nextByte === SHAREDterm) {
-//          readByte()
-//          forkAt(readAddr()).readCase()(ctx.fresh.setNewScope)
-//        }
-//        else readCase()(ctx.fresh.setNewScope)
-//      }
+    // def readCases(end: Addr)(implicit ctx: Context): List[CaseDef] =
+    //   collectWhile((nextUnsharedTag === CASEDEF) && currentAddr != end) {
+    //     if (nextByte === SHAREDterm) {
+    //       readByte()
+    //       forkAt(readAddr()).readCase()(ctx.fresh.setNewScope)
+    //     }
+    //     else readCase()(ctx.fresh.setNewScope)
+    //   }
 
-//    def readCase()(implicit ctx: Context): CaseDef = {
-//      val sctx = sourceChangeContext()
-//      if (sctx `ne` ctx) return readCase()(sctx)
-//      val start = currentAddr
-//      assert(readByte() === CASEDEF)
-//      val end = readEnd()
-//      val pat = readTerm()
-//      val rhs = readTerm()
-//      val guard = ifBefore(end)(readTerm(), EmptyTree)
-//      setSpan(start, CaseDef(pat, guard, rhs))
-//    }
+    // def readCase()(implicit ctx: Context): CaseDef = {
+    //   val sctx = sourceChangeContext()
+    //   if (sctx `ne` ctx) return readCase()(sctx)
+    //   val start = currentAddr
+    //   assert(readByte() === CASEDEF)
+    //   val end = readEnd()
+    //   val pat = readTerm()
+    //   val rhs = readTerm()
+    //   val guard = ifBefore(end)(readTerm(), emptyTree)
+    //   CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
+    // }
 
 //    def readLater[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Trees.Lazy[T] =
 //      readLaterWithOwner(end, op)(ctx)(ctx.owner)
