@@ -1,0 +1,13 @@
+t11843.scala:3: error: Bad reference to internal symbol: method $asInstanceOf
+  def f = "".$asInstanceOf[Symbol]
+             ^
+t11843.scala:4: error: Bad reference to internal symbol: method $asInstanceOf
+  def g = "".$asInstanceOf[Int]
+             ^
+t11843.scala:5: error: Bad reference to internal symbol: method $asInstanceOf
+  def k = 42.$asInstanceOf[String]
+             ^
+t11843.scala:6: error: Bad reference to internal symbol: method $isInstanceOf
+  def p = 42.$isInstanceOf[String]
+             ^
+4 errors

@@ -1273,6 +1273,9 @@ abstract class RefChecks extends Transform {
         // The getOrElse part should never happen, it's just here as a backstop.
         reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
       }
+      // More blacklisted nasties.
+      if (sym == Object_asInstanceOf || sym == Object_isInstanceOf)
+        reporter.error(pos, s"Bad reference to internal symbol: $sym")
     }
 
     private def checkDelayedInitSelect(qual: Tree, sym: Symbol, pos: Position) = {
