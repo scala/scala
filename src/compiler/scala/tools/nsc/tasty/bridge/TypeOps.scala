@@ -16,9 +16,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
   def erasedNameToErasedType(name: TastyName)(implicit ctx: Context): Type = {
-    def specialised(terminal: SimpleName) = terminal match {
-      case SimpleName(s"$sel[]") => (true, SimpleName(sel))
-      case sel                   => (false, sel)
+    def specialised(terminal: SimpleName) = terminal.raw match {
+      case s"$raw[]" => (true, SimpleName(raw))
+      case _         => (false, terminal)
     }
     def erasedType(isArray: Boolean, isModule: Boolean, erasedName: TastyName) = {
       val termName = mkTermName(erasedName.source)
@@ -35,7 +35,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       if (isArray) defn.arrayType(tpe0) else tpe0
     }
     (name.stripModulePart: @unchecked) match {
-      case terminal: SimpleName =>
+      case terminal: SimpleName => // unqualified in the <empty> package
         val (isArray, sel) = specialised(terminal)
         erasedType(isArray, name.isModuleName, sel)
       case QualifiedName(path, TastyName.PathSep, terminal) =>
@@ -83,10 +83,26 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
-  def mkTypeRef(tpe: Type, name: Name, isModule: Boolean = false): Type = {
-    val symName = if (tpe.members.containsName(name)) name else name.encode
-    val member  = tpe.member(symName)
-    mkTypeRef(tpe, if (isModule) member.linkedClassOfClass else member, Nil) // TODO tasty: refactor
+  object NamedType {
+    import SymbolOps._
+    def apply(prefix: Type, designator: Symbol): Type =
+      if (designator.isType
+          // With this second constraint, we avoid making singleton types for
+          // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
+          // [what do we do about Scala 3 enum constants?]
+          || designator.is(Method | JavaStatic)) {
+        mkTypeRef(prefix, designator, Nil)
+      } else {
+        mkSingleType(prefix, designator)
+      }
+  }
+
+  def mkTypeRef(tpe: Type, name: TastyName, isTerm: Boolean): Type = {
+    import NameOps._
+    val encoded = name.toEncodedTermName
+    val member = tpe.member(if (isTerm) encoded else encoded.toTypeName)
+    val sym = if (name.isModuleName) member.linkedClassOfClass else member
+    NamedType(tpe, sym)
   }
 
   abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {

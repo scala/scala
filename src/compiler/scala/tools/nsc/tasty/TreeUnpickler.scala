@@ -56,8 +56,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
    */
   private val typeAtAddr = new mutable.HashMap[Addr, Type]
 
-  private val singleTypeAtSym = new mutable.HashMap[Symbol, Type]
-
   /** The root symbol denotation which are defined by the Tasty file associated with this
    *  TreeUnpickler. Set by `enterTopLevel`.
    */
@@ -102,7 +100,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   private def completeClassTpe1(implicit ctx: Context): ClassSymbol = {
     val cls = ctx.owner.asClass
     val assumedSelfType =
-      if (cls.is(Module) && cls.owner.isClass) mkTypeRef(cls.owner.thisType, cls.name)
+      if (cls.is(Module) && cls.owner.isClass) mkSingleType(cls.owner.thisType, cls.sourceModule)
       else noType
     cls.info = mkClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
     cls
@@ -410,20 +408,23 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               }
             }
             else {
-              mkTypeRef(pre, name.toEncodedTermName.toTypeName, name.isModuleName)
+              mkTypeRef(pre, name, isTerm = false)
             }
           case TERMREF =>
-            val sname = readEncodedName()
+            val sname = readTastyName()
             val prefix = readType()
-            mkTypeRef(prefix, sname)
-  //          sname match {
-  //            case SignedName(name, sig) =>
-  //              TermRef(prefix, name, prefix.member(name).atSignature(sig))
-  //            case name =>
-  //              TermRef(prefix, name)
-  //          }
+            sname match {
+              case TastyName.SignedName(name, sig) =>
+                ??? // TermRef(prefix, name, prefix.member(name).atSignature(sig))
+              case name =>
+                mkTypeRef(prefix, name, isTerm = true)
+            }
           case THIS =>
-            mkThisType(readType().asInstanceOf[TypeRef].sym)
+            val sym = readType() match {
+              case tpe: TypeRef => tpe.sym
+              case tpe: SingleType => tpe.sym
+            }
+            mkThisType(sym)
           case RECtype =>
             typeAtAddr.get(start) match {
               case Some(tp) =>
@@ -453,25 +454,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     private def readSymNameRef()(implicit ctx: Context): Type = {
-      val sym = readSymRef()
+      val sym    = readSymRef()
       val prefix = readType()
-      ctx.log(s"readSymNameRef, sym=${showSym(sym)}, prefix=$prefix")
+      val res    = NamedType(prefix, sym)
       prefix match {
         case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
-          mkTypeRef(noPrefix, sym, Nil) //res.withDenot(sym.denot)
+          mkTypeRef(noPrefix, sym, Nil)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
-        case _ =>
-          if (sym.isTerm
-            // With this second constraint, we avoid making singleton types for static forwarders to modules
-            // (or you get a stack overflow trying to get sealedDescendents in patmat)
-            // [what do we do about Scala 3 enum constants?]
-            && !sym.is(Method | JavaStatic)) {
-            singleTypeAtSym.getOrElseUpdate(sym, mkSingleType(prefix, sym))
-          }
-          else {
-            mkTypeRef(prefix, sym, Nil)
-          }
+        case _ => res
       }
     }
 
@@ -1290,7 +1281,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
 
-      def completeSelect(name: Name, sig: Signature[Type]): Select = {
+      def completeSelect(name: TastyName, sig: Signature[Type], isTerm: Boolean): Select = {
+        val encoded = name.toEncodedTermName
+        val selector = if (isTerm) encoded else encoded.toTypeName
         val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
         val qual = readTerm()(localCtx)
         val qualType = qual.tpe.widen
@@ -1298,8 +1291,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //        val owner = denot.symbol.maybeOwner
 //        if (owner.isPackageObject && qualType.termSymbol.is(Package))
 //          qualType = qualType.select(owner.sourceModule)
-        val tpe = selectFromSig(qualType, name, sig)(mkTypeRef(qualType,_))
-        Select(qual, name).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
+        val tpe =
+          if (sig `eq` NotAMethod) mkTypeRef(qualType, name, isTerm)
+          else selectFromSig(qualType, selector, sig)
+        Select(qual, selector).setType(tpe) // ConstFold(Select(qual, name).setType(tpe))
       }
 
       def readQualId(): (Ident, TypeRef) = {
@@ -1307,33 +1302,30 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def selectFromSig(qualType: Type, name: Name, sig: Signature[Type])(ifNotOverload: Name => Type): Type = {
-        if (sig ne NotAMethod) {
-          ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show} at $start")
-          val MethodSignature(args, ret) = sig
-          var seenTypeParams = false
-          val (tyParamCount, argsSyms) = {
-            val (tyParamCounts, params) = args.partitionMap(identity)
-            assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
-            (tyParamCounts.headOption.getOrElse(0), params)
-          }
-          val member = qualType.member(name)
-          val alts = member.asTerm.alternatives
-          val tpeOpt = alts.find { sym =>
-            val method = sym.asMethod
-            val params = method.paramss.flatten
-            method.returnType.erasure =:= ret &&
-              params.length === argsSyms.length &&
-              ((name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length)
-                || tyParamCount === method.typeParams.length) &&
-              params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
-          }.map(_.tpe).ensuring(_.isDefined, s"No matching overload of $name with signature ${sig.show}")
-          var Some(tpe) = tpeOpt
-          if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(member.owner.typeParams, tpe)
-          ctx.log(s"selected $tpe")
-          tpe
+      def selectFromSig(qualType: Type, name: Name, sig: Signature[Type]): Type = {
+        ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show} at $start")
+        val MethodSignature(args, ret) = sig
+        var seenTypeParams = false
+        val (tyParamCount, argsSyms) = {
+          val (tyParamCounts, params) = args.partitionMap(identity)
+          assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
+          (tyParamCounts.headOption.getOrElse(0), params)
         }
-        else ifNotOverload(name)
+        val member = qualType.member(name)
+        val alts = member.asTerm.alternatives
+        val tpeOpt = alts.find { sym =>
+          val method = sym.asMethod
+          val params = method.paramss.flatten
+          method.returnType.erasure =:= ret &&
+            params.length === argsSyms.length &&
+            ((name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length)
+              || tyParamCount === method.typeParams.length) &&
+            params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
+        }.map(_.tpe).ensuring(_.isDefined, s"No matching overload of $name with signature ${sig.show}")
+        var Some(tpe) = tpeOpt
+        if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(member.owner.typeParams, tpe)
+        ctx.log(s"selected $tpe")
+        tpe
       }
 
 //      def accessibleDenot(qualType: Type, name: Name, sig: Signature) = {
@@ -1353,12 +1345,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SELECT =>
           readTastyName() match {
             case TastyName.SignedName(qual, sig) =>
-              completeSelect(qual.toEncodedTermName, sig.map(erasedNameToErasedType))
-            case name: TastyName => completeSelect(name.toEncodedTermName, NotAMethod)
+              completeSelect(qual, sig.map(erasedNameToErasedType), isTerm = true)
+            case name => completeSelect(name, NotAMethod, isTerm = true)
           }
         case SELECTtpt =>
-          val name = readEncodedName().toTypeName
-          completeSelect(name, NotAMethod)
+          completeSelect(readTastyName(), NotAMethod, isTerm = false)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
           new This(qual.name.toTypeName).setType(mkThisType(tref.sym))

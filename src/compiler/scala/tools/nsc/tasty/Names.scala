@@ -144,28 +144,12 @@ object Names {
 
     final def stripModulePart: TastyName = self match {
       case ModuleName(name) => name
-      case name @ (
-        _:SimpleName
-      | _:QualifiedName
-      | _:SignedName
-      | _:UniqueName
-      | _:DefaultName
-      | _:VariantName
-      | _:PrefixName
-      ) => name
+      case name             => name
     }
 
     final def signature: Signature[TastyName] = self match {
       case SignedName(_, signature) => signature
-      case (
-        _:SimpleName
-      | _:QualifiedName
-      | _:ModuleName
-      | _:UniqueName
-      | _:DefaultName
-      | _:VariantName
-      | _:PrefixName
-      ) => Signature.NotAMethod
+      case _                        => Signature.NotAMethod
     }
   }
 }

@@ -67,7 +67,6 @@ trait TastyKernel { self: TastyUniverse =>
   def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
 
   def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)
-
   def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
   def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
   def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
