@@ -308,7 +308,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         if (in.token == QMARK) {
           val pos = in.currentPos
           in.nextToken()
-          val hi = if (in.token == EXTENDS) { in.nextToken() ; typ() } else EmptyTree
+          val hi = if (in.token == EXTENDS) { in.nextToken() ; typ() } else Ident(definitions.ObjectClass)
           val lo = if (in.token == SUPER)   { in.nextToken() ; typ() } else EmptyTree
           val tdef = atPos(pos) {
             TypeDef(
