@@ -178,24 +178,7 @@ trait TastyKernel { self: TastyUniverse =>
   def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
   type Annotation = symbolTable.Annotation
-  object Annotation {
-    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Tree)(implicit ctx: Contexts.Context): Annotation =
-      new symbolTable.LazyAnnotationInfo({
-        val annotSym = symf
-        val isChild = defn.childAnnotationClass.exists(annotSym === _)
-        if (annotSym.isNonBottomSubClass(defn.StaticAnnotationClass) || annotSym.isJavaDefined || isChild) {
-          val annotTree = tree
-          ctx.log(s"annotation of $annotee = $annotTree")
-          if (isChild) symbolTable.AnnotationInfo(annotTree.tpe, Nil, Nil)
-          else symbolTable.treeToAnnotation(annotTree)
-        }
-        else {
-          ctx.log(s"Ignoring non-static annotation $annotSym")
-          symbolTable.UnmappableAnnotation
-        }
-      })
-  }
-  // def Annotation(tree: Tree): Annotation = symbolTable.Annotation.apply(tree)
+  def mkAnnotation(tree: Tree): Annotation = symbolTable.Annotation.apply(tree)
 
   type Phase = reflect.internal.Phase
   def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase

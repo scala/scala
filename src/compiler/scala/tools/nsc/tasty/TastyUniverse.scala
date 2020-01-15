@@ -6,6 +6,7 @@ abstract class TastyUniverse extends TastyKernel
   with LoggingOps
   with FlagOps
   with TypeOps
+  with AnnotationOps
   with ContextOps
   with SymbolOps
   with NameOps
