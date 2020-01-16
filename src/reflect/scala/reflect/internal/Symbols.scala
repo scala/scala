@@ -1939,7 +1939,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  inheritance graph (i.e. subclass.isLess(superclass) always holds).
      *  the ordering is given by: (_.isType, -_.baseTypeSeq.length) for type symbols, followed by `id`.
      */
-    final def isLess(that: Symbol): Boolean = {
+    final def isLess(that: Symbol): Boolean = (this ne that)  && {
       def baseTypeSeqLength(sym: Symbol) =
         if (sym.isAbstractType) 1 + sym.info.upperBound.baseTypeSeq.length
         else sym.info.baseTypeSeq.length
