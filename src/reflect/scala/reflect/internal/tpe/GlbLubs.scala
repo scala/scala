@@ -154,6 +154,12 @@ private[internal] trait GlbLubs {
         rest filter (t => !first.typeSymbol.isSubClass(t.typeSymbol)))
   }
 
+  // OPT: hoist allocation of the collector and lambda out of the loop in partition
+  private val isWildCardOrNonGroundTypeVarCollector = new FindTypeCollector( {
+    case tv: TypeVar => !tv.isGround
+    case t => t.isWildcard
+  })
+
   /** From a list of types, retain only maximal types as determined by the partial order `po`. */
   private def maxTypes(ts: List[Type])(po: (Type, Type) => Boolean): List[Type] = {
     def loop(ts: List[Type]): List[Type] = ts match {
@@ -165,10 +171,9 @@ private[internal] trait GlbLubs {
 
     // The order here matters because type variables and
     // wildcards can act both as subtypes and supertypes.
-    val (ts2, ts1) = ts.partition(_ exists {
-      case tv: TypeVar => !tv.isGround
-      case t => t.isWildcard
-    })
+    val (ts2, ts1) = ts partition { tp =>
+      isWildCardOrNonGroundTypeVarCollector.collect(tp).isDefined
+    }
 
     loop(ts1 ::: ts2)
   }
