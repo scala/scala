@@ -12,6 +12,7 @@
 
 package scala.collection.immutable
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{MapFactory, MapFactoryDefaults}
 import scala.collection.immutable.{LinkedHashMap => LHM}
 final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], private val _last: LHM.Link[K, V], hm: HashMap[K, LHM.Link[K, V]])
@@ -56,7 +57,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
               (link.key, link.copy()) :: Nil
           }
 
-          val newLink = LHM.Link(key, value, old.prev, old.next)
+          val newLink = new LHM.Link(key, value, old.prev, old.next)
 
           newPrevLinks match {
             case h :: _ => h._2.next = newLink
@@ -86,7 +87,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         }
       case None =>
         if (_first == null) {
-          val newLink = LHM.Link(key, value, LHM.End, LHM.End)
+          val newLink = new LHM.Link(key, value, LHM.End, LHM.End)
           return new LinkedHashMap(newLink, newLink, HashMap.empty.updated(key, newLink))
         }
 
@@ -101,7 +102,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         }
 
         val newPrevLink = newPrevLinks.head._2
-        val newLink = LHM.Link(key, value, newPrevLink.key, LHM.End)
+        val newLink = new LHM.Link(key, value, newPrevLink.key, LHM.End)
         newPrevLink.next = if (hm.size % LHM.arity == 0) key else newLink
 
         val newHm = hm.concat((key, newLink) :: newPrevLinks)
@@ -123,7 +124,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
       Iterator.empty
     } else new Iterator[(K, V)] {
       var curr: LHM.Link[K, V] = _first
-      override def hasNext: Boolean = curr ne null
+      override def hasNext: Boolean = curr != null
       override def next(): (K, V) = {
         if (curr == null) {
           Iterator.empty.next()
@@ -145,7 +146,8 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
   private final def arity: Int = 3
   private final val End: AnyRef = new AnyRef {}
-  private final case class Link[K, +V](key: K, value: V, prev: Any, var next: Any) {
+  private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
+    def copy(): Link[K, V] = new Link(key, value, prev, next)
     def tuple: (K, V) = (key, value)
   }
 
@@ -153,15 +155,53 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
 
   override def empty[K, V]: LinkedHashMap[K, V] = Empty.asInstanceOf[LinkedHashMap[K, V]]
 
-  override def from[K, V](it: IterableOnce[(K, V)]): LinkedHashMap[K, V] = it.iterator.foldLeft(empty[K, V]) {
-    case (acc, (k, v)) => acc.updated(k, v)
-  }
+  override def from[K, V](it: IterableOnce[(K, V)]): LinkedHashMap[K, V] =  newBuilder[K, V].addAll(it).result()
 
   override def newBuilder[K, V]: collection.mutable.Builder[(K, V), LinkedHashMap[K, V]] =
-    new collection.mutable.ImmutableBuilder[(K, V), LinkedHashMap[K, V]](empty) {
+    new collection.mutable.Builder[(K, V), LinkedHashMap[K, V]] {
+      private var size: Int = 0
+      private var _first: Link[K, V] = null
+      private var _last: Link[K, V] = null
+      private var hm = new HashMapBuilder[K, Link[K, V]]
+
+      override def clear(): Unit = {
+        _first = null
+        _last = null
+        hm.clear()
+      }
+
+      /** Result collection consisting of all elements appended so far. */
+      override def result(): LHM[K, V] = {
+        val result = new LinkedHashMap[K, V](_first, _last, hm.result())
+        clear()
+        result
+      }
+
       override def addOne(elem: (K, V)): this.type = {
-        elems = elems.updated(elem._1, elem._2)
+        val old = hm.getOrElse(elem._1, null)
+        if (old == null) {
+          val link = new Link(elem._1, elem._2, if (_last == null) End else _last.key, End)
+          if(_last != null) {
+            if (size % arity != 0) {
+              _last.next = link
+            } else {
+              _last.next = elem._1
+            }
+          }
+          if (_first == null) {
+            _first = link
+          }
+          hm.addOne(elem._1, link)
+          size += 1
+          _last = link
+        } else {
+          old.value = elem._2
+        }
         this
+      }
+
+      override def addAll(xs: IterableOnce[(K, V)]): this.type = {
+        super.addAll(xs)
       }
     }
 }

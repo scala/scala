@@ -124,15 +124,29 @@ class MapTest {
 
   @Test def foo(): Unit = {
 
-    val lhm = immutable.LinkedHashMap("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4)
 
-    println(lhm)
-//    println(lhm.updated("b", 55))
-    val result = lhm.updated("a", 55)
+    var i = 0
+    for {
+      size <- 20 to 20
+      kvs = Array.tabulate(size)(i => i.toString -> i)
+      map = kvs.toMap
+      lhm = kvs.to(immutable.LinkedHashMap)
+    } {
+      println(lhm)
+      if (lhm != map) {
 
-    println(result)
-//    println(lhm.updated("d", 55))
-//    println(lhm.updated("e", 55))
+        print("fail A")
+        val x = lhm equals map
+        println(x)
+      }
+      for { (k, _) <- kvs } {
+        if (lhm.updated(k, "-1") != map.updated(k, "-1")) {
+          println("fail B")
+        }
+        i += 1
+      }
+    }
+    println(i)
 
   }
 
