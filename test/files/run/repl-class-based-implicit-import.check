@@ -1,0 +1,21 @@
+
+scala> def showInt(implicit x: Int) = println(x)
+showInt: (implicit x: Int)Unit
+
+scala> object IntHolder { implicit val myInt = 5 }
+defined object IntHolder
+
+scala> import IntHolder.myInt
+import IntHolder.myInt
+
+scala> showInt
+5
+
+scala> class A; showInt
+5
+defined class A
+
+scala> class B { showInt }
+defined class B
+
+scala> :quit

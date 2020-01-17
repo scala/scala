@@ -102,7 +102,7 @@ trait Imports {
    */
   case class ComputedImports(header: String, prepend: String, append: String, access: String)
 
-  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean): ComputedImports = {
+  protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, generousImports: Boolean): ComputedImports = {
     val header, code, trailingBraces, accessPath = new StringBuilder
     val currentImps = mutable.HashSet[Name]()
     var predefEscapes = false      // only emit predef import header if name not resolved in history, loosely
@@ -121,24 +121,6 @@ trait Imports {
         // Single symbol imports might be implicits! See bug #1752.  Rather than
         // try to finesse this, we will mimic all imports for now.
         def keepHandler(handler: MemberHandler) = handler match {
-          // While defining classes in class based mode - implicits are not needed.
-          // JZ: Not true! This originated in https://github.com/apache/spark/commit/b63d3b28f0ce4a7eab0b1bc673312bc3e7c396dd
-          //     to fix https://issues.apache.org/jira/browse/SPARK-5150 and https://issues.apache.org/jira/browse/SPARK-2576
-          //     but changes semantics as reported https://issues.apache.org/jira/browse/SPARK-5150 or by running
-          //     run/t6320 in -Yrepl-class-based mode.
-          //
-          //     Instead, we should remove the special case below, allowing implicits to be imports, but
-          //     prune unused temp vals after typechecking with a custom REPL phase.
-          //
-          //     scala> class TestClass() { def testMethod = 3 }; val t = new TestClass
-          //     scala> import t.testMethod
-          //     scala> case class TestCaseClass(value: Int)
-          //
-          //         // Remove this unused val with a post-typer REPL phase.
-          //         val $line4$read: $line4.$read.INSTANCE.type = $line4.$read.INSTANCE;
-          //         import $line4$read.$iw.t;
-          //         import t.testMethod;
-          case h: ImportHandler if isClassBased && definesClass => h.importedNames.exists(x => wanted.contains(x))
           case _: ImportHandler     => true
           case x if generousImports => x.definesImplicit || (x.definedNames exists (d => wanted.exists(w => d.startsWith(w))))
           case x                    => x.definesImplicit || (x.definedNames exists wanted)
@@ -219,7 +201,7 @@ trait Imports {
               case _ =>
                 val valName = s"${req.lineRep.packageName}${req.lineRep.readName}"
                 if (!tempValLines.contains(req.lineRep.lineId)) {
-                  code.append(s"val $valName: ${objName}.type = $objName; ")
+                  code.append(s"private val $valName: ${objName}.type = $objName; ")
                   tempValLines += req.lineRep.lineId
                 }
                 code.append(s"import ${valName}${req.accessPath}.`${sym.name}`\n")

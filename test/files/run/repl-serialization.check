@@ -11,6 +11,9 @@ defined class D
 z: Int = 0
 zz: Int = 0
 defined object O
+defined class TestClass
+t: TestClass = TestClass
+import t._
 defined class A
 defined type alias AA
 constructing U

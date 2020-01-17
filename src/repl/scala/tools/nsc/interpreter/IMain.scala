@@ -828,10 +828,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
-    val definesClass = handlers.exists {
-      case _: ClassHandler => true
-      case _ => false
-    }
 
     def defHandlers = handlers collect { case x: MemberDefHandler => x }
 
@@ -850,7 +846,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass, generousImports))
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, generousImports))
 
     /** the line of code to compute */
     def toCompute = line
