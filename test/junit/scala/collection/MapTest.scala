@@ -122,4 +122,19 @@ class MapTest {
     check(mutable.CollisionProofHashMap(1 -> 1))
   }
 
+  @Test def foo(): Unit = {
+
+    val lhm = immutable.LinkedHashMap("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4)
+
+    println(lhm)
+//    println(lhm.updated("b", 55))
+    val result = lhm.updated("a", 55)
+
+    println(result)
+//    println(lhm.updated("d", 55))
+//    println(lhm.updated("e", 55))
+
+  }
+
+
 }
