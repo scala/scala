@@ -39,6 +39,27 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *           ->   is a forward reference by KEY (via lookup in an immutable HashMap)
  *           <-   is a backward reference by KEY (via lookup in an immutable HashMap)
  *
+ *
+ *
+ * Performance Characteristics:
+ *
+ *   Construction: Extremely fast (fastest of all immutable SeqMaps)! O(n log n). Approximately as fast as constructing
+ *   a HashMap, with minimal overhead involved in wrapping values in `Link[K, V]` instances and mutating prev/next
+ *   values during building.
+ *
+ *   Traversal/Iteration: Extremely fast (fastest of all immutable SeqMaps)! O(n + (1/arity) * n log n).
+ *   Almost as fast as traversing a `List`, but every `arity` elements, a hashmap lookup is required. For reference,
+ *   each lookup is approximately 25 ns.
+ *
+ *   Lookup: Extremely fast (on par with other immutable SeqMaps)! O(log n). Simply a lookup in a
+ *   `HashMap[K, Link[K, V]]`, and then an additional dereferencing of the value. Virtually as fast as HashMap itself.
+ *
+ *   Updates: Quite slow, but not pathological (1/3 as fast as VectorMap)! O((arity/2) * log n). When updating a key, all nodes
+ *   that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
+ *   the node only refer backwards by key, not by reference, so they need not be adjusted. So an update is equivalent to
+ *   roughly arity/2 lookups and arity/2 updates. The shallow mutation capabilities of immutable.HashMap are however
+ *   utilized to mitigate the downside.
+ *
  */
 final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], private val _last: LHM.Link[K, V], hm: HashMap[K, LHM.Link[K, V]])
   extends AbstractMap[K, V]
