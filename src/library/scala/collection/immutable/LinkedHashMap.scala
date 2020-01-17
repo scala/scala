@@ -15,6 +15,31 @@ package scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{MapFactory, MapFactoryDefaults}
 import scala.collection.immutable.{LinkedHashMap => LHM}
+
+
+/** an immutable SeqMap implementation that is similar to a mutable LinkedHashMap
+ *
+ * Keys are inserted in an immutable HashMap, inside a node (Link), which refers forwards by reference to the next
+ * Link, and backwards by LOOKUP KEY to the previous Link.
+ *
+ * To have acceptable updates/removals, the entire Map is not forward-linked by reference. The forward-reference chain
+ * breaks at regular intervals of `arity` nodes, where `arity` is a configurable parameter in the companion object.
+ *
+ * For instance, with `arity`= 3, we would have
+ *
+ * LinkedHashMap("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5", "f" -> 6, "g" -> 7)
+ *
+ * represented as:
+ *
+ *   ("a",1) ===> ("b",2) ===> ("c",3") -> ("d",4) ===> ("e",5) ===> ("f",6) -> ("g",7)
+ *            <-           <-           <-          <-           <-          <-
+ *
+ *
+ *   legend: ===> is a reference by memory address
+ *           ->   is a forward reference by KEY (via lookup in an immutable HashMap)
+ *           <-   is a backward reference by KEY (via lookup in an immutable HashMap)
+ *
+ */
 final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], private val _last: LHM.Link[K, V], hm: HashMap[K, LHM.Link[K, V]])
   extends AbstractMap[K, V]
     with SeqMap[K, V]
@@ -144,7 +169,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 }
 
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
-  private final def arity: Int = 3
+  private final val arity: Int = 3
   private final val End: AnyRef = new AnyRef {}
   private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
     def copy(): Link[K, V] = new Link(key, value, prev, next)
@@ -168,6 +193,7 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
         _first = null
         _last = null
         hm.clear()
+        size = 0
       }
 
       /** Result collection consisting of all elements appended so far. */

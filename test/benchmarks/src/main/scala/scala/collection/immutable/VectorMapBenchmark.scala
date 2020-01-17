@@ -18,48 +18,48 @@ class VectorMapBenchmark {
   var size: Int = _
 
   var kvs: Seq[(Int, Int)] = _
-  var vm: VectorMap[Int, Int] = _
+//  var vm: VectorMap[Int, Int] = _
   var lhm: LinkedHashMap[Int, Int] = _
 
   @Setup(Level.Trial)
   def initKeys(): Unit = {
     val unique = (0 to size).map(i => i -> i)
     kvs = unique ++ unique
-    vm = VectorMap.from(kvs)
+//    vm = VectorMap.from(kvs)
     lhm = LinkedHashMap.from(kvs)
   }
-
-  @Benchmark
-  def buildVm(bh: Blackhole): Unit = {
-    bh.consume(VectorMap.from(kvs))
-  }
-  @Benchmark
-  def buildLhm(bh: Blackhole): Unit = {
-    bh.consume(LinkedHashMap.from(kvs))
-  }
-  @Benchmark
-  def foreachVm(bh: Blackhole): Unit = {
-    vm.foreach(bh.consume)
-  }
-  @Benchmark
-  def foreachLhm(bh: Blackhole): Unit = {
-    lhm.foreach(bh.consume)
-  }
-  @Benchmark
-  def getVm(bh: Blackhole): Unit = {
-    bh.consume(vm.get(size / 2))
-    bh.consume(vm.get(size))
-  }
-  @Benchmark
-  def getLhm(bh: Blackhole): Unit = {
-    bh.consume(lhm.get(size / 2))
-    bh.consume(lhm.get(size))
-  }
-  @Benchmark
-  def updatedVm(bh: Blackhole): Unit = {
-    bh.consume(vm.updated(size / 2, -1))
-    bh.consume(vm.updated(size, -1))
-  }
+//
+//  @Benchmark
+//  def buildVm(bh: Blackhole): Unit = {
+//    bh.consume(VectorMap.from(kvs))
+//  }
+//  @Benchmark
+//  def buildLhm(bh: Blackhole): Unit = {
+//    bh.consume(LinkedHashMap.from(kvs))
+//  }
+//  @Benchmark
+//  def foreachVm(bh: Blackhole): Unit = {
+//    vm.foreach(bh.consume)
+//  }
+//  @Benchmark
+//  def foreachLhm(bh: Blackhole): Unit = {
+//    lhm.foreach(bh.consume)
+//  }
+//  @Benchmark
+//  def getVm(bh: Blackhole): Unit = {
+//    bh.consume(vm.get(size / 2))
+//    bh.consume(vm.get(size))
+//  }
+//  @Benchmark
+//  def getLhm(bh: Blackhole): Unit = {
+//    bh.consume(lhm.get(size / 2))
+//    bh.consume(lhm.get(size))
+//  }
+//  @Benchmark
+//  def updatedVm(bh: Blackhole): Unit = {
+//    bh.consume(vm.updated(size / 2, -1))
+//    bh.consume(vm.updated(size, -1))
+//  }
   @Benchmark
   def updatedLhm(bh: Blackhole): Unit = {
     bh.consume(lhm.updated(size / 2, -1))
