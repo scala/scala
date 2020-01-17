@@ -304,7 +304,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
         def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
             (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: TastyName => N)(implicit ctx: Context): Type = {
-          val result = typeAtAddr.getOrElse(start, {
+          val complete = typeAtAddr.contains(start)
+          val stored = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
@@ -314,7 +315,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               pt => readType())
           })
           goto(end)
-          result.asInstanceOf[LT].asReflectType(ctx.owner)
+          val canonical = {
+            if (complete) {
+              stored
+            }
+            else {
+              val canonical = stored.asInstanceOf[LT].canonicalForm
+              typeAtAddr.update(start, canonical)
+              canonical
+            }
+          }
+          canonical
         }
 
         val result =
@@ -352,8 +363,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val lo = readType()
               val hi = readType()
               mkTypeBounds(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
-            // case ANNOTATEDtype =>
-            //   AnnotatedType(readType(), Annotation(readTerm()))
+            case ANNOTATEDtype =>
+              mkAnnotatedType(readType(), mkAnnotation(readTerm()))
             case ANDtype =>
               mkIntersectionType(readType(), readType())
             // case ORtype =>
@@ -1338,8 +1349,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm =>
           forkAt(readAddr()).readTerm()
-        // case IDENT =>
-        //   Ident(readEncodedName()).setType(readType())
+        case IDENT =>
+          Ident(readEncodedName()).setType(readType())
         case IDENTtpt =>
           Ident(readEncodedName().toTypeName).setType(readType())
         case SELECT =>
@@ -1356,8 +1367,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case NEW =>
           val tpt = readTpt()
           New(tpt).setType(tpt.tpe)
-//        case THROW =>
-//          Throw(readTerm())
+        case THROW =>
+          Throw(readTerm()).setType(defn.NothingTpe)
         case SINGLETONtpt =>
           val tpt = readTerm()
           SingletonTypeTree(tpt).setType(tpt.tpe)
@@ -1392,14 +1403,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val expr = readTerm()
               val tpt = readTpt()
               Typed(expr, tpt).setType(tpt.tpe)
-//            case ASSIGN =>
-//              Assign(readTerm(), readTerm())
-            // case BLOCK =>
-            //   val exprReader = fork
-            //   skipTree()
-            //   val stats = readStats(ctx.owner, end)
-            //   val expr = exprReader.readTerm()
-            //   Block(stats, expr).setType(expr.tpe)
+            case ASSIGN =>
+              Assign(readTerm(), readTerm()).setType(defn.UnitTpe)
+            case BLOCK => // TODO tasty: when we support annotation trees, we need to restore readIndexedMember to create trees, and then put the stats in the block.
+              val exprReader = fork
+              skipTree()
+              until(end)(skipTree()) //val stats = readStats(ctx.owner, end)
+              val expr = exprReader.readTerm()
+              expr//Block(stats, expr).setType(expr.tpe)
 //            case INLINED =>
 //              val exprReader = fork
 //              skipTree()
@@ -1424,60 +1435,64 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val elsep = readTerm()
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
-//            case LAMBDA =>
-//              val meth = readTerm()
-//              val tpt = ifBefore(end)(readTpt(), EmptyTree)
-//              Closure(Nil, meth, tpt)
-            // case MATCH =>
-            //   if (nextByte === IMPLICIT) {
-            //     readByte()
-            //     readCases(end) //InlineMatch(EmptyTree, readCases(end))
-            //     errorTasty("implicit match")
-            //     emptyTree
-            //   }
-            //   else if (nextByte === INLINE) {
-            //     readByte()
-            //     readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
-            //     errorTasty("inline match")
-            //     emptyTree
-            //   }
-            //   else {
-            //     val sel = readTerm()
-            //     val cases = readCases(end)
-            //     Match(sel, cases).setType(lub(cases.map(_.tpe)))
-            //   }
+            case LAMBDA => // TODO tasty: if we need trees then we need to either turn this closure to the result of Delambdafy, or resugar to a Function
+              val meth = readTerm()
+              val tpt = ifBefore(end)(readTpt(), emptyTree)
+              TypeTree(meth.tpe) //Closure(Nil, meth, tpt)
+            case MATCH =>
+              if (nextByte === IMPLICIT) {
+                readByte()
+                readCases(end) //InlineMatch(EmptyTree, readCases(end))
+                errorTasty("implicit match")
+                emptyTree
+              }
+              else if (nextByte === INLINE) {
+                readByte()
+                readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
+                errorTasty("inline match")
+                emptyTree
+              }
+              else {
+                val sel = readTerm()
+                val cases = readCases(end)
+                Match(sel, cases).setType(lub(cases.map(_.tpe)))
+              }
 //            case RETURN =>
 //              val from = readSymRef()
 //              val expr = ifBefore(end)(readTerm(), EmptyTree)
 //              Return(expr, Ident(from.termRef))
-//            case WHILE =>
-//              WhileDo(readTerm(), readTerm())
-//            case TRY =>
-//              Try(readTerm(), readCases(end), ifBefore(end)(readTerm(), EmptyTree))
+            case WHILE =>
+              WhileDo(readTerm(), readTerm())
+            case TRY =>
+              val body = readTerm()
+              val cases = readCases(end)
+              val finalizer = ifBefore(end)(readTerm(), emptyTree)
+              Try(body, cases, finalizer).setType(lub(cases.map(_.tpe)))
 //            case SELECTouter =>
 //              val levels = readNat()
 //              readTerm().outerSelect(levels, SkolemType(readType()))
             case REPEATED =>
               val elemtpt = readTpt()
               SeqLiteral(until(end)(readTerm()), elemtpt).setType(elemtpt.tpe)
-            // case BIND =>
-            //   val sym = symAtAddr.getOrElse(start, forkAt(start).createSymbol())
-            //   readTastyName()
-            //   readType()
-            //   val body = readTerm()
-            //   Bind(sym, body).setType(body.tpe)
-//            case ALTERNATIVE =>
-//              Alternative(until(end)(readTerm()))
-//            case UNAPPLY =>
-//              val fn = readTerm()
-//              val implicitArgs =
-//                collectWhile(nextByte === IMPLICITarg) {
-//                  readByte()
-//                  readTerm()
-//                }
-//              val patType = readType()
-//              val argPats = until(end)(readTerm())
-//              UnApply(fn, implicitArgs, argPats, patType)
+            case BIND =>
+              val sym = symAtAddr.getOrElse(start, forkAt(start).createSymbol())
+              readTastyName()
+              readType()
+              val body = readTerm()
+              Bind(sym, body).setType(body.tpe)
+            case ALTERNATIVE =>
+              val alts = until(end)(readTerm())
+              Alternative(alts).setType(lub(alts.map(_.tpe)))
+            case UNAPPLY =>
+              val fn = readTerm()
+              val implicitArgs =
+                collectWhile(nextByte === IMPLICITarg) {
+                  readByte()
+                  readTerm()
+                }
+              val patType = readType()
+              val argPats = until(end)(readTerm())
+              UnApply(fn, implicitArgs, argPats, patType)
 //            case REFINEDtpt =>
 //              val refineCls = ctx.newRefinedClassSymbol(coordAt(start))
 //              typeAtAddr(start) = refineCls.typeRef
@@ -1497,13 +1512,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val ownType = mkTypeRef(tycon.tpe.prefix, tycon.tpe.typeSymbolDirect, args.map(_.tpe))
                 AppliedTypeTree(tycon, args).setType(ownType)
               }
-//            case ANNOTATEDtpt =>
-//              Annotated(readTpt(), readTerm())
+            case ANNOTATEDtpt =>
+              val tpt = readTpt()
+              val annot = readTerm()
+              Annotated(tpt, annot).setType(mkAnnotatedType(tpt.tpe, mkAnnotation(annot)))
             case LAMBDAtpt =>
               val tparams = readParams[NoCycle](TYPEPARAM)
               val body    = readTpt()
-              TypeTree(TypeParamLambda(tparams.map(symFromNoCycle), body.tpe).asReflectType)
-            //  LambdaTypeTree(tparams, body)
+              TypeTree(TypeParamLambda(tparams.map(symFromNoCycle), body.tpe).canonicalForm) //LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()
 //              val (bound, scrut) =
@@ -1559,26 +1575,26 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       tpt
     }
 
-    // def readCases(end: Addr)(implicit ctx: Context): List[CaseDef] =
-    //   collectWhile((nextUnsharedTag === CASEDEF) && currentAddr != end) {
-    //     if (nextByte === SHAREDterm) {
-    //       readByte()
-    //       forkAt(readAddr()).readCase()(ctx.fresh.setNewScope)
-    //     }
-    //     else readCase()(ctx.fresh.setNewScope)
-    //   }
+    def readCases(end: Addr)(implicit ctx: Context): List[CaseDef] =
+      collectWhile((nextUnsharedTag === CASEDEF) && currentAddr != end) {
+        if (nextByte === SHAREDterm) {
+          readByte()
+          forkAt(readAddr()).readCase()(ctx.fresh.setNewScope)
+        }
+        else readCase()(ctx.fresh.setNewScope)
+      }
 
-    // def readCase()(implicit ctx: Context): CaseDef = {
-    //   val sctx = sourceChangeContext()
-    //   if (sctx `ne` ctx) return readCase()(sctx)
-    //   val start = currentAddr
-    //   assert(readByte() === CASEDEF)
-    //   val end = readEnd()
-    //   val pat = readTerm()
-    //   val rhs = readTerm()
-    //   val guard = ifBefore(end)(readTerm(), emptyTree)
-    //   CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
-    // }
+    def readCase()(implicit ctx: Context): CaseDef = {
+      val sctx = sourceChangeContext()
+      if (sctx `ne` ctx) return readCase()(sctx)
+      val start = currentAddr
+      assert(readByte() === CASEDEF)
+      val end = readEnd()
+      val pat = readTerm()
+      val rhs = readTerm()
+      val guard = ifBefore(end)(readTerm(), emptyTree)
+      CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
+    }
 
 //    def readLater[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Trees.Lazy[T] =
 //      readLaterWithOwner(end, op)(ctx)(ctx.owner)

@@ -130,8 +130,8 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       final def withOwner(owner: Symbol): Context =
         if (owner `ne` this.owner) fresh.setOwner(owner) else this
 
-      // final def setNewScope: Context =
-      //   withOwner(newLocalDummy(this.owner))
+      final def setNewScope: Context =
+        withOwner(newLocalDummy(this.owner))
 
       final def fresh: FreshContext = new FreshContext(this)
     }

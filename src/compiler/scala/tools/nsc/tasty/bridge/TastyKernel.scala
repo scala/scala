@@ -38,6 +38,7 @@ trait TastyKernel { self: TastyUniverse =>
   type ThisType = symbolTable.ThisType
   type TypeRef = symbolTable.TypeRef
   type SingleType = symbolTable.SingleType
+  type AnnotatedType = symbolTable.AnnotatedType
 
   type ConstantType = symbolTable.ConstantType
   def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
@@ -80,6 +81,7 @@ trait TastyKernel { self: TastyUniverse =>
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
   def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
+  def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
 
   def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
@@ -88,6 +90,7 @@ trait TastyKernel { self: TastyUniverse =>
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
+    final val UnitTpe: Type = symbolTable.definitions.UnitTpe
     final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
     final val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
     final val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass
@@ -112,6 +115,7 @@ trait TastyKernel { self: TastyUniverse =>
     final val ROOT: TermName = symbolTable.nme.ROOT
     final val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
     final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
+    def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
   }
 
   object termNames {
@@ -181,7 +185,12 @@ trait TastyKernel { self: TastyUniverse =>
   def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
   type Annotation = symbolTable.Annotation
-  def mkAnnotation(tree: Tree): Annotation = symbolTable.Annotation.apply(tree)
+  def mkAnnotation(tree: Tree): Annotation = {tree match {
+    case symbolTable.Apply(symbolTable.Select(symbolTable.New(tpt), nme.CONSTRUCTOR), args) =>
+      symbolTable.AnnotationInfo(tpt.tpe, args, Nil)
+    case _ =>
+      throw new Exception("unexpected annotation kind from TASTy")
+  }}
 
   type Phase = reflect.internal.Phase
   def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase
@@ -207,17 +216,52 @@ trait TastyKernel { self: TastyUniverse =>
   type NamedArg = symbolTable.NamedArg
   def NamedArg(name: Name, value: Tree): NamedArg = symbolTable.NamedArg(Ident(name), value)
 
-  // type Block = symbolTable.Block
-  // def Block(stats: List[Tree], value: Tree): Block = symbolTable.Block((stats :+ value):_*)
+  type Block = symbolTable.Block
+  def Block(stats: List[Tree], value: Tree): Block = symbolTable.Block((stats :+ value):_*)
 
-  // type CaseDef = symbolTable.CaseDef
-  // def CaseDef(pat: Tree, guard: Tree, body: Tree): CaseDef = symbolTable.CaseDef(pat, guard, body)
+  type CaseDef = symbolTable.CaseDef
+  def CaseDef(pat: Tree, guard: Tree, body: Tree): CaseDef = symbolTable.CaseDef(pat, guard, body)
 
-  // type Bind = symbolTable.Bind
-  // def Bind(sym: Symbol, body: Tree): Bind = symbolTable.Bind(sym.name, body)
+  type Bind = symbolTable.Bind
+  def Bind(sym: Symbol, body: Tree): Bind = symbolTable.Bind(sym.name, body)
 
-  // type Match = symbolTable.Match
-  // def Match(selector: Tree, cases: List[CaseDef]): Match = symbolTable.Match(selector: Tree, cases: List[CaseDef])
+  type Match = symbolTable.Match
+  def Match(selector: Tree, cases: List[CaseDef]): Match = symbolTable.Match(selector: Tree, cases: List[CaseDef])
+
+  type Alternative = symbolTable.Alternative
+  def Alternative(alts: List[Tree]): Alternative = symbolTable.Alternative(alts)
+
+  type UnApply = symbolTable.UnApply
+  def UnApply(fun: Tree, implicitArgs: List[Tree], args: List[Tree], patType: Type): UnApply = {
+    val tree = implicitArgs match {
+      case Nil => fun
+      case _   => Apply(fun, implicitArgs).setType(fun.tpe.resultType)
+    }
+    symbolTable.UnApply(tree, args).setType(patType)
+  }
+
+  type Annotated = symbolTable.Annotated
+  def Annotated(tpt: Tree, annot: Tree): Annotated = symbolTable.Annotated(annot, tpt)
+
+  type Throw = symbolTable.Throw
+  def Throw(err: Tree): Throw = symbolTable.Throw(err)
+
+  type Assign = symbolTable.Assign
+  def Assign(ref: Tree, value: Tree): Assign = symbolTable.Assign(ref, value)
+
+  type WhileDo = symbolTable.LabelDef
+  def WhileDo(cond: Tree, body: Tree): WhileDo = {
+    val label    = nme.freshWhileName
+    val ref      = Ident(label).setType(defn.UnitTpe)
+    val rec      = Apply(ref, Nil).setType(defn.UnitTpe)
+    val loop     = Block(body :: Nil, rec).setType(defn.UnitTpe)
+    val unitExpr = symbolTable.gen.mkTuple(Nil).setType(defn.UnitTpe)
+    val whileDo  = If(cond, loop, unitExpr).setType(defn.UnitTpe)
+    symbolTable.LabelDef(label, Nil, whileDo).setType(defn.UnitTpe)
+  }
+
+  type Try = symbolTable.Try
+  def Try(body: Tree, cases: List[CaseDef], finalizer: Tree): Try = symbolTable.Try(body, cases, finalizer)
 
   def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
 
@@ -232,5 +276,5 @@ trait TastyKernel { self: TastyUniverse =>
   def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
 
   def lub(tpe1: Type, tpe2: Type): Type = symbolTable.lub(tpe1 :: tpe2 :: Nil)
-  // def lub(tpes: List[Type]): Type = symbolTable.lub(tpes)
+  def lub(tpes: List[Type]): Type = symbolTable.lub(tpes)
 }
