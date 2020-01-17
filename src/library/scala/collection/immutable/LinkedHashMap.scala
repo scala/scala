@@ -13,7 +13,7 @@
 package scala.collection.immutable
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.{MapFactory, MapFactoryDefaults}
+import scala.collection.{Hashing, MapFactory, MapFactoryDefaults}
 import scala.collection.immutable.{LinkedHashMap => LHM}
 
 
@@ -64,6 +64,27 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
     }
     result
   }
+  private[this] def concatToHm[V1 >: V](list: List[LHM.Link[K, V1]]): HashMap[K, LHM.Link[K, V1]] = {
+    var rootNode: BitmapIndexedMapNode[K, LHM.Link[K, V1]] = hm.rootNode
+    var curr = list
+    while (!curr.isEmpty) {
+      val next = curr.head
+      val hash = next.key.##
+      rootNode = rootNode.updated(next.key, next, hash, Hashing.improve(hash), 0, replaceValue = true)
+      curr = curr.tail
+      if (rootNode ne hm.rootNode) {
+        var nodeMap = 0
+        while (!curr.isEmpty) {
+          val next = curr.head
+          val hash = next.key.##
+          nodeMap = rootNode.updateWithShallowMutations(next.key, next, hash, Hashing.improve(hash), 0, nodeMap)
+          curr = curr.tail
+        }
+        return new HashMap(rootNode)
+      }
+    }
+    hm
+  }
 
   override def removed(key: K): LinkedHashMap[K, V] = ???
   override def updated[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
@@ -73,25 +94,34 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
           this
         } else {
           val oldPrevLinks = allPreviousLinksInChain(old, includeArgument = false)
-          val newPrevLinks = oldPrevLinks.foldLeft(List.empty[(K, LHM.Link[K, V])]){
-            case (acc @ h :: _, link) =>
+
+          var newPrevLinks: List[LHM.Link[K, V]] = List.empty[LHM.Link[K, V]]
+
+          {
+            var curr = oldPrevLinks
+            while (!curr.isEmpty) {
+              val link = curr.head
               val copiedLink = link.copy()
-              h._2.next = copiedLink
-              (link.key, copiedLink) :: acc
-            case (Nil, link) =>
-              (link.key, link.copy()) :: Nil
+              newPrevLinks match {
+                case h :: _ =>
+                  h.next = copiedLink
+                case _ =>
+              }
+              newPrevLinks = copiedLink :: newPrevLinks
+              curr = curr.tail
+            }
           }
 
           val newLink = new LHM.Link(key, value, old.prev, old.next)
 
           newPrevLinks match {
-            case h :: _ => h._2.next = newLink
+            case h :: _ => h.next = newLink
             case _ =>
           }
 
-          val allNewLinks = (newLink.key, newLink) :: newPrevLinks
+          val allNewLinks = newLink :: newPrevLinks
 
-          val newHm = hm.concat(allNewLinks)
+          val newHm = concatToHm(allNewLinks)
 
           var newFirst: LHM.Link[K, V1] = _first
           var newLast: LHM.Link[K, V1] = _last
@@ -102,7 +132,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
             newFirst = newLink
             newLast = newLink
           } else if(oldPrevLinks.nonEmpty && (oldPrevLinks.head eq _first)) {
-            newFirst = newPrevLinks.last._2
+            newFirst = newPrevLinks.last
           }
 
           if (newLast eq old) {
@@ -117,24 +147,24 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         }
 
         val oldPrevLinks = allPreviousLinksInChain(_last, includeArgument = true)
-        val newPrevLinks = oldPrevLinks.foldLeft(List.empty[(K, LHM.Link[K, V])]){
+        val newPrevLinks = oldPrevLinks.foldLeft(List.empty[LHM.Link[K, V]]){
           case (acc @ h :: _, link) =>
             val copiedLink = link.copy()
-            h._2.next = copiedLink
-            (link.key, copiedLink) :: acc
+            h.next = copiedLink
+            copiedLink :: acc
           case (Nil, link) =>
-            (link.key, link.copy()) :: Nil
+            link.copy() :: Nil
         }
 
-        val newPrevLink = newPrevLinks.head._2
+        val newPrevLink = newPrevLinks.head
         val newLink = new LHM.Link(key, value, newPrevLink.key, LHM.End)
         newPrevLink.next = if (hm.size % LHM.arity == 0) key else newLink
 
-        val newHm = hm.concat((key, newLink) :: newPrevLinks)
+        val newHm = concatToHm(newLink :: newPrevLinks)
 
         var newFirst: LHM.Link[K, V1] = _first
         if (oldPrevLinks.head eq _first) {
-          newFirst = newPrevLinks.last._2
+          newFirst = newPrevLinks.last
         }
 
         new LinkedHashMap(newFirst, newLink, newHm)
