@@ -199,7 +199,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 }
 
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
-  private final val arity: Int = 3
+  private final def arity: Int = 3
   private final val End: AnyRef = new AnyRef {}
   private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
     def copy(): Link[K, V] = new Link(key, value, prev, next)
@@ -257,7 +257,36 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
       }
 
       override def addAll(xs: IterableOnce[(K, V)]): this.type = {
-        super.addAll(xs)
+        var __first = _first
+        var __last = _last
+        var __size = size
+        val iter = xs.iterator
+        while (iter.hasNext) {
+          val (k, v) = iter.next()
+          val old = hm.getOrElse(k, null)
+          if (old == null) {
+            val link = new Link(k, v, if (__last == null) End else __last.key, End)
+            if(__last != null) {
+              if (__size % arity != 0) {
+                __last.next = link
+              } else {
+                __last.next = k
+              }
+            }
+            if (__first == null) {
+              __first = link
+            }
+            hm.addOne(k, link)
+            __size += 1
+            __last = link
+          } else {
+            old.value = v
+          }
+        }
+        _first = __first
+        _last = __last
+        size = __size
+        this
       }
     }
 }
