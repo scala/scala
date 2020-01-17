@@ -281,10 +281,26 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
     }
 
   }
+
+  override def foreach[U](f: ((K, V)) => U): Unit = {
+    var curr = _first
+    while (curr != null) {
+      f(curr.tuple)
+      curr = curr.next match { case LHM.End => null case l: LHM.Link[K, V] => l case k => hm(k.asInstanceOf[K])}
+    }
+  }
+
+  override def foreachEntry[U](f: (K, V) => U): Unit = {
+    var curr = _first
+    while (curr != null) {
+      f(curr.key, curr.value)
+      curr = curr.next match { case LHM.End => null case l: LHM.Link[K, V] => l case k => hm(k.asInstanceOf[K])}
+    }
+  }
 }
 
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
-  private final def arity: Int = 3
+  final def arity: Int = 3
   private final val End: AnyRef = new AnyRef {}
   private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
     def copy[V1 >: V](key: K = key, value: V1 = value, prev: Any = prev, next: Any = next): Link[K, V1] = new Link(key, value, prev, next)

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @State(Scope.Benchmark)
 class VectorMapBenchmark {
-  @Param(Array("1", "5", "10", "100", "1000", "1000000"))
+  @Param(Array ("5", "10", "100", "1000", "1000000"))
   var size: Int = _
 
   var kvs: Seq[(Int, Int)] = _
@@ -27,8 +27,9 @@ class VectorMapBenchmark {
     kvs = unique ++ unique
     vm = VectorMap.from(kvs)
     lhm = LinkedHashMap.from(kvs)
+//    println("arity=" + LinkedHashMap.arity)
   }
-//
+
 //  @Benchmark
 //  def buildVm(bh: Blackhole): Unit = {
 //    bh.consume(VectorMap.from(kvs))
@@ -37,34 +38,38 @@ class VectorMapBenchmark {
 //  def buildLhm(bh: Blackhole): Unit = {
 //    bh.consume(LinkedHashMap.from(kvs))
 //  }
+
 //  @Benchmark
 //  def foreachVm(bh: Blackhole): Unit = {
 //    vm.foreach(bh.consume)
 //  }
-//  @Benchmark
-//  def foreachLhm(bh: Blackhole): Unit = {
-//    lhm.foreach(bh.consume)
-//  }
-//  @Benchmark
-//  def getVm(bh: Blackhole): Unit = {
-//    bh.consume(vm.get(size / 2))
-//    bh.consume(vm.get(size))
-//  }
-//  @Benchmark
-//  def getLhm(bh: Blackhole): Unit = {
-//    bh.consume(lhm.get(size / 2))
-//    bh.consume(lhm.get(size))
-//  }
+  @Benchmark
+  def foreachLhm(bh: Blackhole): Unit = {
+    lhm.foreach(bh.consume)
+  }
+  /*
+  @Benchmark
+  def getVm(bh: Blackhole): Unit = {
+    bh.consume(vm.get(size / 2))
+    bh.consume(vm.get(size))
+  }
+  @Benchmark
+  def getLhm(bh: Blackhole): Unit = {
+    bh.consume(lhm.get(size / 2))
+    bh.consume(lhm.get(size))
+  }
+  */
 //  @Benchmark
 //  def updatedVm(bh: Blackhole): Unit = {
-////    bh.consume(vm.updated(size / 2, -1))
-//    bh.consume(vm.updated(size, -1))
+//    bh.consume(vm.updated(size / 2, -1))
+////    bh.consume(vm.updated(size, -1))
 //  }
 //  @Benchmark
 //  def updatedLhm(bh: Blackhole): Unit = {
 //    bh.consume(lhm.updated(size / 2, -1))
 ////    bh.consume(lhm.updated(size, -1))
 //  }
+  /*
 
   @Benchmark
   def removedVm(bh: Blackhole): Unit = {
@@ -74,4 +79,6 @@ class VectorMapBenchmark {
   def removedLhm(bh: Blackhole): Unit = {
     bh.consume(lhm.removed(size/2))
   }
+
+   */
 }
