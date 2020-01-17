@@ -840,12 +840,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val withImplicitArgs = tpr.applyImplicitArgs(tree)
                 if (tpr.context.reporter.hasErrors) tree // silent will wrap it in SilentTypeError anyway
                 else tpr.typed(withImplicitArgs, mode, pt)
-              } orElse { _ =>
+              } orElse { originalErrors =>
                 // Re-try typing (applying to implicit args) without expected type. Add in 53d98e7d42 to
                 // for better error message (scala/bug#2180, http://www.scala-lang.org/old/node/3453.html)
                 val resetTree = resetAttrs(original)
                 resetTree match {
-                  case treeInfo.Applied(fun, targs, args) =>
+                  case treeInfo.Applied(fun, _, _) =>
                     if (fun.symbol != null && fun.symbol.isError)
                       // scala/bug#9041 Without this, we leak error symbols past the typer!
                       // because the fallback typechecking notices the error-symbol,
@@ -854,7 +854,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                       fun.setSymbol(NoSymbol)
                   case _ =>
                 }
-                debuglog(s"fallback on implicits: ${tree}/$resetTree")
+                debuglog(s"fallback on implicits: $tree/$resetTree")
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
                 // work during fallback typechecking below.
                 val resetContext: Context = {
@@ -867,11 +867,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   context.make(substResetForOriginal.transform(context.tree))
                 }
                 typerWithLocalContext(resetContext) { typer1 =>
-                  val tree1 = typer1.typed(resetTree, mode)
-                  // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
-                  // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
-                  tree1 setType pluginsTyped(tree1.tpe, typer1, tree1, mode, pt)
-                  if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt)
+                  typer1.silent { typer1 =>
+                    val tree1 = typer1.typed(resetTree, mode)
+                    // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
+                    // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
+                    tree1 setType pluginsTyped(tree1.tpe, typer1, tree1, mode, pt)
+                    if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt)
+                  } orElse { _ =>
+                    originalErrors.foreach(context.issue)
+                    setError(tree)
+                  }
                 }
               }
             }
