@@ -55,14 +55,23 @@ class VectorMapBenchmark {
 //    bh.consume(lhm.get(size / 2))
 //    bh.consume(lhm.get(size))
 //  }
+//  @Benchmark
+//  def updatedVm(bh: Blackhole): Unit = {
+////    bh.consume(vm.updated(size / 2, -1))
+//    bh.consume(vm.updated(size, -1))
+//  }
+//  @Benchmark
+//  def updatedLhm(bh: Blackhole): Unit = {
+//    bh.consume(lhm.updated(size / 2, -1))
+////    bh.consume(lhm.updated(size, -1))
+//  }
+
   @Benchmark
-  def updatedVm(bh: Blackhole): Unit = {
-//    bh.consume(vm.updated(size / 2, -1))
-    bh.consume(vm.updated(size, -1))
+  def removedVm(bh: Blackhole): Unit = {
+    bh.consume(vm.removed(size/2))
   }
   @Benchmark
-  def updatedLhm(bh: Blackhole): Unit = {
-    bh.consume(lhm.updated(size / 2, -1))
-//    bh.consume(lhm.updated(size, -1))
+  def removedLhm(bh: Blackhole): Unit = {
+    bh.consume(lhm.removed(size/2))
   }
 }

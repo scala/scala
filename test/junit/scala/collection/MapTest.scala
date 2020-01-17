@@ -131,7 +131,7 @@ class MapTest {
       kvs = Array.tabulate(size)(i => i.toString -> i)
       map = kvs.toMap
       lhm = kvs.to(immutable.LinkedHashMap)
-    } {
+    } try {
       println(lhm)
       if (lhm != map) {
 
@@ -145,6 +145,17 @@ class MapTest {
         }
         i += 1
       }
+      for { (k, _) <- kvs } {
+        try {
+          if (lhm.removed(k) != map.removed(k)) {
+            println("fail C")
+          }
+        } finally println(k)
+      }
+      if (lhm.removed("") != map.removed("")) {
+        println("fail D")
+      }
+    } finally {
     }
     println(i)
 
