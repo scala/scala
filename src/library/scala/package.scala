@@ -74,7 +74,7 @@ package object scala {
 
   val Nil = scala.collection.immutable.Nil
 
-  type ::[A] = scala.collection.immutable.::[A]
+  type ::[+A] = scala.collection.immutable.::[A]
   val :: = scala.collection.immutable.::
 
   val +: = scala.collection.+:
