@@ -14,6 +14,7 @@ package scala.tools.nsc.classpath
 
 import java.net.URL
 
+import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.FatalError
 import scala.reflect.io.AbstractFile
@@ -102,7 +103,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
       }
     }
 
-    val distinctPackages: Seq[PackageEntry] = if (packages == null) Nil else packages.toArray(new Array[PackageEntry](packages.size()))
+    val distinctPackages: Seq[PackageEntry] = if (packages == null) Nil else unsafeWrapArray(packages.toArray(new Array[PackageEntry](packages.size())))
     val distinctClassesAndSources = mergeClassesAndSources(classesAndSourcesBuffer)
     ClassPathEntries(distinctPackages, distinctClassesAndSources)
   }

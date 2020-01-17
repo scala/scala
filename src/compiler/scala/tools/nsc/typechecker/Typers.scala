@@ -3721,7 +3721,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   context.set(ContextMode.DiagUsedDefaults)
                   def checkRecursive(res: Tree): Unit =
                     if (settings.warnRecurseWithDefault && !res.isErroneous && context.owner.hasTransOwner(funSym))
-                      context.warning(res.pos, "Recursive call used default arguments.")
+                      context.warning(res.pos, "Recursive call used default arguments instead of passing current argument values.")
 
                   doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt).tap(checkRecursive)
                 } else {

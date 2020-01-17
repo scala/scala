@@ -25,6 +25,7 @@ import javax.tools.Diagnostic.Kind
 import javax.tools.{Diagnostic, DiagnosticListener, JavaFileObject, ToolProvider}
 
 import scala.collection.{immutable, mutable}
+import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
@@ -664,7 +665,7 @@ object PipelineMain {
       case Array(path) if Files.isDirectory(Paths.get(path)) =>
         Files.walk(Paths.get(path)).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
       case _ =>
-        args.map(Paths.get(_))
+        unsafeWrapArray(args.map(Paths.get(_)))
     }
     val main = new PipelineMainClass(argFiles, defaultSettings)
     val result = main.process()
