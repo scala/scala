@@ -182,6 +182,8 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
     }
   }
   override def updated[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
+//    if (LHM.arity == 1) return updatedArity1(key, value)
+//    if (LHM.arity == 2) return updatedArity2(key, value)
     hm.get(key) match {
       case Some(old) =>
         if (old.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) {
@@ -271,6 +273,100 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         new LinkedHashMap(newFirst, newLink, newHm)
     }
   }
+  def updatedArity1[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
+    if (_last == null) {
+      LHM.newSingleton(key, value)
+    } else {
+      hm.getOrElse(key, null) match {
+        case null =>
+          if (_first eq _last) {
+            LHM.newDoubleton(_first.key, _first.value, key, value)
+          } else {
+            val newLink = new LHM.Link[K, V1](key, value, _last.key, LHM.End)
+            val oldLastUpdated = _last.copy(next = key)
+            new LinkedHashMap(_first, newLink, concatToHm(oldLastUpdated :: newLink :: Nil))
+          }
+        case old =>
+          if (old.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) {
+            this
+          } else {
+            val link = old.copy(value = value)
+
+            new LinkedHashMap(if (_first eq old) link else _first, if (_last eq old) link else _last, hm.updated(key, link))
+          }
+      }
+    }
+  }
+  def updatedArity2[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
+    if (_last == null) {
+      LHM.newSingleton(key, value)
+    } else {
+      hm.getOrElse(key, null) match {
+        case null =>
+          if (hm.size == 1) {
+            LHM.newDoubletonArity2(_first.key, _first.value, key, value)
+          } else {
+            val newLink = new LHM.Link[K, V1](key, value, _last.key, LHM.End)
+            val oldLastUpdated = _last.copy(next = if (hm.size % 2 == 0) key else newLink)
+            var allNewNodes = oldLastUpdated :: newLink :: Nil
+            var newFirst = _first
+            if (_last.prev != LHM.End) {
+              val oldLastPrev = hm(_last.prev.asInstanceOf[K])
+              if (oldLastPrev.next.isInstanceOf[LHM.Link[K, V]]) {
+                val newLastPrev = oldLastPrev.copy(next = oldLastUpdated)
+                allNewNodes = newLastPrev :: allNewNodes
+                if (oldLastPrev eq _first) {
+                  newFirst = newLastPrev
+                }
+              }
+            }
+            new LinkedHashMap(newFirst, newLink, concatToHm(allNewNodes))
+          }
+        case old =>
+          if (old.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) {
+            this
+          } else {
+            val newLink = new LHM.Link[K, V1](key, value, old.prev, old.next)
+
+            var newFirst: LHM.Link[K, V1] = _first
+            var newLast: LHM.Link[K, V1] = _last
+
+            var newPrevNode: LHM.Link[K, V1] = null
+
+            newLink.prev match {
+              case LHM.End =>
+                newFirst = newLink
+              case k =>
+                val prev = hm(k.asInstanceOf[K])
+                if (prev.next.isInstanceOf[LHM.Link[K, V]]) {
+                  newPrevNode = prev.copy(next = newLink)
+                  if (prev eq _first) {
+                    newFirst = newPrevNode
+                  }
+                }
+            }
+
+            if (_last eq old) {
+              newLast = newLink
+            }
+
+            new LinkedHashMap(newFirst, newLast, if (newPrevNode == null) hm.updated(key, newLink) else concatToHm(newPrevNode :: newLink :: Nil))
+
+            }
+          // todo
+//          val newLink = new LHM.Link[K, V1](key, value, old.prev, old.next)
+        //          return updated(key, value)
+//          if (old.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) {
+//            this
+//          } else {
+//            val link = old.copy(value = value)
+//
+//            new LinkedHashMap(if (_first eq old) link else _first, if (_last eq old) link else _last, hm.updated(key, link))
+//          }
+      }
+    }
+  }
+
   override def get(key: K): Option[V] = hm.getOrElse(key, LHM.End) match {
     case LHM.End => None
     case v => Some(v).asInstanceOf[Option[V]]
@@ -321,6 +417,21 @@ object LinkedHashMap extends MapFactory[LinkedHashMap] {
   private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
     def copy[V1 >: V](key: K = key, value: V1 = value, prev: Any = prev, next: Any = next): Link[K, V1] = new Link(key, value, prev, next)
     def tuple: (K, V) = (key, value)
+  }
+
+  private def newSingleton[K, V](k: K, v: V): LinkedHashMap[K, V] = {
+    val link = new Link(k, v, End, End)
+    new LinkedHashMap(link, link, HashMap.empty.updated(k, link))
+  }
+  private def newDoubleton[K, V](k0: K, v0: V, k1: K, v1: V): LinkedHashMap[K, V] = {
+    val link0 = new Link(k0, v0, End, k1)
+    val link1 = new Link(k1, v1, k0, End)
+    new LinkedHashMap(link0, link1, HashMap(k0 -> link0, k1 -> link1))
+  }
+  private def newDoubletonArity2[K, V](k0: K, v0: V, k1: K, v1: V): LinkedHashMap[K, V] = {
+    val link1 = new Link(k1, v1, k0, End)
+    val link0 = new Link(k0, v0, End, link1)
+    new LinkedHashMap(link0, link1, HashMap(k0 -> link0, k1 -> link1))
   }
 
   private final val Empty: LinkedHashMap[Nothing, Nothing] = new LinkedHashMap[Nothing, Nothing](null, null, HashMap.empty)
