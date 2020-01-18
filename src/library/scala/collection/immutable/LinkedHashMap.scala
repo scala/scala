@@ -17,13 +17,15 @@ import scala.collection.{Hashing, MapFactory, MapFactoryDefaults}
 import scala.collection.immutable.{LinkedHashMap => LHM}
 
 
-/** an immutable SeqMap implementation that is similar to a mutable LinkedHashMap
+/** An immutable.SeqMap implementation similar to a mutable.LinkedHashMap, where key-values are stored in nodes(`Link`s),
+ *  which refer forwards by REFERENCE to the next Link, and backwards by LOOKUP KEY to the previous Link.
  *
- * Keys are inserted in an immutable HashMap, inside a node (Link), which refers forwards by reference to the next
- * Link, and backwards by LOOKUP KEY to the previous Link.
- *
- * To have acceptable updates/removals, the entire Map is not forward-linked by reference. The forward-reference chain
- * breaks at regular intervals of `arity` nodes, where `arity` is a configurable parameter in the companion object.
+ * Referring forward by reference is beneficial for traversal, but to have acceptable update/remove performance, the
+ * entire Map cannot be forward-linked by reference. That would necessetate a complete map reconstruction performing
+ * immutable writes. The forward-reference chain therefor breaks at regular intervals of `arity` nodes, where `arity`
+ * is a configurable parameter in the companion object. After thorough benchmarking, it was found that `arity`= 2 strikes
+ * the most sensible balance, as the costliness of updates becomes drastically greater for arities >=3, while benefit
+ * to traversal diminishes.
  *
  * For instance, with `arity`= 2, we would have
  *
@@ -31,20 +33,21 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *
  * represented as:
  *
- *   ("a",1) ===> ("b",2) -> ("c",3") ===> ("d",4) -> ("e",5) ===> ("f",6) -> ("g",7)
- *           <-           <-          <-           <-         <-           <-
- *
+ *   * first                                                                                          * last
+ *   |                                                                                                |
+ *   |                                                                                                |
+ *   Link("a",1) ===> Link("b",2) -> Link("c",3") ===> Link("d",4) -> Link("e",5) ===> Link("f",6) -> Link("g",7)
+ *               <-               <-              <-               <-             <-               <-
  *
  *   legend: ===> is a reference by memory address
  *           ->   is a forward reference by KEY (via lookup in an immutable HashMap)
  *           <-   is a backward reference by KEY (via lookup in an immutable HashMap)
  *
  *
- *
  * Performance Characteristics:
  *
  *   Construction: Extremely fast (fastest of all immutable SeqMaps)! O(n log n). Approximately as fast as constructing
- *   a HashMap, with minimal overhead involved in wrapping values in `Link[K, V]` instances and mutating prev/next
+ *   a HashMap, with minimal overhead involved in wrapping values in Link[K, V]` instances and mutating prev/next
  *   values during building.
  *
  *   Traversal/Iteration: Extremely fast (fastest of all immutable SeqMaps)! O(n + (1/arity) * n log n).
@@ -52,7 +55,7 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *   each lookup is approximately 25 ns.
  *
  *   Lookup: Extremely fast (on par with other immutable SeqMaps)! O(log n). Simply a lookup in a
- *   `HashMap[K, Link[K, V]]`, and then an additional dereferencing of the value. Virtually as fast as HashMap itself.
+ *   `HashMap[K, Link[K, V]]`, and then an additional dereference of the value. Virtually as fast as HashMap itself.
  *
  *   Updates: Poor, but not pathological (50% slower than VectorMap)! O((arity/2) * log n). When updating a key,
  *   all nodes that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
@@ -185,8 +188,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
           this
         } else {
           val oldPrevLinks = allPreviousLinksInChain(old, includeArgument = false)
-
-          var newPrevLinks: List[LHM.Link[K, V]] = List.empty[LHM.Link[K, V]]
+          var newPrevLinks: List[LHM.Link[K, V]] = Nil
 
           {
             var curr = oldPrevLinks
@@ -238,13 +240,21 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         }
 
         val oldPrevLinks = allPreviousLinksInChain(_last, includeArgument = true)
-        val newPrevLinks = oldPrevLinks.foldLeft(List.empty[LHM.Link[K, V]]){
-          case (acc @ h :: _, link) =>
+        var newPrevLinks: List[LHM.Link[K, V]] = Nil
+
+        {
+          var curr = oldPrevLinks
+          while (!curr.isEmpty) {
+            val link = curr.head
             val copiedLink = link.copy()
-            h.next = copiedLink
-            copiedLink :: acc
-          case (Nil, link) =>
-            link.copy() :: Nil
+            newPrevLinks match {
+              case h :: _ =>
+                h.next = copiedLink
+              case _ =>
+            }
+            newPrevLinks = copiedLink :: newPrevLinks
+            curr = curr.tail
+          }
         }
 
         val newPrevLink = newPrevLinks.head
