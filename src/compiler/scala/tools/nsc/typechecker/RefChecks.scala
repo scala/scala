@@ -506,6 +506,7 @@ abstract class RefChecks extends Transform {
             overrideErrorWithMemberInfo("volatile type member cannot override type member with non-volatile upper bound:")
         }
         def checkOverrideTerm(): Unit = {
+          member.cookJavaRawInfo() // #11584, #11840
           other.cookJavaRawInfo() // #2454
           if (!overridesTypeInPrefix(lowType, highType, rootType, member.isModuleOrModuleClass && other.isModuleOrModuleClass)) { // 8
             overrideTypeError()
