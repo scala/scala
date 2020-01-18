@@ -102,24 +102,26 @@ private class JLineConsoleReader(val isAcross: Boolean) extends jconsole.Console
   }
 
   override def printColumns(items: ju.Collection[_ <: CharSequence]): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     printColumns_(items.asScala.toList map (_.toString))
   }
 
-  private def printColumns_(items: List[String]): Unit = if (items exists (_ != "")) {
-    val grouped = tabulate(items)
-    var linesLeft = if (isPaginationEnabled()) height - 1 else Int.MaxValue
-    grouped foreach { xs =>
-      println(xs.mkString)
-      linesLeft -= 1
-      if (linesLeft <= 0) {
-        linesLeft = emulateMore()
-        if (linesLeft < 0)
-          return
-      }
+  private def printColumns_(items: List[String]): Unit =
+    if (items.exists(_ != "")) {
+      val grouped = tabulate(items)
+      var linesLeft = if (isPaginationEnabled()) height - 1 else Int.MaxValue
+      def doLine(groups: Seq[Seq[String]]): Unit =
+        if (!groups.isEmpty) {
+          println(groups.head.mkString)
+          linesLeft -= 1
+          if (linesLeft <= 0)
+            linesLeft = emulateMore()
+          if (linesLeft >= 0)
+            doLine(groups.tail)
+        }
+      doLine(grouped)
     }
-  }
 
   def readOneKey(prompt: String) = {
     this.print(prompt)

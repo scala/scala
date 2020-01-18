@@ -15,7 +15,7 @@ package collection
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.StringBuilder
-import scala.language.{higherKinds, implicitConversions}
+import scala.language.implicitConversions
 import scala.math.{Numeric, Ordering}
 import scala.reflect.ClassTag
 

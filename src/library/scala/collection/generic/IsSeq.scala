@@ -40,7 +40,6 @@ trait IsSeq[Repr] extends IsIterable[Repr] {
 }
 
 object IsSeq {
-  import scala.language.higherKinds
 
   private val seqOpsIsSeqVal: IsSeq[Seq[Any]] =
     new IsSeq[Seq[Any]] {

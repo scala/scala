@@ -62,7 +62,7 @@ object JLineHistory {
 
     override def toString = "History(size = " + size + ", index = " + index + ")"
 
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
 
     override def asStrings(from: Int, to: Int): List[String] =
       entries(from).asScala.take(to - from).map(_.value.toString).toList

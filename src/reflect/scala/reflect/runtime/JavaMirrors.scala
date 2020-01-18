@@ -309,7 +309,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val isDerivedValueClass = symbol.isDerivedValueClass
       lazy val boxer = runtimeClass(symbol.toType).getDeclaredConstructors().head
       lazy val unboxer = {
-        val fields @ (field :: _) = symbol.toType.decls.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList
+        val fields @ (field :: _) = symbol.toType.decls.collect{ case ts: TermSymbol if ts.isParamAccessor && ts.isMethod => ts }.toList: @unchecked
         assert(fields.lengthIs == 1, s"$symbol: $fields")
         runtimeClass(symbol.asClass).getDeclaredMethod(field.name.toString)
       }

@@ -18,8 +18,8 @@ import java.lang.{StringBuilder, ThreadLocal}
 
 import scala.annotation.tailrec
 import scala.collection.SortedMap
-import scala.tools.asm
-import scala.tools.asm.Opcodes
+import scala.collection.immutable.ArraySeq.unsafeWrapArray
+import scala.tools.asm, asm.Opcodes
 import scala.tools.nsc.backend.jvm.BTypes.{InlineInfo, InternalName}
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.opt._
@@ -1145,7 +1145,7 @@ object BTypes {
         i += 1
       }
       scala.util.Sorting.quickSort(result)(Ordering.by(_._1))
-      result
+      unsafeWrapArray(result)
     }
   }
 

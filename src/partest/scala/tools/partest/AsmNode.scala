@@ -12,7 +12,7 @@
 
 package scala.tools.partest
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm
 import asm._
 import asm.tree._

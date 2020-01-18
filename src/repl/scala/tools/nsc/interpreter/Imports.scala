@@ -39,14 +39,14 @@ object `{{`
 trait Imports {
   self: IMain =>
 
-  import global.{Type, Tree, Import, ImportSelector, Select, Ident, newTermName, Symbol, TermSymbol, NoType, Name, enteringPickler}
+  import global.{Tree, Import, ImportSelector, Select, Ident, TermName, Symbol, NoType, Name, enteringPickler}
   import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw, INTERPRETER_IMPORT_LEVEL_UP }
   import global.definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
 
   /** Synthetic import handlers for the language defined imports. */
   private def makeWildcardImportHandler(sym: Symbol): ImportHandler = {
-    val hd :: tl = sym.fullName.split('.').toList map newTermName
+    val hd :: tl = sym.fullName.split('.').toList.map(TermName(_)): @unchecked
     val tree = Import(
       tl.foldLeft(Ident(hd): Tree)((x, y) => Select(x, y)),
       ImportSelector.wildList

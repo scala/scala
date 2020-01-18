@@ -54,7 +54,7 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
       val newReq = requestFromLine(
         (s"val $$INSTANCE = new ${req.lineRep.readPath}" :: (defines map (d =>
             s"val `$d` = $$INSTANCE${req.accessPath}.`$d`"))).mkString(";")
-      ).right.get
+      ).toOption.get
       newReq.compile
       Right(newReq)
     }

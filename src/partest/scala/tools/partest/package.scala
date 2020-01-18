@@ -15,6 +15,7 @@ package scala.tools
 import java.util.concurrent.{Callable, ExecutorService}
 
 import scala.concurrent.duration.Duration
+import scala.jdk.CollectionConverters._
 import scala.tools.nsc.util.Exceptional
 
 package object partest {
@@ -60,8 +61,6 @@ package object partest {
   }
 
   implicit class FileOps(val f: File) {
-    import scala.collection.JavaConverters._
-
     private def sf = SFile(f)
 
     // e.g. pos/t1234
@@ -176,7 +175,6 @@ package object partest {
   }
 
   def vmArgString = {
-    import scala.collection.JavaConverters._
     val javaVmArguments =
       java.lang.management.ManagementFactory.getRuntimeMXBean.getInputArguments.asScala.toList
     javaVmArguments.mkString(
@@ -187,7 +185,6 @@ package object partest {
   }
 
   def allPropertiesString = {
-    import scala.collection.JavaConverters._
     System.getProperties.asScala.toList.sorted map { case (k, v) => "%s -> %s\n".format(k, v) } mkString ""
   }
 

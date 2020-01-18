@@ -92,6 +92,7 @@ object Variance {
   val Contravariant = new Variance(-1)
   val Invariant     = new Variance(0)
 
+  @FunctionalInterface
   trait Extractor[A]     { def apply(x: A): Variance }
   trait Extractor2[A, B] { def apply(x: A, y: B): Variance }
 

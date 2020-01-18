@@ -193,23 +193,22 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    */
   protected val toBeRemovedAfterRun: HashSet[AbstractFile] = new HashSet[AbstractFile]
 
-  class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
-    override def default(key: SourceFile): Set[Response[Tree]] = Set()
-    override def addOne (binding: (SourceFile, Set[Response[Tree]])) = {
+  private def newResponseMap: ResponseMap =
+    mutable.HashMap.empty[SourceFile, Set[Response[Tree]]].withDefaultValue(Set.empty[Response[Tree]])
+  type ResponseMap = mutable.Map[SourceFile, Set[Response[Tree]]]
+  /* TODO restore assert on addOne
       assert(interruptsEnabled, "delayed operation within an ask")
-      super.addOne(binding)
-    }
-  }
+  */
 
   /** A map that associates with each abstract file the set of responses that are waiting
    *  (via waitLoadedTyped) for the unit associated with the abstract file to be loaded and completely typechecked.
    */
-  protected val waitLoadedTypeResponses = new ResponseMap
+  protected val waitLoadedTypeResponses = newResponseMap
 
   /** A map that associates with each abstract file the set of responses that ware waiting
    *  (via build) for the unit associated with the abstract file to be parsed and entered
    */
-  protected var getParsedEnteredResponses = new ResponseMap
+  protected var getParsedEnteredResponses = newResponseMap
 
   private def cleanResponses(rmap: ResponseMap): Unit = {
     for ((source, rs) <- rmap.toList) {
@@ -1117,7 +1116,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     /** Create a function application of a given view function to `tree` and typechecked it.
      */
     def viewApply(view: SearchResult): Tree = {
-      assert(view.tree != EmptyTree)
+      assert(view.tree != EmptyTree, "view.tree should be non-empty")
       val t = analyzer.newTyper(context.makeImplicit(reportAmbiguousErrors = false))
         .typed(Apply(view.tree, List(tree)) setPos tree.pos)
       if (!t.tpe.isErroneous) t
@@ -1268,7 +1267,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
 
   /** Implements CompilerControl.askLoadedTyped */
-  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean = false, onSameThread: Boolean = true): Unit = {
+  private[interactive] def waitLoadedTyped(source: SourceFile, response: Response[Tree], keepLoaded: Boolean, onSameThread: Boolean): Unit = {
     getUnit(source) match {
       case Some(unit) =>
         if (unit.isUpToDate) {
@@ -1287,7 +1286,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         debugLog("load unit and type")
         try reloadSources(List(source))
         finally {
-          waitLoadedTyped(source, response, onSameThread)
+          waitLoadedTyped(source, response, keepLoaded, onSameThread = true)
           if (!keepLoaded) removeUnitOf(source)
         }
     }
@@ -1352,7 +1351,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   class TyperResult(val tree: Tree) extends ControlThrowable
 
-  assert(globalPhase.id == 0)
+  assert(globalPhase.id == 0, "phase at zero")
 
   implicit def addOnTypeError[T](x: => T): OnTypeError[T] = new OnTypeError(x)
 

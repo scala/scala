@@ -404,9 +404,9 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
      * Here we get rid of the module class B, making sure that the class B is present.
      */
     def nestedClassSymbolsNoJavaModuleClasses = nestedClassSymbols.filter { s =>
-      val ok = !(s.isJavaDefined && s.isModuleClass) && !s.isPackage
+      val ok = !(s.isJavaDefined && s.isModuleClass) && !s.hasPackageFlag
       if (!ok)
-        if (!s.isPackage) {
+        if (!s.hasPackageFlag) {
           // We could also search in nestedClassSymbols for s.linkedClassOfClass, but sometimes that
           // returns NoSymbol, so it doesn't work.
           val nb = nestedClassSymbols.count(mc => mc.name == s.name && mc.owner == s.owner)

@@ -13,8 +13,7 @@
 package scala
 package reflect.internal.util
 
-import scala.reflect.io.{ AbstractFile, VirtualFile }
-import scala.collection.mutable.ArrayBuffer
+import scala.reflect.io.{AbstractFile, VirtualFile}
 import scala.annotation.tailrec
 import java.util.regex.Pattern
 import java.io.IOException

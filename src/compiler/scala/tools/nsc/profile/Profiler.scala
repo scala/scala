@@ -172,7 +172,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     reporter.reportBackground(this, threadRange)
   }
 
-  def outDir = settings.outputDirs.getSingleOutput.getOrElse(settings.outputDirs.outputs.head._2.file).toString
+  def outDir = settings.outputDirs.getSingleOutput.map(_.path).getOrElse(settings.outputDirs.outputs.head._2.path)
 
   RealProfiler.gcMx foreach {
     case emitter: NotificationEmitter => emitter.addNotificationListener(this, null, null)
@@ -181,7 +181,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
 
   val active = RealProfiler.allPlugins map (_.generate(this, settings))
 
-  private def doGC: Unit = {
+  private def doGC(): Unit = {
     System.gc()
     System.runFinalization()
   }
@@ -241,7 +241,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     assert(mainThread eq Thread.currentThread())
     if (chromeTrace != null) chromeTrace.traceDurationEventStart(Category.Phase, phase.name)
     if (settings.YprofileRunGcBetweenPhases.containsPhase(phase))
-      doGC
+      doGC()
     if (settings.YprofileExternalTool.containsPhase(phase)) {
       println("Profile hook start")
       ExternalToolHook.before()
@@ -259,7 +259,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
       ExternalToolHook.after()
     }
     val finalSnap = if (settings.YprofileRunGcBetweenPhases.containsPhase(phase)) {
-      doGC
+      doGC()
       initialSnap.updateHeap(RealProfiler.readHeapUsage())
     } else initialSnap
     if (chromeTrace != null) chromeTrace.traceDurationEventEnd(Category.Phase, phase.name)

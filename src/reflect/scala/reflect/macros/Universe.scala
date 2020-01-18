@@ -15,7 +15,6 @@ package reflect
 package macros
 
 import scala.language.implicitConversions
-import scala.language.higherKinds
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>

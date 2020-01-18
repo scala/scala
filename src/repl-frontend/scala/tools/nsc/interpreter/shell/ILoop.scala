@@ -21,25 +21,18 @@ import java.util.concurrent.TimeUnit
 import scala.PartialFunction.cond
 import scala.Predef.{println => _, _}
 import scala.annotation.tailrec
+import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
-import scala.util.Properties.jdkHome
 import scala.reflect.classTag
-import scala.reflect.internal.util.ScalaClassLoader._
 import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.{AbstractFile, Directory, File, Path}
 import scala.tools.asm.ClassReader
-import scala.tools.util.PathResolver
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.{stackTraceString, stringFromStream}
 import scala.tools.nsc.interpreter.{AbstractOrMissingHandler, Repl, IMain, Phased, jline}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Success}
 import scala.tools.nsc.interpreter.StdReplTags._
-import scala.tools.nsc.util.Exceptional.rootCause
 import scala.util.chaining._
-import scala.util.control.ControlThrowable
-import scala.jdk.CollectionConverters._
-
-
 
 /** The Scala interactive shell. This part provides the user interface,
   * with evaluation and auto-complete handled by IMain.
@@ -340,11 +333,19 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       intp.lastWarnings foreach { case (pos, msg) => intp.reporter.warning(pos, msg) }
   }
 
-  private def javapCommand(line: String): Result =
-    Javap(intp)(words(line): _*) foreach { res =>
-      if (res.isError) return s"${res.value}"
-      else res.show()
-    }
+  private def javapCommand(line: String): Result = {
+    def handle(results: List[Javap.JpResult]): Result =
+      results match {
+        case Nil => ()
+        case res :: rest =>
+          if (res.isError) res.value.toString
+          else {
+            res.show()
+            handle(rest)
+          }
+      }
+    handle(Javap(intp)(words(line): _*))
+  }
 
   private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
 

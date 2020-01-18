@@ -352,7 +352,7 @@ abstract class TailCalls extends Transform {
         case CaseDef(pat, guard, body) =>
           // CaseDefs are already translated and guards were moved into the body.
           // If this was not the case, guards would have to be transformed here as well.
-          assert(guard.isEmpty)
+          assert(guard.isEmpty, "empty guard")
           deriveCaseDef(tree)(transform)
 
         case If(cond, thenp, elsep) =>

@@ -76,7 +76,7 @@ object Duration {
   // "ms milli millisecond" -> List("ms", "milli", "millis", "millisecond", "milliseconds")
   private[this] def words(s: String) = (s.trim split "\\s+").toList
   private[this] def expandLabels(labels: String): List[String] = {
-    val hd :: rest = words(labels)
+    val hd :: rest = words(labels): @unchecked
     hd :: rest.flatMap(s => List(s, s + "s"))
   }
   private[this] val timeUnitLabels = List(

@@ -16,8 +16,6 @@ package immutable
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.Builder
-import scala.language.higherKinds
-
 
 /** An immutable map whose key-value pairs are sorted according to an [[scala.math.Ordering]] on the keys.
   *

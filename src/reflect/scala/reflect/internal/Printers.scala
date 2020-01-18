@@ -305,7 +305,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
 
     protected def printSuper(tree: Super, resultName: => String, checkSymbol: Boolean = true) = {
-      val Super(This(qual), mix) = tree
+      val Super(This(qual), mix) = tree: @unchecked
       if (qual.nonEmpty || (checkSymbol && tree.symbol != NoSymbol)) print(resultName + ".")
       print("super")
       if (mix.nonEmpty) print(s"[$mix]")
@@ -885,7 +885,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
             }
 
           if (printedParents.nonEmpty) {
-            val (clParent :: traits) = printedParents
+            val (clParent :: traits) = printedParents: @unchecked
             print(clParent)
 
             val constrArgss = ap match {

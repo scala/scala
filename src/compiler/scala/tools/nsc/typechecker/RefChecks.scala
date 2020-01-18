@@ -458,9 +458,9 @@ abstract class RefChecks extends Transform {
               // Only warn for the pair that has one leg in `clazz`.
               if (clazz == memberClass) checkOverrideDeprecated()
               if (settings.warnNullaryOverride) {
-                if (other.paramss.isEmpty && !member.paramss.isEmpty && !member.isJavaDefined) {
+                def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
+                if (other.paramss.isEmpty && !member.paramss.isEmpty && !javaDetermined(member) && !member.overrides.exists(javaDetermined))
                   reporter.warning(member.pos, "non-nullary method overrides nullary method")
-                }
               }
             }
           }
@@ -1315,11 +1315,8 @@ abstract class RefChecks extends Transform {
         else "may be unable to override"
 
       reporter.warning(memberSym.pos,
-        "%s%s references %s %s.".format(
-          memberSym.fullLocationString, comparison,
-          accessFlagsToString(otherSym), otherSym
-        ) + "\nClasses which cannot access %s %s %s.".format(
-          otherSym.decodedName, cannot, memberSym.decodedName)
+        s"""|${memberSym.fullLocationString}${comparison} references ${accessFlagsToString(otherSym)} ${otherSym}.
+            |Classes which cannot access ${otherSym.decodedName} ${cannot} ${memberSym.decodedName}.""".stripMargin
       )
     }
 

@@ -31,6 +31,7 @@ final class Depth private (val depth: Int) extends AnyVal with Ordered[Depth] {
   override def toString = s"Depth($depth)"
 }
 
+@FunctionalInterface
 trait DepthFunction[A] { def apply(a: A): Depth }
 
 object Depth {

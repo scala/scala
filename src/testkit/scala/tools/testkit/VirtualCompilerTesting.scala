@@ -19,7 +19,7 @@ import java.util.Locale
 
 import javax.tools._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}

@@ -14,8 +14,6 @@ package scala
 package collection
 package immutable
 
-import scala.language.higherKinds
-
 /**
   * Trait that overrides operations to take advantage of strict builders.
   */

@@ -13,9 +13,9 @@
 package scala.tools.nsc
 package interpreter
 
+import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.classpath.{AggregateClassPath, ClassPathFactory}
 import scala.tools.nsc.util.ClassPath
-import typechecker.Analyzer
 
 trait ReplGlobal extends Global {
 
@@ -29,7 +29,7 @@ trait ReplGlobal extends Global {
     val loader = super.findMacroClassLoader
     analyzer.macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(classPath.asURLs))
     val virtualDirectory = analyzer.globalSettings.outputDirs.getSingleOutput.get
-    new util.AbstractFileClassLoader(virtualDirectory, loader) {}
+    new AbstractFileClassLoader(virtualDirectory, loader) {}
   }
 
   override def optimizerClassPath(base: ClassPath): ClassPath = {

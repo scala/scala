@@ -15,10 +15,9 @@ package scala.tools.testkit
 import junit.framework.AssertionFailedError
 import org.junit.Assert._
 
-import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
-import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
+import scala.collection.mutable.{Clearable, ListBuffer}
+import scala.jdk.CollectionConverters._
+import scala.reflect.internal.util.BatchSourceFile
 import scala.reflect.io.VirtualDirectory
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{AbstractInsnNode, ClassNode, MethodNode}

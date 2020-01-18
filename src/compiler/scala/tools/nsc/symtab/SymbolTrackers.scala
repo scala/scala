@@ -183,14 +183,14 @@ trait SymbolTrackers {
       val hierarchy = Node(current)
       val Change(_, removed, symMap, _, _) = history.head
       def detailString(sym: Symbol) = {
-        val ownerString = sym.ownerChain splitAt 3 match {
-          case (front, back) =>
-            val xs = if (back.isEmpty) front else front :+ "..."
-            xs mkString " -> "
+        val ownerString = {
+          val (few, rest) = sym.ownersIterator.splitAt(3)
+          val ellipsis = Iterator("...").filter(_ => rest.hasNext)
+          (few ++ ellipsis).mkString(" -> ")
         }
         val treeStrings = symMap(sym).map(t => f"${t.shortClass}%10s: $t")
 
-        ownerString :: treeStrings mkString "\n"
+        (ownerString :: treeStrings).mkString("\n")
       }
       def removedString = (removed: List[Symbol]).zipWithIndex map {
         case (t, i) => "(%2s) ".format(i + 1) + detailString(t)

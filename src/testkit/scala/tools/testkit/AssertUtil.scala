@@ -15,7 +15,6 @@ package scala.tools.testkit
 import org.junit.Assert, Assert._
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
-import scala.jdk.CollectionConverters._
 import scala.collection.mutable
 import scala.concurrent.{Await, Awaitable}
 import scala.util.chaining._

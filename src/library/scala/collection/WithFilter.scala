@@ -12,8 +12,6 @@
 
 package scala.collection
 
-import scala.language.higherKinds
-
 /** A template trait that contains just the `map`, `flatMap`, `foreach` and `withFilter` methods
   * of trait `Iterable`.
   *

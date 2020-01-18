@@ -13,7 +13,6 @@
 package scala.collection.mutable
 
 import scala.collection.{IterableFactory, IterableFactoryDefaults, IterableOps}
-import scala.language.higherKinds
 
 /** Base trait for mutable sets */
 trait Set[A]
@@ -115,5 +114,4 @@ object Set extends IterableFactory.Delegate[Set](HashSet)
 
 
 /** Explicit instantiation of the `Set` trait to reduce class file size in subclasses. */
-@SerialVersionUID(3L)
 abstract class AbstractSet[A] extends scala.collection.AbstractSet[A] with Set[A]

@@ -23,6 +23,7 @@ package typechecker
 import scala.collection.mutable
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
 import scala.reflect.internal.TypesStats
+import scala.util.chaining._
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
@@ -872,7 +873,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     // Q: `typed` already calls `pluginsTyped` and `adapt`. the only difference here is that
                     // we pass `EmptyTree` as the `original`. intended? added in 2009 (53d98e7d42) by martin.
                     tree1 setType pluginsTyped(tree1.tpe, typer1, tree1, mode, pt)
-                    if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt)
+                    if (tree1.isEmpty) tree1 else typer1.adapt(tree1, mode, pt, original = EmptyTree)
                   } orElse { _ =>
                     originalErrors.foreach(context.issue)
                     setError(tree)
@@ -1110,7 +1111,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val boundOrSkolems = if (canIgnoreMismatch) bound ++ pt.skolemsExceptMethodTypeParams else Nil
         boundOrSkolems match {
           case Nil => AdaptTypeError(tree, tree.tpe, pt)
-          case _   => logResult(msg)(adapt(tree, mode, deriveTypeWithWildcards(boundOrSkolems)(pt)))
+          case _   => logResult(msg)(adapt(tree, mode, deriveTypeWithWildcards(boundOrSkolems)(pt), original = EmptyTree))
         }
       }
 
@@ -1224,7 +1225,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields), but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
-        else if (isScalaRepeatedParamType(tree.tpe) && !isScalaRepeatedParamType(pt)) adapt(tree setType(repeatedToSeq(tree.tpe)), mode, pt)
+        else if (isScalaRepeatedParamType(tree.tpe) && !isScalaRepeatedParamType(pt)) adapt(tree setType(repeatedToSeq(tree.tpe)), mode, pt, original = EmptyTree)
         else if (tree.tpe <:< pt)
           tree
         else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
@@ -3561,7 +3562,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (context.reporter.hasErrors)
               setError(tree)
             else {
-              import scala.util.chaining._
               // warn about conversions applied to blocks (#9386) in lieu of fixing
               def checkConversionsToBlockArgs(appl: Tree): Unit =
                 if (settings.warnByNameImplicit) {
@@ -3719,7 +3719,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   // useful when a default doesn't match parameter type, e.g. def f[T](x:T="a"); f[Int]()
                   checkNotMacro()
                   context.set(ContextMode.DiagUsedDefaults)
-                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt)
+                  def checkRecursive(res: Tree): Unit =
+                    if (settings.warnRecurseWithDefault && !res.isErroneous && context.owner.hasTransOwner(funSym))
+                      context.warning(res.pos, "Recursive call used default arguments instead of passing current argument values.")
+
+                  doTypedApply(tree, if (blockIsEmpty) fun else fun1, allArgs, mode, pt).tap(checkRecursive)
                 } else {
                   rollbackNamesDefaultsOwnerChanges()
                   tryTupleApply orElse duplErrorTree(NotEnoughArgsError(tree, fun, missing))

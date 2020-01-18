@@ -363,13 +363,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   /** Most recent tree handled which wasn't wholly synthetic. */
   private def mostRecentlyHandledTree: Option[Tree] = {
-    prevRequests.reverse foreach { req =>
-      req.handlers.reverse foreach {
-        case x: MemberDefHandler if x.definesValue && !isInternalTermName(x.name) => return Some(x.member)
-        case _ => ()
-      }
-    }
-    None
+    prevRequests.reverseIterator.map(_.handlers.reverseIterator.collectFirst {
+      case x: MemberDefHandler if x.definesValue && !isInternalTermName(x.name) => x.member
+    }).find(_.isDefined).flatten
   }
 
   private val logScope = scala.sys.props contains "scala.repl.scope"
@@ -1021,7 +1017,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def valueOfTerm(id: String): Option[Any] = exitingTyper {
     def value(fullName: String) = {
       import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
-      val pkg :: rest = (fullName split '.').toList
+      val pkg :: rest = (fullName split '.').toList: @unchecked
       val top = runtimeMirror.staticPackage(pkg)
       @annotation.tailrec
       def loop(inst: InstanceMirror, cur: Symbol, path: List[String]): Option[Any] = {
@@ -1095,15 +1091,15 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   def runtimeTypeOfTerm(id: String): Type = {
-    typeOfTerm(id) andAlso { tpe =>
-      val clazz      = classOfTerm(id) getOrElse { return NoType }
+    def conformingRuntimeType(tpe: Type, clazz: Class[_]): Type = {
       val staticSym  = tpe.typeSymbol
       val runtimeSym = getClassIfDefined(clazz.getName)
 
-      if ((runtimeSym != NoSymbol) && (runtimeSym != staticSym) && (runtimeSym isSubClass staticSym))
+      if (runtimeSym != NoSymbol && runtimeSym != staticSym && runtimeSym.isSubClass(staticSym))
         runtimeSym.info
       else NoType
     }
+    typeOfTerm(id).andAlso(tpe => classOfTerm(id).map(conformingRuntimeType(tpe, _)).getOrElse(NoType))
   }
 
   def cleanTypeAfterTyper(sym: => Symbol): Type = {
@@ -1294,9 +1290,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         val (types, terms) = handler.importedSymbols partition (_.name.isTypeName)
         val imps           = handler.implicitSymbols
         val found          = tokens filter (handler importsSymbolNamed _)
-        val typeMsg        = if (types.isEmpty) "" else types.size + " types"
-        val termMsg        = if (terms.isEmpty) "" else terms.size + " terms"
-        val implicitMsg    = if (imps.isEmpty) "" else imps.size + " are implicit"
+        val typeMsg        = if (types.isEmpty) "" else s"${types.size} types"
+        val termMsg        = if (terms.isEmpty) "" else s"${terms.size} terms"
+        val implicitMsg    = if (imps.isEmpty) "" else s"${imps.size} are implicit"
         val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
         val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
 
@@ -1337,7 +1333,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def symbolDefString(sym: Symbol): String = {
     TypeStrings.quieter(
       exitingTyper(sym.defString),
-      sym.owner.name + ".this.",
+      s"${sym.owner.name}.this.",
       sym.owner.fullName + "."
     )
   }

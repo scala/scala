@@ -27,7 +27,7 @@ import scala.tools.nsc.io.AbstractFile
  */
 final class AbstractFileReader(val buf: Array[Byte]) extends DataReader {
   @deprecated("Use other constructor", "2.13.0")
-  def this(file: AbstractFile) {
+  def this(file: AbstractFile) = {
     this(file.toByteArray)
   }
 

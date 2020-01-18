@@ -744,7 +744,7 @@ trait Definitions extends api.StandardDefinitions {
       pt match {
         case oap: OverloadedArgProto => (oap.hofParamTypes.head, WildcardType)
         case _                       =>
-          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs
+          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs: @unchecked
           (arg, res)
       }
 
@@ -1736,7 +1736,7 @@ trait Definitions extends api.StandardDefinitions {
         }
       }
 
-      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined(TermName("scala.runtime.java8"))
+      lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
     }
   }
 }

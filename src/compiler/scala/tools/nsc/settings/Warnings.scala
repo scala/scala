@@ -115,6 +115,7 @@ trait Warnings {
     val EtaSam                 = LintWarning("eta-sam",                   "The Java-defined target interface for eta-expansion was not annotated @FunctionalInterface.")
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
     val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
+    val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -144,6 +145,7 @@ trait Warnings {
   def warnEtaSam                 = lint contains EtaSam
   def lintDeprecation            = lint contains Deprecation
   def warnByNameImplicit         = lint contains ByNameImplicit
+  def warnRecurseWithDefault     = lint contains RecurseWithDefault
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

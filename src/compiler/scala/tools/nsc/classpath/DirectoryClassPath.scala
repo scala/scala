@@ -63,7 +63,9 @@ trait DirectoryLookup[FileEntryType <: ClassRepresentation] extends EfficientCla
       case None => emptyFiles
       case Some(directory) => listChildren(directory, Some(isPackage))
     }
-    nestedDirs.map(f => PackageEntryImpl(inPackage.entryName(getName(f))))
+    scala.collection.immutable.ArraySeq.unsafeWrapArray(
+      nestedDirs.map(f => PackageEntryImpl(inPackage.entryName(getName(f))))
+    )
   }
 
   protected def files(inPackage: PackageName): Seq[FileEntryType] = {
@@ -317,7 +319,7 @@ case class DirectorySourcePath(dir: File) extends JFileDirectoryLookup[SourceFil
 
   private def findSourceFile(className: String): Option[AbstractFile] = {
     val relativePath = FileUtils.dirPath(className)
-    val sourceFile = Stream("scala", "java")
+    val sourceFile = Iterator("scala", "java")
       .map(ext => new File(s"$dir/$relativePath.$ext"))
       .collectFirst { case file if file.exists() => file }
 

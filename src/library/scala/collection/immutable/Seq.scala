@@ -14,8 +14,6 @@ package scala
 package collection
 package immutable
 
-import scala.language.higherKinds
-
 trait Seq[+A] extends Iterable[A]
                  with collection.Seq[A]
                  with SeqOps[A, Seq, Seq[A]]

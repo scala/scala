@@ -214,9 +214,9 @@ trait FindMembers {
     }
   }
 
-  private[reflect] final class FindMembers(tpe: Type, excludedFlags: Long, requiredFlags: Long)
+  private[reflect] final class FindMembers(tpe0: Type, excludedFlags0: Long, requiredFlags0: Long)
     extends FindMemberBase[Scope]() {
-    init(tpe, nme.ANYname, excludedFlags, requiredFlags)
+    init(tpe0, nme.ANYname, excludedFlags0, requiredFlags0)
 
     private[this] var _membersScope: Scope   = null
     private def membersScope: Scope = {
@@ -325,8 +325,8 @@ trait FindMembers {
     }
   }
 
-  private[scala] final class HasMember(tpe: Type, name: Name, excludedFlags: Long, requiredFlags: Long) extends FindMemberBase[Boolean] {
-    init(tpe, name, excludedFlags, requiredFlags)
+  private[scala] final class HasMember(tpe0: Type, name0: Name, excludedFlags0: Long, requiredFlags0: Long) extends FindMemberBase[Boolean] {
+    init(tpe0, name0, excludedFlags0, requiredFlags0)
     private[this] var _result = false
     override protected def result: Boolean = _result
 

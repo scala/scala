@@ -14,8 +14,6 @@ package scala
 package reflect
 package internal
 
-import scala.language.implicitConversions
-
 import scala.io.Codec
 
 trait Names extends api.Names {
