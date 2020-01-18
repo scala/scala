@@ -21,7 +21,7 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *  which refer forwards by REFERENCE to the next Link, and backwards by LOOKUP KEY to the previous Link.
  *
  * Referring forward by reference is beneficial for traversal, but to have acceptable update/remove performance, the
- * entire Map cannot be forward-linked by reference. That would necessetate a complete map reconstruction performing
+ * entire Map cannot be forward-linked by reference. That would necessetate a complete map reconstruction when performing
  * immutable writes. The forward-reference chain therefor breaks at regular intervals of `arity` nodes, where `arity`
  * is a configurable parameter in the companion object. After thorough benchmarking, it was found that `arity`= 2 strikes
  * the most sensible balance, as the costliness of updates becomes drastically greater for arities >=3, while benefit
