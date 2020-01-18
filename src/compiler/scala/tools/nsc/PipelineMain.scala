@@ -12,11 +12,9 @@
 
 package scala.tools.nsc
 
-import java.io.{BufferedOutputStream, File}
+import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
-import java.nio.file.attribute.FileTime
 import java.nio.file.{Files, Path, Paths}
-import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 import java.util.{Collections, Locale}
@@ -30,9 +28,8 @@ import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.jdk.CollectionConverters._
 import scala.math.Ordering.Double.TotalOrdering
-import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
-import scala.reflect.io.{PlainNioFile, RootPath}
+import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
@@ -112,7 +109,6 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     val projects: List[Task] = argFiles.toList.map(commandFor)
     if (reporter.hasErrors) return false
 
-    val numProjects = projects.size
     val produces = mutable.LinkedHashMap[Path, Task]()
     for (p <- projects) {
       produces(p.outputDir) = p

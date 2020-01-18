@@ -39,7 +39,7 @@ object `{{`
 trait Imports {
   self: IMain =>
 
-  import global.{Type, Tree, Import, ImportSelector, Select, Ident, TermName, Symbol, TermSymbol, NoType, Name, enteringPickler}
+  import global.{Tree, Import, ImportSelector, Select, Ident, TermName, Symbol, NoType, Name, enteringPickler}
   import global.nme.{ INTERPRETER_IMPORT_WRAPPER => iw, INTERPRETER_IMPORT_LEVEL_UP }
   import global.definitions.{ ScalaPackage, JavaLangPackage, PredefModule }
   import memberHandlers._
