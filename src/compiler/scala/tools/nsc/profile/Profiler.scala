@@ -172,7 +172,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     reporter.reportBackground(this, threadRange)
   }
 
-  def outDir = settings.outputDirs.getSingleOutput.getOrElse(settings.outputDirs.outputs.head._2.file).toString
+  def outDir = settings.outputDirs.getSingleOutput.map(_.path).getOrElse(settings.outputDirs.outputs.head._2.path)
 
   RealProfiler.gcMx foreach {
     case emitter: NotificationEmitter => emitter.addNotificationListener(this, null, null)
