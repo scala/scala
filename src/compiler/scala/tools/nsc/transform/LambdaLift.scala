@@ -517,7 +517,7 @@ abstract class LambdaLift extends InfoTransform {
         case Assign(Apply(TypeApply(sel @ Select(qual, _), _), List()), rhs) =>
           // eliminate casts introduced by selecting a captured variable field
           // on the lhs of an assignment.
-          assert(sel.symbol == Object_asInstanceOf, "$asInstanceOf")
+          assert(sel.symbol == Object_asInstanceOf, "asInstanceOf")
           treeCopy.Assign(tree, qual, rhs)
         case Ident(name) =>
           val tree1 =
