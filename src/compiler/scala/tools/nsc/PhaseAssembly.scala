@@ -103,7 +103,7 @@ trait PhaseAssembly {
     /* Test if there are cycles in the graph, assign levels to the nodes
      * and collapse hard links into nodes
      */
-    def collapseHardLinksAndLevels(node: Node, lvl: Int) {
+    def collapseHardLinksAndLevels(node: Node, lvl: Int): Unit = {
       if (node.visited) {
         dump("phase-cycle")
         throw new FatalError(s"Cycle in phase dependencies detected at ${node.phasename}, created phase-cycle.dot")
@@ -287,7 +287,7 @@ trait PhaseAssembly {
    * file showing its structure.
    * Plug-in supplied phases are marked as green nodes and hard links are marked as blue edges.
    */
-  private def graphToDotFile(graph: DependencyGraph, filename: String) {
+  private def graphToDotFile(graph: DependencyGraph, filename: String): Unit = {
     val sbuf = new StringBuilder
     val extnodes = new mutable.HashSet[graph.Node]()
     val fatnodes = new mutable.HashSet[graph.Node]()

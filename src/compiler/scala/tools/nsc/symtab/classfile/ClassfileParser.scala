@@ -183,12 +183,11 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     }
   }
 
-  def getClassSymbol(name: String): Symbol = {
+  def getClassSymbol(name: String): Symbol =
     name match {
-      case name if name.endsWith(nme.MODULE_SUFFIX_STRING) => rootMirror getModuleByName newTermName(name).dropModule
-      case name                           => classNameToSymbol(name)
+      case name if name.endsWith(nme.MODULE_SUFFIX_STRING) => rootMirror.getModuleByName(name.stripSuffix(nme.MODULE_SUFFIX_STRING))
+      case name                                            => classNameToSymbol(name)
     }
-  }
 
   /**
    * Constructor of this class should not be called directly, use `newConstantPool` instead.

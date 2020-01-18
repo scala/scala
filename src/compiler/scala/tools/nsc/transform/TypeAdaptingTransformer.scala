@@ -61,7 +61,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
               else BLOCK(tree, REF(BoxedUnit_UNIT))
             case NothingClass => tree // a non-terminating expression doesn't need boxing
             case x =>
-              assert(x != ArrayClass)
+              assert(x != ArrayClass, "array")
               tree match {
                 case Apply(boxFun, List(arg)) if isSafelyRemovableUnbox(tree, arg) =>
                   arg
@@ -96,7 +96,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
               case UnitClass  =>
                 preservingSideEffects(tree, UNIT)
               case x          =>
-                assert(x != ArrayClass)
+                assert(x != ArrayClass, "array")
                 // don't `setType pt` the Apply tree, as the Apply's fun won't be typechecked if the Apply tree already has a type
                 Apply(currentRun.runDefinitions.unboxMethod(pt.typeSymbol), tree)
             }

@@ -56,11 +56,11 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
            |
            | Candidates:
            |
-           | ${candidates.map(c => c.name+":"+c.tpe).mkString("\n")}
+           | ${candidates.map(c => s"${c.name}:${c.tpe}").mkString("\n")}
            |
            | Candidates (signatures normalized):
            |
-           | ${candidates.map(c => c.name+":"+normalize(c.tpe, imeth.owner)).mkString("\n")}" """)
+           | ${candidates.map(c => s"${c.name}:${normalize(c.tpe, imeth.owner)}").mkString("\n")}" """)
     matching.head
   }
 

@@ -47,7 +47,7 @@ abstract class Erasure extends InfoTransform
     val mname      = newTermName("to" + numericSym.name)
     val conversion = tree.tpe member mname
 
-    assert(conversion != NoSymbol, tree + " => " + numericSym)
+    assert(conversion != NoSymbol, s"$tree => $numericSym")
     atPos(tree.pos)(Apply(Select(tree, conversion), Nil))
   }
 
@@ -570,10 +570,10 @@ abstract class Erasure extends InfoTransform
       if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
       val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
 
-      debuglog("generating bridge from %s (%s): %s to %s: %s".format(
+      debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
         other, flagsToString(newFlags),
-        otpe + other.locationString, member,
-        specialErasure(root)(member.tpe) + member.locationString)
+        otpe, other.locationString, member,
+        specialErasure(root)(member.tpe), member.locationString)
       )
 
       // the parameter symbols need to have the new owner

@@ -276,7 +276,7 @@ abstract class TreeBrowsers {
       val jmiGoto = new JMenuItem(
         new AbstractAction("Go to unit") {
           putValue(Action.ACCELERATOR_KEY, KeyStroke.getKeyStroke(KeyEvent.VK_N, menuKey, false))
-          override def actionPerformed(actionEvent: ActionEvent) {
+          override def actionPerformed(actionEvent: ActionEvent): Unit = {
             val query = JOptionPane.showInputDialog("Go to unit:", frame.getOwner)
             if (query ne null) { // "Cancel" returns null
               val units = treeModel.program.units

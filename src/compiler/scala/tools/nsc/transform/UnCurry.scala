@@ -279,7 +279,7 @@ abstract class UnCurry extends InfoTransform
         // when calling into java varargs, make sure it's an array - see bug #1360
         def sequenceToArray(tree: Tree): Tree = {
           val toArraySym = tree.tpe member nme.toArray
-          assert(toArraySym != NoSymbol)
+          assert(toArraySym != NoSymbol, "toArray")
           @tailrec
           def getClassTag(tp: Type): Tree = {
             val tag = localTyper.resolveClassTag(tree.pos, tp)

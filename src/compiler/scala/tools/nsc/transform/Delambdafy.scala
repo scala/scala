@@ -254,7 +254,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
     private def transformFunction(originalFunction: Function): Tree = {
       val target = targetMethod(originalFunction)
-      assert(target.hasFlag(Flags.STATIC))
+      assert(target.hasFlag(Flags.STATIC), "static")
       target.setFlag(notPRIVATE)
 
       val funSym = originalFunction.tpe.typeSymbolDirect
