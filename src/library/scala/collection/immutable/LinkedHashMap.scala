@@ -363,7 +363,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 
   override def get(key: K): Option[V] = hm.getOrElse(key, LHM.End) match {
     case LHM.End => None
-    case v => Some(v).asInstanceOf[Option[V]]
+    case v => Some(v.asInstanceOf[LHM.Link[K, V]].value).asInstanceOf[Option[V]]
   }
   override def iterator: Iterator[(K, V)] = {
     if (_first == null) {
