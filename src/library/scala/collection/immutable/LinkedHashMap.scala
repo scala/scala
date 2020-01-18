@@ -65,6 +65,7 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *   Link, so that it refers back (by key) to the Link before the removed Link. Only the immediately succeeding node
  *   needs replacing though.
  *
+ * @author Josh Lemer
  */
 final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], private val _last: LHM.Link[K, V], hm: HashMap[K, LHM.Link[K, V]])
   extends AbstractMap[K, V]
