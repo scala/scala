@@ -57,16 +57,16 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *   Lookup: Extremely fast (on par with other immutable SeqMaps)! O(log n). Simply a lookup in a
  *   `HashMap[K, Link[K, V]]`, and then an additional dereference of the value. Virtually as fast as HashMap itself.
  *
- *   Updates: Poor, but not pathological (40% slower than VectorMap)! O((arity/2) * log n). When updating a key,
+ *   Updates: Poor, but not pathological (40% slower than VectorMap, faster than TreeSeqMap)! O((arity/2) * log n). When updating a key,
  *   all nodes that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
  *   the node only refer backwards by key, not by reference, so they need not be adjusted. So an update is equivalent to
  *   roughly arity/2 lookups and arity/2 updates. The shallow mutation capabilities of immutable.HashMap are however
  *   utilized to mitigate the downside.
  *
- *   Removals: Poor, but not pathological (50% slower than VectorMap)! O((arity) * log n). Virtually all the same
- *   characteristics as updates, except with removals, you must also replace the single Link that succeeds the removed
- *   Link, so that it refers back (by key) to the Link before the removed Link. Only the immediately succeeding node
- *   needs replacing though.
+ *   Removals: Poor, but not pathological (50% slower than VectorMap (probably optimizeable down to 40% slower))!
+ *   O((arity) * log n). Virtually all the same characteristics as updates, except with removals, you must also replace
+ *   the single Link that succeeds the removed Link, so that it refers back (by key) to the Link before the removed
+ *   Link. Only the immediately succeeding node needs replacing though, not all succeeding links in the segment..
  *
  * @author Josh Lemer
  */
@@ -273,7 +273,9 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
         new LinkedHashMap(newFirst, newLink, newHm)
     }
   }
+  /** implementation of updated, but hard-coded specialized for arity=1 */
   def updatedArity1[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
+    // assert(LHM.arity == 2)
     if (_last == null) {
       LHM.newSingleton(key, value)
     } else {
@@ -297,7 +299,9 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
       }
     }
   }
+  /** implementation of updated, but hard-coded specialized for arity=2 */
   def updatedArity2[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
+    // assert(LHM.arity == 2)
     if (_last == null) {
       LHM.newSingleton(key, value)
     } else {
