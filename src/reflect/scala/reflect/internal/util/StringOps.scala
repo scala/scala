@@ -28,7 +28,7 @@ trait StringOps {
     case w :: Nil => w
     case _        =>
       def lcp(ss: List[String]): String = {
-        val w :: ws = ss
+        val w :: ws = ss: @unchecked
         if (w == "") ""
         else if (ws exists (s => s == "" || (s charAt 0) != (w charAt 0))) ""
         else w.substring(0, 1) + lcp(ss map (_ substring 1))

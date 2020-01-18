@@ -527,7 +527,7 @@ trait ReificationSupport { self: SymbolTable =>
 
     object SyntacticFunction extends SyntacticFunctionExtractor {
       def apply(params: List[Tree], body: Tree): Function = {
-        val params0 :: Nil = mkParam(params :: Nil, PARAM)
+        val params0 :: Nil = mkParam(params :: Nil, PARAM): @unchecked
         require(params0.forall { _.rhs.isEmpty }, "anonymous functions don't support parameters with default values")
         Function(params0, body)
       }

@@ -180,7 +180,7 @@ abstract class TreeGen {
   def mkUnattributedRef(sym: Symbol): RefTree = mkUnattributedRef(sym.fullNameAsName('.'))
 
   def mkUnattributedRef(fullName: Name): RefTree = {
-    val hd :: tl = nme.segments(fullName.toString, assumeTerm = fullName.isTermName)
+    val hd :: tl = nme.segments(fullName.toString, assumeTerm = fullName.isTermName): @unchecked
     tl.foldLeft(Ident(hd): RefTree)(Select(_,_))
   }
 

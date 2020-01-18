@@ -744,7 +744,7 @@ trait Definitions extends api.StandardDefinitions {
       pt match {
         case oap: OverloadedArgProto => (oap.hofParamTypes.head, WildcardType)
         case _                       =>
-          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs
+          val arg :: res :: Nil = pt.baseType(PartialFunctionClass).typeArgs: @unchecked
           (arg, res)
       }
 

@@ -276,7 +276,7 @@ quant)
     def pop(prev: TimerSnapshot) = {
       val (nanos0, start) = prev
       val duration = System.nanoTime() - start
-      val (topTimer, nestedNanos) :: rest = elems
+      val (topTimer, nestedNanos) :: rest = elems: @unchecked
       topTimer.totalNanos.addAndGet(nanos0 + duration)
       topTimer.specificNanos += duration - nestedNanos
       topTimer.timings.incrementAndGet()
