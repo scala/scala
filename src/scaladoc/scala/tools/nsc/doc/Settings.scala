@@ -87,6 +87,13 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     "comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."
   )
 
+  val jdkApiDocBase = StringSetting (
+    "-jdk-api-doc-base",
+    "url",
+    "URL used to link Java API references.",
+    ""
+  )
+
   val docgenerator = StringSetting (
     "-doc-generator",
     "class-name",

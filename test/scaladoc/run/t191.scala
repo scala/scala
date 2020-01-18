@@ -19,6 +19,7 @@ object Test extends ScaladocModelTest {
          *  - [[scala]] Linking to a package
          *  - [[scala.AbstractMethodError]] Linking to a member in the package object
          *  - [[scala.Predef.String]] Linking to a member in an object
+         *  - [[java.lang.Throwable]] Linking to a class in the JDK
          *
          *  Don't look at:
          *  - [[scala.NoLink]] Not linking :)
@@ -32,6 +33,7 @@ object Test extends ScaladocModelTest {
     """
 
   def scalaURL = "http://bog.us"
+  val jdkURL = "http://java.us"
 
   override def scaladocSettings = {
     val samplePath = getClass.getClassLoader.getResource("scala/Function1.class").getPath
@@ -41,7 +43,7 @@ object Test extends ScaladocModelTest {
     } else { // individual class files on disk
       samplePath.replace('\\', '/').dropRight("scala/Function1.class".length)
     }
-    s"-no-link-warnings -doc-external-doc $scalaLibPath#$scalaURL"
+    s"-no-link-warnings -doc-external-doc $scalaLibPath#$scalaURL -jdk-api-doc-base $jdkURL"
   }
 
   def testModel(rootPackage: Package): Unit = {
@@ -50,7 +52,9 @@ object Test extends ScaladocModelTest {
 
     def check(memberDef: Def, expected: Int): Unit = {
       val externals = memberDef.valueParams(0)(0).resultType.refEntity collect {
-        case (_, (LinkToExternalTpl(name, url, _), _)) => assert(url.contains(scalaURL)); name
+        case (_, (LinkToExternalTpl(name, url, _), _)) =>
+          assert(url.contains(scalaURL) || url.contains(jdkURL))
+          name
       }
       assert(externals.size == expected)
     }
@@ -58,7 +62,7 @@ object Test extends ScaladocModelTest {
     check(test._method("foo"), 1)
     check(test._method("bar"), 0)
     check(test._method("barr"), 2)
-    check(test._method("baz"), 0)
+    check(test._method("baz"), 1)
 
     val expectedUrls = collection.mutable.Set[String](
                          "scala/collection/Map",
@@ -72,7 +76,7 @@ object Test extends ScaladocModelTest {
                       ).map( _.split("#").toSeq ).map({
                         case Seq(one)      => scalaURL + "/" + one + ".html"
                         case Seq(one, two) => scalaURL + "/" + one + ".html#" + two
-                      })
+                      }) ++ Set(s"$jdkURL/java/lang/Throwable.html")
 
     def isExpectedExternalLink(l: EntityLink) = l.link match {
       case LinkToExternalTpl(name, baseUrlString, tpl: TemplateEntity) =>
@@ -84,7 +88,7 @@ object Test extends ScaladocModelTest {
       case _ => false
     }
 
-    assert(countLinks(test.comment.get, isExpectedExternalLink) == 8,
-            "${countLinks(test.comment.get, isExpectedExternalLink)} == 8")
+    assert(countLinks(test.comment.get, isExpectedExternalLink) == 9,
+            "${countLinks(test.comment.get, isExpectedExternalLink)} == 9")
   }
 }
