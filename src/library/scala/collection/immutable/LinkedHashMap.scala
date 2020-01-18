@@ -25,14 +25,14 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  * To have acceptable updates/removals, the entire Map is not forward-linked by reference. The forward-reference chain
  * breaks at regular intervals of `arity` nodes, where `arity` is a configurable parameter in the companion object.
  *
- * For instance, with `arity`= 3, we would have
+ * For instance, with `arity`= 2, we would have
  *
  * LinkedHashMap("a" -> 1, "b" -> 2, "c" -> 3, "d" -> 4, "e" -> 5", "f" -> 6, "g" -> 7)
  *
  * represented as:
  *
- *   ("a",1) ===> ("b",2) ===> ("c",3") -> ("d",4) ===> ("e",5) ===> ("f",6) -> ("g",7)
- *            <-           <-           <-          <-           <-          <-
+ *   ("a",1) ===> ("b",2) -> ("c",3") ===> ("d",4) -> ("e",5) ===> ("f",6) -> ("g",7)
+ *           <-           <-          <-           <-         <-           <-
  *
  *
  *   legend: ===> is a reference by memory address
@@ -54,11 +54,16 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *   Lookup: Extremely fast (on par with other immutable SeqMaps)! O(log n). Simply a lookup in a
  *   `HashMap[K, Link[K, V]]`, and then an additional dereferencing of the value. Virtually as fast as HashMap itself.
  *
- *   Updates: Quite slow, but not pathological (1/3 as fast as VectorMap)! O((arity/2) * log n). When updating a key, all nodes
- *   that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
+ *   Updates: Poor, but not pathological (50% slower than VectorMap)! O((arity/2) * log n). When updating a key,
+ *   all nodes that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
  *   the node only refer backwards by key, not by reference, so they need not be adjusted. So an update is equivalent to
  *   roughly arity/2 lookups and arity/2 updates. The shallow mutation capabilities of immutable.HashMap are however
  *   utilized to mitigate the downside.
+ *
+ *   Removals: Poor, but not pathological (50% slower than VectorMap)! O((arity) * log n). Virtually all the same
+ *   characteristics as updates, except with removals, you must also replace the single Link that succeeds the removed
+ *   Link, so that it refers back (by key) to the Link before the removed Link. Only the immediately succeeding node
+ *   needs replacing though.
  *
  */
 final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], private val _last: LHM.Link[K, V], hm: HashMap[K, LHM.Link[K, V]])
@@ -300,7 +305,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 }
 
 object LinkedHashMap extends MapFactory[LinkedHashMap] {
-  final def arity: Int = 3
+  final def arity: Int = 2
   private final val End: AnyRef = new AnyRef {}
   private final class Link[K, +V](val key: K, var value: V @uncheckedVariance, val prev: Any, var next: Any) {
     def copy[V1 >: V](key: K = key, value: V1 = value, prev: Any = prev, next: Any = next): Link[K, V1] = new Link(key, value, prev, next)
