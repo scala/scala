@@ -352,17 +352,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 
             new LinkedHashMap(newFirst, newLast, if (newPrevNode == null) hm.updated(key, newLink) else concatToHm(newPrevNode :: newLink :: Nil))
 
-            }
-          // todo
-//          val newLink = new LHM.Link[K, V1](key, value, old.prev, old.next)
-        //          return updated(key, value)
-//          if (old.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) {
-//            this
-//          } else {
-//            val link = old.copy(value = value)
-//
-//            new LinkedHashMap(if (_first eq old) link else _first, if (_last eq old) link else _last, hm.updated(key, link))
-//          }
+          }
       }
     }
   }
