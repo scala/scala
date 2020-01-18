@@ -57,7 +57,7 @@ import scala.collection.immutable.{LinkedHashMap => LHM}
  *   Lookup: Extremely fast (on par with other immutable SeqMaps)! O(log n). Simply a lookup in a
  *   `HashMap[K, Link[K, V]]`, and then an additional dereference of the value. Virtually as fast as HashMap itself.
  *
- *   Updates: Poor, but not pathological (50% slower than VectorMap)! O((arity/2) * log n). When updating a key,
+ *   Updates: Poor, but not pathological (40% slower than VectorMap)! O((arity/2) * log n). When updating a key,
  *   all nodes that PRECEDE that node, in its `arity`-sized segment must be updated accordingly. Any nodes occurring after
  *   the node only refer backwards by key, not by reference, so they need not be adjusted. So an update is equivalent to
  *   roughly arity/2 lookups and arity/2 updates. The shallow mutation capabilities of immutable.HashMap are however
