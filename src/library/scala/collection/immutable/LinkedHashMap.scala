@@ -78,6 +78,14 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
 
   override def mapFactory: MapFactory[LinkedHashMap] = LinkedHashMap
 
+  /** Returns a List of all links that precede `link` in the hashmap, before there is a break in the forward references.
+   *
+   * The returned list will be forward-facing. That is, the first element will be the link in the segment that appears
+   * earliest in the map. The next element immediately follows, etc.
+   *
+   * If `includeArgument` is true, then the argument will be included as the last element of the list. Otherwise, it
+   * will not be included in the result.
+   */
   private[this] def allPreviousLinksInChain(link: LHM.Link[K, V], includeArgument: Boolean): List[LHM.Link[K, V]] = {
     var result: List[LHM.Link[K, V]] = Nil
     if (includeArgument) result = link :: result
@@ -94,6 +102,10 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
     }
     result
   }
+
+  /** Optimized method to concatenate a list of links onto `hm`, where the keys are the link's keys, and the values are
+   * the links themselves. Uses the finicky/tricky shallow mutation capabilities of the immutable.HashMap structure.
+   * */
   private[this] def concatToHm[V1 >: V](list: List[LHM.Link[K, V1]]): HashMap[K, LHM.Link[K, V1]] = {
     var rootNode: BitmapIndexedMapNode[K, LHM.Link[K, V1]] = hm.rootNode
     var curr = list
@@ -275,7 +287,7 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
   }
   /** implementation of updated, but hard-coded specialized for arity=1 */
   def updatedArity1[V1 >: V](key: K, value: V1): LinkedHashMap[K, V1] = {
-    // assert(LHM.arity == 2)
+    // assert(LHM.arity == 1)
     if (_last == null) {
       LHM.newSingleton(key, value)
     } else {
@@ -361,10 +373,11 @@ final class LinkedHashMap[K, +V] private (private val _first: LHM.Link[K, V], pr
     }
   }
 
-  override def get(key: K): Option[V] = hm.getOrElse(key, LHM.End) match {
-    case LHM.End => None
+  override def get(key: K): Option[V] = hm.getOrElse(key, null) match {
+    case null => None
     case v => Some(v.asInstanceOf[LHM.Link[K, V]].value).asInstanceOf[Option[V]]
   }
+
   override def iterator: Iterator[(K, V)] = {
     if (_first == null) {
       Iterator.empty
