@@ -167,6 +167,7 @@ class LazyListTest {
     assertEquals("LazyList(1, 2, 3, 4, <cycle>)", cyc.toString)
   }
 
+  @Test
   def hasCorrectDrop(): Unit = {
     assertEquals(LazyList(), LazyList().drop(2))
     assertEquals(LazyList(), LazyList(1).drop(2))
