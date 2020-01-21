@@ -1056,12 +1056,11 @@ trait Contexts { self: Analyzer =>
           // consistent with what is done just below for named imports.
           collectImplicits(qual.tpe.implicitMembers, pre, imported = true)
         case (sel @ ImportSelector(from, _, to, _)) :: sels1 =>
-          var impls = collect(sels1).filter(info => info.name != from)
-          if (!sel.isMask) {
+          var impls = collect(sels1).filter(_.name != from)
+          if (!sel.isMask)
             withQualifyingImplicitAlternatives(imp, to, pre) { sym =>
               impls = new ImplicitInfo(to, pre, sym) :: impls
             }
-          }
           impls
       }
       //debuglog("collect implicit imports " + imp + "=" + collect(imp.tree.selectors))//DEBUG
@@ -1149,8 +1148,8 @@ trait Contexts { self: Analyzer =>
       val imp1Explicit = imp1 isExplicitImport name
       val imp2Explicit = imp2 isExplicitImport name
       val ambiguous    = if (imp1.depth == imp2.depth) imp1Explicit == imp2Explicit else !imp1Explicit && imp2Explicit
-      val imp1Symbol   = (imp1 importedSymbol name).initialize filter (s => isAccessible(s, imp1.qual.tpe, superAccess = false))
-      val imp2Symbol   = (imp2 importedSymbol name).initialize filter (s => isAccessible(s, imp2.qual.tpe, superAccess = false))
+      val imp1Symbol   = imp1.importedSymbol(name).initialize.filter(isAccessible(_, imp1.qual.tpe, superAccess = false))
+      val imp2Symbol   = imp2.importedSymbol(name).initialize.filter(isAccessible(_, imp2.qual.tpe, superAccess = false))
 
       // The types of the qualifiers from which the ambiguous imports come.
       // If the ambiguous name is a value, these must be the same.
@@ -1762,11 +1761,9 @@ trait Contexts { self: Analyzer =>
     def isExplicitImport(name: Name): Boolean = tree.selectors.exists(_.introduces(name))
 
     /** The symbol with name `name` imported from import clause `tree`. */
-    def importedSymbol(name: Name): Symbol = importedSymbol(name, requireExplicit = false, record = true)
+    def importedSymbol(name: Name): Symbol = importedSelectedSymbol(name, requireExplicit = false)._2
 
     /** If requireExplicit is true, wildcard imports are not considered. */
-    def importedSymbol(name: Name, requireExplicit: Boolean, record: Boolean): Symbol = importedSelectedSymbol(name, requireExplicit)._2
-
     def importedSelectedSymbol(name: Name, requireExplicit: Boolean): (ImportSelector, Symbol) = {
       var result: Symbol = NoSymbol
       var renamed = false
