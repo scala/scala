@@ -217,6 +217,9 @@ trait Names extends api.Names {
     def toTypeName: TypeName
     def companionName: Name
 
+    final def asTypeOf[N <: Name](other: N): N =
+      (if (other.isTermName) toTermName else toTypeName).asInstanceOf[N]
+
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name with ThisNameType
     override def subSequence(from: Int, to: Int): CharSequence = subName(from, to)

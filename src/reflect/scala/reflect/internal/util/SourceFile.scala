@@ -61,6 +61,8 @@ abstract class SourceFile {
     * Bounds are checked and clipped as necessary.
     */
   def lines(start: Int = 0, end: Int = lineCount): Iterator[String]
+
+  final def isJava: Boolean = file.name endsWith ".java"
 }
 
 /** An object representing a missing source file.
