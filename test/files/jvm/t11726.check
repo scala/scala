@@ -1,0 +1,30 @@
+class CS_1.info: [T, U <: jli.CS_1[T,U]#R]Object {
+  class R extends Object
+  object R
+  def <init>(): jli.CS_1[T,U]
+}
+class SD_1.companion.moduleClass.info:  {
+  class Q extends CS_1[String,jli.SD_1]
+  object Q
+}
+
+class CS_2.info: [T, U <: jli.CS_2[T,U]#R]Object {
+  def <init>(): jli.CS_2[T,U]
+  object R
+  class R extends Object
+}
+class SD_2.companion.moduleClass.info: AnyRef {
+  def <init>(): jli.SD_2.type
+  object Q
+  class Q extends CS_2[String,jli.SD_2]
+}
+
+class CS_1.info: [T, U <: jli.CS_1[T,U]#$R]Object {
+  class $R extends Object
+  object $R
+  def <init>(): jli.CS_1[T,U]
+}
+class SD_1.companion.moduleClass.info:  {
+  class Q extends CS_1[String,jli.SD_1]
+  object Q
+}
