@@ -1,0 +1,10 @@
+t11282.scala:4: error: Unit does not take parameters
+  a().fail[scala.Int] // error
+   ^
+t11282.scala:6: error: Unit does not take parameters
+  b().fail[scala.Int] // error
+   ^
+t11282.scala:9: error: wrong number of type parameters for method asInstanceOf of type [T0]=> T0
+  Map().empty.asInstanceOf[String, (String, String)] // error
+                          ^
+three errors found
