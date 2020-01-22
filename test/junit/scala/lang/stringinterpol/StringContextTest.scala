@@ -78,7 +78,10 @@ class StringContextTest {
     }
     new X().thistle()   // this'll be good
   }
-
+  @Test def strict() = {
+    val s = "World"
+    assertEquals(ss"Hello $s", "Hello World")
+  }
   @Test def t6631_baseline() = assertEquals("\f\r\n\t", s"""\f\r\n\t""")
 
   // verifying that the standard interpolators can be supplanted

@@ -90,6 +90,50 @@ case class StringContext(parts: String*) {
    *          use of a StringBuilder.
    */
   def s(args: Any*): String = macro ??? // fasttracked to scala.tools.reflect.FastStringInterpolator::interpolateS
+
+  /** The strict string interpolator.
+    *
+    *  It inserts its arguments of type String between corresponding parts of the string context.
+    *  It also treats standard escape sequences as defined in the Scala specification.
+    *  Here's an example of usage:
+    *  {{{
+    *    val name = "James"
+    *    println(ss"Hello, \$name")  // Hello, James
+    *  }}}
+    *  In this example, the expression \$name is replaced with the value of the
+    *  variable `name`.
+    *  The `ss` interpolator accepts only Strings or any arbitrary expression of type String within
+    *  a `\${}` block, for example:
+    *  {{{
+    *    val list = List(1, 2, 3)
+    *    println(ss"list = \${list.mkString(",")}")
+    *  }}}
+    *  will print the string `list = 1,2,3`.
+    *
+    *  Note that it won't accept any non-string values or expressions, for example:
+    *  {{{
+    *    println(ss"1 + 1 = \${1 + 1}")
+    *  }}}
+    *  will not compile, for this use case either use
+    *  {{{
+    *    println(s"1 + 1 = \${1 + 1}")
+    *  }}}
+    *  or explicitly convert to String
+    *  {{{
+    *    println(ss"1 + 1 = \${(1 + 1).toString}")
+    *  }}}
+    *  @param `args` The arguments to be inserted into the resulting string.
+    *  @throws IllegalArgumentException
+    *          if the number of `parts` in the enclosing `StringContext` does not exceed
+    *          the number of arguments `arg` by exactly 1.
+    *  @throws StringContext.InvalidEscapeException
+    *          if a `parts` string contains a backslash (`\`) character
+    *          that does not start a valid escape sequence.
+    *  @note   The Scala compiler may replace a call to this method with an equivalent, but more efficient,
+    *          use of a StringBuilder.
+    */
+  def ss(args: String*): String = s(args: _*)
+
   object s {
     /** The simple string matcher.
      *
