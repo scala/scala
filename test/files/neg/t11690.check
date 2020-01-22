@@ -1,0 +1,6 @@
+t11690.scala:11: warning: Unused import
+  import X._
+           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
