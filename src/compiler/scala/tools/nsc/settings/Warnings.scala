@@ -157,7 +157,7 @@ trait Warnings {
   ).withPostSetHook { s =>
     if (s contains Unused) warnUnused.enable(UnusedWarnings.Linted)
     else warnUnused.disable(UnusedWarnings.Linted)
-    if (s.contains(Deprecation)) deprecation.value = true
+    if (s.contains(Deprecation) && deprecation.isDefault) deprecation.value = true
   }
 
   // Backward compatibility.

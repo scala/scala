@@ -79,7 +79,7 @@ class MainGenericRunner {
         case _  =>
           // We start the repl when no arguments are given.
           // If user is agnostic about both -feature and -deprecation, turn them on.
-          if (settings.deprecation.isDefault && settings.feature.isDefault) {
+          if (settings.deprecation.isDefault && settings.feature.isDefault && settings.lint.isDefault) {
             settings.deprecation.value = true
             settings.feature.value = true
           }
