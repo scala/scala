@@ -122,7 +122,7 @@ class BigDecimalTest {
   def consistentRoundingTest(): Unit = {
     val mc6 = new MC(6)
     val sameRounding = List(
-      List(
+      List[Any](
         123457000,
         123457000L,
         123457e3,
@@ -137,7 +137,7 @@ class BigDecimalTest {
         BigDecimal.decimal(123456789d, mc6),
         BigDecimal.decimal(new BD("123456789"), mc6)
       ),
-      List(
+      List[Any](
         123456789,
         123456789L,
         123456789d,

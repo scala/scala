@@ -62,7 +62,7 @@ class AssertThrowsTest {
         assertEquals(1, ae.getSuppressed.length)
         assertEquals("Exception failed check: scala.tools.testkit.AssertThrowsTest$Foo", ae.getMessage)
         assertEquals(classOf[Foo], ae.getSuppressed.head.getClass)
-      case t: Throwable => fail("Expected an AssertionError: $t")
+      case t: Throwable => fail(s"Expected an AssertionError: $t")
     }
 
   @Test
@@ -74,6 +74,6 @@ class AssertThrowsTest {
         assertEquals(1, ae.getSuppressed.length)
         assertEquals("Wrong exception: expected scala.tools.testkit.AssertThrowsTest$Foo but was scala.tools.testkit.AssertThrowsTest$Bar", ae.getMessage)
         assertEquals(classOf[Bar], ae.getSuppressed.head.getClass)
-      case t: Throwable => fail("Expected an AssertionError: $t")
+      case t: Throwable => fail(s"Expected an AssertionError: $t")
     }
 }

@@ -12,6 +12,7 @@
 
 package scala.tools
 
+import java.nio.file.Files
 import java.util.concurrent.{Callable, ExecutorService}
 
 import scala.concurrent.duration.Duration
@@ -89,8 +90,9 @@ package object partest {
         case _                               => -1
       }
 
-    def fileContents: String    = try sf.slurp() catch { case _: java.io.FileNotFoundException => "" }
-    def fileLines: List[String] = fileContents.linesIfNonEmpty.toList
+    // Files.readString on jdk 11
+    def fileContents: String    = if (Files.isReadable(f.toPath)) try sf.slurp() catch { case _: java.io.FileNotFoundException => "" } else ""
+    def fileLines: List[String] = if (Files.isReadable(f.toPath)) Files.readAllLines(f.toPath).asScala.toList else Nil
   }
 
   implicit class PathOps(p: Path) extends FileOps(p.jfile)
@@ -138,8 +140,6 @@ package object partest {
 
   def callable[T](body: => T): Callable[T] = new Callable[T] { override def call() = body }
 
-  def file2String(f: File): String = f.fileContents
-
   def basename(name: String): String = Path(name).stripExtension
 
   /** In order to allow for spaces in flags/options, this
@@ -148,12 +148,11 @@ package object partest {
    *  If it contains more than one line, each line is its own
    *  token, spaces and all.
    */
-  def readOptionsFile(file: File): List[String] = {
+  def readOptionsFile(file: File): List[String] =
     file.fileLines match {
       case x :: Nil   => words(x)
       case xs         => xs
     }
-  }
 
   def findProgram(name: String): Option[File] = {
     val pathDirs = sys.env("PATH") match {

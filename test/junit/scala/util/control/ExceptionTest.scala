@@ -30,17 +30,17 @@ class ExceptionTest {
     locally {
       val audit = ListBuffer[Int]()
       val katch = nonFatalCatch[Unit].andFinally(audit append 1)
-      val result = katch(10)
-      assertEquals(result, 10)
-      assertEquals(audit.toList, 1 :: Nil)
+      val result = katch[AnyVal](10)
+      assertEquals(10, result)
+      assertEquals(1 :: Nil, audit.toList)
     }
 
     locally {
       val audit = ListBuffer[Int]()
       val katch = nonFatalCatch[Unit].andFinally(audit append 1).andFinally(audit append 2)
-      val result = katch(20)
-      assertEquals(result, 20)
-      assertEquals(audit.toList, 1 :: 2 :: Nil)
+      val result = katch[AnyVal](20)
+      assertEquals(20, result)
+      assertEquals(1 :: 2 :: Nil, audit.toList)
     }
   }
 }

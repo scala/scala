@@ -319,7 +319,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     val prefix = "#partest"
     val b = new ListBuffer[String]()
     var on = true
-    for (line <- file2String(checkFile).linesIfNonEmpty) {
+    for (line <- checkFile.fileContents.linesIfNonEmpty) {
       if (line startsWith prefix) {
         on = retainOn(line stripPrefix prefix)
       } else if (on) {
@@ -331,7 +331,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
   // diff logfile checkfile
   def currentDiff = {
-    val logged = file2String(logFile).linesIfNonEmpty.toList
+    val logged = logFile.fileContents.linesIfNonEmpty.toList
     val (checked, checkname) = if (checkFile.canRead) (filteredCheck, checkFile.getName) else (Nil, "empty")
     compareContents(original = checked, revised = logged, originalName = checkname, revisedName = logFile.getName)
   }
@@ -413,7 +413,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
       case "" => genPass
       case diff if config.optUpdateCheck =>
         suiteRunner.verbose("Updating checkfile " + checkFile)
-        checkFile writeAll file2String(logFile)
+        checkFile.writeAll(logFile.fileContents)
         genUpdated()
       case diff =>
         // Get a word-highlighted diff from git if we can find it
@@ -457,19 +457,19 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def attemptCompile(sources: List[File]): TestState = {
     val state = newCompiler.compile(flagsForCompilation(sources), sources)
     if (!state.isOk)
-      _transcript append ("\n" + file2String(logFile))
+      _transcript.append("\n" + logFile.fileContents)
 
     state
   }
 
   // snort or scarf all the contributing flags files
   def flagsForCompilation(sources: List[File]): List[String] = {
+    val perKind  = readOptionsFile(testFile.getParentFile.changeExtension("flags"))
     val perTest  = readOptionsFile(flagsFile)
-    val perGroup = if (testFile.isDirectory) {
-      sources.flatMap(f => readOptionsFile(f changeExtension "flags"))
-    } else Nil
+    val perGroup = if (testFile.isDirectory) sources.flatMap(f => readOptionsFile(f.changeExtension("flags"))) else Nil
     val perFile  = toolArgsFor(sources)("scalac")
-    perTest ++ perGroup ++ perFile
+    //println(s"flags $perKind/$perGroup/$perTest/$perFile")
+    perKind ++ perGroup ++ perTest ++ perFile
   }
 
   // inspect sources for tool args
@@ -669,7 +669,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def runScriptTest(): TestState = {
     import scala.sys.process._
 
-    val args = file2String(testFile changeExtension "args")
+    val args = testFile.changeExtension("args").fileContents
     val cmdFile = if (isWin) testFile changeExtension "bat" else testFile
     val succeeded = (((s"$cmdFile $args" #> logFile).!) == 0)
 

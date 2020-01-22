@@ -75,7 +75,7 @@ class DirectCompiler(val runner: Runner) {
     val Xplugin = if (xplugs.isEmpty) Nil else List(xprefix +
       (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
     )
-    runner.suiteRunner.scalacExtraArgs ++ runner.suiteRunner.scalacOpts.split(' ') ++ others ++ Xplugin
+    runner.suiteRunner.scalacExtraArgs ++ /*runner.suiteRunner.scalacOpts.split(' ') ++*/ others ++ Xplugin
   }
 
   def compile(opts0: List[String], sources: List[File]): TestState = {
