@@ -7,4 +7,4 @@ t7686.scala:11: error: No TypeTag available for Test.Co[_]
 t7686.scala:12: error: No TypeTag available for Test.Cn[_]
   t1[Cn]; t2[Cn]; t3[Cn]; t4[Cn]
     ^
-three errors found
+3 errors
