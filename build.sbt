@@ -533,7 +533,8 @@ lazy val compiler = configureAsSubproject(project)
       val base = (unmanagedResourceDirectories in Compile).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("interactive")).value ++
         (unmanagedResourceDirectories in Compile in LocalProject("scaladoc")).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("repl")).value
+        (unmanagedResourceDirectories in Compile in LocalProject("repl")).value ++
+        (unmanagedResourceDirectories in Compile in LocalProject("repl-frontend")).value
       base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair Path.relativeTo(base)
     },
     // Include the additional projects in the scaladoc JAR:
@@ -541,7 +542,8 @@ lazy val compiler = configureAsSubproject(project)
       val base =
         (unmanagedSourceDirectories in Compile in LocalProject("interactive")).value ++
         (unmanagedSourceDirectories in Compile in LocalProject("scaladoc")).value ++
-        (unmanagedSourceDirectories in Compile in LocalProject("repl")).value
+        (unmanagedSourceDirectories in Compile in LocalProject("repl")).value ++
+        (unmanagedSourceDirectories in Compile in LocalProject("repl-frontend")).value
       ((base ** ("*.scala" || "*.java"))
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
       ).get
@@ -869,7 +871,7 @@ lazy val test = project
     testOptions in IntegrationTest += {
       val cp = (dependencyClasspath in Test).value
       val baseDir = (baseDirectory in ThisBuild).value
-      val instrumentedJar = (packagedArtifact in (LocalProject("specLib"), Compile, packageBin)).value._2
+      val instrumentedJar = (packagedArtifact in (specLib, Compile, packageBin)).value._2
       Tests.Setup { () =>
         // Copy instrumented.jar (from specLib)to the location where partest expects it.
         IO.copyFile(instrumentedJar, baseDir / "test/files/speclib/instrumented.jar")
@@ -1088,7 +1090,7 @@ lazy val dist = (project in file("dist"))
     libraryDependencies ++= Seq(jlineDep),
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
-      val cp = (fullClasspath in IntegrationTest in LocalProject("test")).value
+      val cp = (fullClasspath in IntegrationTest in testP).value
       val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
       val props = new java.util.Properties()
       props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
