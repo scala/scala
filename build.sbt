@@ -1318,17 +1318,14 @@ intellij := {
   val ipr = (baseDirectory in ThisBuild).value / "src/intellij/scala.ipr"
 
   var continue = false
+  val interaction = interactionService.value
   if (!ipr.exists) {
-    scala.Console.print(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE (y/N)? ")
-    scala.Console.flush()
-    if (scala.io.StdIn.readLine() == "y") {
+    if (interaction.confirm(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE?")) {
       intellijCreateFromSample((baseDirectory in ThisBuild).value)
       continue = true
     }
   } else {
-    scala.Console.print("Update library classpaths in the current src/intellij/scala.ipr (y/N)? ")
-    scala.Console.flush()
-    continue = scala.io.StdIn.readLine() == "y"
+    continue = interaction.confirm("Update library classpaths in the current src/intellij/scala.ipr")
   }
   if (continue) {
     s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
@@ -1363,9 +1360,8 @@ lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files
 
 intellijFromSample := {
   val s = streams.value
-  scala.Console.print(s"Create new project files from src/intellij/*.SAMPLE (y/N)? ")
-  scala.Console.flush()
-  if (scala.io.StdIn.readLine() == "y")
+  val interaction = interactionService.value
+  if (interaction.confirm("Create new project files from src/intellij/*.SAMPLE"))
     intellijCreateFromSample((baseDirectory in ThisBuild).value)
   else
     s.log.info("Aborting.")
@@ -1381,9 +1377,8 @@ lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using th
 
 intellijToSample := {
   val s = streams.value
-  scala.Console.print(s"Update src/intellij/*.SAMPLE using the current IntelliJ project files (y/N)? ")
-  scala.Console.flush()
-  if (scala.io.StdIn.readLine() == "y") {
+  val interaction = interactionService.value
+  if (interaction.confirm("Update src/intellij/*.SAMPLE using the current IntelliJ project files?")) {
     val basedir = (baseDirectory in ThisBuild).value
     val existing = basedir / "src/intellij" * "*.SAMPLE"
     IO.delete(existing.get)
