@@ -1590,7 +1590,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (probe == null) probe = NoSymbol
       probe.initialize
 
-      if (probe.isTrait || inMixinPosition) {
+      def cookIfNeeded(tpt: Tree) = if (context.unit.isJava) tpt modifyType rawToExistential else tpt
+      cookIfNeeded(if (probe.isTrait || inMixinPosition) {
         if (!argssAreTrivial) {
           if (probe.isTrait) ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
           else () // a class in a mixin position - this warrants an error in `validateParentClasses`
@@ -1620,7 +1621,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
         // the super call dummy is already good enough, so we don't need to do anything
         if (argssAreTrivial) supertptWithTargs else supertptWithTargs updateAttachment SuperArgsAttachment(argss)
-      }
+      })
     }
 
     /** Typechecks the mishmash of trees that happen to be stuffed into the primary constructor of a given template.

@@ -1772,12 +1772,16 @@ trait Contexts { self: Analyzer =>
       @inline def maybeNonLocalMember(nom: Name): Symbol =
         if (qual.tpe.isError) NoSymbol else qual.tpe.nonLocalMember(nom)
       while ((selectors ne Nil) && result == NoSymbol) {
-        if (current.introduces(name))
-          result = maybeNonLocalMember(if (name.isTypeName) current.name.toTypeName else current.name)
-        else if (!current.isWildcard && current.hasName(name))
+        def tryJavaCompanion(target: Name) =
+          if (pos.source.isJava) qual.tpe.companion nonLocalMember target else NoSymbol
+
+        if (current.introduces(name)) {
+          val target = current.name asTypeOf name
+          result = maybeNonLocalMember(target) orElse tryJavaCompanion(target)
+        } else if (!current.isWildcard && current.hasName(name))
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)
-          result = maybeNonLocalMember(name)
+          result = maybeNonLocalMember(name) orElse tryJavaCompanion(name)
 
         if (result == NoSymbol)
           selectors = selectors.tail

@@ -1,0 +1,10 @@
+t7686.scala:10: error: No TypeTag available for Test.In[_]
+  t1[In]; t2[In]; t3[In]; t4[In]
+    ^
+t7686.scala:11: error: No TypeTag available for Test.Co[_]
+  t1[Co]; t2[Co]; t3[Co]; t4[Co]
+    ^
+t7686.scala:12: error: No TypeTag available for Test.Cn[_]
+  t1[Cn]; t2[Cn]; t3[Cn]; t4[Cn]
+    ^
+three errors found
