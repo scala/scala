@@ -25,14 +25,16 @@ import scala.reflect.{ClassTag, classTag}
 
 /** A mutable Settings object.
  */
-class MutableSettings(val errorFn: String => Unit)
+class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
               extends scala.reflect.internal.settings.MutableSettings
                  with AbsSettings
                  with ScalaSettings {
+  def this(errorFn: String => Unit) = this(errorFn, DefaultPathFactory)
+
   type ResultOfTryToSet = List[String]
 
   def withErrorFn(errorFn: String => Unit): MutableSettings = {
-    val settings = new MutableSettings(errorFn)
+    val settings = new MutableSettings(errorFn, pathFactory)
     copyInto(settings)
     settings
   }
@@ -254,8 +256,8 @@ class MutableSettings(val errorFn: String => Unit)
      *  Both directories should exist.
      */
     def add(srcDir: String, outDir: String): Unit = // used in ide?
-      add(checkDir(AbstractFile.getDirectory(srcDir), srcDir),
-          checkDir(AbstractFile.getDirectory(outDir), outDir))
+      add(checkDir(pathFactory.getDirectory(srcDir), srcDir),
+          checkDir(pathFactory.getDirectory(outDir), outDir))
 
     /** Check that dir is exists and is a directory. */
     private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
@@ -271,7 +273,7 @@ class MutableSettings(val errorFn: String => Unit)
      *  be dumped in there, regardless of previous calls to 'add'.
      */
     def setSingleOutput(outDir: String): Unit = {
-      val dst = AbstractFile.getDirectory(outDir)
+      val dst = pathFactory.getDirectory(outDir)
       setSingleOutput(checkDir(dst, outDir, allowJar = true))
     }
 

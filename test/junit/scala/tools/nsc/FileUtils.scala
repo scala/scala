@@ -10,6 +10,11 @@ import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.backend.jvm.AsmUtils
 
 object FileUtils {
+  def createDir(dir: Path, s: String): Path = {
+    val subDir = dir.resolve(s)
+    Files.createDirectories(subDir)
+  }
+
   def assertDirectorySame(dir1: Path, dir2: Path, dir2Label: String): Unit = {
     val diffs = FileUtils.diff(dir1, dir2)
     def diffText = {
