@@ -94,6 +94,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     def getArchive: ZipFile = null
     override def underlyingSource = Some(self)
     override def toString = self.path + "(" + path + ")"
+    override def unsafeToByteArray: Array[Byte] = toByteArray
   }
 
   /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */

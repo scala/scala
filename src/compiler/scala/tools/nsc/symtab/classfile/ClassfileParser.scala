@@ -148,7 +148,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         this.staticModule = module
         this.isScala = false
 
-        val fileContents = file.toByteArray
+        val fileContents = file.unsafeToByteArray
         this.in = new AbstractFileReader(fileContents)
         val magic = in.getInt(in.bp)
         if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {

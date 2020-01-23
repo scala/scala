@@ -59,6 +59,10 @@ class VirtualFile(val name: String, override val path: String) extends AbstractF
     }
   }
 
+  override def unsafeToByteArray: Array[Byte] = {
+    content
+  }
+
   def container: AbstractFile = NoAbstractFile
 
   /** Is this abstract file a directory? */

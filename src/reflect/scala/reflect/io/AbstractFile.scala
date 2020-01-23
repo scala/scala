@@ -193,6 +193,9 @@ abstract class AbstractFile extends Iterable[AbstractFile] {
     }
   }
 
+  /** Returns the context of this file (if applicable) in a byte array. This array might _not_ be defensively copied. */
+  def unsafeToByteArray: Array[Byte] = toByteArray
+
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]
 

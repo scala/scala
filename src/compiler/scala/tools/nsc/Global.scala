@@ -367,7 +367,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   def getSourceFile(f: AbstractFile): BatchSourceFile = new BatchSourceFile(f, reader read f)
 
   def getSourceFile(name: String): SourceFile = {
-    val f = AbstractFile.getFile(name)
+    val f = settings.pathFactory.getFile(name)
     if (f eq null) throw new FileNotFoundException(
       "source file '" + name + "' could not be found")
     getSourceFile(f)
@@ -874,11 +874,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         case cp: ClassPath => Seq(cp)
       }
 
-      val dir = AbstractFile.getDirectory(path) // if path is a `jar`, this is a FileZipArchive (isDirectory is true)
+      val dir = settings.pathFactory.getDirectory(path) // if path is a `jar`, this is a FileZipArchive (isDirectory is true)
       val canonical = dir.canonicalPath         // this is the canonical path of the .jar
       def matchesCanonical(e: ClassPath) = origin(e) match {
         case Some(opath) =>
-          AbstractFile.getDirectory(opath).canonicalPath == canonical
+          settings.pathFactory.getDirectory(opath).canonicalPath == canonical
         case None =>
           false
       }

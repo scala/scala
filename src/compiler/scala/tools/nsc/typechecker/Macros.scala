@@ -78,7 +78,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
       for {
         file <- scala.tools.nsc.util.ClassPath.expandPath(settings.YmacroClasspath.value, true)
-        af <- Option(AbstractFile getDirectory file)
+        af <- Option(settings.pathFactory.getDirectory(file))
       } yield af.file.toURI.toURL
     } else global.classPath.asURLs
     def newLoader: () => ScalaClassLoader.URLClassLoader = () => {
