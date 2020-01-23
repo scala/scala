@@ -1,7 +1,0 @@
-t8855.scala:5: error: stable identifier required, but 42 found.
-    import x._
-           ^
-t8855.scala:6: error: not found: value +
-    val g: Int => Int = +
-                        ^
-2 errors
