@@ -5,11 +5,7 @@ class Defaults(val i: Int = 33, val s: String = "foo")(val b: Boolean = false) {
 }
 
 object Defaults {
-
-  def apply(i: Int = 33, s: String = "foo")(b: Boolean = false): Defaults = new Defaults(i,s)(b)
-
-  class Specialised extends Defaults(12,"abc")(true) {
+  class OutOfOrder extends Defaults(s = {println(25); "abc"}, i = 12)(true) {
     def bar(d: Long = i.toLong) = (d,s,b)
   }
-
 }
