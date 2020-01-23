@@ -100,7 +100,9 @@ private[hashing] class MurmurHash3 {
   final def unorderedHash(xs: IterableOnce[Any], seed: Int): Int = {
     var a, b, n = 0
     var c = 1
-    xs.iterator foreach { x =>
+    val iterator = xs.iterator
+    while (iterator.hasNext) {
+      val x = iterator.next()
       val h = x.##
       a += h
       b ^= h
