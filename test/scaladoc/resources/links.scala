@@ -22,6 +22,8 @@ package scala.test.scaladoc.links {
     def baz(c: scala.test.scaladoc.links.C) = 7
   }
 
+  object ExtendsTarget extends Target 
+  
   object Target {
     type T = Int => Int
     type S = Int
@@ -50,6 +52,7 @@ package scala.test.scaladoc.links {
    *  - [[Target$.::                                       object Target -> type ::]]
    *  - [[Target$.foo(z:Str*                               object Target -> def foo]]
    *  - [[Target$.bar                                      object Target -> def bar]]
+   *  - [[ExtendsTarget.foo(i:Int)*                        object ExtendsTarget -> def bar (disambiguating between inherited members)]]
    *  - [[[[Target$.foo[A[_[_]]]*                          trait Target -> def foo with 3 nested tparams]]]] (should exercise nested parens)
    *  - [[Target.onlyInObject                              object Target -> onlyInObject]]
    *  - [[Target$.C                                        object Target -> class C]] (should link directly to C, not as a member)

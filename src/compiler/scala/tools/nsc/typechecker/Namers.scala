@@ -569,17 +569,17 @@ trait Namers extends MethodSynthesis {
       }
       def checkSelector(s: ImportSelector) = {
         val ImportSelector(from, fromPos, to, _) = s
-        def isValid(original: Name) =
-          (base nonLocalMember original.toTermName) == NoSymbol &&
-            (base nonLocalMember original.toTypeName) == NoSymbol
+        def isValid(original: Name, base: Type) =
+          (base nonLocalMember original.toTermName) != NoSymbol ||
+            (base nonLocalMember original.toTypeName) != NoSymbol
 
         if (!s.isWildcard && base != ErrorType) {
-          if (isValid(from)) {
-            // for Java code importing Scala objects
-            if (!nme.isModuleName(from) || isValid(from.dropModule)) {
-              typer.TyperErrorGen.NotAMemberError(tree, expr, from, context.outer)
-            }
-          }
+          val okay = isValid(from, base) || context.unit.isJava && (      // Java code...
+               (nme.isModuleName(from) && isValid(from.dropModule, base)) // - importing Scala module classes
+            || isValid(from, base.companion)                              // - importing type members from types
+          )
+          if (!okay) typer.TyperErrorGen.NotAMemberError(tree, expr, from, context.outer)
+
           // Setting the position at the import means that if there is
           // more than one hidden name, the second will not be warned.
           // So it is the position of the actual hidden name.
@@ -1808,7 +1808,7 @@ trait Namers extends MethodSynthesis {
             typer.TyperErrorGen.UnstableTreeError(expr1)
         }
 
-        val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
+        val newImport = treeCopy.Import(imp, expr1, selectors)
         checkSelectors(newImport)
         context.unit.transformed(imp) = newImport
         registerImport(context, newImport)

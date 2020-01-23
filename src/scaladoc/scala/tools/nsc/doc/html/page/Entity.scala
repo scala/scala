@@ -341,7 +341,7 @@ trait EntityPage extends HtmlPage {
     val postamble =
       List(Div(id = "tooltip"),
            if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2019 ") :: A(href = "http://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "http://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
+             Div(id = "footer", elems = Txt("Scala programming documentation. Copyright (c) 2002-2020 ") :: A(href = "http://www.epfl.ch", target = "_top", elems = Txt("EPFL")) :: Txt(" and ") :: A(href = "http://www.lightbend.com", target = "_top", elems = Txt("Lightbend")) :: Txt("."))
            else
              Div(id = "footer", elems = Txt(tpl.universe.settings.docfooter.value)))
 

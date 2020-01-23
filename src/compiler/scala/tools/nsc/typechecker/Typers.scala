@@ -1221,7 +1221,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
-          assert(!context.inTypeConstructorAllowed, context) //@M
+          // This used to have
+          //     assert(!context.inTypeConstructorAllowed, context)
+          // but that's not guaranteed to be true in the face of erroneous code; errors in typedApply might mean we
+          // never get around to inferring them, and they leak out and wind up here.
           instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         // TODO: we really shouldn't use T* as a first class types (e.g. for repeated case fields), but we can't allow T* to conform to other types (see isCompatible) because that breaks overload resolution
@@ -1587,7 +1590,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (probe == null) probe = NoSymbol
       probe.initialize
 
-      if (probe.isTrait || inMixinPosition) {
+      def cookIfNeeded(tpt: Tree) = if (context.unit.isJava) tpt modifyType rawToExistential else tpt
+      cookIfNeeded(if (probe.isTrait || inMixinPosition) {
         if (!argssAreTrivial) {
           if (probe.isTrait) ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
           else () // a class in a mixin position - this warrants an error in `validateParentClasses`
@@ -1617,7 +1621,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
         // the super call dummy is already good enough, so we don't need to do anything
         if (argssAreTrivial) supertptWithTargs else supertptWithTargs updateAttachment SuperArgsAttachment(argss)
-      }
+      })
     }
 
     /** Typechecks the mishmash of trees that happen to be stuffed into the primary constructor of a given template.

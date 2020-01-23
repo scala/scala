@@ -1770,10 +1770,13 @@ trait Contexts { self: Analyzer =>
       var selectors = tree.selectors
       @inline def current = selectors.head
       @inline def maybeNonLocalMember(nom: Name): Symbol =
-        if (qual.tpe.isError) NoSymbol else qual.tpe.nonLocalMember(nom)
+        if (qual.tpe.isError) NoSymbol
+        else qual.tpe.nonLocalMember(nom).orElse {
+          if (pos.source.isJava) qual.tpe.companion nonLocalMember nom else NoSymbol
+        }
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name))
-          result = maybeNonLocalMember(if (name.isTypeName) current.name.toTypeName else current.name)
+          result = maybeNonLocalMember(current.name asTypeOf name)
         else if (!current.isWildcard && current.hasName(name))
           renamed = true
         else if (current.isWildcard && !renamed && !requireExplicit)

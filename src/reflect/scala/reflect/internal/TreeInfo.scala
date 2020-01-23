@@ -111,6 +111,7 @@ abstract class TreeInfo {
       case Apply(Select(free @ Ident(_), nme.apply), _) if free.symbol.name endsWith nme.REIFY_FREE_VALUE_SUFFIX =>
         // see a detailed explanation of this trick in `GenSymbols.reifyFreeTerm`
         free.symbol.hasStableFlag && isPath(free, allowVolatile)
+      case Literal(_)      => true // scala/bug#8855
       case _               => false
     }
 
