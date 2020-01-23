@@ -12,11 +12,12 @@
 
 package scala.tools.nsc
 
-import settings.MutableSettings
+import settings.{DefaultPathFactory, MutableSettings, PathFactory}
 
 /** A compatibility stub.
  */
-class Settings(errorFn: String => Unit) extends MutableSettings(errorFn) {
+class Settings(errorFn: String => Unit, pathFactory: PathFactory) extends MutableSettings(errorFn, pathFactory) {
+  def this(errorFn: String => Unit) = this(errorFn, DefaultPathFactory)
   def this() = this(Console.println)
 
   override def withErrorFn(errorFn: String => Unit): Settings = {

@@ -1,14 +1,12 @@
 package scala.tools.nsc
 
-import java.io.{File, IOException}
-import java.nio.charset.Charset
+import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
 import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
 import org.junit.{After, Before, Test}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import FileUtils._
 import scala.tools.nsc.PipelineMain._
 import scala.tools.nsc.reporters.{ConsoleReporter, StoreReporter}
@@ -59,7 +57,7 @@ class PipelineMainTest {
   private def check(projectss: List[List[Build#Project]], altStrategies: List[BuildStrategy] = List(Pipeline, OutlineTypePipeline)): Unit = {
     def build(strategy: BuildStrategy): Unit = {
       for (projects <- projectss) {
-        val argsFiles = projects.map(_.argsFile(Nil))
+        val argsFiles = projects.map(_.argsFile(Nil, printArgs = debug))
         val main = new PipelineMainClass(argsFiles, pipelineSettings.copy(strategy = strategy, logDir = Some(base.resolve(strategy.toString))))
         assert(main.process())
       }
@@ -219,46 +217,6 @@ class PipelineMainTest {
     build
   }
 
-  final class Build(base: Path, name: String) {
-
-    val buildBase = createDir(base, name)
-    val scalacOptions = mutable.ListBuffer[String]()
-    final class Project(val name: String) {
-      def fullName: String = Build.this.name + "." + name
-      val base = createDir(buildBase, name)
-      val out = createDir(base, "target")
-      val src = createDir(base, "src")
-      val scalacOptions = mutable.ListBuffer[String]()
-      scalacOptions += "-usejavacp"
-      val classpath = mutable.ListBuffer[Path]()
-      val sources = mutable.ListBuffer[Path]()
-      def withSource(relativePath: String)(code: String): this.type = {
-        val srcFile = src.resolve(relativePath)
-        Files.createDirectories(srcFile.getParent)
-        Files.write(srcFile, code.getBytes(Charset.defaultCharset()))
-        sources += srcFile
-        this
-      }
-      def argsFile(extraOpts: List[String]): Path = {
-        val cp = List("-cp", if (classpath.isEmpty) "__DUMMY__" else classpath.mkString(File.pathSeparator)) // Dummy to avoid default classpath of "."
-        val printArgs = if (debug) List("-Xprint-args", "-") else Nil
-        val entries = List(
-          Build.this.scalacOptions.toList,
-          scalacOptions.toList,
-          extraOpts,
-          printArgs,
-          List("-d", out.toString) ::: cp ::: sources.toList.map(_.toString)
-        ).flatten
-        Files.write(out.resolve(fullName + ".args"), entries.asJava)
-      }
-    }
-    private val projectsMap = mutable.LinkedHashMap[String, Project]()
-    def projects: List[Project] = projectsMap.valuesIterator.toList
-    def project(name: String): Project = {
-      projectsMap.getOrElseUpdate(name, new Project(name))
-    }
-  }
-
   private def clean(): Unit = {
     class CleanVisitor() extends SimpleFileVisitor[Path] {
       override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
@@ -298,10 +256,5 @@ class PipelineMainTest {
     }
     Files.walkFileTree(src, new CopyVisitor(src, dest))
     dest
-  }
-
-  private def createDir(dir: Path, s: String): Path = {
-    val subDir = dir.resolve(s)
-    Files.createDirectories(subDir)
   }
 }

@@ -194,6 +194,9 @@ abstract class AbstractFile extends AbstractIterable[AbstractFile] {
   }
   def toByteBuffer: ByteBuffer = ByteBuffer.wrap(toByteArray)
 
+  /** Returns the context of this file (if applicable) in a byte array. This array might _not_ be defensively copied. */
+  def unsafeToByteArray: Array[Byte] = toByteArray
+
   /** Returns all abstract subfiles of this abstract directory. */
   def iterator: Iterator[AbstractFile]
   override def isEmpty: Boolean = iterator.isEmpty

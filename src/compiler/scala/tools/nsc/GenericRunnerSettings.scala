@@ -13,9 +13,12 @@
 package scala.tools.nsc
 
 import java.net.URL
+
+import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
 import scala.tools.util.PathResolver
 
-class GenericRunnerSettings(error: String => Unit) extends Settings(error) {
+class GenericRunnerSettings(error: String => Unit, pathFactory: PathFactory) extends Settings(error, pathFactory) {
+  def this(error: String => Unit) = this(error, DefaultPathFactory)
   lazy val classpathURLs: Seq[URL] = {
     val registry = new CloseableRegistry
     try {

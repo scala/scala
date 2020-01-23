@@ -14,9 +14,10 @@ package scala.tools.nsc.fsc
 
 import scala.tools.nsc.Settings
 import scala.tools.nsc.util.ClassPath
-import scala.reflect.io.{ Path, AbstractFile }
+import scala.reflect.io.{AbstractFile, Path}
+import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
 
-class FscSettings(error: String => Unit) extends Settings(error) {
+class FscSettings(error: String => Unit, pathFactory: PathFactory = DefaultPathFactory) extends Settings(error, pathFactory) {
   outer =>
 
   locally {
