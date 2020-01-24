@@ -44,10 +44,10 @@ val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-par
 val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest",              versionProp = "partest")
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                  % "junit"           % "4.11"
+val junitDep          = "junit"                  % "junit"           % "4.12"
 val junitInterfaceDep = "com.novocode"           % "junit-interface" % "0.11"                            % "test"
 val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.13.4"                          % "test"
-val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.5"
+val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.9"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
 val jansiDep          = "org.fusesource.jansi"   % "jansi"           % "1.12"
@@ -621,11 +621,11 @@ lazy val compilerOptionsExporter = Project("compilerOptionsExporter", file(".") 
   .settings(disablePublishing)
   .settings(
     libraryDependencies ++= Seq(
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.5",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.5",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.5",
-      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.5",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.5"
+      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.7",
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.9.7",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.7",
+      "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.9.7",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.9.7"
     )
   )
 
