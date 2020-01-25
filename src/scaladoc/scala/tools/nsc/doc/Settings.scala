@@ -329,8 +329,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
       "scala.Predef.StringFormat",
       "scala.Predef.any2stringadd",
       "scala.Predef.ArrowAssoc",
-      "scala.Predef.Ensuring",
-      "scala.collection.TraversableOnce.alternateImplicit")
+      "scala.Predef.Ensuring")
 
     // included as names as here we don't have access to a Global with Definitions :(
     def valueClassList = List("unit", "boolean", "byte", "short", "char", "int", "long", "float", "double")
