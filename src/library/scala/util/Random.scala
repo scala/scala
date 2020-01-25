@@ -188,14 +188,23 @@ class Random(val self: java.util.Random) extends AnyRef with Serializable {
    *  @param  length    the desired length of the String
    *  @return           the String
    */
-  def nextString(length: Int) = {
-    def safeChar() = {
+  def nextString(length: Int): String = {
+    def safeChar(): Char = {
       val surrogateStart: Int = 0xD800
       val res = nextInt(surrogateStart - 1) + 1
       res.toChar
     }
-
-    List.fill(length)(safeChar()).mkString
+    if (length <= 0) {
+      ""
+    } else {
+      val arr = new Array[Char](length)
+      var i = 0
+      while (i < length) {
+        arr(i) = safeChar()
+        i += 1
+      }
+      new String(arr)
+    }
   }
 
   /** Returns the next pseudorandom, uniformly distributed value
