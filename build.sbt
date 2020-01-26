@@ -1217,7 +1217,24 @@ commands ++= {
   commands.map {
     case (entryPoint, projectRef, mainClassName) =>
       Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (baseDirectory in ThisBuild).value)) { (state, parsedOptions) =>
-        (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
+        val javaOpts = parsedOptions.split(" ").toList.filter(s => s.startsWith("-D") || s.startsWith("-J"))
+        val pre = if (javaOpts.isEmpty) Nil else {
+          val javaOptsK = LocalProject(projectRef) / Compile / run / javaOptions
+          val javaOptsS = Project.showContextKey(state).show(javaOptsK)
+          val ex = new RuntimeException(s"Failed to run '$entryPoint': failed to run $javaOptsS")
+          val existingJavaOpts = Project.runTask(javaOptsK, state) match {
+            case Some((_, Value(javaOpts))) => javaOpts.toSet
+            case Some((_, Inc(i)))          => throw ex.initCause(i)
+            case None                       => throw ex
+          }
+          if (javaOpts.exists(!existingJavaOpts.contains(_))) {
+            val p = if (projectRef.contains("-")) s"""LocalProject("$projectRef")""" else projectRef
+            val set = s"set $p / Compile / run / javaOptions ++= ${javaOpts.map(s => s""""$s"""")}"
+            state.log.warn(s"Modifying the sbt shell's session: $set")
+            List(set)
+          } else Nil
+        }
+        pre ::: (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
       }
   }
 }
