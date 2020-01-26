@@ -75,7 +75,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   import reporter.{debug => repldbg}
 
-  private[interpreter] lazy val useMagicImport: Boolean = settings.YreplMagicImport.value
+  private[interpreter] def useMagicImport: Boolean = settings.YreplMagicImport.value
 
   private var bindExceptions                  = true        // whether to bind the lastException variable
   private var _executionWrapper               = ""          // code to be wrapped around all lines
@@ -128,7 +128,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     writer.toString
   }
 
-  lazy val isClassBased: Boolean = settings.Yreplclassbased.value
+  def isClassBased: Boolean = settings.Yreplclassbased.value
 
 
   override def initializeComplete = _initializeComplete
@@ -311,7 +311,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
 
   /** For class based repl mode we use an .INSTANCE accessor. */
-  val readInstanceName = if (isClassBased) ".INSTANCE" else ""
+  def readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String = {
     if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
   }
