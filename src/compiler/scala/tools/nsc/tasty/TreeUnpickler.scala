@@ -251,7 +251,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** The symbol defined by current definition */
     def symbolAtCurrent()(implicit ctx: Context): Symbol = symAtAddr.get(currentAddr) match {
       case Some(sym) =>
-        assert(ctx.owner === sym.owner, s"owner discrepancy for $sym, expected: ${showSym(ctx.owner)}, found: ${showSym(sym.owner)}")
+        assert(ctx.owner === sym.owner, s"owner discrepancy for ${showSym(sym)}, expected: ${showSym(ctx.owner)}, found: ${showSym(sym.owner)}")
         sym
       case None =>
         createSymbol()
@@ -408,7 +408,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             readPackageRef().termRef
           case TYPEREF =>
             val name = readTastyName()
-            val pre = readType()
+            val pre  = readType()
             if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or) ) {
               if (name === nme.And) {
                 AndType
@@ -419,17 +419,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               }
             }
             else {
-              mkTypeRef(pre, name, isTerm = false)
+              mkTypeRef(pre, name, selectingTerm = false)
             }
           case TERMREF =>
-            val sname = readTastyName()
+            val sname  = readTastyName()
             val prefix = readType()
-            sname match {
-              case TastyName.SignedName(name, sig) =>
-                ??? // TermRef(prefix, name, prefix.member(name).atSignature(sig))
-              case name =>
-                mkTypeRef(prefix, name, isTerm = true)
-            }
+            mkTypeRef(prefix, sname, selectingTerm = true)
           case THIS =>
             val sym = readType() match {
               case tpe: TypeRef => tpe.sym
@@ -447,7 +442,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case RECthis =>
             sys.error("RECthis")//readTypeRef().asInstanceOf[RecType].recThis
           case TYPEALIAS =>
-             readType()// TypeAlias(readType())
+            readType()// TypeAlias(readType())
           case SHAREDtype =>
             val ref = readAddr()
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
@@ -858,7 +853,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tname   = readTastyName()
       val name    = tname.toEncodedTermName
 
-      ctx.log(s"completing member $name at $symAddr. (sym=${showSym(sym)})")
+      ctx.log(s"completing member $name at $symAddr. ${showSym(sym)}")
 
       val completer = sym.completer
 
@@ -949,7 +944,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed { ($sym # ${sym.hashCode}): ${sym.tpe} } in (owner=${showSym(sym.owner)})")
+      ctx.log(s"typed ${showSym(sym)} : ${sym.tpe} in owner ${showSym(sym.owner)}")
       goto(end)
       noCycle
     }
@@ -1270,32 +1265,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def readParams[T <: MaybeCycle /*MemberDef*/](tag: Int)(implicit ctx: Context): List[T] = {
       fork.indexParams(tag)
       readIndexedParams(tag)
-    }
-
-    def selectFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
-      ctx.log(s"looking for overloaded method on $qualType.$name of signature ${sig.show}")
-      val MethodSignature(args, ret) = sig
-      var seenTypeParams = false
-      val (tyParamCount, argsSyms) = {
-        val (tyParamCounts, params) = args.partitionMap(identity)
-        assertTasty(tyParamCounts.length <= 1, s"Multiple type parameter lists on signature ${sig.show} for member $name.")
-        (tyParamCounts.headOption.getOrElse(0), params)
-      }
-      val member = qualType.member(name)
-      val alts = member.asTerm.alternatives
-      val tpeOpt = alts.find { sym =>
-        val method = sym.asMethod
-        val params = method.paramss.flatten
-        method.returnType.erasure =:= ret &&
-          params.length === argsSyms.length &&
-          ((name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length)
-            || tyParamCount === method.typeParams.length) &&
-          params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
-      }.map(_.tpe).ensuring(_.isDefined, s"No matching overload of $name with signature ${sig.show}")
-      var Some(tpe) = tpeOpt
-      if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(member.owner.typeParams, tpe)
-      ctx.log(s"selected $tpe")
-      tpe
     }
 
     def completeSelection[T](name: TastyName, sig: Signature[Type], isTerm: Boolean)(f: (Context, Name, (Context, Name, Type) => Type) => T)(implicit ctx: Context): T = {

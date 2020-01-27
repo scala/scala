@@ -8,6 +8,7 @@ import scala.tools.nsc.tasty.Names.TastyName.SimpleName
 
 import scala.tools.nsc.tasty._
 import scala.tools.nsc.tasty.Names.TastyName.ModuleName
+import scala.tools.nsc.tasty.Names.TastyName.SignedName
 
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
@@ -97,12 +98,40 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       }
   }
 
-  def mkTypeRef(tpe: Type, name: TastyName, isTerm: Boolean): Type = {
+  private def selectSymFromSig0(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String,(Int, Symbol)] =
+    selectSymFromSig(qualType, name, sig).toRight(s"No matching overload of $qualType.$name with signature ${sig.show}")
+
+  private def reportThenErrorTpe(msg: String): Type = {
+    reporter.error(noPosition, msg)
+    errorType
+  }
+
+  def mkTypeRef(tpe: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
     import NameOps._
-    val encoded = name.toEncodedTermName
-    val member = tpe.member(if (isTerm) encoded else encoded.toTypeName)
-    val sym = if (name.isModuleName) member.linkedClassOfClass else member
-    NamedType(tpe, sym)
+    val encoded  = name.toEncodedTermName
+    val selector = if (selectingTerm) encoded else encoded.toTypeName
+    def debugSelectedSym(sym: Symbol): Symbol = {
+      ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
+      sym
+    }
+    val resolved = name match {
+      case SignedName(qual, sig) =>
+        selectSymFromSig0(tpe, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
+      case _ => Right(tpe.member(selector))
+    }
+    val tpeOrErr = resolved.map(sym => NamedType(tpe, if (name.isModuleName) sym.linkedClassOfClass else sym))
+    tpeOrErr.fold(reportThenErrorTpe, identity)
+  }
+
+  def selectFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
+    val tpeOrErr = selectSymFromSig0(qualType, name, sig).map {
+      case (tyParamCount, sym) =>
+        var tpe = sym.tpe
+        if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(sym.owner.typeParams, tpe)
+        ctx.log(s"selected ${showSym(sym)} : $tpe")
+        tpe
+    }
+    tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 
   abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
