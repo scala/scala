@@ -430,7 +430,7 @@ object Predef extends LowPriorityImplicits {
    *  Consider using the [[scala.StringContext.f f interpolator]] as more type safe and idiomatic.
    *
    *  @param text the pattern for formatting the arguments.
-   *  @param args the arguments used to instantiating the pattern.
+   *  @param xs   the arguments used to instantiate the pattern.
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *
    *  @see [[scala.StringContext.f StringContext.f]]
@@ -440,9 +440,9 @@ object Predef extends LowPriorityImplicits {
 
   // views --------------------------------------------------------------
 
-  @deprecated("Use xs.lazyZip(ys).", "2.13.0")
+  // these two are morally deprecated but the @deprecated annotation has been moved to the extension method themselves,
+  // in order to provide a more specific deprecation method.
   implicit def tuple2ToZippedOps[T1, T2](x: (T1, T2)): runtime.Tuple2Zipped.Ops[T1, T2]             = new runtime.Tuple2Zipped.Ops(x)
-  @deprecated("Use xs.lazyZip(ys).lazyZip(zs).", "2.13.0")
   implicit def tuple3ToZippedOps[T1, T2, T3](x: (T1, T2, T3)): runtime.Tuple3Zipped.Ops[T1, T2, T3] = new runtime.Tuple3Zipped.Ops(x)
 
   // Not specialized anymore since 2.13 but we still need separate methods

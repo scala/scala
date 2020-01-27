@@ -126,14 +126,15 @@ final class Tuple3Zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], E
   override def toString = s"($coll1, $coll2, $coll3).zipped"
 }
 
-@deprecated("Use scala.collection.LazyZip3.", "2.13.0")
+@deprecated("Use scala.collection.LazyZip3.", since = "2.13.0")
 object Tuple3Zipped {
   final class Ops[T1, T2, T3](private val x: (T1, T2, T3)) extends AnyVal {
-    def invert[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], El3, It3 <: Iterable[El3], That]
-      (implicit w1: T1 <:< It1,
-                w2: T2 <:< It2,
-                w3: T3 <:< It3,
-                bf: BuildFrom[It1, (El1, El2, El3), That]
+    @deprecated("Use xs.lazyZip(yz).lazyZip(zs).map((_, _, _))", since = "2.13.0")
+    def invert[El1, It1[a] <: Iterable[a], El2, It2[a] <: Iterable[a], El3, It3[a] <: Iterable[a], That]
+      (implicit w1: T1 <:< It1[El1],
+                w2: T2 <:< It2[El2],
+                w3: T3 <:< It3[El3],
+                bf: BuildFrom[T1, (El1, El2, El3), That]
       ): That = {
         val buf = bf.newBuilder(x._1)
         val it1 = x._1.iterator
@@ -145,6 +146,7 @@ object Tuple3Zipped {
         buf.result()
       }
 
+    @deprecated("Use xs.lazyZip(ys).lazyZip(zs)", since = "2.13.0")
     def zipped[El1, It1 <: Iterable[El1], El2, It2 <: Iterable[El2], El3, It3 <: Iterable[El3]]
       (implicit w1: T1 => IterableOps[El1, Iterable, It1] with It1,
                 w2: T2 => IterableOps[El2, Iterable, It2] with It2,
