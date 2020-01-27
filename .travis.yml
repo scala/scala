@@ -10,8 +10,8 @@ stages:
 jobs:
     include:
 
-      # full bootstrap and publish
-      - stage: build
+      - name: full bootstrap and publish
+        stage: build
         if: type != pull_request
         script:
           # see comment in `bootstrap_fun` for details on the procedure
@@ -31,8 +31,8 @@ jobs:
           - triggerScalaDist
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
-      # pull request validation (w/ mini-bootstrap)
-      - stage: build
+      - name: pull request validation with mini-bootstrap
+        stage: build
         name: "JDK 8 pr validation"
         if: type = pull_request
         script:
@@ -42,8 +42,8 @@ jobs:
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
-      # build the spec using jekyll
-      - stage: build
+      - name: build the spec using jekyll
+        stage: build
         language: ruby
         install:
           - ruby -v
@@ -52,7 +52,7 @@ jobs:
           - bundle install
         script:
           - set -e
-          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
+          - (cd admin && ./init.sh)
           - bundle exec jekyll build -s spec/ -d build/spec
         after_success:
           - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
