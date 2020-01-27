@@ -14,7 +14,7 @@ object TestFunctor extends Suite("TestFunctor") {
     def map[A, B](fa: List[A])(f: A => B): List[B] = fa.map(f)
   }
 
-  def toStringOnFunctorL[F[_] <: List[_]: FunctorL, A](fa: F[A]): F[String] = implicitly[FunctorL[F]].map(fa)(_.toString())
+  def toStringOnFunctorL[F[X] <: List[X]: FunctorL, A](fa: F[A]): F[String] = implicitly[FunctorL[F]].map(fa)(_.toString())
   def toStringOnFunctor[F[_]: Functor, A](fa: F[A]): F[String]   = implicitly[Functor[F]].map(fa)(_.toString())
   def hashOnFunctorI[F[_]: FunctorI, A <: Int](fa: F[A]): F[Int] = implicitly[FunctorI[F]].map(fa)(_.##)
 
