@@ -148,10 +148,7 @@ trait TastyKernel { self: TastyUniverse =>
   def showRaw(flags: Long): String = symbolTable.showRaw(flags)
   def showRaw(any: Product): String = symbolTable.showRaw(any)
 
-  def mkTermName(str: String): TermName = {
-    import symbolTable._
-    str
-  }
+  def mkTermName(str: String): TermName = symbolTable.TermName(str)
 
   type Tree = symbolTable.Tree
 

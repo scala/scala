@@ -171,7 +171,8 @@ object TastyTest {
         "-d", out,
         "-classpath", classpaths(out, dottyLibrary),
         "-deprecation",
-        "-Xfatal-warnings"
+        "-Xfatal-warnings",
+        "-usejavacp"
       ) ++ sources
       Try(nsc.Main.process(args)).getOrElse(false)
     }

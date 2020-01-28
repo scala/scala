@@ -5,5 +5,5 @@
   def test2 = new Deprecations.Old().completelyUseless() // error: completelyUseless is deprecated: this is useless
                                      ^
 error: No warnings can be incurred under -Werror.
-two warnings found
-one error found
+2 warnings
+1 error

@@ -4,4 +4,4 @@ error: Scala 2 incompatible TASTy signature of HelloWorld.tasty in object HelloW
  required: helloworld.HelloWorld.msg1.type
   HelloWorld.acceptsOnlyMsg1(helloworld)
                              ^
-two errors found
+2 errors
