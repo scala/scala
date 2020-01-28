@@ -1,6 +1,6 @@
 name: Tasty Reader CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build:
@@ -8,7 +8,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.pull_request.merge_commit_sha }}
     - name: Set up JDK 1.8
       uses: actions/setup-java@v1
       with:
