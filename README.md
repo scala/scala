@@ -1,6 +1,6 @@
 # TASTy Reader For Scala 2
 
-This branch is the home for development of the Scala Center project [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), which aims to enable the reference compiler of Scala 2.x to consume dependencies compiled with dotc, the reference compiler of Scala 3. At present, the scope is to enable all Scala 2 compatible features of TASTy files to be read during class file unpickling. It is not yet a goal to backport non existing features outside of what is announced for Scala 2.14. Features are tested with Dotty version `0.20.0-RC1`. Check the issues at [scalacenter/scala](https://github.com/scalacenter/scala/issues)
+This branch is the home for development of the Scala Center project [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), which will enable the reference compiler of Scala 2.x to consume dependencies compiled with dotc, the reference compiler of Scala 3. The scope of this project is to enable all Scala 2 compatible features of TASTy files to be read during class file unpickling. There is no goal to backport non-compatible features. Features are tested with Dotty version `0.20.0-RC1`. Check the issues at [scalacenter/scala](https://github.com/scalacenter/scala/issues)
 
 ## Testing
 
