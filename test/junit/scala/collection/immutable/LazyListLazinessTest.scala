@@ -76,13 +76,9 @@ class LazyListLazinessTest {
   }
 
   private def genericFilter_properlyLazy(filter: (LazyList[Int], Int => Boolean) => LazyList[Int],
-                                 isFlipped: Boolean): Unit = {
-    val ops: OpProfileMap = Map(
-      lazyListOp(_.filter(_ => true))  -> NoDrops,
-      lazyListOp(_.filter(i => (i % 2 != 0) == isFlipped)) -> DropProfile(dropCount = 1, repeatedDrops = true),
-    )
-
-    for (op -> d <- ops) genericLazyOp_properlyLazy(op, d)
+                                         isFlipped: Boolean): Unit = {
+    genericLazyOp_properlyLazy(filter(_, _ => !isFlipped))
+    genericLazyOp_properlyLazy(filter(_, i => (i % 2 != 0) == isFlipped), DropProfile(dropCount = 1, repeatedDrops = true))
   }
 
   @Test
@@ -132,12 +128,8 @@ class LazyListLazinessTest {
 
   @Test
   def collect_properlyLazy(): Unit = {
-    val ops: OpProfileMap = Map(
-      lazyListOp(_ collect { case i => i })  -> NoDrops,
-      lazyListOp(_ collect { case i if i % 2 != 0 => i }) -> DropProfile(dropCount = 1, repeatedDrops = true),
-    )
-
-    for (op -> d <- ops) genericLazyOp_properlyLazy(op, d)
+    genericLazyOp_properlyLazy(_ collect { case i => i })
+    genericLazyOp_properlyLazy(_ collect { case i if i % 2 != 0 => i }, DropProfile(dropCount = 1, repeatedDrops = true))
   }
 
   @Test
@@ -326,14 +318,8 @@ class LazyListLazinessTest {
   @Test
   def splitAt_properlyLazy(): Unit = {
     val split = lazyListOp(_ splitAt 4)
-    val ops: OpProfileMap = Map(
-      split.andThen(_._1) -> NoDrops,
-      split.andThen(_._2) -> DropProfile(dropCount = 4, repeatedDrops = false),
-    )
-
-    for (op -> d <- ops) {
-      genericLazyOp_properlyLazy(op, d)
-    }
+    genericLazyOp_properlyLazy(split.andThen(_._1))
+    genericLazyOp_properlyLazy(split.andThen(_._2), DropProfile(dropCount = 4, repeatedDrops = false))
   }
 
   @Test
@@ -606,14 +592,9 @@ class LazyListLazinessTest {
     val span = lazyListOp(_.span(_ < 4))
     val op1 = span.andThen(_._1)
     val op2 = span.andThen(_._2)
-    val ops: OpProfileMap = Map(
-      op1 -> NoDrops,
-      op2 -> DropProfile(dropCount = 4, repeatedDrops = false),
-    )
 
-    for (op -> d <- ops) {
-      genericLazyOp_properlyLazy(op, d)
-    }
+    genericLazyOp_properlyLazy(op1)
+    genericLazyOp_properlyLazy(op2, DropProfile(dropCount = 4, repeatedDrops = false))
 
     assertLazyAllSkipping(op1.thenForce, 5)
     genericLazyOp_properlyLazy(op2.andThen(_.drop(1)), DropProfile(dropCount = 5, repeatedDrops = false))
@@ -853,7 +834,7 @@ class LazyListLazinessTest {
     }
     object CustomLong {
       import scala.language.implicitConversions
-      implicit def long2CustomInt(long: Long): CustomLong = CustomLong(long)
+      implicit def long2CustomLong(long: Long): CustomLong = CustomLong(long)
 
       implicit val customIntegralIsIntegral: Integral[CustomLong] = new Integral[CustomLong] {
         private val I = Integral[Long]
@@ -874,8 +855,15 @@ class LazyListLazinessTest {
       }
     }
 
-    LazyList.range(0, 1000)
-    assert(counter < 10)
+    def checkRange(ll: => LazyList[CustomLong]): Unit = {
+      counter = 0
+      ll
+      assert(counter < 10)
+    }
+
+    checkRange(LazyList.range(CustomLong(0), CustomLong(1000)))
+    checkRange(LazyList.range(CustomLong(0), CustomLong(1000), CustomLong(2)))
+    checkRange(LazyList.range(CustomLong(0), CustomLong(1000), CustomLong(-2)))
   }
 
   @Test
@@ -1007,7 +995,6 @@ private object LazyListLazinessTest {
 
   type LazyListOp[U] = LazyList[Int] => U
   type LazyListToLazyListOp = LazyListOp[LazyList[Int]]
-  type OpProfileMap = Map[LazyListToLazyListOp, DropProfile]
 
   implicit final class RichLazyListToLazyListOp(private val self: LazyListToLazyListOp) extends AnyVal {
     def thenForce: LazyListToLazyListOp = self.andThen(_.force)
