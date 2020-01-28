@@ -536,7 +536,7 @@ abstract class LambdaLift extends InfoTransform {
             }
           else tree1
         case Block(stats, expr0) =>
-          val (lzyVals, rest) = stats partition {
+          val (lzyVals, rest) = partitionConserve(stats) {
             case stat: ValDef => stat.symbol.isLazy || stat.symbol.isModuleVar
             case _            => false
           }

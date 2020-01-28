@@ -558,7 +558,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
 
       val jgensig = getGenericSignature(methSymbol, claszSymbol)
 
-      val (excs, others) = methSymbol.annotations partition (_.symbol == definitions.ThrowsClass)
+      val (excs, others) = partitionConserve(methSymbol.annotations)(_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(excs)
 
       val bytecodeName =

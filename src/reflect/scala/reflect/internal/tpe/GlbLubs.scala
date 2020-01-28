@@ -19,6 +19,7 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.reflect.internal.util.StatisticsStatics
 import Variance._
+import scala.reflect.internal.util.Collections._
 
 private[internal] trait GlbLubs {
   self: SymbolTable =>
@@ -171,7 +172,7 @@ private[internal] trait GlbLubs {
 
     // The order here matters because type variables and
     // wildcards can act both as subtypes and supertypes.
-    val (ts2, ts1) = ts partition { tp =>
+    val (ts2, ts1) = partitionConserve(ts) { tp =>
       isWildCardOrNonGroundTypeVarCollector.collect(tp).isDefined
     }
 

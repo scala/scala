@@ -768,7 +768,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       // TODO needed? for(ann <- m.annotations) { ann.symbol.initialize }
       val jgensig = staticForwarderGenericSignature
 
-      val (throws, others) = m.annotations partition (_.symbol == definitions.ThrowsClass)
+      val (throws, others) = partitionConserve(m.annotations)(_.symbol == definitions.ThrowsClass)
       val thrownExceptions: List[String] = getExceptions(throws)
 
       val jReturnType = typeToBType(methodInfo.resultType)

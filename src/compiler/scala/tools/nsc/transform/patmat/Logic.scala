@@ -15,6 +15,7 @@ package tools.nsc.transform.patmat
 
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
+import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
 
 trait Logic extends Debugging  {
@@ -684,7 +685,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // if we've already excluded the pair at some point (-A \/ -B), then don't exclude the symmetric one (-B \/ -A)
           // (nor the positive implications -B \/ A, or -A \/ B, which would entail the equality axioms falsifying the whole formula)
           val todo = equalitySyms filterNot (b => (b.const == sym.const) || excludedPair(ExcludedPair(b.const, sym.const)))
-          val (excluded, notExcluded) = todo partition (b => excludes(sym.const, b.const))
+          val (excluded, notExcluded) = partitionConserve(todo)(b => excludes(sym.const, b.const))
           val implied = notExcluded filter (b => implies(sym.const, b.const))
 
           debug.patmat("eq axioms for: "+ sym.const)

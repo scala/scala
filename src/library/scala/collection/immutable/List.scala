@@ -558,42 +558,10 @@ sealed abstract class List[+A]
 
   override def partition(p: A => Boolean): (List[A], List[A]) = {
     if (isEmpty) List.TupleOfNil
-    else {
-      var b0 = true
-      var canConserve = true
-      var ys = this
-      var ayes: ListBuffer[A] = null
-      var nays: ListBuffer[A] = null
-      var n = 0
-      while (!ys.isEmpty) {
-        val y = ys.head
-        val b = p(y)
-        if (canConserve) {
-          if (n == 0) b0 = b
-          else if (b != b0) {
-            canConserve = false
-            ayes = new ListBuffer[A]
-            nays = new ListBuffer[A]
-            val prefix = if (b0) ayes else nays
-            var j = 0
-            var zs = this
-            while (j < n) {
-              prefix += zs.head
-              zs = zs.tail
-              j += 1
-            }
-            (if (b) ayes else nays) += y
-          }
-          n += 1
-        } else {
-          (if (b) ayes else nays) += y
-        }
-        ys = ys.tail
-      }
-      if (canConserve)
-        if (b0) (this, Nil) else (Nil, this)
-      else
-        (ayes.toList, nays.toList)
+    else super.partition(p) match {
+      case (Nil, xs) => (Nil, this)
+      case (xs, Nil) => (this, Nil)
+      case pair => pair
     }
   }
 
