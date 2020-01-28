@@ -1315,56 +1315,51 @@ intellij := {
     r
   }
 
-  val ipr = (baseDirectory in ThisBuild).value / "src/intellij/scala.ipr"
-
-  var continue = false
-  val interaction = interactionService.value
+  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val ipr = intellijDir / "scala.ipr"
+  backupIdea(intellijDir)
   if (!ipr.exists) {
-    if (interaction.confirm(s"Could not find src/intellij/scala.ipr. Create new project files from src/intellij/*.SAMPLE?")) {
-      intellijCreateFromSample((baseDirectory in ThisBuild).value)
-      continue = true
-    }
-  } else {
-    continue = interaction.confirm("Update library classpaths in the current src/intellij/scala.ipr")
+    intellijCreateFromSample((baseDirectory in ThisBuild).value)
   }
-  if (continue) {
-    s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
-    val content = XML.loadFile(ipr)
+  s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
+  val content = XML.loadFile(ipr)
 
-    val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep(compilerScalaInstance.allJars))
-    val newModules = modules.foldLeft(newStarr)({
-      case (res, (modName, jars)) =>
-        if (jars.isEmpty) res // modules without dependencies
-        else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
-    })
+  val newStarr = replaceLibrary(content, "starr", Some("Scala"), starrDep(compilerScalaInstance.allJars))
+  val newModules = modules.foldLeft(newStarr)({
+    case (res, (modName, jars)) =>
+      if (jars.isEmpty) res // modules without dependencies
+      else replaceLibrary(res, s"$modName-deps", None, moduleDep(modName, jars))
+  })
 
-    // I can't figure out how to keep the entity escapes for \n in the attribute values after this use of XML transform.
-    // Patching the original version back in with more brutish parsing.
-    val R = """(?ims)(.*)(<copyright>.*</copyright>)(.*)""".r
-    val oldContents = IO.read(ipr)
-    XML.save(ipr.getAbsolutePath, newModules)
-    oldContents match {
-      case R(_, withEscapes, _) =>
-        val newContents = IO.read(ipr)
-        val R(pre, toReplace, post) = newContents
-        IO.write(ipr, pre + withEscapes + post)
-      case _ =>
-        // .ipr file hasn't been updated from `intellijFromSample` yet
-    }
-  } else {
-    s.log.info("Aborting.")
+  // I can't figure out how to keep the entity escapes for \n in the attribute values after this use of XML transform.
+  // Patching the original version back in with more brutish parsing.
+  val R = """(?ims)(.*)(<copyright>.*</copyright>)(.*)""".r
+  val oldContents = IO.read(ipr)
+  XML.save(ipr.getAbsolutePath, newModules)
+  oldContents match {
+    case R(_, withEscapes, _) =>
+      val newContents = IO.read(ipr)
+      val R(pre, toReplace, post) = newContents
+      IO.write(ipr, pre + withEscapes + post)
+    case _ =>
+      // .ipr file hasn't been updated from `intellijFromSample` yet
   }
 }
 
 lazy val intellijFromSample = taskKey[Unit]("Create fresh IntelliJ project files from src/intellij/*.SAMPLE.")
 
+def backupIdea(ideaDir: File): Unit = {
+  val temp = IO.createTemporaryDirectory
+  IO.copyDirectory(ideaDir, temp)
+  println(s"Backed up existing src/intellij to $temp")
+}
+
 intellijFromSample := {
   val s = streams.value
-  val interaction = interactionService.value
-  if (interaction.confirm("Create new project files from src/intellij/*.SAMPLE"))
-    intellijCreateFromSample((baseDirectory in ThisBuild).value)
-  else
-    s.log.info("Aborting.")
+  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val ipr = intellijDir / "scala.ipr"
+  backupIdea(intellijDir)
+  intellijCreateFromSample((baseDirectory in ThisBuild).value)
 }
 
 def intellijCreateFromSample(basedir: File): Unit = {
@@ -1377,16 +1372,14 @@ lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using th
 
 intellijToSample := {
   val s = streams.value
-  val interaction = interactionService.value
-  if (interaction.confirm("Update src/intellij/*.SAMPLE using the current IntelliJ project files?")) {
-    val basedir = (baseDirectory in ThisBuild).value
-    val existing = basedir / "src/intellij" * "*.SAMPLE"
-    IO.delete(existing.get)
-    val current = basedir / "src/intellij" * ("*.iml" || "*.ipr")
-    val copies = current.get.map(f => (f, new File(f.getAbsolutePath + ".SAMPLE")))
-    IO.copy(copies)
-  } else
-    s.log.info("Aborting.")
+  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val ipr = intellijDir / "scala.ipr"
+  backupIdea(intellijDir)
+  val existing =intellijDir * "*.SAMPLE"
+  IO.delete(existing.get)
+  val current = intellijDir * ("*.iml" || "*.ipr")
+  val copies = current.get.map(f => (f, new File(f.getAbsolutePath + ".SAMPLE")))
+  IO.copy(copies)
 }
 
 /** Find a specific module's JAR in a classpath, comparing only organization and name */
