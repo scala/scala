@@ -1,7 +1,6 @@
 error: Scala 2 incompatible TASTy signature of HelloWorld.tasty in object HelloWorld: inline val msg with non-constant type String
-/Users/jamie/workspace/scala/test/tasty/neg/src-2/TestHello_fail.scala:5: error: type mismatch;
+TestHello_fail.scala:5: error: type mismatch;
  found   : helloworld.TestHello.helloworld.type (with underlying type String)
  required: helloworld.HelloWorld.msg1.type
   HelloWorld.acceptsOnlyMsg1(helloworld)
                              ^
-2 errors

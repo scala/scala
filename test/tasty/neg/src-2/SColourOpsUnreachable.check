@@ -1,6 +1,4 @@
-/Users/jamie/workspace/scala/test/tasty/neg/src-2/SColourOpsUnreachable_fail.scala:8: warning: unreachable code
+SColourOpsUnreachable_fail.scala:8: warning: unreachable code
       case SColour.Blue => -1 // error: unreachable
                            ^
 error: No warnings can be incurred under -Werror.
-1 warning
-1 error

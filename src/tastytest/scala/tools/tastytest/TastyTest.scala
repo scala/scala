@@ -4,6 +4,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.nsc
 import scala.util.{ Try, Success, Failure }
+import scala.util.chaining._
 
 import dotty.tools.dotc
 import dotc.reporting.{ Reporter => DottyReporter }
@@ -16,6 +17,7 @@ import jl.reflect.Modifier
 import CommandLineParsers._
 import SourceKind._
 import Files._
+import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 
 object TastyTest {
 
@@ -166,15 +168,30 @@ object TastyTest {
   }
 
   private def scalac(out: String, dottyLibrary: String, sources: String*): Boolean = {
+
+    def runCompile(global: Global): Boolean = {
+      global.reporter.reset()
+      new global.Run() compile sources.toList
+      !global.reporter.hasErrors
+    }
+
+    def newCompiler(args: String*): Global =
+      fromSettings(new Settings().tap(_ processArguments(args.toList, true)))
+
+    def fromSettings(settings: Settings): Global =
+      Global(settings, new ConsoleReporter(settings).tap(_.shortname = true))
+
+    def compile(args: String*) =
+      Try(runCompile(newCompiler(args: _*))).getOrElse(false)
+
     sources.isEmpty || {
-      val args = Array(
+      compile(
         "-d", out,
         "-classpath", classpaths(out, dottyLibrary),
         "-deprecation",
         "-Xfatal-warnings",
         "-usejavacp"
-      ) ++ sources
-      Try(nsc.Main.process(args)).getOrElse(false)
+      )
     }
   }
 

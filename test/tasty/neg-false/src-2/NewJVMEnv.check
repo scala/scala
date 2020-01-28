@@ -1,4 +1,3 @@
-/Users/jamie/workspace/scala/test/tasty/neg-false/src-2/NewJVMEnv_fail.scala:9: error: class type required but tastytest.printing#AnyHash with tastytest.printing#AnyClassName found
+NewJVMEnv_fail.scala:9: error: class type required but tastytest.printing#AnyHash with tastytest.printing#AnyClassName found
   new Env.JVMEnv {} // error: class type required but tastytest.printing#AnyHash with tastytest.printing#AnyClassName found
           ^
-1 error
