@@ -1160,20 +1160,17 @@ trait ContextErrors {
         setErrorOnLastTry(lastTry, tree)
       }
 
+      // If erroneous, do not even try further attempts because they should all fail
+      // even if this is not the last attempt (because of the SO lurking beyond the horizon)
       def AmbiguousMethodAlternativeError(tree: Tree, pre: Type, best: Symbol,
-            firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) = {
-
-        if (!(argtpes exists (_.isErroneous)) && !pt.isErroneous) {
-          val widenedArgtpes = widenArgs(argtpes, best.asMethod.tpe.params, firstCompeting.asMethod.tpe.params)
-          val msg0 =
-            "argument types " + widenedArgtpes.mkString("(", ",", ")") +
-           (if (pt == WildcardType) "" else " and expected result type " + pt)
+            firstCompeting: Symbol, argtpes: List[Type], pt: Type, lastTry: Boolean) =
+        if (argtpes.exists(_.isErroneous) || pt.isErroneous) setError(tree) else {
+          def paramsOrEmpty(f: Symbol) = if (f.isMethod) f.asMethod.tpe.params else Nil
+          val widenedArgtpes = widenArgs(argtpes, paramsOrEmpty(best), paramsOrEmpty(firstCompeting))
+          val msg0 = widenedArgtpes.mkString("argument types (", ",", if (pt == WildcardType) ")" else s") and expected result type $pt")
           issueAmbiguousTypeErrorUnlessErroneous(tree.pos, pre, best, firstCompeting, msg0)
           setErrorOnLastTry(lastTry, tree)
-        } else setError(tree) // do not even try further attempts because they should all fail
-                              // even if this is not the last attempt (because of the SO's possibility on the horizon)
-
-      }
+        }
 
       def NoBestExprAlternativeError(tree: Tree, pt: Type, lastTry: Boolean) = {
         issueNormalTypeError(tree, withAddendum(tree.pos)(typeErrorMsg(context, tree.symbol.tpe, pt)))
