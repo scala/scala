@@ -131,6 +131,7 @@ trait TastyKernel { self: TastyUniverse =>
   def emptyScope: Scope = symbolTable.EmptyScope
 
   type Symbol = symbolTable.Symbol
+  type MethodSymbol = symbolTable.MethodSymbol
   type TermSymbol = symbolTable.TermSymbol
   type ModuleSymbol = symbolTable.ModuleSymbol
   type ClassSymbol = symbolTable.ClassSymbol

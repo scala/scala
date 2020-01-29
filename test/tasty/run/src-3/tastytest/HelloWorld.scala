@@ -4,8 +4,6 @@ import scala.annotation.StaticAnnotation
 
 object HelloWorld {
 
-  class argAnnot(arg: Any) extends StaticAnnotation
-
   val msg1: String = "Hello, World!"
   def msg2: String = "Hello, World!"
   final val msg3 = "Hello, World!"
@@ -21,6 +19,6 @@ object HelloWorld {
   def func1[A]: A => A = x => x
   def acceptsOnlyMsg3(m: msg3.type): String = m + m
   final lazy val lzy = "lazy"
-  def withArgAnnot(arg: Any @argAnnot(??? : Int)): Any = arg
   // def `<init>`: Int = 157 // broken in https://github.com/lampepfl/dotty/issues/7799
+
 }

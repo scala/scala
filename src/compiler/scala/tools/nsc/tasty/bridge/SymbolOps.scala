@@ -32,7 +32,7 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
   }
 
   def selectSymFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
-    ctx.log(s"""looking for overloaded method [$qualType]("$name") @@ ${sig.show}""")
+    ctx.log(s"""looking for overload member[$qualType]("$name") @@ ${sig.show}""")
     val MethodSignature(args, ret) = sig
     var seenTypeParams = false
     val member = qualType.member(name)
@@ -43,16 +43,19 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
       }
       (tyParamCounts.headOption.getOrElse(0), params)
     }
-    val alts = member.asTerm.alternatives
-    alts.find { sym =>
-      val method = sym.asMethod
-      val params = method.paramss.flatten
-      method.returnType.erasure =:= ret &&
+    def compareSym(sym: Symbol): Boolean = sym match {
+      case sym: MethodSymbol =>
+        val params = sym.paramss.flatten
+        sym.returnType.erasure =:= ret &&
         params.length === argsSyms.length &&
         ((name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length)
-          || tyParamCount === method.typeParams.length) &&
+          || tyParamCount === sym.typeParams.length) &&
         params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
-    }.map(tyParamCount -> _)
+      case _ =>
+        ctx.log(s"""member[$qualType]("$name") ${showSym(sym)} is not a method""")
+        false
+    }
+    member.asTerm.alternatives.find(compareSym).map(tyParamCount -> _)
   }
 
   def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.hashCode})"
