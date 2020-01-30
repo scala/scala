@@ -827,6 +827,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
+    val definesValueClass = handlers.exists(_.definesValueClass)
 
     def defHandlers = handlers collect { case x: MemberDefHandler => x }
 
@@ -915,7 +916,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     private[interpreter] lazy val ObjectSourceCode: Wrapper =
-      if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
+      if (isClassBased && !definesValueClass) new ClassBasedWrapper else new ObjectBasedWrapper
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result

@@ -99,6 +99,7 @@ trait MemberHandlers {
     def path            = intp.originalPath(symbol)
     def symbol          = if (member.symbol eq null) NoSymbol else member.symbol
     def definesImplicit = false
+    def definesValueClass = false
     def definesValue    = false
 
     def definesTerm     = Option.empty[TermName]
@@ -205,6 +206,10 @@ trait MemberHandlers {
     override def definedSymbols = List(symbol, symbol.companionSymbol) filterNot (_ == NoSymbol)
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
+    override final def definesValueClass: Boolean = member.impl.parents match {
+      case Ident(tpnme.AnyVal) :: _ => true // approximating with a syntactic check
+      case _                        => false
+    }
 
     override def resultExtractionCode(req: Request) =
       codegenln("defined %s %s".format(keyword, name))

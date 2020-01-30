@@ -1,0 +1,8 @@
+
+scala> class Meter(val value: Int) extends AnyVal
+defined class Meter
+
+scala> val x = new Meter(1)
+x: Meter = Meter@XXXXXXXX
+
+scala> :quit
