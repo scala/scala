@@ -456,7 +456,7 @@ abstract class Inliner {
             }
           case _ =>
         }
-        val newRequests = selectRequestsForMethodSize(method, rs.toList, mutable.Map.empty).sorted(inlineRequestOrdering)
+        val newRequests = selectRequestsForMethodSize(method, rs.toList.sorted(inlineRequestOrdering), mutable.Map.empty)
 
         state.illegalAccessInstructions.find(insn => newRequests.forall(_.callsite.callsiteInstruction != insn)) match {
           case None =>
