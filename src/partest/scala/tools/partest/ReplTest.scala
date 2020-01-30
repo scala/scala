@@ -70,7 +70,7 @@ trait Lambdaless extends ReplTest {
   }
 }
 object Lambdaless {
-  private val lambdaless = """\$Lambda\$\d+/\d+(@[a-fA-F0-9]+)?""".r
+  private val lambdaless = """\$Lambda\$\d+/(?:0x[a-f0-9]{16}|\d+)(@[a-fA-F0-9]+)?""".r
   private def stripLambdaClassName(s: String): String = lambdaless.replaceAllIn(s, Regex.quoteReplacement("<function>"))
 }
 
