@@ -36,7 +36,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
   case class LookupInaccessible(symbol: Symbol, msg: String) extends NameLookup
   case object LookupNotFound extends NameLookup { def symbol = NoSymbol }
 
-  class ScopeEntry(val sym: Symbol, val owner: Scope) {
+  class ScopeEntry(var sym: Symbol, val owner: Scope) {
     /** the next entry in the hash bucket
      */
     var tail: ScopeEntry = null
@@ -155,6 +155,25 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
      */
     def enter[T <: Symbol](sym: T): T = {
       enterEntry(newScopeEntry(sym, this))
+      sym
+    }
+
+    final def enterBefore(sym: Symbol, next: ScopeEntry): Symbol = {
+      assert(this != EmptyScope)
+      require(sym.name.hashCode() == next.sym.name.hashCode(), (sym, next.sym))
+      require(sym != next.sym, (sym, next.sym))
+
+      val newNext = new ScopeEntry(next.sym, this)
+      val hasHashTable = hashtable ne null
+
+      newNext.next = next.next
+      if (hasHashTable) newNext.tail = next.tail
+      next.sym = sym
+      next.next = newNext
+      if (hasHashTable) next.tail = newNext
+      flushElemsCache()
+      assert(lookupSymbolEntry(sym) != null)
+      assert(lookupSymbolEntry(newNext.sym) != null)
       sym
     }
 
