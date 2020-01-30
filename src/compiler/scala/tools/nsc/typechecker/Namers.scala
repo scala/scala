@@ -258,7 +258,14 @@ trait Namers extends MethodSynthesis {
           // line it comments unlinks one of them.  What does it intend?
         }
       }
-      scope enter sym
+      if (sym.isModule && sym.isSynthetic && sym.owner.isClass && !sym.isTopLevel) {
+        val entry = scope.lookupEntry(sym.name.toTypeName)
+        if (entry eq null)
+          scope enter sym
+        else
+          scope.enterBefore(sym, entry)
+      } else
+        scope enter sym
     }
 
     /** Logic to handle name conflicts of synthetically generated symbols
