@@ -4,3 +4,4 @@ TestHello_fail.scala:5: error: type mismatch;
  required: helloworld.HelloWorld.msg1.type
   HelloWorld.acceptsOnlyMsg1(helloworld)
                              ^
+2 errors

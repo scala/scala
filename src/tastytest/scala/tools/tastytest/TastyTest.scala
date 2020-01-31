@@ -172,7 +172,9 @@ object TastyTest {
     def runCompile(global: Global): Boolean = {
       global.reporter.reset()
       new global.Run() compile sources.toList
-      !global.reporter.hasErrors
+      val result = !global.reporter.hasErrors
+      global.reporter.finish()
+      result
     }
 
     def newCompiler(args: String*): Global =

@@ -5,3 +5,5 @@ TestDeprecations_fail.scala:6: warning: method completelyUseless in class Old is
   def test2 = new Deprecations.Old().completelyUseless() // error: completelyUseless is deprecated: this is useless
                                      ^
 error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
