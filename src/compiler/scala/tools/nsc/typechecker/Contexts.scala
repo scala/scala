@@ -784,9 +784,10 @@ trait Contexts { self: Analyzer =>
 
 
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg, since)
+      if (!reporter.isBuffering) currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg, since)
+    // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+      if (!reporter.isBuffering) currentRun.reporting.deprecationWarning(fixPosition(pos), sym)
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
       currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required)
