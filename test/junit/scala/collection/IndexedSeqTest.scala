@@ -2,13 +2,9 @@ package scala.collection
 
 import org.junit.Test
 import org.junit.Ignore
-import org.junit.Assert.{assertEquals, _}
+import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-
-// with the Ant JUnit runner, it's necessary to @Ignore the abstract
-// classes here, or JUnit tries to instantiate them.  the annotations
-// can be removed when this is merged forward (TODO 2.12.x)
 
 /**
   * base class for testing common methods on a various implementations
@@ -17,7 +13,6 @@ import org.junit.runners.JUnit4
   * @tparam E the element type
   */
 @RunWith(classOf[JUnit4])
-@Ignore
 abstract class IndexedTest[T, E] {
 
   protected def size = 10
