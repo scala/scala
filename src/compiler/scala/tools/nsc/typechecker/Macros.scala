@@ -73,7 +73,6 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     */
   protected def findMacroClassLoader(): ClassLoader = {
     import java.net.URL
-    import scala.tools.nsc.io.AbstractFile
 
     val classpath: Seq[URL] = if (settings.YmacroClasspath.isSetByUser) {
       for {
