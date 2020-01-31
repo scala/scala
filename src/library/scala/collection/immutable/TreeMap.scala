@@ -215,4 +215,11 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     }
   }
 
+  override def keySet: SortedSet[A] = new DefaultKeySortedSet {
+    override def foreach[U](f: A => U): Unit = RB.foreachEntry(tree, {(key: A, _: B) => f(key)})
+  }
+
+  override def values: scala.Iterable[B] = new DefaultValuesIterable {
+    override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
+  }
 }
