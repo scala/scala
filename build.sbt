@@ -42,6 +42,7 @@ import scala.tools.nsc.util.ScalaClassLoader.URLClassLoader
 // Non-Scala dependencies:
 val junitDep          = "junit"                          % "junit"                            % "4.12"
 val junitInterfaceDep = "com.novocode"                   % "junit-interface"                  % "0.11"                            % "test"
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.14.3"                          % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.9"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
 val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
@@ -654,16 +655,6 @@ lazy val partest = configureAsSubproject(project)
     )
   )
 
-lazy val scalacheckLib = project.in(file("src") / "scalacheck")
-  .dependsOn(library)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(skip in publish := true)
-  .settings(
-    name := "scalacheck-lib",
-    libraryDependencies += testInterfaceDep
-  )
-
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
 lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
@@ -753,23 +744,21 @@ lazy val junit = project.in(file("test") / "junit")
 
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
-  .dependsOn(library, reflect, compiler, scaladoc, scalacheckLib)
+  .dependsOn(library, reflect, compiler, scaladoc)
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(skip in publish := true)
   .settings(
-    // Enable forking to workaround https://github.com/sbt/sbt/issues/4009. We also need a lazy Framework
-    // written in Java to further reduce ClassLoader problems when bootstrapping:
+    // Enable forking to workaround https://github.com/sbt/sbt/issues/4009.
     fork in Test := true,
-    testFrameworks := Seq(TestFramework("org.scalacheck.LazyFramework")),
-    // When we switch to sbt 1.3.0 it should be possible to set the ClassLoaderLayeringStrategy instead:
-    //classLoaderLayeringStrategy in Test := ClassLoaderLayeringStrategy.Flat,
-    // customise framework for early access to https://github.com/rickynils/scalacheck/pull/388
-    // TODO remove this when we upgrade scalacheck
-    //testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
+    // Instead of forking above, it should be possible to set:
+    // classLoaderLayeringStrategy in Test := ClassLoaderLayeringStrategy.Flat,
     javaOptions in Test += "-Xss1M",
-    //Make scalacheck print full stack traces
-    testOptions in Test += Tests.Argument(TestFramework("org.scalacheck.LazyFramework"), "-verbosity", "2"),
+    testOptions in Test += Tests.Argument(
+      // Full stack trace on failure:
+      "-verbosity", "2"
+    ),
+    libraryDependencies ++= Seq(scalacheckDep),
     unmanagedSourceDirectories in Compile := Nil,
     unmanagedSourceDirectories in Test := List(baseDirectory.value)
   )
@@ -1256,7 +1245,6 @@ intellij := {
       moduleDeps(reflect).value,
       moduleDeps(repl).value,
       moduleDeps(replFrontend).value,
-      moduleDeps(scalacheckLib).value.copy(_1 = "scalacheck-src"),
       moduleDeps(scalacheck, config = Test).value.copy(_1 = "scalacheck-test"),
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,

@@ -8,9 +8,6 @@ object ImmutableChampHashSetProperties extends Properties("immutable.HashSet") {
 
   type K = Int
 
-  override def overrideParameters(p: org.scalacheck.Test.Parameters) =
-    p.withMinSuccessfulTests(100).withInitialSeed(42L)
-
   private def doSubtract(one: HashSet[K], two: HashSet[K]) = {
     one.foldLeft(HashSet.empty[K])((result, elem) => if (two contains elem) result else result + elem)
   }

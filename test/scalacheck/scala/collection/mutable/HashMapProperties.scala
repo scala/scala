@@ -7,10 +7,6 @@ import scala.collection.immutable
 
 object HashMapProperties extends Properties("mutable.HashMap") {
 
-  override def overrideParameters(p: Test.Parameters): Test.Parameters =
-    p.withMinSuccessfulTests(500)
-      .withInitialSeed(42L)
-
   property("addAll(immutable.HashMap)") = forAll { (left: immutable.HashMap[Int, Int], right: immutable.HashMap[Int, Int]) =>
     val expected: collection.Map[Int, Int] = left concat right
     val actual: collection.Map[Int, Int] = left.to(HashMap).addAll(right)

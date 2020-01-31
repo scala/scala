@@ -8,8 +8,6 @@ import scala.collection.Hashing
 
 object ImmutableChampHashMapProperties extends Properties("HashMap") {
 
-  override def overrideParameters(p: Test.Parameters): Test.Parameters = p.withInitialSeed(42L)
-
   type K = Int
   type V = Int
   type T = (K, V)

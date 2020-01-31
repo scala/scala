@@ -184,7 +184,6 @@
       <module filepath="$PROJECT_DIR$/repl-frontend.iml" fileurl="file://$PROJECT_DIR$/repl-frontend.iml"/>
       <module filepath="$PROJECT_DIR$/scala.iml" fileurl="file://$PROJECT_DIR$/scala.iml"/>
       <module filepath="$PROJECT_DIR$/scala-build.iml" fileurl="file://$PROJECT_DIR$/scala-build.iml"/>
-      <module filepath="$PROJECT_DIR$/scalacheck-src.iml" fileurl="file://$PROJECT_DIR$/scalacheck-src.iml"/>
       <module filepath="$PROJECT_DIR$/scalacheck-test.iml" fileurl="file://$PROJECT_DIR$/scalacheck-test.iml"/>
       <module filepath="$PROJECT_DIR$/scaladoc.iml" fileurl="file://$PROJECT_DIR$/scaladoc.iml"/>
       <module filepath="$PROJECT_DIR$/scalap.iml" fileurl="file://$PROJECT_DIR$/scalap.iml"/>
@@ -399,13 +398,6 @@
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/librarymanagement-ivy_2.12/jars/librarymanagement-ivy_2.12-1.2.4.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt.ivy/ivy/jars/ivy-2.3.0-sbt-cb9cc189e9f3af519f9f102e6c5d446488ff6832.jar!/" />
         <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/zinc-compile_2.12/jars/zinc-compile_2.12-1.2.5.jar!/" />
-      </CLASSES>
-      <JAVADOC />
-      <SOURCES />
-    </library>
-    <library name="scalacheck-src-deps">
-      <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-sbt/test-interface/jars/test-interface-1.0.jar!/" />
       </CLASSES>
       <JAVADOC />
       <SOURCES />

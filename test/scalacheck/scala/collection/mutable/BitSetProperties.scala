@@ -4,9 +4,6 @@ import org.scalacheck.Prop._
 import Gen._
 
 object BitSetProperties extends Properties("mutable.BitSet") {
-  override def overrideParameters(p: Test.Parameters): Test.Parameters =
-    p.withMinSuccessfulTests(500)
-      .withInitialSeed(42L)
 
   // the top of the range shouldn't be too high, else we may not get enough overlap
   implicit val arbitraryBitSet: Arbitrary[BitSet] = Arbitrary(

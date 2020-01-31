@@ -9,8 +9,6 @@ import scala.collection.immutable
 
 object WrapperProperties extends Properties("Wrappers") {
 
-  override def overrideParameters(p: Test.Parameters): Test.Parameters = p.withInitialSeed(42L)
-
   property("JSetWrapper#filterInPlace(p)") = forAll { (hs: immutable.HashSet[Int], p: Int => Boolean) =>
     val expected: collection.Set[Int] = hs.filter(p)
     val actual: collection.Set[Int] = {
