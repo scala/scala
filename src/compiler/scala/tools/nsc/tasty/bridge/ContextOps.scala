@@ -2,6 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.annotation.tailrec
 
+import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
 
@@ -49,6 +50,13 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       def EmptyPackage: ModuleSymbol = loadingMirror.EmptyPackage
       def RootPackage: ModuleSymbol = loadingMirror.RootPackage
 
+      private[this] val modules: mutable.AnyRefMap[TermName, ModuleSymbol] = mutable.AnyRefMap.empty
+
+      def registerModule(moduleSym: ModuleSymbol): Unit = modules += moduleSym.name -> moduleSym
+      def unlinkModule(moduleName: TermName): ModuleSymbol =
+        modules.remove(moduleName).getOrElse(throw new AssertionError(
+          "unpickling module class from TASTy before its module val."))
+
       final lazy val loadingMirror: Mirror = initialContext.baseLoadingMirror
       final lazy val classRoot: Symbol = initialContext.baseClassRoot
 
@@ -68,7 +76,9 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
             owner.newConstructor(noPosition, flags & ~Stable)
           }
           else if (flags.is(Module)) {
-            owner.newModule(name.toTermName, noPosition, flags)
+            val moduleSym = owner.newModule(name.toTermName, noPosition, flags)
+            registerModule(moduleSym)
+            moduleSym
           }
           else if (name.isTypeName) {
             owner.newTypeSymbol(name.toTypeName, noPosition, flags)

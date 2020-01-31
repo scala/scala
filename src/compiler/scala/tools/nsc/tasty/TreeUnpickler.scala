@@ -626,9 +626,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               rootd
             case _ =>
               if (isModuleClass) {
-                val module = ctx.owner.rawInfo.decls.lookup(name.toTermName)
-                assert(module.isModule, "unpickling module class from TASTy before its module val.")
-                val moduleClass           = module.moduleClass
+                val moduleName            = name.toTermName
+                val moduleClass           = ctx.unlinkModule(moduleName).moduleClass
                 moduleClass.info          = completer
                 moduleClass.flags         = flags
                 moduleClass.privateWithin = privateWithin
@@ -668,8 +667,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       sym
     }
 
-    private def allowsOverload(sym: Symbol) = ( // taken from Namer
-      sym.isSourceMethod && sym.owner.isClass && !sym.isTopLevel
+    private def allowsOverload(sym: Symbol) = ( // taken from Namer. TODO tasty: added module to allows overload
+      (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
     )
 
     /** Read modifier list into triplet of flags, annotations and a privateWithin
