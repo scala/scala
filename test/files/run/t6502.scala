@@ -5,8 +5,8 @@ import scala.tools.partest._
 object Test extends StoreReporterDirectTest {
   def code = ???
 
-  lazy val headerLength = replProps.welcome.lines.size
-  lazy val promptLength = replProps.prompt.lines.size - 1  // extra newlines
+  lazy val headerLength = replProps.welcome.linesIterator.size
+  lazy val promptLength = replProps.prompt.linesIterator.size - 1  // extra newlines
 
   def compileCode(code: String, jarFileName: String) = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
@@ -55,12 +55,12 @@ object Test extends StoreReporterDirectTest {
       |test.Test.test()
       |""".stripMargin.trim
     val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
+    var lines  = output.linesIterator.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
     assert (
       added.contains("Added") && added.contains("test1.jar"),
-      s"[${added}] in [${output.lines.mkString("/")}]"
+      s"[${added}] in [${output.linesIterator.mkString("/")}]"
     )
     lines      = lines drop promptLength
     val r = lines.next
@@ -78,7 +78,7 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar2
       |""".stripMargin.trim
     val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
+    var lines  = output.linesIterator.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
     assert(added.contains("Added") && added.contains("test1.jar"), added)
@@ -99,7 +99,7 @@ object Test extends StoreReporterDirectTest {
       |test.Test3.test()
       |""".stripMargin.trim
     val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
+    var lines  = output.linesIterator.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
     assert(added.contains("Added") && added.contains("test1.jar"), added)
@@ -116,7 +116,7 @@ object Test extends StoreReporterDirectTest {
       |:require ${testOutput.path}/$jar1
       |""".stripMargin.trim
     val output = ILoop.run(codeToRun, settings)
-    var lines  = output.lines.drop(headerLength)
+    var lines  = output.linesIterator.drop(headerLength)
     lines      = lines drop promptLength
     val added  = lines.next
     assert(added.contains("Added") && added.contains("test1.jar"), added)

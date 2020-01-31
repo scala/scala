@@ -1,4 +1,4 @@
-import javax.xml.bind.DatatypeConverter._
+import java.util.Base64
 import scala.reflect.io.File
 
 // This test is self-modifying when run as follows:
@@ -10,6 +10,9 @@ import scala.reflect.io.File
 //
 // Use this to re-establish a baseline for serialization compatibility.
 object Test extends App {
+  def printBase64Binary(x: Array[Byte]): String = Base64.getEncoder().encodeToString(x)
+  def parseBase64Binary(x: String): Array[Byte] = Base64.getDecoder().decode(x)
+
   val overwrite: Option[File] = sys.props.get("overwrite.source").map(s => new File(new java.io.File(s)))
 
   def serialize(o: AnyRef): String = {
@@ -28,7 +31,7 @@ object Test extends App {
   def patch(file: File, line: Int, prevResult: String, result: String) {
     amend(file) {
       content =>
-        content.lines.toList.zipWithIndex.map {
+        content.linesIterator.toList.zipWithIndex.map {
           case (content, i) if i == line - 1 =>
             val newContent = content.replaceAllLiterally(quote(prevResult), quote(result))
             if (newContent != content)
@@ -48,7 +51,7 @@ object Test extends App {
     val newComment = s"  // Generated on $timestamp with Scala ${scala.util.Properties.versionString})"
     amend(file) {
       content =>
-        content.lines.toList.map {
+        content.linesIterator.toList.map {
           f => f.replaceAll("""^ +// Generated on.*""", newComment)
         }.mkString("\n")
     }
