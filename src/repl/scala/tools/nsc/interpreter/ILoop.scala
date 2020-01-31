@@ -21,12 +21,10 @@ import PartialFunction.{cond => when}
 import interpreter.session._
 import StdReplTags._
 import scala.tools.asm.ClassReader
-import scala.util.Properties.jdkHome
 import scala.tools.nsc.util.{ClassPath, stringFromStream}
 import scala.reflect.classTag
-import scala.reflect.internal.util.{BatchSourceFile, ScalaClassLoader, NoPosition}
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
 import scala.reflect.io.{Directory, File, Path}
-import scala.tools.util._
 import io.AbstractFile
 import scala.concurrent.{Await, Future}
 import java.io.BufferedReader
@@ -278,27 +276,6 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
     }
   }
 
-  private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
-
-  private def addToolsJarToLoader() = {
-    val cl = findToolsJar() match {
-      case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
-      case _           => intp.classLoader
-    }
-    if (Javap.isAvailable(cl)) {
-      repldbg(":javap available.")
-      cl
-    }
-    else {
-      repldbg(":javap unavailable: no tools.jar at " + jdkHome)
-      intp.classLoader
-    }
-  }
-
-  protected def newJavap() = JavapClass(addToolsJarToLoader(), new IMain.ReplStrippingWriter(intp), intp)
-
-  private lazy val javap = substituteAndLog[Javap]("javap", NoJavap)(newJavap())
-
   // Still todo: modules.
   private def typeCommand(line0: String): Result = {
     line0.trim match {
@@ -371,17 +348,11 @@ class ILoop(in0: Option[BufferedReader], protected val out: JPrintWriter) extend
     ok && rest.isEmpty
   }
 
-  private def javapCommand(line: String): Result = {
-    if (javap == null)
-      s":javap unavailable, no tools.jar at $jdkHome.  Set JDK_HOME."
-    else if (line == "")
-      Javap.helpText
-    else
-      javap(words(line)) foreach { res =>
-        if (res.isError) return s"Failed: ${res.value}"
-        else res.show()
-      }
-  }
+  private def javapCommand(line: String): Result =
+    Javap(intp)(words(line): _*) foreach { res =>
+      if (res.isError) return s"${res.value}"
+      else res.show()
+    }
 
   private def pathToPhaseWrapper = intp.originalPath("$r") + ".phased.atCurrent"
 

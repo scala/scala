@@ -10,58 +10,52 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package tools.nsc
+package scala.tools.nsc
 package interpreter
 
 import scala.language.reflectiveCalls
 
-import java.lang.{ Iterable => JIterable }
+import java.io.PrintWriter
 import scala.reflect.internal.util.ScalaClassLoader
-import java.io.{ ByteArrayInputStream, CharArrayWriter, FileNotFoundException, PrintWriter, StringWriter, Writer }
-import java.util.{ Locale }
-import java.util.concurrent.ConcurrentLinkedQueue
-import javax.tools.{ Diagnostic, DiagnosticListener,
-                     ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
-                     SimpleJavaFileObject, StandardLocation }
-import scala.reflect.io.File
-import scala.io.Source
-import scala.util.{ Try, Success, Failure }
-import scala.util.Properties.{ lineSeparator => EOL }
-import scala.collection.JavaConverters._
-import scala.collection.generic.Clearable
-import java.net.URL
-import Javap.{ JpResult, JpError, Showable, helper, toolArgs, DefaultOptions }
+import scala.tools.nsc.util.stringFromWriter
+import scala.util.{Failure, Success, Try}
+import scala.util.{Either, Left, Right}
+
+import Javap.JpResult
 
 /** Javap command implementation.
  */
 class JavapClass(
   val loader: ScalaClassLoader,
-  val printWriter: PrintWriter,
-  intp: IMain
-) extends Javap {
+  intp: IMain,
+  tool: JavapTool
+) {
   import JavapClass._
+  import Javap.{DefaultOptions, HashSplit, helper, toolArgs}
+  import JavapTool.Input
+  import java.io.FileNotFoundException
+  import scala.reflect.io.File
 
-  lazy val tool = JavapTool()
+  private val printWriter: PrintWriter = new IMain.ReplStrippingWriter(intp)
 
   def apply(args: Seq[String]): List[JpResult] = {
-    val (options0, targets) = args partition (s => (s startsWith "-") && s.length > 1)
+    val (options0, targets) = args.partition(s => s.startsWith("-") && s.length > 1)
     val (options, filter) = {
       val (opts, flag) = toolArgs(options0)
       (if (opts.isEmpty) DefaultOptions else opts, flag)
     }
 
-    if ((options contains "-help") || targets.isEmpty)
+    if (options.contains("-help") || targets.isEmpty)
       List(JpResult(helper(printWriter)))
     else
-      tool(options, filter)(targets map targeted)
+      tool(options, filter)(targets.map(targeted))
   }
 
   /** Associate the requested path with a possibly failed or empty array of bytes. */
-  private def targeted(path: String): (String, Try[Array[Byte]]) =
+  private def targeted(path: String): Input =
     bytesFor(path) match {
-      case Success((target, bytes)) => (target, Try(bytes))
-      case f: Failure[_]            => (path,   Failure(f.exception))
+      case Success((actual, bytes)) => Input(path, actual, Try(bytes))
+      case f: Failure[_]            => Input(path, path, Failure(f.exception))
     }
 
   /** Find bytes. Handle "-", "Foo#bar" (by ignoring member), "#bar" (by taking "bar").
@@ -74,18 +68,18 @@ class JavapClass(
       case HashSplit(_, member) if member != null => member
       case s                                      => s
     }
-    (path, findBytes(req)) match {
-      case (_, bytes) if bytes.isEmpty => throw new FileNotFoundException(s"Could not find class bytes for '$path'")
-      case ok                          => ok
+    findBytes(req) match {
+      case (_, bytes) if bytes.isEmpty  => throw new FileNotFoundException(s"Could not find class bytes for '$path'")
+      case ok @ (actual @ _, bytes @ _) => ok
     }
   }
 
-  def findBytes(path: String): Array[Byte] = tryFile(path) getOrElse tryClass(path)
+  // data paired with actual path where it was found
+  private def findBytes(path: String): (String, Array[Byte]) = tryFile(path).map(data => (path, data)).getOrElse(tryClass(path))
 
   /** Assume the string is a path and try to find the classfile it represents.
    */
-  def tryFile(path: String): Option[Array[Byte]] =
-    (Try (File(path.asClassResource)) filter (_.exists) map (_.toByteArray())).toOption
+  private def tryFile(path: String): Option[Array[Byte]] = Try(File(path.asClassResource)).filter(_.exists).map(_.toByteArray()).toOption
 
   /** Assume the string is a fully qualified class name and try to
    *  find the class object it represents.
@@ -93,22 +87,22 @@ class JavapClass(
    *  - a definition that is wrapped in an enclosing class
    *  - a synthetic that is not in scope but its associated class is
    */
-  def tryClass(path: String): Array[Byte] = {
-    def load(name: String) = loader classBytes name
-    def loadable(name: String) = loader resourceable name
+  private def tryClass(path: String): (String, Array[Byte]) = {
+    def load(name: String) = loader.classBytes(name)
+    def loadable(name: String) = loader.resourceable(name)
     // if path has an interior dollar, take it as a synthetic
     // if the prefix up to the dollar is a symbol in scope,
     // result is the translated prefix + suffix
     def desynthesize(s: String) = {
-      val i = s indexOf '$'
+      val i = s.indexOf('$')
       if (0 until s.length - 1 contains i) {
-        val name = s substring (0, i)
-        val sufx = s substring i
-        val tran = intp translatePath name
+        val name = s.substring(0, i)
+        val sufx = s.substring(i)
+        val tran = intp.translatePath(name)
         def loadableOrNone(strip: Boolean) = {
           def suffix(strip: Boolean)(x: String) =
-            (if (strip && (x endsWith "$")) x.init else x) + sufx
-          val res = tran map (suffix(strip) _)
+            (if (strip && x.endsWith("$")) x.init else x) + sufx
+          val res = tran.map(suffix(strip)(_))
           if (res.isDefined && loadable(res.get)) res else None
         }
         // try loading translated+suffix
@@ -134,277 +128,155 @@ class JavapClass(
       // just try it plain
       getOrElse p
     )
-    load(q)
-  }
-
-  class JavapTool {
-    type ByteAry = Array[Byte]
-    type Input = Tuple2[String, Try[ByteAry]]
-
-    implicit protected class Failer[A](a: =>A) {
-      def orFailed[B >: A](b: =>B) = if (failed) b else a
-    }
-    protected def noToolError = new JpError(s"No javap tool available: ${getClass.getName} failed to initialize.")
-
-    // output filtering support
-    val writer = new CharArrayWriter
-    def written = {
-      writer.flush()
-      val w = writer.toString
-      writer.reset()
-      w
-    }
-
-    def filterLines(target: String, text: String): String = {
-      // take Foo# as Foo#apply for purposes of filtering.
-      val filterOn  = target.splitHashMember._2 map { s => if (s.isEmpty) "apply" else s }
-      var filtering = false   // true if in region matching filter
-      // turn filtering on/off given the pattern of interest
-      def filterStatus(line: String, pattern: String) = {
-        def isSpecialized(method: String) = (method startsWith pattern+"$") && (method endsWith "$sp")
-        def isAnonymized(method: String)  = (pattern == "$anonfun") && (method startsWith "$anonfun$")
-        // cheap heuristic, todo maybe parse for the java sig.
-        // method sigs end in paren semi
-        def isAnyMethod = line endsWith ");"
-        // take the method name between the space char and left paren.
-        // accept exact match or something that looks like what we might be asking for.
-        def isOurMethod = {
-          val lparen = line lastIndexOf '('
-          val blank  = line.lastIndexOf(' ', lparen)
-          if (blank < 0) false
-          else {
-            val method = line.substring(blank+1, lparen)
-            (method == pattern || isSpecialized(method) || isAnonymized(method))
-          }
-        }
-        filtering =
-          if (filtering) {
-            // next blank line terminates section
-            // in non-verbose mode, next line is next method, more or less
-            line.trim.nonEmpty && (!isAnyMethod || isOurMethod)
-          } else {
-            isAnyMethod && isOurMethod
-          }
-        filtering
-      }
-      // do we output this line?
-      def checkFilter(line: String) = filterOn map (filterStatus(line, _)) getOrElse true
-      val sw = new StringWriter
-      val pw = new PrintWriter(sw)
-      for {
-        line <- Source.fromString(text).getLines()
-        if checkFilter(line)
-      } pw println line
-      pw.flush()
-      sw.toString
-    }
-
-    import JavapTool._
-    type Task = {
-      def call(): Boolean                             // true = ok
-      //def run(args: Array[String]): Int             // all args
-      //def handleOptions(args: Array[String]): Unit  // options, then run() or call()
-    }
-    // result of Task.run
-    //object TaskResult extends Enumeration {
-    //  val Ok, Error, CmdErr, SysErr, Abnormal = Value
-    //}
-    val TaskClass = loader.tryToInitializeClass[Task](JavapTask).orNull
-    // Since the tool is loaded by reflection, check for catastrophic failure.
-    protected def failed = TaskClass eq null
-
-    val TaskCtor  = TaskClass.getConstructor(
-      classOf[Writer],
-      classOf[JavaFileManager],
-      classOf[DiagnosticListener[_]],
-      classOf[JIterable[String]],
-      classOf[JIterable[String]]
-    ) orFailed null
-
-    class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
-      type D = Diagnostic[_ <: JavaFileObject]
-      val diagnostics = new ConcurrentLinkedQueue[D]
-      override def report(d: Diagnostic[_ <: JavaFileObject]) {
-        diagnostics add d
-      }
-      override def clear() = diagnostics.clear()
-      /** All diagnostic messages.
-       *  @param locale Locale for diagnostic messages, null by default.
-       */
-      def messages(implicit locale: Locale = null) = diagnostics.asScala.map(_ getMessage locale).toList
-
-      def reportable(): String = {
-        clear()
-        if (messages.nonEmpty) messages mkString ("", EOL, EOL) else ""
-      }
-    }
-    val reporter = new JavaReporter
-
-    // DisassemblerTool.getStandardFileManager(reporter,locale,charset)
-    val defaultFileManager: JavaFileManager =
-      (loader.tryToLoadClass[JavaFileManager]("com.sun.tools.javap.JavapFileManager").get getMethod (
-        "create",
-        classOf[DiagnosticListener[_]],
-        classOf[PrintWriter]
-      ) invoke (null, reporter, new PrintWriter(System.err, true))).asInstanceOf[JavaFileManager] orFailed null
-
-    // manages named arrays of bytes, which might have failed to load
-    class JavapFileManager(val managed: Seq[Input])(delegate: JavaFileManager = defaultFileManager)
-      extends ForwardingJavaFileManager[JavaFileManager](delegate) {
-      import JavaFileObject.Kind
-      import Kind._
-      import StandardLocation._
-      import JavaFileManager.Location
-      import java.net.{ URI, URISyntaxException }
-
-      // name#fragment is OK, but otherwise fragile
-      def uri(name: String): URI =
-        try new URI(name) // new URI("jfo:" + name)
-        catch { case _: URISyntaxException => new URI("dummy") }
-
-      def inputNamed(name: String): Try[ByteAry] = (managed find (_._1 == name)).get._2
-      def managedFile(name: String, kind: Kind) = kind match {
-        case CLASS  => fileObjectForInput(name, inputNamed(name), kind)
-        case _      => null
-      }
-      // todo: just wrap it as scala abstractfile and adapt it uniformly
-      def fileObjectForInput(name: String, bytes: Try[ByteAry], kind: Kind): JavaFileObject =
-        new SimpleJavaFileObject(uri(name), kind) {
-          override def openInputStream(): InputStream = new ByteArrayInputStream(bytes.get)
-          // if non-null, ClassWriter wrongly requires scheme non-null
-          override def toUri: URI = null
-          override def getName: String = name
-          // suppress
-          override def getLastModified: Long = -1L
-        }
-      override def getJavaFileForInput(location: Location, className: String, kind: Kind): JavaFileObject =
-        location match {
-          case CLASS_PATH => managedFile(className, kind)
-          case _          => null
-        }
-      override def hasLocation(location: Location): Boolean =
-        location match {
-          case CLASS_PATH => true
-          case _          => false
-        }
-    }
-    def fileManager(inputs: Seq[Input]) = new JavapFileManager(inputs)()
-
-    /** Create a Showable to show tool messages and tool output, with output massage.
-     *  @param target attempt to filter output to show region of interest
-     *  @param filter whether to strip REPL names
-     */
-    def showable(target: String, filter: Boolean): Showable =
-      new Showable {
-        val output = filterLines(target, s"${reporter.reportable()}${written}")
-        def show() =
-          if (filter) intp.withoutTruncating(printWriter.write(output))
-          else intp.withoutUnwrapping(printWriter.write(output, 0, output.length))
-      }
-
-    // eventually, use the tool interface
-    def task(options: Seq[String], classes: Seq[String], inputs: Seq[Input]): Task = {
-      //ServiceLoader.load(classOf[javax.tools.DisassemblerTool]).
-      //getTask(writer, fileManager, reporter, options.asJava, classes.asJava)
-      val toolopts = options filter (_ != "-filter")
-      TaskCtor.newInstance(writer, fileManager(inputs), reporter, toolopts.asJava, classes.asJava)
-        .orFailed (throw new IllegalStateException)
-    }
-    // a result per input
-    private def applyOne(options: Seq[String], filter: Boolean, klass: String, inputs: Seq[Input]): Try[JpResult] =
-      Try {
-        task(options, Seq(klass), inputs).call()
-      } map {
-        case true => JpResult(showable(klass, filter))
-        case _    => JpResult(reporter.reportable())
-      } recoverWith {
-        case e: java.lang.reflect.InvocationTargetException => e.getCause match {
-          case t: IllegalArgumentException => Success(JpResult(t.getMessage)) // bad option
-          case x => Failure(x)
-        }
-      } lastly {
-        reporter.clear()
-      }
-    /** Run the tool. */
-    def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult] = (inputs map {
-      case (klass, Success(_))  => applyOne(options, filter, klass, inputs).get
-      case (_, Failure(e))      => JpResult(e.toString)
-    }).toList orFailed List(noToolError)
-  }
-
-  object JavapTool {
-    // >= 1.7
-    val JavapTask    = "com.sun.tools.javap.JavapTask"
-
-    private def hasClass(cl: ScalaClassLoader, cn: String) = cl.tryToInitializeClass[AnyRef](cn).isDefined
-
-    def isAvailable = hasClass(loader, JavapTask)
-
-    /** Select the tool implementation for this platform. */
-    def apply() = {
-      require(isAvailable)
-      new JavapTool
-    }
+    (q, load(q))
   }
 }
 
 object JavapClass {
-
-  def apply(
-    loader: ScalaClassLoader = ScalaClassLoader.appLoader,
-    printWriter: PrintWriter = new PrintWriter(System.out, true),
-    intp: IMain
-  ) = new JavapClass(loader, printWriter, intp)
-
-  /** Match foo#bar, both groups are optional (may be null). */
-  val HashSplit = "([^#]+)?(?:#(.+)?)?".r
+  private final val classSuffix = ".class"
 
   // We enjoy flexibility in specifying either a fully-qualified class name com.acme.Widget
   // or a resource path com/acme/Widget.class; but not widget.out
-  implicit class MaybeClassLike(val s: String) extends AnyVal {
-    /* private[this] final val suffix = ".class" */
-    private def suffix = ".class"
-    def asClassName = (s stripSuffix suffix).replace('/', '.')
-    def asClassResource = if (s endsWith suffix) s else s.replace('.', '/') + suffix
-    def splitSuffix: (String, String) = if (s endsWith suffix) (s dropRight suffix.length, suffix) else (s, "")
-    def strippingSuffix(f: String => String): String =
-      if (s endsWith suffix) f(s dropRight suffix.length) else s
-    // e.g. Foo#bar. Foo# yields zero-length member part.
-    def splitHashMember: (String, Option[String]) = {
-      val i = s lastIndexOf '#'
-      if (i < 0) (s, None)
-      //else if (i >= s.length - 1) (s.init, None)
-      else (s take i, Some(s drop i+1))
-    }
+  implicit private class MaybeClassLike(val s: String) extends AnyVal {
+    def asClassName = s.stripSuffix(classSuffix).replace('/', '.')
+    def asClassResource = if (s.endsWith(classSuffix)) s else s.replace('.', '/') + classSuffix
   }
-  implicit class ClassLoaderOps(val loader: ScalaClassLoader) extends AnyVal {
+  implicit private class ClassLoaderOps(val loader: ScalaClassLoader) extends AnyVal {
     /* would classBytes succeed with a nonempty array */
     def resourceable(className: String): Boolean = loader.getResource(className.asClassResource) != null
   }
-  implicit class URLOps(val url: URL) extends AnyVal {
-    def isFile: Boolean = url.getProtocol == "file"
-  }
 }
 
-abstract class Javap {
+abstract class Javap(protected val intp: IMain) {
+  def loader: Either[String, ClassLoader]
+
+  def task(loader: ClassLoader): Either[String, JavapTool]
+
   /** Run the tool. Option args start with "-", except that "-" itself
    *  denotes the last REPL result.
    *  The default options are "-protected -verbose".
    *  Byte data for filename args is retrieved with findBytes.
    *  @return results for invoking JpResult.show()
    */
-  def apply(args: Seq[String]): List[Javap.JpResult]
+  final def apply(args: Seq[String]): List[Javap.JpResult] =
+    if (args.isEmpty) List(JpResult(Javap.helpText))
+    else
+      loader match {
+        case Left(msg) => List(JpResult(msg))
+        case Right(cl) =>
+          task(cl) match {
+            case Left(msg) => List(JpResult(msg))
+            case Right(tk) => new JavapClass(cl, intp, tk).apply(args)
+          }
+      }
 }
 
 object Javap {
-  def isAvailable(cl: ScalaClassLoader = ScalaClassLoader.appLoader) = JavapClass(cl, intp = null).JavapTool.isAvailable
+  import scala.util.Properties.isJavaAtLeast
+  import java.io.File
+  import java.net.URL
 
-  def apply(path: String): Unit      = apply(Seq(path))
-  def apply(args: Seq[String]): Unit = JavapClass(intp=null) apply args foreach (_.show())
+  private val javap8 = "scala.tools.nsc.interpreter.Javap8"
+  private val javap9 = "scala.tools.nsc.interpreter.Javap9"
+  private val javapP = "scala.tools.nsc.interpreter.JavapProvider"
+
+  // load and run a tool
+  def apply(intp: IMain)(targets: String*): List[JpResult] = {
+    def outDirIsClassPath: Boolean = intp.settings.Yreploutdir.isSetByUser && {
+      val outdir = intp.replOutput.dir.file.getAbsoluteFile
+      intp.compilerClasspath.exists(url => url.isFile && new File(url.toURI).getAbsoluteFile == outdir)
+    }
+    def create(toolName: String) = {
+      val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
+      loader.create[Javap](toolName, Console.println(_))(intp)
+    }
+    def advisory = {
+      val msg = "On JDK 9 or higher, use -nobootcp to enable :javap, or set -Yrepl-outdir to a file system path on the tool class path with -toolcp."
+      List(JpResult(msg))
+    }
+
+    if (targets.isEmpty) List(JpResult(Javap.helpText))
+    else if (!isJavaAtLeast("9")) create(javap8)(targets)
+    else {
+      var res: Option[List[JpResult]] = None
+      if (classOf[scala.tools.nsc.interpreter.IMain].getClassLoader != null) {
+        val javap = create(javap9)
+        if (javap.loader.isRight)
+          res = Some(javap(targets))
+      }
+      res.getOrElse {
+        if (outDirIsClassPath) create(javapP)(targets)
+        else advisory
+      }
+    }
+  }
+
+  implicit private class URLOps(val url: URL) extends AnyVal {
+    def isFile: Boolean = url.getProtocol == "file"
+  }
+
+  /** Match foo#bar, both groups are optional (may be null). */
+  val HashSplit = "([^#]+)?(?:#(.+)?)?".r
+
+  // e.g. Foo#bar. Foo# yields zero-length member part.
+  private def splitHashMember(s: String): Option[String] =
+    s.lastIndexOf('#') match {
+      case -1 => None
+      case  i => Some(s.drop(i+1))
+    }
+
+  // filter lines of javap output for target such as Klass#methode
+  def filterLines(target: String, text: String): String = {
+    // take Foo# as Foo#apply for purposes of filtering.
+    val filterOn  = splitHashMember(target).map(s => if (s.isEmpty) "apply" else s)
+    var filtering = false   // true if in region matching filter
+    // turn filtering on/off given the pattern of interest
+    def filterStatus(line: String, pattern: String) = {
+      def isSpecialized(method: String) = (method startsWith pattern+"$") && (method endsWith "$sp")
+      def isAnonymized(method: String)  = (pattern == "$anonfun") && (method startsWith "$anonfun$")
+      // cheap heuristic, todo maybe parse for the java sig.
+      // method sigs end in paren semi
+      def isAnyMethod = line endsWith ");"
+      // take the method name between the space char and left paren.
+      // accept exact match or something that looks like what we might be asking for.
+      def isOurMethod = {
+        val lparen = line lastIndexOf '('
+        val blank  = line.lastIndexOf(' ', lparen)
+        if (blank < 0) false
+        else {
+          val method = line.substring(blank+1, lparen)
+          (method == pattern || isSpecialized(method) || isAnonymized(method))
+        }
+      }
+      filtering =
+        if (filtering) {
+          // next blank line terminates section
+          // in non-verbose mode, next line is next method, more or less
+          line.trim.nonEmpty && (!isAnyMethod || isOurMethod)
+        } else {
+          isAnyMethod && isOurMethod
+        }
+      filtering
+    }
+    // do we output this line?
+    def checkFilter(line: String) = filterOn.map(filterStatus(line, _)).getOrElse(true)
+    stringFromWriter(pw => text.linesIterator.foreach(line => if (checkFilter(line)) pw.println(line)))
+  }
 
   private[interpreter] trait Showable {
     def show(): Unit
   }
+
+  /** Create a Showable to show tool messages and tool output, with output massage.
+   *  @param filter whether to strip REPL names
+   */
+  def showable(intp: IMain, filter: Boolean, text: String): Showable =
+    new Showable {
+      val out = new IMain.ReplStrippingWriter(intp)
+      def show() =
+        if (filter) intp.withoutTruncating(out.write(text))
+        else intp.withoutUnwrapping(out.write(text, 0, text.length))
+    }
 
   sealed trait JpResult {
     type ResultType
@@ -433,8 +305,9 @@ object Javap {
     def show() = value.show()   // output to tool's PrintWriter
   }
 
+  // split javap options from REPL's -filter flag, also take prefixes of flag names
   def toolArgs(args: Seq[String]): (Seq[String], Boolean) = {
-    val (opts, rest) = args flatMap massage partition (_ != "-filter")
+    val (opts, rest) = args.flatMap(massage).partition(_ != "-filter")
     (opts, rest.nonEmpty)
   }
 
@@ -489,13 +362,212 @@ object Javap {
 
   def helpText: String = (helps map { case (name, help) => f"$name%-12.12s$help%n" }).mkString
 
-  def helper(pw: PrintWriter) = new Showable {
-    def show() = pw print helpText
-  }
+  def helper(pw: PrintWriter) = new Showable { def show() = pw.print(helpText) }
 
   val DefaultOptions = List("-protected", "-verbose")
 }
 
-object NoJavap extends Javap {
-  def apply(args: Seq[String]): List[Javap.JpResult] = Nil
+/** Loaded reflectively under JDK8 to locate tools.jar and load JavapTask tool. */
+class Javap8(intp0: IMain) extends Javap(intp0) {
+  import scala.tools.util.PathResolver
+  import scala.util.Properties.jdkHome
+
+  private def findToolsJar() = PathResolver.SupplementalLocations.platformTools
+
+  private def addToolsJarToLoader() =
+    findToolsJar() match {
+      case Some(tools) => ScalaClassLoader.fromURLs(Seq(tools.toURL), intp.classLoader)
+      case _           => intp.classLoader
+    }
+  override def loader =
+    Right(addToolsJarToLoader()).filterOrElse(
+      _.tryToInitializeClass[AnyRef](JavapTask.taskClassName).isDefined,
+      s":javap unavailable: no ${JavapTask.taskClassName} or no tools.jar at $jdkHome"
+    )
+  override def task(loader: ClassLoader) = Right(new JavapTask(loader, intp))
+}
+
+/** Loaded reflectively under JDK9 to load JavapTask tool. */
+class Javap9(intp0: IMain) extends Javap(intp0) {
+  override def loader =
+    Right(new ClassLoader(intp.classLoader) with ScalaClassLoader).filterOrElse(
+      _.tryToInitializeClass[AnyRef](JavapTask.taskClassName).isDefined,
+      s":javap unavailable: no ${JavapTask.taskClassName}"
+    )
+  override def task(loader: ClassLoader) = Right(new JavapTask(loader, intp))
+}
+
+/** Loaded reflectively under JDK9 to locate ToolProvider. */
+class JavapProvider(intp0: IMain) extends Javap(intp0) {
+  import JavapTool.Input
+  import Javap.{filterLines, HashSplit}
+  import java.util.Optional
+  //import java.util.spi.ToolProvider
+
+  type ToolProvider = AnyRef { def run(out: PrintWriter, err: PrintWriter, args: Array[String]): Unit }
+
+  override def loader = Right(getClass.getClassLoader)
+
+  private def tool(provider: ToolProvider) = new JavapTool {
+    override def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult] = inputs.map {
+      case Input(target @ HashSplit(klass, _), actual, Success(_)) =>
+        val more = List("-cp", intp.replOutput.dir.file.getAbsoluteFile.toString, actual)
+        val s = stringFromWriter(w => provider.run(w, w, (options ++ more).toArray))
+        JpResult(filterLines(target, s))
+      case Input(_, _, Failure(e)) => JpResult(e.toString)
+    }.toList
+  }
+
+  //ToolProvider.findFirst("javap")
+  override def task(loader: ClassLoader) = {
+    val provider = Class.forName("java.util.spi.ToolProvider", /*initialize=*/ true, loader)
+      .getDeclaredMethod("findFirst", classOf[String])
+      .invoke(null, "javap").asInstanceOf[Optional[ToolProvider]]
+    if (provider.isPresent)
+      Right(tool(provider.get))
+    else
+      Left(s":javap unavailable: provider not found")
+  }
+}
+
+/** The task or tool provider. */
+abstract class JavapTool {
+  import JavapTool._
+  def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult]
+}
+object JavapTool {
+  case class Input(target: String, actual: String, data: Try[Array[Byte]])
+}
+
+// Machinery to run JavapTask reflectively
+class JavapTask(val loader: ScalaClassLoader, intp: IMain) extends JavapTool {
+  import javax.tools.{Diagnostic, DiagnosticListener,
+                    ForwardingJavaFileManager, JavaFileManager, JavaFileObject,
+                    SimpleJavaFileObject, StandardLocation}
+  import java.io.CharArrayWriter
+  import java.util.Locale
+  import java.util.concurrent.ConcurrentLinkedQueue
+  import scala.collection.JavaConverters._
+  import scala.collection.generic.Clearable
+  import JavapTool._
+  import Javap.{filterLines, showable}
+
+  // output filtering support
+  val writer = new CharArrayWriter
+  def written = {
+    writer.flush()
+    val w = writer.toString
+    writer.reset()
+    w
+  }
+
+  type Task = {
+    def call(): Boolean                             // true = ok
+    //def run(args: Array[String]): Int             // all args
+    //def handleOptions(args: Array[String]): Unit  // options, then run() or call()
+  }
+  // result of Task.run
+  //object TaskResult extends Enumeration {
+  //  val Ok, Error, CmdErr, SysErr, Abnormal = Value
+  //}
+
+  class JavaReporter extends DiagnosticListener[JavaFileObject] with Clearable {
+    type D = Diagnostic[_ <: JavaFileObject]
+    val diagnostics = new ConcurrentLinkedQueue[D]
+    override def report(d: Diagnostic[_ <: JavaFileObject]) = diagnostics.add(d)
+    override def clear() = diagnostics.clear()
+    /** All diagnostic messages.
+     *  @param locale Locale for diagnostic messages, null by default.
+     */
+    def messages(implicit locale: Locale = null) = diagnostics.asScala.map(_.getMessage(locale)).toList
+
+    def reportable(): String = {
+      import scala.util.Properties.lineSeparator
+      clear()
+      if (messages.nonEmpty) messages.mkString("", lineSeparator, lineSeparator) else ""
+    }
+  }
+  val reporter = new JavaReporter
+
+  // DisassemblerTool.getStandardFileManager(reporter,locale,charset)
+  val defaultFileManager: JavaFileManager =
+    (loader.tryToLoadClass[JavaFileManager]("com.sun.tools.javap.JavapFileManager").get getMethod (
+      "create",
+      classOf[DiagnosticListener[_]],
+      classOf[PrintWriter]
+    ) invoke (null, reporter, new PrintWriter(System.err, true))).asInstanceOf[JavaFileManager]
+
+  // manages named arrays of bytes, which might have failed to load
+  class JavapFileManager(val managed: Seq[Input])(delegate: JavaFileManager = defaultFileManager)
+    extends ForwardingJavaFileManager[JavaFileManager](delegate) {
+    import JavaFileObject.Kind
+    import Kind._
+    import StandardLocation._
+    import JavaFileManager.Location
+    import java.net.{URI, URISyntaxException}
+    import java.io.ByteArrayInputStream
+
+    // name#fragment is OK, but otherwise fragile
+    def uri(name: String): URI =
+      try new URI(name) // new URI("jfo:" + name)
+      catch { case _: URISyntaxException => new URI("dummy") }
+
+    // look up by actual class name or by target descriptor (unused?)
+    def inputNamed(name: String): Try[Array[Byte]] = managed.find(m => m.actual == name || m.target == name).get.data
+
+    def managedFile(name: String, kind: Kind) = kind match {
+      case CLASS  => fileObjectForInput(name, inputNamed(name), kind)
+      case _      => null
+    }
+    // todo: just wrap it as scala abstractfile and adapt it uniformly
+    def fileObjectForInput(name: String, bytes: Try[Array[Byte]], kind: Kind): JavaFileObject =
+      new SimpleJavaFileObject(uri(name), kind) {
+        override def openInputStream(): InputStream = new ByteArrayInputStream(bytes.get)
+        // if non-null, ClassWriter wrongly requires scheme non-null
+        override def toUri: URI = null
+        override def getName: String = name
+        // suppress
+        override def getLastModified: Long = -1L
+      }
+    override def getJavaFileForInput(location: Location, className: String, kind: Kind): JavaFileObject =
+      location match {
+        case CLASS_PATH => managedFile(className, kind)
+        case _          => null
+      }
+    override def hasLocation(location: Location): Boolean =
+      location match {
+        case CLASS_PATH => true
+        case _          => false
+      }
+  }
+  def fileManager(inputs: Seq[Input]) = new JavapFileManager(inputs)()
+
+  // eventually, use the tool interface [Edit: which became ToolProvider]
+  //ServiceLoader.load(classOf[javax.tools.DisassemblerTool]).
+  //getTask(writer, fileManager, reporter, options.asJava, classes.asJava)
+  def task(options: Seq[String], classes: Seq[String], inputs: Seq[Input]): Task =
+    loader.create[Task](JavapTask.taskClassName, Console.println(_))(writer, fileManager(inputs), reporter, options.asJava, classes.asJava)
+
+  /** Run the tool. */
+  override def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult] = inputs.map {
+    case Input(target, actual, Success(_)) =>
+      import java.lang.reflect.InvocationTargetException
+      try {
+        if (task(options, Seq(actual), inputs).call()) JpResult(showable(intp, filter, filterLines(target, s"${reporter.reportable()}${written}")))
+        else JpResult(reporter.reportable())
+      } catch {
+        case e: InvocationTargetException  => e.getCause match {
+          case t: IllegalArgumentException => JpResult(t.getMessage) // bad option
+          case x => throw x
+        }
+      } finally {
+        reporter.clear()
+      }
+    case Input(_, _, Failure(e))           => JpResult(e.getMessage)
+  }.toList
+}
+
+object JavapTask {
+  // introduced in JDK7 as internal API
+  val taskClassName = "com.sun.tools.javap.JavapTask"
 }
