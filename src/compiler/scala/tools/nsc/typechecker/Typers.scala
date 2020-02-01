@@ -1138,11 +1138,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit =
             if (!isPastTyper) {
-              if (tpSym == IntClass  && ptSym == FloatClass ||
-                  tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass))
-                context.deprecationWarning(tree.pos, NoSymbol,
-                  s"Automatic conversion from ${tpSym.name} to ${ptSym.name} is deprecated (since 2.13.1) because it loses precision. " +
-                  s"Write `.to${ptSym.name}` instead.".stripMargin, "2.13.1")
+              val isInharmonic = (
+                tpSym == IntClass  && ptSym == FloatClass ||
+                tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass)
+              )
+              if (isInharmonic)
+                context.warning(tree.pos, s"Automatic conversion from ${tpSym.name} to ${ptSym.name} is deprecated (since 2.13.1) because it loses precision. Write `.to${ptSym.name}` instead.")
               else if (settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
             }
 

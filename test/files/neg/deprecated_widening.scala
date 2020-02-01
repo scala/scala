@@ -1,3 +1,5 @@
+// scalac: -deprecation -Werror
+//
 object Test {
   def foo(i: Int, l: Long): Unit = {
     val i_f: Float = i  // deprecated
@@ -12,4 +14,8 @@ object Test {
     implicitly[Long => Float]  // deprecated
     implicitly[Long => Double] // deprecated
   }
+
+  // don't leak silent warning from float conversion
+  val n = 42
+  def clean = n max 27
 }
