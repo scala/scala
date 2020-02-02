@@ -1,0 +1,12 @@
+
+scala> def f = {
+  val x = 'abc
+         val x = 'abc
+                 ^
+On line 2: warning: symbol literal is deprecated; use Symbol("abc") instead
+  val y = x.toString
+  y
+}
+def f: String
+
+scala> :quit
