@@ -324,7 +324,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   val opt = MultiChoiceSetting(
     name = "-opt",
     helpArg = "optimization",
-    descr = "Enable optimizations",
+    descr = "Enable optimizations, `help` for details.",
     domain = optChoices,
   )
 
@@ -399,7 +399,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   val optWarnings = MultiChoiceSetting(
     name = "-opt-warnings",
     helpArg = "warning",
-    descr = "Enable optimizer warnings",
+    descr = "Enable optimizer warnings, `help` for details.",
     domain = optWarningsChoices,
     default = Some(List(optWarningsChoices.atInlineFailed.name)))
 
