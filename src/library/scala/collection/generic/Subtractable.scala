@@ -14,6 +14,8 @@ package scala
 package collection
 package generic
 
+import scala.collection.immutable.HashSet
+
 
 /** This trait represents collection-like objects that can be reduced
  *  using a '+' operator. It defines variants of `-` and `--`
@@ -59,5 +61,10 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
    *  @return a new $coll that contains all elements of the current $coll
    *  except one less occurrence of each of the elements of `elems`.
    */
-  def --(xs: GenTraversableOnce[A]): Repr = (repr /: xs.seq) (_ - _)
+  def --(xs: GenTraversableOnce[A]): Repr = this match {
+    case hs: HashSet[A] if xs.isInstanceOf[HashSet[A]] =>
+      hs.diff(xs.asInstanceOf[HashSet[A]]).asInstanceOf[Repr]
+    case _ =>
+      (repr /: xs.seq) (_ - _)
+  }
 }
