@@ -503,6 +503,9 @@ abstract class LambdaLift extends InfoTransform {
               }
             }
 
+            if (settings.warnCaptured)
+              reporter.warning(tree.pos, s"Modification of variable $name within a closure causes it to be boxed.")
+
             treeCopy.ValDef(tree, mods, name, tpt1, factoryCall)
           } else tree
         case Return(Block(stats, value)) =>

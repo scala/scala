@@ -1,0 +1,6 @@
+xlint-captured.scala:4: warning: Modification of variable c within a closure causes it to be boxed.
+    var c = a // nok
+        ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

@@ -109,6 +109,7 @@ trait Warnings {
     val UnsoundMatch           = LintWarning("unsound-match",             "Pattern match may not be typesafe.")
     val StarsAlign             = LintWarning("stars-align",               "Pattern sequence wildcard must align with sequence component.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression results in an error.")
+    val Captured               = LintWarning("captured",                  "Modification of var in closure causes boxing.")
     val Unused                 = LintWarning("unused",                    "Enable -Ywarn-unused:imports,privates,locals,implicits.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
@@ -132,6 +133,7 @@ trait Warnings {
   def warnUnsoundMatch           = lint contains UnsoundMatch
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
+  def warnCaptured               = lint contains Captured
   def lintUnused                 = lint contains Unused
 
   // Lint warnings that are currently -Y, but deprecated in that usage
