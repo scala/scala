@@ -127,6 +127,30 @@ object Set extends IterableFactory[Set] {
   }
   private[collection] def emptyInstance: Set[Any] = EmptySet
 
+  @SerialVersionUID(3L)
+  private abstract class SetNIterator[A](n: Int) extends AbstractIterator[A] with Serializable {
+    private[this] var current = 0
+    private[this] var remainder = n
+    override def knownSize: Int = remainder
+    def hasNext = remainder > 0
+    def apply(i: Int): A
+    def next(): A =
+      if (hasNext) {
+        val r = apply(current)
+        current += 1
+        remainder -= 1
+        r
+      } else Iterator.empty.next()
+
+    override def drop(n: Int): Iterator[A] = {
+      if (n > 0) {
+        current += n
+        remainder = Math.max(0, remainder - n)
+      }
+      this
+    }
+  }
+
   /** An optimized representation for immutable sets of size 1 */
   @SerialVersionUID(3L)
   final class Set1[A] private[collection] (elem1: A) extends AbstractSet[A] with StrictOptimizedIterableOps[A, Set, Set[A]] with Serializable {
@@ -144,6 +168,9 @@ object Set extends IterableFactory[Set] {
     override def foreach[U](f: A => U): Unit = f(elem1)
     override def exists(p: A => Boolean): Boolean = p(elem1)
     override def forall(p: A => Boolean): Boolean = p(elem1)
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] =
+      if (pred(elem1) != isFlipped) this else Set.empty
+
     override def find(p: A => Boolean): Option[A] =
       if (p(elem1)) Some(elem1)
       else None
@@ -165,7 +192,11 @@ object Set extends IterableFactory[Set] {
       if (elem == elem1) new Set1(elem2)
       else if (elem == elem2) new Set1(elem1)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2)
     }
@@ -174,6 +205,18 @@ object Set extends IterableFactory[Set] {
     }
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2)
+    }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1; n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => this
+      }
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -200,7 +243,11 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem2) new Set2(elem1, elem3)
       else if (elem == elem3) new Set2(elem1, elem2)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3)
     }
@@ -209,6 +256,20 @@ object Set extends IterableFactory[Set] {
     }
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2) && p(elem3)
+    }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1, r2: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1;                             n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2 else             r2 = elem2; n += 1}
+      if (pred(elem3) != isFlipped) { if (n == 0) r1 = elem3 else if (n == 1) r2 = elem3; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => new Set2(r1, r2)
+        case 3 => this
+      }
     }
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
@@ -237,7 +298,11 @@ object Set extends IterableFactory[Set] {
       else if (elem == elem3) new Set3(elem1, elem2, elem4)
       else if (elem == elem4) new Set3(elem1, elem2, elem3)
       else this
-    def iterator: Iterator[A] = (elem1 :: elem2 :: elem3 :: elem4 :: Nil).iterator
+    def iterator: Iterator[A] = new SetNIterator[A](size) {
+      def apply(i: Int) = getElem(i)
+    }
+    private def getElem(i: Int) = i match { case 0 => elem1 case 1 => elem2 case 2 => elem3 case 3 => elem4 }
+
     override def foreach[U](f: A => U): Unit = {
       f(elem1); f(elem2); f(elem3); f(elem4)
     }
@@ -247,6 +312,23 @@ object Set extends IterableFactory[Set] {
     override def forall(p: A => Boolean): Boolean = {
       p(elem1) && p(elem2) && p(elem3) && p(elem4)
     }
+    override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): Set[A] = {
+      var r1, r2, r3: A = null.asInstanceOf[A]
+      var n = 0
+      if (pred(elem1) != isFlipped) {             r1 = elem1;                                                         n += 1}
+      if (pred(elem2) != isFlipped) { if (n == 0) r1 = elem2 else             r2 = elem2;                             n += 1}
+      if (pred(elem3) != isFlipped) { if (n == 0) r1 = elem3 else if (n == 1) r2 = elem3 else             r3 = elem3; n += 1}
+      if (pred(elem4) != isFlipped) { if (n == 0) r1 = elem4 else if (n == 1) r2 = elem4 else if (n == 2) r3 = elem4; n += 1}
+
+      n match {
+        case 0 => Set.empty
+        case 1 => new Set1(r1)
+        case 2 => new Set2(r1, r2)
+        case 3 => new Set3(r1, r2, r3)
+        case 4 => this
+      }
+    }
+
     override def find(p: A => Boolean): Option[A] = {
       if (p(elem1)) Some(elem1)
       else if (p(elem2)) Some(elem2)
