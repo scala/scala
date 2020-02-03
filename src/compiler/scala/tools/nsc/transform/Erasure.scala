@@ -243,7 +243,7 @@ abstract class Erasure extends InfoTransform
     }
     def boxedSig(tp: Type): Unit = jsig(tp, unboxedVCs = false)
     def boundsSig(bounds: List[Type]): Unit = {
-      val (isTrait, isClass) = bounds partition (_.typeSymbol.isTrait)
+      val (isTrait, isClass) = partitionConserve(bounds)(_.typeSymbol.isTrait)
       isClass match {
         case Nil    => builder.append(':') // + boxedSig(ObjectTpe)
         case x :: _ => builder.append(':'); boxedSig(x)

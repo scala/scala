@@ -556,6 +556,15 @@ sealed abstract class List[+A]
     result
   }
 
+  override def partition(p: A => Boolean): (List[A], List[A]) = {
+    if (isEmpty) List.TupleOfNil
+    else super.partition(p) match {
+      case (Nil, xs) => (Nil, this)
+      case (xs, Nil) => (this, Nil)
+      case pair => pair
+    }
+  }
+
   final override def toList: List[A] = this
 
   // Override for performance
@@ -610,6 +619,7 @@ case object Nil extends List[Nothing] {
   */
 @SerialVersionUID(3L)
 object List extends StrictOptimizedSeqFactory[List] {
+  private val TupleOfNil = (Nil, Nil)
 
   def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
     case coll: List[B] => coll

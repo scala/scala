@@ -67,4 +67,23 @@ class ListBenchmark {
   @Benchmark def mapConserve_modifyMid: Any = {
     values.mapConserve(x => if (x == mid) replacement else x)
   }
+  @Benchmark def partition_includeAll: Any = {
+    values.partition(v => true)
+  }
+
+  @Benchmark def partition_excludeAll: Any = {
+    values.partition(_ => false)
+  }
+
+  @Benchmark def partition_exc_mid: Any = {
+    values.partition(v => v.value != mid.value)
+  }
+
+  @Benchmark def partition_from_mid: Any = {
+    values.partition(v => v.value <= mid.value)
+  }
+
+  @Benchmark def partition_exc_last: Any = {
+    values.partition(v => v.value != last.value)
+  }
 }
