@@ -3,6 +3,7 @@ scala> case class `X"`(var xxx: Any)
 class X$u0022
 
 scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
+warning: 1 deprecation (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 val m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))
 
 scala> m("")
@@ -18,6 +19,7 @@ scala> m("").xxx = "\""
 // mutated m("").xxx
 
 scala> m('s).xxx = 's
+warning: 2 deprecations (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
 // mutated m(scala.Symbol("s")).xxx
 
 scala> val `"` = 0

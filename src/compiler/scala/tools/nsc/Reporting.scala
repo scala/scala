@@ -85,6 +85,9 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
     def allConditionalWarnings = _allConditionalWarnings flatMap (_.warnings)
 
+    // useful in REPL because line parsing doesn't entail a new Run
+    def clearAllConditionalWarnings() = _allConditionalWarnings.foreach(_.warnings.clear())
+
     // behold! the symbol that caused the deprecation warning (may not be deprecated itself)
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit = _deprecationWarnings.warn(pos, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit = {

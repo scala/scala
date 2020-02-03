@@ -6,7 +6,7 @@ object Test extends ReplTest {
 import scala.reflect.runtime.universe._
 import scala.tools.reflect.ToolBox
 import scala.tools.reflect.Eval
-def foo[T]{
+def foo[T] = {
   val code = reify {
     List[T]()
   }

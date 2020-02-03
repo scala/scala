@@ -78,7 +78,6 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
         withoutTruncating { printMessage(error) }
     }
 
-
   // whether to print anything
   var totalSilence: Boolean = false
   def suppressOutput[T](operation: => T): T = {

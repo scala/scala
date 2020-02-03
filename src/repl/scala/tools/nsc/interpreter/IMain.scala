@@ -17,9 +17,10 @@ package scala.tools.nsc.interpreter
 import java.io.{PrintWriter, StringWriter, Closeable}
 import java.net.URL
 
-import scala.language.implicitConversions
+import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.language.implicitConversions
 import scala.reflect.internal.{FatalError, Flags, MissingRequirementError, NoPhase}
 import scala.reflect.runtime.{universe => ru}
 import scala.reflect.{ClassTag, classTag}
@@ -31,12 +32,12 @@ import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.typechecker.{StructuredTypeStrings, TypeStrings}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.util.PathResolver
-import scala.util.{Try => Trying}
 import scala.tools.nsc.util.{stackTraceString, stringFromWriter}
 import scala.tools.nsc.interpreter.Results.{Error, Incomplete, Result, Success}
 import scala.tools.nsc.util.Exceptional.rootCause
+import scala.util.{Try => Trying}
+import scala.util.chaining._
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
 
 
 /** An interpreter for Scala code.
@@ -423,7 +424,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def compileSourcesKeepingRun(sources: SourceFile*) = {
     val run = new Run()
     assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
-    reporter.reset()
     run compileSources sources.toList
     (!reporter.hasErrors, run)
   }
@@ -487,10 +487,17 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       }
     }
 
-    compile(line, synthetic, fatally).fold(identity, loadAndRunReq)
+    compile(line, synthetic, fatally).fold(identity, loadAndRunReq).tap(res =>
+      // besides regular errors, clear deprecation and feature warnings
+      // so they don't leak from last compilation run into next provisional parse
+      if (res != Incomplete) {
+        reporter.reset()
+        currentRun.reporting.clearAllConditionalWarnings()
+      }
+    )
   }
 
-  // create a Request and compile it
+  // create a Request and compile it if input is complete
   def compile(line: String, synthetic: Boolean): Either[Result, Request] = compile(line, synthetic, fatally = false)
   def compile(line: String, synthetic: Boolean, fatally: Boolean): Either[Result, Request] =
     if (global == null) Left(Error)
@@ -702,7 +709,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       val run = new Run()
       assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
 
-      reporter.reset()
       run.compileUnits(unit :: Nil)
       val success = !reporter.hasErrors
 
@@ -785,7 +791,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       case x: ImportHandler => x.importedSymbols
       case _                => Nil
     }
-
 
     /** The path of the value that contains the user code. */
     def fullAccessPath = s"${lineRep.readPathInstance}$accessPath"
@@ -914,8 +919,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** Compile the object file.  Returns whether the compilation succeeded.
       *  If all goes well, the "types" map is computed. */
     def compile: Boolean = {
-      // error counting is wrong, hence interpreter may overlook failure - so we reset
-      reporter.reset()
 
       // compile the object containing the user's code
       lineRep.compile(mkUnit) && {
@@ -1125,17 +1128,15 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     var isIncomplete = false
     val handler = if (fatally) null else (_: Position, _: String) => isIncomplete = true
     currentRun.parsing.withIncompleteHandler(handler) {
-      reporter.reset()
       val unit = newCompilationUnit(line, label)
       val trees = newUnitParser(unit).parseStats()
-      if (reporter.hasErrors) Left(Error)
-      else if (reporter.hasWarnings && settings.fatalWarnings) {
+      if (!isIncomplete) 
         currentRun.reporting.summarizeErrors()
-        Left(Error)
-      }
+      if (reporter.hasErrors) Left(Error)
       else if (isIncomplete) Left(Incomplete)
+      else if (reporter.hasWarnings && settings.fatalWarnings) Left(Error)
       else Right((trees, unit.firstXmlPos))
-    }
+    }.tap(_ => if (!isIncomplete) reporter.reset())
   }
 
   /** Does code start with a package definition? */
