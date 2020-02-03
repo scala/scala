@@ -1272,7 +1272,6 @@ def configureAsSubproject(project: Project): Project = {
   val base = file(".") / "src" / project.id
   (project in base)
     .settings(scalaSubprojectSettings)
-    .settings(generatePropertiesFileSettings)
 }
 
 lazy val buildDirectory = settingKey[File]("The directory where all build products go. By default ./build")
