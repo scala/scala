@@ -1,0 +1,4 @@
+Crash.java:4: error: not found: type NotThere
+    NotThere notThere();
+    ^
+one error found

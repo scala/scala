@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-abstract class Phase(val prev: Phase) {
+abstract class Phase(val prev: Phase) extends Ordered[Phase] {
   if ((prev ne null) && (prev ne NoPhase))
     prev.nx = this
 
@@ -72,6 +72,7 @@ abstract class Phase(val prev: Phase) {
     case x: Phase   => id == x.id && name == x.name
     case _          => false
   }
+  override def compare(that: Phase): Id = this.id compare that.id
 }
 
 object NoPhase extends Phase(null) {
