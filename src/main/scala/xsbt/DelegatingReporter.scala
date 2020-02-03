@@ -109,8 +109,24 @@ private object DelegatingReporter {
       val endOffset = if (pos.isRange) Some(pos.end) else None
       val startLine = if (pos.isRange) Some(lineOf(pos.start)) else None
       val startColumn = if (pos.isRange) Some(columnOf(pos.start)) else None
-      val endLine = if (pos.isRange) Some(lineOf(pos.end)) else None
-      val endColumn = if (pos.isRange) Some(columnOf(pos.end)) else None
+      val endLine =
+        if (pos.isRange)
+          try {
+            Some(lineOf(pos.end))
+          } catch {
+            // work around for https://github.com/scala/bug/issues/11865 by falling back to start pos
+            case _: ArrayIndexOutOfBoundsException =>
+              startLine
+          } else None
+      val endColumn =
+        if (pos.isRange)
+          try {
+            Some(columnOf(pos.end))
+          } catch {
+            // work around for https://github.com/scala/bug/issues/11865 by falling back to start pos
+            case _: ArrayIndexOutOfBoundsException =>
+              startColumn
+          } else None
 
       new PositionImpl(
         Option(sourcePath),
