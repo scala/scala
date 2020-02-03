@@ -306,12 +306,17 @@ final class ListBuffer[A]
   def result: List[A] = toList
 
   /** Converts this buffer to a list. Takes constant time. The buffer is
-   *  copied lazily, the first time it is mutated.
+   *  copied lazily the first time it is mutated.
    */
   override def toList: List[A] = {
     exported = !isEmpty
     start
   }
+
+  // scala/bug#11869
+  override def toSeq: collection.Seq[A] = toList
+  override def toIterable: collection.Iterable[A] = toList
+  override def toStream: immutable.Stream[A] = toList.toStream // mind the laziness
 
 // New methods in ListBuffer
 

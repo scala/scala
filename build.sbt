@@ -46,7 +46,7 @@ val partestDep                   = scalaDep("org.scala-lang.modules", "scala-par
 // Non-Scala dependencies:
 val junitDep          = "junit"                  % "junit"           % "4.12"
 val junitInterfaceDep = "com.novocode"           % "junit-interface" % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.13.4"                          % "test"
+val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.14.3"                          % "test"
 val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.9"
 val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
 val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
@@ -184,6 +184,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.foreachEntry"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.product2Hash"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.emptyMapHash"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapKeys"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapValues"),
 
     // Some static forwarder changes detected after a MiMa upgrade.
     // e.g. static method apply(java.lang.Object)java.lang.Object in class scala.Symbol does not have a correspondent in current version
@@ -901,9 +903,6 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .settings(
     // enable forking to workaround https://github.com/sbt/sbt/issues/4009
     fork in Test := true,
-    // customise framework for early acess to https://github.com/rickynils/scalacheck/pull/388
-    // TODO remove this when we upgrade scalacheck
-    testFrameworks := Seq(TestFramework("org.scalacheck.CustomScalaCheckFramework")),
     javaOptions in Test += "-Xss1M",
     testOptions ++= {
       if ((fork in Test).value) Nil

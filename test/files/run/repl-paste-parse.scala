@@ -19,7 +19,7 @@ object Test extends DirectTest {
     val w = new StringWriter
     val p = new PrintWriter(w, true)
     new ILoop(r, p).process(settings)
-    w.toString.lines foreach { s =>
+    w.toString.linesIterator foreach { s =>
       if (!s.startsWith("Welcome to Scala")) println(s)
     }
   }

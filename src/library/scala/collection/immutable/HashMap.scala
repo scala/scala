@@ -139,6 +139,21 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
 
   override def par = ParHashMap.fromTrie(this)
 
+  /* Override to avoid tuple allocation in foreach */
+  private[collection] class HashMapKeys extends ImmutableDefaultKeySet {
+    override def foreach[U](f: A => U) = foreachEntry((key, _) => f(key))
+    override lazy val hashCode = super.hashCode()
+  }
+  override def keySet: immutable.Set[A] = new HashMapKeys
+
+  /** The implementation class of the iterable returned by `values`.
+   */
+  private[collection] class HashMapValues extends DefaultValuesIterable {
+    override def foreach[U](f: B => U) = foreachEntry((_, value) => f(value))
+  }
+  override def values: scala.collection.Iterable[B] = new HashMapValues
+
+
 }
 
 /** $factoryInfo
