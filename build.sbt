@@ -409,9 +409,6 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   packageOptions in Compile in packageBin := Seq.empty,
   packageOptions in Compile in packageSrc := Seq.empty,
 
-  // workaround for SBT regression. Real fix coming in https://github.com/scala/scala/pull/8525.
-  mappings in Compile in packageBin := (mappings in Compile in packageBin).value.filterNot(_._2 == ""),
-
   // Lets us CTRL-C partest without exiting SBT entirely
   cancelable in Global := true,
 
