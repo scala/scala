@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.asm.Opcodes._
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -148,7 +149,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there were two deprecation warnings"))
 
     assertNoInvoke(getMethod(c, "t1"))
     assertNoInvoke(getMethod(c, "t2"))
@@ -310,7 +311,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there was one deprecation warning"))
     assertNoInvoke(getMethod(c, "t1"))
     assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ICONST_3, IADD, IRETURN))
     assertSameSummary(getMethod(c, "t3"), List(ICONST_3, ICONST_4, IADD, IRETURN))

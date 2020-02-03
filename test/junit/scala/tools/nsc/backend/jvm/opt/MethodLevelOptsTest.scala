@@ -11,6 +11,7 @@ import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
 import scala.tools.nsc.backend.jvm.AsmUtils._
+import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.partest.ASMConverters._
 import scala.tools.testing.BytecodeTesting
 import scala.tools.testing.BytecodeTesting._
@@ -158,7 +159,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there was one deprecation warning"))
     assertSameCode(getMethod(c, "t"), List(
       IntOp(BIPUSH, 23), IntOp(NEWARRAY, 5), Op(POP), VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))
   }
@@ -173,7 +174,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there was one deprecation warning"))
     assertSameCode(getMethod(c, "t"), List(
       TypeOp(NEW, "java/lang/Integer"), Ldc(LDC, "nono"), Invoke(INVOKESPECIAL, "java/lang/Integer", "<init>", "(Ljava/lang/String;)V", false),
       VarOp(ILOAD, 1), VarOp(ILOAD, 2), Op(IADD), Op(IRETURN)))

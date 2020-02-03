@@ -71,27 +71,27 @@ class ClassOfTest extends RunTesting {
   @Test
   def t9702(): Unit = {
     val code =
-      """import javax.annotation.Resource
+      """import scala.reflect.ClassBearingAnnotation
         |import scala.reflect.ClassOfTest.VC
         |class C {
         |  type aList[K] = List[K]
         |  type aVC = VC
         |  type aInt = Int
         |  type aInteger = Integer
-        |  @Resource(`type` = classOf[List[Int]])      def a = 0
-        |  @Resource(`type` = classOf[List[_]])        def b = 0
-        |  @Resource(`type` = classOf[aList[_]])       def c = 0
-        |  @Resource(`type` = classOf[Int])            def d = 0
-        |  @Resource(`type` = classOf[aInt])           def e = 0
-        |  @Resource(`type` = classOf[Integer])        def f = 0
-        |  @Resource(`type` = classOf[aInteger])       def g = 0
-        |  @Resource(`type` = classOf[VC])             def h = 0
-        |  @Resource(`type` = classOf[aVC])            def i = 0
-        |  @Resource(`type` = classOf[Array[Int]])     def j = 0
-        |  @Resource(`type` = classOf[Array[List[_]]]) def k = 0
+        |  @ClassBearingAnnotation(`type` = classOf[List[Int]])      def a = 0
+        |  @ClassBearingAnnotation(`type` = classOf[List[_]])        def b = 0
+        |  @ClassBearingAnnotation(`type` = classOf[aList[_]])       def c = 0
+        |  @ClassBearingAnnotation(`type` = classOf[Int])            def d = 0
+        |  @ClassBearingAnnotation(`type` = classOf[aInt])           def e = 0
+        |  @ClassBearingAnnotation(`type` = classOf[Integer])        def f = 0
+        |  @ClassBearingAnnotation(`type` = classOf[aInteger])       def g = 0
+        |  @ClassBearingAnnotation(`type` = classOf[VC])             def h = 0
+        |  @ClassBearingAnnotation(`type` = classOf[aVC])            def i = 0
+        |  @ClassBearingAnnotation(`type` = classOf[Array[Int]])     def j = 0
+        |  @ClassBearingAnnotation(`type` = classOf[Array[List[_]]]) def k = 0
         |}
         |val c = classOf[C]
-        |def typeArg(meth: String) = c.getDeclaredMethod(meth).getDeclaredAnnotation(classOf[Resource]).`type`
+        |def typeArg(meth: String) = c.getDeclaredMethod(meth).getDeclaredAnnotation(classOf[ClassBearingAnnotation]).`type`
         |('a' to 'k').toList.map(_.toString).map(typeArg)
       """.stripMargin
 

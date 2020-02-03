@@ -14,15 +14,15 @@ class RunTest extends RunTesting {
   @Test
   def annotationInfoNotErased(): Unit = {
     val code =
-      """import javax.annotation.Resource
+      """import scala.reflect.ClassBearingAnnotation
         |import scala.annotation.meta.getter
         |class C {
-        |  type Rg = Resource @getter
-        |  @(Resource @getter)(`type` = classOf[Int]) def a = 0
+        |  type Rg = ClassBearingAnnotation @getter
+        |  @(ClassBearingAnnotation @getter)(`type` = classOf[Int]) def a = 0
         |  @Rg(`type` = classOf[Int])                 def b = 0
         |}
         |val c = classOf[C]
-        |def typeArg(meth: String) = c.getDeclaredMethod(meth).getDeclaredAnnotation(classOf[Resource]).`type`
+        |def typeArg(meth: String) = c.getDeclaredMethod(meth).getDeclaredAnnotation(classOf[ClassBearingAnnotation]).`type`
         |List("a", "b") map typeArg
         |""".stripMargin
 
