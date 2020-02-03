@@ -130,13 +130,17 @@ object ScalaRunTime {
   }
 
   def toArray[T](xs: scala.collection.Seq[T]) = {
-    val arr = new Array[AnyRef](xs.length)
-    var i = 0
-    for (x <- xs) {
-      arr(i) = x.asInstanceOf[AnyRef]
-      i += 1
+    if (xs.isEmpty) Array.emptyObjectArray
+    else {
+      val arr = new Array[AnyRef](xs.length)
+      val it = xs.iterator
+      var i = 0
+      while (it.hasNext) {
+        arr(i) = it.next().asInstanceOf[AnyRef]
+        i += 1
+      }
+      arr
     }
-    arr
   }
 
   // Java bug: https://bugs.java.com/view_bug.do?bug_id=4071957
