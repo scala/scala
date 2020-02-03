@@ -273,7 +273,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
     override def typeParams: List[Symbol] = {
       if (myTypeParams `eq` null) myTypeParams = paramNames.zip(paramInfos).map {
-        case (name, info) => mkNewFreeTypeSymbol(name.toTypeName, Param | Deferred, name.toString).setInfo(info)
+        case (name, info) => typeSymbol.newTypeParameter(name.toTypeName, noPosition, Param | Deferred).setInfo(info)
       }
       myTypeParams
     }

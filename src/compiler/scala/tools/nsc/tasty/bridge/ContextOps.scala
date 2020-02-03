@@ -111,7 +111,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
        *  type of the constructed instance is returned
        */
       def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
-        if (sym.name == nme.CONSTRUCTOR) mkTypeRef(sym.owner.toType.prefix, sym.owner, typeParams.map(_.tpe))
+        if (sym.name == nme.CONSTRUCTOR) sym.owner.tpe
         else givenTp
 
       /** The method type corresponding to given parameters and result type */
