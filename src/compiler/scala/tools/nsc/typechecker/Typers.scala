@@ -1136,8 +1136,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
             if (!isThisTypeResult && !explicitlyUnit(tree)) context.warning(tree.pos, "discarded non-Unit value")
           }
-          @inline def warnNumericWiden(): Unit =
-            if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
+          @inline def warnNumericWiden(tpSym: Symbol, ptSym: Symbol): Unit =
+            if (!isPastTyper) {
+              val isInharmonic = (
+                tpSym == IntClass  && ptSym == FloatClass ||
+                tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass)
+              )
+              if (isInharmonic)
+                context.warning(tree.pos, s"Automatic conversion from ${tpSym.name} to ${ptSym.name} is deprecated (since 2.13.1) because it loses precision. Write `.to${ptSym.name}` instead.")
+              else if (settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
+            }
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
           val anyTyped = tree.tpe <:< AnyTpe
@@ -1146,7 +1154,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case TypeRef(_, UnitClass, _) if anyTyped => // (12)
               warnValueDiscard() ; tpdPos(gen.mkUnitBlock(tree))
             case TypeRef(_, numValueCls, _) if anyTyped && isNumericValueClass(numValueCls) && isNumericSubType(tree.tpe, pt) => // (10) (11)
-              warnNumericWiden() ; tpdPos(Select(tree, s"to${numValueCls.name}"))
+              warnNumericWiden(tree.tpe.widen.typeSymbol, numValueCls) ; tpdPos(Select(tree, s"to${numValueCls.name}"))
             case dealiased if dealiased.annotations.nonEmpty && canAdaptAnnotations(tree, this, mode, pt) => // (13)
               tpd(adaptAnnotations(tree, this, mode, pt))
             case _ =>

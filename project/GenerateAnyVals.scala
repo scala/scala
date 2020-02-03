@@ -9,22 +9,26 @@ trait GenerateAnyValReps {
 
     case class Op(op : String, doc : String)
 
-    private def companionCoercions(tos: AnyValRep*) = {
-      tos.toList map (to =>
-        s"implicit def @javaequiv@2${to.javaEquiv}(x: @name@): ${to.name} = x.to${to.name}"
-      )
-    }
+    private def companionCoercions(deprecated: Boolean, tos: AnyValRep*): List[String] =
+      tos.toList.flatMap { to =>
+        val code = s"implicit def @javaequiv@2${to.javaEquiv}(x: @name@): ${to.name} = x.to${to.name}"
+        if (deprecated)
+          List(s"""@deprecated("Implicit conversion from @name@ to ${to.name} is dangerous because it loses precision. Write `.to${to.name}` instead.", "2.13.1")""", code)
+        else
+          List(code)
+      }
+
     def coercionComment =
 """/** Language mandated coercions from @name@ to "wider" types. */
 import scala.language.implicitConversions"""
 
     def implicitCoercions: List[String] = {
       val coercions = this match {
-        case B     => companionCoercions(S, I, L, F, D)
-        case S | C => companionCoercions(I, L, F, D)
-        case I     => companionCoercions(L, F, D)
-        case L     => companionCoercions(F, D)
-        case F     => companionCoercions(D)
+        case B     => companionCoercions(deprecated = false, S, I, L, F, D)
+        case S | C => companionCoercions(deprecated = false, I, L, F, D)
+        case I     => companionCoercions(deprecated = true, F) ++ companionCoercions(deprecated = false, L, D)
+        case L     => companionCoercions(deprecated = true, F, D)
+        case F     => companionCoercions(deprecated = false, D)
         case _     => Nil
       }
       if (coercions.isEmpty) Nil

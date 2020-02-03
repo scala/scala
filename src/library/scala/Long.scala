@@ -475,7 +475,9 @@ object Long extends AnyValCompanion {
   override def toString = "object scala.Long"
   /** Language mandated coercions from Long to "wider" types. */
   import scala.language.implicitConversions
+  @deprecated("Implicit conversion from Long to Float is dangerous because it loses precision. Write `.toFloat` instead.", "2.13.1")
   implicit def long2float(x: Long): Float = x.toFloat
+  @deprecated("Implicit conversion from Long to Double is dangerous because it loses precision. Write `.toDouble` instead.", "2.13.1")
   implicit def long2double(x: Long): Double = x.toDouble
 }
 

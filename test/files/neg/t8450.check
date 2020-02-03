@@ -1,6 +1,6 @@
 t8450.scala:7: warning: implicit numeric widening
-  def elapsed: Foo = (System.nanoTime - 100L).foo
-                                      ^
+  def elapsed: Foo = (System.nanoTime.toInt - 100).foo
+                                            ^
 error: No warnings can be incurred under -Werror.
 1 warning
 1 error
