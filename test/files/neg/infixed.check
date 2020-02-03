@@ -1,0 +1,4 @@
+infixed.scala:8: error: ';' expected but integer literal found.
+    x 42
+      ^
+1 error
