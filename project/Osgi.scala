@@ -2,7 +2,6 @@ package scala.build
 
 import aQute.bnd.osgi.Builder
 import aQute.bnd.osgi.Constants._
-import java.util.Properties
 import java.util.jar.Attributes
 import sbt._
 import sbt.Keys._

@@ -18,8 +18,8 @@
   </component>
   <component name="InspectionProjectProfileManager">
     <profile version="1.0">
-      <option value="Project Default" name="myName"/>
-      <inspection_tool enabled_by_default="false" level="WARNING" enabled="false" class="EmptyCheck"/>
+      <option value="Project Default" name="myName" />
+      <inspection_tool enabled_by_default="false" level="WARNING" enabled="false" class="EmptyCheck" />
     </profile>
     <version value="1.0" />
   </component>
@@ -154,6 +154,27 @@
       </item>
     </group>
   </component>
+  <component name="ProjectCodeStyleConfiguration">
+    <option name="USE_PER_PROJECT_SETTINGS" value="true" />
+    <code_scheme name="Project" version="173">
+      <XML>
+        <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+      </XML>
+      <codeStyleSettings language="JAVA">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="2" />
+          <option name="CONTINUATION_INDENT_SIZE" value="4" />
+          <option name="TAB_SIZE" value="2" />
+        </indentOptions>
+      </codeStyleSettings>
+      <codeStyleSettings language="Scala">
+        <option name="BLANK_LINES_BEFORE_IMPORTS" value="0" />
+        <option name="BLANK_LINES_AFTER_IMPORTS" value="0" />
+        <option name="BLANK_LINES_AROUND_METHOD" value="0" />
+        <option name="BLANK_LINES_AROUND_METHOD_IN_INTERFACE" value="0" />
+      </codeStyleSettings>
+    </code_scheme>
+  </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />
     <OptionsSetting value="true" id="Remove" />
@@ -208,7 +229,6 @@
       <JAVADOC />
       <SOURCES />
     </library>
-
     <library name="compiler-deps">
       <CLASSES>
         <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
@@ -222,21 +242,21 @@
     </library>
     <library name="compilerOptionsExporter-deps">
       <CLASSES>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-core/bundles/jackson-core-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-annotations/bundles/jackson-annotations-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-databind/bundles/jackson-databind-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/bundles/jackson-dataformat-yaml-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/org.yaml/snakeyaml/bundles/snakeyaml-1.18.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.module/jackson-module-scala_2.12/bundles/jackson-module-scala_2.12-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.module/jackson-module-paranamer/bundles/jackson-module-paranamer-2.9.5.jar!/"/>
-        <root url="jar://$USER_HOME$/.ivy2/cache/com.thoughtworks.paranamer/paranamer/bundles/paranamer-2.8.jar!/"/>
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant/jars/ant-1.9.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.apache.ant/ant-launcher/jars/ant-launcher-1.9.4.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-asm/bundles/scala-asm-6.0.0-scala-1.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.scala-lang.modules/scala-xml_2.12/bundles/scala-xml_2.12-1.0.6.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-core/bundles/jackson-core-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-annotations/bundles/jackson-annotations-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.core/jackson-databind/bundles/jackson-databind-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml/bundles/jackson-dataformat-yaml-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/org.yaml/snakeyaml/bundles/snakeyaml-1.18.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.module/jackson-module-scala_2.12/bundles/jackson-module-scala_2.12-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.fasterxml.jackson.module/jackson-module-paranamer/bundles/jackson-module-paranamer-2.9.5.jar!/" />
+        <root url="jar://$USER_HOME$/.ivy2/cache/com.thoughtworks.paranamer/paranamer/bundles/paranamer-2.8.jar!/" />
       </CLASSES>
-      <JAVADOC/>
-      <SOURCES/>
+      <JAVADOC />
+      <SOURCES />
     </library>
     <library name="interactive-deps">
       <CLASSES>
@@ -447,7 +467,6 @@
     </library>
     <library name="starr" type="Scala">
       <properties>
-        <option name="languageLevel" value="Scala_2_12" />
         <compiler-classpath>
           <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-library/jars/scala-library-2.12.1.jar" />
           <root url="file://$USER_HOME$/.ivy2/cache/org.scala-lang/scala-compiler/jars/scala-compiler-2.12.1.jar" />

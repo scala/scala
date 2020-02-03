@@ -1,10 +1,13 @@
 package scala.build
 
-import sbt.{stringToProcess => _, _}
+import sbt._
 import Keys._
 import java.util.{Date, Locale, Properties, TimeZone}
 import java.io.{File, FileInputStream}
 import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.format.DateTimeFormatter
+import java.time.temporal.{TemporalAccessor, TemporalQueries, TemporalQuery}
 
 import scala.collection.JavaConverters._
 import BuildSettings.autoImport._
@@ -71,8 +74,21 @@ object VersionUtil {
         val db = new FileRepositoryBuilder().findGitDir.build
         val head = db.resolve("HEAD")
         if (head eq null) {
-          log.info("No git HEAD commit found -- Using current date and 'unknown' SHA")
-          (new Date, "unknown")
+          import scala.sys.process._
+          try {
+            // Workaround lack of git worktree support in JGit https://bugs.eclipse.org/bugs/show_bug.cgi?id=477475
+            val sha = List("git", "rev-parse", "HEAD").!!.trim
+            val commitDateIso = List("git", "log", "-1", "--format=%cI", "HEAD").!!.trim
+            val date = java.util.Date.from(DateTimeFormatter.ISO_DATE_TIME.parse(commitDateIso, new TemporalQuery[Instant] {
+              override def queryFrom(temporal: TemporalAccessor): Instant = Instant.from(temporal)
+            }))
+            (date, sha.substring(0, 7))
+          } catch {
+            case ex: Exception =>
+              ex.printStackTrace()
+              log.info("No git HEAD commit found -- Using current date and 'unknown' SHA")
+              (new Date, "unknown")
+          }
         } else {
           val commit = new RevWalk(db).parseCommit(head)
           (new Date(commit.getCommitTime.toLong * 1000L), commit.getName.substring(0, 7))
@@ -109,7 +125,6 @@ object VersionUtil {
     * suffix is used for releases. All other suffix values are treated as RC / milestone builds. The special suffix
     * value "SPLIT" is used to split the real suffix off from `baseVersion` instead and then apply the usual logic. */
   private lazy val versionPropertiesImpl: Def.Initialize[Versions] = Def.setting {
-    val log = sLog.value
     val (date, sha) = (gitProperties.value.date, gitProperties.value.sha)
 
     val (base, suffix) = {
