@@ -17,7 +17,5 @@ object Test {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-    Console.println(response)
-  }
+  def main(args: Array[String]): Unit = assert(response == "check failed: some problem")
 }
