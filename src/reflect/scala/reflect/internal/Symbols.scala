@@ -706,11 +706,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def isOverridableMember  = !(isClass || isEffectivelyFinal || isTypeParameter) && safeOwner.isClass
 
     /** Does this symbol denote a wrapper created by the repl? */
-    final def isInterpreterWrapper = (
-         (this hasFlag MODULE)
-      && isTopLevel
-      && nme.isReplWrapperName(name)
-    )
+    final def isInterpreterWrapper = isTopLevel && nme.isReplWrapperName(name)
 
     /** In our current architecture, symbols for top-level classes and modules
      *  are created as dummies. Package symbols just call newClass(name) or newModule(name) and
@@ -874,7 +870,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     final def skipConstructor: Symbol = if (isConstructor) owner else this
 
     /** Conditions where we omit the prefix when printing a symbol, to avoid
-     *  unpleasantries like Predef.String, $iw.$iw.Foo and <empty>.Bippy.
+     *  unpleasantries like Predef.String, $read.$iw.Foo and <empty>.Bippy.
      */
     final def isOmittablePrefix = /*!settings.debug.value &&*/ {
       // scala/bug#5941 runtime reflection can have distinct symbols representing `package scala` (from different mirrors)
@@ -886,7 +882,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def isEmptyPrefix = (
          isEffectiveRoot                      // has no prefix for real, <empty> or <root>
       || isAnonOrRefinementClass              // has uninteresting <anon> or <refinement> prefix
-      || nme.isReplWrapperName(name)          // has ugly $iw. prefix (doesn't call isInterpreterWrapper due to nesting)
+      || nme.isReplWrapperName(name)          // $read.$iw.Foo or $read.INSTANCE.$iw.Foo
     )
     def isFBounded = info match {
       case TypeBounds(_, _) => info.baseTypeSeq exists (_ contains this)
@@ -1535,14 +1531,24 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 //          activeLocks += 1
  //         lockedSyms += this
         }
-        val current = phase
-        try {
-          assertCorrectThread()
-          phase = phaseOf(infos.validFrom)
-          tp.complete(this)
-        } finally {
-          unlock()
-          phase = current
+        if (isCompilerUniverse) {
+          val current = phase
+          try {
+            assertCorrectThread()
+            phase = phaseOf(infos.validFrom)
+            tp.complete(this)
+          } finally {
+            unlock()
+            phase = current
+          }
+        } else {
+          // In runtime reflection, there is only on phase, so don't mutate Global.phase which would lead to warnings
+          // of data races from when using TSAN to assess thread safety.
+          try {
+            tp.complete(this)
+          } finally {
+            unlock()
+          }
         }
         cnt += 1
         // allow for two completions:

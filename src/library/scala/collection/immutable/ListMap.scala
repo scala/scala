@@ -16,6 +16,7 @@ package immutable
 
 import generic._
 import scala.annotation.tailrec
+import scala.util.hashing.MurmurHash3
 
 /**
   * $factoryInfo
@@ -36,7 +37,8 @@ object ListMap extends ImmutableMapFactory[ListMap] {
     * $mapCanBuildFromInfo
     */
   implicit def canBuildFrom[A, B]: CanBuildFrom[Coll, (A, B), ListMap[A, B]] =
-    new MapCanBuildFrom[A, B]
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (A, B), ListMap[A, B]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Any, Any]
 
   def empty[A, B]: ListMap[A, B] = EmptyListMap.asInstanceOf[ListMap[A, B]]
 
@@ -79,6 +81,24 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   override def isEmpty: Boolean = true
 
   def get(key: A): Option[B] = None
+
+  private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = {
+    var current = this
+    while (!current.isEmpty) {
+      f(current.key, current.value)
+      current = current.next
+    }
+  }
+
+  override def hashCode(): Int = {
+    if (isEmpty) {
+      MurmurHash3.emptyMapHash
+    } else {
+      val hasher = new Map.HashCodeAccumulator()
+      foreachEntry(hasher)
+      hasher.finalizeHash
+    }
+  }
 
   override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
 

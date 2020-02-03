@@ -23,7 +23,7 @@ import scala.util.matching.Regex
 trait Naming {
   def unmangle(str: String): String = {
     val ESC = '\u001b'
-    val cleaned = removeIWPackages(removeLineWrapper(str))
+    val cleaned = lineRegex.replaceAllIn(str, "")
     // Looking to exclude binary data which hoses the terminal, but
     // let through the subset of it we need, like whitespace and also
     // <ESC> for ansi codes.
@@ -44,16 +44,19 @@ trait Naming {
 
   // The two name forms this is catching are the two sides of this assignment:
   //
-  // $line3.$read.$iw.$iw.Bippy =
-  //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
-  lazy val lineRegex = {
+  // $line3.$read.$iw.Bippy =
+  //   $line3.$read$$iw$$Bippy@4a6a00ca
+  lazy val lineRegex: Regex = {
     val sn = sessionNames
-    val members = List(sn.read, sn.eval, sn.print) map Regex.quote mkString ("(?:", "|", ")")
-    debugging("lineRegex")(Regex.quote(sn.line) + """\d+[./]""" + members + """[$.]""")
+    import Regex.{quote => q}
+    val lineN = q(sn.line) + """\d+"""
+    val lineNRead = lineN + raw"""(${q(sn.read)})?"""
+    // This needs to be aware of LambdaMetafactory generated classnames to strip the correct number of '$' delimiters.
+    // A lambda hosted in a module `$iw` (which has a module class `$iw$` is named `$iw$ $ $Lambda1234` (spaces added
+    // here for clarification.) This differs from an explicitly declared inner classes named `$Foo`, which would be
+    // `$iw$$Foo`.
+    (raw"""($lineNRead|${q(sn.read)}(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
   }
-
-  private def removeLineWrapper(s: String) = s.replaceAll(lineRegex, "")
-  private def removeIWPackages(s: String)  = s.replaceAll("""\$iw[$.]""", "")
 
   trait SessionNames {
     // All values are configurable by passing e.g. -Dscala.repl.name.read=XXX
@@ -63,7 +66,8 @@ trait Naming {
 
     // Prefixes used in repl machinery.  Default to $line, $read, etc.
     def line   = propOr("line")
-    def read   = propOr("read")
+    def read   = "$read"
+    def iw   = "$iw"
     def eval   = propOr("eval")
     def print  = propOr("print")
     def result = propOr("result")

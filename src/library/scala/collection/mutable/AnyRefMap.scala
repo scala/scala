@@ -426,6 +426,15 @@ extends AbstractMap[K, V]
     this
   }
 
+  override def clear(): Unit = {
+    import java.util.Arrays.fill
+    fill(_keys, null)
+    fill(_values, null)
+    fill(_hashes, 0)
+    _size = 0
+    _vacant = 0
+  }
+
 }
 
 object AnyRefMap {
@@ -441,10 +450,11 @@ object AnyRefMap {
   private val exceptionDefault = new ExceptionDefault
 
   implicit def canBuildFrom[K <: AnyRef, V, J <: AnyRef, U]: CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] =
-    new CanBuildFrom[AnyRefMap[K,V], (J, U), AnyRefMap[J,U]] {
-      def apply(from: AnyRefMap[K,V]): AnyRefMapBuilder[J, U] = apply()
-      def apply(): AnyRefMapBuilder[J, U] = new AnyRefMapBuilder[J, U]
-    }
+    ReusableCBFInstance.asInstanceOf[CanBuildFrom[AnyRefMap[K, V], (J, U), AnyRefMap[J, U]]]
+  private[this] val ReusableCBFInstance = new CanBuildFrom[AnyRefMap[AnyRef, Any], (AnyRef, Any), AnyRefMap[AnyRef, Any]] {
+    def apply(from: AnyRefMap[AnyRef, Any]): AnyRefMapBuilder[AnyRef, Any] = apply()
+    def apply(): AnyRefMapBuilder[AnyRef, Any] = new AnyRefMapBuilder[AnyRef, Any]
+  }
 
   /** A builder for instances of `AnyRefMap`.
    *

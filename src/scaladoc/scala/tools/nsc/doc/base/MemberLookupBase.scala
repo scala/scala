@@ -168,9 +168,14 @@ trait MemberLookupBase {
       termSyms
     else if (member.endsWith("!"))
       typeSyms
-    else if (member.endsWith("*"))
-      cleanupBogusClasses(container.info.nonPrivateDecls) filter signatureMatch
-    else
+    else if (member.endsWith("*")) {
+      val declOnlyResults = cleanupBogusClasses(container.info.nonPrivateDecls) filter signatureMatch
+      if (declOnlyResults.nonEmpty) {
+        declOnlyResults
+      } else {
+        cleanupBogusClasses(container.info.nonPrivateMembers.toList) filter signatureMatch
+      }
+    } else
       strategy match {
         case BothTypeAndTerm => termSyms ::: typeSyms
         case OnlyType => typeSyms

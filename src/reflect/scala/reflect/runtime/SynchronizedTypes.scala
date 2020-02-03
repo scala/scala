@@ -118,4 +118,7 @@ private[reflect] trait SynchronizedTypes extends internal.Types { self: SymbolTa
   override protected def defineBaseTypeSeqOfTypeRef(tpe: TypeRef) =
     gilSynchronized { super.defineBaseTypeSeqOfTypeRef(tpe) }
 
+  override protected def defineNormalized(tr: TypeRef): Unit = {
+    gilSynchronized { super.defineNormalized(tr) }
+  }
 }

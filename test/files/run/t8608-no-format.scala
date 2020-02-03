@@ -4,7 +4,7 @@ import scala.tools.partest.JavapTest
 object Test extends JavapTest {
   def code = """
     |f"hello, world"
-    |:javap -prv -
+    |:javap -pv -
   """.stripMargin
 
   // no format

@@ -14,7 +14,7 @@ package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 
-import scala.tools.nsc.symtab.Flags.MUTABLE
+import scala.tools.nsc.symtab.Flags.{MUTABLE, STABLE}
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
 
@@ -149,7 +149,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       lazy val localSubstitution        = Substitution(List(prevBinder), List(CODE.REF(nextBinder)))
       lazy val storedCond               = freshSym(selectorPos, BooleanTpe, "rc") setFlag MUTABLE
       lazy val treesToHoist: List[Tree] = {
-        nextBinder setFlag MUTABLE
+        nextBinder setFlag MUTABLE | STABLE // mark stable to tell lambalift not to capture these as the value will be assigned prior to capture and never reassigned.
         nextBinder.setPos(selectorPos)
         List(storedCond, nextBinder) map (b => ValDef(b, codegen.mkZero(b.info)))
       }

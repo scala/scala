@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 
 import java.{util => ju}
+
 import scala.collection.concurrent
 import scala.tools.asm
 import scala.tools.asm.Opcodes
@@ -53,27 +54,14 @@ abstract class BTypes {
   val classBTypeCache: ju.concurrent.ConcurrentHashMap[InternalName, ClassBType] =
     recordPerRunJavaMapCache(new ju.concurrent.ConcurrentHashMap[InternalName, ClassBType])
 
-  /**
-   * A BType is either a primitive type, a ClassBType, an ArrayBType of one of these, or a MethodType
-   * referring to BTypes.
-   */
-  sealed trait BType {
-    final override def toString: String = {
+  sealed abstract class BType {
+    override def toString: String = {
       val builder = new java.lang.StringBuilder(64)
       buildString(builder)
       builder.toString
     }
-
     final def buildString(builder: java.lang.StringBuilder): Unit = this match {
-      case UNIT   => builder.append('V')
-      case BOOL   => builder.append('Z')
-      case CHAR   => builder.append('C')
-      case BYTE   => builder.append('B')
-      case SHORT  => builder.append('S')
-      case INT    => builder.append('I')
-      case FLOAT  => builder.append('F')
-      case LONG   => builder.append('J')
-      case DOUBLE => builder.append('D')
+      case p: PrimitiveBType        => builder.append(p.desc)
       case ClassBType(internalName) => builder.append('L').append(internalName).append(';')
       case ArrayBType(component)    => builder.append('['); component.buildString(builder)
       case MethodBType(args, res)   =>
@@ -248,15 +236,7 @@ abstract class BTypes {
      *  - for an ARRAY type, the full descriptor is part of the range
      */
     def toASMType: asm.Type = this match {
-      case UNIT   => asm.Type.VOID_TYPE
-      case BOOL   => asm.Type.BOOLEAN_TYPE
-      case CHAR   => asm.Type.CHAR_TYPE
-      case BYTE   => asm.Type.BYTE_TYPE
-      case SHORT  => asm.Type.SHORT_TYPE
-      case INT    => asm.Type.INT_TYPE
-      case FLOAT  => asm.Type.FLOAT_TYPE
-      case LONG   => asm.Type.LONG_TYPE
-      case DOUBLE => asm.Type.DOUBLE_TYPE
+      case p: PrimitiveBType        => p.asmType
       case ClassBType(internalName) => asm.Type.getObjectType(internalName) // see (*) above
       case a: ArrayBType            => asm.Type.getObjectType(a.descriptor)
       case m: MethodBType           => asm.Type.getMethodType(m.descriptor)
@@ -268,7 +248,8 @@ abstract class BTypes {
     def asPrimitiveBType : PrimitiveBType = this.asInstanceOf[PrimitiveBType]
   }
 
-  sealed trait PrimitiveBType extends BType {
+  sealed abstract class PrimitiveBType(val desc: Char, val asmType: asm.Type) extends BType {
+    override val toString: String = desc.toString // OPT avoid StringBuilder
 
     /**
      * The upper bound of two primitive types. The `other` type has to be either a primitive
@@ -333,17 +314,17 @@ abstract class BTypes {
     }
   }
 
-  case object UNIT   extends PrimitiveBType
-  case object BOOL   extends PrimitiveBType
-  case object CHAR   extends PrimitiveBType
-  case object BYTE   extends PrimitiveBType
-  case object SHORT  extends PrimitiveBType
-  case object INT    extends PrimitiveBType
-  case object FLOAT  extends PrimitiveBType
-  case object LONG   extends PrimitiveBType
-  case object DOUBLE extends PrimitiveBType
+  case object UNIT   extends PrimitiveBType('V', asm.Type.VOID_TYPE)
+  case object BOOL   extends PrimitiveBType('Z', asm.Type.BOOLEAN_TYPE)
+  case object CHAR   extends PrimitiveBType('C', asm.Type.CHAR_TYPE)
+  case object BYTE   extends PrimitiveBType('B', asm.Type.BYTE_TYPE)
+  case object SHORT  extends PrimitiveBType('S', asm.Type.SHORT_TYPE)
+  case object INT    extends PrimitiveBType('I', asm.Type.INT_TYPE)
+  case object FLOAT  extends PrimitiveBType('F', asm.Type.FLOAT_TYPE)
+  case object LONG   extends PrimitiveBType('J', asm.Type.LONG_TYPE)
+  case object DOUBLE extends PrimitiveBType('D', asm.Type.DOUBLE_TYPE)
 
-  sealed trait RefBType extends BType {
+  sealed abstract class RefBType extends BType {
     /**
      * The class or array type of this reference type. Used for ANEWARRAY, MULTIANEWARRAY,
      * INSTANCEOF and CHECKCAST instructions. Also used for emitting invokevirtual calls to
@@ -794,6 +775,17 @@ abstract class BTypes {
         }
       } while (fcs == null)
       fcs
+    }
+
+    override val toASMType: asm.Type = super.toASMType
+    private[this] var cachedToString: String = null
+    override def toString: String = {
+      val cached = cachedToString
+      if (cached == null) {
+        val computed = super.toString
+        cachedToString = computed
+        computed
+      } else cached
     }
   }
 

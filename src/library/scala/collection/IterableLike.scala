@@ -282,9 +282,10 @@ self =>
 
   def zipWithIndex[A1 >: A, That](implicit bf: CanBuildFrom[Repr, (A1, Int), That]): That = {
     val b = bf(repr)
+    val these = this.iterator
     var i = 0
-    for (x <- this) {
-      b += ((x, i))
+    while (these.hasNext) {
+      b += ((these.next(), i))
       i += 1
     }
     b.result()

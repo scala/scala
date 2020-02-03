@@ -1,0 +1,1 @@
+-Xmx192M -XX:+ExitOnOutOfMemoryError

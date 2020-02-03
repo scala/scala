@@ -386,4 +386,17 @@ class IteratorTest {
     }
     assert(!it.hasNext)
   }
+  @Test def `t11807 multiply-merged concat iterators`(): Unit = {
+    val it0 = Iterator(1)
+    val it1 = Iterator(2) ++ Iterator(3)
+    val it2 = it0 ++ it1
+
+    assertEquals(1, it2.next())
+    assertTrue(it2.hasNext)
+
+    val it3 = it2 ++ Iterator(4)
+    assertEquals(2, it3.next())
+    assertEquals(3, it3.next())
+    assertTrue("concatted tail of it3 should be next", it3.hasNext)
+  }
 }

@@ -536,8 +536,10 @@ trait Namers extends MethodSynthesis {
       val Import(expr, selectors) = tree
       val base = expr.tpe
 
-      def checkNotRedundant(pos: Position, from: Name, to0: Name) {
-        def check(to: Name) = {
+      // warn proactively if specific import loses to definition in scope,
+      // since it may result in desired implicit not imported into scope.
+      def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
+        def check(to: Name): Unit = {
           val e = context.scope.lookupEntry(to)
 
           if (e != null && e.owner == context.scope && e.sym.exists)
@@ -558,17 +560,17 @@ trait Namers extends MethodSynthesis {
       }
       def checkSelector(s: ImportSelector) = {
         val ImportSelector(from, fromPos, to, _) = s
-        def isValid(original: Name) =
-          (base nonLocalMember original.toTermName) == NoSymbol &&
-            (base nonLocalMember original.toTypeName) == NoSymbol
+        def isValid(original: Name, base: Type) =
+          (base nonLocalMember original.toTermName) != NoSymbol ||
+            (base nonLocalMember original.toTypeName) != NoSymbol
 
         if (from != nme.WILDCARD && base != ErrorType) {
-          if (isValid(from)) {
-            // for Java code importing Scala objects
-            if (!nme.isModuleName(from) || isValid(from.dropModule)) {
-              typer.TyperErrorGen.NotAMemberError(tree, expr, from)
-            }
-          }
+          val okay = isValid(from, base) || context.unit.isJava && (      // Java code...
+               (nme.isModuleName(from) && isValid(from.dropModule, base)) // - importing Scala module classes
+            || isValid(from, base.companion)                              // - importing type members from types
+          )
+          if (!okay) typer.TyperErrorGen.NotAMemberError(tree, expr, from)
+
           // Setting the position at the import means that if there is
           // more than one hidden name, the second will not be warned.
           // So it is the position of the actual hidden name.
@@ -1810,7 +1812,7 @@ trait Namers extends MethodSynthesis {
             typer.TyperErrorGen.UnstableTreeError(expr1)
         }
 
-        val newImport = treeCopy.Import(imp, expr1, selectors).asInstanceOf[Import]
+        val newImport = treeCopy.Import(imp, expr1, selectors)
         checkSelectors(newImport)
         context.unit.transformed(imp) = newImport
         // copy symbol and type attributes back into old expression
@@ -1819,7 +1821,6 @@ trait Namers extends MethodSynthesis {
         ImportType(expr1)
       }
     }
-
 
     /** Given a case class
      *   case class C[Ts] (ps: Us)

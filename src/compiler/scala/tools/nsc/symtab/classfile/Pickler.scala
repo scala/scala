@@ -16,6 +16,7 @@ package classfile
 
 import java.lang.Float.floatToIntBits
 import java.lang.Double.doubleToLongBits
+import java.util.Arrays.fill
 
 import scala.io.Codec
 import scala.reflect.internal.pickling.{PickleBuffer, PickleFormat}
@@ -23,12 +24,11 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.collection.mutable
 import PickleFormat._
 import Flags._
-import scala.reflect.io.PlainFile
 
 /**
  * Serialize a top-level module and/or class.
  *
- * @see EntryTags.scala for symbol table attribute format.
+ * @see [[PickleFormat]] for symbol table attribute format.
  *
  * @author Martin Odersky
  * @version 1.0
@@ -40,11 +40,30 @@ abstract class Pickler extends SubComponent {
 
   def newPhase(prev: Phase): StdPhase = new PicklePhase(prev)
 
+  final def pickle(sym: Symbol, companion: Symbol, noPrivates: Boolean): Pickle = {
+    initPickle(sym, noPrivates) { pickle =>
+      def reserveDeclEntries(sym: Symbol): Unit = {
+        if (pickle.reserveEntry(sym)) {
+          if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
+          else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
+        }
+      }
+
+      val syms = sym :: (if (companion != NoSymbol) companion :: Nil else Nil)
+      syms.foreach(reserveDeclEntries)
+      syms.foreach { sym =>
+        pickle.putDecl(sym)
+      }
+    }
+  }
+
   class PicklePhase(prev: Phase) extends StdPhase(prev) {
     import global.genBCode.postProcessor.classfileWriters.FileWriter
     private lazy val sigWriter: Option[FileWriter] =
-      if (settings.YpickleWrite.isSetByUser && !settings.YpickleWrite.value.isEmpty)
-        Some(FileWriter(global, new PlainFile(settings.YpickleWrite.value), None))
+      if (settings.YpickleWrite.isSetByUser && !settings.YpickleWrite.value.isEmpty) {
+        val file = settings.pathFactory.getFile(settings.YpickleWrite.value) // might be a JAR (possibly still to be created) or a directory
+        Some(FileWriter(global, file, None))
+      }
       else
         None
 
@@ -57,23 +76,23 @@ abstract class Pickler extends SubComponent {
             val sym = tree.symbol
             def shouldPickle(sym: Symbol) = currentRun.compiles(sym) && !currentRun.symData.contains(sym)
             if (shouldPickle(sym)) {
-              val pickle = new Pickle(sym)
-              def reserveDeclEntries(sym: Symbol): Unit = {
-                pickle.reserveEntry(sym)
-                if (sym.isClass) sym.info.decls.foreach(reserveDeclEntries)
-                else if (sym.isModule) reserveDeclEntries(sym.moduleClass)
+              def pickle(noPrivates: Boolean, writeToSymData: Boolean, writeToSigFile: Boolean): Unit = {
+                val companion = sym.companionSymbol.filter(_.owner == sym.owner).filter(shouldPickle) // exclude companionship between package- and package object-owned symbols.
+                val pickle = Pickler.this.pickle(sym, companion, noPrivates)
+                if (writeToSymData) {
+                  currentRun.symData(sym) = pickle
+                  companion.andAlso(sym => currentRun.symData(sym) = pickle)
+                  currentRun registerPickle sym
+                }
+                if (writeToSigFile)
+                  writeSigFile(sym, pickle)
               }
-
-              val companion = sym.companionSymbol.filter(_.owner == sym.owner) // exclude companionship between package- and package object-owned symbols.
-              val syms = sym :: (if (shouldPickle(companion)) companion :: Nil else Nil)
-              syms.foreach(reserveDeclEntries)
-              syms.foreach { sym =>
-                pickle.putSymbol(sym)
-                currentRun.symData(sym) = pickle
+              if (sigWriter.isDefined && settings.YpickleWriteApiOnly) {
+                pickle(noPrivates = false, writeToSymData = true, writeToSigFile = false)
+                pickle(noPrivates = true, writeToSymData = false, writeToSigFile = true)
+              } else {
+                pickle(noPrivates = false, writeToSymData = true, writeToSigFile = true)
               }
-              pickle.writeArray()
-              writeSigFile(sym, pickle)
-              currentRun registerPickle sym
             }
           case _ =>
         }
@@ -102,7 +121,11 @@ abstract class Pickler extends SubComponent {
 
     override def run(): Unit = {
       try super.run()
-      finally closeSigWriter()
+      finally {
+        closeSigWriter()
+        _index = null
+        _entries = null
+      }
     }
 
     private def writeSigFile(sym: Symbol, pickle: PickleBuffer): Unit = {
@@ -124,13 +147,30 @@ abstract class Pickler extends SubComponent {
     override protected def shouldSkipThisPhaseForJava: Boolean = !settings.YpickleJava.value
   }
 
-  private class Pickle(root: Symbol) extends PickleBuffer(new Array[Byte](4096), -1, 0) {
+  type Index   = mutable.AnyRefMap[AnyRef, Int] // a map from objects (symbols, types, names, ...) to indices into Entries
+  type Entries = Array[AnyRef]
+
+  final val InitEntriesSize = 256
+  private[this] var _index: Index = _
+  private[this] var _entries: Entries = _
+
+  final def initPickle(root: Symbol, noPrivates: Boolean)(f: Pickle => Unit): Pickle = {
+    if (_index eq null)   { _index   = new Index(InitEntriesSize) }
+    if (_entries eq null) { _entries = new Entries(InitEntriesSize) }
+    val pickle = new Pickle(root, _index, _entries, noPrivates)
+    try f(pickle) finally { pickle.close(); _index.clear(); fill(_entries, null) }
+    pickle
+  }
+
+  class Pickle private[Pickler](root: Symbol, private var index: Index, private var entries: Entries, noPrivates: Boolean)
+      extends PickleBuffer(new Array[Byte](4096), -1, 0) {
     private val rootName  = root.name.toTermName
     private val rootOwner = root.owner
-    private var entries   = new Array[AnyRef](256)
     private var ep        = 0
-    private val index     = new mutable.AnyRefMap[AnyRef, Int]
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
+    def include(sym: Symbol) = !noPrivates || !sym.isPrivate || (sym.owner.isTrait && sym.isAccessor)
+
+    def close(): Unit = { writeArray(); index = null; entries = null }
 
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
@@ -167,9 +207,12 @@ abstract class Pickler extends SubComponent {
 
     // Phase 1 methods: Populate entries/index ------------------------------------
     private val reserved = mutable.BitSet()
-    final def reserveEntry(sym: Symbol): Unit = {
-      reserved(ep) = true
-      putEntry(sym)
+    final def reserveEntry(sym: Symbol): Boolean = {
+      if (include(sym)) {
+        reserved(ep) = true
+        putEntry(sym)
+        true
+      } else false
     }
 
     /** Store entry e in index at next available position unless
@@ -177,19 +220,22 @@ abstract class Pickler extends SubComponent {
      *
      *  @return      true iff entry is new.
      */
-    private def putEntry(entry: AnyRef): Boolean = index.get(entry) match {
-      case Some(i) =>
-        reserved.remove(i)
-      case None =>
-        if (ep == entries.length) {
-          val entries1 = new Array[AnyRef](ep * 2)
-          System.arraycopy(entries, 0, entries1, 0, ep)
-          entries = entries1
-        }
-        entries(ep) = entry
-        index(entry) = ep
-        ep = ep + 1
-        true
+    private def putEntry(entry: AnyRef): Boolean = {
+      assert(index ne null, this)
+      index.get(entry) match {
+        case Some(i) =>
+          reserved.remove(i)
+        case None =>
+          if (ep == entries.length) {
+            val entries1 = new Array[AnyRef](ep * 2)
+            System.arraycopy(entries, 0, entries1, 0, ep)
+            entries = entries1
+          }
+          entries(ep) = entry
+          index(entry) = ep
+          ep = ep + 1
+          true
+      }
     }
 
     private def deskolemizeTypeSymbols(ref: AnyRef): AnyRef = ref match {
@@ -219,6 +265,8 @@ abstract class Pickler extends SubComponent {
       }
       else sym
     }
+
+    def putDecl(sym: Symbol): Unit = if (include(sym)) putSymbol(sym)
 
     /** Store symbol in index. If symbol is local, also store everything it references.
      */
@@ -290,7 +338,7 @@ abstract class Pickler extends SubComponent {
         case tp: CompoundType =>
           putSymbol(tp.typeSymbol)
           putTypes(tp.parents)
-          putSymbols(tp.decls.toList)
+          tp.decls.toList.foreach(putDecl)
         case MethodType(params, restpe) =>
           putType(restpe)
           putSymbols(params)
@@ -390,6 +438,7 @@ abstract class Pickler extends SubComponent {
     /** Write a reference to object, i.e., the object's number in the map index.
      */
     private def writeRef(ref: AnyRef) {
+      assert(index ne null, this)
       writeNat(index(deskolemizeTypeSymbols(ref)))
     }
     private def writeRefs(refs: List[AnyRef]): Unit = refs foreach writeRef
@@ -577,8 +626,9 @@ abstract class Pickler extends SubComponent {
     }
 
     /** Write byte array */
-    def writeArray() {
+    private def writeArray() {
       assert(writeIndex == 0)
+      assert(index ne null, this)
       writeNat(MajorVersion)
       writeNat(MinorVersion)
       writeNat(ep)

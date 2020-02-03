@@ -80,7 +80,7 @@ trait Names extends api.Names {
     while (i < len) {
       if (nc + i == _chrs.length) {
         val newchrs = new Array[Char](_chrs.length * 2)
-        java.lang.System.arraycopy(_chrs, 0, newchrs, 0, chrs.length)
+        java.lang.System.arraycopy(_chrs, 0, newchrs, 0, _chrs.length)
         _chrs = newchrs
       }
       _chrs(nc + i) = cs(offset + i)
@@ -219,6 +219,9 @@ trait Names extends api.Names {
     def companionName: Name
     @deprecated("Use either toTermName or toTypeName", "2.12.9")
     def bothNames: List[Name] = List(toTermName, toTypeName)
+
+    final def asTypeOf[N <: Name](other: N): N =
+      (if (other.isTermName) toTermName else toTypeName).asInstanceOf[N]
 
     /** Return the subname with characters from from to to-1. */
     def subName(from: Int, to: Int): Name with ThisNameType

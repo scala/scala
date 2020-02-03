@@ -38,7 +38,7 @@ object Duration {
    * Construct a finite duration from the given length and time unit, where the latter is
    * looked up in a list of string representation. Valid choices are:
    *
-   * `d, day, h, hour, min, minute, s, sec, second, ms, milli, millisecond, µs, micro, microsecond, ns, nano, nanosecond`
+   * `d, day, h, hr, hour, m, min, minute, s, sec, second, ms, milli, millisecond, µs, micro, microsecond, ns, nano, nanosecond`
    * and their pluralized forms (for every but the first mentioned form of each unit, i.e. no "ds", but "days").
    */
   def apply(length: Long, unit: String): FiniteDuration   = new FiniteDuration(length,  Duration.timeUnit(unit))
@@ -79,8 +79,8 @@ object Duration {
   }
   private[this] val timeUnitLabels = List(
     DAYS         -> "d day",
-    HOURS        -> "h hour",
-    MINUTES      -> "min minute",
+    HOURS        -> "h hr hour",
+    MINUTES      -> "m min minute",
     SECONDS      -> "s sec second",
     MILLISECONDS -> "ms milli millisecond",
     MICROSECONDS -> "µs micro microsecond",

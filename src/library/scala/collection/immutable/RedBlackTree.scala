@@ -95,13 +95,18 @@ object RedBlackTree {
     result
   }
 
-
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
+  def foreachEntry[A,B,U](tree:Tree[A,B], f:(A,B) => U):Unit = if (tree ne null) _foreachEntry(tree,f)
 
   private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U) {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
     if (tree.right ne null) _foreach(tree.right, f)
+  }
+  private[this] def _foreachEntry[A, B, U](tree: Tree[A, B], f: (A, B) => U): Unit = {
+    if (tree.left ne null) _foreachEntry(tree.left, f)
+    f(tree.key, tree.value)
+    if (tree.right ne null) _foreachEntry(tree.right, f)
   }
 
   def foreachKey[A, U](tree:Tree[A,_], f: A => U):Unit = if (tree ne null) _foreachKey(tree,f)

@@ -21,6 +21,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 
+import PartialFunction.cond
+
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
@@ -785,8 +787,12 @@ abstract class UnCurry extends InfoTransform
       if (dd.symbol.isConstructor)
         reporter.error(dd.symbol.pos, "A constructor cannot be annotated with a `varargs` annotation.")
       else {
-        val hasRepeated = mexists(dd.symbol.paramss)(sym => definitions.isRepeatedParamType(sym.tpe))
-        if (!hasRepeated) reporter.error(dd.symbol.pos, "A method without repeated parameters cannot be annotated with the `varargs` annotation.")
+        val ok = cond(dd.symbol.paramss.filter(_.nonEmpty)) {
+          case initPs :+ lastPs =>
+            initPs.forall(!definitions.isVarArgsList(_)) && definitions.isVarArgsList(lastPs)
+        }
+        if (!ok)
+          reporter.error(dd.pos, "A method annotated with @varargs must have a single repeated parameter in its last parameter list.")
       }
 
     /**
@@ -838,7 +844,7 @@ abstract class UnCurry extends InfoTransform
       enteringUncurry(currentClass.info.member(forwSym.name).alternatives.find(s => s != forwSym && s.tpe.matches(forwSym.tpe))) match {
         case Some(s) =>
           reporter.error(dd.symbol.pos,
-            s"A method with a varargs annotation produces a forwarder method with the same signature ${s.tpe} as an existing method.")
+            s"A method annotated with @varargs produces a forwarder method with the same signature ${s.tpe} as an existing method.")
         case None =>
           // enter symbol into scope
           addNewMember(forwTree)

@@ -17,6 +17,7 @@ package immutable
 import generic._
 import immutable.{RedBlackTree => RB}
 import mutable.Builder
+import scala.util.hashing.MurmurHash3
 
 /** $factoryInfo
  *  @define Coll immutable.TreeMap
@@ -203,4 +204,22 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)
 
   override def foreach[U](f : ((A,B)) => U) = RB.foreach(tree, f)
+
+  override def hashCode(): Int = {
+    if (isEmpty) {
+      MurmurHash3.emptyMapHash
+    } else {
+      val hasher = new Map.HashCodeAccumulator()
+      RB.foreachEntry(tree, hasher)
+      hasher.finalizeHash
+    }
+  }
+
+  override def keySet: SortedSet[A] = new DefaultKeySortedSet {
+    override def foreach[U](f: A => U): Unit = RB.foreachEntry(tree, {(key: A, _: B) => f(key)})
+  }
+
+  override def values: scala.Iterable[B] = new DefaultValuesIterable {
+    override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
+  }
 }

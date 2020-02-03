@@ -303,4 +303,13 @@ class BytecodeTest extends BytecodeTesting {
     }
     assertEquals(List("$outer", "x$1", "y$1"), assignedInConstr.sorted)
   }
+
+  @Test
+  def t11718(): Unit = {
+    val code = """class A11718 { private val a = ""; lazy val b = a }"""
+    val cs = compileClasses(code)
+    val A = cs.find(_.name == "A11718").get
+    val a = A.fields.asScala.find(_.name == "a").get
+    assertEquals(0, a.access & Opcodes.ACC_FINAL)
+  }
 }

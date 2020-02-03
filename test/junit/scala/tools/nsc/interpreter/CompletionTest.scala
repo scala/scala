@@ -11,10 +11,11 @@ import scala.tools.nsc.Settings
 class CompletionTest {
   val EmptyString = "" // def string results include the empty string so that JLine won't insert "def ..." at the cursor
 
-  def newIMain(): IMain = {
+  def newIMain(classBased: Boolean = false): IMain = {
     val settings = new Settings()
     settings.Xnojline.value = true
     settings.usejavacp.value = true
+    settings.Yreplclassbased.value = classBased
 
     val writer = new StringWriter
     val out = new PrintWriter(writer)
@@ -28,8 +29,24 @@ class CompletionTest {
   }
 
   @Test
-  def completions(): Unit = {
+  def classBased(): Unit = {
     val intp = newIMain()
+    val completer = new PresentationCompilerCompleter(intp)
+    checkExact(completer, "object O { def x_y_z = 1 }; import O._; x_y")("x_y_z")
+  }
+
+  @Test
+  def completions(): Unit = {
+    testCompletions(classBased = false)
+  }
+
+  @Test
+  def completionsReplClassBased(): Unit = {
+    testCompletions(classBased = true)
+  }
+
+  private def testCompletions(classBased: Boolean): Unit = {
+    val intp = newIMain(classBased)
     val completer = new PresentationCompilerCompleter(intp)
     checkExact(completer, "object O { def x_y_z = 1 }; import O._; x_y")("x_y_z")
     checkExact(completer, "object O { private def x_y_z = 1 }; import O._; x_y")()
@@ -54,6 +71,9 @@ class CompletionTest {
     // Enable implicits to check completion enrichment
     assert(completer.complete("""'c'.""").candidates.contains("toUpper"))
     assert(completer.complete("""val c = 'c'; c.""").candidates.contains("toUpper"))
+
+    intp.interpret("object O { def x_y_x = 1; def x_y_z = 2; def getFooBarZot = 3}; ")
+    checkExact(new PresentationCompilerCompleter(intp), """object O2 { val x = O.""")("x_y_x", "x_y_z", "getFooBarZot")
   }
 
   @Test

@@ -14,9 +14,12 @@ package scala
 package collection
 package immutable
 
+import java.{util => ju}
+
 import generic._
-import scala.annotation.unchecked.{ uncheckedVariance=> uV }
+import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.immutable.ParHashMap
+import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable maps using a hash trie.
  *
@@ -51,6 +54,15 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   def iterator: Iterator[(A,B)] = Iterator.empty
 
   override def foreach[U](f: ((A, B)) => U): Unit = ()
+  private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = ()
+  override def hashCode(): Int = {
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      val hasher = new Map.HashCodeAccumulator()
+      foreachEntry(hasher)
+      hasher.finalizeHash
+    }
+  }
 
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
@@ -126,6 +138,21 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   protected def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that
 
   override def par = ParHashMap.fromTrie(this)
+
+  /* Override to avoid tuple allocation in foreach */
+  private[collection] class HashMapKeys extends ImmutableDefaultKeySet {
+    override def foreach[U](f: A => U) = foreachEntry((key, _) => f(key))
+    override lazy val hashCode = super.hashCode()
+  }
+  override def keySet: immutable.Set[A] = new HashMapKeys
+
+  /** The implementation class of the iterable returned by `values`.
+   */
+  private[collection] class HashMapValues extends DefaultValuesIterable {
+    override def foreach[U](f: B => U) = foreachEntry((_, value) => f(value))
+  }
+  override def values: scala.collection.Iterable[B] = new HashMapValues
+
 
 }
 
@@ -232,10 +259,23 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = Iterator(ensurePair)
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = f(key, value)
     // this method may be called multiple times in a multithreaded environment, but that's ok
     private[HashMap] def ensurePair: (A,B) = if (kv ne null) kv else { kv = (key, value); kv }
     protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
       that.updated0(key, hash, level, value, kv, merger.invert)
+    }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashMap1[_,_] =>
+          (this eq hm) ||
+            (hm.hash == hash && hm.key == key && hm.value == value)
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
     }
   }
 
@@ -293,6 +333,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def iterator: Iterator[(A,B)] = kvs.iterator
     override def foreach[U](f: ((A, B)) => U): Unit = kvs.foreach(f)
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = kvs.foreachEntry(f)
     override def split: Seq[HashMap[A, B]] = {
       val (x, y) = kvs.splitAt(kvs.size / 2)
       def newhm(lm: ListMap[A, B @uV]) = {
@@ -307,6 +348,19 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       for (p <- kvs) m = m.updated0(p._1, this.hash, level, p._2, p, merger.invert)
       m
     }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashMapCollision1[_,_] =>
+          (this eq hm) ||
+            (hm.hash == hash && hm.kvs == kvs)
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
+    }
+
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
@@ -469,6 +523,13 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         i += 1
       }
     }
+    override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = {
+      var i = 0
+      while (i < elems.length) {
+        elems(i).foreachEntry(f)
+        i += 1
+      }
+    }
 
     private def posOf(n: Int, bm: Int) = {
       var left = n
@@ -559,6 +620,22 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       case hm: HashMap[_, _] => this
       case _ => sys.error("section supposed to be unreachable.")
     }
+
+    override def equals(that: Any): Boolean = {
+      that match {
+        case hm: HashTrieMap[_, _] =>
+          (this eq hm) || {
+            this.bitmap == hm.bitmap &&
+              this.size0 == hm.size0 &&
+              ju.Arrays.equals(this.elems.asInstanceOf[Array[AnyRef]], hm.elems.asInstanceOf[Array[AnyRef]])
+          }
+        case _: HashMap[_, _] =>
+          false
+        case _ =>
+          super.equals(that)
+      }
+    }
+
   }
 
   /**

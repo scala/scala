@@ -101,7 +101,7 @@ class NestedClassesCollectorTest {
     import java.nio.file._
     import scala.collection.JavaConverters._
     val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/rt.jar")
-    val fs = FileSystems.newFileSystem(zipfile, null)
+    val fs = FileSystems.newFileSystem(zipfile, null: ClassLoader)
     val root = fs.getRootDirectories.iterator().next()
     val contents = Files.walk(root).iterator().asScala.toList
     for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {
@@ -126,7 +126,7 @@ class NestedClassesCollectorTest {
         import scala.collection.JavaConverters._
         val zipfile = Paths.get(path)
         println(path)
-        val fs = FileSystems.newFileSystem(zipfile, null)
+        val fs = FileSystems.newFileSystem(zipfile, null: ClassLoader)
         val root = fs.getRootDirectories.iterator().next()
         val contents = Files.walk(root).iterator().asScala.toList
         for (f <- contents if Files.isRegularFile(f) && f.getFileName.toString.endsWith(".class")) {

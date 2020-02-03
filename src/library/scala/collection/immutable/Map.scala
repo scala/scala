@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import generic._
+import scala.util.hashing.MurmurHash3
 
 /**
  * A generic trait for immutable maps. Concrete classes have to provide
@@ -82,7 +83,9 @@ trait Map[K, +V] extends Iterable[(K, V)]
 object Map extends ImmutableMapFactory[Map] {
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), Map[K, V]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
 
   def empty[K, V]: Map[K, V] = EmptyMap.asInstanceOf[Map[K, V]]
 
@@ -106,6 +109,7 @@ object Map extends ImmutableMapFactory[Map] {
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
     def - (key: Any): Map[Any, Nothing] = this
+    override def hashCode: Int = MurmurHash3.emptyMapHash
   }
 
   @SerialVersionUID(-9131943191104946031L)
@@ -126,6 +130,23 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) Map.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1))
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 1
+      var c = 1
+
+      var h = MurmurHash3.product2Hash(key1, value1)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
     }
   }
 
@@ -157,6 +178,28 @@ object Map extends ImmutableMapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2))
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 2
+      var c = 1
+
+      var h = MurmurHash3.product2Hash(key1, value1)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key2, value2)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
     }
   }
 
@@ -193,6 +236,33 @@ object Map extends ImmutableMapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3))
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 3
+      var c = 1
+
+      var h = MurmurHash3.product2Hash(key1, value1)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key2, value2)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key3, value3)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
     }
   }
 
@@ -234,6 +304,58 @@ object Map extends ImmutableMapFactory[Map] {
       else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
       f((key1, value1)); f((key2, value2)); f((key3, value3)); f((key4, value4))
+    }
+    override def hashCode(): Int = {
+      import scala.util.hashing.MurmurHash3
+      var a, b = 0
+      val N = 4
+      var c = 1
+
+      var h = MurmurHash3.product2Hash(key1, value1)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key2, value2)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key3, value3)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.product2Hash(key4, value4)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+
+      h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, N)
+    }
+  }
+  private [immutable] final class HashCodeAccumulator extends scala.runtime.AbstractFunction2[Any, Any, Unit] {
+    import scala.util.hashing.MurmurHash3
+    private var a, b, n = 0
+    private var c = 1
+    def apply(key: Any, value: Any): Unit = {
+      val h = MurmurHash3.product2Hash(key, value)
+      a += h
+      b ^= h
+      if (h != 0) c *= h
+      n += 1
+    }
+
+    def finalizeHash: Int = {
+      var h = MurmurHash3.mapSeed
+      h = MurmurHash3.mix(h, a)
+      h = MurmurHash3.mix(h, b)
+      h = MurmurHash3.mixLast(h, c)
+      MurmurHash3.finalizeHash(h, n)
     }
   }
 }

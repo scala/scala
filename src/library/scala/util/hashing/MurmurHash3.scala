@@ -52,6 +52,12 @@ private[hashing] class MurmurHash3 {
     h
   }
 
+  private[scala] def product2Hash(x: Any, y: Any, seed: Int): Int = {
+    var h = seed
+    h = mix(h, x.##)
+    h = mix(h, y.##)
+    finalizeHash(h, 2)
+  }
   /** Compute the hash of a product */
   final def productHash(x: Product, seed: Int): Int = {
     val arr = x.productArity
@@ -90,31 +96,49 @@ private[hashing] class MurmurHash3 {
    *  This is useful for hashing sets, for example.
    */
   final def unorderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
-    var a, b, n = 0
-    var c = 1
-    xs foreach { x =>
-      val h = x.##
-      a += h
-      b ^= h
-      if (h != 0) c *= h
-      n += 1
+    if  (xs.isEmpty) {
+      var h = seed
+      h = mix(h, 0)
+      h = mix(h, 0)
+      h = mixLast(h, 1)
+      finalizeHash(h, 0)
     }
-    var h = seed
-    h = mix(h, a)
-    h = mix(h, b)
-    h = mixLast(h, c)
-    finalizeHash(h, n)
+    else {
+      object hasher extends Function1[Any, Unit] {
+        var a, b, n = 0
+        var c = 1
+        override def apply(x: Any): Unit = {
+          val h = x.##
+          a += h
+          b ^= h
+          if (h != 0) c *= h
+          n += 1
+        }
+      }
+      xs foreach hasher
+      var h = seed
+      h = mix(h, hasher.a)
+      h = mix(h, hasher.b)
+      h = mixLast(h, hasher.c)
+      finalizeHash(h, hasher.n)
+    }
   }
   /** Compute a hash that depends on the order of its arguments.
    */
   final def orderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
-    var n = 0
-    var h = seed
-    xs foreach { x =>
-      h = mix(h, x.##)
-      n += 1
+    if  (xs.isEmpty) finalizeHash(seed, 0)
+    else {
+      object hasher extends Function1[Any, Unit] {
+        var n = 0
+        var h = seed
+        override def apply(x: Any): Unit = {
+          h = mix(h, x.##)
+          n += 1
+        }
+      }
+      xs foreach hasher
+      finalizeHash(hasher.h, hasher.n)
     }
-    finalizeHash(h, n)
   }
 
   /** Compute the hash of an array.
@@ -212,6 +236,7 @@ object MurmurHash3 extends MurmurHash3 {
   def arrayHash[@specialized T](a: Array[T]): Int  = arrayHash(a, arraySeed)
   def bytesHash(data: Array[Byte]): Int            = arrayHash(data, arraySeed)
   def orderedHash(xs: TraversableOnce[Any]): Int   = orderedHash(xs, symmetricSeed)
+  private [scala] def product2Hash(x: Any, y: Any): Int = product2Hash(x, y, productSeed)
   def productHash(x: Product): Int                 = productHash(x, productSeed)
   def stringHash(x: String): Int                   = stringHash(x, stringSeed)
   def unorderedHash(xs: TraversableOnce[Any]): Int = unorderedHash(xs, traversableSeed)
@@ -228,6 +253,7 @@ object MurmurHash3 extends MurmurHash3 {
 
   def mapHash(xs: scala.collection.Map[_, _]): Int = unorderedHash(xs, mapSeed)
   def setHash(xs: scala.collection.Set[_]): Int    = unorderedHash(xs, setSeed)
+  private[scala] val emptyMapHash = unorderedHash(Nil, mapSeed)
 
   class ArrayHashing[@specialized T] extends Hashing[Array[T]] {
     def hash(a: Array[T]) = arrayHash(a)

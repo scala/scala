@@ -237,6 +237,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
   val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects")
+  val YreplMagicImport = BooleanSetting    ("-Yrepl-use-magic-imports", "In the code the wraps REPL snippes, use magic imports to rather than nesting wrapper object/classes")
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overridden methods.")
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
@@ -258,6 +259,7 @@ trait ScalaSettings extends AbsScalaSettings
     Deflater.DEFAULT_COMPRESSION, Some((Deflater.DEFAULT_COMPRESSION,Deflater.BEST_COMPRESSION)), (x: String) => None)
   val YpickleJava = BooleanSetting("-Ypickle-java", "Pickler phase should compute pickles for .java defined symbols for use by build tools").internalOnly()
   val YpickleWrite = StringSetting("-Ypickle-write", "directory|jar", "destination for generated .sig files containing type signatures.", "", None).internalOnly()
+  val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {

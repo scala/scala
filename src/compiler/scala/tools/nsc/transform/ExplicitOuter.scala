@@ -367,9 +367,9 @@ abstract class ExplicitOuter extends InfoTransform
     /** The main transformation method */
     override def transform(tree: Tree): Tree = {
       val sym = tree.symbol
-      if (sym != null && sym.isType) { //(9)
+      if (sym != null && sym.isType) { // (9)
         if (sym.isPrivate) sym setFlag notPRIVATE
-        if (sym.isProtected) sym setFlag notPROTECTED
+        if (sym.isProtected && !sym.isJavaDefined) sym setFlag notPROTECTED
       }
       tree match {
         case Template(parents, self, decls) =>

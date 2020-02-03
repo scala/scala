@@ -407,7 +407,7 @@ trait EntityPage extends HtmlPage {
 
       {
         if (Set("epfl", "EPFL").contains(tpl.universe.settings.docfooter.value))
-          <div id="footer">Scala programming documentation. Copyright (c) 2002-2019 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://www.lightbend.com" target="_top">Lightbend</a>.</div>
+          <div id="footer">Scala programming documentation. Copyright (c) 2002-2020 <a href="http://www.epfl.ch" target="_top">EPFL</a>, with contributions from <a href="http://www.lightbend.com" target="_top">Lightbend</a>.</div>
         else
           <div id="footer"> { tpl.universe.settings.docfooter.value } </div>
       }

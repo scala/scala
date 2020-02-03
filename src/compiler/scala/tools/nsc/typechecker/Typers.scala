@@ -552,7 +552,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (illegal type applications in pre will be skipped -- that's why typedSelect wraps the resulting tree in a TreeWithDeferredChecks)
      *  @return modified tree and new prefix type
      */
-    private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): (Tree, Type) =
+    private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Any /*Type | (Tree, Type)*/ =
       if (!unit.isJava && context.isInPackageObject(sym, pre.typeSymbol)) {
         if (pre.typeSymbol == ScalaPackageClass && sym.isTerm) {
           // short cut some aliases. It seems pattern matching needs this
@@ -589,7 +589,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         (checkAccessible(tree1, sym, qual.tpe, qual), qual.tpe)
       } else {
-        (checkAccessible(tree, sym, pre, site), pre)
+        checkAccessible(tree, sym, pre, site)
       }
 
     /** Post-process an identifier or selection node, performing the following:
@@ -1167,7 +1167,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (shouldInsertApply(tree))
           insertApply()
         else if (hasUndetsInMonoMode) { // (9)
-          assert(!context.inTypeConstructorAllowed, context) //@M
+          // This used to have
+          //     assert(!context.inTypeConstructorAllowed, context)
+          // but that's not guaranteed to be true in the face of erroneous code; errors in typedApply might mean we
+          // never get around to inferring them, and they leak out and wind up here.
           instantiatePossiblyExpectingUnit(tree, mode, pt)
         }
         else if (tree.tpe <:< pt)
@@ -1528,7 +1531,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       if (probe == null) probe = NoSymbol
       probe.initialize
 
-      if (probe.isTrait || inMixinPosition) {
+      def cookIfNeeded(tpt: Tree) = if (context.unit.isJava) tpt modifyType rawToExistential else tpt
+      cookIfNeeded(if (probe.isTrait || inMixinPosition) {
         if (!argssAreTrivial) {
           if (probe.isTrait) ConstrArgsInParentWhichIsTraitError(encodedtpt, probe)
           else () // a class in a mixin position - this warrants an error in `validateParentClasses`
@@ -1558,7 +1562,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // if argss are nullary or empty, then (see the docs for `typedPrimaryConstrBody`)
         // the super call dummy is already good enough, so we don't need to do anything
         if (argssAreTrivial) supertptWithTargs else supertptWithTargs updateAttachment SuperArgsAttachment(argss)
-      }
+      })
     }
 
     /** Typechecks the mishmash of trees that happen to be stuffed into the primary constructor of a given template.
@@ -5078,14 +5082,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case Select(_, _) => treeCopy.Select(tree, qual, name)
               case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
             }
-            val (result, accessibleError) = silent(_.makeAccessible(tree1, sym, qual.tpe, qual)) match {
+            val pre = qual.tpe
+            var accessibleError: AccessTypeError = null
+            val result = silent(_.makeAccessible(tree1, sym, pre, qual)) match {
               case SilentTypeError(err: AccessTypeError) =>
-                (tree1, Some(err))
+                accessibleError = err
+                tree1
               case SilentTypeError(err) =>
                 SelectWithUnderlyingError(tree, err)
                 return tree
-              case SilentResultValue((qual, pre)) =>
-                (stabilize(qual, pre, mode, pt), None)
+              case SilentResultValue((qual: Tree, pre1: Type)) =>
+                stabilize(qual, pre1, mode, pt)
+              case SilentResultValue(qual: Tree) =>
+                stabilize(qual, pre, mode, pt)
             }
 
             result match {
@@ -5099,7 +5108,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     qual // you only get to see the wrapped tree after running this check :-p
                   }) setType qual.tpe setPos qual.pos,
                   name)
-              case _ if accessibleError.isDefined =>
+              case _ if accessibleError != null =>
                 // don't adapt constructor, scala/bug#6074
                 val qual1 = if (name == nme.CONSTRUCTOR) qual
                             else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
@@ -5108,7 +5117,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 else
                   // before failing due to access, try a dynamic call.
                   asDynamicCall getOrElse {
-                    context.issue(accessibleError.get)
+                    context.issue(accessibleError)
                     setError(tree)
                   }
               case _ =>
@@ -5216,7 +5225,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 val pos = tree.pos
                 Select(atPos(pos.focusStart)(qual), name).setPos(pos)
               }
-              val (tree2, pre2) = makeAccessible(tree1, sym, pre1, qual)
+              var tree2: Tree = null
+              var pre2: Type = pre1
+              makeAccessible(tree1, sym, pre1, qual) match {
+                case (t: Tree, tp: Type) =>
+                  tree2 = t
+                  pre2 = tp
+                case t: Tree =>
+                  tree2 = t
+              }
             // scala/bug#5967 Important to replace param type A* with Seq[A] when seen from from a reference, to avoid
             //         inference errors in pattern matching.
               stabilize(tree2, pre2, mode, pt) modifyType dropIllegalStarTypes
@@ -5722,7 +5739,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree1.tpe eq null)
           return setError(tree)
 
-        tree1 modifyType (pluginsTyped(_, this, tree1, mode, ptPlugins))
+        tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode, ptPlugins)
 
         val result =
           if (tree1.isEmpty) tree1

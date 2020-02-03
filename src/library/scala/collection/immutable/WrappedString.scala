@@ -56,7 +56,7 @@ final class WrappedString(val self: String) extends AbstractSeq[Char] with Index
  *  @since 2.8
  */
 object WrappedString {
-  implicit def canBuildFrom: CanBuildFrom[WrappedString, Char, WrappedString] = new CanBuildFrom[WrappedString, Char, WrappedString] {
+  implicit val canBuildFrom: CanBuildFrom[WrappedString, Char, WrappedString] = new CanBuildFrom[WrappedString, Char, WrappedString] {
     def apply(from: WrappedString) = newBuilder
     def apply() = newBuilder
   }

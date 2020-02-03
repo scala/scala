@@ -1096,7 +1096,8 @@ trait Types
     override def baseTypeSeq: BaseTypeSeq = supertype.baseTypeSeq
     override def baseTypeSeqDepth: Depth = supertype.baseTypeSeqDepth
     override def baseClasses: List[Symbol] = supertype.baseClasses
-    override def boundSyms: Set[Symbol] = emptySymbolSet
+   @deprecated("No longer used in the compiler implementation", since = "2.12.3")
+   override def boundSyms: Set[Symbol] = emptySymbolSet
  }
 
   /** A base class for types that represent a single value
@@ -1227,8 +1228,8 @@ trait Types
     }
     override def isGround = sym.isPackageClass || pre.isGround
 
-    private[reflect] var underlyingCache: Type = NoType
-    private[reflect] var underlyingPeriod = NoPeriod
+    @volatile private[reflect] var underlyingCache: Type = NoType
+    @volatile private[reflect] var underlyingPeriod = NoPeriod
     private[Types] def invalidateSingleTypeCaches(): Unit = {
       underlyingCache = NoType
       underlyingPeriod = NoPeriod
@@ -1237,7 +1238,7 @@ trait Types
       val cache = underlyingCache
       if (underlyingPeriod == currentPeriod && cache != null) cache
       else {
-        defineUnderlyingOfSingleType(this)
+        defineUnderlyingOfSingleType(this) // this line is synchronized in runtime reflection
         underlyingCache
       }
     }
@@ -2101,7 +2102,7 @@ trait Types
     private[reflect] var parentsPeriod                 = NoPeriod
     private[reflect] var baseTypeSeqCache: BaseTypeSeq = _
     private[reflect] var baseTypeSeqPeriod             = NoPeriod
-    private var normalized: Type                       = _
+    @volatile private var normalized: Type             = _
 
     //OPT specialize hashCode
     override final def computeHashCode = {
@@ -2218,16 +2219,22 @@ trait Types
     // eta-expand, subtyping relies on eta-expansion of higher-kinded types
     protected def normalizeImpl: Type = if (isHigherKinded) etaExpand else super.normalize
 
-    // TODO: test case that is compiled in a specific order and in different runs
     final override def normalize: Type = {
       // arises when argument-dependent types are approximated (see def depoly in implicits)
       if (pre eq WildcardType) WildcardType
       else if (phase.erasedTypes) normalizeImpl
       else {
-        if (normalized eq null)
-          normalized = normalizeImpl
+        if (normalized eq null) {
+          Types.this.defineNormalized(this)
+        }
         normalized
       }
+    }
+
+    // TODO: test case that is compiled in a specific order and in different runs
+    private[Types] final def defineNormalized: Unit = {
+      if (normalized eq null) // In runtime reflection, this null check is part of double-checked locking
+        normalized = normalizeImpl
     }
 
     override def isGround = (
@@ -2424,6 +2431,10 @@ trait Types
         else                              new ClassNoArgsTypeRef(pre, sym)
       }
     })
+  }
+
+  protected def defineNormalized(tr: TypeRef): Unit = {
+    tr.defineNormalized
   }
 
   protected def defineParentsOfTypeRef(tpe: TypeRef) = {

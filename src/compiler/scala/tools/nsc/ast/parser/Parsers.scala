@@ -858,7 +858,7 @@ self =>
           val x = freshTermName()
           Block(
             List(ValDef(Modifiers(symtab.Flags.SYNTHETIC | symtab.Flags.ARTIFACT), x, TypeTree(), stripParens(left))),
-            Apply(mkSelection(right), List(Ident(x))))
+            Apply(mkSelection(right), List(atPos(left.pos.makeTransparent)(Ident(x)))))
         }
       } else {
         Apply(Ident(op.encode), stripParens(left) :: arguments)

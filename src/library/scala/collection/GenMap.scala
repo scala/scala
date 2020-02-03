@@ -35,5 +35,8 @@ object GenMap extends GenMapFactory[GenMap] {
   def empty[K, V]: immutable.Map[K, V] = immutable.Map.empty
 
   /** $mapCanBuildFromInfo */
-  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), GenMap[K, V]] = new MapCanBuildFrom[K, V]
+  implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), GenMap[K, V]] =
+    ReusableCBF.asInstanceOf[CanBuildFrom[Coll, (K, V), GenMap[K, V]]]
+  private[this] val ReusableCBF = new MapCanBuildFrom[Nothing, Nothing]
+
 }

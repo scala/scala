@@ -14,7 +14,6 @@ package scala
 package tools.nsc
 package interpreter
 
-import PartialFunction.cond
 import scala.language.implicitConversions
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,6 +75,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def showDirectory() = replOutput.show(out)
 
   lazy val isClassBased: Boolean = settings.Yreplclassbased.value
+  private[interpreter] lazy val useMagicImport: Boolean = settings.YreplMagicImport.value
 
   private[nsc] var printResults               = true        // whether to print result lines
   private[nsc] var totalSilence               = false       // whether to print anything
@@ -318,15 +318,16 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def originalPath(name: String): String = originalPath(TermName(name))
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
+
   /** For class based repl mode we use an .INSTANCE accessor. */
   val readInstanceName = if (isClassBased) ".INSTANCE" else ""
   def translateOriginalPath(p: String): String = {
-    if (isClassBased) {
-      val readName = java.util.regex.Matcher.quoteReplacement(sessionNames.read)
-      p.replaceFirst(readName, readName + readInstanceName)
-    } else p
+    if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
   }
-  def flatPath(sym: Symbol): String      = flatOp shift sym.javaClassName
+  def flatPath(sym: Symbol): String = {
+    val sym1 = if (sym.isModule) sym.moduleClass else sym
+    flatOp shift sym1.javaClassName
+  }
 
   def translatePath(path: String) = {
     val sym = if (path endsWith "$") symbolOfTerm(path.init) else symbolOfIdent(path)
@@ -335,7 +336,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
   /** If path represents a class resource in the default package,
    *  see if the corresponding symbol has a class file that is a REPL artifact
-   *  residing at a different resource path. Translate X.class to $line3/$read$$iw$$iw$X.class.
+   *  residing at a different resource path. Translate X.class to $line3/$read$iw$X.class.
    */
   def translateSimpleResource(path: String): Option[String] = {
     if (!(path contains '/') && (path endsWith ".class")) {
@@ -711,11 +712,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
       val unwrapped = unwrap(t)
 
-      // Example input: $line3.$read$$iw$$iw$
-      val classNameRegex = (naming.lineRegex + ".*").r
-      def isWrapperInit(x: StackTraceElement) = cond(x.getClassName) {
-        case classNameRegex() if x.getMethodName == nme.CONSTRUCTOR.decoded => true
-      }
+      // Example input: $line3.$read$$iw$
+      val classNameRegex = naming.lineRegex
+      def isWrapperInit(x: StackTraceElement) =
+        x.getMethodName == nme.CONSTRUCTOR.decoded && classNameRegex.pattern.matcher(x.getClassName).find()
       val stackTrace = unwrapped stackTracePrefixString (!isWrapperInit(_))
 
       withLastExceptionLock[String]({
@@ -863,7 +863,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /** generate the source code for the object that computes this request */
     abstract class Wrapper extends IMain.CodeAssembler[MemberHandler] {
-      def path = originalPath("$intp")
       def envLines = {
         if (!isReplPower) Nil // power mode only for now
         else {
@@ -883,6 +882,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
       /** A format string with %s for $read, specifying the wrapper definition. */
       def preambleHeader: String
+
+      def postamble: String
 
       /** Like preambleHeader for an import wrapper. */
       def prewrap: String = preambleHeader + "\n"
@@ -990,11 +991,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     // the type symbol of the owner of the member that supplies the result value
-    lazy val resultSymbol = {
-      val sym = lineRep.resolvePathToSymbol(fullAccessPath)
-      // plow through the INSTANCE member when -Yrepl-class-based
-      if (sym.isTerm && sym.nameString == "INSTANCE") sym.typeSignature.typeSymbol else sym
-    }
+    lazy val resultSymbol = lineRep.resolvePathToSymbol(fullAccessPath)
 
     def applyToResultMember[T](name: Name, f: Symbol => T) = exitingTyper(f(resultSymbol.info.nonPrivateDecl(name)))
 
@@ -1007,7 +1004,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
-    lazy val typeOf         = typeMap[String](tp => exitingTyper(tp.toString))
+    lazy val typeOf         = typeMap[String](tp => exitingTyper {
+      val s = tp.toString
+      if (isClassBased) s.stripPrefix("INSTANCE.") else s
+    })
 
     lazy val definedSymbols = (
       termNames.map(x => x -> applyToResultMember(x, x => x)) ++
@@ -1060,7 +1060,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def typeOfTerm(id: String): Type = symbolOfTerm(id).tpe
 
   // Given the fullName of the symbol, reflectively drill down the path
-  def valueOfTerm(id: String): Option[Any] = {
+  def valueOfTerm(id: String): Option[Any] = exitingTyper {
     def value(fullName: String) = {
       val mirror = runtimeMirror
       import mirror.universe.{Symbol, InstanceMirror, TermName}
@@ -1088,7 +1088,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
                 mirror.reflect(mirrored.reflectMethod(s.asMethod).apply())
               }
               else {
-                assert(false, originalPath(s))
+                assert(false, fullName)
                 inst
               }
             loop(i, s, rest)
@@ -1142,6 +1142,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       )
     )
   }
+  // this is harder than getting the typed trees and fixing up the string to emit that reports types
   def cleanMemberDecl(owner: Symbol, member: Name): Type =
     cleanTypeAfterTyper(owner.info nonPrivateDecl member)
 
@@ -1267,6 +1268,7 @@ object IMain {
   //   $line3.$read$$iw$$iw$Bippy@4a6a00ca
   private def removeLineWrapper(s: String) = s.replaceAll("""\$line\d+[./]\$(read|eval|print)[$.]""", "")
   private def removeIWPackages(s: String)  = s.replaceAll("""\$(iw|read|eval|print)[$.]""", "")
+  @deprecated("Use intp.naming.unmangle.", "2.12.0-M5")
   def stripString(s: String)               = removeIWPackages(removeLineWrapper(s))
 
   private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {

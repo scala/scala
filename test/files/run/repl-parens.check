@@ -50,21 +50,21 @@ scala> 55 ; (x: Int) => x + 1 ; () => ((5))
 <console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ; (x: Int) => x + 1 ;;
        ^
-res11: () => Int = <function0>
+res11: () => Int = <function>
 
 scala> 
 
 scala> () => 5
-res12: () => Int = <function0>
+res12: () => Int = <function>
 
 scala> 55 ; () => 5
 <console>:11: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
        55 ;;
        ^
-res13: () => Int = <function0>
+res13: () => Int = <function>
 
 scala> () => { class X ; new X }
-res14: () => AnyRef = <function0>
+res14: () => AnyRef = <function>
 
 scala> 
 
