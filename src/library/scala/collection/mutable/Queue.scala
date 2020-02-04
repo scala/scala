@@ -67,7 +67,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
   def enqueueAll(elems: scala.collection.IterableOnce[A]): this.type = this ++= elems
 
   /**
-    * Removes the first element from this queue and return it
+    * Remove the first element from this queue and return it
     *
     * @return
     * @throws java.util.NoSuchElementException when queue is empty
