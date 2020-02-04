@@ -98,7 +98,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def isTrait = sym.isTrait
     def isClass = sym.isClass && !sym.isTrait
     def isObject = sym.isModule && !sym.hasPackageFlag
-    def isCaseClass = sym.isCaseClass
+    def isCase = sym.isCase
     def isRootPackage = false
     def selfType = if (sym.thisSym eq sym) None else Some(makeType(sym.thisSym.typeOfThis, this))
   }
@@ -452,7 +452,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     def primaryConstructor: Option[MemberImpl with Constructor] = if (isClass) constructors find { _.isPrimary } else None
     override def valueParams =
       // we don't want params on a class (non case class) signature
-      if (isCaseClass) primaryConstructor match {
+      if (isCase) primaryConstructor match {
         case Some(const) => const.sym.paramss map (_ map (makeValueParam(_, this)))
         case None => List()
       }

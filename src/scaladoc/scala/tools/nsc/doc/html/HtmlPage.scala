@@ -214,7 +214,7 @@ abstract class HtmlPage extends Page { thisPage =>
   }
 
   def hasPage(e: DocTemplateEntity) = {
-    e.isPackage || e.isTrait || e.isClass || e.isObject || e.isCaseClass
+    e.isPackage || e.isTrait || e.isClass || e.isObject || e.isCase
   }
 
   /** Returns the HTML code that represents the template in `tpl` as a hyperlinked name. */
