@@ -887,24 +887,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
           val vparamss = readParamss(localCtx)
           val tpt = readTpt()(localCtx)
-          val valueParamss = ctx.normalizeIfConstructor(
-            vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
-          // if (tname === TastyName.SimpleName("apply")
-          //     && sym.is(Synthetic)) {
-          //   sym.flags = sym.flags | Case
-          // }
-          // val retType =
-          //   if (tname === TastyName.SimpleName("unapply")
-          //       && sym.is(Synthetic)) {
-          //     sym.flags = sym.flags | Case
-          //     sym.owner.companion.caseFieldAccessors.map(_.tpe) match {
-          //       case Nil          => defn.BooleanTpe
-          //       case value :: Nil => defn.optionType(dropNullaryMethod(value))
-          //       case values       => defn.optionType(defn.tupleType(values.map(dropNullaryMethod)))
-          //     }
-          //   } else {
-          //     tpt.tpe
-          //   }
+          val valueParamss = ctx.normalizeIfConstructor(vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
           val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
           sym.info = ctx.methodType(if (name === nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
           NoCycle(at = symAddr)

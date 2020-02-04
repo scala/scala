@@ -195,31 +195,48 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
     /**Best effort to transform this to an equivalent canonical representation in scalac.
      */
-    final def canonicalForm: Type = {
+    final def canonicalForm(implicit ctx: Context): Type = {
+      ctx.log(s"canonical form of $this")
       val resUpper = resType.upperBound
       val resLower = if (resType `eq` resType.bounds) resType.lowerBound else defn.NothingTpe
-      if (resUpper.typeArgs.nonEmpty && resUpper.typeArgs == paramInfos) {
-        val resUpperRef = resUpper.asInstanceOf[TypeRef]
-        mkPolyType(
-          typeParams,
-          mkTypeBounds(
-            resLower,
-            mkExistentialType(
-              typeParams,
-              mkTypeRef(resUpperRef.pre, resUpperRef.sym, typeParams.map(_.tpe))
+      lazy val typeParams = {
+        for (typeParam <- this.typeParams) {
+          if (typeParam.tpe.bounds.hi.typeParams.nonEmpty) {
+            typeParam.info = typeParam.tpe.bounds.hi
+          }
+        }
+        this.typeParams
+      }
+      val result = {
+        if (resUpper.typeArgs.nonEmpty && resUpper.typeArgs == paramInfos) {
+          ctx.log("making poly from lambda 1)")
+          val resUpperRef = resUpper.asInstanceOf[TypeRef]
+          mkPolyType(
+            typeParams,
+            mkTypeBounds(
+              resLower,
+              mkExistentialType(
+                typeParams,
+                mkTypeRef(resUpperRef.pre, resUpperRef.sym, typeParams.map(_.tpe))
+              )
             )
           )
-        )
+        }
+        else if (resUpper.typeArgs.isEmpty) {
+          ctx.log("making poly from lambda 2)")
+          mkPolyType(typeParams, mkTypeBounds(resLower, resUpper))
+        }
+        else if (resUpper.typeArgs == paramRefs) {
+          ctx.log("reduce to type ctor from lambda")
+          mkPolyType(typeParams, mkTypeRef(noPrefix, resUpper.typeSymbol, typeParams.map(_.tpe)))
+        }
+        else {
+          ctx.log("making poly from lambda 3)")
+          mkPolyType(typeParams, resUpper)
+        }
       }
-      else if (resUpper.typeArgs.isEmpty) {
-        mkPolyType(typeParams, mkTypeBounds(resLower, resUpper))
-      }
-      else if (resUpper.typeArgs == paramRefs) {
-        resUpper.typeConstructor
-      }
-      else {
-        mkPolyType(typeParams, resUpper)
-      }
+      ctx.log(s"result canonical: $result")
+      result
     }
 
     final def productArity: Int = 2
