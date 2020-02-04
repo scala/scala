@@ -90,6 +90,7 @@ trait Analyzer extends AnyRef
     def newPhase(prev: Phase): StdPhase = new TyperPhase(prev)
     final class TyperPhase(prev: Phase) extends StdPhase(prev) {
       override def keepsTypeParams = false
+      override def shouldSkipThisPhaseForJava: Boolean = !(settings.YpickleJava || createJavadoc)
       resetTyper()
       // the log accumulates entries over time, even though it should not (Adriaan, Martin said so).
       // Lacking a better fix, we clear it here (before the phase is created, meaning for each
