@@ -358,7 +358,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             //     // Eta expansion of the latter puts readType() out of the expression.
             case APPLIEDtype =>
               val tpe = readType()
-              mkTypeRef(tpe.typeSymbolDirect.owner.tpe, tpe.typeSymbolDirect, until(end)(readType()))
+              mkTypeRef(tpe, until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
               val hi = readType()
@@ -465,7 +465,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val res    = NamedType(prefix, sym)
       prefix match {
         case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
-          mkTypeRef(noPrefix, sym, Nil)
+          mkTypeRef(sym, Nil)
           // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
           // the problem arises when a self type of a trait is a type parameter of the same trait.
         case _ => res
@@ -1464,7 +1464,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val tpe = mkIntersectionType(args.map(_.tpe))
                 CompoundTypeTree(args).setType(tpe)
               } else {
-                val ownType = mkTypeRef(tycon.tpe.prefix, tycon.tpe.typeSymbolDirect, args.map(_.tpe))
+                val ownType = mkTypeRef(tycon.tpe, args.map(_.tpe))
                 AppliedTypeTree(tycon, args).setType(ownType)
               }
             case ANNOTATEDtpt =>

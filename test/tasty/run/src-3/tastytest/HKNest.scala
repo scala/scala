@@ -32,10 +32,10 @@ object HKNest {
     override def toString(): String = "Baz"
   }
 
-  sealed trait QuxArg[+T]
-  case class Arg1[+T]() extends QuxArg[T]
+  sealed trait QuxArg[T]
+  case class Arg1[T]() extends QuxArg[T]
 
-  class Qux[F[X] <: QuxArg[X]] {
+  class Qux[+F[X] <: QuxArg[X]] {
     override def toString(): String = "Qux"
   }
 

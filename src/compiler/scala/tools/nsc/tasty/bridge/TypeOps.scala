@@ -201,8 +201,8 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       val resLower = if (resType `eq` resType.bounds) resType.lowerBound else defn.NothingTpe
       lazy val typeParams = {
         for (typeParam <- this.typeParams) {
-          if (typeParam.tpe.bounds.hi.typeParams.nonEmpty) {
-            typeParam.info = typeParam.tpe.bounds.hi
+          if (typeParam.tpe.upperBound.isHigherKinded) {
+            typeParam.info = typeParam.tpe.upperBound
           }
         }
         this.typeParams
@@ -210,14 +210,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       val result = {
         if (resUpper.typeArgs.nonEmpty && resUpper.typeArgs == paramInfos) {
           ctx.log("making poly from lambda 1)")
-          val resUpperRef = resUpper.asInstanceOf[TypeRef]
           mkPolyType(
             typeParams,
             mkTypeBounds(
               resLower,
               mkExistentialType(
                 typeParams,
-                mkTypeRef(resUpperRef.pre, resUpperRef.sym, typeParams.map(_.tpe))
+                mkTypeRef(resUpper, typeParams.map(_.tpe))
               )
             )
           )
@@ -228,7 +227,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         }
         else if (resUpper.typeArgs == paramRefs) {
           ctx.log("reduce to type ctor from lambda")
-          mkPolyType(typeParams, mkTypeRef(noPrefix, resUpper.typeSymbol, typeParams.map(_.tpe)))
+          mkPolyType(typeParams, mkTypeBounds(resLower, mkTypeRef(resUpper, typeParams.map(_.tpe))))
         }
         else {
           ctx.log("making poly from lambda 3)")

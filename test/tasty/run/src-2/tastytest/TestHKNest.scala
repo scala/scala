@@ -12,5 +12,6 @@ object TestHKNest extends Suite("TestHKNest") {
   test(assert(new ConsumeInScala3[Foo].foo(new Foo[Box]) == "Foo"))
   test(assert(new ConsumeInScala3_2[Bar].foo(new Bar[Box, String]) == "Bar"))
   test(assert(new ConsumeInScala3_3[Baz].foo(new Baz[List]) == "Baz"))
-  // test(assert(new ConsumeInScala3_4[Qux].foo(new Qux[QuxArg]) == "Qux"))
+  test(assert(new ConsumeInScala3_4[Qux].foo(new Qux[QuxArg]) == "Qux"))
+  test(assert(new ConsumeInScala3_4[Qux].foo(new Qux[Arg1]) == "Qux"))
 }
