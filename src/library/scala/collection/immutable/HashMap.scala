@@ -246,6 +246,8 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
  */
 object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
+  override def newBuilder[A, B]: mutable.Builder[(A, B), HashMap[A, B]] = new HashMapBuilder[A, B]
+
   private[collection] abstract class Merger[A, B] {
     def apply(kv1: (A, B), kv2: (A, B)): (A, B)
     def invert: Merger[A, B]
@@ -273,15 +275,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     val invert: Merger[A1, B1] = new Merger[A1, B1] {
       def apply(kv1: (A1, B1), kv2: (A1, B1)): (A1, B1) = mergef(kv2, kv1)
       def invert: Merger[A1, B1] = self
-    }
-  }
-
-  override def newBuilder[A, B]: mutable.Builder[(A, B), HashMap[A, B]] = new HashMapBuilder[A,B]
-  private class HashMapBuilder[A, B] extends mutable.MapBuilder[A, B, HashMap[A, B]](HashMap.empty) {
-    //not sure if this should be part of MapBuilder
-    override def ++=(xs: TraversableOnce[(A, B)]): HashMapBuilder.this.type = {
-      elems ++= xs
-      this
     }
   }
 
@@ -374,7 +367,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       kv = (key, value); kv
     }
 
-    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
+    protected[HashMap] override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
       that match {
         case hm1: HashMap1[A, B1] =>
           if ((this eq hm1) && merger.retainIdentical) this
@@ -470,7 +463,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
       List(newhm(x), newhm(y))
     }
-    protected override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
+    protected[HashMap] override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
       that match {
         case hm: HashTrieMap[A, B1] =>
           //we ill get better performance and structural sharing by merging out one hashcode
@@ -521,13 +514,18 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
   class HashTrieMap[A, +B](
-    private[collection] val bitmap: Int,
-    private[collection] val elems: Array[HashMap[A, B @uV]],
-    override val size: Int
+    private[HashMap] var bitmap0: Int,
+    private[HashMap] var elems0: Array[HashMap[A, B @uV]],
+    private[HashMap] var size0: Int
   ) extends HashMap[A, B @uV] {
+
+    @inline private[collection] final def bitmap: Int = bitmap0
+    @inline private[collection] final def elems: Array[HashMap[A, B @uV]] = elems0
 
     // assert(Integer.bitCount(bitmap) == elems.length)
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieMap[_,_]]))
+
+    @inline override final def size = size0
 
     override def get0(key: A, hash: Int, level: Int): Option[B] = {
       // Note: this code is duplicated with `contains0`
@@ -998,5 +996,325 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     }
 
     private def readResolve(): AnyRef = orig
+  }
+
+  //TODO share these with HashSet - they are the same
+  private def elemHashCode(key: Any) = key.##
+
+  private final def improve(hcode: Int) = {
+    var h: Int = hcode + ~(hcode << 9)
+    h = h ^ (h >>> 14)
+    h = h + (h << 4)
+    h ^ (h >>> 10)
+  }
+
+  private def computeHashImpl(key: Any) = improve(elemHashCode(key))
+
+  /** Builder for HashMap.
+   */
+  private[collection] final class HashMapBuilder[A, B] extends mutable.ReusableBuilder[(A, B), HashMap[A, B]] {
+    import java.util
+
+    /* Nodes in the tree are either regular HashMap1, HashTrieMap, HashMapCollision1, or a mutable HashTrieMap
+      mutable HashTrieMap nodes are designated by having size == -1
+
+      mutable HashTrieMap nodes can have child nodes that are mutable, or immutable
+      immutable HashTrieMap child nodes can only be immutable
+
+      mutable HashTrieMap elems are always a Array of size 32,size -1, bitmap -1
+     */
+
+    /** The root node of the partially build hashmap */
+    private var rootNode: HashMap[A, B] = HashMap.empty
+    private def plusPlusMerger = liftMerger[A, B](null)
+    private def isMutable(hs: HashMap[A, B]) = {
+      hs.isInstanceOf[HashTrieMap[A, B]] && hs.size == -1
+    }
+
+    private def makeMutable(hs: HashTrieMap[A, B]): HashTrieMap[A, B] = {
+      if (isMutable(hs)) hs
+      else {
+        val elems = new Array[HashMap[A, B]](32)
+        var bit = 0
+        var iBit = 0
+        while (bit < 32) {
+          if ((hs.bitmap & (1 << bit)) != 0) {
+            elems(bit) = hs.elems(iBit)
+            iBit += 1
+          }
+          bit += 1
+        }
+        new HashTrieMap[A, B](-1, elems, -1)
+      }
+    }
+    private def isLeaf(hm: HashMap[A, B]) = {
+      hm.isInstanceOf[HashMap1[A, B]] || hm.isInstanceOf[HashMapCollision1[A, B]]
+    }
+    @inline private def computeHash(key: A) = computeHashImpl(key)
+
+    private def makeImmutable(hs: HashMap[A, B]): HashMap[A, B] = {
+      hs match {
+        case trie: HashTrieMap[A, B] if isMutable(trie) =>
+          var bit = 0
+          var bitmap = 0
+          var size = 0
+          while (bit < 32) {
+            if (trie.elems(bit) ne null)
+              trie.elems(bit) = makeImmutable(trie.elems(bit))
+            if (trie.elems(bit) ne null) {
+              bitmap |= 1 << bit
+              size += trie.elems(bit).size
+            }
+            bit += 1
+          }
+          Integer.bitCount(bitmap) match {
+            case 0 => null
+            case 1
+              if isLeaf(trie.elems(Integer.numberOfTrailingZeros(bitmap))) =>
+              trie.elems(Integer.numberOfTrailingZeros(bitmap))
+
+            case bc =>
+              val elems = if (bc == 32) trie.elems else {
+                val elems = new Array[HashMap[A, B]](bc)
+                var oBit = 0
+                bit = 0
+                while (bit < 32) {
+                  if (trie.elems(bit) ne null) {
+                    elems(oBit) = trie.elems(bit)
+                    oBit += 1
+                  }
+                  bit += 1
+                }
+                assert(oBit == bc)
+                elems
+              }
+              trie.size0 = size
+              trie.elems0 = elems
+              trie.bitmap0 = bitmap
+              trie
+          }
+        case _ => hs
+      }
+    }
+
+    override def clear(): Unit = {
+      rootNode match {
+        case trie: HashTrieMap[A, B] if isMutable(trie) =>
+          util.Arrays.fill(trie.elems.asInstanceOf[Array[AnyRef]], null)
+        case _ => rootNode = HashMap.empty[A, B]
+      }
+    }
+
+    override def result(): HashMap[A, B] = {
+      rootNode = nullToEmpty(makeImmutable(rootNode))
+      rootNode
+    }
+
+    override def +=(elem1: (A, B), elem2: (A, B), elems: (A, B)*): this.type = {
+      this += elem1
+      this += elem2
+      this ++= elems
+    }
+
+    override def +=(elem: (A, B)): this.type = {
+      val hash = computeHash(elem._1)
+      rootNode = addOne(rootNode, elem, hash, 0)
+      this
+    }
+
+    override def ++=(xs: TraversableOnce[(A, B)]): this.type = xs match {
+      case hm: HashMap[A, B] =>
+        if (rootNode eq EmptyHashMap) {
+          if (!hm.isEmpty)
+            rootNode = hm
+        }
+        else
+          rootNode = addHashMap(rootNode, hm, 0)
+        this
+      case hm: mutable.HashMap[A, B] =>
+        //TODO
+        super.++=(xs)
+      case _ =>
+        super.++=(xs)
+    }
+
+    /** return the bit index of the rawIndex in the bitmap of the trie, or -1 if the bit is not in the bitmap */
+    private def compressedIndex(trie: HashTrieMap[A, B], rawIndex: Int): Int = {
+      if (trie.bitmap == -1) rawIndex
+      else if ((trie.bitmap & (1 << rawIndex)) == 0) {
+        //the value is not in this index
+        -1
+      } else {
+        Integer.bitCount(((1 << rawIndex) - 1) & trie.bitmap)
+      }
+    }
+    /** return the array index for the rawIndex, in the trie elem array
+     * The trie may be mutable, or immutable
+     * returns -1 if the trie is compressed and the index in not in the array */
+    private def trieIndex(trie: HashTrieMap[A, B], rawIndex: Int): Int = {
+      if (isMutable(trie) || trie.bitmap == -1) rawIndex
+      else compressedIndex(trie, rawIndex)
+    }
+
+    def leafHash(leaf: HashMap[A, B]) = leaf match {
+      case m: HashMap1[A, B] => m.hash
+      case m: HashMapCollision1[A, B] => m.hash
+      case _ => throw new IllegalArgumentException(leaf.getClass.toString)
+    }
+
+    def makeMutableTrie(aLeaf: HashMap[A, B], bLeaf: HashMap[A, B], level: Int): HashTrieMap[A, B] = {
+      val elems = new Array[HashMap[A, B]](32)
+      val aRawIndex = (leafHash(aLeaf) >>> level) & 0x1f
+      val bRawIndex = (leafHash(bLeaf) >>> level) & 0x1f
+      if (aRawIndex == bRawIndex) {
+        elems(aRawIndex) = makeMutableTrie(aLeaf, bLeaf, level + 5)
+      } else {
+        elems(aRawIndex) = aLeaf
+        elems(bRawIndex) = bLeaf
+      }
+      new HashTrieMap[A, B](-1, elems, -1)
+    }
+
+    private def addOne(toNode: HashMap[A, B], kv: (A, B), improvedHash: Int, level: Int): HashMap[A, B] = {
+      toNode match {
+        case leaf: HashMap1[A, B] =>
+          if (leaf.hash == improvedHash)
+            leaf.updated0(kv._1, improvedHash, level, kv._2, kv, null)
+          else makeMutableTrie(leaf, new HashMap1(kv._1, improvedHash, kv._2, kv), level)
+        case leaf: HashMapCollision1[A, B] =>
+          if (leaf.hash == improvedHash)
+            leaf.updated0(kv._1, improvedHash, level, kv._2, kv, null)
+          else makeMutableTrie(leaf, new HashMap1(kv._1, improvedHash, kv._2, kv), level)
+
+        case trie: HashTrieMap[A, B] if isMutable((trie)) =>
+          val arrayIndex = (improvedHash >>> level) & 0x1f
+          val old = trie.elems(arrayIndex)
+          trie.elems(arrayIndex) = if (old eq null) new HashMap1(kv._1, improvedHash, kv._2, kv)
+          else addOne(old, kv, improvedHash, level + 5)
+          trie
+        case trie: HashTrieMap[A, B] =>
+          val rawIndex = (improvedHash >>> level) & 0x1f
+          val arrayIndex = compressedIndex(trie, rawIndex)
+          if (arrayIndex == -1)
+            addOne(makeMutable(trie), kv, improvedHash, level)
+          else {
+            val old = trie.elems(arrayIndex)
+            val merged = if (old eq null) new HashMap1(kv._1, improvedHash, kv._2, kv)
+            else addOne(old, kv, improvedHash, level + 5)
+
+            if (merged eq old) trie
+            else {
+              val newMutableTrie = makeMutable(trie)
+              newMutableTrie.elems(rawIndex) = merged
+              newMutableTrie
+            }
+          }
+        case empty if empty eq EmptyHashMap => toNode.updated0(kv._1, improvedHash, level, kv._2, kv, null)
+      }
+    }
+    private def addHashMap(toNode: HashMap[A, B], toBeAdded: HashMap[A, B], level: Int): HashMap[A, B] = {
+      toNode match {
+        case aLeaf: HashMap1[A, B] => addToLeafHashMap(aLeaf, aLeaf.hash, toBeAdded, level)
+        case aLeaf: HashMapCollision1[A, B] => addToLeafHashMap(aLeaf, aLeaf.hash, toBeAdded, level)
+        case trie: HashTrieMap[A, B] => addToTrieHashMap(trie, toBeAdded, level)
+        case empty if empty eq EmptyHashMap => toNode
+      }
+    }
+    private def addToLeafHashMap(toNode: HashMap[A, B], toNodeHash: Int, toBeAdded: HashMap[A, B], level: Int): HashMap[A, B] = {
+      assert (isLeaf(toNode))
+      if (toNode eq toBeAdded) toNode
+      else toBeAdded match {
+        case bLeaf: HashMap1[A, B] =>
+          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, plusPlusMerger)
+          else makeMutableTrie(toNode, bLeaf, level)
+
+        case bLeaf: HashMapCollision1[A, B] =>
+          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, plusPlusMerger)
+          else makeMutableTrie(toNode, bLeaf, level)
+
+        case bTrie: HashTrieMap[A, B] =>
+          val rawIndex = (toNodeHash >>> level) & 0x1f
+          val arrayIndex = compressedIndex(bTrie, rawIndex)
+          if (arrayIndex == -1) {
+            val result = makeMutable(bTrie)
+            result.elems(rawIndex) = toNode
+            result
+          } else {
+            val newEle = addToLeafHashMap(toNode, toNodeHash, bTrie.elems(arrayIndex), level + 5)
+            if (newEle eq toBeAdded)
+              toBeAdded
+            else {
+              val result = makeMutable(bTrie)
+              result.elems(rawIndex) = newEle
+              result
+            }
+          }
+        case empty if empty isEmpty =>
+          toNode
+      }
+    }
+
+    private def addToTrieHashMap(toNode: HashTrieMap[A, B], toBeAdded: HashMap[A, B], level: Int): HashMap[A, B] = {
+      def addFromLeaf(hash: Int): HashMap[A, B] = {
+        assert(isLeaf(toBeAdded))
+        val rawIndex = (hash >>> level) & 0x1f
+        val arrayIndex = trieIndex(toNode, rawIndex)
+        if (arrayIndex == -1) {
+          val newToNode = makeMutable(toNode)
+          newToNode.elems(rawIndex) = toBeAdded
+          newToNode
+        } else {
+          val old = toNode.elems(arrayIndex)
+          if (old eq toBeAdded) toNode
+          else if (old eq null) {
+            assert(isMutable(toNode))
+            toNode.elems(arrayIndex) = toBeAdded
+            toNode
+          } else {
+            val result = addHashMap(old, toBeAdded, level + 5)
+            if (result eq old) toNode
+            else {
+              val newToNode = makeMutable(toNode)
+              newToNode.elems(rawIndex) = result
+              newToNode
+            }
+          }
+        }
+      }
+
+      if (toNode eq toBeAdded) toNode
+      else toBeAdded match {
+        case bLeaf: HashMap1[A, B] =>
+          addFromLeaf(bLeaf.hash)
+        case bLeaf: HashMapCollision1[A, B] =>
+          addFromLeaf(bLeaf.hash)
+        case bTrie: HashTrieMap[A, B] =>
+          var result = toNode
+          var bBitSet = bTrie.bitmap
+          var bArrayIndex = 0
+          while (bBitSet != 0) {
+            val rawIndex = Integer.numberOfTrailingZeros(bBitSet)
+            val aValue = result.elems(trieIndex(result, rawIndex))
+            val bValue = bTrie.elems(bArrayIndex)
+            if (aValue ne bValue) {
+              if (aValue eq null) {
+                assert (isMutable(result))
+                result.elems(rawIndex) = bValue
+              } else {
+                val resultAtIndex = addHashMap(aValue, bValue, level + 5)
+                if (resultAtIndex ne aValue) {
+                  result = makeMutable(result)
+                  result.elems(rawIndex) = resultAtIndex
+                }
+              }
+            }
+            bBitSet ^= 1 << rawIndex
+            bArrayIndex += 1
+          }
+          result
+
+        case empty if empty isEmpty => toNode
+      }
+    }
   }
 }

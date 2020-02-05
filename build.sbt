@@ -312,6 +312,20 @@ val mimaFilterSettings = Seq {
 
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.SortedSet.scala$collection$immutable$SortedSet$$super=uals"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.SortedMap.scala$collection$immutable$SortedMap$$super=uals"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.elemHashCode"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.improve"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.bitmap"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.elems"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$MapBuilderImpl"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapBuilder"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.bitmap0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.bitmap0_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.elems0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.elems0_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size0_="),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size"),
+
     //
     // scala-relect
     //
