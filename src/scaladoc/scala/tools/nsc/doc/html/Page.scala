@@ -114,10 +114,10 @@ abstract class Page {
 
   def kindToString(mbr: MemberEntity) =
     mbr match {
-      case c: Class => if (c.isCaseClass) "case class" else "class"
+      case c: Class => if (c.isCase) "case class" else "class"
       case _: Trait => "trait"
       case _: Package => "package"
-      case _: Object => "object"
+      case o: Object => if (o.isCase) "case object" else "object"
       case _: AbstractType => "type"
       case _: AliasType => "type"
       case _: Constructor => "new"

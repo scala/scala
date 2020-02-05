@@ -627,4 +627,16 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
         s.contains("""protected[<a href="index.html" name="p" id="p" class="extype">p</a>]""")
     }
   }
+
+  property("scala/bug#11871 case objects should have the case flag on the index page") = {
+    checkTemplate("t11871.scala", "main/index.html"){(_, s) =>
+      s.contains("""<span class="kind">case object</span>""") && s.contains("""<span class="name">ObjectA</span>""".stripMargin)
+    }
+  }
+
+  property("scala/bug#11871 case objects should have the case flag on the object's page") = {
+    checkTemplate("t11871.scala", "main/ObjectA$.html"){(_, s) =>
+      s.contains("""<span class="kind">case object</span>""") && s.contains("""<span class="name">ObjectA</span>""".stripMargin)
+    }
+  }
 }

@@ -102,8 +102,8 @@ trait TemplateEntity extends Entity {
   /** Whether documentation is available for this template. */
   def isDocTemplate: Boolean
 
-  /** Whether this template is a case class. */
-  def isCaseClass: Boolean
+  /** Whether this template is a case class or a case object. */
+  def isCase: Boolean
 
   /** The self-type of this template, if it differs from the template type. */
   def selfType : Option[TypeEntity]
