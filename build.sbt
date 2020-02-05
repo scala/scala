@@ -242,6 +242,28 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.transformImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.transformImpl"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HasForeachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#EmptyMap.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map1.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map2.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map3.foreachEntry"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map4.foreachEntry"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.ListMap"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.TreeMap"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$HashMap1"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$HashTrieMap"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$HashMapCollision1"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.ListMap$Node"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.ListMap$EmptyListMap$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$EmptyHashMap$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$Map1"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$Map2"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$Map3"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$Map4"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$EmptyMap$"),
+
     //
     // scala-relect
     //

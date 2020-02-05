@@ -99,7 +99,7 @@ object Map extends ImmutableMapFactory[Map] {
   }
 
   @SerialVersionUID(-5626373049574850357L)
-  private object EmptyMap extends AbstractMap[Any, Nothing] with Map[Any, Nothing] with Serializable {
+  private object EmptyMap extends AbstractMap[Any, Nothing] with Map[Any, Nothing] with Serializable with HasForeachEntry[Any, Nothing]{
     override def size: Int = 0
     override def apply(key: Any) = throw new NoSuchElementException("key not found: " + key)
     override def contains(key: Any) = false
@@ -110,10 +110,11 @@ object Map extends ImmutableMapFactory[Map] {
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
     def - (key: Any): Map[Any, Nothing] = this
     override def hashCode: Int = MurmurHash3.emptyMapHash
+    override private[immutable] def foreachEntry[U](f: (Any, Nothing) => U): Unit = ()
   }
 
   @SerialVersionUID(-9131943191104946031L)
-  class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
+  class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Map[K, V] with Serializable with HasForeachEntry[K, V] {
     override def size = 1
     override def apply(key: K) = if (key == key1) value1 else throw new NoSuchElementException("key not found: " + key)
     override def contains(key: K) = key == key1
@@ -148,10 +149,13 @@ object Map extends ImmutableMapFactory[Map] {
       h = MurmurHash3.mixLast(h, c)
       MurmurHash3.finalizeHash(h, N)
     }
+    override private[immutable] def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+    }
   }
 
   @SerialVersionUID(-85684685400398742L)
-  class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
+  class Map2[K, +V](key1: K, value1: V, key2: K, value2: V) extends AbstractMap[K, V] with Map[K, V] with Serializable with HasForeachEntry[K, V] {
     override def size = 2
     override def apply(key: K) =
       if (key == key1) value1
@@ -201,10 +205,14 @@ object Map extends ImmutableMapFactory[Map] {
       h = MurmurHash3.mixLast(h, c)
       MurmurHash3.finalizeHash(h, N)
     }
+    override private[immutable] def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
+    }
   }
 
   @SerialVersionUID(-6400718707310517135L)
-  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
+  class Map3[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V) extends AbstractMap[K, V] with Map[K, V] with Serializable with HasForeachEntry[K, V] {
     override def size = 3
     override def apply(key: K) =
       if (key == key1) value1
@@ -264,10 +272,15 @@ object Map extends ImmutableMapFactory[Map] {
       h = MurmurHash3.mixLast(h, c)
       MurmurHash3.finalizeHash(h, N)
     }
+    override private[immutable] def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
+      f(key3, value3)
+    }
   }
 
   @SerialVersionUID(-7992135791595275193L)
-  class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with Map[K, V] with Serializable {
+  class Map4[K, +V](key1: K, value1: V, key2: K, value2: V, key3: K, value3: V, key4: K, value4: V) extends AbstractMap[K, V] with Map[K, V] with Serializable with HasForeachEntry[K, V] {
     override def size = 4
     override def apply(key: K) =
       if (key == key1) value1
@@ -336,6 +349,12 @@ object Map extends ImmutableMapFactory[Map] {
       h = MurmurHash3.mix(h, b)
       h = MurmurHash3.mixLast(h, c)
       MurmurHash3.finalizeHash(h, N)
+    }
+    override private[immutable] def foreachEntry[U](f: (K, V) => U): Unit = {
+      f(key1, value1)
+      f(key2, value2)
+      f(key3, value3)
+      f(key4, value4)
     }
   }
   private [immutable] final class HashCodeAccumulator extends scala.runtime.AbstractFunction2[Any, Any, Unit] {

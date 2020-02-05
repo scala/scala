@@ -52,7 +52,8 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
-     with Serializable {
+     with Serializable
+     with HasForeachEntry[A, B] {
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
@@ -204,6 +205,8 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   override def isDefinedAt(key: A): Boolean = RB.contains(tree, key)
 
   override def foreach[U](f : ((A,B)) => U) = RB.foreach(tree, f)
+
+  override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = RB.foreachEntry(tree, f)
 
   override def hashCode(): Int = {
     if (isEmpty) {
