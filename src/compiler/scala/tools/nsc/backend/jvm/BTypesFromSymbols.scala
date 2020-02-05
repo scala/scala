@@ -145,10 +145,15 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
   }
 
   def staticHandleFromSymbol(sym: Symbol): asm.Handle = {
-    val owner = if (sym.owner.isModuleClass) sym.owner.linkedClassOfClass else sym.owner
     val descriptor = methodBTypeFromMethodType(sym.info, isConstructor = false).descriptor
-    val ownerBType = classBTypeFromSymbol(owner)
-    new asm.Handle(asm.Opcodes.H_INVOKESTATIC, ownerBType.internalName, sym.name.encoded, descriptor, /* itf = */ ownerBType.isInterface.get)
+    val ownerBType = classBTypeFromSymbol(sym.owner)
+    val rawInternalName = ownerBType.internalName
+    // object Qux { def foo = 1 } --> we want the handle to be to (static) Qux.foo, not (member) Qux$.foo
+    val mustUseMirrorClass = !sym.isJava && sym.owner.isModuleClass && !sym.isStaticMember
+    // ... but we don't know that the mirror class exists! (if there's no companion, the class is synthesized in jvm without a symbol)
+    val ownerInternalName = if (mustUseMirrorClass) rawInternalName stripSuffix nme.MODULE_SUFFIX_STRING else rawInternalName
+    val isInterface = sym.owner.linkedClassOfClass.isTraitOrInterface
+    new asm.Handle(asm.Opcodes.H_INVOKESTATIC, ownerInternalName, sym.name.encoded, descriptor, isInterface)
   }
 
   /**

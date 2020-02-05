@@ -420,7 +420,7 @@ trait DocComments { self: Global =>
       if (pos == NoPosition) NoPosition
       else {
         val start1 = pos.start + start
-        val end1 = pos.end + end
+        val end1 = pos.start + end
         pos withStart start1 withPoint start1 withEnd end1
       }
 
