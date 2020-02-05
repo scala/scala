@@ -108,6 +108,28 @@ object Map extends ImmutableMapFactory[Map] {
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
+    override def ++[V1 >: Nothing](xs: GenTraversableOnce[(Any, V1)]): Map[Any, V1] = addImpl(xs, Map.canBuildFrom[Any, V1])
+    override def ++[B >: (Any, Nothing), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = addImpl(that, bf)
+    private def addImpl[B >: (Any, Nothing), That](that: GenTraversableOnce[B], bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = {
+      if (isMapCBF(bf))
+        that match {
+          case hm: HashMap[a, b] if hm.size > 4 => hm.asInstanceOf[That]
+          case EmptyMap => this.asInstanceOf[That]
+          case m: Map1[_, _] => m.asInstanceOf[That]
+          case m: Map2[_, _] => m.asInstanceOf[That]
+          case m: Map3[_, _] => m.asInstanceOf[That]
+          case m: Map4[_, _] => m.asInstanceOf[That]
+
+          case _ => super.++(that)(bf)
+        }
+      else if (isHashMapCBF(bf))
+        that match {
+          case hm: HashMap[a, b] => hm.asInstanceOf[That]
+
+          case _ => super.++(that)(bf)
+        }
+      else super.++(that)(bf)
+    }
     def - (key: Any): Map[Any, Nothing] = this
     override def hashCode: Int = MurmurHash3.emptyMapHash
     override private[immutable] def foreachEntry[U](f: (Any, Nothing) => U): Unit = ()
@@ -377,6 +399,26 @@ object Map extends ImmutableMapFactory[Map] {
       MurmurHash3.finalizeHash(h, n)
     }
   }
+
+  private def isHashMapCBF(cbf: CanBuildFrom[_,_,_]) = {
+    cbf match {
+      case w: WrappedCanBuildFrom[_,_,_] =>
+        val unwrapped = w.wrapped
+        unwrapped eq HashMap.canBuildFrom
+      case _ =>
+        cbf eq HashMap.canBuildFrom
+    }
+  }
+  private def isMapCBF(cbf: CanBuildFrom[_,_,_]) = {
+    cbf match {
+      case w: WrappedCanBuildFrom[_, _, _] =>
+        val unwrapped = w.wrapped
+        unwrapped eq Map.canBuildFrom
+      case _ =>
+        cbf eq Map.canBuildFrom
+    }
+  }
+
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
