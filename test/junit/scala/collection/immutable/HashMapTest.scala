@@ -116,4 +116,29 @@ class HashMapTest extends AllocationTest {
       shared == base
     })
   }
+
+  private val transformTestCases: List[HashMap[String, String]] = List(
+    HashMap("a" -> "b"),
+    HashMap("a" -> "b", "b" -> "c"),
+    HashMap("a" -> "b", "b" -> "c", "c" -> "d"),
+    HashMap("Ea" -> "FB", "FB" -> "Ea", "xyz" -> "xyz")
+  )
+
+  @Test
+  def transform {
+    def check(hm: HashMap[String, String]) {
+      val hm1 = hm transform ((k, v) => s"$k, $v")
+      assert(hm.size == hm1.size, (hm, hm1))
+      assert(hm.map { case (k, v) => k -> s"$k, $v" }.toSet == hm1.toSet, (hm, hm1))
+    }
+    transformTestCases foreach check
+  }
+  @Test
+  def transformBreakout {
+    def check(hm: HashMap[String, String]) {
+      val hm1: List[(String, String)] = hm.transform((k, v) => s"$k, $v")(collection.breakOut)
+      assert(hm1 == hm.toList.map { case (k, v) => k -> s"$k, $v"})
+    }
+    transformTestCases foreach check
+  }
 }

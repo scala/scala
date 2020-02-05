@@ -236,6 +236,12 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.scalaProps"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.Properties.propFilename"),
 
+    // https://github.com/scala/scala/pull/8630
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.transformImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.transformImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.transformImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.transformImpl"),
+
     //
     // scala-relect
     //
