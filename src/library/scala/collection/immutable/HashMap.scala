@@ -210,7 +210,17 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
         // so we invert
         (this.merge0(thatHash, 0, merger.invert)).asInstanceOf[That]
 
-        // cope with Maps that have a foreachEntry ??
+      case that:HasForeachEntry[A, B] =>
+        object adder extends Function2[A, B, Unit] {
+          var result: HashMap[A, B] = this.asInstanceOf[HashMap[A, B]]
+          val merger = HashMap.liftMerger[A, B](null)
+
+          override def apply(key: A, value: B): Unit = {
+            result = result.updated0(key, computeHash(key), 0, value, null, merger)
+          }
+        }
+        that foreachEntry adder
+        adder.result.asInstanceOf[That]
       case that =>
         object adder extends Function1[(A,B), Unit] {
           var result: HashMap[A, B] = this.asInstanceOf[HashMap[A, B]]
@@ -323,27 +333,31 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override protected def contains0(key: A, hash: Int, level: Int): Boolean =
       hash == this.hash && key == this.key
     private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
-      if (hash == this.hash && key == this.key) {
-        if (merger eq null) {
-          if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
-          else new HashMap1(key, hash, value, kv)
-        } else {
-          val current = this.ensurePair
-          val nkv = merger(current, if (kv != null) kv else (key, value))
-          if ((current eq nkv) || (
-            (current._1.asInstanceOf[AnyRef] eq nkv._1.asInstanceOf[AnyRef]) &&
-              (current._2.asInstanceOf[AnyRef] eq nkv._2.asInstanceOf[AnyRef]))) this
-          else new HashMap1(nkv._1, hash, nkv._2, nkv)
-        }
-      } else {
-        if (hash != this.hash) {
-          // they have different hashes, but may collide at this level - find a level at which they don't
-          val that = new HashMap1[A, B1](key, hash, value, kv)
-          makeHashTrieMap[A, B1](this.hash, this, hash, that, level, 2)
-        } else {
-          // 32-bit hash collision (rare, but not impossible)
+      if (hash == this.hash) {
+        if (key == this.key) {
+          if (merger eq null) {
+            if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
+            else new HashMap1(key, hash, value, kv)
+          } else if (
+            (key.asInstanceOf[AnyRef] eq this.key.asInstanceOf[AnyRef]) &&
+              (value.asInstanceOf[AnyRef] eq this.value.asInstanceOf[AnyRef]) &&
+              merger.retainIdentical) {
+            this
+          } else {
+            val current = this.ensurePair
+            val nkv = merger(current, if (kv != null) kv else (key, value))
+            if ((current eq nkv) || (
+              (this.key.asInstanceOf[AnyRef] eq nkv._1.asInstanceOf[AnyRef]) &&
+                (this.value.asInstanceOf[AnyRef] eq nkv._2.asInstanceOf[AnyRef]))) this
+            else new HashMap1(nkv._1, hash, nkv._2, nkv)
+          }
+        } else
+        // 32-bit hash collision (rare, but not impossible)
           new HashMapCollision1(hash, ListMap.empty.updated(this.key, this.value).updated(key, value))
-        }
+      } else {
+        // they have different hashes, but may collide at this level - find a level at which they don't
+        val that = new HashMap1[A, B1](key, hash, value, kv)
+        makeHashTrieMap[A, B1](this.hash, this, hash, that, level, 2)
       }
 
     override def removed0(key: A, hash: Int, level: Int): HashMap[A, B] =
@@ -555,8 +569,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         val sub = elems(offset)
         val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
         if(subNew eq sub) this else {
-          val elemsNew = new Array[HashMap[A,B1]](elems.length)
-          System.arraycopy(elems, 0, elemsNew, 0, elems.length)
+          val elemsNew = elems.clone().asInstanceOf[Array[HashMap[A, B1]]]
           elemsNew(offset) = subNew
           new HashTrieMap(bitmap, elemsNew, size + (subNew.size - sub.size))
         }
