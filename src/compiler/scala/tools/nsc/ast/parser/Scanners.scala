@@ -159,6 +159,9 @@ trait Scanners extends ScannersCommon {
   }
 
   abstract class Scanner extends CharArrayReader with TokenData with ScannerData with ScannerCommon with DocScanner {
+    /** A switch whether operators at the start of lines can be infix operators. */
+    private var allowLeadingInfixOperators = true
+
     private def isDigit(c: Char) = java.lang.Character isDigit c
 
     private var openComments = 0
@@ -380,6 +383,45 @@ trait Scanners extends ScannersCommon {
         next.token = EMPTY
       }
 
+      def lookingAhead[A](body: => A): A = {
+        val saved = new ScannerData {} copyFrom this
+        val aLIO = allowLeadingInfixOperators
+        allowLeadingInfixOperators = false
+        nextToken()
+        try body finally {
+          this copyFrom saved
+          allowLeadingInfixOperators = aLIO
+        }
+      }
+
+      def isSimpleExprIntroToken(token: Token): Boolean = token match {
+        case CHARLIT | INTLIT | LONGLIT | FLOATLIT | DOUBLELIT |
+             STRINGLIT | INTERPOLATIONID | SYMBOLLIT | TRUE | FALSE | NULL | // literals
+             IDENTIFIER | BACKQUOTED_IDENT | THIS | SUPER | NEW | USCORE |
+             LPAREN | LBRACE | XMLSTART => true
+        case _ => false
+      }
+
+      def insertNL(nl: Token): Unit = {
+        next.copyFrom(this)
+        //  todo: make offset line-end of previous line?
+        offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
+        token = nl
+      }
+
+      /** A leading symbolic or backquoted identifier is treated as an infix operator
+       *  if it is followed by at least one ' ' and a token on the same line
+       *  that can start an expression.
+       */
+      def isLeadingInfixOperator =
+        allowLeadingInfixOperators &&
+        (token == BACKQUOTED_IDENT ||
+         token == IDENTIFIER && isOperatorPart(name.charAt(name.length - 1))) &&
+        (ch == ' ') && lookingAhead {
+          // force a NEWLINE after current token if it is on its own line
+          isSimpleExprIntroToken(token)
+        }
+
       /* Insert NEWLINE or NEWLINES if
        * - we are after a newline
        * - we are within a { ... } or on toplevel (wrt sepRegions)
@@ -388,9 +430,16 @@ trait Scanners extends ScannersCommon {
        */
       if (!applyBracePatch() && afterLineEnd() && inLastOfStat(lastToken) && inFirstOfStat(token) &&
           (sepRegions.isEmpty || sepRegions.head == RBRACE)) {
-        next copyFrom this
-        offset = if (lineStartOffset <= offset) lineStartOffset else lastLineStartOffset
-        token = if (pastBlankLine()) NEWLINES else NEWLINE
+        if (pastBlankLine()) insertNL(NEWLINES)
+        else if (!isLeadingInfixOperator) insertNL(NEWLINE)
+        else if (!currentRun.isScala214) {
+          val msg = """|Line starts with an operator that in future
+                       |will be taken as an infix expression continued from the previous line.
+                       |To force the previous interpretation as a separate statement,
+                       |add an explicit `;`, add an empty line, or remove spaces after the operator.""".stripMargin
+          deprecationWarning(msg, "2.13.2")
+          insertNL(NEWLINE)
+        }
       }
 
       // Join CASE + CLASS => CASECLASS, CASE + OBJECT => CASEOBJECT, SEMI + ELSE => ELSE

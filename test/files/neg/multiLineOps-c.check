@@ -1,0 +1,5 @@
+multiLineOps-c.scala:7: error: value ! is not a member of Unit
+possible cause: maybe a semicolon is missing before `value !`?
+    ! "hello".isEmpty  // error: value ! is not a member of Unit
+    ^
+1 error

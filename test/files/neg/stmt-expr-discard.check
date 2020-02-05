@@ -1,3 +1,15 @@
+stmt-expr-discard.scala:5: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    + 2
+    ^
+stmt-expr-discard.scala:6: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+    - 4
+    ^
 stmt-expr-discard.scala:5: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     + 2
     ^
@@ -5,5 +17,5 @@ stmt-expr-discard.scala:6: warning: a pure expression does nothing in statement 
     - 4
     ^
 error: No warnings can be incurred under -Werror.
-2 warnings
+4 warnings
 1 error

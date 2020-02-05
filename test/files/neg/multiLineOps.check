@@ -1,0 +1,6 @@
+multiLineOps.scala:6: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    +3 // error: Expected a toplevel definition
+    ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Ywarn-value-discard
+// scalac: -Werror -Xlint:deprecation -Ywarn-value-discard
 //
 
 trait T {

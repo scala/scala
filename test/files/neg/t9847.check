@@ -1,3 +1,15 @@
+t9847.scala:10: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+  + 1
+  ^
+t9847.scala:14: warning: Line starts with an operator that in future
+will be taken as an infix expression continued from the previous line.
+To force the previous interpretation as a separate statement,
+add an explicit `;`, add an empty line, or remove spaces after the operator.
+  + 1
+  ^
 t9847.scala:6: warning: discarded non-Unit value
   def f(): Unit = 42
                   ^
@@ -35,5 +47,5 @@ t9847.scala:24: warning: a pure expression does nothing in statement position; m
   class D { 42 ; 17 }
                  ^
 error: No warnings can be incurred under -Werror.
-12 warnings
+14 warnings
 1 error
