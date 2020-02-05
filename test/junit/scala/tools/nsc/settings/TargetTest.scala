@@ -13,23 +13,30 @@
 package scala.tools.nsc
 package settings
 
-import org.junit.{Assert, Test}
+import org.junit.{Assert, Test}, Assert.{assertEquals, assertFalse, assertTrue, fail}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+
+import scala.collection.mutable.ListBuffer
 
 @RunWith(classOf[JUnit4])
 class TargetTest {
 
   @Test def testSettingTargetSetting(): Unit = {
     def check(in: String, expect: String) = {
-      val settings = new Settings
-      settings.processArgumentString(in)
-      Assert.assertEquals(expect, settings.target.value)
+      val settings = new Settings(err => fail(s"Error output: $err"))
+      val (ok, _) = settings.processArgumentString(in)
+      assertTrue(ok)
+      assertEquals(expect, settings.target.value)
     }
     def checkFail(in: String) = {
-      val settings = new Settings
+      val messages = ListBuffer.empty[String]
+      val settings = new Settings(messages.addOne)
       val (ok, _) = settings.processArgumentString(in)
-      Assert.assertFalse(ok)
+      assertFalse(ok)
+      assertTrue(messages.nonEmpty)
+      assertEquals(2, messages.size)   // bad choice + bad option
+      assertTrue(messages.exists(_.startsWith("bad option")))
     }
 
     check("-target:jvm-1.8", "8")
@@ -50,8 +57,10 @@ class TargetTest {
     check("-target:jvm-12", "12")
     check("-target:12", "12")
 
-    checkFail("-target:jvm-13") // not yet...
-    checkFail("-target:msil") // really?
+    checkFail("-target:jvm-6")    // no longer
+    checkFail("-target:jvm-13")   // not yet...
+    checkFail("-target:jvm-3000") // not in our lifetime
+    checkFail("-target:msil")     // really?
 
   }
 
