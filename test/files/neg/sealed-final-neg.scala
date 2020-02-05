@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -opt:l:inline -opt-inline-from:** -opt-warnings
+// scalac: -Werror -opt:inline:** -Wopt
 //
 package neg1 {
   sealed abstract class Foo {

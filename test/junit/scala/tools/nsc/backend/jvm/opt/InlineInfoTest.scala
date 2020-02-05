@@ -18,7 +18,7 @@ class InlineInfoTest extends BytecodeTesting {
   import compiler._
   import global.genBCode.{bTypes, postProcessor}
 
-  override def compilerArgs = "-opt:l:inline -opt-inline-from:**"
+  override def compilerArgs = "-opt:inline:**"
 
   compiler.keepPerRunCachesAfterRun(List(
     JavaClearable.forMap(bTypes.classBTypeCache),

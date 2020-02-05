@@ -18,7 +18,7 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerTest extends BytecodeTesting {
-  override def compilerArgs = "-opt:l:inline -opt-inline-from:** -opt-warnings"
+  override def compilerArgs = "-opt:all -opt:inline:** -Wopt"
 
   val inlineOnlyCompiler = cached("inlineOnlyCompiler", () => newCompiler(extraArgs = "-opt:inline -opt-inline-from:**"))
 

@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:** -opt-warnings -Werror
+// scalac: -opt:inline:** -Wopt -Werror
 package test
 
 object A {

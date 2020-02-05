@@ -10,7 +10,7 @@ import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class InlinerSeparateCompilationTest {
-  val args = "-opt:l:inline -opt-inline-from:**"
+  val args = "-opt:inline:**"
 
   @Test
   def inlineMixedinMember(): Unit = {

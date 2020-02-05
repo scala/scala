@@ -1,5 +1,5 @@
 //
-// scalac: -Werror -opt:l:inline -opt-inline-from:'**' -opt-warnings:none,_
+// scalac: -Werror -opt:all -opt:inline:** -Wopt:none,_
 //
 // compare -opt-warnings:none,at-inline-failed-summary
 

@@ -15,9 +15,10 @@ import scala.tools.testkit.BytecodeTesting._
 class InlineSourceMatcherTest extends BytecodeTesting {
   import compiler._
 
-  override def compilerArgs = "-opt:l:inline -opt-warnings"
+  override def compilerArgs = "-opt:inline -Wopt"
   def setInlineFrom(s: String): Unit = {
-    global.settings.optInlineFrom.value = s.split(':').toList
+    //global.settings.optInlineFrom.value = s.split(':').toList
+    global.settings.optChoices.inline.selections = s.split(':').toList
   }
 
   case class E(regex: String, negated: Boolean = false, terminal: Boolean = true)

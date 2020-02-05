@@ -14,7 +14,7 @@ import Opcodes._
 // By its nature the test can only work on JDK 8+ because under JDK 7- the
 // interface won't verify.
 object Test extends DirectTest {
-  override def extraSettings: String = s"-opt:l:inline -opt-inline-from:** -usejavacp -cp ${testOutput.path}"
+  override def extraSettings: String = s"-opt:inline:** -usejavacp -cp ${testOutput.path}"
 
   def generateInterface(): Unit = {
     val interfaceName =  "HasDefaultMethod"

@@ -36,7 +36,7 @@ object Test extends DirectTest {
 
     // If inlining fails, the compiler will issue an inliner warning that is not present in the
     // check file
-    compileString(newCompiler("-cp", testOutput.path, "-opt:l:inline", "-opt-inline-from:**"))(bCode)
+    compileString(newCompiler("-cp", testOutput.path, "-opt:inline:**"))(bCode)
   }
 
   def readClass(file: String) = {

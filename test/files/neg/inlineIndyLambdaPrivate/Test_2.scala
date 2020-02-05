@@ -1,4 +1,4 @@
-// scalac: -opt:l:inline -opt-inline-from:** -Yopt-inline-heuristics:everything -opt-warnings:_ -Werror
+// scalac: -opt:all -opt:inline:** -Yopt-inline-heuristics:everything -Wopt:_ -Werror
 class Test {
   def foo = A_1.test
 }
