@@ -1011,7 +1011,7 @@ lazy val root: Project = (project in file("."))
         partestDesc("res scalap specialized"),
         partestDesc("instrumented presentation"),
         partestDesc("--srcpath scaladoc"),
-        partestDesc("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot"),
+        partestDesc("--srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
