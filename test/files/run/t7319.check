@@ -15,7 +15,7 @@ def convert[F[X <: F[X]]](builder: F[_ <: F[_]]): Int
 
 scala> convert(Some[Int](0))
        ^
-       error: no type parameters for method convert: (builder: F[_ <: F[_]])Int exist so that it can be applied to arguments (Some[Int])
+       error: no type parameters for method convert: (builder: F[_ <: F[_]]): Int exist so that it can be applied to arguments (Some[Int])
         --- because ---
        argument expression's type is not compatible with formal parameter type;
         found   : Some[Int]

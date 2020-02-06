@@ -1,4 +1,4 @@
-t10514.scala:8: error: no type parameters for constructor Foo: (value: F[C[G[Foo[F,G]]]])Foo[F,G] exist so that it can be applied to arguments (Some[C[Foo[Option,Test.this.Id]]])
+t10514.scala:8: error: no type parameters for constructor Foo: (value: F[C[G[Foo[F,G]]]]): Foo[F,G] exist so that it can be applied to arguments (Some[C[Foo[Option,Test.this.Id]]])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : Some[C[Foo[Option,Test.this.Id]]]

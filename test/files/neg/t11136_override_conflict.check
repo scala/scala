@@ -1,29 +1,29 @@
 t11136_override_conflict.scala:99: error: incompatible type in overriding
 def empty: Qu[A] (defined in trait ArDqOps)
   with def empty: ArDq[A] (defined in class ArDq);
- found   : => ArDq[A]
- required: => Qu[A]
+ found   : ArDq[A]
+ required: Qu[A]
 class Qu[A] extends ArDq[A]
       ^
 t11136_override_conflict.scala:110: error: incompatible type in overriding
 def empty: Qu[A] (defined in trait ArDqOps)
   with def empty: ArDq[A] (defined in class ArDq);
- found   : => ArDq[A]
- required: => Qu[A]
+ found   : ArDq[A]
+ required: Qu[A]
   override def from[A](source: It[A]): Qu[A] = new Qu[A]{}
                                                    ^
 t11136_override_conflict.scala:111: error: incompatible type in overriding
 def empty: Qu[A] (defined in trait ArDqOps)
   with def empty: ArDq[A] (defined in class ArDq);
- found   : => ArDq[A]
- required: => Qu[A]
+ found   : ArDq[A]
+ required: Qu[A]
   override def newBuilder[A]: Bldr[A, Qu[A]] = new Bldr[A, Qu[A]] { def result(): Qu[A] = new Qu[A]{} }
                                                                                               ^
 t11136_override_conflict.scala:120: error: incompatible type in overriding
 def empty: Qu[String] (defined in trait ArDqOps)
   with def empty: ArDq[String] (defined in class ArDq);
- found   : => ArDq[String]
- required: => Qu[String]
+ found   : ArDq[String]
+ required: Qu[String]
     (new Qu[String]{}: ArDqOps[String, Qu, Qu[String]]).empty.bazza
          ^
 4 errors

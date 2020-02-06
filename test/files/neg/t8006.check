@@ -1,4 +1,4 @@
-t8006.scala:3: error: too many arguments (2) for method applyDynamicNamed: (value: (String, Any))String
+t8006.scala:3: error: too many arguments (2) for method applyDynamicNamed: (value: (String, Any)): String
 error after rewriting to X.this.d.applyDynamicNamed("meth")(scala.Tuple2("value1", 10), scala.Tuple2("value2", 100))
 possible cause: maybe a wrong Dynamic method signature?
   d.meth(value1 = 10, value2 = 100) // two arguments here, but only one is allowed

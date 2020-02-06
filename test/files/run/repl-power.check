@@ -15,7 +15,7 @@ warning: 1 feature warning; for details, enable `:setting -feature' or `:replay 
 val tp: $r.global.Type = Array[scala.util.Random]
 
 scala> tp.memberType(Array_apply)                // evidence
-val res1: $r.global.Type = (i: Int)scala.util.Random
+val res1: $r.global.Type = (i: Int): scala.util.Random
 
 scala> val m = LIT(10)                           // treedsl
 val m: $r.treedsl.global.Literal = 10

@@ -1,31 +1,31 @@
 t2066.scala:6: error: incompatible type in overriding
 def f[T[_]]: Unit (defined in trait A1);
- found   : [T[+_]]=> Unit
- required: [T[_]]=> Unit
+ found   : [T[+_]]Unit
+ required: [T[_]]Unit
   override def f[T[+_]] = ()
                ^
 t2066.scala:10: error: incompatible type in overriding
 def f[T[_]]: Unit (defined in trait A1);
- found   : [T[-_]]=> Unit
- required: [T[_]]=> Unit
+ found   : [T[-_]]Unit
+ required: [T[_]]Unit
   override def f[T[-_]] = ()
                ^
 t2066.scala:23: error: incompatible type in overriding
 def f[T[+_]]: Unit (defined in trait A2);
- found   : [T[-_]]=> Unit
- required: [T[+_]]=> Unit
+ found   : [T[-_]]Unit
+ required: [T[+_]]Unit
   override def f[T[-_]] = ()
                ^
 t2066.scala:45: error: incompatible type in overriding
 def f[T[X[+_]]]: Unit (defined in trait A4);
- found   : [T[X[_]]]=> Unit
- required: [T[X[+_]]]=> Unit
+ found   : [T[X[_]]]Unit
+ required: [T[X[+_]]]Unit
   override def f[T[X[_]]] = ()
                ^
 t2066.scala:53: error: incompatible type in overriding
 def f[T[X[-_]]]: Unit (defined in trait A5);
- found   : [T[X[_]]]=> Unit
- required: [T[X[-_]]]=> Unit
+ found   : [T[X[_]]]Unit
+ required: [T[X[-_]]]Unit
   override def f[T[X[_]]] = ()
                ^
 5 errors

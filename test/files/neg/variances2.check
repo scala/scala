@@ -4,10 +4,10 @@ variances2.scala:9: error: covariant type B occurs in contravariant position in 
 variances2.scala:12: error: covariant type E occurs in contravariant position in type E of value x
     def f4(x: E): Unit = ()
            ^
-variances2.scala:15: error: contravariant type A occurs in covariant position in type ()A of method f6
+variances2.scala:15: error: contravariant type A occurs in covariant position in type (): A of method f6
     def f6(): A = ???
         ^
-variances2.scala:18: error: contravariant type D occurs in covariant position in type ()D of method f9
+variances2.scala:18: error: contravariant type D occurs in covariant position in type (): D of method f9
     def f9(): D = ???
         ^
 variances2.scala:22: error: contravariant type A occurs in covariant position in type A => A of value f
@@ -70,73 +70,73 @@ variances2.scala:53: error: covariant type B occurs in contravariant position in
 variances2.scala:56: error: covariant type E occurs in contravariant position in type F => E of value f
     def f46(f: F => E): Unit = ()
             ^
-variances2.scala:59: error: contravariant type A occurs in covariant position in type ()A => A of method f48
+variances2.scala:59: error: contravariant type A occurs in covariant position in type (): A => A of method f48
     def f48(): A => A = null
         ^
-variances2.scala:62: error: contravariant type D occurs in covariant position in type ()A => D of method f51
+variances2.scala:62: error: contravariant type D occurs in covariant position in type (): A => D of method f51
     def f51(): A => D = null
         ^
-variances2.scala:65: error: covariant type B occurs in contravariant position in type ()B => A of method f54
+variances2.scala:65: error: covariant type B occurs in contravariant position in type (): B => A of method f54
     def f54(): B => A = null
         ^
-variances2.scala:66: error: covariant type B occurs in contravariant position in type ()B => B of method f55
+variances2.scala:66: error: covariant type B occurs in contravariant position in type (): B => B of method f55
     def f55(): B => B = null
         ^
-variances2.scala:67: error: covariant type B occurs in contravariant position in type ()B => C of method f56
+variances2.scala:67: error: covariant type B occurs in contravariant position in type (): B => C of method f56
     def f56(): B => C = null
         ^
-variances2.scala:68: error: covariant type B occurs in contravariant position in type ()B => D of method f57
+variances2.scala:68: error: covariant type B occurs in contravariant position in type (): B => D of method f57
     def f57(): B => D = null
         ^
-variances2.scala:69: error: covariant type B occurs in contravariant position in type ()B => E of method f58
+variances2.scala:69: error: covariant type B occurs in contravariant position in type (): B => E of method f58
     def f58(): B => E = null
         ^
-variances2.scala:70: error: covariant type B occurs in contravariant position in type ()B => F of method f59
+variances2.scala:70: error: covariant type B occurs in contravariant position in type (): B => F of method f59
     def f59(): B => F = null
         ^
-variances2.scala:71: error: contravariant type A occurs in covariant position in type ()C => A of method f60
+variances2.scala:71: error: contravariant type A occurs in covariant position in type (): C => A of method f60
     def f60(): C => A = null
         ^
-variances2.scala:74: error: contravariant type D occurs in covariant position in type ()C => D of method f63
+variances2.scala:74: error: contravariant type D occurs in covariant position in type (): C => D of method f63
     def f63(): C => D = null
         ^
-variances2.scala:77: error: contravariant type A occurs in covariant position in type ()D => A of method f66
+variances2.scala:77: error: contravariant type A occurs in covariant position in type (): D => A of method f66
     def f66(): D => A = null
         ^
-variances2.scala:80: error: contravariant type D occurs in covariant position in type ()D => D of method f69
+variances2.scala:80: error: contravariant type D occurs in covariant position in type (): D => D of method f69
     def f69(): D => D = null
         ^
-variances2.scala:83: error: covariant type E occurs in contravariant position in type ()E => A of method f72
+variances2.scala:83: error: covariant type E occurs in contravariant position in type (): E => A of method f72
     def f72(): E => A = null
         ^
-variances2.scala:84: error: covariant type E occurs in contravariant position in type ()E => B of method f73
+variances2.scala:84: error: covariant type E occurs in contravariant position in type (): E => B of method f73
     def f73(): E => B = null
         ^
-variances2.scala:85: error: covariant type E occurs in contravariant position in type ()E => C of method f74
+variances2.scala:85: error: covariant type E occurs in contravariant position in type (): E => C of method f74
     def f74(): E => C = null
         ^
-variances2.scala:86: error: covariant type E occurs in contravariant position in type ()E => D of method f75
+variances2.scala:86: error: covariant type E occurs in contravariant position in type (): E => D of method f75
     def f75(): E => D = null
         ^
-variances2.scala:87: error: covariant type E occurs in contravariant position in type ()E => E of method f76
+variances2.scala:87: error: covariant type E occurs in contravariant position in type (): E => E of method f76
     def f76(): E => E = null
         ^
-variances2.scala:88: error: covariant type E occurs in contravariant position in type ()E => F of method f77
+variances2.scala:88: error: covariant type E occurs in contravariant position in type (): E => F of method f77
     def f77(): E => F = null
         ^
-variances2.scala:89: error: contravariant type A occurs in covariant position in type ()F => A of method f78
+variances2.scala:89: error: contravariant type A occurs in covariant position in type (): F => A of method f78
     def f78(): F => A = null
         ^
-variances2.scala:92: error: contravariant type D occurs in covariant position in type ()F => D of method f81
+variances2.scala:92: error: contravariant type D occurs in covariant position in type (): F => D of method f81
     def f81(): F => D = null
         ^
-variances2.scala:96: error: contravariant type A occurs in covariant position in type (x: A)A of method f84
+variances2.scala:96: error: contravariant type A occurs in covariant position in type (x: A): A of method f84
     def f84(x: A): A = ???
         ^
-variances2.scala:99: error: contravariant type D occurs in covariant position in type (x: A)D of method f87
+variances2.scala:99: error: contravariant type D occurs in covariant position in type (x: A): D of method f87
     def f87(x: A): D = ???
         ^
-variances2.scala:102: error: contravariant type A occurs in covariant position in type (x: B)A of method f90
+variances2.scala:102: error: contravariant type A occurs in covariant position in type (x: B): A of method f90
     def f90(x: B): A = ???
         ^
 variances2.scala:102: error: covariant type B occurs in contravariant position in type B of value x
@@ -148,7 +148,7 @@ variances2.scala:103: error: covariant type B occurs in contravariant position i
 variances2.scala:104: error: covariant type B occurs in contravariant position in type B of value x
     def f92(x: B): C = ???
             ^
-variances2.scala:105: error: contravariant type D occurs in covariant position in type (x: B)D of method f93
+variances2.scala:105: error: contravariant type D occurs in covariant position in type (x: B): D of method f93
     def f93(x: B): D = ???
         ^
 variances2.scala:105: error: covariant type B occurs in contravariant position in type B of value x
@@ -160,19 +160,19 @@ variances2.scala:106: error: covariant type B occurs in contravariant position i
 variances2.scala:107: error: covariant type B occurs in contravariant position in type B of value x
     def f95(x: B): F = ???
             ^
-variances2.scala:108: error: contravariant type A occurs in covariant position in type (x: C)A of method f96
+variances2.scala:108: error: contravariant type A occurs in covariant position in type (x: C): A of method f96
     def f96(x: C): A = ???
         ^
-variances2.scala:111: error: contravariant type D occurs in covariant position in type (x: C)D of method f99
+variances2.scala:111: error: contravariant type D occurs in covariant position in type (x: C): D of method f99
     def f99(x: C): D = ???
         ^
-variances2.scala:114: error: contravariant type A occurs in covariant position in type (x: D)A of method f102
+variances2.scala:114: error: contravariant type A occurs in covariant position in type (x: D): A of method f102
     def f102(x: D): A = ???
         ^
-variances2.scala:117: error: contravariant type D occurs in covariant position in type (x: D)D of method f105
+variances2.scala:117: error: contravariant type D occurs in covariant position in type (x: D): D of method f105
     def f105(x: D): D = ???
         ^
-variances2.scala:120: error: contravariant type A occurs in covariant position in type (x: E)A of method f108
+variances2.scala:120: error: contravariant type A occurs in covariant position in type (x: E): A of method f108
     def f108(x: E): A = ???
         ^
 variances2.scala:120: error: covariant type E occurs in contravariant position in type E of value x
@@ -184,7 +184,7 @@ variances2.scala:121: error: covariant type E occurs in contravariant position i
 variances2.scala:122: error: covariant type E occurs in contravariant position in type E of value x
     def f110(x: E): C = ???
              ^
-variances2.scala:123: error: contravariant type D occurs in covariant position in type (x: E)D of method f111
+variances2.scala:123: error: contravariant type D occurs in covariant position in type (x: E): D of method f111
     def f111(x: E): D = ???
         ^
 variances2.scala:123: error: covariant type E occurs in contravariant position in type E of value x
@@ -196,10 +196,10 @@ variances2.scala:124: error: covariant type E occurs in contravariant position i
 variances2.scala:125: error: covariant type E occurs in contravariant position in type E of value x
     def f113(x: E): F = ???
              ^
-variances2.scala:126: error: contravariant type A occurs in covariant position in type (x: F)A of method f114
+variances2.scala:126: error: contravariant type A occurs in covariant position in type (x: F): A of method f114
     def f114(x: F): A = ???
         ^
-variances2.scala:129: error: contravariant type D occurs in covariant position in type (x: F)D of method f117
+variances2.scala:129: error: contravariant type D occurs in covariant position in type (x: F): D of method f117
     def f117(x: F): D = ???
         ^
 variances2.scala:133: error: contravariant type A occurs in covariant position in supertype Cov[A] of object O1

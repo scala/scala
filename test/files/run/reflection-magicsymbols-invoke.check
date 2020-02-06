@@ -2,15 +2,15 @@
 Any
 it's important to print the list of Any's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
-method !=: (x$1: Any)Boolean
-method ##: ()Int
-method ==: (x$1: Any)Boolean
-method asInstanceOf: [T0]=> T0
-method equals: (x$1: Any)Boolean
-method getClass: ()Class[_]
-method hashCode: ()Int
-method isInstanceOf: [T0]=> Boolean
-method toString: ()String
+method !=: (x$1: Any): Boolean
+method ##: (): Int
+method ==: (x$1: Any): Boolean
+method asInstanceOf: [T0]T0
+method equals: (x$1: Any): Boolean
+method getClass: (): Class[_]
+method hashCode: (): Int
+method isInstanceOf: [T0]Boolean
+method toString: (): String
 testing Any.!=: false
 testing Any.##: 50
 testing Any.==: true
@@ -26,36 +26,36 @@ testing Any.toString: 2
 AnyVal
 it's important to print the list of AnyVal's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
-constructor AnyVal: ()AnyVal
-method getClass: ()Class[_ <: AnyVal]
+constructor AnyVal: (): AnyVal
+method getClass: (): Class[_ <: AnyVal]
 testing AnyVal.<init>: class scala.ScalaReflectionException: unsupported symbol constructor AnyVal when invoking bytecodeless method mirror for def <init>(): AnyVal (bound to null)
 testing AnyVal.getClass: class scala.ScalaReflectionException: expected a member of class Integer, you provided method scala.AnyVal.getClass
 ============
 AnyRef
 it's important to print the list of AnyRef's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
-constructor Object: ()Object
-method !=: (x$1: Any)Boolean
-method ##: ()Int
-method $asInstanceOf: [T0]()T0
-method $isInstanceOf: [T0]()Boolean
-method ==: (x$1: Any)Boolean
-method asInstanceOf: [T0]=> T0
-method clone: ()Object
-method eq: (x$1: AnyRef)Boolean
-method equals: (x$1: Object)Boolean
-method finalize: ()Unit
-method getClass: ()Class[_]
-method hashCode: ()Int
-method isInstanceOf: [T0]=> Boolean
-method ne: (x$1: AnyRef)Boolean
-method notify: ()Unit
-method notifyAll: ()Unit
-method synchronized: [T0](x$1: T0)T0
-method toString: ()String
-method wait: ()Unit
-method wait: (x$1: Long)Unit
-method wait: (x$1: Long, x$2: Int)Unit
+constructor Object: (): Object
+method !=: (x$1: Any): Boolean
+method ##: (): Int
+method $asInstanceOf: [T0](): T0
+method $isInstanceOf: [T0](): Boolean
+method ==: (x$1: Any): Boolean
+method asInstanceOf: [T0]T0
+method clone: (): Object
+method eq: (x$1: AnyRef): Boolean
+method equals: (x$1: Object): Boolean
+method finalize: (): Unit
+method getClass: (): Class[_]
+method hashCode: (): Int
+method isInstanceOf: [T0]Boolean
+method ne: (x$1: AnyRef): Boolean
+method notify: (): Unit
+method notifyAll: (): Unit
+method synchronized: [T0](x$1: T0): T0
+method toString: (): String
+method wait: (): Unit
+method wait: (x$1: Long): Unit
+method wait: (x$1: Long, x$2: Int): Unit
 testing Object.!=: false
 testing Object.##: 50
 testing Object.$asInstanceOf: class scala.ScalaReflectionException: AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors
@@ -79,31 +79,31 @@ TODO: also test AnyRef.wait overloads
 Array
 it's important to print the list of Array's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
-constructor Array: (_length: Int)Array[T]
-method !=: (x$1: Any)Boolean
-method ##: ()Int
-method $asInstanceOf: [T0]()T0
-method $isInstanceOf: [T0]()Boolean
-method ==: (x$1: Any)Boolean
-method apply: (i: Int)T
-method asInstanceOf: [T0]=> T0
-method clone: ()Array[T]
-method eq: (x$1: AnyRef)Boolean
-method equals: (x$1: Object)Boolean
-method finalize: ()Unit
-method getClass: ()Class[_]
-method hashCode: ()Int
-method isInstanceOf: [T0]=> Boolean
-method length: => Int
-method ne: (x$1: AnyRef)Boolean
-method notify: ()Unit
-method notifyAll: ()Unit
-method synchronized: [T0](x$1: T0)T0
-method toString: ()String
-method update: (i: Int, x: T)Unit
-method wait: ()Unit
-method wait: (x$1: Long)Unit
-method wait: (x$1: Long, x$2: Int)Unit
+constructor Array: (_length: Int): Array[T]
+method !=: (x$1: Any): Boolean
+method ##: (): Int
+method $asInstanceOf: [T0](): T0
+method $isInstanceOf: [T0](): Boolean
+method ==: (x$1: Any): Boolean
+method apply: (i: Int): T
+method asInstanceOf: [T0]T0
+method clone: (): Array[T]
+method eq: (x$1: AnyRef): Boolean
+method equals: (x$1: Object): Boolean
+method finalize: (): Unit
+method getClass: (): Class[_]
+method hashCode: (): Int
+method isInstanceOf: [T0]Boolean
+method length: Int
+method ne: (x$1: AnyRef): Boolean
+method notify: (): Unit
+method notifyAll: (): Unit
+method synchronized: [T0](x$1: T0): T0
+method toString: (): String
+method update: (i: Int, x: T): Unit
+method wait: (): Unit
+method wait: (x$1: Long): Unit
+method wait: (x$1: Long, x$2: Int): Unit
 value _length: Int
 testing Array.length: 2
 testing Array.apply: 1

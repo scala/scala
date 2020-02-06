@@ -1,4 +1,4 @@
-t2712-8.scala:9: error: no type parameters for method foo: (x: D[D[Boolean]])Nothing exist so that it can be applied to arguments (Test.Quux[Int])
+t2712-8.scala:9: error: no type parameters for method foo: (x: D[D[Boolean]]): Nothing exist so that it can be applied to arguments (Test.Quux[Int])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : Test.Quux[Int]

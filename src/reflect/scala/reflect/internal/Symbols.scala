@@ -2817,10 +2817,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       keyString,
       varianceString + nameString + infoString + flagsExplanationString
     )
+
     /** String representation of symbol's definition.  It uses the
      *  symbol's raw info to avoid forcing types.
      */
     def defString = defStringCompose(signatureString)
+
+    def defStringWithoutImplicit = compose(
+      keyString,
+      varianceString + nameString + signatureString + flagsExplanationString
+    )
 
     /** String representation of symbol's definition, using the supplied
      *  info rather than the symbol's.

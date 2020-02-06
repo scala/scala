@@ -91,7 +91,7 @@ askType at CallccInterpreter.scala(50,30)
 ================================================================================
 [response] askTypeAt (50,30)
 def add(a: callccInterpreter.Value, b: callccInterpreter.Value): callccInterpreter.M[_ >: callccInterpreter.Num with callccInterpreter.Wrong.type <: Product with callccInterpreter.Value with java.io.Serializable] = scala.Tuple2.apply[callccInterpreter.Value, callccInterpreter.Value](a, b) match {
-  case (_1: callccInterpreter.Value, _2: callccInterpreter.Value)(callccInterpreter.Value, callccInterpreter.Value)((n: Int)callccInterpreter.Num((m @ _)), (n: Int)callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
+  case (_1: callccInterpreter.Value, _2: callccInterpreter.Value): (callccInterpreter.Value, callccInterpreter.Value)((n: Int): callccInterpreter.Num((m @ _)), (n: Int): callccInterpreter.Num((n @ _))) => this.unitM[callccInterpreter.Num](callccInterpreter.this.Num.apply(m.+(n)))
   case _ => callccInterpreter.this.unitM[callccInterpreter.Wrong.type](callccInterpreter.this.Wrong)
 }
 ================================================================================

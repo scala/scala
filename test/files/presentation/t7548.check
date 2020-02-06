@@ -1,1 +1,1 @@
-(x: Int)Unit
+(x: Int): Unit

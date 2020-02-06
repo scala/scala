@@ -1,7 +1,7 @@
 t8323.scala:5: error: double definition:
 def f(x: "Bippy"): String at line 4 and
 def f(x: "Dingo"): String at line 5
-have same type after erasure: (x: String)String
+have same type after erasure: (x: String): String
   def f(x: b.type) = x
       ^
 1 error

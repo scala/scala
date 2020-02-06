@@ -43,13 +43,13 @@ lazy val lazyvalue: Int (defined in class A)
 t5429.scala:37: error: incompatible type in overriding
 def nullary: Int (defined in class A);
  found   : C.this.nullary.type
- required: => Int
+ required: Int
   override object nullary   // fail
                   ^
 t5429.scala:38: error: incompatible type in overriding
 def emptyArg(): Int (defined in class A);
  found   : C.this.emptyArg.type
- required: ()Int
+ required: (): Int
   override object emptyArg  // fail
                   ^
 t5429.scala:39: error: object oneArg overrides nothing.

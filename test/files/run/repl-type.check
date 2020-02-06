@@ -27,7 +27,7 @@ scala> def xx: 23 = 23
 def xx: 23
 
 scala> :type xx
-=> 23
+23
 
 scala> final val yy = xx
 val yy: 23 = 23

@@ -5,7 +5,7 @@ isProtected = false
 isPublic = false
 privateWithin = package foo
 ============
-sym = constructor PackagePrivateJavaClass, signature = (x$1: Int, x$2: Int)foo.PackagePrivateJavaClass, owner = class PackagePrivateJavaClass
+sym = constructor PackagePrivateJavaClass, signature = (x$1: Int, x$2: Int): foo.PackagePrivateJavaClass, owner = class PackagePrivateJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -17,7 +17,7 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
-sym = method privateMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method privateMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = true
 isProtected = false
 isPublic = false
@@ -29,7 +29,7 @@ isProtected = true
 isPublic = false
 privateWithin = package foo
 ============
-sym = method protectedMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method protectedMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = false
 isProtected = true
 isPublic = false
@@ -41,7 +41,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-sym = method publicMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method publicMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -59,7 +59,7 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
-sym = method privateStaticMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method privateStaticMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = true
 isProtected = false
 isPublic = false
@@ -71,7 +71,7 @@ isProtected = true
 isPublic = false
 privateWithin = package foo
 ============
-sym = method protectedStaticMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method protectedStaticMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = false
 isProtected = true
 isPublic = false
@@ -83,7 +83,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-sym = method publicStaticMethod, signature = ()Unit, owner = class PackagePrivateJavaClass
+sym = method publicStaticMethod, signature = (): Unit, owner = class PackagePrivateJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -101,7 +101,7 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
-sym = constructor $PrivateJavaClass, signature = ()JavaClass_1.this.$PrivateJavaClass, owner = class $PrivateJavaClass
+sym = constructor $PrivateJavaClass, signature = (): JavaClass_1.this.$PrivateJavaClass, owner = class $PrivateJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -125,7 +125,7 @@ isProtected = true
 isPublic = false
 privateWithin = package foo
 ============
-sym = constructor $ProtectedJavaClass, signature = ()JavaClass_1.this.$ProtectedJavaClass, owner = class $ProtectedJavaClass
+sym = constructor $ProtectedJavaClass, signature = (): JavaClass_1.this.$ProtectedJavaClass, owner = class $ProtectedJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -149,7 +149,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-sym = constructor $PublicJavaClass, signature = (x$1: foo.JavaClass_1)JavaClass_1.this.$PublicJavaClass, owner = class $PublicJavaClass
+sym = constructor $PublicJavaClass, signature = (x$1: foo.JavaClass_1): JavaClass_1.this.$PublicJavaClass, owner = class $PublicJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -167,7 +167,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-sym = constructor JavaClass_1, signature = ()foo.JavaClass_1, owner = class JavaClass_1
+sym = constructor JavaClass_1, signature = (): foo.JavaClass_1, owner = class JavaClass_1
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -185,7 +185,7 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
-sym = constructor PrivateStaticJavaClass, signature = ()foo.JavaClass_1.PrivateStaticJavaClass, owner = class PrivateStaticJavaClass
+sym = constructor PrivateStaticJavaClass, signature = (): foo.JavaClass_1.PrivateStaticJavaClass, owner = class PrivateStaticJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -203,7 +203,7 @@ isProtected = false
 isPublic = false
 privateWithin = <none>
 ============
-sym = constructor ProtectedStaticJavaClass, signature = ()foo.JavaClass_1.ProtectedStaticJavaClass, owner = class ProtectedStaticJavaClass
+sym = constructor ProtectedStaticJavaClass, signature = (): foo.JavaClass_1.ProtectedStaticJavaClass, owner = class ProtectedStaticJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true
@@ -221,7 +221,7 @@ isProtected = false
 isPublic = true
 privateWithin = <none>
 ============
-sym = constructor PublicStaticJavaClass, signature = ()foo.JavaClass_1.PublicStaticJavaClass, owner = class PublicStaticJavaClass
+sym = constructor PublicStaticJavaClass, signature = (): foo.JavaClass_1.PublicStaticJavaClass, owner = class PublicStaticJavaClass
 isPrivate = false
 isProtected = false
 isPublic = true

@@ -6,8 +6,8 @@ val f2: 4 (defined in trait Overridden);
                ^
 sip23-override.scala:28: error: incompatible type in overriding
 def f5: 4 (defined in trait Overridden);
- found   : => 5
- required: => 4
+ found   : 5
+ required: 4
   override def f5: 5 = 5
                ^
 2 errors

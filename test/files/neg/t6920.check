@@ -1,4 +1,4 @@
-t6920.scala:9: error: too many arguments (2) for method applyDynamicNamed: (values: Seq[(String, Any)])String
+t6920.scala:9: error: too many arguments (2) for method applyDynamicNamed: (values: Seq[(String, Any)]): String
 error after rewriting to CompilerError.this.test.applyDynamicNamed("crushTheCompiler")(scala.Tuple2("a", 1), scala.Tuple2("b", 2))
 possible cause: maybe a wrong Dynamic method signature?
   test.crushTheCompiler(a = 1, b = 2)

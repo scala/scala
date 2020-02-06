@@ -45,26 +45,26 @@ names-defaults-neg.scala:28: error: Int does not take parameters
   test3(b = 3, a = 1)(3)
                      ^
 names-defaults-neg.scala:37: error: ambiguous reference to overloaded definition,
-both method f in object t1 of type (b: String, a: Int)String
-and  method f in object t1 of type (a: Int, b: String)String
+both method f in object t1 of type (b: String, a: Int): String
+and  method f in object t1 of type (a: Int, b: String): String
 match argument types (b: String,a: Int)
   t1.f(b = "dkljf", a = 1)
      ^
 names-defaults-neg.scala:44: error: ambiguous reference to overloaded definition,
-both method f in object t3 of type (a2: Int)(b: Int)String
-and  method f in object t3 of type (a1: Int)String
+both method f in object t3 of type (a2: Int)(b: Int): String
+and  method f in object t3 of type (a1: Int): String
 match argument types (Int)
   t3.f(1)
      ^
 names-defaults-neg.scala:45: error: ambiguous reference to overloaded definition,
-both method f in object t3 of type (a2: Int)(b: Int)String
-and  method f in object t3 of type (a1: Int)String
+both method f in object t3 of type (a2: Int)(b: Int): String
+and  method f in object t3 of type (a1: Int): String
 match argument types (Int)
   t3.f(1)(2)
      ^
 names-defaults-neg.scala:51: error: ambiguous reference to overloaded definition,
-both method g in object t7 of type (a: B)String
-and  method g in object t7 of type (a: C, b: Int*)String
+both method g in object t7 of type (a: B): String
+and  method g in object t7 of type (a: C, b: Int*): String
 match argument types (C)
   t7.g(new C()) // ambiguous reference
      ^
@@ -78,19 +78,19 @@ names-defaults-neg.scala:57: error: when using named arguments, the vararg param
   test5(b = "dlkj")
        ^
 names-defaults-neg.scala:63: error: ambiguous reference to overloaded definition,
-both method f in object t8 of type (b: String, a: Int)String
-and  method f in object t8 of type (a: Int, b: Object)String
+both method f in object t8 of type (b: String, a: Int): String
+and  method f in object t8 of type (a: Int, b: Object): String
 match argument types (a: Int,b: String) and expected result type Any
   println(t8.f(a = 0, b = "1")) // ambiguous reference
              ^
-names-defaults-neg.scala:67: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*)Fact in object Fact.
+names-defaults-neg.scala:67: error: not enough arguments for method apply: (a: Int, b: String)(c: Int*): Fact in object Fact.
 Unspecified value parameter b.
   val fac = Fact(1)(2, 3)
                 ^
 names-defaults-neg.scala:71: error: wrong number of arguments for pattern A1(x: Int, y: String)
   A1() match { case A1(_) => () }
                       ^
-names-defaults-neg.scala:78: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]])T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])
+names-defaults-neg.scala:78: error: no type parameters for method test4: (x: T[T[List[T[X forSome { type X }]]]]): T[T[List[T[X forSome { type X }]]]] exist so that it can be applied to arguments (List[Int])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[Int]

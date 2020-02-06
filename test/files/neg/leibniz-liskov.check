@@ -16,7 +16,7 @@ leibniz-liskov.scala:13: error: Cannot prove that LeibnizLiskov.this.SA <:< Leib
 leibniz-liskov.scala:14: error: Cannot prove that LeibnizLiskov.this.A <:< LeibnizLiskov.this.SB.
   implicitly[A <:< SB]
             ^
-leibniz-liskov.scala:18: error: no type parameters for method substituteCo: (ff: F[LeibnizLiskov.this.A])F[LeibnizLiskov.this.B] exist so that it can be applied to arguments (List[LeibnizLiskov.this.B])
+leibniz-liskov.scala:18: error: no type parameters for method substituteCo: (ff: F[LeibnizLiskov.this.A]): F[LeibnizLiskov.this.B] exist so that it can be applied to arguments (List[LeibnizLiskov.this.B])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[LeibnizLiskov.this.B]
@@ -28,7 +28,7 @@ leibniz-liskov.scala:18: error: type mismatch;
  required: F[LeibnizLiskov.this.A]
   aEqB.substituteCo    (List(B(), B(), B()))
                             ^
-leibniz-liskov.scala:19: error: no type parameters for method substituteContra: (ft: F[LeibnizLiskov.this.B])F[LeibnizLiskov.this.A] exist so that it can be applied to arguments (List[LeibnizLiskov.this.A])
+leibniz-liskov.scala:19: error: no type parameters for method substituteContra: (ft: F[LeibnizLiskov.this.B]): F[LeibnizLiskov.this.A] exist so that it can be applied to arguments (List[LeibnizLiskov.this.A])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[LeibnizLiskov.this.A]
@@ -43,7 +43,7 @@ leibniz-liskov.scala:19: error: type mismatch;
 leibniz-liskov.scala:20: error: Cannot prove that xs.type <:< List[LeibnizLiskov.this.B].
   locally { val xs = aEqB.flip.liftCo[List](List(B(), B(), B())); implicitly[xs.type <:< List[B]] }
                                                                             ^
-leibniz-liskov.scala:21: error: no type parameters for method substituteContra: (ft: F[U])F[T] exist so that it can be applied to arguments (List[T])
+leibniz-liskov.scala:21: error: no type parameters for method substituteContra: (ft: F[U]): F[T] exist so that it can be applied to arguments (List[T])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[T]
@@ -60,7 +60,7 @@ leibniz-liskov.scala:21: error: type mismatch;
  required: List[U]
   def convert1[T, U](l: List[T])(ev: T =:= U): List[U] = ev.substituteContra(l)
                                                                             ^
-leibniz-liskov.scala:22: error: no type parameters for method substituteCo: (ff: F[T])F[U] exist so that it can be applied to arguments (List[U])
+leibniz-liskov.scala:22: error: no type parameters for method substituteCo: (ff: F[T]): F[U] exist so that it can be applied to arguments (List[U])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : List[U]
@@ -97,7 +97,7 @@ LeibnizLiskov.this.Consumes's type parameters do not match type F's expected par
 type X is contravariant, but type _ is declared covariant
   def convertConsume1[U, T](c: Consumes[T])(ev: U <:< T): Consumes[U] = ev.liftCo[Consumes](c)
                                                                                  ^
-leibniz-liskov.scala:35: error: no type parameters for method substituteCo: (ff: F[U])F[T] exist so that it can be applied to arguments (LeibnizLiskov.this.Consumes[T])
+leibniz-liskov.scala:35: error: no type parameters for method substituteCo: (ff: F[U]): F[T] exist so that it can be applied to arguments (LeibnizLiskov.this.Consumes[T])
  --- because ---
 argument expression's type is not compatible with formal parameter type;
  found   : LeibnizLiskov.this.Consumes[T]
