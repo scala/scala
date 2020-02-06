@@ -51,6 +51,7 @@ trait TypingTransformers {
           super.transform(tree)
       }
     }
+    def transformAtOwner(owner: Symbol, tree: Tree): Tree = atOwner(tree, owner) { transform(tree) }
   }
 }
 

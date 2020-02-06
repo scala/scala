@@ -232,6 +232,7 @@ abstract class TreeInfo {
       (    !tree.isErrorTyped
         && (isExprSafeToInline(tree) || isWarnableRefTree)
         && isWarnableSymbol
+        && !tree.hasAttachment[SuppressPureExpressionWarning.type]
       )
   }
 

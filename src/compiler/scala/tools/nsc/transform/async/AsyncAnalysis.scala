@@ -16,7 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Flags
 
 trait AsyncAnalysis extends TransformUtils  {
-  import u._
+  import global._
 
   /**
    * Analyze the contents of an `async` block in order to:

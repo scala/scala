@@ -11,13 +11,16 @@
  */
 
 
-import scala.tools.nsc.transform.async.user.{async, autoawait}
+import scala.concurrent._
+import ExecutionContext.Implicits.global
+import scala.async._
+import scala.concurrent.duration.Duration
 
 object Test extends App { assert(test == "foobar")
-  @async
-  def test: String = {
-    @autoawait def id(a: String) = a
+  def test: String = Await.result(async {
+    def id(a: String) = async { a }
 
-    id("foo") + id("bar")
-  }
+    await(id("foo")) + await(id("bar"))
+  }, Duration.Inf)
 }
+

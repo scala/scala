@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.reflect.internal.Flags._
 
 trait Lifter extends ExprBuilder {
-  import u._
+  import global._
 
   /**
    * Identify which DefTrees are used (including transitively) which are declared
@@ -103,7 +103,7 @@ trait Lifter extends ExprBuilder {
 
           // Only mark transitive references of defs, modules and classes. The RHS of lifted vals/vars
           // stays in its original location, so things that it refers to need not be lifted.
-          if (!(sym.isTerm && !sym.asTerm.isLazy && (sym.asTerm.isVal || sym.asTerm.isVar)))
+          if (!(sym.isTerm && (sym.asTerm.isVal || sym.asTerm.isVar)))
             defSymToReferenced(sym).foreach(sym2 => markForLift(sym2))
         }
       }

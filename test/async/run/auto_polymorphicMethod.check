@@ -1,3 +1,0 @@
-auto_polymorphicMethod.scala:13: warning: unreachable code
-      case _ if false => ???;
-                         ^

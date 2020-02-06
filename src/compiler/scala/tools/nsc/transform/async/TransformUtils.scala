@@ -14,35 +14,30 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.{Flags, SymbolTable}
-import user.AsyncBase
-import scala.tools.nsc.{Global, NoPhase}
+import scala.tools.nsc.NoPhase
 import scala.language.existentials
-
-private[async] trait AsyncContext {
-  val asyncBase: AsyncBase
-  val u: Global
-}
+import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.transform.TypingTransformers
 
 // Logic sensitive to where we are in the pipeline
 // (intend to move the transformation as late as possible, to avoid lugging all these trees around)
-trait PhasedTransform extends AsyncContext {
-  import u._
+trait PhasedTransform extends TypingTransformers {
+  import global._
 
   // macro context interface -- the rest is meant to be independent of our being a macro (planning to move async into the compiler)
   def abort(pos: Position, msg: String): Nothing
   def error(pos: Position, msg: String): Unit
   def typecheck(tree: Tree): Tree
 
-  // We're not that granular, but keeping separate flag for semantics
-  private lazy val isPastUncurry = isPastErasure
-  private lazy val emptyParamss: List[Nil.type] = if (isPastUncurry) List(Nil) else Nil
-  protected def applyNilAfterUncurry(t: Tree) = if (isPastUncurry) Apply(t, Nil) else t
-
-  lazy val isPastErasure = {
-    val erasurePhase = u.currentRun.erasurePhase
-    erasurePhase != NoPhase && u.isPast(erasurePhase)
+  def isPastErasure: Boolean = {
+    val erasurePhase = global.currentRun.erasurePhase
+    erasurePhase != NoPhase && global.isPast(erasurePhase)
   }
+
+  // We're not that granular, but keeping separate flag for semantics
+  private def isPastUncurry = isPastErasure
+  private def emptyParamss: List[List[ValDef]] = if (isPastUncurry) ListOfNil else Nil
+  protected def applyNilAfterUncurry(t: Tree) = if (isPastUncurry) Apply(t, Nil) else t
 
   def literalNull = Literal(Constant(null))
 
@@ -133,28 +128,6 @@ trait PhasedTransform extends AsyncContext {
     }
   }
 
-  final def uncheckedBounds(tp: Type): Type = if (isPastErasure) tp else u.uncheckedBounds(tp)
-
-  def uncheckedBoundsIfNeeded(t: Type): Type = {
-    var quantified: List[Symbol] = Nil
-    var badSkolemRefs: List[Symbol] = Nil
-    t.foreach {
-      case et: ExistentialType =>
-        quantified :::= et.quantified
-      case TypeRef(pre, sym, args) =>
-        val illScopedSkolems = args.map(_.typeSymbol).filter(arg => arg.isExistentialSkolem && !quantified.contains(arg))
-        badSkolemRefs :::= illScopedSkolems
-      case _ =>
-    }
-    if (badSkolemRefs.isEmpty) t
-    else t.map {
-      case tp @ TypeRef(pre, sym, args) if args.exists(a => badSkolemRefs.contains(a.typeSymbol)) =>
-        uncheckedBounds(tp)
-      case t => t
-    }
-  }
-
-
   final def mkMutableField(tpt: Type, name: TermName, init: Tree): List[Tree] = {
     if (isPastTyper) {
       import scala.reflect.internal.Flags._
@@ -192,28 +165,22 @@ trait PhasedTransform extends AsyncContext {
  * Utilities used in both `ExprBuilder` and `AnfTransform`.
  */
 private[async] trait TransformUtils extends PhasedTransform {
-  import typingTransformers.{TypingTransformApi, typingTransform}
-  import u._
+  import global._
 
-  val asyncNames: AsyncNames[u.type]
+  def currentTransformState: AsyncTransformState[global.type]
+  val asyncNames: AsyncNames[global.type]
   object name extends asyncNames.AsyncName {
     def fresh(name: TermName): TermName = freshenIfNeeded(name)
     def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
   }
 
-  def emitTryCatch: Boolean = asyncBase.futureSystem.emitTryCatch
-
-  def maybeTry(block: Tree, catches: List[CaseDef], finalizer: Tree) =
+  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree) =
     if (emitTryCatch) Try(block, catches, finalizer) else block
 
   lazy val IllegalStateExceptionClass = rootMirror.staticClass("java.lang.IllegalStateException")
 
-  val Async_async: Symbol
-  val Async_await: Symbol
-
-  def isAsync(fun: Tree) = fun.symbol == Async_async
-  def isAwait(fun: Tree) = fun.symbol == Async_await
-
+  def isAsync(fun: Tree) = fun.symbol == currentTransformState.ops.Async_async
+  def isAwait(fun: Tree) = fun.symbol == currentTransformState.ops.Async_await
 
   private lazy val Boolean_ShortCircuits: Set[Symbol] = {
     import definitions.BooleanClass
@@ -356,13 +323,6 @@ private[async] trait TransformUtils extends PhasedTransform {
     }
   }
 
-  def transformAt(tree: Tree)(f: PartialFunction[Tree, (TypingTransformApi => Tree)]) = {
-    typingTransform(tree)((tree, api) => {
-      if (f.isDefinedAt(tree)) f(tree)(api)
-      else api.default(tree)
-    })
-  }
-
   def toMultiMap[A, B](abs: Iterable[(A, B)]): mutable.LinkedHashMap[A, List[B]] = {
     // LinkedHashMap for stable order of results.
     val result = new mutable.LinkedHashMap[A, ListBuffer[B]]()
@@ -372,23 +332,6 @@ private[async] trait TransformUtils extends PhasedTransform {
     }
     result.map { case (a, b) => (a, b.toList) }
   }
-
-  // Attributed version of `TreeGen#mkCastPreservingAnnotations`
-  def mkAttributedCastPreservingAnnotations(tree: Tree, tp: Type): Tree = {
-    atPos(tree.pos) {
-      val casted = typecheck(gen.mkCast(tree, uncheckedBounds(tp.withoutAnnotations).dealias))
-      Typed(casted, TypeTree(tp)).setType(tp)
-    }
-  }
-
-  def withAnnotation(tp: Type, ann: Annotation): Type = withAnnotations(tp, List(ann))
-
-  def withAnnotations(tp: Type, anns: List[Annotation]): Type = tp match {
-    case AnnotatedType(existingAnns, underlying) => annotatedType(anns ::: existingAnns, underlying)
-    case ExistentialType(quants, underlying) => existentialAbstraction(quants, withAnnotations(underlying, anns))
-    case _ => annotatedType(anns, tp)
-  }
-
 
   def thisType(sym: Symbol): Type = {
     if (sym.isClass) sym.asClass.thisPrefix
@@ -422,6 +365,7 @@ private[async] trait TransformUtils extends PhasedTransform {
   private object markContainsAwaitTraverser extends Traverser {
     def shouldAttach(t: Tree) = !treeCannotContainAwait(t)
     private def treeCannotContainAwait(t: Tree) = t match {
+      case _: CannotHaveAttrs => true
       case _: Ident | _: TypeTree | _: Literal => true
       case _ => isAsync(t)
     }
@@ -452,9 +396,11 @@ private[async] trait TransformUtils extends PhasedTransform {
   }
 
   final def cleanupContainsAwaitAttachments(t: Tree): t.type = {
-    t.foreach {t =>
-      t.removeAttachment[ContainsAwait.type]
-      t.removeAttachment[NoAwait.type]
+    t.foreach {
+      case _: CannotHaveAttrs =>
+      case t =>
+        t.removeAttachment[ContainsAwait.type]
+        t.removeAttachment[NoAwait.type]
     }
     t
   }
@@ -464,57 +410,44 @@ private[async] trait TransformUtils extends PhasedTransform {
   //  - Propagate this change to trees known to directly enclose them:
   //    ``If` / `Block`) adjust types of enclosing
   final def adjustTypeOfTranslatedPatternMatches(t: Tree, owner: Symbol): Tree = {
+    val trans = new PatmatAdjuster
+    trans.transformAtOwner(owner, t)
+  }
+
+  private class PatmatAdjuster extends TypingTransformer(currentTransformState.unit) {
     import definitions.UnitTpe
-
-    typingTransform(t, owner) {
-      (tree, api) =>
-        tree match {
-          case LabelDef(name, params, rhs) =>
-            val rhs1 = api.recur(rhs)
-            if (rhs1.tpe =:= UnitTpe) {
-              tree.symbol.info = internal.methodType(tree.symbol.info.paramLists.head, UnitTpe)
-              treeCopy.LabelDef(tree, name, params, rhs1)
-            } else {
-              treeCopy.LabelDef(tree, name, params, rhs1)
-            }
-          case Block(stats, expr) =>
-            val stats1 = stats map api.recur
-            val expr1 = api.recur(expr)
-            if (expr1.tpe =:= UnitTpe)
-              treeCopy.Block(tree, stats1, expr1).setType(UnitTpe)
-            else
-              treeCopy.Block(tree, stats1, expr1)
-          case If(cond, thenp, elsep) =>
-            val cond1 = api.recur(cond)
-            val thenp1 = api.recur(thenp)
-            val elsep1 = api.recur(elsep)
-            if (thenp1.tpe =:= definitions.UnitTpe && elsep.tpe =:= UnitTpe)
-              treeCopy.If(tree, cond1, thenp1, elsep1).setType(UnitTpe)
-            else
-              treeCopy.If(tree, cond1, thenp1, elsep1)
-          case Apply(fun, args) if isLabel(fun.symbol) =>
-            treeCopy.Apply(tree, api.recur(fun), args map api.recur).setType(UnitTpe)
-          case vd @ ValDef(mods, name, tpt, rhs) if isCaseTempVal(vd.symbol) =>
-            def addUncheckedBounds(t: Tree) = {
-              typingTransform(t, owner) {
-                (tree, api) =>
-                  if (tree.tpe == null) tree else api.default(tree).setType(uncheckedBoundsIfNeeded(tree.tpe))
-              }
-
-            }
-            val uncheckedRhs = addUncheckedBounds(api.recur(rhs))
-            val uncheckedTpt = addUncheckedBounds(tpt)
-            vd.symbol.info = uncheckedBoundsIfNeeded(vd.symbol.info)
-            treeCopy.ValDef(vd, mods, name, uncheckedTpt, uncheckedRhs)
-          case t => api.default(t)
-        }
+    
+    override def transform(tree: Tree): Tree = {
+      tree match {
+        case LabelDef(name, params, rhs) =>
+          val rhs1 = transform(rhs)
+          if (rhs1.tpe =:= UnitTpe) {
+            tree.symbol.info = internal.methodType(tree.symbol.info.paramLists.head, UnitTpe)
+            treeCopy.LabelDef(tree, name, params, rhs1)
+          } else {
+            treeCopy.LabelDef(tree, name, params, rhs1)
+          }
+        case Block(stats, expr) =>
+          val stats1 = transformTrees(stats)
+          val expr1 = transform(expr)
+          if (expr1.tpe =:= UnitTpe)
+            treeCopy.Block(tree, stats1, expr1).setType(UnitTpe)
+          else
+            treeCopy.Block(tree, stats1, expr1)
+        case If(cond, thenp, elsep) =>
+          val cond1 = transform(cond)
+          val thenp1 = transform(thenp)
+          val elsep1 = transform(elsep)
+          if (thenp1.tpe =:= definitions.UnitTpe && elsep.tpe =:= UnitTpe)
+            treeCopy.If(tree, cond1, thenp1, elsep1).setType(UnitTpe)
+          else
+            treeCopy.If(tree, cond1, thenp1, elsep1)
+        case Apply(fun, args) if isLabel(fun.symbol) =>
+          treeCopy.Apply(tree, transform(fun), transformTrees(args)).setType(UnitTpe)
+        case t => super.transform(t)
+      }
     }
   }
-
-  private def isCaseTempVal(s: Symbol) = {
-    s.isTerm && s.asTerm.isVal && s.isSynthetic && s.name.toString.startsWith("x")
-  }
-
 
   def deriveLabelDef(ld: LabelDef, applyToRhs: Tree => Tree): LabelDef = {
     val rhs2 = applyToRhs(ld.rhs)
@@ -536,90 +469,6 @@ private[async] trait TransformUtils extends PhasedTransform {
       case _ => None
     }
   }
-
-  // TODO get rid of all of this and use compiler's facilities directly
-  val typingTransformers: TypingTransformers { val global: u.type }
-
-  abstract class TypingTransformers extends scala.tools.nsc.transform.TypingTransformers {
-    val global: u.type = u
-    def callsiteTyper: analyzer.Typer
-
-    trait TransformApi {
-      /** Calls the current transformer on the given tree.
-        *  Current transformer = argument to the `transform` call.
-        */
-      def recur(tree: Tree): Tree
-
-      /** Calls the default transformer on the given tree.
-        *  Default transformer = recur into tree's children and assemble the results.
-        */
-      def default(tree: Tree): Tree
-    }
-
-    /** Functions that are available during [[typingTransform]].
-      *  @see [[typingTransform]]
-      */
-    trait TypingTransformApi extends TransformApi {
-      /** Temporarily pushes the given symbol onto the owner stack, creating a new local typer,
-        *  invoke the given operation and then rollback the changes to the owner stack.
-        */
-      def atOwner[T](owner: Symbol)(op: => T): T
-
-      /** Temporarily pushes the given tree onto the recursion stack, and then calls `atOwner(symbol)(trans)`.
-        */
-      def atOwner[T](tree: Tree, owner: Symbol)(op: => T): T
-
-      /** Returns the symbol currently on the top of the owner stack.
-        *  If we're not inside any `atOwner` call, then macro application's context owner will be used.
-        */
-      def currentOwner: Symbol
-
-      /** Typechecks the given tree using the local typer currently on the top of the owner stack.
-        *  If we're not inside any `atOwner` call, then macro application's callsite typer will be used.
-        */
-      def typecheck(tree: Tree): Tree
-    }
-
-    class HofTransformer(hof: (Tree, TransformApi) => Tree) extends Transformer {
-      val api = new TransformApi {
-        def recur(tree: Tree): Tree = hof(tree, this)
-        def default(tree: Tree): Tree = superTransform(tree)
-      }
-      def superTransform(tree: Tree) = super.transform(tree)
-      override def transform(tree: Tree): Tree = hof(tree, api)
-    }
-
-    //    def transform(tree: Tree)(transformer: (Tree, TransformApi) => Tree): Tree = new HofTransformer(transformer).transform(tree)
-
-    class HofTypingTransformer(hof: (Tree, TypingTransformApi) => Tree) extends TypingTransformer(callsiteTyper.context.unit) { self =>
-      currentOwner = callsiteTyper.context.owner
-      curTree = EmptyTree
-
-      localTyper = {
-        val ctx: analyzer.Context = callsiteTyper.context.make(unit = callsiteTyper.context.unit)
-        if (phase.erasedTypes) erasure.newTyper(ctx.asInstanceOf[erasure.Context]).asInstanceOf[analyzer.Typer] else analyzer.newTyper(ctx)
-      }
-
-      val api = new TypingTransformApi {
-        def recur(tree: Tree): Tree = hof(tree, this)
-        def default(tree: Tree): Tree = superTransform(tree)
-        def atOwner[T](owner: Symbol)(op: => T): T = self.atOwner(owner)(op)
-        def atOwner[T](tree: Tree, owner: Symbol)(op: => T): T = self.atOwner(tree, owner)(op)
-        def currentOwner: Symbol = self.currentOwner
-        def typecheck(tree: Tree): Tree = localTyper.typed(tree)
-      }
-      def superTransform(tree: Tree) = super.transform(tree)
-      override def transform(tree: Tree): Tree = hof(tree, api)
-    }
-
-    def typingTransform(tree: Tree)(transformer: (Tree, TypingTransformApi) => Tree): Tree = new HofTypingTransformer(transformer).transform(tree)
-
-    def typingTransform(tree: Tree, owner: Symbol)(transformer: (Tree, TypingTransformApi) => Tree): Tree = {
-      val trans = new HofTypingTransformer(transformer)
-      trans.atOwner(owner)(trans.transform(tree))
-    }
-  }
-
 }
 
 case object ContainsAwait

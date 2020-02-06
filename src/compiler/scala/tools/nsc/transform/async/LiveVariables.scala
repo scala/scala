@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.reflect.internal.Flags._
 
 trait LiveVariables extends ExprBuilder {
-  import u._
+  import global._
 
   /**
    *  Returns for a given state a list of fields (as trees) that should be nulled out

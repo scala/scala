@@ -1,4 +1,7 @@
-import scala.tools.nsc.transform.async.user.{async, autoawait}
+import scala.concurrent._
+import ExecutionContext.Implicits.global
+import scala.async._
+import scala.concurrent.duration.Duration
 
 sealed trait Result
 
@@ -11,10 +14,10 @@ case object C extends Result
 object Test extends App { test
   protected def doStuff(res: Result) = {
     class C {
-      @autoawait def needCheck = false
+      def needCheck = async { false }
 
-      @async def m = {
-        if (needCheck) "NO"
+      def m  = async {
+        if (await(needCheck)) "NO"
         else {
           res match {
             case A => 1
@@ -23,9 +26,9 @@ object Test extends App { test
         }
       }
     }
+    new C().m
   }
 
 
-  @async
-  def test() = doStuff(B)
+  def test() = Await.result(doStuff(B), Duration.Inf)
 }

@@ -1,3 +1,0 @@
-auto_shadowing.scala:16: warning: a pure expression does nothing in statement position
-          case _ => foo; ()
-                    ^

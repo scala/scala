@@ -1,0 +1,3 @@
+concurrent_polymorphicMethod.scala:16: warning: unreachable code
+      case _ if false => ???;
+                         ^
