@@ -18,10 +18,19 @@ import scala.tools.nsc._
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.settings.ScalaVersion
 
-/** A class for testing code which is embedded as a string.
-  *  It allows for more complete control over settings, compiler
-  *  configuration, sequence of events, etc. than does partest.
-  */
+/** Test with code which is embedded as a string.
+ *
+ *  `DirectTest` allows for more complete control over settings, compiler
+ *  configuration, sequence of events, etc. than does partest alone.
+ *
+ *  Tests must define `code` and `show()`. Minimally:
+ *  ```
+ *  def show() = assert(compile())
+ *  ```
+ *
+ *  There are helper methods for creating settings and
+ *  invoking a (newly constructed) compiler.
+ */
 abstract class DirectTest {
   // The program being tested in some fashion
   def code: String

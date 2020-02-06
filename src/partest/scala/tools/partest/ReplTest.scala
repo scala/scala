@@ -17,8 +17,13 @@ import scala.tools.nsc.interpreter.shell.ILoop
 import scala.util.matching.Regex
 import scala.util.matching.Regex.Match
 
-/** A class for testing repl code.
- *  It filters the line of output that mentions a version number.
+/** Test code or commands in a REPL.
+ *
+ *  Just call `show` to print the result of `eval()` your `code`.
+ *
+ *  Optionally, `transformSettings` or redefine `normalize`.
+ *
+ *  The test filters the line of output that mentions a version number.
  */
 abstract class ReplTest extends DirectTest {
   // override to transform Settings object immediately before the finish
@@ -53,9 +58,7 @@ abstract class ReplTest extends DirectTest {
 /** Strip Any.toString's id@abcdef16 hashCodes. These are generally at end of result lines. */
 trait Hashless extends ReplTest {
   import Hashless._
-  override def normalize(s: String) = {
-    stripIdentityHashCode(super.normalize(s))
-  }
+  override def normalize(s: String) = stripIdentityHashCode(super.normalize(s))
 }
 object Hashless {
   private val hashless = "@[a-fA-F0-9]+".r
@@ -65,17 +68,41 @@ object Hashless {
 /** Strip dynamic parts of LambdaMetafactory synthetic class names. */
 trait Lambdaless extends ReplTest {
   import Lambdaless._
-  override def normalize(s: String) = {
-    stripLambdaClassName(super.normalize(s))
-  }
+  override def normalize(s: String) = stripLambdaClassName(super.normalize(s))
 }
 object Lambdaless {
   private val lambdaless = """\$Lambda\$\d+/(?:0x[a-f0-9]{16}|\d+)(@[a-fA-F0-9]+)?""".r
   private def stripLambdaClassName(s: String): String = lambdaless.replaceAllIn(s, Regex.quoteReplacement("<function>"))
 }
 
+/** Normalize a REPL stack trace by stripping line numbers and count of elided frames. */
+trait StackCleaner extends ReplTest {
+  import StackCleaner._
+  override def normalize(s: String) = stripFrameCount(super.normalize(s))
+}
+object StackCleaner {
+  private val elided = """(\s+\.{3} )\d+( elided)""".r
+  private val frame  = """(\s+at [^(]+\(<console>:)\d+(\))""".r
+  private def stripFrameCount(line: String) = line match {
+    case elided(ellipsis, suffix) => s"$ellipsis???$suffix"
+    case frame(prefix, suffix)    => s"${prefix}XX${suffix}"
+    case s                        => s
+  }
+}
+
 /** Run a REPL test from a session transcript.
- *  The `session` is read from the `.check` file.
+ *
+ *  The `session` is read from the `.check` file,
+ *  and the `code` is the session stripped of output text.
+ *
+ *  By default, output is compared against the check file
+ *  as usual. Optionally, redefine `show` to use `checkSession()`,
+ *  which compares `eval()` result to `expected`.
+ *
+ *  Redefine `session` if it must be constructed dynamically.
+ *  Redefine `show` to use `checkSession` to postprocess
+ *  the `expected` text and/or the result of `eval()`.
+ *
  */
 abstract class SessionTest extends ReplTest  {
   /** Session transcript. */
@@ -119,8 +146,8 @@ abstract class SessionTest extends ReplTest  {
   }
 }
 object SessionTest {
-  // \R for line break is Java 8, \v for vertical space might suffice
-  def input(prompt: String) = s"""(?m)^$prompt(:pa.*\u000A)// Entering paste mode.*\u000A\u000A((?:.*\u000A)*)\u000A// Exiting paste mode.*\u000A|^scala> (.*\u000A(?:\\s*\\| .*\u000A)*)""".r
+  // \R for line break since Java 8
+  private def input(prompt: String) = raw"""(?m)^$prompt(:pa.*\R)// Entering paste mode.*\R\R((?:.*\R)*)\R// Exiting paste mode.*\R|^scala> (.*\R(?:\s*\| .*\R)*)""".r
 
-  val margin = """(?m)^\s*\| (.*)$""".r
+  private val margin = """(?m)^\s*\| (.*)$""".r
 }

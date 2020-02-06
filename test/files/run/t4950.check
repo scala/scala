@@ -1,0 +1,8 @@
+
+scala> val 1 = 2
+scala.MatchError: 2 (of class java.lang.Integer)
+  ... ??? elided
+
+scala> val List(1) = List(1)
+
+scala> :quit

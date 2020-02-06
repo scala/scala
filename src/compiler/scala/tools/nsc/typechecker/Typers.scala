@@ -2167,6 +2167,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val vdef1 = treeCopy.ValDef(vdef, typedMods, sym.name, tpt1, checkDead(context, rhs1)) setType NoType
       if (sym.isSynthetic && sym.name.startsWith(nme.RIGHT_ASSOC_OP_PREFIX))
         rightAssocValDefs += ((sym, vdef1.rhs))
+      if (sym.isSynthetic && sym.owner.isClass && (tpt1.tpe eq UnitTpe) && vdef.hasAttachment[PatVarDefAttachment.type] && sym.isPrivateThis && vdef.mods.isPrivateLocal && !sym.enclClassChain.exists(_.isInterpreterWrapper)) {
+        context.warning(vdef.pos, s"Pattern definition introduces Unit-valued member of ${sym.owner.name}; consider wrapping it in `locally { ... }`.")
+        vdef.removeAttachment[PatVarDefAttachment.type]
+      }
       vdef1
     }
 

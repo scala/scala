@@ -1,3 +1,36 @@
+t7691.scala:2: warning: Pattern definition introduces Unit-valued member of X; consider wrapping it in `locally { ... }`.
+object X { val _ = 42 }
+               ^
+t7691.scala:4: warning: Pattern definition introduces Unit-valued member of Y; consider wrapping it in `locally { ... }`.
+object Y { val (_, _) = (42, 17) }
+               ^
+t7691.scala:6: warning: Pattern definition introduces Unit-valued member of Z; consider wrapping it in `locally { ... }`.
+object Z { val _ = 42 ; val _ = 17 }             // was error
+               ^
+t7691.scala:6: warning: Pattern definition introduces Unit-valued member of Z; consider wrapping it in `locally { ... }`.
+object Z { val _ = 42 ; val _ = 17 }             // was error
+                            ^
+t7691.scala:8: warning: Pattern definition introduces Unit-valued member of V; consider wrapping it in `locally { ... }`.
+object V { val _, _, _ = println("hi") }         // was error
+               ^
+t7691.scala:8: warning: Pattern definition introduces Unit-valued member of V; consider wrapping it in `locally { ... }`.
+object V { val _, _, _ = println("hi") }         // was error
+                  ^
+t7691.scala:8: warning: Pattern definition introduces Unit-valued member of V; consider wrapping it in `locally { ... }`.
+object V { val _, _, _ = println("hi") }         // was error
+                     ^
+t7691.scala:10: warning: Pattern definition introduces Unit-valued member of W; consider wrapping it in `locally { ... }`.
+object W { val _: Int = 42 ; val _: Int = 17 }   // was error
+               ^
+t7691.scala:10: warning: Pattern definition introduces Unit-valued member of W; consider wrapping it in `locally { ... }`.
+object W { val _: Int = 42 ; val _: Int = 17 }   // was error
+                                 ^
+t7691.scala:12: warning: Pattern definition introduces Unit-valued member of Q; consider wrapping it in `locally { ... }`.
+object Q { val _ @ _ = 42 ; val _ = 17 }         // was error
+                   ^
+t7691.scala:12: warning: Pattern definition introduces Unit-valued member of Q; consider wrapping it in `locally { ... }`.
+object Q { val _ @ _ = 42 ; val _ = 17 }         // was error
+                                ^
 t7691.scala:16: error: value _ is not a member of object X
   def x = X.`_`       // value _ is not a member of object X
             ^
@@ -16,4 +49,5 @@ t7691.scala:24: error: value _ is not a member of object W
 t7691.scala:26: error: value _ is not a member of object Q
   def q = Q.`_`       // still not
             ^
+11 warnings
 6 errors

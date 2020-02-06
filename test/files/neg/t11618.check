@@ -1,0 +1,36 @@
+t11618.scala:9: warning: Implicit pattern definition binds no variables
+  implicit val _ = 42
+               ^
+t11618.scala:10: warning: Implicit pattern definition binds no variables
+  implicit val Some(_) = Option(42)
+                   ^
+t11618.scala:18: warning: Implicit pattern definition binds no variables
+    implicit val _ = i
+                 ^
+t11618.scala:19: warning: Implicit pattern definition binds no variables
+    implicit val Some(_) = Option(i)
+                     ^
+t11618.scala:24: warning: Implicit pattern definition binds no variables
+  implicit val Some(_) = Option(42)
+                   ^
+t11618.scala:7: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  val _ = 42
+      ^
+t11618.scala:8: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  val Some(_) = Option(42)
+          ^
+t11618.scala:9: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  implicit val _ = 42
+               ^
+t11618.scala:10: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  implicit val Some(_) = Option(42)
+                   ^
+t11618.scala:23: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  val Some(_) = Option(42)
+          ^
+t11618.scala:24: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  implicit val Some(_) = Option(42)
+                   ^
+error: No warnings can be incurred under -Werror.
+11 warnings
+1 error
