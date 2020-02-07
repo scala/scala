@@ -13,11 +13,10 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.mutable.ListBuffer
-import scala.collection.{immutable, mutable}
+import scala.collection.{immutable, mutable}, mutable.ListBuffer
+import scala.reflect.internal.Depth
 import scala.util.control.ControlThrowable
 import symtab.Flags._
-import scala.reflect.internal.Depth
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -589,8 +588,18 @@ trait Infer extends Checkable {
         // ...or lower bound of a type param, since they're asking for it.
         var checked, warning = false
         def checkForAny(): Unit = {
-          val collector = new ContainsAnyCollector(topTypes)
-          @`inline` def containsAny(t: Type) = t.dealiasWidenChain.exists(collector.collect)
+          val collector = new ContainsAnyCollector(topTypes) {
+            val seen = mutable.Set.empty[Type]
+            override def apply(t: Type): Unit = {
+              def saw(dw: Type): Unit =
+                if (!result && !seen(dw)) {
+                  seen += dw
+                  if (!dw.typeSymbol.isRefinementClass) super.apply(dw)
+                }
+              if (!result && !seen(t)) t.dealiasWidenChain.foreach(saw)
+            }
+          }
+          @`inline` def containsAny(t: Type) = collector.collect(t)
           val hasAny = containsAny(pt) || containsAny(restpe) ||
             formals.exists(containsAny) ||
             argtpes.exists(containsAny) ||
