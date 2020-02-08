@@ -7,7 +7,12 @@ javac -version
 
 generateRepositoriesConfig
 
-SBT="java $JAVA_OPTS -Dsbt.ivy.home=$WORKSPACE/.ivy2 -jar $sbtLauncher -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
+# it may not be necessary to set both COURSIER_HOME and sbt.coursier.home,
+# but at least for now, doing it just in case; see discussion at
+# https://github.com/scala/scala-dev/issues/666
+export COURSIER_HOME=$WORKSPACE/.coursier
+
+SBT="java $JAVA_OPTS -Dsbt.ivy.home=$WORKSPACE/.ivy2 -Dsbt.coursier.home=$WORKSPACE/.coursier -jar $sbtLauncher -Dsbt.override.build.repos=true -Dsbt.repository.config=$sbtRepositoryConfig"
 
 # Build locker with STARR
 $SBT -warn "setupPublishCore" generateBuildCharacterPropertiesFile publishLocal
