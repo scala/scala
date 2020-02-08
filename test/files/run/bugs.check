@@ -84,12 +84,6 @@ hello
 <<< bug 328
 >>> bug 328
 
-<<< bug 396
-A
-B
-C
->>> bug 396
-
 <<< bug 399
 a
 >>> bug 399

@@ -1,38 +1,40 @@
+// scalac: -Werror -Xlint:deprecation
+//
 
 import scala.language.{ implicitConversions }
 abstract class BaseList {
-  type Node <: NodeImpl;
-  implicit def convertNode(ni : NodeImpl) = ni.asInstanceOf[Node];
-  abstract class NodeImpl;
+  type Node <: BaseNodeImpl
+  implicit def convertNode(ni : BaseNodeImpl) = ni.asInstanceOf[Node];
+  abstract class BaseNodeImpl
 }
 abstract class LinkedList extends BaseList {
-  type Node <: NodeImpl;
-  trait NodeImpl extends super.NodeImpl;
+  type Node <: NodeImpl0
+  trait NodeImpl0 extends super.BaseNodeImpl;
 }
 trait OffsetList extends LinkedList {
-  type Node <: NodeImpl;
-  trait NodeImpl extends super.NodeImpl;
+  type Node <: NodeImpl1
+  trait NodeImpl1 extends super.NodeImpl0
 }
 
 trait PriorityTree extends BaseList {
-  type Node <: NodeImpl;
-  trait NodeImpl extends super.NodeImpl {
-    def chop : Node = this;
+  type Node <: NodeImpl2
+  trait NodeImpl2 extends super.BaseNodeImpl {
+    def chop : Node = this
   }
 }
 
 trait PrecedenceParser  extends LinkedList with PriorityTree {
-  type Node <: NodeImpl;
-  trait NodeImpl extends super[LinkedList].NodeImpl with super[PriorityTree].NodeImpl;
+  type Node <: NodeImpl3
+  trait NodeImpl3 extends super[LinkedList].NodeImpl0 with super[PriorityTree].NodeImpl2
 }
 
 trait Matcher extends PrecedenceParser {
-  type Node <: NodeImpl;
-  trait NodeImpl extends super.NodeImpl;
+  type Node <: NodeImpl4
+  trait NodeImpl4 extends super.NodeImpl3
 
-  type Matchable <: Node with MatchableImpl;
-  implicit def convertMatchable(m : MatchableImpl) = m.asInstanceOf[Matchable];
-  trait MatchableImpl extends NodeImpl {
+  type Matchable <: Node with MatchableImpl0
+  implicit def convertMatchable(m : MatchableImpl0) = m.asInstanceOf[Matchable]
+  trait MatchableImpl0 extends NodeImpl4 {
     override def chop : Node = {
       Console.println("passed"); super.chop;
     }
@@ -40,14 +42,14 @@ trait Matcher extends PrecedenceParser {
 }
 
 class Test1 extends OffsetList with Matcher {
-  type Node = NodeImpl;
-  trait NodeImpl extends super[OffsetList].NodeImpl with super[Matcher].NodeImpl;
-  class MatchableImpl extends super.MatchableImpl with NodeImpl;
-  type Matchable = MatchableImpl;
+  type Node = NodeImpl5
+  trait NodeImpl5 extends super[OffsetList].NodeImpl1 with super[Matcher].NodeImpl4
+  class MatchableImpl1 extends super.MatchableImpl0 with NodeImpl5
+  type Matchable = MatchableImpl1
 }
 
 object Test extends App {
-  val test = new Test1;
-  val m = new test.MatchableImpl;
-  m.chop;
+  val test = new Test1
+  val m = new test.MatchableImpl1
+  m.chop
 }

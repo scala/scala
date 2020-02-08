@@ -1,7 +1,10 @@
+// scalac: -Xlint:deprecation
+//
+
 import scala.tools.partest.ReplTest
 
 class A {
-  sealed trait F[A]
+  // sealed trait F[A]
 }
 
 class C[T] extends A {
