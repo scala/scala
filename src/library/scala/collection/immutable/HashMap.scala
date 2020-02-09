@@ -170,11 +170,9 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
     }
   }
 
-  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] = addImpl(xs, HashMap.canBuildFrom[A, B1])
+  override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): Map[A, B1] = ++[(A, B1), Map[A, B1]](xs)(HashMap.canBuildFrom[A, B1])
 
-  override def ++[C >: (A, B), That](that: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That =
-    addImpl(that, bf)
-  private def addImpl[C >: (A, B), That](that: GenTraversableOnce[C], bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+  override def ++[C >: (A, B), That](that: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
     if (isCompatibleCBF(bf)) {
       //here we know that That =:= HashMap[_, _], or compatible with it
       if (this eq that.asInstanceOf[AnyRef]) that.asInstanceOf[That]

@@ -108,9 +108,8 @@ object Map extends ImmutableMapFactory[Map] {
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
-    override def ++[V1 >: Nothing](xs: GenTraversableOnce[(Any, V1)]): Map[Any, V1] = addImpl(xs, Map.canBuildFrom[Any, V1])
-    override def ++[B >: (Any, Nothing), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = addImpl(that, bf)
-    private def addImpl[B >: (Any, Nothing), That](that: GenTraversableOnce[B], bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = {
+    override def ++[V1 >: Nothing](xs: GenTraversableOnce[(Any, V1)]): Map[Any, V1] = ++[(Any, V1), Map[Any, V1]](xs)(Map.canBuildFrom[Any, V1])
+    override def ++[B >: (Any, Nothing), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[Any, Nothing], B, That]): That = {
       if (isMapCBF(bf))
         that match {
           case hm: HashMap[a, b] if hm.size > 4 => hm.asInstanceOf[That]
