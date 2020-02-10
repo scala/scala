@@ -562,10 +562,10 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     private[nsc] val outputDirs: OutputDirs,
     default: String)
     extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None) {
-      value = default
-      override def value_=(str: String): Unit = {
-        super.value_=(str)
-        try outputDirs.setSingleOutput(str)
+      postSetHook()
+      override def postSetHook(): Unit = {
+        super.postSetHook()
+        try outputDirs.setSingleOutput(value)
         catch { case FatalError(msg) => errorFn(msg) }
       }
   }
