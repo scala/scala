@@ -66,7 +66,7 @@ class PipedProcessTest {
     val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = false), new ProcessBuilderMock(b, error = true), io, false)
     val f = Future {
       ignoring(classOf[IOException]) {
-        p.callRunAndExitValue(source, sink)
+        p.callRunAndExitValue(source, sink): Unit
       }
     }
     waitForIt(f.isCompleted)
@@ -87,7 +87,7 @@ class PipedProcessTest {
     val p = new PipedProcessesMock(new ProcessBuilderMock(a, error = true), new ProcessBuilderMock(b, error = false), io, false)
     val f = Future {
       ignoring(classOf[IOException]) {
-        p.callRunAndExitValue(source, sink)
+        p.callRunAndExitValue(source, sink): Unit
       }
     }
     waitForIt(f.isCompleted)

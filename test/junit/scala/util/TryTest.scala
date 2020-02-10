@@ -188,7 +188,7 @@ class TryTest {
 
   @Test def testRescueSuccess(): Unit = {
     val t = Success(1)
-    t.recoverWith{ case x => fail() ; Try(()) }
+    t.recoverWith{ case x => fail() ; Try(-1) }
   }
 
   @Test def testRescueFailure(): Unit = {

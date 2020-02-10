@@ -248,8 +248,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
   connectInput in run := true,
-  //scalacOptions in Compile += "-deprecation",
-  //scalacOptions in Compile += "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_",
+  //scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
   //scalacOptions in Compile ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
@@ -442,6 +441,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
+    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
     scalacOptions in Compile in doc ++= {
       val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
       Seq(
@@ -489,6 +489,7 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
+    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
     scalacOptions in Compile in doc ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
@@ -555,6 +556,7 @@ lazy val compiler = configureAsSubproject(project)
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
       ).get
     },
+    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
     scalacOptions in Compile in doc ++= Seq(
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
     ),
@@ -590,6 +592,7 @@ lazy val interactive = configureAsSubproject(project)
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(skip in publish := true)
+  .settings(scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_")
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
@@ -597,7 +600,8 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .settings(skip in publish := true)
   .settings(
     libraryDependencies += jlineDep,
-    name := "scala-repl-frontend"
+    name := "scala-repl-frontend",
+    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
   )
   .settings(
     connectInput in run := true,
@@ -735,7 +739,7 @@ lazy val testkit = configureAsSubproject(project)
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(commonSettings)
-  //.settings(scalacOptions in Compile += "-Xlint:-nullary-unit,-adapted-args")
+  .settings(scalacOptions in Compile += "-Xlint:-adapted-args,-deprecation,-inaccessible,-nonlocal-return,-nullary-unit,-unused,-valpattern,_")
   .settings(disableDocs)
   .settings(skip in publish := true)
   .settings(
@@ -844,7 +848,6 @@ lazy val test = project
   .disablePlugins(plugins.JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(commonSettings)
-  //.settings(scalacOptions in Compile -= "-Xlint:-nullary-override,-inaccessible,-nonlocal-return,_") // as in common settings
   .settings(disableDocs)
   .settings(skip in publish := true)
   .settings(Defaults.itSettings)
@@ -1005,7 +1008,7 @@ lazy val root: Project = (project in file("."))
         partestDesc("res scalap specialized"),
         partestDesc("instrumented presentation"),
         partestDesc("--srcpath scaladoc"),
-        partestDesc("-Dpartest.scalac_opts=-Ymacro-annotations --srcpath macro-annot"),
+        partestDesc("--srcpath macro-annot"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),

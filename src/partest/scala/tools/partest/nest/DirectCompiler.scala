@@ -71,11 +71,15 @@ class DirectCompiler(val runner: Runner) {
     }
 
     val xprefix = "-Xplugin:"
-    val (xplugs, others) = args partition (_ startsWith xprefix)
-    val Xplugin = if (xplugs.isEmpty) Nil else List(xprefix +
-      (xplugs map (_ stripPrefix xprefix) flatMap (_ split pathSeparator) map absolutize mkString pathSeparator)
-    )
-    runner.suiteRunner.scalacExtraArgs ++ runner.suiteRunner.scalacOpts.split(' ') ++ others ++ Xplugin
+    val (xplugs, others) = args.partition(_.startsWith(xprefix))
+    val Xplugin =
+      if (xplugs.isEmpty) Nil
+      else List(xprefix + xplugs.map(_ stripPrefix xprefix).flatMap(_ split pathSeparator).map(absolutize).mkString(pathSeparator))
+
+    // tests control most compiler settings, but let the environment tell us whether to exercise optimizer
+    val filteredOpts = runner.suiteRunner.scalacOpts.split(' ').filter(_.startsWith("-opt"))
+
+    runner.suiteRunner.scalacExtraArgs ++ filteredOpts ++ others ++ Xplugin
   }
 
   def compile(opts0: List[String], sources: List[File]): TestState = {

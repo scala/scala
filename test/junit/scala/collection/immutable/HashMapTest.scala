@@ -44,9 +44,9 @@ class HashMapTest {
   @Test
   def testWithDefaultValue: Unit = {
     val m1 = HashMap(1 -> "a", 2 -> "b")
-    val m2 = m1.withDefaultValue(0)
+    val m2 = m1.withDefaultValue("missing")
     assertEquals("a", m2(1))
-    assertEquals(0, m2(3))
+    assertEquals("missing", m2(3))
   }
 
   @Test

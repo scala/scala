@@ -1,7 +1,7 @@
 package scala.tools.nsc
 package settings
 
-import org.junit.Assert._
+import org.junit.Assert.{assertTrue => assert, _}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -18,9 +18,9 @@ class SettingsTest {
       assert(residual.isEmpty)
       b1
     }
-    assertTrue(check("-Ytest-setting").value)
-    assertTrue(check("-Ytest-setting:true").value)
-    assertTrue(check("-Ytest-setting:TRUE").value)
+    assert(check("-Ytest-setting").value)
+    assert(check("-Ytest-setting:true").value)
+    assert(check("-Ytest-setting:TRUE").value)
     assertFalse(check("-Ytest-setting:false").value)
     assertFalse(check("-Ytest-setting:FALSE").value)
     assertThrows[IllegalArgumentException](check("-Ytest-setting:rubbish"))
@@ -33,22 +33,41 @@ class SettingsTest {
     assert(residual.isEmpty)
     b(s)
   }
+
+  @Test def `deprecation and xlint deprecation play well together`(): Unit = {
+    assert(check("-deprecation")(_.deprecation))
+    assert(check("--deprecation")(_.deprecation))
+    assert(check("-deprecation")(!_.lintDeprecation))
+    assert(check("-Xlint:deprecation")(_.deprecation))
+    assert(check("-Xlint:deprecation")(_.lintDeprecation))
+    assert(check("-deprecation", "-Xlint:deprecation")(ss => ss.deprecation && ss.lintDeprecation))
+    assert(check("-deprecation", "-Xlint:-deprecation")(ss => ss.deprecation && !ss.lintDeprecation))
+    // normally, explicit yes overrides explicit no, but here we treat them as different settings.
+    // lint will enable deprecation if not explicitly disabled, otherwise just lints the usage.
+    assert(check("-deprecation:false", "-Xlint:deprecation")(ss => !ss.deprecation && ss.lintDeprecation))
+    assert(check("-deprecation:false", "-Xlint:-deprecation")(ss => !ss.deprecation && !ss.lintDeprecation))
+    // same behavior with -Xlint:_
+    assert(check("-deprecation", "-Xlint")(ss => ss.deprecation && ss.lintDeprecation))
+    assert(check("-deprecation", "-Xlint:-deprecation,_")(ss => ss.deprecation && !ss.lintDeprecation))
+    assert(check("-deprecation:false", "-Xlint")(ss => !ss.deprecation && ss.lintDeprecation))
+  }
+
   @Test def userSettingsHavePrecedenceOverLint(): Unit = {
-    assertTrue(check("-Xlint")(_.warnUnusedImport))
+    assert(check("-Xlint")(_.warnUnusedImport))
     assertFalse(check("-Xlint", "-Ywarn-unused:-imports")(_.warnUnusedImport))
     assertFalse(check("-Ywarn-unused:-imports", "-Xlint")(_.warnUnusedImport))
   }
 
   @Test def anonymousLintersCanBeNamed(): Unit = {
-    assertTrue(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
+    assert(check("-Xlint")(_.warnMissingInterpolator)) // among Xlint
     assertFalse(check("-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
 
     // positive overrides negative, but not the other way around
-    assertTrue(check("-Xlint:-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:-missing-interpolator", "-Xlint:missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:-missing-interpolator", "-Xlint:missing-interpolator")(_.warnMissingInterpolator))
 
-    assertTrue(check("-Xlint:missing-interpolator,-missing-interpolator")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:missing-interpolator", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:missing-interpolator,-missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:missing-interpolator", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
 
     // -Xlint:_ adds all possible choices, but explicit negative settings will override
     assertFalse(check("-Xlint:-missing-interpolator,_")(_.warnMissingInterpolator))
@@ -61,11 +80,11 @@ class SettingsTest {
     assertFalse(check("-Xlint", "-Xlint:-missing-interpolator")(_.warnMissingInterpolator))
 
     // combination of positive, negative and _
-    assertTrue(check("-Xlint:_,-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:-missing-interpolator,_,missing-interpolator")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:-missing-interpolator,missing-interpolator,_")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:missing-interpolator,-missing-interpolator,_")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint:missing-interpolator,_,-missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:_,-missing-interpolator,missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:-missing-interpolator,_,missing-interpolator")(_.warnMissingInterpolator))
+    assert(check("-Xlint:-missing-interpolator,missing-interpolator,_")(_.warnMissingInterpolator))
+    assert(check("-Xlint:missing-interpolator,-missing-interpolator,_")(_.warnMissingInterpolator))
+    assert(check("-Xlint:missing-interpolator,_,-missing-interpolator")(_.warnMissingInterpolator))
   }
 
   @Test def xLintInvalidChoices(): Unit = {
@@ -74,9 +93,9 @@ class SettingsTest {
   }
 
   @Test def xLintNonColonated(): Unit = {
-    assertTrue(check("-Xlint", "adapted-args", "-deprecation")(_.warnAdaptedArgs))
+    assert(check("-Xlint", "adapted-args", "-deprecation")(_.warnAdaptedArgs))
     assertFalse(check("-Xlint", "adapted-args", "-deprecation")(_.warnMissingInterpolator))
-    assertTrue(check("-Xlint", "adapted-args", "missing-interpolator", "-deprecation")(s => s.warnMissingInterpolator && s.warnAdaptedArgs))
+    assert(check("-Xlint", "adapted-args", "missing-interpolator", "-deprecation")(s => s.warnMissingInterpolator && s.warnAdaptedArgs))
     assertThrows[IllegalArgumentException](check("-Xlint", "adapted-args", "-missing-interpolator")(_.warnAdaptedArgs)) // non-colonated: cannot provide negative args
   }
 
@@ -88,11 +107,11 @@ class SettingsTest {
       r
     }
 
-    assertTrue(check("-Xlint")(t(_, "adapted-args")))
-    assertTrue(check("-Xlint:_")(t(_, "adapted-args")))
+    assert(check("-Xlint")(t(_, "adapted-args")))
+    assert(check("-Xlint:_")(t(_, "adapted-args")))
     assertFalse(check("-Xlint:_,-adapted-args")(t(_, "adapted-args")))
     assertFalse(check("-Xlint:-adapted-args,_")(t(_, "adapted-args")))
-    assertTrue(check("-Xlint:-adapted-args,_,adapted-args")(t(_, "adapted-args")))
+    assert(check("-Xlint:-adapted-args,_,adapted-args")(t(_, "adapted-args")))
   }
 
   @Test def expandingMultichoice(): Unit = {
@@ -118,21 +137,21 @@ class SettingsTest {
 
     import mChoices._
 
-    assertTrue(check("-m")(_.value == Set(a,c)))
-    assertTrue(check("-m:a,-b,c")(_.value == Set(a,c)))
+    assert(check("-m")(_.value == Set(a,c)))
+    assert(check("-m:a,-b,c")(_.value == Set(a,c)))
 
     // expanding options don't end up in the value set, only the terminal ones
-    assertTrue(check("-m:ab,ac")(_.value == Set(a,b,c)))
-    assertTrue(check("-m:_")(_.value == Set(a,b,c,d)))
-    assertTrue(check("-m:uber,ac")(_.value == Set(a,b,c,d))) // recursive expansion of uber
+    assert(check("-m:ab,ac")(_.value == Set(a,b,c)))
+    assert(check("-m:_")(_.value == Set(a,b,c,d)))
+    assert(check("-m:uber,ac")(_.value == Set(a,b,c,d))) // recursive expansion of uber
 
     // explicit nays
-    assertTrue(check("-m:_,-b")(_.value == Set(a,c,d)))
-    assertTrue(check("-m:b,_,-b")(_.value == Set(a,b,c,d)))
-    assertTrue(check("-m:ac,-c")(_.value == Set(a)))
-    assertTrue(check("-m:ac,-a,-c")(_.value == Set()))
-    assertTrue(check("-m:-d,ac")(_.value == Set(a,c)))
-    assertTrue(check("-m:-b,ac,uber")(_.value == Set(a,c,d)))
+    assert(check("-m:_,-b")(_.value == Set(a,c,d)))
+    assert(check("-m:b,_,-b")(_.value == Set(a,b,c,d)))
+    assert(check("-m:ac,-c")(_.value == Set(a)))
+    assert(check("-m:ac,-a,-c")(_.value == Set()))
+    assert(check("-m:-d,ac")(_.value == Set(a,c)))
+    assert(check("-m:-b,ac,uber")(_.value == Set(a,c,d)))
 
     assertFalse(check("-m:uber")(_.contains("i-m-not-an-option")))
 
@@ -146,7 +165,7 @@ class SettingsTest {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (_, residual) = s.processArguments(args.toList, processAll = true)
       assert(residual.isEmpty)
-      assertTrue(s.source.value == ScalaVersion(expected))
+      assert(s.source.value == ScalaVersion(expected))
     }
     check(expected = "2.13.0") // default
     check(expected = "2.11.0", "-Xsource:2.11")
@@ -182,8 +201,8 @@ class SettingsTest {
 
     import mChoices._
 
-    assertTrue(check("-m")(_.value == Set(b)))
-    assertTrue(check("-m") { _ =>
+    assert(check("-m")(_.value == Set(b)))
+    assert(check("-m") { _ =>
       val expected =
         """|magic sauce
            |  a  help a
@@ -212,8 +231,8 @@ class SettingsTest {
 
     import mChoices._
 
-    assertTrue(check("-m")(_.value == Set(a, b, c)))
-    assertTrue(check("-m") { _ =>
+    assert(check("-m")(_.value == Set(a, b, c)))
+    assert(check("-m") { _ =>
       val expected =
         """|magic sauce
            |  a  help a
@@ -227,13 +246,13 @@ class SettingsTest {
   @Test def `wildcard doesn't disable everything`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:_" :: Nil, true)
-    assertTrue("has the choice", settings.opt.contains(settings.optChoices.inline))
-    assertTrue("is enabled", settings.optInlinerEnabled)
+    assert("has the choice", settings.opt.contains(settings.optChoices.inline))
+    assert("is enabled", settings.optInlinerEnabled)
   }
   @Test def `kill switch can be enabled explicitly`(): Unit = {
     val settings = new Settings()
     settings.processArguments("-opt:inline,l:none" :: Nil, true)
-    assertTrue("has the choice", settings.opt.contains(settings.optChoices.inline))
+    assert("has the choice", settings.opt.contains(settings.optChoices.inline))
     assertFalse("is not enabled", settings.optInlinerEnabled)
   }
 }

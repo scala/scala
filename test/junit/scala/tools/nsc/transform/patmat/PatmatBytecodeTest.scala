@@ -138,7 +138,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
       """.stripMargin
     val c = optCompiler.compileClass(code, allowMessage = _.msg.contains("may not be exhaustive"))
 
-    val expected = List(
+    val expected = List[Any](
       ALOAD /*1*/ , INSTANCEOF /*::*/ , IFEQ /*A*/ ,
       ALOAD, CHECKCAST /*::*/ , "head", "unboxToInt",
       ISTORE, GOTO /*B*/ ,
