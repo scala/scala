@@ -3082,7 +3082,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   class AliasTypeSymbol protected[Symbols] (initOwner: Symbol, initPos: Position, initName: TypeName)
   extends TypeSymbol(initOwner, initPos, initName) {
     type TypeOfClonedSymbol = TypeSymbol
-    override def variance = if (isLocalToThis) Bivariant else info.typeSymbol.variance
+    override def variance =
+      // A non-applied parameterized type alias can appear in any variance position
+      if (typeParams.nonEmpty)
+        Invariant
+      else if (isLocalToThis)
+        Bivariant
+      else
+        info.typeSymbol.variance
+
     override def isContravariant = variance.isContravariant
     override def isCovariant     = variance.isCovariant
     final override def isAliasType = true
