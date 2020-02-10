@@ -47,6 +47,8 @@ trait ReplGlobal extends Global {
     addToPhasesSet(wrapperCleanup, "Remove unused values from import wrappers to avoid unwanted capture of non-serializable objects")
   }
 
+  def sessionNames: Naming#SessionNames
+
   private object wrapperCleanup extends Transform {
     override val global: self.type = self
     override val phaseName: String = "wrapper-cleanup"
@@ -56,7 +58,12 @@ trait ReplGlobal extends Global {
     override val runsRightAfter: Option[String] = None
     override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer(unit)
     class WrapperCleanupTransformer(unit: CompilationUnit) extends Transformer {
-      val unusedPrivates = new analyzer.UnusedPrivates()
+      val unusedPrivates = new analyzer.UnusedPrivates() {
+        override def ignoreNames = super.ignoreNames ++ {
+          val sn = sessionNames
+          Set(sn.line, sn.read, "INSTANCE", sn.iw, sn.eval, sn.print, sn.result).map(TermName(_))
+        }
+      }
       unusedPrivates.traverse(unit.body)
       val unusedSet = unusedPrivates.unusedTerms.iterator.flatMap(tree => List(tree.symbol, tree.symbol.accessedOrSelf)).toSet
       override def transformTemplate(tree: Template): Template = {

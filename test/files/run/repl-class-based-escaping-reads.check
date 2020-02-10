@@ -1,0 +1,8 @@
+
+scala> type anotherint = Int
+defined type alias anotherint
+
+scala> val four: anotherint = 4
+four: anotherint = 4
+
+scala> :quit
