@@ -1,4 +1,4 @@
-t877.scala:3: error: Invalid literal number
+t877.scala:3: error: invalid literal number
 trait Foo extends A(22A, Bug!) {}
                     ^
 t877.scala:3: error: ')' expected but eof found.
