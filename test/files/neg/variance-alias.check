@@ -1,7 +1,7 @@
-variance-alias.scala:5: error: covariant type T occurs in invariant position in type => Inv[T] of value a
+variance-alias.scala:5: error: covariant type T occurs in invariant position in type Inv[T] of value a
   val a: Inv[({type L[+X] = X})#L[T]] = new Inv[({type L[+X] = X})#L[T]] {} // error
       ^
-variance-alias.scala:6: error: covariant type T occurs in invariant position in type => Inv[X.this.Id[T]] of value b
+variance-alias.scala:6: error: covariant type T occurs in invariant position in type Inv[X.this.Id[T]] of value b
   val b: Inv[Id[T]] = new Inv[Id[T]] {} // error
       ^
 2 errors
