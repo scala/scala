@@ -14,7 +14,7 @@ import sbt.librarymanagement.{
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "0.21.0-RC1"
+  val dottyVersion = "0.22.0-RC1"
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(
@@ -38,6 +38,10 @@ object DottySupport {
 
       beforeSourcepath ++ ("-sourcepath" :: newSourcepath :: afterSourcePath)
     },
+
+    scalacOptions in Compile ++= Seq(
+      "-Yerased-terms" // needed to compile dotty-library
+    ),
 
     // Some files shouldn't be compiled
     excludeFilter in unmanagedSources ~= (old =>
