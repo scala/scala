@@ -964,7 +964,7 @@ lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-
   .settings(
     name := "scala-partest-extras",
     description := "Scala Compiler Testing Tool (compiler-specific extras)",
-    libraryDependencies += partestDep,
+    libraryDependencies ++= Seq(partestDep, junitDep),
     unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
 
