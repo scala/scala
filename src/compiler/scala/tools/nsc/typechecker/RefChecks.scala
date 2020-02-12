@@ -272,6 +272,7 @@ abstract class RefChecks extends Transform {
      *     that are not implemented in a subclass.
      *  4. Check that every member with an `override` modifier
      *     overrides some other member.
+     *  5. Check that the nested class do not shadow other nested classes from outer class's parent.
      */
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false): Unit = {
       val self = clazz.thisType
@@ -832,7 +833,21 @@ abstract class RefChecks extends Transform {
           }
           member resetFlag (OVERRIDE | ABSOVERRIDE)  // Any Override
         }
-    }
+
+      // 5. Check that the nested class do not shadow other nested classes from outer class's parent
+      def checkNestedClassShadow(): Unit =
+        if (clazz.isNestedClass) {
+          val overridden = clazz.owner.ancestors
+            .map(a => clazz.matchingSymbol(a, clazz.owner.thisType))
+            .filter(c => c.exists && c.isClass)
+          overridden foreach { sym2 =>
+            def msg(what: String) = s"shadowing a nested class of a parent is $what but class ${clazz.name} shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
+            if (currentRun.isScala300) reporter.error(clazz.pos, msg("unsupported"))
+            else currentRun.reporting.deprecationWarning(clazz.pos, clazz, msg("deprecated"), "2.13.2")
+          }
+        }
+      checkNestedClassShadow()
+    } // end checkAllOverrides
 
   // Basetype Checking --------------------------------------------------------
 

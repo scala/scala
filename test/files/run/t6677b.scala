@@ -1,3 +1,6 @@
+// scalac: -Xlint:deprecation
+//
+
 trait U {
 	trait U1 {
 		class X

@@ -1,0 +1,3 @@
+t6677b.scala:15: warning: shadowing a nested class of a parent is deprecated but class X shadows class X defined in trait U1; rename the class to something else
+  class U11 extends U1 { class X extends super.X { foo } } // refer to foo to add $outer pointer
+                               ^

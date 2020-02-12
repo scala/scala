@@ -1,0 +1,4 @@
+nested-class-shadowing-removal.scala:9: error: shadowing a nested class of a parent is unsupported but class Status shadows class Status defined in trait Core; rename the class to something else
+  class Status extends super.Status
+        ^
+1 error

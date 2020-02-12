@@ -1,3 +1,6 @@
+// scalac: -Werror -Xlint:deprecation
+//
+
 //############################################################################
 // Bugs
 //############################################################################
@@ -395,29 +398,6 @@ object Bug328Test {
 }
 
 //############################################################################
-// Bug 396
-
-trait Bug396A {
-  class I {
-    def run = Console.println("A");
-  }
-}
-trait Bug396B extends Bug396A {
-  class I extends super.I {
-    override def run = { super.run; Console.println("B"); }
-  }
-}
-trait Bug396C extends Bug396A {
-  trait I extends super.I {
-    override def run = { super.run; Console.println("C"); }
-  }
-}
-object Bug396Test extends Bug396B with Bug396C {
-  class I2 extends super[Bug396B].I with super[Bug396C].I;
-  def test(args: Array[String]): Unit = (new I2).run
-}
-
-//############################################################################
 // Bug 399
 
 object Bug399Test {
@@ -476,7 +456,6 @@ object Test  {
     test(266, Bug266Test.test(args));
     test(316, Bug316Test.test(args));
     test(328, Bug328Test.test(args));
-    test(396, Bug396Test.test(args));
     test(399, Bug399Test.test(args));
 
     if (errors > 0) {

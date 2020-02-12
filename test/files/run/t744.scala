@@ -1,3 +1,6 @@
+// scalac: -Xlint:deprecation
+//
+
 trait Linked {
   type File <: FileImpl;
   trait FileImpl {
