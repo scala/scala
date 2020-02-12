@@ -221,7 +221,7 @@ trait ScriptedRepl extends Repl {
   def addBackReferences(req: Request): Either[String, Request]
 }
 
-trait ReplReporter extends FilteringReporter {
+trait ReplReporter extends FilteringReporter with ReplStrings {
   def out: PrintWriter
 
   /**

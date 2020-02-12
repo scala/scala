@@ -22,7 +22,7 @@ trait MemberHandlers {
   // show identity hashcode of objects in vals
   final val showObjIds = false
 
-  import intp.{ Request, global, naming }
+  import intp.{ Request, global, naming, nameToCode, typeToCode }
   import global._
   import naming._
 
@@ -142,13 +142,13 @@ trait MemberHandlers {
           else "val"
 
         val nameString = {
-          string2code(prettyName) + (
+          nameToCode(string2code(prettyName)) + (
             if (showObjIds) s"""" + f"@$${System.identityHashCode($path)}%8x" + """"
             else ""
           )
         }
 
-        val typeString = string2code(req.typeOf(name))
+        val typeString = typeToCode(string2code(req.typeOf(name)))
 
         s""" + "$varOrValOrLzy $nameString: $typeString" + $resultString"""
       }

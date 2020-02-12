@@ -733,10 +733,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     @tailrec
     def loop(tpe: Type, acc: StringBuilder): StringBuilder = tpe match {
-      case NullaryMethodType(resultType)  => acc ++= s": $resultType"
+      case NullaryMethodType(resultType)  => acc ++= s": ${typeToCode(resultType.toString)}"
       case PolyType(tyParams, resultType) => loop(resultType, acc ++= tyParens(tyParams.map(_.defString)))
       case MethodType(params, resultType) => loop(resultType, acc ++= formatParams(params))
-      case other                          => acc ++= s": $other"
+      case other                          => acc ++= s": ${typeToCode(other.toString)}"
     }
 
     loop(tp, new StringBuilder).toString
@@ -1338,6 +1338,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       sym.owner.fullName + "."
     )
   }
+
+  def replStrings: ReplStrings = reporter
+  def nameToCode(s: String)    = replStrings.nameToCode(s)
+  def typeToCode(s: String)    = replStrings.typeToCode(s)
 
   // debugging
   def debugging[T](msg: String)(res: T) = {
