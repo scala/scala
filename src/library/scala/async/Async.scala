@@ -10,11 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
+package scala.async
 
-import scala.language.experimental.macros
-import scala.concurrent.{Future, ExecutionContext}
 import scala.annotation.compileTimeOnly
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.experimental.macros
 
 /**
  * Async blocks provide a direct means to work with [[scala.concurrent.Future]].
@@ -45,7 +45,7 @@ import scala.annotation.compileTimeOnly
  *  }
  * }}}
  */
-object async {
+object Async {
   /**
    * Run the block of code `body` asynchronously. `body` may contain calls to `await` when the results of
    * a `Future` are needed; this is translated into non-blocking code.

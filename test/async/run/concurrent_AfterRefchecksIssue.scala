@@ -1,4 +1,4 @@
-import scala.concurrent._, ExecutionContext.Implicits.global, scala.async._
+import scala.concurrent._, ExecutionContext.Implicits.global, scala.async.Async._
 
 trait Factory[T] {
   def create: T

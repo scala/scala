@@ -1,6 +1,6 @@
 import scala.concurrent.{Await, Future, duration}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.async.{async, await}
+import scala.async.Async.{async, await}
 
 object Test extends App {
   val out = Console.out

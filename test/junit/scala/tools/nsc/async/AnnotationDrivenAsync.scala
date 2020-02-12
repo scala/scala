@@ -23,7 +23,8 @@ class AnnotationDrivenAsync {
   def testBasicScalaConcurrent(): Unit = {
     val code =
       """
-        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global, scala.async._
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
         |
         |object Test {
         |  def test: Future[Int] = async { await(f(1)) + await(f(2)) }
@@ -56,7 +57,7 @@ class AnnotationDrivenAsync {
   def testMixedAsync(): Unit = {
     val code = """
       |import scala.tools.nsc.async.{autoawait, customAsync}
-      |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global, scala.async._
+      |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global, scala.async.Async._
       |
       |object Test {
       |  @customAsync

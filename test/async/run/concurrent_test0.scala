@@ -13,7 +13,7 @@
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.async._
+import scala.async.Async._
 import scala.concurrent.duration.Duration
 
 object Test extends App { assert(test == "foobar")
