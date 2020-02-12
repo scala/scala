@@ -3519,13 +3519,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             isApplicableSafe(context.undetparams, followApply(pre memberType alt), argtypes, pt)
           }
           if (sym.isOverloaded) {
-              // eliminate functions that would result from tupling transforms
-              // keeps alternatives with repeated params
-            val sym1 = sym filter (alt =>
-                 isApplicableBasedOnArity(pre memberType alt, argtypes.length, varargsStar = false, tuplingAllowed = false)
-              || alt.tpe.params.exists(_.hasDefault)
-            )
-            if (sym1 != NoSymbol) sym = sym1
+            // retracted synthetic apply in favor of user-defined apply
+            def isRetracted(alt: Symbol) = alt.isError && alt.isSynthetic
+            // loose arity check: based on args, prefer no tupling, assume no args: _*,
+            // but keep alt with repeated params or default args, this is a loose fitting
+            def isLooseFit(alt: Symbol)  =
+              isApplicableBasedOnArity(pre memberType alt, argtypes.length, varargsStar = false, tuplingAllowed = false) || alt.tpe.params.exists(_.hasDefault)
+            sym.filter(alt => !isRetracted(alt) && isLooseFit(alt)) match {
+              case _: NoSymbol =>
+              case sym1        => sym = sym1
+            }
           }
           if (sym == NoSymbol) fun
           else adaptAfterOverloadResolution(fun setSymbol sym setType pre.memberType(sym), mode.forFunMode)
