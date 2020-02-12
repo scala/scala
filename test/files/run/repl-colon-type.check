@@ -34,12 +34,12 @@ scala> :type lazy val f = 5
 Int
 
 scala> :type protected lazy val f = 5
-<console>:5: error: lazy value f cannot be accessed in INSTANCE.$iw
+<console>:5: error: lazy value f cannot be accessed in object $iw
  Access to protected lazy value f not permitted because
  enclosing object $eval in package $line13 is not a subclass of
- class $iw where target is defined
+ object $iw where target is defined
          lazy val $result = f
-                                                       ^
+                                                           ^
 
 scala> :type def f = 5
 => Int

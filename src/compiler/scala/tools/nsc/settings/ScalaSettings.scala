@@ -236,8 +236,8 @@ trait ScalaSettings extends AbsScalaSettings
   val Ymacronoexpand  = BooleanSetting    ("-Ymacro-no-expand", "Don't expand macros. Might be useful for scaladoc and presentation compiler, but will crash anything which uses macros and gets past typer.") withDeprecationMessage(s"Use ${Ymacroexpand.name}:${MacroExpand.None}") withPostSetHook(_ => Ymacroexpand.value = MacroExpand.None)
   val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
   val Yreplsync       = BooleanSetting    ("-Yrepl-sync", "Do not use asynchronous code for repl startup")
-  val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects") withDefault true withPostSetHook (_ => YreplMagicImport.value = true)
-  val YreplMagicImport = BooleanSetting   ("-Yrepl-use-magic-imports", "In the code that wraps REPL snippets, use magic imports rather than nesting wrapper object/classes") withDefault true
+  val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects") withPostSetHook (_ => YreplMagicImport.value = true)
+  val YreplMagicImport = BooleanSetting   ("-Yrepl-use-magic-imports", "In the code that wraps REPL snippets, use magic imports rather than nesting wrapper object/classes")
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
   val YmethodInfer    = BooleanSetting    ("-Yinfer-argument-types", "Infer types for arguments of overridden methods.")
   val YdisableFlatCpCaching  = BooleanSetting    ("-YdisableFlatCpCaching", "Do not cache flat classpath representation of classpath elements from jars across compiler instances.")
