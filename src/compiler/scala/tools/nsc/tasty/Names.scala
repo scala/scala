@@ -2,6 +2,7 @@ package scala.tools.nsc.tasty
 
 import scala.annotation.tailrec
 import scala.reflect.NameTransformer
+import scala.reflect.internal.Variance
 
 object Names {
 
@@ -150,6 +151,11 @@ object Names {
     final def signature: Signature[TastyName] = self match {
       case SignedName(_, signature) => signature
       case _                        => Signature.NotAMethod
+    }
+
+    final def variance: Variance = self match {
+      case VariantName(_, contravariant) => if (contravariant) Variance.Contravariant else Variance.Covariant
+      case _                             => Variance.Invariant
     }
   }
 }

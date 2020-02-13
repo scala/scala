@@ -9,6 +9,7 @@ import scala.tools.nsc.tasty.Names.TastyName.SimpleName
 import scala.tools.nsc.tasty._
 import scala.tools.nsc.tasty.Names.TastyName.ModuleName
 import scala.tools.nsc.tasty.Names.TastyName.SignedName
+import scala.reflect.internal.Variance
 
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
@@ -143,7 +144,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
-    def apply(paramNames: List[N])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type): LT
+    def apply(paramNames: List[N], paramVariances: List[Variance])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type): LT
   }
 
   object TypeParamLambda {
@@ -154,8 +155,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     type ThisName = TypeName
     type PInfo    = TypeBounds
 
-    val paramNames: List[TypeName]   = typeParams.map(_.name.toTypeName)
-    val paramInfos: List[TypeBounds] = typeParams.map(_.tpe.bounds)
+    val paramVariances: List[Variance] = typeParams.map(_.variance)
+    val paramNames: List[TypeName]     = typeParams.map(_.name.toTypeName)
+    val paramInfos: List[TypeBounds]   = typeParams.map(_.tpe.bounds)
 
     validateThisLambda()
 
@@ -168,15 +170,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     type PInfo <: Type
 
     val paramNames: List[ThisName]
+    val paramVariances: List[Variance]
     val paramInfos: List[PInfo]
     val resType: Type
-
-    private[this] var myParamRefs: List[TypeParamRef] = _
-
-    final def paramRefs: List[TypeParamRef] = {
-      if (myParamRefs `eq` null) myParamRefs = paramNames.indices.toList.map(i => new TypeParamRef(this, i))
-      myParamRefs
-    }
 
     override final def safeToString: String = {
       val args = paramNames.zip(paramInfos).map {
@@ -197,42 +193,20 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
      */
     final def canonicalForm(implicit ctx: Context): Type = {
       ctx.log(s"canonical form of $this")
-      val resUpper = resType.upperBound
-      val resLower = if (resType `eq` resType.bounds) resType.lowerBound else defn.NothingTpe
-      lazy val typeParams = {
-        for (typeParam <- this.typeParams) {
-          if (typeParam.tpe.upperBound.isHigherKinded) {
-            typeParam.info = typeParam.tpe.upperBound
-          }
-        }
-        this.typeParams
+      def eliminateBadArgs(tpe: Type): Type = {
+        if (tpe.typeArgs.exists(_ =:= TypeBounds.empty))
+          mkExistentialType(typeParams, mkTypeRef(tpe, typeParams.map(_.tpe)))
+        else
+          tpe
       }
-      val result = {
-        if (resUpper.typeArgs.nonEmpty && resUpper.typeArgs == paramInfos) {
-          ctx.log("making poly from lambda 1)")
-          mkPolyType(
-            typeParams,
-            mkTypeBounds(
-              resLower,
-              mkExistentialType(
-                typeParams,
-                mkTypeRef(resUpper, typeParams.map(_.tpe))
-              )
-            )
-          )
-        }
-        else if (resUpper.typeArgs.isEmpty) {
-          ctx.log("making poly from lambda 2)")
-          mkPolyType(typeParams, mkTypeBounds(resLower, resUpper))
-        }
-        else if (resUpper.typeArgs == paramRefs) {
-          ctx.log("reduce to type ctor from lambda")
-          mkPolyType(typeParams, mkTypeBounds(resLower, mkTypeRef(resUpper, typeParams.map(_.tpe))))
-        }
-        else {
-          ctx.log("making poly from lambda 3)")
-          mkPolyType(typeParams, resUpper)
-        }
+      val sanitised = resType.map(eliminateBadArgs)
+      val result = lambdaTpe match {
+        case _: TypeParamLambda =>
+          ctx.log(s"making poly from type param lambda")
+          mkPolyType(typeParams, sanitised)
+        case _: HKTypeLambda =>
+          ctx.log("making poly from hk type lambda")
+          mkPolyType(typeParams, TypeBounds.addLower(sanitised))
       }
       ctx.log(s"result canonical: $result")
       result
@@ -254,26 +228,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  final class TypeParamRef(binder: LambdaType, i: Int) extends Type with Product {
-
-    override def safeToString(): String = binder.paramNames(i).toString()
-
-    override val productPrefix: String = "TypeParamRef"
-    val productArity = 1
-    def productElement(n: Int): Any = n match {
-      case 0 => binder.paramNames(i)
-      case _ => throw new IndexOutOfBoundsException(n.toString)
-    }
-    def canEqual(that: Any): Boolean = that.isInstanceOf[TypeParamRef]
-  }
-
   object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
-    def apply(paramNames: List[TypeName])(
+    def apply(paramNames: List[TypeName], paramVariances: List[Variance])(
         paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type): HKTypeLambda =
-      new HKTypeLambda(paramNames)(paramInfosExp, resultTypeExp)
+      new HKTypeLambda(paramNames, paramVariances)(paramInfosExp, resultTypeExp)
   }
 
-  final class HKTypeLambda(val paramNames: List[TypeName])(
+  final class HKTypeLambda(val paramNames: List[TypeName], val paramVariances: List[Variance])(
       paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)
   extends LambdaType {
     type ThisName = TypeName
@@ -288,8 +249,26 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     validateThisLambda()
 
     override def typeParams: List[Symbol] = {
-      if (myTypeParams `eq` null) myTypeParams = paramNames.zip(paramInfos).map {
-        case (name, info) => typeSymbol.newTypeParameter(name.toTypeName, noPosition, Param | Deferred).setInfo(info)
+      if (myTypeParams `eq` null) myTypeParams = paramNames.lazyZip(paramInfos).lazyZip(paramVariances).map {
+        case (name, info, variance) =>
+          val flags0 = Param | Deferred
+          val flags  = variance match {
+            case Variance.Contravariant => flags0 | Contravariant
+            case Variance.Covariant     => flags0 | Covariant
+            case _                      => flags0
+          }
+          val argInfo = info match {
+            case bounds @ TypeBounds(lo,hi) =>
+              if (lo.isHigherKinded && hi.isHigherKinded && hi.resultType =:= TypeBounds.empty) {
+                assert(lo.resultType.lowerBound =:= defn.NothingTpe)
+                mkPolyType(lo.typeParams, TypeBounds.lower(lo.resultType.upperBound))
+              }
+              else if (hi.isHigherKinded) hi
+              else if (lo.isHigherKinded) lo
+              else bounds
+            case _ => info
+          }
+          typeSymbol.newTypeParameter(name.toTypeName, noPosition, flags).setInfo(argInfo)
       }
       myTypeParams
     }

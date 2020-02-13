@@ -10,7 +10,7 @@ object TestReader extends Suite("TestReader") {
   def pureToString[F[_], A](fa: F[A])(implicit F: Monad[F]): F[String] = F.flatMap(fa)(a => F.pure(a.toString))
 
   test {
-    val f = pureToString((s: Unit) => 101)
+    val f = pureToString[({type F[A] = Unit => A})#F, Int]((s: Unit) => 101)(mkReaderMonad[Unit])
     assert(f(()) === "101")
   }
 }

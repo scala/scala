@@ -41,9 +41,9 @@ object TastyTest {
   def runSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/"run")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"pre", pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"src-2", src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
   } yield ()
@@ -64,20 +64,20 @@ object TastyTest {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"pre", pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, srcRoot/"src-2", src2:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", src2:_*)
   } yield ()
 
   private def negSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
     (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- dotcPos(out, dottyLibrary, srcRoot/"src-3", src3:_*)
+    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
     _                 <- scalacNeg(out, dottyLibrary, src2:_*)
   } yield ()
 
-  private def scalacPos(out: String, dottyLibrary: String, dir: String, sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(dir)} with scalac.")
+  private def scalacPos(out: String, dottyLibrary: String, sourceRoot: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
     successWhen(scalac(out, dottyLibrary, sources:_*))("scalac failed to compile sources.")
   }
 
@@ -211,8 +211,8 @@ object TastyTest {
     }.getOrElse(false)
   }
 
-  private def dotcPos(out: String, dottyLibrary: String, dir: String, sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(dir)} with dotc.")
+  private def dotcPos(out: String, dottyLibrary: String, sourceRoot: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
     val result = sources.isEmpty || {
       val args = Array(
         "-d", out,

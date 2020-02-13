@@ -39,6 +39,7 @@ trait TastyKernel { self: TastyUniverse =>
   type TypeRef = symbolTable.TypeRef
   type SingleType = symbolTable.SingleType
   type AnnotatedType = symbolTable.AnnotatedType
+  type TypeBounds = symbolTable.TypeBounds
 
   type ConstantType = symbolTable.ConstantType
   def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
@@ -51,8 +52,17 @@ trait TastyKernel { self: TastyUniverse =>
 
   def noPrefix: Type = symbolTable.NoPrefix
 
-  type TypeBounds = symbolTable.TypeBounds
-  def emptyTypeBounds: TypeBounds = symbolTable.TypeBounds.empty
+  object TypeBounds {
+    def unapply(tpe: TypeBounds): Option[(Type, Type)] = symbolTable.TypeBounds.unapply(tpe)
+    def empty: TypeBounds = symbolTable.TypeBounds.empty
+    def upper(hi: Type): TypeBounds = symbolTable.TypeBounds.upper(hi)
+    def lower(lo: Type): TypeBounds = symbolTable.TypeBounds.lower(lo)
+    def addLower(tpe: Type): TypeBounds = tpe match {
+      case tpe: TypeBounds => tpe
+      case tpe             => upper(tpe)
+    }
+    def bounded(lo: Type, hi: Type): TypeBounds = symbolTable.TypeBounds.apply(lo, hi)
+  }
 
   def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
     symbolTable.cloneSymbolsAtOwner(syms,owner)
@@ -79,7 +89,6 @@ trait TastyKernel { self: TastyUniverse =>
   def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
   def mkAppliedType(tyconsym: Symbol, args: Type*): Type = symbolTable.appliedType(tyconsym, args:_*)
   def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
-  def mkTypeBounds(lo: Type, hi: Type): TypeBounds = symbolTable.internal.typeBounds(lo, hi)
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
   def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
@@ -91,6 +100,7 @@ trait TastyKernel { self: TastyUniverse =>
   object defn {
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
+    final val AnyTpe: Type = symbolTable.definitions.AnyTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
     final val UnitTpe: Type = symbolTable.definitions.UnitTpe
     final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass

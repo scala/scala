@@ -5,6 +5,7 @@ import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import Names.TastyName
+import scala.reflect.internal.Variance
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -303,14 +304,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val end = readEnd()
 
         def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
-            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: TastyName => N)(implicit ctx: Context): Type = {
+            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: TastyName => N, varianceMap: TastyName => Variance)(implicit ctx: Context): Type = {
           val complete = typeAtAddr.contains(start)
           val stored = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
-            val paramNames = nameReader.readParamNames(end).map(nameMap)
-            companion(paramNames)(
+            val paramNames = nameReader.readParamNames(end)
+            val encodedNames = paramNames.map(nameMap)
+            val nameVariances = paramNames.map(varianceMap)
+            companion(encodedNames, nameVariances)(
               pt => registeringType(pt, paramReader.readParamTypes[PInfo](end)),
               pt => readType())
           })
@@ -362,7 +365,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case TYPEBOUNDS =>
               val lo = readType()
               val hi = readType()
-              mkTypeBounds(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
+              TypeBounds.bounded(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
             case ANNOTATEDtype =>
               mkAnnotatedType(readType(), mkAnnotation(readTerm()))
             case ANDtype =>
@@ -386,10 +389,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             // case IMPLICITMETHODtype =>
             //   readMethodic(ImplicitMethodType, _.toTermName)
             case TYPELAMBDAtype =>
-              readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName)
+              readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName, _.variance)
             case PARAMtype =>
               readTypeRef() match {
-                case binder: LambdaType => binder.paramRefs(readNat())
+                case binder: LambdaType => mkTypeRef(binder.typeParams(readNat()), Nil)
               }
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
@@ -907,7 +910,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             readTemplate(symAddr)(localCtx)
           }
           else {
-            sym.info = emptyTypeBounds // needed to avoid cyclic references when unpickling rhs, see i3816.scala
+            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see i3816.scala
             // sym.setFlag(Provisional)
             val rhs = readTpt()(localCtx)
             sym.info = new NoCompleter {
@@ -1483,7 +1486,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case TYPEBOUNDStpt =>
               val lo = readTpt()
               val hi = if (currentAddr === end) lo else readTpt()
-              TypeBoundsTree(lo, hi).setType(mkTypeBounds(lo.tpe, hi.tpe))
+              TypeBoundsTree(lo, hi).setType(TypeBounds.bounded(lo.tpe, hi.tpe))
 //            case HOLE =>
 //              readHole(end, isType = false)
 //            case _ =>
