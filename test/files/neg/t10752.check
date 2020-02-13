@@ -1,0 +1,9 @@
+Test_2.scala:2: warning: class DeprecatedClass in package p1 is deprecated: see corresponding Javadoc for more information.
+  def useC = p1.DeprecatedClass.foo
+                ^
+Test_2.scala:3: warning: method foo in class DeprecatedMethod is deprecated: see corresponding Javadoc for more information.
+  def useM = p1.DeprecatedMethod.foo
+                                 ^
+error: No warnings can be incurred under -Xfatal-warnings.
+two warnings found
+one error found
