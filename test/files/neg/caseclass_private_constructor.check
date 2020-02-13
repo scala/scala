@@ -1,53 +1,53 @@
-caseclass_private_constructor.scala:6: error: method apply in object A cannot be accessed in object A
+caseclass_private_constructor.scala:6: error: method apply in object A cannot be accessed as a member of object A from object ATest
 error after rewriting to A.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def a1: A = A(1) // error: apply is private
               ^
-caseclass_private_constructor.scala:7: error: method copy in class A cannot be accessed in A
+caseclass_private_constructor.scala:7: error: method copy in class A cannot be accessed as a member of A from object ATest
   def a2: A = a1.copy(2) // error: copy is private
                  ^
-caseclass_private_constructor.scala:12: error: method apply in object B cannot be accessed in object B
+caseclass_private_constructor.scala:12: error: method apply in object B cannot be accessed as a member of object B from object BTest
 error after rewriting to B.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def b1: B = B(1) // error: apply is private
               ^
-caseclass_private_constructor.scala:13: error: method copy in class B cannot be accessed in B
+caseclass_private_constructor.scala:13: error: method copy in class B cannot be accessed as a member of B from object BTest
   def b2: B = b1.copy(2) // error: copy is private
                  ^
-caseclass_private_constructor.scala:24: error: method apply in object C cannot be accessed in object qualified_private.C
+caseclass_private_constructor.scala:24: error: method apply in object C cannot be accessed as a member of object qualified_private.C from object QPrivTest
 error after rewriting to qualified_private.C.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def c1: C = C(1) // error: apply is private
               ^
-caseclass_private_constructor.scala:25: error: method copy in class C cannot be accessed in qualified_private.C
+caseclass_private_constructor.scala:25: error: method copy in class C cannot be accessed as a member of qualified_private.C from object QPrivTest
   def c2: C = c1.copy(2) // error: copy is private
                  ^
-caseclass_private_constructor.scala:27: error: method apply in object D cannot be accessed in object qualified_private.D
+caseclass_private_constructor.scala:27: error: method apply in object D cannot be accessed as a member of object qualified_private.D from object QPrivTest
 error after rewriting to qualified_private.D.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def d1: D = D(1) // error: apply is private
               ^
-caseclass_private_constructor.scala:28: error: method copy in class D cannot be accessed in qualified_private.D
+caseclass_private_constructor.scala:28: error: method copy in class D cannot be accessed as a member of qualified_private.D from object QPrivTest
   def d2: D = d1.copy(2) // error: copy is private
                  ^
-caseclass_private_constructor.scala:34: error: method copy in class E cannot be accessed in E
+caseclass_private_constructor.scala:34: error: method copy in class E cannot be accessed as a member of E from object ETest
  Access to protected method copy not permitted because
  enclosing object ETest is not a subclass of
  class E where target is defined
   def e2: E = e2.copy(2) // error: copy is protected
                  ^
-caseclass_private_constructor.scala:43: error: method copy in class F cannot be accessed in qualified_protected.F
+caseclass_private_constructor.scala:43: error: method copy in class F cannot be accessed as a member of qualified_protected.F from object QProtTest
  Access to protected method copy not permitted because
  enclosing object QProtTest is not a subclass of
  class F in object qualified_protected where target is defined
   def f2: F = f2.copy(2) // error: copy is protected
                  ^
-caseclass_private_constructor.scala:57: error: method copy in class OverrideApply cannot be accessed in OverrideApply
+caseclass_private_constructor.scala:57: error: method copy in class OverrideApply cannot be accessed as a member of OverrideApply from object OverrideTest
   def oa = OverrideApply(42).copy(24) // error: copy is still private
                              ^
-caseclass_private_constructor.scala:58: error: method apply in object OverrideCopy cannot be accessed in object OverrideCopy
+caseclass_private_constructor.scala:58: error: method apply in object OverrideCopy cannot be accessed as a member of object OverrideCopy from object OverrideTest
 error after rewriting to OverrideCopy.<apply: error>
 possible cause: maybe a wrong Dynamic method signature?
   def oc = OverrideCopy(42) // error: apply is still private
            ^
-12 errors found
+12 errors
