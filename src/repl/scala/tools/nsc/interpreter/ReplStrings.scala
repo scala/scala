@@ -57,3 +57,11 @@ object ReplStrings {
   //    def ss(args: Any*): String = sc.standardInterpolator(treatEscapes, args map stringOf)
   //  }
 }
+
+trait ReplStrings {
+  /** Prepare a val/def name string for outputting in code. */
+  def nameToCode(s: String): String
+
+  /** Prepare a val/def type string for outputting in code. */
+  def typeToCode(s: String): String
+}

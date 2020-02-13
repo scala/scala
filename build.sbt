@@ -605,7 +605,8 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   )
   .settings(
     connectInput in run := true,
-    run := (run in Compile).partialInput(" -usejavacp").evaluated // Automatically add this so that `repl/run` works without additional arguments.
+    run := (run in Compile).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
+    Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
   )
   .dependsOn(repl)
 

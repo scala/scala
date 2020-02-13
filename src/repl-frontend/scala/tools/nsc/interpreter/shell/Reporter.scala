@@ -127,7 +127,11 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
   var currentRequest: ReplRequest = _
 
-  import scala.io.AnsiColor.{RED, RESET, YELLOW}
+  import scala.io.AnsiColor.{BOLD, BLUE, GREEN, RED, RESET, YELLOW}
+
+  def color(c: String, s: String) = if (colorOk) BOLD + c + s + RESET else s
+  def nameToCode(s: String)       = color(BLUE, s)
+  def typeToCode(s: String)       = color(GREEN, s)
 
   private def label(severity: Severity): String = severity match {
     case internal.Reporter.ERROR   => "error"
