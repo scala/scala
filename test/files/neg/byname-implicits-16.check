@@ -1,5 +1,5 @@
 byname-implicits-16.scala:14: error: diverging implicit expansion for type Test.O[Test.Z]
-starting with method expande in object Expand
+starting with method mkN in object Test
   implicitly[O[Z]]
             ^
 1 error
