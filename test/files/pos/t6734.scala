@@ -6,7 +6,7 @@ package object p
 
 package p {
   import scala.concurrent.Future
-  case class C private[p] (value: Future[Int])   // private to avoid rewriting C.apply to new C
+  case class C protected[p] (value: Future[Int])   // protected to avoid rewriting C.apply to new C
 }
 
 package client {

@@ -532,6 +532,12 @@ abstract class TreeInfo {
     case _                                => Nil
   }
 
+  /** The modifiers of the first constructor in `stats`. */
+  def firstConstructorMods(stats: List[Tree]): Modifiers = firstConstructor(stats) match {
+    case DefDef(mods, _, _, _, _, _) => mods
+    case _                           => Modifiers()
+  }
+
   /** The value definitions marked PRESUPER in this statement sequence */
   def preSuperFields(stats: List[Tree]): List[ValDef] =
     stats collect { case vd: ValDef if isEarlyValDef(vd) => vd }

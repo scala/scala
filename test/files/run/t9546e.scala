@@ -1,5 +1,5 @@
-case class A private (x: Int)
-case class B private (x: Int)(y: Int)
+case class A protected (x: Int)
+case class B protected (x: Int)(y: Int)
 
 class C {
   def f = A(1)
