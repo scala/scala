@@ -86,8 +86,6 @@ trait TastyKernel { self: TastyUniverse =>
   def mkTypeRef(tycon: Type, args: List[Type]): Type = symbolTable.appliedType(tycon, args)
   def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
   def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
-  def mkAppliedType(tyconsym: Symbol, args: Type*): Type = symbolTable.appliedType(tyconsym, args:_*)
-  def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
   def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
   def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
@@ -100,7 +98,6 @@ trait TastyKernel { self: TastyUniverse =>
   object defn {
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
-    final val AnyTpe: Type = symbolTable.definitions.AnyTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
     final val UnitTpe: Type = symbolTable.definitions.UnitTpe
     final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass

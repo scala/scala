@@ -23,14 +23,14 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
     if (args.exists(_.isInstanceOf[TypeBounds])) {
       def bindWildcard(tpe: Type) = tpe match {
-        case tpe: TypeBounds => newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
+        case tpe: TypeBounds => ctx.newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
         case tpe             => noSymbol -> tpe
       }
       val (syms, args1) = args.map(bindWildcard).unzip
-      mkExistentialType(syms.filterSyms, mkAppliedType(tycon, args1:_*))
+      mkExistentialType(syms.filterSyms, mkTypeRef(tycon, args1))
     }
     else {
-      mkAppliedType(tycon, args:_*)
+      mkTypeRef(tycon, args)
     }
   }
 

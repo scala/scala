@@ -63,6 +63,9 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
 
       def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(noPosition)
 
+      def newWildcardSym(info: TypeBounds): Symbol =
+        owner.newTypeParameter(nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
+
       def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
         val sym = {
           if (flags.is(Param)) {

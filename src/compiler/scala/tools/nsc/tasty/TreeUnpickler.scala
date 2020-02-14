@@ -449,7 +449,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val ref = readAddr()
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
-            mkAppliedType(defn.ByNameParamClass, readType()) // ExprType(readType())
+            mkTypeRef(defn.ByNameParamClass, readType() :: Nil) // ExprType(readType())
           case ENUMconst =>
             errorTasty("Enum Constant") //Constant(readTypeRef().termSymbol)
             errorType

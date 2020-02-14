@@ -35,9 +35,6 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  def newWildcardSym(info: TypeBounds)(implicit ctx: Context): Symbol =
-    ctx.owner.newTypeParameter(nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
-
   def selectSymFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
     ctx.log(s"""looking for overload member[$qualType]("$name") @@ ${sig.show}""")
     val MethodSignature(args, ret) = sig
