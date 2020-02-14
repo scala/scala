@@ -4034,14 +4034,17 @@ trait Types
       val result =
         if (isIntersectionTypeForLazyBaseType(original)) intersectionTypeForLazyBaseType(parents)
         else refinedType(parents, owner)
-      val syms1 = decls.toList
-      for (sym <- syms1)
-        result.decls.enter(sym.cloneSymbol(result.typeSymbol).resetFlag(OVERRIDE))
-      val syms2 = result.decls.toList
-      val resultThis = result.typeSymbol.thisType
-      for (sym <- syms2)
-        sym modifyInfo (_ substThisAndSym(original.typeSymbol, resultThis, syms1, syms2))
-
+      if (! decls.isEmpty){
+        val syms1 = decls.toList
+        for (sym <- syms1)
+          result.decls.enter(sym.cloneSymbol(result.typeSymbol).resetFlag(OVERRIDE))
+        val syms2 = result.decls.toList
+        val resultThis = result.typeSymbol.thisType
+        val substThisMap = new SubstThisMap(original.typeSymbol, resultThis)
+        val substMap = new SubstSymMap(syms1, syms2)
+        for (sym <- syms2)
+          sym.modifyInfo(info => substMap.apply(substThisMap.apply(info)))
+      }
       result
     }
 
