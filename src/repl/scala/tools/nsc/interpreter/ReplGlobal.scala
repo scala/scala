@@ -56,12 +56,19 @@ trait ReplGlobal extends Global {
     override val runsAfter: List[String] = List("refchecks")
     /** Name of the phase that this phase must follow immediately. */
     override val runsRightAfter: Option[String] = None
-    override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer(unit)
-    class WrapperCleanupTransformer(unit: CompilationUnit) extends Transformer {
+    override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer
+    class WrapperCleanupTransformer extends Transformer {
+      override def transformUnit(unit: CompilationUnit): Unit = {
+        if (settings.Yreplclassbased.value) super.transformUnit(unit)
+      }
+
       def newUnusedPrivates: analyzer.UnusedPrivates = new analyzer.UnusedPrivates() {
         override lazy val ignoreNames = super.ignoreNames ++ {
           val sn = sessionNames
           Set(sn.line, sn.read, "INSTANCE", sn.iw, sn.eval, sn.print, sn.result).map(TermName(_))
+        }
+        override def isEffectivelyPrivate(sym: Symbol): Boolean = {
+          sessionNames.isLineReadVal(sym.name)
         }
       }
 
@@ -69,13 +76,14 @@ trait ReplGlobal extends Global {
         case tree @ Template(parents, self, body) if nme.isReplWrapperName(tree.symbol.name) =>
           val unusedPrivates = newUnusedPrivates
           unusedPrivates.traverse(tree)
-          val unusedSet = unusedPrivates.unusedTerms.iterator.flatMap(tree => List(tree.symbol, tree.symbol.accessedOrSelf)).toSet
-          val (unused, used) = tree.body.partition (t => unusedSet(t.symbol))
-          if (unused.isEmpty ) tree
+          val unusedSyms = unusedPrivates.unusedTerms.iterator.map(_.symbol)
+          val unusedLineReadVals = unusedSyms.filter(sym => sessionNames.isLineReadVal(sym.name)).flatMap(sym => List(sym, sym.accessedOrSelf)).toSet
+          val (removedStats, retainedStats) = tree.body.partition (t => unusedLineReadVals(t.symbol))
+          if (removedStats.isEmpty) tree
           else {
             val decls = tree.symbol.info.decls
-            unused.foreach(tree => decls.unlink(tree.symbol))
-            deriveTemplate(tree)(_ => used)
+            removedStats.foreach(tree => decls.unlink(tree.symbol))
+            deriveTemplate(tree)(_ => retainedStats)
           }
         case tree => tree
       }

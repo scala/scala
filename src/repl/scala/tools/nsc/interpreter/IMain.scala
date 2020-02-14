@@ -702,7 +702,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
-    val packageName = sessionNames.line + lineId
+    val packageName = sessionNames.packageName(lineId)
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
     val printName   = sessionNames.print

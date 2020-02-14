@@ -58,6 +58,7 @@ trait Naming {
     (raw"""($lineNRead|${q(sn.read)}(\.INSTANCE)?(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
   }
 
+  private val PositiveInt = """\d+""".r
   trait SessionNames {
     // All values are configurable by passing e.g. -Dscala.repl.name.read=XXX
     final def propOr(name: String): String = propOr(name, "$" + name)
@@ -71,6 +72,17 @@ trait Naming {
     def eval   = propOr("eval")
     def print  = propOr("print")
     def result = propOr("result")
+    def packageName(lineId: Int) = line + lineId
+
+    /** Create the name for the temp val used in the -Yclass-based REPL wrapper to refer to the state of a previous line. */
+    final def lineReadValName(linePackageName: String) = s"${linePackageName}${read}"
+    /** Is the given name of the form created by `lineReadValName`? */
+    final def isLineReadVal(name: Global#Name) = {
+      name.startsWith(line) && name.endsWith(read) && (name.subSequence(line.length, name.length - read.length) match {
+        case PositiveInt() => true
+        case _ => false
+      })
+    }
 
     // The prefix for unnamed results: by default res0, res1, etc.
     def res   = propOr("res", "res")  // INTERPRETER_VAR_PREFIX
