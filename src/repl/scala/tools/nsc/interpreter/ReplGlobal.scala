@@ -58,22 +58,26 @@ trait ReplGlobal extends Global {
     override val runsRightAfter: Option[String] = None
     override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer(unit)
     class WrapperCleanupTransformer(unit: CompilationUnit) extends Transformer {
-      val unusedPrivates = new analyzer.UnusedPrivates() {
-        override def ignoreNames = super.ignoreNames ++ {
+      def newUnusedPrivates: analyzer.UnusedPrivates = new analyzer.UnusedPrivates() {
+        override lazy val ignoreNames = super.ignoreNames ++ {
           val sn = sessionNames
           Set(sn.line, sn.read, "INSTANCE", sn.iw, sn.eval, sn.print, sn.result).map(TermName(_))
         }
       }
-      unusedPrivates.traverse(unit.body)
-      val unusedSet = unusedPrivates.unusedTerms.iterator.flatMap(tree => List(tree.symbol, tree.symbol.accessedOrSelf)).toSet
-      override def transformTemplate(tree: Template): Template = {
-        val (unused, used) = tree.body.partition (t => unusedSet(t.symbol))
-        if (unused.isEmpty ) tree
-        else {
-          val decls = tree.symbol.info.decls
-          unused.foreach(tree => decls.unlink(tree.symbol))
-          deriveTemplate(tree)(_ => used)
-        }
+
+      override def transform(tree: Tree): Tree = super.transform(tree) match {
+        case tree @ Template(parents, self, body) if nme.isReplWrapperName(tree.symbol.name) =>
+          val unusedPrivates = newUnusedPrivates
+          unusedPrivates.traverse(tree)
+          val unusedSet = unusedPrivates.unusedTerms.iterator.flatMap(tree => List(tree.symbol, tree.symbol.accessedOrSelf)).toSet
+          val (unused, used) = tree.body.partition (t => unusedSet(t.symbol))
+          if (unused.isEmpty ) tree
+          else {
+            val decls = tree.symbol.info.decls
+            unused.foreach(tree => decls.unlink(tree.symbol))
+            deriveTemplate(tree)(_ => used)
+          }
+        case tree => tree
       }
     }
   }

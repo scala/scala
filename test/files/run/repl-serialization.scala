@@ -14,7 +14,7 @@ object Test {
   def run(): Unit = {
     val settings = new Settings()
     settings.Yreplclassbased.value = true
-    settings.YreplMagicImport.value = true
+    settings.YreplMagicImport.value = false
     //settings.Xprint.value = List("refchecks","wrapper-cleanup")
     settings.usejavacp.value = true
 

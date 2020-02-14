@@ -506,9 +506,10 @@ trait TypeDiagnostics {
 
     def defnSymbols = defnTrees.toList map (_.symbol)
     def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
+    def isInterpreterLineReadVal(sym: Symbol): Boolean = sym.ownerChain.exists(_.isInterpreterWrapper) && sym.name.startsWith("$line")
 
     def qualifiesTerm(sym: Symbol) = (
-      (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || sym.owner.isInterpreterWrapper)
+      (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || isInterpreterLineReadVal(sym))
         && !nme.isLocalName(sym.name)
         && !sym.isParameter
         && !sym.isParamAccessor       // could improve this, but it's a pain
@@ -582,7 +583,7 @@ trait TypeDiagnostics {
     def isUnusedType(m: Symbol): Boolean = (
       m.isType
         && !m.isTypeParameterOrSkolem // would be nice to improve this
-        && (m.isPrivate || m.isLocalToBlock || m.owner.isInterpreterWrapper)
+        && (m.isPrivate || m.isLocalToBlock || isInterpreterLineReadVal(m))
         && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
       )
     def isSyntheticWarnable(sym: Symbol) = (
@@ -591,7 +592,7 @@ trait TypeDiagnostics {
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
         && (!m.isSynthetic || isSyntheticWarnable(m))
-        && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock || (m.owner.isInterpreterWrapper && !m.isConstructor))
+        && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock || (m.owner.isInterpreterWrapper && !m.isConstructor) || isInterpreterLineReadVal(m))
         && !targets(m)
         && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
         && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization/repl methods
