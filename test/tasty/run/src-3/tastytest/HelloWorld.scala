@@ -15,6 +15,11 @@ object HelloWorld {
   def bounded[T >: Null <: String](a: T): String = a + a
   def higher[F[_], G[_]](fInt: F[Int])(implicit ev: F[Int] <:< G[Int]): G[Int] = ev(fInt)
   def higherBounded[F[_] >: Null <: List[_], A](f: F[A]): F[A] = f
+  def higherBounded2[T <: List[_ <: Int]](f: T): T = f
+  def higherBounded3[T <: List[List[_ <: Int]]](f: T): T = f
+  def higherBounded4[T <: Either[_ <: Int, String]](f: T): T = f
+  def higherBounded5[F[+_], A](fa: F[A]): F[A] = fa
+  def higherBounded6[F[-_], A](fa: F[A]): F[A] = fa
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
   def acceptsOnlyMsg3(m: msg3.type): String = m + m

@@ -10,13 +10,29 @@ import scala.tools.nsc.tasty._
 import scala.tools.nsc.tasty.Names.TastyName.ModuleName
 import scala.tools.nsc.tasty.Names.TastyName.SignedName
 import scala.reflect.internal.Variance
+import scala.util.chaining._
 
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
+  import SymbolOps._
   import FlagSets._
   import SymbolOps._
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
+
+  def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
+    if (args.exists(_.isInstanceOf[TypeBounds])) {
+      def bindWildcard(tpe: Type) = tpe match {
+        case tpe: TypeBounds => newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
+        case tpe             => noSymbol -> tpe
+      }
+      val (syms, args1) = args.map(bindWildcard).unzip
+      mkExistentialType(syms.filterSyms, mkAppliedType(tycon, args1:_*))
+    }
+    else {
+      mkAppliedType(tycon, args:_*)
+    }
+  }
 
   def erasedNameToErasedType(name: TastyName)(implicit ctx: Context): Type = {
     def specialised(terminal: SimpleName) = terminal.raw match {
@@ -193,20 +209,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
      */
     final def canonicalForm(implicit ctx: Context): Type = {
       ctx.log(s"canonical form of $this")
-      def eliminateBadArgs(tpe: Type): Type = {
-        if (tpe.typeArgs.exists(_ =:= TypeBounds.empty))
-          mkExistentialType(typeParams, mkTypeRef(tpe, typeParams.map(_.tpe)))
-        else
-          tpe
-      }
-      val sanitised = resType.map(eliminateBadArgs)
       val result = lambdaTpe match {
         case _: TypeParamLambda =>
           ctx.log(s"making poly from type param lambda")
-          mkPolyType(typeParams, sanitised)
+          mkPolyType(typeParams, resType)
         case _: HKTypeLambda =>
           ctx.log("making poly from hk type lambda")
-          mkPolyType(typeParams, TypeBounds.addLower(sanitised))
+          mkPolyType(typeParams, TypeBounds.addLower(resType))
       }
       ctx.log(s"result canonical: $result")
       result
@@ -258,14 +267,15 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
             case _                      => flags0
           }
           val argInfo = info match {
-            case bounds @ TypeBounds(lo,hi) =>
-              if (lo.isHigherKinded && hi.isHigherKinded && hi.resultType =:= TypeBounds.empty) {
-                assert(lo.resultType.lowerBound =:= defn.NothingTpe)
-                mkPolyType(lo.typeParams, TypeBounds.lower(lo.resultType.upperBound))
-              }
-              else if (hi.isHigherKinded) hi
-              else if (lo.isHigherKinded) lo
-              else bounds
+            case bounds @ TypeBounds(lo, hi) =>
+              if (lo.isHigherKinded && hi.isHigherKinded)
+                mkPolyType(hi.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.resultType.upperBound))
+              else if (hi.isHigherKinded)
+                mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))
+              else if (lo.isHigherKinded)
+                mkPolyType(lo.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.upperBound))
+              else
+                bounds
             case _ => info
           }
           typeSymbol.newTypeParameter(name.toTypeName, noPosition, flags).setInfo(argInfo)

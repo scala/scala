@@ -86,8 +86,8 @@ trait TastyKernel { self: TastyUniverse =>
   def mkTypeRef(tycon: Type, args: List[Type]): Type = symbolTable.appliedType(tycon, args)
   def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
   def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
-  def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
   def mkAppliedType(tyconsym: Symbol, args: Type*): Type = symbolTable.appliedType(tyconsym, args:_*)
+  def mkAppliedType(tycon: Type, args: Type*): Type = symbolTable.appliedType(tycon, args:_*)
   def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
   def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
   def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
@@ -113,9 +113,6 @@ trait TastyKernel { self: TastyUniverse =>
     def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] =
       ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
     def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
-    // final val BooleanTpe: Type = symbolTable.definitions.BooleanTpe
-    // def optionType(value: Type) = symbolTable.definitions.optionType(value)
-    // def tupleType(values: List[Type]) = symbolTable.definitions.tupleType(values)
   }
 
   object nme {
@@ -127,6 +124,7 @@ trait TastyKernel { self: TastyUniverse =>
     final val ROOT: TermName = symbolTable.nme.ROOT
     final val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
     final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
+    final val WILDCARD: TermName = symbolTable.nme.WILDCARD
     def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
   }
 
@@ -138,6 +136,7 @@ trait TastyKernel { self: TastyUniverse =>
   private[bridge] type FlagAgnosticCompleter = symbolTable.FlagAgnosticCompleter
 
   def noSymbol: Symbol = symbolTable.NoSymbol
+  def isSymbol(sym: Symbol) = sym `ne` symbolTable.NoSymbol
 
   type Scope = symbolTable.Scope
   def emptyScope: Scope = symbolTable.EmptyScope

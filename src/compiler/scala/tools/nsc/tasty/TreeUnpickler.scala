@@ -360,8 +360,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             //     // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
             //     // Eta expansion of the latter puts readType() out of the expression.
             case APPLIEDtype =>
-              val tpe = readType()
-              mkTypeRef(tpe, until(end)(readType()))
+              boundedAppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
               val hi = readType()
@@ -1467,8 +1466,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val tpe = mkIntersectionType(args.map(_.tpe))
                 CompoundTypeTree(args).setType(tpe)
               } else {
-                val ownType = mkTypeRef(tycon.tpe, args.map(_.tpe))
-                AppliedTypeTree(tycon, args).setType(ownType)
+                AppliedTypeTree(tycon, args).setType(boundedAppliedType(tycon.tpe, args.map(_.tpe)))
               }
             case ANNOTATEDtpt =>
               val tpt = readTpt()

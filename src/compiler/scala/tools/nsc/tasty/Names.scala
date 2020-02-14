@@ -23,11 +23,19 @@ object Names {
     final val PathSep: SimpleName = SimpleName(".")
     final val ExpandedSep: SimpleName = SimpleName("$$")
     final val ExpandPrefixSep: SimpleName = SimpleName("$")
+    final val WildcardSep: SimpleName = SimpleName("_$")
     final val InlinePrefix: SimpleName = SimpleName("inline$")
     final val SuperPrefix: SimpleName = SimpleName("super$")
     final val Constructor: SimpleName = SimpleName("<init>")
     final val EmptyPkg: SimpleName = SimpleName("<empty>")
     final val RootClass: SimpleName = SimpleName("<root>")
+
+    object WildcardName {
+      def unapply(name: TastyName): Boolean = name match {
+        case UniqueName(Empty, WildcardSep, _) => true
+        case _                                 => false
+      }
+    }
 
     final val DefaultGetterStr     = "$default$"
     final val DefaultGetterInitStr = NameTransformer.encode("<init>") + DefaultGetterStr

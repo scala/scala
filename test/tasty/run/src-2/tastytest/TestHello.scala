@@ -12,10 +12,19 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.bounded("a") === "aa"))
   test(assert(HelloWorld.higher[Option, IterableOnce](Some(1)) === (Some(1): IterableOnce[Int])))
   test(assert(HelloWorld.higherBounded(List(1,2,3)) === List(1,2,3)))
+  test(assert(HelloWorld.higherBounded2(List(1,2,3)) === List(1,2,3)))
+  test(assert(HelloWorld.higherBounded3(List(List(1))) === List(List(1))))
+  test(assert(HelloWorld.higherBounded4(Left[Int,String](3)) === Left[Int,String](3)))
+  test(assert(HelloWorld.higherBounded5(List(1,2,3)) === List(1,2,3)))
+  test(assert(HelloWorld.higherBounded6(ShowString) === (ShowString: Show[String])))
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
   test(assert((HelloWorld.lzy: "lazy") === "lazy"))
   test(assert(HelloWorld.acceptsOnlyMsg3(HelloWorld.msg3) === "Hello, World!Hello, World!"))
   // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
+
+  trait Show[-A]
+
+  object ShowString extends Show[String]
 
 }
