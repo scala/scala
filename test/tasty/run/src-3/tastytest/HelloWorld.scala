@@ -20,6 +20,7 @@ object HelloWorld {
   def higherBounded4[T <: Either[_ <: Int, String]](f: T): T = f
   def higherBounded5[F[+_], A](fa: F[A]): F[A] = fa
   def higherBounded6[F[-_], A](fa: F[A]): F[A] = fa
+  def higherBounded7[F[_] <: Either[_ <: Int, _], A](f: F[A]): f.type = f
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
   def acceptsOnlyMsg3(m: msg3.type): String = m + m

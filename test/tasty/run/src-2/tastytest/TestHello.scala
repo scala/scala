@@ -17,11 +17,16 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.higherBounded4(Left[Int,String](3)) === Left[Int,String](3)))
   test(assert(HelloWorld.higherBounded5(List(1,2,3)) === List(1,2,3)))
   test(assert(HelloWorld.higherBounded6(ShowString) === (ShowString: Show[String])))
+  test(assert(HelloWorld.higherBounded7(orInt(3)) === orInt(3)))
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
   test(assert((HelloWorld.lzy: "lazy") === "lazy"))
   test(assert(HelloWorld.acceptsOnlyMsg3(HelloWorld.msg3) === "Hello, World!Hello, World!"))
   // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
+
+  type OrInt[A] = Either[Int, A]
+
+  def orInt[A](a: A): OrInt[A] = Right(a)
 
   trait Show[-A]
 
