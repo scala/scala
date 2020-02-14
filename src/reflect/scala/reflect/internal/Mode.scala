@@ -72,11 +72,33 @@ object Mode {
    */
   final val TYPEPATmode: Mode   = 0x10000
 
+  /** This mode is set when starting to type check a `Select`, `Apply` or `TypeApply`, e.g., `x.y`
+    * or `a.b.foo[T](x, y).bar(z)`. Stabilizers (a feature added in PR scala/scala#5999) created
+    * when typing the expression are emitted in a new enclosing block, e.g.
+    *   {
+    *     val $stabilizer$1 = a.b
+    *     val $stabilizer$2 = $stabilizer1.foo[T](x, y)
+    *     $stabilizer$2.bar(z)
+    *   }
+    *
+    * The flag is sticky for typing the function of an Apply (`forFunMode`) and qualifiers of
+    * nested selections (`MonoQualifierModes`), but cleared for argument expressions
+    * (`onlySticky`). So `a.b.foo(a.b.bar)` becomes
+    *   {
+    *     val $stabilizer$1 = a.b
+    *     $stabilizer$1.foo({
+    *       val $stabilizer$2 = a.b
+    *       $stabilizer$2.bar
+    *     })
+    *   }
+    */
+  final val APPSELmode: Mode   = 0x20000
+
   private val StickyModes: Mode       = EXPRmode | PATTERNmode | TYPEmode
   private val StickyModesForFun: Mode = StickyModes | SCCmode
-  final val MonoQualifierModes: Mode  = EXPRmode | QUALmode
-  final val PolyQualifierModes: Mode  = EXPRmode | QUALmode | POLYmode
-  final val OperatorModes: Mode       = EXPRmode |            POLYmode | TAPPmode | FUNmode
+  final val MonoQualifierModes: Mode  = EXPRmode | QUALmode | APPSELmode
+  final val PolyQualifierModes: Mode  = MonoQualifierModes | POLYmode
+  final val OperatorModes: Mode       = EXPRmode | POLYmode | TAPPmode | FUNmode
 
   /** Translates a mask of mode flags into something readable.
    */
@@ -97,7 +119,8 @@ object Mode {
     (1 << 13) -> "<>",      // formerly ALTmode
     (1 << 14) -> "<>",      // formerly HKmode
     (1 << 15) -> "BYVALmode",
-    (1 << 16) -> "TYPEPATmode"
+    (1 << 16) -> "TYPEPATmode",
+    (1 << 17) -> "APPSELmode"
   ).map({ case (k, v) => Mode(k) -> v })
 }
 import Mode._
@@ -109,7 +132,7 @@ final class Mode private (val bits: Int) extends AnyVal {
 
   def onlyTypePat = this & TYPEPATmode
   def onlySticky  = this & Mode.StickyModes
-  def forFunMode  = this & Mode.StickyModesForFun | FUNmode | POLYmode | BYVALmode
+  def forFunMode  = this & Mode.StickyModesForFun | FUNmode | POLYmode | BYVALmode | APPSELmode
   def forTypeMode = if (typingPatternOrTypePat) TYPEmode | TYPEPATmode else TYPEmode
 
   def inAll(required: Mode)    = (this & required) == required

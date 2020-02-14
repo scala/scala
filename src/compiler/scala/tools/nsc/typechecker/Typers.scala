@@ -712,10 +712,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val context1 = context.makeSilent(reportAmbiguousErrors, newtree)
           context1.undetparams = context.undetparams
           context1.savedTypeBounds = context.savedTypeBounds
+          context1.pendingStabilizers = context.pendingStabilizers
           val typer1 = newTyper(context1)
           val result = op(typer1)
           context.undetparams = context1.undetparams
           context.savedTypeBounds = context1.savedTypeBounds
+          context.pendingStabilizers = context1.pendingStabilizers
 
           // If we have a successful result, emit any warnings it created.
           if (!context1.reporter.hasErrors)
@@ -2568,7 +2570,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
         }
         val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
-        val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
+        val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode | APPSELmode), pt)
 
         // sanity check block for unintended expr placement
         if (!isPastTyper) {
@@ -5327,35 +5329,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // implicit scopes which are accessible via lhs can be candidates for satisfying
               // implicit (conversions to) arguments of name.
 
-              // We have to introduce the ValDef before its use here, so we walk up the
-              // context tree and attach it to the original root of this expression. It will
-              // be extracted and inserted by insertStabilizer when typer unwinds out of this
-              // expression. Stabilized args are introduced in the block arg expression.
-              val insertionContext = context.nextEnclosing { ctx =>
-                def isInsertionNode(tree: Tree) =
-                  tree match {
-                    case _: Apply | _: TypeApply | _: Select => true
-                    case _                                   => false
-                  }
-                def isEnclosingInsertionNode(tree: Tree) =
-                  tree match {
-                    case Apply(_, args)           => args.contains(ctx.tree)
-                    case _: TypeApply | _: Select => false
-                    case _                        => true
-                  }
-                isInsertionNode(ctx.tree) && isEnclosingInsertionNode(ctx.outer.tree)
-              }
-
-              if (insertionContext != NoContext) {
-                val vsym = insertionContext.owner.newValue(freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
-                vsym.setInfo(uncheckedBounds(qual.tpe))
-                insertionContext.scope enter vsym
-                val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
-                qual.changeOwner(insertionContext.owner -> vsym)
-                addStabilizingDefinition(insertionContext.tree, vdef)
-                val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
-                return typedSelect(tree, newQual, name)
-              }
+              val vsym = context.owner.newValue(freshTermName(nme.STABILIZER_PREFIX), qual.pos.focus, SYNTHETIC | ARTIFACT | STABLE)
+              vsym.setInfo(uncheckedBounds(qual.tpe))
+              val vdef = atPos(vsym.pos)(ValDef(vsym, focusInPlace(qual)) setType NoType)
+              context.pendingStabilizers ::= vdef
+              qual.changeOwner(context.owner -> vsym)
+              val newQual = Ident(vsym) setType singleType(NoPrefix, vsym) setPos qual.pos.focus
+              return typedSelect(tree, newQual, name)
             }
 
             val tree1 = tree match {
@@ -5956,23 +5936,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         case _                => abort(s"unexpected member def: ${tree.getClass}\n$tree")
       }
 
-      // Extract and insert stabilizing ValDefs (if any) which might have been
-      // introduced during the typing of the original expression.
-      def insertStabilizer(tree: Tree, original: Tree): Tree = {
-        if (phase.erasedTypes) tree
-        else stabilizingDefinitions(original) match {
-          case Nil => tree
-          case vdefs =>
-            removeStabilizingDefinitions(tree)
-            Block(vdefs.reverse, tree) setType tree.tpe setPos tree.pos
-        }
-      }
-
       // Trees not allowed during pattern mode.
       def typedOutsidePatternMode(tree: Tree): Tree = tree match {
         case tree: Block            => typerWithLocalContext(context.makeNewScope(tree, context.owner))(_.typedBlock(tree, mode, pt))
         case tree: If               => typedIf(tree)
-        case tree: TypeApply        => insertStabilizer(typedTypeApply(tree), tree)
+        case tree: TypeApply        => typedTypeApply(tree)
         case tree: Function         => typedFunction(tree)
         case tree: Match            => typedVirtualizedMatch(tree)
         case tree: New              => typedNew(tree)
@@ -5995,8 +5963,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       @inline def typedInAnyMode(tree: Tree): Tree = tree match {
         case tree: Ident   => typedIdentOrWildcard(tree)
         case tree: Bind    => typedBind(tree)
-        case tree: Apply   => insertStabilizer(typedApply(tree), tree)
-        case tree: Select  => insertStabilizer(typedSelectOrSuperCall(tree), tree)
+        case tree: Apply   => typedApply(tree)
+        case tree: Select  => typedSelectOrSuperCall(tree)
         case tree: Literal => typedLiteral(tree)
         case tree: Typed   => typedTyped(tree)
         case tree: This    => typedThis(tree)  // scala/bug#6104
@@ -6017,14 +5985,39 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
+      // Extract and insert stabilizing ValDefs (if any) which might have been
+      // introduced during the typing of the original expression.
+      @inline def insertStabilizer(doTyped: Mode => Tree): Tree = {
+        if (phase.erasedTypes || mode.in(APPSELmode) || isMacroImplRef(tree)) doTyped(mode)
+        else tree match {
+          case _: Select | _: Apply | _: TypeApply =>
+            val saved = context.pendingStabilizers
+            context.pendingStabilizers = Nil
+            val (res, vdefs) =
+              try {
+                val r = doTyped(mode | APPSELmode)
+                (r, context.pendingStabilizers)
+              }
+              finally
+                context.pendingStabilizers = saved
+            if (vdefs.isEmpty)
+              res
+            else {
+              devWarningIf(vdefs.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(vdefs.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
+              typed1(Block(vdefs.reverse, res) setPos res.pos, mode, pt)
+            }
+          case _ => doTyped(mode)
+        }
+      }
+
       lastTreeToTyper = tree
       val statsEnabled = StatisticsStatics.areSomeHotStatsEnabled() && statistics.areHotStatsLocallyEnabled
       val startByType = if (statsEnabled) statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
       if (statsEnabled) statistics.incCounter(visitsByType, tree.getClass)
       val shouldPrintTyping = printTypings && !phase.erasedTypes && !noPrintTyping(tree)
       val shouldPopTypingStack = shouldPrintTyping && typingStack.beforeNextTyped(tree, mode, pt, context)
-      try {
 
+      try insertStabilizer { mode =>
         val ptPlugins = pluginsPt(pt, this, tree, mode)
         def retypingOk = (
           context.retyping
