@@ -1,4 +1,8 @@
 t10731.scala:3: error: stable identifier required, but C.this.eq found.
   val eq.a = 1
       ^
+t10731.scala:3: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  val eq.a = 1
+         ^
+1 warning
 1 error

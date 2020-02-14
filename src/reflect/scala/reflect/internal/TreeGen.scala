@@ -807,8 +807,13 @@ abstract class TreeGen {
           val tmp = freshTermName()
           val firstDef =
             atPos(matchExpr.pos) {
-              ValDef(Modifiers(PrivateLocal | SYNTHETIC | ARTIFACT | (mods.flags & LAZY)),
-                     tmp, TypeTree(), matchExpr)
+              val v = ValDef(Modifiers(PrivateLocal | SYNTHETIC | ARTIFACT | (mods.flags & LAZY)), tmp, TypeTree(), matchExpr)
+              if (vars.isEmpty) {
+                v.updateAttachment(PatVarDefAttachment)  // warn later if this introduces a Unit-valued field
+                if (mods.isImplicit)
+                  currentRun.reporting.deprecationWarning(matchExpr.pos, "Implicit pattern definition binds no variables", since="2.13")
+              }
+              v
             }
           var cnt = 0
           val restDefs = for ((vname, tpt, pos, original) <- vars) yield atPos(pos) {

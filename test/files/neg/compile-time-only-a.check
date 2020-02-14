@@ -1,3 +1,6 @@
+compile-time-only-a.scala:49: warning: Pattern definition introduces Unit-valued member of Test; consider wrapping it in `locally { ... }`.
+  val _ = c6.x
+      ^
 compile-time-only-a.scala:10: error: C3
 @compileTimeOnly("C3") case class C3(x: Int)
                                   ^
@@ -79,4 +82,5 @@ compile-time-only-a.scala:75: error: placebo
 compile-time-only-a.scala:75: error: placebo
   @placebo def x = (2: @placebo)
                         ^
+1 warning
 27 errors

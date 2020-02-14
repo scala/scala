@@ -4,4 +4,8 @@ t10474.scala:8: error: stable identifier required, but Test.this.Foo found.
 t10474.scala:15: error: stable identifier required, but hrhino.this.Foo found.
   val Foo.Crash = ???
       ^
+t10474.scala:15: warning: Pattern definition introduces Unit-valued member of hrhino; consider wrapping it in `locally { ... }`.
+  val Foo.Crash = ???
+          ^
+1 warning
 2 errors
