@@ -5466,16 +5466,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           setError(tree)
         }
-          // ignore current variable scope in patterns to enforce linearity
+        // ignore current variable scope in patterns to enforce linearity
         val startContext = if (mode.typingPatternOrTypePat) context.outer else context
 
         def asTypeName = if (mode.inAll(MonoQualifierModes) && unit.isJava && name.isTermName) {
           startContext.lookupSymbol(name.toTypeName, qualifies).symbol
         } else NoSymbol
 
-        val nameLookup   = tree.symbol match {
-          case NoSymbol   => startContext.lookupSymbol(name, qualifies)
-          case sym        => LookupSucceeded(EmptyTree, sym)
+        // in Java, only pick a package if it is rooted
+        def termQualifies(sym: Symbol) = qualifies(sym) && (
+            !startContext.unit.isJava  || !sym.hasPackageFlag
+          || sym.owner.isEffectiveRoot || sym.owner.isRootPackage || sym.isRootPackage
+        )
+        val nameLookup  = tree.symbol match {
+          case NoSymbol => startContext.lookupSymbol(name, termQualifies)
+          case sym      => LookupSucceeded(EmptyTree, sym)
         }
         import InferErrorGen._
         nameLookup match {
@@ -5495,7 +5500,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // actual call to the stubbed classOf method is generated, returning null.
               typedClassOf(tree, TypeTree(pt.typeArgs.head).setPos(tree.pos.focus))
             }
-          else {
+            else {
               val pre1  = if (sym.isTopLevel) sym.owner.thisType else if (qual == EmptyTree) NoPrefix else qual.tpe
               val tree1 = if (qual == EmptyTree) tree else {
                 val pos = tree.pos
