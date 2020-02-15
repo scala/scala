@@ -1248,15 +1248,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** If this symbol has an expanded name, its original (unexpanded) name,
      *  otherwise the name itself.
      */
-    def unexpandedName: Name = nme.unexpandedName(name)
+    final def unexpandedName: Name = nme.unexpandedName(name)
 
     /** The name of the symbol before decoding, e.g. `\$eq\$eq` instead of `==`.
      */
-    def encodedName: String = name.toString
+    final def encodedName: String = name.toString
 
     /** The decoded name of the symbol, e.g. `==` instead of `\$eq\$eq`.
      */
-    def decodedName: String = name.decode
+    final def decodedName: String = name.decode
 
     private def addModuleSuffix(n: Name): Name =
       if (needsModuleSuffix) n append nme.MODULE_SUFFIX_STRING else n
@@ -2717,20 +2717,36 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *  If settings.Yshowsymkinds, adds abbreviated symbol kind.
      */
     def nameString: String = {
-      val name_s = if (settings.debug.value) "" + unexpandedName else unexpandedName.dropLocal.decode
-      val kind_s = if (settings.Yshowsymkinds.value) "#" + abbreviatedKindString else ""
-
-      name_s + idString + kind_s
+      val sb = Symbol.nameStringBuilderTL.get
+      buildNameString
+      sb.toString
     }
 
-    def fullNameString: String = {
-      def recur(sym: Symbol): String = {
-        if (sym.isRootSymbol || sym == NoSymbol) sym.nameString
-        else if (sym.owner.isEffectiveRoot) sym.nameString
-        else recur(sym.effectiveOwner.enclClass) + "." + sym.nameString
+    final protected def buildNameString: Unit = {
+      val sb = Symbol.nameStringBuilderTL.get()
+      sb.clear
+      sb.append(if (settings.debug.value) unexpandedName else unexpandedName.dropLocal.decode)
+      sb.append(idString)
+      if (settings.Yshowsymkinds.value){
+        sb.append('#')
+        sb.append(abbreviatedKindString)
       }
+    }
 
-      recur(this)
+    final def fullNameString: String = {
+      def recur(sb: StringBuilder, sym: Symbol): Unit = {
+        if (sym.isRootSymbol || sym == NoSymbol) sb.append(sym.nameString)
+        else if (sym.owner.isEffectiveRoot) sb.append(sym.nameString)
+        else {
+          recur(sb, sym.effectiveOwner.enclClass)
+          sb.append('.')
+          sb.append(sym.nameString)
+        }
+      }
+      val sb = Symbol.fullNameStringBuilderTL.get()
+      sb.clear
+      recur(sb, this)
+      sb.toString
     }
 
     /** If settings.uniqid is set, the symbol's id, else "" */
@@ -2845,6 +2861,16 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         "val " + tpnme.dropSingletonName(name) + ": " + dropSingletonType(info.upperBound)
       else defString
   }
+
+  object Symbol {
+    private[Symbols] val fullNameStringBuilderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){
+      override protected def initialValue: StringBuilder = new StringBuilder(64)
+    }
+    private[Symbols] val nameStringBuilderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){
+      override protected def initialValue: StringBuilder = new StringBuilder(64)
+    }
+  }
+
   implicit val SymbolTag = ClassTag[Symbol](classOf[Symbol])
 
   /** A class for term symbols */
@@ -3304,9 +3330,15 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def cloneSymbolImpl(owner: Symbol, newFlags: Long): TypeSkolem =
       owner.newTypeSkolemSymbol(name, origin, pos, newFlags)
 
-    override def nameString: String =
-      if (settings.debug.value) (super.nameString + "&" + level)
-      else super.nameString
+    override def nameString: String = {
+      super.buildNameString
+      val sb = Symbol.nameStringBuilderTL.get
+      if (settings.debug.value) {
+        sb.append('&')
+        sb.append(level)
+      }
+      sb.toString
+    }
   }
 
   /** A class for class symbols */

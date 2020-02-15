@@ -206,6 +206,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.IsRelatableCollector
     this.SubTypePair
     this.SymbolKind
+    this.Symbol
     this.NoSymbol
     this.CyclicReference
     this.SymbolOps
