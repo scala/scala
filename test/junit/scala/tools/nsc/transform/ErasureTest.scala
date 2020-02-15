@@ -10,6 +10,10 @@ import scala.tools.testkit.BytecodeTesting.{assertNoInvoke, getMethod}
 class ErasureTest extends BytecodeTesting {
   object symbolTable extends SymbolTableForUnitTesting
 
+  type Id[A] = A
+  trait Tag[T] extends Any
+  type @@[A, T] <: A with Tag[T]
+
   @Test def testGenericArray(): Unit = {
     import symbolTable._
     import definitions._
@@ -37,5 +41,21 @@ class ErasureTest extends BytecodeTesting {
       """.stripMargin
     val c = compileClass(code)
     assertNoInvoke(getMethod(c, "t"))
+  }
+
+  @Test
+  def testHigherKindedTypeAlias(): Unit = {
+    import symbolTable._
+    import definitions._
+
+    assertEquals(StringTpe, erasure.scalaErasure(typeOf[Id[String]]))
+  }
+
+  @Test
+  def testHigherKindedAbstractType(): Unit = {
+    import symbolTable._
+    import definitions._
+
+    assertEquals(IntTpe, erasure.scalaErasure(weakTypeOf[Int @@ String]))
   }
 }
