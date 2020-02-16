@@ -22,7 +22,7 @@ import mutable.{ListBuffer, LinkedHashSet}
 import Flags._
 import scala.util.control.ControlThrowable
 import scala.annotation.{tailrec, unused}
-import util.{Statistics, StatisticsStatics}
+import util.{ReusableInstance, Statistics, StatisticsStatics}
 import util.ThreeValues._
 import Variance._
 import Depth._
@@ -4030,6 +4030,9 @@ trait Types
   def refinedType(parents: List[Type], owner: Symbol): Type =
     refinedType(parents, owner, newScope, owner.pos)
 
+  private[this] val copyRefinedTypeSSM: ReusableInstance[MutableSubstSymMap] =
+    ReusableInstance[MutableSubstSymMap](new MutableSubstSymMap())
+
   def copyRefinedType(original: RefinedType, parents: List[Type], decls: Scope) =
     if ((parents eq original.parents) && (decls eq original.decls)) original
     else {
@@ -4044,9 +4047,10 @@ trait Types
         val syms2 = result.decls.toList
         val resultThis = result.typeSymbol.thisType
         val substThisMap = new SubstThisMap(original.typeSymbol, resultThis)
-        val substMap = new SubstSymMap(syms1, syms2)
-        for (sym <- syms2)
-          sym.modifyInfo(info => substMap.apply(substThisMap.apply(info)))
+        copyRefinedTypeSSM.using { (msm: MutableSubstSymMap) =>
+          msm.reset(syms1, syms2)
+          syms2.foreach(_.modifyInfo(info => msm.apply(substThisMap.apply(info))))
+        }
       }
       result
     }

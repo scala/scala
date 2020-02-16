@@ -20,7 +20,7 @@ package internal
 
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
-import util.{ Statistics, shortClassOfInstance, StatisticsStatics }
+import util.{ ReusableInstance, Statistics, shortClassOfInstance, StatisticsStatics }
 import Flags._
 import scala.annotation.tailrec
 import scala.reflect.io.{AbstractFile, NoAbstractFile}
@@ -3748,7 +3748,19 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   /** Convenience functions which derive symbols by cloning.
    */
   def cloneSymbols(syms: List[Symbol]): List[Symbol] =
-    deriveSymbols(syms, _.cloneSymbol)
+    if (syms.isEmpty) Nil
+    else {
+      val syms1 = mapList(syms)(_.cloneSymbol)
+      cloneSymbolsSubstSymMap.using { (msm: MutableSubstSymMap) =>
+        msm.reset(syms, syms1)
+        syms1.foreach(_.modifyInfo(msm))
+      }
+      syms1
+    }
+
+  private[this] val cloneSymbolsSubstSymMap: ReusableInstance[MutableSubstSymMap] =
+    ReusableInstance[MutableSubstSymMap]( new MutableSubstSymMap())
+
   def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
     deriveSymbols(syms, _ cloneSymbol owner)
 
