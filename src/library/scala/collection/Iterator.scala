@@ -826,6 +826,9 @@ trait Iterator[+A] extends IterableOnce[A] with IterableOnceOps[A, Iterator, Ite
     }
   }
 
+  /** check if this iterator has the same set of elements and order of elements with the other iterator
+    * @param that The iterator to be compared with
+    */
   def sameElements[B >: A](that: IterableOnce[B]): Boolean = {
     val those = that.iterator
     while (hasNext && those.hasNext)
