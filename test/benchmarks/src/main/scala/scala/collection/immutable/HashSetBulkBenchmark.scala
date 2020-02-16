@@ -226,19 +226,8 @@ abstract class HashSetBaseBulkBenchmark {
     bh.consume(set1.sameElements(set2))
   }
 }
-object HashSetBenchmarkData {
-  def apply(hashCode: Int, data: String) = new HashSetBenchmarkData(hashCode, data.intern())
-}
-class HashSetBenchmarkData private (override val hashCode: Int, val data: String) {
-  override def equals(obj: Any): Boolean = obj match {
-    case that: HashSetBenchmarkData => this.hashCode == that.hashCode && (this.data eq that.data)
-    case _ => false
-  }
-
-  override def toString: String = s"$hashCode-$data"
-}
 //for testing, debugging, optimising etc
-object Test extends App {
+object HashSetBulkBenchmarkTestApp extends App {
 
   val bh = new Blackhole("Today's password is swordfish. I understand instantiating Blackholes directly is dangerous.")
   val test = new HashSetBulkUnsharedBenchmark
