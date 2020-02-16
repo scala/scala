@@ -2039,8 +2039,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
-      updateAttachmentFun.theClone = clone
-      this.attachments.all.foreach(updateAttachmentFun)
+      assert(clone.attachments.isEmpty)
+      clone.setAttachments(this.attachments.cloneAttachments)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
 
@@ -2048,11 +2048,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         clone setName asNameType(newName)
 
       clone
-    }
-
-    private[this] object updateAttachmentFun extends Function1[Any, Unit] {
-      var theClone: TypeOfClonedSymbol = null
-      def apply(x: Any): Unit = theClone.updateAttachment(x)
     }
 
     /** Internal method to clone a symbol's implementation with the given flags and no info. */
