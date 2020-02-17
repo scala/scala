@@ -1435,9 +1435,13 @@ trait Contexts { self: Analyzer =>
       import importCursor.{imp1, imp2}
 
       def lookupImport(imp: ImportInfo, requireExplicit: Boolean): (ImportSelector, Symbol) = {
-        val (sel, sym) = imp.importedSelectedSymbol(name, requireExplicit)
-        val sym1 = thisContext.importedAccessibleSymbol(imp, sym).filter(qualifies)
-        (sel, sym1)
+        val pair @ (sel, sym) = imp.importedSelectedSymbol(name, requireExplicit)
+        if (sym == NoSymbol) pair
+        else {
+          val sym1 = thisContext.importedAccessibleSymbol(imp, sym).filter(qualifies)
+          if (sym1 eq sym) pair
+          else (sel, sym1)
+        }
       }
 
       /* Java: A single-type-import declaration d in a compilation unit c of package p
@@ -1797,7 +1801,7 @@ trait Contexts { self: Analyzer =>
         if (isRootImport) !definitions.isUnimportableUnlessRenamed(sym)
         else definitions.isImportable(sym)
       ) match {
-        case filtered: NoSymbol => (null, filtered)
+        case filtered: NoSymbol => TupleOfNullAndNoSymbol
         case _                  => (current, result)
       }
     }
@@ -1873,6 +1877,8 @@ trait Contexts { self: Analyzer =>
     private def imp1Explicit = imp1 isExplicitImport name
     private def imp2Explicit = imp2 isExplicitImport name
   }
+
+  private val TupleOfNullAndNoSymbol = (null, NoSymbol)
 }
 
 object ContextMode {
