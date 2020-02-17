@@ -145,11 +145,29 @@ trait TraversableLike[+A, +Repr] extends Any
   def hasDefiniteSize = true
 
   def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
-    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.seq.size)
-    b ++= thisCollection
-    b ++= that.seq
-    b.result
+    def defaultPlusPlus: That = {
+      val b = bf(repr)
+      if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.seq.size)
+      b ++= thisCollection
+      b ++= that.seq
+      b.result
+    }
+
+    if (bf eq immutable.Set.canBuildFrom) {
+      this match {
+        case s: immutable.Set[A] if that.isInstanceOf[GenSet[A]] =>
+          (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
+        case _ => defaultPlusPlus
+      }
+    } else if (bf eq immutable.HashSet.canBuildFrom) {
+      this match {
+        case s: immutable.HashSet[A] if that.isInstanceOf[GenSet[A]] =>
+          (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
+        case _ => defaultPlusPlus
+      }
+
+    } else defaultPlusPlus
+
   }
 
   /** As with `++`, returns a new collection containing the elements from the left operand followed by the
@@ -185,11 +203,28 @@ trait TraversableLike[+A, +Repr] extends Any
    *                  followed by all elements of `that`.
    */
   def ++:[B >: A, That](that: TraversableOnce[B])(implicit bf: CanBuildFrom[Repr, B, That]): That = {
-    val b = bf(repr)
-    if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
-    b ++= that
-    b ++= thisCollection
-    b.result
+    def defaultPlusPlus: That = {
+      val b = bf(repr)
+      if (that.isInstanceOf[IndexedSeqLike[_, _]]) b.sizeHint(this, that.size)
+      b ++= that
+      b ++= thisCollection
+      b.result
+    }
+    if (bf eq immutable.Set.canBuildFrom) {
+      this match {
+        case s: immutable.Set[A] if that.isInstanceOf[GenSet[A]] =>
+          (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
+        case _ => defaultPlusPlus
+      }
+    } else if (bf eq immutable.HashSet.canBuildFrom) {
+      this match {
+        case s: immutable.HashSet[A] if that.isInstanceOf[GenSet[A]] =>
+          (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
+        case _ => defaultPlusPlus
+      }
+
+    } else defaultPlusPlus
+
   }
 
   /** As with `++`, returns a new collection containing the elements from the

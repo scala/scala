@@ -150,7 +150,35 @@ self =>
    *  @param elems     the collection containing the elements to add.
    *  @return a new $coll with the given elements added, omitting duplicates.
    */
-  def ++ (elems: GenTraversableOnce[A]): This = (repr /: elems.seq)(_ + _)
+  def ++ (elems: GenTraversableOnce[A]): This = {
+    import immutable.HashSet
+    //in 2.14 this should be moved to the appropriate place - HashSet and EmptySet.
+    //we can't break binary comparability before then
+    this match {
+      case _ if this eq immutable.Set.empty.asInstanceOf[AnyRef] =>
+        import immutable.Set.{Set1, Set2, Set3, Set4}
+        elems match {
+          case hs: HashSet[A] if hs.size > 4 => hs.asInstanceOf[This]
+          case hs: Set1[A] => hs.asInstanceOf[This]
+          case hs: Set2[A] => hs.asInstanceOf[This]
+          case hs: Set3[A] => hs.asInstanceOf[This]
+          case hs: Set4[A] => hs.asInstanceOf[This]
+          case _  =>
+            if (elems.isEmpty) this.asInstanceOf[This]
+            else (repr /: elems.seq) (_ + _)
+        }
+      case hs: immutable.HashSet[A] =>
+        elems match {
+          case that: GenSet[A] =>
+            hs.union(that).asInstanceOf[This]
+          case _ =>
+            (repr /: elems.seq) (_ + _)
+        }
+      case _ =>
+        (repr /: elems.seq) (_ + _)
+
+    }
+  }
 
   /** Creates a new set with a given element removed from this set.
    *

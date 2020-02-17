@@ -291,7 +291,7 @@ self =>
     b.result()
   }
 
-  def sameElements[B >: A](that: GenIterable[B]): Boolean = {
+  def sameElements[B >: A](that: GenIterable[B]): Boolean = (this.asInstanceOf[AnyRef] eq that.asInstanceOf[AnyRef]) || {
     that match {
       case thatVector: Vector[_] if this.isInstanceOf[Vector[_]] =>
         val thisVector = this.asInstanceOf[Vector[_]]
@@ -307,6 +307,9 @@ self =>
           }
           equal
         }
+      case thatSet: GenSet[A] if this.isInstanceOf[GenSetLike[A,_]]=>
+        val thisSet = this.asInstanceOf[GenSetLike[A,_]]
+          thisSet.size == thatSet.size && thisSet.subsetOf(thatSet)
 
       case _ =>
         val these = this.iterator

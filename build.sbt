@@ -187,6 +187,20 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapKeys"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapValues"),
 
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.HashSet#HashSetCollision1.union0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashSetCollision1.union0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashSetCollision1.this"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.HashSet.union0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.union0"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.HashSet#HashTrieSet.union0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.union0"),
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.HashSet#HashSet1.union0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashSet1.union0"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
+    ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.this"),
+
     // Some static forwarder changes detected after a MiMa upgrade.
     // e.g. static method apply(java.lang.Object)java.lang.Object in class scala.Symbol does not have a correspondent in current version
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Symbol.apply"),

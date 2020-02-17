@@ -81,8 +81,50 @@ sealed class ListSet[A] extends AbstractSet[A]
   def -(elem: A): ListSet[A] = this
 
   override def ++(xs: GenTraversableOnce[A]): ListSet[A] =
-    if (xs.isEmpty) this
-    else (repr /: xs) (_ + _)
+   xs match {
+        // we want to avoid to use of iterator as it causes allocations
+        // during reverseList
+      case ls: ListSet[A] =>
+        if (ls eq this) this
+        else {
+          val lsSize = ls.size
+          if (lsSize == 0) this else {
+            @tailrec def skip(ls: ListSet[A], count: Int): ListSet[A] = {
+              if (count == 0) ls else skip(ls.next, count - 1)
+            }
+
+            @tailrec def containsLimited(n: ListSet[A], e: A, end: ListSet[A]): Boolean =
+              (n ne end) && (e == n.elem || containsLimited(n.next, e, end))
+
+            // We hope to get some structural sharing so find the tail of the
+            // ListSet that are `eq` (or if there are not any then the ends of the lists),
+            // and we optimise the add to only iterate until we reach the common end
+            val thisSize = this.size
+            val remaining = Math.min(thisSize, lsSize)
+            var thisTail = skip(this, thisSize - remaining)
+            var lsTail = skip(ls, lsSize - remaining)
+            while ((thisTail ne lsTail) && !lsTail.isEmpty) {
+              thisTail = thisTail.next
+              lsTail = lsTail.next
+            }
+            var toAdd = ls
+            var result: ListSet[A] = this
+
+            while (toAdd ne lsTail) {
+              val elem = toAdd.elem
+              if (!containsLimited(result, elem, lsTail)) {
+                val r = result
+                result = new r.Node(elem)
+              }
+              toAdd = toAdd.next
+            }
+            result
+          }
+        }
+      case _ =>
+        if (xs.isEmpty) this
+        else (repr /: xs) (_ + _)
+    }
 
   def iterator: Iterator[A] = {
     def reverseList = {
@@ -123,14 +165,33 @@ sealed class ListSet[A] extends AbstractSet[A]
     @tailrec private[this] def containsInternal(n: ListSet[A], e: A): Boolean =
       !n.isEmpty && (n.elem == e || containsInternal(n.next, e))
 
+    @tailrec private[this] def indexInternal(n: ListSet[A], e: A, i:Int): Int =
+      if (n.isEmpty) -1
+      else if (n.elem == e) i
+      else indexInternal(n.next, e, i + 1)
+
     override def +(e: A): ListSet[A] = if (contains(e)) this else new Node(e)
 
-    override def -(e: A): ListSet[A] = removeInternal(e, this, Nil)
-
-    @tailrec private[this] def removeInternal(k: A, cur: ListSet[A], acc: List[ListSet[A]]): ListSet[A] =
-      if (cur.isEmpty) acc.last
-      else if (k == cur.elem) (cur.next /: acc) { case (t, h) => new t.Node(h.elem) }
-      else removeInternal(k, cur.next, cur :: acc)
+    override def -(e: A): ListSet[A] = {
+      val index = indexInternal(this, e, 0)
+      if (index < 0) this
+      else if (index == 0) next
+      else {
+        val data = new Array[ListSet[A]](index)
+        @tailrec def store(i: Int, e: ListSet[A]): Unit = {
+          if (i < index) {
+            data(i) = e
+            store(i + 1, e.next)
+          }
+        }
+        @tailrec def reform(i: Int, e: ListSet[A]): ListSet[A] = {
+          if (i < 0) e
+          else reform (i -1, new e.Node(data(i).elem))
+        }
+        store(0, this)
+        reform(index -1, data(index - 1).next.next)
+      }
+    }
 
     override protected def next: ListSet[A] = ListSet.this
 
