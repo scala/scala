@@ -30,6 +30,18 @@ object HKNest {
     def foo[F[X] <: Either[X, Int]](x: O[F]): String = x.toString()
   }
 
+  class HKClass_8[F[G[X]] <: Foo[[T] =>> Either[Nothing, T]]] {
+    def foo[G[X]](x: F[G]): String = x.toString()
+  }
+
+  class HKClass_9[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
+    def foo[G[X]](x: F[G]): String = x.toString()
+  }
+  object HKClass_9
+  // val test = new HKClass_8[Foo]
+
+  type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
+
   // class HKClass_8[P[F[X <: String]] <: Hoo[StringOrInt]] {
   //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/lampepfl/dotty/issues/8329
   // }

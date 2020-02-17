@@ -69,10 +69,18 @@ trait TastyKernel { self: TastyUniverse =>
 
   def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = symbolTable.defineOriginalOwner(sym, owner)
 
-
   object GenPolyType {
     def apply(tparams: List[Symbol], tpe: Type): Type = symbolTable.GenPolyType.apply(tparams,tpe)
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
+  }
+
+  object LambdaEncoding {
+    def unapply(tpe: Type): Option[PolyType] = tpe match {
+      case symbolTable.PolyType(args, TypeBounds(nothing, upper)) if nothing =:= defn.NothingTpe =>
+        Some(mkPolyType(args, upper))
+      case _ =>
+        None
+    }
   }
 
   def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)

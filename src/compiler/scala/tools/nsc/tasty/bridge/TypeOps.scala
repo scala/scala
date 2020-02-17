@@ -20,11 +20,24 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
+  def normaliseBounds(bounds: TypeBounds): Type = {
+    val TypeBounds(lo, hi) = bounds
+    if (lo.isHigherKinded && hi.isHigherKinded)
+      mkPolyType(hi.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.resultType.upperBound))
+    else if (hi.isHigherKinded)
+      mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))
+    else if (lo.isHigherKinded)
+      mkPolyType(lo.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.upperBound))
+    else
+      bounds
+  }
+
   def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
-    if (args.exists(_.isInstanceOf[TypeBounds])) {
+    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[PolyType])) {
       def bindWildcard(tpe: Type) = tpe match {
-        case tpe: TypeBounds => ctx.newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
-        case tpe             => noSymbol -> tpe
+        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
+        case LambdaEncoding(lambda) => noSymbol -> lambda
+        case tpe                    => noSymbol -> tpe
       }
       val (syms, args1) = args.map(bindWildcard).unzip
       mkExistentialType(syms.filterSyms, mkTypeRef(tycon, args1))
@@ -65,7 +78,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   object TypeOps {
     implicit final class StripOps(tpe: Type) {
-      def stripLowerBoundsIfPoly: Type = tpe match {
+      def stripLowerBoundsIfPoly(implicit ctx: Context): Type = tpe match {
+        // case bounds @ symbolTable.TypeBounds(lo: PolyType, hi: PolyType) =>
+        //   val res = normaliseBounds(bounds)
+        //   ctx.log(s"""|stripped, raw: ${showRaw(res)}
+        //               |          tpe: $res""".stripMargin)
+        //   res
+        // TODO tasty: check out how scalac types HKClass_5 and HKClass_6
         case symbolTable.TypeBounds(_, hi: PolyType) => hi
         case tpe => tpe
       }
@@ -214,7 +233,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
           ctx.log(s"making poly from type param lambda")
           mkPolyType(typeParams, resType)
         case _: HKTypeLambda =>
-          ctx.log("making poly from hk type lambda")
+          ctx.log("making poly from hk type lambda") // Todo: we should only addLower if this lambda is not an argument
           mkPolyType(typeParams, TypeBounds.addLower(resType))
       }
       ctx.log(s"result canonical: $result")
@@ -259,25 +278,14 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
     override def typeParams: List[Symbol] = {
       if (myTypeParams `eq` null) myTypeParams = paramNames.lazyZip(paramInfos).lazyZip(paramVariances).map {
-        case (name, info, variance) =>
+        case (name, bounds, variance) =>
           val flags0 = Param | Deferred
           val flags  = variance match {
             case Variance.Contravariant => flags0 | Contravariant
             case Variance.Covariant     => flags0 | Covariant
             case _                      => flags0
           }
-          val argInfo = info match {
-            case bounds @ TypeBounds(lo, hi) =>
-              if (lo.isHigherKinded && hi.isHigherKinded)
-                mkPolyType(hi.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.resultType.upperBound))
-              else if (hi.isHigherKinded)
-                mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))
-              else if (lo.isHigherKinded)
-                mkPolyType(lo.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.upperBound))
-              else
-                bounds
-            case _ => info
-          }
+          val argInfo = normaliseBounds(bounds)
           typeSymbol.newTypeParameter(name.toTypeName, noPosition, flags).setInfo(argInfo)
       }
       myTypeParams
