@@ -72,9 +72,32 @@ import scala.collection.{Stepper, StepperShape, mutable}
 abstract class Accumulator[@specialized(Double, Int, Long) A, +CC[X] <: mutable.Seq[X], +C <: mutable.Seq[A]]
   extends mutable.Seq[A]
     with mutable.Builder[A, C] {
+
+  /**
+   * Implementation Details
+   *
+   * Every subclass has two arrays
+   *   - `current: Array[A]`
+   *   - `history: Array[Array[A]]`
+   *
+   * Elements are added to `current` at [[index]] until it's full, then `current` is added to `history` at [[hIndex]].
+   * [[nextBlockSize]] defines the size of the next `current`. See also [[cumulative]].
+   */
   private[jdk] var index: Int = 0
   private[jdk] var hIndex: Int = 0
   private[jdk] var totalSize: Long = 0L
+
+  /**
+   * The total number of elements stored in the history up to `history(i)` (where `0 <= i < hIndex`).
+   * This method is constant-time, the cumulative lengths are stored.
+   *   - [[AnyAccumulator]] keeps a separate array to store the cumulative lengths.
+   *   - [[LongAccumulator]] and [[DoubleAccumulator]] store the cumulative length at the last slot in every
+   *     array in the history. Every array is allocated with 1 extra slot for this purpose. [[DoubleAccumulator]]
+   *     converts the length to double for storing and back to long, which is correct for lengths that fit in the
+   *     double's 52 fraction bits (so any collection that fits in memory).
+   *   - [[IntAccumulator]] uses the last two slots in every array to store the cumulative length, every array is
+   *     allocated with 1 extra slot. So `history(0)` has 17 slots of which the first 15 store elements.
+   */
   private[jdk] def cumulative(i: Int): Long
 
   private[jdk] def nextBlockSize: Int = {
