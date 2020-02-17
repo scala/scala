@@ -166,15 +166,23 @@ sealed class HashSet[A] extends AbstractSet[A]
 
   override def tail: HashSet[A] = this - head
 
-  override def filter(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
-    nullToEmpty(filter0(p, false, 0, buffer, 0))
+  override def filter(p: A => Boolean) = p match {
+    case hs: HashSet[A] =>
+      intersect(hs)
+    case _ =>
+      val buffer = new Array[HashSet[A]](bufferSize(size))
+      nullToEmpty(filter0(p, false, 0, buffer, 0))
   }
 
-  override def filterNot(p: A => Boolean) = {
-    val buffer = new Array[HashSet[A]](bufferSize(size))
-    nullToEmpty(filter0(p, true, 0, buffer, 0))
+  override def filterNot(p: A => Boolean) = p match {
+    case hs: HashSet[A] =>
+      diff(hs)
+    case _ =>
+      val buffer = new Array[HashSet[A]](bufferSize(size))
+      nullToEmpty(filter0(p, true, 0, buffer, 0))
   }
+
+
 
   protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = null
 
