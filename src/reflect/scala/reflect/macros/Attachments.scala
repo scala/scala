@@ -83,6 +83,7 @@ abstract class Attachments { self =>
   }
 
   def isEmpty: Boolean = true
+  def cloneAttachments: Attachments { type Pos = self.Pos } = this
 }
 
 private object Attachments {
@@ -97,4 +98,5 @@ private final class NonemptyAttachments[P >: Null](override val pos: P, override
   type Pos = P
   def withPos(newPos: Pos) = new NonemptyAttachments(newPos, all)
   override def isEmpty: Boolean = false
+  override def cloneAttachments: Attachments { type Pos = P } = new NonemptyAttachments[P](pos, all)
 }

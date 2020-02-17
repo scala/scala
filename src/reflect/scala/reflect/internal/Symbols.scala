@@ -2039,7 +2039,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
-      this.attachments.all.foreach(clone.updateAttachment)
+      assert(clone.attachments.isEmpty)
+      clone.setAttachments(this.attachments.cloneAttachments)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
 
