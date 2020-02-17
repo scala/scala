@@ -73,7 +73,8 @@ object ListMap extends ImmutableMapFactory[ListMap] {
 sealed class ListMap[A, +B] extends AbstractMap[A, B]
   with Map[A, B]
   with MapLike[A, B, ListMap[A, B]]
-  with Serializable {
+  with Serializable
+  with HasForeachEntry[A,B] {
 
   override def empty = ListMap.empty
 

@@ -44,6 +44,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
                         with MapLike[A, B, HashMap[A, B]]
                         with Serializable
                         with CustomParallelizable[(A, B), ParHashMap[A, B]]
+                        with HasForeachEntry[A, B]
 {
   import HashMap.{nullToEmpty, bufferSize}
 
