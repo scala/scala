@@ -1218,7 +1218,10 @@ trait Contexts { self: Analyzer =>
      */
     private[Contexts] def importedAccessibleSymbol(imp: ImportInfo, sym: => Symbol): Symbol =
       if (isExcludedRootImport(imp)) NoSymbol
-      else sym.filter(isAccessible(_, imp.qual.tpe, superAccess = false))
+      else {
+        isAccessibleLambda.setup(this, imp.qual.tpe)
+        sym.filter(isAccessibleLambda)
+      }
 
     private def isExcludedRootImport(imp: ImportInfo): Boolean =
       imp.isRootImport && excludedRootImportsCached.get(unit).exists(_.contains(imp.qual.symbol))
@@ -1553,6 +1556,13 @@ trait Contexts { self: Analyzer =>
       }
       else finish(EmptyTree, NoSymbol)
     }
+  }
+
+  private[Contexts] object isAccessibleLambda extends (Symbol => Boolean) {
+    private[this] var context: Context = null
+    private[this] var prefix: Type = null
+    def setup(c: Context, p: Type): Unit = {context = c ; prefix = p }
+    def apply(sym: Symbol): Boolean = context.isAccessible(sym, prefix, superAccess = false)
   }
 
   /** A `Context` focussed on an `Import` tree */
