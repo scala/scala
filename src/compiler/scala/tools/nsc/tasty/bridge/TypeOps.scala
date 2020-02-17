@@ -40,7 +40,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         case tpe                    => noSymbol -> tpe
       }
       val (syms, args1) = args.map(bindWildcard).unzip
-      mkExistentialType(syms.filterSyms, mkTypeRef(tycon, args1))
+      val quantified = syms.filterSyms
+      if (quantified.isEmpty) mkTypeRef(tycon, args1)
+      else mkExistentialType(quantified, mkTypeRef(tycon, args1))
     }
     else {
       mkTypeRef(tycon, args)
@@ -78,15 +80,10 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   object TypeOps {
     implicit final class StripOps(tpe: Type) {
-      def stripLowerBoundsIfPoly(implicit ctx: Context): Type = tpe match {
-        // case bounds @ symbolTable.TypeBounds(lo: PolyType, hi: PolyType) =>
-        //   val res = normaliseBounds(bounds)
-        //   ctx.log(s"""|stripped, raw: ${showRaw(res)}
-        //               |          tpe: $res""".stripMargin)
-        //   res
-        // TODO tasty: check out how scalac types HKClass_5 and HKClass_6
-        case symbolTable.TypeBounds(_, hi: PolyType) => hi
-        case tpe => tpe
+      def normaliseIfBounds(implicit ctx: Context): Type = tpe match {
+        // case symbolTable.TypeBounds(_, hi: PolyType) => hi
+        case tpe: TypeBounds => normaliseBounds(tpe)
+        case tpe             => tpe
       }
     }
   }
@@ -179,7 +176,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
-    def apply(paramNames: List[N], paramVariances: List[Variance])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type): LT
+    def apply(paramNames: List[N], paramVariances: List[Variance])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
   }
 
   object TypeParamLambda {
@@ -258,12 +255,12 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
     def apply(paramNames: List[TypeName], paramVariances: List[Variance])(
-        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type): HKTypeLambda =
+        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context): HKTypeLambda =
       new HKTypeLambda(paramNames, paramVariances)(paramInfosExp, resultTypeExp)
   }
 
   final class HKTypeLambda(val paramNames: List[TypeName], val paramVariances: List[Variance])(
-      paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)
+      paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context)
   extends LambdaType {
     type ThisName = TypeName
     type PInfo = TypeBounds
@@ -286,7 +283,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
             case _                      => flags0
           }
           val argInfo = normaliseBounds(bounds)
-          typeSymbol.newTypeParameter(name.toTypeName, noPosition, flags).setInfo(argInfo)
+          ctx.owner.newTypeParameter(name, noPosition, flags).setInfo(argInfo)
       }
       myTypeParams
     }

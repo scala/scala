@@ -37,8 +37,14 @@ object HKNest {
   class HKClass_9[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
     def foo[G[X]](x: F[G]): String = x.toString()
   }
-  object HKClass_9
-  // val test = new HKClass_8[Foo]
+
+  class HKClass_10[F[-T >: Sum]] {
+    def foo[T1 >: Sum](x: F[T1]): String = x.toString()
+  }
+
+  class HKClass_11[F[-T >: Prod]] {
+    def foo[T1 >: Prod](x: F[T1]): String = x.toString()
+  }
 
   type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
 
@@ -66,12 +72,19 @@ object HKNest {
   sealed trait QuxArg[T]
   case class Arg1[T]() extends QuxArg[T]
 
+  sealed trait Sum
+  case class Prod() extends Sum
+
   class Qux[+F[X] <: QuxArg[X]] {
     override def toString(): String = "Qux"
   }
 
   class Quux[-F[X] >: Arg1[X]] {
     override def toString(): String = "Quux"
+  }
+
+  class Quuux[-T >: Prod] {
+    override def toString(): String = "Quuux"
   }
 
   class Boo[F[X] <: Either[X, Int]] {

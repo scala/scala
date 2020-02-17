@@ -917,7 +917,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 rhs.tpe.typeParams
             }
             // TODO check for cycles
-            sym.info = rhs.tpe.stripLowerBoundsIfPoly
+            sym.info = rhs.tpe.normaliseIfBounds
             // sym.normalizeOpaque()
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)
@@ -935,7 +935,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
       }
-      ctx.log(s"typed ${showSym(sym)} : ${sym.tpe} in owner ${showSym(sym.owner)}")
+      ctx.log(s"typed ${showSym(sym)} : ${if (sym.isClass) sym.tpe else sym.info} in owner ${showSym(sym.owner)}")
       goto(end)
       noCycle
     }
