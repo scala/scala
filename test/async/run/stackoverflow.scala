@@ -1,8 +1,17 @@
-import scala.async.internal.AsyncId._
+import scala.concurrent._
+import scala.concurrent.duration._
+import ExecutionContext.Implicits.global
+import scala.async.Async.{async, await}
+object TestUtil {
+  import language.implicitConversions
+  implicit def lift[T](t: T): Future[T] = Future.successful(t)
+  def block[T](f: Future[T]): T = Await.result(f, Duration.Inf)
+}
+import TestUtil._
 
 object Test extends App {
 
-  async {
+  block(  async {
     var i = 100000000
     while (i > 0) {
       if (false) {
@@ -10,6 +19,5 @@ object Test extends App {
       }
       i -= 1
     }
-  }
-
+  })
 }

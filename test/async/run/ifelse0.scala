@@ -2,19 +2,23 @@ object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.ifelse
 
 package scala.async.run.ifelse0 {
 
-  import language.{reflectiveCalls, postfixOps}
-  import scala.concurrent.{Future, ExecutionContext, Await}
-  import scala.concurrent.duration._
-  import scala.async.Async.{async, await}
   import org.junit.Test
   import org.junit.Assert._
-  import scala.async.internal.AsyncId
+  import language.{reflectiveCalls, postfixOps}
+
+  import scala.concurrent._
+  import scala.concurrent.duration._
+  import ExecutionContext.Implicits.global
+  import scala.async.Async.{async, await}
+  object TestUtil {
+    import language.implicitConversions
+    implicit def lift[T](t: T): Future[T] = Future.successful(t)
+    def block[T](f: Future[T]): T = Await.result(f, Duration.Inf)
+  }
+  import TestUtil._
 
 
   class TestIfElseClass {
-
-    import ExecutionContext.Implicits.global
-
     def m1(x: Int): Future[Int] = Future {
       x + 2
     }
@@ -44,10 +48,9 @@ package scala.async.run.ifelse0 {
     }
 
     @Test def `await in condition`(): Unit = {
-      import AsyncId.{async, await}
-      val result = async {
+      val result = block(async {
         if ({await(true); await(true)}) await(1) else ???
-      }
+      })
       assertEquals(1, result)
     }
   }

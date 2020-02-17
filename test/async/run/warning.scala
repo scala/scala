@@ -28,7 +28,7 @@ class WarningsSpec {
     // was: "a pure expression does nothing in statement position; you may be omitting necessary parentheses"
     tb.eval(tb.parse {
       """
-        |  import scala.async.internal.AsyncId._
+        |  import scala.tools.nsc.transform.async.user.AsyncId._
         |   async {
         |     if ("".isEmpty) {
         |       await(println("hello"))

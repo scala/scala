@@ -3,13 +3,19 @@ object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.tought
 package scala.async.run.toughtype {
 
   import language.{reflectiveCalls, postfixOps}
-  import scala.concurrent._
-  import scala.concurrent.duration._
-  import scala.async.Async._
   import org.junit.Test
   import org.junit.Assert._
-  import scala.async.internal.AsyncId
 
+  import scala.concurrent._
+  import scala.concurrent.duration._
+  import ExecutionContext.Implicits.global
+  import scala.async.Async.{async, await}
+  object TestUtil {
+    import language.implicitConversions
+    implicit def lift[T](t: T): Future[T] = Future.successful(t)
+    def block[T](f: Future[T]): T = Await.result(f, Duration.Inf)
+  }
+  import TestUtil._
 
   object ToughTypeObject {
 
@@ -33,39 +39,35 @@ package scala.async.run.toughtype {
     }
 
     @Test def patternMatchingPartialFunction(): Unit = {
-      import AsyncId.{await, async}
-      assertEquals(3, async {
+      assertEquals(3, block(async {
         await(1)
         val a = await(1)
         val f = { case x => x + a }: PartialFunction[Int, Int]
         await(f(2))
-      })
+      }))
     }
 
     @Test def patternMatchingPartialFunctionNested(): Unit = {
-      import AsyncId.{await, async}
-      assertEquals(-3, async {
+      assertEquals(-3, block(async {
         await(1)
         val neg1 = -1
         val a = await(1)
         val f = { case x => ({case x => neg1 * x}: PartialFunction[Int, Int])(x + a) }: PartialFunction[Int, Int]
         await(f(2))
-      })
+      }))
     }
 
     @Test def patternMatchingFunction(): Unit = {
-      import AsyncId.{await, async}
-      assertEquals(3, async {
+      assertEquals(3, block(async {
         await(1)
         val a = await(1)
         val f = { case x => x + a }: Function[Int, Int]
         await(f(2))
-      })
+      }))
     }
 
     @Test def existentialBindIssue19(): Unit = {
-      import AsyncId.{await, async}
-      def m7(a: Any) = async {
+      def m7(a: Any) = block(async {
         a match {
           case s: Seq[_] =>
             val x = s.size
@@ -73,7 +75,7 @@ package scala.async.run.toughtype {
             ss = s
             await(x)
         }
-      }
+      })
       assertEquals(0, m7(Nil))
     }
 
@@ -92,20 +94,18 @@ package scala.async.run.toughtype {
     }
 
     @Test def singletonTypeIssue17(): Unit = {
-      import AsyncId.{async, await}
       class A { class B }
-      async {
+      block(async {
         val a = new A
         def foo(b: a.B) = 0
         await(foo(new a.B))
-      }
+      })
     }
 
     @Test def existentialMatch(): Unit = {
-      import AsyncId.{async, await}
       trait Container[+A]
       case class ContainerImpl[A](value: A) extends Container[A]
-      def foo: Container[_] = async {
+      def foo: Container[_] = block(async {
         val a: Any = List(1)
         a match {
           case buf: Seq[_] =>
@@ -113,15 +113,14 @@ package scala.async.run.toughtype {
             val e0 = buf(0)
             ContainerImpl(e0)
         }
-      }
+      })
       foo
     }
 
     @Test def existentialIfElse0(): Unit = {
-      import AsyncId.{async, await}
       trait Container[+A]
       case class ContainerImpl[A](value: A) extends Container[A]
-      def foo: Container[_] = async {
+      def foo: Container[_] = block(async {
         val a: Any = List(1)
         if (true) {
           val buf: Seq[_] = List(1)
@@ -129,7 +128,7 @@ package scala.async.run.toughtype {
           val e0 = buf(0)
           ContainerImpl(e0)
         } else ???
-      }
+      })
       foo
     }
 
@@ -153,7 +152,6 @@ package scala.async.run.toughtype {
       import scala.concurrent.{Future, ExecutionContext, Await}
       import scala.concurrent.duration._
       import scala.async.Async.{async, await}
-      import scala.async.internal.AsyncId
 
       class Foo[A]
 
@@ -319,15 +317,14 @@ package scala.async.run.toughtype {
 
     // https://github.com/scala/async/issues/106
     @Test def valueClassT106(): Unit = {
-      import scala.async.internal.AsyncId._
-      async {
+      block(async {
         "whatever value" match {
           case _ =>
             await("whatever return type")
             new IntWrapper("value class matters")
         }
         "whatever return type"
-      }
+      })
     }
   }
 

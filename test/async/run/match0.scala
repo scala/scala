@@ -3,17 +3,22 @@ object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.match0
 package scala.async.run.match0 {
 
   import language.{reflectiveCalls, postfixOps}
-  import scala.concurrent.{Future, ExecutionContext, Await}
-  import scala.concurrent.duration._
-  import scala.async.Async.{async, await}
+
   import org.junit.Test
   import org.junit.Assert._
-  import scala.async.internal.AsyncId
 
+  import scala.concurrent._
+  import scala.concurrent.duration._
+  import ExecutionContext.Implicits.global
+  import scala.async.Async.{async, await}
+  object TestUtil {
+    import language.implicitConversions
+    implicit def lift[T](t: T): Future[T] = Future.successful(t)
+    def block[T](f: Future[T]): T = Await.result(f, Duration.Inf)
+  }
+  import TestUtil._
 
   class TestMatchClass {
-
-    import ExecutionContext.Implicits.global
 
     def m1(x: Int): Future[Int] = Future {
       x + 2
@@ -66,21 +71,20 @@ package scala.async.run.match0 {
     }
 
     @Test def `support await in a match expression with binds`(): Unit = {
-      val result = AsyncId.async {
+      val result = block(async {
         val x = 1
         Option(x) match {
           case op @ Some(x) =>
             assert(op.contains(1))
-            x + AsyncId.await(x)
-          case None => AsyncId.await(0)
+            x + await(x)
+          case None => await(0)
         }
-      }
-      assertEquals(2, res)
+      })
+      assertEquals(2, result)
     }
 
     @Test def `support await referring to pattern matching vals`(): Unit = {
-      import AsyncId.{async, await}
-      val result = async {
+      val result = block(async {
         val x = 1
         val opt = Some("")
         await(0)
@@ -92,53 +96,49 @@ package scala.async.run.match0 {
 
         await(0)
         await((o, y.isEmpty))
-      }
+      })
       assertEquals((Some(""), true), result)
     }
 
     @Test def `await in scrutinee`(): Unit = {
-      import AsyncId.{async, await}
-      val result = async {
+      val result = block(async {
         await(if ("".isEmpty) await(1) else ???) match {
           case x if x < 0 => ???
           case y: Int => y * await(3)
         }
-      }
+      })
       assertEquals(3, result)
     }
 
     @Test def duplicateBindName(): Unit = {
-      import AsyncId.{async, await}
-      def m4(m: Any) = async {
+      def m4(m: Any) = block(async {
         m match {
           case buf: String =>
             await(0)
           case buf: Double =>
             await(2)
         }
-      }
+      })
 
       assertEquals(0, m4(""))
     }
 
     @Test def bugCastBoxedUnitToStringMatch(): Unit = {
-      import scala.async.internal.AsyncId.{async, await}
-      def foo = async {
+      def foo = block(async {
         val p2 = await(5)
         "foo" match {
           case p3: String =>
             p2.toString
         }
-      }
+      })
       assertEquals("5", foo)
     }
 
     @Test def bugCastBoxedUnitToStringIf(): Unit = {
-      import scala.async.internal.AsyncId.{async, await}
-      def foo = async {
+      def foo = block(async {
         val p2 = await(5)
         if (true) p2.toString else p2.toString
-      }
+      })
       assertEquals("5", foo)
     }
   }
