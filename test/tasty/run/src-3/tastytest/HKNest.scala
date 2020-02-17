@@ -30,7 +30,12 @@ object HKNest {
     def foo[F[X] <: Either[X, Int]](x: O[F]): String = x.toString()
   }
 
+  // class HKClass_8[P[F[X <: String]] <: Hoo[StringOrInt]] {
+  //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/lampepfl/dotty/issues/8329
+  // }
+
   type OrInt[X] = Either[X, Int]
+  // type StringOrInt[X <: String] = Either[X, Int] https://github.com/lampepfl/dotty/issues/8329
 
   class Box[A]
 
@@ -60,5 +65,9 @@ object HKNest {
   class Boo[F[X] <: Either[X, Int]] {
     override def toString(): String = "Boo"
   }
+
+  // class Hoo[F[X <: String] <: Either[X, Int]] { https://github.com/lampepfl/dotty/issues/8329
+  //   override def toString(): String = "Hoo"
+  // }
 
 }

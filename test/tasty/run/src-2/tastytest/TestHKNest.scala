@@ -13,5 +13,6 @@ object TestHKNest extends Suite("TestHKNest") {
   test(assert(new HKClass_5[Quux].foo(new Quux[Arg1]) == "Quux"))
   test(assert(new HKClass_6[Quux].foo(new Quux[QuxArg]) == "Quux"))
   test(assert(new HKClass_7[Boo].foo(new Boo[OrInt]) == "Boo"))
+  // test(assert(new HKClass_8[Boo].foo(new Boo[StringOrInt]) == "Boo"))  blocked by https://github.com/lampepfl/dotty/issues/8329
 
 }
