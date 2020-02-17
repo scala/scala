@@ -63,10 +63,6 @@ trait ReplGlobal extends Global {
       }
 
       def newUnusedPrivates: analyzer.UnusedPrivates = new analyzer.UnusedPrivates() {
-        override lazy val ignoreNames = super.ignoreNames ++ {
-          val sn = sessionNames
-          Set(sn.line, sn.read, "INSTANCE", sn.iw, sn.eval, sn.print, sn.result).map(TermName(_))
-        }
         override def isEffectivelyPrivate(sym: Symbol): Boolean = {
           sessionNames.isLineReadVal(sym.name)
         }

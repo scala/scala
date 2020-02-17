@@ -496,7 +496,7 @@ trait TypeDiagnostics {
   }
 
   class UnusedPrivates extends Traverser {
-    def ignoreNames: Set[TermName] = UnusedPrivates.ignoreNames
+    import UnusedPrivates.ignoreNames
     def isEffectivelyPrivate(sym: Symbol): Boolean = false
     val defnTrees = ListBuffer[MemberDef]()
     val targets   = mutable.Set[Symbol]()
