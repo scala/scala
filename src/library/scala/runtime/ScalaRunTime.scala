@@ -124,8 +124,11 @@ object ScalaRunTime {
     case _ =>
       val length = array_length(src)
       val dest = new Array[Object](length)
-      for (i <- 0 until length)
+      var i = 0
+      while (i < length) {
         array_update(dest, i, array_apply(src, i))
+        i += 1
+      }
       dest
   }
 
