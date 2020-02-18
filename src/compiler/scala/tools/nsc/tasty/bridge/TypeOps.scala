@@ -29,7 +29,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
       assert(mergeableParams(lo, hi))
-      val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(mkTypeRef(_,Nil)))
+      val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(_.ref))
       lo.typeParams.foreach { sym =>
         sym.owner.rawInfo.decls.unlink(sym)
         sym.owner.rawInfo.members.unlink(sym)
@@ -58,13 +58,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         defn.AnyTpe
       }
       else {
-        mkTypeRef(tycon, args)
+        mkAppliedType(tycon, args)
       }
     }
 
     if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[PolyType])) {
       def bindWildcard(tpe: Type) = tpe match {
-        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
+        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).pipe(sym => sym -> sym.ref)
         case LambdaEncoding(lambda) => noSymbol -> lambda
         case tpe                    => noSymbol -> tpe
       }
@@ -113,7 +113,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
    */
   case object AndType extends Type
 
-  def typeRef(pre: Type, name: TastyName)(implicit ctx: Context): Type = {
+  def selectType(pre: Type, name: TastyName)(implicit ctx: Context): Type = {
     if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) {
         AndType
@@ -124,9 +124,12 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       }
     }
     else {
-      mkTypeRef(pre, name, selectingTerm = false)
+      selectFromPrefix(pre, name, selectingTerm = false)
     }
   }
+
+  def selectTerm(pre: Type, name: TastyName)(implicit ctx: Context): Type =
+    selectFromPrefix(pre, name, selectingTerm = true)
 
   /**
    * Ported from dotc
@@ -158,16 +161,17 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   object NamedType {
     import SymbolOps._
-    def apply(prefix: Type, designator: Symbol): Type =
-      if (designator.isType
-          // With this second constraint, we avoid making singleton types for
-          // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-          // [what do we do about Scala 3 enum constants?]
-          || designator.is(Method | JavaStatic)) {
-        mkTypeRef(prefix, designator, Nil)
-      } else {
+    def apply(prefix: Type, designator: Symbol): Type = {
+      if (designator.isType)
+        designator.ref
+      else if (designator.is(Method | JavaStatic))
+        // With this second constraint, we avoid making singleton types for
+        // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
+        // [what do we do about Scala 3 enum constants?]
+        designator.termRef(prefix)
+      else
         mkSingleType(prefix, designator)
-      }
+    }
   }
 
   private def selectSymFromSig0(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String,(Int, Symbol)] =
@@ -178,7 +182,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     errorType
   }
 
-  def mkTypeRef(tpe: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+  def selectFromPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
     import NameOps._
     val encoded  = name.toEncodedTermName
     val selector = if (selectingTerm) encoded else encoded.toTypeName
@@ -186,19 +190,12 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
       sym
     }
-    val resolved = {
-      (name match {
-        case SignedName(qual, sig) =>
-          selectSymFromSig0(tpe, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
-        case _ => Right(tpe.member(selector))
-      }).map(mem => if (name.isModuleName) mem.linkedClassOfClass else mem)
+    val resolved = name match {
+      case SignedName(qual, sig) =>
+        selectSymFromSig0(pre, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
+      case _ => Right(pre.member(selector))
     }
-    val tpeOrErr = resolved.map(sym1 =>
-      if (tpe.typeSymbol.is(scala.reflect.internal.Flags.PACKAGE) && sym1.isClass)
-        sym1.tpe
-      else
-        NamedType(tpe, sym1)
-    )
+    val tpeOrErr = resolved.map(sym => NamedType(pre, if (name.isModuleName) sym.linkedClassOfClass else sym))
     tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 

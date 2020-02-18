@@ -386,9 +386,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case TYPELAMBDAtype =>
               readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName, _.variance)
             case PARAMtype =>
-              readTypeRef() match {
-                case binder: LambdaType => mkTypeRef(binder.typeParams(readNat()), Nil)
-              }
+              readTypeRef().asInstanceOf[LambdaType].typeParams(readNat()).ref
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
@@ -397,21 +395,21 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readSimpleType(): Type = {
         (tag: @switch) match {
           case TYPEREFdirect | TERMREFdirect =>
-            mkTypeRef(noPrefix, readSymRef(), Nil)
+            readSymRef().termRef
           case TYPEREFsymbol | TERMREFsymbol =>
             readSymNameRef()
           case TYPEREFpkg =>
-            readPackageRef().moduleClass.typeRef
+            readPackageRef().moduleClass.ref
           case TERMREFpkg =>
             readPackageRef().termRef
           case TYPEREF =>
             val name = readTastyName()
             val pre  = readType()
-            typeRef(pre, name)
+            selectType(pre, name)
           case TERMREF =>
-            val sname  = readTastyName()
+            val name  = readTastyName()
             val prefix = readType()
-            mkTypeRef(prefix, sname, selectingTerm = true)
+            selectTerm(prefix, name)
           case THIS =>
             val sym = readType() match {
               case tpe: TypeRef => tpe.sym
@@ -434,7 +432,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val ref = readAddr()
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
-            mkTypeRef(defn.ByNameParamClass, readType() :: Nil) // ExprType(readType())
+            defn.ByNameParamClass.ref(readType() :: Nil) // ExprType(readType())
           case ENUMconst =>
             errorTasty("Enum Constant") //Constant(readTypeRef().termSymbol)
             errorType
@@ -449,14 +447,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def readSymNameRef()(implicit ctx: Context): Type = {
       val sym    = readSymRef()
       val prefix = readType()
-      val res    = NamedType(prefix, sym)
-      prefix match {
-        case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
-          mkTypeRef(sym, Nil)
-          // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
-          // the problem arises when a self type of a trait is a type parameter of the same trait.
-        case _ => res
-      }
+      // TODO tasty: restore this if github:lampepfl/dotty/tests/pos/extmethods.scala causes infinite loop
+      // prefix match {
+        // case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
+        //   mkAppliedType(sym, Nil)
+        //   // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
+        //   // the problem arises when a self type of a trait is a type parameter of the same trait.
+      // }
+      NamedType(prefix, sym)
     }
 
     private def readPackageRef()(implicit ctx: Context): TermSymbol = {
@@ -858,7 +856,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           if (completer.tastyFlagSet.is(Inline)) {
             sym.addAnnotation(
-              symbolTable.symbolOf[annotation.compileTimeOnly],
+              defn.CompileTimeOnlyAttr,
               Literal(Constant(s"Unsupported Scala 3 inline $sym"))
             )
           }
@@ -1252,7 +1250,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val selector = if (isTerm) encoded else encoded.toTypeName
       val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
       def tpeFun(localCtx: Context, selector: Name, qualType: Type): Type =
-        if (sig `eq` NotAMethod) mkTypeRef(qualType, name, isTerm)
+        if (sig `eq` NotAMethod) selectFromPrefix(qualType, name, isTerm)
         else selectFromSig(qualType, selector, sig)(localCtx)
       f(localCtx, selector, tpeFun)
     }

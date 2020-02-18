@@ -10,6 +10,8 @@ trait FlagOps extends TastyKernel { self: TastyUniverse =>
     import symbolTable.Flag
     import scala.reflect.internal.{Flags, ModifierFlags}
 
+    val Package: FlagSet = Flags.PACKAGE
+
     val Private: FlagSet = Flag.PRIVATE
     val Protected: FlagSet = Flag.PROTECTED
     val AbsOverride: FlagSet = Flag.ABSOVERRIDE

@@ -16,9 +16,10 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
-      def typeRef(args: List[Type]): Type = mkTypeRef(sym, args)
-      def typeRef: Type = mkTypeRef(sym, Nil)
-      def termRef: Type = mkTypeRef(sym.tpe.prefix, sym, Nil)
+      def ref(args: List[Type]): Type = mkAppliedType(sym, args)
+      def ref: Type = sym.ref(Nil)
+      def termRef: Type = sym.termRef(noPrefix)
+      def termRef(pre: Type): Type = mkTypeRef(pre, sym, Nil)
       def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
       def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
       def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
