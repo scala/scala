@@ -223,9 +223,14 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
 
     // Replace the ValDefs in the async block with Assigns to the corresponding lifted
     // fields. Similarly, replace references to them with references to the field.
-    object UseFields extends TypingTransformer(currentTransformState.unit) {
-      private def fieldSel(tree: Tree) =
-        atPos(tree.pos)(Select(This(stateMachineClass).setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
+    object UseFields extends explicitOuter.OuterPathTransformer(currentTransformState.unit) {
+      private def fieldSel(tree: Tree) = {
+        val outerOrThis = if (stateMachineClass == currentClass) This(stateMachineClass) else {
+          tree.symbol.makeNotPrivate(tree.symbol.owner)
+          outerPath(outerValue, currentClass.outerClass, stateMachineClass)
+        }
+        atPos(tree.pos)(Select(outerOrThis.setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
+      }
       override def transform(tree: Tree): Tree = tree match {
         case _ if currentOwner == stateMachineClass =>
           super.transform(tree)

@@ -35,6 +35,26 @@ class AnnotationDrivenAsync {
   }
 
   @Test
+  def testScalaConcurrentAsyncNested(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |object Test {
+        |  def foo[T](a0: Int)(b0: Int*) = s"a0 = $a0, b0 = ${b0.head}"
+        |
+        |  def test: String = Await.result(async {
+        |    var i = 0
+        |    def get = async{i += 1; i}
+        |    foo[Int](await(get))(await(get) :: await(async(Nil)) : _*)
+        |  }, Duration.Inf)
+        |}
+        |""".stripMargin
+    assertEquals("a0 = 1, b0 = 2", run(code))
+  }
+
+  @Test
   def testCustomAsync(): Unit = {
     val code = """
        |import scala.tools.nsc.async.{autoawait, customAsync}
@@ -204,6 +224,8 @@ class AnnotationDrivenAsync {
       settings.embeddedDefaults(getClass.getClassLoader)
       // settings.debug.value = true
       // settings.processArgumentString("-Xprint:all -nowarn")
+      // sys.props("scala.async.trace") = "true"
+      // sys.props("scala.async.debug") = "true"
       val isInSBT = !settings.classpath.isSetByUser
       if (isInSBT) settings.usejavacp.value = true
       val global = new Global(settings, reporter) {
