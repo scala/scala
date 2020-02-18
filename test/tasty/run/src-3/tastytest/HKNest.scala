@@ -26,27 +26,38 @@ object HKNest {
     def foo[F1[X] >: QuxArg[X]](x: N[F1]): String = x.toString()
   }
 
-  class HKClass_7[O[F[X] <: Either[X, Int]]] {
+  class HKClass_7[M[-F[X] >: Arg1[X] <: QuxArg[X]]] {
+    def foo[F[X] >: Arg1[X] <: QuxArg[X]](x: M[F]): String = x.toString()
+  }
+
+  class HKClass_8[O[F[X] <: Either[X, Int]]] {
     def foo[F[X] <: Either[X, Int]](x: O[F]): String = x.toString()
   }
 
-  class HKClass_8[F[G[X]] <: Foo[[T] =>> Either[Nothing, T]]] {
+  class HKClass_9[F[G[X]] <: Foo[[T] =>> Either[Nothing, T]]] {
     def foo[G[X]](x: F[G]): String = x.toString()
   }
 
-  class HKClass_9[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
+  class HKClass_10[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
     def foo[G[X]](x: F[G]): String = x.toString()
   }
 
-  class HKClass_10[F[-T >: Sum]] {
+  class HKClass_11[F[-T >: Sum]] {
     def foo[T1 >: Sum](x: F[T1]): String = x.toString()
   }
 
-  class HKClass_11[F[-T >: Prod]] {
+  class HKClass_12[F[-T >: Prod]] {
     def foo[T1 >: Prod](x: F[T1]): String = x.toString()
   }
 
+  class HKClass_13[F <: [T] =>> [U] =>> (U, T)] {
+    def foo[T,U](x: F[T][U]): String = x.toString()
+  }
+
+  def test13 = new HKClass_13[HKLam].foo[Int,String](("",0))
+
   type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
+  type HKLam = [T] =>> [U] =>> (U, T)
 
   // class HKClass_8[P[F[X <: String]] <: Hoo[StringOrInt]] {
   //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/lampepfl/dotty/issues/8329
@@ -61,6 +72,10 @@ object HKNest {
     override def toString(): String = "Foo"
   }
 
+  class Foo1[F[T] <: [U] =>> Either[U, T]] {
+    override def toString(): String = "Foo1"
+  }
+
   class Bar[F[_], A] {
     override def toString(): String = "Bar"
   }
@@ -70,10 +85,10 @@ object HKNest {
   }
 
   sealed trait QuxArg[T]
-  case class Arg1[T]() extends QuxArg[T]
+  class Arg1[T]() extends QuxArg[T]
 
   sealed trait Sum
-  case class Prod() extends Sum
+  class Prod extends Sum
 
   class Qux[+F[X] <: QuxArg[X]] {
     override def toString(): String = "Qux"
@@ -83,12 +98,16 @@ object HKNest {
     override def toString(): String = "Quux"
   }
 
-  class Quuux[-T >: Prod] {
+  class Quuux[-F[X] >: Arg1[X] <: QuxArg[X]] {
     override def toString(): String = "Quuux"
   }
 
   class Boo[F[X] <: Either[X, Int]] {
     override def toString(): String = "Boo"
+  }
+
+  class Contra[-T >: Prod] {
+    override def toString(): String = "Contra"
   }
 
   // class Hoo[F[X <: String] <: Either[X, Int]] { https://github.com/lampepfl/dotty/issues/8329

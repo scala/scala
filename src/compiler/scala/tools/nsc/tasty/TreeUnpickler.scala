@@ -906,6 +906,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               case tpe: TypeBounds => normaliseBounds(tpe)
               case tpe             => tpe
             }
+            if (sym.is(Param)) sym.flags &= ~(Private | Protected)
             // sym.normalizeOpaque()
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)

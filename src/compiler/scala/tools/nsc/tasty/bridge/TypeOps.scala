@@ -20,10 +20,23 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
-  def normaliseBounds(bounds: TypeBounds): Type = {
+  def mergeableParams(t: Type, u: Type): Boolean = {
+    t.typeParams.size == u.typeParams.size &&
+      t.typeParams.lazyZip(u.typeParams).forall((t,u) => t.name == u.name)
+  }
+
+  def normaliseBounds(bounds: TypeBounds)(implicit ctx: Context): Type = {
     val TypeBounds(lo, hi) = bounds
-    if (lo.isHigherKinded && hi.isHigherKinded)
-      mkPolyType(hi.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.resultType.upperBound))
+    if (lo.isHigherKinded && hi.isHigherKinded) {
+      assert(mergeableParams(lo, hi))
+      val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(mkTypeRef(_,Nil)))
+      lo.typeParams.foreach { sym =>
+        sym.owner.rawInfo.decls.unlink(sym)
+        sym.owner.rawInfo.members.unlink(sym)
+        sym.owner = noSymbol
+      }
+      mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
+    }
     else if (hi.isHigherKinded)
       mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))
     else if (lo.isHigherKinded)
