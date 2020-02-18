@@ -153,7 +153,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    * @throws   NoSuchElementException if no `Value` with a matching
    *           name is in this `Enumeration`
    */
-  final def withName(s: String): Value = values.find(_.toString == s).getOrElse(
+  final def withName(s: String): Value = values.byName.getOrElse(s,
     throw new NoSuchElementException(s"No value found for '$s'"))
 
   /** Creates a fresh value, part of this enumeration. */
@@ -200,7 +200,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
       val value = m.invoke(this).asInstanceOf[Value]
       // verify that outer points to the correct Enumeration: ticket #3616.
       if (value.outerEnum eq thisenum) {
-        val id = Int.unbox(classOf[Val] getMethod "id" invoke value)
+        val id: Int = value.id
         nmap += ((id, name))
       }
     }
@@ -294,6 +294,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     /** Creates a bit mask for the zero-adjusted ids in this set as a
      *  new array of longs */
     def toBitMask: Array[Long] = nnIds.toBitMask
+    private[Enumeration] lazy val byName: Map[String, Value] = iterator.map( v => v.toString -> v).toMap
   }
 
   /** A factory object for value sets */
