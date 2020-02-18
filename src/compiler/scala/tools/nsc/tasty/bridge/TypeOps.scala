@@ -78,17 +78,25 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  object TypeOps {
-    implicit final class StripOps(tpe: Type) {
-      def normaliseIfBounds(implicit ctx: Context): Type = tpe match {
-        // case symbolTable.TypeBounds(_, hi: PolyType) => hi
-        case tpe: TypeBounds => normaliseBounds(tpe)
-        case tpe             => tpe
+  /** A type which accepts two type arguments, representing an intersection type
+   * @see https://github.com/lampepfl/dotty/issues/7688
+   */
+  case object AndType extends Type
+
+  def typeRef(pre: Type, name: TastyName)(implicit ctx: Context): Type = {
+    if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
+      if (name === nme.And) {
+        AndType
+      }
+      else {
+        errorTasty(s"Union types are not currently supported, [found within ${ctx.classRoot}]")
+        errorType
       }
     }
+    else {
+      mkTypeRef(pre, name, selectingTerm = false)
+    }
   }
-
-  case object AndType extends Type
 
   /**
    * Ported from dotc

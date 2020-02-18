@@ -8,6 +8,11 @@ import scala.tools.nsc.tasty.TastyUniverse
 
 trait ContextOps extends TastyKernel { self: TastyUniverse =>
   import FlagSets._
+  import Contexts._
+
+  @inline
+  final def errorTasty(msg: String)(implicit ctx: Context): Unit =
+    reporter.error(noPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
 
   object Contexts {
 

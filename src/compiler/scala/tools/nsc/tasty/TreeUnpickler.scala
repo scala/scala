@@ -30,17 +30,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import TastyFlags._
   import Signature._
   import Contexts._
-  import TypeOps._
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
       errorTasty(msg)
     }
-
-  @inline
-  final protected def errorTasty(msg: String)(implicit ctx: Context): Unit =
-    reporter.error(noPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
@@ -411,18 +406,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case TYPEREF =>
             val name = readTastyName()
             val pre  = readType()
-            if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or) ) {
-              if (name === nme.And) {
-                AndType
-              }
-              else {
-                errorTasty(s"Union types are not currently supported, [found reference to scala.$name at Addr($start) in ${ctx.classRoot}]")
-                errorType
-              }
-            }
-            else {
-              mkTypeRef(pre, name, selectingTerm = false)
-            }
+            typeRef(pre, name)
           case TERMREF =>
             val sname  = readTastyName()
             val prefix = readType()
@@ -917,7 +901,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 rhs.tpe.typeParams
             }
             // TODO check for cycles
-            sym.info = rhs.tpe.normaliseIfBounds
+            sym.info = rhs.tpe match {
+              // case symbolTable.TypeBounds(_, hi: PolyType) => hi
+              case tpe: TypeBounds => normaliseBounds(tpe)
+              case tpe             => tpe
+            }
             // sym.normalizeOpaque()
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)
