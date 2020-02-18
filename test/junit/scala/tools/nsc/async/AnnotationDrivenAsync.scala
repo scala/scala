@@ -192,7 +192,7 @@ class AnnotationDrivenAsync {
       |
       |    "" match {
       |      case _ if id(false) => ???;
-      |      case _              => "okay"
+      |      case _              => id("okay")
       |    }
       |  }
       |}
@@ -247,6 +247,7 @@ class AnnotationDrivenAsync {
       settings.outdir.value = out.getAbsolutePath
       settings.embeddedDefaults(getClass.getClassLoader)
       // settings.debug.value = true
+      // settings.uniqid.value = true
       // settings.processArgumentString("-Xprint:all -nowarn")
       // sys.props("scala.async.trace") = "true"
       // sys.props("scala.async.debug") = "true"

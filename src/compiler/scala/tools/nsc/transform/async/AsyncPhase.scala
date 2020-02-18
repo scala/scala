@@ -22,6 +22,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
   import global._
 
   val asyncNames = new AsyncNames[global.type](global)
+  val tracing = new Tracing
 
   val phaseName: String = "async"
   override def enabled = true // TODO: should be off by default, enabled by flag
@@ -77,7 +78,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
                 case _ => false
               }
               val asyncBody = (dd.rhs: @unchecked) match {
-                case Block(stats, Literal(Constant(()))) => Block(stats.init, stats.last)
+                case blk@Block(stats, Literal(Constant(()))) => treeCopy.Block(blk, stats.init, stats.last)
               }
               val (newRhs, liftables) = asyncTransform(asyncBody, dd.symbol, dd.vparamss.head.head.symbol)
 

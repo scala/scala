@@ -655,7 +655,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val sym = fun.symbol
 
           if (sym.isLabel) { // jump to a label
-            genLoadLabelArguments(args, labelDef(sym), app.pos)
+            def notFound() = abort("Not found: " + sym + " in " + labelDef)
+            genLoadLabelArguments(args, labelDef.getOrElse(sym, notFound()), app.pos)
             bc goTo programPoint(sym)
           } else if (isPrimitive(sym)) { // primitive method call
             generatedType = genPrimitiveOp(app, expectedType)

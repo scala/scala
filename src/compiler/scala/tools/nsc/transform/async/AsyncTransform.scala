@@ -190,7 +190,8 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
 
     val anfTree = futureSystemOps.postAnfTransform(anfTree0)
 
-    // TODO: why redo this?
+    // The ANF transform re-parents some trees, so the previous traversal to mark ancestors of
+    // await is no longer reliable.
     cleanupContainsAwaitAttachments(anfTree)
     markContainsAwait(anfTree)
 
@@ -205,7 +206,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     for ((state, flds) <- assignsOf) {
       val assigns = flds.map { fld =>
         val fieldSym = fld.symbol
-        Assign(gen.mkAttributedStableRef(thisType(fieldSym.owner), fieldSym), mkZero(fieldSym.info, asyncPos))
+        Assign(gen.mkAttributedStableRef(thisType(fieldSym.owner), fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
 
       }
       val asyncState = asyncBlock.asyncStates.find(_.state == state).get
@@ -225,6 +226,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     // fields. Similarly, replace references to them with references to the field.
     object UseFields extends explicitOuter.OuterPathTransformer(currentTransformState.unit) {
       private def fieldSel(tree: Tree) = {
+        assert(currentOwner != NoSymbol)
         val outerOrThis = if (stateMachineClass == currentClass) This(stateMachineClass) else {
           tree.symbol.makeNotPrivate(tree.symbol.owner)
           outerPath(outerValue, currentClass.outerClass, stateMachineClass)
@@ -236,9 +238,15 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
           super.transform(tree)
         case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) =>
           assignUnitType(treeCopy.Assign(tree, fieldSel(tree), transform(rhs.changeOwner((tree.symbol, currentOwner)))))
-        case _: DefTree if liftedSyms(tree.symbol)           => EmptyTree
-        case Ident(name) if liftedSyms(tree.symbol)          => fieldSel(tree).setType(tree.tpe)
-        case _                                               => super.transform(tree)
+        case _: DefTree if liftedSyms(tree.symbol) =>
+          EmptyTree
+        case Assign(i @ Ident(name), rhs) if liftedSyms(i.symbol) =>
+          // Use localTyper to adapt () to BoxedUnit in `val ifRes: Object; if (cond) "" else ()`
+          treeCopy.Assign(tree, fieldSel(i), localTyper.typed(transform(rhs), i.symbol.tpe))
+        case Ident(name) if liftedSyms(tree.symbol) =>
+          fieldSel(tree).setType(tree.tpe)
+        case _ =>
+          super.transform(tree)
       }
     }
 

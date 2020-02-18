@@ -167,7 +167,7 @@ object ScalaConcurrentFutureSystem extends FutureSystem {
     }
 
     def completeProm[A](prom: Expr[Prom[A]], value: Expr[scala.util.Try[A]]): Expr[Unit] = {
-      Block(gen.mkMethodCall(prom, Promise_complete, Nil, value :: Nil) :: Nil, literalUnitExpr)
+      gen.mkMethodCall(prom, Promise_complete, Nil, value :: Nil)
     }
 
     def tryyIsFailure[A](tryy: Expr[scala.util.Try[A]]): Expr[Boolean] = {

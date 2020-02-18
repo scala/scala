@@ -49,6 +49,7 @@ trait ExprBuilder extends TransformUtils {
     final def body: Tree = stats match {
       case stat :: Nil => stat
       case init :+ last => Block(init, last)
+      case Nil => literalUnit
     }
   }
 
@@ -92,21 +93,23 @@ trait ExprBuilder extends TransformUtils {
       val futureSystem = currentTransformState.futureSystem
       val futureSystemOps = futureSystem.mkOps(global)
       val fun = This(tpnme.EMPTY)
-      val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr,
-        fun, Ident(nme.execContext))
       val tryGetOrCallOnComplete: List[Tree] =
         if (futureSystemOps.continueCompletedFutureOnSameThread) {
-          val tempName = nme.completed
-          val initTemp = ValDef(NoMods, tempName, TypeTree(tryAny), futureSystemOps.getCompleted[Any](awaitable.expr))
+          val tempAwaitableSym = symLookup.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
+          val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
+          val tempCompletedSym = symLookup.applyTrParam.owner.newTermSymbol(nme.completed).setInfo(tryAny)
+          val initTempCompleted = ValDef(tempCompletedSym, futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
           val null_ne = Select(Literal(Constant(null)), TermName("ne"))
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](Ident(tempAwaitableSym), fun, Ident(nme.execContext))
           val ifTree =
-            If(Apply(null_ne, Ident(tempName) :: Nil),
-              adaptToUnit(ifIsFailureTree[T](Ident(tempName)) :: Nil),
+            If(Apply(null_ne, Ident(tempCompletedSym) :: Nil),
+              adaptToUnit(ifIsFailureTree[T](Ident(tempCompletedSym)) :: Nil),
               Block(toList(callOnComplete), Return(literalUnit)))
-
-          initTemp :: ifTree :: Nil
-        } else
+          initAwaitableTemp :: initTempCompleted :: ifTree :: Nil
+        } else {
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
           toList(callOnComplete) ::: Return(literalUnit) :: Nil
+        }
       mkHandlerCase(state, stats ++ List(mkStateTree(onCompleteState, symLookup)) ++ tryGetOrCallOnComplete)
     }
 
@@ -294,7 +297,7 @@ trait ExprBuilder extends TransformUtils {
       case vd @ ValDef(mods, name, tpt, UnwrapBoxedUnit(Apply(fun, arg :: Nil))) if isAwait(fun) =>
         val onCompleteState = nextState()
         val afterAwaitState = afterState.getOrElse(nextState())
-        val awaitable = Awaitable(arg, stat.symbol, tpt.tpe, vd)
+        val awaitable = Awaitable(arg.changeOwner(vd.symbol, vd.symbol.owner), stat.symbol, tpt.tpe, vd)
         asyncStates += stateBuilder.resultWithAwait(awaitable, onCompleteState, afterAwaitState) // complete with await
         currState = afterAwaitState
         stateBuilder = new AsyncStateBuilder(currState, symLookup)
@@ -432,7 +435,7 @@ trait ExprBuilder extends TransformUtils {
             (t match {
               case Block(stats, expr) => stats ::: expr :: Nil
               case t => t :: Nil
-            }).iterator.map(t => showCode(t)).mkString("\n")
+            }).iterator.map(t => global.show(t)).mkString("\n")
           }
           if (i != length - 1) {
             val CaseDef(_, _, body) = state.mkHandlerCaseForState

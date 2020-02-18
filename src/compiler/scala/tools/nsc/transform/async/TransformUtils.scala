@@ -41,8 +41,6 @@ trait PhasedTransform extends TypingTransformers {
 
   def literalNull = Literal(Constant(null))
 
-  def typeEqualsNothing(tp: Type) = tp =:= definitions.NothingTpe
-
   def typeEqualsUnit(tp: Type) = tp =:= definitions.UnitTpe || (isPastErasure && tp =:= definitions.BoxedUnitTpe)
 
   def assignUnitType(t: Tree): t.type =
@@ -54,8 +52,9 @@ trait PhasedTransform extends TypingTransformers {
   def isNothingClass(sym: Symbol) = sym == definitions.NothingClass
 
   def literalUnit =
-    if (isPastErasure) gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
-    else Literal(Constant(())) // a def to avoid sharing trees
+    Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees
+  def literalBoxedUnit =
+    gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
 
   def isLiteralUnit(t: Tree) = t match {
     case Literal(Constant(())) => true
@@ -106,58 +105,6 @@ trait PhasedTransform extends TypingTransformers {
 
   private def derivedValueClassUnbox(cls: Symbol) =
     (cls.info.decls.find(sym => sym.isMethod && sym.asTerm.isParamAccessor) getOrElse NoSymbol)
-
-  def mkZero(tp: Type, pos: Position): Tree = {
-    val tpSym = tp.typeSymbol
-    if (tpSym.isClass && tpSym.asClass.isDerivedValueClass) {
-      val argZero = mkZero(derivedValueClassUnbox(tpSym).infoIn(tp).resultType, pos)
-      val baseType = tp.baseType(tpSym) // use base type here to dealias / strip phantom "tagged types" etc.
-
-      // By explicitly attributing the types and symbols here, we subvert privacy.
-      // Otherwise, ticket86PrivateValueClass would fail.
-
-      // Approximately:
-      // q"new ${valueClass}[$..targs](argZero)"
-      val target: Tree = gen.mkAttributedSelect(typecheck(atPos(pos)(New(TypeTree(baseType)))), tpSym.asClass.primaryConstructor)
-
-      val zero = gen.mkMethodCall(target, argZero :: Nil)
-      // restore the original type which we might otherwise have weakened with `baseType` above
-      typecheck(atPos(pos)(gen.mkCast(zero, tp)))
-    } else {
-      gen.mkZero(tp)
-    }
-  }
-
-  final def mkMutableField(tpt: Type, name: TermName, init: Tree): List[Tree] = {
-    if (isPastTyper) {
-      import scala.reflect.internal.Flags._
-      // If we are running after the typer phase (ie being called from a compiler plugin)
-      // we have to create the trio of members manually.
-      val field = ValDef(Modifiers(MUTABLE | PRIVATE | LOCAL), name.localName, TypeTree(tpt), init)
-      val paramss = emptyParamss
-      val getter = DefDef(Modifiers(ACCESSOR | STABLE), name.getterName, Nil, paramss, TypeTree(tpt), Select(This(tpnme.EMPTY), field.name))
-      val setter = DefDef(Modifiers(ACCESSOR), name.setterName, Nil, List(List(ValDef(NoMods, TermName("x"), TypeTree(tpt), EmptyTree))), TypeTree(definitions.UnitTpe), Assign(Select(This(tpnme.EMPTY), field.name), Ident(TermName("x"))))
-      field :: getter :: setter :: Nil
-    } else {
-      val result = ValDef(NoMods, name, TypeTree(tpt), init)
-      result :: Nil
-    }
-  }
-  final def mkField(tpt: Type, name: TermName, init: Tree): List[Tree] = {
-    if (isPastTyper) {
-      import scala.reflect.internal.Flags._
-      // If we are running after the typer phase (ie being called from a compiler plugin)
-      // we have to create the trio of members manually.
-      val field = ValDef(Modifiers(PRIVATE | LOCAL), name.localName, TypeTree(tpt), init)
-      val paramss = emptyParamss
-      val getter = DefDef(Modifiers(ACCESSOR | STABLE), name.getterName, Nil, paramss, TypeTree(tpt), Select(This(tpnme.EMPTY), field.name))
-      field :: getter :: Nil
-    } else {
-      val result = ValDef(NoMods, name, TypeTree(tpt), init)
-      result :: Nil
-    }
-  }
-
 }
 
 
@@ -182,78 +129,13 @@ private[async] trait TransformUtils extends PhasedTransform {
   def isAsync(fun: Tree) = fun.symbol == currentTransformState.ops.Async_async
   def isAwait(fun: Tree) = fun.symbol == currentTransformState.ops.Async_await
 
-  private lazy val Boolean_ShortCircuits: Set[Symbol] = {
-    import definitions.BooleanClass
-    def BooleanTermMember(name: String) = BooleanClass.typeSignature.member(TermName(name).encodedName)
-    val Boolean_&& = BooleanTermMember("&&")
-    val Boolean_|| = BooleanTermMember("||")
-    Set(Boolean_&&, Boolean_||)
-  }
-
-  private def isByName(fun: Tree): ((Int, Int) => Boolean) = {
-    if (Boolean_ShortCircuits contains fun.symbol) (i, j) => true
-    else if (fun.tpe == null) (x, y) => false
-    else {
-      val paramss = fun.tpe.paramss
-      val byNamess = paramss.map(_.map(_.asTerm.isByNameParam))
-      (i, j) => util.Try(byNamess(i)(j)).getOrElse(false)
-    }
-  }
-  private def argName(fun: Tree): ((Int, Int) => TermName) = {
-    val paramss = fun.tpe.paramss
-    val namess = paramss.map(_.map(_.name.toTermName))
-    (i, j) => util.Try(namess(i)(j)).getOrElse(TermName(s"arg_${i}_${j}"))
-  }
+  def isBooleanShortCircuit(sym: Symbol): Boolean =
+    sym.owner == definitions.BooleanClass && (sym == definitions.Boolean_and || sym == definitions.Boolean_or)
 
   def isLabel(sym: Symbol): Boolean = sym.isLabel
 
   def substituteTrees(t: Tree, from: List[Symbol], to: List[Tree]): Tree =
     (new TreeSubstituter(from, to)).transform(t)
-
-  /** Map a list of arguments to:
-    * - A list of argument Trees
-    * - A list of auxillary results.
-    *
-    * The function unwraps and rewraps the `arg :_*` construct.
-    *
-    * @param args The original argument trees
-    * @param f  A function from argument (with '_*' unwrapped) and argument index to argument.
-    * @tparam A The type of the auxillary result
-    */
-  private def mapArguments[A](args: List[Tree])(f: (Tree, Int) => (A, Tree)): (List[A], List[Tree]) = {
-    args match {
-      case args :+ Typed(tree, Ident(tpnme.WILDCARD_STAR)) =>
-        val (a, argExprs :+ lastArgExpr) = (args :+ tree).zipWithIndex.map(f.tupled).unzip
-        val exprs = argExprs :+ atPos(lastArgExpr.pos.makeTransparent)(Typed(lastArgExpr, Ident(tpnme.WILDCARD_STAR)))
-        (a, exprs)
-      case args                                            =>
-        args.zipWithIndex.map(f.tupled).unzip
-    }
-  }
-
-  case class Arg(expr: Tree, isByName: Boolean, argName: TermName)
-
-  /**
-   * Transform a list of argument lists, producing the transformed lists, and lists of auxillary
-   * results.
-   *
-   * The function `f` need not concern itself with varargs arguments e.g (`xs : _*`). It will
-   * receive `xs`, and it's result will be re-wrapped as `f(xs) : _*`.
-   *
-   * @param fun   The function being applied
-   * @param argss The argument lists
-   * @return      (auxillary results, mapped argument trees)
-   */
-  def mapArgumentss[A](fun: Tree, argss: List[List[Tree]])(f: Arg => (A, Tree)): (List[List[A]], List[List[Tree]]) = {
-    val isByNamess: (Int, Int) => Boolean = isByName(fun)
-    val argNamess: (Int, Int) => TermName = argName(fun)
-    argss.zipWithIndex.map { case (args, i) =>
-      mapArguments[A](args) {
-        (tree, j) => f(Arg(tree, isByNamess(i, j), argNamess(i, j)))
-      }
-    }.unzip
-  }
-
 
   def statsAndExpr(tree: Tree): (List[Tree], Tree) = tree match {
     case Block(stats, expr) => (stats, expr)
@@ -269,6 +151,8 @@ private[async] trait TransformUtils extends PhasedTransform {
     case trees @ (init :+ last) =>
       val pos = trees.map(_.pos).reduceLeft(_ union _)
       Block(init, last).setType(last.tpe).setPos(pos)
+    case Nil =>
+      throw new MatchError(trees)
   }
 
   def emptyConstructor: DefDef = {
@@ -307,15 +191,10 @@ private[async] trait TransformUtils extends PhasedTransform {
         case dd: DefDef            => nestedMethod(dd)
         case fun: Function         => function(fun)
         case m@Match(EmptyTree, _) => patMatFunction(m) // Pattern matching anonymous function under -Xoldpatmat of after `restorePatternMatchingFunctions`
-        case q"$fun[..$targs](...$argss)" if argss.nonEmpty =>
-          val isInByName = isByName(fun)
-          for ((args, i) <- argss.zipWithIndex) {
-            for ((arg, j) <- args.zipWithIndex) {
-              if (!isInByName(i, j)) traverse(arg)
-              else byNameArgument(arg)
-            }
-          }
+        case Apply(fun, arg1 :: arg2 :: Nil) if isBooleanShortCircuit(fun.symbol) =>
           traverse(fun)
+          traverse(arg1)
+          byNameArgument(arg2)
         case _                     => super.traverse(tree)
       }
     }
@@ -351,8 +230,10 @@ private[async] trait TransformUtils extends PhasedTransform {
       var containsAwait = false
       override def traverse(tree: Tree): Unit =
         if (tree.hasAttachment[NoAwait.type]) {} // safe to skip
-        else if (tree.hasAttachment[ContainsAwait.type]) containsAwait = true
-        else if (markContainsAwaitTraverser.shouldAttach(t)) super.traverse(tree)
+        else if (!containsAwait) {
+          if (tree.hasAttachment[ContainsAwait.type]) containsAwait = true
+          else if (markContainsAwaitTraverser.shouldAttach(t)) super.traverse(tree)
+        }
     }
     traverser.traverse(t)
     traverser.containsAwait
@@ -399,69 +280,19 @@ private[async] trait TransformUtils extends PhasedTransform {
     t
   }
 
-  // First modification to translated patterns:
-  //  - Set the type of label jumps to `Unit`
-  //  - Propagate this change to trees known to directly enclose them:
-  //    ``If` / `Block`) adjust types of enclosing
-  final def adjustTypeOfTranslatedPatternMatches(t: Tree, owner: Symbol): Tree = {
-    val trans = new PatmatAdjuster
-    trans.transformAtOwner(owner, t)
-  }
-
-  private class PatmatAdjuster extends TypingTransformer(currentTransformState.unit) {
-    import definitions.UnitTpe
-    
-    override def transform(tree: Tree): Tree = {
-      tree match {
-        case LabelDef(name, params, rhs) =>
-          val rhs1 = transform(rhs)
-          if (rhs1.tpe =:= UnitTpe) {
-            tree.symbol.info = internal.methodType(tree.symbol.info.paramLists.head, UnitTpe)
-            treeCopy.LabelDef(tree, name, params, rhs1)
-          } else {
-            treeCopy.LabelDef(tree, name, params, rhs1)
-          }
-        case Block(stats, expr) =>
-          val stats1 = transformTrees(stats)
-          val expr1 = transform(expr)
-          if (expr1.tpe =:= UnitTpe)
-            treeCopy.Block(tree, stats1, expr1).setType(UnitTpe)
-          else
-            treeCopy.Block(tree, stats1, expr1)
-        case If(cond, thenp, elsep) =>
-          val cond1 = transform(cond)
-          val thenp1 = transform(thenp)
-          val elsep1 = transform(elsep)
-          if (thenp1.tpe =:= definitions.UnitTpe && elsep.tpe =:= UnitTpe)
-            treeCopy.If(tree, cond1, thenp1, elsep1).setType(UnitTpe)
-          else
-            treeCopy.If(tree, cond1, thenp1, elsep1)
-        case Apply(fun, args) if isLabel(fun.symbol) =>
-          treeCopy.Apply(tree, transform(fun), transformTrees(args)).setType(UnitTpe)
-        case t => super.transform(t)
-      }
-    }
-  }
-
-  def deriveLabelDef(ld: LabelDef, applyToRhs: Tree => Tree): LabelDef = {
-    val rhs2 = applyToRhs(ld.rhs)
-    val ld2 = treeCopy.LabelDef(ld, ld.name, ld.params, rhs2)
-    if (ld eq ld2) ld
-    else {
-      val info2 = ld2.symbol.info match {
-        case MethodType(params, p) => MethodType(params, rhs2.tpe)
-        case t => t
-      }
-      ld2.symbol.info = info2
-      ld2
-    }
-  }
+  val isMatchEnd: (Tree) => Boolean = t =>
+    MatchEnd.unapply(t).isDefined
   object MatchEnd {
     def unapply(t: Tree): Option[LabelDef] = t match {
       case ValDef(_, _, _, t) => unapply(t)
       case ld: LabelDef if ld.name.toString.startsWith("matchEnd") => Some(ld)
       case _ => None
     }
+  }
+
+  final def flattenBlock(tree: Tree)(f: Tree => Unit): Unit = tree match {
+    case Block(stats, expr) => stats.foreach(f); f(expr)
+    case _ => f(tree)
   }
 }
 
