@@ -431,6 +431,15 @@ package scala.async.run.anf {
     }
 
     @Test
+    def awaitInArrayValue(): Unit = {
+      val result = async {
+        Array(1, await(fut(2)), await(fut(3))).sum
+      }.block
+
+      result mustBe 6
+    }
+
+    @Test
     def nothingTypedMatch(): Unit = {
       val result = util.Try(async {
         0 match {

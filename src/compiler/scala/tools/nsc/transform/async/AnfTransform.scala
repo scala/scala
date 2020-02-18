@@ -218,6 +218,10 @@ private[async] trait AnfTransform extends TransformUtils {
             val stats :+ expr1 = linearize.transformToList(expr)
             stats :+ treeCopy.Typed(tree, expr1, tpt)
 
+          case ArrayValue(elemtp, elems) =>
+            val blks = elems.map(elem => linearize.transformToBlock(elem))
+            blks.flatMap(_.stats) :+ treeCopy.ArrayValue(tree, elemtp, blks.map(_.expr))
+
           case Applied(fun, targs, argss) if argss.nonEmpty =>
             // we can assume that no await call appears in a by-name argument position,
             // this has already been checked.
