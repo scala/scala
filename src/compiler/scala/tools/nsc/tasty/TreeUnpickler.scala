@@ -866,9 +866,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val localCtx = localContext(sym)
       val noCycle  = tag match {
         case DEFDEF =>
-          val (isExtension, exceptExtension) = completer.tastyFlagSet.except(Extension)
-          assertTasty(!exceptExtension, s"unsupported Scala 3 flags on $sym: ${show(exceptExtension)}")
-          if (isExtension) ctx.log(s"$name is a Scala 3 extension method.")
+          val supported = Extension | Inline | TastyMacro
+          val unsupported = completer.tastyFlagSet &~ supported
+          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
+          if (completer.tastyFlagSet.is(Inline)) {
+            sym.addAnnotation(
+              symbolTable.symbolOf[annotation.compileTimeOnly],
+              Literal(Constant(s"Unsupported Scala 3 inline $sym"))
+            )
+          }
+          if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$name is a Scala 3 extension method.")
           val typeParams = {
             if (nme.CONSTRUCTOR === sym.name.toTermName) {
               skipTypeParams()

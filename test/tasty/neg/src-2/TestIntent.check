@@ -1,2 +1,10 @@
-error: Scala 2 incompatible TASTy signature of Position.tasty in object Position: unsupported Scala 3 flags on method here: inline | <tastymacro>
-1 error
+TestIntent_fail.scala:7: error: Unsupported Scala 3 inline method here
+    in("should be 6")(toEqual(expect(3 + 3))(6))
+                                    ^
+TestIntent_fail.scala:7: error: Unsupported Scala 3 inline method here
+    in("should be 6")(toEqual(expect(3 + 3))(6))
+                     ^
+TestIntent_fail.scala:6: error: Unsupported Scala 3 inline method here
+  apply("3 + 3") {
+                 ^
+3 errors
