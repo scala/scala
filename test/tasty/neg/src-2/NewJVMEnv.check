@@ -1,0 +1,4 @@
+NewJVMEnv_fail.scala:7: error: class type required but tastytest.printing.AnyHash with tastytest.printing.AnyClassName found
+  new Env.JVMEnv {} // error: class type required but tastytest.printing.AnyHash with tastytest.printing.AnyClassName found
+          ^
+1 error

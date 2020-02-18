@@ -13,6 +13,7 @@ import scala.tools.nsc.tasty.Names.TastyName.SignedName
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
   import FlagSets._
+  import SymbolOps._
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
@@ -114,12 +115,19 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
       sym
     }
-    val resolved = name match {
-      case SignedName(qual, sig) =>
-        selectSymFromSig0(tpe, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
-      case _ => Right(tpe.member(selector))
+    val resolved = {
+      (name match {
+        case SignedName(qual, sig) =>
+          selectSymFromSig0(tpe, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
+        case _ => Right(tpe.member(selector))
+      }).map(mem => if (name.isModuleName) mem.linkedClassOfClass else mem)
     }
-    val tpeOrErr = resolved.map(sym => NamedType(tpe, if (name.isModuleName) sym.linkedClassOfClass else sym))
+    val tpeOrErr = resolved.map(sym1 =>
+      if (tpe.typeSymbol.is(scala.reflect.internal.Flags.PACKAGE) && sym1.isClass)
+        sym1.tpe
+      else
+        NamedType(tpe, sym1)
+    )
     tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 
