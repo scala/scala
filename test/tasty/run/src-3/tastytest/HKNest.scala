@@ -50,14 +50,7 @@ object HKNest {
     def foo[T1 >: Prod](x: F[T1]): String = x.toString()
   }
 
-  class HKClass_13[F <: [T] =>> [U] =>> (U, T)] {
-    def foo[T,U](x: F[T][U]): String = x.toString()
-  }
-
-  def test13 = new HKClass_13[HKLam].foo[Int,String](("",0))
-
   type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
-  type HKLam = [T] =>> [U] =>> (U, T)
 
   // class HKClass_8[P[F[X <: String]] <: Hoo[StringOrInt]] {
   //   def foo[F[X <: String]](x: P[F]): String = x.toString() https://github.com/lampepfl/dotty/issues/8329

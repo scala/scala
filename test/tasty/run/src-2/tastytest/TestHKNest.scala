@@ -20,7 +20,6 @@ object TestHKNest extends Suite("TestHKNest") {
   test(assert(new HKClass_11[Contra].foo(new Contra[Sum]) == "Contra"))
   test(assert(new HKClass_12[Contra].foo(new Contra[Sum]) == "Contra"))
   test(assert(new HKClass_12[Contra].foo(new Contra[Prod]) == "Contra"))
-  test(assert(test13 === "(,0)"))
 
   type OrNothing[I] = Either[Nothing, I]
 

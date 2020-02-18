@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import Names.TastyName
 import scala.reflect.internal.Variance
+import scala.util.chaining._
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -902,7 +903,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             // TODO check for cycles
             sym.info = rhs.tpe match {
-              // case symbolTable.TypeBounds(_, hi: PolyType) => hi
               case tpe: TypeBounds => normaliseBounds(tpe)
               case tpe             => tpe
             }

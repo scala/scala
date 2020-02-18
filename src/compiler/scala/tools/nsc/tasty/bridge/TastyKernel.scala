@@ -105,9 +105,11 @@ trait TastyKernel { self: TastyUniverse =>
 
   object defn {
     def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
+    final val AnyTpe: Type = symbolTable.definitions.AnyTpe
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
     final val UnitTpe: Type = symbolTable.definitions.UnitTpe
+    final val CompileTimeOnlyAttr: Symbol = symbolTable.definitions.CompileTimeOnlyAttr
     final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
     final val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
     final val AnyValClass: ClassSymbol = symbolTable.definitions.AnyValClass

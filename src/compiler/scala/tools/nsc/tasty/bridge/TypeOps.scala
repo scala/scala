@@ -46,6 +46,22 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
+
+    def typeRefUncurried(tycon: Type, args: List[Type]): Type = {
+      if (tycon.isInstanceOf[TypeRef] && tycon.typeArgs.nonEmpty) {
+        for (owner <- ctx.owner.ownerChain.find(sym => !sym.is(Param))) {
+          owner.addAnnotation(
+            defn.CompileTimeOnlyAttr,
+            Literal(Constant(
+              s"Unsupported Scala 3 curried type application $tycon[${args.mkString(",")}] in signature of $owner")))
+        }
+        defn.AnyTpe
+      }
+      else {
+        mkTypeRef(tycon, args)
+      }
+    }
+
     if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[PolyType])) {
       def bindWildcard(tpe: Type) = tpe match {
         case tpe: TypeBounds        => ctx.newWildcardSym(tpe).pipe(sym => sym -> mkTypeRef(sym,Nil))
@@ -54,13 +70,14 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       }
       val (syms, args1) = args.map(bindWildcard).unzip
       val quantified = syms.filterSyms
-      if (quantified.isEmpty) mkTypeRef(tycon, args1)
-      else mkExistentialType(quantified, mkTypeRef(tycon, args1))
+      if (quantified.isEmpty) typeRefUncurried(tycon, args1)
+      else mkExistentialType(quantified, typeRefUncurried(tycon, args1))
     }
     else {
-      mkTypeRef(tycon, args)
+      typeRefUncurried(tycon, args)
     }
-  }
+
+  }.tap(res => ctx.log(s"boundedAppliedType: $tycon => $res"))
 
   def erasedNameToErasedType(name: TastyName)(implicit ctx: Context): Type = {
     def specialised(terminal: SimpleName) = terminal.raw match {
@@ -245,18 +262,17 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     /**Best effort to transform this to an equivalent canonical representation in scalac.
      */
     final def canonicalForm(implicit ctx: Context): Type = {
-      ctx.log(s"canonical form of $this")
-      val result = lambdaTpe match {
-        case _: TypeParamLambda =>
-          ctx.log(s"making poly from type param lambda")
-          mkPolyType(typeParams, resType)
-        case _: HKTypeLambda =>
-          ctx.log("making poly from hk type lambda") // Todo: we should only addLower if this lambda is not an argument
-          mkPolyType(typeParams, TypeBounds.addLower(resType))
+      val res = resType match {
+        case LambdaEncoding(lambda) => lambda
+        case res                    => res
       }
-      ctx.log(s"result canonical: $result")
-      result
-    }
+      lambdaTpe match {
+        case _: HKTypeLambda    => mkPolyType(typeParams, TypeBounds.addLower(res))
+        case _: TypeParamLambda => mkPolyType(typeParams, res)
+      }
+    }.tap(res => ctx.log(s"""|canonical form of ${lambdaTpe.productPrefix}:
+                             |  TASTy         = $lambdaTpe
+                             |  scala.reflect = $res""".stripMargin))
 
     final def productArity: Int = 2
     final def productElement(n: Int): Any = n match {
