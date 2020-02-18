@@ -16,6 +16,7 @@ package math
 import java.util.Comparator
 
 import scala.language.implicitConversions
+import scala.annotation.migration
 
 /** Ordering is a trait whose instances each represent a strategy for sorting
   * instances of a type.
@@ -369,7 +370,37 @@ object Ordering extends LowPriorityOrderingImplicits {
 
   /** `Ordering`s for `Float`s.
     *
-    * @define floatOrdering Because the behaviour of `Float`s specified by IEEE is
+    * The behavior of the comparison operations provided by the default (implicit)
+    * ordering on `Float` changed in 2.10.0 and 2.13.0.
+    * Prior to Scala 2.10.0, the `Ordering` instance used semantics
+    * consistent with `java.lang.Float.compare`.
+    *
+    * Scala 2.10.0 changed the implementation of `lt`, `equiv`, `min`, etc., to be
+    * IEEE 754 compliant, while keeping the `compare` method NOT compliant,
+    * creating an internally inconsistent instance. IEEE 754 specifies that
+    * `0.0F == -0.0F`. In addition, it requires all comparisons with `Float.NaN` return
+    * `false` thus `0.0F < Float.NaN`, `0.0F > Float.NaN`, and
+    * `Float.NaN == Float.NaN` all yield `false`, analogous `None` in `flatMap`.
+    *
+    * Recognizing the limitation of the IEEE 754 semantics in terms of ordering,
+    * Scala 2.13.0 created two instances: `Ordering.Float.IeeeOrdering`, which retains
+    * the IEEE 754 semantics from Scala 2.12.x, and `Ordering.Float.TotalOrdering`,
+    * which brings back the `java.lang.Float.compare` semantics for all operations.
+    * The default extends `TotalOrdering`.
+    *
+    *  {{{
+    *  List(0.0F, 1.0F, 0.0F / 0.0F, -1.0F / 0.0F).sorted      // List(-Infinity, 0.0, 1.0, NaN)
+    *  List(0.0F, 1.0F, 0.0F / 0.0F, -1.0F / 0.0F).min         // -Infinity
+    *  implicitly[Ordering[Float]].lt(0.0F, 0.0F / 0.0F)       // true
+    *  {
+    *    import Ordering.Float.IeeeOrdering
+    *    List(0.0F, 1.0F, 0.0F / 0.0F, -1.0F / 0.0F).sorted    // List(-Infinity, 0.0, 1.0, NaN)
+    *    List(0.0F, 1.0F, 0.0F / 0.0F, -1.0F / 0.0F).min       // NaN
+    *    implicitly[Ordering[Float]].lt(0.0F, 0.0F / 0.0F)     // false
+    *  }
+    *  }}}
+    *
+    * @define floatOrdering Because the behavior of `Float`s specified by IEEE is
     *                       not consistent with a total ordering when dealing with
     *                       `NaN`, there are two orderings defined for `Float`:
     *                       `TotalOrdering`, which is consistent with a total
@@ -380,7 +411,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Float {
     /** An ordering for `Float`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Float` values; it behaves
-      * the same as [[java.lang.Float#compare]].
+      * the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -401,7 +432,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Float#compare]].
+      *   - `compare` behaves the same as [[java.lang.Float.compare]].
       *
       * $floatOrdering
       *
@@ -422,14 +453,48 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Floats (Ordering.Float.TotalOrdering, " +
-    "Ordering.Float.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
+  @migration(
+    "  The default implicit ordering for floats now maintains consistency\n" +
+    "  between its `compare` method and its `lt`, `min`, `equiv`, etc., methods,\n" +
+    "  which means nonconforming to IEEE 754's behavior for -0.0F and NaN.\n" +
+    "  The sort order of floats remains the same, however, with NaN at the end.\n" +
+    "  Import Ordering.Float.IeeeOrdering to recover the previous behavior.\n" +
+    "  See also https://www.scala-lang.org/api/current/scala/math/Ordering$$Float$.html.", "2.13.0")
   implicit object DeprecatedFloatOrdering extends Float.TotalOrdering
 
   /** `Ordering`s for `Double`s.
     *
-    * @define doubleOrdering Because the behaviour of `Double`s specified by IEEE is
+    * The behavior of the comparison operations provided by the default (implicit)
+    * ordering on `Double` changed in 2.10.0 and 2.13.0.
+    * Prior to Scala 2.10.0, the `Ordering` instance used semantics
+    * consistent with `java.lang.Double.compare`.
+    *
+    * Scala 2.10.0 changed the implementation of `lt`, `equiv`, `min`, etc., to be
+    * IEEE 754 compliant, while keeping the `compare` method NOT compliant,
+    * creating an internally inconsistent instance. IEEE 754 specifies that
+    * `0.0 == -0.0`. In addition, it requires all comparisons with `Double.NaN` return
+    * `false` thus `0.0 < Double.NaN`, `0.0 > Double.NaN`, and
+    * `Double.NaN == Double.NaN` all yield `false`, analogous `None` in `flatMap`.
+    *
+    * Recognizing the limitation of the IEEE 754 semantics in terms of ordering,
+    * Scala 2.13.0 created two instances: `Ordering.Double.IeeeOrdering`, which retains
+    * the IEEE 754 semantics from Scala 2.12.x, and `Ordering.Double.TotalOrdering`,
+    * which brings back the `java.lang.Double.compare` semantics for all operations.
+    * The default extends `TotalOrdering`.
+    *
+    *  {{{
+    *  List(0.0, 1.0, 0.0 / 0.0, -1.0 / 0.0).sorted      // List(-Infinity, 0.0, 1.0, NaN)
+    *  List(0.0, 1.0, 0.0 / 0.0, -1.0 / 0.0).min         // -Infinity
+    *  implicitly[Ordering[Double]].lt(0.0, 0.0 / 0.0)   // true
+    *  {
+    *    import Ordering.Double.IeeeOrdering
+    *    List(0.0, 1.0, 0.0 / 0.0, -1.0 / 0.0).sorted    // List(-Infinity, 0.0, 1.0, NaN)
+    *    List(0.0, 1.0, 0.0 / 0.0, -1.0 / 0.0).min       // NaN
+    *    implicitly[Ordering[Double]].lt(0.0, 0.0 / 0.0) // false
+    *  }
+    *  }}}
+    *
+    * @define doubleOrdering Because the behavior of `Double`s specified by IEEE is
     *                        not consistent with a total ordering when dealing with
     *                        `NaN`, there are two orderings defined for `Double`:
     *                        `TotalOrdering`, which is consistent with a total
@@ -440,7 +505,7 @@ object Ordering extends LowPriorityOrderingImplicits {
   object Double {
     /** An ordering for `Double`s which is a fully consistent total ordering,
       * and treats `NaN` as larger than all other `Double` values; it behaves
-      * the same as [[java.lang.Double#compare]].
+      * the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -461,7 +526,7 @@ object Ordering extends LowPriorityOrderingImplicits {
       * `NaN`.
       *   - `min` and `max` are consistent with `math.min` and `math.max`, and
       * return `NaN` when called with `NaN` as either argument.
-      *   - `compare` behaves the same as [[java.lang.Double#compare]].
+      *   - `compare` behaves the same as [[java.lang.Double.compare]].
       *
       * $doubleOrdering
       *
@@ -482,9 +547,13 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     implicit object IeeeOrdering extends IeeeOrdering
   }
-  @deprecated("There are multiple ways to order Doubles (Ordering.Double.TotalOrdering, " +
-    "Ordering.Double.IeeeOrdering). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See their documentation for details.", since = "2.13.0")
+  @migration(
+    "  The default implicit ordering for doubles now maintains consistency\n" +
+    "  between its `compare` method and its `lt`, `min`, `equiv`, etc., methods,\n" +
+    "  which means nonconforming to IEEE 754's behavior for -0.0 and NaN.\n" +
+    "  The sort order of doubles remains the same, however, with NaN at the end.\n" +
+    "  Import Ordering.Double.IeeeOrdering to recover the previous behavior.\n" +
+    "  See also https://www.scala-lang.org/api/current/scala/math/Ordering$$Double$.html.", "2.13.0")
   implicit object DeprecatedDoubleOrdering extends Double.TotalOrdering
 
   trait BigIntOrdering extends Ordering[BigInt] {
