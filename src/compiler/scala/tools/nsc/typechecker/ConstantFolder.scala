@@ -27,11 +27,12 @@ abstract class ConstantFolder {
 
   // We can fold side effect free terms and their types
   object FoldableTerm {
+    @inline private def effectless(sym: Symbol): Boolean = sym != null && !sym.isLazy && (sym.isVal || sym.isGetter && sym.accessed.isVal)
+
     def unapply(tree: Tree): Option[Constant] = tree match {
-      case Literal(x) => Some(x)
-      case term if term.symbol != null && !term.symbol.isLazy && (term.symbol.isVal || (term.symbol.isGetter && term.symbol.accessed.isVal)) =>
-        extractConstant(term.tpe)
-      case _ => None
+      case Literal(x)                      => Some(x)
+      case term if effectless(term.symbol) => extractConstant(term.tpe)
+      case _                               => None
     }
   }
 
@@ -42,32 +43,29 @@ abstract class ConstantFolder {
 
   private def extractConstant(tpe: Type): Option[Constant] =
     tpe match {
-      case ConstantType(x) => Some(x)
+      case ConstantType(x)     => Some(x)
       case st: SingleType =>
         st.underlying match {
           case ConstantType(x) => Some(x)
-          case _ => None
+          case _               => None
         }
-      case _ => None
+      case _                   => None
     }
 
   /** If tree is a constant operation, replace with result. */
-  def apply(tree: Tree): Tree = {
-    try {
-      tree match {
-        case Apply(Select(FoldableTerm(x), op), List(FoldableTerm(y))) => fold(tree, foldBinop(op, x, y), true)
-        case Apply(Select(ConstantTerm(x), op), List(ConstantTerm(y))) => fold(tree, foldBinop(op, x, y), false)
-        case Select(FoldableTerm(x), op) => fold(tree, foldUnop(op, x), true)
-        case Select(ConstantTerm(x), op) => fold(tree, foldUnop(op, x), false)
-        case _ => tree
-      }
+  def apply(tree: Tree): Tree =
+    try tree match {
+      case Apply(Select(x0 @ FoldableTerm(x), op), List(y0 @ FoldableTerm(y))) => fold(tree, foldBinop(op, x, y)(tree, x0, y0), true)
+      case Apply(Select(x0 @ ConstantTerm(x), op), List(y0 @ ConstantTerm(y))) => fold(tree, foldBinop(op, x, y)(tree, x0, y0), false)
+      case Select(FoldableTerm(x), op)                                         => fold(tree, foldUnop(op, x), true)
+      case Select(ConstantTerm(x), op)                                         => fold(tree, foldUnop(op, x), false)
+      case _                                                                   => tree
     } catch {
       case e: ArithmeticException =>
         if (settings.warnConstant)
           warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
         tree
     }
-  }
 
   /** If tree is a constant value that can be converted to type `pt`, perform
    *  the conversion.
@@ -75,18 +73,43 @@ abstract class ConstantFolder {
   def apply(tree: Tree, pt: Type): Tree = {
     val orig = apply(tree)
     orig.tpe match {
-      case tp@ConstantType(x) => fold(orig, x convertTo pt, isConstantType(tp))
+      case tp @ ConstantType(x) =>
+        if (pt.typeSymbol == definitions.FloatClass) {
+          if (x.tag == IntTag || x.tag == LongTag) warnWidening(tree, tree.pos, x, FloatTag)
+        }
+        else if (pt.typeSymbol == definitions.DoubleClass) {
+          if (x.tag == LongTag) warnWidening(tree, tree.pos, x, DoubleTag)
+        }
+        fold(orig, x.convertTo(pt), isConstantType(tp))
       case _ => orig
+    }
+  }
+
+  private val names = Array("Int", "Long", "Float", "Double")
+
+  private def warnWidening(tree: Tree, pos: Position, k: Constant, to: Int): Unit = {
+    val from = k.tag
+    def tagString(tag: Int) = names(tag - IntTag)
+    def warn() = tree.updateAttachment[DeferredRefCheck](DeferredRefCheck(t =>
+      currentRun.reporting.deprecationWarning(pos, s"Deprecated widening conversion ${tagString(from)} to ${tagString(to)}", "2.13.2")
+    ))
+    if (to == FloatTag) {
+      val bad = from == IntTag && k.intValue != k.intValue.toFloat.toInt || from == LongTag && k.longValue != k.longValue.toFloat.toLong
+      if (bad) warn()
+    }
+    else if (to == DoubleTag) {
+      val bad = from == LongTag && k.longValue != k.longValue.toDouble.toLong
+      if (bad) warn()
     }
   }
 
   private def fold(orig: Tree, folded: Constant, foldable: Boolean): Tree =
     if ((folded eq null) || folded.tag == UnitTag) orig
-    else if(foldable) orig setType FoldableConstantType(folded)
+    else if (foldable) orig setType FoldableConstantType(folded)
     else orig setType LiteralType(folded)
 
   private def foldUnop(op: Name, x: Constant): Constant = (op, x.tag) match {
-    case (nme.UNARY_!, BooleanTag) => Constant(!x.booleanValue)
+    case (nme.UNARY_! , BooleanTag) => Constant(!x.booleanValue)
 
     case (nme.UNARY_~ , IntTag    ) => Constant(~x.intValue)
     case (nme.UNARY_~ , LongTag   ) => Constant(~x.longValue)
@@ -101,7 +124,7 @@ abstract class ConstantFolder {
     case (nme.UNARY_- , FloatTag  ) => Constant(-x.floatValue)
     case (nme.UNARY_- , DoubleTag ) => Constant(-x.doubleValue)
 
-    case _ => null
+    case _                          => null
   }
 
   /** These are local helpers to keep foldBinop from overly taxing the
@@ -192,20 +215,32 @@ abstract class ConstantFolder {
     case _       => null
   }
 
-  private def foldBinop(op: Name, x: Constant, y: Constant): Constant = {
+  private def foldBinop(op: Name, x: Constant, y: Constant)(expr: Tree, x0: Tree, y0: Tree): Constant = {
+
     val optag =
       if (x.tag == y.tag) x.tag
-      else if (x.isNumeric && y.isNumeric) math.max(x.tag, y.tag)
+      else if (x.isNumeric && y.isNumeric) {
+        val t = math.max(x.tag, y.tag)
+        if (t == FloatTag) {
+          if (x.tag == IntTag || x.tag == LongTag)      warnWidening(expr, x0.pos, x, t)
+          else if (y.tag == IntTag || y.tag == LongTag) warnWidening(expr, y0.pos, y, t)
+        }
+        else if (t == DoubleTag) {
+          if (x.tag == LongTag)      warnWidening(expr, x0.pos, x, t)
+          else if (y.tag == LongTag) warnWidening(expr, y0.pos, y, t)
+        }
+        t
+      }
       else NoTag
 
     optag match {
-      case BooleanTag                               => foldBooleanOp(op, x, y)
-      case ByteTag | ShortTag | CharTag | IntTag    => foldSubrangeOp(op, x, y)
-      case LongTag                                  => foldLongOp(op, x, y)
-      case FloatTag                                 => foldFloatOp(op, x, y)
-      case DoubleTag                                => foldDoubleOp(op, x, y)
-      case StringTag if op == nme.ADD               => Constant(x.stringValue + y.stringValue)
-      case _                                        => null
+      case BooleanTag                            => foldBooleanOp(op, x, y)
+      case ByteTag | ShortTag | CharTag | IntTag => foldSubrangeOp(op, x, y)
+      case LongTag                               => foldLongOp(op, x, y)
+      case FloatTag                              => foldFloatOp(op, x, y)
+      case DoubleTag                             => foldDoubleOp(op, x, y)
+      case StringTag if op == nme.ADD            => Constant(x.stringValue + y.stringValue)
+      case _                                     => null
     }
   }
 }

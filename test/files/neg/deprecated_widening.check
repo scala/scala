@@ -16,6 +16,39 @@ deprecated_widening.scala:14: warning: method long2float in object Long is depre
 deprecated_widening.scala:15: warning: method long2double in object Long is deprecated (since 2.13.1): Implicit conversion from Long to Double is dangerous because it loses precision. Write `.toDouble` instead.
     implicitly[Long => Double] // deprecated
               ^
+deprecated_widening.scala:26: warning: Deprecated widening conversion Int to Float
+  def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
+                             ^
+deprecated_widening.scala:26: warning: Deprecated widening conversion Int to Float
+  def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
+                                         ^
+deprecated_widening.scala:26: warning: Deprecated widening conversion Int to Float
+  def literals  = Set[Float](0x7fffffc0, 0x7ffffffd, 0x7ffffffe, 0x7fffffff)
+                                                     ^
+deprecated_widening.scala:27: warning: Deprecated widening conversion Long to Float
+  def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
+                             ^
+deprecated_widening.scala:27: warning: Deprecated widening conversion Long to Float
+  def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
+                                          ^
+deprecated_widening.scala:27: warning: Deprecated widening conversion Long to Float
+  def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
+                                                       ^
+deprecated_widening.scala:27: warning: Deprecated widening conversion Long to Float
+  def longingly = Set[Float](0x7fffffc0L, 0x7ffffffdL, 0x7ffffffeL, 0x7fffffffL)
+                                                                    ^
+deprecated_widening.scala:29: warning: Deprecated widening conversion Int to Float
+  def `pick one` = Set[Float](0x1000003, 0x1000004, 0x1000005)
+                              ^
+deprecated_widening.scala:29: warning: Deprecated widening conversion Int to Float
+  def `pick one` = Set[Float](0x1000003, 0x1000004, 0x1000005)
+                                                    ^
+deprecated_widening.scala:31: warning: Deprecated widening conversion Int to Float
+  def `lossy arg`       = 1f + 2147483584
+                               ^
+deprecated_widening.scala:32: warning: Deprecated widening conversion Int to Float
+  def `lossy receiver`  = 2147483584 + 1f
+                          ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+17 warnings
 1 error

@@ -1653,6 +1653,14 @@ abstract class RefChecks extends Transform {
       try {
         val sym = tree.symbol
 
+        // Apply RefChecks which might easily have run earlier.
+        def runDeferredCheck(): Unit =
+          tree.getAndRemoveAttachment[DeferredRefCheck] match {
+            case Some(DeferredRefCheck(check)) => check(tree) ; runDeferredCheck()
+            case None => ()
+          }
+        runDeferredCheck()
+
         // Apply RefChecks to annotations. Makes sure the annotations conform to
         // type bounds (bug #935), issues deprecation warnings for symbols used
         // inside annotations.

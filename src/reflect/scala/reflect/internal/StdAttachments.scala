@@ -119,4 +119,6 @@ trait StdAttachments {
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment
+
+  case class DeferredRefCheck(check: Tree => Unit) extends PlainAttachment
 }
