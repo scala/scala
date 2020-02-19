@@ -1,14 +1,7 @@
-TestHKNest2_fail.scala:7: error: no type parameters for method foo: (x: tastytest.HKNest.Quuux[F])String exist so that it can be applied to arguments (tastytest.HKNest.Quuux[tastytest.HKNest.QuxArg])
- --- because ---
-argument expression's type is not compatible with formal parameter type;
- found   : tastytest.HKNest.Quuux[tastytest.HKNest.QuxArg]
- required: tastytest.HKNest.Quuux[?F]
-
-  def test14 = new HKClass_14[Quuux].foo(new Quuux[QuxArg])
-                                     ^
-TestHKNest2_fail.scala:7: error: type mismatch;
- found   : tastytest.HKNest.Quuux[tastytest.HKNest.QuxArg]
- required: tastytest.HKNest.Quuux[F]
-  def test14 = new HKClass_14[Quuux].foo(new Quuux[QuxArg])
-                                         ^
+TestHKNest2_fail.scala:6: error: Scala 3 union types are not supported for method foo
+  def test16 = new HKClass_15().foo(List(1,2,3)) // error: Union type not supported
+                                ^
+TestHKNest2_fail.scala:7: error: Scala 3 union types are not supported for method foo
+  def test17 = new HKClass_15().foo(Option(1))   // error: Union type not supported
+                                ^
 2 errors

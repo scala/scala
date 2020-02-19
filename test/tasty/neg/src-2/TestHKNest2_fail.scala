@@ -3,7 +3,6 @@ package tastytest
 import HKNest._
 
 object TestHKNest2 {
-
-  def test14 = new HKClass_14[Quuux].foo(new Quuux[QuxArg])
-
+  def test16 = new HKClass_15().foo(List(1,2,3)) // error: Union type not supported
+  def test17 = new HKClass_15().foo(Option(1))   // error: Union type not supported
 }

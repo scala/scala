@@ -124,6 +124,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     override def complete(sym: Symbol): Unit = throw new UnsupportedOperationException("complete")
   }
 
+  final class ErrorCompleter(msg: Symbol => String) extends TastyLazyType {
+    override def complete(sym: Symbol): Unit = {
+      throw new symbolTable.TypeError(msg(sym))
+    }
+  }
+
   class TreeReader(val reader: TastyReader) {
     import reader._
 
@@ -855,10 +861,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val unsupported = completer.tastyFlagSet &~ supported
           assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           if (completer.tastyFlagSet.is(Inline)) {
-            sym.addAnnotation(
-              defn.CompileTimeOnlyAttr,
-              Literal(Constant(s"Unsupported Scala 3 inline $sym"))
-            )
+            attachCompiletimeOnly(sym, s"Unsupported Scala 3 inline $sym")
           }
           if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$name is a Scala 3 extension method.")
           val typeParams = {
@@ -901,6 +904,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
             // TODO check for cycles
             sym.info = rhs.tpe match {
+              case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
+                new ErrorCompleter(owner =>
+                  s"$owner has diverging type lambdas as bounds:$bounds")
               case tpe: TypeBounds => normaliseBounds(tpe)
               case tpe             => tpe
             }

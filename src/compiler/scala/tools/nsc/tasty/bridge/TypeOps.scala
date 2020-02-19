@@ -25,6 +25,20 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
+  def attachCompiletimeOnly(owner: Symbol, msg: String): Unit = {
+    owner.addAnnotation(defn.CompileTimeOnlyAttr, Literal(Constant(msg)))
+  }
+
+  def attachCompiletimeOnly(msg: Symbol => String)(implicit ctx: Context): Unit = {
+    findOwner(owner => attachCompiletimeOnly(owner, msg(owner)))
+  }
+
+  def findOwner[U](op: Symbol => U)(implicit ctx: Context): Unit = {
+    for (owner <- ctx.owner.ownerChain.find(sym => !sym.is(Param))) {
+      op(owner)
+    }
+  }
+
   def normaliseBounds(bounds: TypeBounds)(implicit ctx: Context): Type = {
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
@@ -37,11 +51,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         }
         mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
       }
-      else {
-        bounds match {
-          case TypeBounds(LambdaEncoding(lo), LambdaEncoding(hi)) => TypeBounds.bounded(lo,hi)
-          case _ => bounds
-        }
+      else bounds match {
+        case TypeBounds(LambdaEncoding(lo), LambdaEncoding(hi)) => TypeBounds.bounded(lo,hi)
+        case _                                                  => bounds
       }
     }
     else if (hi.isHigherKinded)
@@ -56,13 +68,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
     def typeRefUncurried(tycon: Type, args: List[Type]): Type = {
       if (tycon.isInstanceOf[TypeRef] && tycon.typeArgs.nonEmpty) {
-        for (owner <- ctx.owner.ownerChain.find(sym => !sym.is(Param))) {
-          owner.addAnnotation(
-            defn.CompileTimeOnlyAttr,
-            Literal(Constant(
-              s"Unsupported Scala 3 curried type application $tycon[${args.mkString(",")}] in signature of $owner")))
-        }
-        defn.AnyTpe
+        attachCompiletimeOnly(owner =>
+          s"Unsupported Scala 3 curried type application $tycon[${args.mkString(",")}] in signature of $owner")
+        errorType
       }
       else {
         mkAppliedType(tycon, args)
@@ -126,7 +134,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         AndType
       }
       else {
-        errorTasty(s"Union types are not currently supported, [found within ${ctx.classRoot}]")
+        attachCompiletimeOnly(owner => s"Scala 3 union types are not supported for $owner")
         errorType
       }
     }
