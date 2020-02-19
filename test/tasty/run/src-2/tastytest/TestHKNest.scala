@@ -14,12 +14,14 @@ object TestHKNest extends Suite("TestHKNest") {
   test(assert(new HKClass_6[Quux].foo(new Quux[QuxArg]) == "Quux"))
   test(assert(new HKClass_7[Quuux].foo(new Quuux[Arg1]) == "Quuux"))
   test(assert(new HKClass_7[Quuux].foo(new Quuux[QuxArg]) == "Quuux"))
-  test(assert(new HKClass_8[Boo].foo(new Boo[OrInt]) == "Boo"))
-  test(assert(new HKClass_9[ThrowawayHK].foo[List](new Foo[OrNothing]) == "Foo"))
+  test(assert(new HKClass_8[Quuux].foo(new Quuux[QuxArg]) == "Quuux"))
+  test(assert(new HKClass_9[Boo].foo(new Boo[OrInt]) == "Boo"))
   test(assert(new HKClass_10[ThrowawayHK].foo[List](new Foo[OrNothing]) == "Foo"))
-  test(assert(new HKClass_11[Contra].foo(new Contra[Sum]) == "Contra"))
+  test(assert(new HKClass_11[ThrowawayHK].foo[List](new Foo[OrNothing]) == "Foo"))
   test(assert(new HKClass_12[Contra].foo(new Contra[Sum]) == "Contra"))
-  test(assert(new HKClass_12[Contra].foo(new Contra[Prod]) == "Contra"))
+  test(assert(new HKClass_13[Contra].foo(new Contra[Sum]) == "Contra"))
+  test(assert(new HKClass_13[Contra].foo(new Contra[Prod]) == "Contra"))
+
 
   type OrNothing[I] = Either[Nothing, I]
 

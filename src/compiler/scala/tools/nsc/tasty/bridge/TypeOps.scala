@@ -22,22 +22,27 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
 
-  def mergeableParams(t: Type, u: Type): Boolean = {
-    t.typeParams.size == u.typeParams.size &&
-      t.typeParams.lazyZip(u.typeParams).forall((t,u) => t.name == u.name)
-  }
+  def mergeableParams(t: Type, u: Type): Boolean =
+    t.typeParams.size == u.typeParams.size
 
   def normaliseBounds(bounds: TypeBounds)(implicit ctx: Context): Type = {
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
-      assert(mergeableParams(lo, hi))
-      val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(_.ref))
-      lo.typeParams.foreach { sym =>
-        sym.owner.rawInfo.decls.unlink(sym)
-        sym.owner.rawInfo.members.unlink(sym)
-        sym.owner = noSymbol
+      if (mergeableParams(lo, hi)) {
+        val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(_.ref))
+        lo.typeParams.foreach { sym =>
+          sym.owner.rawInfo.decls.unlink(sym)
+          sym.owner.rawInfo.members.unlink(sym)
+          sym.owner = noSymbol
+        }
+        mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
       }
-      mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
+      else {
+        bounds match {
+          case TypeBounds(LambdaEncoding(lo), LambdaEncoding(hi)) => TypeBounds.bounded(lo,hi)
+          case _ => bounds
+        }
+      }
     }
     else if (hi.isHigherKinded)
       mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))

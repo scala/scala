@@ -30,25 +30,31 @@ object HKNest {
     def foo[F[X] >: Arg1[X] <: QuxArg[X]](x: M[F]): String = x.toString()
   }
 
-  class HKClass_8[O[F[X] <: Either[X, Int]]] {
+  class HKClass_8[M[F >: [X] =>> Arg1[X] <: [Y] =>> QuxArg[Y]]] {
+    def foo[F[X] >: Arg1[X] <: QuxArg[X]](x: M[F]): String = x.toString()
+  }
+
+  class HKClass_9[O[F[X] <: Either[X, Int]]] {
     def foo[F[X] <: Either[X, Int]](x: O[F]): String = x.toString()
   }
 
-  class HKClass_9[F[G[X]] <: Foo[[T] =>> Either[Nothing, T]]] {
+  class HKClass_10[F[G[X]] <: Foo[[T] =>> Either[Nothing, T]]] {
     def foo[G[X]](x: F[G]): String = x.toString()
   }
 
-  class HKClass_10[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
+  class HKClass_11[F[G[X]] >: Foo[[T] =>> Either[Nothing, T]]] {
     def foo[G[X]](x: F[G]): String = x.toString()
   }
 
-  class HKClass_11[F[-T >: Sum]] {
+  class HKClass_12[F[-T >: Sum]] {
     def foo[T1 >: Sum](x: F[T1]): String = x.toString()
   }
 
-  class HKClass_12[F[-T >: Prod]] {
+  class HKClass_13[F[-T >: Prod]] {
     def foo[T1 >: Prod](x: F[T1]): String = x.toString()
   }
+
+  def test8 = new HKClass_8[Quuux].foo(new Quuux[QuxArg])
 
   type ThrowawayHK[G[X]] = Foo[[T] =>> Either[Nothing, T]]
 
