@@ -198,18 +198,32 @@ trait MemberHandlers {
   class ModuleHandler(module: ModuleDef) extends MemberDefHandler(module) {
     override def definesTerm = Some(name.toTermName)
     override def definesValue = true
+    override def definesValueClass = {
+      var foundValueClass = false
+      new Traverser {
+        override def traverse(tree: Tree): Unit = tree match {
+          case _ if foundValueClass                 => ()
+          case cdef: ClassDef if isValueClass(cdef) => foundValueClass = true
+          case mdef: ModuleDef                      => traverseStats(mdef.impl.body, mdef.impl.symbol)
+          case _                                    => () // skip anything else
+        }
+      }.traverse(module)
+      foundValueClass
+    }
 
     override def resultExtractionCode(req: Request) = codegenln("defined object ", name)
+  }
+
+  private def isValueClass(cdef: ClassDef) = cdef.impl.parents match {
+    case Ident(tpnme.AnyVal) :: _ => true // approximating with a syntactic check
+    case _                        => false
   }
 
   class ClassHandler(member: ClassDef) extends MemberDefHandler(member) {
     override def definedSymbols = List(symbol, symbol.companionSymbol) filterNot (_ == NoSymbol)
     override def definesType = Some(name.toTypeName)
     override def definesTerm = Some(name.toTermName) filter (_ => mods.isCase)
-    override final def definesValueClass: Boolean = member.impl.parents match {
-      case Ident(tpnme.AnyVal) :: _ => true // approximating with a syntactic check
-      case _                        => false
-    }
+    override def definesValueClass = isValueClass(member)
 
     override def resultExtractionCode(req: Request) =
       codegenln("defined %s %s".format(keyword, name))
