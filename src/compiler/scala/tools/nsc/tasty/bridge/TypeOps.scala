@@ -12,6 +12,8 @@ import scala.tools.nsc.tasty.Names.TastyName.SignedName
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
+import scala.collection.mutable
+
 trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import Contexts._
   import SymbolOps._
@@ -63,15 +65,15 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
 
     if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[PolyType])) {
-      def bindWildcard(tpe: Type) = tpe match {
-        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).pipe(sym => sym -> sym.ref)
-        case LambdaEncoding(lambda) => noSymbol -> lambda
-        case tpe                    => noSymbol -> tpe
+      val syms = mutable.ListBuffer.empty[Symbol]
+      def bindWildcards(tpe: Type) = tpe match {
+        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+        case LambdaEncoding(lambda) => lambda
+        case tpe                    => tpe
       }
-      val (syms, args1) = args.map(bindWildcard).unzip
-      val quantified = syms.filterSyms
-      if (quantified.isEmpty) typeRefUncurried(tycon, args1)
-      else mkExistentialType(quantified, typeRefUncurried(tycon, args1))
+      val args1 = args.map(bindWildcards)
+      if (syms.isEmpty) typeRefUncurried(tycon, args1)
+      else mkExistentialType(syms.toList, typeRefUncurried(tycon, args1))
     }
     else {
       typeRefUncurried(tycon, args)

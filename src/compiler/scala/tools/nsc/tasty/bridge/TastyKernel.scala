@@ -143,7 +143,7 @@ trait TastyKernel { self: TastyUniverse =>
   private[bridge] type FlagAgnosticCompleter = symbolTable.FlagAgnosticCompleter
 
   def noSymbol: Symbol = symbolTable.NoSymbol
-  def isSymbol(sym: Symbol) = sym `ne` symbolTable.NoSymbol
+  // def isSymbol(sym: Symbol) = sym `ne` symbolTable.NoSymbol
 
   type Scope = symbolTable.Scope
   def emptyScope: Scope = symbolTable.EmptyScope

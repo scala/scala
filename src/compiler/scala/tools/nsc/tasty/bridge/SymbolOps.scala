@@ -30,10 +30,6 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
           sym.hasFlag(mask) && sym.hasNoFlags(butNot)
       def not(mask: FlagSet): Boolean = !is(mask)
     }
-
-    implicit class FlattenOps(syms: List[Symbol]) {
-      def filterSyms: List[Symbol] = syms.filter(isSymbol)
-    }
   }
 
   def selectSymFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
