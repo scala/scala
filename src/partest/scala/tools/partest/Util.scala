@@ -23,6 +23,7 @@ object Util {
     }
 
     override def className = "Array"
+    override def toString: String = mkString(className + "(", ", ", ")")
   }
 
   implicit class ArrayDeep(val a: Array[_]) extends AnyVal {

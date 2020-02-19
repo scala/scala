@@ -270,6 +270,16 @@ class IterableTest {
   }
 
   @Test
+  def infiniteIterable: Unit = {
+    class Foo extends Iterable[Int] {
+      def iterator = Iterator.continually(42)
+      override def className = "Fu"
+    }
+    val foo = new Foo
+    Assert.assertEquals("Fu(<iterable>)", foo.toString)
+  }
+
+  @Test
   def partitionMap: Unit = {
     val (left, right) = Seq(1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionMap {
       case i: Int => Left(i)
