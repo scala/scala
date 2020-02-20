@@ -90,9 +90,12 @@ abstract class ConstantFolder {
   private def warnWidening(tree: Tree, pos: Position, k: Constant, to: Int): Unit = {
     val from = k.tag
     def tagString(tag: Int) = names(tag - IntTag)
-    def warn() = tree.updateAttachment[DeferredRefCheck](DeferredRefCheck(t =>
-      currentRun.reporting.deprecationWarning(pos, s"Deprecated widening conversion ${tagString(from)} to ${tagString(to)}", "2.13.2")
-    ))
+    def warn() = {
+      val msg = s"Widening conversion from ${tagString(from)} to ${tagString(to)} is deprecated because it loses precision. Write `.to${tagString(to)}` instead."
+      tree.updateAttachment[DeferredRefCheck](DeferredRefCheck(_ =>
+        currentRun.reporting.deprecationWarning(pos, msg, "2.13.2")
+      ))
+    }
     if (to == FloatTag) {
       val bad = from == IntTag && k.intValue != k.intValue.toFloat.toInt || from == LongTag && k.longValue != k.longValue.toFloat.toLong
       if (bad) warn()

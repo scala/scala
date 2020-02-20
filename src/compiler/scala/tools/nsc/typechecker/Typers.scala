@@ -1142,8 +1142,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 tpSym == IntClass  && ptSym == FloatClass ||
                 tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass)
               )
-              if (isInharmonic)
-                context.warning(tree.pos, s"Automatic conversion from ${tpSym.name} to ${ptSym.name} is deprecated (since 2.13.1) because it loses precision. Write `.to${ptSym.name}` instead.")
+              if (isInharmonic) {
+                val msg = s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead."
+                tree.updateAttachment[DeferredRefCheck](DeferredRefCheck(t =>
+                  currentRun.reporting.deprecationWarning(t.pos, msg, "2.13.2")
+                ))
+              }
               else if (settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
             }
 
