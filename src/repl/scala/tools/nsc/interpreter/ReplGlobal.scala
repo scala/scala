@@ -54,6 +54,8 @@ trait ReplGlobal extends Global {
     override val phaseName: String = "wrapper-cleanup"
     /** Names of phases that must run before this phase. */
     override val runsAfter: List[String] = List("refchecks")
+    /** Names of phases that must run after this phase. Default is `Nil`. */
+    override val runsBefore: List[String] = List("uncurry")
     /** Name of the phase that this phase must follow immediately. */
     override val runsRightAfter: Option[String] = None
     override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer
