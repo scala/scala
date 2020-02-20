@@ -1,0 +1,20 @@
+
+scala> class Meter(val value: Int) extends AnyVal
+defined class Meter
+
+scala> val x = new Meter(1)
+x: Meter = Meter@XXXXXXXX
+
+scala> object T { class Meter(val value: Int) extends AnyVal }
+defined object T
+
+scala> val y = new T.Meter(2)
+y: T.Meter = T$Meter@XXXXXXXX
+
+scala> object S { object T { class Meter(val value: Int) extends AnyVal } }
+defined object S
+
+scala> val z = new S.T.Meter(3)
+z: S.T.Meter = S$T$Meter@XXXXXXXX
+
+scala> :quit

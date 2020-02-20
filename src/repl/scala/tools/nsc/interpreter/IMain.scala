@@ -244,7 +244,10 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   protected def newCompiler(settings: Settings, reporter: reporters.Reporter): ReplGlobal = {
     settings.outputDirs setSingleOutput replOutput.dir
     settings.exposeEmptyPackage.value = true
-    new Global(settings, reporter) with ReplGlobal { override def toString: String = "<global>" }
+    new Global(settings, reporter) with ReplGlobal {
+      def sessionNames = naming.sessionNames
+      override def toString: String = "<global>"
+    }
   }
 
   /**
@@ -319,10 +322,9 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
 
-  /** For class based repl mode we use an .INSTANCE accessor. */
-  val readInstanceName = if (isClassBased) ".INSTANCE" else ""
+  val readInstanceName = ".INSTANCE"
   def translateOriginalPath(p: String): String = {
-    if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
+    p.replace(sessionNames.read, sessionNames.read + readInstanceName)
   }
   def flatPath(sym: Symbol): String = {
     val sym1 = if (sym.isModule) sym.moduleClass else sym
@@ -700,7 +702,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
-    val packageName = sessionNames.line + lineId
+    val packageName = sessionNames.packageName(lineId)
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
     val printName   = sessionNames.print
@@ -828,10 +830,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
-    val definesClass = handlers.exists {
-      case _: ClassHandler => true
-      case _ => false
-    }
+    val definesValueClass = handlers.exists(_.definesValueClass)
 
     def defHandlers = handlers collect { case x: MemberDefHandler => x }
 
@@ -850,7 +849,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, definesClass, generousImports))
+      exitingTyper(importsCode(referencedNames.toSet, ObjectSourceCode, generousImports))
 
     /** the line of code to compute */
     def toCompute = line
@@ -895,7 +894,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     class ObjectBasedWrapper extends Wrapper {
       def preambleHeader = "object %s {"
 
-      def postamble = importsTrailer + "\n}"
+      /** Adds a .INSTANCE accessor to the read object, so access is identical to class-based. */
+      def postamble = importsTrailer + s"\n  val INSTANCE = this\n}"
 
       def postwrap = "}\n"
     }
@@ -919,7 +919,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     }
 
     private[interpreter] lazy val ObjectSourceCode: Wrapper =
-      if (isClassBased) new ClassBasedWrapper else new ObjectBasedWrapper
+      if (isClassBased && !definesValueClass) new ClassBasedWrapper else new ObjectBasedWrapper
 
     private object ResultObjectSourceCode extends IMain.CodeAssembler[MemberHandler] {
       /** We only want to generate this code when the result
@@ -1005,8 +1005,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
     lazy val typeOf         = typeMap[String](tp => exitingTyper {
-      val s = tp.toString
-      if (isClassBased) s.stripPrefix("INSTANCE.") else s
+      tp.toString.stripPrefix("INSTANCE.")
     })
 
     lazy val definedSymbols = (
@@ -1082,7 +1081,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
             val i =
               if (s.isModule) {
                 if (inst == null) null
-                else mirror.reflect((inst reflectModule s.asModule).instance)
+                else mirror.reflect((mirror reflectModule s.asModule).instance)
               }
               else if (s.isAccessor) {
                 mirror.reflect(mirrored.reflectMethod(s.asMethod).apply())

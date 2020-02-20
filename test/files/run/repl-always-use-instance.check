@@ -1,0 +1,14 @@
+
+scala> case class Name(value: String)
+defined class Name
+
+scala> val x = Name("foo")
+x: Name = Name(foo)
+
+scala> val y = Name("bar")
+y: Name = Name(bar)
+
+scala> val z = Name(x.value + y.value)
+z: Name = Name(foobar)
+
+scala> :quit

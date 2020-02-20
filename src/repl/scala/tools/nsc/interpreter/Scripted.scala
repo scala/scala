@@ -38,14 +38,14 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     /* Modify the template to snag definitions from dynamic context.
      * So object $iw { x + 42 } becomes object $iw { def x = $ctx.x ; x + 42 }
      */
-    override protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, definesClass: Boolean, generousImports: Boolean) = {
+    override protected def importsCode(wanted: Set[Name], wrapper: Request#Wrapper, generousImports: Boolean) = {
 
       // cull references that can be satisfied from the current dynamic context
       val contextual = wanted & contextNames
 
       if (contextual.nonEmpty) {
         val neededContext = (wanted &~ contextual) + TermName(ctx)
-        val ComputedImports(header, preamble, trailer, path) = super.importsCode(neededContext, wrapper, definesClass, generousImports)
+        val ComputedImports(header, preamble, trailer, path) = super.importsCode(neededContext, wrapper, generousImports)
         val adjusted = contextual.map { n =>
             val valname = n.decodedName
             s"""def `$valname` = $ctx.`$valname`
@@ -53,7 +53,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
           }.mkString(preamble, "\n", "\n")
         ComputedImports(header, adjusted, trailer, path)
       }
-      else super.importsCode(wanted, wrapper, definesClass, generousImports)
+      else super.importsCode(wanted, wrapper, generousImports)
     }
 
     // names available in current dynamic context

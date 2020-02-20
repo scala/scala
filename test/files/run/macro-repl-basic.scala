@@ -1,6 +1,12 @@
+import scala.tools.nsc.Settings
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
+    override def transformSettings(s: Settings) = {
+    s.Yreplclassbased.value = false // macros are object-based only
+    s
+  }
+
   def code = """
     |import language.experimental.macros
     |import scala.reflect.macros.blackbox.Context

@@ -1,0 +1,16 @@
+
+scala> import scala.concurrent._
+import scala.concurrent._
+
+scala> import scala.concurrent.duration._
+import scala.concurrent.duration._
+
+scala> import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits.global
+
+scala> 
+
+scala> Await.result(Future(42), 1.second) // progression to not deadlocking
+res0: Int = 42
+
+scala> :quit

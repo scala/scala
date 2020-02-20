@@ -1,0 +1,320 @@
+
+scala> import scala.reflect.macros.blackbox.Context
+import scala.reflect.macros.blackbox.Context
+
+scala> import language.experimental.macros
+import language.experimental.macros
+
+scala> import scala.reflect
+import scala.reflect
+
+scala> import scala.reflect.macros.{ blackbox, whitebox }
+import scala.reflect.macros.{blackbox, whitebox}
+
+scala> 
+
+scala> def implBBC(c: blackbox.Context)                                = c.universe.reify(())
+implBBC: (c: scala.reflect.macros.blackbox.Context)c.universe.Expr[Unit]
+
+scala> def implWBC(c: whitebox.Context)                                = c.universe.reify(())
+implWBC: (c: scala.reflect.macros.whitebox.Context)c.universe.Expr[Unit]
+
+scala> def implRBBC(c: reflect.macros.blackbox.Context)                = c.universe.reify(())
+implRBBC: (c: scala.reflect.macros.blackbox.Context)c.universe.Expr[Unit]
+
+scala> def implRWBC(c: reflect.macros.whitebox.Context)                = c.universe.reify(())
+implRWBC: (c: scala.reflect.macros.whitebox.Context)c.universe.Expr[Unit]
+
+scala> def implSRBBC(c: scala.reflect.macros.blackbox.Context)         = c.universe.reify(())
+implSRBBC: (c: scala.reflect.macros.blackbox.Context)c.universe.Expr[Unit]
+
+scala> def implSRWBC(c: scala.reflect.macros.whitebox.Context)         = c.universe.reify(())
+implSRWBC: (c: scala.reflect.macros.whitebox.Context)c.universe.Expr[Unit]
+
+scala> def implRSRBBC(c: _root_.scala.reflect.macros.blackbox.Context) = c.universe.reify(())
+implRSRBBC: (c: scala.reflect.macros.blackbox.Context)c.universe.Expr[Unit]
+
+scala> def implRSRWBC(c: _root_.scala.reflect.macros.whitebox.Context) = c.universe.reify(())
+implRSRWBC: (c: scala.reflect.macros.whitebox.Context)c.universe.Expr[Unit]
+
+scala> 
+
+scala> def fooBBC: Unit    = macro implBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooBBC: Unit    = macro implBBC
+                                   ^
+
+scala> def fooWBC: Unit    = macro implWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooWBC: Unit    = macro implWBC
+                                   ^
+
+scala> def fooRBBC: Unit   = macro implRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooRBBC: Unit   = macro implRBBC
+                                   ^
+
+scala> def fooRWBC: Unit   = macro implRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooRWBC: Unit   = macro implRWBC
+                                   ^
+
+scala> def fooSRBBC: Unit  = macro implSRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooSRBBC: Unit  = macro implSRBBC
+                                   ^
+
+scala> def fooSRWBC: Unit  = macro implSRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooSRWBC: Unit  = macro implSRWBC
+                                   ^
+
+scala> def fooRSRBBC: Unit = macro implRSRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooRSRBBC: Unit = macro implRSRBBC
+                                   ^
+
+scala> def fooRSRWBC: Unit = macro implRSRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def fooRSRWBC: Unit = macro implRSRWBC
+                                   ^
+
+scala> 
+
+scala> // fooBBC
+
+scala> // fooWBC
+
+scala> // fooRBBC
+
+scala> // fooRWBC
+
+scala> // fooSRBBC
+
+scala> // fooSRWBC
+
+scala> // fooRSRBBC
+
+scala> // fooRSRWBC
+
+scala> 
+
+scala> 
+
+scala> object MacrosModule {
+  def implBBC(c: blackbox.Context)                                = c.universe.reify(())
+  def implWBC(c: whitebox.Context)                                = c.universe.reify(())
+  def implRBBC(c: reflect.macros.blackbox.Context)                = c.universe.reify(())
+  def implRWBC(c: reflect.macros.whitebox.Context)                = c.universe.reify(())
+  def implSRBBC(c: scala.reflect.macros.blackbox.Context)         = c.universe.reify(())
+  def implSRWBC(c: scala.reflect.macros.whitebox.Context)         = c.universe.reify(())
+  def implRSRBBC(c: _root_.scala.reflect.macros.blackbox.Context) = c.universe.reify(())
+  def implRSRWBC(c: _root_.scala.reflect.macros.whitebox.Context) = c.universe.reify(())
+}
+defined object MacrosModule
+
+scala> 
+
+scala> def barBBC: Unit    = macro MacrosModule.implBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barBBC: Unit    = macro MacrosModule.implBBC
+                                                ^
+
+scala> def barWBC: Unit    = macro MacrosModule.implWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barWBC: Unit    = macro MacrosModule.implWBC
+                                                ^
+
+scala> def barRBBC: Unit   = macro MacrosModule.implRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barRBBC: Unit   = macro MacrosModule.implRBBC
+                                                ^
+
+scala> def barRWBC: Unit   = macro MacrosModule.implRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barRWBC: Unit   = macro MacrosModule.implRWBC
+                                                ^
+
+scala> def barSRBBC: Unit  = macro MacrosModule.implSRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barSRBBC: Unit  = macro MacrosModule.implSRBBC
+                                                ^
+
+scala> def barSRWBC: Unit  = macro MacrosModule.implSRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barSRWBC: Unit  = macro MacrosModule.implSRWBC
+                                                ^
+
+scala> def barRSRBBC: Unit = macro MacrosModule.implRSRBBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barRSRBBC: Unit = macro MacrosModule.implRSRBBC
+                                                ^
+
+scala> def barRSRWBC: Unit = macro MacrosModule.implRSRWBC
+<console>:16: error: macro implementation reference has wrong shape. required:
+macro [<static object>].<method name>[[<type args>]] or
+macro [<macro bundle>].<method name>[[<type args>]]
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def barRSRWBC: Unit = macro MacrosModule.implRSRWBC
+                                                ^
+
+scala> 
+
+scala> // barBBC
+
+scala> // barWBC
+
+scala> // barRBBC
+
+scala> // barRWBC
+
+scala> // barSRBBC
+
+scala> // barSRWBC
+
+scala> // barRSRBBC
+
+scala> // barRSRWBC
+
+scala> 
+
+scala> 
+
+scala> class MacroBundleBBC(val c: blackbox.Context)                                { def impl = c.universe.reify(()) }
+defined class MacroBundleBBC
+
+scala> class MacroBundleWBC(val c: whitebox.Context)                                { def impl = c.universe.reify(()) }
+defined class MacroBundleWBC
+
+scala> class MacroBundleRBBC(val c: reflect.macros.blackbox.Context)                { def impl = c.universe.reify(()) }
+defined class MacroBundleRBBC
+
+scala> class MacroBundleRWBC(val c: reflect.macros.whitebox.Context)                { def impl = c.universe.reify(()) }
+defined class MacroBundleRWBC
+
+scala> class MacroBundleSRBBC(val c: scala.reflect.macros.blackbox.Context)         { def impl = c.universe.reify(()) }
+defined class MacroBundleSRBBC
+
+scala> class MacroBundleSRWBC(val c: scala.reflect.macros.whitebox.Context)         { def impl = c.universe.reify(()) }
+defined class MacroBundleSRWBC
+
+scala> class MacroBundleRSRBBC(val c: _root_.scala.reflect.macros.blackbox.Context) { def impl = c.universe.reify(()) }
+defined class MacroBundleRSRBBC
+
+scala> class MacroBundleRSRWBC(val c: _root_.scala.reflect.macros.whitebox.Context) { def impl = c.universe.reify(()) }
+defined class MacroBundleRSRWBC
+
+scala> 
+
+scala> def bazBBC: Unit    = macro MacroBundleBBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazBBC: Unit    = macro MacroBundleBBC.impl
+                                   ^
+
+scala> def bazWBC: Unit    = macro MacroBundleWBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazWBC: Unit    = macro MacroBundleWBC.impl
+                                   ^
+
+scala> def bazRBBC: Unit   = macro MacroBundleRBBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazRBBC: Unit   = macro MacroBundleRBBC.impl
+                                   ^
+
+scala> def bazRWBC: Unit   = macro MacroBundleRWBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazRWBC: Unit   = macro MacroBundleRWBC.impl
+                                   ^
+
+scala> def bazSRBBC: Unit  = macro MacroBundleSRBBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazSRBBC: Unit  = macro MacroBundleSRBBC.impl
+                                   ^
+
+scala> def bazSRWBC: Unit  = macro MacroBundleSRWBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazSRWBC: Unit  = macro MacroBundleSRWBC.impl
+                                   ^
+
+scala> def bazRSRBBC: Unit = macro MacroBundleRSRBBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazRSRBBC: Unit = macro MacroBundleRSRBBC.impl
+                                   ^
+
+scala> def bazRSRWBC: Unit = macro MacroBundleRSRWBC.impl
+<console>:16: error: macro bundles must be static
+note: macro definition is not supported in the REPL when using -Yrepl-classbased.
+       def bazRSRWBC: Unit = macro MacroBundleRSRWBC.impl
+                                   ^
+
+scala> //
+
+scala> // bazBBC
+
+scala> // bazWBC
+
+scala> // bazRBBC
+
+scala> // bazRWBC
+
+scala> // bazSRBBC
+
+scala> // bazSRWBC
+
+scala> // bazRSRBBC
+
+scala> // bazRSRWBC
+
+scala> :quit
