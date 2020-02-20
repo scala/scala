@@ -20,8 +20,6 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   import FlagSets._
   import SymbolOps._
 
-  def isTastyLazyType(rawInfo: Type): Boolean = rawInfo.isInstanceOf[TastyLazyType]
-
   def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
@@ -52,7 +50,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
       }
       else bounds match {
-        case TypeBounds(LambdaEncoding(lo), LambdaEncoding(hi)) => TypeBounds.bounded(lo,hi)
+        case TypeBounds(lo: LambdaEncoding, hi: LambdaEncoding) => TypeBounds.bounded(lo.toNested,hi.toNested)
         case _                                                  => bounds
       }
     }
@@ -66,23 +64,21 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
 
-    def typeRefUncurried(tycon: Type, args: List[Type]): Type = {
-      if (tycon.isInstanceOf[TypeRef] && tycon.typeArgs.nonEmpty) {
+    def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
+      case tycon: TypeRef if tycon.typeArgs.nonEmpty =>
         attachCompiletimeOnly(owner =>
           s"Unsupported Scala 3 curried type application $tycon[${args.mkString(",")}] in signature of $owner")
         errorType
-      }
-      else {
+      case _ =>
         mkAppliedType(tycon, args)
-      }
     }
 
-    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[PolyType])) {
+    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaEncoding])) {
       val syms = mutable.ListBuffer.empty[Symbol]
       def bindWildcards(tpe: Type) = tpe match {
-        case tpe: TypeBounds        => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
-        case LambdaEncoding(lambda) => lambda
-        case tpe                    => tpe
+        case tpe: TypeBounds     => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+        case tpe: LambdaEncoding => tpe.toNested
+        case tpe                 => tpe
       }
       val args1 = args.map(bindWildcards)
       if (syms.isEmpty) typeRefUncurried(tycon, args1)
@@ -229,6 +225,15 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     def apply(paramNames: List[N], paramVariances: List[Variance])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
   }
 
+  final class LambdaEncoding(override val typeParams: List[Symbol], val resTpe: Type) extends PolyType(typeParams, TypeBounds.addLower(resTpe)) {
+    def toNested: PolyType = resTpe match {
+      case _: TypeBounds => this
+      case _             => mkPolyType(typeParams, resTpe)
+    }
+  }
+
+  def mkLambdaEncoding(typeParams: List[Symbol], resTpe: Type) = new LambdaEncoding(typeParams, resTpe)
+
   object TypeParamLambda {
     def apply(typeParams: List[Symbol], ret: Type): LambdaType = new TypeParamLambda(typeParams, ret)
   }
@@ -275,11 +280,11 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
      */
     final def canonicalForm(implicit ctx: Context): Type = {
       val res = resType match {
-        case LambdaEncoding(lambda) => lambda
-        case res                    => res
+        case res: LambdaEncoding => res.toNested
+        case res                 => res
       }
       lambdaTpe match {
-        case _: HKTypeLambda    => mkPolyType(typeParams, TypeBounds.addLower(res))
+        case _: HKTypeLambda    => mkLambdaEncoding(typeParams, res)
         case _: TypeParamLambda => mkPolyType(typeParams, res)
       }
     }.tap(res => ctx.log(s"""|canonical form of ${lambdaTpe.productPrefix}:

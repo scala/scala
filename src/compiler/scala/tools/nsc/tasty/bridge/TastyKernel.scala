@@ -74,15 +74,6 @@ trait TastyKernel { self: TastyUniverse =>
     def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
   }
 
-  object LambdaEncoding {
-    def unapply(tpe: Type): Option[PolyType] = tpe match {
-      case symbolTable.PolyType(args, TypeBounds(nothing, upper)) if nothing =:= defn.NothingTpe =>
-        Some(mkPolyType(args, upper))
-      case _ =>
-        None
-    }
-  }
-
   def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
 
   def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)

@@ -18,11 +18,11 @@ object Diff {
         .generateUnifiedDiff(
           "check",
           "output",
-          output.asJava,
+          check.asJava,
           diff,
           1
         )
-        .asScala
+        .toArray()
         .mkString("\n")
   }
 }
