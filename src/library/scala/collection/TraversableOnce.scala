@@ -100,25 +100,37 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   // for internal use
   protected[this] def reversed = {
-    var elems: List[A] = Nil
-    self foreach (elems ::= _)
-    elems
+    object reverser extends Function1[A, Unit] {
+      var elems: List[A] = Nil
+      override def apply(v1: A): Unit = elems ::= v1
+    }
+    self foreach reverser
+    reverser.elems
   }
 
   def size: Int = {
-    var result = 0
-    for (x <- self) result += 1
-    result
+    //we can't guard with isEmpty as some implementation have
+    // def isEmpty = size == 0
+    object counter extends Function1[A, Unit] {
+      var result = 0
+      override def apply(v1: A): Unit = result += 1
+    }
+    self foreach counter
+    counter.result
   }
 
   def nonEmpty: Boolean = !isEmpty
 
   def count(p: A => Boolean): Int = {
-    var cnt = 0
-    for (x <- this)
-      if (p(x)) cnt += 1
-
-    cnt
+    if (isEmpty)  0
+    else {
+      object counter extends Function1[A, Unit] {
+        var result = 0
+        override def apply(v1: A): Unit = if (p(v1)) result += 1
+      }
+      this foreach counter
+      counter.result
+    }
   }
 
   /** Finds the first element of the $coll for which the given partial
@@ -158,9 +170,15 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    var result = z
-    this foreach (x => result = op(result, x))
-    result
+    if (isEmpty)  z
+    else {
+      object folder extends Function1[A, Unit] {
+        var result = z
+        override def apply(v1: A): Unit = result = op(result,v1)
+      }
+      this foreach folder
+      folder.result
+    }
   }
 
   def foldRight[B](z: B)(op: (A, B) => B): B =
@@ -184,17 +202,19 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.reduceLeft")
 
-    var first = true
-    var acc: B = 0.asInstanceOf[B]
+    object reducer extends Function1[A, Unit] {
+      var first = true
+      var acc: B = 0.asInstanceOf[B]
 
-    for (x <- self) {
-      if (first) {
-        acc = x
-        first = false
-      }
-      else acc = op(acc, x)
+      override def apply(x: A): Unit =
+        if (first) {
+          acc = x
+          first = false
+        }
+        else acc = op(acc, x)
     }
-    acc
+    self foreach reducer
+    reducer.acc
   }
 
   def reduceRight[B >: A](op: (A, B) => B): B = {
@@ -239,38 +259,42 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.maxBy")
+    object maxer extends Function1[A, Unit] {
+      var maxF: B = null.asInstanceOf[B]
+      var maxElem: A = null.asInstanceOf[A]
+      var first = true
 
-    var maxF: B = null.asInstanceOf[B]
-    var maxElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- self) {
-      val fx = f(elem)
-      if (first || cmp.gt(fx, maxF)) {
-        maxElem = elem
-        maxF = fx
-        first = false
+      override def apply(elem: A): Unit = {
+        val fx = f(elem)
+        if (first || cmp.gt(fx, maxF)) {
+          maxElem = elem
+          maxF = fx
+          first = false
+        }
       }
     }
-    maxElem
+    self foreach maxer
+    maxer.maxElem
   }
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.minBy")
+    object miner extends Function1[A, Unit] {
+      var minF: B = null.asInstanceOf[B]
+      var minElem: A = null.asInstanceOf[A]
+      var first = true
 
-    var minF: B = null.asInstanceOf[B]
-    var minElem: A = null.asInstanceOf[A]
-    var first = true
-
-    for (elem <- self) {
-      val fx = f(elem)
-      if (first || cmp.lt(fx, minF)) {
-        minElem = elem
-        minF = fx
-        first = false
+      override def apply(elem: A): Unit = {
+        val fx = f(elem)
+        if (first || cmp.lt(fx, minF)) {
+          minElem = elem
+          minF = fx
+          first = false
+        }
       }
     }
-    minElem
+    self foreach miner
+    miner.minElem
   }
 
   /** Copies all elements of this $coll to a buffer.
@@ -356,21 +380,25 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    *  @return      the string builder `b` to which elements were appended.
    */
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
-    var first = true
-
     b append start
-    for (x <- self) {
-      if (first) {
-        b append x
-        first = false
+    if (!isEmpty) {
+      object appender extends Function1[A, Unit] {
+        var first = true
+
+        override def apply(x: A): Unit = {
+          if (first) {
+            b append x
+            first = false
+          }
+          else {
+            b append sep
+            b append x
+          }
+        }
       }
-      else {
-        b append sep
-        b append x
-      }
+      self foreach appender
     }
     b append end
-
     b
   }
 
