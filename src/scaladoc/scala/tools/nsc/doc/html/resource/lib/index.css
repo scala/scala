@@ -457,7 +457,6 @@ div#search-progress > div#progress-fill {
 }
 
 div#content-scroll-container {
-  position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
