@@ -1,0 +1,6 @@
+java-import-non-existing-selector/BadClient.java:3: error: cannot find symbol
+import static p1.Test.DoesNotExist;
+^
+  symbol:   static DoesNotExist
+  location: class
+1 error
