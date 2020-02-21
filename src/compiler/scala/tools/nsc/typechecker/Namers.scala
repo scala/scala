@@ -1813,7 +1813,7 @@ trait Namers extends MethodSynthesis {
         }
 
         val newImport = treeCopy.Import(imp, expr1, selectors)
-        checkSelectors(newImport)
+        if (!context.unit.isJava) checkSelectors(newImport) // trust in javac
         context.unit.transformed(imp) = newImport
         // copy symbol and type attributes back into old expression
         // so that the structure builder will find it.
