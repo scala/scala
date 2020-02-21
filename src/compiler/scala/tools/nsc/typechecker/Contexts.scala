@@ -1548,15 +1548,22 @@ trait Contexts { self: Analyzer =>
         def sameName(name: Name, other: Name) = {
           (name eq other) || (name ne null) && name.start == other.start && name.length == other.length
         }
-        def tryJavaCompanion(target: Name) =
-          if (pos.source.isJava) qual.tpe.companion nonLocalMember target else NoSymbol
+        def lookup(target: Name): Symbol = {
+          if (pos.source.isJava) {
+            val (_, sym) = NoContext.javaFindMember(qual.tpe, target, _ => true)
+            // We don't need to propagate the new prefix back out to the result of `Context.lookupSymbol`
+            // because typechecking .java sources doesn't need it.
+            sym
+          }
+          else qual.tpe nonLocalMember target
+        }
         if (sameName(current.rename, name)) {
           val target = current.name asTypeOf name
-          result = qual.tpe nonLocalMember target orElse tryJavaCompanion(target)
+          result = lookup(target)
         } else if (sameName(current.name, name))
           renamed = true
         else if (current.name == nme.WILDCARD && !renamed && !requireExplicit)
-          result = qual.tpe nonLocalMember name orElse tryJavaCompanion(name)
+          result = lookup(name)
 
         if (result == NoSymbol)
           selectors = selectors.tail
