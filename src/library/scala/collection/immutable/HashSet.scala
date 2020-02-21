@@ -299,11 +299,13 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
     super.span(p)
   }
 
-  override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): HashSet[A] = {
-    val newRootNode = rootNode.filterImpl(pred, isFlipped)
-    if (newRootNode eq rootNode) this
-    else if (newRootNode.size == 0) HashSet.empty
-    else new HashSet(newRootNode)
+  override protected[collection] def filterImpl(pred: A => Boolean, isFlipped: Boolean): HashSet[A] = pred match {
+    case hs: HashSet[A] => if (isFlipped) diff(hs) else intersect(hs)
+    case _              =>
+      val newRootNode = rootNode.filterImpl(pred, isFlipped)
+      if (newRootNode eq rootNode) this
+      else if (newRootNode.size == 0) HashSet.empty
+      else new HashSet(newRootNode)
   }
 
   override def intersect(that: collection.Set[A]): HashSet[A] = {

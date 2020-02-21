@@ -824,6 +824,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           val arg = Literal(Constant("see corresponding Javadoc for more information."))
           sym.addAnnotation(DeprecatedAttr, arg, Literal(Constant("")))
           in.skip(attrLen)
+          if (sym == clazz)
+            staticModule.addAnnotation(DeprecatedAttr, arg, Literal(Constant("")))
 
         case tpnme.ConstantValueATTR =>
           completer.constant = pool.getConstant(u2)
