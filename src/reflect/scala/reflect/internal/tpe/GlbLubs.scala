@@ -19,7 +19,6 @@ import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.reflect.internal.util.StatisticsStatics
 import Variance._
-import scala.reflect.internal.util.Collections._
 
 private[internal] trait GlbLubs {
   self: SymbolTable =>

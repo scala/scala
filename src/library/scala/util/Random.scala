@@ -16,7 +16,7 @@ package util
 import scala.annotation.{migration, tailrec}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.BuildFrom
-import scala.collection.immutable.{List, LazyList}
+import scala.collection.immutable.LazyList
 import scala.language.implicitConversions
 
 class Random(val self: java.util.Random) extends AnyRef with Serializable {
