@@ -857,9 +857,11 @@ lazy val test = project
   .settings(
     libraryDependencies ++= Seq(asmDep),
     // no main sources
-    sources in Compile := Seq.empty,
+    Compile / unmanagedSourceDirectories := Nil,
+    Compile / sources := Nil,
     // test sources are compiled in partest run, not here
-    sources in IntegrationTest := Seq.empty,
+    IntegrationTest / unmanagedSourceDirectories := Nil,
+    IntegrationTest / sources := Nil,
     fork in IntegrationTest := true,
     // enable this in 2.13, when tests pass
     //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
