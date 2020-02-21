@@ -1344,7 +1344,12 @@ If $e$ has a primitive number type which [weakly conforms](03-types.html#weak-co
 to the expected type, it is widened to
 the expected type using one of the numeric conversion methods
 `toShort`, `toChar`, `toInt`, `toLong`,
-`toFloat`, `toDouble` defined [here](12-the-scala-standard-library.html#numeric-value-types).
+`toFloat`, `toDouble` defined [in the standard library](12-the-scala-standard-library.html#numeric-value-types).
+
+Since conversions from `Int` to `Float` and from `Long` to `Float` or `Double`
+may incur a loss of precision, those implicit conversions are deprecated.
+The conversion is permitted for literals if the original value can be recovered,
+that is, if conversion back to the original type produces the original value.
 
 ###### Numeric Literal Narrowing
 If the expected type is `Byte`, `Short` or `Char`, and
