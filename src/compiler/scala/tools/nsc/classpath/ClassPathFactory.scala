@@ -13,7 +13,6 @@
 package scala.tools.nsc.classpath
 
 import scala.reflect.io.{AbstractFile, VirtualDirectory}
-import scala.reflect.io.Path.string2path
 import scala.tools.nsc.{CloseableRegistry, Settings}
 import FileUtils.AbstractFileOps
 import scala.tools.nsc.util.ClassPath
