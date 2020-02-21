@@ -50,7 +50,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
       }
       else bounds match {
-        case TypeBounds(lo: LambdaEncoding, hi: LambdaEncoding) => TypeBounds.bounded(lo.toNested,hi.toNested)
+        case TypeBounds(lo: LambdaPolyType, hi: LambdaPolyType) => TypeBounds.bounded(lo.toNested,hi.toNested)
         case _                                                  => bounds
       }
     }
@@ -73,11 +73,11 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
         mkAppliedType(tycon, args)
     }
 
-    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaEncoding])) {
+    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
       val syms = mutable.ListBuffer.empty[Symbol]
       def bindWildcards(tpe: Type) = tpe match {
         case tpe: TypeBounds     => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
-        case tpe: LambdaEncoding => tpe.toNested
+        case tpe: LambdaPolyType => tpe.toNested
         case tpe                 => tpe
       }
       val args1 = args.map(bindWildcards)
@@ -221,114 +221,90 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 
-  abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
-    def apply(paramNames: List[N], paramVariances: List[Variance])(paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): LT
+  def lambdaResultType(resType: Type): Type = resType match {
+    case res: LambdaPolyType => res.toNested
+    case res                 => res
   }
 
-  final class LambdaEncoding(override val typeParams: List[Symbol], val resTpe: Type) extends PolyType(typeParams, TypeBounds.addLower(resTpe)) {
-    def toNested: PolyType = resTpe match {
+  abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType, Res <: Type] {
+    def apply(paramNames: List[TastyName])(nameMap: TastyName => N, paramInfosExp: LT => List[PInfo], resultTypeExp: LT => Type)(implicit ctx: Context): Res
+  }
+
+  final class LambdaPolyType(typeParams: List[Symbol], resType: Type) extends PolyType(typeParams, LambdaPolyType.addLower(resType)) {
+    def toNested: PolyType = resType match {
       case _: TypeBounds => this
-      case _             => mkPolyType(typeParams, resTpe)
+      case _             => mkPolyType(typeParams, resType)
     }
   }
 
-  def mkLambdaEncoding(typeParams: List[Symbol], resTpe: Type) = new LambdaEncoding(typeParams, resTpe)
-
-  object TypeParamLambda {
-    def apply(typeParams: List[Symbol], ret: Type): LambdaType = new TypeParamLambda(typeParams, ret)
+  object LambdaPolyType {
+    private def addLower(tpe: Type): TypeBounds = tpe match {
+      case tpe: TypeBounds => tpe
+      case tpe             => TypeBounds.upper(tpe)
+    }
   }
 
-  final class TypeParamLambda(override val typeParams: List[Symbol], val resType: Type) extends LambdaType {
-    type ThisName = TypeName
-    type PInfo    = TypeBounds
+  def mkLambdaPolyType(typeParams: List[Symbol], resTpe: Type): LambdaPolyType = new LambdaPolyType(typeParams, resTpe)
+  def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): PolyType = mkPolyType(typeParams, lambdaResultType(ret))
 
-    val paramVariances: List[Variance] = typeParams.map(_.variance)
-    val paramNames: List[TypeName]     = typeParams.map(_.name.toTypeName)
-    val paramInfos: List[TypeBounds]   = typeParams.map(_.tpe.bounds)
+  type LambdaType = Type with Lambda
 
-    validateThisLambda()
-
-    override val productPrefix                = "TypeParamLambda"
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[TypeParamLambda]
-  }
-
-  abstract class LambdaType extends Type with Product { lambdaTpe =>
+  trait Lambda extends Product with Serializable {
+    self: Type =>
     type ThisName <: Name
     type PInfo <: Type
 
     val paramNames: List[ThisName]
-    val paramVariances: List[Variance]
     val paramInfos: List[PInfo]
     val resType: Type
-
-    override final def safeToString: String = {
-      val args = paramNames.zip(paramInfos).map {
-        case (name, info) => s"${name}$info"
-      }.mkString("[", ", ", "]")
-      s"$args =>> $resType"
-    }
 
     def typeParams: List[Symbol] // deferred to final implementation
 
     final protected def validateThisLambda(): Unit = {
-      assert(resType.isComplete, this)
-      assert(paramNames.nonEmpty, this)
-      assert(paramInfos.length == paramNames.length, this)
+      assert(resType.isComplete, self)
+      assert(paramNames.nonEmpty, self)
+      assert(paramInfos.length == paramNames.length, self)
     }
 
-    /**Best effort to transform this to an equivalent canonical representation in scalac.
-     */
-    final def canonicalForm(implicit ctx: Context): Type = {
-      val res = resType match {
-        case res: LambdaEncoding => res.toNested
-        case res                 => res
-      }
-      lambdaTpe match {
-        case _: HKTypeLambda    => mkLambdaEncoding(typeParams, res)
-        case _: TypeParamLambda => mkPolyType(typeParams, res)
-      }
-    }.tap(res => ctx.log(s"""|canonical form of ${lambdaTpe.productPrefix}:
-                             |  TASTy         = $lambdaTpe
-                             |  scala.reflect = $res""".stripMargin))
+    override final def productArity: Int = 2
 
-    final def productArity: Int = 2
-    final def productElement(n: Int): Any = n match {
+    override final def productElement(n: Int): Any = n match {
       case 0 => paramNames
       case 1 => resType
       case _ => throw new IndexOutOfBoundsException(n.toString)
     }
-    def canEqual(that: Any): Boolean = that.isInstanceOf[LambdaType]
+
+    def canEqual(that: Any): Boolean = that.isInstanceOf[Lambda]
+
     override final def equals(that: Any): Boolean = that match {
-      case lambdaType: LambdaType =>
-        (lambdaType.canEqual(this)
-          && lambdaType.paramNames == paramNames
-          && lambdaType.resType == resType)
+      case that: Lambda =>
+        (that.canEqual(self)
+          && that.paramNames == paramNames
+          && that.resType    == resType)
       case _ => false
     }
   }
 
-  object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda] {
-    def apply(paramNames: List[TypeName], paramVariances: List[Variance])(
-        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context): HKTypeLambda =
-      new HKTypeLambda(paramNames, paramVariances)(paramInfosExp, resultTypeExp)
+  object HKTypeLambda extends LambdaTypeCompanion[TypeName, TypeBounds, HKTypeLambda, LambdaPolyType] {
+    def apply(paramNames: List[TastyName])(nameMap: TastyName => TypeName,
+        paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context): LambdaPolyType =
+      new HKTypeLambda(paramNames)(nameMap, paramInfosExp, resultTypeExp).toPolyType
   }
 
-  final class HKTypeLambda(val paramNames: List[TypeName], val paramVariances: List[Variance])(
+  final class HKTypeLambda(params: List[TastyName])(nameMap: TastyName => TypeName,
       paramInfosExp: HKTypeLambda => List[TypeBounds], resultTypeExp: HKTypeLambda => Type)(implicit ctx: Context)
-  extends LambdaType {
+  extends Type with Lambda { hkLambda =>
     type ThisName = TypeName
     type PInfo = TypeBounds
 
     private[this] var myTypeParams: List[Symbol] = _
 
     override val productPrefix       = "HKTypeLambda"
-    val paramInfos: List[TypeBounds] = paramInfosExp(this)
-    val resType: Type                = resultTypeExp(this)
+    val paramNames: List[TypeName]   = params.map(nameMap)
+    val paramInfos: List[TypeBounds] = paramInfosExp(hkLambda)
 
-    validateThisLambda()
-
-    override def typeParams: List[Symbol] = {
-      if (myTypeParams `eq` null) myTypeParams = paramNames.lazyZip(paramInfos).lazyZip(paramVariances).map {
+    override val typeParams: List[Symbol] = {
+      paramNames.lazyZip(paramInfos).lazyZip(params.map(_.variance)).map {
         case (name, bounds, variance) =>
           val flags0 = Param | Deferred
           val flags  = variance match {
@@ -339,8 +315,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
           val argInfo = normaliseBounds(bounds)
           ctx.owner.newTypeParameter(name, noPosition, flags).setInfo(argInfo)
       }
-      myTypeParams
     }
+
+    val resType: Type = lambdaResultType(resultTypeExp(hkLambda))
+
+    validateThisLambda()
+
+    final def toPolyType: LambdaPolyType = mkLambdaPolyType(typeParams, resType)
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }

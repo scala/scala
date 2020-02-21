@@ -57,10 +57,6 @@ trait TastyKernel { self: TastyUniverse =>
     def empty: TypeBounds = symbolTable.TypeBounds.empty
     def upper(hi: Type): TypeBounds = symbolTable.TypeBounds.upper(hi)
     def lower(lo: Type): TypeBounds = symbolTable.TypeBounds.lower(lo)
-    def addLower(tpe: Type): TypeBounds = tpe match {
-      case tpe: TypeBounds => tpe
-      case tpe             => upper(tpe)
-    }
     def bounded(lo: Type, hi: Type): TypeBounds = symbolTable.TypeBounds.apply(lo, hi)
   }
 

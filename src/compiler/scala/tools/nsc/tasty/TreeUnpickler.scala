@@ -297,7 +297,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       ctx.log(s"reading type ${astTagToString(tag)} at $start")
 
-      def registeringType[T](tp: Type, op: => T): T = {
+      def registeringTypeWith[T](tp: Type, op: => T): T = {
         typeAtAddr(start) = tp
         op
       }
@@ -305,32 +305,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readLengthType(): Type = {
         val end = readEnd()
 
-        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
-            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: TastyName => N, varianceMap: TastyName => Variance)(implicit ctx: Context): Type = {
-          val complete = typeAtAddr.contains(start)
-          val stored = typeAtAddr.getOrElse(start, {
+        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType, Res <: Type]
+            (companion: LambdaTypeCompanion[N, PInfo, LT, Res], nameMap: TastyName => N)(implicit ctx: Context): Res = {
+          val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
             val paramNames = nameReader.readParamNames(end)
-            val encodedNames = paramNames.map(nameMap)
-            val nameVariances = paramNames.map(varianceMap)
-            companion(encodedNames, nameVariances)(
-              pt => registeringType(pt, paramReader.readParamTypes[PInfo](end)),
-              pt => readType())
+            companion(paramNames)(nameMap,
+              pt => registeringTypeWith(pt, paramReader.readParamTypes[PInfo](end)),
+              pt => readType()).tap(typeAtAddr(start) = _)
           })
           goto(end)
-          val canonical = {
-            if (complete) {
-              stored
-            }
-            else {
-              val canonical = stored.asInstanceOf[LT].canonicalForm
-              typeAtAddr.update(start, canonical)
-              canonical
-            }
-          }
-          canonical
+          result.asInstanceOf[Res]
         }
 
         val result =
@@ -390,9 +377,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             // case IMPLICITMETHODtype =>
             //   readMethodic(ImplicitMethodType, _.toTermName)
             case TYPELAMBDAtype =>
-              readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName, _.variance)
+              readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName)
             case PARAMtype =>
-              readTypeRef().asInstanceOf[LambdaType].typeParams(readNat()).ref
+              readTypeRef().typeParams(readNat()).ref
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
@@ -1468,7 +1455,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case LAMBDAtpt =>
               val tparams = readParams[NoCycle](TYPEPARAM)
               val body    = readTpt()
-              TypeTree(TypeParamLambda(tparams.map(symFromNoCycle), body.tpe).canonicalForm) //LambdaTypeTree(tparams, body)
+              TypeTree(mkLambdaFromParams(tparams.map(symFromNoCycle), body.tpe)) //LambdaTypeTree(tparams, body)
 //            case MATCHtpt =>
 //              val fst = readTpt()
 //              val (bound, scrut) =
