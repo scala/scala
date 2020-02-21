@@ -62,11 +62,11 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = new TreeMap[A, B](RB.rangeImpl(tree, from, until))
-  override def range(from: A, until: A): TreeMap[A, B] = new TreeMap[A, B](RB.range(tree, from, until))
-  override def from(from: A): TreeMap[A, B] = new TreeMap[A, B](RB.from(tree, from))
-  override def to(to: A): TreeMap[A, B] = new TreeMap[A, B](RB.to(tree, to))
-  override def until(until: A): TreeMap[A, B] = new TreeMap[A, B](RB.until(tree, until))
+  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = newMap[B](RB.rangeImpl(tree, from, until))
+  override def range(from: A, until: A): TreeMap[A, B] = newMap[B](RB.range(tree, from, until))
+  override def from(from: A): TreeMap[A, B] = newMap[B](RB.from(tree, from))
+  override def to(to: A): TreeMap[A, B] = newMap[B](RB.to(tree, to))
+  override def until(until: A): TreeMap[A, B] = newMap[B](RB.until(tree, until))
 
   override def firstKey = RB.smallest(tree).key
   override def lastKey = RB.greatest(tree).key
@@ -83,26 +83,31 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
   override def lastOption = if (RB.isEmpty(tree)) None else Some(last)
 
-  override def tail = new TreeMap(RB.delete(tree, firstKey))
-  override def init = new TreeMap(RB.delete(tree, lastKey))
+  override def tail = newMap(RB.delete(tree, firstKey))
+  override def init = newMap(RB.delete(tree, lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
     else if (n >= size) empty
-    else new TreeMap(RB.drop(tree, n))
+    else newMap(RB.drop(tree, n))
   }
 
   override def take(n: Int) = {
     if (n <= 0) empty
     else if (n >= size) this
-    else new TreeMap(RB.take(tree, n))
+    else newMap(RB.take(tree, n))
+  }
+
+  private def newMap[B1 >: B](newTree: RedBlackTree.Tree[A, B1]): TreeMap[A, B1] = {
+    if (newTree eq tree) this
+    else new TreeMap(newTree)
   }
 
   override def slice(from: Int, until: Int) = {
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
-    else new TreeMap(RB.slice(tree, from, until))
+    else newMap(RB.slice(tree, from, until))
   }
 
   override def dropRight(n: Int) = take(size - math.max(n, 0))
@@ -121,7 +126,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
 
   /** A factory to create empty maps of the same type of keys.
    */
-  override def empty: TreeMap[A, B] = TreeMap.empty[A, B](ordering)
+  override def empty: TreeMap[A, B] = newMap(null)
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -132,7 +137,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    *  @param value   the value to be associated with `key`
    *  @return        a new $coll with the updated binding
    */
-  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = new TreeMap(RB.update(tree, key, value, overwrite = true))
+  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = newMap(RB.update(tree, key, value, overwrite = true))
 
   /** Add a key/value pair to this map.
    *  @tparam   B1   type of the value of the new binding, a supertype of `B`
@@ -172,12 +177,12 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     assert(!RB.contains(tree, key))
-    new TreeMap(RB.update(tree, key, value, overwrite = true))
+    newMap(RB.update(tree, key, value, overwrite = true))
   }
 
   def - (key:A): TreeMap[A, B] =
     if (!RB.contains(tree, key)) this
-    else new TreeMap(RB.delete(tree, key))
+    else newMap(RB.delete(tree, key))
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.
