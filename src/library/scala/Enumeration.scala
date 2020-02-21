@@ -155,7 +155,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    * @throws   NoSuchElementException if no `Value` with a matching
    *           name is in this `Enumeration`
    */
-  final def withName(s: String): Value = values.find(_.toString == s).getOrElse(
+  final def withName(s: String): Value = values.byName.getOrElse(s,
     throw new NoSuchElementException(s"No value found for '$s'"))
 
   /** Creates a fresh value, part of this enumeration. */
@@ -208,7 +208,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
       val value = m.invoke(this).asInstanceOf[Value]
       // verify that outer points to the correct Enumeration: ticket #3616.
       if (value.outerEnum eq thisenum) {
-        val id = Int.unbox(classOf[Val] getMethod "id" invoke value)
+        val id: Int = value.id
         nmap += ((id, name))
       }
     }
@@ -321,6 +321,8 @@ abstract class Enumeration (initial: Int) extends Serializable {
       super[SortedSet].zip[B](that)
     override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): immutable.SortedSet[B] =
       super[SortedSet].collect[B](pf)
+
+    private[Enumeration] lazy val byName: Map[String, Value] = iterator.map( v => v.toString -> v).toMap
   }
 
   /** A factory object for value sets */
