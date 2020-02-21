@@ -13,18 +13,17 @@
 package scala.collection
 package immutable
 
-import scala.annotation.switch
-import scala.collection.mutable.{ArrayBuilder, Builder, ReusableBuilder}
-import scala.collection.generic.DefaultSerializable
-import scala.reflect.ClassTag
-import java.util.{Arrays, Spliterator}
-import java.util.Arrays.{copyOf, copyOfRange}
 import java.lang.Math.{abs, max => mmax, min => mmin}
+import java.util.Arrays.{copyOf, copyOfRange}
+import java.util.{Arrays, Spliterator}
 
-import VectorInline._
-import VectorStatics._
+import scala.annotation.switch
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.Stepper.EfficientSplit
+import scala.collection.generic.DefaultSerializable
+import scala.collection.immutable.VectorInline._
+import scala.collection.immutable.VectorStatics._
+import scala.collection.mutable.ReusableBuilder
 
 
 /** $factoryInfo
@@ -307,9 +306,9 @@ private sealed abstract class BigVector[+A](_prefix1: Arr1, private[immutable] v
 
 
 /** Empty vector */
-private final object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
+private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
 
-  def apply(index: Int) = throw ioob(index)
+  def apply(index: Int): Nothing = throw ioob(index)
 
   override def updated[B >: Nothing](index: Int, elem: B): Vector[B] = throw ioob(index)
 
@@ -340,7 +339,7 @@ private final object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
   override protected[this]def appendedAll0[B >: Nothing](suffix: collection.IterableOnce[B], k: Int): Vector[B] =
     Vector.from(suffix)
 
-  override protected[this] def ioob(index: Int) =
+  override protected[this] def ioob(index: Int): IndexOutOfBoundsException =
     new IndexOutOfBoundsException(s"$index is out of bounds (empty vector)")
 }
 
@@ -1069,8 +1068,8 @@ private final class VectorSliceBuilder(lo: Int, hi: Int) {
     } else {
       val bitsN = BITS * (n-1)
       val widthN = 1 << bitsN
-      var loN = lo >>> bitsN
-      var hiN = hi >>> bitsN
+      val loN = lo >>> bitsN
+      val hiN = hi >>> bitsN
       val loRest = lo & (widthN - 1)
       val hiRest = hi & (widthN - 1)
       //println(s"*****       bitsN=$bitsN, loN=$loN, hiN=$hiN, loRest=$loRest, hiRest=$hiRest")
@@ -1771,7 +1770,7 @@ private object VectorStatics {
 
   final def foreachRec[T <: AnyRef, A, U](level: Int, a: Array[T], f: A => U): Unit = {
     var i = 0
-    var len = a.length
+    val len = a.length
     if(level == 0) {
       while(i < len) {
         f(a(i).asInstanceOf[A])

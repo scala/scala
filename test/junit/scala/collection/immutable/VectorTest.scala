@@ -417,7 +417,7 @@ object VectorUtils {
 
   def validate(v: Vector[_]): Unit = {
     val count = v.vectorSliceCount
-    val len = (0 until count).map(v.vectorSlicePrefixLength _)
+    val len = (0 until count).map(v.vectorSlicePrefixLength)
     val alen = (0 until count).map { i =>
       if(i == 0 || i == (count-1)) v.vectorSlice(i).length
       else validateArrays(v.vectorSlice(i).asInstanceOf[Array[Array[AnyRef]]], sliceName(v, i))
@@ -439,7 +439,7 @@ object VectorUtils {
   def toDebugString(v: Vector[_]): String = {
     val sb = new StringBuilder()
     val level = (v.vectorSliceCount+1)/2
-    val len = (0 until v.vectorSliceCount).map(v.vectorSlicePrefixLength _)
+    val len = (0 until v.vectorSliceCount).map(v.vectorSlicePrefixLength)
     sb.append(s"Vector$level(lenghts=[${len.mkString(", ")}])\n")
     for(i <- 0 until v.vectorSliceCount)
       logArray(sb, v.vectorSlice(i), "  ", s"${sliceName(v, i)}: ")
