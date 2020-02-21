@@ -15,6 +15,8 @@ object Test {
   def run(): Unit = {
     val settings = new Settings()
     settings.Yreplclassbased.value = true
+
+    //settings.Xprint.value = List("refchecks","wrapper-cleanup")
     settings.usejavacp.value = true
 
     var imain: IMain = null
@@ -31,6 +33,8 @@ object Test {
         |lazy val y = {println("  evaluating y"); 0 }
         |class D; val z = {println("  evaluating z"); 0}; val zz = {println("  evaluating zz"); 0}
         |object O extends Serializable { val apply = {println("  evaluating O"); 0} }
+        |class TestClass() { def testMethod = 3; override def toString = "TestClass" }; val t = new TestClass // not serializable
+        |import t._
         |class A(i: Int) { println("  constructing A") }
         |type AA = A
         |val u = new U()
