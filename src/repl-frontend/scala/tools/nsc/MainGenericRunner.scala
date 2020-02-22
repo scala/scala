@@ -78,10 +78,51 @@ class MainGenericRunner {
           None
         case _  =>
           // We start the repl when no arguments are given.
-          // If user is agnostic about both -feature and -deprecation, turn them on.
+          // If user is agnostic about both -feature and -deprecation, turn them on and add batteries.
           if (settings.deprecation.isDefault && settings.feature.isDefault && settings.lint.isDefault) {
             settings.deprecation.value = true
             settings.feature.value = true
+            locally {
+              import settings.LintWarnings._
+              for (linted <- allLintWarnings if linted != Unused)
+                settings.lint.enable(linted)
+            }
+            locally {
+              import settings.UnusedWarnings._
+              val unused = List (
+                //Imports,  // not until REPL is fixed not to include spurious imports
+                PatVars,
+                Privates,
+                Locals,
+                Explicits,
+                Implicits,
+              )
+              unused.foreach(settings.warnUnused.enable)
+            }
+            locally {
+              import settings._
+              val goodies = List(
+                warnValueDiscard,
+                warnNumericWiden,
+                warnOctalLiteral,
+                warnSelfImplicit,
+              )
+              goodies.foreach(_.value = true)
+            }
+          }
+          if (settings.imports.isDefault) {
+            settings.imports.value = List(
+              "java.lang",
+              "scala.collection",
+              "scala",
+              "scala.Predef",
+              "scala.annotation",
+              "scala.concurrent",
+              "scala.concurrent.ExecutionContext.Implicits",
+              "scala.math",
+              "scala.util",
+              "scala.util.chaining",
+            )
           }
           val config = ShellConfig(settings)
           new ILoop(config).run(settings)
