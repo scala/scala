@@ -126,7 +126,7 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
 
   /** A factory to create empty sets of the same type of keys.
    */
-  override def empty = TreeSet.empty
+  override def empty = newSet(null)
 
   /** Creates a new `TreeSet` with the entry added.
    *
