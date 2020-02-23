@@ -141,7 +141,7 @@ object RedBlackTree {
 
   private[this] def balanceLeft[A, B, B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1]): Tree[A, B1] = {
     if (isRedTree(l) && isRedTree(l.left))
-      RedTree(l.key, l.value, BlackTree(l.left.key, l.left.value, l.left.left, l.left.right), BlackTree(z, zv, l.right, d))
+      RedTree(l.key, l.value, l.left.black, BlackTree(z, zv, l.right, d))
     else if (isRedTree(l) && isRedTree(l.right))
       RedTree(l.right.key, l.right.value, BlackTree(l.key, l.value, l.left, l.right.left), BlackTree(z, zv, l.right.right, d))
     else
@@ -151,26 +151,26 @@ object RedBlackTree {
     if (isRedTree(r) && isRedTree(r.left))
       RedTree(r.left.key, r.left.value, BlackTree(x, xv, a, r.left.left), BlackTree(r.key, r.value, r.left.right, r.right))
     else if (isRedTree(r) && isRedTree(r.right))
-      RedTree(r.key, r.value, BlackTree(x, xv, a, r.left), BlackTree(r.right.key, r.right.value, r.right.left, r.right.right))
+      RedTree(r.key, r.value, BlackTree(x, xv, a, r.left), r.right.black)
     else
       mkTree(isBlack, x, xv, a, r)
   }
   private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
-    RedTree(k, v, null, null)
+    RedTree.leaf(k, v)
   } else {
     val cmp = ordering.compare(k, tree.key)
     if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
     else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v, overwrite))
-    else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    else if (overwrite || k != tree.key) tree.withKV(k, v)
     else tree
   }
   private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1, overwrite: Boolean): Tree[A, B1] = if (tree eq null) {
-    RedTree(k, v, null, null)
+    RedTree.leaf(k, v)
   } else {
     val rank = count(tree.left) + 1
     if (idx < rank) balanceLeft(isBlackTree(tree), tree.key, tree.value, updNth(tree.left, idx, k, v, overwrite), tree.right)
     else if (idx > rank) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, updNth(tree.right, idx - rank, k, v, overwrite))
-    else if (overwrite) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    else if (overwrite) tree.withKV(k, v)
     else tree
   }
 
@@ -441,35 +441,43 @@ object RedBlackTree {
     @(inline @getter) final val key: A,
     @(inline @getter) final val value: B,
     @(inline @getter) final val left: Tree[A, B],
-    @(inline @getter) final val right: Tree[A, B])
+    @(inline @getter) final val right: Tree[A, B],
+    @(inline @getter) final val count: Int)
   extends Serializable {
-    @(inline @getter) final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
+    def withKV[B1 >: B](k: A, v: B1): Tree[A, B1]
+
     def black: Tree[A, B]
     def red: Tree[A, B]
   }
   final class RedTree[A, +B](key: A,
                              value: B,
                              left: Tree[A, B],
-                             right: Tree[A, B]) extends Tree[A, B](key, value, left, right) {
-    override def black: Tree[A, B] = BlackTree(key, value, left, right)
+                             right: Tree[A, B],
+                             count: Int) extends Tree[A, B](key, value, left, right, count) {
+    override def black: Tree[A, B] = new BlackTree(key, value, left, right, count)
     override def red: Tree[A, B] = this
+    override def withKV[B1 >: B](k: A, v: B1): Tree[A, B1] = new RedTree(k, v, left, right, count)
     override def toString: String = "RedTree(" + key + ", " + value + ", " + left + ", " + right + ")"
   }
   final class BlackTree[A, +B](key: A,
                                value: B,
                                left: Tree[A, B],
-                               right: Tree[A, B]) extends Tree[A, B](key, value, left, right) {
+                               right: Tree[A, B],
+                               count: Int) extends Tree[A, B](key, value, left, right, count) {
     override def black: Tree[A, B] = this
-    override def red: Tree[A, B] = RedTree(key, value, left, right)
+    override def red: Tree[A, B] = new RedTree(key, value, left, right, count)
+    override def withKV[B1 >: B](k: A, v: B1): Tree[A, B1] = new BlackTree(k, v, left, right, count)
     override def toString: String = "BlackTree(" + key + ", " + value + ", " + left + ", " + right + ")"
   }
 
   object RedTree {
-    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
+    @inline def leaf[A, B](key: A, value: B) = new RedTree(key, value, null, null, 1)
+    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right, 1 + count(left) + count(right))
     def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
   object BlackTree {
-    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
+    @inline def leaf[A, B](key: A, value: B) = new BlackTree(key, value, null, null, 1)
+    @inline def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right, 1 + count(left) + count(right))
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
