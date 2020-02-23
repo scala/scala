@@ -12,8 +12,6 @@
 
 package scala.tools.nsc
 
-import java.nio.file.Files
-
 /** A class representing command line info for scalac */
 class CompilerCommand(arguments: List[String], val settings: Settings) {
   def this(arguments: List[String], error: String => Unit) = this(arguments, new Settings(error))
@@ -124,18 +122,15 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
     else allSettings.valuesIterator.filter(_.isHelping).map(_.help).mkString("\n\n")
   }
 
-  /**
-   * Expands all arguments starting with @ to the contents of the
-   * file named like each argument.
-   */
+  /** Expands all arguments starting with @ to the contents of the file named like each argument. */
   def expandArg(arg: String): List[String] = {
-    def stripComment(s: String) = s takeWhile (_ != '#')
-    import java.nio.file._
+    import java.nio.file.{Files, Paths}
     import scala.jdk.CollectionConverters._
+    def stripComment(s: String) = s.takeWhile(_ != '#')
     val file = Paths.get(arg stripPrefix "@")
     if (!Files.exists(file))
-      throw new java.io.FileNotFoundException("argument file %s could not be found" format file)
-    settings splitParams (Files.readAllLines(file).asScala map stripComment mkString " ")
+      throw new java.io.FileNotFoundException(s"argument file $file could not be found")
+    settings.splitParams(Files.readAllLines(file).asScala.map(stripComment).mkString(" "))
   }
 
   // override this if you don't want arguments processed here

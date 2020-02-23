@@ -13,9 +13,8 @@
 package scala.tools.nsc.transform.patmat
 
 import scala.annotation.tailrec
-import scala.tools.nsc.symtab.Flags.{MUTABLE, STABLE}
 import scala.collection.mutable
-import scala.reflect.internal.util.Position
+import scala.tools.nsc.symtab.Flags.{MUTABLE, STABLE}
 
 /** Optimize and analyze matches based on their TreeMaker-representation.
  *

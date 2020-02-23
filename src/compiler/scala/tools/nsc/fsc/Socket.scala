@@ -12,8 +12,7 @@
 
 package scala.tools.nsc.fsc
 
-import java.io.{IOException, InputStreamReader, BufferedReader, PrintWriter, Closeable}
-import java.io.{BufferedOutputStream, BufferedReader}
+import java.io.{BufferedOutputStream, BufferedReader, Closeable, InputStreamReader, IOException, PrintWriter}
 import java.net.{InetAddress, Socket => JSocket}
 import scala.io.Codec
 import scala.reflect.io.Streamable

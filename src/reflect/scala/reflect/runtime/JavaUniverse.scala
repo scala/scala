@@ -17,7 +17,6 @@ package runtime
 import scala.reflect.internal.{TreeInfo, SomePhase}
 import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
-import scala.reflect.internal.util.Statistics
 import scala.reflect.api.{TypeCreator, Universe}
 import scala.reflect.internal.util.Statistics
 

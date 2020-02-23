@@ -119,6 +119,7 @@ class InterpreterLoop {
           def bindValue(id: String, value: Any) =
             interpreter.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
         }
+        @annotation.unused
         implicit def compat(a: AnyRef): Compat = new Compat
 
         interpreter.beQuietDuring(interpreter.bindValue(??? : String, ??? : Any))
