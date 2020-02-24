@@ -1,0 +1,3 @@
+package crashy
+
+object brash
