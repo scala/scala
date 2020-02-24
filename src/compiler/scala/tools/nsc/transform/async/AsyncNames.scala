@@ -16,12 +16,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.api.Names
 
 /**
   * A per-global cache of names needed by the Async macro.
   */
-final class AsyncNames[U <: Names with Singleton](val u: U) {
+final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   self =>
   import u._
 
@@ -91,13 +90,26 @@ final class AsyncNames[U <: Names with Singleton](val u: U) {
     }
     private def freshen(name: TermName, counter: AtomicInteger): TermName = {
       if (freshened.contains(name)) name
-      else TermName(freshenString(name.toString, counter.incrementAndGet()))
+      else TermName(freshenString(name, counter.incrementAndGet()))
     }
     private def freshen(name: TypeName, counter: AtomicInteger): TypeName = {
       if (freshened.contains(name)) name
-      else TypeName(freshenString(name.toString, counter.incrementAndGet()))
+      else TypeName(freshenString(name, counter.incrementAndGet()))
     }
   }
 
-  private def freshenString(name: String, counter: Int): String = name.toString + "$async$" + counter
+  private def freshenString(name: CharSequence, counter: Int): String = {
+    val suffix = "$async$"
+    val length = name.length + suffix.length + decimalLength(counter)
+    val buffer = new java.lang.StringBuffer(length)
+    buffer.append(name)
+    buffer.append(suffix)
+    buffer.append(counter)
+    buffer.toString
+  }
+
+  private def decimalLength(i: Int): Int = {
+    require(i >= 0, i)
+    if (i == 0) 1 else (Math.log10(i).floor + 1d).toInt
+  }
 }
