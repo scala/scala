@@ -27,43 +27,63 @@ trait Lifter extends ExprBuilder {
   def liftables(asyncStates: List[AsyncState]): List[Tree] = {
     object companionship {
       private val companions = collection.mutable.Map[Symbol, Symbol]()
-      private val companionsInverse = collection.mutable.Map[Symbol, Symbol]()
-      private def record(sym1: Symbol, sym2: Symbol): Unit = {
-        companions(sym1) = sym2
-        companions(sym2) = sym1
-      }
 
-      def record(defs: List[Tree]): Unit = {
-        // Keep note of local companions so we rename them consistently
-        // when lifting.
+      def record(classes: Seq[Symbol], moduleClasses: Seq[Symbol]): Unit = {
+        // Keep note of local companions so we rename them consistently when lifting.
         for {
-          cd@ClassDef(_, _, _, _) <- defs
-          md@ModuleDef(_, _, _) <- defs
-          if (cd.name.toTermName == md.name)
-        } record(cd.symbol, md.symbol)
+          cd <- classes
+          md <- moduleClasses
+          if (cd.name == md.name)
+        } {
+          companions(cd) = md
+          companions(md) = cd
+        }
       }
       def companionOf(sym: Symbol): Symbol = {
-        companions.get(sym).orElse(companionsInverse.get(sym)).getOrElse(NoSymbol)
+        companions.getOrElse(sym, NoSymbol)
       }
     }
 
 
     val defs: mutable.LinkedHashMap[Tree, Int] = {
       /** Collect the DefTrees directly enclosed within `t` that have the same owner */
-      def collectDirectlyEnclosedDefs(t: Tree): List[DefTree] = t match {
-        case ld: LabelDef => Nil
-        case dt: DefTree => dt :: Nil
-        case _: Function => Nil
-        case t           =>
-          val childDefs = t.children.flatMap(collectDirectlyEnclosedDefs(_))
-          companionship.record(childDefs)
-          childDefs
+      object traverser extends Traverser {
+        val childDefs = mutable.ArrayBuffer[Tree]()
+        private val classesBuffer, moduleClassesBuffer = mutable.ArrayBuffer[Symbol]()
+        override def traverse(tree: Tree): Unit = tree match {
+          case _: LabelDef =>
+          case _: DefTree => childDefs += tree
+          case _: Function => Nil
+          case Block(stats, expr) =>
+            classesBuffer.clear()
+            moduleClassesBuffer.clear()
+            for (stat <- stats) {
+              stat match {
+                case _: ClassDef =>
+                  val sym = stat.symbol
+                  val buffer = if (sym.isModuleClass) moduleClassesBuffer else classesBuffer
+                  buffer += sym
+                case _ =>
+              }
+            }
+            companionship.record(classesBuffer, moduleClassesBuffer)
+            assert(!expr.isInstanceOf[ClassDef])
+            super.traverse(tree)
+          case _ =>
+            super.traverse(tree)
+        }
       }
-      mutable.LinkedHashMap(asyncStates.flatMap {
-        asyncState =>
-          val defs = collectDirectlyEnclosedDefs(Block(asyncState.allStats: _*))
-          defs.map((_, asyncState.state))
-      }: _*)
+
+      val result = mutable.LinkedHashMap[Tree, Int]()
+
+      for (asyncState <- asyncStates) {
+        traverser.childDefs.clear()
+        traverser.traverse(Block(asyncState.allStats, EmptyTree))
+        for (defTree <-traverser.childDefs) {
+          result(defTree) = asyncState.state
+        }
+      }
+      result
     }
 
     // In which block are these symbols defined?
@@ -137,22 +157,25 @@ trait Lifter extends ExprBuilder {
             // due to the handling of type parameter skolems in `thisMethodType` in `Namers`
             treeCopy.DefDef(dd, Modifiers(sym.flags), sym.name, tparams, vparamss, tpt, rhs)
           case cd@ClassDef(_, _, tparams, impl)             =>
-            sym.setName(name.freshen(sym.name.toTypeName))
-            companionship.companionOf(cd.symbol) match {
-              case NoSymbol     =>
-              case moduleSymbol =>
-                moduleSymbol.setName(sym.name.toTermName)
-                moduleSymbol.asModule.moduleClass.setName(moduleSymbol.name.toTypeName)
+            val companion = companionship.companionOf(cd.symbol)
+            if (!cd.symbol.isModuleClass) {
+              sym.setName(name.freshen(sym.name.toTypeName))
+              companion match {
+                case NoSymbol =>
+                case moduleClassSymbol =>
+                  moduleClassSymbol.setName(sym.name.toTypeName)
+                  // TODO rename the other lazy artifacts? Foo$lazy
+              }
+              treeCopy.ClassDef(cd, Modifiers(sym.flags), sym.name, tparams, impl)
+            } else {
+              companion match {
+                case NoSymbol    =>
+                  sym.setName(name.freshen(sym.name.toTypeName))
+                  sym.setName(sym.name.toTypeName)
+                case classSymbol => // will be renamed by above.
+              }
+              treeCopy.ClassDef(cd, Modifiers(sym.flags), sym.name, tparams, impl)
             }
-            treeCopy.ClassDef(cd, Modifiers(sym.flags), sym.name, tparams, impl)
-          case md@ModuleDef(_, _, impl)                     =>
-            companionship.companionOf(md.symbol) match {
-              case NoSymbol    =>
-                sym.setName(name.freshen(sym.name.toTermName))
-                sym.asModule.moduleClass.setName(sym.name.toTypeName)
-              case classSymbol => // will be renamed by `case ClassDef` above.
-            }
-            treeCopy.ModuleDef(md, Modifiers(sym.flags), sym.name, impl)
           case td@TypeDef(_, _, tparams, rhs)               =>
             sym.setName(name.freshen(sym.name.toTypeName))
             treeCopy.TypeDef(td, Modifiers(sym.flags), sym.name, tparams, rhs)
