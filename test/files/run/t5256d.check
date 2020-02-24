@@ -15,7 +15,7 @@ scala> println(c)
 class A
 
 scala> println(c.fullName)
-$line8.$read.$iw.$iw.$iw.$iw.A
+$line8.$read.$iw.A
 
 scala> println(c.info)
 AnyRef {

@@ -5,12 +5,12 @@ class Bippy
 scala> $intp.reporter.withoutUnwrapping {
      |   println($intp.classLoader getResource "Bippy.class")
      | }
-memory:(memory)/$line3/$read$$iw$$iw$Bippy.class
+memory:(memory)/$line3/$read$$iw$Bippy.class
 
 scala> $intp.reporter.withoutUnwrapping {
      |   println(($intp.classLoader getResources "Bippy.class").nextElement)
      | }
-memory:(memory)/$line3/$read$$iw$$iw$Bippy.class
+memory:(memory)/$line3/$read$$iw$Bippy.class
 
 scala> ($intp.classLoader classBytes "Bippy").nonEmpty
 val res2: Boolean = true
