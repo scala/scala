@@ -338,6 +338,9 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size0_="),
     ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeMap$TreeMapProxy"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.this"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetProxy"),
     //
     // scala-relect
     //
