@@ -165,8 +165,14 @@ trait TraversableLike[+A, +Repr] extends Any
           (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
         case _ => defaultPlusPlus
       }
-
-    } else defaultPlusPlus
+    } else {
+      this match {
+        case thisTS: collection.immutable.TreeSet[A] =>
+          thisTS.addAllImpl[B, That](that)(bf.asInstanceOf[CanBuildFrom[immutable.TreeSet[A], B, That]])
+        case _ =>
+          defaultPlusPlus
+      }
+    }
 
   }
 
@@ -222,8 +228,14 @@ trait TraversableLike[+A, +Repr] extends Any
           (s union that.asInstanceOf[GenSet[A]]).asInstanceOf[That]
         case _ => defaultPlusPlus
       }
-
-    } else defaultPlusPlus
+    } else {
+      this match {
+        case thisTS: immutable.TreeSet[A] =>
+          thisTS.addAllImpl[B, That](that)(bf.asInstanceOf[CanBuildFrom[immutable.TreeSet[A], B, That]])
+        case _ =>
+          defaultPlusPlus
+      }
+    }
 
   }
 

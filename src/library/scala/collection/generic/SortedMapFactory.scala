@@ -33,6 +33,7 @@ abstract class SortedMapFactory[CC[A, B] <: SortedMap[A, B] with SortedMapLike[A
     new MapBuilder[A, B, CC[A, B]](empty(ord))
 
   class SortedMapCanBuildFrom[A, B](implicit ord: Ordering[A]) extends CanBuildFrom[Coll, (A, B), CC[A, B]] {
+    private[collection] def ordering = ord
     def apply(from: Coll) = newBuilder[A, B](ord)
     def apply() = newBuilder[A, B]
   }

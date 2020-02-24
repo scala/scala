@@ -14,7 +14,7 @@ package scala
 package collection
 package generic
 
-import scala.collection.immutable.HashSet
+import scala.collection.immutable.{HashSet, TreeMap, TreeSet}
 
 
 /** This trait represents collection-like objects that can be reduced
@@ -64,6 +64,10 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
   def --(xs: GenTraversableOnce[A]): Repr = this match {
     case hs: HashSet[A] if xs.isInstanceOf[HashSet[A]] =>
       hs.diff(xs.asInstanceOf[HashSet[A]]).asInstanceOf[Repr]
+    case ts: TreeMap[A, _] if xs.isInstanceOf[TreeSet[A]] && ts.ordering == xs.asInstanceOf[TreeSet[A]].ordering =>
+      ts.removeAllImpl(xs.asInstanceOf[TreeSet[A]]).asInstanceOf[Repr]
+    case ts: TreeSet[A] if xs.isInstanceOf[TreeSet[A]] && ts.ordering == xs.asInstanceOf[TreeSet[A]].ordering =>
+      ts.removeAll(xs.asInstanceOf[TreeSet[A]]).asInstanceOf[Repr]
     case _ =>
       (repr /: xs.seq) (_ - _)
   }
