@@ -83,6 +83,7 @@ trait FlagOps extends TastyKernel { self: TastyUniverse =>
         case NoInits     => "<noinits>"
         case TastyMacro  => "<tastymacro>"
         case Enum        => "enum"
+        case Open        => "open"
       }
     } mkString(" | ")
 }
