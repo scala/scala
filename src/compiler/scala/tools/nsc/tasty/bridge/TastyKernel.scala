@@ -1,15 +1,18 @@
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.SafeEq
-import scala.reflect.internal
-import internal.SymbolTable, internal.settings.MutableSettings
+import scala.tools.nsc
+import nsc.symtab
+import nsc.tasty.{SafeEq, TastyUniverse}
+import nsc.tasty.TastyFlags.{EmptyTastyFlags, TastyFlagSet}
+import nsc.tasty.Names.TastyName, TastyName._
 
-import scala.tools.nsc.tasty.TastyFlags.{ EmptyTastyFlags, TastyFlagSet }
-import scala.tools.nsc.tasty.Names.TastyName
-import TastyName._
-import scala.tools.nsc.tasty.TastyUniverse
+import scala.reflect.internal
 
 trait TastyKernel { self: TastyUniverse =>
+
+  type Settings = nsc.Settings
+
+  type SymbolTable <: symtab.SymbolTable { def settings: Settings }
 
   val symbolTable: SymbolTable
 
@@ -25,7 +28,6 @@ trait TastyKernel { self: TastyUniverse =>
   type Postion = symbolTable.Position
   def noPosition: Postion = symbolTable.NoPosition
 
-  type Settings = MutableSettings
   private[bridge] def settings: Settings = symbolTable.settings
   private[bridge] def phase: Phase = symbolTable.phase
 

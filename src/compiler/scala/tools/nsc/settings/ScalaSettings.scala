@@ -456,7 +456,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val Vhelp              = BooleanSetting("-V", "Print a synopsis of verbose options.")
   val browse          = PhasesSetting("-Vbrowse", "Browse the abstract syntax tree after") withAbbreviation "-Ybrowse"
   val debug           = BooleanSetting("-Vdebug", "Increase the quantity of debugging output.") withAbbreviation "-Ydebug"
-  val debugTasty      = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
+  val YdebugTasty      = BooleanSetting("-Vdebug-tasty", "Increase the quantity of debugging output when unpickling tasty.") withAbbreviation "-Ydebug-tasty"
   val Ydocdebug          = BooleanSetting("-Vdoc", "Trace scaladoc activity.") withAbbreviation "-Ydoc-debug"
   val Yidedebug          = BooleanSetting("-Vide", "Generate, validate and output trees using the interactive compiler.") withAbbreviation "-Yide-debug"
   val Yissuedebug        = BooleanSetting("-Vissue", "Print stack traces when a context issues an error.") withAbbreviation "-Yissue-debug"

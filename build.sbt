@@ -94,7 +94,6 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.debugTasty"),
     ProblemFilters.exclude[MissingClassProblem]("scala.reflect.runtime.JavaMirrors$JavaMirror$typeTagCache$"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.TypeTags.TypeTagImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Universe.TypeTagImpl"),

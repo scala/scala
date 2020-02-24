@@ -111,7 +111,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   }
 
   implicit object TastyUniverse extends TastyUniverse {
-    val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
+    type SymbolTable = ClassfileParser.this.symbolTable.type
+    val symbolTable: SymbolTable = ClassfileParser.this.symbolTable
   }
 
   private def handleMissing(e: MissingRequirementError) = {
