@@ -21,6 +21,8 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
 
       type ThisContext <: Context
 
+      def ignoreAnnotations: Boolean = settings.YtastyNoAnnotations
+
       def adjustModuleCompleter(completer: TastyLazyType, name: Name): TastyLazyType = {
         val scope = this.effectiveScope
         if (name.isTermName)

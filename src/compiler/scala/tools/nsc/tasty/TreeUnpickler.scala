@@ -721,7 +721,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
-      (flags, tastyFlagSet, annotFns.reverse, privateWithin)
+      (flags, tastyFlagSet, if (ctx.ignoreAnnotations) Nil else annotFns.reverse, privateWithin)
     }
 
     private val readTypedWithin: Context => Symbol =

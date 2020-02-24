@@ -14,74 +14,44 @@ import java.io.ByteArrayOutputStream
 import java.{ lang => jl, util => ju }
 import jl.reflect.Modifier
 
-import CommandLineParsers._
 import SourceKind._
 import Files._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 
 object TastyTest {
 
-  def tastytest(dottyLibrary: String, srcRoot: String, pkgName: String, run: Boolean, pos: Boolean, neg: Boolean, negFalse: Boolean, posFalse: Boolean, outDir: Option[String]): Try[Unit] = {
-    val results = Map(
-      "run"       -> Tests.suite("run", run)(runSuite(dottyLibrary, srcRoot, pkgName, outDir)),
-      "pos"       -> Tests.suite("pos", pos)(posSuite(dottyLibrary, srcRoot, pkgName, outDir)),
-      "neg"       -> Tests.suite("neg", neg)(negSuite(dottyLibrary, srcRoot, pkgName, outDir)),
-      "neg-false" -> Tests.suite("neg-false", neg)(negFalseSuite(dottyLibrary, srcRoot, pkgName, outDir))
-    )
-    if (results.values.forall(_.isEmpty)) {
-      printwarnln("No suites to run.")
-    }
-    successWhen(results.values.forall(_.getOrElse(true)))({
-      val failures = results.filter(_._2.exists(!_))
-      val str = if (failures.size == 1) "suite" else "suites"
-      s"${failures.size} $str failed: ${failures.map(_._1).mkString(", ")}."
-    })
-  }
-
-  def runSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
-    (pre, src2, src3) <- getRunSources(srcRoot/"run")
+  def runSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
+    (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"pre", pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/"run"/"src-2", src2:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
   } yield ()
 
-  def posSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
-    posSuiteRunner("pos", dottyLibrary, srcRoot, pkgName, outDir)
-
-  def posFalseSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
-    posSuiteRunner("pos-false", dottyLibrary, srcRoot, pkgName, outDir)
-
-  def negSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
-    negSuiteRunner("neg", dottyLibrary, srcRoot, pkgName, outDir)
-
-  def negFalseSuite(dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] =
-    negSuiteRunner("neg-false", dottyLibrary, srcRoot, pkgName, outDir)
-
-  def posSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+  def posSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", pre:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
     _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", src2:_*)
+    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
-  private def negSuiteRunner(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String]): Try[Unit] = for {
+  def negSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
-    _                 <- scalacNeg(out, dottyLibrary, src2:_*)
+    _                 <- scalacNeg(out, dottyLibrary, additionalSettings, src2:_*)
   } yield ()
 
-  private def scalacPos(out: String, dottyLibrary: String, sourceRoot: String, sources: String*): Try[Unit] = {
+  private def scalacPos(out: String, dottyLibrary: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(scalac(out, dottyLibrary, sources:_*))("scalac failed to compile sources.")
+    successWhen(scalac(out, dottyLibrary, additionalSettings, sources:_*))("scalac failed to compile sources.")
   }
 
-  private def scalacNeg(out: String, dottyLibrary: String, files: String*): Try[Unit] = {
+  private def scalacNeg(out: String, dottyLibrary: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
     val failMap = {
@@ -107,7 +77,7 @@ object TastyTest {
           }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
-              scalac(out, dottyLibrary, source)
+              scalac(out, dottyLibrary, additionalSettings, source)
             }
           }
           byteArrayStream.flush()
@@ -167,7 +137,7 @@ object TastyTest {
     }
   }
 
-  private def scalac(out: String, dottyLibrary: String, sources: String*): Boolean = {
+  private def scalac(out: String, dottyLibrary: String, additionalSettings: Seq[String], sources: String*): Boolean = {
 
     def runCompile(global: Global): Boolean = {
       global.reporter.reset()
@@ -187,13 +157,14 @@ object TastyTest {
       Try(runCompile(newCompiler(args: _*))).getOrElse(false)
 
     sources.isEmpty || {
-      compile(
+      val settings = Array(
         "-d", out,
         "-classpath", classpaths(out, dottyLibrary),
         "-deprecation",
         "-Xfatal-warnings",
         "-usejavacp"
-      )
+      ) ++ additionalSettings
+      compile(settings:_*)
     }
   }
 
@@ -320,48 +291,4 @@ object TastyTest {
     } yield ()
   }
 
-  private val helpText: String = """|# TASTy Test Help
-  |
-  |This runner can be used to test compilation and runtime behaviour of Scala 2 sources that depend on sources compiled with Scala 3. During compilation of test sources, and during run test execution, the dotty library will be on the classpath.
-  |
-  |The following arguments are available to TASTy Test:
-  |
-  |  -help                            Display this help.
-  |  -run                             Perform the run test.
-  |  -pos                             Perform the pos test.
-  |  -neg                             Perform the neg test.
-  |  -neg-false                       Perform the neg-false test.
-  |  -pos-false                       Perform the pos-false test.
-  |  --dotty-library  <paths>         Paths separated by `:`, the classpath for the dotty library.
-  |  --src            <path=.>        The path that contains all compilation sources across test kinds.
-  |  --out            <path=.>        output for classpaths, optional.
-  |  --package        <pkg=tastytest> The package containing run tests.""".stripMargin
-
-  def run(args: Seq[String]): Boolean = process(args).fold(
-    err => {
-      printerrln(s"ERROR: ${err.getClass.getName}: ${err.getMessage}")
-      true
-    },
-    _ => false
-  )
-
-  def process(implicit args: Seq[String]): Try[Unit] = {
-    if (booleanArg("-help")) {
-      Success(println(helpText))
-    }
-    else for {
-      dottyLibrary  <- requiredArg("--dotty-library")
-      srcRoot       =  optionalArg("--src", currentDir)
-      pkgName       =  optionalArg("--package", "tastytest")
-      run           =  booleanArg("-run")
-      pos           =  booleanArg("-pos")
-      neg           =  booleanArg("-neg")
-      negFalse      =  booleanArg("-neg-false")
-      posFalse      =  booleanArg("-pos-false")
-      out           =  findArg("--out")
-      _             <- tastytest(dottyLibrary, srcRoot, pkgName, run, pos, neg, negFalse, posFalse, out)
-    } yield ()
-  }
-
-  def main(args: Array[String]): Unit = sys.exit(if (run(args.toList)) 1 else 0)
 }
