@@ -360,6 +360,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.factory"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeMap$TreeMapProxy"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.this"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetProxy"),
+
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Array.emptyUnitArray"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Tag.emptyArray"),
