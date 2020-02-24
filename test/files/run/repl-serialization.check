@@ -11,6 +11,9 @@ class D
 val z: Int = 0
 val zz: Int = 0
 object O
+class TestClass
+val t: TestClass = TestClass
+import t._
 class A
 type AA
 constructing U

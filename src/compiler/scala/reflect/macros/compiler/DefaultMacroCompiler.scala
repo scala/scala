@@ -87,7 +87,10 @@ abstract class DefaultMacroCompiler extends Resolvers
         case SilentResultValue(result) if looksLikeMacroBundleType(result.tpe) =>
           val bundle = result.tpe.typeSymbol
           if (!isMacroBundleType(bundle.tpe)) MacroBundleWrongShapeError()
-          if (!bundle.owner.isStaticOwner) MacroBundleNonStaticError()
+          if (!bundle.owner.isStaticOwner) {
+            val isReplClassBased = settings.Yreplclassbased.value && bundle.owner.enclosingTopLevelClass.isInterpreterWrapper
+            MacroBundleNonStaticError(isReplClassBased)
+          }
           bundleResult.get
         case _ =>
           vanillaResult.get

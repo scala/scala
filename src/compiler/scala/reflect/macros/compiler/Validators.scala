@@ -41,7 +41,10 @@ trait Validators {
       val effectiveOwner = if (isImplMethod) macroImplOwner else macroImplOwner.owner
       val effectivelyStatic = effectiveOwner.isStaticOwner || effectiveOwner.moduleClass.isStaticOwner
       val correctBundleness = if (isImplMethod) macroImplOwner.isModuleClass else macroImplOwner.isClass && !macroImplOwner.isModuleClass
-      if (!effectivelyStatic || !correctBundleness) MacroImplReferenceWrongShapeError()
+      if (!effectivelyStatic || !correctBundleness) {
+        val isReplClassBased = settings.Yreplclassbased.value && effectiveOwner.enclosingTopLevelClass.isInterpreterWrapper
+        MacroImplReferenceWrongShapeError(isReplClassBased)
+      }
     }
 
     private def checkMacroDefMacroImplCorrespondence() = {

@@ -345,6 +345,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
    *  Subclasses each define a `value` field of the appropriate type.
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
+    def withDefault(value: T): this.type = { v = value; this }
+
     /** Will be called after this Setting is set for any extra work. */
     private[this] var _postSetHook: this.type => Unit = (x: this.type) => ()
     override def postSetHook(): Unit = _postSetHook(this)

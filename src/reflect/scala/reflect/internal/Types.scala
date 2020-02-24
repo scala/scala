@@ -2162,7 +2162,7 @@ trait Types
 
     override def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (isHigherKinded) {
-        if (sameLength(formals intersect typeParams, typeParams))
+        if (typeParams.forall(formals.contains))
           copyTypeRef(this, pre, sym, actuals)
         // partial application (needed in infer when bunching type arguments from classes and methods together)
         else
@@ -3116,7 +3116,7 @@ trait Types
         // (TODO: clone latter existential with fresh quantifiers -- not covering this case for now)
         val canSharpen = (
              emptyBounds(quant) && !emptyBounds(tparam)
-          && (existentialsInType(tparam.info) intersect quantified).isEmpty
+          && existentialsInType(tparam.info).forall(et => !quantified.contains(et))
         )
 
         val skolemInfo = if (!canSharpen) quant.info else tparam.info.substSym(tpars, quantified)

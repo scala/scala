@@ -29,7 +29,7 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
   /* Modify the template to snag definitions from dynamic context.
    * So object $iw { x + 42 } becomes object $iw { def x = $ctx.x ; x + 42 }
    */
-  override protected def importsCode(wanted: Set[Name], request: Request, definesClass: Boolean, generousImports: Boolean) = {
+  override protected def importsCode(wanted: Set[Name], request: Request, generousImports: Boolean) = {
     val ImportContextPreamble(exclude, include, scriptedPreamble) =
       importContextPreamble(wanted.filter(_.isTermName).map(_.decodedName.toString))
 
@@ -37,11 +37,11 @@ class ScriptedInterpreter(initialSettings: Settings, reporter: ReplReporter, imp
       val scriptedWanted = (wanted &~ exclude.map(TermName.apply)) ++ include.map(TermName.apply)
 
       val ComputedImports(header, preamble, trailer, path) =
-        super.importsCode(scriptedWanted, request, definesClass, generousImports)
+        super.importsCode(scriptedWanted, request, generousImports)
 
       ComputedImports(header, preamble + scriptedPreamble, trailer, path)
     }
-    else super.importsCode(wanted, request, definesClass, generousImports)
+    else super.importsCode(wanted, request, generousImports)
   }
 
 

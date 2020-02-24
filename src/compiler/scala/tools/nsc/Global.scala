@@ -400,10 +400,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     def apply(unit: CompilationUnit): Unit
 
     // run only the phases needed
-    protected def shouldSkipThisPhaseForJava: Boolean = {
-      this.id > (if (createJavadoc) currentRun.typerPhase.id
-      else currentRun.namerPhase.id)
-    }
+    protected def shouldSkipThisPhaseForJava: Boolean =
+      this > currentRun.namerPhase // but see overrides for nuances
 
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
