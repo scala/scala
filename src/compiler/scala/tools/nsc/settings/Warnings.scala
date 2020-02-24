@@ -116,6 +116,7 @@ trait Warnings {
     val Deprecation            = LintWarning("deprecation",               "Enable -deprecation and also check @deprecated annotations.")
     val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
+    val UnitSpecialization     = LintWarning("unit-special",              "Warn for specialization of Unit in parameter position.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -146,6 +147,7 @@ trait Warnings {
   def lintDeprecation            = lint contains Deprecation
   def warnByNameImplicit         = lint contains ByNameImplicit
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
+  def unitSpecialization         = lint contains UnitSpecialization
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(
