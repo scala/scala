@@ -236,7 +236,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
         */
       def mkTest(bm: BitmapInfo, equalToZero: Boolean = true): Tree =
         if (bm.isBoolean)
-          if (equalToZero) NOT(bm.select(thisRef)) else bm.select(thisRef)
+          if (equalToZero) Apply(NOT(bm.select(thisRef)), Nil) else bm.select(thisRef)
         else
           Apply(bm.member(bm.applyToMask(thisRef, nme.AND), if (equalToZero) nme.EQ else nme.NE), List(ZERO))
 
