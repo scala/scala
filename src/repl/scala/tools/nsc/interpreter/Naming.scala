@@ -56,7 +56,7 @@ object Naming {
     // A lambda hosted in a module `$iw` (which has a module class `$iw$` is named `$iw$ $ $Lambda1234` (spaces added
     // here for clarification.) This differs from an explicitly declared inner classes named `$Foo`, which would be
     // `$iw$$Foo`.
-    (raw"""($lineNRead|${q(sn.read)}(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
+    (raw"""($lineNRead|${q(sn.read)}(\.INSTANCE)?(\$$${q(sn.iw)})?|${q(sn.eval)}|${q(sn.print)}|${q(sn.iw)})""" + """(\.this\.|\.|/|\$\$(?=\$Lambda)|\$|$)""").r
   }
 
   object sessionNames {
@@ -72,6 +72,10 @@ object Naming {
     def eval = propOr("eval")
     def print = propOr("print")
     def result = propOr("result")
+    def packageName(lineId: Int) = line + lineId
+
+    /** Create the name for the temp val used in the -Yclass-based REPL wrapper to refer to the state of a previous line. */
+    final def lineReadValName(linePackageName: String) = s"${linePackageName}${read}"
 
     // The prefix for unnamed results: by default res0, res1, etc.
     def res = propOr("res", "res") // INTERPRETER_VAR_PREFIX

@@ -311,10 +311,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def originalPath(name: Name): String   = translateOriginalPath(typerOp path name)
   def originalPath(sym: Symbol): String  = translateOriginalPath(typerOp path sym)
 
-  /** For class based repl mode we use an .INSTANCE accessor. */
-  val readInstanceName = if (isClassBased) ".INSTANCE" else ""
+  val readInstanceName = ".INSTANCE"
   def translateOriginalPath(p: String): String = {
-    if (isClassBased) p.replace(sessionNames.read, sessionNames.read + readInstanceName) else p
+    p.replace(sessionNames.read, sessionNames.read + readInstanceName)
   }
   def flatPath(sym: Symbol): String = {
     val sym1 = if (sym.isModule) sym.moduleClass else sym
@@ -594,7 +593,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   class ReadEvalPrint(val lineId: Int) {
     def this() = this(freshLineId())
 
-    val packageName = sessionNames.line + lineId
+    val packageName = sessionNames.packageName(lineId)
     val readName    = sessionNames.read
     val evalName    = sessionNames.eval
     val printName   = sessionNames.print
@@ -774,10 +773,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
     /** handlers for each tree in this request */
     val handlers: List[MemberHandler] = trees map (memberHandlers chooseHandler _)
-    val definesClass = handlers.exists {
-      case _: ClassHandler => true
-      case _ => false
-    }
+    val definesValueClass = handlers.exists(_.definesValueClass)
+
+    val isClassBased = IMain.this.isClassBased && !definesValueClass
 
     def defHandlers = handlers collect { case x: MemberDefHandler => x }
 
@@ -802,7 +800,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       * append to objectName to access anything bound by request.
       */
     lazy val ComputedImports(headerPreamble, importsPreamble, importsTrailer, accessPath) =
-      exitingTyper(importsCode(referencedNames.toSet, this, definesClass, generousImports))
+      exitingTyper(importsCode(referencedNames.toSet, this, generousImports))
 
 
     private val USER_CODE_PLACEHOLDER = newTermName("$user_code_placeholder$")
@@ -841,7 +839,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       // (have to parse importsPreamble + ... + importsTrailer at once)
       // This will be simplified when we stop wrapping to begin with.
       val syntheticStats =
-        parseSynthetic(importsPreamble + s"`$USER_CODE_PLACEHOLDER`" + importsTrailer)
+        parseSynthetic(importsPreamble + s"`$USER_CODE_PLACEHOLDER`" + importsTrailer) ++
+        (if (isClassBased) Nil else List(q"val INSTANCE = this")) // Add a .INSTANCE accessor to the read object, so access is identical to class-based
 
       // don't use empty list of parents, since that triggers a rangepos bug in typer (the synthetic typer tree violates overlapping invariant)
       val parents = List(atPos(wholeUnit.focus)(if (isClassBased) gen.rootScalaDot(tpnme.Serializable) else gen.rootScalaDot(tpnme.AnyRef)))
@@ -957,9 +956,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     /** Types of variables defined by this request. */
     lazy val compilerTypeOf = typeMap[Type](x => x) withDefaultValue NoType
     /** String representations of same. */
-    lazy val typeOf         = typeMap[String](tp => exitingTyper{
-      val s = tp.toString
-      if (isClassBased) s.stripPrefix("INSTANCE.") else s
+    lazy val typeOf         = typeMap[String](tp => exitingTyper {
+      tp.toString.stripPrefix("INSTANCE.")
     })
     /** String representations as if a method type. */
     private[this] lazy val defTypeOfMap = typeMap[String](tp => exitingTyper(methodTypeAsDef(tp)))
@@ -1038,7 +1036,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
             val i =
               if (s.isModule) {
                 if (inst == null) null
-                else runtimeMirror.reflect((inst reflectModule s.asModule).instance)
+                else runtimeMirror.reflect((runtimeMirror reflectModule s.asModule).instance)
               }
               else if (s.isAccessor) {
                 runtimeMirror.reflect(mirrored.reflectMethod(s.asMethod).apply())

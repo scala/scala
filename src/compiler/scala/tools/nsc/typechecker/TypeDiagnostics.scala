@@ -489,155 +489,160 @@ trait TypeDiagnostics {
     def inMode(context: Context, mode: Mode, tree: Tree): Tree = if (mode.typingMonoExprByValue) apply(context, tree) else tree
   }
 
-  class checkUnused(typer: Typer) {
+  object UnusedPrivates {
     val ignoreNames: Set[TermName] = Set(
       "readResolve", "readObject", "writeObject", "writeReplace"
     ).map(TermName(_))
+  }
 
-    class UnusedPrivates extends Traverser {
-      val defnTrees = ListBuffer[MemberDef]()
-      val targets   = mutable.Set[Symbol]()
-      val setVars   = mutable.Set[Symbol]()
-      val treeTypes = mutable.Set[Type]()
-      val params    = mutable.Set[Symbol]()
-      val patvars   = mutable.Set[Symbol]()
+  class UnusedPrivates extends Traverser {
+    import UnusedPrivates.ignoreNames
+    def isEffectivelyPrivate(sym: Symbol): Boolean = false
+    val defnTrees = ListBuffer[MemberDef]()
+    val targets   = mutable.Set[Symbol]()
+    val setVars   = mutable.Set[Symbol]()
+    val treeTypes = mutable.Set[Type]()
+    val params    = mutable.Set[Symbol]()
+    val patvars   = mutable.Set[Symbol]()
 
-      def defnSymbols = defnTrees.toList map (_.symbol)
-      def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
+    def defnSymbols = defnTrees.toList map (_.symbol)
+    def localVars   = defnSymbols filter (t => t.isLocalToBlock && t.isVar)
 
-      def qualifiesTerm(sym: Symbol) = (
-        (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock)
-          && !nme.isLocalName(sym.name)
-          && !sym.isParameter
-          && !sym.isParamAccessor       // could improve this, but it's a pain
-          && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
-          && !(sym.isGetter && sym.accessed.isEarlyInitialized)
-        )
-      def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
-      def qualifies(sym: Symbol) = (
-        (sym ne null)
-          && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
-        )
-      def isExisting(sym: Symbol) = sym != null && sym.exists
+    def qualifiesTerm(sym: Symbol) = (
+      (sym.isModule || sym.isMethod || sym.isPrivateLocal || sym.isLocalToBlock || isEffectivelyPrivate(sym))
+        && !nme.isLocalName(sym.name)
+        && !sym.isParameter
+        && !sym.isParamAccessor       // could improve this, but it's a pain
+        && !sym.isEarlyInitialized    // lots of false positives in the way these are encoded
+        && !(sym.isGetter && sym.accessed.isEarlyInitialized)
+      )
+    def qualifiesType(sym: Symbol) = !sym.isDefinedInPackage
+    def qualifies(sym: Symbol) = (
+      (sym ne null)
+        && (sym.isTerm && qualifiesTerm(sym) || sym.isType && qualifiesType(sym))
+      )
+    def isExisting(sym: Symbol) = sym != null && sym.exists
 
-      override def traverse(t: Tree): Unit = {
-        val sym = t.symbol
-        t match {
-          case m: MemberDef if qualifies(sym) && !t.isErrorTyped =>
-            t match {
-              case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
-                if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
-              case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
-                if (sym.isPrimaryConstructor)
-                  for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
-                else if (sym.isSynthetic && sym.isImplicit) return
-                else if (!sym.isConstructor && rhs.symbol != Predef_???)
-                  for (vs <- vparamss) params ++= vs.map(_.symbol)
-                defnTrees += m
-              case _ =>
-                defnTrees += m
-            }
-          case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars && !t.isErrorTyped =>
-            pat.foreach {
-              case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
-              case _ =>
-            }
-          case _: RefTree if isExisting(sym)            => targets += sym
-          case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
-          case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
-            ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
-          case _                                        =>
+    override def traverse(t: Tree): Unit = {
+      val sym = t.symbol
+      t match {
+        case m: MemberDef if qualifies(sym) && !t.isErrorTyped =>
+          t match {
+            case ValDef(mods@_, name@_, tpt@_, rhs@_) if wasPatVarDef(t) =>
+              if (settings.warnUnusedPatVars && !atBounded(t)) patvars += sym
+            case DefDef(mods@_, name@_, tparams@_, vparamss, tpt@_, rhs@_) if !sym.isAbstract && !sym.isDeprecated && !sym.isMacro =>
+              if (sym.isPrimaryConstructor)
+                for (cpa <- sym.owner.constrParamAccessors if cpa.isPrivateLocal) params += cpa
+              else if (sym.isSynthetic && sym.isImplicit) return
+              else if (!sym.isConstructor && rhs.symbol != Predef_???)
+                for (vs <- vparamss) params ++= vs.map(_.symbol)
+              defnTrees += m
+            case _ =>
+              defnTrees += m
         }
+        case CaseDef(pat, guard@_, rhs@_) if settings.warnUnusedPatVars && !t.isErrorTyped =>
+          pat.foreach {
+            case b @ Bind(n, _) if !atBounded(b) && n != nme.DEFAULT_CASE => patvars += b.symbol
+            case _ =>
+        }
+        case _: RefTree if isExisting(sym)            => targets += sym
+        case Assign(lhs, _) if isExisting(lhs.symbol) => setVars += lhs.symbol
+        case Function(ps, _) if settings.warnUnusedParams && !t.isErrorTyped => params ++=
+          ps.filterNot(p => atBounded(p) || p.symbol.isSynthetic).map(_.symbol)
+        case _                                        =>
+      }
 
-        if (t.tpe ne null) {
-          for (tp <- t.tpe) if (!treeTypes(tp)) {
-            // Include references to private/local aliases (which might otherwise refer to an enclosing class)
-            val isAlias = {
-              val td = tp.typeSymbolDirect
-              td.isAliasType && (td.isLocalToBlock || td.isPrivate)
-            }
-            // Ignore type references to an enclosing class. A reference to C must be outside C to avoid warning.
-            if (isAlias || !currentOwner.hasTransOwner(tp.typeSymbol)) tp match {
-              case NoType | NoPrefix    =>
-              case NullaryMethodType(_) =>
-              case MethodType(_, _)     =>
-              case SingleType(_, _)     =>
-              case ConstantType(Constant(k: Type)) =>
-                log(s"classOf $k referenced from $currentOwner")
-                treeTypes += k
-              case _                    =>
-                log(s"${if (isAlias) "alias " else ""}$tp referenced from $currentOwner")
-                treeTypes += tp
-            }
+      if (t.tpe ne null) {
+        for (tp <- t.tpe) if (!treeTypes(tp)) {
+          // Include references to private/local aliases (which might otherwise refer to an enclosing class)
+          val isAlias = {
+            val td = tp.typeSymbolDirect
+            td.isAliasType && (td.isLocalToBlock || td.isPrivate)
           }
-          // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
-          t.tpe.prefix foreach {
-            case SingleType(_, sym) => targets += sym
-            case _                  => ()
+          // Ignore type references to an enclosing class. A reference to C must be outside C to avoid warning.
+          if (isAlias || !currentOwner.hasTransOwner(tp.typeSymbol)) tp match {
+            case NoType | NoPrefix    =>
+            case NullaryMethodType(_) =>
+            case MethodType(_, _)     =>
+            case SingleType(_, _)     =>
+            case ConstantType(Constant(k: Type)) =>
+              log(s"classOf $k referenced from $currentOwner")
+              treeTypes += k
+            case _                    =>
+              log(s"${if (isAlias) "alias " else ""}$tp referenced from $currentOwner")
+              treeTypes += tp
           }
         }
-        super.traverse(t)
+        // e.g. val a = new Foo ; new a.Bar ; don't let a be reported as unused.
+        t.tpe.prefix foreach {
+          case SingleType(_, sym) => targets += sym
+          case _                  => ()
+        }
       }
-      def isSuppressed(sym: Symbol): Boolean = sym.hasAnnotation(UnusedClass)
-      def isUnusedType(m: Symbol): Boolean = (
-        m.isType
-          && !isSuppressed(m)
-          && !m.isTypeParameterOrSkolem // would be nice to improve this
-          && (m.isPrivate || m.isLocalToBlock)
-          && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
-        )
-      def isSyntheticWarnable(sym: Symbol) = {
-        def rescindPrivateConstructorDefault: Boolean =
-          cond(nme.splitDefaultGetterName(sym.name)) {
-            case (nme.CONSTRUCTOR, _) => true
-          }
-        sym.isDefaultGetter && !rescindPrivateConstructorDefault
-      }
-      def isUnusedTerm(m: Symbol): Boolean = (
-        m.isTerm
-          && !isSuppressed(m)
-          && (!m.isSynthetic || isSyntheticWarnable(m))
-          && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock)
-          && !targets(m)
-          && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
-          && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization methods
-          && !isConstantType(m.info.resultType)     // subject to constant inlining
-          && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
-        )
-      def isUnusedParam(m: Symbol): Boolean = (
-        isUnusedTerm(m)
-          && !m.isDeprecated
-          && !m.owner.isDefaultGetter
-          && !(m.isParamAccessor && (
-          m.owner.isImplicit ||
-            targets.exists(s => s.isParameter
-              && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
-          ))
-        )
-      def sympos(s: Symbol): Int =
-        if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
-      def treepos(t: Tree): Int =
-        if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
-
-      def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
-      def unusedTerms = {
-        val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
-
-        // is this a getter-setter pair? and why is this a difficult question for traits?
-        def sameReference(g: Symbol, s: Symbol) =
-          if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
-          else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
-
-        // filter out setters if already warning for getter.
-        val clean = all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && sameReference(g.symbol, v.symbol)))
-        clean.sortBy(treepos)
-      }
-      // local vars which are never set, except those already returned in unused
-      def unsetVars = localVars.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
-      def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
-      def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
-      def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
+      super.traverse(t)
     }
+    def isSuppressed(sym: Symbol): Boolean = sym.hasAnnotation(UnusedClass)
+    def isUnusedType(m: Symbol): Boolean = (
+      m.isType
+        && !isSuppressed(m)
+        && !m.isTypeParameterOrSkolem // would be nice to improve this
+        && (m.isPrivate || m.isLocalToBlock || isEffectivelyPrivate(m))
+        && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
+      )
+    def isSyntheticWarnable(sym: Symbol) = {
+      def rescindPrivateConstructorDefault: Boolean =
+        cond(nme.splitDefaultGetterName(sym.name)) {
+          case (nme.CONSTRUCTOR, _) => true
+        }
+      sym.isDefaultGetter && !rescindPrivateConstructorDefault
+    }
+    def isUnusedTerm(m: Symbol): Boolean = (
+      m.isTerm
+        && !isSuppressed(m)
+        && (!m.isSynthetic || isSyntheticWarnable(m))
+        && ((m.isPrivate && !(m.isConstructor && m.owner.isAbstract)) || m.isLocalToBlock || isEffectivelyPrivate(m))
+        && !targets(m)
+        && !(m.name == nme.WILDCARD)              // e.g. val _ = foo
+        && (m.isValueParameter || !ignoreNames(m.name.toTermName)) // serialization/repl methods
+        && !isConstantType(m.info.resultType)     // subject to constant inlining
+        && !treeTypes.exists(_ contains m)        // e.g. val a = new Foo ; new a.Bar
+      )
+    def isUnusedParam(m: Symbol): Boolean = (
+      isUnusedTerm(m)
+        && !m.isDeprecated
+        && !m.owner.isDefaultGetter
+        && !(m.isParamAccessor && (
+        m.owner.isImplicit ||
+          targets.exists(s => s.isParameter
+            && s.name == m.name && s.owner.isConstructor && s.owner.owner == m.owner) // exclude ctor params
+        ))
+      )
+    def sympos(s: Symbol): Int =
+      if (s.pos.isDefined) s.pos.point else if (s.isTerm) s.asTerm.referenced.pos.point else -1
+    def treepos(t: Tree): Int =
+      if (t.pos.isDefined) t.pos.point else sympos(t.symbol)
+
+    def unusedTypes = defnTrees.toList.filter(t => isUnusedType(t.symbol)).sortBy(treepos)
+    def unusedTerms = {
+      val all = defnTrees.toList.filter(v => isUnusedTerm(v.symbol))
+
+      // is this a getter-setter pair? and why is this a difficult question for traits?
+      def sameReference(g: Symbol, s: Symbol) =
+        if (g.accessed.exists && s.accessed.exists) g.accessed == s.accessed
+        else g.owner == s.owner && g.setterName == s.name         //sympos(g) == sympos(s)
+
+      // filter out setters if already warning for getter.
+      val clean = all.filterNot(v => v.symbol.isSetter && all.exists(g => g.symbol.isGetter && sameReference(g.symbol, v.symbol)))
+      clean.sortBy(treepos)
+    }
+    // local vars which are never set, except those already returned in unused
+    def unsetVars = localVars.filter(v => !isSuppressed(v) && !setVars(v) && !isUnusedTerm(v)).sortBy(sympos)
+    def unusedParams = params.iterator.filter(isUnusedParam).toList.sortBy(sympos)
+    def inDefinedAt(p: Symbol) = p.owner.isMethod && p.owner.name == nme.isDefinedAt && p.owner.owner.isAnonymousFunction
+    def unusedPatVars = patvars.toList.filter(p => isUnusedTerm(p) && !inDefinedAt(p)).sortBy(sympos)
+  }
+
+  class checkUnused(typer: Typer) {
 
     object skipMacroCall extends UnusedPrivates {
       override def qualifiesTerm(sym: Symbol): Boolean =
