@@ -16,11 +16,15 @@ import org.openjdk.jmh.infra._
 class TreeMapBenchmark {
 
   val small = TreeMap.empty[String, String] ++ (Array.tabulate(10)(x => x.toString -> x.toString))
+  val smallHash: HashMap[String, String] = (HashMap.newBuilder[String, String] ++= small).result
   val rawData = Array.tabulate(1000)(x => x.toString -> x.toString)
 
   val large: TreeMap[String, String] = TreeMap.empty[String, String] ++ rawData
+  val largeHash: HashMap[String, String] =  (HashMap.newBuilder[String, String] ++= rawData).result
   val largeDifferentValues: TreeMap[String, String] = large map { case ((k, v)) => k -> (v + "-xx") }
+  val largeDifferentValuesHash: HashMap[String, String] =  (HashMap.newBuilder[String, String]  ++= largeDifferentValues).result
   val large2: TreeMap[String, String] = large.map { case ((k, v)) => (k + "-yy") -> (v + "-xx") }
+  val large2Hash: HashMap[String, String] =  (HashMap.newBuilder[String, String] ++= large2).result
 
   val one = TreeMap[String, String]("a" -> "b")
 
@@ -45,10 +49,22 @@ class TreeMapBenchmark {
     bh.consume(builder.result)
   }
 
+  @Benchmark def builderPlusPlusInitialHash(bh: Blackhole): Unit = {
+    val builder = TreeMap.newBuilder[String, String]
+    builder ++= large2Hash
+    bh.consume(builder.result)
+  }
+
   @Benchmark def builderPlusPlusSame(bh: Blackhole): Unit = {
     val builder = TreeMap.newBuilder[String, String]
     builder ++= large
     builder ++= large
+    bh.consume(builder.result)
+  }
+  @Benchmark def builderPlusPlusSameHash(bh: Blackhole): Unit = {
+    val builder = TreeMap.newBuilder[String, String]
+    builder ++= large
+    builder ++= largeHash
     bh.consume(builder.result)
   }
   @Benchmark def builderPlusPlusDifferntValues(bh: Blackhole): Unit = {
@@ -65,11 +81,23 @@ class TreeMapBenchmark {
     builder ++= large2
     bh.consume(builder.result)
   }
+  @Benchmark def builderPlusPlusLargeLargeHash(bh: Blackhole): Unit = {
+    val builder = TreeMap.newBuilder[String, String]
+    builder ++= large
+    builder ++= large2Hash
+    bh.consume(builder.result)
+  }
 
   @Benchmark def builderPlusPlusSmallLarge(bh: Blackhole): Unit = {
     val builder = TreeMap.newBuilder[String, String]
     builder ++= small
     builder ++= large
+    bh.consume(builder.result)
+  }
+  @Benchmark def builderPlusPlusSmallLargeHash(bh: Blackhole): Unit = {
+    val builder = TreeMap.newBuilder[String, String]
+    builder ++= small
+    builder ++= largeHash
     bh.consume(builder.result)
   }
 

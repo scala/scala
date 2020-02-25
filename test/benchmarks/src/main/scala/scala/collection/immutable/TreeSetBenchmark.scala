@@ -17,9 +17,14 @@ import org.openjdk.jmh.infra._
 class TreeSetBenchmark {
 
   val small =  (Array.tabulate(10) (_.toString)).to[TreeSet]
+  val smallHash: HashSet[String] = HashSet.empty ++ small
   val rawData = Array.tabulate(1000) (_.toString)
+
   val large = rawData.to[TreeSet]
+  val largeHash:  HashSet[String] = HashSet.empty ++ rawData
   val large2 = large map (_+ "-xx")
+  val large2Hash:  HashSet[String] = HashSet.empty ++ large2
+
   val one =  TreeSet[String] ("f")
 
   @Benchmark def plusPlus(bh: Blackhole): Unit = {
@@ -40,10 +45,21 @@ class TreeSetBenchmark {
     builder ++= large
     bh.consume(builder.result)
   }
+  @Benchmark def builderPlusPlusInitialHash(bh: Blackhole): Unit = {
+    val builder = TreeSet.newBuilder[String]
+    builder ++= largeHash
+    bh.consume(builder.result)
+  }
   @Benchmark def builderPlusPlusSame(bh: Blackhole): Unit = {
     val builder = TreeSet.newBuilder[String]
     builder ++= large
     builder ++= large
+    bh.consume(builder.result)
+  }
+  @Benchmark def builderPlusPlusSameHash(bh: Blackhole): Unit = {
+    val builder = TreeSet.newBuilder[String]
+    builder ++= large
+    builder ++= largeHash
     bh.consume(builder.result)
   }
 
@@ -53,10 +69,22 @@ class TreeSetBenchmark {
     builder ++= large2
     bh.consume(builder.result)
   }
+  @Benchmark def builderPlusPlusLargeLargeHash(bh: Blackhole): Unit = {
+    val builder = TreeSet.newBuilder[String]
+    builder ++= large
+    builder ++= large2Hash
+    bh.consume(builder.result)
+  }
   @Benchmark def builderPlusPlusSmallLarge(bh: Blackhole): Unit = {
     val builder = TreeSet.newBuilder[String]
     builder ++= small
     builder ++= large
+    bh.consume(builder.result)
+  }
+  @Benchmark def builderPlusPlusSmallLargeHash(bh: Blackhole): Unit = {
+    val builder = TreeSet.newBuilder[String]
+    builder ++= small
+    builder ++= largeHash
     bh.consume(builder.result)
   }
   @Benchmark def builderPlusPlusLargeSmall(bh: Blackhole): Unit = {
