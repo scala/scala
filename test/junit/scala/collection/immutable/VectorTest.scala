@@ -333,14 +333,17 @@ class VectorTest {
   }
 
   @Test
-  def testSlice: Unit = for(size <- smallSizes) {
+  def testSlice1: Unit = for(size <- smallSizes) {
     val step = size/16 max 1
     val v = Vector.range(0, size)
     for {
       from <- 0 until size by step
       to <- from until size by step
     } {
+      //println(s"-------------------------- size=$size, from=$from, to=$to")
+      //println("v: "+VectorUtils.toDebugString(v))
       val v2 = v.slice(from, to)
+      //println("v2: "+VectorUtils.toDebugString(v2))
       validateDebug(v2)
       assertEquals(from until to, v2)
     }

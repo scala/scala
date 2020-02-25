@@ -1088,8 +1088,8 @@ private final class VectorSliceBuilder(lo: Int, hi: Int) {
           if(hiRest == 0) {
             if(hiN > loN+1) add(n, copyOrUse(a, loN+1, hiN))
           } else {
-            if(hiN-1 > loN+1) add(n, copyOrUse(a, loN+1, hiN-1))
-            addSlice(n-1, a(hiN-1).asInstanceOf[Array[AnyRef]], 0, hiRest)
+            if(hiN > loN+1) add(n, copyOrUse(a, loN+1, hiN))
+            addSlice(n-1, a(hiN).asInstanceOf[Array[AnyRef]], 0, hiRest)
           }
         }
       }
@@ -1097,6 +1097,7 @@ private final class VectorSliceBuilder(lo: Int, hi: Int) {
   }
 
   private[this] def add[T <: AnyRef](n: Int, a: Array[T]): Unit = {
+    //println(s"*****       add($n, /${a.length})")
     val idx =
       if(n <= maxDim) suffixIdx(n)
       else { maxDim = n; prefixIdx(n) }
@@ -1104,11 +1105,13 @@ private final class VectorSliceBuilder(lo: Int, hi: Int) {
   }
 
   def result[A](): Vector[A] = {
+    //println(s"*****   result: $len, $maxDim")
     if(len <= 32) {
       if(len == 0) Vector0
       else {
         val prefix1 = slices(prefixIdx(1))
         val suffix1 = slices(suffixIdx(1))
+        //println(s"*****     prefix1: ${if(prefix1 == null) "null" else prefix1.mkString("[", ",", "]")}, suffix1: ${if(suffix1 == null) "null" else suffix1.mkString("[", ",", "]")}")
         val a: Arr1 =
           if(prefix1 ne null) {
             if(suffix1 ne null) concatArrays(prefix1, suffix1)
