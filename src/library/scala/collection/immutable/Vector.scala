@@ -251,14 +251,14 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
 
   override final def head: A =
     try prefix1(0).asInstanceOf[A]
-    catch { case _: NullPointerException => throw ioob(0) }
+    catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("empty.head") }
 
-  override final def last: A = {
+  override final def last: A = try {
     if(this.isInstanceOf[BigVector[_]]) {
       val v = this.asInstanceOf[BigVector[_]]
       v.suffix1(v.suffix1.length-1)
     } else prefix1(prefix1.length-1)
-  }.asInstanceOf[A]
+  }.asInstanceOf[A] catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("empty.tail") }
 
   override final def foreach[U](f: A => U): Unit = {
     val c = vectorSliceCount
@@ -392,8 +392,8 @@ private final class Vector1[+A](_data1: Arr1) extends VectorImpl[A](_data1) {
 
 
 /** 2-dimensional radix-balanced finger tree */
-private final class Vector2[+A](_prefix1: Arr1, private[immutable] final val len1: Int,
-                                 private[immutable] final val data2: Arr2,
+private final class Vector2[+A](_prefix1: Arr1, private[immutable] val len1: Int,
+                                 private[immutable] val data2: Arr2,
                                  _suffix1: Arr1,
                                  _length0: Int) extends BigVector[A](_prefix1, _suffix1, _length0) {
 
@@ -479,10 +479,10 @@ private final class Vector2[+A](_prefix1: Arr1, private[immutable] final val len
 
 
 /** 3-dimensional radix-balanced finger tree */
-private final class Vector3[+A](_prefix1: Arr1, private[immutable] final val len1: Int,
-                                 private[immutable] final val prefix2: Arr2, private[immutable] final val len12: Int,
-                                 private[immutable] final val data3: Arr3,
-                                 private[immutable] final val suffix2: Arr2, _suffix1: Arr1,
+private final class Vector3[+A](_prefix1: Arr1, private[immutable] val len1: Int,
+                                 private[immutable] val prefix2: Arr2, private[immutable] val len12: Int,
+                                 private[immutable] val data3: Arr3,
+                                 private[immutable] val suffix2: Arr2, _suffix1: Arr1,
                                  _length0: Int) extends BigVector[A](_prefix1, _suffix1, _length0) {
 
   @inline private[this] def copy(prefix1: Arr1 = prefix1, len1: Int = len1,
@@ -588,11 +588,11 @@ private final class Vector3[+A](_prefix1: Arr1, private[immutable] final val len
 
 
 /** 4-dimensional radix-balanced finger tree */
-private final class Vector4[+A](_prefix1: Arr1, private[immutable] final val len1: Int,
-                                 private[immutable] final val prefix2: Arr2, private[immutable] final val len12: Int,
-                                 private[immutable] final val prefix3: Arr3, private[immutable] final val len123: Int,
-                                 private[immutable] final val data4: Arr4,
-                                 private[immutable] final val suffix3: Arr3, private[immutable] final val suffix2: Arr2, _suffix1: Arr1,
+private final class Vector4[+A](_prefix1: Arr1, private[immutable] val len1: Int,
+                                 private[immutable] val prefix2: Arr2, private[immutable] val len12: Int,
+                                 private[immutable] val prefix3: Arr3, private[immutable] val len123: Int,
+                                 private[immutable] val data4: Arr4,
+                                 private[immutable] val suffix3: Arr3, private[immutable] val suffix2: Arr2, _suffix1: Arr1,
                                  _length0: Int) extends BigVector[A](_prefix1, _suffix1, _length0) {
 
   @inline private[this] def copy(prefix1: Arr1 = prefix1, len1: Int = len1,
@@ -717,12 +717,12 @@ private final class Vector4[+A](_prefix1: Arr1, private[immutable] final val len
 
 
 /** 5-dimensional radix-balanced finger tree */
-private final class Vector5[+A](_prefix1: Arr1, private[immutable] final val len1: Int,
-                                 private[immutable] final val prefix2: Arr2, private[immutable] final val len12: Int,
-                                 private[immutable] final val prefix3: Arr3, private[immutable] final val len123: Int,
-                                 private[immutable] final val prefix4: Arr4, private[immutable] final val len1234: Int,
-                                 private[immutable] final val data5: Arr5,
-                                 private[immutable] final val suffix4: Arr4, private[immutable] final val suffix3: Arr3, private[immutable] final val suffix2: Arr2, _suffix1: Arr1,
+private final class Vector5[+A](_prefix1: Arr1, private[immutable] val len1: Int,
+                                 private[immutable] val prefix2: Arr2, private[immutable] val len12: Int,
+                                 private[immutable] val prefix3: Arr3, private[immutable] val len123: Int,
+                                 private[immutable] val prefix4: Arr4, private[immutable] val len1234: Int,
+                                 private[immutable] val data5: Arr5,
+                                 private[immutable] val suffix4: Arr4, private[immutable] val suffix3: Arr3, private[immutable] val suffix2: Arr2, _suffix1: Arr1,
                                  _length0: Int) extends BigVector[A](_prefix1, _suffix1, _length0) {
 
   @inline private[this] def copy(prefix1: Arr1 = prefix1, len1: Int = len1,
@@ -866,13 +866,13 @@ private final class Vector5[+A](_prefix1: Arr1, private[immutable] final val len
 
 
 /** 6-dimensional radix-balanced finger tree */
-private final class Vector6[+A](_prefix1: Arr1, private[immutable] final val len1: Int,
-                                 private[immutable] final val prefix2: Arr2, private[immutable] final val len12: Int,
-                                 private[immutable] final val prefix3: Arr3, private[immutable] final val len123: Int,
-                                 private[immutable] final val prefix4: Arr4, private[immutable] final val len1234: Int,
-                                 private[immutable] final val prefix5: Arr5, private[immutable] final val len12345: Int,
-                                 private[immutable] final val data6: Arr6,
-                                 private[immutable] final val suffix5: Arr5, private[immutable] final val suffix4: Arr4, private[immutable] final val suffix3: Arr3, private[immutable] final val suffix2: Arr2, _suffix1: Arr1,
+private final class Vector6[+A](_prefix1: Arr1, private[immutable] val len1: Int,
+                                 private[immutable] val prefix2: Arr2, private[immutable] val len12: Int,
+                                 private[immutable] val prefix3: Arr3, private[immutable] val len123: Int,
+                                 private[immutable] val prefix4: Arr4, private[immutable] val len1234: Int,
+                                 private[immutable] val prefix5: Arr5, private[immutable] val len12345: Int,
+                                 private[immutable] val data6: Arr6,
+                                 private[immutable] val suffix5: Arr5, private[immutable] val suffix4: Arr4, private[immutable] val suffix3: Arr3, private[immutable] val suffix2: Arr2, _suffix1: Arr1,
                                  _length0: Int) extends BigVector[A](_prefix1, _suffix1, _length0) {
 
   @inline private[this] def copy(prefix1: Arr1 = prefix1, len1: Int = len1,
