@@ -428,7 +428,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     withHelpSyntax(s"$name <n>")
   }
 
-  /** A setting represented by a boolean flag (false, unless set) */
+  /** A setting represented by a boolean flag (false, unless set, or `withDefault` used) */
   class BooleanSetting private[nsc](
     name: String,
     descr: String)

@@ -33,7 +33,7 @@ class CompilerCommand(arguments: List[String], val settings: Settings) {
 
   private def explainAdvanced = """
     |-- Note --
-    |Boolean settings are false unless set: -Xdev -Xcheck-init:true -Xprompt:false
+    |Boolean settings generally are false unless set: -Xdev -Xcheck-init:true -Xprompt:false
     |Multi-valued settings are comma-separated: -Xlint:infer-any,unused,-missing-interpolator
     |Phases are a list of names, ids, or ranges of ids: -Vprint:parser,typer,5-10 -Ylog:-4
     |Use _ to enable all: -language:_ -Vprint:_
