@@ -141,4 +141,68 @@ class HashMapTest extends AllocationTest {
     }
     transformTestCases foreach check
   }
+
+  @Test
+  def addEmptyAllocations(): Unit = {
+    val nonEmpty = HashMap("a" -> 1,
+      "b" -> 2,
+      "c" -> 3,
+      "d" -> 4,
+      "e" -> 5,
+      "f" -> 6,
+      "g" -> 7,
+      "h" -> 8,
+      "i" -> 9,
+      "j" -> 10
+    )
+    assertSame(nonEmpty, nonAllocating(nonEmpty ++ HashMap.empty))
+    assertSame(nonEmpty, nonAllocating(nonEmpty ++ Map.empty))
+    assertSame(nonEmpty, nonAllocating(HashMap.empty ++ nonEmpty))
+    assertSame(nonEmpty, nonAllocating(Map.empty ++ nonEmpty))
+  }
+  @Test
+  def addSharedAllocations(): Unit = {
+    val nonEmpty1 = HashMap("a" -> 1,
+      "b" -> 2,
+      "c" -> 3,
+      "d" -> 4,
+      "e" -> 5,
+      "f" -> 6,
+      "g" -> 7,
+      "h" -> 8,
+      "i" -> 9,
+      "j" -> 10
+    )
+    val nonEmpty2 = nonEmpty1 - "a"
+    val nonEmpty3 = nonEmpty1 + ("k" -> 11)
+    assertSame(nonEmpty1, nonAllocating(nonEmpty1 ++ nonEmpty1))
+    assertSame(nonEmpty1, nonAllocating(nonEmpty1 ++ nonEmpty2))
+    assertSame(nonEmpty3, nonAllocating(nonEmpty1 ++ nonEmpty3))
+  }
+  @Test
+  def addCollidingAllocations(): Unit = {
+    val nonEmpty1 = HashMap("a" -> 1,
+      "b" -> 2,
+      "c" -> 3,
+      "d" -> 4,
+      "e" -> 5,
+      "f" -> 6,
+      "g" -> 7,
+      "h" -> 8,
+      "i" -> 9,
+      "j" -> 10
+    )
+    val nonEmpty2 = HashMap("a" -> 1,
+      "b" -> 2,
+      "c" -> 3,
+      "d" -> 4,
+      "e" -> 5,
+      "f" -> 6,
+      "g" -> 7,
+      "h" -> 8,
+      "i" -> 9,
+      "j" -> 10
+    )
+    assertSame(nonEmpty2, nonAllocating(nonEmpty1 ++ nonEmpty2))
+  }
 }

@@ -94,10 +94,15 @@ package object collection {
    */
   def breakOut[From, T, To](implicit b: CanBuildFrom[Nothing, T, To]): CanBuildFrom[From, T, To] =
     // can't just return b because the argument to apply could be cast to From in b
-    new CanBuildFrom[From, T, To] {
-      def apply(from: From) = b.apply()
-      def apply()           = b.apply()
-    }
+    new WrappedCanBuildFrom[From, T, To](b)
+
+  private[collection] final class WrappedCanBuildFrom[From, T, To](
+        val wrapped: CanBuildFrom[Nothing, T, To])
+    extends CanBuildFrom[From, T, To] {
+    def apply(from: From) = wrapped.apply()
+
+    def apply() = wrapped.apply()
+  }
 }
 
 package collection {
