@@ -317,12 +317,12 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
                   q"""
                     {
                       val ${nme.execContextTemp} = ()
-                      class stateMachine$$async extends _root_.scala.tools.nsc.async.StateMachineBase {
+                      ${q"""class stateMachine$$async extends _root_.scala.tools.nsc.async.StateMachineBase {
                         ${q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = {
                           $rhs
                           ()
-                        }""".updateAttachment(ChangeOwnerAttachment(dd.symbol))}
-                      }
+                        }""".updateAttachment(ChangeOwnerAttachment(dd.symbol)).updateAttachment(new global.async.FutureSystemAttachment(CustomFutureFutureSystem))}
+                      }""".updateAttachment(new global.async.FutureSystemAttachment(CustomFutureFutureSystem))}
                       val stateMachine$$async = new stateMachine$$async
                       _root_.scala.tools.nsc.async.CustomFuture._unit._onComplete(
                         stateMachine$$async.asInstanceOf[_root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.Unit] => _root_.scala.Unit]
@@ -331,7 +331,6 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
                     }
                    """
 
-                wrapped.updateAttachment(new global.async.FutureSystemAttachment(CustomFutureFutureSystem))
                 val tree =
                   q"""
                       val temp = ${wrapped}

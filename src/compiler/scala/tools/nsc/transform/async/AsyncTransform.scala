@@ -103,6 +103,7 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
         val applyVParamss = List(List(ValDef(Modifiers(Flags.PARAM), nme.tr, TypeTree(tryResult), EmptyTree)))
         DefDef(NoMods, nme.apply, Nil, applyVParamss, TypeTree(definitions.UnitTpe), Block(asyncBody.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))).updateAttachment(ChangeOwnerAttachment(originalOwner))
       }
+      applyFSM.updateAttachment(new FutureSystemAttachment(futureSystem))
 
       atPos(asyncBody.pos)(ClassDef(NoMods, tpnme.stateMachine, Nil,
                                      gen.mkTemplate(parents, noSelfType, NoMods, List(Nil),
@@ -124,7 +125,7 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
 
     val promToFuture = Select(Select(Ident(nme.stateMachine), nme.result), nme.future)
 
-    Block(List(execContextTempVal, stateMachine, newStateMachine, stateMachineToFuture), promToFuture).updateAttachment(new FutureSystemAttachment(futureSystem))
+    Block(List(execContextTempVal, stateMachine, newStateMachine, stateMachineToFuture), promToFuture)
   }
 }
 
