@@ -15,7 +15,6 @@ package mutable
 
 import scala.annotation.tailrec
 import scala.collection.immutable.{List, Nil, ::}
-import scala.annotation.tailrec
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence

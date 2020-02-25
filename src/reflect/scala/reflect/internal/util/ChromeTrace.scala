@@ -20,6 +20,7 @@ import scala.collection.mutable
 
 object ChromeTrace {
 
+  @annotation.unused // spurious
   private object EventType {
     final val Start = "B"
     final val Instant = "I"
@@ -111,7 +112,7 @@ final class ChromeTrace(f: Path) extends Closeable {
   def traceDurationEventStart(cat: String, name: String, colour: String = "", pidSuffix: String = tid()): Unit = traceDurationEventStartEnd(EventType.Start, cat, name, colour, pidSuffix)
   def traceDurationEventEnd(cat: String, name: String, colour: String = "", pidSuffix: String = tid()): Unit = traceDurationEventStartEnd(EventType.End, cat, name, colour, pidSuffix)
 
-  private def traceDurationEventStartEnd(eventType: String, cat: String, name: String, colour: String, pidSuffix: String = ""): Unit = {
+  private def traceDurationEventStartEnd(eventType: String, cat: String, name: String, colour: String, pidSuffix: String): Unit = {
     objStart()
     str("cat", cat)
     str("name", name)

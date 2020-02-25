@@ -14,8 +14,6 @@ package scala.tools.nsc
 package plugins
 
 import java.net.URL
-
-import java.net.URL
 import java.util
 
 import scala.reflect.internal.util.ScalaClassLoader

@@ -18,7 +18,6 @@ import java.lang.IllegalStateException
 import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
 import scala.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.annotation.tailrec
-import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 
 /** Utility class for long maps.

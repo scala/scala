@@ -14,13 +14,11 @@ package scala.tools.nsc.transform.patmat
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.reflect.internal.{Mode, Types}
+import scala.reflect.internal.util.Statistics
 import scala.tools.nsc.Global
 import scala.tools.nsc.ast
-import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.Transform
-import scala.reflect.internal.util.Statistics
-import scala.reflect.internal.{Mode, Types}
-import scala.reflect.internal.util.Position
+import scala.tools.nsc.transform.{Transform, TypingTransformers}
 
 /** Translate pattern matching.
   *
