@@ -177,7 +177,8 @@ trait LiveVariables extends ExprBuilder {
       isPred0(state1, state2)
     }
 
-    val finalState = asyncStates.find(as => !asyncStates.exists(other => isPred(as.state, other.state))).get
+    val finalStates = asyncStates.filter(as => !asyncStates.exists(other => isPred(as.state, other.state)))
+    val finalState = finalStates.head
 
     if(AsyncUtils.verbose) {
       for (as <- asyncStates)
@@ -298,7 +299,7 @@ trait LiveVariables extends ExprBuilder {
             var i = 0
             while (i < succNums.length) {
               val num = succNums(i)
-              if (!isPred(num, s) && !LVentry(num).contains(fld.symbol))
+              if (num != finalState.state && !isPred(num, s) && !LVentry(num).contains(fld.symbol))
                 result += num
               i += 1
             }
