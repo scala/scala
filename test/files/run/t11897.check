@@ -1,0 +1,14 @@
+
+scala> import Predef.{toString => _}
+import Predef.{toString=>_}
+
+scala> 
+
+scala> class C {
+  def f: Int = 42.ensuring(_ > 27)
+}
+         def f: Int = 42.ensuring(_ > 27)
+                         ^
+On line 2: error: value ensuring is not a member of Int
+
+scala> :quit

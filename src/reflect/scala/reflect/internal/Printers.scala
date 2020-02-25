@@ -267,8 +267,8 @@ trait Printers extends api.Printers { self: SymbolTable =>
       print("import ", resSelect, ".")
       selectors match {
         case List(s) =>
-          // If there is just one selector and it is not renaming a name, no braces are needed
-          if (!s.isRename) print(selectorToString(s))
+          // If there is just one selector and it is not renaming or masking a name, no braces are needed
+          if (!s.isRename && !s.isMask) print(selectorToString(s))
           else print("{", selectorToString(s), "}")
         // If there is more than one selector braces are always needed
         case many =>
