@@ -137,14 +137,8 @@ class AsyncTransformState[U <: Global with Singleton](val symbolTable: U, val fu
   val labelDefStates = collection.mutable.Map[symbolTable.Symbol, Int]()
 }
 
-// This was originally a macro -- TODO: complete integration with compiler universe (use global instead of scala.reflect.internal stuff)
 trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with LiveVariables with TypingTransformers {
   var currentTransformState: AsyncTransformState[global.type] = null
-  import global._
-  def typecheck(tree: Tree): Tree = currentTransformState.localTyper.typed(tree)
-  def abort(pos: Position, msg: String): Nothing = {currentTransformState.localTyper.context.reporter.error(pos, msg); ???}
-  def error(pos: Position, msg: String): Unit = currentTransformState.localTyper.context.reporter.error(pos, msg)
-
   import global._
 
   // synthesize the state machine logic -- explode the apply method's rhs and lift local vals to field defs in the state machine

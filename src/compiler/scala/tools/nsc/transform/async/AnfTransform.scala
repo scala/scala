@@ -328,7 +328,7 @@ private[async] trait AnfTransform extends TransformUtils {
         case r1 :: Nil =>
           // { var matchRes = _; ....; matchRes }
           List(r1).iterator ++ statsExpr0.reverseIterator
-        case _ => error(pos, "Internal error: unexpected tree encountered during ANF transform " + statsExpr); statsExpr.iterator
+        case _ => global.reporter.error(pos, "Internal error: unexpected tree encountered during ANF transform " + statsExpr); statsExpr.iterator
       }
     }
 

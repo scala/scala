@@ -250,7 +250,7 @@ trait ExprBuilder extends TransformUtils {
     var currState    = startState
 
     def checkForUnsupportedAwait(tree: Tree) = if (containsAwait(tree))
-      abort(tree.pos, "await must not be used in this position")
+      global.reporter.error(tree.pos, "await must not be used in this position")
 
     def nestedBlockBuilder(nestedTree: Tree, startState: Int, endState: Int) = {
       val (nestedStats, nestedExpr) = statsAndExpr(nestedTree)

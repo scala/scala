@@ -24,11 +24,6 @@ import scala.tools.nsc.transform.TypingTransformers
 trait PhasedTransform extends TypingTransformers {
   import global._
 
-  // macro context interface -- the rest is meant to be independent of our being a macro (planning to move async into the compiler)
-  def abort(pos: Position, msg: String): Nothing
-  def error(pos: Position, msg: String): Unit
-  def typecheck(tree: Tree): Tree
-
   def isPastErasure: Boolean = {
     val erasurePhase = global.currentRun.erasurePhase
     erasurePhase != NoPhase && global.isPast(erasurePhase)

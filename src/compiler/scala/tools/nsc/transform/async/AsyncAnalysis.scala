@@ -61,7 +61,7 @@ trait AsyncAnalysis extends TransformUtils  {
           reportUnsupportedAwait(tree, "try/catch")
           super.traverse(tree)
         case Return(_)                                        =>
-          abort(tree.pos, "return is illegal within a async block")
+          global.reporter.error(tree.pos, "return is illegal within a async block")
         case DefDef(mods, _, _, _, _, _) if mods.hasFlag(Flags.LAZY) && containsAwait(tree) =>
           reportUnsupportedAwait(tree, "lazy val initializer")
         case ValDef(mods, _, _, _) if mods.hasFlag(Flags.LAZY) && containsAwait(tree) =>
@@ -97,7 +97,7 @@ trait AsyncAnalysis extends TransformUtils  {
     }
 
     private def reportError(pos: Position, msg: String): Unit = {
-      abort(pos, msg)
+      global.reporter.error(pos, msg)
     }
   }
 }
