@@ -261,7 +261,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
 
     val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
     val applyRhs = UseFields.transformAtOwner(applySym, applyBody)
-    if (AsyncUtils.verbose) {
+    if (settings.debug.value && shouldLogAtThisPhase) {
       val location = try asyncBody.pos.source.path catch {
         case _: UnsupportedOperationException => asyncBody.pos.toString
       }
@@ -273,10 +273,10 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
   }
 
   def logDiagnostics(location: String, anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
-    AsyncUtils.vprintln(s"In file '$location':")
-    AsyncUtils.vprintln(s"ANF transform expands to:\n $anfTree")
-    states foreach (s => AsyncUtils.vprintln(s))
-    AsyncUtils.vprintln("===== DOT =====")
-    AsyncUtils.vprintln(block.toDot)
+    inform(s"In file '$location':")
+    inform(s"ANF transform expands to:\n $anfTree")
+    states foreach (s => inform(s))
+    inform("===== DOT =====")
+    inform(block.toDot)
   }
 }

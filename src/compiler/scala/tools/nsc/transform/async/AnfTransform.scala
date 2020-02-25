@@ -52,6 +52,7 @@ private[async] trait AnfTransform extends TransformUtils {
     private var currentStats = ListBuffer[Tree]()
 
     override def transform(tree: Tree): Tree = trace(tree) {
+      curTree = tree
       val treeContainsAwait = containsAwait(tree)
       tree match {
         case _: ClassDef | _: ModuleDef | _: Function | _: DefDef =>
@@ -332,8 +333,10 @@ private[async] trait AnfTransform extends TransformUtils {
       }
     }
 
+    private final val traceAsync = false
+
     @inline final def trace[T](args: Any)(t: => T): T = {
-      if (AsyncUtils.trace) {
+      if (traceAsync) {
         tracing.apply("", args)({val tree = t; ("" + currentStats.mkString(";") + " ;; " + tree, tree)})
       } else t
     }
@@ -365,11 +368,9 @@ private[async] trait AnfTransform extends TransformUtils {
       def oneLine(s: Any) = s.toString.replaceAll("""\n""", "\\\\n").take(300)
 
       try {
-        if (AsyncUtils.trace)
-          AsyncUtils.trace(s"$indentString$prefix(${oneLine(args)})")
+        println(s"$indentString$prefix(${oneLine(args)})")
         val result = t
-        if (AsyncUtils.trace)
-          AsyncUtils.trace(s"$indentString= ${oneLine(result._1)}")
+        println(s"$indentString= ${oneLine(result._1)}")
         result._2
       } finally {
         indent -= 1

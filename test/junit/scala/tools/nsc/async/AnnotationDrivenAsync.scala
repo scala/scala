@@ -10,6 +10,7 @@ import org.junit.{Assert, Ignore, Test}
 import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.SymbolTable
+import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.reporters.StoreReporter
@@ -36,6 +37,8 @@ class AnnotationDrivenAsync {
 
   @Test
   def testCaseClassLifting(): Unit = {
+    // Note: this emits a warning under -Ydebug (which we sometimes manually set below in the compiler setup)
+    // https://github.com/scala/scala/pull/8750 will fix this.
     val code =
       """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
          import scala.async.Async.{async, await}
@@ -242,15 +245,23 @@ class AnnotationDrivenAsync {
   def run(code: String): Any = {
     val out = createTempDir()
     try {
-      val reporter = new StoreReporter
+      val reporter = new StoreReporter {
+        override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
+          if (severity == INFO) println(msg)
+          else super.info0(pos, msg, severity, force)
+        }
+      }
       val settings = new Settings(println(_))
       settings.outdir.value = out.getAbsolutePath
       settings.embeddedDefaults(getClass.getClassLoader)
+
       // settings.debug.value = true
       // settings.uniqid.value = true
       // settings.processArgumentString("-Xprint:all -nowarn")
-      // sys.props("scala.async.trace") = "true"
-      // sys.props("scala.async.debug") = "true"
+      // settings.log.value = List("async")
+
+      // NOTE: edit ANFTransform.traceAsync to `= true` to get additional diagnostic tracing.
+
       val isInSBT = !settings.classpath.isSetByUser
       if (isInSBT) settings.usejavacp.value = true
       val global = new Global(settings, reporter) {

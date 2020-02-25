@@ -80,7 +80,7 @@ trait LiveVariables extends ExprBuilder {
         !liftedSyms.contains(tree.symbol) && tree.exists(_.symbol == sym)
       }
     }
-    AsyncUtils.vprintln(s"fields never zero-ed out: ${noNull.mkString(", ")}")
+    debuglog(s"fields never zero-ed out: ${noNull.mkString(", ")}")
 
     /**
      *  Traverse statements of an `AsyncState`, collect `Ident`-s referring to lifted fields.
@@ -180,9 +180,9 @@ trait LiveVariables extends ExprBuilder {
     val finalStates = asyncStates.filter(as => !asyncStates.exists(other => isPred(as.state, other.state)))
     val finalState = finalStates.head
 
-    if(AsyncUtils.verbose) {
+    if(settings.debug.value && shouldLogAtThisPhase) {
       for (as <- asyncStates)
-        AsyncUtils.vprintln(s"fields used in state #${as.state}: ${fieldsUsedIn(as)}")
+        debuglog(s"fields used in state #${as.state}: ${fieldsUsedIn(as)}")
     }
 
     /* Backwards data-flow analysis. Computes live variables information at entry and exit
@@ -246,10 +246,10 @@ trait LiveVariables extends ExprBuilder {
       currStates = exitChanged
     }
 
-    if(AsyncUtils.verbose) {
+    if(settings.debug.value && shouldLogAtThisPhase) {
       for (as <- asyncStates) {
-        AsyncUtils.vprintln(s"LVentry at state #${as.state}: ${LVentry(as.state).mkString(", ")}")
-        AsyncUtils.vprintln(s"LVexit  at state #${as.state}: ${LVexit(as.state).mkString(", ")}")
+        debuglog(s"LVentry at state #${as.state}: ${LVentry(as.state).mkString(", ")}")
+        debuglog(s"LVexit  at state #${as.state}: ${LVexit(as.state).mkString(", ")}")
       }
     }
 
@@ -282,9 +282,9 @@ trait LiveVariables extends ExprBuilder {
     val lastUsages: mutable.LinkedHashMap[Tree, StateSet] =
       mutable.LinkedHashMap(liftables.map(fld => fld -> lastUsagesOf(fld, finalState)): _*)
 
-    if(AsyncUtils.verbose) {
+    if(settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, lastStates) <- lastUsages)
-        AsyncUtils.vprintln(s"field ${fld.symbol.name} is last used in states ${lastStates.iterator.mkString(", ")}")
+        debuglog(s"field ${fld.symbol.name} is last used in states ${lastStates.iterator.mkString(", ")}")
     }
 
     val nullOutAt: mutable.LinkedHashMap[Tree, StateSet] =
@@ -308,9 +308,9 @@ trait LiveVariables extends ExprBuilder {
         (fld, result)
       }
 
-    if(AsyncUtils.verbose) {
+    if(settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, killAt) <- nullOutAt)
-        AsyncUtils.vprintln(s"field ${fld.symbol.name} should be nulled out in states ${killAt.iterator.mkString(", ")}")
+        debuglog(s"field ${fld.symbol.name} should be nulled out in states ${killAt.iterator.mkString(", ")}")
     }
 
     nullOutAt
