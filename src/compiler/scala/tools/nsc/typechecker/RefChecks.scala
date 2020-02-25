@@ -69,33 +69,12 @@ abstract class RefChecks extends Transform {
     if (sym.hasAccessBoundary) "" + sym.privateWithin.name else ""
   )
 
-  def overridesTypeInPrefix(tp1: Type, tp2: Type, prefix: Type, isModuleOverride: Boolean): Boolean = (tp1.dealiasWiden, tp2.dealiasWiden) match {
-    case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) =>
-      rtp1 <:< rtp2
-    case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) =>
-      rtp1 <:< rtp2
-
-    // all this module business would be so much simpler if we moduled^w modelled a module as a class and an accessor, like we do for fields
-    case (TypeRef(_, sym, _), _) if sym.isModuleClass =>
-      overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix, isModuleOverride)
-    case (_, TypeRef(_, sym, _)) if sym.isModuleClass =>
-      overridesTypeInPrefix(tp1, NullaryMethodType(tp2), prefix, isModuleOverride)
-
-    case _ =>
-      def classBoundAsSeen(tp: Type) = tp.typeSymbol.classBound.asSeenFrom(prefix, tp.typeSymbol.owner)
-      (tp1 <:< tp2) || isModuleOverride && (
-        // Object override check. This requires that both the overridden and the overriding member are object
-        // definitions. The overriding module type is allowed to replace the original one with the same name
-        // as long as it conform to the original non-singleton type.
-        tp1.typeSymbol.isModuleClass && tp2.typeSymbol.isModuleClass && {
-          val cb1 = classBoundAsSeen(tp1)
-          val cb2 = classBoundAsSeen(tp2)
-          (cb1 <:< cb2) && {
-            log(s"Allowing $tp1 to override $tp2 because $cb1 <:< $cb2")
-            true
-          }
-        }
-      )
+  def overridesTypeInPrefix(tp1: Type, tp2: Type, prefix: Type): Boolean = (tp1.dealiasWiden, tp2.dealiasWiden) match {
+    case (MethodType(List(), rtp1), NullaryMethodType(rtp2)) => rtp1 <:< rtp2
+    case (NullaryMethodType(rtp1), MethodType(List(), rtp2)) => rtp1 <:< rtp2
+    case (TypeRef(_, sym, _), _) if sym.isModuleClass        => overridesTypeInPrefix(NullaryMethodType(tp1), tp2, prefix)
+    case (_, TypeRef(_, sym, _)) if sym.isModuleClass        => overridesTypeInPrefix(tp1, NullaryMethodType(tp2), prefix)
+    case _                                                   => tp1 <:< tp2
   }
 
   private val separatelyCompiledScalaSuperclass = perRunCaches.newAnyRefMap[Symbol, Unit]()
@@ -509,7 +488,7 @@ abstract class RefChecks extends Transform {
         def checkOverrideTerm(): Unit = {
           member.cookJavaRawInfo() // #11584, #11840
           other.cookJavaRawInfo() // #2454
-          if (!overridesTypeInPrefix(lowType, highType, rootType, member.isModuleOrModuleClass && other.isModuleOrModuleClass)) { // 8
+          if (!overridesTypeInPrefix(lowType, highType, rootType)) { // 8
             overrideTypeError()
             explainTypes(lowType, highType)
           }
