@@ -17,41 +17,42 @@ import jl.reflect.Modifier
 import SourceKind._
 import Files._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
+import scala.util.Properties
 
 object TastyTest {
 
-  def runSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
+  def runSuite(src: String, srcRoot: String, dottyLibrary: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", src3:_*)
+    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
     _                 <- runMainOn(out, dottyLibrary, testNames:_*)
   } yield ()
 
-  def posSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
+  def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
-    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
-    _                 <- scalacPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
+    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", src3:_*)
+    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
 
-  def negSuite(src: String, dottyLibrary: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
+  def negSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (src2, src3)      <- getNegSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- dotcPos(out, dottyLibrary, sourceRoot=srcRoot/src/"src-3", src3:_*)
-    _                 <- scalacNeg(out, dottyLibrary, additionalSettings, src2:_*)
+    _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", src3:_*)
+    _                 <- scalacNeg(out, additionalSettings, src2:_*)
   } yield ()
 
-  private def scalacPos(out: String, dottyLibrary: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
+  private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(scalac(out, dottyLibrary, additionalSettings, sources:_*))("scalac failed to compile sources.")
+    successWhen(scalac(out, additionalSettings, sources:_*))("scalac failed to compile sources.")
   }
 
-  private def scalacNeg(out: String, dottyLibrary: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
+  private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
     val errors = mutable.ArrayBuffer.empty[String]
     val unexpectedFail = mutable.ArrayBuffer.empty[String]
     val failMap = {
@@ -77,7 +78,7 @@ object TastyTest {
           }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
-              scalac(out, dottyLibrary, additionalSettings, source)
+              scalac(out, additionalSettings, source)
             }
           }
           byteArrayStream.flush()
@@ -137,7 +138,7 @@ object TastyTest {
     }
   }
 
-  private def scalac(out: String, dottyLibrary: String, additionalSettings: Seq[String], sources: String*): Boolean = {
+  def scalac(out: String, additionalSettings: Seq[String], sources: String*): Boolean = {
 
     def runCompile(global: Global): Boolean = {
       global.reporter.reset()
@@ -159,7 +160,7 @@ object TastyTest {
     sources.isEmpty || {
       val settings = Array(
         "-d", out,
-        "-classpath", classpaths(out, dottyLibrary),
+        "-classpath", out,
         "-deprecation",
         "-Xfatal-warnings",
         "-usejavacp"
@@ -182,18 +183,22 @@ object TastyTest {
     }.getOrElse(false)
   }
 
-  private def dotcPos(out: String, dottyLibrary: String, sourceRoot: String, sources: String*): Try[Unit] = {
-    println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
-    val result = sources.isEmpty || {
+  def dotc(out: String, sources: String*): Boolean = {
+    sources.isEmpty || {
       val args = Array(
         "-d", out,
-        "-classpath", classpaths(out, dottyLibrary),
+        "-classpath", out,
         "-deprecation",
-        "-Xfatal-warnings"
+        "-Xfatal-warnings",
+        "-usejavacp"
       ) ++ sources
       dotcProcess(args)
     }
-    successWhen(result)("dotc failed to compile sources.")
+  }
+
+  def dotcPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
+    successWhen(dotc(out, sources:_*))("dotc failed to compile sources.")
   }
 
   private def classpaths(paths: String*): String = paths.mkString(":")
