@@ -119,24 +119,47 @@ object ScalaRunTime {
    *  Needed to deal with vararg arguments of primitive types that are passed
    *  to a generic Java vararg parameter T ...
    */
-  def toObjectArray(src: AnyRef): Array[Object] = src match {
-    case x: Array[AnyRef] => x
-    case _ =>
-      val length = array_length(src)
-      val dest = new Array[Object](length)
-      for (i <- 0 until length)
-        array_update(dest, i, array_apply(src, i))
-      dest
+  def toObjectArray(src: AnyRef): Array[Object] = {
+    def copy[@specialized T <: AnyVal](src: Array[T]): Array[Object] = {
+      val length = src.length
+      if (length == 0) Array.emptyObjectArray
+      else {
+        val dest = new Array[Object](length)
+        var i = 0
+        while (i < length) {
+          dest(i) = src(i).asInstanceOf[AnyRef]
+          i += 1
+        }
+        dest
+      }
+    }
+    src match {
+      case x: Array[AnyRef]  => x
+      case x: Array[Int]     => copy(x)
+      case x: Array[Double]  => copy(x)
+      case x: Array[Long]    => copy(x)
+      case x: Array[Float]   => copy(x)
+      case x: Array[Char]    => copy(x)
+      case x: Array[Byte]    => copy(x)
+      case x: Array[Short]   => copy(x)
+      case x: Array[Boolean] => copy(x)
+      case x: Array[Unit]    => copy(x)
+      case null => throw new NullPointerException
+    }
   }
 
   def toArray[T](xs: scala.collection.Seq[T]) = {
-    val arr = new Array[AnyRef](xs.length)
-    var i = 0
-    for (x <- xs) {
-      arr(i) = x.asInstanceOf[AnyRef]
-      i += 1
+    if (xs.isEmpty) Array.emptyObjectArray
+    else {
+      val arr = new Array[AnyRef](xs.length)
+      val it = xs.iterator
+      var i = 0
+      while (it.hasNext) {
+        arr(i) = it.next().asInstanceOf[AnyRef]
+        i += 1
+      }
+      arr
     }
-    arr
   }
 
   // Java bug: https://bugs.java.com/view_bug.do?bug_id=4071957
