@@ -238,25 +238,18 @@ package $line10 {
       super.<init>;
       ()
     };
+    import $line7.$read.INSTANCE.$iw.BippyBups;
+    import $line7.$read.INSTANCE.$iw.BippyBups;
+    import $line8.$read.INSTANCE.$iw.PuppyPups;
+    import $line8.$read.INSTANCE.$iw.PuppyPups;
+    import $line9.$read.INSTANCE.$iw.Bingo;
+    import $line9.$read.INSTANCE.$iw.Bingo;
     sealed class $iw extends _root_.java.io.Serializable {
       def <init>() = {
         super.<init>;
         ()
       };
-      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
-      import $line7.$read.INSTANCE.$iw.$iw.BippyBups;
-      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
-      import $line8.$read.INSTANCE.$iw.$iw.PuppyPups;
-      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
-      import $line9.$read.INSTANCE.$iw.$iw.Bingo;
-      sealed class $iw extends _root_.java.io.Serializable {
-        def <init>() = {
-          super.<init>;
-          ()
-        };
-        val res3 = List(BippyBups, PuppyPups, Bingo)
-      };
-      val $iw = new $iw.<init>
+      val res3 = List(BippyBups, PuppyPups, Bingo)
     };
     val $iw = new $iw.<init>
   };
@@ -271,11 +264,11 @@ package $line10 {
 
 package $line10 {
 object $eval {
-  lazy val $result = $line10.$read.INSTANCE.$iw.$iw.res3
+  lazy val $result = $line10.$read.INSTANCE.$iw.res3
   lazy val $print: _root_.java.lang.String =  {
-    $line10.$read.INSTANCE.$iw.$iw
+    $line10.$read.INSTANCE.$iw
 
-""  + "val res3: List[Product with java.io.Serializable]" + " = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.$iw.res3, 1000)
+""  + "val res3: List[Product with java.io.Serializable]" + " = " + _root_.scala.runtime.ScalaRunTime.replStringOf($line10.$read.INSTANCE.$iw.res3, 1000)
 
   }
 }}

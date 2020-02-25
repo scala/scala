@@ -4,7 +4,7 @@ def f: Nothing
 
 scala> f
 java.lang.Exception: Uh-oh
-  at .f(<console>:XX)
+  at f(<console>:XX)
   ... ??? elided
 
 scala> def f = throw new Exception("")
@@ -12,7 +12,7 @@ def f: Nothing
 
 scala> f
 java.lang.Exception:
-  at .f(<console>:XX)
+  at f(<console>:XX)
   ... ??? elided
 
 scala> def f = throw new Exception
@@ -20,7 +20,7 @@ def f: Nothing
 
 scala> f
 java.lang.Exception
-  at .f(<console>:XX)
+  at f(<console>:XX)
   ... ??? elided
 
 scala> null.asInstanceOf
