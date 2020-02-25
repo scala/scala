@@ -418,7 +418,8 @@ trait ExprBuilder extends TransformUtils {
           preText.split("\n").foreach {
             (line: String) =>
               builder.append(br)
-              builder.append(line.replaceAllLiterally("\"", "&quot;").replaceAllLiterally("<", "&lt;").replaceAllLiterally(">", "&gt;").replaceAllLiterally(" ", "&nbsp;"))
+              // TODO Wrap with CDATA instead?
+              builder.append(line.replaceAllLiterally("&", "&amp;").replaceAllLiterally("\"", "&quot;").replaceAllLiterally("<", "&lt;").replaceAllLiterally(">", "&gt;").replaceAllLiterally(" ", "&nbsp;"))
           }
           builder.append(br)
           builder.append("</font>")
