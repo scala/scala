@@ -80,8 +80,7 @@ trait AsyncAnalysis extends TransformUtils  {
       val badAwaits = ListBuffer[Tree]()
       object traverser extends Traverser {
         override def traverse(tree: Tree): Unit = {
-          if (!isAsync(tree))
-            super.traverse(tree)
+          super.traverse(tree)
           tree match {
             case rt: RefTree if isAwait(rt) =>
               badAwaits += rt
