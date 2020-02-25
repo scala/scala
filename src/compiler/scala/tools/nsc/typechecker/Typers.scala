@@ -965,7 +965,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           doIt
         }
 
-
+        def matchNullaryLoosely: Boolean = {
+          def test(sym: Symbol) =
+            sym.isJavaDefined ||
+            sym.owner == AnyClass ||
+            sym == Object_clone
+          test(meth) || meth.overrides.exists(test)
+        }
         // (4.2) condition for auto-application by -Xsource level
         //
         // until 2.14: none (assuming condition for (4.3) was not met)
@@ -977,10 +983,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //          > val vparamSymssOrEmptyParamsFromOverride =
         //          This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
-          if (sourceLevel2_14 && !meth.isJavaDefined)
+          if (sourceLevel2_14 && !isPastTyper && !matchNullaryLoosely) {
             context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
                                                            s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
                                                            s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.14.0")
+          }
           true
         }
 
