@@ -131,6 +131,10 @@ trait LiveVariables extends ExprBuilder {
 
       val findUses = new FindUseTraverser
       findUses.traverse(Block(as.stats: _*))
+      as match {
+        case aswa: AsyncStateWithAwait => findUses.traverse(aswa.awaitable.expr)
+        case _ =>
+      }
       ReferencedFields(findUses.usedFields, findUses.capturedFields)
     }
     case class ReferencedFields(used: Set[Symbol], captured: Set[Symbol]) {
