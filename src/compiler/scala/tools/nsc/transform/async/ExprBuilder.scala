@@ -578,9 +578,9 @@ trait ExprBuilder extends TransformUtils {
 
       private val compactStateTransform = new Transformer {
         override def transform(tree: Tree): Tree = tree match {
-          case as @ Apply(qual: Select, Literal(Constant(i: Integer)) :: Nil) if qual.symbol == symLookup.stateSetter =>
+          case as @ Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == symLookup.stateSetter =>
             val replacement = switchIds(i)
-            treeCopy.Apply(tree, qual, Literal(Constant(replacement)):: Nil)
+            treeCopy.Apply(tree, qual, treeCopy.Literal(lit, Constant(replacement)):: Nil)
           case _: Match | _: CaseDef | _: Block | _: If =>
             super.transform(tree)
           case _ => tree
@@ -588,13 +588,15 @@ trait ExprBuilder extends TransformUtils {
       }
 
       private def compactStates(m: Match): Tree = {
-        val cases1 = m.cases.flatMap {
-          case cd @ CaseDef(Literal(Constant(i: Integer)), EmptyTree, rhs) =>
+        val casesAndReplacementIds: List[(Integer, CaseDef)] = m.cases.map {
+          case cd @ CaseDef(lit @ Literal(Constant(i: Integer)), EmptyTree, rhs) =>
             val replacement = switchIds(i)
             val rhs1 = compactStateTransform.transform(rhs)
-            treeCopy.CaseDef(cd, Literal(Constant(replacement)), EmptyTree, rhs1) :: Nil
-          case x => x :: Nil
+            (replacement, treeCopy.CaseDef(cd, treeCopy.Literal(lit, Constant(replacement)), EmptyTree, rhs1))
+          case cd =>
+            (Int.box(Integer.MAX_VALUE), cd)
         }
+        val cases1: List[CaseDef] = casesAndReplacementIds.sortBy(_._1).map(_._2)
         treeCopy.Match(m, m.selector, cases1)
       }
 
