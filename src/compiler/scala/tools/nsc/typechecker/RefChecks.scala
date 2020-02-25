@@ -91,7 +91,7 @@ abstract class RefChecks extends Transform {
           val cb1 = classBoundAsSeen(tp1)
           val cb2 = classBoundAsSeen(tp2)
           (cb1 <:< cb2) && {
-            log("Allowing %s to override %s because %s <:< %s".format(tp1, tp2, cb1, cb2))
+            log(s"Allowing $tp1 to override $tp2 because $cb1 <:< $cb2")
             true
           }
         }
@@ -836,12 +836,12 @@ abstract class RefChecks extends Transform {
 
       // 5. Check that the nested class do not shadow other nested classes from outer class's parent
       def checkNestedClassShadow(): Unit =
-        if (clazz.isNestedClass) {
+        if (clazz.isNestedClass && !clazz.isModuleClass) {
           val overridden = clazz.owner.ancestors
             .map(a => clazz.matchingSymbol(a, clazz.owner.thisType))
             .filter(c => c.exists && c.isClass)
           overridden foreach { sym2 =>
-            def msg(what: String) = s"shadowing a nested class of a parent is $what but class ${clazz.name} shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
+            def msg(what: String) = s"shadowing a nested class of a parent is $what but $clazz shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
             if (currentRun.isScala300) reporter.error(clazz.pos, msg("unsupported"))
             else currentRun.reporting.deprecationWarning(clazz.pos, clazz, msg("deprecated"), "2.13.2")
           }

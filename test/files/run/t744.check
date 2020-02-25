@@ -1,4 +1,4 @@
-t744.scala:12: warning: shadowing a nested class of a parent is deprecated but class FileImpl shadows trait FileImpl defined in trait Linked; rename the class to something else
+t744.scala:12: warning: shadowing a nested class of a parent is deprecated but trait FileImpl shadows trait FileImpl defined in trait Linked; rename the class to something else
     trait FileImpl extends super.FileImpl {
           ^
 BEGIN
