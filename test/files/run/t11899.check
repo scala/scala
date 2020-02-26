@@ -1,0 +1,15 @@
+
+scala> :paste < DONE
+// Entering paste mode (DONE to finish)
+
+type T
+DONE
+
+// Exiting paste mode, now interpreting.
+
+type T
+
+scala> 42
+val res0: Int = 42
+
+scala> :quit
