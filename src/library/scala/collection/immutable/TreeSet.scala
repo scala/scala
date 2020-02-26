@@ -50,7 +50,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(-5685982407650748405L)
-final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
   if (ordering eq null)
@@ -119,11 +119,14 @@ final class TreeSet[A] private (tree: RB.Tree[A, Unit])(implicit val ordering: O
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  private def newSet(t: RB.Tree[A, Unit]) = new TreeSet[A](t)
+  private def newSet(t: RB.Tree[A, Unit]) = {
+    if (t eq this.tree) this
+    else new TreeSet[A](t)
+  }
 
   /** A factory to create empty sets of the same type of keys.
    */
-  override def empty = TreeSet.empty
+  override def empty = newSet(null)
 
   /** Creates a new `TreeSet` with the entry added.
    *
