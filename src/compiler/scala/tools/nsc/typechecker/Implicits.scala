@@ -1239,7 +1239,9 @@ trait Implicits {
               val pendingImprovingBest = undoLog undo {
                 otherPending filterNot firstPendingImproves
               }
-              rankImplicits(pendingImprovingBest, (newBest, firstPending) :: acc)
+
+              if (pt.typeSymbol.hasAnnotation(definitions.LanguageFeatureAnnot)) (newBest, firstPending):: Nil
+              else rankImplicits(pendingImprovingBest, (newBest, firstPending) :: acc)
           }
       }
 
