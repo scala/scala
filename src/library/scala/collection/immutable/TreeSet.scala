@@ -16,7 +16,7 @@ package immutable
 
 import generic._
 import immutable.{RedBlackTree => RB}
-import mutable.{ Builder, SetBuilder }
+import mutable.Builder
 
 /** $factoryInfo
  *  @define Coll `immutable.TreeSet`
@@ -25,11 +25,65 @@ import mutable.{ Builder, SetBuilder }
 object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   implicit def implicitBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] = newBuilder[A](ordering)
   override def newBuilder[A](implicit ordering: Ordering[A]): Builder[A, TreeSet[A]] =
-    new SetBuilder(empty[A](ordering))
+    new TreeSetBuilder
 
   /** The empty set of this type
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
+  private class TreeSetBuilder[A](implicit val ordering: Ordering[A]) extends Builder[A, TreeSet[A]] {
+    type Tree = RB.Tree[A, Unit]
+    private [this] var tree:Tree = null
+    override def +=(elem: A): TreeSetBuilder.this.type = {
+      tree = RB.update(tree, elem, (), overwrite = false)
+      this
+    }
+
+    private object adder extends Function1[A, Unit] {
+      var accumulator :Tree = null
+      def addTree(aTree:Tree, bTree: Tree): Tree = {
+        val aSize = RB.count(aTree)
+        val bSize = RB.count(bTree)
+        // TODO should consider non overlapping trees
+        // just bulk add the non overlapping parts and
+        // only addAll for the intersecting range
+        //
+        // but for now just add the smaller set to the larger one
+
+        if (aSize > bSize) {
+          accumulator = aTree
+          RB.foreachKey(bTree, this)
+        } else {
+          accumulator = bTree
+          RB.foreachKey(aTree, this)
+        }
+        val result = accumulator
+        // be friendly to GC
+        accumulator = null
+        result
+      }
+
+      override def apply(elem: A): Unit = {
+        accumulator = RB.update(accumulator, elem, (), overwrite = false)
+      }
+    }
+
+    override def ++=(xs: TraversableOnce[A]): TreeSetBuilder.this.type = {
+      xs match {
+        case ts: TreeSet[A] if ts.ordering eq ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = adder.addTree(tree, ts.tree0)
+        case _ =>
+          super.++=(xs)
+      }
+      this
+    }
+
+    override def clear(): Unit = {
+      tree = null
+    }
+
+    override def result(): TreeSet[A] = new TreeSet(tree)(ordering)
+  }
 }
 
 /** This class implements immutable sets using a tree.
@@ -53,6 +107,8 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
 final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
+  //for serialisation computability
+  private def tree0 = tree
   if (ordering eq null)
     throw new NullPointerException("ordering must not be null")
 
