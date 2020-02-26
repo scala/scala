@@ -898,17 +898,17 @@ class FunctionConvertersTest {
     assert(sf eq sf.asJavaBinaryOperator.asScala)
     assert(sf eq sf.asJavaBiFunction.asScala)
     assert(jfa eq jfa.asScala.asJavaBiFunction)
-    assert(jfa ne (jfa.asScala.asJava: IntBinaryOperator)) // produces a IntBinaryOperator
+    assert((jfa: AnyRef) ne (jfa.asScala.asJava: IntBinaryOperator)) // produces a IntBinaryOperator
     assert(jfb eq jfb.asScala.asJava)
-    assert(jfb ne jfb.asScala.asJavaBinaryOperator)
+    assert((jfb: AnyRef) ne jfb.asScala.asJavaBinaryOperator)
 
     assert(sf eq conv.asScalaFromIntBinaryOperator(conv.asJavaIntBinaryOperator(sf)))
     assert(sf eq conv.asScalaFromBinaryOperator(conv.asJavaBinaryOperator(sf)))
     assert(sf eq conv.asScalaFromBiFunction(conv.asJavaBiFunction(sf)))
     assert(jfa eq conv.asJavaBiFunction(conv.asScalaFromBiFunction(jfa)))
-    assert(jfa ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa): (Int, Int) => Int))
+    assert((jfa: AnyRef) ne conv.asJavaIntBinaryOperator(conv.asScalaFromBiFunction(jfa): (Int, Int) => Int))
     assert(jfb eq conv.asJavaIntBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
-    assert(jfb ne conv.asJavaBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
+    assert((jfb: AnyRef) ne conv.asJavaBinaryOperator(conv.asScalaFromIntBinaryOperator(jfb)))
   }
 
   private def serializeDeserialize[T <: AnyRef](obj: T): T = {
