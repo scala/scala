@@ -63,7 +63,10 @@ trait Constants extends api.Constants {
     def isCharRange: Boolean  = isIntRange && Char.MinValue <= intValue && intValue <= Char.MaxValue
     def isIntRange: Boolean   = ByteTag <= tag && tag <= IntTag
     def isLongRange: Boolean  = ByteTag <= tag && tag <= LongTag
-    def isFloatRange: Boolean = ByteTag <= tag && tag <= FloatTag
+    // Float has a Fraction of 23 Bits + 1 implicit leading Bit so the total precision is 24 Bit (see https://en.wikipedia.org/wiki/Single-precision_floating-point_format)
+    def isFloatRepresentable: Boolean = ByteTag <= tag && tag <= FloatTag && (tag != IntTag && tag != LongTag || longValue <= (1L << 24) && longValue >= -(1L << 24))
+    // Double has a Fraction of 53 Bits + 1 implicit leading Bit => 54 Bit
+    def isDoubleRepresentable: Boolean    = ByteTag <= tag && tag <= DoubleTag && (tag != LongTag || longValue <= (1L << 54) && longValue >= -(1L << 54))
     def isNumeric: Boolean    = ByteTag <= tag && tag <= DoubleTag
     def isNonUnitAnyVal       = BooleanTag <= tag && tag <= DoubleTag
     def isSuitableLiteralType = BooleanTag <= tag && tag <= NullTag
@@ -218,9 +221,9 @@ trait Constants extends api.Constants {
         Constant(intValue)
       else if (target == LongClass && isLongRange)
         Constant(longValue)
-      else if (target == FloatClass && isFloatRange)
+      else if (target == FloatClass && isFloatRepresentable)
         Constant(floatValue)
-      else if (target == DoubleClass && isNumeric)
+      else if (target == DoubleClass && isDoubleRepresentable)
         Constant(doubleValue)
       else
         null

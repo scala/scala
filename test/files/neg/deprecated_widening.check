@@ -7,6 +7,24 @@ deprecated_widening.scala:7: warning: Automatic conversion from Long to Float is
 deprecated_widening.scala:8: warning: Automatic conversion from Long to Double is deprecated (since 2.13.1) because it loses precision. Write `.toDouble` instead.
     val l_d: Double = l // deprecated
                       ^
+deprecated_widening.scala:23: warning: Automatic conversion from Long to Float is deprecated (since 2.13.1) because it loses precision. Write `.toFloat` instead.
+  val truncatedPosFloat:Float = 16777217L  // deprecated
+                                ^
+deprecated_widening.scala:25: warning: Automatic conversion from Long to Float is deprecated (since 2.13.1) because it loses precision. Write `.toFloat` instead.
+  val truncatedNegFloat: Float = - 16777217L // deprecated
+                                 ^
+deprecated_widening.scala:28: warning: Automatic conversion from Int to Float is deprecated (since 2.13.1) because it loses precision. Write `.toFloat` instead.
+  val truncatedPosFloatI:Float = 16777217  // deprecated
+                                 ^
+deprecated_widening.scala:30: warning: Automatic conversion from Int to Float is deprecated (since 2.13.1) because it loses precision. Write `.toFloat` instead.
+  val truncatedNegFloatI: Float = - 16777217 // deprecated
+                                  ^
+deprecated_widening.scala:33: warning: Automatic conversion from Long to Double is deprecated (since 2.13.1) because it loses precision. Write `.toDouble` instead.
+  val truncatedPosDouble:Double = 18014398509481985L // deprecated
+                                  ^
+deprecated_widening.scala:35: warning: Automatic conversion from Long to Double is deprecated (since 2.13.1) because it loses precision. Write `.toDouble` instead.
+  val truncatedNegDouble: Double = - 18014398509481985L // deprecated
+                                   ^
 deprecated_widening.scala:12: warning: method int2float in object Int is deprecated (since 2.13.1): Implicit conversion from Int to Float is dangerous because it loses precision. Write `.toFloat` instead.
     implicitly[Int => Float]   // deprecated
               ^
@@ -17,5 +35,5 @@ deprecated_widening.scala:15: warning: method long2double in object Long is depr
     implicitly[Long => Double] // deprecated
               ^
 error: No warnings can be incurred under -Werror.
-6 warnings
+12 warnings
 1 error
