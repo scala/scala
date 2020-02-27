@@ -16,6 +16,7 @@ package mutable
 import scala.annotation.tailrec
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
+import scala.util.hashing.MurmurHash3
 
 /** This class implements mutable maps using a hashtable.
   *
@@ -525,6 +526,21 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   override def mapFactory: MapFactory[HashMap] = HashMap
 
   override protected[this] def stringPrefix = "HashMap"
+
+  override def hashCode: Int = {
+    if (isEmpty) MurmurHash3.emptyMapHash
+    else {
+      val tupleHashIterator = new HashMapIterator[Any] {
+        var hash: Int = 0
+        override def hashCode: Int = hash
+        override protected[this] def extract(nd: Node[K, V]): Any = {
+          hash = MurmurHash3.tuple2Hash(unimproveHash(nd.hash), nd.value.##)
+          this
+        }
+      }
+      MurmurHash3.unorderedHash(tupleHashIterator, MurmurHash3.mapSeed)
+    }
+  }
 }
 
 /**
