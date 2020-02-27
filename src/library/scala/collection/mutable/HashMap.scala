@@ -102,7 +102,13 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
           put0(next.key, next.value, next.hash, getOld = false)
         }
         this
-      case _ => super.addAll(xs)
+      case thatMap: Map[K, V] =>
+        thatMap.foreachEntry { (key: K, value: V) =>
+          put0(key, value, improveHash(key.##), getOld = false)
+        }
+        this
+      case _ =>
+        super.addAll(xs)
     }
   }
 
