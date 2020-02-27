@@ -29,7 +29,6 @@ class Suite(val name: String) {
     else for (i <- 0 to reps) {
       runImpl(errors, i)
     }
-    println("Suite passed!")
   }
 
   private def runImpl(errors: mutable.ArrayBuffer[(Context, Throwable)], iteration: Int): Unit = {

@@ -79,9 +79,7 @@ object TastyTest {
           buf.append(byteArrayStream.toString)
           compiled
         }
-        finally {
-          byteArrayStream.close()
-        }
+        finally byteArrayStream.close()
       }
       if (compiled.getOrElse(false)) {
         if (failMap.contains(source)) {
@@ -209,20 +207,12 @@ object TastyTest {
           names.init.mkString(".") -> names.last
         }
         println(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
-        runner.runRaw(test) match {
-          case Success((output, error)) =>
-            val diff = Diff.compareContents(output, "Suite passed!")
-            if (diff.nonEmpty && error.nonEmpty) {
-              errors += test
-              printerrln(s"ERROR: $test failed, unexpected output with error.\n  output: $diff\n  error: $error")
-            }
-            else if (diff.nonEmpty) {
+        runner.runCaptured(test) match {
+          case Success(output) =>
+            val diff = Diff.compareContents(output, "")
+            if (diff.nonEmpty) {
               errors += test
               printerrln(s"ERROR: $test failed, unexpected output.\n$diff")
-            }
-            else if (error.nonEmpty) {
-              errors += test
-              printerrln(s"ERROR: $test failed, unexpected errors.\n$error")
             }
           case Failure(err) =>
             errors += test
@@ -231,7 +221,8 @@ object TastyTest {
       }
     }
     for {
-      runner <- Runner.classloadFrom(out)
+      cldr   <- Runner.classloadFrom(out)
+      runner <- Runner.capturingRunner(cldr)
       errors =  mutable.ArrayBuffer.empty[String]
       _      <- runTests(errors, runner)
       _      <- successWhen(errors.isEmpty)({

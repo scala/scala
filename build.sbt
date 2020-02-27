@@ -1040,7 +1040,6 @@ lazy val tasty = project.in(file("test") / "tasty")
   .settings(
     fork in Test := true,
     libraryDependencies += junitInterfaceDep,
-    libraryDependencies in Test += DottySupport.dottyLibrary,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     testOptions in Test += Tests.Argument(
       s"-Dtastytest.src=${baseDirectory.value}",

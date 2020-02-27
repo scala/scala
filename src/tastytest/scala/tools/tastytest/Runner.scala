@@ -15,7 +15,7 @@ import java.net.URLClassLoader
 import Files._
 import java.net.URL
 
-private class Runner(classloader: ScalaClassLoader) {
+class Runner private (classloader: ScalaClassLoader) {
 
   val Runner_run: Method = {
     val internal_Runner = Class.forName(Runner.name, true, classloader)
@@ -24,7 +24,7 @@ private class Runner(classloader: ScalaClassLoader) {
     run
   }
 
-  def runRaw(name: String): Try[(String, String)] = {
+  def runCaptured(name: String): Try[String] = {
     def kernel(out: OutputStream, err: OutputStream): Try[Unit] = Try {
       try classloader.asContext[Unit](Runner_run.invoke(null, name, out, err))
       catch {
@@ -32,41 +32,48 @@ private class Runner(classloader: ScalaClassLoader) {
       }
     }
     val outStream = new ByteArrayOutputStream(50)
-    val errStream = new ByteArrayOutputStream(50)
     try {
-      val result = kernel(outStream, errStream)
+      val result = kernel(outStream, outStream)
       outStream.flush()
-      errStream.flush()
-      result.map(_ => outStream.toString -> errStream.toString)
+      result.map(_ => outStream.toString)
     }
-    finally {
-      outStream.close()
-      errStream.close()
-    }
+    finally outStream.close()
   }
 }
 
-private object Runner {
+object Runner {
 
-  val name = "scala.tools.tastytest.internal.Runner"
+  private val name = "scala.tools.tastytest.internal.Runner"
 
-  def getSystemClasspath: Array[URL] = ClassLoader.getSystemClassLoader().asInstanceOf[URLClassLoader].getURLs
+  private def currentClasspath: Try[Seq[URL]] = splitClasspath(System.getProperty("java.class.path"))
 
-  def classloadFrom(classpath: String): Try[Runner] = for {
-    classpaths  <- Try(classpath.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL))
-    classloader <- Try(ScalaClassLoader.fromURLs(classpaths.toIndexedSeq ++ getSystemClasspath))
-    runner      <- Try(new Runner(classloader))
-  } yield runner
+  private def splitClasspath(classpath: String): Try[Seq[URL]] =
+    Try(classpath.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL).toIndexedSeq)
+
+  def classloadFrom(classpath: String): Try[ScalaClassLoader] = for {
+    classpaths  <- splitClasspath(classpath)
+    current     <- currentClasspath
+    classloader <- Try(ScalaClassLoader.fromURLs(current ++ classpaths))
+  } yield classloader
+
+  def run(classloader: ScalaClassLoader, name: String): Unit = {
+    try {
+      val objClass = Class.forName(name, true, classloader)
+      val main     = objClass.getMethod("main", classOf[Array[String]])
+      if (!Modifier.isStatic(main.getModifiers))
+        throw new NoSuchMethodException(name + ".main is not static")
+      classloader.asContext[Unit](main.invoke(null, Array.empty[String]))
+    }
+    catch {
+      case NonFatal(ex) => throw ReflectionUtils.unwrapThrowable(ex)
+    }
+  }
+
+  def capturingRunner(classloader: ScalaClassLoader): Try[Runner] = Try(new Runner(classloader))
 
   def main(args: Array[String]): Unit = {
     val Array(classpath, className) = args
-    (for {
-      runner     <- classloadFrom(classpath)
-      (out, err) <- runner.runRaw(className)
-    } yield {
-      if (err.nonEmpty) println(s"$className completed with\n  output: $out\n  error: $err")
-      else println(s"$className completed with\n  output: $out")
-    }).get
+    classloadFrom(classpath).map(run(_, className)).get
   }
 
 }
