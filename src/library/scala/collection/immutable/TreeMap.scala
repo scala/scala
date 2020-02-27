@@ -48,12 +48,13 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
-final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
+final class TreeMap[A, +B] private (_tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
      with Serializable
      with HasForeachEntry[A, B] {
+  private[immutable] val tree: RB.Tree[A, B] = _tree
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
@@ -62,11 +63,11 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = newMap[B](RB.rangeImpl(tree, from, until))
-  override def range(from: A, until: A): TreeMap[A, B] = newMap[B](RB.range(tree, from, until))
-  override def from(from: A): TreeMap[A, B] = newMap[B](RB.from(tree, from))
-  override def to(to: A): TreeMap[A, B] = newMap[B](RB.to(tree, to))
-  override def until(until: A): TreeMap[A, B] = newMap[B](RB.until(tree, until))
+  override def rangeImpl(from: Option[A], until: Option[A]): TreeMap[A, B] = newMapOrSelf[B](RB.rangeImpl(tree, from, until))
+  override def range(from: A, until: A): TreeMap[A, B] = newMapOrSelf[B](RB.range(tree, from, until))
+  override def from(from: A): TreeMap[A, B] = newMapOrSelf[B](RB.from(tree, from))
+  override def to(to: A): TreeMap[A, B] = newMapOrSelf[B](RB.to(tree, to))
+  override def until(until: A): TreeMap[A, B] = newMapOrSelf[B](RB.until(tree, until))
 
   override def firstKey = RB.smallest(tree).key
   override def lastKey = RB.greatest(tree).key
@@ -83,22 +84,22 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
   override def lastOption = if (RB.isEmpty(tree)) None else Some(last)
 
-  override def tail = newMap(RB.delete(tree, firstKey))
-  override def init = newMap(RB.delete(tree, lastKey))
+  override def tail = newMapOrSelf(RB.delete(tree, firstKey))
+  override def init = newMapOrSelf(RB.delete(tree, lastKey))
 
   override def drop(n: Int) = {
     if (n <= 0) this
     else if (n >= size) empty
-    else newMap(RB.drop(tree, n))
+    else newMapOrSelf(RB.drop(tree, n))
   }
 
   override def take(n: Int) = {
     if (n <= 0) empty
     else if (n >= size) this
-    else newMap(RB.take(tree, n))
+    else newMapOrSelf(RB.take(tree, n))
   }
 
-  private def newMap[B1 >: B](newTree: RedBlackTree.Tree[A, B1]): TreeMap[A, B1] = {
+  private def newMapOrSelf[B1 >: B](newTree: RB.Tree[A, B1]): TreeMap[A, B1] = {
     if (newTree eq tree) this
     else new TreeMap(newTree)
   }
@@ -107,7 +108,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
-    else newMap(RB.slice(tree, from, until))
+    else newMapOrSelf(RB.slice(tree, from, until))
   }
 
   override def dropRight(n: Int) = take(size - math.max(n, 0))
@@ -126,7 +127,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
 
   /** A factory to create empty maps of the same type of keys.
    */
-  override def empty: TreeMap[A, B] = newMap(null)
+  override def empty: TreeMap[A, B] = newMapOrSelf(null)
 
   /** A new TreeMap with the entry added is returned,
    *  if key is <em>not</em> in the TreeMap, otherwise
@@ -137,7 +138,8 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    *  @param value   the value to be associated with `key`
    *  @return        a new $coll with the updated binding
    */
-  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] = newMap(RB.update(tree, key, value, overwrite = true))
+  override def updated [B1 >: B](key: A, value: B1): TreeMap[A, B1] =
+    newMapOrSelf(RB.update(tree, key, value, overwrite = true))
 
   /** Add a key/value pair to this map.
    *  @tparam   B1   type of the value of the new binding, a supertype of `B`
@@ -164,8 +166,21 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    *
    *  @param xs     the traversable object.
    */
-  override def ++[B1 >: B] (xs: GenTraversableOnce[(A, B1)]): TreeMap[A, B1] =
-    ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
+  override def ++[B1 >: B] (xs: GenTraversableOnce[(A, B1)]): TreeMap[A, B1] = {
+    xs match {
+      case tm: TreeMap[A, B] if ordering == tm.ordering =>
+        newMapOrSelf(RB.union(tree, tm.tree))
+      case _ =>
+        // probably shoul dbe something like
+        //        val builder = TreeMap.newBuilder[A, B1]
+        //        builder ++= this
+        //        builder ++= xs
+        //        builder.result()
+        //but for compat and simplicity
+
+        ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
+    }
+  }
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
@@ -177,12 +192,19 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    */
   def insert [B1 >: B](key: A, value: B1): TreeMap[A, B1] = {
     assert(!RB.contains(tree, key))
-    newMap(RB.update(tree, key, value, overwrite = true))
+    newMapOrSelf(RB.update(tree, key, value, overwrite = true))
   }
 
   def - (key:A): TreeMap[A, B] =
-    if (!RB.contains(tree, key)) this
-    else newMap(RB.delete(tree, key))
+   newMapOrSelf(RB.delete(tree, key))
+
+  override def --(keys: GenTraversableOnce[A]): TreeMap[A, B] =  keys match {
+    case ts: TreeSet[A] if ordering == ts.ordering =>
+      newMapOrSelf(RB.difference(tree, ts.tree))
+    case _ =>
+      // probably can do something better here to avoid all of the temporary TreeMaps wrapping the changes
+      super.--(keys)
+  }
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.
@@ -222,12 +244,26 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       hasher.finalizeHash
     }
   }
-
-  override def keySet: SortedSet[A] = new DefaultKeySortedSet {
-    override def foreach[U](f: A => U): Unit = RB.foreachEntry(tree, {(key: A, _: B) => f(key)})
-  }
+  override def keySet: TreeSet[A] = new TreeSet[A](tree)(ordering)
 
   override def values: scala.Iterable[B] = new DefaultValuesIterable {
     override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
+  }
+  override def filter(f: ((A, B)) => Boolean): TreeMap[A, B] =
+    newMapOrSelf(RB.filterEntries[A, B](tree, (k, v) => f((k, v))))
+
+  override def partition(p: ((A, B)) => Boolean): (TreeMap[A, B], TreeMap[A, B]) = {
+    val (l, r) = RB.partitionEntries[A, B](tree, (k, v) => p((k, v)))
+    (newMapOrSelf(l), newMapOrSelf(r))
+  }
+
+  override def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[TreeMap[A, B], (A, W), That]): That = {
+    bf match {
+      case sm: TreeMap.SortedMapCanBuildFrom[A, B] if sm.ordering == ordering =>
+        val t2 = RB.transform[A, B, W](tree, f)
+        if (t2 eq tree) this.asInstanceOf[That]
+        else new TreeMap(t2).asInstanceOf[That]
+      case _ => super.transform(f)
+    }
   }
 }
