@@ -217,50 +217,46 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
       }
     }
 
-    // Replace the ValDefs in the async block with Assigns to the corresponding lifted
-    // fields. Similarly, replace references to them with references to the field.
+    // Adjust the tree to:
+    //   - lifted local variables are entered into the scope of the state machine class
+    //   - references to them are rewritten as referencs to the fields.
+    //   - the rhs of ValDefs that initialize such fields is turned into an assignment to the field
     object UseFields extends explicitOuter.OuterPathTransformer(currentTransformState.unit) {
       private def fieldSel(tree: Tree) = {
         assert(currentOwner != NoSymbol)
-        val outerOrThis = if (stateMachineClass == currentClass) This(stateMachineClass) else {
+        val outerOrThis = if (stateMachineClass == currentClass) gen.mkAttributedThis(stateMachineClass) else {
+          // These references need to be selected from an outer reference, because explicitouter
+          // has already run we must perform this transform explicitly here.
           tree.symbol.makeNotPrivate(tree.symbol.owner)
           outerPath(outerValue, currentClass.outerClass, stateMachineClass)
         }
         atPos(tree.pos)(Select(outerOrThis.setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
       }
       override def transform(tree: Tree): Tree = tree match {
-        case _ if currentOwner == stateMachineClass =>
-          super.transform(tree)
-        case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) =>
-          assignUnitType(treeCopy.Assign(tree, fieldSel(tree), transform(rhs.changeOwner((tree.symbol, currentOwner)))))
-        case _: DefTree if liftedSyms(tree.symbol) =>
+        case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) && currentOwner == applySym =>
+          // Drop the lifted definitions from the apply method
+          assignUnitType(treeCopy.Assign(tree, fieldSel(tree), transform(rhs.changeOwner(tree.symbol, currentOwner))))
+        case _: DefTree if liftedSyms(tree.symbol) && currentOwner == applySym =>
+          // Drop the lifted definitions from the apply method
           EmptyTree
+        case md: MemberDef if currentOwner == stateMachineClass && liftedSyms(tree.symbol)=>
+          stateMachineClass.info.decls.enter(md.symbol)
+          super.transform(tree)
         case Assign(i @ Ident(name), rhs) if liftedSyms(i.symbol) =>
-          // Use localTyper to adapt () to BoxedUnit in `val ifRes: Object; if (cond) "" else ()`
-          treeCopy.Assign(tree, fieldSel(i), localTyper.typed(transform(rhs), i.symbol.tpe))
+          treeCopy.Assign(tree, fieldSel(i), adapt(transform(rhs), i.symbol.tpe))
         case Ident(name) if liftedSyms(tree.symbol) =>
           fieldSel(tree).setType(tree.tpe)
         case _ =>
           super.transform(tree)
       }
-    }
 
-    val liftablesUseFields = liftedFields.map {
-      case vd: ValDef => vd
-      case x          => UseFields.transformAtOwner(stateMachineClass, x)
+      // Use localTyper to adapt () to BoxedUnit in `val ifRes: Object; if (cond) "" else ()`
+      private def adapt(tree: Tree, pt: Type): Tree = localTyper.typed(tree, pt)
     }
-
-    liftablesUseFields.foreach { t =>
-      if (t.symbol != null && t.symbol.owner == stateMachineClass) {
-        stateMachineClass.info.decls.enter(t.symbol)
-        // TODO AM: refine the resetting of the lazy flag -- this is so that local lazy vals that are lifted to the class
-        // actually get their LazyRef allocated to the var that holds the lazy val's reference
-        t.symbol.resetFlag(Flags.LAZY)
-      }
-    }
-
     val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
-    val applyRhs = UseFields.transformAtOwner(applySym, applyBody)
+    val ClassDef(_, _, _, Template(_, _, (applyDefDef: DefDef) :: liftablesUseFields)) =
+      UseFields.transformAtOwner(stateMachineClass.owner, ClassDef(stateMachineClass, DefDef(applySym, applyBody) :: liftedFields))
+
     if (settings.debug.value && shouldLogAtThisPhase) {
       val location = try asyncBody.pos.source.path catch {
         case _: UnsupportedOperationException => asyncBody.pos.toString
@@ -269,7 +265,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     }
     futureSystemOps.dot(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
 
-    (cleanupContainsAwaitAttachments(applyRhs), liftablesUseFields)
+    (cleanupContainsAwaitAttachments(applyDefDef.rhs), liftablesUseFields)
   }
 
   def logDiagnostics(location: String, anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {

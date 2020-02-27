@@ -35,6 +35,21 @@ class AnnotationDrivenAsync {
     assertEquals(3, run(code))
   }
 
+ @Test
+  def testLiftedLazyVal(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |object Test {
+        |  def test: Future[(Int, Int, Int)] = async { var i = 0; var z = 0; lazy val foo = { def ii = i; z = -1; ii }; await(f(1)) + await(f(2)); i += 1; (foo, foo, z) }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals((1, 1, -1), run(code))
+  }
+
   @Test
   def testCaseClassLifting(): Unit = {
     // Note: this emits a warning under -Ydebug (which we sometimes manually set below in the compiler setup)

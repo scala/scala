@@ -145,10 +145,12 @@ trait Lifter extends ExprBuilder {
         val sym = t.symbol
         val treeLifted = t match {
           case vd@ValDef(_, _, tpt, rhs)                    =>
-            sym.setFlag(MUTABLE | STABLE | PRIVATE | LOCAL)
+            val isLazy = sym.isLazy
+            sym.setFlag(STABLE | PRIVATE | LOCAL)
+            if (isLazy) sym.resetFlag(LAZY) else sym.setFlag(MUTABLE)
             sym.setName(name.fresh(sym.name.toTermName))
             sym.setInfo(sym.info.deconst)
-            val rhs1 = if (sym.asTerm.isLazy) rhs else EmptyTree
+            val rhs1 = if (isLazy) rhs else EmptyTree
             treeCopy.ValDef(vd, Modifiers(sym.flags), sym.name, TypeTree(sym.info).setPos(t.pos), rhs1)
           case dd@DefDef(_, _, tparams, vparamss, tpt, rhs) =>
             sym.setName(this.name.freshen(sym.name.toTermName))
