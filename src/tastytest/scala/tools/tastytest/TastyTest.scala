@@ -2,33 +2,27 @@ package scala.tools.tastytest
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.tools.nsc
-import scala.util.{ Try, Success, Failure }
-import scala.util.chaining._
 
-import dotty.tools.dotc
-import dotc.reporting.{ Reporter => DottyReporter }
+import scala.util.{ Try, Success, Failure }
 
 import java.nio.file.{ Files => JFiles, Paths => JPaths, Path => JPath }
 import java.io.ByteArrayOutputStream
-import java.{ lang => jl, util => ju }
-import jl.reflect.Modifier
+import java.{ util => ju }
 
 import SourceKind._
 import Files._
-import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 import scala.util.Properties
 
 object TastyTest {
 
-  def runSuite(src: String, srcRoot: String, dottyLibrary: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
+  def runSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
     (pre, src2, src3) <- getRunSources(srcRoot/src)
     out               <- outDir.fold(tempDir(pkgName))(dir)
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", src3:_*)
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
     testNames         <- visibleClasses(out, pkgName, src2:_*)
-    _                 <- runMainOn(out, dottyLibrary, testNames:_*)
+    _                 <- runMainOn(out, testNames:_*)
   } yield ()
 
   def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String]): Try[Unit] = for {
@@ -49,7 +43,7 @@ object TastyTest {
 
   private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(scalac(out, additionalSettings, sources:_*))("scalac failed to compile sources.")
+    successWhen(Scalac.scalac(out, additionalSettings, sources:_*))("scalac failed to compile sources.")
   }
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
@@ -78,7 +72,7 @@ object TastyTest {
           }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
-              scalac(out, additionalSettings, source)
+              Scalac.scalac(out, additionalSettings, source)
             }
           }
           byteArrayStream.flush()
@@ -89,7 +83,7 @@ object TastyTest {
           byteArrayStream.close()
         }
       }
-      if (compiled) {
+      if (compiled.getOrElse(false)) {
         if (failMap.contains(source)) {
           errors += source
           printerrln(s"ERROR: $source successfully compiled.")
@@ -138,70 +132,10 @@ object TastyTest {
     }
   }
 
-  def scalac(out: String, additionalSettings: Seq[String], sources: String*): Boolean = {
-
-    def runCompile(global: Global): Boolean = {
-      global.reporter.reset()
-      new global.Run() compile sources.toList
-      val result = !global.reporter.hasErrors
-      global.reporter.finish()
-      result
-    }
-
-    def newCompiler(args: String*): Global =
-      fromSettings(new Settings().tap(_ processArguments(args.toList, true)))
-
-    def fromSettings(settings: Settings): Global =
-      Global(settings, new ConsoleReporter(settings).tap(_.shortname = true))
-
-    def compile(args: String*) =
-      Try(runCompile(newCompiler(args: _*))).getOrElse(false)
-
-    sources.isEmpty || {
-      val settings = Array(
-        "-d", out,
-        "-classpath", out,
-        "-deprecation",
-        "-Xfatal-warnings",
-        "-usejavacp"
-      ) ++ additionalSettings
-      compile(settings:_*)
-    }
-  }
-
-  // TODO call it directly when we are bootstrapped
-  private[this] lazy val dotcProcess: Array[String] => Boolean = {
-    val mainClass = Class.forName("dotty.tools.dotc.Main")
-    val reporterClass = Class.forName("dotty.tools.dotc.reporting.Reporter")
-    val Main_process = mainClass.getMethod("process", classOf[Array[String]])
-    assert(Modifier.isStatic(Main_process.getModifiers), "dotty.tools.dotc.Main.process is not static!")
-    val Reporter_hasErrors = reporterClass.getMethod("hasErrors")
-    args => Try {
-      val reporter  = Main_process.invoke(null, args)
-      val hasErrors = Reporter_hasErrors.invoke(reporter).asInstanceOf[Boolean]
-      !hasErrors
-    }.getOrElse(false)
-  }
-
-  def dotc(out: String, sources: String*): Boolean = {
-    sources.isEmpty || {
-      val args = Array(
-        "-d", out,
-        "-classpath", out,
-        "-deprecation",
-        "-Xfatal-warnings",
-        "-usejavacp"
-      ) ++ sources
-      dotcProcess(args)
-    }
-  }
-
   def dotcPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
-    successWhen(dotc(out, sources:_*))("dotc failed to compile sources.")
+    successWhen(Dotc.dotc(out, sources:_*))("dotc failed to compile sources.")
   }
-
-  private def classpaths(paths: String*): String = paths.mkString(":")
 
   private def getSourceAsName(path: String): String =
     path.split(pathSep).last.stripSuffix(".scala")
@@ -264,7 +198,10 @@ object TastyTest {
   private def successWhen(cond: Boolean)(ifFalse: => String): Try[Unit] =
     Option.when(cond)(()).failOnEmpty(new TestFailure(ifFalse))
 
-  private def runMainOn(out: String, dottyLibrary: String, tests: String*): Try[Unit] = {
+  private def successWhen(cond: Try[Boolean])(ifFalse: => String): Try[Unit] =
+    cond.flatMap(success => if (success) Success(()) else Failure(new TestFailure(ifFalse)))
+
+  private def runMainOn(out: String, tests: String*): Try[Unit] = {
     def runTests(errors: mutable.ArrayBuffer[String], runner: Runner): Try[Unit] = Try {
       for (test <- tests) {
         val (pkgs, name) = {
@@ -272,12 +209,20 @@ object TastyTest {
           names.init.mkString(".") -> names.last
         }
         println(s"run suite ${if (pkgs.nonEmpty) pkgs + '.' else ""}${cyan(name)} started")
-        runner.run(test) match {
-          case Success(output) =>
+        runner.runRaw(test) match {
+          case Success((output, error)) =>
             val diff = Diff.compareContents(output, "Suite passed!")
-            if (diff.nonEmpty) {
+            if (diff.nonEmpty && error.nonEmpty) {
+              errors += test
+              printerrln(s"ERROR: $test failed, unexpected output with error.\n  output: $diff\n  error: $error")
+            }
+            else if (diff.nonEmpty) {
               errors += test
               printerrln(s"ERROR: $test failed, unexpected output.\n$diff")
+            }
+            else if (error.nonEmpty) {
+              errors += test
+              printerrln(s"ERROR: $test failed, unexpected errors.\n$error")
             }
           case Failure(err) =>
             errors += test
@@ -286,7 +231,7 @@ object TastyTest {
       }
     }
     for {
-      runner <- Runner.classloadFrom(classpaths(out, dottyLibrary))
+      runner <- Runner.classloadFrom(out)
       errors =  mutable.ArrayBuffer.empty[String]
       _      <- runTests(errors, runner)
       _      <- successWhen(errors.isEmpty)({

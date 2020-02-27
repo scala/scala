@@ -9,12 +9,11 @@ class TastyTestJUnit {
 
   @test def run(): Unit = TastyTest.runSuite(
     src                = "run",
-    dottyLibrary       = assertPropIsSet(propDottyLibrary),
     srcRoot            = assertPropIsSet(propSrc),
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Nil
-  )
+  ).get
 
   @test def pos(): Unit = TastyTest.posSuite(
     src                = "pos",
@@ -22,7 +21,7 @@ class TastyTestJUnit {
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Nil
-  )
+  ).get
 
   @test def posFalse(): Unit = TastyTest.posSuite(
     src                = "pos-false",
@@ -30,7 +29,7 @@ class TastyTestJUnit {
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Nil
-  )
+  ).get
 
   @test def posFalseNoAnnotations(): Unit = TastyTest.posSuite(
     src                = "pos-false-noannotations",
@@ -38,7 +37,7 @@ class TastyTestJUnit {
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Seq("-Ytasty-no-annotations")
-  )
+  ).get
 
   @test def neg(): Unit = TastyTest.negSuite(
     src                = "neg",
@@ -46,7 +45,7 @@ class TastyTestJUnit {
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Nil
-  )
+  ).get
 
   @test def negFalse(): Unit = TastyTest.negSuite(
     src                = "neg-false",
@@ -54,9 +53,8 @@ class TastyTestJUnit {
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
     additionalSettings = Nil
-  )
+  ).get
 
-  val propDottyLibrary = "tastytest.dotty-library"
   val propSrc          = "tastytest.src"
   val propPkgName      = "tastytest.packageName"
 
