@@ -70,12 +70,12 @@ class ProcessTest {
     assertEquals(0, res)
   }
 
-  @Test def processApply(): Unit = {
+  @Test def processApply(): Unit = testily {
     val res = Process("cat", tempFiles.map(_.getAbsolutePath)).!
     assertEquals(0, res)
   }
 
-  @Test def t10696(): Unit = {
+  @Test def t10696(): Unit = testily {
     val res1 = Process("false").lazyLines
     assertEquals("LazyList(<not computed>)", res1.toString())
     val ex = Try(res1.head).failed.get
