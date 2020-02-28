@@ -177,7 +177,6 @@ val mimaFilterSettings = Seq {
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap.foreachEntry"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$HashCodeAccumulator"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.foreachEntry"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.foreachEntry"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.foreachEntry"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.foreachEntry"),
@@ -186,6 +185,15 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.util.hashing.MurmurHash3.emptyMapHash"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapKeys"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapValues"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$NList"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$NList$"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$EntriesIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$ValuesIterator"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$TreeIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedMapFactory#SortedMapCanBuildFrom.ordering"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.tree"),
 
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.package$WrappedCanBuildFrom"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapBuilder"),
