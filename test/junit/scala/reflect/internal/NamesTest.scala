@@ -35,10 +35,10 @@ class NamesTest {
 
   @Test
   def termNamesNotEqualsTypeNames(): Unit = {
-    assert(h1 ne h1y)
-    assert(h1 != h1y)
-    assert(h2 ne h2y)
-    assert(h2 != h2y)
+    assert((h1: AnyRef) ne h1y)
+    assert((h1: AnyRef) != h1y)
+    assert((h2: AnyRef) ne h2y)
+    assert((h2: AnyRef) != h2y)
   }
 
   @Test

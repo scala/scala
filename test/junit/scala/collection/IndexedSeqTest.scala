@@ -305,7 +305,7 @@ package IndexedTestImpl {
     def toType(n: Int) = n
   }
   trait FloatTestData extends DataProvider [Float] {
-    def toType(n: Int) = n
+    def toType(n: Int) = n.toFloat
   }
   trait DoubleTestData extends DataProvider [Double] {
     def toType(n: Int) = n

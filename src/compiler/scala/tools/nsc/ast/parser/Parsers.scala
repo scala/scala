@@ -2859,7 +2859,7 @@ self =>
           case EQUALS =>
             in.nextToken()
             TypeDef(mods, name, tparams, typ())
-          case t if t == SUPERTYPE || t == SUBTYPE || t == COMMA || t == RBRACE || isStatSep(t) =>
+          case SEMI | NEWLINE | NEWLINES | SUPERTYPE | SUBTYPE | RBRACE | EOF =>
             TypeDef(mods | Flags.DEFERRED, name, tparams, typeBounds())
           case _ =>
             syntaxErrorOrIncompleteAnd("`=`, `>:`, or `<:` expected", skipIt = true)(
