@@ -169,12 +169,5 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       def owner: Symbol = _owner
       def setOwner(owner: Symbol): ThisContext = { _owner = owner; this }
     }
-
-    final def withPhaseNoLater[T](otherPhase: scala.tools.nsc.Phase)(op: Context => T)(implicit ctx: Context): T = {
-      if (!isNoPhase(otherPhase) && phase.id > otherPhase.id)
-        enteringPhase(otherPhase) { op(ctx) }
-      else
-        op(ctx)
-    }
   }
 }

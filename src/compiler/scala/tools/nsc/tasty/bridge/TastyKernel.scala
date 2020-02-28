@@ -18,18 +18,18 @@ trait TastyKernel { self: TastyUniverse =>
 
   type FlagSet = symbolTable.FlagSet
 
-  def isEmpty(flags: FlagSet): Boolean = flags == symbolTable.NoFlags
-  def emptyFlags: FlagSet = symbolTable.NoFlags
-  def emptyTastyFlags: TastyFlagSet = EmptyTastyFlags
+  final def isEmpty(flags: FlagSet): Boolean = flags == symbolTable.NoFlags
+  final def emptyFlags: FlagSet = symbolTable.NoFlags
+  final def emptyTastyFlags: TastyFlagSet = EmptyTastyFlags
 
   type Reporter = internal.Reporter
-  def reporter: Reporter = symbolTable.reporter
+  final def reporter: Reporter = symbolTable.reporter
 
   type Postion = symbolTable.Position
-  def noPosition: Postion = symbolTable.NoPosition
+  final def noPosition: Postion = symbolTable.NoPosition
 
-  private[bridge] def settings: Settings = symbolTable.settings
-  private[bridge] def phase: Phase = symbolTable.phase
+  private[bridge] final def settings: Settings = symbolTable.settings
+  private[bridge] final def phase: Phase = symbolTable.phase
 
   type Type = symbolTable.Type
   type ClassInfoType = symbolTable.ClassInfoType
@@ -44,56 +44,55 @@ trait TastyKernel { self: TastyUniverse =>
   type TypeBounds = symbolTable.TypeBounds
 
   type ConstantType = symbolTable.ConstantType
-  def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
+  final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
 
-  def errorType: Type = symbolTable.ErrorType
-  def noType: Type = symbolTable.NoType
+  final def errorType: Type = symbolTable.ErrorType
+  final def noType: Type = symbolTable.NoType
 
-  def isError(tpe: Type): Boolean = tpe `eq` symbolTable.ErrorType
-  def isNoType(tpe: Type): Boolean = tpe `eq` symbolTable.NoType
+  final def isError(tpe: Type): Boolean = tpe `eq` symbolTable.ErrorType
+  final def isNoType(tpe: Type): Boolean = tpe `eq` symbolTable.NoType
 
-  def noPrefix: Type = symbolTable.NoPrefix
+  final def noPrefix: Type = symbolTable.NoPrefix
 
   object TypeBounds {
-    def unapply(tpe: TypeBounds): Option[(Type, Type)] = symbolTable.TypeBounds.unapply(tpe)
-    def empty: TypeBounds = symbolTable.TypeBounds.empty
-    def upper(hi: Type): TypeBounds = symbolTable.TypeBounds.upper(hi)
-    def lower(lo: Type): TypeBounds = symbolTable.TypeBounds.lower(lo)
-    def bounded(lo: Type, hi: Type): TypeBounds = symbolTable.TypeBounds.apply(lo, hi)
+    final def unapply(tpe: TypeBounds): Option[(Type, Type)] = symbolTable.TypeBounds.unapply(tpe)
+    final def empty: TypeBounds = symbolTable.TypeBounds.empty
+    final def upper(hi: Type): TypeBounds = symbolTable.TypeBounds.upper(hi)
+    final def lower(lo: Type): TypeBounds = symbolTable.TypeBounds.lower(lo)
+    final def bounded(lo: Type, hi: Type): TypeBounds = symbolTable.TypeBounds.apply(lo, hi)
   }
 
-  def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
+  final def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
     symbolTable.cloneSymbolsAtOwner(syms,owner)
 
-  def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = symbolTable.defineOriginalOwner(sym, owner)
+  final def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = symbolTable.defineOriginalOwner(sym, owner)
 
   object GenPolyType {
-    def apply(tparams: List[Symbol], tpe: Type): Type = symbolTable.GenPolyType.apply(tparams,tpe)
-    def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
+    final def apply(tparams: List[Symbol], tpe: Type): Type = symbolTable.GenPolyType.apply(tparams,tpe)
+    final def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
   }
 
-  def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
+  final def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
 
-  def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)
-  def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
-  private[bridge] def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
-  private[bridge] def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
-  private[bridge] def mkTypeRef(tpe: Type, sym: Symbol, args: List[Type]): Type = symbolTable.typeRef(tpe, sym, args)
-  private[bridge] def mkAppliedType(sym: Symbol, args: List[Type]): Type = symbolTable.appliedType(sym, args)
-  private[bridge] def mkAppliedType(tycon: Type, args: List[Type]): Type = symbolTable.appliedType(tycon, args)
-  private[bridge] def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
-  def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
-  def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
-  def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
-  def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
-  def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
-  def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
+  final def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)
+  final def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)
+  private[bridge] final def mkMethodType(params: List[Symbol], res: Type): MethodType = symbolTable.internal.methodType(params, res)
+  private[bridge] final def mkPolyType(params: List[Symbol], res: Type): PolyType = symbolTable.internal.polyType(params, res)
+  private[bridge] final def mkTypeRef(tpe: Type, sym: Symbol, args: List[Type]): Type = symbolTable.typeRef(tpe, sym, args)
+  private[bridge] final def mkAppliedType(sym: Symbol, args: List[Type]): Type = symbolTable.appliedType(sym, args)
+  private[bridge] final def mkAppliedType(tycon: Type, args: List[Type]): Type = symbolTable.appliedType(tycon, args)
+  private[bridge] final def mkExistentialType(params: List[Symbol], res: Type): ExistentialType = symbolTable.internal.existentialType(params, res)
+  final def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = symbolTable.internal.classInfoType(parents, decls, sym)
+  final def mkThisType(sym: Symbol): Type = symbolTable.internal.thisType(sym)
+  final def mkConstantType(c: Constant): ConstantType = symbolTable.internal.constantType(c)
+  final def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
+  final def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
+  final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
 
-  def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
+  final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
 
   object defn {
-    def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
     final val AnyTpe: Type = symbolTable.definitions.AnyTpe
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
@@ -106,9 +105,9 @@ trait TastyKernel { self: TastyUniverse =>
     final val ScalaStrictFPAttr: ClassSymbol = symbolTable.definitions.ScalaStrictFPAttr
     final val TailrecClass: ClassSymbol = symbolTable.definitions.TailrecClass
     final val StaticAnnotationClass: ClassSymbol = symbolTable.definitions.StaticAnnotationClass
-    def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] =
-      ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
-    def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
+    final def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
+    final def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
+    final def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
   }
 
   object nme {
@@ -121,21 +120,20 @@ trait TastyKernel { self: TastyUniverse =>
     final val ROOTPKG: TermName = symbolTable.nme.ROOTPKG
     final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
     final val WILDCARD: TermName = symbolTable.nme.WILDCARD
-    def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
+    final def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
   }
 
   object termNames {
-    val EMPTY: TermName = symbolTable.termNames.EMPTY
+    final val EMPTY: TermName = symbolTable.termNames.EMPTY
   }
 
   private[bridge] type LazyType = symbolTable.LazyType
   private[bridge] type FlagAgnosticCompleter = symbolTable.FlagAgnosticCompleter
 
-  def noSymbol: Symbol = symbolTable.NoSymbol
-  // def isSymbol(sym: Symbol) = sym `ne` symbolTable.NoSymbol
+  final def noSymbol: Symbol = symbolTable.NoSymbol
 
   type Scope = symbolTable.Scope
-  def emptyScope: Scope = symbolTable.EmptyScope
+  final def emptyScope: Scope = symbolTable.EmptyScope
 
   type Symbol = symbolTable.Symbol
   type MethodSymbol = symbolTable.MethodSymbol
@@ -145,7 +143,7 @@ trait TastyKernel { self: TastyUniverse =>
   type FreeTypeSymbol = symbolTable.FreeTypeSymbol
 
   type Constant = symbolTable.Constant
-  def Constant(value: Any): Constant = symbolTable.Constant(value)
+  final def Constant(value: Any): Constant = symbolTable.Constant(value)
 
   type Mirror = symbolTable.Mirror
 
@@ -153,44 +151,44 @@ trait TastyKernel { self: TastyUniverse =>
   type TermName = symbolTable.TermName
   type TypeName = symbolTable.TypeName
 
-  def showRaw(flags: Long): String = symbolTable.showRaw(flags)
-  def showRaw(any: Product): String = symbolTable.showRaw(any)
+  final def showRaw(flags: Long): String = symbolTable.showRaw(flags)
+  final def showRaw(any: Product): String = symbolTable.showRaw(any)
 
-  def mkTermName(str: String): TermName = symbolTable.TermName(str)
+  final def mkTermName(str: String): TermName = symbolTable.TermName(str)
 
   type Tree = symbolTable.Tree
 
   type RefTree = symbolTable.RefTree
-  def RefTree(qual: Tree, name: Name): RefTree = symbolTable.RefTree(qual, name)
+  final def RefTree(qual: Tree, name: Name): RefTree = symbolTable.RefTree(qual, name)
 
   type TypeTree = symbolTable.TypeTree
-  def TypeTree(tp: Type): TypeTree = symbolTable.TypeTree(tp)
+  final def TypeTree(tp: Type): TypeTree = symbolTable.TypeTree(tp)
 
   type This = symbolTable.This
 
   type SeqLiteral = symbolTable.ArrayValue
-  def SeqLiteral(trees: List[Tree], tpt: Tree) = symbolTable.ArrayValue(tpt, trees)
+  final def SeqLiteral(trees: List[Tree], tpt: Tree) = symbolTable.ArrayValue(tpt, trees)
 
   type Typed = symbolTable.Typed
-  def Typed(expr: Tree, tpt: Tree): Typed = symbolTable.Typed(expr, tpt)
+  final def Typed(expr: Tree, tpt: Tree): Typed = symbolTable.Typed(expr, tpt)
 
   type Literal = symbolTable.Literal
-  def Literal(c: Constant): Literal = symbolTable.Literal(c)
+  final def Literal(c: Constant): Literal = symbolTable.Literal(c)
 
   type Ident = symbolTable.Ident
-  def Ident(name: Name): Ident = symbolTable.Ident(name)
+  final def Ident(name: Name): Ident = symbolTable.Ident(name)
 
   type New = symbolTable.New
-  def New(tpt: Tree): New = symbolTable.New(tpt)
+  final def New(tpt: Tree): New = symbolTable.New(tpt)
 
   type If = symbolTable.If
-  def If(cond: Tree, thenp: Tree, elsep: Tree): If = symbolTable.If(cond, thenp, elsep)
+  final def If(cond: Tree, thenp: Tree, elsep: Tree): If = symbolTable.If(cond, thenp, elsep)
 
   type Select = symbolTable.Select
-  def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
+  final def Select(qual: Tree, name: Name): Select = symbolTable.Select(qual, name)
 
   type Annotation = symbolTable.Annotation
-  def mkAnnotation(tree: Tree): Annotation = {tree match {
+  final def mkAnnotation(tree: Tree): Annotation = {tree match {
     case symbolTable.Apply(symbolTable.Select(symbolTable.New(tpt), nme.CONSTRUCTOR), args) =>
       symbolTable.AnnotationInfo(tpt.tpe, args, Nil)
     case _ =>
@@ -198,46 +196,46 @@ trait TastyKernel { self: TastyUniverse =>
   }}
 
   type Phase = reflect.internal.Phase
-  def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase
+  final def isNoPhase(phase: Phase): Boolean = phase `eq` reflect.internal.NoPhase
 
   type SingletonTypeTree = symbolTable.SingletonTypeTree
-  def SingletonTypeTree(ref: Tree): SingletonTypeTree = symbolTable.SingletonTypeTree(ref)
+  final def SingletonTypeTree(ref: Tree): SingletonTypeTree = symbolTable.SingletonTypeTree(ref)
 
   type Apply = symbolTable.Apply
-  def Apply(fun: Tree, args: List[Tree]): Apply = symbolTable.Apply(fun, args)
+  final def Apply(fun: Tree, args: List[Tree]): Apply = symbolTable.Apply(fun, args)
 
   type TypeApply = symbolTable.TypeApply
-  def TypeApply(fun: Tree, args: List[Tree]): TypeApply = symbolTable.TypeApply(fun, args)
+  final def TypeApply(fun: Tree, args: List[Tree]): TypeApply = symbolTable.TypeApply(fun, args)
 
   type AppliedTypeTree = symbolTable.AppliedTypeTree
-  def AppliedTypeTree(tpt: Tree, args: List[Tree]): AppliedTypeTree = symbolTable.AppliedTypeTree(tpt, args)
+  final def AppliedTypeTree(tpt: Tree, args: List[Tree]): AppliedTypeTree = symbolTable.AppliedTypeTree(tpt, args)
 
   type TypeBoundsTree = symbolTable.TypeBoundsTree
-  def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
+  final def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
 
   type CompoundTypeTree = symbolTable.CompoundTypeTree
-  def CompoundTypeTree(tps: List[Tree]): CompoundTypeTree = symbolTable.CompoundTypeTree(symbolTable.Template(tps, symbolTable.noSelfType, Nil))
+  final def CompoundTypeTree(tps: List[Tree]): CompoundTypeTree = symbolTable.CompoundTypeTree(symbolTable.Template(tps, symbolTable.noSelfType, Nil))
 
   type NamedArg = symbolTable.NamedArg
-  def NamedArg(name: Name, value: Tree): NamedArg = symbolTable.NamedArg(Ident(name), value)
+  final def NamedArg(name: Name, value: Tree): NamedArg = symbolTable.NamedArg(Ident(name), value)
 
   type Block = symbolTable.Block
-  def Block(stats: List[Tree], value: Tree): Block = symbolTable.Block((stats :+ value):_*)
+  final def Block(stats: List[Tree], value: Tree): Block = symbolTable.Block((stats :+ value):_*)
 
   type CaseDef = symbolTable.CaseDef
-  def CaseDef(pat: Tree, guard: Tree, body: Tree): CaseDef = symbolTable.CaseDef(pat, guard, body)
+  final def CaseDef(pat: Tree, guard: Tree, body: Tree): CaseDef = symbolTable.CaseDef(pat, guard, body)
 
   type Bind = symbolTable.Bind
-  def Bind(sym: Symbol, body: Tree): Bind = symbolTable.Bind(sym.name, body)
+  final def Bind(sym: Symbol, body: Tree): Bind = symbolTable.Bind(sym.name, body)
 
   type Match = symbolTable.Match
-  def Match(selector: Tree, cases: List[CaseDef]): Match = symbolTable.Match(selector: Tree, cases: List[CaseDef])
+  final def Match(selector: Tree, cases: List[CaseDef]): Match = symbolTable.Match(selector: Tree, cases: List[CaseDef])
 
   type Alternative = symbolTable.Alternative
-  def Alternative(alts: List[Tree]): Alternative = symbolTable.Alternative(alts)
+  final def Alternative(alts: List[Tree]): Alternative = symbolTable.Alternative(alts)
 
   type UnApply = symbolTable.UnApply
-  def UnApply(fun: Tree, implicitArgs: List[Tree], args: List[Tree], patType: Type): UnApply = {
+  final def UnApply(fun: Tree, implicitArgs: List[Tree], args: List[Tree], patType: Type): UnApply = {
     val tree = implicitArgs match {
       case Nil => fun
       case _   => Apply(fun, implicitArgs).setType(fun.tpe.resultType)
@@ -246,16 +244,16 @@ trait TastyKernel { self: TastyUniverse =>
   }
 
   type Annotated = symbolTable.Annotated
-  def Annotated(tpt: Tree, annot: Tree): Annotated = symbolTable.Annotated(annot, tpt)
+  final def Annotated(tpt: Tree, annot: Tree): Annotated = symbolTable.Annotated(annot, tpt)
 
   type Throw = symbolTable.Throw
-  def Throw(err: Tree): Throw = symbolTable.Throw(err)
+  final def Throw(err: Tree): Throw = symbolTable.Throw(err)
 
   type Assign = symbolTable.Assign
-  def Assign(ref: Tree, value: Tree): Assign = symbolTable.Assign(ref, value)
+  final def Assign(ref: Tree, value: Tree): Assign = symbolTable.Assign(ref, value)
 
   type WhileDo = symbolTable.LabelDef
-  def WhileDo(cond: Tree, body: Tree): WhileDo = {
+  final def WhileDo(cond: Tree, body: Tree): WhileDo = {
     val label    = nme.freshWhileName
     val ref      = Ident(label).setType(defn.UnitTpe)
     val rec      = Apply(ref, Nil).setType(defn.UnitTpe)
@@ -266,18 +264,18 @@ trait TastyKernel { self: TastyUniverse =>
   }
 
   type Try = symbolTable.Try
-  def Try(body: Tree, cases: List[CaseDef], finalizer: Tree): Try = symbolTable.Try(body, cases, finalizer)
+  final def Try(body: Tree, cases: List[CaseDef], finalizer: Tree): Try = symbolTable.Try(body, cases, finalizer)
 
-  def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
+  final def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
 
-  def emptyTree: Tree = symbolTable.EmptyTree
+  final def emptyTree: Tree = symbolTable.EmptyTree
 
-  def mkScope: Scope = symbolTable.newScope
+  final def mkScope: Scope = symbolTable.newScope
 
-  def enteringPhase[T](phase: Phase)(op: => T): T = symbolTable.enteringPhase[T](phase)(op)
+  final def withPhaseNoLater[T](phase: Phase)(op: => T): T = symbolTable.enteringPhaseNotLaterThan[T](phase)(op)
 
-  def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
+  final def mirrorThatLoaded(sym: Symbol): Mirror = symbolTable.mirrorThatLoaded(sym)
 
-  def lub(tpe1: Type, tpe2: Type): Type = symbolTable.lub(tpe1 :: tpe2 :: Nil)
-  def lub(tpes: List[Type]): Type = symbolTable.lub(tpes)
+  final def lub(tpe1: Type, tpe2: Type): Type = symbolTable.lub(tpe1 :: tpe2 :: Nil)
+  final def lub(tpes: List[Type]): Type = symbolTable.lub(tpes)
 }

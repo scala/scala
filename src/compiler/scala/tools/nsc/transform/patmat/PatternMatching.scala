@@ -102,7 +102,7 @@ trait PatternMatching extends Transform
     // TODO tasty: should we do Child logic here?
     def tastyAddChildren(sel: Tree) {
       val selSym = sel.tpe.typeSymbolDirect
-      if (!selSym.isSealed) return
+      if (!selSym.isSealed || selSym.children.nonEmpty) return
       val ChildAnnotation = mirrorThatLoaded(selSym).getClassIfDefined("scala.annotation.internal.Child")
       if (ChildAnnotation ne NoSymbol) {
         for (childAnnot <- selSym.annotations.filter(_.symbol == ChildAnnotation)) {

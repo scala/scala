@@ -112,10 +112,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
-      cycleAtAddr(currentAddr) =
-        Contexts.withPhaseNoLater(ctx.picklerPhase) { implicit ctx => // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
-          new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
-        }
+      cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) { // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
+        new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
+      }
     }
   }
 
@@ -954,7 +953,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
       if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
         // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
-        Contexts.withPhaseNoLater(ctx.extmethodsPhase) { implicit ctx =>
+        withPhaseNoLater(ctx.extmethodsPhase) {
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(noSymbol)
           for (decl <- cls.info.decls if decl.isMethod) {
@@ -1680,7 +1679,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       op: TreeReader => Context => T) extends Trees.Lazy[T] {
     def complete(implicit ctx: Context): T = {
       ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
-      Contexts.withPhaseNoLater(ctx.picklerPhase) { implicit ctx =>
+      withPhaseNoLater(ctx.picklerPhase) {
         op(reader)(ctx
           .withOwner(owner))
 //          .withModeBits(mode)
