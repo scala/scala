@@ -16,7 +16,6 @@ object Names {
     final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[TastyName]) extends TastyName
     final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                 extends TastyName
     final case class DefaultName(qual: TastyName, num: Int)                                 extends TastyName
-    final case class VariantName(qual: TastyName, contravariant: Boolean)                   extends TastyName
     final case class PrefixName(prefix: SimpleName, qual: TastyName)                        extends TastyName
 
     final val Empty: SimpleName = SimpleName("")
@@ -61,7 +60,6 @@ object Names {
         case name: SignedName    => traverse(sb, name.qual)
         case name: UniqueName    => traverse(traverse(sb, name.qual), name.sep).append(name.num)
         case name: DefaultName   => traverse(sb, name.qual).append(DefaultGetterStr).append(name.num + 1)
-        case name: VariantName   => traverse(sb.append(if (name.contravariant) '-' else '+'), name.qual)
         case name: QualifiedName => traverse(traverse(traverse(sb, name.qual), name.sep), name.selector)
         case name: PrefixName    => traverse(traverse(sb, name.prefix), name.qual)
       }
@@ -78,9 +76,6 @@ object Names {
         case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
         case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
         case SignedName(name,sig)     => sig.map(_.debug).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
-
-        case VariantName(qual, contra) =>
-          traverse(sb, qual).append("[Variant ").append(if (contra) '-' else '+').append(']')
 
         case QualifiedName(qual, sep, name) =>
           traverse(traverse(traverse(sb, qual).append("[Qualified "), sep).append(' '), name).append(']')
@@ -111,7 +106,6 @@ object Names {
         case name: ModuleName    => traverse(sb, name.base)
         case name: SignedName    => traverse(sb, name.qual)
         case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
-        case name: VariantName   => traverse(sb, name.qual)
         case name: QualifiedName => traverse(traverse(sb, name.qual).append(name.sep.raw), name.selector)
         case name: PrefixName    => traverse(sb.append(name.prefix), name.qual)
 
@@ -161,9 +155,5 @@ object Names {
       case _                        => Signature.NotAMethod
     }
 
-    final def variance: Variance = self match {
-      case VariantName(_, contravariant) => if (contravariant) Variance.Contravariant else Variance.Covariant
-      case _                             => Variance.Invariant
-    }
   }
 }

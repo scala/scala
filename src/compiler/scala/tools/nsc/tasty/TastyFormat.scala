@@ -256,7 +256,7 @@ Standard Section: "Comments" Comment*
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 18
+  val MajorVersion: Int = 19
   val MinorVersion: Int = 0
 
   /** Tags used to serialize names */
@@ -276,9 +276,6 @@ object TastyFormat {
 
     final val DEFAULTGETTER = 11     // The name `<meth-name>$default$<param-num>`
                                      // of a default getter that returns a default argument.
-
-    final val VARIANT = 12           // A name `+<name>` or `-<name>` indicating
-                                     // a co- or contra-variant parameter of a type lambda.
 
     final val SUPERACCESSOR = 20     // The name of a super accessor `super$name` created by SuperAccesors.
 
@@ -300,7 +297,6 @@ object TastyFormat {
       case EXPANDPREFIX => "EXPANDPREFIX"
       case UNIQUE => "UNIQUE"
       case DEFAULTGETTER => "DEFAULTGETTER"
-      case VARIANT => "VARIANT"
       case SUPERACCESSOR => "SUPERACCESSOR"
       case INLINEACCESSOR => "INLINEACCESSOR"
       case OBJECTCLASS => "OBJECTCLASS"
@@ -391,9 +387,8 @@ object TastyFormat {
   final val PRIVATEqualified = 89
   final val PROTECTEDqualified = 90
   final val RECtype = 91
-  final val TYPEALIAS = 92
-  final val SINGLETONtpt = 93
-  final val BOUNDED = 94
+  final val SINGLETONtpt = 92
+  final val BOUNDED = 93
 
   // Cat. 4:    tag Nat AST
 
@@ -669,7 +664,6 @@ object TastyFormat {
     case APPLIEDtpt => "APPLIEDtpt"
     case TYPEBOUNDS => "TYPEBOUNDS"
     case TYPEBOUNDStpt => "TYPEBOUNDStpt"
-    case TYPEALIAS => "TYPEALIAS"
     case ANDtype => "ANDtype"
     case ORtype => "ORtype"
     case BYNAMEtype => "BYNAMEtype"

@@ -71,13 +71,10 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         val res = UniqueName(original, separator, num)
         logTasty(s"${nameAtRef.size}: ${res.debug}")
         res // uniqueNameKindOfSeparator(separator)(original, num)
-      case DEFAULTGETTER | VARIANT =>
+      case DEFAULTGETTER =>
         val qual = readName()
         val nat = readNat()
-        val res = {
-          if (tag == DEFAULTGETTER) DefaultName(qual, nat)
-          else VariantName(qual, contravariant = nat == 0)
-        }
+        val res = DefaultName(qual, nat)
         logTasty(s"${nameAtRef.size}: ${res.debug}")
         res // numberedNameKindOfTag(tag)(readName(), readNat())
       case SIGNED =>

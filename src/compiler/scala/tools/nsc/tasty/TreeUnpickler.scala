@@ -319,6 +319,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           result.asInstanceOf[Res]
         }
 
+        def readVariances(tp: Type): Type = tp match {
+          case tp: LambdaPolyType if currentAddr != end =>
+            val vs = until(end) { readByte() /* TODO: tasty variances on polytype parameters appear useless, should ensure that neg tests are invalidating bounds */ }
+            tp
+          case _ => tp
+        }
+
         val result =
           (tag: @switch) match {
             // case TERMREFin =>
@@ -351,8 +358,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               boundedAppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
-              val hi = readType()
-              TypeBounds.bounded(lo, hi) // if (lo.isMatch && (lo `eq` hi)) MatchAlias(lo) else TypeBounds(lo, hi)
+              if (nothingButMods(end))
+                typeRef(readVariances(lo))
+              else TypeBounds.bounded(lo, readVariances(readType()))
             case ANNOTATEDtype =>
               mkAnnotatedType(readType(), mkAnnotation(readTerm()))
             case ANDtype =>
@@ -418,8 +426,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             }
           case RECthis =>
             sys.error("RECthis")//readTypeRef().asInstanceOf[RecType].recThis
-          case TYPEALIAS =>
-            readType()// TypeAlias(readType())
           case SHAREDtype =>
             val ref = readAddr()
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
@@ -527,10 +533,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readByte() // tag
       readEnd()  // end
       var name: Name = readEncodedName()
-      nextUnsharedTag match {
-        case TYPEBOUNDS | TYPEALIAS => name = name.toTypeName
-        case _ =>
-      }
+      if (nextUnsharedTag == TYPEBOUNDS) name = name.toTypeName
       val typeReader = fork
       val completer = new TastyLazyType {
         override def complete(sym: Symbol): Unit =
@@ -1436,12 +1439,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val patType = readType()
               val argPats = until(end)(readTerm())
               UnApply(fn, implicitArgs, argPats, patType)
-//            case REFINEDtpt =>
-//              val refineCls = ctx.newRefinedClassSymbol(coordAt(start))
-//              typeAtAddr(start) = refineCls.typeRef
-//              val parent = readTpt()
-//              val refinements = readStats(refineCls, end)(localContext(refineCls))
-//              RefinedTypeTree(parent, refinements, refineCls)
+            // case REFINEDtpt =>
+            //   val refineCls = symAtAddr.getOrElse(start,
+            //     ctx.newRefinedClassSymbol(coordAt(start))).asClass
+            //   registerSym(start, refineCls)
+            //   typeAtAddr(start) = refineCls.typeRef
+            //   val parent = readTpt()
+            //   val refinements = readStats(refineCls, end)(localContext(refineCls))
+            //   RefinedTypeTree(parent, refinements, refineCls)
             case APPLIEDtpt =>
               // If we do directly a tpd.AppliedType tree we might get a
               // wrong number of arguments in some scenarios reading F-bounded

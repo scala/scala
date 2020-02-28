@@ -15,9 +15,9 @@ import sbt.librarymanagement.{
  */
 object DottySupport {
   val dottyVersion = "0.24.0-RC1"
-  val currentDottyRelease = "0.21.0" // TASTy version 18
-  val dottyLibrary = "ch.epfl.lamp" % "dotty-library_0.21" % currentDottyRelease
-  val dottyCompiler = "ch.epfl.lamp" % "dotty-compiler_0.21" % currentDottyRelease
+  val currentDottyRelease = "0.22.0-RC1" // TASTy version 19
+  val dottyLibrary = "ch.epfl.lamp" % "dotty-library_0.22" % currentDottyRelease
+  val dottyCompiler = "ch.epfl.lamp" % "dotty-compiler_0.22" % currentDottyRelease
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(

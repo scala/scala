@@ -244,6 +244,8 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
+  def typeRef(tpe: Type): Type = mkAppliedType(tpe, Nil)
+
   def mkLambdaPolyType(typeParams: List[Symbol], resTpe: Type): LambdaPolyType = new LambdaPolyType(typeParams, resTpe)
   def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): PolyType = mkPolyType(typeParams, lambdaResultType(ret))
 
@@ -304,16 +306,10 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     val paramInfos: List[TypeBounds] = paramInfosExp(hkLambda)
 
     override val typeParams: List[Symbol] = {
-      paramNames.lazyZip(paramInfos).lazyZip(params.map(_.variance)).map {
-        case (name, bounds, variance) =>
-          val flags0 = Param | Deferred
-          val flags  = variance match {
-            case Variance.Contravariant => flags0 | Contravariant
-            case Variance.Covariant     => flags0 | Covariant
-            case _                      => flags0
-          }
+      paramNames.lazyZip(paramInfos).map {
+        case (name, bounds) =>
           val argInfo = normaliseBounds(bounds)
-          ctx.owner.newTypeParameter(name, noPosition, flags).setInfo(argInfo)
+          ctx.owner.newTypeParameter(name, noPosition, Param | Deferred).setInfo(argInfo)
       }
     }
 
