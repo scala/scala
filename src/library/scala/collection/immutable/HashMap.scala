@@ -856,7 +856,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           }
           // we don't have to check whether the result is a leaf, since union will only make the set larger
           // and this is not a leaf to begin with.
-          new HashTrieMap(this.bitmap | that.bitmap, resultElems, rs)
+          new HashTrieMap(abm | bbm, resultElems, rs)
 
         }
 
