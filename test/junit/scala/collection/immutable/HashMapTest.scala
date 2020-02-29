@@ -205,4 +205,25 @@ class HashMapTest extends AllocationTest {
     )
     assertSame(nonEmpty2, nonAllocating(nonEmpty1 ++ nonEmpty2))
   }
+
+  @Test
+  def mergeWorks(): Unit = {
+    def hm(as: Int*): HashMap[Int, Int] = HashMap(as.map(x => (x, x)) : _*)
+    def check(m1: HashMap[Int, Int], m2: HashMap[Int, Int]): Unit = {
+      val expected = HashMap(m1.toSeq ++ m2.toSeq: _*)
+      val actual1 = m1 ++ m2
+      val actual2 = m2 ++ m1
+      assertEquals(expected, actual1)
+      assertEquals(expected, actual2)
+      for ((k, v) <- expected) {
+        assertEquals(v, actual1(k))
+        assertEquals(v, actual2(k))
+      }
+    }
+    check(hm(1, 2, 3), hm(4, 5, 6))
+    check(hm(), hm(4, 5, 6))
+    check(hm(1, 2, 3), hm(1, 2))
+    check(hm(1, 2, 3), hm(1, 2, 3, 4))
+    check(hm((1 to 1000): _*), hm((2000 to 3000): _*))
+  }
 }

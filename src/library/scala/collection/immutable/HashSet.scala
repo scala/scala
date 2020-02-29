@@ -762,7 +762,7 @@ object HashSet extends ImmutableSetFactory[HashSet] {
           }
           // we don't have to check whether the result is a leaf, since union will only make the set larger
           // and this is not a leaf to begin with.
-          new HashTrieSet(this.bitmap | that.bitmap, resultElems, rs)
+          new HashTrieSet(abm | bbm, resultElems, rs)
 
         }
 
