@@ -244,11 +244,9 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
       }
   }
 
-  override def --(xs: GenTraversableOnce[A]): TreeSet[A] = xs match {
-    case ts: TreeSet[A] if ordering == ts.ordering =>
-      newSetOrSelf(RB.difference(tree, ts.tree))
-    case _ =>
-      super.--(xs)
+  private [collection] def removeAll(ts: TreeSet[A]): TreeSet[A] = {
+    assert (ordering == ts.ordering)
+    newSetOrSelf(RB.difference(tree, ts.tree))
   }
 
   override def intersect(that: GenSet[A]): TreeSet[A] = that match {

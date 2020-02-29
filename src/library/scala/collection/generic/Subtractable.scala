@@ -66,6 +66,8 @@ trait Subtractable[A, +Repr <: Subtractable[A, Repr]] { self =>
       hs.diff(xs.asInstanceOf[HashSet[A]]).asInstanceOf[Repr]
     case ts: TreeMap[A, _] if xs.isInstanceOf[TreeSet[A]] && ts.ordering == xs.asInstanceOf[TreeSet[A]].ordering =>
       ts.removeAllImpl(xs.asInstanceOf[TreeSet[A]]).asInstanceOf[Repr]
+    case ts: TreeSet[A] if xs.isInstanceOf[TreeSet[A]] && ts.ordering == xs.asInstanceOf[TreeSet[A]].ordering =>
+      ts.removeAll(xs.asInstanceOf[TreeSet[A]]).asInstanceOf[Repr]
     case _ =>
       (repr /: xs.seq) (_ - _)
   }
