@@ -65,6 +65,21 @@ import scala.reflect.ClassTag
 trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   self =>
 
+  // A note on `isEmpty`: it is documented in GenTraversableOnce as required to
+  // not consume any elements.  However, when (in scala/scala#8732) we tried
+  // to add some `isEmpty` checks in this file for efficiency, we found that:
+  // * in our own standard library, at least one subclass implemented
+  //   `isEmpty` as `size == 0`, making it problematic to call `isEmpty`
+  //   from `size` in this file
+  // * in the community build, at least one repo had a subclass where `isEmpty`
+  //   consumed elements, making it problematic to call `isEmpty` in this file
+  //   from other methods such as `count`, `foldLeft`, and `addString`
+  // Because it is now so late (2.12.11) in the 2.12.x series, we have chosen
+  // to avoid adding `isEmpty` calls here, figuring that the breakage isn't
+  // worth the presumably slight performance gain.  (And note that in 2.13.x,
+  // `TraversableOnce` no longer even exists, and `IterableOnce#isEmpty` is
+  // deprecated.)
+
   //TODO 2.12: Remove these methods. They are already defined in GenTraversableOnce
   /* Self-documenting abstract methods. */
   def foreach[U](f: A => U): Unit
@@ -122,15 +137,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def nonEmpty: Boolean = !isEmpty
 
   def count(p: A => Boolean): Int = {
-    if (isEmpty)  0
-    else {
-      object counter extends Function1[A, Unit] {
-        var result = 0
-        override def apply(v1: A): Unit = if (p(v1)) result += 1
-      }
-      this foreach counter
-      counter.result
+    object counter extends Function1[A, Unit] {
+      var result = 0
+      override def apply(v1: A): Unit = if (p(v1)) result += 1
     }
+    this foreach counter
+    counter.result
   }
 
   /** Finds the first element of the $coll for which the given partial
@@ -170,15 +182,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    if (isEmpty)  z
-    else {
-      object folder extends Function1[A, Unit] {
-        var result = z
-        override def apply(v1: A): Unit = result = op(result,v1)
-      }
-      this foreach folder
-      folder.result
+    object folder extends Function1[A, Unit] {
+      var result = z
+      override def apply(v1: A): Unit = result = op(result,v1)
     }
+    this foreach folder
+    folder.result
   }
 
   def foldRight[B](z: B)(op: (A, B) => B): B =
@@ -381,23 +390,20 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    */
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     b append start
-    if (!isEmpty) {
-      object appender extends Function1[A, Unit] {
-        var first = true
-
-        override def apply(x: A): Unit = {
-          if (first) {
-            b append x
-            first = false
-          }
-          else {
-            b append sep
-            b append x
-          }
+    object appender extends Function1[A, Unit] {
+      var first = true
+      override def apply(x: A): Unit = {
+        if (first) {
+          b append x
+          first = false
+        }
+        else {
+          b append sep
+          b append x
         }
       }
-      self foreach appender
     }
+    self foreach appender
     b append end
     b
   }
