@@ -249,13 +249,6 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     newSetOrSelf(RB.difference(tree, ts.tree))
   }
 
-  override def intersect(that: GenSet[A]): TreeSet[A] = that match {
-    case ts: TreeSet[A] if ordering == ts.ordering =>
-      newSetOrSelf(RB.intersect(tree, ts.tree))
-    case _ =>
-      super.intersect(that)
-  }
-
   override private[scala] def filterImpl(f: A => Boolean, isFlipped: Boolean) =
     newSetOrSelf(RB.filterKeys(tree, f, isFlipped))
 
