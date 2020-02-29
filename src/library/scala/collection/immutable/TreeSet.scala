@@ -206,13 +206,9 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   override def lastKey = last
 
 
-  override def ++(that: GenTraversableOnce[A]): TreeSet[A] = {
-    that match {
-      case ts: TreeSet[A] if ordering == ts.ordering  =>
-        newSetOrSelf(RB.union(tree, ts.tree))
-      case _ =>
-        super.++(that)
-    }
+  private [collection] def addAll(ts: TreeSet[A]): TreeSet[A] = {
+    assert (ordering == ts.ordering)
+    newSetOrSelf(RB.union(tree, ts.tree))
   }
   private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
     bf match {

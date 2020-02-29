@@ -14,9 +14,10 @@ package scala
 package collection
 
 import generic._
-import mutable.{ Builder, SetBuilder }
+import mutable.{Builder, SetBuilder}
 import scala.annotation.migration
 import parallel.ParSet
+import scala.collection.immutable.TreeSet
 
 /** A template trait for sets.
  *
@@ -171,6 +172,13 @@ self =>
         elems match {
           case that: GenSet[A] =>
             hs.union(that).asInstanceOf[This]
+          case _ =>
+            (repr /: elems.seq) (_ + _)
+        }
+      case ts1: TreeSet[A] =>
+        elems match {
+          case ts2: TreeSet[A] if ts1.ordering == ts2.ordering  =>
+            ts1.addAll(ts2).asInstanceOf[This]
           case _ =>
             (repr /: elems.seq) (_ + _)
         }
