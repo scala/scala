@@ -355,16 +355,16 @@ private[collection] object RedBlackTree {
       else if (tree.left eq null) tree
       else findLeftMostOrPopOnEmpty(goLeft(tree))
 
-    private[this] def pushNext(tree: Tree[A, B]): Unit = {
+    @`inline` private[this] def pushNext(tree: Tree[A, B]): Unit = {
       stackOfNexts(index) = tree
       index += 1
     }
-    protected final def popNext(): Tree[A, B] = if (index == 0) null else {
+    @`inline` protected final def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
       stackOfNexts(index)
     }
 
-    private[this] var stackOfNexts = if (root eq null) null else {
+    protected[this] val stackOfNexts = if (root eq null) null else {
       /*
        * According to "Ralf Hinze. Constructing red-black trees" [http://www.cs.ox.ac.uk/ralf.hinze/publications/#P5]
        * the maximum height of a red-black tree is 2*log_2(n + 2) - 2.
@@ -378,7 +378,7 @@ private[collection] object RedBlackTree {
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    protected var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
+    protected var lookahead: Tree[A, B] = if (start isDefined) startFrom(start.get) else findLeftMostOrPopOnEmpty(root)
 
     /**
      * Find the leftmost subtree whose key is equal to the given key, or if no such thing,
