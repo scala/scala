@@ -241,7 +241,7 @@ final class TreeMap[A, +B] private (_tree: RB.Tree[A, B])(implicit val ordering:
       hasher.finalizeHash
     }
   }
-  override def keySet: TreeSet[A] = new TreeSet[A](tree)(ordering)
+  override def keySet: SortedSet[A] = new TreeSet[A](tree)(ordering)
 
   override def values: scala.Iterable[B] = new DefaultValuesIterable {
     override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
