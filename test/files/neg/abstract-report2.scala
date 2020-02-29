@@ -10,6 +10,12 @@ trait Xyz[T] {
   def foo(x: T): Boolean
 }
 
+trait Symbolic {
+  def --? : Int
+  def --!(i: Int): Unit
+  def unary_~ : Long
+}
+
 trait Bippy[T1, T2, T3] extends Collection[T1] with TraversableOnce[(T2, String)] with Xyz[T3]
 
-class Dingus extends Bippy[String, Set[Int], List[Int]]
+class Dingus extends Bippy[String, Set[Int], List[Int]] with Symbolic
