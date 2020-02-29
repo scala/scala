@@ -269,7 +269,8 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
       super.diff(that)
   }
 
-  override def filter(f: A => Boolean): TreeSet[A] = newSetOrSelf(RB.filterKeys(tree, f))
+  override private[scala] def filterImpl(f: A => Boolean, isFlipped: Boolean) =
+    newSetOrSelf(RB.filterKeys(tree, f, isFlipped))
 
   override def partition(p: A => Boolean): (TreeSet[A], TreeSet[A]) = {
     val (l, r) = RB.partitionKeys(tree, p)
