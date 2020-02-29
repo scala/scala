@@ -723,7 +723,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
       throw new UnsupportedOperationException("empty.reduceLeft")
 
     var first = true
-    var acc: B = 0.asInstanceOf[B]
+    var acc: B = null.asInstanceOf[B]
 
     while (it.hasNext) {
       val x = it.next()
