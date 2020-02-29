@@ -198,12 +198,9 @@ final class TreeMap[A, +B] private (_tree: RB.Tree[A, B])(implicit val ordering:
   def - (key:A): TreeMap[A, B] =
    newMapOrSelf(RB.delete(tree, key))
 
-  override def --(keys: GenTraversableOnce[A]): TreeMap[A, B] =  keys match {
-    case ts: TreeSet[A] if ordering == ts.ordering =>
-      newMapOrSelf(RB.difference(tree, ts.tree))
-    case _ =>
-      // probably can do something better here to avoid all of the temporary TreeMaps wrapping the changes
-      super.--(keys)
+  private[collection] def removeAllImpl(ts: TreeSet[A]): TreeMap[A, B] =  {
+    assert(ordering == ts.ordering)
+    newMapOrSelf(RB.difference(tree, ts.tree))
   }
 
   /** Check if this map maps `key` to a value and return the
