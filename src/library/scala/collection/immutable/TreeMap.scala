@@ -246,8 +246,8 @@ final class TreeMap[A, +B] private (_tree: RB.Tree[A, B])(implicit val ordering:
   override def values: scala.Iterable[B] = new DefaultValuesIterable {
     override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
   }
-  override def filter(f: ((A, B)) => Boolean): TreeMap[A, B] =
-    newMapOrSelf(RB.filterEntries[A, B](tree, (k, v) => f((k, v))))
+  override private[scala] def filterImpl(f: ((A, B)) => Boolean, isFlipped: Boolean) =
+    newMapOrSelf(RB.filterEntries[A, B](tree, (k, v) => isFlipped ^ f((k, v))))
 
   override def partition(p: ((A, B)) => Boolean): (TreeMap[A, B], TreeMap[A, B]) = {
     val (l, r) = RB.partitionEntries[A, B](tree, (k, v) => p((k, v)))
