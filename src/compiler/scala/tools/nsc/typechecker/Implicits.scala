@@ -268,7 +268,7 @@ trait Implicits {
         containsError(restpe)
       case mt @ MethodType(_, restpe) =>
         // OPT avoiding calling `mt.paramTypes` which creates a new list.
-        (mt.params exists symTypeIsError) || containsError(restpe)
+        mt.params.exists(_.tpe.isError) || containsError(restpe)
       case _ =>
         tp.isError
     }
@@ -1085,7 +1085,7 @@ trait Implicits {
       // which can't be solved for. Rather than attempt to patch things up later we just skip
       // those cases altogether.
       lazy val wildPtNotInstantiable =
-        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
+        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp => tp.isNothing }
 
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
