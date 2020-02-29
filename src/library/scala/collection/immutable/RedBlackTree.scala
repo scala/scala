@@ -121,6 +121,25 @@ private[collection] object RedBlackTree {
 
   def foreach[A,B,U](tree:Tree[A,B], f:((A,B)) => U):Unit = if (tree ne null) _foreach(tree,f)
 
+  def keysEqual[A: Ordering, X, Y](a: Tree[A, X], b: Tree[A, Y]): Boolean = {
+    if (a eq b) true
+    else if (a eq null) false
+    else if (b eq null) false
+    else a.count == b.count && (new EqualsIterator(a)).sameKeys(new EqualsIterator(b))
+  }
+  def valuesEqual[A: Ordering, X, Y](a: Tree[A, X], b: Tree[A, Y]): Boolean = {
+    if (a eq b) true
+    else if (a eq null) false
+    else if (b eq null) false
+    else a.count == b.count && (new EqualsIterator(a)).sameValues(new EqualsIterator(b))
+  }
+  def entriesEqual[A: Ordering, X, Y](a: Tree[A, X], b: Tree[A, Y]): Boolean = {
+    if (a eq b) true
+    else if (a eq null) false
+    else if (b eq null) false
+    else a.count == b.count && (new EqualsIterator(a)).sameEntries(new EqualsIterator(b))
+  }
+
   private[this] def _foreach[A, B, U](tree: Tree[A, B], f: ((A, B)) => U): Unit = {
     if (tree.left ne null) _foreach(tree.left, f)
     f((tree.key, tree.value))
@@ -332,7 +351,7 @@ private[collection] object RedBlackTree {
     }
 
     @tailrec
-    private[this] def findLeftMostOrPopOnEmpty(tree: Tree[A, B]): Tree[A, B] =
+    protected final def findLeftMostOrPopOnEmpty(tree: Tree[A, B]): Tree[A, B] =
       if (tree eq null) popNext()
       else if (tree.left eq null) tree
       else findLeftMostOrPopOnEmpty(goLeft(tree))
@@ -341,7 +360,7 @@ private[collection] object RedBlackTree {
       stackOfNexts(index) = tree
       index += 1
     }
-    private[this] def popNext(): Tree[A, B] = if (index == 0) null else {
+    protected final def popNext(): Tree[A, B] = if (index == 0) null else {
       index -= 1
       stackOfNexts(index)
     }
@@ -360,7 +379,7 @@ private[collection] object RedBlackTree {
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    private[this] var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
+    protected var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
 
     /**
      * Find the leftmost subtree whose key is equal to the given key, or if no such thing,
@@ -383,9 +402,55 @@ private[collection] object RedBlackTree {
       tree.left
     }
 
-    @`inline` private[this] def goRight(tree: Tree[A, B]) = tree.right
+    @`inline` protected final def goRight(tree: Tree[A, B]) = tree.right
   }
 
+  private[this] class EqualsIterator[A: Ordering, B](tree: Tree[A, B]) extends TreeIterator[A, B, Unit](tree, None) {
+    override def nextResult(tree: Tree[A, B]) = ???
+
+    def sameKeys[X](that:EqualsIterator[A,X]): Boolean = {
+      var equal = true
+      while (equal && (this.lookahead ne null) && (that.lookahead ne null)) {
+        if (this.lookahead eq that.lookahead) {
+          this.lookahead = this.popNext()
+          that.lookahead = that.popNext()
+        } else {
+          equal = this.lookahead.key == that.lookahead.key
+          this.lookahead =  this.findLeftMostOrPopOnEmpty(this.goRight(this.lookahead))
+          that.lookahead =  that.findLeftMostOrPopOnEmpty(that.goRight(that.lookahead))
+        }
+      }
+      equal && (this.lookahead eq null) && (that.lookahead eq null)
+    }
+    def sameValues[X](that:EqualsIterator[A,X]): Boolean = {
+      var equal = true
+      while (equal && (this.lookahead ne null) && (that.lookahead ne null)) {
+        if (this.lookahead eq that.lookahead) {
+          this.lookahead = this.popNext()
+          that.lookahead = that.popNext()
+        } else {
+          equal = this.lookahead.value == that.lookahead.value
+          this.lookahead =  this.findLeftMostOrPopOnEmpty(this.goRight(this.lookahead))
+          that.lookahead =  that.findLeftMostOrPopOnEmpty(that.goRight(that.lookahead))
+        }
+      }
+      equal && (this.lookahead eq null) && (that.lookahead eq null)
+    }
+    def sameEntries[X](that:EqualsIterator[A,X]): Boolean = {
+      var equal = true
+      while (equal && (this.lookahead ne null) && (that.lookahead ne null)) {
+        if (this.lookahead eq that.lookahead) {
+          this.lookahead = this.popNext()
+          that.lookahead = that.popNext()
+        } else {
+          equal = this.lookahead.key == that.lookahead.key && this.lookahead.value == that.lookahead.value
+          this.lookahead =  this.findLeftMostOrPopOnEmpty(this.goRight(this.lookahead))
+          that.lookahead =  that.findLeftMostOrPopOnEmpty(that.goRight(that.lookahead))
+        }
+      }
+      equal && (this.lookahead eq null) && (that.lookahead eq null)
+    }
+  }
   private[this] class EntriesIterator[A: Ordering, B](tree: Tree[A, B], focus: Option[A]) extends TreeIterator[A, B, (A, B)](tree, focus) {
     override def nextResult(tree: Tree[A, B]) = (tree.key, tree.value)
   }

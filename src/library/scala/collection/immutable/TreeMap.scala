@@ -252,6 +252,11 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
   override def keySet: SortedSet[A] = new TreeSet[A](tree)(ordering)
 
+  override def equals(obj: Any): Boolean = obj match {
+    case that: TreeMap[A, B] if ordering == that.ordering => RB.entriesEqual(tree, that.tree0)
+    case _ => super.equals(obj)
+  }
+
   override def values: scala.Iterable[B] = new DefaultValuesIterable {
     override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree0, {(_: A, value: B) => f(value)})
   }
