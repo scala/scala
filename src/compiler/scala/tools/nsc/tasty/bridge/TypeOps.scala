@@ -235,26 +235,15 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       case _: TypeBounds => this
       case _             => mkPolyType(typeParams, resType)
     }
-    def withVariances(variances: List[Variance]): LambdaPolyType = {
-      if (variances.exists(v => v == Variance.Covariant || v == Variance.Contravariant)) { // TODO [tasty]: is cloning necessary or a leak?
-        val typeParams1 = typeParams.lazyZip(variances).map { (sym, variance) =>
-          variance match {
-            case Variance.Covariant =>
-              val sym1 = sym.cloneSymbol
-              sym1.flags |= Covariant
-              sym1
-            case Variance.Contravariant =>
-              val sym1 = sym.cloneSymbol
-              sym1.flags |= Contravariant
-              sym1
-            case _ => sym.cloneSymbol
-          }
+    def withVariances(variances: List[Variance]): this.type = {
+      typeParams.lazyZip(variances).foreach { (sym, variance) => // TODO [tasty]: should this be cloned instead?
+        variance match {
+          case Variance.Covariant => sym.flags |= Covariant
+          case Variance.Contravariant => sym.flags |= Contravariant
+          case _ => ()
         }
-        mkLambdaPolyType(typeParams1, resType.subst(typeParams, typeParams1.map(_.ref)))
       }
-      else {
-        this
-      }
+      this
     }
   }
 

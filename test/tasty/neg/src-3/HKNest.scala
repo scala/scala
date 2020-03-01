@@ -27,8 +27,7 @@ object HKNest {
 
   def test13 = new HKClass_13[HKLam].foo[Int,String](("",0))
   def test16 = new HKClass_16[List].foo[HKLam,Int,String](("",0) :: Nil)
-
-  // def test14 = new HKClass_14[Quuux].foo(new Quuux[QuxArg])
+  // def test6 = new HKClass_6[Qux]
 
   type HKLam = [T] =>> [U] =>> (U, T)
 
@@ -36,6 +35,10 @@ object HKNest {
 
   sealed trait QuxArg[T]
   class Arg1[T]() extends QuxArg[T]
+
+  class Qux[+F[X] >: QuxArg[X]] {
+    override def toString(): String = "Quux"
+  }
 
   class Quux[-F[X] >: Arg1[X]] {
     override def toString(): String = "Quux"
