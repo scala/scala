@@ -30,7 +30,8 @@ import scala.tools.nsc.{Global, Settings}
   */
 class VirtualCompiler {
   /** A java compiler instance that we can use. */
-  lazy val javac = ToolProvider.getSystemJavaCompiler
+  lazy val javac = Option(ToolProvider.getSystemJavaCompiler)
+                   .getOrElse(throw new UnsupportedOperationException("No java compiler found in current Java runtime"))
 
   /** The directory in which are placed classfiles. */
   lazy val output = new VirtualDirectory("out", maybeContainer = None)

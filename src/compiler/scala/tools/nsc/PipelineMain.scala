@@ -550,7 +550,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         javaTimer.start()
         javaDone.completeWith(Future {
           val opts: java.util.List[String] = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.outdir.value + File.pathSeparator + originalClassPath)
-          val compiler = ToolProvider.getSystemJavaCompiler
+          val javaCompiler = ToolProvider.getSystemJavaCompiler()
+          //If the running JRE isn't from a JDK distribution, getSystemJavaCompiler returns null
+          if(javaCompiler == null) throw new UnsupportedOperationException("no java compiler found in current Java runtime")
           val listener = new DiagnosticListener[JavaFileObject] {
             override def report(diagnostic: Diagnostic[_ <: JavaFileObject]): Unit = {
               val msg = diagnostic.getMessage(Locale.getDefault)
@@ -567,17 +569,13 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               }
             }
           }
-          val fileManager = ToolProvider.getSystemJavaCompiler.getStandardFileManager(null, null, null)
-          val compileTask = compiler.getTask(null, fileManager, listener, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
+
+          val fileManager = javaCompiler.getStandardFileManager(null, null, null)
+          val compileTask = javaCompiler.getTask(null, fileManager, listener, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
           compileTask.setProcessors(Collections.emptyList())
-          if (compileTask.call()) {
-            javaTimer.stop()
-            log(f"javac: done ${javaTimer.durationMs}%.0f ms ")
-          } else {
-            javaTimer.stop()
-            log(f"javac: error ${javaTimer.durationMs}%.0f ms ")
-          }
-          ()
+          val result = if (compileTask.call()) "done" else "error"
+          javaTimer.stop()
+          log(f"javac: $result ${javaTimer.durationMs}%.0f ms ")
         })
       } else {
         javaDone.complete(Success(()))
