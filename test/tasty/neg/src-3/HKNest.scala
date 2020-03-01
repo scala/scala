@@ -2,6 +2,13 @@ package tastytest
 
 object HKNest {
 
+  class HKClass_4[F[+_]]
+  class HKClass_5[F[-_]]
+
+  class HKClass_6[N[-F[X] >: QuxArg[X]]] {
+    def foo[F1[X] >: QuxArg[X]](x: N[F1]): String = x.toString()
+  }
+
   class HKClass_13[F <: [T] =>> [U] =>> (U, T)] {
     def foo[T,U](x: F[T][U]): String = x.toString()
   }
@@ -29,6 +36,10 @@ object HKNest {
 
   sealed trait QuxArg[T]
   class Arg1[T]() extends QuxArg[T]
+
+  class Quux[-F[X] >: Arg1[X]] {
+    override def toString(): String = "Quux"
+  }
 
   class Quuux[F[X] >: Arg1[X] <: QuxArg[X]] {
     override def toString(): String = "Quuux"

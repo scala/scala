@@ -321,8 +321,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
         def readVariances(tp: Type): Type = tp match {
           case tp: LambdaPolyType if currentAddr != end =>
-            val vs = until(end) { readByte() /* TODO: tasty variances on polytype parameters appear useless, should ensure that neg tests are invalidating bounds */ }
-            tp
+            val vs = until(end) {
+              readByte() match {
+                case STABLE => Variance.Invariant
+                case COVARIANT => Variance.Covariant
+                case CONTRAVARIANT => Variance.Contravariant
+              }
+            }
+            tp.withVariances(vs)
           case _ => tp
         }
 
@@ -445,7 +451,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def readSymNameRef()(implicit ctx: Context): Type = {
       val sym    = readSymRef()
       val prefix = readType()
-      // TODO tasty: restore this if github:lampepfl/dotty/tests/pos/extmethods.scala causes infinite loop
+      // TODO [tasty]: restore this if github:lampepfl/dotty/tests/pos/extmethods.scala causes infinite loop
       // prefix match {
         // case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
         //   mkAppliedType(sym, Nil)
@@ -647,7 +653,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       sym
     }
 
-    private def allowsOverload(sym: Symbol) = ( // taken from Namer. TODO tasty: added module to allows overload
+    private def allowsOverload(sym: Symbol) = ( // taken from Namer. TODO [tasty]: added module to allows overload
       (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
     )
 
@@ -955,7 +961,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         else tpe
       }
       if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
-        // TODO tasty: please reconsider if there is some shared optimised logic that can be triggered instead.
+        // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
         withPhaseNoLater(ctx.extmethodsPhase) {
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(noSymbol)
@@ -1351,7 +1357,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               Typed(expr, tpt).setType(tpt.tpe)
             case ASSIGN =>
               Assign(readTerm(), readTerm()).setType(defn.UnitTpe)
-            case BLOCK => // TODO tasty: when we support annotation trees, we need to restore readIndexedMember to create trees, and then put the stats in the block.
+            case BLOCK => // TODO [tasty]: when we support annotation trees, we need to restore readIndexedMember to create trees, and then put the stats in the block.
               val exprReader = fork
               skipTree()
               until(end)(skipTree()) //val stats = readStats(ctx.owner, end)
@@ -1381,7 +1387,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val elsep = readTerm()
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
-            case LAMBDA => // TODO tasty: if we need trees then we need to either turn this closure to the result of Delambdafy, or resugar to a Function
+            case LAMBDA => // TODO [tasty]: if we need trees then we need to either turn this closure to the result of Delambdafy, or resugar to a Function
               val meth = readTerm()
               val tpt = ifBefore(end)(readTpt(), emptyTree)
               TypeTree(meth.tpe) //Closure(Nil, meth, tpt)
@@ -1522,7 +1528,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       tpt
     }
 
-    /** TODO tasty: SPECIAL OPTIMAL CASE FOR TEMPLATES */
+    /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
     def readParentFromTerm()(implicit ctx: Context): Type = {  // TODO: rename to readTree
       val sctx = sourceChangeContext()
       if (sctx `ne` ctx) return readParentFromTerm()(sctx)

@@ -1,0 +1,9 @@
+TestHKNest4_fail.scala:7: error: inferred type arguments [[T]tastytest.HKNest.Arg1[T]] do not conform to method foo's type parameter bounds [F1[X] >: tastytest.HKNest.QuxArg[X]]
+  def test7 = new HKClass_6[Quux].foo(new Quux[Arg1]) // error
+                                  ^
+TestHKNest4_fail.scala:7: error: type mismatch;
+ found   : tastytest.HKNest.Quux[tastytest.HKNest.Arg1]
+ required: tastytest.HKNest.Quux[F1]
+  def test7 = new HKClass_6[Quux].foo(new Quux[Arg1]) // error
+                                      ^
+2 errors

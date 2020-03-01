@@ -19,7 +19,7 @@ Individual tasks exist to help debug issues:
 
 ## Notes
 
-comments beginning with `// TODO tasty:` should be considered carefully as they are special accomodations for the TASTy reader that are particulary expensive, or leak out of the classfile parser or `scala.tools.nsc.tasty` package.
+comments beginning with `// TODO [tasty]:` should be considered carefully as they are special accomodations for the TASTy reader that are particulary expensive, or leak out of the classfile parser or `scala.tools.nsc.tasty` package.
 
 # Welcome!
 

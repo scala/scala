@@ -62,17 +62,10 @@ trait TastyKernel { self: TastyUniverse =>
     final def bounded(lo: Type, hi: Type): TypeBounds = symbolTable.TypeBounds.apply(lo, hi)
   }
 
-  final def cloneSymbolsAtOwner(syms: List[Symbol], owner: Symbol): List[Symbol] =
-    symbolTable.cloneSymbolsAtOwner(syms,owner)
-
-  final def defineOriginalOwner(sym: Symbol, owner: Symbol): Unit = symbolTable.defineOriginalOwner(sym, owner)
-
   object GenPolyType {
     final def apply(tparams: List[Symbol], tpe: Type): Type = symbolTable.GenPolyType.apply(tparams,tpe)
     final def unapply(tpe: Type): Option[(List[Symbol], Type)] = symbolTable.GenPolyType.unapply(tpe)
   }
-
-  final def dropNullaryMethod(tp: Type): Type = symbolTable.definitions.dropNullaryMethod(tp)
 
   final def mkSingleType(pre: Type, sym: Symbol): Type = symbolTable.singleType(pre, sym)
   final def mkNullaryMethodType(res: Type): NullaryMethodType = symbolTable.internal.nullaryMethodType(res)

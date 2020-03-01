@@ -99,7 +99,7 @@ trait PatternMatching extends Transform
       new OptimizingMatchTranslator(localTyper, selectorPos)
     }
 
-    // TODO tasty: should we do Child logic here?
+    // TODO [tasty]: should we do Child logic here?
     def tastyAddChildren(sel: Tree) {
       val selSym = sel.tpe.typeSymbolDirect
       if (!selSym.isSealed || selSym.children.nonEmpty) return
