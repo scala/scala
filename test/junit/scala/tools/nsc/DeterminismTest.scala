@@ -299,6 +299,7 @@ class DeterminismTest {
           }
           val options = List("-d", output.toString)
           val javac = ToolProvider.getSystemJavaCompiler
+          assert(javac != null, "No javac from getSystemJavaCompiler. If the java on your path isn't a JDK version, but $JAVA_HOME is, launch sbt with --java-home \"$JAVA_HOME\"")
           val fileMan = javac.getStandardFileManager(null, null, null)
           val javaFileObjects = fileMan.getJavaFileObjects(javaSources.map(s => tempFileFor(s).toAbsolutePath.toString): _*)
           val task = javac.getTask(new OutputStreamWriter(System.out), fileMan, null, options.asJava, Nil.asJava, javaFileObjects)
