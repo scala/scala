@@ -157,6 +157,10 @@
   <component name="ProjectCodeStyleConfiguration">
     <option name="USE_PER_PROJECT_SETTINGS" value="true" />
     <code_scheme name="Project" version="173">
+      <ScalaCodeStyleSettings>
+        <option name="ALIGN_IF_ELSE" value="true" />
+        <option name="ALIGN_IN_COLUMNS_CASE_BRANCH" value="true" />
+      </ScalaCodeStyleSettings>
       <XML>
         <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
       </XML>
@@ -172,6 +176,9 @@
         <option name="BLANK_LINES_AFTER_IMPORTS" value="0" />
         <option name="BLANK_LINES_AROUND_METHOD" value="0" />
         <option name="BLANK_LINES_AROUND_METHOD_IN_INTERFACE" value="0" />
+        <option name="ALIGN_MULTILINE_CHAINED_METHODS" value="true" />
+        <option name="ALIGN_MULTILINE_PARAMETERS_IN_CALLS" value="true" />
+        <option name="ALIGN_GROUP_FIELD_DECLARATIONS" value="true" />
       </codeStyleSettings>
     </code_scheme>
   </component>
