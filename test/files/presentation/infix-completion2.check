@@ -161,9 +161,9 @@ def toOctalString: String
 def toRadians: Double
 def toShort: Short
 def toString(): String
-def unary_+: Int
-def unary_-: Int
-def unary_~: Int
+def unary_+ : Int
+def unary_- : Int
+def unary_~ : Int
 def underlying(): AnyRef
 def until(end: Double): Range.Partial[Double,scala.collection.immutable.NumericRange[Double]]
 def until(end: Double,step: Double): scala.collection.immutable.NumericRange.Exclusive[Double]

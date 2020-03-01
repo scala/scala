@@ -61,8 +61,8 @@ it has 13 unimplemented members.
 
 class Baz[T] extends Collection[T]
       ^
-abstract-report2.scala:15: error: class Dingus needs to be abstract, since:
-it has 24 unimplemented members.
+abstract-report2.scala:21: error: class Dingus needs to be abstract, since:
+it has 27 unimplemented members.
 /** As seen from class Dingus, the missing signatures are as follows.
  *  For convenience, these are usable as stub implementations.
  */
@@ -84,6 +84,11 @@ it has 24 unimplemented members.
   def toIterator: Iterator[(Set[Int], String)] = ???
   def toStream: Stream[(Set[Int], String)] = ???
 
+  // Members declared in Symbolic
+  def --!(i: Int): Unit = ???
+  def --? : Int = ???
+  def unary_~ : Long = ???
+
   // Members declared in scala.collection.TraversableOnce
   def copyToArray[B >: (Set[Int], String)](xs: Array[B],start: Int,len: Int): Unit = ???
   def exists(p: ((Set[Int], String)) => Boolean): Boolean = ???
@@ -98,6 +103,6 @@ it has 24 unimplemented members.
   // Members declared in Xyz
   def foo(x: List[Int]): Boolean = ???
 
-class Dingus extends Bippy[String, Set[Int], List[Int]]
+class Dingus extends Bippy[String, Set[Int], List[Int]] with Symbolic
       ^
 four errors found
