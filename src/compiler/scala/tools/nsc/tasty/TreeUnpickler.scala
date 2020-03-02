@@ -881,7 +881,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
-          sym.info = if (sym.isMethod) mkNullaryMethodType(tpe) else tpe
+          sym.info = {
+            if (completer.tastyFlagSet.is(Enum)) mkConstantType(Constant(sym))
+            else if (sym.isMethod) mkNullaryMethodType(tpe)
+            else tpe
+          }
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
           val unsupported = completer.tastyFlagSet &~ Enum

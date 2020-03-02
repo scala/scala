@@ -171,14 +171,12 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   object NamedType {
-    import SymbolOps._
     def apply(prefix: Type, designator: Symbol): Type = {
       if (designator.isType)
         designator.ref
-      else if (designator.is(Method | JavaStatic))
+      else if (designator.is(JavaStatic))
         // With this second constraint, we avoid making singleton types for
         // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-        // [what do we do about Scala 3 enum constants?]
         designator.termRef(prefix)
       else
         mkSingleType(prefix, designator)

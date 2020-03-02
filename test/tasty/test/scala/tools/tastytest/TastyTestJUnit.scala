@@ -23,14 +23,6 @@ class TastyTestJUnit {
     additionalSettings = Nil
   ).get
 
-  @test def posFalse(): Unit = TastyTest.posSuite(
-    src                = "pos-false",
-    srcRoot            = assertPropIsSet(propSrc),
-    pkgName            = assertPropIsSet(propPkgName),
-    outDir             = None,
-    additionalSettings = Nil
-  ).get
-
   @test def posFalseNoAnnotations(): Unit = TastyTest.posSuite(
     src                = "pos-false-noannotations",
     srcRoot            = assertPropIsSet(propSrc),
@@ -41,14 +33,6 @@ class TastyTestJUnit {
 
   @test def neg(): Unit = TastyTest.negSuite(
     src                = "neg",
-    srcRoot            = assertPropIsSet(propSrc),
-    pkgName            = assertPropIsSet(propPkgName),
-    outDir             = None,
-    additionalSettings = Nil
-  ).get
-
-  @test def negFalse(): Unit = TastyTest.negSuite(
-    src                = "neg-false",
     srcRoot            = assertPropIsSet(propSrc),
     pkgName            = assertPropIsSet(propPkgName),
     outDir             = None,
