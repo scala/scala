@@ -1,0 +1,2 @@
+trait HasSelf { (this: Forbidden) =>
+}

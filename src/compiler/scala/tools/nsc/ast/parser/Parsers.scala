@@ -1629,14 +1629,18 @@ self =>
           } else if (in.token == MATCH) {
             t = atPos(t.pos.start, in.skipToken())(Match(stripParens(t), inBracesOrNil(caseClauses())))
           }
-          // in order to allow anonymous functions as statements (as opposed to expressions) inside
-          // templates, we have to disambiguate them from self type declarations - bug #1565
-          // The case still missed is unparenthesized single argument, like "x: Int => x + 1", which
-          // may be impossible to distinguish from a self-type and so remains an error.  (See #1564)
+          // disambiguate between self types "x: Int =>" and orphan function literals "(x: Int) => ???"
+          // "(this: Int) =>" is parsed as an erroneous function literal but emits special guidance on
+          // what's probably intended.
           def lhsIsTypedParamList() = t match {
-            case Parens(xs) if xs.forall(isTypedParam) => true
-            case _ => false
+            case Parens(List(Typed(This(_), _))) => {
+              reporter.error(t.pos, "self-type annotation may not be in parentheses")
+              false
+            }
+            case Parens(xs)                      => xs.forall(isTypedParam)
+            case _                               => false
           }
+
           if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
             t = atPos(t.pos.start, in.skipToken()) {
               Function(convertToParams(t), if (location != InBlock) expr() else block())
