@@ -90,7 +90,6 @@ Global / mimaReferenceVersion := Some("2.13.0")
 import com.typesafe.tools.mima.core._
 val mimaFilterSettings = Seq {
   mimaBinaryIssueFilters ++= Seq(
-    ProblemFilters.exclude[IncompatibleSignatureProblem]("*"),
     ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
