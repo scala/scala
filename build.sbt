@@ -270,6 +270,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map4.foreachEntry"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.ListMap"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.TreeMap"),
+    ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.TreeMap.serialVersionUID"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$HashMap1"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.HashMap$HashTrieMap"),
