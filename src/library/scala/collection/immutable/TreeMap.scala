@@ -48,12 +48,16 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define mayNotTerminateInf
  *  @define willNotTerminateInf
  */
+@SerialVersionUID(4714724050750123970L)
 final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
      with Serializable
      with HasForeachEntry[A, B] {
+  // Manually use this from inner classes to avoid having scalac rename `tree` to an expanded name which is not
+  // serialization compatbile.
+  private def tree0: RB.Tree[A, B] = tree
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
@@ -224,10 +228,10 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
 
   override def keySet: SortedSet[A] = new DefaultKeySortedSet {
-    override def foreach[U](f: A => U): Unit = RB.foreachEntry(tree, {(key: A, _: B) => f(key)})
+    override def foreach[U](f: A => U): Unit = RB.foreachEntry(tree0, {(key: A, _: B) => f(key)})
   }
 
   override def values: scala.Iterable[B] = new DefaultValuesIterable {
-    override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree, {(_: A, value: B) => f(value)})
+    override def foreach[U](f: B => U): Unit = RB.foreachEntry(tree0, {(_: A, value: B) => f(value)})
   }
 }
