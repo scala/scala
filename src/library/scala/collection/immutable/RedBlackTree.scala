@@ -192,7 +192,7 @@ private[collection] object RedBlackTree {
     val cmp = ordering.compare(k, tree.key)
     if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
     else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v, overwrite))
-    else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
+    else if (overwrite) mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
     else tree
   }
   private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1, overwrite: Boolean): Tree[A, B1] = if (tree eq null) {
