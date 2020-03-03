@@ -8,14 +8,6 @@
 
 object Test {
 
-  /* I add a couple of Unicode identifier tests here "temporarily" */
-
-  def \u03b1\u03c1\u03b5\u03c4\u03b7 = "alpha rho epsilon tau eta"
-
-  case class GGG(i: Int) {
-    def \u03b1\u03b1(that: GGG) = i + that.i
-  }
-
   def check_success[A](name: String, closure: => A, expected: A): Unit = {
     val res: Option[String] =
       try {
@@ -30,15 +22,19 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     // char
+
+    //unicode escapes escape in char literals
     check_success("'\\u0024' == '$'", '\u0024', '$')
     check_success("'\\u005f' == '_'", '\u005f', '_')
-    check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
-    //check_success("\"\\141\\142\" == \"ab\"", "\141\142", "ab")
-    //check_success("\"\\0x61\\0x62\".trim() == \"x61\\0x62\"", "\0x61\0x62".substring(1), "x61\0x62")
-    //check_success(""""\0x61\0x62".getBytes == Array(0, 120, ...)""",
-    //  "\0x61\0x62".getBytes(io.Codec.UTF8.charSet) sameElements Array[Byte](0, 120, 54, 49, 0, 120, 54, 50),
-    //  true)
 
+    //unicode escapes escape in interpolations
+    check_success("bleh", s"\u0024", "$")
+    check_success("bleh", s"""\u0024""", "$")
+
+
+    //Int#asInstanceOf[Char] gets the char at the codepont
+    check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
+    
     // boolean
     check_success("(65 : Byte) == 'A'", (65: Byte) == 'A', true) // contrib #176
 
@@ -116,10 +112,6 @@ object Test {
     check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
 
     check_success("\"\".length()", "\u001a".length(), 1)
-
-    val ggg = GGG(1) \u03b1\u03b1 GGG(2)
-    check_success("ggg == 3", ggg, 3)
-
   }
 }
 

@@ -1,7 +1,7 @@
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
-  def code = """
+  def code = s"""
 :paste -raw
 package scala { object T { @scala.annotation.migration("text", "2.8.0") def muh: String = "muuh" } }
 \u0004

@@ -1,0 +1,16 @@
+t3220-2.scala:2: error: invalid unicode escape at index 6 of foo \unope that's wrong
+  val badInters1 = s"foo \unope that's wrong"
+                           ^
+t3220-2.scala:3: error: invalid unicode escape at index 8 of foo \u12
+  val badIntersEnd1 = s"foo \u12"
+                                ^
+t3220-2.scala:4: error: invalid unicode escape at index 6 of foo \unope that's wrong
+  val badInterRaw1 = raw"foo \unope that's wrong"
+                               ^
+t3220-2.scala:6: error: invalid unicode escape at index 6 of foo \unope that's wrong
+  val badInters3 = s"""foo \unope that's wrong"""
+                             ^
+t3220-2.scala:7: error: invalid unicode escape at index 6 of foo \unope that's wrong
+  val badInterRaw3 = raw"""foo \unope that's wrong"""
+                                 ^
+5 errors

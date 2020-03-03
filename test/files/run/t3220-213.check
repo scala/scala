@@ -1,0 +1,55 @@
+t3220-213.scala:9: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
+  def inTripleQuoted = """\u000A"""
+                          ^
+t3220-213.scala:45: warning: Unicode escapes in triple quoted strings are deprecated, use the literal character instead
+      "tab unicode escape in triple quoted string" -> """tab\u0009tab""",
+                                                            ^
+t3220-213.scala:10: warning: Unicode escapes in raw interpolations are deprecated. Use literal characters instead.
+  def inInterpolation = raw"\u000A"
+                            ^
+t3220-213.scala:11: warning: Unicode escapes in raw interpolations are deprecated. Use literal characters instead.
+  def inTripleQuotedInterpolation = raw"""\u000A"""
+                                          ^
+t3220-213.scala:46: warning: Unicode escapes in raw interpolations are deprecated. Use literal characters instead.
+      "tab unicode escape in single quoted raw interpolator" -> raw"tab\u0009tab",
+                                                                       ^
+t3220-213.scala:47: warning: Unicode escapes in raw interpolations are deprecated. Use literal characters instead.
+      "tab unicode escape in triple quoted raw interpolator" -> raw"""tab\u0009tab"""
+                                                                         ^
+supported
+literals that result in tab	tab:
+literal tab in single quoted string
+tab escape char in single quoted string
+tab unicode escape in single quoted string
+literal tab in triple quoted string
+literal tab in triple quoted raw interpolator
+literal tab in single quoted raw interpolator
+literal tab in triple quoted s interpolator
+literal tab in single quoted s interpolator
+tab escape char in triple quoted s interpolator
+tab escape char in single quoted s interpolator
+tab unicode escape in triple quoted s interpolator
+tab unicode escape in single quoted s interpolator
+
+unsupported
+literals that result in tab\ttab:
+tab escape char in triple quoted string
+tab escape char in raw interpolator
+
+deprecated
+literals that result in tab	tab:
+tab unicode escape in triple quoted string
+tab unicode escape in single quoted raw interpolator
+tab unicode escape in triple quoted raw interpolator
+
+after backslashes
+List(\, \, u, 0, 0, 4, 0)
+List(\, u, 0, 0, 4, 0)
+List(\, \, u, 0, 0, 4, 0)
+List(\, u, 0, 0, 4, 0)
+List(", (, [, ^, ", \, x, 0, 0, -, \, x, 1, F, \, x, 7, F, \, \, ], |, \, \, [, \, \, ', ", b, f, n, r, t, ], |, \, \, u, [, a, -, f, A, -, F, 0, -, 9, ], {, 4, }, ), *, ")
+List(b, a, d, \)
+quotes are not interpreted from escape
+List(", _, ")
+List(")
+'

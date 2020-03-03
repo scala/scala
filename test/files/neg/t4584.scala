@@ -1,1 +1,1 @@
-class A { val \u2
+class A { val x = """\u2

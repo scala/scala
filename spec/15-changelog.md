@@ -6,6 +6,12 @@ chapter: 15
 
 # Changelog
 
+Changes in Version 2.13.1
+
+#### Unicode normalization
+
+Unicode escapes are no longer pre-processed, but are processed as regular escapes.
+
 Changes in Version 2.8.0
 ------------------------
 

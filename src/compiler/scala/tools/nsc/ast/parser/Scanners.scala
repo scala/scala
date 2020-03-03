@@ -237,10 +237,7 @@ trait Scanners extends ScannersCommon {
 
     /** append Unicode character to "cbuf" buffer
      */
-    protected def putChar(c: Char): Unit = {
-//      assert(cbuf.size < 10000, cbuf)
-      cbuf.append(c)
-    }
+    protected def putChar(c: Char): Unit = cbuf.append(c)
 
     /** Determines whether this scanner should emit identifier deprecation warnings,
      *  e.g. when seeing `macro` or `then`, which are planned to become keywords in future versions of Scala.
@@ -653,7 +650,7 @@ trait Scanners extends ScannersCommon {
               charLitOr(() => getIdentRest())
             else if (isOperatorPart(ch) && (ch != '\\'))
               charLitOr(() => getOperatorRest())
-            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape)) {
+            else if (!isAtEnd && (ch != SU && ch != CR && ch != LF)) {
               val isEmptyCharLit = (ch == '\'')
               getLitChar()
               if (ch == '\'') {
@@ -843,11 +840,28 @@ trait Scanners extends ScannersCommon {
 
     private def unclosedStringLit(): Unit = syntaxError("unclosed string literal")
 
+    private def replaceUnicodeEscapesInTriple(): Unit = 
+      if(strVal != null) {
+        try {
+          val replaced = StringContext.processUnicode(strVal)
+          if(replaced != strVal) {
+            val diffPosition = replaced.zip(strVal).zipWithIndex.collectFirst{ case ((r, o), i) if r != o => i}.getOrElse(replaced.length - 1)
+            deprecationWarning(offset + 3 + diffPosition, "Unicode escapes in triple quoted strings are deprecated, use the literal character instead", since="2.13.2")
+          }
+          strVal = replaced
+        } catch {
+          case ue: StringContext.InvalidUnicodeEscapeException => {
+            syntaxError(offset + 3 + ue.index, ue.getMessage())
+          }
+        }
+      }
+
     @tailrec private def getRawStringLit(): Unit = {
       if (ch == '\"') {
         nextRawChar()
         if (isTripleQuote()) {
           setStrVal()
+          if(!currentRun.isScala214) replaceUnicodeEscapesInTriple()
           token = STRINGLIT
         } else
           getRawStringLit()
@@ -911,7 +925,7 @@ trait Scanners extends ScannersCommon {
           syntaxError(s"invalid string interpolation $$$ch, expected: $$$$, $$identifier or $${expression}")
         }
       } else {
-        val isUnclosedLiteral = !isUnicodeEscape && (ch == SU || (!multiLine && (ch == CR || ch == LF)))
+        val isUnclosedLiteral = (ch == SU || (!multiLine && (ch == CR || ch == LF)))
         if (isUnclosedLiteral) {
           if (multiLine)
             incompleteInputError("unclosed multi-line string literal")
@@ -974,31 +988,64 @@ trait Scanners extends ScannersCommon {
           syntaxError(start, s"octal escape literals are unsupported: use $alt instead")
           putChar(oct.toChar)
         } else {
-          ch match {
-            case 'b'  => putChar('\b')
-            case 't'  => putChar('\t')
-            case 'n'  => putChar('\n')
-            case 'f'  => putChar('\f')
-            case 'r'  => putChar('\r')
-            case '\"' => putChar('\"')
-            case '\'' => putChar('\'')
-            case '\\' => putChar('\\')
-            case _    => invalidEscape()
+          if (ch == 'u') {
+            if (getUEscape()) nextChar()
           }
-          nextChar()
+          else {
+            ch match {
+              case 'b'  => putChar('\b')
+              case 't'  => putChar('\t')
+              case 'n'  => putChar('\n')
+              case 'f'  => putChar('\f')
+              case 'r'  => putChar('\r')
+              case '\"' => putChar('\"')
+              case '\'' => putChar('\'')
+              case '\\' => putChar('\\')
+              case _    => invalidEscape()
+            }
+            nextChar()
+          }
         }
       } else  {
         putChar(ch)
         nextChar()
       }
 
+    private def getUEscape(): Boolean = {
+      while (ch == 'u') nextChar()
+      var codepoint = 0
+      var digitsRead = 0
+      while (digitsRead < 4) {
+        if (digitsRead > 0) nextChar()
+        val digit = digit2int(ch, 16)
+        digitsRead += 1
+        if (digit >= 0) {
+          codepoint = codepoint << 4
+          codepoint += digit
+        }
+        else {
+          invalidUnicodeEscape(digitsRead)
+          return false
+        }
+      }
+      val found = codepoint.asInstanceOf[Char]
+      putChar(found)
+      true
+    }
+    
+
     protected def invalidEscape(): Unit = {
       syntaxError(charOffset - 1, "invalid escape character")
       putChar(ch)
     }
 
+    protected def invalidUnicodeEscape(n: Int): Unit = {
+      syntaxError(charOffset - n, "invalid unicode escape")
+      putChar(ch)
+    }
+
     private def getLitChars(delimiter: Char) = {
-      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF || isUnicodeEscape))
+      while (ch != delimiter && !isAtEnd && (ch != SU && ch != CR && ch != LF))
         getLitChar()
     }
 
@@ -1391,7 +1438,6 @@ trait Scanners extends ScannersCommon {
    */
   class SourceFileScanner(val source: SourceFile) extends Scanner {
     val buf = source.content
-    override val decodeUni: Boolean = !settings.nouescape
 
     // suppress warnings, throw exception on errors
     def deprecationWarning(off: Offset, msg: String, since: String): Unit = ()

@@ -3,5 +3,5 @@ object Test {
   def b = 'B
   def c = '+
   //def d = '`\n` //error: unclosed character literal
-  def e = '\u0041
+  //def e = '\u0041 //error: unclosed character literal
 }

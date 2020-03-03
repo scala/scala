@@ -242,9 +242,6 @@ object scalac extends Command {
           CmdOption("Xno-patmat-analysis"),
           "Don't perform exhaustivity/unreachability analysis. Also, ignore " & MItalic("@switch") & " annotation."),
         Definition(
-          CmdOption("Xno-uescape"),
-          "Disable handling of " & BSlash & "u unicode escapes"),
-        Definition(
           CmdOption("Xnojline"),
           "Do not use JLine for editing."),
         Definition(
