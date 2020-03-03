@@ -244,11 +244,11 @@ private[async] trait TransformUtils extends PhasedTransform {
       case _ => false
     }
     private def attachContainsAwait(t: Tree): Unit = if (shouldAttach(t)) {
-      t.updateAttachment(ContainsAwait)
-      t.removeAttachment[NoAwait.type]
+      t.setAttachments(t.attachments.addElement(ContainsAwait))
+      t.setAttachments(t.attachments.removeElement(NoAwait))
     }
     private def attachNoAwait(t: Tree): Unit = if (shouldAttach(t)) {
-      t.updateAttachment(NoAwait)
+      t.setAttachments(t.attachments.addElement(NoAwait))
     }
 
     var stack: List[Tree] = Nil
@@ -269,8 +269,8 @@ private[async] trait TransformUtils extends PhasedTransform {
     t.foreach {
       case _: CannotHaveAttrs =>
       case t =>
-        t.removeAttachment[ContainsAwait.type]
-        t.removeAttachment[NoAwait.type]
+        t.setAttachments(t.attachments.removeElement(ContainsAwait))
+        t.setAttachments(t.attachments.removeElement(NoAwait))
     }
     t
   }
@@ -291,5 +291,5 @@ private[async] trait TransformUtils extends PhasedTransform {
   }
 }
 
-case object ContainsAwait
-case object NoAwait
+private case object ContainsAwait
+private case object NoAwait

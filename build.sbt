@@ -450,6 +450,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.getOrElse0"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
 
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$IterableOrdering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple4Ordering"),
@@ -461,6 +462,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple6Ordering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple8Ordering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple5Ordering"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.removeElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.addElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.containsElement"),
   )
 }
 
