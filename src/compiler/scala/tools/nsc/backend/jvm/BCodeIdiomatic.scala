@@ -456,7 +456,7 @@ abstract class BCodeIdiomatic {
       i = 1
       while (i < keys.length) {
         if (keys(i-1) == keys(i)) {
-          abort("duplicate keys in SWITCH, can't pick arbitrarily one of them to evict, see scala/bug#6011.")
+          abort("duplicate keys in SWITCH, can't pick arbitrarily one of them to evict, see scala/bug#6011: " + keys.sorted.toList)
         }
         i += 1
       }

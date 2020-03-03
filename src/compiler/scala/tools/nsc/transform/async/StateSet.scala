@@ -25,8 +25,15 @@ final class StateSet {
   def +=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.set(stateId) else caseSet.add(stateId)
   def -=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.clear(stateId) else caseSet.remove(stateId)
   def contains(stateId: Int): Boolean = if (useBitSet(stateId)) bitSet.get(stateId) else caseSet.contains(stateId)
+  def isEmpty = bitSet.isEmpty && caseSet.isEmpty
   def iterator: Iterator[Integer] = {
     bitSet.stream().iterator().asScala ++ caseSet.asScala.iterator
+  }
+  def toArray: Array[Int] = {
+    val result = new Array[Int](bitSet.cardinality() + caseSet.size())
+    var i = 0
+    foreach(value => {result(i) = value; i += 1 })
+    result
   }
   def foreach(f: IntConsumer): Unit = {
     bitSet.stream().forEach(f)

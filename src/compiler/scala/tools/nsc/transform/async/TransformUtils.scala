@@ -24,43 +24,18 @@ import scala.tools.nsc.transform.TypingTransformers
 trait PhasedTransform extends TypingTransformers {
   import global._
 
-  def isPastErasure: Boolean = {
-    val erasurePhase = global.currentRun.erasurePhase
-    erasurePhase != NoPhase && global.isPast(erasurePhase)
-  }
+  def assignUnitType(t: Tree): t.type = t.setType(definitions.UnitTpe)
 
-  // We're not that granular, but keeping separate flag for semantics
-  private def isPastUncurry = isPastErasure
-  private def emptyParamss: List[List[ValDef]] = if (isPastUncurry) ListOfNil else Nil
-  protected def applyNilAfterUncurry(t: Tree) = if (isPastUncurry) Apply(t, Nil) else t
+  def isUnitType(tp: Type): Boolean = tp.typeSymbol == definitions.UnitClass || tp =:= definitions.BoxedUnitTpe
 
-  def literalNull = Literal(Constant(null))
+  def literalUnit: Tree = Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees
+  def literalBoxedUnit: Tree = gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
 
-  def typeEqualsUnit(tp: Type) = tp =:= definitions.UnitTpe || (isPastErasure && tp =:= definitions.BoxedUnitTpe)
-
-  def assignUnitType(t: Tree): t.type =
-    t.setType(definitions.UnitTpe)
-
-  def setUnitMethodInfo(sym: Symbol): sym.type = sym.setInfo(MethodType(Nil, if (isPastErasure) definitions.BoxedUnitTpe else definitions.UnitTpe))
-
-  def isUnitType(tp: Type) = tp.typeSymbol == definitions.UnitClass || (isPastErasure && tp =:= definitions.BoxedUnitTpe)
-  def isNothingClass(sym: Symbol) = sym == definitions.NothingClass
-
-  def literalUnit =
-    Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees
-  def literalBoxedUnit =
-    gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
-
-  def isLiteralUnit(t: Tree) = t match {
+  def isLiteralUnit(t: Tree): Boolean = t match {
     case Literal(Constant(())) => true
     case t if t.symbol == definitions.BoxedUnit_UNIT => true // important to find match labels (which are potential states)
     case _ => false
   }
-
-
-  def transformType(tp: Type) = if (isPastErasure) transformedType(tp) else tp
-
-  def mkAsInstanceOf(qual: Tree, tp: Type) = gen.mkCast(qual, tp)
 
   private def tpeOf(t: Tree): Type = t match {
     case _ if t.tpe != null    => t.tpe
@@ -71,35 +46,30 @@ trait PhasedTransform extends TypingTransformers {
     case _                     => NoType
   }
 
-  def adaptToUnit(rhs: List[Tree]): Block =
+  def adaptToUnit(rhs: List[Tree]): Block = {
+    def filterUnit(ts: List[Tree]): List[Tree] = {
+      val result = ts.filterNot(isLiteralUnit(_))
+      // if (result != ts)
+      //  getClass
+      result
+    }
     rhs match {
       case (rhs: Block) :: Nil if { val tp = tpeOf(rhs); tp <:< definitions.UnitTpe || tp <:< definitions.BoxedUnitTpe } =>
         rhs
       case init :+ last if { val tp = tpeOf(last); tp <:< definitions.UnitTpe || tp <:< definitions.BoxedUnitTpe }        =>
-        Block(init, last)
+        Block(filterUnit(init), last)
       case init :+ (last@Literal(Constant(())))                       =>
-        Block(init, last)
+        Block(filterUnit(init), last)
       case init :+ (last@Block(_, Return(_) | Literal(Constant(())))) =>
-        Block(init, last)
+        Block(filterUnit(init), last)
       case init :+ (last@Block(_, expr)) if expr.symbol == definitions.BoxedUnit_UNIT =>
-        Block(init, last)
+        Block(filterUnit(init), last)
       case init :+ Block(stats, expr)                                 =>
-        Block(init, Block(stats :+ expr, literalUnit))
+        Block(filterUnit(init), Block(filterUnit(stats :+ expr), literalUnit))
       case _                                                          =>
-        Block(rhs, literalUnit)
+        Block(filterUnit(rhs), literalUnit)
     }
-
-  // TODO AM: why add the :Any type ascription to hide a tree of type Nothing? adaptToUnit doesn't seem to care
-  def adaptToUnitIgnoringNothing(stats: List[Tree]): Block =
-    stats match {
-      case init :+ last if tpeOf(last) =:= definitions.NothingTpe =>
-        adaptToUnit(init :+ Typed(last, TypeTree(definitions.AnyTpe)))
-      case _                                                      =>
-        adaptToUnit(stats)
-    }
-
-  private def derivedValueClassUnbox(cls: Symbol) =
-    (cls.info.decls.find(sym => sym.isMethod && sym.asTerm.isParamAccessor) getOrElse NoSymbol)
+  }
 }
 
 
@@ -116,7 +86,7 @@ private[async] trait TransformUtils extends PhasedTransform {
     def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
   }
 
-  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree) =
+  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
     if (emitTryCatch) Try(block, catches, finalizer) else block
 
   lazy val IllegalStateExceptionClass = rootMirror.staticClass("java.lang.IllegalStateException")
@@ -127,19 +97,18 @@ private[async] trait TransformUtils extends PhasedTransform {
   def isBooleanShortCircuit(sym: Symbol): Boolean =
     sym.owner == definitions.BooleanClass && (sym == definitions.Boolean_and || sym == definitions.Boolean_or)
 
-  def isLabel(sym: Symbol): Boolean = sym.isLabel
+  def isLabel(sym: Symbol): Boolean = sym != null && sym.isLabel
+  def isCaseLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("case")
+  def isMatchEndLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("matchEnd")
 
   def substituteTrees(t: Tree, from: List[Symbol], to: List[Tree]): Tree =
     (new TreeSubstituter(from, to)).transform(t)
 
   def statsAndExpr(tree: Tree): (List[Tree], Tree) = tree match {
     case Block(stats, expr) => (stats, expr)
-    case _                  => (List(tree), Literal(Constant(())))
-  }
-
-  def blockToList(tree: Tree): List[Tree] = tree match {
-    case Block(stats, expr) => stats :+ expr
-    case t                  => t :: Nil
+    case _                  =>
+      if (tree.tpe <:< definitions.UnitTpe) (Nil, tree)
+      else (List(tree), literalUnit)
   }
 
   def listToBlock(trees: List[Tree]): Block = trees match {
@@ -150,9 +119,44 @@ private[async] trait TransformUtils extends PhasedTransform {
       throw new MatchError(trees)
   }
 
-  def emptyConstructor: DefDef = {
-    val emptySuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), Nil)
-    DefDef(NoMods, nme.CONSTRUCTOR, List(), List(List()), TypeTree(), Block(List(emptySuperCall), Literal(Constant(()))))
+  class ThicketTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+    private object Thicket
+    private def expandThicket(t: Tree): List[Tree] = t match {
+      case Block(stats, expr) if t.attachments.contains[Thicket.type] =>
+        stats :+ expr
+      case _ => t :: Nil
+    }
+
+    def apply(tree: Tree): List[Tree] = expandThicket(transform(tree))
+
+    protected def Thicket(stats: List[Tree], expr: Tree): Tree = {
+      Block(stats, expr).updateAttachment(Thicket)
+    }
+    protected def Thicket(block: Block): Tree = {
+      block.updateAttachment(Thicket)
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+      case Block(stats, expr) =>
+        val stats1 = mutable.ListBuffer[Tree]()
+        transformTrees(stats).foreach {
+          case blk @ Block(stats, expr) if blk.hasAttachment[Thicket.type] =>
+            stats1 ++= stats
+            stats1 += expr
+          case t =>
+            stats1 += t
+        }
+        val expr1 = transform(expr) match {
+          case blk @ Block(stats, expr) if blk.hasAttachment[Thicket.type] =>
+            stats1 ++= stats
+            expr
+          case expr =>
+            expr
+        }
+        treeCopy.Block(tree, stats1.toList, expr1)
+      case _ =>
+        super.transform(tree)
+    }
   }
 
   /** Descends into the regions of the tree that are subject to the
@@ -203,11 +207,6 @@ private[async] trait TransformUtils extends PhasedTransform {
       buffer += b
     }
     result.map { case (a, b) => (a, b.toList) }
-  }
-
-  def thisType(sym: Symbol): Type = {
-    if (sym.isClass) sym.asClass.thisPrefix
-    else NoPrefix
   }
 
   /**
@@ -280,7 +279,7 @@ private[async] trait TransformUtils extends PhasedTransform {
   object MatchEnd {
     def unapply(t: Tree): Option[LabelDef] = t match {
       case ValDef(_, _, _, t) => unapply(t)
-      case ld: LabelDef if ld.name.toString.startsWith("matchEnd") => Some(ld)
+      case ld: LabelDef if isMatchEndLabel(ld.symbol) => Some(ld)
       case _ => None
     }
   }
@@ -288,6 +287,14 @@ private[async] trait TransformUtils extends PhasedTransform {
   final def flattenBlock(tree: Tree)(f: Tree => Unit): Unit = tree match {
     case Block(stats, expr) => stats.foreach(f); f(expr)
     case _ => f(tree)
+  }
+
+  // unwrap Block(t :: Nil, scala.runtime.BoxedUnit.UNIT) -- erasure will add the expr when await had type Unit
+  object UnwrapBoxedUnit {
+    def unapply(tree: Tree): Some[Tree] = tree match {
+      case Block(t :: Nil, unit) if isLiteralUnit(unit) => Some(t) // is really only going to be BoxedUnit, but hey
+      case t => Some(t)
+    }
   }
 }
 

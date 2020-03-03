@@ -35,6 +35,71 @@ class AnnotationDrivenAsync {
     assertEquals(3, run(code))
   }
 
+  @Test
+  def testMatchBig(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |
+        |object Test {
+        |  def test: Future[Int] = async {
+        |    val x: Option[Either[Object, (String, String)]] = Some(Right(("a", "b")))
+        |    x match {
+        |      case Some(Left(_)) => 1
+        |      case Some(Right(("a", "c"))) => 2
+        |      case Some(Right(("a", "e"))) => 3
+        |      case Some(Right(("a", x))) if "ab".isEmpty => 4
+        |      case Some(Right(("a", "b"))) => await(f(5))
+        |      case Some(Right((y, x))) if x == y => 6
+        |      case Some(Right((_, _))) => await(f(7))
+        |      case None => 8
+        |    }
+        | }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals(5, run(code))
+  }
+ @Test
+  def testMatchSmall(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |
+        |object Test {
+        |  def test: Future[Int] = async {
+        |    val x: Option[Either[Object, (String, String)]] = Some(Right(("a", "b")))
+        |    (x: @unchecked) match {
+        |      case Some(Right(("a", "b"))) => await(f(5))
+        |      case None => 8
+        |    }
+        | }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals(5, run(code))
+  }
+
+
+  @Test
+  def testBasicScalaConcurrentCapture(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |object Test {
+        |  def test: Future[(String, Int, Int)] = async { var x = "init"; val y = await(f(1)); class C { x = x + "_updated" }; new C; (x, y, await(f(2))) }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals(("init_updated", 1, 2), run(code))
+  }
+
  @Test
   def testLiftedLazyVal(): Unit = {
     val code =
@@ -48,6 +113,58 @@ class AnnotationDrivenAsync {
         |}
         |""".stripMargin
     assertEquals((1, 1, -1), run(code))
+  }
+
+  @Test
+  def testWhile1(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |object Test {
+        |  def p[T](t: T): T = {println(t); t }
+        |  def test: Future[Int] = async {
+        |    var sum = 0
+        |    var i = 0
+        |    while (i < 5) {
+        |      var j = 0
+        |      while (j < 5) {
+        |        sum += await(f(i)) * await(f(j))
+        |        j += 1
+        |      }
+        |      i += 1
+        |    }
+        |    sum
+        |  }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals(100, run(code))
+  }
+
+  @Test
+  def testWhile2(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.async.Async.{async, await}
+        |
+        |object Test {
+        |  def p[T](t: T): T = {println(t); t }
+        |  def test: Future[Int] = async {
+        |    var sum = 0
+        |    var i = 0
+        |    while (i < 5) {
+        |      sum += await(f(i))
+        |      i += 1
+        |    }
+        |    sum
+        |  }
+        |  def f(x: Int): Future[Int] = Future.successful(x)
+        |}
+        |""".stripMargin
+    assertEquals(10, run(code))
   }
 
   @Test
@@ -242,6 +359,8 @@ class AnnotationDrivenAsync {
       |""".stripMargin
     assertEquals(true, run(code))
   }
+
+
 
   // Handy to debug the compiler
   @Test @Ignore
@@ -451,7 +570,7 @@ object CustomFutureFutureSystem extends FutureSystem {
     }
 
     def completeProm[A](prom: Expr[Prom[A]], value: Expr[scala.util.Try[A]]): Expr[Unit] = {
-      Block(gen.mkMethodCall(prom, Promise_complete, Nil, value :: Nil) :: Nil, literalUnitExpr)
+      gen.mkMethodCall(prom, Promise_complete, Nil, value :: Nil)
     }
 
     def tryyIsFailure[A](tryy: Expr[scala.util.Try[A]]): Expr[Boolean] = {

@@ -165,9 +165,8 @@ private[async] trait AnfTransform extends TransformUtils {
             treeCopy.Match(tree, scrutExpr, casesWithAssign)
           }
 
-        case LabelDef(name, params, rhs) =>
+        case ld @ LabelDef(name, params, rhs) =>
           treeCopy.LabelDef(tree, name, params, transformNewControlFlowBlock(rhs))
-
         case _ =>
           super.transform(tree)
       }
@@ -186,9 +185,8 @@ private[async] trait AnfTransform extends TransformUtils {
     private def transformMatchOrIf[T <: Tree](tree: Tree, needsResultVar: Boolean, nameSource: asyncNames.NameSource[TermName])(core: Symbol => T): Tree = {
       // if type of if/match is Unit don't introduce assignment,
       // but add Unit value to bring it into form expected by async transform
-      if (typeEqualsUnit(tree.tpe)) {
-        currentStats += assignUnitType(core(NoSymbol))
-        atPos(tree.pos)(literalUnit)
+      if (isUnitType(tree.tpe)) {
+        assignUnitType(core(NoSymbol))
       } else if (tree.tpe =:= definitions.NothingTpe) {
         currentStats += assignUnitType(core(NoSymbol))
         localTyper.typedPos(tree.pos)(Throw(New(IllegalStateExceptionClass)))
@@ -281,7 +279,7 @@ private[async] trait AnfTransform extends TransformUtils {
         val param = ld.params.head
 
         def unitLabelDef = {
-          setUnitMethodInfo(ld.symbol)
+          ld.symbol.setInfo(MethodType(Nil, definitions.UnitTpe))
           assignUnitType(treeCopy.LabelDef(ld, ld.name, Nil, literalUnit))
         }
 
@@ -378,7 +376,7 @@ private[async] trait AnfTransform extends TransformUtils {
     }
   }
 
-  final class MatchResultTransformer(caseDefToMatchResult: collection.Map[Symbol, Symbol]) extends TypingTransformer(currentTransformState.unit) {
+  final class MatchResultTransformer(caseDefToMatchResult: collection.Map[Symbol, Symbol]) extends ThicketTransformer(currentTransformState.unit) {
     override def transform(tree: Tree): Tree = {
       tree match {
         case _: Function | _: MemberDef =>
@@ -386,19 +384,11 @@ private[async] trait AnfTransform extends TransformUtils {
         case Apply(fun, arg :: Nil) if isLabel(fun.symbol) && caseDefToMatchResult.contains(fun.symbol) =>
           val temp = caseDefToMatchResult(fun.symbol)
           if (temp == NoSymbol)
-            treeCopy.Block(tree, transform(arg) :: Nil, treeCopy.Apply(tree, fun, Nil))
+            Thicket(treeCopy.Block(tree, transform(arg) :: Nil, treeCopy.Apply(tree, fun, Nil)))
           else if (arg.tpe.typeSymbol == definitions.NothingClass) {
             transform(arg)
           } else {
-            treeCopy.Block(tree, typedAssign(transform(arg), temp) :: Nil, treeCopy.Apply(tree, fun, Nil))
-          }
-        case Block(stats, expr: Apply) if isLabel(expr.symbol) =>
-          super.transform(tree) match {
-            case Block(stats0, Block(stats1, expr1)) =>
-              // flatten the block returned by `case Apply` above into the enclosing block for
-              // cleaner generated code.
-              treeCopy.Block(tree, stats0 ::: stats1, expr1)
-            case t => t
+            Thicket(treeCopy.Block(tree, typedAssign(transform(arg), temp) :: Nil, treeCopy.Apply(tree, fun, Nil)))
           }
         case _ =>
           super.transform(tree)

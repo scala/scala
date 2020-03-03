@@ -51,7 +51,7 @@ trait Lifter extends ExprBuilder {
         val childDefs = mutable.ArrayBuffer[Tree]()
         private val classesBuffer, moduleClassesBuffer = mutable.ArrayBuffer[Symbol]()
         override def traverse(tree: Tree): Unit = tree match {
-          case _: LabelDef =>
+          case _: LabelDef => super.traverse(tree)
           case _: DefTree => childDefs += tree
           case _: Function => Nil
           case Block(stats, expr) =>
@@ -78,7 +78,7 @@ trait Lifter extends ExprBuilder {
 
       for (asyncState <- asyncStates) {
         traverser.childDefs.clear()
-        traverser.traverse(Block(asyncState.allStats, EmptyTree))
+        traverser.traverse(Block(asyncState.stats, EmptyTree))
         for (defTree <-traverser.childDefs) {
           result(defTree) = asyncState.state
         }

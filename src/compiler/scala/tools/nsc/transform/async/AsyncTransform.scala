@@ -131,11 +131,43 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
 
 class AsyncTransformState[U <: Global with Singleton](val symbolTable: U, val futureSystem: FutureSystem,
                                                       val unit: U#CompilationUnit,
-                                                      val typingTransformer: TypingTransformers#TypingTransformer) {
+                                                      val typingTransformer: TypingTransformers#TypingTransformer,
+                                                      val stateMachineClass: U#Symbol,
+                                                      val applyMethod: U#Symbol,
+                                                      val applyTrParam: U#Symbol,
+                                                      val asyncType: U#Type) {
+  import symbolTable._
   val ops: futureSystem.Ops[symbolTable.type] = futureSystem.mkOps(symbolTable)
   val localTyper: symbolTable.analyzer.Typer = typingTransformer.localTyper.asInstanceOf[symbolTable.analyzer.Typer]
   val stateAssigner  = new StateAssigner
   val labelDefStates = collection.mutable.Map[symbolTable.Symbol, Int]()
+  val symLookup = new SymLookup() {
+    val global: symbolTable.type = symbolTable
+    val stateMachineClass: global.Symbol = AsyncTransformState.this.stateMachineClass.asInstanceOf[symbolTable.Symbol]
+    val applyTrParam: global.Symbol = AsyncTransformState.this.applyTrParam.asInstanceOf[symbolTable.Symbol]
+  }
+}
+
+abstract class SymLookup {
+  val global: Global
+  import global._
+  val stateMachineClass: Symbol
+  val applyTrParam: Symbol
+
+  def stateMachineMember(name: TermName): Symbol = {
+    stateMachineClass.info.member(name)
+  }
+  def memberRef(name: TermName): Tree =
+    gen.mkAttributedRef(stateMachineClass.typeConstructor, stateMachineMember(name))
+  def memberRef(sym: Symbol): Tree =
+    gen.mkAttributedRef(stateMachineClass.typeConstructor, sym)
+
+  lazy val stateGetter: Symbol = stateMachineMember(nme.state)
+  lazy val stateSetter: Symbol = stateGetter.setterIn(stateGetter.owner)
+
+  def selectResult = Apply(memberRef(nme.result), Nil)
+  def applyMethod: Symbol = applyTrParam.owner
+  lazy val whileLabel: Symbol = applyMethod.newLabel(nme.WHILE_PREFIX).setInfo(MethodType(Nil, definitions.UnitTpe))
 }
 
 trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with LiveVariables with TypingTransformers {
@@ -168,7 +200,8 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
         };
       };
    */
-  def asyncTransform(asyncBody: Tree, applySym: Symbol, trParamSym: Symbol): (Tree, List[Tree]) = {
+  def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {
+    val applySym = currentTransformState.applyMethod
     val futureSystem = currentTransformState.futureSystem
     val futureSystemOps = futureSystem.mkOps(global)
 
@@ -190,22 +223,25 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     cleanupContainsAwaitAttachments(anfTree)
     markContainsAwait(anfTree)
 
-    val asyncBlock = buildAsyncBlock(anfTree, SymLookup(stateMachineClass, trParamSym))
+    val asyncBlock = buildAsyncBlock(anfTree)
 
     val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
 
     // live variables analysis
     // the result map indicates in which states a given field should be nulled out
-    val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, liftedFields)
+    val nullOut = true
+    if (nullOut) {
+      val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)
 
-    for ((state, flds) <- assignsOf) {
-      val assigns = flds.map { fld =>
-        val fieldSym = fld.symbol
-        Assign(gen.mkAttributedStableRef(thisType(fieldSym.owner), fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
+      for ((state, flds) <- assignsOf) {
+        val assigns = flds.map { fld =>
+          val fieldSym = fld.symbol
+          Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
 
+        }
+        val asyncState = asyncBlock.asyncStates.find(_.state == state).get
+        asyncState.stats = assigns ++ asyncState.stats
       }
-      val asyncState = asyncBlock.asyncStates.find(_.state == state).get
-      asyncState.stats = assigns ++ asyncState.stats
     }
 
     val liftedSyms = liftedFields.map(_.symbol).toSet

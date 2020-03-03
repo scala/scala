@@ -13,7 +13,6 @@
 package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.transform.async.user.FutureSystem
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
 
@@ -80,9 +79,9 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
 
           atOwner(dd, dd.symbol) {
             val saved = currentTransformState
-            currentTransformState = new AsyncTransformState[global.type](global, futureSystem, unit, this)
+            currentTransformState = new AsyncTransformState[global.type](global, futureSystem, unit, this, dd.symbol.owner, dd.symbol, dd.vparamss.head.head.symbol, asyncBody.tpe)
             try {
-              val (newRhs, liftableFields) = asyncTransform(asyncBody, dd.symbol, dd.vparamss.head.head.symbol)
+              val (newRhs, liftableFields) = asyncTransform(asyncBody)
               liftables(dd.symbol.owner) = liftableFields
               deriveDefDef(dd)(_ => localTyper.typed(newRhs))
             } finally {

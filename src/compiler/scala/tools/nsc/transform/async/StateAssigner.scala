@@ -12,6 +12,8 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.tools.nsc.symtab.SymbolTable
+
 private[async] final class StateAssigner {
   private var current = StateAssigner.Initial
 
@@ -20,4 +22,13 @@ private[async] final class StateAssigner {
 
 object StateAssigner {
   final val Initial = 0
+  final val Terminal = -1
+
+  // We use the convention that the state machine's ID for a state corresponding to
+  // a labeldef will a negative number be based on the symbol ID. This allows us
+  // to translate a forward jump to the label as a state transition to a known state
+  // ID, even though the state machine transform hasn't yet processed the target label
+  // def. Negative numbers are used so as as not to clash with regular state IDs, which
+  // are allocated in ascending order from 0.
+  def stateIdForLabel(sym: SymbolTable#Symbol): Int = -sym.id
 }

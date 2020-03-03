@@ -31,10 +31,10 @@ trait LiveVariables extends ExprBuilder {
    *  @return  a map mapping a state to the fields that should be nulled out
    *           upon resuming that state
    */
-  def fieldsToNullOut(asyncStates: List[AsyncState], liftables: List[Tree]): mutable.LinkedHashMap[Int, List[Tree]] = {
+  def fieldsToNullOut(asyncStates: List[AsyncState], finalState: AsyncState, liftables: List[Tree]): mutable.LinkedHashMap[Int, List[Tree]] = {
     // live variables analysis:
     // the result map indicates in which states a given field should be nulled out
-    val liveVarsMap: mutable.LinkedHashMap[Tree, StateSet] = liveVars(asyncStates, liftables)
+    val liveVarsMap: mutable.LinkedHashMap[Tree, StateSet] = liveVars(asyncStates, finalState, liftables)
 
     val assignsOf = mutable.LinkedHashMap[Int, List[Tree]]()
 
@@ -66,7 +66,7 @@ trait LiveVariables extends ExprBuilder {
    *  @param   liftables   the lifted fields
    *  @return              a map which indicates for a given field (the key) the states in which it should be nulled out
    */
-  def liveVars(asyncStates: List[AsyncState], liftables: List[Tree]): mutable.LinkedHashMap[Tree, StateSet] = {
+  def liveVars(asyncStates: List[AsyncState], finalState: AsyncState, liftables: List[Tree]): mutable.LinkedHashMap[Tree, StateSet] = {
     val liftedSyms: Set[Symbol] = // include only vars
       liftables.iterator.filter {
         case ValDef(mods, _, _, _) => mods.hasFlag(MUTABLE)
@@ -76,7 +76,7 @@ trait LiveVariables extends ExprBuilder {
     // determine which fields should be live also at the end (will not be nulled out)
     val noNull: Set[Symbol] = liftedSyms.filter { sym =>
       val tpSym = sym.info.typeSymbol
-      (tpSym.isClass && (tpSym.asClass.isPrimitive || isNothingClass(tpSym))) || liftables.exists { tree =>
+      (tpSym.isClass && (tpSym.asClass.isPrimitive || tpSym == definitions.NothingClass)) || liftables.exists { tree =>
         !liftedSyms.contains(tree.symbol) && tree.exists(_.symbol == sym)
       }
     }
@@ -131,10 +131,6 @@ trait LiveVariables extends ExprBuilder {
 
       val findUses = new FindUseTraverser
       findUses.traverse(Block(as.stats: _*))
-      as match {
-        case aswa: AsyncStateWithAwait => findUses.traverse(aswa.awaitable.expr)
-        case _ =>
-      }
       ReferencedFields(findUses.usedFields, findUses.capturedFields)
     }
     case class ReferencedFields(used: Set[Symbol], captured: Set[Symbol]) {
@@ -176,9 +172,6 @@ trait LiveVariables extends ExprBuilder {
 
       isPred0(state1, state2)
     }
-
-    val finalStates = asyncStates.filter(as => !asyncStates.exists(other => isPred(as.state, other.state)))
-    val finalState = finalStates.head
 
     if(settings.debug.value && shouldLogAtThisPhase) {
       for (as <- asyncStates)
