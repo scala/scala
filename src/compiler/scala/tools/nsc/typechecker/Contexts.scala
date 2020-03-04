@@ -1112,7 +1112,8 @@ trait Contexts { self: Analyzer =>
     /** @return None if a cycle is detected, or Some(infos) containing the in-scope implicits at this context */
     private def implicits: Option[List[ImplicitInfo]] = {
       val firstImport = this.firstImport
-      if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
+      if (unit.isJava) SomeOfNil
+      else if (owner != outer.owner && owner.isClass && !owner.isPackageClass) {
         if (!owner.isInitialized) None
         else savingEnclClass(this) {
           // !!! In the body of `class C(implicit a: A) { }`, `implicitss` returns `List(List(a), List(a), List(<predef..)))`
@@ -1775,9 +1776,13 @@ trait Contexts { self: Analyzer =>
       @inline def current = selectors.head
       @inline def maybeNonLocalMember(nom: Name): Symbol =
         if (qual.tpe.isError) NoSymbol
-        else qual.tpe.nonLocalMember(nom).orElse {
-          if (pos.source.isJava) qual.tpe.companion nonLocalMember nom else NoSymbol
+        else if (pos.source.isJava) {
+          val (_, sym) = NoContext.javaFindMember(qual.tpe, nom, _ => true)
+          // We don't need to propagate the new prefix back out to the result of `Context.lookupSymbol`
+          // because typechecking .java sources doesn't need it.
+          sym
         }
+        else qual.tpe.nonLocalMember(nom)
       while ((selectors ne Nil) && result == NoSymbol) {
         if (current.introduces(name))
           result = maybeNonLocalMember(current.name asTypeOf name)
