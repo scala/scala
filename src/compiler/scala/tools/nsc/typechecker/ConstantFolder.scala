@@ -27,11 +27,12 @@ abstract class ConstantFolder {
 
   // We can fold side effect free terms and their types
   object FoldableTerm {
+    @inline private def effectless(sym: Symbol): Boolean = sym != null && !sym.isLazy && (sym.isVal || sym.isGetter && sym.accessed.isVal)
+
     def unapply(tree: Tree): Option[Constant] = tree match {
-      case Literal(x) => Some(x)
-      case term if term.symbol != null && !term.symbol.isLazy && (term.symbol.isVal || (term.symbol.isGetter && term.symbol.accessed.isVal)) =>
-        extractConstant(term.tpe)
-      case _ => None
+      case Literal(x)                      => Some(x)
+      case term if effectless(term.symbol) => extractConstant(term.tpe)
+      case _                               => None
     }
   }
 

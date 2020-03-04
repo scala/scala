@@ -1150,7 +1150,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 tpSym == LongClass && (ptSym == FloatClass || ptSym == DoubleClass)
               )
               if (isInharmonic)
-                context.warning(tree.pos, s"Automatic conversion from ${tpSym.name} to ${ptSym.name} is deprecated (since 2.13.1) because it loses precision. Write `.to${ptSym.name}` instead.")
+                context.warning(tree.pos, s"Widening conversion from ${tpSym.name} to ${ptSym.name} is deprecated because it loses precision. Write `.to${ptSym.name}` instead.")
               else if (settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
             }
 

@@ -3,10 +3,9 @@
  */
 
 import scala.concurrent.duration._
-import scala.reflect._
 import scala.tools.testkit.AssertUtil.assertThrows
 
-import scala.language.{ postfixOps }
+import scala.language.postfixOps
 
 object Test extends App {
 
