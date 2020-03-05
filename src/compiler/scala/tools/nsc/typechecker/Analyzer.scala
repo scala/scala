@@ -109,6 +109,7 @@ trait Analyzer extends AnyRef
         // defensive measure in case the bookkeeping in deferred macro expansion is buggy
         clearDelayed()
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.typerNanos, start)
+        runReporting.reportSuspendedMessages()
       }
       def apply(unit: CompilationUnit): Unit = {
         try {

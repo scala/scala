@@ -1,3 +1,21 @@
+t7691.scala:16: error: value _ is not a member of object X
+  def x = X.`_`       // value _ is not a member of object X
+            ^
+t7691.scala:18: error: value _ is not a member of object Y
+  def y = Y.`_`       // still not
+            ^
+t7691.scala:20: error: value _ is not a member of object Z
+  def z = Z.`_`       // still not
+            ^
+t7691.scala:22: error: value _ is not a member of object V
+  def v = V.`_`       // still not
+            ^
+t7691.scala:24: error: value _ is not a member of object W
+  def w = W.`_`       // still not
+            ^
+t7691.scala:26: error: value _ is not a member of object Q
+  def q = Q.`_`       // still not
+            ^
 t7691.scala:2: warning: Pattern definition introduces Unit-valued member of X; consider wrapping it in `locally { ... }`.
 object X { val _ = 42 }
                ^
@@ -31,23 +49,5 @@ object Q { val _ @ _ = 42 ; val _ = 17 }         // was error
 t7691.scala:12: warning: Pattern definition introduces Unit-valued member of Q; consider wrapping it in `locally { ... }`.
 object Q { val _ @ _ = 42 ; val _ = 17 }         // was error
                                 ^
-t7691.scala:16: error: value _ is not a member of object X
-  def x = X.`_`       // value _ is not a member of object X
-            ^
-t7691.scala:18: error: value _ is not a member of object Y
-  def y = Y.`_`       // still not
-            ^
-t7691.scala:20: error: value _ is not a member of object Z
-  def z = Z.`_`       // still not
-            ^
-t7691.scala:22: error: value _ is not a member of object V
-  def v = V.`_`       // still not
-            ^
-t7691.scala:24: error: value _ is not a member of object W
-  def w = W.`_`       // still not
-            ^
-t7691.scala:26: error: value _ is not a member of object Q
-  def q = Q.`_`       // still not
-            ^
 11 warnings
 6 errors

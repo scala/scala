@@ -187,6 +187,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive#Entry.unsafeToByteArray"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.unsafeToByteArray"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse#PerRunReporting.deprecationWarning"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
   ),
 }
 

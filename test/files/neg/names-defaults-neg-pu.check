@@ -11,9 +11,6 @@ names-defaults-neg-pu.scala:7: error: type mismatch;
 names-defaults-neg-pu.scala:10: error: positional after named argument.
   test1(b = "(*", 23)
                   ^
-names-defaults-neg-pu.scala:15: warning: a pure expression does nothing in statement position
-  test2(x = 1)
-            ^
 names-defaults-neg-pu.scala:16: error: unknown parameter name: y
   test2(y = 1)
           ^
@@ -112,24 +109,12 @@ names-defaults-neg-pu.scala:92: error: deprecated parameter name x has to be dis
 names-defaults-neg-pu.scala:93: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
   def deprNam2(a: String)(@deprecatedName("a") b: Int) = 1
                                                ^
-names-defaults-neg-pu.scala:95: warning: the parameter name y is deprecated: use b instead
-  deprNam3(y = 10, b = 2)
-             ^
 names-defaults-neg-pu.scala:95: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg-pu.scala:98: warning: naming parameter deprNam4Arg is deprecated.
-  deprNam4(deprNam4Arg = null)
-                       ^
-names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprecated.
-  deprNam5(deprNam5Arg = null)
-                       ^
 names-defaults-neg-pu.scala:104: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
-names-defaults-neg-pu.scala:137: warning: a pure expression does nothing in statement position
-  delay(var2 = 40)
-               ^
 names-defaults-neg-pu.scala:140: error: missing parameter type for expanded function ((<x$1: error>) => a = x$1)
   val taf2: Int => Unit = testAnnFun(a = _, b = get("+"))
                                          ^
@@ -142,5 +127,20 @@ names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at pa
 names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
+names-defaults-neg-pu.scala:15: warning: a pure expression does nothing in statement position
+  test2(x = 1)
+            ^
+names-defaults-neg-pu.scala:95: warning: the parameter name y is deprecated: use b instead
+  deprNam3(y = 10, b = 2)
+             ^
+names-defaults-neg-pu.scala:98: warning: naming parameter deprNam4Arg is deprecated.
+  deprNam4(deprNam4Arg = null)
+                       ^
+names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprecated.
+  deprNam5(deprNam5Arg = null)
+                       ^
+names-defaults-neg-pu.scala:137: warning: a pure expression does nothing in statement position
+  delay(var2 = 40)
+               ^
 5 warnings
 33 errors

@@ -55,6 +55,47 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private val summarizedWarnings: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
     private val summarizedInfos: mutable.Map[WarningCategory, mutable.LinkedHashMap[Position, Message]] = mutable.HashMap.empty
 
+    private var suppressionsComplete = false
+    private val suppressions: mutable.LinkedHashMap[SourceFile, mutable.ListBuffer[Suppression]] = mutable.LinkedHashMap.empty
+    private val suspendedMessages: mutable.LinkedHashSet[Message] = mutable.LinkedHashSet.empty
+
+    private def isSuppressed(warning: Message): Boolean =
+      suppressions.getOrElse(warning.pos.source, Nil).find(_.matches(warning)) match {
+        case Some(s) => s.markUsed(); true
+        case _ => false
+      }
+
+    def addSuppression(sup: Suppression): Unit = {
+      val source = sup.annotPos.source
+      suppressions.getOrElseUpdate(source, mutable.ListBuffer.empty) += sup
+    }
+
+    def suppressionExists(pos: Position): Boolean =
+      suppressions.getOrElse(pos.source, Nil).exists(_.annotPos.point == pos.point)
+
+    def warnUnusedSuppressions(): Unit = {
+      // if we stop before typer completes (errors in parser, Ystop), report all suspended messages
+      suspendedMessages.foreach(issueWarning)
+      if (settings.warnUnusedNowarn) {
+        val sources = suppressions.keysIterator.toList
+        for (source <- sources; sups <- suppressions.remove(source); sup <- sups.reverse) {
+          if (!sup.used)
+            issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
+        }
+      }
+    }
+
+    def reportSuspendedMessages(): Unit = {
+      suppressionsComplete = true
+      // sort suppressions. they are not added in any particular order because of lazy type completion
+      suppressions.mapValuesInPlace((_, sups) => sups.sortBy(sup => 0 - sup.start))
+      suspendedMessages.foreach { m =>
+        if (!isSuppressed(m))
+          issueWarning(m)
+      }
+      suspendedMessages.clear()
+    }
+
     private def summaryMap(action: Action, category: WarningCategory) = {
       val sm = (action: @unchecked) match {
         case Action.WarningSummary => summarizedWarnings
@@ -79,6 +120,14 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
           if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
         case Action.Silent =>
       }
+    }
+
+    private def checkSuppressedAndIssue(warning: Message): Unit = {
+      if (suppressionsComplete) {
+        if (!isSuppressed(warning))
+          issueWarning(warning)
+      } else
+        suspendedMessages += warning
     }
 
     private def summarize(action: Action, category: WarningCategory): Unit = {
@@ -133,7 +182,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     private def siteName(s: Symbol) = if (s.exists) s.fullNameString else ""
 
     def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
-      issueWarning(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
+      checkSuppressedAndIssue(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
 
     def deprecationWarning(pos: Position, origin: Symbol, site: Symbol, msg: String, since: String): Unit =
       deprecationWarning(pos, msg, since, siteName(site), siteName(origin))
@@ -189,7 +238,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 
     // Used in the optimizer where we don't have no symbols, the site string is created from the class internal name and method name.
     def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
-      issueWarning(Message.Plain(pos, msg, category, site))
+      checkSuppressedAndIssue(Message.Plain(pos, msg, category, site))
 
     // Preferred over the overload above whenever a site symbol is available
     def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
@@ -297,6 +346,7 @@ object Reporting {
     object UnusedPrivates extends Unused; add(UnusedPrivates)
     object UnusedLocals extends Unused; add(UnusedLocals)
     object UnusedParams extends Unused; add(UnusedParams)
+    object UnusedNowarn extends Unused; add(UnusedNowarn)
 
     sealed trait Lint extends WarningCategory { override def summaryCategory: WarningCategory = Lint }
     object Lint extends Lint { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Lint] }; add(Lint)
@@ -506,7 +556,7 @@ object Reporting {
         }
       } else if (s.startsWith("src=")) {
         val arg = s.substring(4)
-        var pat = new mutable.StringBuilder()
+        val pat = new mutable.StringBuilder()
         if (rootDir.nonEmpty) pat += '^' ++= rootDir
         // Also prepend prepend a `/` if rootDir is empty, the pattern has to match
         // the beginning of a path segment
