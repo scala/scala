@@ -3908,10 +3908,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val filters = (info.assocs: @unchecked) match {
             case Nil => List(MessageFilter.Any)
             case (_, LiteralAnnotArg(s)) :: Nil =>
-              val (ms, fs) = s.stringValue.split('&').map(WConf.parseFilter(_, runReporting.rootDirPrefix)).toList.partitionMap(identity)
-              if (ms.nonEmpty)
-                reporter.error(info.pos, s"Invalid message filter:\n${ms.mkString("\n")}")
-              fs
+              if (s.stringValue.isEmpty) List()
+              else {
+                val (ms, fs) = s.stringValue.split('&').map(WConf.parseFilter(_, runReporting.rootDirPrefix)).toList.partitionMap(identity)
+                if (ms.nonEmpty)
+                  reporter.error(info.pos, s"Invalid message filter:\n${ms.mkString("\n")}")
+                fs
+              }
           }
           val (start, end) =
             if (settings.Yrangepos) {

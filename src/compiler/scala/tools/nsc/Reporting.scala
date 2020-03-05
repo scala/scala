@@ -565,7 +565,7 @@ object Reporting {
         if (!arg.endsWith("$")) pat += '$'
         regex(pat.toString).map(SourcePattern)
       } else {
-        Left(s"filter not yet implemented: $s")
+        Left(s"unknown filter: $s")
       }
     }
 
