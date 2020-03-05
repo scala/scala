@@ -69,28 +69,29 @@ trait Contexts { self: Analyzer =>
   private lazy val allImportInfos =
     mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
 
-  @tailrec private def warnUnusedImportInfos(infos: List[(ImportInfo, Symbol)]): Unit =
-    infos match {
-      case (info, owner) :: rest =>
-        val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-        @tailrec def loop(selectors: List[ImportSelector]): Unit =
-          selectors match {
-            case selector :: rest =>
-              if (!selector.isMask && !used(selector))
-                runReporting.warning(info.posOf(selector), "Unused import", WarningCategory.UnusedImports, site = owner)
-              loop(rest)
-            case _ =>
-          }
-        loop(info.tree.selectors)
-        warnUnusedImportInfos(rest)
-      case _ =>
-    }
-  def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava)
-    allImportInfos.remove(unit) match {
-      case Some(importInfos) =>
-        warnUnusedImportInfos(importInfos.distinct.reverse)
-      case _ =>
-    }
+  def warnUnusedImports(unit: CompilationUnit) = {
+    @tailrec def warnUnusedImportInfos(infos: List[(ImportInfo, Symbol)]): Unit =
+      infos match {
+        case (info, owner) :: rest =>
+          val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
+          @tailrec def checkSelectors(selectors: List[ImportSelector]): Unit =
+            selectors match {
+              case selector :: rest =>
+                if (!selector.isMask && !used(selector))
+                  runReporting.warning(info.posOf(selector), "Unused import", WarningCategory.UnusedImports, site = owner)
+                checkSelectors(rest)
+              case _ =>
+            }
+          checkSelectors(info.tree.selectors)
+          warnUnusedImportInfos(rest)
+        case _ =>
+      }
+    if (!unit.isJava)
+      allImportInfos.remove(unit) match {
+        case Some(importInfos) => warnUnusedImportInfos(importInfos.reverse)
+        case _                 => ()
+      }
+  }
 
   var lastAccessCheckDetails: String = ""
 
@@ -699,6 +700,12 @@ trait Contexts { self: Analyzer =>
       debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
       c
     }
+
+    def makeImportContext(tree: Import): Context =
+      make(tree).tap { ctx =>
+        if (settings.warnUnusedImport && openMacros.isEmpty && !ctx.isRootImport)
+          allImportInfos(ctx.unit) ::= ((ctx.importOrNull, ctx.owner))
+      }
 
     /** Use reporter (possibly buffered) for errors/warnings and enable implicit conversion **/
     def initRootContext(throwing: Boolean = false, checking: Boolean = false): Unit = {
@@ -1576,16 +1583,13 @@ trait Contexts { self: Analyzer =>
   }
 
   /** A `Context` focussed on an `Import` tree */
-  final class ImportContext(tree: Tree, owner: Symbol, scope: Scope,
+  final class ImportContext private[Contexts] (
+                            tree: Tree, owner: Symbol, scope: Scope,
                             unit: CompilationUnit, outer: Context,
                             override val isRootImport: Boolean, depth: Int,
                             reporter: ContextReporter) extends Context(tree, owner, scope, unit, outer, depth, reporter) {
-    private[this] val impInfo: ImportInfo = {
-      val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
-      if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
-        allImportInfos(unit) ::= ((info, owner))
-      info
-    }
+    private[this] val impInfo: ImportInfo = new ImportInfo(tree.asInstanceOf[Import], outerDepth, isRootImport)
+
     override final def imports      = impInfo :: super.imports
     override final def firstImport  = Some(impInfo)
     override final def importOrNull = impInfo
