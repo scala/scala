@@ -133,7 +133,7 @@ trait Implicits {
         else if (result.tree.symbol.isModule) result.tree.symbol.moduleClass
         else result.tree.symbol
       if (s != NoSymbol && context.owner.hasTransOwner(s))
-        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}", WarningCategory.Other)
+        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}", WarningCategory.WFlagSelfImplicit)
     }
     implicitSearchContext.emitImplicitDictionary(result)
   }

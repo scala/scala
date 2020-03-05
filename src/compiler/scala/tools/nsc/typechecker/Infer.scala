@@ -609,7 +609,7 @@ trait Infer extends Checkable {
           warning = !hasAny
         }
         def canWarnAboutAny = { if (!checked) checkForAny() ; warning }
-        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.Other))
+        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny))
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }

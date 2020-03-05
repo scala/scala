@@ -746,7 +746,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (settings.unitSpecialization && m.isPrimaryConstructor && specCtor.paramLists.exists(_.exists(_.tpe =:= UnitTpe)))
             m.paramLists.flatten.zip(specCtor.paramLists.flatten).foreach {
               case (orig, spec) if spec.tpe =:= UnitTpe && m.enclClass.typeParams.contains(orig.tpe.typeSymbol) =>
-                reporter.warning(m.pos, "Fruitless specialization of Unit in parameter position. Consider using `@specialized(Specializable.Arg)` instead.")
+                runReporting.warning(
+                  m.pos,
+                  "Fruitless specialization of Unit in parameter position. Consider using `@specialized(Specializable.Arg)` instead.",
+                  WarningCategory.LintUnitSpecialization,
+                  m)
               case _ =>
             }
           info(specCtor) = Forward(m)

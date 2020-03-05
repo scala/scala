@@ -181,7 +181,7 @@ trait Warnings {
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
     val StarsAlign             = LintWarning("stars-align",               "In a pattern, a sequence wildcard `_*` should match all of a repeated parameter.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression resulted in an error.")
-    val Unused                 = LintWarning("unused",                    "Enable -Wunused:imports,privates,locals,implicits.")
+    val Unused                 = LintWarning("unused",                    "Enable -Wunused:imports,privates,locals,implicits,nowarn.")
     val NonlocalReturn         = LintWarning("nonlocal-return",           "A return statement used an exception for flow control.")
     val ImplicitNotFound       = LintWarning("implicit-not-found",        "Check @implicitNotFound and @implicitAmbiguous messages.")
     val Serial                 = LintWarning("serial",                    "@SerialVersionUID on traits and non-serializable classes.")

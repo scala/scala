@@ -785,6 +785,7 @@ trait Contexts { self: Analyzer =>
     }
 
 
+    // TODO: buffer deprecations under silent (route through ContextReporter, store in BufferingReporter)
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
       runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =

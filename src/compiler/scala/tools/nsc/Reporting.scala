@@ -336,7 +336,7 @@ object Reporting {
     object WFlagDeadCode extends WFlag; add(WFlagDeadCode)
     object WFlagExtraImplicit extends WFlag; add(WFlagExtraImplicit)
     object WFlagNumericWiden extends WFlag; add(WFlagNumericWiden)
-    object WFlagOctalLiteral extends WFlag; add(WFlagOctalLiteral)
+    object WFlagSelfImplicit extends WFlag; add(WFlagSelfImplicit)
     object WFlagValueDiscard extends WFlag; add(WFlagValueDiscard)
 
     sealed trait Unused extends WarningCategory { override def summaryCategory: WarningCategory = Unused }
@@ -373,7 +373,7 @@ object Reporting {
     object LintDeprecation extends Lint; add(LintDeprecation)
     object LintBynameImplicit extends Lint; add(LintBynameImplicit)
     object LintRecurseWithDefault extends Lint; add(LintRecurseWithDefault)
-
+    object LintUnitSpecialization extends Lint; add(LintUnitSpecialization)
 
     sealed trait Feature extends WarningCategory { override def summaryCategory: WarningCategory = Feature }
     object Feature extends Feature { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[Feature] }; add(Feature)
