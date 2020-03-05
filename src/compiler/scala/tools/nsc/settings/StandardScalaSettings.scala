@@ -34,18 +34,18 @@ trait StandardScalaSettings {
   val javabootclasspath = PathSetting ("-javabootclasspath", "Override java boot classpath.", Defaults.javaBootClassPath) withAbbreviation "--java-boot-class-path"
   val javaextdirs =       PathSetting ("-javaextdirs", "Override java extdirs classpath.", Defaults.javaExtDirs) withAbbreviation "--java-extension-directories"
   val sourcepath =        PathSetting ("-sourcepath", "Specify location(s) of source files.", "") withAbbreviation "--source-path" // Defaults.scalaSourcePath
-  val rootdir =           PathSetting ("-rootdir", "The absolute path of the project root directory, usually the git / scm checkout.", "") withAbbreviation "--root-directory"
+  val rootdir =           PathSetting ("-rootdir", "The absolute path of the project root directory, usually the git/scm checkout. Used by -Wconf.", "") withAbbreviation "--root-directory"
 
   /** Other settings.
    */
   val dependencyfile =  StringSetting ("-dependencyfile", "file", "Set dependency tracking file.", ".scala_dependencies") withAbbreviation "--dependency-file"
-  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs.") withAbbreviation "--deprecation" withPostSetHook { s =>
+  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs. See also -Wconf.") withAbbreviation "--deprecation" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=deprecation:w"))
     else Wconf.tryToSet(List(s"cat=deprecation:s"))
   }
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding) withAbbreviation "--encoding"
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.") withAbbreviation "--explain-types"
-  val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly.") withAbbreviation "--feature" withPostSetHook { s =>
+  val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly. See also -Wconf.") withAbbreviation "--feature" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=feature:w"))
     else Wconf.tryToSet(List(s"cat=feature:s"))
   }
@@ -55,7 +55,7 @@ trait StandardScalaSettings {
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
   val target =         ChoiceSetting  ("-target", "target", "Target platform for object files.", AllTargetVersions, "8") withPreSetHook normalizeTarget _ withAbbreviation "--target"
-  val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.") withAbbreviation "--unchecked" withPostSetHook { s =>
+  val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions. See also -Wconf.") withAbbreviation "--unchecked" withPostSetHook { s =>
     if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
     else Wconf.tryToSet(List(s"cat=unchecked:s"))
   }

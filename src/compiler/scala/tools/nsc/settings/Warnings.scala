@@ -38,8 +38,8 @@ trait Warnings {
          |Syntax: -Wconf:<filters>:<action>,<filters>:<action>,...
          |multiple <filters> are combined with &, i.e., <filter>&...&<filter>
          |
-         |Note: Run with `-Wconf:any:warning-verbose` to cause warnings to be printed with their
-         |category, site, and (for deprecations) origin and since-version.
+         |Note: Run with `-Wconf:any:warning-verbose` to print warnings with their category, site,
+         |and (for deprecations) origin and since-version.
          |
          |<filter>
          |  - Any message: any
@@ -51,7 +51,7 @@ trait Warnings {
          |    The regex need only match some part of the message, not all of it.
          |
          |  - Site where the warning is triggered: site=my\\.package\\..*
-         |    The regex must match the full name of the warning position.
+         |    The regex must match the full name (`package.Class.method`) of the warning position.
          |
          |  - Source file name: src=src_managed/.*
          |    If `-rootdir` is specified, the regex must match the canonical path relative to the
@@ -60,7 +60,7 @@ trait Warnings {
          |    Use unix-style paths, separated by `/`.
          |
          |  - Origin of deprecation: origin=external\\.package\\..*
-         |    The regex must match the full name of the deprecated entity.
+         |    The regex must match the full name (`package.Class.method`) of the deprecated entity.
          |
          |  - Since of deprecation: since<1.24
          |    Valid operators: <, =, >, valid versions: N, N.M, N.M.P. Compares against the first
@@ -70,9 +70,9 @@ trait Warnings {
          |<action>
          |  - error / e
          |  - warning / w
-         |  - warning-summary / ws
+         |  - warning-summary / ws (summary with the number of warnings, like for deprecations)
          |  - warning-verbose / wv (show warning category and site)
-         |  - info / i
+         |  - info / i             (infos are not counted as warnings and don't affect `-Werror`)
          |  - info-summary / is
          |  - info-verbose / iv
          |  - silent / s
