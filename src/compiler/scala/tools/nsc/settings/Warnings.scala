@@ -93,7 +93,7 @@ trait Warnings {
          |Note: on the command-line you might need to quote configurations containing `*` or `&`
          |to prevent the shell from expanding patterns.""".stripMargin),
     prepend = true)
-  locally { Wconf.tryToSet(WconfDefault) }
+  locally { Wconf.tryToSet(WconfDefault); Wconf.clearSetByUser() }
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
