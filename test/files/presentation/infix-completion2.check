@@ -158,9 +158,9 @@ def toOctalString: String
 def toRadians: Double
 def toShort: Short
 def toString(): String
-def unary_+: Int
-def unary_-: Int
-def unary_~: Int
+def unary_+ : Int
+def unary_- : Int
+def unary_~ : Int
 def until(end: Int): scala.collection.immutable.Range
 def until(end: Int, step: Int): scala.collection.immutable.Range
 def until(end: Long): scala.collection.immutable.NumericRange.Exclusive[Long]
