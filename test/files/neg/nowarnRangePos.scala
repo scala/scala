@@ -86,3 +86,10 @@ trait T {
 }
 
 class K extends T
+
+@nowarn("site=Uh.f.g")
+class Uh {
+  def f = {
+    def g(c: C) = c.dep
+  }
+}

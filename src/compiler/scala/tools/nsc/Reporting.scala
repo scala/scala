@@ -179,7 +179,14 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       }
     }
 
-    private def siteName(s: Symbol) = if (s.exists) s.fullNameString else ""
+    private def siteName(sym: Symbol) = if (sym.exists) {
+      // Similar to fullNameString, but don't jump to enclosing class. Keep full chain of symbols.
+      def impl(s: Symbol): String =
+        if (s.isRootSymbol || s == NoSymbol) s.nameString
+        else if (s.owner.isEffectiveRoot) s.nameString
+        else impl(s.effectiveOwner) + "." + s.nameString
+      impl(sym)
+    } else ""
 
     def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit =
       checkSuppressedAndIssue(Message.Deprecation(pos, msg, site, origin, Version.fromString(since)))
