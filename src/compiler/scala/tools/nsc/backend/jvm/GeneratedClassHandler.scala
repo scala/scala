@@ -20,7 +20,6 @@ import java.util.concurrent._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
-import scala.reflect.internal.util.NoPosition
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.BufferingBackendReporting
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.profile.ThreadPoolFactory
@@ -101,6 +100,8 @@ private[jvm] object GeneratedClassHandler {
 
   sealed abstract class WritingClassHandler(val javaExecutor: Executor) extends GeneratedClassHandler {
     import postProcessor.bTypes.frontendAccess
+
+    import scala.reflect.internal.util.NoPosition
 
     def tryStealing: Option[Runnable]
 

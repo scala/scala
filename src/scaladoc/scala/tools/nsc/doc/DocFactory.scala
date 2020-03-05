@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package doc
 
-import reporters.Reporter
+import scala.tools.nsc.reporters.Reporter
 import scala.util.control.ControlThrowable
 import scala.reflect.internal.util.BatchSourceFile
 
@@ -36,6 +36,7 @@ import scala.reflect.internal.util.BatchSourceFile
   * @param settings The settings to be used by the documenter and compiler for generating documentation.
   *
   * @author Gilles Dubochet */
+// takes a `Reporter`, not `FilteringReporter` for sbt compatibility
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
   object compiler extends ScaladocGlobal(settings, reporter)
