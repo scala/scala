@@ -142,21 +142,6 @@ trait CompilationUnits { global: Global =>
     /** For sbt compatibility (https://github.com/scala/scala/pull/4588) */
     val icode: LinkedHashSet[icodes.IClass] = new LinkedHashSet
 
-    @deprecated("Call global.reporter.echo directly instead.", "2.11.2")
-    final def echo(pos: Position, msg: String): Unit    = reporter.echo(pos, msg)
-    @deprecated("Call global.reporter.error (or typer.context.error) directly instead.", "2.11.2")
-    final def error(pos: Position, msg: String): Unit   = reporter.error(pos, msg)
-    @deprecated("Call global.reporter.warning (or typer.context.warning) directly instead.", "2.11.2")
-    final def warning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
-
-    @deprecated("Call global.currentRun.reporting.deprecationWarning directly instead.", "2.11.2")
-    final def deprecationWarning(pos: Position, msg: String, since: String): Unit = currentRun.reporting.deprecationWarning(pos, msg, since)
-    @deprecated("Call global.currentRun.reporting.uncheckedWarning directly instead.", "2.11.2")
-    final def uncheckedWarning(pos: Position, msg: String): Unit   = currentRun.reporting.uncheckedWarning(pos, msg)
-
-    @deprecated("This method will be removed. It does nothing.", "2.11.2")
-    final def comment(pos: Position, msg: String): Unit = {}
-
     /** Is this about a .java source file? */
     val isJava: Boolean = source.isJava
 

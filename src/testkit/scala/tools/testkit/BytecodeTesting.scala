@@ -36,7 +36,7 @@ trait BytecodeTesting extends ClearAfterClass {
    */
   def compilerArgs = ""
 
-  val compiler = cached("compiler", () => BytecodeTesting.newCompiler(extraArgs = compilerArgs))
+  val compiler: Compiler = cached("compiler", () => BytecodeTesting.newCompiler(extraArgs = compilerArgs))
 }
 
 class Compiler(val global: Global) {
@@ -68,7 +68,7 @@ class Compiler(val global: Global) {
     global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
   }
 
-  def newRun: global.Run = {
+  def newRun(): global.Run = {
     global.reporter.reset()
     resetOutput()
     keptPerRunCaches.foreach(_.clear())
@@ -86,7 +86,7 @@ class Compiler(val global: Global) {
   }
 
   def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): List[(String, Array[Byte])] = {
-    val run = newRun
+    val run = newRun()
     run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
     checkReport(allowMessage)
     getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get)
@@ -104,7 +104,7 @@ class Compiler(val global: Global) {
   def compileToBytesTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[(String, Array[Byte])] = {
     import global._
     settings.stopBefore.value = "jvm" :: Nil
-    val run = newRun
+    val run = newRun()
     val scalaUnit = newCompilationUnit(scalaCode, "unitTestSource.scala")
     val javaUnits = javaCode.map(p => newCompilationUnit(p._1, p._2))
     val units = scalaUnit :: javaUnits
@@ -112,7 +112,7 @@ class Compiler(val global: Global) {
     settings.stopBefore.value = Nil
     scalaUnit.body = beforeBackend(scalaUnit.body)
     checkReport(_ => false)
-    val run1 = newRun
+    val run1 = newRun()
     run1.compileUnits(units, run1.phaseNamed("jvm"))
     checkReport(_ => false)
     getGeneratedClassfiles(settings.outputDirs.getSingleOutput.get)

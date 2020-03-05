@@ -18,4 +18,4 @@ package scala.annotation
  *  If it is present, the compiler will issue an error if the method cannot
  *  be optimized into a loop.
  */
-final class tailrec extends scala.annotation.StaticAnnotation
+final class tailrec extends StaticAnnotation

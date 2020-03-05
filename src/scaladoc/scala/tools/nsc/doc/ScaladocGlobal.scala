@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package doc
 
-import reporters.Reporter
+import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.typechecker.MacroAnnotationNamers
 
 trait ScaladocGlobalTrait extends Global {
@@ -44,6 +44,7 @@ trait ScaladocGlobalTrait extends Global {
   }
 }
 
+// takes a `Reporter`, not `FilteringReporter` for sbt compatibility
 class ScaladocGlobal(settings: doc.Settings, reporter: Reporter) extends Global(settings, reporter) with ScaladocGlobalTrait {
   override protected def computeInternalPhases(): Unit = {
     phasesSet += syntaxAnalyzer

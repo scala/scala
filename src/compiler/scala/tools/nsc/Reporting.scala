@@ -25,9 +25,8 @@ import scala.reflect.internal, internal.util.StringOps.countElementsAsString
 trait Reporting extends internal.Reporting { self: ast.Positions with CompilationUnits with internal.Symbols =>
   def settings: Settings
 
-  // not deprecated yet, but a method called "error" imported into
-  // nearly every trait really must go.  For now using globalError.
-  def error(msg: String) = globalError(msg)
+  @deprecated("use `globalError` instead")
+  def error(msg: String): Unit = globalError(msg)
 
   // a new instance of this class is created for every Run (access the current instance via `currentRun.reporting`)
   protected def PerRunReporting = new PerRunReporting
@@ -103,13 +102,13 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
       val fqname  = "scala.language." + featureName
       val explain = (
         if (reportedFeature contains featureTrait) "" else
-        s"""|
-            |----
-            |This can be achieved by adding the import clause 'import $fqname'
-            |or by setting the compiler option -language:$featureName.
-            |See the Scaladoc for value $fqname for a discussion
-            |why the feature $req be explicitly enabled.""".stripMargin
-      )
+          s"""
+             |----
+             |This can be achieved by adding the import clause 'import $fqname'
+             |or by setting the compiler option -language:$featureName.
+             |See the Scaladoc for value $fqname for a discussion
+             |why the feature $req be explicitly enabled.""".stripMargin
+        )
       reportedFeature += featureTrait
 
       val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)

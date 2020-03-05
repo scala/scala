@@ -51,7 +51,7 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
       case ex: InterruptedException => throw ex
       case ex: Throwable =>
         if (settings.debug) ex.printStackTrace()
-        error(s"Error while emitting ${unit.source}\n${ex.getMessage}")
+        globalError(s"Error while emitting ${unit.source}\n${ex.getMessage}")
     }
 
     def genClassDefs(tree: Tree): Unit = tree match {

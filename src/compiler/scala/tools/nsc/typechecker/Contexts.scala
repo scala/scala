@@ -129,7 +129,7 @@ trait Contexts { self: Analyzer =>
           getModuleIfDefined(s) orElse
           getPackageObjectIfDefined(s) orElse
           getPackageIfDefined(s) orElse {
-            error(s"bad preamble import $s")
+            globalError(s"bad preamble import $s")
             NoSymbol
           }
       }

@@ -884,7 +884,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         case Some(oldEntry) =>
           Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry))
         case None =>
-          error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
+          globalError(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None
       }
     }

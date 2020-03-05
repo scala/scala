@@ -97,20 +97,4 @@ object ScalaDoc extends ScalaDoc {
   def main(args: Array[String]): Unit = {
     System.exit(if (process(args)) 0 else 1)
   }
-
-  implicit class SummaryReporter(val rep: Reporter) extends AnyVal {
-    /** Adds print lambda to ScalaDocReporter, executes it on other reporter */
-    private[this] def summaryMessage(pos: Position, msg: String, print: () => Unit): Unit = rep match {
-      case r: ScalaDocReporter => r.addDelayedMessage(pos, msg, print)
-      case _ => print()
-    }
-
-    def summaryEcho(pos: Position, msg: String): Unit    = summaryMessage(pos, msg, () => rep.echo(pos, msg))
-    def summaryError(pos: Position, msg: String): Unit   = summaryMessage(pos, msg, () => rep.error(pos, msg))
-    def summaryWarning(pos: Position, msg: String): Unit = summaryMessage(pos, msg, () => rep.warning(pos, msg))
-
-    def summaryEcho(msg: String): Unit    = summaryEcho(NoPosition, msg)
-    def summaryError(msg: String): Unit   = summaryError(NoPosition, msg)
-    def summaryWarning(msg: String): Unit = summaryWarning(NoPosition, msg)
-  }
 }

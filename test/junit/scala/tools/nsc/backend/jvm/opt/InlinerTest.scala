@@ -1512,7 +1512,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t3 = mc // lines
         |}
       """.stripMargin
-    val run = compiler.newRun
+    val run = compiler.newRun()
     run.compileSources(List(makeSourceFile(code1, "A.scala"), makeSourceFile(code2, "B.scala")))
     val List(_, _, c) = readAsmClasses(getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get))
     def is(name: String) = getMethod(c, name).instructions.filterNot(_.isInstanceOf[FrameEntry])
