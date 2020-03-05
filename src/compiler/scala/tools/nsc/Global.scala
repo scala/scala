@@ -24,6 +24,7 @@ import scala.reflect.ClassTag
 import scala.reflect.internal.pickling.PickleBuffer
 import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.{Reporter => InternalReporter}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.ast.parser._
 import scala.tools.nsc.ast.{TreeGen => AstTreeGen, _}
 import scala.tools.nsc.backend.jvm.{BackendStats, GenBCode}
@@ -294,7 +295,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   @inline final def devWarning(pos: Position, msg: => String): Unit = {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
     if (isDeveloper)
-      warning(pos, "!!! " + msg)
+      runReporting.warning(pos, "!!! " + msg, WarningCategory.OtherDebug, site = "")
     else
       log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
@@ -992,10 +993,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** The currently active run
    */
-  def currentRun: Run              = curRun
-  def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
-  def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  def currentFreshNameCreator      = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
+  def currentRun: Run               = curRun
+  def currentUnit: CompilationUnit  = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
+  def currentSource: SourceFile     = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  def runReporting: PerRunReporting = currentRun.reporting
+  def currentFreshNameCreator       = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
   private[this] var curFreshNameCreator: FreshNameCreator = null
   private[scala] def currentFreshNameCreator_=(fresh: FreshNameCreator): Unit = curFreshNameCreator = fresh
 
@@ -1139,9 +1141,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val isScala300: Boolean = settings.isScala300
 
     // used in sbt
-    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
     // used in sbt
-    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings
 
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]
@@ -1249,8 +1251,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
           val count =
             if (including) first.iterator.count(tester.containsPhase(_))
             else phaseDescriptors.count(pd => tester.contains(pd.phaseName))
-          if (count == 0) warning(s"'$p' specifies no phase")
-          if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
+          if (count == 0) runReporting.warning(NoPosition, s"'$p' specifies no phase", WarningCategory.Other, site = "")
+          if (count > 1 && !isSpecial(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
           if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
           tester.clear()
         }
@@ -1360,9 +1362,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def warnDeprecatedAndConflictingSettings(): Unit = {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
-        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
+        runReporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
-      settings.conflictWarning.foreach(reporter.warning(NoPosition, _))
+      settings.conflictWarning.foreach(runReporting.warning(NoPosition, _, WarningCategory.Other, site = ""))
     }
 
     /* An iterator returning all the units being compiled in this run */

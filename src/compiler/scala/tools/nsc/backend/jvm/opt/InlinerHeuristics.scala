@@ -109,17 +109,17 @@ abstract class InlinerHeuristics extends PerRunInit {
 
             case Some(Left(w)) =>
               if (w.emitWarning(compilerSettings)) {
-                backendReporting.inlinerWarning(callsite.callsitePosition, w.toString)
+                backendReporting.optimizerWarning(callsite.callsitePosition, w.toString, backendUtils.optimizerWarningSiteString(callsite))
               }
 
             case None =>
               if (callsiteWarning.isDefined && callsiteWarning.get.emitWarning(compilerSettings))
-                backendReporting.inlinerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ callsiteWarning.get)
+                backendReporting.optimizerWarning(pos, s"there was a problem determining if method ${callee.name} can be inlined: \n"+ callsiteWarning.get, backendUtils.optimizerWarningSiteString(callsite))
           }
 
-        case Callsite(ins, _, _, Left(warning), _, _, _, pos, _, _) =>
+        case callsite @ Callsite(ins, _, _, Left(warning), _, _, _, pos, _, _) =>
           if (warning.emitWarning(compilerSettings))
-            backendReporting.inlinerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning")
+            backendReporting.optimizerWarning(pos, s"failed to determine if ${ins.name} should be inlined:\n$warning", backendUtils.optimizerWarningSiteString(callsite))
       }
       (methodNode, requests)
     }).filterNot(_._2.isEmpty).toMap

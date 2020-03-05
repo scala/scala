@@ -122,7 +122,7 @@ abstract class ClosureOptimizer {
 
             for (init <- closureInits.valuesIterator) closureCallsites(init, prodCons) foreach {
               case Left(warning) =>
-                backendReporting.inlinerWarning(warning.pos, warning.toString)
+                backendReporting.optimizerWarning(warning.pos, warning.toString, backendReporting.siteString(ownerClass, method.name))
 
               case Right((invocation, stackHeight)) =>
                 addRewrite(init, invocation, stackHeight)

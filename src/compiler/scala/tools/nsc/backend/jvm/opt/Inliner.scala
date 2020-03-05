@@ -412,15 +412,17 @@ abstract class Inliner {
                 case Some(inlinedCallsite) =>
                   val rw = inlinedCallsite.warning.get
                   if (rw.emitWarning(compilerSettings)) {
-                    backendReporting.inlinerWarning(
+                    backendReporting.optimizerWarning(
                       inlinedCallsite.eliminatedCallsite.callsitePosition,
-                      rw.toString + inlineChainSuffix(r.callsite, state.inlineChain(inlinedCallsite.eliminatedCallsite.callsiteInstruction, skipForwarders = true)))
+                      rw.toString + inlineChainSuffix(r.callsite, state.inlineChain(inlinedCallsite.eliminatedCallsite.callsiteInstruction, skipForwarders = true)),
+                      backendUtils.optimizerWarningSiteString(inlinedCallsite.eliminatedCallsite))
                   }
                 case _ =>
                   if (w.emitWarning(compilerSettings))
-                    backendReporting.inlinerWarning(
+                    backendReporting.optimizerWarning(
                       r.callsite.callsitePosition,
-                      w.toString + inlineChainSuffix(r.callsite, state.inlineChain(r.callsite.callsiteInstruction, skipForwarders = true)))
+                      w.toString + inlineChainSuffix(r.callsite, state.inlineChain(r.callsite.callsiteInstruction, skipForwarders = true)),
+                      backendUtils.optimizerWarningSiteString(r.callsite))
               }
           }
         }
@@ -471,7 +473,10 @@ abstract class Inliner {
                 val w = inlinedCallsite.warning.get
                 state.inlineLog.logRollback(callsite, s"Instruction ${AsmUtils.textify(notInlinedIllegalInsn)} would cause an IllegalAccessError, and is not selected for (or failed) inlining", state.outerCallsite(notInlinedIllegalInsn))
                 if (w.emitWarning(compilerSettings))
-                  backendReporting.inlinerWarning(callsite.callsitePosition, w.toString + inlineChainSuffix(callsite, state.inlineChain(callsite.callsiteInstruction, skipForwarders = true)))
+                  backendReporting.optimizerWarning(
+                    callsite.callsitePosition,
+                    w.toString + inlineChainSuffix(callsite, state.inlineChain(callsite.callsiteInstruction, skipForwarders = true)),
+                    backendUtils.optimizerWarningSiteString(callsite))
               case _ =>
                 // TODO: replace by dev warning after testing
                 assert(false, "should not happen")

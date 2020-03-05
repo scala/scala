@@ -19,9 +19,10 @@ package ast.parser
 import scala.collection.mutable
 import mutable.ListBuffer
 import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
-import scala.reflect.internal.util.{ SourceFile, Position, FreshNameCreator, ListOfNil }
+import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
 import Tokens._
 import scala.annotation.tailrec
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
  *  but at a time when that Parsers had been replaced by a different one.
@@ -161,7 +162,7 @@ self =>
     def unit = global.currentUnit
 
     // suppress warnings; silent abort on errors
-    def warning(offset: Offset, msg: String): Unit = ()
+    def warning(offset: Offset, msg: String, category: WarningCategory): Unit = ()
     def deprecationWarning(offset: Offset, msg: String, since: String): Unit = ()
 
     def syntaxError(offset: Offset, msg: String): Unit = throw new MalformedInput(offset, msg)
@@ -211,11 +212,12 @@ self =>
 
     override def newScanner() = new UnitScanner(unit, patches)
 
-    override def warning(offset: Offset, msg: String): Unit =
-      reporter.warning(o2p(offset), msg)
+    override def warning(offset: Offset, msg: String, category: WarningCategory): Unit =
+      runReporting.warning(o2p(offset), msg, category, site = "")
 
     override def deprecationWarning(offset: Offset, msg: String, since: String): Unit =
-      currentRun.reporting.deprecationWarning(o2p(offset), msg, since)
+      // we cannot provide a `site` in the parser, there's no context telling us where we are
+      runReporting.deprecationWarning(o2p(offset), msg, since, site = "", origin = "")
 
     private var smartParsing = false
     @inline private def withSmartParsing[T](body: => T): T = {
@@ -420,7 +422,7 @@ self =>
         if (disallowed.isEmpty) makeEmptyPackage(0, newStmts)
         else {
           if (seenModule)
-            warning(disallowed.pos.point, "Script has a main object but statement is disallowed")
+            warning(disallowed.pos.point, "Script has a main object but statement is disallowed", WarningCategory.Other)
           EmptyTree
         }
       }
@@ -568,7 +570,7 @@ self =>
         in.nextToken()
       }
     }
-    def warning(offset: Offset, msg: String): Unit
+    def warning(offset: Offset, msg: String, category: WarningCategory): Unit
     def incompleteInputError(msg: String): Unit
     def syntaxError(offset: Offset, msg: String): Unit
 
@@ -586,7 +588,7 @@ self =>
         skip(UNDEF)
     }
 
-    def warning(msg: String): Unit = warning(in.offset, msg)
+    def warning(msg: String, category: WarningCategory): Unit = warning(in.offset, msg, category)
 
     def syntaxErrorOrIncomplete(msg: String, skipIt: Boolean): Unit = {
       if (in.token == EOF)
@@ -1114,8 +1116,8 @@ self =>
         // identifier, but at a later stage we lose the ability to tell an empty
         // refinement from no refinement at all.  See bug #284.
         if (hasRefinement) types match {
-          case Ident(name) :: Nil if name endsWith "Unit" => warning(braceOffset, "Detected apparent refinement of Unit; are you missing an '=' sign?")
-          case _                                          =>
+          case Ident(name) :: Nil if name == tpnme.Unit => warning(braceOffset, "Detected apparent refinement of Unit; are you missing an '=' sign?", WarningCategory.Other)
+          case _                                        =>
         }
         // The second case includes an empty refinement - refinements is empty, but
         // it still gets a CompoundTypeTree.
@@ -2349,7 +2351,7 @@ self =>
         // guard against anomalous class C(private implicit val x: Int)(implicit s: String)
         val ttl = vds.count { case ValDef(mods, _, _, _) :: _ => mods.isImplicit ; case _ => false }
         if (ttl > 1)
-          warning(in.offset, s"$ttl parameter sections are effectively implicit")
+          warning(in.offset, s"$ttl parameter sections are effectively implicit", WarningCategory.WFlagExtraImplicit)
       }
       val result = vds.toList
       if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {

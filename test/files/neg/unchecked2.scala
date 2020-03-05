@@ -1,4 +1,4 @@
-// scalac: -unchecked -Xfatal-warnings
+// scalac: -Xfatal-warnings
 //
 object Test {
   // These warn because it can be statically shown they won't match.

@@ -19,8 +19,9 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import mutable.ListBuffer
+import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
 /** This phase performs the following functions, each of which could be split out in a
@@ -306,10 +307,12 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                     qual.symbol.ancestors foreach { parent =>
                       parent.info.decls filterNot (x => x.isPrivate || x.isLocalToThis) foreach { m2 =>
                         if (sym.name == m2.name && m2.isGetter && m2.accessed.isMutable) {
-                          reporter.warning(sel.pos,
+                          runReporting.warning(sel.pos,
                             sym.accessString + " " + sym.fullLocationString + " shadows mutable " + m2.name
                               + " inherited from " + m2.owner + ".  Changes to " + m2.name + " will not be visible within "
-                              + sym.owner + " - you may want to give them distinct names.")
+                              + sym.owner + " - you may want to give them distinct names.",
+                            WarningCategory.LintPrivateShadow,
+                            currentOwner)
                         }
                       }
                     }

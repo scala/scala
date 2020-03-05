@@ -19,7 +19,7 @@ import scala.reflect.internal.util.Collections._
 import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
 
 trait Logic extends Debugging  {
-  import global.statistics
+  import global._
 
   private def max(xs: Seq[Int]) = if (xs.isEmpty) 0 else xs.max
   private def alignedColumns(cols: Seq[Any]): Seq[String] = {
@@ -77,7 +77,7 @@ trait Logic extends Debugging  {
       def unapply(v: Var): Some[Tree]
     }
 
-    def uncheckedWarning(pos: Position, msg: String): Unit
+    def uncheckedWarning(pos: Position, msg: String, site: Symbol): Unit
 
     def reportWarning(message: String): Unit
 
@@ -498,7 +498,7 @@ trait Logic extends Debugging  {
 
     def findModelFor(solvable: Solvable): Model
 
-    def findAllModelsFor(solvable: Solvable, pos: Position = NoPosition): List[Solution]
+    def findAllModelsFor(solvable: Solvable, sym: Symbol = NoSymbol): List[Solution]
   }
 }
 

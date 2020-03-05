@@ -15,6 +15,7 @@ package doc
 package base
 
 import comment._
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait extracts all required information for documentation from compilation units.
  *  The base trait has been extracted to allow getting light-weight documentation
@@ -84,7 +85,7 @@ trait MemberLookupBase {
     links match {
       case Nil =>
         if (warnNoLink)
-          reporter.warning(pos, "Could not find any member to link for \"" + query + "\".")
+          runReporting.warning(pos, "Could not find any member to link for \"" + query + "\".", WarningCategory.Scaladoc, site)
         // (4) if we still haven't found anything, create a tooltip
         Tooltip(query)
       case List(l) => l
@@ -97,10 +98,12 @@ trait MemberLookupBase {
         }
         if (warnNoLink) {
           val allLinks = links.map(linkToString).mkString
-          reporter.warning(pos,
+          runReporting.warning(pos,
             s"""The link target \"$query\" is ambiguous. Several members fit the target:
             |$allLinks
-            |$explanation""".stripMargin)
+            |$explanation""".stripMargin,
+            WarningCategory.Scaladoc,
+            site)
         }
         chosen
     }

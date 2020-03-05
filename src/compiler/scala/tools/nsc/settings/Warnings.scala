@@ -14,6 +14,8 @@ package scala.tools
 package nsc
 package settings
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /** Settings influencing the printing of warnings.
  */
 trait Warnings {
@@ -23,6 +25,75 @@ trait Warnings {
 
   // Warning semantics.
   val fatalWarnings = BooleanSetting("-Werror", "Fail the compilation if there are any warnings.") withAbbreviation "-Xfatal-warnings"
+
+  private val WconfDefault = List("cat=deprecation:ws", "cat=feature:ws", "cat=optimizer:ws")
+  // Note: user-defined settings are added on the right, but the value is reversed before
+  // it's parsed, so that later defined settings take precedence.
+  val Wconf = MultiStringSetting(
+    "-Wconf",
+    "patterns",
+    "Configure reporting of compiler warnings; use `help` for details.",
+    helpText = Some(
+      s"""Configure compiler warnings.
+         |Syntax: -Wconf:<filters>:<action>,<filters>:<action>,...
+         |multiple <filters> are combined with &, i.e., <filter>&...&<filter>
+         |
+         |Note: Run with `-Wconf:any:warning-verbose` to cause warnings to be printed with their
+         |category, site, and (for deprecations) origin and since-version.
+         |
+         |<filter>
+         |  - Any message: any
+         |
+         |  - Message categories: cat=deprecation, cat=lint, cat=lint-infer-any
+         |    The full list of warning categories is shown at the end of this help text.
+         |
+         |  - Message content: msg=regex
+         |    The regex need only match some part of the message, not all of it.
+         |
+         |  - Site where the warning is triggered: site=my\\.package\\..*
+         |    The regex must match the full name of the warning position.
+         |
+         |  - Source file name: src=src_managed/.*
+         |    If `-rootdir` is specified, the regex must match the canonical path relative to the
+         |    root directory. Otherwise, the regex must match the canonical path relative to any
+         |    path segment (`b/.*Test.scala` matches `/a/b/XTest.scala` but not `/ab/Test.scala`).
+         |    Use unix-style paths, separated by `/`.
+         |
+         |  - Origin of deprecation: origin=external\\.package\\..*
+         |    The regex must match the full name of the deprecated entity.
+         |
+         |  - Since of deprecation: since<1.24
+         |    Valid operators: <, =, >, valid versions: N, N.M, N.M.P. Compares against the first
+         |    version of the form N, N.M or N.M.P found in the `since` parameter of the deprecation,
+         |    for example `1.2.3` in `@deprecated("", "some lib 1.2.3-foo")`.
+         |
+         |<action>
+         |  - error / e
+         |  - warning / w
+         |  - warning-summary / ws
+         |  - warning-verbose / wv (show warning category and site)
+         |  - info / i
+         |  - info-summary / is
+         |  - info-verbose / iv
+         |  - silent / s
+         |
+         |The default configuration is:
+         |  -Wconf:${WconfDefault.mkString(",")}
+         |
+         |User-defined configurations are added to the left. The leftmost rule matching
+         |a warning message defines the action.
+         |
+         |Examples:
+         |  - change every warning into an error: -Wconf:any:error
+         |  - silence certain deprecations: -Wconf:origin=some\\.lib\\..*&since>2.2:s
+         |
+         |Full list of message categories:
+         |${WarningCategory.all.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
+         |
+         |Note: on the command-line you might need to quote configurations containing `*` or `&`
+         |to prevent the shell from expanding patterns.""".stripMargin),
+    prepend = true)
+  locally { Wconf.tryToSet(WconfDefault) }
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(

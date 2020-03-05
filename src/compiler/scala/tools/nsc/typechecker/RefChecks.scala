@@ -15,9 +15,9 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.settings.NoScalaVersion
-
 import symtab.Flags._
 import transform.Transform
 
@@ -111,6 +111,9 @@ abstract class RefChecks extends Transform {
       !seen
     }
 
+    private def refchecksWarning(pos: Position, msg: String, cat: WarningCategory): Unit =
+      runReporting.warning(pos, msg, cat, currentOwner)
+
     // only one overloaded alternative is allowed to define default arguments
     private def checkOverloadedRestrictions(clazz: Symbol, defaultClass: Symbol): Unit = {
       // Using the default getters (such as methodName$default$1) as a cheap way of
@@ -158,7 +161,7 @@ abstract class RefChecks extends Transform {
           // implicit classes leave both a module symbol and a method symbol as residue
           val alts = clazz.info.decl(sym.name).alternatives filterNot (_.isModule)
           if (alts.size > 1)
-            alts foreach (x => reporter.warning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds"))
+            alts foreach (x => refchecksWarning(x.pos, "parameterized overloaded implicit methods are not visible as view bounds", WarningCategory.LintPolyImplicitOverload))
         })
       }
     }
@@ -440,7 +443,7 @@ abstract class RefChecks extends Transform {
               if (settings.warnNullaryOverride) {
                 def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
                 if (other.paramss.isEmpty && !member.paramss.isEmpty && !javaDetermined(member) && !member.overrides.exists(javaDetermined))
-                  reporter.warning(member.pos, "non-nullary method overrides nullary method")
+                  refchecksWarning(member.pos, "non-nullary method overrides nullary method", WarningCategory.LintNullaryOverride)
               }
             }
           }
@@ -517,7 +520,7 @@ abstract class RefChecks extends Transform {
             val since   = if (version.isEmpty) version else s" (since $version)"
             val message = other.deprecatedOverridingMessage map (msg => s": $msg") getOrElse ""
             val report  = s"overriding ${other.fullLocationString} is deprecated$since$message"
-            currentRun.reporting.deprecationWarning(member.pos, other, report, version)
+            runReporting.deprecationWarning(member.pos, other, member, report, version)
           }
         }
       }
@@ -822,7 +825,7 @@ abstract class RefChecks extends Transform {
           overridden foreach { sym2 =>
             def msg(what: String) = s"shadowing a nested class of a parent is $what but $clazz shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
             if (currentRun.isScala300) reporter.error(clazz.pos, msg("unsupported"))
-            else currentRun.reporting.deprecationWarning(clazz.pos, clazz, msg("deprecated"), "2.13.2")
+            else runReporting.deprecationWarning(clazz.pos, clazz, currentOwner, msg("deprecated"), "2.13.2")
           }
         }
       checkNestedClassShadow()
@@ -950,7 +953,7 @@ abstract class RefChecks extends Transform {
 
     def checkImplicitViewOptionApply(pos: Position, fn: Tree, args: List[Tree]): Unit = if (settings.warnOptionImplicit) (fn, args) match {
       case (tap@TypeApply(fun, targs), List(view: ApplyImplicitView)) if fun.symbol == currentRun.runDefinitions.Option_apply =>
-        reporter.warning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.") // scala/bug#6567
+        refchecksWarning(pos, s"Suspicious application of an implicit view (${view.fun}) in the argument to Option.apply.", WarningCategory.LintOptionImplicit) // scala/bug#6567
       case _ =>
     }
 
@@ -1042,7 +1045,7 @@ abstract class RefChecks extends Transform {
 
       def nonSensibleWarning(what: String, alwaysEqual: Boolean) = {
         val msg = alwaysEqual == (name == nme.EQ || name == nme.eq)
-        reporter.warning(pos, s"comparing $what using `${name.decode}` will always yield $msg")
+        refchecksWarning(pos, s"comparing $what using `${name.decode}` will always yield $msg", WarningCategory.Other)
         isNonSensible = true
       }
       def nonSensible(pre: String, alwaysEqual: Boolean) =
@@ -1057,7 +1060,7 @@ abstract class RefChecks extends Transform {
       }
       def unrelatedTypes() = if (!isNonSensible) {
         val weaselWord = if (isEitherValueClass) "" else " most likely"
-        reporter.warning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg")
+        refchecksWarning(pos, s"$typesString are unrelated: they will$weaselWord $unrelatedMsg", WarningCategory.Other)
       }
 
       if (nullCount == 2) // null == null
@@ -1149,7 +1152,7 @@ abstract class RefChecks extends Transform {
       if (!sym.isValueParameter && sym.paramss.isEmpty) {
         rhs match {
           case t@(Ident(_) | Select(This(_), _)) if t hasSymbolWhich (_.accessedOrSelf == sym) =>
-            reporter.warning(rhs.pos, s"${sym.fullLocationString} does nothing other than call itself recursively")
+            refchecksWarning(rhs.pos, s"${sym.fullLocationString} does nothing other than call itself recursively", WarningCategory.Other)
           case _ =>
         }
       }
@@ -1244,7 +1247,7 @@ abstract class RefChecks extends Transform {
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
-        currentRun.reporting.deprecationWarning(pos, sym)
+        runReporting.deprecationWarning(pos, sym, currentOwner)
 
       // Similar to deprecation: check if the symbol is marked with @migration
       // indicating it has changed semantics between versions.
@@ -1253,12 +1256,12 @@ abstract class RefChecks extends Transform {
           settings.Xmigration.value < ScalaVersion(sym.migrationVersion.get)
         catch {
           case e : NumberFormatException =>
-            reporter.warning(pos, s"${sym.fullLocationString} has an unparsable version number: ${e.getMessage()}")
+            refchecksWarning(pos, s"${sym.fullLocationString} has an unparsable version number: ${e.getMessage()}", WarningCategory.Other)
             // if we can't parse the format on the migration annotation just conservatively assume it changed
             true
         }
         if (changed)
-          reporter.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
+          refchecksWarning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}", WarningCategory.OtherMigration)
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       if (sym.isCompileTimeOnly && !inAnnotation && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
@@ -1277,7 +1280,7 @@ abstract class RefChecks extends Transform {
         && sym.accessedOrSelf.isVal
       )
       if (settings.warnDelayedInit && isLikelyUninitialized)
-        reporter.warning(pos, s"Selecting ${sym} from ${sym.owner}, which extends scala.DelayedInit, is likely to yield an uninitialized value")
+        refchecksWarning(pos, s"Selecting ${sym} from ${sym.owner}, which extends scala.DelayedInit, is likely to yield an uninitialized value", WarningCategory.LintDelayedinitSelect)
     }
 
     private def lessAccessible(otherSym: Symbol, memberSym: Symbol): Boolean = (
@@ -1309,9 +1312,10 @@ abstract class RefChecks extends Transform {
         if (memberSym.isDeferred) "may be unable to provide a concrete implementation of"
         else "may be unable to override"
 
-      reporter.warning(memberSym.pos,
+      refchecksWarning(memberSym.pos,
         s"""|${memberSym.fullLocationString}${comparison} references ${accessFlagsToString(otherSym)} ${otherSym}.
-            |Classes which cannot access ${otherSym.decodedName} ${cannot} ${memberSym.decodedName}.""".stripMargin
+            |Classes which cannot access ${otherSym.decodedName} ${cannot} ${memberSym.decodedName}.""".stripMargin,
+        WarningCategory.LintInaccessible
       )
     }
 
@@ -1348,9 +1352,10 @@ abstract class RefChecks extends Transform {
           symbol.allOverriddenSymbols.filter(sym =>
             !sym.isDeprecated && !sym.isDeferred && !sym.hasDeprecatedOverridingAnnotation && !sym.enclClass.hasDeprecatedInheritanceAnnotation)
         if(!concrOvers.isEmpty)
-          currentRun.reporting.deprecationWarning(
+          runReporting.deprecationWarning(
             tree.pos,
             symbol,
+            currentOwner,
             s"${symbol.toString} overrides concrete, non-deprecated symbol(s):    ${concrOvers.map(_.name.decode).mkString(", ")}", "")
       }
     }
@@ -1457,14 +1462,14 @@ abstract class RefChecks extends Transform {
           // validate implicitNotFoundMessage and implicitAmbiguousMessage
           if (settings.lintImplicitNotFound) {
             def messageWarning(name: String)(warn: String) =
-              reporter.warning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn")
+              refchecksWarning(tree.pos, s"Invalid $name message for ${sym}${sym.locationString}:\n$warn", WarningCategory.LintImplicitNotFound)
             analyzer.ImplicitNotFoundMsg.check(sym) foreach messageWarning("implicitNotFound")
             analyzer.ImplicitAmbiguousMsg.check(sym) foreach messageWarning("implicitAmbiguous")
           }
 
           if (settings.warnSerialization && sym.isClass && sym.hasAnnotation(SerialVersionUIDAttr)) {
             def warn(what: String) =
-              reporter.warning(tree.pos, s"@SerialVersionUID has no effect on $what")
+              refchecksWarning(tree.pos, s"@SerialVersionUID has no effect on $what", WarningCategory.LintSerial)
 
             if (sym.isTrait) warn("traits")
             else if (!sym.isSerializable) warn("non-serializable classes")
@@ -1608,7 +1613,7 @@ abstract class RefChecks extends Transform {
           || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
         )
         if (!isOk)
-          reporter.warning(sym.pos, s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead")
+          refchecksWarning(sym.pos, s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead", WarningCategory.LintNullaryUnit)
       case _ => ()
     }
 

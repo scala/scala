@@ -14,8 +14,9 @@ package scala.tools.nsc
 package doc
 
 import scala.tools.nsc.reporters.Reporter
+import scala.reflect.internal.util.{BatchSourceFile, NoPosition}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.control.ControlThrowable
-import scala.reflect.internal.util.BatchSourceFile
 
 /** A documentation processor controls the process of generating Scala
   * documentation, which is as follows.
@@ -40,6 +41,7 @@ import scala.reflect.internal.util.BatchSourceFile
 class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor =>
   /** The unique compiler instance used by this processor and constructed from its `settings`. */
   object compiler extends ScaladocGlobal(settings, reporter)
+  def runReporting: compiler.PerRunReporting = compiler.currentRun.reporting
 
   /** Creates a scaladoc site for all symbols defined in this call's `source`,
     * as well as those defined in `sources` of previous calls to the same processor.
@@ -123,7 +125,7 @@ class DocFactory(val reporter: Reporter, val settings: doc.Settings) { processor
         }
         .map(_.newInstance(reporter))
         .getOrElse{
-          reporter.warning(null, "Doclets should be created with the Reporter constructor, otherwise logging reporters will not be shared by the creating parent")
+          runReporting.warning(NoPosition, "Doclets should be created with the Reporter constructor, otherwise logging reporters will not be shared by the creating parent", WarningCategory.Scaladoc, site = "")
           docletClass.getConstructor().newInstance()
         }
         .asInstanceOf[Generator]

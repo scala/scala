@@ -18,6 +18,7 @@ package patmat
 
 import scala.tools.nsc.typechecker.Contexts
 import scala.reflect.internal.util
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** An 'extractor' can be a case class or an unapply or unapplySeq method.
   *
@@ -218,8 +219,8 @@ trait PatternExpansion {
     // errors & warnings
 
     private def err(msg: String) = context.error(fun.pos,msg)
-    private def warn(msg: String) = context.warning(fun.pos,msg)
-    private def depr(msg: String, since: String) = currentRun.reporting.deprecationWarning(fun.pos, fun.symbol.owner, msg, since)
+    private def warn(msg: String, cat: WarningCategory) = context.warning(fun.pos,msg, cat)
+    private def depr(msg: String, since: String) = runReporting.deprecationWarning(fun.pos, origin = fun.symbol.owner, site = context.owner.asInstanceOf[global.Symbol], msg, since)
 
     private def warnPatternTupling() =
       if (effectivePatternArity(args) == 1 && tupleValuedUnapply) {
@@ -228,7 +229,7 @@ trait PatternExpansion {
           else s" to hold ${equivConstrParamTypes.mkString("(", ", ", ")")}"
         val sym = fun.symbol.owner
         val arr = equivConstrParamTypes.length
-        depr(s"${sym} expects $arr patterns$acceptMessage but crushing into $arr-tuple to fit single pattern (scala/bug#6675)", "2.11.0")
+        depr(s"deprecated adaptation: ${sym} expects $arr patterns$acceptMessage but crushing into $arr-tuple to fit single pattern (scala/bug#6675)", "2.11.0")
       }
 
     private def arityError(mismatch: String) = {
@@ -252,7 +253,8 @@ trait PatternExpansion {
     else if (elementArity > 0 && !isSeq) arityError("too many")
     else if (settings.warnStarsAlign && isSeq && productArity > 0 && elementArity > 0) warn(
       if (isStar) "Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected."
-      else "A repeated case parameter or extracted sequence is not matched by a sequence wildcard (_*), and may fail at runtime.")
+      else "A repeated case parameter or extracted sequence is not matched by a sequence wildcard (_*), and may fail at runtime.",
+      WarningCategory.LintStarsAlign)
 
   }
 }

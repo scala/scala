@@ -19,6 +19,7 @@ import symtab.Flags._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.Reporting.WarningCategory
 
 import PartialFunction.cond
 
@@ -200,7 +201,7 @@ abstract class UnCurry extends InfoTransform
           cdef <- catches
           if catchesThrowable(cdef) && !isSyntheticCase(cdef)
         } {
-          reporter.warning(body.pos, "catch block may intercept non-local return from " + meth)
+          runReporting.warning(body.pos, "catch block may intercept non-local return from " + meth, WarningCategory.Other, meth)
         }
 
         Block(List(keyDef), tryCatch)
@@ -267,7 +268,7 @@ abstract class UnCurry extends InfoTransform
                 else gen.mkCastArray(tree, elemtp, pt)
 
               if(copy) {
-                currentRun.reporting.deprecationWarning(tree.pos, NoSymbol,
+                runReporting.deprecationWarning(tree.pos, NoSymbol, currentOwner,
                   "Passing an explicit array value to a Scala varargs method is deprecated (since 2.13.0) and will result in a defensive copy; "+
                     "Use the more efficient non-copying ArraySeq.unsafeWrapArray or an explicit toIndexedSeq call", "2.13.0")
                 gen.mkMethodCall(PredefModule, nme.copyArrayToImmutableIndexedSeq, List(elemtp), List(adaptedTree))
@@ -654,7 +655,7 @@ abstract class UnCurry extends InfoTransform
         case ret @ Return(expr) if isNonLocalReturn(ret) =>
           log(s"non-local return from ${currentOwner.enclMethod} to ${ret.symbol}")
           if (settings.warnNonlocalReturn)
-            reporter.warning(ret.pos, s"return statement uses an exception to pass control to the caller of the enclosing named ${ret.symbol}")
+            runReporting.warning(ret.pos, s"return statement uses an exception to pass control to the caller of the enclosing named ${ret.symbol}", WarningCategory.LintNonlocalReturn, ret.symbol)
           atPos(ret.pos)(nonLocalReturnThrow(expr, ret.symbol))
         case TypeTree() =>
           tree
@@ -833,7 +834,7 @@ abstract class UnCurry extends InfoTransform
         flatdd.symbol.attachments.get[VarargsSymbolAttachment] match {
           case Some(VarargsSymbolAttachment(sym)) => sym
           case None =>
-            reporter.warning(dd.pos, s"Could not generate Java varargs forwarder for ${flatdd.symbol}. Please file a bug.")
+            runReporting.warning(dd.pos, s"Could not generate Java varargs forwarder for ${flatdd.symbol}. Please file a bug.", WarningCategory.Other, dd.symbol)
             return flatdd
         }
       }

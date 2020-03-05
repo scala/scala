@@ -1,4 +1,4 @@
-// scalac: -unchecked -Xfatal-warnings
+// scalac: -Xfatal-warnings
 //
 trait Y
 trait Z extends Y

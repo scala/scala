@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package doc
 import scala.language.implicitConversions
+import scala.reflect.internal.util.NoPosition
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Some glue between DocParser (which reads source files which can't be compiled)
  *  and the scaladoc model.
@@ -21,7 +23,7 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, warning, newTypeName, newTermName, Symbol, DocComment, NoSymbol }
+  import global.{ reporter, inform, newTypeName, newTermName, runReporting, Symbol, DocComment, NoSymbol }
   import global.definitions.AnyRefClass
   import global.rootMirror.RootClass
 
@@ -47,7 +49,7 @@ trait Uncompilable {
       inform("Found %d uncompilable files: %s".format(files.size, files mkString ", "))
 
     if (pairs.isEmpty)
-      warning("no doc comments read from " + settings.docUncompilable.value)
+      runReporting.warning(NoPosition, "no doc comments read from " + settings.docUncompilable.value, WarningCategory.Scaladoc, site = "")
 
     pairs
   }

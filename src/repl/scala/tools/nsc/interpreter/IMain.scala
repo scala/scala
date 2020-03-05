@@ -691,7 +691,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings.map{ case (pos, (msg, since@_)) => (pos, msg) })
+      val warnings = loop(run.reporting.allConditionalWarnings)
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }
@@ -1128,8 +1128,8 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     currentRun.parsing.withIncompleteHandler(handler) {
       val unit = newCompilationUnit(line, label)
       val trees = newUnitParser(unit).parseStats()
-      if (!isIncomplete) 
-        currentRun.reporting.summarizeErrors()
+      if (!isIncomplete)
+        runReporting.summarizeErrors()
       if (reporter.hasErrors) Left(Error)
       else if (isIncomplete) Left(Incomplete)
       else if (reporter.hasWarnings && settings.fatalWarnings) Left(Error)

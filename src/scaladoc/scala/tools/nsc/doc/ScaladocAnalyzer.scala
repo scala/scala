@@ -13,10 +13,11 @@
 package scala.tools.nsc
 package doc
 
-import scala.tools.nsc.ast.parser.{ SyntaxAnalyzer, BracePatch }
+import scala.tools.nsc.ast.parser.{BracePatch, SyntaxAnalyzer}
 import typechecker.Analyzer
-import scala.reflect.internal.util.{ BatchSourceFile, Position }
-import scala.tools.nsc.doc.base.{ CommentFactoryBase, MemberLookupBase, LinkTo }
+import scala.reflect.internal.util.{BatchSourceFile, Position}
+import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.doc.base.{CommentFactoryBase, LinkTo, MemberLookupBase}
 
 trait ScaladocAnalyzer extends Analyzer {
   val global : Global // generally, a ScaladocGlobal
@@ -44,12 +45,12 @@ trait ScaladocAnalyzer extends Analyzer {
         for (useCase <- comment.useCases) {
           typer1.silent(_.asInstanceOf[ScaladocTyper].defineUseCases(useCase)) match {
             case SilentTypeError(err) =>
-              reporter.warning(useCase.pos, err.errMsg)
+              context.warning(useCase.pos, err.errMsg, WarningCategory.Scaladoc)
             case _ =>
           }
           for (useCaseSym <- useCase.defined) {
             if (sym.getterName != useCaseSym.getterName)
-              reporter.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode)
+              context.warning(useCase.pos, "@usecase " + useCaseSym.name.decode + " does not match commented symbol: " + sym.name.decode, WarningCategory.Scaladoc)
           }
         }
       }
@@ -164,7 +165,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       }
       def isDirty = unclean(unmooredParser parseComment doc)
       if ((doc ne null) && (settings.warnDocDetached || isDirty))
-        reporter.warning(doc.pos, "discarding unmoored doc comment")
+        runReporting.warning(doc.pos, "discarding unmoored doc comment", WarningCategory.LintDocDetached, site = "")
     }
 
     protected def docPosition: Position = Position.range(unit.source, offset, offset, charOffset - 2)

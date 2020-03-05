@@ -1,4 +1,4 @@
-// scalac: -unchecked -Xfatal-warnings
+// scalac: -Xfatal-warnings
 //
 object Test {
   def hasMatch[T](x: AnyRef) = x.isInstanceOf[T]
