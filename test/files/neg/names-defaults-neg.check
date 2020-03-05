@@ -112,18 +112,9 @@ names-defaults-neg.scala:91: error: deprecated parameter name x has to be distin
 names-defaults-neg.scala:92: error: deprecated parameter name a has to be distinct from any other parameter name (deprecated or not).
   def deprNam2(a: String)(@deprecatedName('a) b: Int) = 1
                                               ^
-names-defaults-neg.scala:94: warning: the parameter name y is deprecated: use b instead
-  deprNam3(y = 10, b = 2)
-             ^
 names-defaults-neg.scala:94: error: parameter 'b' is already specified at parameter position 1
   deprNam3(y = 10, b = 2)
                      ^
-names-defaults-neg.scala:97: warning: naming parameter deprNam4Arg is deprecated.
-  deprNam4(deprNam4Arg = null)
-                       ^
-names-defaults-neg.scala:99: warning: naming parameter deprNam5Arg is deprecated.
-  deprNam5(deprNam5Arg = null)
-                       ^
 names-defaults-neg.scala:103: error: unknown parameter name: m
   f3818(y = 1, m = 1)
                  ^
@@ -154,17 +145,9 @@ names-defaults-neg.scala:149: error: variable definition needs type because 'x' 
 names-defaults-neg.scala:152: error: variable definition needs type because 'x' is used as a named argument in its body.
   object t6 { var x = t.f(x = 1) }
                   ^
-names-defaults-neg.scala:152: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-  object t6 { var x = t.f(x = 1) }
-                            ^
 names-defaults-neg.scala:155: error: variable definition needs type because 'x' is used as a named argument in its body.
   class t9 { var x = t.f(x = 1) }
                  ^
-names-defaults-neg.scala:155: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
-an explicit type is required for the definition mentioned in the error message above.
-  class t9 { var x = t.f(x = 1) }
-                           ^
 names-defaults-neg.scala:169: error: variable definition needs type because 'x' is used as a named argument in its body.
   def u3 { var x = u.f(x = 1) }
                ^
@@ -177,12 +160,29 @@ names-defaults-neg.scala:175: error: reference to x is ambiguous; it is both a m
 names-defaults-neg.scala:182: error: variable definition needs type because 'x' is used as a named argument in its body.
   class u15 { var x = u.f(x = 1) }
                   ^
+names-defaults-neg.scala:185: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
+  class u18 { var x: Int = u.f(x = 1) }
+                                 ^
+names-defaults-neg.scala:94: warning: the parameter name y is deprecated: use b instead
+  deprNam3(y = 10, b = 2)
+             ^
+names-defaults-neg.scala:97: warning: naming parameter deprNam4Arg is deprecated.
+  deprNam4(deprNam4Arg = null)
+                       ^
+names-defaults-neg.scala:99: warning: naming parameter deprNam5Arg is deprecated.
+  deprNam5(deprNam5Arg = null)
+                       ^
+names-defaults-neg.scala:152: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
+  object t6 { var x = t.f(x = 1) }
+                            ^
+names-defaults-neg.scala:155: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
+an explicit type is required for the definition mentioned in the error message above.
+  class t9 { var x = t.f(x = 1) }
+                           ^
 names-defaults-neg.scala:182: warning: failed to determine if 'x = ...' is a named argument or an assignment expression.
 an explicit type is required for the definition mentioned in the error message above.
   class u15 { var x = u.f(x = 1) }
                             ^
-names-defaults-neg.scala:185: error: reference to x is ambiguous; it is both a method parameter and a variable in scope.
-  class u18 { var x: Int = u.f(x = 1) }
-                                 ^
 6 warnings found
 45 errors found

@@ -26,7 +26,7 @@ import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
-import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -3784,18 +3784,65 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */
-    def typedAnnotation(ann: Tree, mode: Mode = EXPRmode): AnnotationInfo = {
+    def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = {
       var hasError: Boolean = false
       var unmappable: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
+      def registerNowarn(info: AnnotationInfo): Unit = {
+        if (annotee.nonEmpty && NowarnClass.exists && info.matches(NowarnClass) && !runReporting.suppressionExists(info.pos)) {
+          val filters = (info.assocs: @unchecked) match {
+            case Nil => List(MessageFilter.Any)
+            case (_, LiteralAnnotArg(s)) :: Nil =>
+              val (ms, fs) = separateE(s.stringValue.split('&').map(WConf.parseFilter(_, runReporting.rootDirPrefix)).toList)
+              if (ms.nonEmpty)
+                reporter.error(info.pos, s"Invalid message filter:\n${ms.mkString("\n")}")
+              fs
+          }
+          val (start, end) =
+            if (settings.Yrangepos) {
+              val p = annotee.get.pos
+              (p.start, p.end)
+            } else {
+              // compute approximate range
+              var s = unit.source.length
+              var e = 0
+              object setRange extends ForeachTreeTraverser({ child =>
+                val pos = child.pos
+                if (pos.isDefined) {
+                  s = s min pos.start
+                  e = e max pos.end
+                }
+              }) {
+                // in `@nowarn @ann(deprecatedMethod) def foo`, the deprecation warning should show
+                override def traverseModifiers(mods: Modifiers): Unit = ()
+              }
+              setRange(annotee.get)
+              (s, e max s)
+            }
+          runReporting.addSuppression(Suppression(info.pos, filters, start, end))
+        }
+      }
+
+      // aka xs.partitionMap(identity) in 2.13
+      def separateE[A, B](xs: List[Either[A, B]]): (List[A], List[B]) = {
+        import mutable.ListBuffer
+        val (a, b) = xs.foldLeft((new ListBuffer[A], new ListBuffer[B])) {
+          case ((a, b),  Left(x)) => (a += x, b)
+          case ((a, b), Right(x)) => (a, b += x)
+        }
+        (a.toList, b.toList)
+      }
+
       def finish(res: AnnotationInfo): AnnotationInfo = {
         if (hasError) {
           pending.foreach(ErrorUtils.issueTypeError)
           ErroneousAnnotation
+        } else {
+          registerNowarn(res)
+          res
         }
-        else res
       }
 
       def reportAnnotationError(err: AbsTypeError) = {
@@ -3841,7 +3888,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           reportAnnotationError(ArrayConstantsError(tree)); None
 
         case ann @ Apply(Select(New(tpt), nme.CONSTRUCTOR), args) =>
-          val annInfo = typedAnnotation(ann, mode)
+          val annInfo = typedAnnotation(ann, None, mode)
           val annType = annInfo.tpe
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
@@ -4368,7 +4415,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (arg1.isType) {
           // make sure the annotation is only typechecked once
           if (ann.tpe == null) {
-            val ainfo = typedAnnotation(ann, annotMode)
+            val ainfo = typedAnnotation(ann, Some(atd), annotMode)
             val atype = arg1.tpe.withAnnotation(ainfo)
 
             if (ainfo.isErroneous)
@@ -4385,7 +4432,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         else {
           if (ann.tpe == null) {
-            val annotInfo = typedAnnotation(ann, annotMode)
+            val annotInfo = typedAnnotation(ann, Some(atd), annotMode)
             ann setType arg1.tpe.withAnnotation(annotInfo)
           }
           val atype = ann.tpe

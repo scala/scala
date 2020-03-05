@@ -88,6 +88,8 @@ trait Warnings {
          |Full list of message categories:
          |${WarningCategory.all.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
          |
+         |To suppress warnings locally, use the `scala.annotation.nowarn` annotation.
+         |
          |Note: on the command-line you might need to quote configurations containing `*` or `&`
          |to prevent the shell from expanding patterns.""".stripMargin),
     prepend = true)
@@ -118,8 +120,9 @@ trait Warnings {
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
     val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+    val Nowarn    = Choice("nowarn",    "Warn if a @nowarn annotation does not suppress any warnings.")
     val Params    = Choice("params",    "Enable -Ywarn-unused:explicits,implicits.", expandsTo = List(Explicits, Implicits))
-    val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits))
+    val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits, Nowarn))
   }
 
   // The -Ywarn-unused warning group.
@@ -138,6 +141,7 @@ trait Warnings {
   def warnUnusedParams    = warnUnusedExplicits || warnUnusedImplicits
   def warnUnusedExplicits = warnUnused contains UnusedWarnings.Explicits
   def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
+  def warnUnusedNowarn    = warnUnused contains UnusedWarnings.Nowarn
 
   BooleanSetting("-Ywarn-unused-import", "Warn when imports are unused.") withPostSetHook { s =>
     warnUnused.add(s"${if (s) "" else "-"}imports")

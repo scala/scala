@@ -15,9 +15,6 @@ type mismatch for return type: reflect.runtime.universe.Literal does not conform
 Macros_Test_2.scala:7: error: macro defs must have explicitly specified return types
   def foo5 = macro Impls.foo5
       ^
-Macros_Test_2.scala:8: warning: macro defs must have explicitly specified return types (inference of Int from macro impl's c.Expr[Int] is deprecated and is going to stop working in 2.12)
-  def foo6 = macro Impls.foo6
-      ^
 Macros_Test_2.scala:15: error: exception during macro expansion:
 java.lang.NullPointerException
 	at Impls$.foo3(Impls_1.scala:8)
@@ -27,5 +24,8 @@ java.lang.NullPointerException
 Macros_Test_2.scala:16: error: macro implementation is missing
   foo4
   ^
+Macros_Test_2.scala:8: warning: macro defs must have explicitly specified return types (inference of Int from macro impl's c.Expr[Int] is deprecated and is going to stop working in 2.12)
+  def foo6 = macro Impls.foo6
+      ^
 one warning found
 5 errors found
