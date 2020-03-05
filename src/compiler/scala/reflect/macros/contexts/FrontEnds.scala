@@ -14,6 +14,7 @@ package scala.reflect.macros
 package contexts
 
 import scala.reflect.macros.runtime.AbortMacroException
+import scala.tools.nsc.Reporting.WarningCategory
 
 trait FrontEnds {
   self: Context =>
@@ -27,7 +28,8 @@ trait FrontEnds {
 
   def hasErrors: Boolean = universe.reporter.hasErrors
 
-  def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg)
+  // TODO: add WarningCategory parameter in 2.14 (not binary compatible)
+  def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg, WarningCategory.Other)
 
   def error(pos: Position, msg: String): Unit = callsiteTyper.context.error(pos, msg)
 

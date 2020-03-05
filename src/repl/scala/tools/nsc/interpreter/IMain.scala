@@ -800,7 +800,7 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
           }
           ((pos, msg)) :: loop(filtered)
       }
-      val warnings = loop(run.reporting.allConditionalWarnings.map{ case (pos, (msg, since@_)) => (pos, msg) })
+      val warnings = loop(run.reporting.allConditionalWarnings)
       if (warnings.nonEmpty)
         mostRecentWarnings = warnings
     }
@@ -1161,6 +1161,8 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       def parse = withoutWarnings {
         reporter.reset()
         val trees = newUnitParser(line, label).parseStats()
+        if (!isIncomplete)
+          runReporting.summarizeErrors()
         if (reporter.hasErrors) Error(trees)
         else if (isIncomplete) Incomplete(trees)
         else Success(trees)

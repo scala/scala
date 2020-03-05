@@ -1,3 +1,3 @@
-warning: there was one deprecation warning (since 2.11.0)
-warning: there were 19 deprecation warnings (since 2.12.0)
-warning: there were 20 deprecation warnings in total; re-run with -deprecation for details
+warning: one deprecation (since 2.11.0)
+warning: 19 deprecations (since 2.12.0)
+warning: 20 deprecations in total; re-run with -deprecation for details

@@ -14,9 +14,9 @@ package scala.tools.nsc.transform.patmat
 
 import scala.language.postfixOps
 
-import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
 import scala.collection.mutable
-import scala.reflect.internal.util.Position
+import scala.tools.nsc.symtab.Flags.{SYNTHETIC, ARTIFACT}
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
  *
@@ -603,7 +603,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           }
 
         emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse{
-          if (requireSwitch) reporter.warning(scrut.pos, "could not emit switch for @switch annotated match")
+          if (requireSwitch) typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
           if (casesNoSubstOnly nonEmpty) {
             // before optimizing, check casesNoSubstOnly for presence of a default case,

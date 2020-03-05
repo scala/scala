@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package symtab
 
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
 
 /** A subclass of SymbolLoaders that implements browsing behavior.
@@ -119,7 +120,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
     val browser = new BrowserTraverser
     browser.traverse(body)
     if (browser.entered == 0)
-      warning("No classes or objects found in "+source+" that go in "+root)
+      runReporting.warning(NoPosition, "No classes or objects found in "+source+" that go in "+root, WarningCategory.OtherDebug, site = "")
   }
 
   /** Enter top-level symbols from a source file

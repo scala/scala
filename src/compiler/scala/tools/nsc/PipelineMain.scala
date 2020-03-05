@@ -28,6 +28,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
@@ -553,7 +554,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
               }
               diagnostic.getKind match {
                 case Kind.ERROR                            => reporter.error(position, msg)
-                case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
+                case Kind.WARNING | Kind.MANDATORY_WARNING => Task.this.compiler.runReporting.warning(position, msg, WarningCategory.JavaSource, site = "")
                 case Kind.NOTE | Kind.OTHER                => reporter.echo(position, msg)
               }
             }

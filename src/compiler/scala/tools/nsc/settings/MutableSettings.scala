@@ -228,9 +228,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   }
 
   def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
-  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String]) =
+  def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp))
-  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String]) =
+  def ChoiceSettingForcedDefault(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil) =
     ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp).withPostSetHook(sett =>
       if (sett.value != default) {
         sett.withDeprecationMessage(s"${name}:${sett.value} is deprecated, forcing use of $default")
@@ -239,12 +239,13 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     )
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
     add(new IntSetting(name, descr, default, range, parser))
-  def MultiStringSetting(name: String, arg: String, descr: String, helpText: Option[String]) = add(new MultiStringSetting(name, arg, descr, helpText))
+  def MultiStringSetting(name: String, arg: String, descr: String, helpText: Option[String] = None, prepend: Boolean = false) =
+    add(new MultiStringSetting(name, arg, descr, helpText, prepend))
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
   def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
-  def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String]) = add(new StringSetting(name, arg, descr, default, helpText))
+  def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
     add(new ScalaVersionSetting(name, arg, descr, initial, default))
   def PathSetting(name: String, descr: String, default: String): PathSetting = {
@@ -809,7 +810,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     name: String,
     val arg: String,
     descr: String,
-    helpText: Option[String])
+    helpText: Option[String],
+    prepend: Boolean)
   extends Setting(name, descr) with Clearable {
     type T = List[String]
     protected var v: T = Nil
@@ -824,12 +826,13 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
           if (halting && (arg startsWith "-")) args
           else {
             if (helpText.isDefined && arg == "help") sawHelp = true
+            else if (prepend) value ::= arg
             else value ++= List(arg)
             loop(rest)
           }
         case Nil         => Nil
       }
-      Some(loop(args))
+      Some(loop(if (prepend) args.reverse else args))
     }
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
     override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)

@@ -18,6 +18,7 @@ import scala.collection.mutable
 import symtab.Flags._
 import scala.language.postfixOps
 import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -810,10 +811,10 @@ trait Namers extends MethodSynthesis {
       }
       val owner = tree.symbol.owner
       if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
-        reporter.warning(tree.pos,
+        context.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
-          "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
-        )
+          "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead.",
+          WarningCategory.LintPackageObjectClasses)
       }
 
       // Suggested location only.

@@ -139,7 +139,7 @@ abstract class Inliner {
       val warnings = inline(request)
       for (warning <- warnings) {
         if (warning.emitWarning(compilerSettings))
-          backendReporting.inlinerWarning(request.callsite.callsitePosition, warning.toString)
+          backendReporting.optimizerWarning(request.callsite.callsitePosition, warning.toString, site = backendUtils.optimizerWarningSiteString(request.callsite))
       }
     }
     InlineLog.print()

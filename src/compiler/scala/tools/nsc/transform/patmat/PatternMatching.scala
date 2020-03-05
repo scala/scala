@@ -16,6 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.Global
 import scala.tools.nsc.ast
 import scala.language.postfixOps
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.transform.TypingTransformers
 import scala.tools.nsc.transform.Transform
 import scala.reflect.internal.util.Statistics
@@ -192,13 +193,13 @@ trait Interface extends ast.TreeDSL {
     val matchOwner = typer.context.owner
     def pureType(tp: Type): Type = tp
 
-    def reportUnreachable(pos: Position) = reporter.warning(pos, "unreachable code")
+    def reportUnreachable(pos: Position) = typer.context.warning(pos, "unreachable code", WarningCategory.OtherMatchAnalysis)
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {
       val ceString =
         if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
         else "inputs: " + counterExamples.mkString(", ")
 
-      reporter.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString)
+      typer.context.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString, WarningCategory.OtherMatchAnalysis)
     }
   }
 

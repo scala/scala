@@ -20,6 +20,7 @@ import java.util.concurrent._
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.BufferingBackendReporting
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.profile.ThreadPoolFactory
@@ -58,8 +59,8 @@ private[jvm] object GeneratedClassHandler {
         new SyncWritingClassHandler(postProcessor)
 
       case maxThreads =>
-        if (global.statistics.enabled)
-          global.reporter.warning(global.NoPosition, "jvm statistics are not reliable with multi-threaded jvm class writing")
+        if (statistics.enabled)
+          runReporting.warning(NoPosition, "jvm statistics are not reliable with multi-threaded jvm class writing", WarningCategory.Other, site = "")
         val additionalThreads = maxThreads - 1
         // The thread pool queue is limited in size. When it's full, the `CallerRunsPolicy` causes
         // a new task to be executed on the main thread, which provides back-pressure.

@@ -14,8 +14,9 @@ package scala
 package tools.nsc
 package transform
 
+import scala.collection.{ immutable, mutable }
 import scala.tools.nsc.symtab.Flags
-import scala.collection.{immutable, mutable}
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** Specialize code on types.
  *
@@ -416,7 +417,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       specializedOn(sym).map(s => specializesClass(s).tpe).sorted
 
     if (isBoundedGeneric(sym.tpe) && (types contains AnyRefTpe))
-      reporter.warning(sym.pos, sym + " is always a subtype of " + AnyRefTpe + ".")
+      runReporting.warning(sym.pos, s"$sym is always a subtype of $AnyRefTpe.", WarningCategory.Other, sym)
 
     types
   }
@@ -653,8 +654,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             if (stp != p)
               if (p.typeSymbol.isTrait) res ::= stp
               else if (currentRun.compiles(clazz))
-                reporter.warning(clazz.pos, p.typeSymbol + " must be a trait. Specialized version of "
-                  + clazz + " will inherit generic " + p)  // TODO change to error
+                // TODO change to error
+                runReporting.warning(clazz.pos,
+                  s"${p.typeSymbol} must be a trait. Specialized version of $clazz will inherit generic $p",
+                  WarningCategory.Other,
+                  clazz)
           }
           res
         }
@@ -908,11 +912,12 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         // their type parameters are used in non-specializable positions.  Why is
         // unusedStvars.nonEmpty for these classes???
         if (unusedStvars.nonEmpty && currentRun.compiles(sym) && !sym.isSynthetic) {
-          reporter.warning(sym.pos,
+          runReporting.warning(sym.pos,
             "%s %s unused or used in non-specializable positions.".format(
               unusedStvars.mkString("", ", ", ""),
-              if (unusedStvars.length == 1) "is" else "are")
-          )
+              if (unusedStvars.length == 1) "is" else "are"),
+            WarningCategory.Other,
+            sym)
           unusedStvars foreach (_ removeAnnotation SpecializedClass)
           specializingOn = specializingOn filterNot (unusedStvars contains _)
         }
@@ -1313,7 +1318,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     env forall { case (tvar, tpe) =>
       matches(tvar.info.lowerBound, tpe) && matches(tpe, tvar.info.upperBound) || {
         if (warnings)
-          reporter.warning(tvar.pos, s"Bounds prevent specialization of $tvar")
+          runReporting.warning(tvar.pos, s"Bounds prevent specialization of $tvar", WarningCategory.Other, tvar)
 
         debuglog("specvars: " +
           tvar.info.lowerBound + ": " +

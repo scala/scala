@@ -20,8 +20,10 @@ import scala.tools.util.PathResolver.Defaults
  *  The abstract settings are commented as to why they are as yet
  *  implemented in MutableSettings rather than mutation-generically.
  */
-trait StandardScalaSettings {
-  self: AbsScalaSettings =>
+trait StandardScalaSettings { _: MutableSettings =>
+  // Switched to MutableSettings so:
+  // 1. deprecation/feature/etc can access Wconf
+  // 2. and they have withPostSetHook methods
 
   /** Path related settings.
    */
@@ -32,14 +34,21 @@ trait StandardScalaSettings {
   val javabootclasspath = PathSetting ("-javabootclasspath", "Override java boot classpath.", Defaults.javaBootClassPath)
   val javaextdirs =       PathSetting ("-javaextdirs", "Override java extdirs classpath.", Defaults.javaExtDirs)
   val sourcepath =        PathSetting ("-sourcepath", "Specify location(s) of source files.", "") // Defaults.scalaSourcePath
+  val rootdir =           PathSetting ("-rootdir", "The absolute path of the project root directory, usually the git / scm checkout.", "") withAbbreviation "--root-directory"
 
   /** Other settings.
    */
   val dependencyfile =  StringSetting ("-dependencyfile", "file", "Set dependency tracking file.", ".scala_dependencies")
-  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs.")
+  val deprecation =    BooleanSetting ("-deprecation", "Emit warning and location for usages of deprecated APIs.") withAbbreviation "--deprecation" withPostSetHook { s =>
+    if (s.value) Wconf.tryToSet(List(s"cat=deprecation:w"))
+    else Wconf.tryToSet(List(s"cat=deprecation:s"))
+  }
   val encoding =        StringSetting ("-encoding", "encoding", "Specify character encoding used by source files.", Properties.sourceEncoding)
   val explaintypes =   BooleanSetting ("-explaintypes", "Explain type errors in more detail.")
-  val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly.")
+  val feature =        BooleanSetting ("-feature", "Emit warning and location for usages of features that should be imported explicitly.") withAbbreviation "--feature" withPostSetHook { s =>
+    if (s.value) Wconf.tryToSet(List(s"cat=feature:w"))
+    else Wconf.tryToSet(List(s"cat=feature:s"))
+  }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
   val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.")
@@ -47,7 +56,10 @@ trait StandardScalaSettings {
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
   val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.",
                           List("jvm-1.5", "jvm-1.6", "jvm-1.7", "jvm-1.8"), "jvm-1.8")
-  val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.")
+  val unchecked =      BooleanSetting ("-unchecked", "Enable additional warnings where generated code depends on assumptions.") withAbbreviation "--unchecked" withPostSetHook { s =>
+    if (s.value) Wconf.tryToSet(List(s"cat=unchecked:w"))
+    else Wconf.tryToSet(List(s"cat=unchecked:s"))
+  }
   val uniqid =         BooleanSetting ("-uniqid", "Uniquely tag all identifiers in debugging output.")
   val usejavacp =      BooleanSetting ("-usejavacp", "Utilize the java.class.path in classpath resolution.")
   val usemanifestcp =  BooleanSetting ("-usemanifestcp", "Utilize the manifest in classpath resolution.")

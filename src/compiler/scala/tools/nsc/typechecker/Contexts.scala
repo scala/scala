@@ -13,9 +13,10 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.collection.{ immutable, mutable }
 import scala.annotation.tailrec
-import scala.reflect.internal.util.{ ReusableInstance, shortClassOfInstance, SomeOfNil }
+import scala.collection.{immutable, mutable}
+import scala.reflect.internal.util.{ReusableInstance, shortClassOfInstance, SomeOfNil}
+import scala.tools.nsc.Reporting.WarningCategory
 
 /**
  *  @author  Martin Odersky
@@ -64,16 +65,16 @@ trait Contexts { self: Analyzer =>
   private lazy val allUsedSelectors =
     mutable.Map[ImportInfo, Set[ImportSelector]]() withDefaultValue Set()
   private lazy val allImportInfos =
-    mutable.Map[CompilationUnit, List[ImportInfo]]() withDefaultValue Nil
+    mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
 
   def warnUnusedImports(unit: CompilationUnit) = if (!unit.isJava) {
     for (imps <- allImportInfos.remove(unit)) {
-      for (imp <- imps.distinct.reverse) {
+      for ((imp, owner) <- imps.distinct.reverse) {
         val used = allUsedSelectors(imp)
         for (sel <- imp.tree.selectors if !isMaskImport(sel) && !used(sel))
-          reporter.warning(imp.posOf(sel), "Unused import")
+          runReporting.warning(imp.posOf(sel), "Unused import", WarningCategory.UnusedImports, site = owner)
       }
-      allUsedSelectors --= imps
+      allUsedSelectors --= imps.iterator.map(_._1)
     }
   }
 
@@ -604,7 +605,8 @@ trait Contexts { self: Analyzer =>
     /** Issue/throw the given error message according to the current mode for error reporting. */
     def error(pos: Position, msg: String)                                    = reporter.error(fixPosition(pos), msg)
     /** Issue/throw the given error message according to the current mode for error reporting. */
-    def warning(pos: Position, msg: String)                                  = reporter.warning(fixPosition(pos), msg)
+    def warning(pos: Position, msg: String, category: WarningCategory)       = reporter.warning(fixPosition(pos), msg, category, owner)
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol) = reporter.warning(fixPosition(pos), msg, category, site)
     def echo(pos: Position, msg: String)                                     = reporter.echo(fixPosition(pos), msg)
     def fixPosition(pos: Position): Position = pos match {
       case NoPosition => nextEnclosing(_.tree.pos != NoPosition).tree.pos
@@ -613,12 +615,12 @@ trait Contexts { self: Analyzer =>
 
 
     def deprecationWarning(pos: Position, sym: Symbol, msg: String, since: String): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym, msg, since)
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner, msg, since)
     def deprecationWarning(pos: Position, sym: Symbol): Unit =
-      currentRun.reporting.deprecationWarning(fixPosition(pos), sym) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
+      runReporting.deprecationWarning(fixPosition(pos), sym, owner) // TODO: allow this to escalate to an error, and implicit search will ignore deprecated implicits
 
     def featureWarning(pos: Position, featureName: String, featureDesc: String, featureTrait: Symbol, construct: => String = "", required: Boolean): Unit =
-      currentRun.reporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required)
+      runReporting.featureWarning(fixPosition(pos), featureName, featureDesc, featureTrait, construct, required, owner)
 
 
     // nextOuter determines which context is searched next for implicits
@@ -1325,7 +1327,7 @@ trait Contexts { self: Analyzer =>
     private[this] val impInfo: ImportInfo = {
       val info = new ImportInfo(tree.asInstanceOf[Import], outerDepth)
       if (settings.warnUnusedImport && openMacros.isEmpty && !isRootImport) // excludes java.lang/scala/Predef imports
-        allImportInfos(unit) ::= info
+        allImportInfos(unit) ::= (info, owner)
       info
     }
     override final def imports      = impInfo :: super.imports
@@ -1346,14 +1348,20 @@ trait Contexts { self: Analyzer =>
    *
    *  To handle nested contexts, reporters share buffers. TODO: only buffer in BufferingReporter, emit immediately in ImmediateReporter
    */
-  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) {
+  abstract class ContextReporter(private[this] var _errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, private[this] var _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) {
     type Error = AbsTypeError
-    type Warning = (Position, String)
+    type Warning = (Position, String, WarningCategory, Symbol)
 
     def issue(err: AbsTypeError)(implicit context: Context): Unit = error(context.fixPosition(err.errPos), addDiagString(err.errMsg))
 
-    def echo(pos: Position, msg: String): Unit    = reporter.echo(pos, msg)
-    def warning(pos: Position, msg: String): Unit = reporter.warning(pos, msg)
+    def echo(msg: String): Unit = echo(NoPosition, msg)
+
+    def echo(pos: Position, msg: String): Unit =
+      reporter.echo(pos, msg)
+
+    def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      runReporting.warning(pos, msg, category, site)
+
     def error(pos: Position, msg: String): Unit
 
     protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = ()
@@ -1447,7 +1455,7 @@ trait Contexts { self: Analyzer =>
 
     final def emitWarnings() = if (_warningBuffer != null) {
       _warningBuffer foreach {
-        case (pos, msg) => reporter.warning(pos, msg)
+        case (pos, msg, category, site) => runReporting.warning(pos, msg, category, site)
       }
       _warningBuffer = null
     }
@@ -1471,20 +1479,22 @@ trait Contexts { self: Analyzer =>
     final def clearAllErrors(): Unit = { _errorBuffer = null }
   }
 
-  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class ImmediateReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def makeBuffering: ContextReporter = new BufferingReporter(errorBuffer, warningBuffer)
     def error(pos: Position, msg: String): Unit = reporter.error(pos, msg)
  }
 
-  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
+  private[typechecker] class BufferingReporter(_errorBuffer: mutable.LinkedHashSet[AbsTypeError] = null, _warningBuffer: mutable.LinkedHashSet[(Position, String, WarningCategory, Symbol)] = null) extends ContextReporter(_errorBuffer, _warningBuffer) {
     override def isBuffering = true
 
     override def issue(err: AbsTypeError)(implicit context: Context): Unit             = errorBuffer += err
 
     // this used to throw new TypeError(pos, msg) -- buffering lets us report more errors (test/files/neg/macro-basic-mamdmi)
     // the old throwing behavior was relied on by diagnostics in manifestOfType
-    def error(pos: Position, msg: String): Unit                        = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg))
-    override def warning(pos: Position, msg: String): Unit             = warningBuffer += ((pos, msg))
+    def error(pos: Position, msg: String): Unit = errorBuffer += TypeErrorWrapper(new TypeError(pos, msg))
+
+    override def warning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit =
+      warningBuffer += ((pos, msg, category, site))
 
     override protected def handleSuppressedAmbiguous(err: AbsAmbiguousTypeError): Unit = errorBuffer += err
 

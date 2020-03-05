@@ -1,0 +1,7 @@
+wconfSource1.scala:9: error: method dep in class C is deprecated:
+  def t = dep
+          ^
+wconfSource1.scala:10: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+  def u = { 1; 2 }
+            ^
+one error found

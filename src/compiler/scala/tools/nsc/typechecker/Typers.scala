@@ -26,6 +26,7 @@ import scala.reflect.internal.TypesStats
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
+import scala.tools.nsc.Reporting.WarningCategory
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -85,7 +86,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case s : SilentTypeError      => f(s.reportableErrors)
     }
   }
-  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[(Position, String)]) extends SilentResult[Nothing] {
+  class SilentTypeError private(val errors: List[AbsTypeError], val warnings: List[(Position, String, WarningCategory, Symbol)]) extends SilentResult[Nothing] {
     override def isEmpty = true
     def err: AbsTypeError = errors.head
     def reportableErrors = errors match {
@@ -97,7 +98,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
   }
   object SilentTypeError {
     def apply(errors: AbsTypeError*): SilentTypeError = apply(errors.toList, Nil)
-    def apply(errors: List[AbsTypeError], warnings: List[(Position, String)]): SilentTypeError = new SilentTypeError(errors, warnings)
+    def apply(errors: List[AbsTypeError], warnings: List[(Position, String, WarningCategory, Symbol)]): SilentTypeError = new SilentTypeError(errors, warnings)
     // todo: this extracts only one error, should be a separate extractor.
     def unapply(error: SilentTypeError): Option[AbsTypeError] = error.errors.headOption
   }
@@ -1087,10 +1088,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case (Apply(Select(receiver, _), _), SingleType(_, sym)) => sym == receiver.symbol
               case _ => false
             }
-            if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value")
+            if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value", WarningCategory.WFlagValueDiscard)
           }
           @inline def warnNumericWiden(): Unit =
-            if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening")
+            if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
           val anyTyped = tree.tpe <:< AnyTpe
@@ -1176,7 +1177,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         else if (mode.inPatternMode && { inferModulePattern(tree, pt); isPopulated(tree.tpe, approximateAbstracts(pt)) })
           tree
         else {
-          val constFolded = constfold(tree, pt)
+          val constFolded = constfold(tree, pt, context.owner)
           if (constFolded.tpe <:< pt) adapt(constFolded, mode, pt, original) // set stage for (0)
           else adaptExprNotFunMode() // (10) -- (15)
         }
@@ -1841,7 +1842,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           else if (clazz != SerialVersionUIDAttr) restrictionWarning(cdef.pos, unit,
             """|subclassing Classfile does not
                |make your annotation visible at runtime.  If that is what
-               |you want, you must write the annotation class in Java.""".stripMargin)
+               |you want, you must write the annotation class in Java.""".stripMargin, WarningCategory.Other, clazz)
         }
 
         warnTypeParameterShadow(tparams1, clazz)
@@ -2021,7 +2022,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
       if (clazz.isTrait) {
         for (decl <- clazz.info.decls if decl.isTerm && decl.isEarlyInitialized) {
-          context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.")
+          context.warning(decl.pos, "Implementation restriction: early definitions in traits are not initialized before the super class is initialized.", WarningCategory.Other)
         }
       }
 
@@ -3712,7 +3713,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 if (args.isEmpty && canTranslateEmptyListToNil && fun.symbol.isInitialized && ListModule.hasCompleteInfo && (fun.symbol == currentRun.runDefinitions.List_apply))
                   atPos(tree.pos)(gen.mkNil setType restpe)
                 else
-                  constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe))
+                  constfold(treeCopy.Apply(tree, fun, args1) setType ifPatternSkipFormals(restpe), context.owner)
               }
               if (settings.warnDeadCode) {
                 val sym = fun.symbol
@@ -3809,7 +3810,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryConst(tr: Tree, pt: Type): Option[LiteralAnnotArg] = {
         // The typed tree may be relevantly different than the tree `tr`,
         // e.g. it may have encountered an implicit conversion.
-        val ttree = typed(constfold(tr), pt)
+        val ttree = typed(constfold(tr, context.owner), pt)
         val const: Constant = ttree match {
           case l @ Literal(c) if !l.isErroneous => c
           case tree => tree.tpe match {
@@ -3972,19 +3973,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               context.warning(t.pos, "Usage of named or default arguments transformed this annotation\n"+
                                 "constructor call into a block. The corresponding AnnotationInfo\n"+
                                 "will contain references to local values and default getters instead\n"+
-                                "of the actual argument trees")
+                                "of the actual argument trees", WarningCategory.Other)
               annInfo(expr)
 
             case Apply(fun, args) =>
               context.warning(t.pos, "Implementation limitation: multiple argument lists on annotations are\n"+
-                                     "currently not supported; ignoring arguments "+ args)
+                                     "currently not supported; ignoring arguments "+ args, WarningCategory.Other)
               annInfo(fun)
 
             case _ =>
               reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
           }
           if (annType.typeSymbol == DeprecatedAttr && sumSize(argss, 0) < 2)
-            context.deprecationWarning(ann.pos, DeprecatedAttr, "@deprecated now takes two arguments; see the scaladoc.", "2.11.0")
+            context.warning(ann.pos, """Specify both message and version: @deprecated("message", since = "1.0")""", WarningCategory.LintDeprecation)
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
           else annInfo(typedAnn)
@@ -4586,7 +4587,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // unless the warning is legitimate.
               val typedExpr = typed(expr)
               if (!isPastTyper && typedExpr.tpe.typeSymbol != UnitClass)
-                context.warning(tree.pos, "enclosing method " + name + s" has result type Unit: return value of type ${typedExpr.tpe} discarded")
+                context.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded", WarningCategory.Other)
             }
             val res = treeCopy.Return(tree, checkDead(context, expr1)).setSymbol(enclMethod.owner)
             val tp = pluginsTypedReturn(NothingTpe, this, res, restpt.tpe)
@@ -4708,7 +4709,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def tryTypedApply(fun: Tree, args: List[Tree]): Tree = {
         val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedApplyNanos) else null
 
-        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String)]): Tree = {
+        def onError(typeErrors: Seq[AbsTypeError], warnings: Seq[(Position, String, WarningCategory, Symbol)]): Tree = {
           if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedApplyNanos, start)
 
           // If the problem is with raw types, convert to existentials and try again.
@@ -4764,7 +4765,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
           }
           typeErrors foreach context.issue
-          warnings foreach { case (p, m) => context.warning(p, m) }
+          warnings foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
           setError(treeCopy.Apply(tree, fun, args))
         }
 
@@ -4786,7 +4787,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def reportError(error: SilentTypeError): Tree = {
           error.reportableErrors foreach context.issue
-          error.warnings foreach { case (p, m) => context.warning(p, m) }
+          error.warnings foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
           args foreach (arg => typed(arg, mode, ErrorType))
           setError(tree)
         }
@@ -5385,7 +5386,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           def unbound(t: Tree) = t.symbol == null || t.symbol == NoSymbol
           def warn(name: Name) = {
             val msg = s"This catches all Throwables. If this is really intended, use `case ${name.decoded} : Throwable` to clear this warning."
-            context.warning(cdef.pat.pos, msg)
+            context.warning(cdef.pat.pos, msg, WarningCategory.Other)
           }
           if (cdef.guard.isEmpty) cdef.pat match {
             case Bind(name, i @ Ident(_)) if unbound(i) => warn(name)
@@ -5396,7 +5397,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!isPastTyper) tree match {
           case Try(_, Nil, fin) =>
             if (fin eq EmptyTree)
-              context.warning(tree.pos, "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.")
+              context.warning(tree.pos, "A try without a catch or finally is equivalent to putting its body in a block; no exceptions are handled.", WarningCategory.Other)
           case Try(_, catches, _) =>
             catches foreach checkForCatchAll
         }
@@ -5542,7 +5543,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         def isPlausible(m: Symbol) = !m.isPackage && m.alternatives.exists(x => requiresNoArgs(x.info))
 
         def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message")
+          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message", WarningCategory.LintMissingInterpolator)
           def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
           val suspiciousExprs               = InterpolatorCodeRegex findAllMatchIn s
           def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))

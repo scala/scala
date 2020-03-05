@@ -1,0 +1,15 @@
+wconfSource2.scala:7: reflective access of structural type member method f should be enabled
+by making the implicit value scala.language.reflectiveCalls visible.
+This can be achieved by adding the import clause 'import scala.language.reflectiveCalls'
+or by setting the compiler option -language:reflectiveCalls.
+See the Scaladoc for value scala.language.reflectiveCalls for a discussion
+why the feature should be explicitly enabled.
+  def v(a: { def f: Int }) = a.f
+                               ^
+wconfSource2.scala:5: error: method dep in class C is deprecated:
+  def t = dep
+          ^
+wconfSource2.scala:6: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+  def u = { 1; 2 }
+            ^
+one error found

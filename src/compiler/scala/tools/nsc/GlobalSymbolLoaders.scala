@@ -14,6 +14,8 @@ package scala
 package tools
 package nsc
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /**
  * Symbol loaders implementation that wires dependencies using Global.
  */
@@ -34,4 +36,7 @@ abstract class GlobalSymbolLoaders extends symtab.SymbolLoaders {
 
   protected def compileLate(srcfile: io.AbstractFile): Unit =
     currentRun.compileLate(srcfile)
+
+  def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
+    runReporting.warning(pos, msg, category, site)
 }

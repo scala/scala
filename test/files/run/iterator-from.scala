@@ -1,5 +1,5 @@
 /* This file tests iteratorFrom, keysIteratorFrom, and valueIteratorFrom on various sorted sets and maps
- * filter: inliner warnings
+ * filter: optimizer warning
  */
 
 import scala.util.{Random => R}

@@ -7,6 +7,7 @@ import scala.reflect.internal.util.Statistics
 import scala.tools.util.PathResolver
 import util.ClassPath
 import io.AbstractFile
+import scala.tools.nsc.Reporting.WarningCategory
 
 /**
  * A complete SymbolTable implementation designed to be used in JUnit tests.
@@ -51,6 +52,8 @@ class SymbolTableForUnitTesting extends SymbolTable {
       sym.info.member(name)
     protected override def compileLate(srcfile: AbstractFile): Unit =
       sys.error(s"We do not expect compileLate to be called in SymbolTableTest. The srcfile passed in is $srcfile")
+    def warning(pos: Position, msg: String, category: WarningCategory, site: String): Unit =
+      reporter.warning(pos, msg)
   }
 
   class GlobalMirror extends Roots(NoSymbol) {
@@ -88,7 +91,7 @@ class SymbolTableForUnitTesting extends SymbolTable {
   // minimal Run to get Reporting wired
   def currentRun = new RunReporting {}
   class PerRunReporting extends PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String): Unit = reporter.warning(pos, msg)
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit = reporter.warning(pos, msg)
   }
   protected def PerRunReporting = new PerRunReporting
 

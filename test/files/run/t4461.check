@@ -1,4 +1,4 @@
-warning: there were four deprecation warnings (since 2.11.0); re-run with -deprecation for details
+warning: four deprecations (since 2.11.0); re-run with -deprecation for details
 Include(End,1)
 Include(End,2)
 Include(End,3)

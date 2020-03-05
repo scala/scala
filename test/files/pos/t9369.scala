@@ -1,4 +1,5 @@
 // scalac: -Xfatal-warnings -unchecked
+//
 object Test {
 
   trait Tree
