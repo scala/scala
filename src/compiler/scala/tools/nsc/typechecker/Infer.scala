@@ -558,7 +558,7 @@ trait Infer extends Checkable {
       if (settings.warnInferAny && context.reportErrors && !fn.isEmpty && canWarnAboutAny) {
         targs.foreach(_.typeSymbol match {
           case sym @ (AnyClass | AnyValClass) =>
-            context.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.", WarningCategory.Other)
+            context.warning(fn.pos, s"a type was inferred to be `${sym.name}`; this may indicate a programming error.", WarningCategory.LintInferAny)
           case _ =>
         })
       }

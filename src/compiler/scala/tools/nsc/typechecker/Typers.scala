@@ -1091,6 +1091,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             if (!isThisTypeResult) context.warning(tree.pos, "discarded non-Unit value", WarningCategory.WFlagValueDiscard)
           }
           @inline def warnNumericWiden(): Unit =
+            // not `context.deprecationWarning` because they are not buffered in silent mode
             if (!isPastTyper && settings.warnNumericWiden) context.warning(tree.pos, "implicit numeric widening", WarningCategory.WFlagNumericWiden)
 
           // The <: Any requirement inhibits attempts to adapt continuation types to non-continuation types.
