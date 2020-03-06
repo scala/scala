@@ -123,7 +123,8 @@ object Reader {
         case COMPLETE => tokenize(line, cursor)    // Parse to find completions (typically after a Tab).
         case SECONDARY_PROMPT =>
           tokenize(line, cursor) // Called when we need to update the secondary prompts.
-        case UNSPECIFIED => ScalaParsedLine(line, cursor, 0, 0, Nil)
+        case SPLIT_LINE | UNSPECIFIED =>
+          ScalaParsedLine(line, cursor, 0, 0, Nil)
       }
     }
     def tokenize(line: String, cursor: Int): ScalaParsedLine = {
