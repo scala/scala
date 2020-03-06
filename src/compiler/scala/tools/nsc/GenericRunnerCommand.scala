@@ -94,12 +94,12 @@ Other startup options:
 
  -i <file>    preload <file> before starting the REPL
  -I <file>    preload <file>, enforcing line-by-line interpretation
- -e <string>  execute <string> as if entered in the REPL
+ -e <string>  execute <string> as if it were in a source file
  -save        save the compiled script in a jar for future use
 
 If the runner does not correctly guess how to run the target:
 
- -howtorun    what to run <script|object|jar|guess> (default: guess)
+ -howtorun    what to run <script|object|jar|repl|guess> (default: guess)
 %n"""
 }
 
