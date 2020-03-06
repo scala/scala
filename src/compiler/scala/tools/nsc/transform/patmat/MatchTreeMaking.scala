@@ -355,7 +355,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // this also includes methods and (possibly nested) objects inside of methods.
           def definedInStaticLocation(tp: Type): Boolean = {
             def isStatic(tp: Type): Boolean =
-              if (tp == NoType || tp.typeSymbol.isPackageClass || tp == NoPrefix) true
+              if (tp == NoType || tp.typeSymbol.isPackageClass || tp == NoPrefix || nme.isReplWrapperName(tp.typeSymbol.name)) true
               else if (tp.typeSymbol.isModuleClass) isStatic(tp.prefix)
               else false
             tp.typeSymbol.owner == tp.prefix.typeSymbol && isStatic(tp.prefix)
