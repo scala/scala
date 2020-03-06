@@ -39,7 +39,10 @@ abstract class GenericCompanion[+CC[X] <: GenTraversable[X]] {
   /** An empty collection of type `$Coll[A]`
    *  @tparam A      the type of the ${coll}'s elements
    */
-  def empty[A]: CC[A] = newBuilder[A].result()
+  def empty[A]: CC[A] = {
+    if ((this eq immutable.Seq) || (this eq collection.Seq)) Nil.asInstanceOf[CC[A]]
+    else newBuilder[A].result()
+  }
 
   /** Creates a $coll with the specified elements.
    *  @tparam A      the type of the ${coll}'s elements
