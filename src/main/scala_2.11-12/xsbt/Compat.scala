@@ -13,8 +13,7 @@ package xsbt
 
 import java.io.PrintWriter
 import java.nio.file.{ Path, Paths }
-import xsbti.PickleData
-import xsbti.compile.Output
+import xsbti.compile.{ Output, PickleData }
 import scala.collection.mutable
 import scala.tools.nsc.{ Global, Settings }
 import scala.reflect.io.AbstractFile

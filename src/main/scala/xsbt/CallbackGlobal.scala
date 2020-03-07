@@ -77,10 +77,14 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     with ZincGlobalCompat {
 
   final class ZincRun(compileProgress: CompileProgress) extends Run {
-    override def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit =
+    override def informUnitStarting(phase: Phase, unit: CompilationUnit): Unit = {
       compileProgress.startUnit(phase.name, unit.source.path)
-    override def progress(current: Int, total: Int): Unit =
-      if (!compileProgress.advance(current, total)) cancel else ()
+    }
+
+    override def progress(current: Int, total: Int): Unit = {
+      if (!compileProgress.advance(current, total, phase.name, phase.next.name)) cancel
+      else ()
+    }
   }
 
   object dummy // temporary fix for #4426

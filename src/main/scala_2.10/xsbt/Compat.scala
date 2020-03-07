@@ -13,8 +13,7 @@ package xsbt
 
 import java.io.PrintWriter
 import java.nio.file.Path
-import xsbti.PickleData
-import xsbti.compile.Output
+import xsbti.compile.{ Output, PickleData }
 import scala.reflect.{ internal => sri }
 import scala.reflect.internal.{ util => sriu }
 import scala.reflect.io.AbstractFile
