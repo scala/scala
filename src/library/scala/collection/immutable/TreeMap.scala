@@ -17,7 +17,7 @@ package immutable
 import java.io.IOException
 
 import generic._
-import immutable.{RedBlackTree => RB}
+import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
 import scala.util.hashing.MurmurHash3
 
@@ -93,7 +93,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") != "false"
 
   private class TreeMapProxy[A, B](
-    @transient private[this] var tree: RedBlackTree.Tree[A, B],
+    @transient private[this] var tree: RB.Tree[A, B],
     @transient private[this] var ordering: Ordering[A]) extends Serializable {
 
     @throws[IOException]
@@ -387,4 +387,12 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   @throws[IOException]
   private[this] def writeReplace(out: java.io.ObjectOutputStream): AnyRef =
     if (TreeMap.legacySerialisation) this else new TreeMap.TreeMapProxy(tree, ordering)
+
+  @throws[IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+    out.writeObject(ordering)
+    out.writeObject(RedBlackTree.from(tree))
+  }
+
+
 }

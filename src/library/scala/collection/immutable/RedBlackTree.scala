@@ -28,7 +28,7 @@ import java.lang.{Integer, String}
  *  easily be used. The API represented by the RedBlackTree object tries to hide these
  *  optimizations behind a reasonably clean API.
  */
-private[collection] object RedBlackTree {
+private[collection] object NewRedBlackTree {
 
   def isEmpty(tree: Tree[_, _]): Boolean = tree eq null
 
@@ -378,7 +378,7 @@ private[collection] object RedBlackTree {
                                      @(`inline` @getter) final val left: Tree[A, B],
                                      @(`inline` @getter) final val right: Tree[A, B]) extends Serializable
   {
-    @(`inline` @getter) final val count: Int = 1 + RedBlackTree.count(left) + RedBlackTree.count(right)
+    @(`inline` @getter) final val count: Int = 1 + NewRedBlackTree.count(left) + NewRedBlackTree.count(right)
     def black: Tree[A, B]
     def red: Tree[A, B]
   }

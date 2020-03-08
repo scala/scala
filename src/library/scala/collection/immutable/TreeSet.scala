@@ -17,7 +17,7 @@ package immutable
 import java.io.IOException
 
 import generic._
-import immutable.{RedBlackTree => RB}
+import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
 
 /** $factoryInfo
@@ -59,7 +59,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") != "false"
 
   private class TreeSetProxy[A](
-    @transient private[this] var tree: RedBlackTree.Tree[A, Any],
+    @transient private[this] var tree: RB.Tree[A, Any],
     @transient private[this] var ordering: Ordering[A]) extends Serializable {
 
     @throws[IOException]
@@ -283,4 +283,10 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   @throws[IOException]
   private[this] def writeReplace(out: java.io.ObjectOutputStream): AnyRef =
     if (TreeSet.legacySerialisation) this else new TreeSet.TreeSetProxy(tree, ordering)
+
+  @throws[IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+    out.writeObject(ordering)
+    out.writeObject(RedBlackTree.from(tree))
+  }
 }

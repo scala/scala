@@ -1,6 +1,6 @@
 package scala.collection.immutable.redblacktree
 
-import collection.immutable.{RedBlackTree => RB}
+import collection.immutable.{NewRedBlackTree => RB}
 import org.scalacheck._
 import Prop._
 import Gen._
