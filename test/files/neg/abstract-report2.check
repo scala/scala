@@ -52,7 +52,7 @@ Missing implementations for 13 members. Stub implementations follow:
 
 class Baz[T] extends Collection[T]
       ^
-abstract-report2.scala:15: error: class Dingus needs to be abstract.
+abstract-report2.scala:21: error: class Dingus needs to be abstract.
 Missing implementations for 7 members. Stub implementations follow:
   // Members declared in scala.collection.IterableOnce
   def iterator: Iterator[(Set[Int], String)] = ???

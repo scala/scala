@@ -32,6 +32,11 @@ jobs:
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
       # pull request validation (w/ mini-bootstrap)
+      # "mini" in these senses:
+      # - it doesn't use the complicated legacy scripts.
+      # - it doesn't publish to scala-pr-validation-snapshots
+      #   (because we need secrets for that and Travis-CI doesn't give PR jobs access to secrets)
+      # it is still a true bootstrap.
       - stage: build
         name: "JDK 8 pr validation"
         if: type = pull_request
