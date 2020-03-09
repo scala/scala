@@ -65,7 +65,7 @@ trait ShellConfig {
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = Properties.coloredOutputEnabled
 
-  val historyFile = s"$userHome/.scala_history"
+  val historyFile = s"$userHome/.scala_history_jline3"
 
   private val info  = bool("scala.repl.info")
   private val debug = bool("scala.repl.debug")

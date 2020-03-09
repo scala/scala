@@ -74,7 +74,6 @@ object Reader {
         .option(AUTO_GROUP, false)
         .option(LIST_PACKED, true)  // TODO
         .option(INSERT_TAB, true)   // At the beginning of the line, insert tab instead of completing
-        .option(HISTORY_TIMESTAMPED, false)         // Allows sharing history file between versions
         .variable(HISTORY_FILE, config.historyFile) // Save history to file
         .variable(SECONDARY_PROMPT_PATTERN, config.encolor(config.continueText)) // Continue prompt
     }
@@ -86,12 +85,23 @@ object Reader {
       val keymap = if (config.viMode) VIINS else EMACS
       reader.getKeyMaps.put(MAIN, reader.getKeyMaps.get(keymap));
     }
+    def secure(p: java.nio.file.Path): Unit = {
+      try scala.reflect.internal.util.OwnerOnlyChmod.chmodFileOrCreateEmpty(p)
+      catch { case scala.util.control.NonFatal(e) =>
+        if (config.isReplDebug) e.printStackTrace()
+        config.replinfo(s"Warning: history file ${p}'s permissions could not be restricted to owner-only.")
+      }
+    }
     def backupHistory(): Unit = {
       import java.nio.file.{Files, Paths, StandardCopyOption}, StandardCopyOption.REPLACE_EXISTING
       val hf = Paths.get(config.historyFile)
       val bk = Paths.get(config.historyFile + ".bk")
       Files.move(/*source =*/ hf, /*target =*/ bk, REPLACE_EXISTING)
+      secure(bk)
     }
+    // always try to restrict permissions on history file,
+    // creating an empty file if none exists.
+    secure(java.nio.file.Paths.get(config.historyFile))
     try history.attach(reader)
     catch {
       case e: IllegalArgumentException if e.getMessage.contains("Bad history file syntax") =>
