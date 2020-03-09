@@ -530,7 +530,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   def runPosTest(): TestState =
-    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Werror with neg test to verify warnings)")
     else runTestCommon()
 
   def runNegTest(): TestState = runInContext {

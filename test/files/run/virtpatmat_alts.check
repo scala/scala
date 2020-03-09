@@ -4,4 +4,5 @@ virtpatmat_alts.scala:5: warning: match may not be exhaustive.
 virtpatmat_alts.scala:9: warning: match may not be exhaustive.
   List(5) match {
       ^
+2 warnings
 OK 5

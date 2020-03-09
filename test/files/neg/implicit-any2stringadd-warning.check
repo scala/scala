@@ -1,6 +1,5 @@
 implicit-any2stringadd-warning.scala:4: warning: method any2stringadd in object Predef is deprecated (since 2.13.0): Implicit injection of + is deprecated. Convert to String to call +
   true + "what"
   ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

@@ -25,3 +25,4 @@ names-defaults-neg-warn.scala:44: warning: a pure expression does nothing in sta
            ^
 4 warnings
 3 errors
+error: No warnings can be incurred under -Werror.

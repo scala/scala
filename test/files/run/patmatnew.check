@@ -19,3 +19,4 @@ patmatnew.scala:673: warning: This catches all Throwables. If this is really int
 patmatnew.scala:492: warning: unreachable code
         case _ if false =>
                         ^
+7 warnings

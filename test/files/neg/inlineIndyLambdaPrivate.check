@@ -11,6 +11,5 @@ The callee A_1::test()Ljava/lang/String; contains the instruction INVOKEDYNAMIC 
 that would cause an IllegalAccessError when inlined into class Test.
   def foo = A_1.test
                 ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

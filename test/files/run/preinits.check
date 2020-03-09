@@ -5,6 +5,7 @@ preinits.scala:3: warning: Implementation restriction: early definitions in trai
 trait C extends { override val x = 2 } with A
                                ^
 warning: 2 deprecations (since 2.13.0); re-run with -deprecation for details
+3 warnings
 A
 B
 2

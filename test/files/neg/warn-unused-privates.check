@@ -70,6 +70,5 @@ warn-unused-privates.scala:237: warning: private class D in class nonprivate ali
 warn-unused-privates.scala:102: warning: local var x in method f2 is never updated: consider using immutable val
     var x = 100 // warn about it being a var
         ^
-error: No warnings can be incurred under -Werror.
 24 warnings
-1 error
+error: No warnings can be incurred under -Werror.

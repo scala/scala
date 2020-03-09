@@ -1,6 +1,5 @@
 virtpatmat_unreach_select.scala:12: warning: unreachable code
     case WARNING.id => // unreachable
                     ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

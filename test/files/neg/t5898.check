@@ -6,6 +6,5 @@ t5898.scala:10: warning: match may not be exhaustive.
 It would fail on the following input: C(_)
   val D(x) = t
              ^
-error: No warnings can be incurred under -Werror.
 2 warnings
-1 error
+error: No warnings can be incurred under -Werror.

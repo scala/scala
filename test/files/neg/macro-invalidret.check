@@ -55,3 +55,4 @@ Macros_Test_2.scala:35: warning: a pure expression does nothing in statement pos
   ^
 2 warnings
 10 errors
+error: No warnings can be incurred under -Werror.

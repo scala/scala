@@ -7,6 +7,5 @@ nested-class-shadowing.scala:13: warning: shadowing a nested class of a parent i
 nested-class-shadowing.scala:17: warning: shadowing a nested class of a parent is deprecated but class Status shadows class Status defined in trait Core; rename the class to something else
   class Status
         ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

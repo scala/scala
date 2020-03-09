@@ -10,3 +10,4 @@ t3235-minimal.scala:7: warning: method round in class RichLong is deprecated (si
 t3235-minimal.scala:8: warning: method round in package math is deprecated (since 2.11.0): This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?
     assert(math.round(1234567890123456789L) == 1234567890123456789L)
                 ^
+4 warnings

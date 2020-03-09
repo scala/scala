@@ -2,6 +2,7 @@ t8196.scala:26: warning: a pure expression does nothing in statement position; m
     form2.g1 // comment this line in order to make the test pass
           ^
 warning: 2 feature warnings; re-run with -feature for details
+2 warnings
 Scope{
   final private val f1: Int
 }

@@ -25,6 +25,5 @@ ordering-migration.scala:7: warning: object DeprecatedDoubleOrdering in object O
   See also https://www.scala-lang.org/api/current/scala/math/Ordering$$Double$.html.
   list.sorted
        ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

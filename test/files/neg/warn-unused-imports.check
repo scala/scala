@@ -53,3 +53,4 @@ warn-unused-imports_2.scala:152: warning: Unused import
               ^
 16 warnings
 1 error
+error: No warnings can be incurred under -Werror.

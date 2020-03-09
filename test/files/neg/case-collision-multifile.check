@@ -2,6 +2,5 @@ two.scala:1: warning: Generated class hotDog differs only in case from HotDog (d
   Such classes will overwrite one another on case-insensitive filesystems.
 class hotDog
       ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

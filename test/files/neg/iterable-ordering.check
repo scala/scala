@@ -1,6 +1,5 @@
 iterable-ordering.scala:2: warning: method Iterable in object Ordering is deprecated (since 2.13.0): Iterables are not guaranteed to have a consistent order; if using a type with a consistent order (e.g. Seq), use its Ordering (found in the Ordering.Implicits object)
   val o = Ordering[Iterable[Int]]
                   ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

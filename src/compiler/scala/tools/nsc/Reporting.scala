@@ -109,16 +109,18 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         case Message.Deprecation(_, msg, site, origin, version) => s"[${warning.category.name} @ $site | origin=$origin | version=${version.filterString}] $msg"
         case Message.Plain(_, msg, category, site) => s"[${category.name} @ $site] $msg"
       }
+      def werror(): Unit = if (settings.fatalWarnings) reporter.werror()
+
       wconf.action(warning) match {
-        case Action.Error => reporter.error(warning.pos, warning.msg)
-        case Action.Warning => reporter.warning(warning.pos, warning.msg)
-        case Action.WarningVerbose => reporter.warning(warning.pos, verbose)
-        case Action.Info => reporter.echo(warning.pos, warning.msg)
-        case Action.InfoVerbose => reporter.echo(warning.pos, verbose)
+        case Action.Error          => reporter.error(warning.pos, warning.msg)
+        case Action.Warning        => reporter.warning(warning.pos, warning.msg) ; werror()
+        case Action.WarningVerbose => reporter.warning(warning.pos, verbose) ; werror()
+        case Action.Info           => reporter.echo(warning.pos, warning.msg)
+        case Action.InfoVerbose    => reporter.echo(warning.pos, verbose)
         case a @ (Action.WarningSummary | Action.InfoSummary) =>
           val m = summaryMap(a, warning.category.summaryCategory)
-          if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
-        case Action.Silent =>
+          if (!m.contains(warning.pos)) { m.addOne((warning.pos, warning)) ; werror() }
+        case Action.Silent         =>
       }
     }
 
@@ -277,9 +279,6 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
                 "\nrecompiling with generated classfiles on the classpath might help.", WarningCategory.Other, site = "")
 
       // todo: migrationWarnings
-
-      if (settings.fatalWarnings && reporter.hasWarnings)
-        reporter.error(NoPosition, "No warnings can be incurred under -Werror.")
     }
   }
 }

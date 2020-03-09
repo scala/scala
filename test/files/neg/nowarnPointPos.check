@@ -43,6 +43,5 @@ nowarnPointPos.scala:24: warning: @nowarn annotation does not suppress any warni
 nowarnPointPos.scala:65: warning: @nowarn annotation does not suppress any warnings
   @nowarn("msg=something else")
    ^
-error: No warnings can be incurred under -Werror.
 14 warnings
-1 error
+error: No warnings can be incurred under -Werror.

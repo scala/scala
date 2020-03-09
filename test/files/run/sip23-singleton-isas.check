@@ -34,3 +34,4 @@ sip23-singleton-isas.scala:35: warning: fruitless type test: every non-null valu
 sip23-singleton-isas.scala:36: warning: fruitless type test: every non-null value will be a Singleton dynamically
   assert(!(null: String).isInstanceOf[Singleton])
                                      ^
+12 warnings

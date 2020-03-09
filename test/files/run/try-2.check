@@ -1,6 +1,7 @@
 try-2.scala:41: warning: a pure expression does nothing in statement position
       10;
       ^
+1 warning
 exception happened
 
 Nothin

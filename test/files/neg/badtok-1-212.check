@@ -15,3 +15,4 @@ badtok-1-212.scala:8: warning: deprecated syntax for character literal (use '\''
 ^
 1 warning
 4 errors
+error: No warnings can be incurred under -Werror.

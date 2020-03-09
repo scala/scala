@@ -1,6 +1,7 @@
 name-based-patmat.scala:73: warning: unreachable code
       case Foo(5, 10)             => 4 // should warn unreachable
                                      ^
+1 warning
 `catdog only` has 11 chars
 `catdog only, no product` has 23 chars
 catdog

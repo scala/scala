@@ -1,4 +1,5 @@
 warning: 3 deprecations (since 2.13.0); re-run with -deprecation for details
+1 warning
 Stream(1, <not computed>)
 List(1, 2, 3)
 Stream(1, <not computed>)

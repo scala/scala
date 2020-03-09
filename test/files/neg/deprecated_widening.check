@@ -61,6 +61,5 @@ deprecated_widening.scala:14: warning: method long2float in object Long is depre
 deprecated_widening.scala:15: warning: method long2double in object Long is deprecated (since 2.13.1): Implicit conversion from Long to Double is dangerous because it loses precision. Write `.toDouble` instead.
     implicitly[Long => Double] // deprecated
               ^
-error: No warnings can be incurred under -Werror.
 21 warnings
-1 error
+error: No warnings can be incurred under -Werror.

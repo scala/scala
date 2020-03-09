@@ -2,6 +2,5 @@ implicit-ambiguous-invalid.scala:7: warning: Invalid implicitAmbiguous message f
 The type parameter B referenced in the message of the @implicitAmbiguous annotation is not defined by method neqAmbig1.
   implicit def neqAmbig1[A] : A =!= A = null
                ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

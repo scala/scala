@@ -7,6 +7,5 @@ t11012.scala:10: warning: constructor B in class B is deprecated: constructor!
 t11012.scala:13: warning: constructor B in class B is deprecated: constructor!
   def foo = new B
             ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

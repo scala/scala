@@ -10,3 +10,4 @@ literals.scala:65: warning: Lowercase el for long is not recommended because it 
 literals.scala:112: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
     check_success("1l.asInstanceOf[Double] == 1.0", 1l.asInstanceOf[Double], 1.0)
                                                      ^
+4 warnings

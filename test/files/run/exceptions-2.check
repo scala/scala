@@ -1,6 +1,7 @@
 exceptions-2.scala:267: warning: a pure expression does nothing in statement position
     try { 1 } catch { case e: java.io.IOException => () }
           ^
+1 warning
 nested1: 
 Innermost finally
 Outermost finally

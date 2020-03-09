@@ -1,6 +1,5 @@
 FooMapView.scala:6: warning: overriding method stringPrefix in trait Iterable is deprecated (since 2.13.0): Override className instead
   override def stringPrefix = "FooMapView"
                ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

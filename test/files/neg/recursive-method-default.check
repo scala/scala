@@ -22,6 +22,5 @@ recursive-method-default.scala:35: warning: Recursive call used default argument
 recursive-method-default.scala:39: warning: Recursive call used default arguments instead of passing current argument values.
     rec7()(0)   // one warning only
         ^
-error: No warnings can be incurred under -Werror.
 8 warnings
-1 error
+error: No warnings can be incurred under -Werror.

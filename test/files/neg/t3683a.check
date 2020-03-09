@@ -2,6 +2,5 @@ t3683a.scala:16: warning: match may not be exhaustive.
 It would fail on the following input: XX()
     w match {
     ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

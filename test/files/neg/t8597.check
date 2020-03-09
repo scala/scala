@@ -16,6 +16,5 @@ t8597.scala:20: warning: abstract type T in type pattern Array[T] is unchecked s
 t8597.scala:28: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
   def warnArrayErasure2   = (null: Any) match {case Some(_: Array[Array[List[String]]]) => } // warn
                                                             ^
-error: No warnings can be incurred under -Werror.
 6 warnings
-1 error
+error: No warnings can be incurred under -Werror.

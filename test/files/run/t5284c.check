@@ -1,4 +1,5 @@
 t5284c.scala:29: warning: type W is unused or used in non-specializable positions.
   def bar[@specialized(Int) W <: T](ws: List[W]) = len(ws)
       ^
+1 warning
 3

@@ -1,3 +1,4 @@
 t9387.scala:12: warning: a pure expression does nothing in statement position
   A[Unit](G.v(() => ())) // Was VerifyError
                  ^
+1 warning

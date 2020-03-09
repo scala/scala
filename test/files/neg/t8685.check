@@ -43,6 +43,5 @@ t8685.scala:54: warning: object F in object Extra is deprecated (since now): Ext
 t8685.scala:55: warning: class K in object J is deprecated (since now): Inner K is depr
   def l = new J.K(42)
                 ^
-error: No warnings can be incurred under -Werror.
 15 warnings
-1 error
+error: No warnings can be incurred under -Werror.

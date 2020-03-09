@@ -4,3 +4,4 @@ unchecked-impossible.scala:7: error: pattern type is incompatible with expected 
     case Seq(x) =>
             ^
 1 error
+error: No warnings can be incurred under -Werror.

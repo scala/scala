@@ -1,6 +1,5 @@
 t8731.scala:12: warning: could not emit switch for @switch annotated match
   def g(x: Int) = (x: @annotation.switch) match {
                        ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

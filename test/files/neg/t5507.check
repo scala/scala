@@ -1,6 +1,5 @@
 t5507.scala:5: warning: Fruitless specialization of Unit in parameter position. Consider using `@specialized(Specializable.Arg)` instead.
 final class C[@specialized A, @specialized B](a: A, b: B)
                                              ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

@@ -28,3 +28,4 @@ iterableonce-deprecations.scala:19: warning: method toVector in class IterableOn
 iterableonce-deprecations.scala:23: warning: method toMap in class IterableOnceExtensionMethods is deprecated (since 2.13.0): Use .iterator.to(Map) instead
     ti.toMap
        ^
+10 warnings

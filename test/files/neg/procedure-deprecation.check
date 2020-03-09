@@ -13,6 +13,5 @@ procedure-deprecation.scala:7: warning: procedure syntax is deprecated: instead,
 procedure-deprecation.scala:8: warning: procedure syntax is deprecated for constructors: add `=`, as in method definition
   def this(i: Int) { this() } // Don't complain here! or maybe do complain
                   ^
-error: No warnings can be incurred under -Werror.
 5 warnings
-1 error
+error: No warnings can be incurred under -Werror.

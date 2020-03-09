@@ -16,6 +16,7 @@ t3220-213.scala:46: warning: Unicode escapes in raw interpolations are deprecate
 t3220-213.scala:47: warning: Unicode escapes in raw interpolations are deprecated. Use literal characters instead.
       "tab unicode escape in triple quoted raw interpolator" -> raw"""tab\u0009tab"""
                                                                          ^
+6 warnings
 supported
 literals that result in tab	tab:
 literal tab in single quoted string

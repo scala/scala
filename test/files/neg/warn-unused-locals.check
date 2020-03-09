@@ -19,6 +19,5 @@ warn-unused-locals.scala:33: warning: local type OtherThing is never used
 warn-unused-locals.scala:18: warning: local var x in method f2 is never updated: consider using immutable val
     var x = 100 // warn about it being a var
         ^
-error: No warnings can be incurred under -Werror.
 7 warnings
-1 error
+error: No warnings can be incurred under -Werror.

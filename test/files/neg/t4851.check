@@ -46,6 +46,5 @@ S.scala:16: warning: adapted the argument list to the expected 3-tuple: add addi
  after adaptation: Test.anyId((1, 2, 3): (Int, Int, Int))
   val w1 = anyId(1, 2 ,3)
                 ^
-error: No warnings can be incurred under -Werror.
 8 warnings
-1 error
+error: No warnings can be incurred under -Werror.

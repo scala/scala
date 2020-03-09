@@ -7,6 +7,5 @@ t7171b.scala:10: warning: The outer reference in this type test cannot be checke
 t7171b.scala:15: warning: The outer reference in this type test cannot be checked at run time.
     case _: A => true; case _ => false
           ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

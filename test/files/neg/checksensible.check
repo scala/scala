@@ -101,9 +101,8 @@ checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=` will always yield true
     while ((c = in.read) != -1)
                          ^
-error: No warnings can be incurred under -Werror.
 34 warnings
-1 error
+error: No warnings can be incurred under -Werror.
 #partest !java8
 checksensible.scala:54: warning: symbol literal is deprecated; use Symbol("sym") instead
   (1 != 'sym)
@@ -219,6 +218,5 @@ checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=` will always yield true
     while ((c = in.read) != -1)
                          ^
-error: No warnings can be incurred under -Werror.
 38 warnings
-1 error
+error: No warnings can be incurred under -Werror.

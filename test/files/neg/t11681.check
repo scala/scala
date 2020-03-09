@@ -12,3 +12,4 @@ t11681.scala:17: warning: private object Detest in package object example is nev
                  ^
 2 warnings
 2 errors
+error: No warnings can be incurred under -Werror.

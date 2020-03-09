@@ -11,3 +11,4 @@ t5352.scala:16: error: method f in class Bar1 cannot be accessed as a member of 
   (new Bar1).f
              ^
 2 errors
+error: No warnings can be incurred under -Werror.

@@ -1,6 +1,7 @@
 Course-2002-01.scala:41: warning: method loop in object M0 does nothing other than call itself recursively
   def loop: Int = loop;
                   ^
+1 warning
 232
 667
 11

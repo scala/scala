@@ -1,3 +1,4 @@
+1 warning
 sum = 12
 [OK] Caught UFE: Uninitialized field: checked.scala: 44
 2

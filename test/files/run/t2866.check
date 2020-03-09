@@ -1,3 +1,4 @@
 t2866.scala:30: warning: imported `one` is permanently hidden by definition of value one
     import A.one // warning: imported `one` is permanently hidden by definition of value one.
              ^
+1 warning

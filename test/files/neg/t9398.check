@@ -2,6 +2,5 @@ match.scala:3: warning: match may not be exhaustive.
 It would fail on the following input: CC(B2)
   def test(c: CC): Unit = c match {
                           ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

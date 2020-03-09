@@ -6,6 +6,7 @@ lazy-exprs.scala:62: warning: match may not be exhaustive.
 It would fail on the following input: Some((x: String forSome x not in LazyField))
     t match {
     ^
+2 warnings
 forced <z1>
 lazy val in scrutinee: ok
 forced <z1>

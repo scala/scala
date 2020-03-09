@@ -7,4 +7,5 @@ identifierCase.scala:23: warning: unreachable code due to variable pattern 'ªpp
 identifierCase.scala:23: warning: unreachable code
       case ʰelper        => "unreachable"
                             ^
+3 warnings
 not so constant

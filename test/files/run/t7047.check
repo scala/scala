@@ -1,3 +1,4 @@
 Test_2.scala:2: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   Macros.foo
          ^
+1 warning

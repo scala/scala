@@ -88,3 +88,4 @@ patmat-behavior.scala:87: warning: fruitless type test: a value of type s.C21[A]
 patmat-behavior.scala:87: warning: fruitless type test: a value of type s.C21[A] cannot also be a s.C11[A]
     def gd6[A](x: C21[A]) = x match { case G00() => ??? ; case G10(x) => x ; case G20(x, y) => x ; case G01(xs @ _*) => xs.head ; case G11(x, ys @ _*) => x ; case G21(x, y, zs @ _*) => x }
                                                                                                                                           ^
+30 warnings

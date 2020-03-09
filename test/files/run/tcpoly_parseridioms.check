@@ -18,4 +18,5 @@ tcpoly_parseridioms.scala:39: warning: match may not be exhaustive.
 It would fail on the following input: ParseResult()
     def apply(in: Input): ParseResult[U] = a(in) match {
                                             ^
+5 warnings
 Success(List(),Plus(1,2))

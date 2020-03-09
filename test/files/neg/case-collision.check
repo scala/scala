@@ -30,6 +30,5 @@ case-collision.scala:29: warning: Generated class foo.O$a_$bang$ differs only in
   Such classes will overwrite one another on case-insensitive filesystems.
     object bang {
            ^
-error: No warnings can be incurred under -Werror.
 8 warnings
-1 error
+error: No warnings can be incurred under -Werror.

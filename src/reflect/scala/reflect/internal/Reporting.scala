@@ -90,6 +90,9 @@ abstract class Reporter {
   private[this] var _errorCount = 0
   private[this] var _warningCount = 0
 
+  private[this] var _werror = false
+  def werror(): Unit = _werror = true
+
   // sbt source compatibility
   final type Severity = Reporter.Severity
   @uncheckedStable final def INFO: Severity    = Reporter.INFO
@@ -139,7 +142,7 @@ abstract class Reporter {
   def flush(): Unit = ()
 
   /** Finish reporting: print summaries, release resources. */
-  def finish(): Unit = ()
+  def finish(): Unit = if (_werror) error(util.NoPosition, "No warnings can be incurred under -Werror.")
 
   /** After reporting, offer advice on getting more details.
     * Does not access `this`, but not static because it's overridden in ReplReporterImpl.

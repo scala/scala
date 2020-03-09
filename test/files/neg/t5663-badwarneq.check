@@ -37,6 +37,5 @@ t5663-badwarneq.scala:83: warning: comparing values of types ValueClass3 and Val
 t5663-badwarneq.scala:84: warning: comparing values of types ValueClass3 and Int using `==` will always yield false
     println(ValueClass3(5) == 5) // bad
                            ^
-error: No warnings can be incurred under -Werror.
 13 warnings
-1 error
+error: No warnings can be incurred under -Werror.

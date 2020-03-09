@@ -1,6 +1,7 @@
 MeterCaseClass.scala:71: warning: comparing values of types a.Meter and Int using `==` will always yield false
   println("x == 1: "+(x == 1))
                         ^
+1 warning
 2.0
 Meter(4.0)
 false

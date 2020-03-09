@@ -7,6 +7,5 @@ t10790.scala:10: warning: private class C in class X is never used
 t10790.scala:8: warning: parameter value x in method control is never used
   def control(x: Int) = 42         // warn to verify control
               ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

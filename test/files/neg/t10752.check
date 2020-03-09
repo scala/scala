@@ -4,6 +4,5 @@ Test_2.scala:2: warning: class DeprecatedClass in package p1 is deprecated: see 
 Test_2.scala:3: warning: method foo in class DeprecatedMethod is deprecated: see corresponding Javadoc for more information.
   def useM = p1.DeprecatedMethod.foo
                                  ^
-error: No warnings can be incurred under -Werror.
 2 warnings
-1 error
+error: No warnings can be incurred under -Werror.

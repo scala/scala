@@ -4,6 +4,5 @@ t6162-overriding.scala:16: warning: overriding method bar in class Bar is deprec
 t6162-overriding.scala:17: warning: overriding method baz in class Bar is deprecated
   override def baz = 43
                ^
-error: No warnings can be incurred under -Werror.
 2 warnings
-1 error
+error: No warnings can be incurred under -Werror.

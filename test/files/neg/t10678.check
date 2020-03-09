@@ -9,3 +9,4 @@ trait U <: T
         ^
 1 warning
 2 errors
+error: No warnings can be incurred under -Werror.

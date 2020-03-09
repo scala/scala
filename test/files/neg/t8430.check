@@ -22,6 +22,5 @@ t8430.scala:22: warning: match may not be exhaustive.
 It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit), LetL(UnitLit), LetP
   val f5 = (tree: Tree) => tree match {case LetL(CharLit) => ??? }
                            ^
-error: No warnings can be incurred under -Werror.
 6 warnings
-1 error
+error: No warnings can be incurred under -Werror.

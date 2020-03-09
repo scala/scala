@@ -13,6 +13,5 @@ warn-inferred-any.scala:27: warning: a type was inferred to be `Any`; this may i
 warn-inferred-any.scala:37: warning: a type was inferred to be `Object`; this may indicate a programming error.
   cs.contains(new C2)             // warns
      ^
-error: No warnings can be incurred under -Werror.
 5 warnings
-1 error
+error: No warnings can be incurred under -Werror.

@@ -5,6 +5,7 @@ names-defaults.scala:269: warning: multiline expressions might require enclosing
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
 warning: 4 deprecations; re-run with -deprecation for details
+3 warnings
 1: @
 get: $
 get: 2

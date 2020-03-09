@@ -22,6 +22,7 @@ misc.scala:62: warning: a pure expression does nothing in statement position; mu
 misc.scala:74: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     1 < 2;
       ^
+8 warnings
 ### Hello
 ### 17
 ### Bye

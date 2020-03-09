@@ -1,6 +1,7 @@
 Meter.scala:72: warning: a.Meter and Int are unrelated: they will never compare equal
   println("x == 1: "+(x == 1))
                         ^
+1 warning
 2.0
 4.0m
 false

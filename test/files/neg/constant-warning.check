@@ -1,6 +1,5 @@
 constant-warning.scala:3: warning: Evaluation of a constant expression results in an arithmetic error: / by zero
   val fails = 1 + 2 / (3 - 2 - 1)
                     ^
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

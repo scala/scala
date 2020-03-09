@@ -13,6 +13,5 @@ t6048.scala:16: warning: unreachable code due to variable pattern on line 15
 t6048.scala:16: warning: unreachable code
     case 5 if true  => x // unreachable
                        ^
-error: No warnings can be incurred under -Werror.
 5 warnings
-1 error
+error: No warnings can be incurred under -Werror.

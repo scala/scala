@@ -10,3 +10,4 @@ Classes_1.scala:130: warning: a pure expression does nothing in statement positi
 Classes_1.scala:129: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   (s: String) => {
               ^
+4 warnings

@@ -1,4 +1,5 @@
 virtpatmat_nested_lists.scala:7: warning: match may not be exhaustive.
   List(List(1), List(2)) match { case x :: (y :: Nil) :: Nil => println(y) }
       ^
+1 warning
 2

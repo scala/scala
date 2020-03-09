@@ -4,6 +4,7 @@ patmat_unapp_abstype-new.scala:21: warning: abstract type pattern TypesUser.this
 patmat_unapp_abstype-new.scala:53: warning: abstract type pattern Intermed.this.Foo is unchecked since it is eliminated by erasure
      case Foo(x) => println("Foo")
              ^
+2 warnings
 TypeRef
 MethodType
 Bar

@@ -10,6 +10,5 @@ unit-returns-value.scala:24: warning: a pure expression does nothing in statemen
 unit-returns-value.scala:25: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     i2 // warn
     ^
-error: No warnings can be incurred under -Werror.
 4 warnings
-1 error
+error: No warnings can be incurred under -Werror.

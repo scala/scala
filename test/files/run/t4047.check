@@ -10,6 +10,7 @@ t4047.scala:26: warning: a pure expression does nothing in statement position; m
 t4047.scala:27: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   b.foo
     ^
+4 warnings
 Unit: called A.foo
 Unit: called B.foo
 Unit: called C.foo

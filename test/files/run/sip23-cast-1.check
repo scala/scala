@@ -34,3 +34,4 @@ sip23-cast-1.scala:39: warning: a pure expression does nothing in statement posi
 sip23-cast-1.scala:40: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   'f'.asInstanceOf['b']
                   ^
+12 warnings

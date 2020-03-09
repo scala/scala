@@ -7,6 +7,5 @@ unchecked-suppress.scala:7: warning: non-variable type argument String in type p
 unchecked-suppress.scala:9: warning: non-variable type argument Int in type pattern (Int, Int) => Int is unchecked since it is eliminated by erasure
     case f: ((Int, Int) => Int)                    =>           // unchecked
                         ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

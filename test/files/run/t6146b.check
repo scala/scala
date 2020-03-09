@@ -2,6 +2,7 @@ t6146b.scala:18: warning: match may not be exhaustive.
 It would fail on the following inputs: S2(), S3()
   def foo(f: F[Int]) = f match { case X.S1 => }
                        ^
+1 warning
 
 scala> :power
 Power mode enabled. :phase is at typer.

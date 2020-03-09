@@ -1,3 +1,4 @@
 warning: 1 deprecation (since 2.10.0); re-run with -deprecation for details
+1 warning
 scala.collection.immutable.List[<?>]
 scala.collection.immutable.List

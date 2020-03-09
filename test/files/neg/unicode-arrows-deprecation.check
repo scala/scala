@@ -10,6 +10,5 @@ unicode-arrows-deprecation.scala:6: warning: The unicode arrow `←` is deprecat
 unicode-arrows-deprecation.scala:8: warning: method → in class ArrowAssoc is deprecated (since 2.13.0): Use `->` instead. If you still wish to display it as one character, consider using a font with programming ligatures such as Fira Code.
   val c: (Int, Int) = 1 → 1
                         ^
-error: No warnings can be incurred under -Werror.
 4 warnings
-1 error
+error: No warnings can be incurred under -Werror.

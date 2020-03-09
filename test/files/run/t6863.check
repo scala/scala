@@ -10,3 +10,4 @@ t6863.scala:49: warning: comparing values of types Unit and Unit using `==` will
 t6863.scala:62: warning: comparing values of types Unit and Unit using `==` will always yield true
     assert({ () => x }.apply == u)
                              ^
+4 warnings

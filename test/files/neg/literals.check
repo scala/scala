@@ -57,3 +57,4 @@ literals.scala:52: warning: Lowercase el for long is not recommended because it 
                  ^
 8 warnings
 11 errors
+error: No warnings can be incurred under -Werror.

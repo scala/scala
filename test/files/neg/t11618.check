@@ -31,6 +31,5 @@ t11618.scala:23: warning: Pattern definition introduces Unit-valued member of C;
 t11618.scala:24: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
   implicit val Some(_) = Option(42)
                    ^
-error: No warnings can be incurred under -Werror.
 11 warnings
-1 error
+error: No warnings can be incurred under -Werror.

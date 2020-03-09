@@ -10,6 +10,5 @@ t7285.scala:53: warning: match may not be exhaustive.
 It would fail on the following input: (Up, Down)
     (d1, d2) match {
     ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

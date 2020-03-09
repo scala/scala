@@ -4,6 +4,5 @@ nonlocal-warning.scala:6: warning: This catches all Throwables. If this is reall
 nonlocal-warning.scala:4: warning: catch block may intercept non-local return from method foo
   def foo(l: List[Int]): Int = {
                                ^
-error: No warnings can be incurred under -Werror.
 2 warnings
-1 error
+error: No warnings can be incurred under -Werror.

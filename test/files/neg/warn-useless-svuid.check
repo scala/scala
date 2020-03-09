@@ -13,6 +13,5 @@ trait U extends scala.Serializable
 warn-useless-svuid.scala:25: warning: @SerialVersionUID has no effect on traits
 trait V extends java.io.Serializable
       ^
-error: No warnings can be incurred under -Werror.
 5 warnings
-1 error
+error: No warnings can be incurred under -Werror.

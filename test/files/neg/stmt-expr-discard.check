@@ -16,6 +16,5 @@ stmt-expr-discard.scala:5: warning: a pure expression does nothing in statement 
 stmt-expr-discard.scala:6: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
     - 4
     ^
-error: No warnings can be incurred under -Werror.
 4 warnings
-1 error
+error: No warnings can be incurred under -Werror.

@@ -7,6 +7,5 @@ object SubT extends T
 usage.scala:8: warning: inheritance from trait S in package t6126 is deprecated
   new S {
       ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

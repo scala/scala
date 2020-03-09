@@ -19,6 +19,5 @@ t5691.scala:22: warning: type parameter List defined in type M shadows type List
 t5691.scala:23: warning: type parameter List defined in type M shadows type List defined in package object scala. You may want to rename your type parameter, or possibly remove it.
   def foo[N[M[List[_]]]] = ???
               ^
-error: No warnings can be incurred under -Werror.
 7 warnings
-1 error
+error: No warnings can be incurred under -Werror.

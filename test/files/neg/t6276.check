@@ -16,6 +16,5 @@ t6276.scala:15: warning: method a does nothing other than call itself recursivel
 t6276.scala:24: warning: method a does nothing other than call itself recursively
       def a = a // warn
               ^
-error: No warnings can be incurred under -Werror.
 6 warnings
-1 error
+error: No warnings can be incurred under -Werror.

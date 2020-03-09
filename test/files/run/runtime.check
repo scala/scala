@@ -4,6 +4,7 @@ runtime.scala:141: warning: comparing values of types Null and Null using `eq` w
 runtime.scala:141: warning: comparing values of types Null and Null using `ne` will always yield false
     check(true , null eq null, null ne null);
                                     ^
+2 warnings
 <<< Test0
 [false,true]
 [0,1,2]

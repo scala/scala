@@ -1,4 +1,3 @@
 warning: 1 feature warning; re-run with -feature for details
-error: No warnings can be incurred under -Werror.
 1 warning
-1 error
+error: No warnings can be incurred under -Werror.

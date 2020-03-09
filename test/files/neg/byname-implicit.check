@@ -10,6 +10,5 @@ byname-implicit.scala:68: warning: Block result was adapted via implicit convers
 byname-implicit.scala:84: warning: Implicits applied to block expressions after overload resolution may have unexpected semantics
   Foo.bar { println("barring"); 0 }  // warn
           ^
-error: No warnings can be incurred under -Werror.
 4 warnings
-1 error
+error: No warnings can be incurred under -Werror.

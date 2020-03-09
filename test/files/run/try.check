@@ -1,6 +1,7 @@
 try.scala:65: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
       1+1;
        ^
+1 warning
 1 + 1 = 2
 1 + 1 = 2
 1 + 1 = 2

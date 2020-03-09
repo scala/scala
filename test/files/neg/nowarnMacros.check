@@ -7,6 +7,5 @@ Test_2.scala:19: warning: a pure expression does nothing in statement position; 
 Test_2.scala:28: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     1 // warn
     ^
-error: No warnings can be incurred under -Werror.
 3 warnings
-1 error
+error: No warnings can be incurred under -Werror.

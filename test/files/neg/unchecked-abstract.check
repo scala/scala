@@ -34,6 +34,5 @@ unchecked-abstract.scala:45: warning: abstract type L in type Covariant[M.this.L
 unchecked-abstract.scala:50: warning: abstract type L in type Covariant[M.this.L] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Covariant[L]])
                                        ^
-error: No warnings can be incurred under -Werror.
 12 warnings
-1 error
+error: No warnings can be incurred under -Werror.

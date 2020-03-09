@@ -4,4 +4,5 @@ t8610.scala:8: warning: adapted the argument list to the expected 2-tuple: add a
  after adaptation: X.f((3, 4): (Int, Int))
   def g = f(3, 4)       // adapted
            ^
+1 warning
 Hi, $name

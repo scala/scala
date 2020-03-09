@@ -69,3 +69,4 @@ macro-deprecate-idents.scala:57: warning: procedure syntax is deprecated: instea
                ^
 1 warning
 22 errors
+error: No warnings can be incurred under -Werror.

@@ -13,6 +13,5 @@ t6217c.scala:20: warning: _root_ in root position of qualifier refers to the roo
 t6217c.scala:38: warning: _root_ in root position in package definition does not refer to the root package, but to package _root_ in package a, which is in scope
   package _root_.p {
           ^
-error: No warnings can be incurred under -Werror.
 5 warnings
-1 error
+error: No warnings can be incurred under -Werror.

@@ -1,4 +1,5 @@
 warning: 12 deprecations (since 2.13.0); re-run with -deprecation for details
+1 warning
 java.lang.IndexOutOfBoundsException: -1 is out of bounds (min 0, max 4)
 java.lang.IndexOutOfBoundsException: -2 is out of bounds (min 0, max 4)
 java.lang.IndexOutOfBoundsException: -3 is out of bounds (min 0, max 4)
