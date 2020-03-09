@@ -125,6 +125,35 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
     private[this] def readResolve(): AnyRef =
       new TreeMap(tree)(ordering)
   }
+
+  private class TreeMapBuilder[A, B](implicit val ordering: Ordering[A]) extends Builder[(A, B), TreeMap[A, B]] {
+    type Tree = RB.Tree[A, B]
+    private [this] var tree:Tree = null
+    private [this] val helper = new RB.MapHelper[A, B]()
+
+    def +=(elem: (A, B)): this.type = {
+      tree = helper.addMutable(tree, elem._1, elem._2)
+      this
+    }
+
+    override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
+      xs match {
+        case ts: TreeMap[A, B] if ts.ordering eq ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = RB.union(tree, ts.tree0)
+        case _ =>
+          super.++=(xs)
+      }
+      this
+    }
+
+    override def clear(): Unit = {
+      tree = null
+    }
+
+    override def result(): TreeMap[A, B] = new TreeMap[A, B](helper.beforePublish(tree))
+  }
+
 }
 
 /** This class implements immutable maps using a tree.
@@ -155,7 +184,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
      with HasForeachEntry[A, B] {
   // Manually use this from inner classes to avoid having scalac rename `tree` to an expanded name which is not
   // serialization compatible.
-  private def tree0: RB.Tree[A, B] = tree
+  private[immutable] def tree0: RB.Tree[A, B] = tree
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]

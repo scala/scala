@@ -35,15 +35,21 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   private class TreeSetBuilder[A](implicit val ordering: Ordering[A]) extends Builder[A, TreeSet[A]] {
     type Tree = RB.Tree[A, Any]
     private [this] var tree:Tree = null
-    override def +=(elem: A): TreeSetBuilder.this.type = {
-      tree = RB.update(tree, elem, (), overwrite = false)
+    private [this] val helper = new RB.SetHelper[A]()
+
+    override def +=(elem: A): this.type = {
+      tree = helper.addMutable(tree, elem)
       this
     }
 
     override def ++=(xs: TraversableOnce[A]): this.type = {
       xs match {
         case ts: TreeSet[A] if ts.ordering == ordering =>
-          tree = RB.union(tree, ts.tree)
+          if (tree eq null) tree = ts.tree
+          else tree = RB.union(tree, ts.tree)
+        case ts: TreeMap[A, _] if ts.ordering == ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = RB.union(tree, ts.tree0)
         case _ =>
           super.++=(xs)
       }
@@ -54,7 +60,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
       tree = null
     }
 
-    override def result(): TreeSet[A] = new TreeSet(tree)(ordering)
+    override def result(): TreeSet[A] = new TreeSet[A](helper.beforePublish(tree))
   }
   private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") != "false"
 

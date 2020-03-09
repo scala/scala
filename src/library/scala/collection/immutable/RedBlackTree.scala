@@ -14,12 +14,8 @@ package scala
 package collection
 package immutable
 
-import collection.Iterator
-
+import scala.annotation.meta.{getter, setter}
 import scala.annotation.tailrec
-import scala.annotation.meta.getter
-
-import java.lang.{Integer, String}
 
 /** An object containing the RedBlack tree implementation used by for `TreeMaps` and `TreeSets`.
  *
@@ -44,6 +40,143 @@ private[collection] object NewRedBlackTree {
     if (cmp < 0) lookup(tree.left, x)
     else if (cmp > 0) lookup(tree.right, x)
     else tree
+  }
+  private[immutable] abstract class Helper[A] {
+    def beforePublish[B](tree: Tree[A, B]): Tree[A, B] = {
+      if (tree eq null) tree
+      else {
+        val res = tree.mutableBlack.makeImmutable
+        VM.releaseFence()
+        res
+      }
+    }
+    /** Create a new balanced tree where `newLeft` replaces `tree.left`.
+     * tree and newLeft are never null */
+    protected[this] def mutableBalanceLeft[A, B, B1 >: B](tree: Tree[A, B], newLeft: Tree[A, B1]): Tree[A, B1] = {
+      // Parameter trees
+      //            tree              |                   newLeft
+      //     --      KV         R     |    nl.L            nl.KV      nl.R
+      //                              |                     nl.R.L   nl.R.KV  nl.R.R
+      if (tree.left eq newLeft) tree
+      else if (newLeft.isRed) {
+        val newLeft_left = newLeft.left
+        val newLeft_right = newLeft.right
+        if (isRedTree(newLeft_left)) {
+          //                      RED
+          //    black(nl.L)      nl.KV      black
+          //                          nl.R    KV   R
+          val resultLeft = newLeft_left.mutableBlack
+          val resultRight = tree.mutableBlackWithLeft(newLeft_right)
+
+          newLeft.mutableWithLeftRight(resultLeft, resultRight)
+        } else if (isRedTree(newLeft_right)) {
+          //                              RED
+          //           black            nl.R.KV      black
+          //    nl.L   nl.KV  nl.R.L           nl.R.R  KV   R
+
+          val newLeft_right_right = newLeft_right.right
+
+          val resultLeft = newLeft.mutableBlackWithRight(newLeft_right.left)
+          val resultRight = tree.mutableBlackWithLeft(newLeft_right_right)
+
+          newLeft_right.mutableWithLeftRight(resultLeft, resultRight)
+        } else {
+          //               tree
+          //    newLeft      KV         R
+          tree.mutableWithLeft(newLeft)
+        }
+      } else {
+        //                tree
+        //     newLeft      KV         R
+        tree.mutableWithLeft(newLeft)
+      }
+    }
+    /** Create a new balanced tree where `newRight` replaces `tree.right`.
+     * tree and newRight are never null */
+    protected[this] def mutableBalanceRight[A, B, B1 >: B](tree: Tree[A, B], newRight: Tree[A, B1]): Tree[A, B1] = {
+      // Parameter trees
+      //            tree                |                             newRight
+      //      L      KV         --      |              nr.L            nr.KV      nr.R
+      //                                |     nr.L.L   nr.L.KV  nr.L.R
+      if (tree.right eq newRight) tree
+      else if (newRight.isRed) {
+        val newRight_left = newRight.left
+        if (isRedTree(newRight_left)) {
+          //                                RED
+          //              black           nr.L.KV          black
+          //     L         KV   nr.L.L             nr.L.R  nr.KV    nr.R
+
+          val resultLeft = tree.mutableBlackWithRight(newRight_left.left)
+          val resultRight = newRight.mutableBlackWithLeft(newRight_left.right)
+
+          newRight_left.mutableWithLeftRight(resultLeft, resultRight)
+
+        } else {
+          val newRight_right = newRight.right
+          if (isRedTree(newRight_right)) {
+            //                                RED
+            //              black           nr.KV            black(nr.R)
+            //     L         KV   nr.L
+
+            val resultLeft = tree.mutableBlackWithRight(newRight_left)
+            val resultRight = newRight_right.mutableBlack
+
+            newRight.mutableWithLeftRight(resultLeft, resultRight)
+          } else {
+            //             tree
+            //     L        KV         newRight
+            tree.mutableWithRight(newRight)
+          }
+        }
+      } else {
+        //               tree
+        //       L        KV         newRight
+        tree.mutableWithRight(newRight)
+      }
+    }
+  }
+  private[immutable] class SetHelper[A](implicit ordering: Ordering[A]) extends Helper[A] {
+    def addMutable(tree: Tree[A, Any], k: A): Tree[A, Any] = {
+      mutableUpd(tree, k)
+    }
+
+    protected[this] def mutableUpd(tree: Tree[A, Any], k: A): Tree[A, Any] =
+      if (tree eq null) {
+        mutableRedTree(k, (), null, null)
+      } else if (k.asInstanceOf[AnyRef] eq tree.key.asInstanceOf[AnyRef]) {
+        tree
+      } else {
+        val cmp = ordering.compare(k, tree.key)
+        if (cmp < 0)
+          mutableBalanceLeft(tree, mutableUpd(tree.left, k))
+        else if (cmp > 0)
+          mutableBalanceRight(tree, mutableUpd(tree.right, k))
+        else tree
+      }
+  }
+  private[immutable] class MapHelper[A, B](implicit ordering: Ordering[A]) extends Helper[A] {
+
+    def addMutable(tree: Tree[A, B], k: A, v: B): Tree[A, B] = {
+      mutableUpd(tree, k, v)
+    }
+
+    protected[this] def mutableUpd[B1 >: B](tree: Tree[A, B], k: A, v: B1): Tree[A, B1] =
+      if (tree eq null) {
+        mutableRedTree(k, v, null, null)
+      } else if (k.asInstanceOf[AnyRef] eq tree.key.asInstanceOf[AnyRef]) {
+        if (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef])
+          tree.mutableWithKV(tree.key, v)
+        else tree
+      } else {
+        val cmp = ordering.compare(k, tree.key)
+        if (cmp < 0)
+          mutableBalanceLeft(tree, mutableUpd(tree.left, k, v))
+        else if (cmp > 0)
+          mutableBalanceRight(tree, mutableUpd(tree.right, k, v))
+        else if (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef])
+          tree.mutableWithKV(tree.key, v)
+        else tree
+      }
   }
 
   def count(tree: Tree[_, _]) = if (tree eq null) 0 else tree.count
@@ -176,8 +309,8 @@ private[collection] object NewRedBlackTree {
 
   def isBlack(tree: Tree[_, _]) = (tree eq null) || isBlackTree(tree)
 
-  @`inline` private[this] def isRedTree(tree: Tree[_, _]) = tree.isInstanceOf[RedTree[_, _]]
-  @`inline` private[this] def isBlackTree(tree: Tree[_, _]) = tree.isInstanceOf[BlackTree[_, _]]
+  @`inline` private[this] def isRedTree(tree: Tree[_, _]) = (tree ne null) && tree.isRed
+  @`inline` private[this] def isBlackTree(tree: Tree[_, _]) = (tree ne null) && tree.isBlack
 
   private[this] def blacken[A, B](t: Tree[A, B]): Tree[A, B] = if (t eq null) null else t.black
 
@@ -231,7 +364,6 @@ private[collection] object NewRedBlackTree {
       }
     }
   }
-
   /** Create a new balanced tree where `newRight` replaces `tree.right`. */
   private[this] def balanceRight[A, B1](tree: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = {
     // Parameter trees
@@ -275,6 +407,10 @@ private[collection] object NewRedBlackTree {
 
   private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
+  } else if (k.asInstanceOf[AnyRef] eq tree.key.asInstanceOf[AnyRef]) {
+    if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]))
+      mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
+    else tree
   } else {
     val cmp = ordering.compare(k, tree.key)
     if (cmp < 0)
@@ -372,41 +508,135 @@ private[collection] object NewRedBlackTree {
    *
    * An alternative is to implement the these classes using plain old Java code...
    */
-  sealed abstract class Tree[A, +B](
-                                     @(`inline` @getter) final val key: A,
-                                     @(`inline` @getter) final val value: B,
-                                     @(`inline` @getter) final val left: Tree[A, B],
-                                     @(`inline` @getter) final val right: Tree[A, B]) extends Serializable
+  final class Tree[A, +B](
+                           @(inline @getter @setter)     private var _key: A,
+                           @(inline @getter @setter)     private var _value: AnyRef,
+                           @(inline @getter @setter)     private var _left: Tree[A, _],
+                           @(inline @getter @setter)     private var _right: Tree[A, _],
+                           @(inline @getter @setter)     private var _count: Int)
   {
-    @(`inline` @getter) final val count: Int = 1 + NewRedBlackTree.count(left) + NewRedBlackTree.count(right)
-    def black: Tree[A, B]
-    def red: Tree[A, B]
-  }
-  final class RedTree[A, +B](key: A,
-                             value: B,
-                             left: Tree[A, B],
-                             right: Tree[A, B]) extends Tree[A, B](key, value, left, right) {
-    override def black: Tree[A, B] = BlackTree(key, value, left, right)
-    override def red: Tree[A, B] = this
-    override def toString: String = "RedTree(" + key + ", " + value + ", " + left + ", " + right + ")"
-  }
-  final class BlackTree[A, +B](key: A,
-                               value: B,
-                               left: Tree[A, B],
-                               right: Tree[A, B]) extends Tree[A, B](key, value, left, right) {
-    override def black: Tree[A, B] = this
-    override def red: Tree[A, B] = RedTree(key, value, left, right)
-    override def toString: String = "BlackTree(" + key + ", " + value + ", " + left + ", " + right + ")"
-  }
+    // read only APIs
+    @`inline` final def count = _count & 0x7FFFFFFF
+    @`inline` final def key = _key
+    @`inline` final def value = _value.asInstanceOf[B]
+    @`inline` final def left = _left.asInstanceOf[Tree[A, B]]
+    @`inline` final def right = _right.asInstanceOf[Tree[A, B]]
+    @`inline` final def isBlack = _count < 0
+    @`inline` final def isRed = _count >= 0
 
-  object RedTree {
-    @`inline` def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new RedTree(key, value, left, right)
-    def unapply[A, B](t: RedTree[A, B]) = Some((t.key, t.value, t.left, t.right))
+    override def toString: String = s"${if(isRed) "RedTree" else "BlackTree"}($key, $value, $left, $right)"
+
+    @`inline` private def initialCount = _count & 0x80000000
+    @`inline` def initialBlackCount = 0x80000000
+    @`inline` def initialRedCount = 0
+
+    //mutable APIs
+    @`inline` def mutable = (_count & 0x7FFFFFFF) == 0
+    def makeImmutable: Tree[A, B] = {
+      def makeImmutableImpl() = {
+        if (mutable) {
+          var size = 1
+          if (_left ne null) {
+            _left.makeImmutable
+            size += _left.count
+          }
+          if (_right ne null) {
+            _right.makeImmutable
+            size += _right.count
+          }
+          _count |= size //retains colour
+        }
+        this
+      }
+      makeImmutableImpl()
+      //TODO call releaseFence after backported
+      this
+    }
+
+    def mutableBlack: Tree[A, B] = {
+      if (isBlack) this
+      else if (mutable) {
+        _count = initialBlackCount
+        this
+      }
+      else new Tree(_key, _value, _left, _right, initialBlackCount)
+    }
+    def mutableRed: Tree[A, B] = {
+      if (isRed) this
+      else if (mutable) {
+        _count = initialRedCount
+        this
+      }
+      else new Tree(_key, _value, _left, _right, initialRedCount)
+    }
+    def mutableWithKV[B1 >: B](key: A, value: B1): Tree[A, B1] = {
+      if (mutable) {
+        _key = key
+        _value = value.asInstanceOf[AnyRef]
+        this
+      } else new Tree(key, value.asInstanceOf[AnyRef], _left, _right, _count)
+    }
+    def mutableWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
+      if (mutable) {
+        _left = newLeft
+        this
+      } else new Tree(_key, _value, newLeft, _right, initialCount)
+    }
+    def mutableWithRight[B1 >: B](newRight: Tree[A, B1]): Tree[A, B1] = {
+      if (mutable) {
+        _right = newRight
+        this
+      } else new Tree(_key, _value, _left, newRight, initialCount)
+    }
+    def mutableWithLeftRight[B1 >: B](newLeft: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = {
+      if (mutable) {
+        _left = newLeft
+        _right = newRight
+        this
+      } else new Tree(_key, _value, newLeft, newRight, initialCount)
+    }
+    def mutableBlackWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
+      if (mutable) {
+        _count = initialBlackCount
+        _left = newLeft
+        this
+      } else new Tree(_key, _value, newLeft, _right, initialBlackCount)
+    }
+    def mutableBlackWithRight[B1 >: B](newRight: Tree[A, B1]): Tree[A, B1] = {
+      if (mutable) {
+        _count = initialBlackCount
+        _right = newRight
+        this
+      } else new Tree(_key, _value, _left, newRight, initialBlackCount)
+    }
+//    def mutableBlackWithLeftRight[B1 >: B](newLeft: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = {
+//      if (mutable) {
+//        _count = initialBlackCount
+//        _left = newLeft
+//        _right = newRight
+//        this
+//      } else new Tree(_key, _value, newLeft, newRight, initialBlackCount)
+//    }
+    //immutable APIs
+    def black: Tree[A, B] = mutableBlack.makeImmutable
+    def red: Tree[A, B] = mutableRed.makeImmutable
+    def withKV[B1 >: B](key: A, value: B1): Tree[A, B1] = mutableWithKV(key,value).makeImmutable
+    def withLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = mutableWithLeft(newLeft).makeImmutable
+    def withRight[B1 >: B](newRight: Tree[A, B1]): Tree[A, B1] = mutableWithRight(newRight).makeImmutable
+    def withLeftRight[B1 >: B](newLeft: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = mutableWithLeftRight(newLeft, newRight).makeImmutable
   }
-  object BlackTree {
-    @`inline` def apply[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new BlackTree(key, value, left, right)
-    def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
-  }
+  @`inline` def initialBlackCount = 0x80000000
+  @`inline` def initialRedCount = 0
+
+  @`inline` def mutableRedTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new Tree[A,B](key, value.asInstanceOf[AnyRef], left, right, initialRedCount)
+  @`inline` def mutableBlackTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new Tree[A,B](key, value.asInstanceOf[AnyRef], left, right, initialBlackCount)
+
+  /** create a new immutable red tree.
+   * left and right may be null
+   * TODO - make the callers able to cope with mutability
+   */
+  @`inline` def RedTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]): Tree[A, B] = mutableRedTree(key, value, left, right).makeImmutable
+  @`inline` def BlackTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]): Tree[A, B] = mutableBlackTree(key, value, left, right).makeImmutable
 
   private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(protected implicit val ordering: Ordering[A]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R

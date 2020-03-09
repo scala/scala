@@ -5,6 +5,8 @@ import org.scalacheck._
 import Prop._
 import Gen._
 
+import scala.collection.immutable.NewRedBlackTree.Tree
+
 /*
 Properties of a Red & Black Tree:
 
@@ -68,6 +70,14 @@ abstract class RedBlackTreeTest extends Properties("RedBlackTree") {
 
 trait RedBlackTreeInvariants {
   self: RedBlackTreeTest =>
+
+
+  object RedTree {
+    def unapply[A,B](t:Tree[A,B]) = if ((t ne null) && t.isRed) Some(t.key, t.value, t.left, t.right) else None
+  }
+  object BlackTree {
+    def unapply[A,B](t:Tree[A,B]) = if ((t ne null) && t.isBlack) Some(t.key, t.value, t.left, t.right) else None
+  }
 
   import RB._
 
