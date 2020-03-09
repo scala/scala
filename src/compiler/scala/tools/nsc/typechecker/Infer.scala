@@ -17,6 +17,7 @@ import scala.collection.{immutable, mutable}, mutable.ListBuffer
 import scala.reflect.internal.Depth
 import scala.util.control.ControlThrowable
 import symtab.Flags._
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait contains methods related to type parameter inference.
  *
@@ -608,7 +609,7 @@ trait Infer extends Checkable {
           warning = !hasAny
         }
         def canWarnAboutAny = { if (!checked) checkForAny() ; warning }
-        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) reporter.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error."))
+        targs.foreach(targ => if (topTypes.contains(targ.typeSymbol) && canWarnAboutAny) context.warning(fn.pos, s"a type was inferred to be `${targ.typeSymbol.name}`; this may indicate a programming error.", WarningCategory.LintInferAny))
       }
       adjustTypeArgs(tparams, tvars, targs, restpe)
     }

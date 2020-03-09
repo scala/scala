@@ -35,7 +35,7 @@ Inlining into Main$.t2b
 Inlining into Main$.t3b
  inlined A_1.c (the callsite is annotated `@inline`). Before: 10 ins, after: 21 ins.
  rewrote invocations of closure allocated in Main$.t3b with body <init>: INVOKEINTERFACE java/util/function/Function.apply (Ljava/lang/Object;)Ljava/lang/Object; (itf)
-warning: 6 inliner warnings; re-run enabling -opt-warnings for details, or try -help
+warning: 6 optimizer warnings; re-run enabling -opt-warnings for details, or try -help
 m1
 m1
 m2

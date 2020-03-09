@@ -412,6 +412,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.SwitchClass
     definitions.TailrecClass
     definitions.VarargsClass
+    definitions.NowarnClass
     definitions.uncheckedStableClass
     definitions.uncheckedVarianceClass
     definitions.BeanPropertyAttr

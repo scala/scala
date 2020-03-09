@@ -15,7 +15,7 @@ package typechecker
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-
+import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
 /** Synthetic method implementations for case classes and case objects.
@@ -386,7 +386,7 @@ trait SyntheticMethods extends ast.TreeDSL {
               // Without a means to suppress this warning, I've thought better of it.
               if (settings.warnValueOverrides) {
                  (clazz.info nonPrivateMember m.name) filter (m => (m.owner != AnyClass) && (m.owner != clazz) && !m.isDeferred) andAlso { m =>
-                   typer.context.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics")
+                   typer.context.warning(clazz.pos, s"Implementation of ${m.name} inherited from ${m.owner} overridden in $clazz to enforce value class semantics", WarningCategory.Other /* settings.warnValueOverrides is not exposed as compiler flag */)
                  }
                }
               true

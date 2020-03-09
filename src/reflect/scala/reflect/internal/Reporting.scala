@@ -35,7 +35,7 @@ trait Reporting { self : Positions =>
   type PerRunReporting <: PerRunReportingBase
   protected def PerRunReporting: PerRunReporting
   abstract class PerRunReportingBase {
-    def deprecationWarning(pos: Position, msg: String, since: String): Unit
+    def deprecationWarning(pos: Position, msg: String, since: String, site: String, origin: String): Unit
 
     /** Have we already supplemented the error message of a compiler crash? */
     private[this] var supplementedError = false
@@ -45,7 +45,6 @@ trait Reporting { self : Positions =>
         supplementedError = true
         supplementTyperState(errorMessage)
       }
-
   }
 
   // overridden in Global
@@ -56,6 +55,7 @@ trait Reporting { self : Positions =>
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
   def inform(msg: String): Unit      = inform(NoPosition, msg)
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
+  @deprecated("Use `runReporting.warning` instead")
   def warning(msg: String): Unit     = warning(NoPosition, msg)
   // globalError(msg: String) used to abort -- not sure that was a good idea, so I made it more regular
   // (couldn't find any uses that relied on old behavior)
@@ -72,6 +72,7 @@ trait Reporting { self : Positions =>
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
   def inform(pos: Position, msg: String)      = reporter.echo(pos, msg)
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
+  @deprecated("Use `runReporting.warning` instead")
   def warning(pos: Position, msg: String)     = reporter.warning(pos, msg)
   @deprecatedOverriding("This forwards to the corresponding method in reporter -- override reporter instead", "2.11.2")
   def globalError(pos: Position, msg: String) = reporter.error(pos, msg)

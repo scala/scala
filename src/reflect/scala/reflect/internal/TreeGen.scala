@@ -811,7 +811,7 @@ abstract class TreeGen {
               if (vars.isEmpty) {
                 v.updateAttachment(PatVarDefAttachment)  // warn later if this introduces a Unit-valued field
                 if (mods.isImplicit)
-                  currentRun.reporting.deprecationWarning(matchExpr.pos, "Implicit pattern definition binds no variables", since="2.13")
+                  currentRun.reporting.deprecationWarning(matchExpr.pos, "Implicit pattern definition binds no variables", since="2.13", "", "")
               }
               v
             }

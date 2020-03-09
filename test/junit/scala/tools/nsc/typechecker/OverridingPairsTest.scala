@@ -19,7 +19,7 @@ class OverridingPairsTest extends BytecodeTesting {
         |abstract class AS extends SO
         |class L extends AS with SOSO
       """.stripMargin
-    val run = compiler.newRun
+    val run = compiler.newRun()
     run.compileSources(List(BytecodeTesting.makeSourceFile(code, "UnitTestSource.scala")))
 
     val g = compiler.global

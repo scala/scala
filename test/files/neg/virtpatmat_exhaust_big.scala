@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -unchecked
+// scalac: -Xfatal-warnings
 //
 sealed abstract class Z
 object Z {

@@ -1,12 +1,3 @@
-newSource1.scala:47: warning: discarding unmoored doc comment
-        /** Document this crucial constant for posterity.
-        ^
-newSource1.scala:64: warning: discarding unmoored doc comment
-        /*************************\
-        ^
-newSource1.scala:73: warning: discarding unmoored doc comment
-        val i = 10 */** Important!
-                   ^
 [[syntax trees at end of                    parser]] // newSource1.scala
 package <empty> {
   object UselessComments extends scala.AnyRef {
@@ -130,3 +121,15 @@ package <empty> {
   }
 }
 
+newSource1.scala:42: warning: Tag '@martin' is not recognised
+        /** @martin is this right? It shouldn't flag me as scaladoc. */
+        ^
+newSource1.scala:47: warning: discarding unmoored doc comment
+        /** Document this crucial constant for posterity.
+        ^
+newSource1.scala:64: warning: discarding unmoored doc comment
+        /*************************\
+        ^
+newSource1.scala:73: warning: discarding unmoored doc comment
+        val i = 10 */** Important!
+                   ^

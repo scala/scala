@@ -7,9 +7,6 @@ scopes.scala:5: error: x is already defined as value x
 scopes.scala:8: error: y is already defined as value y
     val y: Float = .0f
         ^
-scopes.scala:6: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-  {
-  ^
 scopes.scala:11: error: x is already defined as value x
   def f1(x: Int, x: Float) = x
                  ^
@@ -22,5 +19,8 @@ scopes.scala:13: error: x is already defined as value x
 scopes.scala:15: error: x is already defined as value x
     case x::x => x
             ^
+scopes.scala:6: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+  {
+  ^
 1 warning
 7 errors

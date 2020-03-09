@@ -1,26 +1,8 @@
 literals.scala:4: error: invalid literal number
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
                              ^
-literals.scala:6: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def leadingZeros: Int  = { 01 }        // line 6: no leading zero
-                             ^
-literals.scala:8: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def tooManyZeros: Int  = { 00 }        // line 8: no leading zero
-                             ^
-literals.scala:10: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def zeroOfNine: Int    = { 09 }        // line 10: no leading zero
-                             ^
-literals.scala:14: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
-                             ^
 literals.scala:22: error: invalid literal number
   def missingHex: Int    = 0x            // line 22: was: not reported, taken as zero
-                           ^
-literals.scala:26: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def tooManyZeros: Int  = 00            // line 26: no leading zero
-                           ^
-literals.scala:28: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
-  def zeroOfNine: Int    = 09            // line 28: no leading zero
                            ^
 literals.scala:39: error: floating point number too small
   def tooTiny: Float     = { 0.7e-45f }      // floating point number too small
@@ -34,12 +16,6 @@ literals.scala:43: error: floating point number too large
 literals.scala:45: error: double precision floating point number too large
   def twoHuge: Double    = { 1.7976931348623159e308 } // double precision floating point number too large
                              ^
-literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
-  def bad = 1l
-             ^
-literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
-  def worse = 123l
-                 ^
 literals.scala:12: error: identifier expected but '}' found.
   def orphanDot: Int     = { 9. }        // line 12: ident expected
                                 ^
@@ -55,5 +31,29 @@ literals.scala:24: error: ';' expected but 'def' found.
 literals.scala:32: error: identifier expected but 'def' found.
   def zeroOfNineDot: Int = 09.           // line 32: malformed integer, ident expected
   ^
+literals.scala:6: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def leadingZeros: Int  = { 01 }        // line 6: no leading zero
+                             ^
+literals.scala:8: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def tooManyZeros: Int  = { 00 }        // line 8: no leading zero
+                             ^
+literals.scala:10: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNine: Int    = { 09 }        // line 10: no leading zero
+                             ^
+literals.scala:14: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNineDot: Int = { 09. }       // line 14: malformed integer, ident expected
+                             ^
+literals.scala:26: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def tooManyZeros: Int  = 00            // line 26: no leading zero
+                           ^
+literals.scala:28: warning: Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)
+  def zeroOfNine: Int    = 09            // line 28: no leading zero
+                           ^
+literals.scala:50: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+  def bad = 1l
+             ^
+literals.scala:52: warning: Lowercase el for long is not recommended because it is easy to confuse with numeral 1; use uppercase L instead
+  def worse = 123l
+                 ^
 8 warnings
 11 errors

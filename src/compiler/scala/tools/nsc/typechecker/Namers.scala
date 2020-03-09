@@ -17,6 +17,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait declares methods to create symbols and to enter them into scopes.
  *
@@ -808,10 +809,10 @@ trait Namers extends MethodSynthesis {
       }
       val owner = tree.symbol.owner
       if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
-        reporter.warning(tree.pos,
+        context.warning(tree.pos,
           "it is not recommended to define classes/objects inside of package objects.\n" +
-          "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
-        )
+          "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead.",
+          WarningCategory.LintPackageObjectClasses)
       }
 
       // Suggested location only.
@@ -869,7 +870,7 @@ trait Namers extends MethodSynthesis {
         // on these flag checks so it can't hurt.
         def needsCycleCheck = sym.isNonClassType && !sym.isParameter && !sym.isExistential
 
-        val annotations = annotSig(tree.mods.annotations, _ => true)
+        val annotations = annotSig(tree.mods.annotations, tree, _ => true)
 
         val tp = typeSig(tree, annotations)
 
@@ -937,7 +938,7 @@ trait Namers extends MethodSynthesis {
             val pred: AnnotationInfo => Boolean =
               if (isGetter) accessorAnnotsFilter(tree.mods)
               else annotationFilter(FieldTargetClass, !mods.isParamAccessor)
-            annotSig(mods.annotations, pred)
+            annotSig(mods.annotations, tree, pred)
           }
 
         // must use typeSig, not memberSig (TODO: when do we need to switch namers?)
@@ -985,7 +986,7 @@ trait Namers extends MethodSynthesis {
             val mods = valDef.mods
             val annots =
               if (mods.annotations.isEmpty) Nil
-              else annotSig(mods.annotations, accessorAnnotsFilter(valDef.mods, isSetter, isBean))
+              else annotSig(mods.annotations, valDef, accessorAnnotsFilter(valDef.mods, isSetter, isBean))
 
             // for a setter, call memberSig to attribute the parameter (for a bean, we always use the regular method sig completer since they receive method types)
             // for a regular getter, make sure it gets a NullaryMethodType (also, no need to recompute it: we already have the valSig)
@@ -1870,13 +1871,13 @@ trait Namers extends MethodSynthesis {
      * they were added only in typer, depending on the compilation order, they may
      * or may not be visible.
      */
-    def annotSig(annotations: List[Tree], pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
+    def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
       annotations filterNot (_ eq null) map { ann =>
         val ctx = typer.context
         // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
         AnnotationInfo lazily {
           enteringTyper {
-            val annotSig = newTyper(ctx.makeNonSilent(ann)) typedAnnotation ann
+            val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
             if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
           }
         }

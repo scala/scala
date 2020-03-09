@@ -27,6 +27,7 @@ import symtab.Flags._
 import scala.reflect.internal.util.{ReusableInstance, Statistics, StatisticsStatics, TriState}
 import scala.reflect.internal.TypesStats
 import scala.language.implicitConversions
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** This trait provides methods to find various kinds of implicits.
  *
@@ -132,7 +133,7 @@ trait Implicits {
         else if (result.tree.symbol.isModule) result.tree.symbol.moduleClass
         else result.tree.symbol
       if (s != NoSymbol && context.owner.hasTransOwner(s))
-        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}")
+        context.warning(result.tree.pos, s"Implicit resolves to enclosing ${result.tree.symbol}", WarningCategory.WFlagSelfImplicit)
     }
     implicitSearchContext.emitImplicitDictionary(result)
   }

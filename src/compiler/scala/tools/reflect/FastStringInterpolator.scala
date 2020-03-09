@@ -40,7 +40,7 @@ trait FastStringInterpolator extends FormatInterpolator {
                                    case ((p, o), i) if p != o => i
                                  }.getOrElse(processed.length - 1)
                                  
-                                 currentRun.reporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2")
+                                 runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
                                }
                                processed
                              }

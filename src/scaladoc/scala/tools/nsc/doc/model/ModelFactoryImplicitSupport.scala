@@ -15,6 +15,7 @@ package doc
 package model
 
 import scala.collection._
+import scala.tools.nsc.Reporting.WarningCategory
 
 /**
  * This trait finds implicit conversions for a class in the default scope and creates scaladoc entries for each of them.
@@ -200,7 +201,7 @@ trait ModelFactoryImplicitSupport {
 
           case global.analyzer.SilentResultValue(t: Tree) => t
           case global.analyzer.SilentTypeError(err) =>
-            global.reporter.warning(sym.pos, err.toString)
+            context.warning(sym.pos, err.toString, WarningCategory.Scaladoc)
             return Nil
         }
       }

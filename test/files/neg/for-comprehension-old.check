@@ -1,15 +1,3 @@
-for-comprehension-old.scala:5: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
-  for (x <- 1 to 5 ; val y = x) yield x+y       // fail
-                           ^
-for-comprehension-old.scala:7: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
-  for (val x <- 1 to 5 ; val y = x) yield x+y   // fail
-                               ^
-for-comprehension-old.scala:10: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
-  for (z <- 1 to 2 ; x <- 1 to 5 ; val y = x) yield x+y       // fail
-                                         ^
-for-comprehension-old.scala:12: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
-  for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
-                                             ^
 for-comprehension-old.scala:6: error: `val` keyword in for comprehension is unsupported: just remove `val`
   for (val x <- 1 to 5 ; y = x) yield x+y       // fail
              ^
@@ -22,5 +10,17 @@ for-comprehension-old.scala:11: error: `val` keyword in for comprehension is uns
 for-comprehension-old.scala:12: error: `val` keyword in for comprehension is unsupported: just remove `val`
   for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
                            ^
+for-comprehension-old.scala:5: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
+  for (x <- 1 to 5 ; val y = x) yield x+y       // fail
+                           ^
+for-comprehension-old.scala:7: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
+  for (val x <- 1 to 5 ; val y = x) yield x+y   // fail
+                               ^
+for-comprehension-old.scala:10: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
+  for (z <- 1 to 2 ; x <- 1 to 5 ; val y = x) yield x+y       // fail
+                                         ^
+for-comprehension-old.scala:12: warning: `val` keyword in for comprehension is deprecated: instead, bind the value without `val`
+  for (z <- 1 to 2 ; val x <- 1 to 5 ; val y = x) yield x+y   // fail
+                                             ^
 4 warnings
 4 errors

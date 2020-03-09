@@ -1,7 +1,3 @@
-t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
-Write foo() to invoke method foo, or change the expected type.
-  val t1b: () => Any = foo   // eta-expansion, but lint warning
-                       ^
 t7187.scala:16: error: _ must follow method; cannot follow () => String
   val t1f: Any       = foo() _ // error: _ must follow method
                           ^
@@ -18,13 +14,22 @@ t7187.scala:23: error: not enough arguments for method apply: (i: Int): Char in 
 Unspecified value parameter i.
   val t2e: Any       = bar() _ // error: not enough arguments for method apply
                           ^
+t7187.scala:29: error: _ must follow method; cannot follow String
+  val t3d: Any       = baz() _ // error: _ must follow method
+                          ^
+t7187.scala:38: error: missing argument list for method zup in class EtaExpandZeroArg
+Unapplied methods are only converted to functions when a function type is expected.
+You can make this conversion explicit by writing `zup _` or `zup(_)` instead of `zup`.
+  val t5a = zup // error in 2.13, eta-expansion in 2.14
+            ^
+t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
+Write foo() to invoke method foo, or change the expected type.
+  val t1b: () => Any = foo   // eta-expansion, but lint warning
+                       ^
 t7187.scala:26: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write baz() to invoke method baz, or change the expected type.
   val t3a: () => Any = baz   // eta-expansion, but lint warning
                        ^
-t7187.scala:29: error: _ must follow method; cannot follow String
-  val t3d: Any       = baz() _ // error: _ must follow method
-                          ^
 t7187.scala:32: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write zap() to invoke method zap, or change the expected type.
   val t4a: () => Any = zap     // eta-expansion, but lint warning
@@ -33,11 +38,6 @@ t7187.scala:33: warning: An unapplied 0-arity method was eta-expanded (due to th
 Write zap()() to invoke method zap, or change the expected type.
   val t4b: () => Any = zap()   // ditto
                           ^
-t7187.scala:38: error: missing argument list for method zup in class EtaExpandZeroArg
-Unapplied methods are only converted to functions when a function type is expected.
-You can make this conversion explicit by writing `zup _` or `zup(_)` instead of `zup`.
-  val t5a = zup // error in 2.13, eta-expansion in 2.14
-            ^
 t7187.scala:40: warning: Eta-expansion performed to meet expected type AcciSamOne, which is SAM-equivalent to Int => Int,
 even though trait AcciSamOne is not annotated with `@FunctionalInterface`;
 to suppress warning, add the annotation or write out the equivalent function literal.

@@ -49,9 +49,6 @@ macro-deprecate-idents.scala:52: error: macro is now a reserved word; usage as a
 macro-deprecate-idents.scala:57: error: macro is now a reserved word; usage as an identifier is disallowed
   def macro = 2
       ^
-macro-deprecate-idents.scala:57: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `<error>`'s return type
-  def macro = 2
-               ^
 macro-deprecate-idents.scala:5: error: '=' expected but '}' found.
 }
 ^
@@ -67,5 +64,8 @@ macro-deprecate-idents.scala:47: error: '{' expected but '}' found.
 macro-deprecate-idents.scala:54: error: ')' expected but '}' found.
 }
 ^
+macro-deprecate-idents.scala:57: warning: procedure syntax is deprecated: instead, add `: Unit` to explicitly declare `<error>`'s return type
+  def macro = 2
+               ^
 1 warning
 22 errors

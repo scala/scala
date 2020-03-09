@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package typechecker
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /** This trait provides logic for assessing the validity of argument
  *  adaptations, such as tupling, unit-insertion, widening, etc.  Such
  *  logic is spread around the compiler, without much ability on the
@@ -87,8 +89,8 @@ trait Adaptations {
       }
       @inline def warnAdaptation = {
         if (settings.warnAdaptedArgs) context.warning(t.pos, adaptWarningMessage(
-          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"
-        ))
+          s"adapted the argument list to the expected ${args.size}-tuple: add additional parens instead"),
+          WarningCategory.LintAdaptedArgs)
         true // keep adaptation
       }
       if (args.isEmpty) {

@@ -12,6 +12,8 @@
 
 package scala.tools.nsc.typechecker
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 // imported from scalamacros/paradise
 trait MacroAnnotationNamers { self: Analyzer =>
   import global._
@@ -241,10 +243,10 @@ trait MacroAnnotationNamers { self: Analyzer =>
             }
             val owner = tree.symbol.owner
             if (settings.warnPackageObjectClasses && owner.isPackageObjectClass && !mods.isImplicit) {
-              reporter.warning(tree.pos,
+              context.warning(tree.pos,
                                "it is not recommended to define classes/objects inside of package objects.\n" +
-                               "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead."
-                              )
+                               "If possible, define " + tree.symbol + " in " + owner.skipPackageObject + " instead.",
+                              WarningCategory.LintPackageObjectClasses)
             }
             // Suggested location only.
             if (mods.isImplicit) {

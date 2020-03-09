@@ -1,11 +1,11 @@
 t11374b.scala:3: error: not found: value _
   val Some(`_`) = Option(42)  // was crashola
            ^
-t11374b.scala:3: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
-  val Some(`_`) = Option(42)  // was crashola
-          ^
 t11374b.scala:6: error: not found: value _
     val Some(`_`) = Option(42)  // was crashola
              ^
+t11374b.scala:3: warning: Pattern definition introduces Unit-valued member of C; consider wrapping it in `locally { ... }`.
+  val Some(`_`) = Option(42)  // was crashola
+          ^
 1 warning
 2 errors

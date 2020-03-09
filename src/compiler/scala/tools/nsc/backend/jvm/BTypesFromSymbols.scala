@@ -15,6 +15,7 @@ package backend.jvm
 
 import scala.reflect.internal.Flags.{DEFERRED, SYNTHESIZE_IMPL_IN_SUBCLASS}
 import scala.tools.asm
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 
@@ -195,9 +196,12 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
        */
 
       case tp =>
-        warning(tp.typeSymbol.pos,
+        runReporting.warning(
+          tp.typeSymbol.pos,
           s"an unexpected type representation reached the compiler backend while compiling $currentUnit: $tp. " +
-            "If possible, please file a bug on https://github.com/scala/bug/issues.")
+            "If possible, please file a bug on https://github.com/scala/bug/issues.",
+          WarningCategory.Other,
+          site = "")
 
         tp match {
           case ThisType(ArrayClass)    => ObjectRef // was introduced in 9b17332f11 to fix scala/bug#999, but this code is not reached in its test, or any other test
