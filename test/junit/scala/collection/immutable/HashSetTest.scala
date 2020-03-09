@@ -6,6 +6,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.testing.AllocationTest
+import scala.util.Random
 
 @RunWith(classOf[JUnit4])
 class HashSetTest extends AllocationTest {
@@ -184,8 +185,6 @@ class HashSetTest extends AllocationTest {
     })
   }
 
-
-
   def generateWithCollisions(start:Int, end:Int): HashSet[Colliding] = {
     (start to end).map { i => new Colliding(i/10, s"key $i") }(scala.collection.breakOut)
   }
@@ -217,4 +216,32 @@ class HashSetTest extends AllocationTest {
 
   }
 
+  @Test
+  def optimizedAppendAllWorks(): Unit = {
+    case class C(i: Int) {
+      override def hashCode: Int = i % 1024
+    }
+    val setReference = collection.mutable.HashSet[C]()
+    val builder0 = collection.immutable.HashSet.newBuilder[C];
+    for (i <- 1 to 16) {
+      val builder1 = collection.immutable.HashSet.newBuilder[C];
+      for (i <- 1 to 8)
+        builder1 += C(scala.util.Random.nextInt());
+      val s1 = builder1.result()
+      builder0 ++= s1
+      setReference ++= s1
+    }
+    val set0 = builder0.result()
+    assertEquals(set0, setReference)
+  }
+
+  @Test
+  def optimizedBuilderHandlesEmptyHashSetInstance(): Unit = {
+    val s = new scala.collection.immutable.HashSet[Int]
+    //      ^--- constructed with new is important here so we don't get EmptyHashSet
+    val b = scala.collection.immutable.HashSet.newBuilder[Int]
+    b ++= List(1, 2, 3, 4)
+    b ++= s // was scala.MatchError: Set() (of class scala.collection.immutable.HashSet)... at ... addToTrieHashSet(HashSet.scala:1386)
+    assertEquals(List(1, 2, 3, 4), b.result().toList.sorted)
+  }
 }

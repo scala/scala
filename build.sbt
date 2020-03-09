@@ -221,6 +221,18 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.this"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.elemHashCode"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.computeHash"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.improve"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.bitmap"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.bitmap_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.elems_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.size0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.size0_="),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashSet#HashTrieSet.size"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashSet$HashSetBuilder"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Set$SetBuilderImpl"),
+
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.findLeftMostOrPopOnEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.popNext"),
@@ -228,7 +240,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead_="),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.goRight"),
 
-    // Some static forwarder changes detected after a MiMa upgrade.
+  // Some static forwarder changes detected after a MiMa upgrade.
     // e.g. static method apply(java.lang.Object)java.lang.Object in class scala.Symbol does not have a correspondent in current version
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Symbol.apply"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.sys.process.Process.Future"),
