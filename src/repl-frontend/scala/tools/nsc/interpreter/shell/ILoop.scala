@@ -541,10 +541,21 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       else NoCompletions
   }
 
+  // this may be used by editors that embed the REPL (e.g. emacs) to present completions themselves;
+  // it's also used by ReplTest
   def completionsCommand(what: String): Result = {
     val completions = in.completion.complete(what, what.length)
-    val prefix = if (completions == NoCompletions) "" else what.substring(0, completions.cursor)
-    completions.candidates.map(c => s"[completions] $prefix$c").foreach(echo)
+    if (completions.candidates.nonEmpty) {
+      val prefix =
+        if (completions == NoCompletions) ""
+        else what.substring(0, completions.cursor)
+      // hvesalai (emacs sbt-mode maintainer) says it's important to echo only once and not per-line
+      echo(
+        completions.candidates
+          .map(c => s"[completions] $prefix$c")
+          .mkString("\n")
+      )
+    }
     Result.default // never record completions
   }
 
