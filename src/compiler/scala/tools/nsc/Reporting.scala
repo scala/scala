@@ -110,17 +110,21 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         case Message.Plain(_, msg, category, site) => s"[${category.name} @ $site] $msg"
       }
       def werror(): Unit = if (settings.fatalWarnings) reporter.werror()
+      def summary(action: Action): Unit = {
+        val m = summaryMap(action, warning.category.summaryCategory)
+        if (!m.contains(warning.pos)) m.addOne((warning.pos, warning))
+      }
 
+      import Action._
       wconf.action(warning) match {
-        case Action.Error          => reporter.error(warning.pos, warning.msg)
-        case Action.Warning        => reporter.warning(warning.pos, warning.msg) ; werror()
-        case Action.WarningVerbose => reporter.warning(warning.pos, verbose) ; werror()
-        case Action.Info           => reporter.echo(warning.pos, warning.msg)
-        case Action.InfoVerbose    => reporter.echo(warning.pos, verbose)
-        case a @ (Action.WarningSummary | Action.InfoSummary) =>
-          val m = summaryMap(a, warning.category.summaryCategory)
-          if (!m.contains(warning.pos)) { m.addOne((warning.pos, warning)) ; werror() }
-        case Action.Silent         =>
+        case Error          => reporter.error(warning.pos, warning.msg)
+        case Warning        => reporter.warning(warning.pos, warning.msg) ; werror()
+        case WarningVerbose => reporter.warning(warning.pos, verbose) ; werror()
+        case Info           => reporter.echo(warning.pos, warning.msg)
+        case InfoVerbose    => reporter.echo(warning.pos, verbose)
+        case WarningSummary => summary(WarningSummary) ; werror()
+        case InfoSummary    => summary(InfoSummary)
+        case Silent         => ()
       }
     }
 
