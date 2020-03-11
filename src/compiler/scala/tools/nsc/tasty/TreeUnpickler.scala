@@ -400,8 +400,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def readSimpleType(): Type = {
         (tag: @switch) match {
-          case TYPEREFdirect | TERMREFdirect =>
+          case TYPEREFdirect =>
             readSymRef().termRef
+          case TERMREFdirect =>
+            readSymRef().singleRef
           case TYPEREFsymbol | TERMREFsymbol =>
             readSymNameRef()
           case TYPEREFpkg =>
@@ -1293,8 +1295,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def completeSelect(name: TastyName, sig: Signature[Type], isTerm: Boolean)(implicit ctx: Context): Select =
         completeSelection(name, sig, isTerm) { (localCtx, selector, tpeFun) =>
-          val qual = readTerm()(localCtx)
-          val qualType = qual.tpe.widen
+          val qual     = readTerm()(localCtx)
+          val qualType = qual.tpe
           Select(qual, selector).setType(tpeFun(localCtx, selector, qualType))
         }
 

@@ -18,6 +18,7 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
       def ensureCompleted(): Unit = sym.info
       def ref(args: List[Type]): Type = mkAppliedType(sym, args)
       def ref: Type = sym.ref(Nil)
+      def singleRef: Type = mkSingleType(noPrefix, sym)
       def termRef: Type = sym.termRef(noPrefix)
       def termRef(pre: Type): Type = mkTypeRef(pre, sym, Nil)
       def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner

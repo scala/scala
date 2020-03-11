@@ -172,14 +172,20 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
 
   object NamedType {
     def apply(prefix: Type, designator: Symbol): Type = {
-      if (designator.isType)
-        designator.ref
-      else if (designator.is(JavaStatic))
+      if (designator.isType) {
+        prefix match {
+          case _: SingleType => designator.termRef(prefix)
+          case _             => designator.ref
+        }
+      }
+      else if (designator.is(JavaStatic)) {
         // With this second constraint, we avoid making singleton types for
         // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
         designator.termRef(prefix)
-      else
+      }
+      else {
         mkSingleType(prefix, designator)
+      }
     }
   }
 
