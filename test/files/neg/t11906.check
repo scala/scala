@@ -1,0 +1,4 @@
+t11906.scala:6: error: super may not be used on lazy value test; super can only be used to select a member that is a method or type
+  override val test: Seq[String] = super.test
+                                         ^
+1 error
