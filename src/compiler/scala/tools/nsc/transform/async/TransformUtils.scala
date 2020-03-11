@@ -14,9 +14,7 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.tools.nsc.NoPhase
 import scala.language.existentials
-import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.transform.TypingTransformers
 
 // Logic sensitive to where we are in the pipeline
@@ -119,10 +117,10 @@ private[async] trait TransformUtils extends PhasedTransform {
       throw new MatchError(trees)
   }
 
+  private object ThicketAttachment
   class ThicketTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    private object Thicket
     private def expandThicket(t: Tree): List[Tree] = t match {
-      case Block(stats, expr) if t.attachments.contains[Thicket.type] =>
+      case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
         stats :+ expr
       case _ => t :: Nil
     }
@@ -130,24 +128,24 @@ private[async] trait TransformUtils extends PhasedTransform {
     def apply(tree: Tree): List[Tree] = expandThicket(transform(tree))
 
     protected def Thicket(stats: List[Tree], expr: Tree): Tree = {
-      Block(stats, expr).updateAttachment(Thicket)
+      Block(stats, expr).updateAttachment(ThicketAttachment)
     }
     protected def Thicket(block: Block): Tree = {
-      block.updateAttachment(Thicket)
+      block.updateAttachment(ThicketAttachment)
     }
 
     override def transform(tree: Tree): Tree = tree match {
       case Block(stats, expr) =>
         val stats1 = mutable.ListBuffer[Tree]()
         transformTrees(stats).foreach {
-          case blk @ Block(stats, expr) if blk.hasAttachment[Thicket.type] =>
+          case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
             stats1 ++= stats
             stats1 += expr
           case t =>
             stats1 += t
         }
         val expr1 = transform(expr) match {
-          case blk @ Block(stats, expr) if blk.hasAttachment[Thicket.type] =>
+          case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
             stats1 ++= stats
             expr
           case expr =>
@@ -223,9 +221,9 @@ private[async] trait TransformUtils extends PhasedTransform {
     object traverser extends Traverser {
       var containsAwait = false
       override def traverse(tree: Tree): Unit =
-        if (tree.hasAttachment[NoAwait.type]) {} // safe to skip
+        if (tree.attachments.containsElement(NoAwait)) {} // safe to skip
         else if (!containsAwait) {
-          if (tree.hasAttachment[ContainsAwait.type]) containsAwait = true
+          if (tree.attachments.containsElement(ContainsAwait)) containsAwait = true
           else if (markContainsAwaitTraverser.shouldAttach(t)) super.traverse(tree)
         }
     }
