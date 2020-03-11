@@ -32,6 +32,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import Signature._
   import Contexts._
 
+  final class TASTyException(msg: String) extends Exception(msg)
+
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
@@ -112,8 +114,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
-      cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) { // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
-        new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
+      try {
+        cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) { // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
+          new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
+        }
+      } catch {
+        case err: TASTyException =>
+          sym.info = errorType
+          errorTasty(err.getMessage)
       }
     }
   }
@@ -352,14 +360,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             //     case symd: SymDenotation if prefix.isArgPrefixOf(symd.symbol) => TypeRef(prefix, symd.symbol)
             //     case _ => TypeRef(prefix, name, space.decl(name).asSeenFrom(prefix))
             //   }
-            // case REFINEDtype =>
-            //   var name: Name = readName()
-            //   val parent = readType()
-            //   val ttag = nextUnsharedTag
-            //   if (ttag === TYPEBOUNDS || ttag === TYPEALIAS) name = name.toTypeName
-            //   RefinedType(parent, name, readType())
-            //     // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
-            //     // Eta expansion of the latter puts readType() out of the expression.
+            case REFINEDtype =>
+              // refined type acts as a nested list of refinements, recursing on the parent.
+              // We can check if parent is already a refined type and then clone its scope to append a new refinement
+              throw new TASTyException(s"REFINEDtype")
+
+              // var name: Name = readName()
+              // val parent = readType()
+              // val ttag = nextUnsharedTag
+              // if (ttag === TYPEBOUNDS || ttag === TYPEALIAS) name = name.toTypeName
+              // RefinedType(parent, name, readType())
+                // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
+                // Eta expansion of the latter puts readType() out of the expression.
             case APPLIEDtype =>
               boundedAppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
@@ -1451,14 +1463,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val patType = readType()
               val argPats = until(end)(readTerm())
               UnApply(fn, implicitArgs, argPats, patType)
-            // case REFINEDtpt =>
-            //   val refineCls = symAtAddr.getOrElse(start,
-            //     ctx.newRefinedClassSymbol(coordAt(start))).asClass
-            //   registerSym(start, refineCls)
-            //   typeAtAddr(start) = refineCls.typeRef
-            //   val parent = readTpt()
-            //   val refinements = readStats(refineCls, end)(localContext(refineCls))
-            //   RefinedTypeTree(parent, refinements, refineCls)
+            case REFINEDtpt =>
+              // refined tpt is a list of new definitions
+              throw new TASTyException(s"REFINEDtpt")
+
+              // val refineCls = symAtAddr.getOrElse(start,
+              //   ctx.newRefinedClassSymbol(coordAt(start))).asClass
+              // registerSym(start, refineCls)
+              // typeAtAddr(start) = refineCls.typeRef
+              // val parent = readTpt()
+              // val refinements = readStats(refineCls, end)(localContext(refineCls))
+              // RefinedTypeTree(parent, refinements, refineCls)
             case APPLIEDtpt =>
               // If we do directly a tpd.AppliedType tree we might get a
               // wrong number of arguments in some scenarios reading F-bounded
