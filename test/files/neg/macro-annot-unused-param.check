@@ -1,0 +1,6 @@
+Test_2.scala:2: warning: parameter value x in anonymous function is never used
+@mymacro
+ ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
