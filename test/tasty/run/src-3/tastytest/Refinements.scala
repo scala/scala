@@ -42,4 +42,27 @@ object Refinements {
     }
   }
 
+  trait Methodic {
+    def nullary: Any
+    def nillary(): Any
+    def poly[T](): Any
+    val value: Any
+  }
+
+  class Blip[A, M <: Methodic { def nullary: A } ] {
+    def blip(m: M): A = m.nullary
+  }
+
+  class Blap[A, M <: Methodic { def nillary(): A } ] { // generates METHODtype tag
+    def blap(m: M): A = m.nillary()
+  }
+
+  class Blam[A, M <: Methodic { val value: A } ] {
+    def blam(m: M): A = m.value
+  }
+
+  class Bloc[A, M <: Methodic { def poly[T](): A } ] { // generates POLYtype tag
+    def bloc(m: M): A = m.poly()
+  }
+
 }

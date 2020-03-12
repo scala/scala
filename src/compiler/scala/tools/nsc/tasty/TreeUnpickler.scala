@@ -367,12 +367,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val parent = readType()
               val ttag = nextUnsharedTag
               if (ttag === TYPEBOUNDS) name = name.toTypeName
-              val refinement = parent.member(name).cloneSymbol.setInfo(readType())
+              var refinedTpe = readType()
+              val refinement = parent.member(name).cloneSymbol
+              if (refinement.isMethod && refinement.paramss.isEmpty) {
+                refinedTpe = ByNameType.normalise(refinedTpe)(mkNullaryMethodType)
+              }
+              refinement.setInfo(refinedTpe)
               parent match {
                 case parent: RefinedType =>
                   val scope = parent.decls.cloneScope
                   scope.enter(refinement)
-                  mkRefinedType(parent.parents, ctx.owner, scope)
+                  mkRefinedTypeWith(parent.parents, parent.typeSymbol, scope)
                 case parent =>
                   mkRefinedType(parent :: Nil, ctx.owner, mkScope(refinement))
               }
@@ -454,7 +459,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val ref = readAddr()
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
-            defn.ByNameParamClass.ref(readType() :: Nil) // ExprType(readType())
+            val tpe = readType()
+            defn.ByNameParamClass.ref(tpe :: Nil) // ExprType(readType())
           case _ =>
             mkConstantType(readConstant(tag))
         }
@@ -505,6 +511,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       var flags = givenFlags
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (tag === DEFDEF) flags |= Method
+      if (tag === VALDEF) {
+        if (flags.not(Mutable)) flags |= Stable
+        if (owner.flags.is(Trait)) flags |= Accessor
+      }
       if (givenFlags.is(Module))
         flags = flags | (if (tag === VALDEF) ModuleCreationFlags else ModuleClassCreationFlags)
       if (ctx.owner.isClass) {

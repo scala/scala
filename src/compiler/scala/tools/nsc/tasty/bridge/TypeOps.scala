@@ -170,6 +170,13 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
+  object ByNameType {
+    def normalise(tpe: Type)(op: Type => Type): Type = tpe match {
+      case ref: TypeRef if ref.sym == defn.ByNameParamClass && ref.args.length == 1 => op(ref.args.head)
+      case _                                                                        => op(tpe)
+    }
+  }
+
   object NamedType {
     def apply(prefix: Type, designator: Symbol): Type = {
       if (designator.isType) {
