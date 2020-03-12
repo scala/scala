@@ -149,30 +149,6 @@ trait LiveVariables extends ExprBuilder {
       res
     }
 
-    /** Tests if `state1` is a predecessor of `state2`.
-     */
-    def isPred(state1: Int, state2: Int): Boolean = {
-      val seen = new StateSet()
-
-      def isPred0(state1: Int, state2: Int): Boolean =
-        if(state1 == state2) false
-        else if (seen.contains(state1)) false  // breaks cycles in the CFG
-        else cfg get state1 match {
-          case Some(nextStates) =>
-            seen += state1
-            var i = 0
-            while (i < nextStates.length) {
-              if (nextStates(i) == state2 || isPred0(nextStates(i), state2)) return true
-              i += 1
-            }
-            false
-          case None =>
-            false
-        }
-
-      isPred0(state1, state2)
-    }
-
     if(settings.debug.value && shouldLogAtThisPhase) {
       for (as <- asyncStates)
         debuglog(s"fields used in state #${as.state}: ${fieldsUsedIn(as)}")
@@ -280,30 +256,11 @@ trait LiveVariables extends ExprBuilder {
         debuglog(s"field ${fld.symbol.name} is last used in states ${lastStates.iterator.mkString(", ")}")
     }
 
-    val nullOutAt: mutable.LinkedHashMap[Tree, StateSet] =
-      for ((fld, lastStates) <- lastUsages) yield {
-        val result = new StateSet
-        lastStates.foreach(new IntConsumer { def accept(s: Int): Unit = {
-          if (s != finalState.state) {
-            val lastAsyncState = asyncStates.find(_.state == s).get
-            val succNums       = lastAsyncState.nextStates
-            // all successor states that are not indirect predecessors
-            // filter out successor states where the field is live at the entry
-            var i = 0
-            while (i < succNums.length) {
-              val num = succNums(i)
-              if (num != finalState.state && !isPred(num, s) && !LVentry(num).contains(fld.symbol))
-                result += num
-              i += 1
-            }
-          }
-        }})
-        (fld, result)
-      }
+    val nullOutAt: mutable.LinkedHashMap[Tree, StateSet] = lastUsages
 
     if(settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, killAt) <- nullOutAt)
-        debuglog(s"field ${fld.symbol.name} should be nulled out in states ${killAt.iterator.mkString(", ")}")
+        debuglog(s"field ${fld.symbol.name} should be nulled out at the conclusion of states ${killAt.iterator.mkString(", ")}")
     }
 
     nullOutAt

@@ -1,299 +1,189 @@
-/*
- * Scala (https://www.scala-lang.org)
- *
- * Copyright EPFL and Lightbend, Inc.
- *
- * Licensed under Apache License 2.0
- * (http://www.apache.org/licenses/LICENSE-2.0).
- *
- * See the NOTICE file distributed with this work for
- * additional information regarding copyright ownership.
- */
+object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.live.LiveVariablesSpec])
 
-package scala.async
-package run
-package live
+package scala.async.run.live {
+  import org.junit.Test
+  import org.junit.Assert._
 
-import org.junit.Test
-
-import internal.AsyncTestLV
-import AsyncTestLV._
-
-case class Cell[T](v: T)
-
-class Meter(val len: Long) extends AnyVal
-
-case class MCell[T](var v: T)
-
-
-class LiveVariablesSpec {
-  AsyncTestLV.clear()
-
-  @Test
-  def `zero out fields of reference type`(): Unit = {
-    val f = async { Cell(1) }
-
-    def m1(x: Cell[Int]): Cell[Int] =
-      async { Cell(x.v + 1) }
-
-    def m2(x: Cell[Int]): String =
-      async { x.v.toString }
-
-    def m3() = async {
-      val a: Cell[Int] = await(f)      // await$1$1
-      // a == Cell(1)
-      val b: Cell[Int] = await(m1(a))  // await$2$1
-      // b == Cell(2)
-      assert(AsyncTestLV.log.exists(_._2 == Cell(1)), AsyncTestLV.log)
-      val res = await(m2(b))           // await$3$1
-      assert(AsyncTestLV.log.exists(_._2 == Cell(2)))
-      res
-    }
-
-    assert(m3() == "2")
+  import scala.concurrent._
+  import duration.Duration
+  import scala.async.Async.{async, await}
+  import scala.collection.immutable
+  object TestUtil {
+    import language.implicitConversions
+    implicit def lift[T](t: T): Future[T] = Future.successful(t)
+    def block[T](f: Future[T]): T = Await.result(f, Duration.Inf)
   }
+  import TestUtil._
 
-  @Test
-  def `zero out fields of type Any`(): Unit = {
-    val f = async { Cell(1) }
+  case class Cell[T](v: T)
 
-    def m1(x: Cell[Int]): Cell[Int] =
-      async { Cell(x.v + 1) }
+  class Meter(val len: Long) extends AnyVal
 
-    def m2(x: Any): String =
-      async { x.toString }
+  case class MCell[T](var v: T)
 
-    def m3() = async {
-      val a: Cell[Int] = await(f)      // await$4$1
-      // a == Cell(1)
-      val b: Any = await(m1(a))        // await$5$1
-      // b == Cell(2)
-      assert(AsyncTestLV.log.exists(_._2 == Cell(1)))
-      val res = await(m2(b))           // await$6$1
-      assert(AsyncTestLV.log.exists(_._2 == Cell(2)))
-      res
-    }
-
-    assert(m3() == "Cell(2)")
-  }
-
-  @Test
-  def `do not zero out fields of primitive type`(): Unit = {
-    val f = async { 1 }
-
-    def m1(x: Int): Cell[Int] =
-      async { Cell(x + 1) }
-
-    def m2(x: Any): String =
-      async { x.toString }
-
-    def m3() = async {
-      val a: Int = await(f)            // await$7$1
-      // a == 1
-      val b: Any = await(m1(a))        // await$8$1
-      // b == Cell(2)
-      // assert(!AsyncTestLV.log.exists(p => p._1 == "await$7$1"))
-      val res = await(m2(b))           // await$9$1
-      assert(AsyncTestLV.log.exists(_._2 == Cell(2)))
-      res
-    }
-
-    assert(m3() == "Cell(2)")
-  }
-
-  @Test
-  def `zero out fields of value class type`(): Unit = {
-    val f = async { Cell(1) }
-
-    def m1(x: Cell[Int]): Meter =
-      async { new Meter(x.v + 1) }
-
-    def m2(x: Any): String =
-      async { x.toString }
-
-    def m3() = async {
-      val a: Cell[Int] = await(f)      // await$10$1
-      // a == Cell(1)
-      val b: Meter = await(m1(a))      // await$11$1
-      // b == Meter(2)
-      assert(AsyncTestLV.log.exists(_._2 == Cell(1)))
-      val res = await(m2(b.len))       // await$12$1
-      assert(AsyncTestLV.log.exists(_._2.asInstanceOf[Meter].len == 2L))
-      res
-    }
-
-    assert(m3() == "2")
-  }
-
-  @Test
-  def `zero out fields after use in loop`(): Unit = {
-    val f = async { MCell(1) }
-
-    def m1(x: MCell[Int], y: Int): Int =
-      async { x.v + y }
-
-    def m3() = async {
-      // state #1
-      val a: MCell[Int] = await(f)     // await$13$1
-      // state #2
-      var y = MCell(0)
-
-      while (a.v < 10) {
-        // state #4
-        a.v = a.v + 1
-        y = MCell(await(a).v + 1)      // await$14$1
-        // state #7
+  class LiveVariablesSpec {
+    implicit object testingEc extends ExecutionContext {
+      var lastStateMachine: Any = _
+      var lastFailure: Throwable = _
+      def live[T: reflect.ClassTag]: List[T] = {
+        val instance = lastStateMachine
+        val flds = instance.getClass.getDeclaredFields
+        val filterClass = reflect.classTag[T].runtimeClass
+        flds.toList.flatMap { fld =>
+          fld.setAccessible(true)
+          val value = fld.get(instance)
+          if (filterClass.isInstance(value)) {
+            value.asInstanceOf[T] :: Nil
+          } else Nil
+        }
+      }
+      override def execute(runnable: Runnable): Unit = try {
+        lastStateMachine = reflectivelyExtractStateMachine(runnable)
+        runnable.run()
+      } catch {
+        case t: Throwable => throw new RuntimeException(t)
+      }
+      override def reportFailure(cause: Throwable): Unit = {
+        lastFailure = cause
       }
 
-      // state #3
-      // assert(AsyncTestLV.log.exists(entry => entry._1 == "await$14$1"))
-
-      val b = await(m1(a, y.v))        // await$15$1
-      // state #8
-      assert(AsyncTestLV.log.exists(_._2 == MCell(10)), AsyncTestLV.log)
-      assert(AsyncTestLV.log.exists(_._2 == MCell(11)))
-      b
-    }
-
-    assert(m3() == 21, m3())
-  }
-
-  @Test
-  def `don't zero captured fields captured lambda`(): Unit = {
-    val f = async {
-      val x = "x"
-      val y = "y"
-      await(0)
-      y.reverse
-      val f = () => assert(x != null)
-      await(0)
-      f
-    }
-    AsyncTestLV.assertNotNulledOut("x")
-    AsyncTestLV.assertNulledOut("y")
-    f()
-  }
-
-  @Test
-  def `don't zero captured fields captured by-name`(): Unit = {
-    def func0[A](a: => A): () => A =  () => a
-    val f = async {
-      val x = "x"
-      val y = "y"
-      await(0)
-      y.reverse
-      val f = func0(assert(x != null))
-      await(0)
-      f
-    }
-    AsyncTestLV.assertNotNulledOut("x")
-    AsyncTestLV.assertNulledOut("y")
-    f()
-  }
-
-  @Test
-  def `don't zero captured fields nested class`(): Unit = {
-    def func0[A](a: => A): () => A = () => a
-    val f = async {
-      val x = "x"
-      val y = "y"
-      await(0)
-      y.reverse
-      val f = new Function0[Unit] {
-        def apply = assert(x != null)
+      private def reflectivelyExtractStateMachine(runnable: Runnable) = {
+        assert(runnable.getClass == Class.forName("scala.concurrent.impl.CallbackRunnable"), runnable.getClass)
+        val fld = runnable.getClass.getDeclaredField("onComplete")
+        fld.setAccessible(true)
+        val stateMachine = fld.get(runnable)
+        assert(stateMachine.getClass.getName.contains("stateMachine"), stateMachine.getClass)
+        stateMachine
       }
-      await(0)
-      f
     }
-    AsyncTestLV.assertNotNulledOut("x")
-    AsyncTestLV.assertNulledOut("y")
-    f()
-  }
 
-  @Test
-  def `don't zero captured fields nested object`(): Unit = {
-    def func0[A](a: => A): () => A = () => a
-    val f = async {
-      val x = "x"
-      val y = "y"
-      await(0)
-      y.reverse
-      object f extends Function0[Unit] {
-        def apply = assert(x != null)
+    @Test
+    def `zero out fields of reference type`(): Unit = {
+      def live: Set[Any] = {
+        testingEc.live[Cell[_]].map(_.v).toSet
       }
-      await(0)
-      f
+
+      def m3() = async {
+        val _0: Any = await(Cell(0))
+        val _1: Cell[Int] = await(Cell(1))
+        identity(_1)
+        val _2 = await(Cell(2))
+
+        identity(_1)
+        assertEquals(Set(0, 1), live)
+        val res = await(_2.toString)
+
+        assertEquals(Set(0), live)
+        identity(_0)
+        res
+      }
+
+      assert(block(m3()) == "Cell(2)")
     }
-    AsyncTestLV.assertNotNulledOut("x")
-    AsyncTestLV.assertNulledOut("y")
-    f()
-  }
 
-  @Test
-  def `don't zero captured fields nested def`(): Unit = {
-    val f = async {
-      val x = "x"
-      val y = "y"
-      await(0)
-      y.reverse
-      def xx = x
-      val f = xx _
-      await(0)
-      f
+    @Test
+    def `zero out fields after use in loop`(): Unit = {
+      val f = Cell(1)
+
+      def live: Set[Any] = {
+        testingEc.live[Cell[_]].map(_.v).toSet
+      }
+
+      def m3() = async {
+        val _0: Any = await(Cell(0))
+        val _1: Cell[Int] = await(Cell(1))
+        var i = 0
+        while (i < 5) {
+          identity(await(_1))
+          assertEquals("in loop", Set(0, 1), live)
+          i += 1
+        }
+        assertEquals("after loop", Set(0), live)
+        identity(_0)
+        await(())
+        assertEquals("end of block", Set(), live)
+        ()
+      }
+
+      block(m3())
     }
-    AsyncTestLV.assertNotNulledOut("x")
-    AsyncTestLV.assertNulledOut("y")
-    f()
-  }
 
-  @Test
-  def `capture bug`(): Unit = {
-    sealed trait Base
-    case class B1() extends Base
-    case class B2() extends Base
-    val outer = List[(Base, Int)]((B1(), 8))
+      @Test
+      def `don't zero captured fields captured lambda`(): Unit = {
+        def live: Set[Any] = {
+          testingEc.live[Cell[_]].map(_.v).toSet
+        }
 
-    def getMore(b: Base) = 4
+        def m3() = async {
+          val _1 = Cell(1)
+          val _2 = Cell(2)
+          val _3 = Cell(3)
+          val _4 = Cell(4)
+          val _5 = Cell(5)
+          val _6 = Cell(6)
+          await(0)
+          _1.toString.reverse
+          val fun = () => assert(_2 != null)
+          class LocalClass { assert(_3 != null) }
+          object localObject { assert(_4 != null) }
+          def localDef = { assert(_5 != null) }
+          lazy val localLazy = { assert(_6 != null) }
+          await(0)
+          assertEquals("after capture", Set(2, 3, 4, 5, 6), live)
+          fun()
+          new LocalClass()
+          localObject
+        }
 
-    def baz = async {
-      outer.head match {
-        case (a @ B1(), r) => {
-          val ents = await(getMore(a))
+        block(m3())
+      }
 
-          { () =>
-            println(a)
-            assert(a ne null)
+
+    @Test
+    def `capture bug`(): Unit = {
+      sealed trait Base
+      case class B1() extends Base
+      case class B2() extends Base
+      val outer = List[(Base, Int)]((B1(), 8))
+
+      def getMore(b: Base) = 4
+
+      def baz = async {
+        outer.head match {
+          case (a @ B1(), r) => {
+            val ents = await(getMore(a))
+
+            { () =>
+              // println(a)
+              assert(a ne null)
+            }
+          }
+          case (b @ B2(), x) =>
+            () => ???
+        }
+      }
+      block(baz).apply()
+    }
+
+    // https://github.com/scala/async/issues/104
+    @Test def dontNullOutVarsOfTypeNothing_t104(): Unit = {
+      def errorGenerator(randomNum: Double) = {
+        Future {
+          if (randomNum < 0) {
+            throw new IllegalStateException("Random number was too low!")
+          } else {
+            throw new IllegalStateException("Random number was too high!")
           }
         }
-        case (b @ B2(), x) =>
-          () => ???
       }
-    }
-    baz()
-  }
-
-  // https://github.com/scala/async/issues/104
-  @Test def dontNullOutVarsOfTypeNothing_t104(): Unit = {
-    import scala.async.Async._
-    import scala.concurrent.duration.Duration
-    import scala.concurrent.{Await, Future}
-    import scala.concurrent.ExecutionContext.Implicits.global
-    def errorGenerator(randomNum: Double) = {
-      Future {
-        if (randomNum < 0) {
-          throw new IllegalStateException("Random number was too low!")
-        } else {
-          throw new IllegalStateException("Random number was too high!")
+      def randomTimesTwo = async {
+        val num = _root_.scala.math.random
+        if (num < 0 || num > 1) {
+          await(errorGenerator(num))
         }
+        num * 2
       }
+      block(randomTimesTwo) // was: NotImplementedError
     }
-    def randomTimesTwo = async {
-      val num = _root_.scala.math.random
-      if (num < 0 || num > 1) {
-        await(errorGenerator(num))
-      }
-      num * 2
-    }
-    Await.result(randomTimesTwo, TestLatch.DefaultTimeout) // was: NotImplementedError
   }
 }

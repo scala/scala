@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.collection.mutable
 import user.{FutureSystem, ScalaConcurrentFutureSystem}
 import scala.reflect.internal.Flags
 import scala.tools.nsc.Global
@@ -234,13 +235,30 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
       val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)
 
       for ((state, flds) <- assignsOf) {
-        val assigns = flds.map { fld =>
-          val fieldSym = fld.symbol
-          Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
-
-        }
         val asyncState = asyncBlock.asyncStates.find(_.state == state).get
-        asyncState.stats = assigns ++ asyncState.stats
+        val stats1 = mutable.ListBuffer[Tree]()
+        def addNullAssigments(): Unit = {
+          // Insert the null assignments immediately after the state transition
+          for (fld <- flds) {
+            val fieldSym = fld.symbol
+            stats1 += Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
+          }
+        }
+        var foundStateTransition = false
+        asyncState.stats.foreach {
+          stat =>
+            stats1 += stat
+            if (stat.attachments.containsElement(StateTransitionTree)) {
+              assert(!foundStateTransition)
+              foundStateTransition = true
+              // Insert the null assignments immediately after the state transition
+              addNullAssigments()
+            }
+        }
+        if (!foundStateTransition) {
+          addNullAssigments()
+        }
+        asyncState.stats = stats1.toList
       }
     }
 

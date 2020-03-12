@@ -511,31 +511,6 @@ trait ExprBuilder extends TransformUtils {
     vd :: assignOrReturn :: Nil
   }
 
-  // Suspend execution by calling `onComplete` with the state machine itself as a callback.
-  //
-  // If the future is already completed, and the future system allows it, execution will continue
-  // synchronously.
-  private def awaitTree(awaitable: Awaitable): List[Tree] = {
-    val futureSystemOps = currentTransformState.ops
-    val fun = This(tpnme.EMPTY)
-    val symLookup = currentTransformState.symLookup
-    if (futureSystemOps.continueCompletedFutureOnSameThread) {
-      val tempAwaitableSym = symLookup.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
-      val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
-      val initTempCompleted = Assign(Ident(symLookup.applyTrParam), futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
-      val null_ne = Select(Literal(Constant(null)), TermName("ne"))
-      val callOnComplete = futureSystemOps.onComplete[Any, Unit](Ident(tempAwaitableSym), fun, Ident(nme.execContext))
-      val ifTree =
-        If(Apply(null_ne, Ident(symLookup.applyTrParam) :: Nil),
-          Apply(Ident(currentTransformState.symLookup.whileLabel), Nil),
-          Block(toList(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod)))
-      initAwaitableTemp :: initTempCompleted :: ifTree :: Nil
-    } else {
-      val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
-      (toList(callOnComplete)) ::: Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod) :: Nil
-    }
-  }
-
   // Comlete the Promise in the `result` field with the final sucessful result of this async block.
   private def completeSuccess(expr: Tree): Tree = {
     val futureSystemOps = currentTransformState.ops
@@ -549,13 +524,13 @@ trait ExprBuilder extends TransformUtils {
       val symLookup = currentTransformState.symLookup
       val callSetter = Apply(symLookup.memberRef(symLookup.stateSetter), Literal(Constant(nextState)) :: Nil)
       val printStateUpdates = false
-      if (printStateUpdates) {
+      (if (printStateUpdates) {
         Block(
           callSetter :: Nil,
           gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")), currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(symLookup.memberRef(symLookup.stateGetter)), definitions.ObjectTpe) :: Nil)
         )
       }
-      else callSetter
+      else callSetter).updateAttachment(StateTransitionTree)
     }
   }
 
@@ -575,7 +550,29 @@ trait ExprBuilder extends TransformUtils {
     case class UpdateAndAwait(awaitable: Awaitable) extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState
-        mkStateTree(nextState) :: awaitTree(awaitable)
+
+        // Suspend execution by calling `onComplete` with the state machine itself as a callback.
+        //
+        // If the future is already completed, and the future system allows it, execution will continue
+        // synchronously.
+        val futureSystemOps = currentTransformState.ops
+        val fun = This(tpnme.EMPTY)
+        val symLookup = currentTransformState.symLookup
+        if (futureSystemOps.continueCompletedFutureOnSameThread) {
+          val tempAwaitableSym = symLookup.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
+          val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
+          val initTempCompleted = Assign(Ident(symLookup.applyTrParam), futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
+          val null_ne = Select(Literal(Constant(null)), TermName("ne"))
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](Ident(tempAwaitableSym), fun, Ident(nme.execContext))
+          val ifTree =
+            If(Apply(null_ne, Ident(symLookup.applyTrParam) :: Nil),
+              Apply(Ident(currentTransformState.symLookup.whileLabel), Nil),
+              Block(toList(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod)))
+          initAwaitableTemp :: initTempCompleted :: mkStateTree(nextState) :: ifTree :: Nil
+        } else {
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
+          mkStateTree(nextState) :: toList(callOnComplete) ::: Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod) :: Nil
+        }
       }
     }
     /** Update the state variable and jump to the the while loop that encloses the state machine. */

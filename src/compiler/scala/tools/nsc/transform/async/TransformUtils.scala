@@ -298,3 +298,4 @@ private[async] trait TransformUtils extends PhasedTransform {
 
 private case object ContainsAwait
 private case object NoAwait
+case object StateTransitionTree

@@ -12,13 +12,10 @@
 
 package scala.tools.partest
 
-import java.io.{PrintWriter, StringWriter}
-
-import org.junit.internal.TextListener
 import org.junit.runner.JUnitCore
 import org.junit.runner.notification.{Failure, RunListener}
 
-import scala.collection.JavaConverters._
+import scala.tools.nsc.util.Exceptional
 
 abstract class JUnitTest(classes: Class[_]*) extends App {
 
@@ -28,12 +25,17 @@ abstract class JUnitTest(classes: Class[_]*) extends App {
       println(failure)
       val ex = failure.getException
       if(ex != null) {
-        val sw = new StringWriter()
-        val out = new PrintWriter(sw)
-        ex.printStackTrace(out)
-        out.flush()
-        val lines = sw.getBuffer.toString.split('\n')
-        lines.iterator.takeWhile(s => !s.contains("at org.junit.runners.")).foreach(println)
+        val seen = new java.util.IdentityHashMap[Throwable, Object]
+        @scala.annotation.tailrec
+        def trimStack(ex: Throwable): Unit = if (ex != null && !seen.containsKey(ex)) {
+          seen.put(ex, null)
+          ex.setStackTrace(ex.getStackTrace.takeWhile(!_.getClassName.startsWith("org.junit.runners.")))
+          trimStack(ex.getCause)
+        }
+
+        val unwrapped = Exceptional.unwrap(ex)
+        trimStack(unwrapped)
+        unwrapped.printStackTrace()
       }
     }
   })
