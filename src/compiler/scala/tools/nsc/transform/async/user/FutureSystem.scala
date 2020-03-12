@@ -39,7 +39,7 @@ trait FutureSystem {
   abstract class Ops[Universe <: SymbolTable](val u: Universe) {
     import u._
 
-    final def isPastErasure = {
+    final def isPastErasure: Boolean = {
       val global = u.asInstanceOf[Global]
       val erasurePhase = global.currentRun.erasurePhase
       erasurePhase != NoPhase && global.isPast(erasurePhase)
@@ -47,9 +47,7 @@ trait FutureSystem {
     def Async_async: Symbol
     def Async_await: Symbol
 
-    def literalUnitExpr = if (isPastErasure) gen.mkAttributedRef(definitions.BoxedUnit_UNIT) else Literal(Constant(()))
-
-    def phasedAppliedType(tycon: Type, tp: Type) = if (isPastErasure) tycon else appliedType(tycon, tp)
+    def literalUnitExpr: Tree = if (isPastErasure) gen.mkAttributedRef(definitions.BoxedUnit_UNIT) else Literal(Constant(()))
 
     def tryType(tp: Type): Type
     def tryTypeToResult(tp: Type): Type
@@ -65,7 +63,7 @@ trait FutureSystem {
     def onComplete[A, B](future: Expr[Fut[A]], fun: Expr[Tryy[A] => B],
                          execContext: Expr[ExecContext]): Expr[Unit]
 
-    def continueCompletedFutureOnSameThread = false
+    def continueCompletedFutureOnSameThread: Boolean = false
 
     /** Return `null` if this future is not yet completed, or `Tryy[A]` with the completed result
       * otherwise
@@ -90,16 +88,11 @@ trait FutureSystem {
 
     /** A hook for custom macros to selectively generate and process a Graphviz visualization of the transformed state machine */
     def dot(enclosingOwner: Symbol, macroApplication: Tree): Option[(String => Unit)] = None
-
   }
 
   def mkOps(u: SymbolTable): Ops[u.type]
 
-  @deprecated("No longer honoured by the macro, all generated names now contain $async to avoid accidental clashes with lambda lifted names", "0.9.7")
-  def freshenAllNames: Boolean = false
   def emitTryCatch: Boolean = true
-  @deprecated("No longer honoured by the macro, all generated names now contain $async to avoid accidental clashes with lambda lifted names", "0.9.7")
-  def resultFieldName: String = "result"
 }
 
 // TODO AM: test the erased version by running the remainder of the test suite post-posterasure (i.e., not LateExpansion, which tests AsyncId)
