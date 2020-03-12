@@ -1,3 +1,4 @@
+// scalac: -Werror
 object Test {
   import pack._
 

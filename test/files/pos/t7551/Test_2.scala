@@ -1,3 +1,4 @@
+// scalac: -Werror
 package p
 
 object Foo {

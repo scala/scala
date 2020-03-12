@@ -1,3 +1,4 @@
+// scalac: -Werror
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
