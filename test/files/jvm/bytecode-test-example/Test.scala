@@ -1,3 +1,4 @@
+// scalac: -opt:l:none
 import scala.tools.partest.BytecodeTest
 
 import scala.tools.nsc.util.JavaClassPath

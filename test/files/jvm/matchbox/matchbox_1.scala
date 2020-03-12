@@ -1,3 +1,4 @@
+// scalac: -opt:l:method
 object Matchbox {
   import scala.{specialized => sp}
 
