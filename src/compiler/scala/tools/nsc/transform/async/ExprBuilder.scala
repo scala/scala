@@ -12,12 +12,8 @@
 
 package scala.tools.nsc.transform.async
 
-import java.util.function.IntUnaryOperator
-
-import user.FutureSystem
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.language.existentials
 
 trait ExprBuilder extends TransformUtils {
 

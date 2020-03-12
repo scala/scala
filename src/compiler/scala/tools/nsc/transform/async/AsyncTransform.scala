@@ -14,10 +14,9 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import user.{FutureSystem, ScalaConcurrentFutureSystem}
-import scala.reflect.internal.{Flags, Mode}
+import scala.reflect.internal.Flags
 import scala.tools.nsc.Global
 import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.typechecker.Analyzer
 
 // TODO: check there's no await outside of an async block
 
