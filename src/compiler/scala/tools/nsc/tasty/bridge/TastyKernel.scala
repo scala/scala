@@ -42,6 +42,7 @@ trait TastyKernel { self: TastyUniverse =>
   type SingleType = symbolTable.SingleType
   type AnnotatedType = symbolTable.AnnotatedType
   type TypeBounds = symbolTable.TypeBounds
+  type RefinedType = symbolTable.RefinedType
 
   type ConstantType = symbolTable.ConstantType
   final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[symbolTable.ConstantType]
@@ -81,6 +82,7 @@ trait TastyKernel { self: TastyUniverse =>
   final def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   final def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
   final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
+  final def mkRefinedType(parents: List[Type], owner: Symbol, scope: Scope): Type = symbolTable.internal.refinedType(parents, owner, scope)
 
   final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
@@ -127,6 +129,7 @@ trait TastyKernel { self: TastyUniverse =>
 
   type Scope = symbolTable.Scope
   final def emptyScope: Scope = symbolTable.EmptyScope
+  final def mkScope(syms: Symbol*): Scope = symbolTable.newScopeWith(syms:_*)
 
   type Symbol = symbolTable.Symbol
   type MethodSymbol = symbolTable.MethodSymbol

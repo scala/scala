@@ -8,8 +8,12 @@ object TestRefinements extends Suite("TestRefinements") {
     def foo = ("I am foo", 23)
   }
 
-  val b = new Refinements.Bar[String, Int]
+  // val b1 = new Refinements.Bar[String, Int]
 
-  test(assert((b.bar(new FooIntString): (String, Int)) === ("I am foo", 23)))
+  // test(assert((b.bar(new FooIntString): (String, Int)) === ("I am foo", 23)))
+
+  val b2 = new Refinements.Baz[String, Int, FooIntString]
+
+  test(assert((b2.baz(new FooIntString): (String, Int)) === ("I am foo", 23)))
 
 }

@@ -361,17 +361,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             //     case _ => TypeRef(prefix, name, space.decl(name).asSeenFrom(prefix))
             //   }
             case REFINEDtype =>
-              // refined type acts as a nested list of refinements, recursing on the parent.
-              // We can check if parent is already a refined type and then clone its scope to append a new refinement
-              throw new TASTyException(s"REFINEDtype")
-
-              // var name: Name = readName()
-              // val parent = readType()
-              // val ttag = nextUnsharedTag
-              // if (ttag === TYPEBOUNDS || ttag === TYPEALIAS) name = name.toTypeName
-              // RefinedType(parent, name, readType())
-                // Note that the lambda "rt => ..." is not equivalent to a wildcard closure!
-                // Eta expansion of the latter puts readType() out of the expression.
+              var name: Name = readEncodedName()
+              val parent = readType()
+              val ttag = nextUnsharedTag
+              if (ttag === TYPEBOUNDS) name = name.toTypeName
+              val refinement = parent.member(name).cloneSymbol.setInfo(readType())
+              parent match {
+                case parent: RefinedType =>
+                  val scope = parent.decls.cloneScope
+                  scope.enter(refinement)
+                  mkRefinedType(parent.parents, ctx.owner, scope)
+                case parent =>
+                  mkRefinedType(parent :: Nil, ctx.owner, mkScope(refinement))
+              }
             case APPLIEDtype =>
               boundedAppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
