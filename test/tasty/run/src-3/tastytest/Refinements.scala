@@ -65,4 +65,20 @@ object Refinements {
     def bloc(m: M): A = m.poly()
   }
 
+  class Clip[A] {
+    def clip[M <: Methodic { def nullary: A }](m: M): A = m.nullary
+  }
+
+  class Clap[A] {
+    def clap[M <: Methodic { def nillary(): A }](m: M): A = m.nillary()
+  }
+
+  class Clam[A] {
+    def clam[M <: Methodic { val value: A }](m: M): A = m.value
+  }
+
+  class Cloc[A] {
+    def cloc[M <: Methodic { def poly[T](): A }](m: M): A = m.poly()
+  }
+
 }
