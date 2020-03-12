@@ -31,7 +31,7 @@ trait AsyncAnalysis extends TransformUtils  {
 
   private class UnsupportedAwaitAnalyzer extends AsyncTraverser {
     override def nestedClass(classDef: ClassDef): Unit = {
-      val kind = if (classDef.symbol.asClass.isTrait) "trait" else "class"
+      val kind = if (classDef.symbol.isTrait) "trait" else "class"
       reportUnsupportedAwait(classDef, s"nested $kind")
     }
 

@@ -78,7 +78,7 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
         val customParents = futureSystemOps.stateMachineClassParents
         // prefer extending a class to reduce the class file size of the state machine.
         // ... unless a custom future system already extends some class
-        val useClass = customParents.forall(_.typeSymbol.asClass.isTrait)
+        val useClass = customParents.forall(_.typeSymbol.isTrait)
 
         val fun1Tpe =
           if (useClass) definitions.abstractFunctionType(tryResult :: Nil, definitions.UnitTpe)
