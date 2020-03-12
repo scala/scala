@@ -1,10 +1,10 @@
-Test_2.scala:3: error: <$anon: C with A> inherits conflicting members:
+Test_2.scala:4: error: <$anon: C with A> inherits conflicting members:
   macro override def t(): Unit (defined in trait C) and
   def t(): Unit (defined in trait A)
   (note: this can be resolved by declaring an `override` in <$anon: C with A>.)
   val c2 = new C with A {}
                ^
-Test_2.scala:5: error: macro can only be overridden by another macro:
+Test_2.scala:6: error: macro can only be overridden by another macro:
 macro override def t(): Unit (defined in trait C)
   val c4 = new C with A { override def t(): Unit = () }
                                        ^

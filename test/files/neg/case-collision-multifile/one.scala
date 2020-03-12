@@ -1,1 +1,2 @@
+// scalac: -Werror
 class HotDog

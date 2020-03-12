@@ -1,56 +1,56 @@
-Macros_Test_2.scala:5: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:6: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Any]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): Int
 type mismatch for return type: Int does not conform to c.Expr[Any]
   def foo1 = macro Impls.foo1
                          ^
-Macros_Test_2.scala:6: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:7: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Any]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): reflect.runtime.universe.Literal
 type mismatch for return type: reflect.runtime.universe.Literal does not conform to c.Expr[Any]
   def foo2 = macro Impls.foo2
                          ^
-Macros_Test_2.scala:7: error: macro defs must have explicitly specified return types
+Macros_Test_2.scala:8: error: macro defs must have explicitly specified return types
   def foo3 = macro Impls.foo3
       ^
-Macros_Test_2.scala:8: error: macro defs must have explicitly specified return types
+Macros_Test_2.scala:9: error: macro defs must have explicitly specified return types
   def foo4 = macro ???
       ^
-Macros_Test_2.scala:9: error: macro defs must have explicitly specified return types
+Macros_Test_2.scala:10: error: macro defs must have explicitly specified return types
   def foo5 = macro Impls.foo5
       ^
-Macros_Test_2.scala:10: error: macro defs must have explicitly specified return types
+Macros_Test_2.scala:11: error: macro defs must have explicitly specified return types
   def foo6 = macro Impls.foo6
       ^
-Macros_Test_2.scala:13: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:14: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Int]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): Int
 type mismatch for return type: Int does not conform to c.Expr[Int]
   def bar1: Int = macro Impls.foo1
                               ^
-Macros_Test_2.scala:14: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:15: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Int]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): reflect.runtime.universe.Literal
 type mismatch for return type: reflect.runtime.universe.Literal does not conform to c.Expr[Int]
   def bar2: Int = macro Impls.foo2
                               ^
-Macros_Test_2.scala:32: error: exception during macro expansion:
+Macros_Test_2.scala:33: error: exception during macro expansion:
 java.lang.NullPointerException
 	at Impls$.foo3(Impls_1.scala:7)
 
   bar3
   ^
-Macros_Test_2.scala:33: error: macro implementation is missing
+Macros_Test_2.scala:34: error: macro implementation is missing
   bar4
   ^
-Macros_Test_2.scala:34: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+Macros_Test_2.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   bar5
   ^
-Macros_Test_2.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+Macros_Test_2.scala:36: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   bar6
   ^
 2 warnings

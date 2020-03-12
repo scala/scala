@@ -1,8 +1,8 @@
-Bar_2.scala:2: warning: match may not be exhaustive.
+Bar_2.scala:3: warning: match may not be exhaustive.
 It would fail on the following input: B
   def bar1(foo: Foo_1) = foo match {
                          ^
-Bar_2.scala:6: warning: match may not be exhaustive.
+Bar_2.scala:7: warning: match may not be exhaustive.
 It would fail on the following input: B
   def bar2(foo: Baz_1) = foo match {
                          ^

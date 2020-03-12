@@ -1,8 +1,8 @@
-t2442.scala:4: warning: match may not be exhaustive.
+t2442.scala:5: warning: match may not be exhaustive.
 It would fail on the following input: THREE
   def f(e: MyEnum) = e match {
                      ^
-t2442.scala:11: warning: match may not be exhaustive.
+t2442.scala:12: warning: match may not be exhaustive.
 It would fail on the following input: BLUE
   def g(e: MySecondEnum) = e match {
                            ^

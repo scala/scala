@@ -1,3 +1,4 @@
+// scalac: -Xsource:3.0
 class A
 class B extends A
 

@@ -1,4 +1,4 @@
-t2509-7b.scala:30: error: ambiguous implicit values:
+t2509-7b.scala:31: error: ambiguous implicit values:
  both method make in object X of type Both[X,X]
  and method make in trait Factory of type Both[Y,Y]
  match expected type Both[Y,X]

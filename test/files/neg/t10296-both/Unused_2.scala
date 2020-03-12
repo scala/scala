@@ -1,4 +1,4 @@
-
+// scalac: -Werror -Xlint:unused -Wmacros:both
 import scala.language.experimental.macros
 
 object Unused extends App {

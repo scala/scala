@@ -1,4 +1,4 @@
-t2509-2.scala:26: error: ambiguous implicit values:
+t2509-2.scala:27: error: ambiguous implicit values:
  both value xb in object Test of type X[B,Int]
  and value xa in object Test of type X[A,Boolean]
  match expected type X[B,U]
