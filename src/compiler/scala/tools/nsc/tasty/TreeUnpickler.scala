@@ -294,6 +294,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         Constant(null)
       case CLASSconst =>
         Constant(readType())
+      case ENUMconst =>
+        Constant(readTypeRef().termSymbol)
       case _ =>
         sys.error(s"unknown tag ${astTagToString(tag)} when reading constant")
     }
@@ -453,9 +455,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
             defn.ByNameParamClass.ref(readType() :: Nil) // ExprType(readType())
-          case ENUMconst =>
-            errorTasty("Enum Constant") //Constant(readTypeRef().termSymbol)
-            errorType
           case _ =>
             mkConstantType(readConstant(tag))
         }

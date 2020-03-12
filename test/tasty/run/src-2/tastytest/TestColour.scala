@@ -27,7 +27,10 @@ object TestColour extends Suite("TestColour") {
     }
   }
 
+  def constRed: Colour.Red.type = Colour.Red
+
   test("Red.red == 255")(assert(Colour.Red.red === 255))
+  test("constRed.red == 255")(assert(constRed.red === 255))
   test("RGB(10,25,30).red == 10")(assert(Colour.RGB(10,25,30).red === 10))
   test("Green.green == 255")(assert(Colour.Green.green === 255))
   test("RGB(10,25,30).green == 25")(assert(Colour.RGB(10,25,30).green === 25))
