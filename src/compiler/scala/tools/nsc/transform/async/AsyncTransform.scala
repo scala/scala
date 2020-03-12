@@ -14,9 +14,10 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import user.{FutureSystem, ScalaConcurrentFutureSystem}
-import scala.reflect.internal.Flags
+import scala.reflect.internal.{Flags, Mode}
 import scala.tools.nsc.Global
 import scala.tools.nsc.transform.TypingTransformers
+import scala.tools.nsc.typechecker.Analyzer
 
 // TODO: check there's no await outside of an async block
 
@@ -241,7 +242,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
           // Insert the null assignments immediately after the state transition
           for (fld <- flds) {
             val fieldSym = fld.symbol
-            stats1 += Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos))
+            stats1 += typed(Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos)))
           }
         }
         var foundStateTransition = false

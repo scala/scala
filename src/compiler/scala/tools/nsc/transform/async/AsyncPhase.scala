@@ -83,7 +83,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
             try {
               val (newRhs, liftableFields) = asyncTransform(asyncBody)
               liftables(dd.symbol.owner) = liftableFields
-              deriveDefDef(dd)(_ => localTyper.typed(newRhs))
+              deriveDefDef(dd)(_ => newRhs)
             } finally {
               currentTransformState = saved
             }

@@ -27,7 +27,8 @@ trait ExprBuilder extends TransformUtils {
   private def labelDefStates = currentTransformState.labelDefStates
 
   final class AsyncState(var stats: List[Tree], val state: Int, var nextStates: Array[Int], val isEmpty: Boolean) {
-    def mkHandlerCaseForState: CaseDef = CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))
+    def mkHandlerCaseForState: CaseDef =
+      CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))
 
     override def toString: String = mkToString + " (was: " + initToString + ")"
     private def mkToString = s"AsyncState #$state, next = ${nextStates.toList}"
@@ -95,7 +96,7 @@ trait ExprBuilder extends TransformUtils {
           val expr = stats.remove(stats.size - 1)
           stats += completeSuccess(expr)
         }
-        stats += Return(literalUnit).setSymbol(currentTransformState.applyMethod)
+        stats += typed(Return(literalUnit).setSymbol(currentTransformState.applyMethod))
         allNextStates -= nextState
       }
       if (nextState == StateAssigner.Terminal)
@@ -189,7 +190,7 @@ trait ExprBuilder extends TransformUtils {
             needAfterIfState ||= branchNeedsAfterIfState
             adaptToUnit(inlinedState.stats)
           }
-          stateBuilder.stats += treeCopy.If(stat, cond, mkBranch(thenp), mkBranch(elsep)).clearType()
+          stateBuilder.stats += treeCopy.If(stat, cond, mkBranch(thenp), mkBranch(elsep))
           if (needAfterIfState) {
             stateBuilder.nextStates += afterIfState
             buildStateAndOpenNextState(afterIfState, style = StateTransitionStyle.Update)
@@ -215,7 +216,7 @@ trait ExprBuilder extends TransformUtils {
               checkForUnsupportedAwait(guard)
               treeCopy.CaseDef(cd, pat, guard, mkBranch(rhs))
           }
-          stateBuilder.stats += treeCopy.Match(stat, scrutinee, newCases).clearType()
+          stateBuilder.stats += treeCopy.Match(stat, scrutinee, newCases)
 
           if (needAfterMatchState) {
             stateBuilder.nextStates += afterMatchState
@@ -245,7 +246,7 @@ trait ExprBuilder extends TransformUtils {
             // allowed even if this case has its own state (ie if there is an asynchrounous path
             // from the start of the pattern to this case/matchEnd)
             ld.symbol.setInfo(MethodType(Nil, definitions.UnitTpe))
-            stateBuilder.stats += treeCopy.LabelDef(ld, ld.name, ld.params, adaptToUnit(inlinedState.stats)).clearType()
+            stateBuilder.stats += treeCopy.LabelDef(ld, ld.name, ld.params, adaptToUnit(inlinedState.stats))
 
             val needsAfterLabelState = incorporate(nestedStates, afterLabelState)
             if (needsAfterLabelState) {
@@ -399,11 +400,11 @@ trait ExprBuilder extends TransformUtils {
         val symLookup = currentTransformState.symLookup
         def stateMemberRef = gen.mkApplyIfNeeded(symLookup.memberRef(symLookup.stateGetter))
         val body =
-          Match(stateMemberRef,
+          typed(Match(stateMemberRef,
                   asyncStates.map(_.mkHandlerCaseForState) ++
-                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), termNames.CONSTRUCTOR), List(gen.mkMethodCall(definitions.StringModule.info.member(nme.valueOf), stateMemberRef :: Nil)))))))
+                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), termNames.CONSTRUCTOR), List(gen.mkMethodCall(definitions.StringModule.info.member(nme.valueOf), stateMemberRef :: Nil))))))))
 
-        val body1 = compactStates(body)
+        val body1 = compactStates(body.asInstanceOf[Match])
 
         val stateMatch = maybeTry(currentTransformState.futureSystem.emitTryCatch)(
           body1,
@@ -415,12 +416,12 @@ trait ExprBuilder extends TransformUtils {
                 val t = Ident(nme.t)
                 val complete = futureSystemOps.completeProm[AnyRef](
                   symLookup.selectResult, futureSystemOps.tryyFailure[AnyRef](t))
-                Block(toList(complete), Return(literalUnit))
+                Block(toStats(complete), Return(literalUnit))
               }
               If(Apply(Ident(NonFatalClass), List(Ident(nme.t))), branchTrue, Throw(Ident(nme.t)))
                 branchTrue
             })), EmptyTree)
-        LabelDef(symLookup.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(symLookup.whileLabel), Nil)))
+        typed(LabelDef(symLookup.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(symLookup.whileLabel), Nil))))
       }
 
       private def compactStates = true
@@ -501,20 +502,20 @@ trait ExprBuilder extends TransformUtils {
     vd.symbol.setFlag(Flag.MUTABLE)
     val assignOrReturn = if (currentTransformState.futureSystem.emitTryCatch) {
       If(futureSystemOps.tryyIsFailure(tryyReference),
-        Block(toList(futureSystemOps.completeProm[AnyRef](currentTransformState.symLookup.selectResult, tryyReference)),
+        Block(toStats(futureSystemOps.completeProm[AnyRef](currentTransformState.symLookup.selectResult, tryyReference)),
           Return(literalBoxedUnit).setSymbol(currentTransformState.applyMethod)),
         assignTryGet
       )
     } else {
       assignTryGet
     }
-    vd :: assignOrReturn :: Nil
+    vd :: typed(assignOrReturn) :: Nil
   }
 
   // Comlete the Promise in the `result` field with the final sucessful result of this async block.
   private def completeSuccess(expr: Tree): Tree = {
     val futureSystemOps = currentTransformState.ops
-    futureSystemOps.completeWithSuccess(currentTransformState.symLookup.selectResult, expr)
+    typed(futureSystemOps.completeWithSuccess(currentTransformState.symLookup.selectResult, expr))
   }
 
   /** What trailing statements should be added to the code for this state to transition to the nest state? */
@@ -524,13 +525,14 @@ trait ExprBuilder extends TransformUtils {
       val symLookup = currentTransformState.symLookup
       val callSetter = Apply(symLookup.memberRef(symLookup.stateSetter), Literal(Constant(nextState)) :: Nil)
       val printStateUpdates = false
-      (if (printStateUpdates) {
+      val tree = if (printStateUpdates) {
         Block(
           callSetter :: Nil,
           gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")), currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(symLookup.memberRef(symLookup.stateGetter)), definitions.ObjectTpe) :: Nil)
         )
       }
-      else callSetter).updateAttachment(StateTransitionTree)
+      else callSetter
+      typed(tree.updateAttachment(StateTransitionTree))
     }
   }
 
@@ -567,11 +569,11 @@ trait ExprBuilder extends TransformUtils {
           val ifTree =
             If(Apply(null_ne, Ident(symLookup.applyTrParam) :: Nil),
               Apply(Ident(currentTransformState.symLookup.whileLabel), Nil),
-              Block(toList(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod)))
-          initAwaitableTemp :: initTempCompleted :: mkStateTree(nextState) :: ifTree :: Nil
+              Block(toStats(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod)))
+          typed(initAwaitableTemp) :: typed(initTempCompleted) :: mkStateTree(nextState) :: typed(ifTree) :: Nil
         } else {
           val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
-          mkStateTree(nextState) :: toList(callOnComplete) ::: Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod) :: Nil
+          mkStateTree(nextState) :: toStats(typed(callOnComplete)) ::: typed(Return(literalUnit)) :: Nil
         }
       }
     }
@@ -579,14 +581,14 @@ trait ExprBuilder extends TransformUtils {
     case object UpdateAndContinue extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState
-        List(mkStateTree(nextState), Apply(Ident(currentTransformState.symLookup.whileLabel), Nil))
+        List(mkStateTree(nextState), typed(Apply(Ident(currentTransformState.symLookup.whileLabel), Nil)))
       }
     }
   }
 
-  // TODO AM: should this explode blocks even when expr is not ()?
-  private def toList(tree: Tree): List[Tree] = tree match {
+  private def toStats(tree: Tree): List[Tree] = tree match {
     case Block(stats, expr) if isLiteralUnit(expr) => stats
+    case Block(stats, expr) => stats ::: (expr :: Nil)
     case _ => tree :: Nil
   }
 

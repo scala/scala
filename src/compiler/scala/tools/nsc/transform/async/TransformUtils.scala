@@ -15,6 +15,7 @@ package scala.tools.nsc.transform.async
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.language.existentials
+import scala.reflect.internal.Mode
 import scala.tools.nsc.transform.TypingTransformers
 
 // Logic sensitive to where we are in the pipeline
@@ -35,37 +36,23 @@ trait PhasedTransform extends TypingTransformers {
     case _ => false
   }
 
-  private def tpeOf(t: Tree): Type = t match {
-    case _ if t.tpe != null    => t.tpe
-    case Try(body, Nil, _)     => tpeOf(body)
-    case Block(_, expr)        => tpeOf(expr)
-    case Literal(Constant(())) => definitions.UnitTpe
-    case Return(_)             => definitions.NothingTpe
-    case _                     => NoType
-  }
-
   def adaptToUnit(rhs: List[Tree]): Block = {
-    def filterUnit(ts: List[Tree]): List[Tree] = {
-      val result = ts.filterNot(isLiteralUnit(_))
-      // if (result != ts)
-      //  getClass
-      result
-    }
+    def filterUnit(ts: List[Tree]): List[Tree] = ts.filterNot(isLiteralUnit(_))
     rhs match {
-      case (rhs: Block) :: Nil if { val tp = tpeOf(rhs); tp <:< definitions.UnitTpe || tp <:< definitions.BoxedUnitTpe } =>
+      case (rhs: Block) :: Nil if rhs.tpe <:< definitions.UnitTpe || rhs.tpe <:< definitions.BoxedUnitTpe =>
         rhs
-      case init :+ last if { val tp = tpeOf(last); tp <:< definitions.UnitTpe || tp <:< definitions.BoxedUnitTpe }        =>
-        Block(filterUnit(init), last)
+      case init :+ last if last.tpe <:< definitions.UnitTpe || last.tpe <:< definitions.BoxedUnitTpe=>
+        Block(filterUnit(init), last).setType(definitions.UnitTpe)
       case init :+ (last@Literal(Constant(())))                       =>
-        Block(filterUnit(init), last)
+        Block(filterUnit(init), last).setType(definitions.UnitTpe)
       case init :+ (last@Block(_, Return(_) | Literal(Constant(())))) =>
-        Block(filterUnit(init), last)
+        Block(filterUnit(init), last).setType(definitions.UnitTpe)
       case init :+ (last@Block(_, expr)) if expr.symbol == definitions.BoxedUnit_UNIT =>
-        Block(filterUnit(init), last)
+        Block(filterUnit(init), last).setType(definitions.UnitTpe)
       case init :+ Block(stats, expr)                                 =>
-        Block(filterUnit(init), Block(filterUnit(stats :+ expr), literalUnit))
+        Block(filterUnit(init), Block(filterUnit(stats :+ expr), literalUnit)).setType(definitions.UnitTpe)
       case _                                                          =>
-        Block(filterUnit(rhs), literalUnit)
+        Block(filterUnit(rhs), literalUnit).setType(definitions.UnitTpe)
     }
   }
 }
@@ -83,6 +70,10 @@ private[async] trait TransformUtils extends PhasedTransform {
     def fresh(name: TermName): TermName = freshenIfNeeded(name)
     def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
   }
+
+  def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
+  def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos, mode, pt)(tree)
+  def typed(tree: Tree): Tree = typedPos(currentTransformState.applyMethod.pos)(tree)
 
   def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
     if (emitTryCatch) Try(block, catches, finalizer) else block
