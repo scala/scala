@@ -25,8 +25,8 @@ trait TastyKernel { self: TastyUniverse =>
   type Reporter = internal.Reporter
   final def reporter: Reporter = symbolTable.reporter
 
-  type Postion = symbolTable.Position
-  final def noPosition: Postion = symbolTable.NoPosition
+  type Position = symbolTable.Position
+  final def noPosition: Position = symbolTable.NoPosition
 
   private[bridge] final def settings: Settings = symbolTable.settings
   private[bridge] final def phase: Phase = symbolTable.phase
@@ -82,7 +82,8 @@ trait TastyKernel { self: TastyUniverse =>
   final def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   final def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
   final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
-  final def mkRefinedType(parents: List[Type], owner: Symbol, scope: Scope): Type = symbolTable.internal.refinedType(parents, owner, scope)
+  final def mkRefinedType(parents: List[Type], owner: Symbol, scope: Scope): Type = symbolTable.refinedType(parents, owner, scope, noPosition)
+  final def mkRefinedType(parents: List[Type], clazz: Symbol): RefinedType = symbolTable.RefinedType.apply(parents, mkScope, clazz)
 
   final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
@@ -130,6 +131,7 @@ trait TastyKernel { self: TastyUniverse =>
   type Scope = symbolTable.Scope
   final def emptyScope: Scope = symbolTable.EmptyScope
   final def mkScope(syms: Symbol*): Scope = symbolTable.newScopeWith(syms:_*)
+  final def mkScope: Scope = symbolTable.newScope
 
   type Symbol = symbolTable.Symbol
   type MethodSymbol = symbolTable.MethodSymbol
@@ -137,6 +139,7 @@ trait TastyKernel { self: TastyUniverse =>
   type ModuleSymbol = symbolTable.ModuleSymbol
   type ClassSymbol = symbolTable.ClassSymbol
   type FreeTypeSymbol = symbolTable.FreeTypeSymbol
+  type RefinementClassSymbol = symbolTable.RefinementClassSymbol
 
   type Constant = symbolTable.Constant
   final def Constant(value: Any): Constant = symbolTable.Constant(value)
@@ -265,8 +268,6 @@ trait TastyKernel { self: TastyUniverse =>
   final def mkFunctionTypeTree(argtpes: List[Tree], restpe: Tree): Tree = symbolTable.gen.mkFunctionTypeTree(argtpes, restpe)
 
   final def emptyTree: Tree = symbolTable.EmptyTree
-
-  final def mkScope: Scope = symbolTable.newScope
 
   final def withPhaseNoLater[T](phase: Phase)(op: => T): T = symbolTable.enteringPhaseNotLaterThan[T](phase)(op)
 

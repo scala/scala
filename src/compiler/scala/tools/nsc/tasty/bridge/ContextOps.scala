@@ -110,6 +110,8 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
         sym
       }
 
+      def newRefinedClassSymbol(coord: Position): RefinementClassSymbol = owner.newRefinementClass(coord)
+
       /** if isConstructor, make sure it has one non-implicit parameter list */
       def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
         if (isConstructor &&

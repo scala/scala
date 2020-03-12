@@ -2,18 +2,28 @@ package tastytest
 
 object TestRefinements extends Suite("TestRefinements") {
 
-  class FooIntString extends Refinements.Foo {
+  class FooStringInt extends Refinements.Foo {
     type T = String
     type U = Int
     def foo = ("I am foo", 23)
   }
 
-  // val b1 = new Refinements.Bar[String, Int]
+  trait FooString extends Refinements.FooT {
+    type T = String
+    def fooT = "I am foo"
+  }
 
-  // test(assert((b.bar(new FooIntString): (String, Int)) === ("I am foo", 23)))
+  trait FooInt extends Refinements.FooU {
+    type U = Int
+    def fooU = 23
+  }
 
-  val b2 = new Refinements.Baz[String, Int, FooIntString]
+  test(assert((new Refinements.Bar[String, Int].bar(new FooStringInt)) == ("I am foo", 23)))
 
-  test(assert((b2.baz(new FooIntString): (String, Int)) === ("I am foo", 23)))
+  test(assert((new Refinements.Baz[String, Int, FooStringInt].baz(new FooStringInt): (String, Int)) === ("I am foo", 23)))
+
+  test(assert((new Refinements.Qux[String, Int, FooString with FooInt].qux( new FooString with FooInt ): (String, Int)) === ("I am foo", 23)))
+
+  test(assert((new Refinements.Zot[String, Int].zot( new FooString with FooInt )) == ("I am foo", 23)))
 
 }

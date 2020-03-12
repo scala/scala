@@ -1,0 +1,9 @@
+BadRefinements2_fail.scala:11: error: inferred type arguments [tastytest.BadRefinements.FooIntString] do not conform to method bar's type parameter bounds [F <: tastytest.Refinements.Foo{type T = Long; type U = Boolean}]
+  val b2 = new Refinements.Bar[Long, Boolean].bar(new FooIntString)
+                                              ^
+BadRefinements2_fail.scala:11: error: type mismatch;
+ found   : tastytest.BadRefinements.FooIntString
+ required: F
+  val b2 = new Refinements.Bar[Long, Boolean].bar(new FooIntString)
+                                                  ^
+2 errors
