@@ -1,4 +1,4 @@
-t562.scala:10: error: super may not be used on value y
+t562.scala:10: error: super may not be used on value y; super can only be used to select a member that is a method or type
   override val y = super.y;
                          ^
 1 error

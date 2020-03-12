@@ -367,7 +367,8 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
               case Super(_, mix) =>
                 if (sym.isValue && !sym.isMethod || sym.hasAccessorFlag) {
-                  reporter.error(tree.pos, "super may not be used on " + sym.accessedOrSelf)
+                  val more = "super can only be used to select a member that is a method or type"
+                  reporter.error(tree.pos, s"super may not be used on ${ if (sym.isLazy) sym else sym.accessedOrSelf }; $more")
                 } else if (isDisallowed(sym)) {
                   reporter.error(tree.pos, "super not allowed here: use this." + name.decode + " instead")
                 }
