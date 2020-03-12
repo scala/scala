@@ -27,12 +27,9 @@ trait AsyncAnalysis extends TransformUtils  {
   def reportUnsupportedAwaits(tree: Tree): Unit = {
     val analyzer = new UnsupportedAwaitAnalyzer
     analyzer.traverse(tree)
-    // analyzer.hasUnsupportedAwaits // XB: not used?!
   }
 
   private class UnsupportedAwaitAnalyzer extends AsyncTraverser {
-    var hasUnsupportedAwaits = false
-
     override def nestedClass(classDef: ClassDef): Unit = {
       val kind = if (classDef.symbol.asClass.isTrait) "trait" else "class"
       reportUnsupportedAwait(classDef, s"nested $kind")
@@ -70,7 +67,6 @@ trait AsyncAnalysis extends TransformUtils  {
         case ValDef(mods, _, _, _) if mods.hasFlag(Flags.LAZY) && containsAwait(tree) =>
           reportUnsupportedAwait(tree, "lazy val initializer")
         case CaseDef(_, guard, _) if guard exists isAwait     =>
-          // TODO lift this restriction
           reportUnsupportedAwait(tree, "pattern guard")
         case _                                                =>
           super.traverse(tree)
@@ -102,7 +98,6 @@ trait AsyncAnalysis extends TransformUtils  {
     }
 
     private def reportError(pos: Position, msg: String): Unit = {
-      hasUnsupportedAwaits = true
       abort(pos, msg)
     }
   }
