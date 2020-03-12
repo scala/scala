@@ -18,10 +18,55 @@ import scala.language.existentials
 import scala.reflect.internal.Mode
 import scala.tools.nsc.transform.TypingTransformers
 
-// Logic sensitive to where we are in the pipeline
-// (intend to move the transformation as late as possible, to avoid lugging all these trees around)
-trait PhasedTransform extends TypingTransformers {
+/**
+ * Utilities used in both `ExprBuilder` and `AnfTransform`.
+ */
+private[async] trait TransformUtils extends TypingTransformers {
   import global._
+
+  def currentTransformState: AsyncTransformState[global.type]
+  val asyncNames: AsyncNames[global.type]
+  object name extends asyncNames.AsyncName {
+    def fresh(name: TermName): TermName = freshenIfNeeded(name)
+    def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
+  }
+
+  def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
+  def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos, mode, pt)(tree)
+  def typed(tree: Tree): Tree = typedPos(currentTransformState.applyMethod.pos)(tree)
+
+  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
+    if (emitTryCatch) Try(block, catches, finalizer) else block
+
+  lazy val IllegalStateExceptionClass: Symbol = rootMirror.staticClass("java.lang.IllegalStateException")
+
+  def isAsync(fun: Tree): Boolean = fun.symbol == currentTransformState.ops.Async_async
+  def isAwait(fun: Tree): Boolean = fun.symbol == currentTransformState.ops.Async_await
+
+  def isBooleanShortCircuit(sym: Symbol): Boolean =
+    sym.owner == definitions.BooleanClass && (sym == definitions.Boolean_and || sym == definitions.Boolean_or)
+
+  def isLabel(sym: Symbol): Boolean = sym != null && sym.isLabel
+  def isCaseLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("case")
+  def isMatchEndLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("matchEnd")
+
+  def substituteTrees(t: Tree, from: List[Symbol], to: List[Tree]): Tree =
+    (new TreeSubstituter(from, to)).transform(t)
+
+  def statsAndExpr(tree: Tree): (List[Tree], Tree) = tree match {
+    case Block(stats, expr) => (stats, expr)
+    case _                  =>
+      if (tree.tpe <:< definitions.UnitTpe) (Nil, tree)
+      else (List(tree), literalUnit)
+  }
+
+  def listToBlock(trees: List[Tree]): Block = trees match {
+    case trees @ (init :+ last) =>
+      val pos = trees.map(_.pos).reduceLeft(_ union _)
+      Block(init, last).setType(last.tpe).setPos(pos)
+    case Nil =>
+      throw new MatchError(trees)
+  }
 
   def assignUnitType(t: Tree): t.type = t.setType(definitions.UnitTpe)
 
@@ -54,58 +99,6 @@ trait PhasedTransform extends TypingTransformers {
       case _                                                          =>
         Block(filterUnit(rhs), literalUnit).setType(definitions.UnitTpe)
     }
-  }
-}
-
-
-/**
- * Utilities used in both `ExprBuilder` and `AnfTransform`.
- */
-private[async] trait TransformUtils extends PhasedTransform {
-  import global._
-
-  def currentTransformState: AsyncTransformState[global.type]
-  val asyncNames: AsyncNames[global.type]
-  object name extends asyncNames.AsyncName {
-    def fresh(name: TermName): TermName = freshenIfNeeded(name)
-    def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
-  }
-
-  def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
-  def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos, mode, pt)(tree)
-  def typed(tree: Tree): Tree = typedPos(currentTransformState.applyMethod.pos)(tree)
-
-  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
-    if (emitTryCatch) Try(block, catches, finalizer) else block
-
-  lazy val IllegalStateExceptionClass = rootMirror.staticClass("java.lang.IllegalStateException")
-
-  def isAsync(fun: Tree) = fun.symbol == currentTransformState.ops.Async_async
-  def isAwait(fun: Tree) = fun.symbol == currentTransformState.ops.Async_await
-
-  def isBooleanShortCircuit(sym: Symbol): Boolean =
-    sym.owner == definitions.BooleanClass && (sym == definitions.Boolean_and || sym == definitions.Boolean_or)
-
-  def isLabel(sym: Symbol): Boolean = sym != null && sym.isLabel
-  def isCaseLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("case")
-  def isMatchEndLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("matchEnd")
-
-  def substituteTrees(t: Tree, from: List[Symbol], to: List[Tree]): Tree =
-    (new TreeSubstituter(from, to)).transform(t)
-
-  def statsAndExpr(tree: Tree): (List[Tree], Tree) = tree match {
-    case Block(stats, expr) => (stats, expr)
-    case _                  =>
-      if (tree.tpe <:< definitions.UnitTpe) (Nil, tree)
-      else (List(tree), literalUnit)
-  }
-
-  def listToBlock(trees: List[Tree]): Block = trees match {
-    case trees @ (init :+ last) =>
-      val pos = trees.map(_.pos).reduceLeft(_ union _)
-      Block(init, last).setType(last.tpe).setPos(pos)
-    case Nil =>
-      throw new MatchError(trees)
   }
 
   private object ThicketAttachment
