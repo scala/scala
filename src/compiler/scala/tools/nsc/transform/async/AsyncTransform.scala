@@ -275,7 +275,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     //   - lifted local variables are entered into the scope of the state machine class
     //   - references to them are rewritten as referencs to the fields.
     //   - the rhs of ValDefs that initialize such fields is turned into an assignment to the field
-    object UseFields extends explicitOuter.OuterPathTransformer(currentTransformState.unit) {
+    object UseFields extends explicitOuter.OuterPathTransformer(currentTransformState.localTyper) {
       private def fieldSel(tree: Tree) = {
         assert(currentOwner != NoSymbol)
         val outerOrThis = if (stateMachineClass == currentClass) gen.mkAttributedThis(stateMachineClass) else {

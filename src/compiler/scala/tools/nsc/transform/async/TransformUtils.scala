@@ -102,7 +102,7 @@ private[async] trait TransformUtils extends TypingTransformers {
   }
 
   private object ThicketAttachment
-  class ThicketTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
+  class ThicketTransformer(unit: CompilationUnit, initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
     private def expandThicket(t: Tree): List[Tree] = t match {
       case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
         stats :+ expr
@@ -120,22 +120,45 @@ private[async] trait TransformUtils extends TypingTransformers {
 
     override def transform(tree: Tree): Tree = tree match {
       case Block(stats, expr) =>
-        val stats1 = mutable.ListBuffer[Tree]()
-        transformTrees(stats).foreach {
+        val transformedStats = transformTrees(stats)
+        val transformedExpr = transform(expr)
+        def expandStats(expanded: mutable.ListBuffer[Tree]) = transformedStats.foreach {
           case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
-            stats1 ++= stats
-            stats1 += expr
+            expanded ++= stats
+            expanded += expr
           case t =>
-            stats1 += t
+            expanded += t
         }
-        val expr1 = transform(expr) match {
+        def expandExpr(expanded: mutable.ListBuffer[Tree]): Tree = transformedExpr match {
           case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
-            stats1 ++= stats
+            expanded ++= stats
             expr
-          case expr =>
-            expr
+          case t =>
+            t
         }
-        treeCopy.Block(tree, stats1.toList, expr1)
+
+        if (stats eq transformedStats) {
+          if (expr eq transformedExpr) tree
+          else {
+            val expanded = new mutable.ListBuffer[Tree]
+            expanded ++= transformedStats
+            val expr1 = expandExpr(expanded)
+            if (expanded.isEmpty)
+              treeCopy.Block(tree, transformedStats, expr1)
+            else
+              treeCopy.Block(tree, expanded.toList, expr1)
+          }
+        } else {
+          val expanded = new mutable.ListBuffer[Tree]
+          if (expr eq transformedExpr) {
+            expandStats(expanded)
+            treeCopy.Block(tree, expanded.toList, expr)
+          } else {
+            expandStats(expanded)
+            val expr1 = expandExpr(expanded)
+            treeCopy.Block(tree, expanded.toList, expr1)
+          }
+        }
       case _ =>
         super.transform(tree)
     }
@@ -232,17 +255,17 @@ private[async] trait TransformUtils extends TypingTransformers {
       t.setAttachments(t.attachments.addElement(NoAwait))
     }
 
-    var stack: List[Tree] = Nil
+    var stack = mutable.ArrayStack[Tree]()
 
     override def traverse(tree: Tree): Unit = {
-      stack ::= tree
+      stack.push(tree)
       try {
         if (isAwait(tree))
           stack.foreach(attachContainsAwait)
         else
           attachNoAwait(tree)
         super.traverse(tree)
-      } finally stack = stack.tail
+      } finally stack.pop()
     }
   }
 

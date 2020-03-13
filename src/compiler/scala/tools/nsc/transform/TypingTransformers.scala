@@ -21,12 +21,15 @@ trait TypingTransformers {
   val global: Global
   import global._
 
-  abstract class TypingTransformer(unit: CompilationUnit) extends Transformer {
-    var localTyper: analyzer.Typer =
-      if (phase.erasedTypes)
-        erasure.newTyper(erasure.rootContextPostTyper(unit, EmptyTree)).asInstanceOf[analyzer.Typer]
-      else // TODO: AM: should some phases use a regular rootContext instead of a post-typer one??
-        analyzer.newTyper(analyzer.rootContextPostTyper(unit, EmptyTree))
+  protected def newRootLocalTyper(unit: CompilationUnit): analyzer.Typer = if (phase.erasedTypes)
+    erasure.newTyper(erasure.rootContextPostTyper(unit, EmptyTree)).asInstanceOf[analyzer.Typer]
+  else // TODO: AM: should some phases use a regular rootContext instead of a post-typer one??
+    analyzer.newTyper(analyzer.rootContextPostTyper(unit, EmptyTree))
+
+  abstract class TypingTransformer(initLocalTyper: global.analyzer.Typer) extends Transformer {
+    def this(unit: CompilationUnit) = this(newRootLocalTyper(unit))
+    var localTyper: analyzer.Typer = initLocalTyper
+    currentOwner = localTyper.context.owner
     protected var curTree: Tree = _
 
     override final def atOwner[A](owner: Symbol)(trans: => A): A = atOwner(curTree, owner)(trans)

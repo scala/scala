@@ -592,7 +592,8 @@ trait ExprBuilder extends TransformUtils {
     labelDefStates.getOrElseUpdate(label, StateAssigner.stateIdForLabel(label))
 
   // Replace jumps to qualifying labels as a state transition.
-  private class JumpReplacer(states: StateSet, state: Int, shouldReplace: Symbol => Boolean) extends ThicketTransformer(currentTransformState.unit) {
+  private class JumpReplacer(states: StateSet, state: Int, shouldReplace: Symbol => Boolean)
+    extends ThicketTransformer(currentTransformState.unit, currentTransformState.localTyper) {
     override def transform(tree: Tree): Tree = tree match {
       case Apply(fun, args) if isLabel(fun.symbol) =>
         if (shouldReplace(fun.symbol)) {

@@ -31,7 +31,7 @@ private[async] trait AnfTransform extends TransformUtils {
     trans.atOwner(tree, owner) { trans.apply(tree) }
   }
 
-  private final class AnfTransformer() extends TypingTransformer(currentTransformState.unit) {
+  private final class AnfTransformer() extends TypingTransformer(currentTransformState.localTyper) {
     /** Main entry point to the ANF transform. */
     def apply(tree: Tree): Block = {
       transformNewControlFlowBlock(tree) match {
@@ -376,7 +376,8 @@ private[async] trait AnfTransform extends TransformUtils {
     }
   }
 
-  final class MatchResultTransformer(caseDefToMatchResult: collection.Map[Symbol, Symbol]) extends ThicketTransformer(currentTransformState.unit) {
+  final class MatchResultTransformer(caseDefToMatchResult: collection.Map[Symbol, Symbol])
+    extends ThicketTransformer(currentTransformState.unit, currentTransformState.localTyper) {
     override def transform(tree: Tree): Tree = {
       tree match {
         case _: Function | _: MemberDef =>
