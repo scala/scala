@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 package instrumented
 
 object MyPredef {
