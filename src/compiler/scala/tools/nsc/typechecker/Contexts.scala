@@ -70,25 +70,38 @@ trait Contexts { self: Analyzer =>
     mutable.Map[CompilationUnit, List[(ImportInfo, Symbol)]]() withDefaultValue Nil
 
   def warnUnusedImports(unit: CompilationUnit) = {
-    @tailrec def warnUnusedImportInfos(infos: List[(ImportInfo, Symbol)]): Unit =
-      infos match {
-        case (info, owner) :: rest =>
-          val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
-          @tailrec def checkSelectors(selectors: List[ImportSelector]): Unit =
-            selectors match {
-              case selector :: rest =>
-                if (!selector.isMask && !used(selector))
-                  runReporting.warning(info.posOf(selector), "Unused import", WarningCategory.UnusedImports, site = owner)
-                checkSelectors(rest)
-              case _ =>
-            }
-          checkSelectors(info.tree.selectors)
-          warnUnusedImportInfos(rest)
+    def cullUnusedSelections(infos0: List[(ImportInfo, Symbol)]): List[(Position, Symbol)] = {
+      var unused = List.empty[(Position, Symbol)]
+      @tailrec def loop(infos: List[(ImportInfo, Symbol)]): Unit =
+        infos match {
+          case (info, owner) :: rest =>
+            val used = allUsedSelectors.remove(info).getOrElse(Set.empty)
+            // since we are going in reverse order, add unused selectors from right to left, last to first
+            def checkSelectors(selectors: List[ImportSelector]): Unit =
+              selectors match {
+                case selector :: rest =>
+                  checkSelectors(rest)
+                  if (!selector.isMask && !used(selector))
+                    unused ::= ((info.posOf(selector), owner))
+                case _ =>
+              }
+            checkSelectors(info.tree.selectors)
+            loop(rest)
+          case _ =>
+        }
+      loop(infos0)
+      unused
+    }
+    @tailrec def warnUnusedSelections(unused: List[(Position, Symbol)]): Unit =
+      unused match {
+        case (pos, site) :: rest =>
+          runReporting.warning(pos, "Unused import", WarningCategory.UnusedImports, site = site)
+          warnUnusedSelections(rest)
         case _ =>
       }
     if (!unit.isJava)
       allImportInfos.remove(unit) match {
-        case Some(importInfos) => warnUnusedImportInfos(importInfos.reverse)
+        case Some(importInfos) => warnUnusedSelections(cullUnusedSelections(importInfos))
         case _                 => ()
       }
   }
