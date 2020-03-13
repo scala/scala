@@ -579,11 +579,19 @@ trait ReificationSupport { self: SymbolTable =>
     protected class SyntacticValDefBase(isMutable: Boolean) extends SyntacticValDefExtractor {
       def modifiers(mods: Modifiers): Modifiers = if (isMutable) mods | MUTABLE else mods
 
-      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef = ValDef(modifiers(mods), name, tpt, rhs)
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef =
+        apply(mods, name, tpt, rhs, noWarnAttachment = false)
 
-      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)] = tree match {
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree, noWarnAttachment: Boolean): ValDef = {
+        val valDef = ValDef(modifiers(mods), name, tpt, rhs)
+        if (noWarnAttachment)
+          valDef.updateAttachment(NoWarnAttachment)
+        valDef
+      }
+
+      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree, Boolean)] = tree match {
         case ValDef(mods, name, tpt, rhs) if mods.hasFlag(MUTABLE) == isMutable =>
-          Some((mods, name, tpt, rhs))
+          Some((mods, name, tpt, rhs, tree.hasAttachment[NoWarnAttachment.type]))
         case _ =>
           None
       }

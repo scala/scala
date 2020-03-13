@@ -711,7 +711,8 @@ trait Internals { self: Universe =>
 
     trait SyntacticValDefExtractor {
       def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree): ValDef
-      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree)]
+      def apply(mods: Modifiers, name: TermName, tpt: Tree, rhs: Tree, noWarnAttachment: Boolean): ValDef
+      def unapply(tree: Tree): Option[(Modifiers, TermName, Tree, Tree, Boolean)]
     }
 
     val SyntacticPatDef: SyntacticPatDefExtractor

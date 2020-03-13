@@ -180,10 +180,10 @@ trait Reifiers { self: Quasiquotes =>
       case SyntacticDefDef(mods, name, tparams, vparamss, tpt, rhs) =>
         mirrorBuildCall(nme.SyntacticDefDef, reify(mods), reify(name), reify(tparams),
                                              reifyVparamss(vparamss), reify(tpt), reify(rhs))
-      case SyntacticValDef(mods, name, tpt, rhs) if tree != noSelfType =>
-        reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs)
-      case SyntacticVarDef(mods, name, tpt, rhs) =>
-        reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs)
+      case SyntacticValDef(mods, name, tpt, rhs, noWarnAttachment) if tree != noSelfType =>
+        reifyBuildCall(nme.SyntacticValDef, mods, name, tpt, rhs, noWarnAttachment)
+      case SyntacticVarDef(mods, name, tpt, rhs, noWarnAttachment) =>
+        reifyBuildCall(nme.SyntacticVarDef, mods, name, tpt, rhs, noWarnAttachment)
       case SyntacticValFrom(pat, rhs) =>
         reifyBuildCall(nme.SyntacticValFrom, pat, rhs)
       case SyntacticValEq(pat, rhs) =>
@@ -364,8 +364,8 @@ trait Reifiers { self: Quasiquotes =>
       case ParamPlaceholder(Hole(tree, DotDot)) => tree
       case SyntacticPatDef(mods, pat, tpt, rhs) =>
         reifyBuildCall(nme.SyntacticPatDef, mods, pat, tpt, rhs)
-      case SyntacticValDef(mods, p @ Placeholder(h: ApplyHole), tpt, rhs) if h.tpe <:< treeType =>
-        mirrorBuildCall(nme.SyntacticPatDef, reify(mods), h.tree, reify(tpt), reify(rhs))
+      case SyntacticValDef(mods, p @ Placeholder(h: ApplyHole), tpt, rhs, noWarnAttachment) if h.tpe <:< treeType =>
+        mirrorBuildCall(nme.SyntacticPatDef, reify(mods), h.tree, reify(tpt), reify(rhs), reify(noWarnAttachment))
     }
 
     val fillListOfListsHole: PartialFunction[Any, Tree] = {

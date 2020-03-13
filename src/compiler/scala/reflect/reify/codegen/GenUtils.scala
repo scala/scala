@@ -57,7 +57,7 @@ trait GenUtils {
     call("" + nme.UNIVERSE_BUILD_PREFIX + name, args: _*)
 
   def reifyBuildCall(name: TermName, args: Any*) =
-      mirrorBuildCall(name, args map reify: _*)
+    mirrorBuildCall(name, args map reify: _*)
 
   def mirrorMirrorCall(name: TermName, args: Tree*): Tree =
     call("" + nme.MIRROR_PREFIX + name, args: _*)
