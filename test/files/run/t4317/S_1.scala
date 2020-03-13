@@ -1,3 +1,4 @@
+// scalac: -Werror
 import language.existentials
 
 object S_1 {

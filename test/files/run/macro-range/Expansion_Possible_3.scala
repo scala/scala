@@ -1,3 +1,4 @@
+import scala.language.experimental.macros
 class Range(val from: Int, val to: Int) extends RangeDefault {
   override def foreach(f: Int => Unit): Unit = macro Impls.foreach
 }

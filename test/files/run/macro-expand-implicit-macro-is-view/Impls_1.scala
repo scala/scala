@@ -1,3 +1,4 @@
+// scalac: -deprecation
 import scala.reflect.macros.blackbox.Context
 
 object Impls {

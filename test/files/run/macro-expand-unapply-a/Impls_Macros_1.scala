@@ -1,3 +1,4 @@
+import scala.language.experimental.macros
 import scala.reflect.macros.whitebox.Context
 
 object Helper {

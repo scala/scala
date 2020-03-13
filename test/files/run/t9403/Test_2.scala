@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 import p.C
 import scala.tools.asm.Opcodes
 import scala.tools.partest.BytecodeTest

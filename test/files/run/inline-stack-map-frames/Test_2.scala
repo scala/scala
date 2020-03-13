@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 class C {
   def t(a: A): AnyRef = {
     // a.a is inlined, resulting in a.b, which has return type B

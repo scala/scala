@@ -1,3 +1,4 @@
+// scalac: -Xsource:3.0
 import scala.language.implicitConversions
 
 class A

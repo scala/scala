@@ -1,5 +1,6 @@
 package test4
 
+import scala.language.experimental.macros
 import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.api.Universe
