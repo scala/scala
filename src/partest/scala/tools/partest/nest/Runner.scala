@@ -46,9 +46,6 @@ case class TestInfo(testFile: File) {
   /** pos/t1234.check */
   val checkFile: File = testFile.changeExtension("check")
 
-  /** pos/t1234.flags */
-  val flagsFile: File = testFile.changeExtension("flags")
-
   // outputs
 
   /** pos/t1234-pos.log */
@@ -462,14 +459,11 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     state
   }
 
-  // snort or scarf all the contributing flags files
+  // all sources in a round may contribute flags via // scalac: -flags
   def flagsForCompilation(sources: List[File]): List[String] = {
-    val perKind  = readOptionsFile(testFile.getParentFile.changeExtension("flags"))
-    val perTest  = readOptionsFile(flagsFile)
-    val perGroup = if (testFile.isDirectory) sources.flatMap(f => readOptionsFile(f.changeExtension("flags"))) else Nil
-    val perFile  = toolArgsFor(sources)("scalac")
-    //println(s"flags $perKind/$perGroup/$perTest/$perFile")
-    perKind ++ perGroup ++ perTest ++ perFile
+    val perFile = toolArgsFor(sources)("scalac")
+    if (parentFile.getParentFile.getName == "macro-annot") "-Ymacro-annotations" :: perFile
+    else perFile
   }
 
   // inspect sources for tool args
