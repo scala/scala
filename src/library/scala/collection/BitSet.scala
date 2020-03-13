@@ -26,7 +26,7 @@ import scala.collection.mutable.Builder
   *
   * @define bitsetinfo
   *  Bitsets are sets of non-negative integers which are represented as
-  *  variable-size arrays of bits packed into 64-bit words. The memory footprint of a bitset is
+  *  variable-size arrays of bits packed into 64-bit words. The lower bound of memory footprint of a bitset is
   *  determined by the largest number stored in it.
   * @define coll bitset
   * @define Coll `BitSet`
