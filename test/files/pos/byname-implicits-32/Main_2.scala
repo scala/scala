@@ -1,4 +1,4 @@
-// scalac: -Ycheck:all
+// scalac: -Ycheck:_
 object Test {
   util.lazily[Ping]
 }

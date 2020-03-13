@@ -1,4 +1,4 @@
-// scalac: -Xlog-reflective-calls
+// scalac: -Vreflective-calls
 object Test extends App {
   import Interpolation._
   42 match {
