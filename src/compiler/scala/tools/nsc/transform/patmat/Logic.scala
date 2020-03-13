@@ -16,7 +16,7 @@ package tools.nsc.transform.patmat
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.Collections._
-import scala.reflect.internal.util.{HashSet, NoPosition, Position, StatisticsStatics}
+import scala.reflect.internal.util.{HashSet, StatisticsStatics}
 
 trait Logic extends Debugging  {
   import global._
