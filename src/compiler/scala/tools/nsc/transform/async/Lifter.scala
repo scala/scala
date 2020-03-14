@@ -100,7 +100,7 @@ trait Lifter extends ExprBuilder {
     val defSymToReferenced: mutable.LinkedHashMap[Symbol, List[Symbol]] = defs.map {
       case (tree, _) => (tree.symbol, tree.collect {
         case rt: RefTree if symToDefiningState.contains(rt.symbol) => rt.symbol
-      })
+      } ::: tree.symbol.info.collect { case TypeRef(_, sym, _) if symToDefiningState.contains(sym) => sym })
     }
 
     // The direct references of each block, excluding references of `DefTree`-s which
