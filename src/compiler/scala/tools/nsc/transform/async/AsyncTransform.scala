@@ -67,7 +67,7 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
         stateMachine$async.result$async.future
       }
     */
-  def apply(callsiteTyper: analyzer.Typer, asyncBody: Tree, execContext: Tree, resultType: Type, originalOwner: Symbol) = {
+  def apply(callsiteTyper: analyzer.Typer, asyncBody: Tree, execContext: Tree, resultType: Type) = {
     val tryResult = futureSystemOps.tryType(resultType)
 
     val execContextTempVal =
@@ -102,7 +102,9 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
 
       val applyFSM: DefDef = {
         val applyVParamss = List(List(ValDef(Modifiers(Flags.PARAM), nme.tr, TypeTree(tryResult), EmptyTree)))
-        DefDef(NoMods, nme.apply, Nil, applyVParamss, TypeTree(definitions.UnitTpe), Block(asyncBody.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))).updateAttachment(ChangeOwnerAttachment(originalOwner))
+        DefDef(NoMods, nme.apply, Nil, applyVParamss, TypeTree(definitions.UnitTpe), Block(
+          asyncBody.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))
+        ).updateAttachment(ChangeOwnerAttachment(callsiteTyper.context.owner))
       }
       applyFSM.updateAttachment(new FutureSystemAttachment(futureSystem))
 
@@ -131,48 +133,35 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
 }
 
 class AsyncTransformState[U <: Global with Singleton](val symbolTable: U, val futureSystem: FutureSystem,
-                                                      val unit: U#CompilationUnit,
                                                       val typingTransformer: TypingTransformers#TypingTransformer,
-                                                      val stateMachineClass: U#Symbol,
-                                                      val applyMethod: U#Symbol,
                                                       val applyTrParam: U#Symbol,
                                                       val asyncType: U#Type) {
   import symbolTable._
   val ops: futureSystem.Ops[symbolTable.type] = futureSystem.mkOps(symbolTable)
+
   val localTyper: symbolTable.analyzer.Typer = typingTransformer.localTyper.asInstanceOf[symbolTable.analyzer.Typer]
   val stateAssigner  = new StateAssigner
   val labelDefStates = collection.mutable.Map[symbolTable.Symbol, Int]()
-  val symLookup = new SymLookup() {
-    val global: symbolTable.type = symbolTable
-    val stateMachineClass: global.Symbol = AsyncTransformState.this.stateMachineClass.asInstanceOf[symbolTable.Symbol]
-    val applyTrParam: global.Symbol = AsyncTransformState.this.applyTrParam.asInstanceOf[symbolTable.Symbol]
-  }
-}
 
-abstract class SymLookup {
-  val global: Global
-  import global._
-  val stateMachineClass: Symbol
-  val applyTrParam: Symbol
+  lazy val applyTr: Symbol = applyTrParam.asInstanceOf[symbolTable.Symbol]
+  lazy val applySym: Symbol = applyTr.owner
+  lazy val stateMachineClass: Symbol = applySym.owner
+  lazy val stateGetter: Symbol = stateMachineMember(nme.state)
+  lazy val stateSetter: Symbol = stateGetter.setterIn(stateGetter.owner)
+  lazy val whileLabel: Symbol = applySym.newLabel(nme.WHILE_PREFIX).setInfo(MethodType(Nil, definitions.UnitTpe))
 
-  def stateMachineMember(name: TermName): Symbol = {
+  def stateMachineMember(name: TermName): Symbol =
     stateMachineClass.info.member(name)
-  }
   def memberRef(name: TermName): Tree =
     gen.mkAttributedRef(stateMachineClass.typeConstructor, stateMachineMember(name))
   def memberRef(sym: Symbol): Tree =
     gen.mkAttributedRef(stateMachineClass.typeConstructor, sym)
+  def selectResult: Tree = Apply(memberRef(nme.result), Nil)
 
-  lazy val stateGetter: Symbol = stateMachineMember(nme.state)
-  lazy val stateSetter: Symbol = stateGetter.setterIn(stateGetter.owner)
-
-  def selectResult = Apply(memberRef(nme.result), Nil)
-  def applyMethod: Symbol = applyTrParam.owner
-  lazy val whileLabel: Symbol = applyMethod.newLabel(nme.WHILE_PREFIX).setInfo(MethodType(Nil, definitions.UnitTpe))
 }
 
 trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with LiveVariables with TypingTransformers {
-  var currentTransformState: AsyncTransformState[global.type] = null
+  var currentTransformState: AsyncTransformState[global.type] = _
   import global._
 
   // synthesize the state machine logic -- explode the apply method's rhs and lift local vals to field defs in the state machine
@@ -202,12 +191,12 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
       };
    */
   def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {
-    val applySym = currentTransformState.applyMethod
+    val transformState = currentTransformState
+    import transformState.{applySym, stateMachineClass}
     val futureSystem = currentTransformState.futureSystem
     val futureSystemOps = futureSystem.mkOps(global)
 
     val asyncPos = asyncBody.pos
-    val stateMachineClass = applySym.owner
 
     markContainsAwait(asyncBody) // ANF transform also relies on whether something contains await
     reportUnsupportedAwaits(asyncBody)

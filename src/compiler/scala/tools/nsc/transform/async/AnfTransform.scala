@@ -353,7 +353,7 @@ private[async] trait AnfTransform extends TransformUtils {
   private def typedAssign(lhs: Tree, varSym: Symbol) =
     Assign(gen.mkAttributedRef(varSym), lhs).setType(definitions.UnitTpe).setPos(lhs.pos)
 
-  val tracing: Tracing
+  protected val tracing: Tracing
   class Tracing {
     private var indent = -1
 
@@ -377,7 +377,7 @@ private[async] trait AnfTransform extends TransformUtils {
   }
 
   final class MatchResultTransformer(caseDefToMatchResult: collection.Map[Symbol, Symbol])
-    extends ThicketTransformer(currentTransformState.unit, currentTransformState.localTyper) {
+    extends ThicketTransformer(currentTransformState.localTyper) {
     override def transform(tree: Tree): Tree = {
       tree match {
         case _: Function | _: MemberDef =>

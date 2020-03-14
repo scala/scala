@@ -16,12 +16,12 @@ import scala.collection.mutable
 import scala.tools.nsc.transform.async.user.FutureSystem
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
 
-abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTransform{
+abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTransform {
   self =>
   import global._
 
   val asyncNames = new AsyncNames[global.type](global)
-  val tracing = new Tracing
+  protected val tracing = new Tracing
 
   val phaseName: String = "async"
   override def enabled = true // TODO: should be off by default, enabled by flag
@@ -41,8 +41,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
   def fastTrackEntry: (Symbol, PartialFunction[Applied, scala.reflect.macros.contexts.Context { val universe: self.global.type } => Tree]) =
     (currentRun.runDefinitions.Async_async, {
       // def async[T](body: T)(implicit execContext: ExecutionContext): Future[T] = macro ???
-      case app@Applied(_, resultTp :: Nil, List(asyncBody :: Nil, execContext :: Nil)) =>
-        c => c.global.async.macroExpansion.apply(c.callsiteTyper, asyncBody, execContext, resultTp.tpe, c.internal.enclosingOwner)
+      case app@Applied(_, _, List(asyncBody :: Nil, execContext :: Nil)) =>
+        c => c.global.async.macroExpansion.apply(c.callsiteTyper, asyncBody, execContext, asyncBody.tpe)
     })
 
   def newTransformer(unit: CompilationUnit): Transformer = new AsyncTransformer(unit)
@@ -72,14 +72,15 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
 
         case dd: DefDef if tree.hasAttachment[FutureSystemAttachment] =>
           val futureSystem = tree.getAndRemoveAttachment[FutureSystemAttachment].get.system
-
           val asyncBody = (dd.rhs: @unchecked) match {
             case blk@Block(stats, Literal(Constant(()))) => treeCopy.Block(blk, stats.init, stats.last).setType(stats.last.tpe)
           }
 
+          val saved = currentTransformState
           atOwner(dd, dd.symbol) {
+            val trSym = dd.vparamss.head.head.symbol
             val saved = currentTransformState
-            currentTransformState = new AsyncTransformState[global.type](global, futureSystem, unit, this, dd.symbol.owner, dd.symbol, dd.vparamss.head.head.symbol, asyncBody.tpe)
+            currentTransformState = new AsyncTransformState[global.type](global, futureSystem, this, trSym, asyncBody.tpe)
             try {
               val (newRhs, liftableFields) = asyncTransform(asyncBody)
               liftables(dd.symbol.owner) = liftableFields

@@ -39,7 +39,7 @@ trait ExprBuilder extends TransformUtils {
     val stats                      = ListBuffer[Tree]()
 
     val nextStates: StateSet = new StateSet
-    private val jumpReplacer = new JumpReplacer(nextStates, state, shouldReplace(_))
+    private val jumpReplacer = new JumpReplacer(nextStates, shouldReplace(_))
 
     private def shouldReplace(target: Symbol): Boolean = labelDefStates.contains(target) || {
       val patternOwnerOption = owner.outerIterator.find(_.patternSyms.contains(target))
@@ -92,7 +92,7 @@ trait ExprBuilder extends TransformUtils {
           val expr = stats.remove(stats.size - 1)
           stats += completeSuccess(expr)
         }
-        stats += typed(Return(literalUnit).setSymbol(currentTransformState.applyMethod))
+        stats += typed(Return(literalUnit).setSymbol(currentTransformState.applySym))
         allNextStates -= nextState
       }
       if (nextState == StateAssigner.Terminal)
@@ -393,8 +393,8 @@ trait ExprBuilder extends TransformUtils {
       def onCompleteHandler: Tree = {
         val futureSystemOps = currentTransformState.ops
 
-        val symLookup = currentTransformState.symLookup
-        def stateMemberRef = gen.mkApplyIfNeeded(symLookup.memberRef(symLookup.stateGetter))
+        val transformState = currentTransformState
+        def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
         val body =
           typed(Match(stateMemberRef,
                   asyncStates.map(_.mkHandlerCaseForState) ++
@@ -411,13 +411,13 @@ trait ExprBuilder extends TransformUtils {
               val branchTrue = {
                 val t = Ident(nme.t)
                 val complete = futureSystemOps.completeProm[AnyRef](
-                  symLookup.selectResult, futureSystemOps.tryyFailure[AnyRef](t))
+                  transformState.selectResult, futureSystemOps.tryyFailure[AnyRef](t))
                 Block(toStats(complete), Return(literalUnit))
               }
               If(Apply(Ident(NonFatalClass), List(Ident(nme.t))), branchTrue, Throw(Ident(nme.t)))
                 branchTrue
             })), EmptyTree)
-        typed(LabelDef(symLookup.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(symLookup.whileLabel), Nil))))
+        typed(LabelDef(transformState.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(transformState.whileLabel), Nil))))
       }
 
       private def compactStates = true
@@ -460,9 +460,9 @@ trait ExprBuilder extends TransformUtils {
       } else all
 
       private val compactStateTransform = new Transformer {
-        val symLookup = currentTransformState.symLookup
+        val transformState = currentTransformState
         override def transform(tree: Tree): Tree = tree match {
-          case as @ Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == symLookup.stateSetter && compactStates =>
+          case as @ Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == transformState.stateSetter && compactStates =>
             val replacement = switchIdOf(i)
             treeCopy.Apply(tree, qual, treeCopy.Literal(lit, Constant(replacement)):: Nil)
           case _: Match | _: CaseDef | _: Block | _: If | _: LabelDef =>
@@ -491,15 +491,15 @@ trait ExprBuilder extends TransformUtils {
   // Resume execution by extracting the successful value and assigining it to the `awaitable.resultValDef`
   private def resumeTree(awaitable: Awaitable): List[Tree] = {
     val futureSystemOps = currentTransformState.ops
-    def tryyReference = Ident(currentTransformState.symLookup.applyTrParam)
+    def tryyReference = Ident(currentTransformState.applyTrParam)
     val assignTryGet = Assign(Ident(awaitable.resultName), futureSystemOps.tryyGet[Any](tryyReference))
 
     val vd = deriveValDef(awaitable.resultValDef)(_ => gen.mkZero(awaitable.resultValDef.symbol.info))
     vd.symbol.setFlag(Flag.MUTABLE)
     val assignOrReturn = if (currentTransformState.futureSystem.emitTryCatch) {
       If(futureSystemOps.tryyIsFailure(tryyReference),
-        Block(toStats(futureSystemOps.completeProm[AnyRef](currentTransformState.symLookup.selectResult, tryyReference)),
-          Return(literalBoxedUnit).setSymbol(currentTransformState.applyMethod)),
+        Block(toStats(futureSystemOps.completeProm[AnyRef](currentTransformState.selectResult, tryyReference)),
+          Return(literalBoxedUnit).setSymbol(currentTransformState.applySym)),
         assignTryGet
       )
     } else {
@@ -511,20 +511,20 @@ trait ExprBuilder extends TransformUtils {
   // Comlete the Promise in the `result` field with the final sucessful result of this async block.
   private def completeSuccess(expr: Tree): Tree = {
     val futureSystemOps = currentTransformState.ops
-    typed(futureSystemOps.completeWithSuccess(currentTransformState.symLookup.selectResult, expr))
+    typed(futureSystemOps.completeWithSuccess(currentTransformState.selectResult, expr))
   }
 
   /** What trailing statements should be added to the code for this state to transition to the nest state? */
   private sealed abstract class StateTransitionStyle {
     def trees(next: Int, stateSet: StateSet): List[Tree]
     protected def mkStateTree(nextState: Int): Tree = {
-      val symLookup = currentTransformState.symLookup
-      val callSetter = Apply(symLookup.memberRef(symLookup.stateSetter), Literal(Constant(nextState)) :: Nil)
+      val transformState = currentTransformState
+      val callSetter = Apply(transformState.memberRef(transformState.stateSetter), Literal(Constant(nextState)) :: Nil)
       val printStateUpdates = false
       val tree = if (printStateUpdates) {
         Block(
           callSetter :: Nil,
-          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")), currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(symLookup.memberRef(symLookup.stateGetter)), definitions.ObjectTpe) :: Nil)
+          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")), currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter)), definitions.ObjectTpe) :: Nil)
         )
       }
       else callSetter
@@ -555,17 +555,17 @@ trait ExprBuilder extends TransformUtils {
         // synchronously.
         val futureSystemOps = currentTransformState.ops
         val fun = This(tpnme.EMPTY)
-        val symLookup = currentTransformState.symLookup
+        val transformState = currentTransformState
         if (futureSystemOps.continueCompletedFutureOnSameThread) {
-          val tempAwaitableSym = symLookup.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
+          val tempAwaitableSym = transformState.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
           val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
-          val initTempCompleted = Assign(Ident(symLookup.applyTrParam), futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
+          val initTempCompleted = Assign(Ident(transformState.applyTrParam), futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
           val null_ne = Select(Literal(Constant(null)), TermName("ne"))
           val callOnComplete = futureSystemOps.onComplete[Any, Unit](Ident(tempAwaitableSym), fun, Ident(nme.execContext))
           val ifTree =
-            If(Apply(null_ne, Ident(symLookup.applyTrParam) :: Nil),
-              Apply(Ident(currentTransformState.symLookup.whileLabel), Nil),
-              Block(toStats(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.symLookup.applyMethod)))
+            If(Apply(null_ne, Ident(transformState.applyTrParam) :: Nil),
+              Apply(Ident(currentTransformState.whileLabel), Nil),
+              Block(toStats(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.applySym)))
           typed(initAwaitableTemp) :: typed(initTempCompleted) :: mkStateTree(nextState) :: typed(ifTree) :: Nil
         } else {
           val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
@@ -577,7 +577,7 @@ trait ExprBuilder extends TransformUtils {
     case object UpdateAndContinue extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState
-        List(mkStateTree(nextState), typed(Apply(Ident(currentTransformState.symLookup.whileLabel), Nil)))
+        List(mkStateTree(nextState), typed(Apply(Ident(currentTransformState.whileLabel), Nil)))
       }
     }
   }
@@ -592,8 +592,8 @@ trait ExprBuilder extends TransformUtils {
     labelDefStates.getOrElseUpdate(label, StateAssigner.stateIdForLabel(label))
 
   // Replace jumps to qualifying labels as a state transition.
-  private class JumpReplacer(states: StateSet, state: Int, shouldReplace: Symbol => Boolean)
-    extends ThicketTransformer(currentTransformState.unit, currentTransformState.localTyper) {
+  private class JumpReplacer(states: StateSet, shouldReplace: global.Symbol => Boolean)
+    extends ThicketTransformer(currentTransformState.localTyper) {
     override def transform(tree: Tree): Tree = tree match {
       case Apply(fun, args) if isLabel(fun.symbol) =>
         if (shouldReplace(fun.symbol)) {

@@ -33,7 +33,7 @@ private[async] trait TransformUtils extends TypingTransformers {
 
   def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
   def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos, mode, pt)(tree)
-  def typed(tree: Tree): Tree = typedPos(currentTransformState.applyMethod.pos)(tree)
+  def typed(tree: Tree): Tree = typedPos(currentTransformState.applySym.pos)(tree)
 
   def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
     if (emitTryCatch) Try(block, catches, finalizer) else block
@@ -102,7 +102,7 @@ private[async] trait TransformUtils extends TypingTransformers {
   }
 
   private object ThicketAttachment
-  class ThicketTransformer(unit: CompilationUnit, initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
+  class ThicketTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
     private def expandThicket(t: Tree): List[Tree] = t match {
       case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
         stats :+ expr
