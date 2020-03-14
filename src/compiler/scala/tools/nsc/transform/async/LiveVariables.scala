@@ -16,57 +16,21 @@ import java.util.function.IntConsumer
 
 import scala.collection.immutable.IntMap
 import scala.collection.mutable
-
 import scala.reflect.internal.Flags._
 
 trait LiveVariables extends ExprBuilder {
   import global._
 
   /**
-   *  Returns for a given state a list of fields (as trees) that should be nulled out
-   *  upon resuming that state (at the beginning of `resume`).
-   *
-   *  @param   asyncStates the states of an `async` block
-   *  @param   liftables   the lifted fields
-   *  @return  a map mapping a state to the fields that should be nulled out
-   *           upon resuming that state
-   */
-  def fieldsToNullOut(asyncStates: List[AsyncState], finalState: AsyncState, liftables: List[Tree]): mutable.LinkedHashMap[Int, List[Tree]] = {
-    // live variables analysis:
-    // the result map indicates in which states a given field should be nulled out
-    val liveVarsMap: mutable.LinkedHashMap[Tree, StateSet] = liveVars(asyncStates, finalState, liftables)
-
-    val assignsOf = mutable.LinkedHashMap[Int, List[Tree]]()
-
-    for ((fld, where) <- liveVarsMap) {
-      where.foreach { new IntConsumer { def accept(state: Int): Unit = {
-        assignsOf get state match {
-          case None =>
-            assignsOf += (state -> List(fld))
-          case Some(trees) if !trees.exists(_.symbol == fld.symbol) =>
-            assignsOf += (state -> (fld +: trees))
-          case _ =>
-            // do nothing
-        }
-      }}}
-    }
-
-    assignsOf
-  }
-
-  /**
    *  Live variables data-flow analysis.
    *
-   *  The goal is to find, for each lifted field, the last state where the field is used.
-   *  In all direct successor states which are not (indirect) predecessors of that last state
-   *  (possible through loops), the corresponding field should be nulled out (at the beginning of
-   *  `resume`).
+   *  Find, for each lifted field, the last state where the field is used.
    *
    *  @param   asyncStates the states of an `async` block
    *  @param   liftables   the lifted fields
-   *  @return              a map which indicates for a given field (the key) the states in which it should be nulled out
+   *  @return              a map which indicates fields which are used for the final time in each state.
    */
-  def liveVars(asyncStates: List[AsyncState], finalState: AsyncState, liftables: List[Tree]): mutable.LinkedHashMap[Tree, StateSet] = {
+  def fieldsToNullOut(asyncStates: List[AsyncState], finalState: AsyncState, liftables: List[Tree]): mutable.LinkedHashMap[Int, mutable.LinkedHashSet[Symbol]] = {
     val liftedSyms: Set[Symbol] = // include only vars
       liftables.iterator.filter {
         case ValDef(mods, _, _, _) => mods.hasFlag(MUTABLE)
@@ -248,21 +212,26 @@ trait LiveVariables extends ExprBuilder {
       result
     }
 
-    val lastUsages: mutable.LinkedHashMap[Tree, StateSet] =
-      mutable.LinkedHashMap(liftables.map(fld => fld -> lastUsagesOf(fld, finalState)): _*)
+    val lastUsages: mutable.LinkedHashMap[Symbol, StateSet] =
+      mutable.LinkedHashMap(liftables.map(fld => fld.symbol -> lastUsagesOf(fld, finalState)): _*)
 
     if(settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, lastStates) <- lastUsages)
-        debuglog(s"field ${fld.symbol.name} is last used in states ${lastStates.iterator.mkString(", ")}")
+        debuglog(s"field ${fld.name} is last used in states ${lastStates.iterator.mkString(", ")}")
     }
-
-    val nullOutAt: mutable.LinkedHashMap[Tree, StateSet] = lastUsages
 
     if(settings.debug.value && shouldLogAtThisPhase) {
-      for ((fld, killAt) <- nullOutAt)
-        debuglog(s"field ${fld.symbol.name} should be nulled out at the conclusion of states ${killAt.iterator.mkString(", ")}")
+      for ((fld, killAt) <- lastUsages)
+        debuglog(s"field ${fld.name} should be nulled out at the conclusion of states ${killAt.iterator.mkString(", ")}")
     }
 
-    nullOutAt
+    val assignsOf = mutable.LinkedHashMap[Int, mutable.LinkedHashSet[Symbol]]()
+
+    for ((fld, where) <- lastUsages) {
+      where.foreach { new IntConsumer { def accept(state: Int): Unit = {
+        assignsOf.getOrElseUpdate(state, new mutable.LinkedHashSet()) += fld
+      }}}
+    }
+    assignsOf
   }
 }

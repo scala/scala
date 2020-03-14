@@ -29,6 +29,30 @@ trait ExprBuilder extends TransformUtils {
     override def toString: String = mkToString + " (was: " + initToString + ")"
     private def mkToString = s"AsyncState #$state, next = ${nextStates.toList}"
     private val initToString = mkToString
+    def insertNullAssignments(flds: Iterator[Symbol]): Unit = {
+      val stats1 = mutable.ListBuffer[Tree]()
+      def addNullAssigments(): Unit = {
+        // Insert the null assignments immediately after the state transition
+        for (fieldSym <- flds) {
+          stats1 += typed(Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info)))
+        }
+      }
+      var foundStateTransition = false
+      stats.foreach {
+        stat =>
+          stats1 += stat
+          if (stat.attachments.containsElement(StateTransitionTree)) {
+            assert(!foundStateTransition)
+            foundStateTransition = true
+            // Insert the null assignments immediately after the state transition
+            addNullAssigments()
+          }
+      }
+      if (!foundStateTransition) {
+        addNullAssigments()
+      }
+      stats = stats1.toList
+    }
   }
 
   /*

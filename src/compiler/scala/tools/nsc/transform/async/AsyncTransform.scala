@@ -12,7 +12,6 @@
 
 package scala.tools.nsc.transform.async
 
-import scala.collection.mutable
 import scala.tools.nsc.transform.TypingTransformers
 
 // TODO: check there's no await outside of an async block
@@ -73,36 +72,11 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
 
     // live variables analysis
-    // the result map indicates in which states a given field should be nulled out
     val nullOut = true
     if (nullOut) {
-      val assignsOf = fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)
-
-      for ((state, flds) <- assignsOf) {
+      for ((state, flds) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
         val asyncState = asyncBlock.asyncStates.find(_.state == state).get
-        val stats1 = mutable.ListBuffer[Tree]()
-        def addNullAssigments(): Unit = {
-          // Insert the null assignments immediately after the state transition
-          for (fld <- flds) {
-            val fieldSym = fld.symbol
-            stats1 += typed(Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info).setPos(asyncPos)))
-          }
-        }
-        var foundStateTransition = false
-        asyncState.stats.foreach {
-          stat =>
-            stats1 += stat
-            if (stat.attachments.containsElement(StateTransitionTree)) {
-              assert(!foundStateTransition)
-              foundStateTransition = true
-              // Insert the null assignments immediately after the state transition
-              addNullAssigments()
-            }
-        }
-        if (!foundStateTransition) {
-          addNullAssigments()
-        }
-        asyncState.stats = stats1.toList
+        asyncState.insertNullAssignments(flds.iterator)
       }
     }
 
