@@ -458,16 +458,18 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
           case dd: DefDef if dd.symbol.hasAnnotation(customAsyncSym) =>
             deriveDefDef(dd) {
               rhs =>
+                val unit = localTyper.context.unit
+                val applyMethod =
+                  q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = {$rhs; () }"""
+                applyMethod.updateAttachment(ChangeOwnerAttachment(dd.symbol))
+                global.async.addFutureSystemAttachment(unit, applyMethod, CustomFutureFutureSystem)
                 val wrapped =
                   q"""
                     {
                       val ${nme.execContextTemp} = ()
-                      ${q"""class stateMachine$$async extends _root_.scala.tools.nsc.async.StateMachineBase {
-                        ${q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = {
-                          $rhs
-                          ()
-                        }""".updateAttachment(ChangeOwnerAttachment(dd.symbol)).updateAttachment(new global.async.FutureSystemAttachment(CustomFutureFutureSystem))}
-                      }""".updateAttachment(new global.async.FutureSystemAttachment(CustomFutureFutureSystem))}
+                      class stateMachine$$async extends _root_.scala.tools.nsc.async.StateMachineBase {
+                       $applyMethod
+                      }
                       val stateMachine$$async = new stateMachine$$async
                       _root_.scala.tools.nsc.async.CustomFuture._unit._onComplete(
                         stateMachine$$async.asInstanceOf[_root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.Unit] => _root_.scala.Unit]

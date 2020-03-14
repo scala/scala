@@ -24,16 +24,18 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
   protected val tracing = new Tracing
 
   val phaseName: String = "async"
-  override def enabled = true // TODO: should be off by default, enabled by flag
-//  {
-//    (currentRun.runDefinitions match {
-//      case null => new definitions.RunDefinitions
-//      case rd => rd
-//    }).Async_async.exists
-//  }
-  final class FutureSystemAttachment(val system: FutureSystem) extends PlainAttachment
 
-  object macroExpansion extends AsyncEarlyExpansion {
+  private final class FutureSystemAttachment(val system: FutureSystem) extends PlainAttachment
+
+  // Optimization: avoid the transform altogether if there are no async blocks in a unit.
+  private val units = perRunCaches.newSet[CompilationUnit]()
+  final def addFutureSystemAttachment(unit: CompilationUnit, method: Tree, system: FutureSystem): Tree = {
+    units += unit
+    method.updateAttachment(new FutureSystemAttachment(system))
+    method
+  }
+
+  protected object macroExpansion extends AsyncEarlyExpansion {
     val global: self.global.type = self.global
   }
 
@@ -50,8 +52,10 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
   // TOOD: figure out how to make the root-level async built-in macro sufficiently configurable:
   //       replace the ExecutionContext implicit arg with an AsyncContext implicit that also specifies the type of the Future/Awaitable/Node/...?
   final class AsyncTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-
     private lazy val liftables = new mutable.AnyRefMap[Symbol, List[Tree]]()
+
+    override def transformUnit(unit: CompilationUnit): Unit =
+      if (units.contains(unit)) super.transformUnit(unit)
 
     // Together, these transforms below target this tree shaps
     // {

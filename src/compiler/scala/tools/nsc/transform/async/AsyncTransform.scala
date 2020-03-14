@@ -22,7 +22,6 @@ import scala.tools.nsc.transform.TypingTransformers
 
 abstract class AsyncEarlyExpansion extends TypingTransformers {
   import global._
-  import global.async.FutureSystemAttachment
 
   // NOTE: this part runs during typer
   lazy val futureSystem: FutureSystem = ScalaConcurrentFutureSystem
@@ -106,7 +105,7 @@ abstract class AsyncEarlyExpansion extends TypingTransformers {
           asyncBody.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))
         ).updateAttachment(ChangeOwnerAttachment(callsiteTyper.context.owner))
       }
-      applyFSM.updateAttachment(new FutureSystemAttachment(futureSystem))
+      async.addFutureSystemAttachment(callsiteTyper.context.unit, applyFSM, futureSystem)
 
       atPos(asyncBody.pos)(ClassDef(NoMods, tpnme.stateMachine, Nil,
                                      gen.mkTemplate(parents, noSelfType, NoMods, List(Nil),
