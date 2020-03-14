@@ -49,8 +49,7 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
   def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {
     val transformState = currentTransformState
     import transformState.{applySym, stateMachineClass}
-    val futureSystem = currentTransformState.futureSystem
-    val futureSystemOps = futureSystem.mkOps(global)
+    val futureSystemOps = transformState.ops
 
     val asyncPos = asyncBody.pos
 
@@ -108,13 +107,6 @@ trait AsyncTransform extends AnfTransform with AsyncAnalysis with Lifter with Li
     }
 
     val liftedSyms = liftedFields.map(_.symbol).toSet
-    liftedSyms.foreach { sym =>
-      if (sym != null) {
-        sym.owner = stateMachineClass
-        if (sym.isModule)
-          sym.asModule.moduleClass.owner = stateMachineClass
-      }
-    }
 
     // Adjust the tree to:
     //   - lifted local variables are entered into the scope of the state machine class

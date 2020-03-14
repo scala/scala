@@ -139,10 +139,12 @@ trait Lifter extends ExprBuilder {
       (liftableStatementRefs ++ liftableRefsOfDefTrees).foreach(markForLift)
       liftableMutableSet
     }
-
+    val changer = new ChangeOwnerTraverser(currentTransformState.applySym, currentTransformState.stateMachineClass)
     liftableSyms.iterator.map(symToTree).map {
       t =>
         val sym = t.symbol
+        changer.change(sym)
+
         val treeLifted = t match {
           case vd@ValDef(_, _, tpt, rhs)                    =>
             val isLazy = sym.isLazy
