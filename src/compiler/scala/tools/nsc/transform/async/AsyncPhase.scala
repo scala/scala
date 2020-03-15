@@ -16,12 +16,13 @@ import scala.collection.mutable
 import scala.tools.nsc.transform.async.user.FutureSystem
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
 
-abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTransform {
+abstract class AsyncPhase extends Transform with TypingTransformers with AnfTransform with AsyncAnalysis with Lifter with LiveVariables {
   self =>
   import global._
 
-  val asyncNames = new AsyncNames[global.type](global)
-  protected val tracing = new Tracing
+  private[async] var currentTransformState: AsyncTransformState[global.type] = _
+  private[async] val asyncNames = new AsyncNames[global.type](global)
+  protected[async] val tracing = new Tracing
 
   val phaseName: String = "async"
 
@@ -52,7 +53,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
   // TOOD: figure out how to make the root-level async built-in macro sufficiently configurable:
   //       replace the ExecutionContext implicit arg with an AsyncContext implicit that also specifies the type of the Future/Awaitable/Node/...?
   final class AsyncTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
-    private lazy val liftables = new mutable.AnyRefMap[Symbol, List[Tree]]()
+    private lazy val liftableMap = new mutable.AnyRefMap[Symbol, (Symbol, List[Tree])]()
 
     override def transformUnit(unit: CompilationUnit): Unit =
       if (units.contains(unit)) super.transformUnit(unit)
@@ -71,8 +72,16 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
     // are lifted into members of the enclosing class.
     override def transform(tree: Tree): Tree =
       super.transform(tree) match {
-        case cd: ClassDef if liftables.contains(cd.symbol) =>
-          deriveClassDef(cd)(impl => deriveTemplate(impl)(liftables.remove(cd.symbol).getOrElse(Nil) ::: _))
+        case cd: ClassDef if liftableMap.contains(cd.symbol) =>
+          val (applySym, liftedTrees) = liftableMap.remove(cd.symbol).get
+          val liftedSyms = liftedTrees.iterator.map(_.symbol).toSet
+          val cd1 = atOwner(tree.symbol) {
+            deriveClassDef(cd)(impl => {
+              deriveTemplate(impl)(liftedTrees ::: _)
+            })
+          }
+          assert(localTyper.context.owner == cd.symbol.owner)
+          new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
 
         case dd: DefDef if tree.hasAttachment[FutureSystemAttachment] =>
           val futureSystem = tree.getAndRemoveAttachment[FutureSystemAttachment].get.system
@@ -87,7 +96,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
             currentTransformState = new AsyncTransformState[global.type](global, futureSystem, this, trSym, asyncBody.tpe)
             try {
               val (newRhs, liftableFields) = asyncTransform(asyncBody)
-              liftables(dd.symbol.owner) = liftableFields
+              liftableMap(dd.symbol.owner) = (dd.symbol, liftableFields)
               deriveDefDef(dd)(_ => newRhs)
             } finally {
               currentTransformState = saved
@@ -95,5 +104,101 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AsyncTr
           }
         case tree => tree
       }
+
+    private def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {
+      val transformState = currentTransformState
+      import transformState.applySym
+      val futureSystemOps = transformState.ops
+
+      val asyncPos = asyncBody.pos
+
+      markContainsAwait(asyncBody) // ANF transform also relies on whether something contains await
+      reportUnsupportedAwaits(asyncBody)
+
+      // Transform to A-normal form:
+      //  - no await calls in qualifiers or arguments,
+      //  - if/match only used in statement position.
+      val anfTree0: Block = anfTransform(asyncBody, applySym)
+
+      val anfTree = futureSystemOps.postAnfTransform(anfTree0)
+
+      // The ANF transform re-parents some trees, so the previous traversal to mark ancestors of
+      // await is no longer reliable.
+      cleanupContainsAwaitAttachments(anfTree)
+      markContainsAwait(anfTree)
+
+      val asyncBlock = buildAsyncBlock(anfTree)
+
+      val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
+
+      // live variables analysis
+      val nullOut = true
+      if (nullOut) {
+        for ((state, flds) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
+          val asyncState = asyncBlock.asyncStates.find(_.state == state).get
+          asyncState.insertNullAssignments(flds.iterator)
+        }
+      }
+
+      val liftedSyms = liftedFields.map(_.symbol).toSet
+
+      val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
+
+      if (settings.debug.value && shouldLogAtThisPhase) {
+        val location = try asyncBody.pos.source.path catch {
+          case _: UnsupportedOperationException => asyncBody.pos.toString
+        }
+        logDiagnostics(location, anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
+      }
+      futureSystemOps.dot(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
+
+      (cleanupContainsAwaitAttachments(applyBody), liftedFields)
+    }
+
+    // Adjust the tree to:
+    //   - lifted local variables are entered into the scope of the state machine class
+    //   - references to them are rewritten as referencs to the fields.
+    //   - the rhs of ValDefs that initialize such fields is turned into an assignment to the field
+    private class UseFields(initLocalTyper: analyzer.Typer, stateMachineClass: Symbol,
+                            applySym: Symbol, liftedSyms: Set[Symbol]) extends explicitOuter.OuterPathTransformer(initLocalTyper) {
+      private def fieldSel(tree: Tree) = {
+        assert(currentOwner != NoSymbol)
+        val outerOrThis = if (stateMachineClass == currentClass) gen.mkAttributedThis(stateMachineClass) else {
+          // These references need to be selected from an outer reference, because explicitouter
+          // has already run we must perform this transform explicitly here.
+          tree.symbol.makeNotPrivate(tree.symbol.owner)
+          outerPath(outerValue, currentClass.outerClass, stateMachineClass)
+        }
+        atPos(tree.pos)(Select(outerOrThis.setType(stateMachineClass.tpe), tree.symbol).setType(tree.symbol.tpe))
+      }
+      override def transform(tree: Tree): Tree = tree match {
+        case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) && currentOwner == applySym =>
+          // Drop the lifted definitions from the apply method
+          assignUnitType(treeCopy.Assign(tree, fieldSel(tree), transform(rhs.changeOwner(tree.symbol, currentOwner))))
+        case _: DefTree if liftedSyms(tree.symbol) && currentOwner == applySym =>
+          // Drop the lifted definitions from the apply method
+          EmptyTree
+        case md: MemberDef if currentOwner == stateMachineClass && liftedSyms(tree.symbol) =>
+          stateMachineClass.info.decls.enter(md.symbol)
+          super.transform(tree)
+        case Assign(i @ Ident(name), rhs) if liftedSyms(i.symbol) =>
+          treeCopy.Assign(tree, fieldSel(i), adapt(transform(rhs), i.symbol.tpe))
+        case Ident(name) if liftedSyms(tree.symbol) =>
+          fieldSel(tree).setType(tree.tpe)
+        case _ =>
+          super.transform(tree)
+      }
+
+      // Use localTyper to adapt () to BoxedUnit in `val ifRes: Object; if (cond) "" else ()`
+      private def adapt(tree: Tree, pt: Type): Tree = localTyper.typed(tree, pt)
+    }
+
+    private def logDiagnostics(location: String, anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
+      inform(s"In file '$location':")
+      inform(s"ANF transform expands to:\n $anfTree")
+      states foreach (s => inform(s))
+      inform("===== DOT =====")
+      inform(block.toDot)
+    }
   }
 }

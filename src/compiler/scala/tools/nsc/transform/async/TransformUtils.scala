@@ -23,8 +23,8 @@ import scala.tools.nsc.transform.TypingTransformers
 private[async] trait TransformUtils extends TypingTransformers {
   import global._
 
-  def currentTransformState: AsyncTransformState[global.type]
-  val asyncNames: AsyncNames[global.type]
+  private[async] def currentTransformState: AsyncTransformState[global.type]
+  private[async] val asyncNames: AsyncNames[global.type]
   object name extends asyncNames.AsyncName {
     def fresh(name: TermName): TermName = freshenIfNeeded(name)
     def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName

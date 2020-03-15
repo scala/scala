@@ -19,7 +19,7 @@ import scala.tools.nsc.Global
 /**
  * An abstraction over a future system.
  *
- * Used by the macro implementations in [[scala.tools.nsc.transform.async.AsyncTransform]] to
+ * Used by the macro implementations in [[scala.tools.nsc.transform.async.AsyncPhase]] to
  * customize the code generation.
  *
  * The API mirrors that of `scala.concurrent.Future`, see the instance
