@@ -87,14 +87,6 @@ private[async] trait TransformUtils extends TypingTransformers {
         rhs
       case init :+ last if last.tpe <:< definitions.UnitTpe || last.tpe <:< definitions.BoxedUnitTpe=>
         Block(filterUnit(init), last).setType(definitions.UnitTpe)
-      case init :+ (last@Literal(Constant(())))                       =>
-        Block(filterUnit(init), last).setType(definitions.UnitTpe)
-      case init :+ (last@Block(_, Return(_) | Literal(Constant(())))) =>
-        Block(filterUnit(init), last).setType(definitions.UnitTpe)
-      case init :+ (last@Block(_, expr)) if expr.symbol == definitions.BoxedUnit_UNIT =>
-        Block(filterUnit(init), last).setType(definitions.UnitTpe)
-      case init :+ Block(stats, expr)                                 =>
-        Block(filterUnit(init), Block(filterUnit(stats :+ expr), literalUnit)).setType(definitions.UnitTpe)
       case _                                                          =>
         Block(filterUnit(rhs), literalUnit).setType(definitions.UnitTpe)
     }
