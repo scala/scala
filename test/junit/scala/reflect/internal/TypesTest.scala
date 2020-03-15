@@ -7,7 +7,7 @@ import org.junit.runners.JUnit4
 import scala.collection.mutable
 import scala.tools.nsc.settings.ScalaVersion
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
-import language.higherKinds
+import language.existentials
 
 @RunWith(classOf[JUnit4])
 class TypesTest {
@@ -129,6 +129,15 @@ class TypesTest {
     assertEquals("M[X] with M[Int] forSome { type X }", T.baseTypeSeq.rawElem(1).toString)
     // calling `apply` merges the prefix/args of the elements ot the RefinedType and rewraps in the existential
     assertEquals("M[_1] forSome { type X; type _1 >: X with Int }", T.baseTypeSeq.apply(1).toString)
+  }
+
+  @Test
+  def testDegenerateExistentialToString(): Unit = {
+    SingletonClass // enter scala.Singleton
+    val freeQuantifier = typeOf[Int forSome { type x }]
+    val nestedSingleton = typeOf[x.type forSome { val x: x.type forSome { val x: String } }]
+    assertEquals("Int", freeQuantifier.toString)
+    assertEquals("x.type forSome { val x: x.type forSome { val x: String } }", nestedSingleton.toString)
   }
 
   @Test
