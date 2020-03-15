@@ -26,12 +26,7 @@ private[async] trait AnfTransform extends TransformUtils {
    *   - calls to `await` are not allowed in compound expressions;
    *   - execution order is reified in the tree by extracting temporary vals
    */
-  final def anfTransform(tree: Tree, owner: Symbol): Block = {
-    val trans = new AnfTransformer()
-    trans.atOwner(tree, owner) { trans.apply(tree) }
-  }
-
-  private final class AnfTransformer() extends TypingTransformer(currentTransformState.localTyper) {
+  final class AnfTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
     /** Main entry point to the ANF transform. */
     def apply(tree: Tree): Block = {
       transformNewControlFlowBlock(tree) match {

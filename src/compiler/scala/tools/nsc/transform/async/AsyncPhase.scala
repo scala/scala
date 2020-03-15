@@ -118,7 +118,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       // Transform to A-normal form:
       //  - no await calls in qualifiers or arguments,
       //  - if/match only used in statement position.
-      val anfTree0: Block = anfTransform(asyncBody, applySym)
+      val anfTree0: Block = new AnfTransformer(localTyper).apply(asyncBody)
 
       val anfTree = futureSystemOps.postAnfTransform(anfTree0)
 
