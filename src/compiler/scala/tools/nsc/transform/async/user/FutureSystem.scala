@@ -145,7 +145,10 @@ object ScalaConcurrentFutureSystem extends FutureSystem {
     
     def mkAttributedSelectApplyIfNeeded(qual: Tree, sym: Symbol) = {
       val sel = gen.mkAttributedSelect(qual, sym)
-      if (isPastErasure) Apply(sel, Nil) else sel
+      if (sel.tpe == null)
+        if (isPastErasure) Apply(sel, Nil) else sel
+      else
+        if (isPastErasure) Apply(sel, Nil).setType(sel.tpe.resultType) else sel
     }
 
     override def getCompleted[A](future: Expr[Fut[A]]): Expr[Tryy[A]] = {

@@ -517,8 +517,8 @@ trait ExprBuilder extends TransformUtils {
   // Resume execution by extracting the successful value and assigining it to the `awaitable.resultValDef`
   private def resumeTree(awaitable: Awaitable): List[Tree] = {
     val futureSystemOps = currentTransformState.ops
-    def tryyReference = Ident(currentTransformState.applyTrParam)
-    val assignTryGet = Assign(Ident(awaitable.resultName), futureSystemOps.tryyGet[Any](tryyReference))
+    def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
+    val assignTryGet = Assign(gen.mkAttributedIdent(awaitable.resultValDef.symbol), futureSystemOps.tryyGet[Any](tryyReference))
 
     val vd = deriveValDef(awaitable.resultValDef)(_ => gen.mkZero(awaitable.resultValDef.symbol.info))
     vd.symbol.setFlag(Flag.MUTABLE)
@@ -585,9 +585,9 @@ trait ExprBuilder extends TransformUtils {
         if (futureSystemOps.continueCompletedFutureOnSameThread) {
           val tempAwaitableSym = transformState.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
           val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
-          val initTempCompleted = Assign(Ident(transformState.applyTrParam), futureSystemOps.getCompleted[Any](Ident(tempAwaitableSym)))
-          val null_ne = Select(Literal(Constant(null)), TermName("ne"))
-          val callOnComplete = futureSystemOps.onComplete[Any, Unit](Ident(tempAwaitableSym), fun, Ident(nme.execContext))
+          val initTempCompleted = Assign(gen.mkAttributedIdent(transformState.applyTrParam), futureSystemOps.getCompleted[Any](gen.mkAttributedIdent(tempAwaitableSym)))
+          val null_ne = Select(Literal(Constant(null)).setType(definitions.NullTpe), TermName("ne"))
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](gen.mkAttributedIdent(tempAwaitableSym), fun, Ident(nme.execContext))
           val ifTree =
             If(Apply(null_ne, Ident(transformState.applyTrParam) :: Nil),
               Apply(Ident(currentTransformState.whileLabel), Nil),
