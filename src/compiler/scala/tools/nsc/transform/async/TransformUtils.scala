@@ -263,14 +263,18 @@ private[async] trait TransformUtils extends TypingTransformers {
     }
   }
 
-  final def cleanupContainsAwaitAttachments(t: Tree): t.type = {
-    t.foreach {
+  object cleanupContainsAwaitAttachments extends Traverser {
+    def apply(tree: Tree): tree.type = {traverse(tree); tree}
+    override def traverse(tree: Tree): Unit = tree match {
       case _: CannotHaveAttrs =>
       case t =>
-        t.setAttachments(t.attachments.removeElement(ContainsAwait))
-        t.setAttachments(t.attachments.removeElement(NoAwait))
+        if (t.attachments.containsElement(NoAwait)) {
+          t.setAttachments(t.attachments.removeElement(NoAwait))
+        } else {
+          t.setAttachments(t.attachments.removeElement(ContainsAwait))
+          super.traverse(t)
+        }
     }
-    t
   }
 
   val isMatchEnd: (Tree) => Boolean = t =>
