@@ -26,9 +26,9 @@ trait ExprBuilder extends TransformUtils {
     def mkHandlerCaseForState: CaseDef =
       CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))
 
-    override def toString: String = mkToString + " (was: " + initToString + ")"
     private def mkToString = s"AsyncState #$state, next = ${nextStates.toList}"
-    private val initToString = mkToString
+    override def toString: String = mkToString //+ " (was: " + initToString + ")"
+    // private val initToString = mkToString
     def insertNullAssignments(flds: Iterator[Symbol]): Unit = {
       val stats1 = mutable.ListBuffer[Tree]()
       def addNullAssigments(): Unit = {
