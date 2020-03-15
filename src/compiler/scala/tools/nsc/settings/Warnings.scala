@@ -192,6 +192,7 @@ trait Warnings {
     val ByNameImplicit         = LintWarning("byname-implicit",           "Block adapted by implicit with by-name parameter.")
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
     val UnitSpecialization     = LintWarning("unit-special",              "Warn for specialization of Unit in parameter position.")
+    val PatternShadow          = LintWarning("pattern-shadow",            "Pattern variable id is also a term in scope.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -223,6 +224,7 @@ trait Warnings {
   def warnByNameImplicit         = lint contains ByNameImplicit
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
   def unitSpecialization         = lint contains UnitSpecialization
+  def warnPatternShadow          = lint contains PatternShadow
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

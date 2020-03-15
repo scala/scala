@@ -1,0 +1,6 @@
+t11850.scala:9: warning: Name x is already in scope. Did you intend backquoted `x`?
+      case x   => 1    // warn
+           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

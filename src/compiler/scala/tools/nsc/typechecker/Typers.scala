@@ -4628,6 +4628,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             tree setSymbol sym setType sym.tpeHK
 
           case Bind(name: TermName, body)  =>
+            if (settings.warnPatternShadow && !tree.hasAttachment[NoWarnAttachment.type] && context.isNameInScope(name))
+              context.warning(tree.pos, s"Name $name is already in scope. Did you intend backquoted `$name`?", WarningCategory.OtherShadowing)
+
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else context.owner.newValue(name, tree.pos)
