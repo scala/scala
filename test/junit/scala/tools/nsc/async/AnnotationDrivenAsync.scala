@@ -547,7 +547,6 @@ object CustomFutureFutureSystem extends FutureSystem {
     lazy val Async_await: Symbol = symbolOf[CustomFuture.type].info.member(TermName("_await"))
 
     def tryType(tp: Type): Type = appliedType(Either_class, tp)
-    def tryTypeToResult(tp: Type): Type = tp.baseType(Either_class).typeArgs.headOption.getOrElse(NoType)
 
     def future(a: Tree, execContext: Tree): Tree =
       Apply(Select(gen.mkAttributedStableRef(Future_class.companionModule), TermName("_apply")), List(a))

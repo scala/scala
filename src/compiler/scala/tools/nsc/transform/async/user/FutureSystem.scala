@@ -47,10 +47,7 @@ trait FutureSystem {
     def Async_async: Symbol
     def Async_await: Symbol
 
-    def literalUnitExpr: Tree = if (isPastErasure) gen.mkAttributedRef(definitions.BoxedUnit_UNIT) else Literal(Constant(()))
-
     def tryType(tp: Type): Type
-    def tryTypeToResult(tp: Type): Type
     def stateMachineClassParents: List[Type] = Nil
 
     /** Construct a future to asynchronously compute the given expression -- tree shape should take isPastErasure into account */
@@ -127,7 +124,6 @@ object ScalaConcurrentFutureSystem extends FutureSystem {
     lazy val Try_get: Symbol = Try_class.info.member(TermName("get"))
 
     def tryType(tp: Type): Type = appliedType(Try_class, tp)
-    def tryTypeToResult(tp: Type): Type = tp.baseType(Try_class).typeArgs.headOption.getOrElse(NoType)
 
     def future(a: Tree, execContext: Tree): Tree =
       if (isPastErasure) Apply(Select(gen.mkAttributedStableRef(Future_class.companionModule), nme.apply), List(a, execContext))
