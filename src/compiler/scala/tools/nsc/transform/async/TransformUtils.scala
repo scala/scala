@@ -214,19 +214,22 @@ private[async] trait TransformUtils extends TypingTransformers {
     * in search of a sub tree that was decorated with the cached answer.
     *
     * Requires markContainsAwaitTraverser has previously traversed `t`.
-    **/
-  final def containsAwait(t: Tree): Boolean = {
-    object traverser extends Traverser {
-      var containsAwait = false
-      override def traverse(tree: Tree): Unit =
-        if (tree.attachments.containsElement(NoAwait)) {} // safe to skip
-        else if (!containsAwait) {
-          if (tree.attachments.containsElement(ContainsAwait)) containsAwait = true
-          else if (markContainsAwaitTraverser.shouldAttach(t)) super.traverse(tree)
-        }
+    */
+  final def containsAwait(t: Tree): Boolean = containsAwaitTraverser.apply(t)
+
+  private object containsAwaitTraverser extends Traverser {
+    var containsAwait = false
+    def apply(t: Tree): Boolean = {
+      containsAwait = false
+      traverse(t)
+      containsAwait
     }
-    traverser.traverse(t)
-    traverser.containsAwait
+    override def traverse(tree: Tree): Unit =
+      if (tree.attachments.containsElement(NoAwait)) {} // safe to skip
+      else if (!containsAwait) {
+        if (tree.attachments.containsElement(ContainsAwait)) containsAwait = true
+        else if (markContainsAwaitTraverser.shouldAttach(tree)) super.traverse(tree)
+      }
   }
 
   def markContainsAwait(t: Tree) = markContainsAwaitTraverser.traverse(t)
