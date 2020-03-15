@@ -188,11 +188,11 @@ trait ExprBuilder extends TransformUtils {
           // always in statement position.
           //
           // Spawn a new state and transition to asynchronously it with `UpdateAndAwait` (ie an onComplete call)
-          val awaitable = Awaitable(arg.changeOwner(vd.symbol, vd.symbol.owner), stat.symbol, tpt.tpe, vd)
           val afterAwaitState = stateAssigner.nextState()
-          buildStateAndOpenNextState(afterAwaitState, style = StateTransitionStyle.UpdateAndAwait(awaitable))
+          val transition = StateTransitionStyle.UpdateAndAwait(arg.changeOwner(vd.symbol, vd.symbol.owner))
+          buildStateAndOpenNextState(afterAwaitState, style = transition)
 
-          stateBuilder.stats ++= resumeTree(awaitable)
+          stateBuilder.stats ++= resumeTree(vd)
 
         case If(cond, thenp, elsep) if containsAwait(stat) =>
           // Emit a modified `If` in this state with each branch incorprating the
@@ -512,15 +512,13 @@ trait ExprBuilder extends TransformUtils {
     }
   }
 
-  private case class Awaitable(expr: Tree, resultName: Symbol, resultType: Type, resultValDef: ValDef)
-
   // Resume execution by extracting the successful value and assigining it to the `awaitable.resultValDef`
-  private def resumeTree(awaitable: Awaitable): List[Tree] = {
+  private def resumeTree(awaitableResult: ValDef): List[Tree] = {
     val futureSystemOps = currentTransformState.ops
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
-    val assignTryGet = Assign(gen.mkAttributedIdent(awaitable.resultValDef.symbol), futureSystemOps.tryyGet[Any](tryyReference))
+    val assignTryGet = Assign(gen.mkAttributedIdent(awaitableResult.symbol), futureSystemOps.tryyGet[Any](tryyReference))
 
-    val vd = deriveValDef(awaitable.resultValDef)(_ => gen.mkZero(awaitable.resultValDef.symbol.info))
+    val vd = deriveValDef(awaitableResult)(_ => gen.mkZero(awaitableResult.symbol.info))
     vd.symbol.setFlag(Flag.MUTABLE)
     val assignOrReturn = if (currentTransformState.futureSystem.emitTryCatch) {
       If(futureSystemOps.tryyIsFailure(tryyReference),
@@ -571,7 +569,7 @@ trait ExprBuilder extends TransformUtils {
       }
     }
     /** Update the state variable and the await completion of `awaitble.expr`. */
-    case class UpdateAndAwait(awaitable: Awaitable) extends StateTransitionStyle {
+    case class UpdateAndAwait(awaitable: Tree) extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState
 
@@ -583,8 +581,8 @@ trait ExprBuilder extends TransformUtils {
         val fun = This(tpnme.EMPTY)
         val transformState = currentTransformState
         if (futureSystemOps.continueCompletedFutureOnSameThread) {
-          val tempAwaitableSym = transformState.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.expr.tpe)
-          val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable.expr)
+          val tempAwaitableSym = transformState.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.tpe)
+          val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable)
           val initTempCompleted = Assign(gen.mkAttributedIdent(transformState.applyTrParam), futureSystemOps.getCompleted[Any](gen.mkAttributedIdent(tempAwaitableSym)))
           val null_ne = Select(Literal(Constant(null)).setType(definitions.NullTpe), TermName("ne"))
           val callOnComplete = futureSystemOps.onComplete[Any, Unit](gen.mkAttributedIdent(tempAwaitableSym), fun, Ident(nme.execContext))
@@ -594,7 +592,7 @@ trait ExprBuilder extends TransformUtils {
               Block(toStats(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.applySym)))
           typed(initAwaitableTemp) :: typed(initTempCompleted) :: mkStateTree(nextState) :: typed(ifTree) :: Nil
         } else {
-          val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable.expr, fun, Ident(nme.execContext))
+          val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable, fun, Ident(nme.execContext))
           mkStateTree(nextState) :: toStats(typed(callOnComplete)) ::: typed(Return(literalUnit)) :: Nil
         }
       }
