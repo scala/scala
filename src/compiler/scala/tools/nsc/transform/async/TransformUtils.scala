@@ -38,6 +38,8 @@ private[async] trait TransformUtils extends TypingTransformers {
     if (emitTryCatch) Try(block, catches, finalizer) else block
 
   lazy val IllegalStateExceptionClass: Symbol = rootMirror.staticClass("java.lang.IllegalStateException")
+  lazy val IllegalStateExceptionClass_NEW_String: Symbol = IllegalStateExceptionClass.info.decl(nme.CONSTRUCTOR).suchThat(
+    x => x.paramss.head.size == 1 && x.firstParam.info.typeSymbol == definitions.StringClass)
 
   def isAsync(fun: Tree): Boolean = fun.symbol == currentTransformState.ops.Async_async
   def isAwait(fun: Tree): Boolean = fun.symbol == currentTransformState.ops.Async_await

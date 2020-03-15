@@ -419,10 +419,12 @@ trait ExprBuilder extends TransformUtils {
 
         val transformState = currentTransformState
         def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
+        val throww = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
         val body =
           typed(Match(stateMemberRef,
                   asyncStates.map(_.mkHandlerCaseForState) ++
-                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree, Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), termNames.CONSTRUCTOR), List(gen.mkMethodCall(definitions.StringModule.info.member(nme.valueOf), stateMemberRef :: Nil))))))))
+                 List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
+                   throww))))
 
         val body1 = compactStates(body.asInstanceOf[Match])
 
@@ -618,7 +620,9 @@ trait ExprBuilder extends TransformUtils {
   // Replace jumps to qualifying labels as a state transition.
   private class JumpReplacer(states: StateSet, shouldReplace: global.Symbol => Boolean)
     extends ThicketTransformer(currentTransformState.localTyper) {
+    val initOwner = currentTransformState.localTyper.context.owner
     override def transform(tree: Tree): Tree = tree match {
+      case _ if initOwner != currentOwner.enclMethod => tree
       case Apply(fun, args) if isLabel(fun.symbol) =>
         if (shouldReplace(fun.symbol)) {
           val nextState = addLabelState(fun.symbol)

@@ -1518,6 +1518,8 @@ trait Definitions extends api.StandardDefinitions {
     /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runDefinitions` */
     final class RunDefinitions {
       lazy val StringAdd_+ = getMemberMethod(StringAddClass, nme.PLUS)
+      lazy val String_valueOf_Int = getMemberMethod(StringClass.companionModule, nme.valueOf).suchThat(
+        x => x.paramss.head.length == 1 && x.firstParam.info.typeSymbol == IntClass)
 
       // The given symbol represents either String.+ or StringAdd.+
       // TODO: this misses Predef.any2stringadd
