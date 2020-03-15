@@ -112,26 +112,27 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
 
       val asyncPos = asyncBody.pos
 
-      markContainsAwait(asyncBody) // ANF transform also relies on whether something contains await
+      // We mark whether each sub-tree of `asyncBody` that do or do not contain an await in thus pre-processing pass.
+      // The ANF transform can then efficiently query this to selectively transform the tree.
+      markContainsAwait(asyncBody)
       reportUnsupportedAwaits(asyncBody)
 
       // Transform to A-normal form:
       //  - no await calls in qualifiers or arguments,
       //  - if/match only used in statement position.
-      val anfTree0: Block = new AnfTransformer(localTyper).apply(asyncBody)
-
-      val anfTree = futureSystemOps.postAnfTransform(anfTree0)
+      val anfTree: Block = futureSystemOps.postAnfTransform(new AnfTransformer(localTyper).apply(asyncBody))
 
       // The ANF transform re-parents some trees, so the previous traversal to mark ancestors of
-      // await is no longer reliable.
+      // await is no longer reliable. Clear previous results and run it again for use in the `buildAsyncBlock`.
       cleanupContainsAwaitAttachments(anfTree)
       markContainsAwait(anfTree)
 
       val asyncBlock = buildAsyncBlock(anfTree)
 
       val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
+      val liftedSyms = liftedFields.map(_.symbol).toSet
 
-      // live variables analysis
+      // Null out lifted fields become unreachable at each state.
       val nullOut = true
       if (nullOut) {
         for ((state, flds) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
@@ -140,19 +141,18 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         }
       }
 
-      val liftedSyms = liftedFields.map(_.symbol).toSet
-
+      // Assemble the body of the apply method, which is dispactches on the current state id.
       val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
 
-      if (settings.debug.value && shouldLogAtThisPhase) {
-        val location = try asyncBody.pos.source.path catch {
-          case _: UnsupportedOperationException => asyncBody.pos.toString
-        }
-        logDiagnostics(location, anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
-      }
+      // Logging
+      if (settings.debug.value && shouldLogAtThisPhase)
+        logDiagnostics(anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
+      // Offer the future system a change to produce the .dot diagram
       futureSystemOps.dot(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
 
-      (cleanupContainsAwaitAttachments(applyBody), liftedFields)
+      cleanupContainsAwaitAttachments(applyBody)
+
+      (applyBody, liftedFields)
     }
 
     // Adjust the tree to:
@@ -193,7 +193,9 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       private def adapt(tree: Tree, pt: Type): Tree = localTyper.typed(tree, pt)
     }
 
-    private def logDiagnostics(location: String, anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
+    private def logDiagnostics(anfTree: Tree, block: AsyncBlock, states: Seq[String]): Unit = {
+      val pos = currentTransformState.applySym.pos
+      val location = try pos.source.path catch { case _: UnsupportedOperationException => pos.toString }
       inform(s"In file '$location':")
       inform(s"ANF transform expands to:\n $anfTree")
       states foreach (s => inform(s))
