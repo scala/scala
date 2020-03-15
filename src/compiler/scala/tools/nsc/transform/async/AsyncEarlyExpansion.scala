@@ -12,10 +12,8 @@
 
 package scala.tools.nsc.transform.async
 
-import scala.collection.mutable
 import user.{FutureSystem, ScalaConcurrentFutureSystem}
 import scala.reflect.internal.Flags
-import scala.tools.nsc.Global
 import scala.tools.nsc.transform.TypingTransformers
 
 // NOTE: this part runs during typer to wrap argument to the `async` macro

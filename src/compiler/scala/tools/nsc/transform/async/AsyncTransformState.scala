@@ -12,9 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
-import scala.collection.mutable
-import user.{FutureSystem, ScalaConcurrentFutureSystem}
-import scala.reflect.internal.Flags
+import user.FutureSystem
 import scala.tools.nsc.Global
 import scala.tools.nsc.transform.TypingTransformers
 
