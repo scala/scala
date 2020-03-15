@@ -177,13 +177,21 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         case _: DefTree if liftedSyms(tree.symbol) && currentOwner == applySym =>
           // Drop the lifted definitions from the apply method
           EmptyTree
-        case md: MemberDef if currentOwner == stateMachineClass && liftedSyms(tree.symbol) =>
-          stateMachineClass.info.decls.enter(md.symbol)
-          super.transform(tree)
+        case md: MemberDef =>
+          if (currentOwner == stateMachineClass) {
+            if (liftedSyms(tree.symbol)) {
+              stateMachineClass.info.decls.enter(md.symbol)
+              super.transform(tree)
+            } else if (md.symbol == applySym || md.symbol == stateMachineClass) {
+              super.transform(tree)
+            } else tree
+          } else super.transform(tree)
         case Assign(i @ Ident(name), rhs) if liftedSyms(i.symbol) =>
           treeCopy.Assign(tree, fieldSel(i), adapt(transform(rhs), i.symbol.tpe))
         case Ident(name) if liftedSyms(tree.symbol) =>
           fieldSel(tree).setType(tree.tpe)
+        case _: TypeTree =>
+          tree
         case _ =>
           super.transform(tree)
       }
