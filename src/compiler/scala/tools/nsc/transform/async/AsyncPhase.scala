@@ -30,10 +30,9 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
 
   // Optimization: avoid the transform altogether if there are no async blocks in a unit.
   private val units = perRunCaches.newSet[CompilationUnit]()
-  final def addFutureSystemAttachment(unit: CompilationUnit, method: Tree, system: FutureSystem): Tree = {
+  final def addFutureSystemAttachment(unit: CompilationUnit, method: Tree, system: FutureSystem): method.type = {
     units += unit
     method.updateAttachment(new FutureSystemAttachment(system))
-    method
   }
 
   protected object macroExpansion extends AsyncEarlyExpansion {
