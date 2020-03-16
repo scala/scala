@@ -2,7 +2,7 @@ object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.except
 
 package scala.async.run.exceptions {
 
-  import scala.async.Async.{async, await}
+  import scala.tools.partest.async.Async.{async, await}
 
   import scala.concurrent.{Future, ExecutionContext, Await}
   import ExecutionContext.Implicits._

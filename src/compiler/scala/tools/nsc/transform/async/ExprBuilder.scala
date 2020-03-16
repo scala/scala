@@ -192,7 +192,7 @@ trait ExprBuilder extends TransformUtils {
           val transition = StateTransitionStyle.UpdateAndAwait(arg.changeOwner(vd.symbol, vd.symbol.owner))
           buildStateAndOpenNextState(afterAwaitState, style = transition)
 
-          stateBuilder.stats ++= resumeTree(vd)
+          stateBuilder.stats += resumeTree(vd)
 
         case If(cond, thenp, elsep) if containsAwait(stat) =>
           // Emit a modified `If` in this state with each branch incorprating the
@@ -315,8 +315,13 @@ trait ExprBuilder extends TransformUtils {
       stateBuilder = new AsyncStateBuilder(nextState, this)
     }
 
-    private def checkForUnsupportedAwait(tree: Tree) = if (containsAwait(tree))
-      global.reporter.error(tree.pos, "await must not be used in this position")
+    private def checkForUnsupportedAwait(tree: Tree) = if (containsAwait(tree)) {
+      tree.foreach {
+        case tree: RefTree if isAwait(tree) =>
+          global.reporter.error(tree.pos, "await must not be used in this position")
+        case _ =>
+      }
+    }
 
     /** Copy these states into the current block builder's async stats updating the open state builder's
      *  next states
@@ -415,8 +420,6 @@ trait ExprBuilder extends TransformUtils {
        * Builds the definition of the `apply(tr: Try)` method.
        */
       def onCompleteHandler: Tree = {
-        val futureSystemOps = currentTransformState.ops
-
         val transformState = currentTransformState
         def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
         val throww = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
@@ -428,21 +431,15 @@ trait ExprBuilder extends TransformUtils {
 
         val body1 = compactStates(body.asInstanceOf[Match])
 
-        val stateMatch = maybeTry(currentTransformState.futureSystem.emitTryCatch)(
+        val stateMatch = Try(
           body1,
           List(
             CaseDef(
-            Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(ThrowableClass))),
-            EmptyTree, {
-              val branchTrue = {
-                val t = Ident(nme.t)
-                val complete = futureSystemOps.completeProm[AnyRef](
-                  transformState.selectResult, futureSystemOps.tryyFailure[AnyRef](t))
-                Block(toStats(complete), Return(literalUnit))
-              }
-              If(Apply(Ident(NonFatalClass), List(Ident(nme.t))), branchTrue, Throw(Ident(nme.t)))
-                branchTrue
-            })), EmptyTree)
+              Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(ThrowableClass))),
+              EmptyTree,
+              Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
+            )
+          ), EmptyTree)
         typed(LabelDef(transformState.whileLabel, Nil, Block(stateMatch :: Nil, Apply(Ident(transformState.whileLabel), Nil))))
       }
 
@@ -511,31 +508,25 @@ trait ExprBuilder extends TransformUtils {
       }
     }
   }
-
   // Resume execution by extracting the successful value and assigining it to the `awaitable.resultValDef`
-  private def resumeTree(awaitableResult: ValDef): List[Tree] = {
-    val futureSystemOps = currentTransformState.ops
+  private def resumeTree(awaitableResult: ValDef): Tree = {
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
-    val assignTryGet = Assign(gen.mkAttributedIdent(awaitableResult.symbol), futureSystemOps.tryyGet[Any](tryyReference))
-
-    val vd = deriveValDef(awaitableResult)(_ => gen.mkZero(awaitableResult.symbol.info))
-    vd.symbol.setFlag(Flag.MUTABLE)
-    val assignOrReturn = if (currentTransformState.futureSystem.emitTryCatch) {
-      If(futureSystemOps.tryyIsFailure(tryyReference),
-        Block(toStats(futureSystemOps.completeProm[AnyRef](currentTransformState.selectResult, tryyReference)),
-          Return(literalBoxedUnit).setSymbol(currentTransformState.applySym)),
-        assignTryGet
-      )
-    } else {
-      assignTryGet
+    deriveValDef(awaitableResult) { _ =>
+      val temp = awaitableResult.symbol.newTermSymbol(TermName("tryGetResult$async")).setInfo(definitions.ObjectTpe)
+      val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
+      typed(Block(
+        tempVd :: Nil,
+        If(Apply(gen.mkAttributedSelect(gen.mkAttributedThis(currentTransformState.stateMachineClass), definitions.Any_==), gen.mkAttributedIdent(temp) :: Nil),
+          Return(literalUnit),
+          gen.mkCast(gen.mkAttributedIdent(temp), tempVd.symbol.info)
+        )
+      ))
     }
-    vd :: typed(assignOrReturn) :: Nil
   }
 
-  // Comlete the Promise in the `result` field with the final sucessful result of this async block.
+  // Comlete the Promise in the `result` field with the final successful result of this async block.
   private def completeSuccess(expr: Tree): Tree = {
-    val futureSystemOps = currentTransformState.ops
-    typed(futureSystemOps.completeWithSuccess(currentTransformState.selectResult, expr))
+    typed(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteSuccess), expr :: Nil))
   }
 
   /** What trailing statements should be added to the code for this state to transition to the nest state? */
@@ -548,7 +539,8 @@ trait ExprBuilder extends TransformUtils {
       val tree = if (printStateUpdates) {
         Block(
           callSetter :: Nil,
-          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")), currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter)), definitions.ObjectTpe) :: Nil)
+          gen.mkMethodCall(definitions.PredefModule.info.member(TermName("println")),
+            currentTransformState.localTyper.typed(gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter)), definitions.ObjectTpe) :: Nil)
         )
       }
       else callSetter
@@ -572,28 +564,33 @@ trait ExprBuilder extends TransformUtils {
     case class UpdateAndAwait(awaitable: Tree) extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
         stateSet += nextState
+        val transformState = currentTransformState
 
         // Suspend execution by calling `onComplete` with the state machine itself as a callback.
         //
-        // If the future is already completed, and the future system allows it, execution will continue
-        // synchronously.
-        val futureSystemOps = currentTransformState.ops
-        val fun = This(tpnme.EMPTY)
-        val transformState = currentTransformState
-        if (futureSystemOps.continueCompletedFutureOnSameThread) {
+        // If the state machine contains a member `getCompleted`, this first be called to see if
+        // an already-completed result is avaialble. If so, execution will continue on this thread
+        // (_without_ consuming an extra stack frome!)
+
+        def callOnComplete(fut: Tree): Tree =
+          Apply(Select(This(currentTransformState.stateMachineClass), transformState.stateOnComplete), fut :: Nil)
+
+        val runCompletedOnSameThread = transformState.stateGetCompleted != NoSymbol
+        if (runCompletedOnSameThread) {
           val tempAwaitableSym = transformState.applyTrParam.owner.newTermSymbol(nme.awaitable).setInfo(awaitable.tpe)
           val initAwaitableTemp = ValDef(tempAwaitableSym, awaitable)
-          val initTempCompleted = Assign(gen.mkAttributedIdent(transformState.applyTrParam), futureSystemOps.getCompleted[Any](gen.mkAttributedIdent(tempAwaitableSym)))
-          val null_ne = Select(Literal(Constant(null)).setType(definitions.NullTpe), TermName("ne"))
-          val callOnComplete = futureSystemOps.onComplete[Any, Unit](gen.mkAttributedIdent(tempAwaitableSym), fun, Ident(nme.execContext))
+          val initTempCompleted = Assign(
+            gen.mkAttributedIdent(transformState.applyTrParam),
+            gen.mkMethodCall(transformState.memberRef(transformState.stateGetCompleted), gen.mkAttributedIdent(tempAwaitableSym) :: Nil)
+          )
+          val null_ne = gen.mkAttributedSelect(Literal(Constant(null)).setType(definitions.NullTpe), definitions.Any_!=)
           val ifTree =
             If(Apply(null_ne, Ident(transformState.applyTrParam) :: Nil),
-              Apply(Ident(currentTransformState.whileLabel), Nil),
-              Block(toStats(callOnComplete), Return(literalUnit).setSymbol(currentTransformState.applySym)))
+              Apply(Ident(transformState.whileLabel), Nil),
+              Block(toStats(callOnComplete(gen.mkAttributedIdent(tempAwaitableSym))), Return(literalUnit).setSymbol(transformState.applySym)))
           typed(initAwaitableTemp) :: typed(initTempCompleted) :: mkStateTree(nextState) :: typed(ifTree) :: Nil
         } else {
-          val callOnComplete = futureSystemOps.onComplete[Any, Unit](awaitable, fun, Ident(nme.execContext))
-          mkStateTree(nextState) :: toStats(typed(callOnComplete)) ::: typed(Return(literalUnit)) :: Nil
+          mkStateTree(nextState) :: toStats(typed(callOnComplete(awaitable))) ::: typed(Return(literalUnit)) :: Nil
         }
       }
     }

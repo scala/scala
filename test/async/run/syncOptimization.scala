@@ -1,4 +1,4 @@
-import scala.async.Async._
+import scala.tools.partest.async.Async._
 import scala.concurrent._
 import scala.concurrent.duration._
 import ExecutionContext.Implicits._

@@ -6,7 +6,7 @@ package scala.async.run.live {
 
   import scala.concurrent._
   import duration.Duration
-  import scala.async.Async.{async, await}
+  import scala.tools.partest.async.Async.{async, await}
   import scala.collection.immutable
   object TestUtil {
     import language.implicitConversions

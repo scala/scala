@@ -44,6 +44,7 @@ abstract class MutableSettings extends AbsSettings {
     def valueSetByUser: Option[T] = if (isSetByUser) Some(value) else None
   }
 
+  def async: BooleanSetting
   def Xexperimental: BooleanSetting
   def XfullLubs: BooleanSetting
   def XnoPatmatAnalysis: BooleanSetting

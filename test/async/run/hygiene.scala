@@ -7,7 +7,7 @@ package scala.async.run.hygiene {
 
   import scala.concurrent._
   import ExecutionContext.Implicits.global
-  import scala.async.Async._
+  import scala.tools.partest.async.Async._
   import scala.concurrent.duration.Duration
   object TestUtil {
     import language.implicitConversions

@@ -466,6 +466,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.removeElement"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.addElement"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.containsElement"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.async"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Internals#InternalApi.markForAsyncTransform"),
   )
 }
 

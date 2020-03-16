@@ -13,56 +13,85 @@
 package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
-import scala.tools.nsc.transform.async.user.FutureSystem
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
+import scala.reflect.internal.util.SourceFile
 
 abstract class AsyncPhase extends Transform with TypingTransformers with AnfTransform with AsyncAnalysis with Lifter with LiveVariables {
   self =>
   import global._
 
-  private[async] var currentTransformState: AsyncTransformState[global.type] = _
+  private[async] var currentTransformState: AsyncTransformState = _
   private[async] val asyncNames = new AsyncNames[global.type](global)
   protected[async] val tracing = new Tracing
 
   val phaseName: String = "async"
+  override def enabled: Boolean = settings.async
 
-  private final class FutureSystemAttachment(val system: FutureSystem) extends PlainAttachment
+  private final case class AsyncAttachment(awaitSymbol: Symbol, postAnfTransform: Block => Block, stateDiagram: ((Symbol, Tree) => Option[String => Unit])) extends PlainAttachment
 
   // Optimization: avoid the transform altogether if there are no async blocks in a unit.
-  private val units = perRunCaches.newSet[CompilationUnit]()
-  final def addFutureSystemAttachment(unit: CompilationUnit, method: Tree, system: FutureSystem): method.type = {
-    units += unit
-    method.updateAttachment(new FutureSystemAttachment(system))
-  }
+  private val sourceFilesToTransform = perRunCaches.newSet[SourceFile]()
+  private val awaits: mutable.Set[Symbol] = perRunCaches.newSet[Symbol]()
 
-  protected object macroExpansion extends AsyncEarlyExpansion {
-    val global: self.global.type = self.global
+  /**
+   * Mark the given method as requiring an async transform.
+   */
+  final def markForAsyncTransform(owner: Symbol, method: DefDef, awaitMethod: Symbol,
+                                  config: Map[String, AnyRef]): DefDef = {
+    val pos = owner.pos
+    if (!settings.async)
+      reporter.warning(pos, s"${settings.async.name} must be enabled for async transformation.")
+    sourceFilesToTransform += pos.source
+    val postAnfTransform = config.getOrElse("postAnfTransform", (x: Block) => x).asInstanceOf[Block => Block]
+    val stateDiagram = config.getOrElse("stateDiagram", (sym: Symbol, tree: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
+    method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram))
+    deriveDefDef(method) { rhs =>
+      Block(rhs.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))
+    }.updateAttachment(ChangeOwnerAttachment(owner))
   }
-
-  import treeInfo.Applied
-  def fastTrackEntry: (Symbol, PartialFunction[Applied, scala.reflect.macros.contexts.Context { val universe: self.global.type } => Tree]) =
-    (currentRun.runDefinitions.Async_async, {
-      // def async[T](body: T)(implicit execContext: ExecutionContext): Future[T] = macro ???
-      case app@Applied(_, _, List(asyncBody :: Nil, execContext :: Nil)) =>
-        c => c.global.async.macroExpansion.apply(c.callsiteTyper, asyncBody, execContext, asyncBody.tpe)
-    })
 
   def newTransformer(unit: CompilationUnit): Transformer = new AsyncTransformer(unit)
+
+  private def compileTimeOnlyPrefix: String = "[async] "
+
+  /** Should refchecks defer reporting `@compileTimeOnly` errors for `sym` and instead let this phase issue the warning
+   *  if they survive the async tranform? */
+  private[scala] def deferCompileTimeOnlyError(sym: Symbol): Boolean = settings.async && {
+    awaits.contains(sym) || {
+      val msg = sym.compileTimeOnlyMessage.getOrElse("")
+      val shouldDefer =
+        msg.startsWith(compileTimeOnlyPrefix) || (sym.name == nme.await) && msg.contains("must be enclosed") && sym.owner.info.member(nme.async) != NoSymbol
+      if (shouldDefer) awaits += sym
+      shouldDefer
+    }
+  }
 
   // TOOD: figure out how to make the root-level async built-in macro sufficiently configurable:
   //       replace the ExecutionContext implicit arg with an AsyncContext implicit that also specifies the type of the Future/Awaitable/Node/...?
   final class AsyncTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     private lazy val liftableMap = new mutable.AnyRefMap[Symbol, (Symbol, List[Tree])]()
 
-    override def transformUnit(unit: CompilationUnit): Unit =
-      if (units.contains(unit)) super.transformUnit(unit)
+    override def transformUnit(unit: CompilationUnit): Unit = {
+      if (settings.async) {
+        if (sourceFilesToTransform.contains(unit.source)) super.transformUnit(unit)
+        if (awaits.exists(_.isInitialized)) {
+          unit.body.foreach {
+            case tree: RefTree if tree.symbol != null && awaits.contains(tree.symbol) =>
+              val sym = tree.symbol
+              val msg = sym.compileTimeOnlyMessage.getOrElse(s"`${sym.decodedName}` must be enclosed in an `async` block").stripPrefix(compileTimeOnlyPrefix)
+              global.reporter.error(tree.pos, msg)
+            case _ =>
+          }
+        }
+      }
+    }
 
     // Together, these transforms below target this tree shaps
     // {
     //    class $STATE_MACHINE extends ... {
     //      def $APPLY_METHOD(....) = {
     //      ...
-    //      }.updateAttachment(FutureSystemAttachment(...))
+    //      }.updateAttachment(AsyncAttachment(...))
     //    }
     // }
     //
@@ -74,7 +103,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         case cd: ClassDef if liftableMap.contains(cd.symbol) =>
           val (applySym, liftedTrees) = liftableMap.remove(cd.symbol).get
           val liftedSyms = liftedTrees.iterator.map(_.symbol).toSet
-          val cd1 = atOwner(tree.symbol) {
+          val cd1 = atOwner(cd.symbol) {
             deriveClassDef(cd)(impl => {
               deriveTemplate(impl)(liftedTrees ::: _)
             })
@@ -82,8 +111,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
           assert(localTyper.context.owner == cd.symbol.owner)
           new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
 
-        case dd: DefDef if tree.hasAttachment[FutureSystemAttachment] =>
-          val futureSystem = tree.getAndRemoveAttachment[FutureSystemAttachment].get.system
+        case dd: DefDef if dd.hasAttachment[AsyncAttachment] =>
+          val asyncAttachment = dd.getAndRemoveAttachment[AsyncAttachment].get
           val asyncBody = (dd.rhs: @unchecked) match {
             case blk@Block(stats, Literal(Constant(()))) => treeCopy.Block(blk, stats.init, stats.last).setType(stats.last.tpe)
           }
@@ -92,7 +121,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
           atOwner(dd, dd.symbol) {
             val trSym = dd.vparamss.head.head.symbol
             val saved = currentTransformState
-            currentTransformState = new AsyncTransformState[global.type](global, futureSystem, this, trSym, asyncBody.tpe)
+            currentTransformState = new AsyncTransformState(asyncAttachment.awaitSymbol,
+              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, trSym, asyncBody.tpe)
             try {
               val (newRhs, liftableFields) = asyncTransform(asyncBody)
               liftableMap(dd.symbol.owner) = (dd.symbol, liftableFields)
@@ -101,13 +131,13 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
               currentTransformState = saved
             }
           }
-        case tree => tree
+        case tree =>
+          tree
       }
 
     private def asyncTransform(asyncBody: Tree): (Tree, List[Tree]) = {
       val transformState = currentTransformState
       import transformState.applySym
-      val futureSystemOps = transformState.ops
 
       val asyncPos = asyncBody.pos
 
@@ -119,7 +149,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       // Transform to A-normal form:
       //  - no await calls in qualifiers or arguments,
       //  - if/match only used in statement position.
-      val anfTree: Block = futureSystemOps.postAnfTransform(new AnfTransformer(localTyper).apply(asyncBody))
+      val anfTree: Block = transformState.postAnfTransform(new AnfTransformer(localTyper).apply(asyncBody))
 
       // The ANF transform re-parents some trees, so the previous traversal to mark ancestors of
       // await is no longer reliable. Clear previous results and run it again for use in the `buildAsyncBlock`.
@@ -144,10 +174,10 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       val applyBody = atPos(asyncPos)(asyncBlock.onCompleteHandler)
 
       // Logging
-      if (settings.debug.value && shouldLogAtThisPhase)
+      if ((settings.debug.value && shouldLogAtThisPhase))
         logDiagnostics(anfTree, asyncBlock, asyncBlock.asyncStates.map(_.toString))
-      // Offer the future system a change to produce the .dot diagram
-      futureSystemOps.dot(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
+      // Offer async frontends a change to produce the .dot diagram
+      transformState.dotDiagram(applySym, asyncBody).foreach(f => f(asyncBlock.toDot))
 
       cleanupContainsAwaitAttachments(applyBody)
 

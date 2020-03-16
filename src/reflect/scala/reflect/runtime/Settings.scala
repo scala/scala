@@ -42,6 +42,7 @@ private[reflect] class Settings extends MutableSettings {
     override def value: List[String] = v
   }
 
+  val async             = new BooleanSetting(false)
   val Xexperimental     = new BooleanSetting(false)
   val XfullLubs         = new BooleanSetting(false)
   val XnoPatmatAnalysis = new BooleanSetting(false)

@@ -392,5 +392,3 @@ private[async] trait AnfTransform extends TransformUtils {
     }
   }
 }
-
-object SyntheticBindVal

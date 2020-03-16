@@ -52,7 +52,7 @@ package scala.async.run.futures {
   import scala.reflect.{ClassTag, classTag}
 
   import scala.async.TestLatch
-  import scala.async.Async.{async, await}
+  import scala.tools.partest.async.Async.{async, await}
 
   import org.junit.Test
 

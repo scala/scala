@@ -1285,12 +1285,15 @@ abstract class RefChecks extends Transform {
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
       // async/await is expanded after erasure
-      if (sym.isCompileTimeOnly && sym != currentRun.runDefinitions.Async_await && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
-        def defaultMsg =
-          sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
-              |it should have been processed and eliminated during expansion of an enclosing macro."""
-        // The getOrElse part should never happen, it's just here as a backstop.
-        reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+      if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
+        if (!async.deferCompileTimeOnlyError(sym)) {
+          def defaultMsg =
+            sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
+                |it should have been processed and eliminated during expansion of an enclosing macro."""
+          // The getOrElse part should never happen, it's just here as a backstop.
+          val msg = sym.compileTimeOnlyMessage getOrElse defaultMsg
+          reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+        }
       }
     }
 
@@ -1719,7 +1722,7 @@ abstract class RefChecks extends Transform {
     }
 
     private def checkUnexpandedMacro(t: Tree) =
-      if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro && t.symbol != currentRun.runDefinitions.Async_async) // TODO async
+      if (!t.isDef && t.hasSymbolField && t.symbol.isTermMacro)
         reporter.error(t.pos, "macro has not been expanded")
 
     override def transform(tree: Tree): Tree = {

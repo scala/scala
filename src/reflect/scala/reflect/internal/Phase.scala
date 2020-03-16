@@ -64,6 +64,7 @@ abstract class Phase(val prev: Phase) extends Ordered[Phase] {
    *  overridden to false in parser, namer, typer, and erasure. (And NoPhase.)
    */
   def keepsTypeParams = true
+  def init(): Unit = ()
   def run(): Unit
 
   override def toString() = name

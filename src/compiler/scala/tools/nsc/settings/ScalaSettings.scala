@@ -113,6 +113,7 @@ trait ScalaSettings extends AbsScalaSettings
    * -X "Advanced" settings
    */
   val Xhelp              = BooleanSetting      ("-X", "Print a synopsis of advanced options.")
+  val async              = BooleanSetting      ("-Xasync", "Enable the async phase for scala.async.Async.{async,await}.")
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
   val developer          = BooleanSetting      ("-Xdev", "Indicates user is a developer - issue warnings about anything which seems amiss")
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.") andThen (flag =>

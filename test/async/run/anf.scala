@@ -5,7 +5,7 @@ package scala.async.run.anf {
   import language.{reflectiveCalls, postfixOps}
   import scala.concurrent.{Future, ExecutionContext, Await}
   import scala.concurrent.duration._
-  import scala.async.Async.{async, await}
+  import scala.tools.partest.async.Async.{async, await}
   import scala.reflect.{ClassTag, classTag}
   import org.junit.Test
 
@@ -396,7 +396,7 @@ package scala.async.run.anf {
 //      val tree = tb.typeCheck(tb.parse {
 //        """
 //          | import language.implicitConversions
-//          | import _root_.scala.async.Async.{async, await}
+//          | import _root_.scala.tools.partest.async.Async.{async, await}
 //          | import _root_.scala.concurrent._
 //          | import ExecutionContext.Implicits.global
 //          | implicit def view(a: Int): String = ""

@@ -55,5 +55,8 @@ trait Internals extends scala.tools.nsc.transform.TypingTransformers {
       val trans = new HofTypingTransformer(transformer)
       trans.atOwner(owner)(trans.transform(tree))
     }
+    override def markForAsyncTransform(owner: Symbol, method: DefDef, awaitSymbol: Symbol, config: Map[String, AnyRef]): DefDef = {
+      global.async.markForAsyncTransform(owner, method, awaitSymbol, config)
+    }
   }
 }

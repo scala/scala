@@ -644,6 +644,13 @@ trait Definitions extends api.StandardDefinitions {
     def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
     def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
 
+    lazy val TryClass = requiredClass[scala.util.Try[_]]
+    lazy val FailureClass = requiredClass[scala.util.Failure[_]]
+    lazy val SuccessClass = requiredClass[scala.util.Success[_]]
+    lazy val FutureClass = requiredClass[scala.concurrent.Future[_]]
+    lazy val PromiseClass = requiredClass[scala.concurrent.Promise[_]]
+    lazy val NonFatalClass = requiredClass[scala.util.control.NonFatal.type]
+
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
         // add initialization from its generic class constructor
@@ -1556,6 +1563,8 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Boolean_not = definitions.Boolean_not
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
+      lazy val Option_isDefined: Symbol = getMemberMethod(OptionClass, TermName("isDefined"))
+      lazy val Option_get: Symbol = getMemberMethod(OptionClass, TermName("get"))
       lazy val List_apply = DefinitionsClass.this.List_apply
 
       /**
@@ -1637,9 +1646,10 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
 
-      lazy val AsyncModule = getModuleIfDefined("scala.async.Async")
-      lazy val Async_async = AsyncModule.map(async => getDeclIfDefined(async, nme.async))
-      lazy val Async_await = AsyncModule.map(async => getDeclIfDefined(async, nme.await))
+      lazy val Future_unit: Symbol = getMemberMethod(FutureClass.companionModule, TermName("unit"))
+      lazy val Future_onComplete: Symbol = getMemberMethod(FutureClass, TermName("onComplete"))
+      lazy val Future_value: Symbol = getMemberMethod(FutureClass, TermName("value"))
+      lazy val Promise_complete: Symbol = getMemberMethod(PromiseClass, TermName("complete"))
     }
   }
 }
