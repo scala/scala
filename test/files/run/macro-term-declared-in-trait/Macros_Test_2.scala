@@ -1,3 +1,4 @@
+import scala.language.experimental.macros
 trait Base {
   def foo: Unit = macro Impls.foo
 }

@@ -1,3 +1,4 @@
+import scala.language.experimental.macros
 object Macros {
   def foo(x: Any) = macro Impls.foo2
 }

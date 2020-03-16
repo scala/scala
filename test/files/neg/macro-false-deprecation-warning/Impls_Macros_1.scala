@@ -1,4 +1,8 @@
+import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
+
+// don't emit deprecation warnings about identifiers like `macro` or `then`
+// when skimming through the source file trying to heal braces
 
 object Helper {
   def unapplySeq[T](x: List[T]): Option[Seq[T]] =

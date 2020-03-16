@@ -1,4 +1,4 @@
-Crash.java:4: error: not found: type NotThere
+Crash.java:5: error: not found: type NotThere
     NotThere notThere();
     ^
 1 error

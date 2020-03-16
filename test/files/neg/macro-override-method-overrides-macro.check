@@ -1,4 +1,4 @@
-Macros_Test_2.scala:8: error: macro can only be overridden by another macro:
+Macros_Test_2.scala:9: error: macro can only be overridden by another macro:
 macro def foo(x: String): Unit (defined in class B)
   override def foo(x: String): Unit = println("fooDString")
                ^

@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:** -opt-warnings -Werror
 package test
 
 object Test {

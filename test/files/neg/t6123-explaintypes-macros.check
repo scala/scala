@@ -1,6 +1,6 @@
 c.universe.Expr[Any]* <: c.universe.Expr[String]*?
 false
-BadMac_2.scala:6: error: macro implementation has incompatible shape:
+BadMac_2.scala:7: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(format: c.Expr[String], params: c.Expr[Any]*): c.Expr[Unit]
  or      : (c: scala.reflect.macros.blackbox.Context)(format: c.Tree, params: Tree*): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(format: c.Expr[String], params: c.Expr[String]*): c.Expr[Unit]

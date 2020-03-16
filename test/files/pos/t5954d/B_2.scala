@@ -1,3 +1,4 @@
+// scalac: -Werror -Xdev
 package p {
   trait T {
     class B

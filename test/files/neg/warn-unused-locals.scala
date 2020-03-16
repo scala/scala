@@ -1,3 +1,5 @@
+// scalac: -Wunused:locals -Werror
+
 class Outer {
   class Inner
 }

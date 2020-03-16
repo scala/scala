@@ -1,3 +1,4 @@
+// scalac: -Vreflective-calls
 object Test extends App {
   import Interpolation._
   2 match {

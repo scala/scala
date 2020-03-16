@@ -1,3 +1,4 @@
+// scalac: -Ddummy=run-in-forked-process
 object Module {
   val data = new Array[Byte](32 * 1024 * 1024)
 }

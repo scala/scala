@@ -1,4 +1,4 @@
-// Traits.scala
+// Traits.scala scalac: -Werror
 sealed trait T
 
 trait A extends T

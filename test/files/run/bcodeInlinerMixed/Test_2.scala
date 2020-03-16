@@ -1,3 +1,5 @@
+// scalac: -opt:l:inline -opt-inline-from:**
+//
 import scala.tools.partest.BytecodeTest
 import scala.tools.testkit.ASMConverters
 import ASMConverters._

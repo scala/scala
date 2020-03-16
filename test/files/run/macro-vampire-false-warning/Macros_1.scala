@@ -1,4 +1,5 @@
 // As per http://meta.plasm.us/posts/2013/08/31/feeding-our-vampires/
+// scalac: -Werror
 
 import scala.annotation.StaticAnnotation
 import scala.reflect.macros.whitebox.Context

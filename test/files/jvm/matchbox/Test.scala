@@ -1,9 +1,8 @@
-import scala.tools.partest.BytecodeTest
-import scala.tools.asm
-import asm.ClassReader
-import asm.tree
-import scala.collection.JavaConverters._
+// scalac: -opt:l:method -Xlint
+import scala.jdk.CollectionConverters._
 import scala.reflect.{classTag, ClassTag}
+import scala.tools.asm, asm.ClassReader, asm.tree
+import scala.tools.partest.BytecodeTest
 
 object Test extends BytecodeTest {
   def internalName[T <: AnyRef : ClassTag]: String =
