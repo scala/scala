@@ -16,6 +16,7 @@ import java.nio.file.Files
 import java.util.concurrent.{Callable, ExecutorService}
 
 import scala.concurrent.duration.Duration
+import scala.io.Codec
 import scala.jdk.CollectionConverters._
 import scala.tools.nsc.util.Exceptional
 
@@ -40,7 +41,7 @@ package object partest {
   def ojoin(xs: String*): String  = oempty(xs: _*) mkString space
   def nljoin(xs: String*): String = oempty(xs: _*) mkString EOL
 
-  implicit val codec = scala.io.Codec.UTF8
+  implicit val codec: Codec = Codec.UTF8
 
   def setUncaughtHandler() = {
     Thread.setDefaultUncaughtExceptionHandler(
@@ -98,7 +99,7 @@ package object partest {
   implicit class PathOps(p: Path) extends FileOps(p.jfile)
 
   implicit class Copier(val f: SFile) extends AnyVal {
-    def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(scala.io.Codec.UTF8)
+    def copyTo(dest: Path): Unit = dest.toFile writeAll f.slurp(Codec.UTF8)
   }
 
   implicit class LoaderOps(val loader: ClassLoader) extends AnyVal {
