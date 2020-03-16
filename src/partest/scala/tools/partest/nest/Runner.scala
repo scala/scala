@@ -470,24 +470,26 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def toolArgs(tool: String, split: Boolean = true): List[String] =
     toolArgsFor(sources(testFile))(tool, split)
 
-  // inspect given files for tool args
+  // inspect given files for tool args of the form `tool: args`
+  // if args string ends in close comment, drop the `*` `/`
+  // if split, parse the args string as command line.
+  //
   def toolArgsFor(files: List[File])(tool: String, split: Boolean = true): List[String] = {
-    def argsplitter(s: String) = if (split) words(s) filter (_.nonEmpty) else List(s)
     def argsFor(f: File): List[String] = {
-      import scala.util.matching.Regex
-      val p    = new Regex(s"(?:.*\\s)?${tool}:(?:\\s*)(.*)?", "args")
+      import scala.jdk.OptionConverters._
+      import scala.tools.cmd.CommandLineParser.tokenize
+      import scala.util.Using
       val max  = 10
-      val src  = Path(f).toFile.chars(codec)
-      val args = try {
-        src.getLines take max collectFirst {
-          case s if (p findFirstIn s).nonEmpty => for (m <- p findFirstMatchIn s) yield m group "args"
-        }
-      } finally src.close()
-      val parsed = args.flatten map argsplitter getOrElse Nil
-      // be forgiving of /* scalac: ... */
-      if (parsed.lastOption contains "*/") parsed.init else parsed
+      val tag  = s"$tool:"
+      val endc = "*" + "/"    // be forgiving of /* scalac: ... */
+      def stripped(s: String) = s.substring(s.indexOf(tag) + tag.length).stripSuffix(endc)
+      def argsplitter(s: String) = if (split) tokenize(s) else List(s.trim())
+      val args = Using.resource(Files.lines(f.toPath, codec.charSet))(
+        _.limit(max).filter(_.contains(tag)).map(stripped).findAny.toScala
+      )
+      args.map(argsplitter).getOrElse(Nil)
     }
-    files flatMap argsFor
+    files.flatMap(argsFor)
   }
 
   abstract class CompileRound {
