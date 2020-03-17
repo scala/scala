@@ -17,7 +17,7 @@ import java.util
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
-import scala.reflect.internal.util.{Position, StatisticsStatics}
+import scala.reflect.internal.util.StatisticsStatics
 
 // a literal is a (possibly negated) variable
 case class Lit(val v: Int) {

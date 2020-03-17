@@ -3,7 +3,7 @@ import scala.tools.partest.DirectTest
 object Test extends DirectTest {
 
   override def extraSettings: String =
-    s"-usejavacp -Vprint:typer -language:higherKinds -Ystop-after:typer"
+    s"-usejavacp -Vprint:typer -Ystop-after:typer"
 
   override def code = """
 object t10344 {

@@ -1,5 +1,4 @@
 
-import scala.language.{ higherKinds }
 
 object Test {
 

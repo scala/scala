@@ -1,7 +1,7 @@
 // scalac: -deprecation
 //
 import scala.tools.partest.Util.ArrayDeep
-import scala.language.{ higherKinds, reflectiveCalls }
+import scala.language.reflectiveCalls
 
 object Test2 {
   import java.io.{BufferedReader,FileReader, IOException}
