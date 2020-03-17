@@ -1,5 +1,7 @@
 package tastytest
 
+import scala.reflect.ClassTag
+
 object Refinements {
 
   trait Foo {
@@ -45,7 +47,8 @@ object Refinements {
   trait Methodic {
     def nullary: Any
     def nillary(): Any
-    def poly[T](): Any
+    def poly[T]: Any
+    def polyNillary[T](): Any
     val value: Any
   }
 
@@ -53,7 +56,7 @@ object Refinements {
     def blip(m: M): A = m.nullary
   }
 
-  class Blap[A, M <: Methodic { def nillary(): A } ] { // generates METHODtype tag
+  class Blap[A, M <: Methodic { def nillary(): A } ] {
     def blap(m: M): A = m.nillary()
   }
 
@@ -61,8 +64,12 @@ object Refinements {
     def blam(m: M): A = m.value
   }
 
-  class Bloc[A, M <: Methodic { def poly[T](): A } ] { // generates POLYtype tag
-    def bloc(m: M): A = m.poly()
+  class Bloc[A, M <: Methodic { def poly[T]: A } ] {
+    def bloc(m: M): A = m.poly
+  }
+
+  class Blaa[A, M <: Methodic { def polyNillary[T](): A } ] {
+    def blaa(m: M): A = m.polyNillary()
   }
 
   class Clip[A] {
@@ -78,7 +85,67 @@ object Refinements {
   }
 
   class Cloc[A] {
-    def cloc[M <: Methodic { def poly[T](): A }](m: M): A = m.poly()
+    def cloc[M <: Methodic { def poly[T]: A }](m: M): A = m.poly
+  }
+
+  class Claa[A] {
+    def claa[M <: Methodic { def polyNillary[T](): A }](m: M): A = m.polyNillary()
+  }
+
+  trait MethodicComplex {
+    def one(a: String): Any
+    def two(a: String)(b: Boolean): Any
+    def three[C](a: String)(b: Boolean)(c: C): Any
+  }
+
+  class MethodOrPoly1[A, M <: MethodicComplex { def one(a: String): A } ] {
+    def read(m: M, s: String): A = m.one(s)
+  }
+
+  class MethodOrPoly2[A, M <: MethodicComplex { def two(a: String)(b: Boolean): A } ] {
+    def read(m: M, s: String, b: Boolean): A = m.two(s)(b)
+  }
+
+  class MethodOrPoly3[A, M <: MethodicComplex { def three[C](a: String)(b: Boolean)(c: C): A } ] {
+    def read[C](m: M, s: String, b: Boolean, c: C): A = m.three(s)(b)(c)
+  }
+
+  class Structural1[M <: { val output: Int } ] {
+    import reflect.Selectable.reflectiveSelectable
+    def get(m: M): Int = m.output
+  }
+
+  class Structural2[M <: { def output: Int } ] {
+    import reflect.Selectable.reflectiveSelectable
+    def get(m: M): Int = m.output
+  }
+
+  class Structural3[M <: { def encode(t: Int): String } ] {
+    import reflect.Selectable.reflectiveSelectable
+    def encodeWith(m: M, t: Int): String = m.encode(t)
+  }
+
+  class StructuralSelectable[M <: Selectable { def encode(t: Int): String } ] {
+    def encodeWith(m: M, t: Int): String = m.encode(t)
+  }
+
+  class StructuralFlip1 {
+    import reflect.Selectable.reflectiveSelectable
+    def get[M <: { val output: Int } ](m: M): Int = m.output
+  }
+
+  class StructuralFlip2 {
+    import reflect.Selectable.reflectiveSelectable
+    def get[M <: { def output: Int } ](m: M): Int = m.output
+  }
+
+  class StructuralFlip3 {
+    import reflect.Selectable.reflectiveSelectable
+    def encodeWith[M <: { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
+  }
+
+  class StructuralSelectableFlip {
+    def encodeWith[M <: Selectable { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
   }
 
 }

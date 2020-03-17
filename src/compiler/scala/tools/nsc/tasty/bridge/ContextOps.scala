@@ -73,7 +73,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       def newWildcardSym(info: TypeBounds): Symbol =
         owner.newTypeParameter(nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
 
-      def newSymbol(owner: Symbol, name: Name, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
+      def newSymbol(owner: Symbol, name: Name, flags: FlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol = {
         val sym = {
           if (flags.is(Param)) {
             if (name.isTypeName) {
@@ -99,7 +99,7 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
           }
         }
         sym.privateWithin = privateWithin
-        sym.info = completer
+        sym.info = info
         sym
       }
 

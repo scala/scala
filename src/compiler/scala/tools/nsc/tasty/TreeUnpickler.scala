@@ -314,19 +314,21 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readLengthType(): Type = {
         val end = readEnd()
 
-        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType, Res <: Type]
-            (companion: LambdaTypeCompanion[N, PInfo, LT, Res], nameMap: TastyName => N)(implicit ctx: Context): Res = {
+        def readMethodic[N <: Name, PInfo <: Type, LT <: LambdaType]
+            (companion: LambdaTypeCompanion[N, PInfo, LT], nameMap: TastyName => N)(implicit ctx: Context): Type = {
           val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
-            val paramNames = nameReader.readParamNames(end)
-            companion(paramNames)(nameMap,
-              pt => registeringTypeWith(pt, paramReader.readParamTypes[PInfo](end)),
-              pt => readType()).tap(typeAtAddr(start) = _)
+            val paramNames = nameReader.readParamNames(end).map(nameMap)
+            companion(paramNames)(
+              pt => typeAtAddr(start) = pt,
+              () => paramReader.readParamTypes[PInfo](end),
+              () => readType()
+            ).tap(typeAtAddr(start) = _)
           })
           goto(end)
-          result.asInstanceOf[Res]
+          result
         }
 
         def readVariances(tp: Type): Type = tp match {
@@ -368,11 +370,27 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val ttag = nextUnsharedTag
               if (ttag === TYPEBOUNDS) name = name.toTypeName
               var refinedTpe = readType()
-              val refinement = parent.member(name).cloneSymbol
-              if (refinement.isMethod && refinement.paramss.isEmpty) {
-                refinedTpe = ByNameType.normalise(refinedTpe)(mkNullaryMethodType)
+              val refinement = {
+                val memberOrNone = parent.member(name)
+                if (isSymbol(memberOrNone)) {
+                  val refinement = memberOrNone.cloneSymbol
+                  if (refinement.isMethod && refinement.paramss.isEmpty) {
+                    refinedTpe = MethodRefinement.normalise(refinedTpe)
+                  }
+                  refinement.setInfo(refinedTpe)
+                }
+                else { // Structural Refinement, dotty only allows vals or non-polymorphic defs
+                  var flags = Method
+                  val info = refinedTpe match {
+                    case ByNameType(res) => mkNullaryMethodType(res) // nullary method
+                    case _: MethodType => refinedTpe
+                    case _ => // val
+                      flags |= Stable | Deferred
+                      mkNullaryMethodType(refinedTpe)
+                  }
+                  ctx.newSymbol(ctx.owner, name, flags, info)
+                }
               }
-              refinement.setInfo(refinedTpe)
               parent match {
                 case parent: RefinedType =>
                   val scope = parent.decls.cloneScope
@@ -398,10 +416,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               mkSuperType(readType(), readType())
             // case MATCHtype =>
             //   MatchType(readType(), readType(), until(end)(readType()))
-            // case POLYtype =>
-            //   readMethodic(PolyType, _.toTypeName)
-            // case METHODtype =>
-            //   readMethodic(MethodType, _.toTermName)
+            case POLYtype =>
+              readMethodic(PolyType, _.toEncodedTermName.toTypeName)
+            case METHODtype =>
+              readMethodic(MethodType, _.toEncodedTermName)
             // case ERASEDMETHODtype =>
             //   readMethodic(ErasedMethodType, _.toTermName)
             // case GIVENMETHODtype =>
@@ -610,7 +628,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isModuleClass && !isTypeParameter
       ctx.log {
-        val msg = if (privateWithin ne noSymbol) s" private within $privateWithin" else ""
+        val msg = if (isSymbol(privateWithin)) s" private within $privateWithin" else ""
         s"""creating symbol ${name}${msg} at $start with flags $showFlags"""
       }
       def adjustIfModule(completer: TastyLazyType) = {
