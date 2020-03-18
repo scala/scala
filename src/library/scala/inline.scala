@@ -47,5 +47,5 @@ package scala
  * def t2 = f1(1) + (f1(1): @noinline) // the second call to f1 is not inlined
  * }}}
  */
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class inline extends scala.annotation.StaticAnnotation

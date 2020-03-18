@@ -35,5 +35,5 @@ package scala.annotation
   *
   * @param enabled whether to show this type as an infix type operator.
   */
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class showAsInfix(enabled: Boolean = true) extends annotation.StaticAnnotation

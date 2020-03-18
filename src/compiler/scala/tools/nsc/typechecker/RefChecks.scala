@@ -824,7 +824,7 @@ abstract class RefChecks extends Transform {
             .filter(c => c.exists && c.isClass)
           overridden foreach { sym2 =>
             def msg(what: String) = s"shadowing a nested class of a parent is $what but $clazz shadows $sym2 defined in ${sym2.owner}; rename the class to something else"
-            if (currentRun.isScala300) reporter.error(clazz.pos, msg("unsupported"))
+            if (currentRun.isScala3) reporter.error(clazz.pos, msg("unsupported"))
             else runReporting.deprecationWarning(clazz.pos, clazz, currentOwner, msg("deprecated"), "2.13.2")
           }
         }

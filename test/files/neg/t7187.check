@@ -20,7 +20,7 @@ t7187.scala:29: error: _ must follow method; cannot follow String
 t7187.scala:38: error: missing argument list for method zup in class EtaExpandZeroArg
 Unapplied methods are only converted to functions when a function type is expected.
 You can make this conversion explicit by writing `zup _` or `zup(_)` instead of `zup`.
-  val t5a = zup // error in 2.13, eta-expansion in 2.14
+  val t5a = zup // error in 2.13, eta-expansion in 3.0
             ^
 t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write foo() to invoke method foo, or change the expected type.

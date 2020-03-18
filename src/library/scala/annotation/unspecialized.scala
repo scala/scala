@@ -16,5 +16,5 @@ package scala.annotation
  *  additional specialized forms based on enclosing specialized
  *  type parameters.
  */
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class unspecialized extends scala.annotation.StaticAnnotation

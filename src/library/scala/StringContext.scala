@@ -138,7 +138,7 @@ case class StringContext(parts: String*) {
    *
    *  ''Note:'' Even when using the raw interpolator, Scala will process Unicode escapes.
    *  Unicode processing in the raw interpolator is deprecated as of scala 2.13.2 and
-   *  will be removed in scala 2.14
+   *  will be removed in the future
    *  For example:
    *  {{{
    *    scala> raw"\u005cu0023"

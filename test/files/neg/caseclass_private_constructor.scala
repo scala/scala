@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.14
+// scalac: -Xsource:3
 
 case class A private (i: Int)
 object A

@@ -1,4 +1,4 @@
-// scalac: -deprecation -Xsource:2.14
+// scalac: -deprecation -Xsource:3
 //
 class A {
   for (x <- 1 to 5 ; y = x) yield x+y           // ok

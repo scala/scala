@@ -1137,8 +1137,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     // We hit these checks regularly. They shouldn't change inside the same run, so cache the comparisons here.
     val isScala212: Boolean = settings.isScala212
     val isScala213: Boolean = settings.isScala213
-    val isScala214: Boolean = settings.isScala214
-    val isScala300: Boolean = settings.isScala300
+    val isScala3: Boolean   = settings.isScala3
 
     // used in sbt
     def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings

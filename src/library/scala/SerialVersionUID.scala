@@ -23,5 +23,5 @@ package scala
   * @see [[http://docs.oracle.com/javase/8/docs/api/java/io/Serializable.html `java.io.Serializable`]]
   * @see [[Serializable]]
   */
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class SerialVersionUID(value: Long) extends scala.annotation.ConstantAnnotation

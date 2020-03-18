@@ -67,7 +67,7 @@ final class TreeSeqMap[K, +V] private (
   override def isEmpty = size == 0
 
   /*
-  // This should have been overridden in 2.13.0 but wasn't so it will have to wait until 2.14 since it is not forwards compatible
+  // This should have been overridden in 2.13.0 but wasn't so it will have to wait since it is not forwards compatible
   // Now handled in inherited method from scala.collection.MapFactoryDefaults instead.
   override def empty = TreeSeqMap.empty[K, V](orderedBy)
   */

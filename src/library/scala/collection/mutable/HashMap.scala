@@ -513,7 +513,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     this
   }
 
-  // TODO in 2.14: rename to `mapValuesInPlace` and override the base version (not binary compatible)
+  // TODO: rename to `mapValuesInPlace` and override the base version (not binary compatible)
   private[mutable] def mapValuesInPlaceImpl(f: (K, V) => V): this.type = {
     val len = table.length
     var i = 0

@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.14
+// scalac: -Xsource:3
 //
 object Test {
   def f[A <% Int](a: A) = null

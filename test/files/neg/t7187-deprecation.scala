@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.14 -deprecation -Werror
+// scalac: -Xsource:3 -deprecation -Werror
 //
 trait AcciSamZero { def apply(): Int }
 
@@ -22,7 +22,7 @@ class EtaExpand214 {
 
   val t4 = m1 // apply
   val t5 = m2 // apply, ()-insertion
-  val t6 = m3 // eta-expansion in 2.14
+  val t6 = m3 // eta-expansion in 3.0
 
   val t4a: Int        = t4 // ok
   val t5a: Int        = t5 // ok

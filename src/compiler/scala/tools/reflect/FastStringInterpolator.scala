@@ -32,7 +32,7 @@ trait FastStringInterpolator extends FormatInterpolator {
       val treated = 
         try
           parts.mapConserve { case lit@Literal(Constant(stringVal: String)) =>
-            val k = Constant(if (isRaw && currentRun.isScala214) stringVal
+            val k = Constant(if (isRaw && currentRun.isScala3) stringVal
                              else if (isRaw) {
                                val processed = StringContext.processUnicode(stringVal)
                                if(processed != stringVal){

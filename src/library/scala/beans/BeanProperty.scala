@@ -27,5 +27,5 @@ package scala.beans
  *  use the `scala.beans.BooleanBeanProperty` annotation instead.
  */
 @scala.annotation.meta.field
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class BeanProperty extends scala.annotation.StaticAnnotation

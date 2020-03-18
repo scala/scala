@@ -28,7 +28,7 @@ trait FrontEnds {
 
   def hasErrors: Boolean = universe.reporter.hasErrors
 
-  // TODO: add WarningCategory parameter in 2.14 (not binary compatible)
+  // TODO: add WarningCategory parameter (not binary compatible)
   def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg, WarningCategory.Other)
 
   def error(pos: Position, msg: String): Unit = callsiteTyper.context.error(pos, msg)

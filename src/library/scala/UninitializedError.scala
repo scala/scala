@@ -14,6 +14,6 @@ package scala
 
 /** This class represents uninitialized variable/value errors.
  */
-// TODO: remove in 2.14
+// TODO: remove
 @deprecated("will be removed in a future release", since = "2.12.7")
 final class UninitializedError extends RuntimeException("uninitialized value")

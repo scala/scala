@@ -168,6 +168,8 @@ class SettingsTest {
       assert(s"(${s.source.value} == ${ScalaVersion(expected)})", s.source.value == ScalaVersion(expected))
     }
     check(expected = "2.13.0") // default
+    check(expected = "3",      "-Xsource:2.14")
+    check(expected = "3",      "-Xsource:2.15")
     check(expected = "9.11.0", "-Xsource:9.11")
     check(expected = "9.10",   "-Xsource:9.10.0")
     check(expected = "9.12",   "-Xsource:9.12")
