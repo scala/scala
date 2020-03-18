@@ -293,7 +293,7 @@ trait Namers extends MethodSynthesis {
           case tree @ DefDef(_, _, _, _, _, _)               => enterDefDef(tree)
           case tree @ TypeDef(_, _, _, _)                    => enterTypeDef(tree)
           case DocDef(_, defn)                               => enterSym(defn)
-          case tree @ Import(_, _)                           => enterImport(tree); returnContext = context.make(tree)
+          case tree @ Import(_, _)                           => enterImport(tree); returnContext = context.makeImportContext(tree)
           case _ =>
         }
         returnContext

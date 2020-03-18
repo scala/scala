@@ -115,7 +115,7 @@ trait Analyzer extends AnyRef
         try {
           val typer = newTyper(rootContext(unit))
           unit.body = typer.typed(unit.body)
-          if (!settings.Youtline.value) {
+          if (!settings.Youtline) {
             for (workItem <- unit.toCheck) workItem()
             if (settings.warnUnusedImport)
               warnUnusedImports(unit)
