@@ -1,6 +1,6 @@
 t9361.scala:4: error: type mismatch;
  found   : Tc[_$2] where type _$2
- required: Nothing[]
+ required: Nothing
     new Foo { def tc = null.asInstanceOf[Tc[_]] }
                                         ^
 1 error

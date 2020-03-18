@@ -2836,8 +2836,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Concatenate strings separated by spaces */
     private def compose(ss: String*) = ss filter (_ != "") mkString " "
 
-    def isSingletonExistential =
-      nme.isSingletonName(name) && (info.upperBound.typeSymbol isSubClass SingletonClass)
+    def isSingletonExistential: Boolean =
+      nme.isSingletonName(name)
 
     /** String representation of existentially bound variable */
     def existentialToString =

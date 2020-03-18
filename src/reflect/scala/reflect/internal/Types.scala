@@ -3177,15 +3177,15 @@ trait Types
       }
     }
 
-    override def safeToString: String = {
-      underlying match {
-        case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
-          "" + TypeRef(pre, sym, Nil) + wildcardArgsString(quantified.toSet, args).mkString("[", ", ", "]")
-        case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
-          "(" + underlying + ")" + existentialClauses
-        case _ =>
-          "" + underlying + existentialClauses
-      }
+    override def safeToString: String = underlying match {
+      case TypeRef(pre, sym, args) if !settings.debug && isRepresentableWithWildcards =>
+        val ref = typeRef(pre, sym, Nil).toString
+        val wildcards = wildcardArgsString(quantified.toSet, args)
+        if (wildcards.isEmpty) ref else ref + wildcards.mkString("[", ", ", "]")
+      case MethodType(_, _) | NullaryMethodType(_) | PolyType(_, _) =>
+        "(" + underlying + ")" + existentialClauses
+      case _ =>
+        underlying.toString + existentialClauses
     }
 
     override def cloneInfo(owner: Symbol) =
