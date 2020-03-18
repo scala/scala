@@ -190,6 +190,114 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
+
+    ////////////////////////////////////////////////////////////////////////////// Vector backward compatiblity
+
+    // Vector, VectorBuilder and VectorIterator do not extend VectorPointer anymore; all features are package-private
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorPointer"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorBuilder"),
+    ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorIterator"),
+
+    // Applies to Vector, VectorBuilder, VectorIterator
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.copyRange"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.depth"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.depth_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display0_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display1"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display1_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display2"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display2_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display3"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display3_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display4"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display4_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display5"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.display5_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoFreshPosWritable0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoFreshPosWritable1"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoNewBlockStart"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoNextBlockStart"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoNextBlockStartWritable"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoPos"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.gotoPosWritable0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.initFrom"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.preClean"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector*.stabilize"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.remainingElementCount"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.remainingVector"),
+
+    // Some other package-private methods have been removed, changed or added
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.VectorBuilder.initFrom"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.dirty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.dirty_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.initIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.updateAt"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.Vector.vectorSlice"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.Vector.vectorSliceCount"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.Vector.vectorSlicePrefixLength"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.Vector.slice0"),
+
+    // Vector was final, now sealed, and has no accessible constructor
+    ProblemFilters.exclude[AbstractClassProblem]("scala.collection.immutable.Vector"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.take"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.takeRight"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.length"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.drop"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.appendedAll"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.iterator"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.slice"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.dropRight"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.head"),
+    ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.Vector.last"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.this"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.apply"),
+
+    ////////////////////////////////////////////////////////////////////////////// Vector forward compatiblity
+
+    // Vector was final, now sealed, and has no accessible constructor
+    ProblemFilters.exclude[FinalClassProblem]("scala.collection.immutable.Vector"),
+
+    // Package-private features in the new implementation to ignore
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector0"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector0$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector1"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector2"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector3"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector4"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector5"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Vector6"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorSliceBuilder"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorStepperBase"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.IntVectorStepper"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.LongVectorStepper"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.DoubleVectorStepper"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.AnyVectorStepper"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorInline"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorInline$"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorBuilder.getData"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorBuilder.initSparse"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.BigVector"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.NewVectorIterator"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorStatics"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorStatics$"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.appendedAll0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.slice0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.mapElems"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.mapElems1"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.append1IfSpace"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.tinyAppendLimit"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.vectorSlice"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.vectorSliceCount"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.vectorSlicePrefixLength"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.ioob"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.prefix1"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.fillSparse"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.it"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorIterator.it_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.filterImpl")
   ),
 }
 
@@ -722,7 +830,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
     },
-    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:**")
+    scalacOptions ++= Seq("-feature", "-opt:l:inline", "-opt-inline-from:scala.**")
   ).settings(inConfig(JmhPlugin.JmhKeys.Jmh)(scalabuild.JitWatchFilePlugin.jitwatchSettings))
 
 

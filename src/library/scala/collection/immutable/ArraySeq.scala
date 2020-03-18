@@ -70,19 +70,11 @@ sealed abstract class ArraySeq[+A]
 
   override def map[B](f: A => B): ArraySeq[B] = iterableFactory.tabulate(length)(i => f(apply(i)))
 
-  override def prepended[B >: A](elem: B): ArraySeq[B] = {
-    val dest = new Array[Any](length + 1)
-    dest(0) = elem
-    Array.copy(unsafeArray, 0, dest, 1, length)
-    ArraySeq.unsafeWrapArray(dest).asInstanceOf[ArraySeq[B]]
-  }
+  override def prepended[B >: A](elem: B): ArraySeq[B] =
+    ArraySeq.unsafeWrapArray(unsafeArray.prepended[Any](elem)).asInstanceOf[ArraySeq[B]]
 
-  override def appended[B >: A](elem: B): ArraySeq[B] = {
-    val dest = new Array[Any](length + 1)
-    Array.copy(unsafeArray, 0, dest, 0, length)
-    dest(length) = elem
-    ArraySeq.unsafeWrapArray(dest).asInstanceOf[ArraySeq[B]]
-  }
+  override def appended[B >: A](elem: B): ArraySeq[B] =
+    ArraySeq.unsafeWrapArray(unsafeArray.appended[Any](elem)).asInstanceOf[ArraySeq[B]]
 
   override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): ArraySeq[B] = {
     val b = ArrayBuilder.make[Any]
