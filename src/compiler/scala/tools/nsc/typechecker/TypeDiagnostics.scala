@@ -651,11 +651,13 @@ trait TypeDiagnostics {
     }
     object skipMacroExpansion extends UnusedPrivates {
       override def traverse(t: Tree): Unit =
-        if (!hasMacroExpansionAttachment(t)) super.traverse(t)
+        if (!hasMacroExpansionAttachment(t) && !(t.hasSymbol && isExpanded(t.symbol)))
+          super.traverse(t)
     }
     object checkMacroExpandee extends UnusedPrivates {
       override def traverse(t: Tree): Unit =
-        super.traverse(if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t)
+        if (!(t.hasSymbol && isExpanded(t.symbol)))
+          super.traverse(if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t)
     }
 
     private def warningsEnabled: Boolean = {
