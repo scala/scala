@@ -20,25 +20,32 @@ import scala.collection.JavaConverters.{asScalaIteratorConverter, iterableAsScal
 // Set for StateIds, which are either small positive integers or -symbolID.
 final class StateSet {
   private val bitSet = new java.util.BitSet()
-  private val caseSet = new util.HashSet[Integer]()
+  private var _caseSet: util.HashSet[Integer] = null
+  private def caseSet: util.HashSet[Integer] = {
+    if (_caseSet == null) _caseSet = new util.HashSet[Integer]()
+    _caseSet
+  }
+
   private def useBitSet(i: Int) = i > 0 && i < 1024
   def +=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.set(stateId) else caseSet.add(stateId)
   def -=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.clear(stateId) else caseSet.remove(stateId)
-  def contains(stateId: Int): Boolean = if (useBitSet(stateId)) bitSet.get(stateId) else caseSet.contains(stateId)
-  def isEmpty = bitSet.isEmpty && caseSet.isEmpty
+  def contains(stateId: Int): Boolean = if (useBitSet(stateId)) bitSet.get(stateId) else (_caseSet != null && _caseSet.contains(stateId))
+  def isEmpty = bitSet.isEmpty && (_caseSet == null || caseSet.isEmpty)
   def iterator: Iterator[Integer] = {
-    bitSet.stream().iterator().asScala ++ caseSet.asScala.iterator
+    bitSet.stream().iterator().asScala ++ (if (_caseSet == null) Nil else _caseSet.asScala.iterator)
   }
   def toArray: Array[Int] = {
-    val result = new Array[Int](bitSet.cardinality() + caseSet.size())
+    val result = new Array[Int](bitSet.cardinality() + (if (_caseSet == null) 0 else caseSet.size()))
     var i = 0
     foreach(value => {result(i) = value; i += 1 })
     result
   }
   def foreach(f: IntConsumer): Unit = {
     bitSet.stream().forEach(f)
-    caseSet.stream().forEach(new Consumer[Integer] {
-      override def accept(value: Integer): Unit = f.accept(value)
-    })
+    if (_caseSet != null) {
+      caseSet.stream().forEach(new Consumer[Integer] {
+        override def accept(value: Integer): Unit = f.accept(value)
+      })
+    }
   }
 }
