@@ -1465,7 +1465,7 @@ trait Namers extends MethodSynthesis {
             context.unit.toCheck += {() =>
               def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
               if (!meth.overrides.exists(javaDetermined))
-                reporter.warning(ddef.pos, "nullary method assumes an empty parameter list from the overridden definition")
+                context.warning(ddef.pos, "nullary method assumes an empty parameter list from the overridden definition", WarningCategory.LintNullaryOverride)
             }
           ListOfNil
         } else vparamSymss

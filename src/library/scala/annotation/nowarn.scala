@@ -29,6 +29,6 @@ package scala.annotation
   *   def f = { 1; deprecated() } // show deprecation warning
   * }}}
   *
-  * To ensure that a `@nowarn` annotation actually suppresses a warning, enable `-Xlint:nowarn`.
+  * To ensure that a `@nowarn` annotation actually suppresses a warning, enable `-Xlint:unused` or `-Wunused:nowarn`.
   */
 class nowarn(value: String = "") extends ConstantAnnotation
