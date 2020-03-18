@@ -58,7 +58,7 @@ class SBTRunner(config: RunnerSpec.Config,
 
   override val scalacOpts = {
     val l = defs.collect { case ("partest.scalac_opts", v) => v }
-    if(l.isEmpty) PartestDefaults.javaOpts
+    if(l.isEmpty) PartestDefaults.scalacOpts
     else l.mkString(" ")
   }
 
