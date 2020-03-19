@@ -108,7 +108,7 @@ abstract class Any {
    *
    *  @return   a hash value consistent with ==
    */
-  final def ##(): Int = sys.error("##")
+  final def ## : Int = sys.error("##")
 
   /** Test whether the dynamic type of the receiver object is `T0`.
    *

@@ -8,7 +8,6 @@ class Test {
   def a5(xs: List[String]): Class[_] = xs.getClass
   def a6(xs: List[String]): Class[_] = xs.getClass()
   def a7(xs: List[String]): Int = xs.##
-  def a8(xs: List[String]): Int = xs.##()
   def a9(x: Address): String = x.toString
   def a10(x: Address): String = x.toString()
   def a11(x: A): String = x.toString

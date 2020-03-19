@@ -38,7 +38,7 @@ def toString(): String
 def unitM[A](a: A): callccInterpreter.M[A]
 def →[B](y: B): (callccInterpreter.type, B)
 final def !=(x$1: Any): Boolean
-final def ##(): Int
+final def ## : Int
 final def ==(x$1: Any): Boolean
 final def asInstanceOf[T0]: T0
 final def eq(x$1: AnyRef): Boolean

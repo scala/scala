@@ -148,10 +148,13 @@ package ll {
 
   def pretty(xs: List[_]) = if (xs.isEmpty) "" else xs.mkString("\n  ", "\n  ", "\n")
 
-  def signaturesIn(info: Type): List[String] = (
-    info.members.toList
-      filterNot (s => s.isType || s.owner == ObjectClass || s.owner == AnyClass || s.isConstructor)
-      map (_.defString)
+  def signaturesIn(sym: Symbol): List[String] = (
+    if (sym.owner == ObjectClass || sym.owner == AnyClass) Nil
+    else {
+      sym.tpe.members.toList
+        .filterNot(s => s.isType || s.owner == ObjectClass || s.owner == AnyClass || s.isConstructor)
+        .map(_.defString)
+    }
   )
 
   def check(source: String, unit: global.CompilationUnit) = {
@@ -161,10 +164,10 @@ package ll {
       val typeArgs = List[Type](IntClass.tpe, ListClass[Int]) ++ tparams.map(_.tpe)
       permute(typeArgs) foreach println
     }
-    for (x <- classes ++ terms) {
-      afterEachPhase(signaturesIn(x.tpe)) collect {
+    for (sym <- classes ++ terms) {
+      afterEachPhase(signaturesIn(sym)) collect {
         case (ph, sigs) if sigs.nonEmpty =>
-          println(sigs.mkString(x.toString + " { // after " + ph + "\n  ", "\n  ", "\n}\n"))
+          println(sigs.mkString(s"$sym { // after $ph\n  ", "\n  ", "\n}\n"))
       }
     }
   }
