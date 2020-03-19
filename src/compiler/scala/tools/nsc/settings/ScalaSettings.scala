@@ -133,7 +133,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
   val mainClass          = StringSetting       ("-Xmain-class", "path", "Class for manifest's Main-Class entry (only useful with -d <jar>)", "")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
   val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
-  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala.", initial = version213).withPostSetHook(s =>
+  val source             = ScalaVersionSetting ("-Xsource", "version", "Enable features that will be available in a future version of Scala, for purposes of early migration and alpha testing.", initial = version213).withPostSetHook(s =>
       if (s.value < version213) errorFn.apply(s"-Xsource must be at least the current major version (${version213.versionString})"))
 
   val XnoPatmatAnalysis = BooleanSetting ("-Xno-patmat-analysis", "Don't perform exhaustivity/unreachability analysis. Also, ignore @switch annotation.")
