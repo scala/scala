@@ -1,0 +1,4 @@
+t9911.scala:23: error: super may not be used on value source
+      super.source.getSomething
+            ^
+1 error

@@ -1,9 +1,6 @@
 variances.scala:4: error: covariant type A occurs in contravariant position in type test.Vector[A] of value x
   def append(x: Vector[A]): Vector[A]
              ^
-variances.scala:75: error: covariant type A occurs in contravariant position in type A => A of value m
-      val m: A => A
-          ^
 variances.scala:18: error: covariant type A occurs in contravariant position in type A of value a
     private def setA3(a : A) = this.a = a
                       ^
@@ -22,4 +19,4 @@ variances.scala:89: error: covariant type T occurs in invariant position in type
 variances.scala:90: error: covariant type A occurs in contravariant position in type test.TestAlias.B[C.this.A] of method foo
     def foo: B[A]
         ^
-8 errors
+7 errors

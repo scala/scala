@@ -890,9 +890,9 @@ abstract class RefChecks extends Transform {
         case ClassInfoType(parents, _, clazz) => "supertype "+intersectionType(parents, clazz.owner)
         case _                                => "type "+tp
       }
-      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance): Unit = {
+      override def issueVarianceError(base: Symbol, sym: Symbol, required: Variance, tpe: Type): Unit = {
         reporter.error(base.pos,
-          s"${sym.variance} $sym occurs in $required position in ${tpString(base.info)} of $base")
+          s"${sym.variance} $sym occurs in $required position in ${tpString(tpe)} of $base")
       }
     }
 
@@ -1563,8 +1563,6 @@ abstract class RefChecks extends Transform {
 
       if (!sym.exists)
         devWarning("Select node has NoSymbol! " + tree + " / " + tree.tpe)
-      else if (sym.isLocalToThis)
-        varianceValidator.checkForEscape(sym, currentClass)
 
       def checkSuper(mix: Name) =
         // term should have been eliminated by super accessors
@@ -1771,13 +1769,11 @@ abstract class RefChecks extends Transform {
             result.transform(this)
         }
         result1 match {
-          case ClassDef(_, _, _, _)
-             | TypeDef(_, _, _, _)
-             | ModuleDef(_, _, _) =>
+          case ClassDef(_, _, _, _) | TypeDef(_, _, _, _) | ModuleDef(_, _, _) =>
             if (result1.symbol.isLocalToBlock || result1.symbol.isTopLevel)
               varianceValidator.traverse(result1)
           case tt @ TypeTree() if tt.original != null =>
-            varianceValidator.traverse(tt.original) // See scala/bug#7872
+            varianceValidator.validateVarianceOfPolyTypesIn(tt.tpe)
           case _ =>
         }
 
