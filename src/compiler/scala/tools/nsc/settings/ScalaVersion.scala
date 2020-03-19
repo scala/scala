@@ -21,6 +21,7 @@ package tools.nsc.settings
  */
 sealed abstract class ScalaVersion extends Ordered[ScalaVersion] {
   def unparse: String
+  def versionString: String = unparse
 }
 
 /**
@@ -43,6 +44,7 @@ case object NoScalaVersion extends ScalaVersion {
  */
 case class SpecificScalaVersion(major: Int, minor: Int, rev: Int, build: ScalaBuild) extends ScalaVersion {
   def unparse = s"${major}.${minor}.${rev}${build.unparse}"
+  override def versionString = s"${major}.${minor}.${rev}"
 
   def compare(that: ScalaVersion): Int =  that match {
     case SpecificScalaVersion(thatMajor, thatMinor, thatRev, thatBuild) =>
@@ -117,6 +119,11 @@ object ScalaVersion {
    * The version of the compiler running now
    */
   val current = apply(util.Properties.versionNumberString)
+
+  implicit class `not in Ordered`(private val v: ScalaVersion) extends AnyVal {
+    def min(other: ScalaVersion): ScalaVersion = if (v <= other) v else other
+    def max(other: ScalaVersion): ScalaVersion = if (v >= other) v else other
+  }
 }
 
 /**

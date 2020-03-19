@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.13 -deprecation -Xfatal-warnings
+// scalac: -Xlint:deprecation -Werror
 //
 // bug 989
 '42'
