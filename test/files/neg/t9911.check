@@ -1,4 +1,4 @@
-t9911.scala:23: error: super may not be used on value source
+t9911.scala:23: error: super may not be used on value source; super can only be used to select a member that is a method or type
       super.source.getSomething
             ^
 1 error
