@@ -17,7 +17,6 @@ import java.lang.Thread.UncaughtExceptionHandler
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Collections, Locale}
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
 
 import javax.tools.Diagnostic.Kind
 import javax.tools.{Diagnostic, DiagnosticListener, JavaFileObject, ToolProvider}
@@ -28,11 +27,11 @@ import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.PlainNioFile
+import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
-import scala.util.{Failure, Success, Try}
-import PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
+import scala.util.{Failure, Success}
 
 class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.PipelineSettings) {
   import pipelineSettings._
@@ -147,30 +146,19 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     val timer = new Timer
     timer.start()
 
-    def awaitAll(fs: Seq[Future[_]]): Future[_] = {
-      val done = Promise[Any]()
-      val allFutures = projects.flatMap(_.futures)
-      val count = allFutures.size
-      val counter = new AtomicInteger(count)
-      val failed = new AtomicBoolean(false)
-      val handler = (a: Try[_]) => a match {
-        case f @ Failure(_) =>
-          if (failed.compareAndSet(false, true)) {
-            done.complete(f)
-          }
-        case Success(_) =>
-          val remaining = counter.decrementAndGet()
-          if (remaining == 0) done.success(())
+    def sequenceFailSlow[A](fs: Seq[Future[A]]): Future[Seq[A]] = {
+      Future.traverse(fs)(_.transform(tr => Success(tr.toEither))).map { results =>
+        results.collect { case Left(throwable) => throwable }.toList match {
+          case head :: rest => rest.foreach(head.addSuppressed(_)); throw head
+          case _            => results.collect { case Right(value) => value }
+        }
       }
-
-      allFutures.foreach(_.onComplete(handler))
-      done.future
     }
 
     def awaitDone(): Unit = {
-      val allFutures: immutable.Seq[Future[_]] = projects.flatMap(_.futures)
+      val allFutures: immutable.Seq[Future[Any]] = projects.flatMap(_.futures)
       val numAllFutures = allFutures.size
-      val awaitAllFutures: Future[_] = awaitAll(allFutures)
+      val awaitAllFutures: Future[_] = sequenceFailSlow(allFutures)
       var lastNumCompleted = allFutures.count(_.isCompleted)
       while (true) try {
         Await.result(awaitAllFutures, Duration(60, "s"))
@@ -196,6 +184,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           }
       }
     }
+
     strategy match {
       case OutlineTypePipeline =>
         projects.foreach { p: Task =>
@@ -431,6 +420,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         reporter.flush()
       else if (command.shouldStopWithInfo)
         reporter.echo(command.getInfoMessage(result))
+      result.reporter = createReporter(result.settings)
       result
     } catch {
       case t: Throwable =>
@@ -450,8 +440,8 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         run1 compile files
         outlineTimer.stop()
         log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
-        reporter.finish()
-        if (reporter.hasErrors) {
+        compiler.reporter.finish()
+        if (compiler.reporter.hasErrors) {
           log("scalac outline: failed")
           outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
         } else {
@@ -460,8 +450,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         }
       } catch {
         case t: Throwable =>
-          t.printStackTrace()
-          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
+          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ", t)))
       }
     }
 
@@ -488,9 +477,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
                 log(f"scalac (${ix + 1}/$groupCount): done ${group.timer.durationMs}%.0f ms")
               }
               if (compiler2.reporter.hasErrors) {
-                group.done.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-              } else {
-                group.done.complete(Success(()))
+                throw new RuntimeException(label + ": compile failed: ")
               }
             } finally {
               compiler2.close()
@@ -529,7 +516,6 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           group.done.complete(Failure(new RuntimeException(label + ": compile failed: ")))
         } else {
           log(f"scalac: done ${group.timer.durationMs}%.0f ms")
-          //        outlineDone.complete(Success(()))
           group.done.complete(Success(()))
         }
       } catch {
@@ -551,7 +537,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           val opts: java.util.List[String] = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.outdir.value + File.pathSeparator + originalClassPath)
           val javaCompiler = ToolProvider.getSystemJavaCompiler()
           //If the running JRE isn't from a JDK distribution, getSystemJavaCompiler returns null
-          if(javaCompiler == null) throw new UnsupportedOperationException("no java compiler found in current Java runtime")
+          if (javaCompiler == null) throw new UnsupportedOperationException("no java compiler found in current Java runtime")
           val listener = new DiagnosticListener[JavaFileObject] {
             override def report(diagnostic: Diagnostic[_ <: JavaFileObject]): Unit = {
               val msg = diagnostic.getMessage(Locale.getDefault)
@@ -573,9 +559,12 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           val fileManager = javaCompiler.getStandardFileManager(null, null, null)
           val compileTask = javaCompiler.getTask(null, fileManager, listener, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
           compileTask.setProcessors(Collections.emptyList())
-          val result = if (compileTask.call()) "done" else "error"
+          val success = compileTask.call()
           javaTimer.stop()
-          log(f"javac: $result ${javaTimer.durationMs}%.0f ms ")
+          if (success)
+            log(f"javac: done ${javaTimer.durationMs}%.0f ms ")
+          else
+            throw new RuntimeException(f"javac: error ${javaTimer.durationMs}%.0f ms ")
         })
       } else {
         javaDone.complete(Success(()))
@@ -617,7 +606,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         else
           entryPath
       }
-      settings.classpath.value = modifiedClassPath.mkString(java.io.File.pathSeparator)
+      settings.classpath.value = modifiedClassPath.mkString(File.pathSeparator)
     }
     Global(settings)
   }
