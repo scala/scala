@@ -80,7 +80,7 @@ object TestRefinements extends Suite("TestRefinements") {
     def encode(t: Int): String = t.toString
 
     def selectDynamic(name: String): Any = ???
-    override def applyDynamic(name: String, paramClasses: Seq[ClassTag[_]])(args: Seq[Any]): Any = (name, paramClasses, args) match {
+    override def applyDynamic(name: String, paramClasses: ClassTag[_]*)(args: Any*): Any = (name, paramClasses, args) match {
       case ("encode", Seq(ClassTag.Int), Seq(i: Int)) => encode(i)
     }
 
