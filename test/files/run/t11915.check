@@ -1,0 +1,4 @@
+val x: Int = 42
+val y: Option[Any] = Some(42)
+val x: Int = 27
+val y: Option[Any] = Some(27)

@@ -90,6 +90,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
     *  on the future.
     */
   private var _classLoader: AbstractFileClassLoader = null  // active classloader
+  private var _runtimeMirror: ru.Mirror = null
   private var _runtimeClassLoader: URLClassLoader = null    // wrapper exposing addURL
 
   def compilerClasspath: Seq[java.net.URL] = (
@@ -169,8 +170,6 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   import definitions.{ ObjectClass, termMember, dropNullaryMethod}
 
   override def classPathString = global.classPath.asClassPathString
-
-  lazy val runtimeMirror = ru.runtimeMirror(classLoader)
 
   private def noFatal(body: => Symbol): Symbol = try body catch { case _: FatalError => NoSymbol }
 
@@ -273,15 +272,21 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   def resetClassLoader() = {
     repldbg("Setting new classloader: was " + _classLoader)
     _classLoader = null
+    _runtimeMirror = null
     ensureClassLoader()
   }
-  final def ensureClassLoader(): Unit = {
+  final def ensureClassLoader(): Unit =
     if (_classLoader == null)
       _classLoader = makeClassLoader()
-  }
+
   override def classLoader: AbstractFileClassLoader = {
     ensureClassLoader()
     _classLoader
+  }
+  def runtimeMirror = {
+    if (_runtimeMirror == null)
+      _runtimeMirror = ru.runtimeMirror(classLoader)
+    _runtimeMirror
   }
 
   def backticked(s: String): String = (
@@ -1017,6 +1022,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   // Given the fullName of the symbol, reflectively drill down the path
   def valueOfTerm(id: String): Option[Any] = exitingTyper {
     def value(fullName: String) = {
+      val runtimeMirror = this.runtimeMirror
       import runtimeMirror.universe.{Symbol, InstanceMirror, TermName}
       val pkg :: rest = (fullName split '.').toList: @unchecked
       val top = runtimeMirror.staticPackage(pkg)
