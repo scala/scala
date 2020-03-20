@@ -102,7 +102,10 @@ trait TastyKernel { self: TastyUniverse =>
     final val ScalaStrictFPAttr: ClassSymbol = symbolTable.definitions.ScalaStrictFPAttr
     final val TailrecClass: ClassSymbol = symbolTable.definitions.TailrecClass
     final val StaticAnnotationClass: ClassSymbol = symbolTable.definitions.StaticAnnotationClass
+    final val SeqClass: ClassSymbol = symbolTable.definitions.SeqClass
     final def byNameType(arg: Type): Type = symbolTable.definitions.byNameType(arg)
+    final def scalaRepeatedType(arg: Type): Type = symbolTable.definitions.scalaRepeatedType(arg)
+    final def repeatedAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Repeated").toOption
     final def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
     final def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
   }

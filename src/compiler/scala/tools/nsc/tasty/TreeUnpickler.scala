@@ -1518,7 +1518,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case ANNOTATEDtpt =>
               val tpt = readTpt()
               val annot = readTerm()
-              Annotated(tpt, annot).setType(mkAnnotatedType(tpt.tpe, mkAnnotation(annot)))
+              defn.repeatedAnnotationClass match {
+                case Some(repeated)
+                if annot.tpe.typeSymbol === repeated
+                && tpt.tpe.typeSymbol.isSubClass(defn.SeqClass)
+                && tpt.tpe.typeArgs.length == 1 =>
+                  TypeTree(defn.scalaRepeatedType(tpt.tpe.typeArgs.head))
+                case _ =>
+                  Annotated(tpt, annot).setType(mkAnnotatedType(tpt.tpe, mkAnnotation(annot)))
+              }
             case LAMBDAtpt =>
               val tparams = readParams[NoCycle](TYPEPARAM)
               val body    = readTpt()
