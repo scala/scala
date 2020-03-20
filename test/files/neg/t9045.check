@@ -1,7 +1,7 @@
 t9045.scala:3: error: constructor invokes itself
   def this(axes: Array[Int]) = this(axes)
                                ^
-t9045.scala:6: error: called constructor's definition must precede calling constructor's definition
+t9045.scala:6: error: self constructor invocation must refer to a constructor definition which precedes it, to prevent infinite cycles
   def this(d: Double) = this(d.toLong)
                         ^
 2 errors

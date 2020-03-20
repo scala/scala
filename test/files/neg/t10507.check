@@ -1,4 +1,4 @@
-Test_2.scala:2: error: called constructor's definition must precede calling constructor's definition
+Test_2.scala:2: error: self constructor invocation must refer to a constructor definition which precedes it, to prevent infinite cycles
   Macros_1.seq
            ^
 1 error
