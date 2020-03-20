@@ -1,4 +1,6 @@
-Scala includes the JLine library, which includes the Jansi library.
+Scala includes the JLine library, which includes the JNA library,
+which is made available under multiple licenses, including the
+Apache 2 license:
 
                                  Apache License
                            Version 2.0, January 2004

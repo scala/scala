@@ -54,8 +54,7 @@ object Reader {
 
     System.setProperty(LineReader.PROP_SUPPORT_PARSEDLINE, java.lang.Boolean.TRUE.toString())
 
-    //val terminal = TerminalBuilder.builder().build()
-    val terminal  = TerminalBuilder.terminal() // defaults for now
+    val terminal = TerminalBuilder.builder().jna(true).build()
     val completer = new Completion(completion)
     val parser    = new ReplParser(repl)
     val history   = new DefaultHistory

@@ -28,7 +28,7 @@ which are also included in the `licenses/` directory:
 ### [Apache License](http://www.apache.org/licenses/LICENSE-2.0.html)
 This license is used by the following third-party libraries:
 
-  * Jansi
+  * JNA
 
 ### [BSD 3-Clause License](http://opensource.org/licenses/BSD-3-Clause)
 This license is used by the following third-party libraries:
