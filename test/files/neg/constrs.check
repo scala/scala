@@ -4,7 +4,7 @@ constrs.scala:6: error: type T is not a member of object test
 constrs.scala:6: error: value u is not a member of object test
     def this(y: Int)(z: Int)(t: this.T) = { this(this.u + y + z); Console.println(x) }
                                                       ^
-constrs.scala:10: error: called constructor's definition must precede calling constructor's definition
+constrs.scala:10: error: self constructor invocation must refer to a constructor definition which precedes it, to prevent infinite cycles
     def this() = this("abc")
                  ^
 constrs.scala:12: error: constructor invokes itself

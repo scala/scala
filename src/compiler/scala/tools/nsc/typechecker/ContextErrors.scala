@@ -520,7 +520,7 @@ trait ContextErrors {
           "Expected type was: " + pt.toLongString)
 
       def ConstructorsOrderError(tree: Tree) = {
-        issueNormalTypeError(tree, "called constructor's definition must precede calling constructor's definition")
+        issueNormalTypeError(tree, "self constructor invocation must refer to a constructor definition which precedes it, to prevent infinite cycles")
         setError(tree)
       }
 
