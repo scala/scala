@@ -41,9 +41,6 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   final class TermNameCache(base: String) extends NameCache[U#TermName](base) {
     override protected def newName(s: String): U#TermName = TermName(s)
   }
-  final class TypeNameCache(base: String) extends NameCache[U#TypeName](base) {
-    override protected def newName(s: String): U#TypeName = TypeName(s)
-  }
   private val matchRes: TermNameCache = new TermNameCache("match")
   private val ifRes: TermNameCache = new TermNameCache("if")
   private val await: TermNameCache = new TermNameCache("await")
@@ -63,15 +60,6 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
     private val freshened = mutable.HashSet[Name]()
 
     final def freshenIfNeeded(name: TermName): TermName = {
-      seenPrefixes.getOrNull(name) match {
-        case null =>
-          seenPrefixes.put(name, new AtomicInteger())
-          name
-        case counter =>
-          freshen(name, counter)
-      }
-    }
-    final def freshenIfNeeded(name: TypeName): TypeName = {
       seenPrefixes.getOrNull(name) match {
         case null =>
           seenPrefixes.put(name, new AtomicInteger())

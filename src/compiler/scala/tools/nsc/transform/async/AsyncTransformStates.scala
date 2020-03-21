@@ -47,11 +47,8 @@ trait AsyncTransformStates extends TypingTransformers {
 
     def stateMachineMember(name: TermName): Symbol =
       stateMachineClass.info.member(name)
-    def memberRef(name: TermName): Tree =
-      gen.mkAttributedRef(stateMachineClass.typeConstructor, stateMachineMember(name))
     def memberRef(sym: Symbol): Tree =
       gen.mkAttributedRef(stateMachineClass.typeConstructor, sym)
-    def selectResult: Tree = Apply(memberRef(nme.result), Nil)
   }
 
 }

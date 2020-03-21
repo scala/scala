@@ -87,7 +87,6 @@ trait ExprBuilder extends TransformUtils {
       }
     }
 
-    def ++=(stats: List[Tree]): this.type = {stats.foreach(+=(_)); this}
     def +=(stat: Tree): this.type = {
       stats ++= jumpReplacer.atOwner(currentTransformState.localTyper.context.owner) {
         jumpReplacer.apply(stat)
@@ -348,9 +347,6 @@ trait ExprBuilder extends TransformUtils {
     def toDot: String
   }
 
-  private lazy val NonFatalClass = rootMirror.staticModule("scala.util.control.NonFatal")
-  private lazy val ThrowableClass = rootMirror.staticClass("java.lang.Throwable")
-
   /**
    * Uses `AsyncBlockBuilder` to create an instance of `AsyncBlock`.
    *
@@ -365,9 +361,9 @@ trait ExprBuilder extends TransformUtils {
     val blockBuilder = new AsyncBlockBuilder(stats, expr, startState, endState, startToEndUpdateStyle = StateTransitionStyle.Update)
 
     new AsyncBlock {
-      val switchIds = mutable.AnyRefMap[Integer, Integer]()
-      val emptyReplacements = mutable.AnyRefMap[Integer, Integer]()
-      def switchIdOf(state: Integer) = switchIds(emptyReplacements.getOrElse(state, state))
+      private val switchIds = mutable.AnyRefMap[Integer, Integer]()
+      private val emptyReplacements = mutable.AnyRefMap[Integer, Integer]()
+      private def switchIdOf(state: Integer) = switchIds(emptyReplacements.getOrElse(state, state))
 
       // render with http://graphviz.it/#/new
       def toDot: String = {
@@ -435,7 +431,7 @@ trait ExprBuilder extends TransformUtils {
           body1,
           List(
             CaseDef(
-              Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(ThrowableClass))),
+              Bind(nme.t, Typed(Ident(nme.WILDCARD), Ident(definitions.ThrowableClass))),
               EmptyTree,
               Block(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteFailure), Ident(nme.t) :: Nil) :: Nil, Return(literalUnit))
             )

@@ -29,8 +29,6 @@ final class StateSet {
   private def useBitSet(i: Int) = i > 0 && i < 1024
   def +=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.set(stateId) else caseSet.add(stateId)
   def -=(stateId: Int): Unit = if (useBitSet(stateId)) bitSet.clear(stateId) else caseSet.remove(stateId)
-  def contains(stateId: Int): Boolean = if (useBitSet(stateId)) bitSet.get(stateId) else (_caseSet != null && _caseSet.contains(stateId))
-  def isEmpty = bitSet.isEmpty && (_caseSet == null || caseSet.isEmpty)
   def iterator: Iterator[Integer] = {
     bitSet.stream().iterator().asScala ++ (if (_caseSet == null) Nil else _caseSet.asScala.iterator)
   }

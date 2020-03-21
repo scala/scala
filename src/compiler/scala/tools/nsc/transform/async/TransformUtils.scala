@@ -25,15 +25,10 @@ private[async] trait TransformUtils extends AsyncTransformStates {
   private[async] val asyncNames: AsyncNames[global.type]
   object name extends asyncNames.AsyncName {
     def fresh(name: TermName): TermName = freshenIfNeeded(name)
-    def fresh(name: String): String = currentFreshNameCreator.newName(name) // TODO ok? was c.freshName
   }
 
   def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
-  def typedPos(pos: Position, mode: Mode, pt: Type)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos, mode, pt)(tree)
   def typed(tree: Tree): Tree = typedPos(currentTransformState.applySym.pos)(tree)
-
-  def maybeTry(emitTryCatch: Boolean)(block: Tree, catches: List[CaseDef], finalizer: Tree): Tree =
-    if (emitTryCatch) Try(block, catches, finalizer) else block
 
   lazy val IllegalStateExceptionClass: Symbol = rootMirror.staticClass("java.lang.IllegalStateException")
   lazy val IllegalStateExceptionClass_NEW_String: Symbol = IllegalStateExceptionClass.info.decl(nme.CONSTRUCTOR).suchThat(
@@ -248,7 +243,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
       t.setAttachments(t.attachments.addElement(NoAwait))
     }
 
-    var stack = mutable.ArrayStack[Tree]()
+    val stack = mutable.ArrayStack[Tree]()
 
     override def traverse(tree: Tree): Unit = {
       stack.push(tree)

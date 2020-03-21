@@ -101,19 +101,7 @@ trait LiveVariables extends ExprBuilder {
       override def toString = s"used: ${used.mkString(",")}\ncaptured: ${captured.mkString(",")}"
     }
 
-    /* Build the control-flow graph.
-     *
-     * A state `i` is contained in the list that is the value to which
-     * key `j` maps iff control can flow from state `j` to state `i`.
-     */
-    val cfg: Map[Int, Array[Int]] = {
-      var res = IntMap.empty[Array[Int]]
-
-      for (as <- asyncStates) res = res.updated(as.state, as.nextStates)
-      res
-    }
-
-    if(settings.debug.value && shouldLogAtThisPhase) {
+    if (settings.debug.value && shouldLogAtThisPhase) {
       for (as <- asyncStates)
         debuglog(s"fields used in state #${as.state}: ${fieldsUsedIn(as)}")
     }
@@ -215,12 +203,12 @@ trait LiveVariables extends ExprBuilder {
     val lastUsages: mutable.LinkedHashMap[Symbol, StateSet] =
       mutable.LinkedHashMap(liftables.map(fld => fld.symbol -> lastUsagesOf(fld, finalState)): _*)
 
-    if(settings.debug.value && shouldLogAtThisPhase) {
+    if (settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, lastStates) <- lastUsages)
         debuglog(s"field ${fld.name} is last used in states ${lastStates.iterator.mkString(", ")}")
     }
 
-    if(settings.debug.value && shouldLogAtThisPhase) {
+    if (settings.debug.value && shouldLogAtThisPhase) {
       for ((fld, killAt) <- lastUsages)
         debuglog(s"field ${fld.name} should be nulled out at the conclusion of states ${killAt.iterator.mkString(", ")}")
     }
