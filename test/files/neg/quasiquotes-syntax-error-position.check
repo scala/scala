@@ -1,7 +1,7 @@
 quasiquotes-syntax-error-position.scala:5: error: '=' expected but identifier found.
   q"def $a f"
            ^
-quasiquotes-syntax-error-position.scala:6: error: illegal start of simple expression
+quasiquotes-syntax-error-position.scala:6: error: ')' expected but end of quote found.
   q"$a("
        ^
 quasiquotes-syntax-error-position.scala:7: error: '}' expected but end of quote found.
@@ -31,7 +31,7 @@ quasiquotes-syntax-error-position.scala:14: error: ')' expected but end of quote
 quasiquotes-syntax-error-position.scala:15: error: ':' expected but ')' found.
   q"def foo(x)"
              ^
-quasiquotes-syntax-error-position.scala:16: error: illegal start of simple expression
+quasiquotes-syntax-error-position.scala:16: error: ')' expected but ']' found.
   q"$a(])"
        ^
 quasiquotes-syntax-error-position.scala:17: error: in XML literal: '>' expected instead of '$'

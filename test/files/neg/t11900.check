@@ -1,0 +1,13 @@
+t11900.scala:35: error: ';' expected but ',' found.
+      a => a + 1,   // error: weird comma
+                ^
+t11900.scala:39: error: ';' expected but ',' found.
+    println("a"),   // error: weird comma
+                ^
+t11900.scala:43: error: ';' expected but ',' found.
+    println("b"),   // error: weird comma
+                ^
+t11900.scala:55: error: bad simple pattern: bad use of _* (a sequence pattern must be the last pattern)
+        _*,
+          ^
+4 errors
