@@ -1107,6 +1107,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def result(): HashMap[A, B] = {
       rootNode = nullToEmpty(makeImmutable(rootNode))
+      VM.releaseFence()
       rootNode
     }
 
