@@ -15,20 +15,34 @@ package reflect
 package internal
 package util
 
-/** A wrapper for a re-entrant, cached instance of a value of type `T`.
+import scala.collection.mutable.ArrayBuffer
+
+/** A wrapper for a list of cached instances of a value of type `T`.
+  * The wrapper is recursion-reentrant: several instances are kept, so
+  * at each depth of reentrance we are reusing the instance for that.
+  *
+  * An instance is created upon creating this object, and more instances
+  * are allocated dynamically, on demand, when reentrance occurs.
   *
   * Not thread safe.
   */
 final class ReusableInstance[T <: AnyRef](make: () => T, enabled: Boolean) {
-  private val cached = make()
-  private var taken = false
+  private[this] val cached = new ArrayBuffer[T]
+  cached += make()
+
+  private var taken: Int = 0
 
   @inline def using[R](action: T => R): R =
-    if (!enabled || taken) action(make())
-    else try {
-      taken = true
-      action(cached)
-    } finally taken = false
+    if (!enabled)
+      action(make())
+    else {
+      if (taken == cached.size)
+        cached += make()
+      try {
+        taken += 1
+        action(cached(taken-1))
+      } finally taken -= 1
+    }
 }
 
 object ReusableInstance {
