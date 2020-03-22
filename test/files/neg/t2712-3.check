@@ -1,6 +1,0 @@
-t2712-3.scala:19: error: type mismatch;
- found   : test.One[test.X3]
- required: test.Two[test.X1,test.X2]
-  test1(foo): Two[X1, X2] // fails with -Xsource:2.12
-       ^
-1 error

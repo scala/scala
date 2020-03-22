@@ -1,4 +1,4 @@
-// scalac: -feature -Xfatal-warnings -Xsource:2.12
+// scalac: -feature -Werror
 //
 class A
 class B[T](x: T)

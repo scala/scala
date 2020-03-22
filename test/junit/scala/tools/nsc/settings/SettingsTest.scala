@@ -164,14 +164,15 @@ class SettingsTest {
     def check(expected: String, args: String*): Unit = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
       val (_, residual) = s.processArguments(args.toList, processAll = true)
-      assert(residual.isEmpty)
-      assert(s.source.value == ScalaVersion(expected))
+      assert(s"remaining input [$residual]", residual.isEmpty)
+      assert(s"(${s.source.value} == ${ScalaVersion(expected)})", s.source.value == ScalaVersion(expected))
     }
     check(expected = "2.13.0") // default
-    check(expected = "2.11.0", "-Xsource:2.11")
-    check(expected = "2.10",   "-Xsource:2.10.0")
-    check(expected = "2.12",   "-Xsource:2.12")
-    check(expected = "2.13",   "-Xsource:2.13")
+    check(expected = "9.11.0", "-Xsource:9.11")
+    check(expected = "9.10",   "-Xsource:9.10.0")
+    check(expected = "9.12",   "-Xsource:9.12")
+    check(expected = "9.13",   "-Xsource:9.13")
+    assertThrows[IllegalArgumentException](check(expected = "2.12", "-Xsource:2.12"), _ == "-Xsource must be at least the current major version (2.13.0)")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource"), _ == "-Xsource requires an argument, the syntax is -Xsource:<version>")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource", "2.11"), _ == "-Xsource requires an argument, the syntax is -Xsource:<version>")
     assertThrows[IllegalArgumentException](check(expected = "2.11", "-Xsource:2.invalid"), _ contains "Bad version (2.invalid)")

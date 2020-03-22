@@ -66,4 +66,13 @@ class ScalaVersionTest {
   @Test def `missing version is as good as none`(): Unit = {
     assertEquals(NoScalaVersion, ScalaVersion(""))
   }
+
+  @Test def `missing ops`(): Unit = {
+    assertEquals(ScalaVersion("2.13"), ScalaVersion("2.12") max ScalaVersion("2.13"))
+    assertEquals(ScalaVersion("2.12"), ScalaVersion("2.12") min ScalaVersion("2.13"))
+    assertEquals(ScalaVersion("2.13"), ScalaVersion("2.13") max ScalaVersion("2.12"))
+    assertEquals(ScalaVersion("2.12"), ScalaVersion("2.13") min ScalaVersion("2.12"))
+    assertEquals(ScalaVersion("2.13"), ScalaVersion("2.13") max ScalaVersion("2.13"))
+    assertEquals(ScalaVersion("2.13"), ScalaVersion("2.13") min ScalaVersion("2.13"))
+  }
 }
