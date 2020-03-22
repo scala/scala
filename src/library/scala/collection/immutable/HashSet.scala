@@ -1279,8 +1279,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     }
 
     override def result(): HashSet[A] = {
-        rootNode = nullToEmpty(makeImmutable(rootNode))
-        rootNode
+      rootNode = nullToEmpty(makeImmutable(rootNode))
+      VM.releaseFence()
+      rootNode
     }
 
 
