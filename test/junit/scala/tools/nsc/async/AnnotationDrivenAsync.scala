@@ -442,13 +442,19 @@ class AnnotationDrivenAsync {
     assertEquals(100, run(code))
   }
 
-
-
-  // Handy to debug the compiler
-  @Test @Ignore
+  // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
+  @Test
+  @Ignore
   def testManualRunPartestUnderJUnit(): Unit = {
-    val code = new String(Files.readAllBytes(Paths.get("../async/run/concurrent_ArrayIndexOutOfBoundIssue.scala")))
-    assertEquals(("a", "b"), run(code))
+    import scala.collection.JavaConverters._
+    for (path <- List(Paths.get("../async/run"), Paths.get("../async/neg"))) {
+      for (file <- Files.list(path).iterator.asScala) {
+        if (file.getFileName.toString.endsWith(".scala")) {
+          val code = new String(Files.readAllBytes(file))
+          run(code, compileOnly = true)
+        }
+      }
+    }
   }
 
   private def createTempDir(): File = {
@@ -458,7 +464,7 @@ class AnnotationDrivenAsync {
     f
   }
 
-  def run(code: String): Any = {
+  def run(code: String, compileOnly: Boolean = false): Any = {
     val out = createTempDir()
     try {
       val reporter = new StoreReporter {
@@ -495,11 +501,18 @@ class AnnotationDrivenAsync {
       val run = new Run
       val source = newSourceFile(code)
       run.compileSources(source :: Nil)
-      Assert.assertTrue(reporter.infos.mkString("\n"), !reporter.hasWarnings)
+      if (compileOnly) return null
       Assert.assertTrue(reporter.infos.mkString("\n"), !reporter.hasErrors)
+      Assert.assertTrue(reporter.infos.mkString("\n"), !reporter.hasWarnings)
       val loader = new URLClassLoader(Seq(new File(settings.outdir.value).toURI.toURL), global.getClass.getClassLoader)
       val cls = loader.loadClass("Test")
-      cls.getMethod("test").invoke(null) match {
+      val result = try {
+        cls.getMethod("test").invoke(null)
+      } catch {
+        case _: NoSuchMethodException =>
+          cls.getMethod("main", classOf[Array[String]]).invoke(null, null)
+      }
+      result match {
         case t: scala.concurrent.Future[_] =>
           scala.concurrent.Await.result(t, Duration.Inf)
         case cf: CustomFuture[_] =>
