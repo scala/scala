@@ -129,6 +129,8 @@ trait StdNames {
     val NESTED_IN_ANON_FUN: String             = NESTED_IN + ANON_FUN_NAME.toString.replace("$", "")
     val NESTED_IN_LAMBDA: String               = NESTED_IN + DELAMBDAFY_LAMBDA_CLASS_NAME.toString.replace("$", "")
 
+    val NON_LOCAL_RETURN_KEY_STRING: String    = "nonLocalReturnKey"
+
     /**
      * Ensures that name mangling does not accidentally make a class respond `true` to any of
      * isAnonymousClass, isAnonymousFunction, isDelambdafyFunction, e.g. by introducing "$anon".

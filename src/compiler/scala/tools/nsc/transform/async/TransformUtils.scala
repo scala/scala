@@ -14,7 +14,6 @@ package scala.tools.nsc.transform.async
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.Mode
 
 /**
  * Utilities used in both `ExprBuilder` and `AnfTransform`.
@@ -36,8 +35,10 @@ private[async] trait TransformUtils extends AsyncTransformStates {
 
   def isAwait(fun: Tree): Boolean = fun.symbol == currentTransformState.Async_await
 
-  def isBooleanShortCircuit(sym: Symbol): Boolean =
-    sym.owner == definitions.BooleanClass && (sym == definitions.Boolean_and || sym == definitions.Boolean_or)
+  def isBooleanAnd(sym: Symbol): Boolean =
+    sym.owner == definitions.BooleanClass && sym == definitions.Boolean_and
+  def isBooleanOr(sym: Symbol): Boolean =
+    sym.owner == definitions.BooleanClass && sym == definitions.Boolean_or
 
   def isLabel(sym: Symbol): Boolean = sym != null && sym.isLabel
   def isCaseLabel(sym: Symbol): Boolean = sym != null && sym.isLabel && sym.name.startsWith("case")
@@ -67,6 +68,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
 
   def literalUnit: Tree = Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees
   def literalBoxedUnit: Tree = gen.mkAttributedRef(definitions.BoxedUnit_UNIT)
+  def literalBool(b: Boolean): Tree = Literal(Constant(b)).setType(definitions.BooleanTpe)
 
   def isLiteralUnit(t: Tree): Boolean = t match {
     case Literal(Constant(())) => true
@@ -158,7 +160,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     def nestedClass(classDef: ClassDef): Unit = {
     }
 
-    def nestedModule(module: ModuleDef): Unit = {
+    def nestedModuleClass(moduleClass: ClassDef): Unit = {
     }
 
     def nestedMethod(defdef: DefDef): Unit = {
@@ -170,20 +172,17 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     def function(function: Function): Unit = {
     }
 
-    def patMatFunction(tree: Match): Unit = {
+    def function(expandedFunction: ClassDef): Unit = {
     }
 
     override def traverse(tree: Tree): Unit = {
       tree match {
-        case cd: ClassDef          => nestedClass(cd)
-        case md: ModuleDef         => nestedModule(md)
+        case cd: ClassDef          =>
+          if (cd.symbol.isAnonymousClass) function(cd)
+          else if (cd.symbol.isModuleClass) nestedModuleClass(cd)
+          else nestedClass(cd)
         case dd: DefDef            => nestedMethod(dd)
         case fun: Function         => function(fun)
-        case m@Match(EmptyTree, _) => patMatFunction(m) // Pattern matching anonymous function under -Xoldpatmat of after `restorePatternMatchingFunctions`
-        case Apply(fun, arg1 :: arg2 :: Nil) if isBooleanShortCircuit(fun.symbol) =>
-          traverse(fun)
-          traverse(arg1)
-          byNameArgument(arg2)
         case _                     => super.traverse(tree)
       }
     }

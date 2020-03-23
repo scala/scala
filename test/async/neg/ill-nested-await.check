@@ -1,0 +1,37 @@
+ill-nested-await.scala:15: error: await must not be used under a nested method.
+    async { foo(0)(await(f(0))) }
+                   ^
+ill-nested-await.scala:20: error: await must not be used under a nested object.
+    async { object Nested { await(f(false)) } }
+                            ^
+ill-nested-await.scala:25: error: await must not be used under a nested trait.
+    async { trait Nested { await(f(false)) } }
+                           ^
+ill-nested-await.scala:30: error: await must not be used under a nested class.
+    async { class Nested { await(f(false)) } }
+                           ^
+ill-nested-await.scala:35: error: await must not be used under a nested method.
+    async { () => { await(f(false)) } }
+                    ^
+ill-nested-await.scala:40: error: await must not be used under a nested function.
+    async { { case 0 => { await(f(false)) } } : PartialFunction[Int, Boolean] }
+                          ^
+ill-nested-await.scala:45: error: await must not be used under a try/catch.
+    async { try { await(f(false)) } catch { case _: Throwable => } }
+                  ^
+ill-nested-await.scala:50: error: await must not be used under a try/catch.
+    async { try { () } catch { case _: Throwable => await(f(false)) } }
+                                                    ^
+ill-nested-await.scala:55: error: await must not be used under a try/catch.
+    async { try { () } finally { await(f(false)) } }
+                                 ^
+ill-nested-await.scala:60: error: await must not be used under a nested method.
+    async { def foo = await(f(false)) }
+                      ^
+ill-nested-await.scala:69: error: await must not be used under a lazy val initializer.
+    def foo(): Any = async { val x = { lazy val y = await(f(0)); y } }
+                                                    ^
+ill-nested-await.scala:9: error: `await` must be enclosed in an `async` block
+     await[Any](f(null))
+     ^
+12 errors found

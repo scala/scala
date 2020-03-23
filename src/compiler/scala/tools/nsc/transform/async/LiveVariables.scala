@@ -82,15 +82,14 @@ trait LiveVariables extends ExprBuilder {
 
         override def nestedClass(classDef: ClassDef): Unit = capturingCheck(classDef)
 
-        override def nestedModule(module: ModuleDef): Unit = capturingCheck(module)
+        override def nestedModuleClass(moduleClass: ClassDef): Unit = capturingCheck(moduleClass)
 
         override def nestedMethod(defdef: DefDef): Unit = capturingCheck(defdef)
 
         override def byNameArgument(arg: Tree): Unit = capturingCheck(arg)
 
         override def function(function: Function): Unit = capturingCheck(function)
-
-        override def patMatFunction(tree: Match): Unit = capturingCheck(tree)
+        override def function(expandedFunction: ClassDef): Unit = capturingCheck(expandedFunction)
       }
 
       val findUses = new FindUseTraverser

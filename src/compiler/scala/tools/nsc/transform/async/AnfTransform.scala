@@ -52,11 +52,13 @@ private[async] trait AnfTransform extends TransformUtils {
       tree match {
         case _: ClassDef | _: ModuleDef | _: Function | _: DefDef =>
           tree
-        case _: RefTree if tree.symbol.hasPackageFlag =>
-          tree
         case _ if !treeContainsAwait =>
           tree
-        case Apply(fun, args) if !isBooleanShortCircuit(fun.symbol) =>
+        case Apply(sel @ Select(fun, _), arg :: Nil) if isBooleanAnd(sel.symbol) && containsAwait(arg) =>
+          transform(treeCopy.If(tree, fun, arg, literalBool(false)))
+        case Apply(sel @ Select(fun, _), arg :: Nil) if isBooleanOr(sel.symbol) && containsAwait(arg) =>
+          transform(treeCopy.If(tree, fun, literalBool(true), arg))
+        case Apply(fun, args) =>
           val lastAwaitArgIndex: Int = args.lastIndexWhere(containsAwait)
           val simpleFun = transform(fun)
           var i = 0

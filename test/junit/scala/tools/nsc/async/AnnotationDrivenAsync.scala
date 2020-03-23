@@ -35,6 +35,32 @@ class AnnotationDrivenAsync {
   }
 
   @Test
+  def testBooleanAndOr(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  var counter = 0
+        |  def ordered(i: Int, b: Boolean): Boolean = { assert(counter == i, (counter, i)); counter += 1; b }
+        |  def test: Future[Any] = async {
+        |    counter = 0; assert(!(ordered(0, false) && await(f(ordered(-1,  true)))))
+        |    counter = 0; assert(!(ordered(0, false) && await(f(ordered(-1, false)))))
+        |    counter = 0; assert( (ordered(0,  true) && await(f(ordered( 1,  true)))))
+        |    counter = 0; assert(!(ordered(0,  true) && await(f(ordered( 1, false)))))
+        |    counter = 0; assert( (ordered(0, false) || await(f(ordered( 1,  true)))))
+        |    counter = 0; assert(!(ordered(0, false) || await(f(ordered( 1, false)))))
+        |    counter = 0; assert( (ordered(0,  true) || await(f(ordered(-1, false)))))
+        |    counter = 0; assert( (ordered(0,  true) || await(f(ordered(-1,  true)))))
+        |    ()
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals((), run(code))
+  }
+
+  @Test
   def testBasicScalaConcurrentViaMacroFrontEnd(): Unit = {
     val code =
       """

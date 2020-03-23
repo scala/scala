@@ -13,7 +13,7 @@
 package scala.tools.nsc.transform.async
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.Flags
+import scala.reflect.NameTransformer
 
 trait AsyncAnalysis extends TransformUtils  {
   import global._
@@ -35,8 +35,8 @@ trait AsyncAnalysis extends TransformUtils  {
       reportUnsupportedAwait(classDef, s"nested $kind")
     }
 
-    override def nestedModule(module: ModuleDef): Unit = {
-      reportUnsupportedAwait(module, "nested object")
+    override def nestedModuleClass(moduleClass: ClassDef): Unit = {
+      reportUnsupportedAwait(moduleClass, "nested object")
     }
 
     override def nestedMethod(defDef: DefDef): Unit = {
@@ -50,9 +50,8 @@ trait AsyncAnalysis extends TransformUtils  {
     override def function(function: Function): Unit = {
       reportUnsupportedAwait(function, "nested function")
     }
-
-    override def patMatFunction(tree: Match): Unit = {
-      reportUnsupportedAwait(tree, "nested function")
+    override def function(expandedFunction: ClassDef): Unit = {
+      reportUnsupportedAwait(expandedFunction, "nested function")
     }
 
     override def traverse(tree: Tree): Unit = {
@@ -60,14 +59,10 @@ trait AsyncAnalysis extends TransformUtils  {
         case Try(_, _, _) if containsAwait(tree)              =>
           reportUnsupportedAwait(tree, "try/catch")
           super.traverse(tree)
-        case Return(_)                                        =>
+        case Throw(Apply(fun, Ident(name) :: _)) if fun.symbol.isConstructor && fun.symbol.owner == definitions.NonLocalReturnControlClass && name.startsWith(nme.NON_LOCAL_RETURN_KEY_STRING) =>
           global.reporter.error(tree.pos, "return is illegal within a async block")
-        case DefDef(mods, _, _, _, _, _) if mods.hasFlag(Flags.LAZY) && containsAwait(tree) =>
+        case DefDef(mods, _, _, _, _, _) if tree.symbol.name.endsWith(nme.LAZY_SLOW_SUFFIX) && containsAwait(tree) =>
           reportUnsupportedAwait(tree, "lazy val initializer")
-        case ValDef(mods, _, _, _) if mods.hasFlag(Flags.LAZY) && containsAwait(tree) =>
-          reportUnsupportedAwait(tree, "lazy val initializer")
-        case CaseDef(_, guard, _) if guard exists isAwait     =>
-          reportUnsupportedAwait(tree, "pattern guard")
         case _                                                =>
           super.traverse(tree)
       }
@@ -91,7 +86,7 @@ trait AsyncAnalysis extends TransformUtils  {
       traverser(tree)
       badAwaits foreach {
         tree =>
-          reportError(tree.pos, s"await must not be used under a $whyUnsupported.")
+          reportError(tree.pos, s"${currentTransformState.Async_await.decodedName} must not be used under a $whyUnsupported.")
       }
       badAwaits.nonEmpty
     }
