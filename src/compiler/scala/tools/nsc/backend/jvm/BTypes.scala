@@ -602,7 +602,7 @@ abstract class BTypes {
     def info: Either[NoClassBTypeInfo, ClassInfo] = {
       if (_info eq null)
         // synchronization required to ensure the apply is finished
-        // which populates info. ClassBType doesnt escape apart from via the map
+        // which populates info. ClassBType does not escape apart from via the map
         // and the object mutex is locked prior to insertion. See apply
         this.synchronized {}
       assert(_info != null, s"ClassBType.info not yet assigned: $this")

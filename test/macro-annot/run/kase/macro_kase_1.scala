@@ -69,7 +69,7 @@ object kaseMacro {
     def expand(annottees: List[c.Tree]): List[c.Tree] = {
       val cdef @ ClassDef(_, name, tparams, Template(_, _, cbody)) = annottees.head
       val primaryCtor = cbody.collect{ case ddef @ DefDef(_, termNames.CONSTRUCTOR, _, _, _, _) => ddef }.head
-      if (primaryCtor.vparamss.isEmpty) c.abort(c.enclosingPosition, "`kase` is not appplicable to classes without a parameter list")
+      if (primaryCtor.vparamss.isEmpty) c.abort(c.enclosingPosition, "`kase' is not applicable to classes without a parameter list")
       val primaryParamss = primaryCtor.vparamss
       val primaryParams = primaryParamss.head
       val secondaryParamss = primaryParamss.tail

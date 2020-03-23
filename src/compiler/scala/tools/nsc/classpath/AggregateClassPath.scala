@@ -40,7 +40,7 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
     packageIndex.getOrElseUpdate(pkg.dottedString, aggregates.filter(_.hasPackage(pkg)))
   }
 
-  // This method is performance sensitive as it is used by SBT's ExtractDependencies phase.
+  // This method is performance sensitive as it is used by sbt's ExtractDependencies phase.
   override def findClass(className: String): Option[ClassRepresentation] = {
     val (pkg, _) = PackageNameUtils.separatePkgAndClassNames(className)
 

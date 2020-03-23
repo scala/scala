@@ -72,7 +72,7 @@ object TypeDeconstructionProps extends QuasiquoteProperties("type deconstruction
     }
   }
 
-  property("applied type doesn't match type appliction") = test {
+  property("applied type doesn't match type application") = test {
     assertThrows[MatchError] {
       val tq"$tpt[..$tpts]" = q"foo[bar]"
     }

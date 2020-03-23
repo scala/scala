@@ -279,7 +279,7 @@ trait Constants extends api.Constants {
       h = mix(h, tag.##) // include tag in the hash, otherwise 0, 0d, 0L, 0f collide.
       val valueHash = tag match {
         case NullTag => 0
-        // We could just use value.hashCode here, at the cost of a collition between different NaNs
+        // We could just use value.hashCode here, at the cost of a collision between different NaNs
         case FloatTag => java.lang.Integer.hashCode(floatToRawIntBits(value.asInstanceOf[Float]))
         case DoubleTag => java.lang.Long.hashCode(doubleToRawLongBits(value.asInstanceOf[Double]))
         case _ => value.hashCode()

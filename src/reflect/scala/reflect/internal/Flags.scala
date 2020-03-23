@@ -212,7 +212,7 @@ class Flags extends ModifierFlags {
   final val PhaseIndependentFlags = 0xF807FFFFFFFFFE08L
   //this should be
   // final val PhaseIndependentFlags = (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
-  // but the constant folder doesnt optimise this! Good news is that is expected to be fixed soon :-)
+  // but the constant folder does not optimise this! Good news is that is expected to be fixed soon :-)
   assert (PhaseIndependentFlags == (-1L & ~LateFlags & ~AntiFlags & ~(LateFlags >>> LateShift) & ~(AntiFlags >>> AntiShift)))
 
 

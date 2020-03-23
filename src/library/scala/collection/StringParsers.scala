@@ -203,11 +203,11 @@ private[scala] object StringParsers {
         val len = endIndex - startIndex
         (len > 0) && {
           //the prefix part is
-          //hexDigits 
+          //hexDigits
           //hexDigits.
-          //hexDigits.hexDigits 
+          //hexDigits.hexDigits
           //.hexDigits
-          //but notnot .
+          //but not .
           if (format.charAt(startIndex) == '.') {
             (len > 1) && forAllBetween(startIndex + 1, endIndex, isHexDigit)
           } else {

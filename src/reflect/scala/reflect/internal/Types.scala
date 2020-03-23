@@ -891,7 +891,7 @@ trait Types
       * there is a Ti so that T <:< Ti <:< T'.
       *
       * This is also known as the upward closed set of the partially ordered set of
-      * class types under Symbol#isLess (a refinement of Symbol#isSubclass).
+      * class types under Symbol#isLess (a refinement of Symbol#isSubClass).
       *
       * See "Base Types and Member Definitions" in spec/03-types.md.
       */

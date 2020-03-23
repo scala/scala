@@ -12,7 +12,7 @@ object TermConstructionProps extends QuasiquoteProperties("term construction") {
     q"if($t1) $t2 else $t3" ≈ If(t1, t2, t3)
   }
 
-  property("unquote trees into ascriptiopn") = forAll { (t1: Tree, t2: Tree) =>
+  property("unquote trees into ascription") = forAll { (t1: Tree, t2: Tree) =>
     q"$t1 : $t2" ≈ Typed(t1, t2)
   }
 

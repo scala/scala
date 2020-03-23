@@ -1134,7 +1134,7 @@ class InlinerTest extends BytecodeTesting {
         |    val f = (b: Byte, i: Int) => i + b
         |    // invocation of apply(ObjectOjbect)Object, matches SAM in IndyLambda. arguments are boxed, result unboxed.
         |    f(1, 2)
-        |    // opt: re-wrtie to $anonfun$adapted
+        |    // opt: re-write to $anonfun$adapted
         |    // inline that call, then we get box-unbox pairs (can be eliminated) and a call to $anonfun(BI)I
         |  }
         |
@@ -1159,10 +1159,10 @@ class InlinerTest extends BytecodeTesting {
         |
         |
         |  @inline final def m4a[T, U, V](f: (T, U) => V, x: T, y: U) = f(x, y) // invocation to generic apply(ObjectObject)Object
-        |  def t4a = m4a((x: Int, y: Double) => 1L + x + y.toLong, 1, 2d) // IndyLambda uses specilized JFunction2$mcJID$sp. after inlining m4a, similar to t4.
+        |  def t4a = m4a((x: Int, y: Double) => 1L + x + y.toLong, 1, 2d) // IndyLambda uses specialized JFunction2$mcJID$sp. after inlining m4a, similar to t4.
         |
         |  def t5 = {
-        |    // no specialization for the comibnation of primitives
+        |    // no specialization for the combination of primitives
         |    // IndyLambda: SAM type is JFunction2, SAM is generic apply, body method is $anonfun$adapted
         |    val f: (Int, Byte) => Any = (x: Int, b: Byte) => 1
         |    // invocation of generic apply.
@@ -1335,7 +1335,7 @@ class InlinerTest extends BytecodeTesting {
         |
         |  def t1(c: C) = asC(c) // eliminated
         |  def t2(c: C) = asO(c) // eliminated
-        |  def t3(c: Object) = asC(c) // not elimianted
+        |  def t3(c: Object) = asC(c) // not eliminated
         |  def t4(c: C, d: D, b: Boolean) = asC(if (b) c else d) // not eliminated: lub of two non-equal reference types approximated with Object
         |  def t5(c: C, d: D, b: Boolean) = asO(if (b) c else d)
         |  def t6(c: C, cs: Array[C], b: Boolean) = asO(if (b) c else cs)
@@ -1672,7 +1672,7 @@ class InlinerTest extends BytecodeTesting {
         |when entering an exception handler declared in the inlined method.""".stripMargin
     val List(a, c, t) = compileClasses(code, allowMessage = _.msg contains warn)
 
-    // inlinig of m$ is rolled back, because <invokespecial T.m> is not legal in class C.
+    // inlining of m$ is rolled back, because <invokespecial T.m> is not legal in class C.
     assertInvoke(getMethod(c, "t"), "T", "m$")
   }
 

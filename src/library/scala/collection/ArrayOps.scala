@@ -79,7 +79,7 @@ object ArrayOps {
       *
       *  @param f      the function to apply to each element.
       *  @tparam B     the element type of the returned array.
-      *  @return       a new aray resulting from applying the given function
+      *  @return       a new array resulting from applying the given function
       *                `f` to each element of this array and collecting the results.
       */
     def map[B: ClassTag](f: A => B): Array[B] = {
@@ -912,7 +912,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *
     *  @param f      the function to apply to each element.
     *  @tparam B     the element type of the returned array.
-    *  @return       a new aray resulting from applying the given function
+    *  @return       a new array resulting from applying the given function
     *                `f` to each element of this array and collecting the results.
     */
   def map[B](f: A => B)(implicit ct: ClassTag[B]): Array[B] = {
