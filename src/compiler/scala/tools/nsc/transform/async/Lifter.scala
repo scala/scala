@@ -33,7 +33,7 @@ trait Lifter extends ExprBuilder {
         for {
           cd <- classes
           md <- moduleClasses
-          if (cd.name == md.name)
+          if cd.name == md.name
         } {
           companions(cd) = md
           companions(md) = cd
@@ -52,8 +52,10 @@ trait Lifter extends ExprBuilder {
         private val classesBuffer, moduleClassesBuffer = mutable.ArrayBuffer[Symbol]()
         override def traverse(tree: Tree): Unit = tree match {
           case _: LabelDef => super.traverse(tree)
+          case _: TypeDef =>
+            abort("Unexpected tree. TypeDefs should have been eliminated after erasure" + tree)
           case _: DefTree => childDefs += tree
-          case _: Function => Nil
+          case _: Function =>
           case Block(stats, expr) =>
             classesBuffer.clear()
             moduleClassesBuffer.clear()
@@ -180,9 +182,6 @@ trait Lifter extends ExprBuilder {
               }
               treeCopy.ClassDef(cd, Modifiers(sym.flags), sym.name, tparams, impl)
             }
-          case td@TypeDef(_, _, tparams, rhs)               =>
-            sym.setName(name.freshen(sym.name.toTypeName))
-            treeCopy.TypeDef(td, Modifiers(sym.flags), sym.name, tparams, rhs)
         }
         atPos(t.pos)(treeLifted)
     }.toList
