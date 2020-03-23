@@ -32,7 +32,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import Signature._
   import Contexts._
 
-  final class TASTyException(msg: String) extends Exception(msg)
+  final class TASTyException(val sym: Symbol, msg: String) extends Exception(msg)
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
@@ -121,7 +121,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       } catch {
         case err: TASTyException =>
           sym.info = errorType
-          errorTasty(err.getMessage)
+          errorTasty(s"${err.getMessage} on ${err.sym}")
       }
     }
   }
@@ -394,8 +394,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               mkIntersectionType(readType(), readType())
             // case ORtype =>
             //   OrType(readType(), readType())
-            // case SUPERtype =>
-            //   SuperType(readType(), readType())
+            case SUPERtype =>
+              mkSuperType(readType(), readType())
             // case MATCHtype =>
             //   MatchType(readType(), readType(), until(end)(readType()))
             // case POLYtype =>
@@ -412,7 +412,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             //   readMethodic(ImplicitMethodType, _.toTermName)
             case TYPELAMBDAtype =>
               readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName)
-            case PARAMtype =>
+            case PARAMtype => // reference to a type parameter within a LambdaType
               readTypeRef().typeParams(readNat()).ref
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
@@ -1273,9 +1273,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case TYPEDEF | VALDEF | DEFDEF =>
         readIndexedMember()
       case IMPORT =>
-        throw new TASTyException("IMPORT in expression")
+        throw new TASTyException(ctx.owner, "IMPORT in expression")
       case PACKAGE =>
-        throw new TASTyException("PACKAGE in expression")
+        throw new TASTyException(ctx.owner, "PACKAGE in expression")
       case _ =>
         skipTree() // readTerm()(ctx.withOwner(exprOwner))
         NoCycle(at = NoAddr)
@@ -1326,7 +1326,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         readType() match {
           case path: TypeRef => TypeTree(path)
           case path: SingleType => TypeTree(path)
-          case path: ThisType => new This(nme.EMPTY.toTypeName).setType(path)
+          case path: ThisType => new This(path.sym.name.toTypeName).setSymbol(path.sym).setType(path)
           case path: ConstantType => Literal(path.value).setType(path)
         }
       }
@@ -1388,10 +1388,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val end = readEnd()
         val result =
           (tag: @switch) match {
-//            case SUPER =>
-//              val qual = readTerm()
-//              val (mixId, mixTpe) = ifBefore(end)(readQualId(), (untpd.EmptyTypeIdent, NoType))
-//              tpd.Super(qual, mixId, ctx.mode.is(Mode.InSuperCall), mixTpe.typeSymbol)
+            case SUPER =>
+              val qual = readTerm()
+              val (mixId, mixTpe) = ifBefore(end)(readQualId(), (untpd.EmptyTypeIdent, noType))
+              val owntype = (
+                if (!mixId.isEmpty) mixTpe
+                // else if (context.inSuperInit) qual.tpe.firstParent // sourced from Typer
+                else mkIntersectionType(qual.tpe.parents)
+              )
+              Super(qual, mixId.name.toTypeName).setType(mkSuperType(qual.tpe, owntype))
             case APPLY =>
               val fn = readTerm()
               val args = until(end)(readTerm())

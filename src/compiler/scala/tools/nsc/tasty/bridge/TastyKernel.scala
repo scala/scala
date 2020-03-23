@@ -85,6 +85,7 @@ trait TastyKernel { self: TastyUniverse =>
   final def mkRefinedType(parents: List[Type], owner: Symbol, scope: Scope): Type = symbolTable.refinedType(parents, owner, scope, noPosition)
   final def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, scope: Scope): RefinedType = symbolTable.RefinedType.apply(parents, scope, clazz)
   final def mkRefinedType(parents: List[Type], clazz: Symbol): RefinedType = mkRefinedTypeWith(parents, clazz, mkScope)
+  final def mkSuperType(thisTpe: Type, superTpe: Type): Type = symbolTable.SuperType(thisTpe, superTpe)
 
   final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     symbolTable.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
@@ -121,6 +122,12 @@ trait TastyKernel { self: TastyUniverse =>
     final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
     final val WILDCARD: TermName = symbolTable.nme.WILDCARD
     final def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
+  }
+
+  object untpd {
+    final val EmptyTypeIdent: Ident = new Ident(nme.EMPTY) {
+      override def isEmpty: Boolean = true
+    }
   }
 
   object termNames {
@@ -212,6 +219,9 @@ trait TastyKernel { self: TastyUniverse =>
 
   type AppliedTypeTree = symbolTable.AppliedTypeTree
   final def AppliedTypeTree(tpt: Tree, args: List[Tree]): AppliedTypeTree = symbolTable.AppliedTypeTree(tpt, args)
+
+  type Super = symbolTable.Super
+  final def Super(qual: Tree, mix: TypeName): Super = symbolTable.Super(qual, mix)
 
   type TypeBoundsTree = symbolTable.TypeBoundsTree
   final def TypeBoundsTree(lo: Tree, hi: Tree): TypeBoundsTree = symbolTable.TypeBoundsTree(lo, hi)
