@@ -442,6 +442,24 @@ class AnnotationDrivenAsync {
     assertEquals(100, run(code))
   }
 
+  @Test
+  def testNothingTypedExpr(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test: Future[Throwable] = async { if ("".isEmpty) {await(f("")); throw new RuntimeException("boo!")} else ??? }.failed
+        |}
+        |""".stripMargin
+    run(code) match {
+      case re: RuntimeException => assert(re.getMessage == "boo!")
+      case _ => Assert.fail()
+    }
+  }
+
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
   @Ignore

@@ -176,18 +176,10 @@ private[async] trait AnfTransform extends TransformUtils {
       }
     }
 
-    @tailrec
     private def transformMatchOrIf[T <: Tree](tree: Tree, needsResultVar: Boolean, nameSource: asyncNames.NameSource[TermName])(core: Symbol => T): Tree = {
-      // if type of if/match is Unit don't introduce assignment,
-      // but add Unit value to bring it into form expected by async transform
-      if (isUnitType(tree.tpe)) {
-        assignUnitType(core(NoSymbol))
-      } else if (tree.tpe =:= definitions.NothingTpe) {
-        currentStats += assignUnitType(core(NoSymbol))
-        localTyper.typedPos(tree.pos)(Throw(New(IllegalStateExceptionClass)))
-      } else if (isPatMatGeneratedJump(tree)) {
-        transformMatchOrIf(assignUnitType(tree), needsResultVar, nameSource)(core)
-      } else if (!needsResultVar) {
+      if (isPatMatGeneratedJump(tree)) assignUnitType(tree)
+
+      if (!needsResultVar || isUnitType(tree.tpe) || (tree.tpe =:= definitions.NothingTpe)) {
         core(NoSymbol)
       } else {
         val varDef = defineVar(nameSource(), tree.tpe, tree.pos)
