@@ -275,7 +275,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings {
     object LastModified extends CachePolicy("last-modified", "Cache class loader, using file last-modified time to invalidate")
     object Always extends CachePolicy("always", "Cache class loader with no invalidation")
     // TODO Jorge to add new policy. Think about whether there is a benefit to the user on offering this as a separate policy or unifying with the previous one.
-    // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloade, using file last-modified time, then ZIP file metadata to invalidate")
+    // object ZipMetadata extends CachePolicy("zip-metadata", "Cache classloader, using file last-modified time, then ZIP file metadata to invalidate")
     def values: List[CachePolicy] = List(None, LastModified, Always)
   }
 

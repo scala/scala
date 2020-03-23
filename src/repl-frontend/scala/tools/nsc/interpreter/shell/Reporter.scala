@@ -162,7 +162,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   // TODO: can we splice the error into the code the user typed when multiple lines were entered?
   // (should also comment out the error to keep multi-line copy/pastable)
   // TODO: multiple errors are not very intuitive (should the second error for same line repeat the line?)
-  // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpeter (plusOne))
+  // TODO: the console could be empty due to external changes (also, :reset? -- see unfortunate example in jvm/interpreter (plusOne))
   def printMessage(posIn: Position, msg0: String): Unit = {
     val msg = Reporter.explanation(msg0)
     if ((posIn eq null) || (posIn.source eq NoSourceFile)) printMessage(msg)

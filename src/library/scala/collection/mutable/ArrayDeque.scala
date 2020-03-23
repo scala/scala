@@ -104,7 +104,7 @@ class ArrayDeque[A] protected (
     val it = elems.iterator
     if (it.nonEmpty) {
       val n = length
-      // The following code resizes the current collection atmost once and traverses elems atmost twice
+      // The following code resizes the current collection at most once and traverses elems at most twice
       elems.knownSize match {
         // Size is too expensive to compute AND we can traverse it only once - can't do much but retry with an IndexedSeq
         case srcLength if srcLength < 0 => prependAll(it.to(IndexedSeq: Factory[A, IndexedSeq[A]] /* type ascription needed by Dotty */))

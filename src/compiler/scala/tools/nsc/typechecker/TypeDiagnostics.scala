@@ -746,7 +746,7 @@ trait TypeDiagnostics {
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
       val body = unit.body
-      // TODO the message should distinguish whether the unusage is before or after macro expansion.
+      // TODO the message should distinguish whether the non-usage is before or after macro expansion.
       settings.warnMacros.value match {
         case "none"   => run(skipMacroExpansion)(body)
         case "before" => run(checkMacroExpandee)(body)

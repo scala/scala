@@ -112,7 +112,7 @@ object PostProcessorFrontendAccess {
 
   final class BufferingBackendReporting extends BackendReporting {
     // We optimise access to the buffered reports for the common case - that there are no warning/errors to report
-    // We could use a listBuffer etc - but that would be extra allocation in the common case
+    // We could use a ListBuffer etc - but that would be extra allocation in the common case
     // Note - all access is externally synchronized, as this allow the reports to be generated in on thread and
     // consumed in another
     private var bufferedReports = List.empty[Report]

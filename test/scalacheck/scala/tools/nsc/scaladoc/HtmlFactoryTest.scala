@@ -180,7 +180,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
     files.get("WithObject$.html").isDefined
   }
 
-  property("Trac #4325 - Don't link to syntetic companion") = {
+  property("Trac #4325 - Don't link to synthetic companion") = {
     checkTemplate("Trac4325.scala", "WithSynthetic.html"){ (_, s) =>
         ! s.contains("""href="WithSynthetic$.html"""")
     }

@@ -995,7 +995,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             case _ =>
               // could add some guess based on types of primitive args.
               // or, we could stringify all the args onto the stack, compute the exact size of
-              // the stringbuffer.
+              // the StringBuilder.
               // or, just let http://openjdk.java.net/jeps/280 (or a re-implementation thereof in our 2.13.x stdlib) do all the hard work at link time
               0
           }.sum

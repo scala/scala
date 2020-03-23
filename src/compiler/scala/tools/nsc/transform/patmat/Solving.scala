@@ -510,14 +510,14 @@ trait Solving extends Logic {
 
     type TseitinSearch = List[(Array[Clause], List[Lit])]
 
-    /** An implementation of the DPLL algorithm for checking statisfiability
+    /** An implementation of the DPLL algorithm for checking satisfiability
       * of a Boolean formula in CNF (conjunctive normal form).
       *
       * This is a backtracking, depth-first algorithm, which searches a
       * (conceptual) decision tree the nodes of which represent assignments
       * of truth values to variables. The algorithm works like so:
       *
-      * - If there are any empty clauses, the formula is unsatisifable.
+      * - If there are any empty clauses, the formula is unsatisfiable.
       * - If there are no clauses, the formula is trivially satisfiable.
       * - If there is a clause with a single positive (rsp. negated) variable
       *   in it, any solution must assign it the value `true` (rsp. `false`).
