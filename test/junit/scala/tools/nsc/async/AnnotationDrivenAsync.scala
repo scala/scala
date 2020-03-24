@@ -486,6 +486,57 @@ class AnnotationDrivenAsync {
     }
   }
 
+  @Test def testByNameOwner(): Unit = {
+    val result = run(
+      """
+      import scala.tools.nsc.async.{autoawait, customAsync}
+
+      object Bleh {
+        @autoawait def asyncCall(): Int = 0
+        def byName[T](fn: => T): T = fn
+      }
+      object Boffo {
+        @autoawait @customAsync def jerk(): Unit = {
+          val pointlessSymbolOwner = 1 match {
+            case _ =>
+              Bleh.asyncCall()
+              Bleh.byName {
+                val whyDoHateMe = 1
+                whyDoHateMe
+              }
+          }
+        }
+      }
+      object Test {
+        @customAsync def test() = Boffo.jerk()
+      }
+      """)
+  }
+
+  @Test def testByNameOwner2(): Unit = {
+    val result = run(
+      """
+      import scala.tools.nsc.async.{autoawait, customAsync}
+      object Bleh {
+        @autoawait def bleh = Bleh
+        def byName[T](fn: => T): T = fn
+      }
+      object Boffo {
+        @autoawait @customAsync def slob(): Unit = {
+          val pointlessSymbolOwner =  {
+              Bleh.bleh.byName {
+                val whyDoHateMeToo = 1
+                whyDoHateMeToo
+              }
+          }
+        }
+      }
+      object Test {
+        @customAsync def test() = Boffo.slob()
+      }
+      """)
+  }
+
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
   @Ignore
