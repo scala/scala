@@ -49,11 +49,27 @@ object TestRefinements extends Suite("TestRefinements") {
     def one(a: String): Int = a.toInt
     def two(a: String)(b: Boolean): Int = a.toInt + (if (b) 1 else 0)
     def three[C](a: String)(b: Boolean)(c: C): Int = a.toInt + (if (b) 1 else 0) + c.toString.toInt
+    def implicitly(implicit ls: List[String]): Int = ls.size
+    def contextual(implicit ls: List[String]): Int = ls.size
   }
+
+  def testWithList(op: List[String] => Unit) = test(op(List.fill(3) {""}))
 
   test(assert(new Refinements.MethodOrPoly1[Int, MethodicComplexInt].read(new MethodicComplexInt, "23") === 23))
   test(assert(new Refinements.MethodOrPoly2[Int, MethodicComplexInt].read(new MethodicComplexInt, "23", true) === 24))
   test(assert(new Refinements.MethodOrPoly3[Int, MethodicComplexInt].read(new MethodicComplexInt, "23", true, 6) === 30))
+  testWithList { implicit ls =>
+    assert(new Refinements.MethodOrPoly4[Int, MethodicComplexInt].read(new MethodicComplexInt) === 3)
+  }
+  testWithList { implicit ls =>
+    assert(new Refinements.MethodOrPoly5[Int, MethodicComplexInt].read(new MethodicComplexInt) === 3)
+  }
+  testWithList { implicit ls =>
+    assert(new Refinements.MethodOrPoly4_2[Int].read[MethodicComplexInt](new MethodicComplexInt) === 3)
+  }
+  testWithList { implicit ls =>
+    assert(new Refinements.MethodOrPoly5_2[Int].read[MethodicComplexInt](new MethodicComplexInt) === 3)
+  }
 
   class EncoderInt {
     def encode(t: Int): String = t.toString

@@ -96,6 +96,8 @@ object Refinements {
     def one(a: String): Any
     def two(a: String)(b: Boolean): Any
     def three[C](a: String)(b: Boolean)(c: C): Any
+    def implicitly(implicit ls: List[String]): Any
+    def contextual(using ls: List[String]): Any
   }
 
   class MethodOrPoly1[A, M <: MethodicComplex { def one(a: String): A } ] {
@@ -108,6 +110,22 @@ object Refinements {
 
   class MethodOrPoly3[A, M <: MethodicComplex { def three[C](a: String)(b: Boolean)(c: C): A } ] {
     def read[C](m: M, s: String, b: Boolean, c: C): A = m.three(s)(b)(c)
+  }
+
+  class MethodOrPoly4[A, M <: MethodicComplex { def implicitly(implicit ls: List[String]): A } ] {
+    def read(m: M)(implicit ls: List[String]): A = m.implicitly
+  }
+
+  class MethodOrPoly5[A, M <: MethodicComplex { def contextual(using ls: List[String]): A } ] {
+    def read(m: M)(using ls: List[String]): A = m.contextual
+  }
+
+  class MethodOrPoly4_2[A] {
+    def read[M <: MethodicComplex { def implicitly(implicit ls: List[String]): A }](m: M)(implicit ls: List[String]): A = m.implicitly
+  }
+
+  class MethodOrPoly5_2[A] {
+    def read[M <: MethodicComplex { def contextual(using ls: List[String]): A }](m: M)(using ls: List[String]): A = m.contextual
   }
 
   class Structural1[M <: { val output: Int } ] {

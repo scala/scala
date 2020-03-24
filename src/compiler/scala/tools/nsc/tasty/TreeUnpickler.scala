@@ -422,12 +422,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               readMethodic(MethodType, _.toEncodedTermName)
             // case ERASEDMETHODtype =>
             //   readMethodic(ErasedMethodType, _.toTermName)
-            // case GIVENMETHODtype =>
-            //   readMethodic(ContextualMethodType, _.toTermName)
             // case ERASEDGIVENMETHODtype =>
             //   readMethodic(ErasedContextualMethodType, _.toTermName)
-            // case IMPLICITMETHODtype =>
-            //   readMethodic(ImplicitMethodType, _.toTermName)
+            case IMPLICITMETHODtype | GIVENMETHODtype =>
+              readMethodic(ImplicitMethodType, _.toEncodedTermName)
             case TYPELAMBDAtype =>
               readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName)
             case PARAMtype => // reference to a type parameter within a LambdaType

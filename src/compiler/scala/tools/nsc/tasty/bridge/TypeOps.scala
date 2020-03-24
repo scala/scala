@@ -343,11 +343,14 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
-  object MethodType extends TermLambdaCompanion[MethodTermLambda] { self =>
+  abstract class MethodTypeCompanion(defaultFlags: FlagSet) extends TermLambdaCompanion[MethodTermLambda] { self =>
     def factory(params: List[TermName])(registerCallback: MethodTermLambda => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): MethodTermLambda =
-      new MethodTermLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
+      new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
   }
+
+  object MethodType extends MethodTypeCompanion(emptyFlags)
+  object ImplicitMethodType extends MethodTypeCompanion(Implicit)
 
   abstract class TermLambdaCompanion[LT <: TermLambda]
     extends LambdaTypeCompanion[TermName, Type, LT]
@@ -355,7 +358,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   abstract class TypeLambdaCompanion[LT <: TypeLambda]
     extends LambdaTypeCompanion[TypeName, TypeBounds, LT]
 
-  final class MethodTermLambda(val paramNames: List[TermName])(registerCallback: MethodTermLambda => Unit,
+  final class MethodTermLambda(val paramNames: List[TermName], defaultFlags: FlagSet)(registerCallback: MethodTermLambda => Unit,
     paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TermLike { methodLambda =>
     type This = MethodType
@@ -367,7 +370,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val params: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newValueParameter(name, noPosition, emptyFlags).setInfo(argInfo)
+      case (name, argInfo) => ctx.owner.newValueParameter(name, noPosition, defaultFlags).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp()
