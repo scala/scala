@@ -213,6 +213,12 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
    *  @return         the value of the mapping, if it exists
    */
   override def get(key: A): Option[B] = RB.get(tree, key)
+  override def getOrElse[V1 >: B](key: A, default: => V1): V1 = {
+    val resultOrNull = RB.lookup(tree, key)
+    if (resultOrNull eq null) default
+    else resultOrNull.value
+  }
+
 
   /** Creates a new iterator over all elements contained in this
    *  object.
