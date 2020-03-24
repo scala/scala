@@ -48,7 +48,7 @@ object Runner {
   private def currentClasspath: Try[Seq[URL]] = splitClasspath(System.getProperty("java.class.path"))
 
   private def splitClasspath(classpath: String): Try[Seq[URL]] =
-    Try(classpath.split(":").filter(_.nonEmpty).map(Paths.get(_).toUri.toURL).toIndexedSeq)
+    Try(classpath.split(classpathSep).filter(_.nonEmpty).map(Paths.get(_).toUri.toURL).toIndexedSeq)
 
   def classloadFrom(classpath: String): Try[ScalaClassLoader] = for {
     classpaths  <- splitClasspath(classpath)

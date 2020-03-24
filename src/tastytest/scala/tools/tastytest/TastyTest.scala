@@ -136,7 +136,7 @@ object TastyTest {
   }
 
   private def getSourceAsName(path: String): String =
-    path.split(pathSep).last.stripSuffix(".scala")
+    path.substring(path.lastIndexOf(pathSep) + pathSep.length).stripSuffix(".scala")
 
   private def getRunSources(root: String, preFilters: Set[SourceKind] = Set(Scala),
     src2Filters: Set[SourceKind] = Set(Scala), src3Filters: Set[SourceKind] = Set(Scala)

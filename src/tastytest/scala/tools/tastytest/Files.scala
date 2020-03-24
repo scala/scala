@@ -70,4 +70,6 @@ object Files {
 
   val pathSep: String = FileSystems.getDefault.getSeparator
 
+  val classpathSep: String = java.io.File.pathSeparator
+
 }
