@@ -90,6 +90,9 @@ object TestRefinements extends Suite("TestRefinements") {
   test(assert(new Refinements.StructuralFlip1().get(new OutputterInt1) === 23))
   test(assert(new Refinements.StructuralFlip2().get(new OutputterInt2) === 23))
   test(assert(new Refinements.StructuralFlip3().encodeWith(new EncoderInt, 23) === "23"))
+  test(assert(new Refinements.StructuralFlip4().get(new OutputterInt1) === 23))
+  test(assert(new Refinements.StructuralFlip5().get(new OutputterInt2) === 23))
+  test(assert(new Refinements.StructuralFlip6().encodeWith(new EncoderInt, 23) === "23"))
 
   class EncoderIntSel extends Selectable {
 

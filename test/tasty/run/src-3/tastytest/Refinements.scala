@@ -162,6 +162,21 @@ object Refinements {
     def encodeWith[M <: { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
   }
 
+  class StructuralFlip4 {
+    import reflect.Selectable.reflectiveSelectable
+    def get(m: { val output: Int }): Int = m.output
+  }
+
+  class StructuralFlip5 {
+    import reflect.Selectable.reflectiveSelectable
+    def get(m: { def output: Int }): Int = m.output
+  }
+
+  class StructuralFlip6 {
+    import reflect.Selectable.reflectiveSelectable
+    def encodeWith(m: { def encode(t: Int): String }, t: Int): String = m.encode(t)
+  }
+
   class StructuralSelectableFlip {
     def encodeWith[M <: Selectable { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
   }
