@@ -89,7 +89,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
   }
 
   private object ThicketAttachment
-  class ThicketTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
+  abstract class ThicketTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
     private def expandThicket(t: Tree): List[Tree] = t match {
       case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
         stats :+ expr

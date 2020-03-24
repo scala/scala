@@ -13,6 +13,9 @@
 package scala.tools.nsc
 package transform
 
+import scala.collection.mutable
+
+
 /** A base class for transforms.
  *  A transform contains a compiler phase which applies a tree transformer.
  */
@@ -55,6 +58,57 @@ trait TypingTransformers {
       }
     }
     def transformAtOwner(owner: Symbol, tree: Tree): Tree = atOwner(tree, owner) { transform(tree) }
+  }
+
+  private object ThicketAttachment
+  /** A base class for typing transformers that need to perform "thicket expansion". A thicket is the output of a
+   *  transformation that is flattened into the enclosing block.
+   */
+  abstract class ThicketTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
+    private def expandThicket(t: Tree): List[Tree] = t match {
+      case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
+        stats :+ expr
+      case _ => t :: Nil
+    }
+
+    def apply(tree: Tree): List[Tree] = expandThicket(transform(tree))
+
+    protected def Thicket(stats: List[Tree], expr: Tree): Tree = {
+      Block(stats, expr).updateAttachment(ThicketAttachment)
+    }
+    protected def Thicket(block: Block): Tree = {
+      block.updateAttachment(ThicketAttachment)
+    }
+
+    override def transform(tree: Tree): Tree = tree match {
+      case Block(stats, expr) =>
+        val transformedStats = transformTrees(stats)
+        val transformedExpr = transform(expr)
+        if ((stats eq transformedStats) && (expr eq transformedExpr)) tree
+        else {
+          val expanded = new mutable.ListBuffer[Tree]
+          def expandStats(): Unit = transformedStats.foreach {
+            case EmptyTree =>
+            case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
+              stats.foreach { s => if (s != EmptyTree) expanded += s }
+              if (expr != EmptyTree) expanded += expr
+            case t =>
+              expanded += t
+          }
+          def expandExpr(): Tree = transformedExpr match {
+            case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
+              stats.foreach { s => if (s != EmptyTree) expanded += s }
+              expr
+            case t =>
+              t
+          }
+          expandStats()
+          val expr1 = expandExpr()
+          treeCopy.Block(tree, expanded.toList, expr1)
+        }
+      case _ =>
+        super.transform(tree)
+    }
   }
 }
 
