@@ -537,6 +537,77 @@ class AnnotationDrivenAsync {
       """)
   }
 
+  @Test def testRewrittenApply(): Unit = {
+    val result = run(
+      """
+        |import scala.tools.nsc.async.{autoawait, customAsync}
+        |object O {
+        |  case class Foo(a: Any)
+        |}
+        |object Test {
+        |  @autoawait def id(a: String) = a
+        |  @customAsync
+        |  def test = {
+        |    O.Foo
+        |    id("foo") + id("bar")
+        |    O.Foo(1)
+        |  }
+        |}
+        | """.stripMargin)
+    assertEquals("Foo(1)", result.toString)
+  }
+
+  @Test def testIsInstanceOfType(): Unit = {
+    val result = run(
+      """ import scala.tools.nsc.async.{autoawait, customAsync}
+        |
+        | class Outer
+        | object Test {
+        |   @autoawait def id(a: String) = a
+        |   @customAsync def test = {
+        |     val o = new Outer
+        |     id("foo") + id("bar")
+        |     ("": Object).isInstanceOf[o.type]
+        |   }
+        | }
+        | """.stripMargin)
+    assertEquals(false, result)
+  }
+
+  @Test def testIsInstanceOfTerm(): Unit = {
+    val result = run(
+      """import scala.tools.nsc.async.{autoawait, customAsync}
+        |
+        | class Outer
+        | object Test {
+        |   @autoawait def id(a: String) = a
+        |   @customAsync def test = {
+        |     val o = new Outer
+        |     id("foo") + id("bar")
+        |     o.isInstanceOf[Outer]
+        |   }
+        | }
+        | """.stripMargin)
+    assertEquals(true, result)
+  }
+
+  @Test def testArrayLocalModule(): Unit = {
+    val result = run(
+      """ import scala.tools.nsc.async.{autoawait, customAsync}
+        |
+        | class Outer
+        | object Test {
+        |   @autoawait def id(a: String) = a
+        |   @customAsync def test = {
+        |     val O = ""
+        |     id("foo") + id("bar")
+        |     new Array[O.type](0)
+        |   }
+        | }
+        | """.stripMargin)
+    assertEquals(classOf[Array[String]], result.getClass)
+  }
+
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
   @Ignore
