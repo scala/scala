@@ -31,47 +31,17 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
   private class TreeSetBuilder[A](implicit val ordering: Ordering[A]) extends Builder[A, TreeSet[A]] {
-    type Tree = RB.Tree[A, Unit]
+    type Tree = RB.Tree[A, Any]
     private [this] var tree:Tree = null
     override def +=(elem: A): TreeSetBuilder.this.type = {
       tree = RB.update(tree, elem, (), overwrite = false)
       this
     }
 
-    private object adder extends Function1[A, Unit] {
-      var accumulator :Tree = null
-      def addTree(aTree:Tree, bTree: Tree): Tree = {
-        val aSize = RB.count(aTree)
-        val bSize = RB.count(bTree)
-        // TODO should consider non overlapping trees
-        // just bulk add the non overlapping parts and
-        // only addAll for the intersecting range
-        //
-        // but for now just add the smaller set to the larger one
-
-        if (aSize > bSize) {
-          accumulator = aTree
-          RB.foreachKey(bTree, this)
-        } else {
-          accumulator = bTree
-          RB.foreachKey(aTree, this)
-        }
-        val result = accumulator
-        // be friendly to GC
-        accumulator = null
-        result
-      }
-
-      override def apply(elem: A): Unit = {
-        accumulator = RB.update(accumulator, elem, (), overwrite = false)
-      }
-    }
-
-    override def ++=(xs: TraversableOnce[A]): TreeSetBuilder.this.type = {
+    override def ++=(xs: TraversableOnce[A]): this.type = {
       xs match {
-        case ts: TreeSet[A] if ts.ordering eq ordering =>
-          if (tree eq null) tree = ts.tree0
-          else tree = adder.addTree(tree, ts.tree0)
+        case ts: TreeSet[A] if ts.ordering == ordering =>
+          tree = RB.union(tree, ts.tree)
         case _ =>
           super.++=(xs)
       }
@@ -104,11 +74,9 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(-5685982407650748405L)
-final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val ordering: Ordering[A])
+final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[A, Any])(implicit val ordering: Ordering[A])
   extends SortedSet[A] with SortedSetLike[A, TreeSet[A]] with Serializable {
 
-  //for serialisation computability
-  private def tree0 = tree
   if (ordering eq null)
     throw new NullPointerException("ordering must not be null")
 
@@ -143,20 +111,20 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
   override def drop(n: Int) = {
     if (n <= 0) this
     else if (n >= size) empty
-    else newSet(RB.drop(tree, n))
+    else newSetOrSelf(RB.drop(tree, n))
   }
 
   override def take(n: Int) = {
     if (n <= 0) empty
     else if (n >= size) this
-    else newSet(RB.take(tree, n))
+    else newSetOrSelf(RB.take(tree, n))
   }
 
   override def slice(from: Int, until: Int) = {
     if (until <= from) empty
     else if (from <= 0) take(until)
     else if (until >= size) drop(from)
-    else newSet(RB.slice(tree, from, until))
+    else newSetOrSelf(RB.slice(tree, from, until))
   }
 
   override def dropRight(n: Int) = take(size - math.max(n, 0))
@@ -175,21 +143,21 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
 
   def this()(implicit ordering: Ordering[A]) = this(null)(ordering)
 
-  private def newSet(t: RB.Tree[A, Unit]) = {
+  private def newSetOrSelf(t: RB.Tree[A, Any]) = {
     if (t eq this.tree) this
     else new TreeSet[A](t)
   }
 
   /** A factory to create empty sets of the same type of keys.
    */
-  override def empty = newSet(null)
+  override def empty = newSetOrSelf(null)
 
   /** Creates a new `TreeSet` with the entry added.
    *
    *  @param elem    a new element to add.
    *  @return        a new $coll containing `elem` and all the elements of this $coll.
    */
-  def + (elem: A): TreeSet[A] = newSet(RB.update(tree, elem, (), overwrite = false))
+  def + (elem: A): TreeSet[A] = newSetOrSelf(RB.update(tree, elem, (), overwrite = false))
 
   /** A new `TreeSet` with the entry added is returned,
    *  assuming that elem is <em>not</em> in the TreeSet.
@@ -199,7 +167,7 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
    */
   def insert(elem: A): TreeSet[A] = {
     assert(!RB.contains(tree, elem))
-    newSet(RB.update(tree, elem, (), overwrite = false))
+    newSetOrSelf(RB.update(tree, elem, (), overwrite = false))
   }
 
   /** Creates a new `TreeSet` with the entry removed.
@@ -209,7 +177,7 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
    */
   def - (elem:A): TreeSet[A] =
     if (!RB.contains(tree, elem)) this
-    else newSet(RB.delete(tree, elem))
+    else newSetOrSelf(RB.delete(tree, elem))
 
   /** Checks if this set contains element `elem`.
    *
@@ -228,12 +196,51 @@ final class TreeSet[A] private (private val tree: RB.Tree[A, Unit])(implicit val
 
   override def foreach[U](f: A => U) = RB.foreachKey(tree, f)
 
-  override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSet(RB.rangeImpl(tree, from, until))
-  override def range(from: A, until: A): TreeSet[A] = newSet(RB.range(tree, from, until))
-  override def from(from: A): TreeSet[A] = newSet(RB.from(tree, from))
-  override def to(to: A): TreeSet[A] = newSet(RB.to(tree, to))
-  override def until(until: A): TreeSet[A] = newSet(RB.until(tree, until))
+  override def rangeImpl(from: Option[A], until: Option[A]): TreeSet[A] = newSetOrSelf(RB.rangeImpl(tree, from, until))
+  override def range(from: A, until: A): TreeSet[A] = newSetOrSelf(RB.range(tree, from, until))
+  override def from(from: A): TreeSet[A] = newSetOrSelf(RB.from(tree, from))
+  override def to(to: A): TreeSet[A] = newSetOrSelf(RB.to(tree, to))
+  override def until(until: A): TreeSet[A] = newSetOrSelf(RB.until(tree, until))
 
   override def firstKey = head
   override def lastKey = last
+
+
+  private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
+    bf match {
+      case tsb: TreeSet.TreeSetBuilder[_] if tsb.ordering == ordering => true
+      case w: WrappedCanBuildFrom[_,_,_] => sameCBF(w.wrapped)
+      case _ => false
+    }
+  }
+
+  private [collection] def addAllTreeSetImpl(ts: TreeSet[A]): TreeSet[A] = {
+    assert (ordering == ts.ordering)
+    newSetOrSelf(RB.union(tree, ts.tree))
+  }
+
+  private[scala] def addAllImpl[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[TreeSet[A], B, That]): That = {
+    that match {
+      case ts: TreeSet[A] if ordering == ts.ordering && sameCBF(bf) =>
+        newSetOrSelf(RB.union(tree, ts.tree)).asInstanceOf[That]
+      case _ =>
+        val b = bf(repr)
+        b ++= thisCollection
+        b ++= that.seq
+        b.result
+    }
+  }
+
+  private [collection] def removeAll(ts: TreeSet[A]): TreeSet[A] = {
+    assert (ordering == ts.ordering)
+    newSetOrSelf(RB.difference(tree, ts.tree))
+  }
+
+  override private[scala] def filterImpl(f: A => Boolean, isFlipped: Boolean) =
+    newSetOrSelf(RB.filterKeys(tree, f, isFlipped))
+
+  override def partition(p: A => Boolean): (TreeSet[A], TreeSet[A]) = {
+    val (l, r) = RB.partitionKeys(tree, p)
+    (newSetOrSelf(l), newSetOrSelf(r))
+  }
 }
