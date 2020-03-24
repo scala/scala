@@ -5,9 +5,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.ref.WeakReference
+import scala.tools.testing.AllocationTest
 
 @RunWith(classOf[JUnit4])
-class ListTest {
+class ListTest extends AllocationTest{
   /**
    * Test that empty iterator does not hold reference
    * to complete List
@@ -45,5 +46,10 @@ class ListTest {
 
     // real assertion
     Assert.assertTrue(emptyIterators.exists(_._2.get.isEmpty))
+  }
+
+  @Test def emptyNonAllocating(): Unit = {
+    nonAllocating(List.empty)
+    nonAllocating(List())
   }
 }
