@@ -6,6 +6,8 @@ import nsc.tasty.{SafeEq, TastyUniverse}
 import nsc.tasty.TastyFlags.{EmptyTastyFlags, TastyFlagSet}
 import nsc.tasty.Names.TastyName, TastyName._
 
+import scala.util.chaining._
+
 import scala.reflect.internal
 
 trait TastyKernel { self: TastyUniverse =>
@@ -82,8 +84,7 @@ trait TastyKernel { self: TastyUniverse =>
   final def mkIntersectionType(tps: Type*): Type = mkIntersectionType(tps.toList)
   final def mkIntersectionType(tps: List[Type]): Type = symbolTable.internal.intersectionType(tps)
   final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = symbolTable.AnnotatedType(annot :: Nil, tpe)
-  final def mkRefinedType(parents: List[Type], owner: Symbol, scope: Scope): Type = symbolTable.refinedType(parents, owner, scope, noPosition)
-  final def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, scope: Scope): RefinedType = symbolTable.RefinedType.apply(parents, scope, clazz)
+  final def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): RefinedType = symbolTable.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
   final def mkRefinedType(parents: List[Type], clazz: Symbol): RefinedType = mkRefinedTypeWith(parents, clazz, mkScope)
   final def mkSuperType(thisTpe: Type, superTpe: Type): Type = symbolTable.SuperType(thisTpe, superTpe)
 

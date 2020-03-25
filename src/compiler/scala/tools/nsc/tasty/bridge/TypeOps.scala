@@ -186,7 +186,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   object NamedType {
-    def apply(prefix: Type, designator: Symbol): Type = {
+    def apply(prefix: Type, designator: Symbol)(implicit ctx: Context): Type = {
       if (designator.isType) {
         prefix match {
           case _: SingleType => designator.termRef(prefix)
@@ -347,6 +347,28 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     def factory(params: List[TermName])(registerCallback: MethodTermLambda => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): MethodTermLambda =
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
+  }
+
+  def mkRecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+
+  final class RecType(run: RecType => Type)(implicit ctx: Context) extends Type with Product {
+    override val productPrefix = "RecType"
+    override val productArity = 2
+
+    val refinementClass = ctx.newRefinedClassSymbol(noPosition)
+    val recThis: Type   = mkThisType(refinementClass)
+    val parent: Type    = run(this)
+
+    def canEqual(that: Any): Boolean = that.isInstanceOf[RecType]
+    def productElement(n: Int): Any = n match {
+      case 0 => if (parent == null) "<under-construction>" else parent
+      case 1 => hashCode
+      case _ => throw new IndexOutOfBoundsException(n.toString)
+    }
+
+    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
+    override def safeToString: String = s"RecType(rt @ $hashCode => ${if (parent == null) "<under-construction>" else parent})"
+
   }
 
   object MethodType extends MethodTypeCompanion(emptyFlags)
