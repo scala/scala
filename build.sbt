@@ -189,6 +189,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaUniverse#PerRunReporting.deprecationWarning"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.apiStatus*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
 
     ////////////////////////////////////////////////////////////////////////////// Vector backward compatiblity

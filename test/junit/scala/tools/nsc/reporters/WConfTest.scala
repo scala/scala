@@ -131,7 +131,7 @@ class WConfTest extends BytecodeTesting {
   @Test
   def warnVerbose(): Unit = {
     check(reports(code, "any:wv"), List(
-      l5a.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l5a._2),
+      l5a.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f] " + l5a._2),
       l5b.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.g | version=1.2.3] " + l5b._2),
       l7.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l7._2),
       l9.copy(_2 = "[other-pure-statement @ A.pureExpressionAsStatement] " + l9._2),
@@ -319,8 +319,7 @@ class WConfTest extends BytecodeTesting {
         override lazy val canonicalPath: String = p
       }, Array()), 0),
       msg = "",
-      WarningCategory.Other,
-      site = "")
+      WarningCategory.Other)
 
     val aTest = Reporting.WConf.parseFilter("src=a/.*Test.scala", rootDir = "").getOrElse(null)
     assertTrue(aTest.matches(m("/a/FooTest.scala")))

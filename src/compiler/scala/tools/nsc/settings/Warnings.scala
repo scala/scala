@@ -88,7 +88,7 @@ trait Warnings {
          |  - silence certain deprecations: -Wconf:origin=some\\.lib\\..*&since>2.2:s
          |
          |Full list of message categories:
-         |${WarningCategory.all.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
+         |${WarningCategory.builtIn.keys.groupBy(_.split('-').head).toList.sortBy(_._1).map(_._2.toList.sorted.mkString(", ")).mkString(" - ", "\n - ", "")}
          |
          |To suppress warnings locally, use the `scala.annotation.nowarn` annotation.
          |

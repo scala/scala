@@ -913,6 +913,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
                                = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 0)
     def deprecatedOverridingVersion
                                = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
+    def isApiStatus            = hasAnnotation(ApiStatusAttr)
+    def apiStatusMessage       = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 0)
+    def apiStatusCategory      = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 1)
+    def apiStatusVersion       = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 2)
+    def apiStatusDefaultAction = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 3)
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
