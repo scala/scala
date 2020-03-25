@@ -31,7 +31,7 @@ abstract class ReplTest extends DirectTest {
   // final because we need to enforce the existence of a couple settings.
   final override def settings: Settings = {
     val s = super.settings
-    s.Xnojline.value = true
+    s.Xjline.value = "off"
     if (getClass.getClassLoader.getParent != null) {
       s.classpath.value = s.classpath.value match {
         case "" => testOutput.toString

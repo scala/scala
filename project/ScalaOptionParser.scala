@@ -83,7 +83,7 @@ object ScalaOptionParser {
 
   // TODO retrieve these data programmatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
   private def booleanSettingNames = List("-X", "-Xcheckinit", "-Xdev", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
-    "-Xno-forwarders", "-Xno-patmat-analysis", "-Xnojline", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xverify", "-Y",
+    "-Xno-forwarders", "-Xno-patmat-analysis", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xverify", "-Y",
     "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
     "-Yide-debug",
     "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
@@ -93,7 +93,7 @@ object ScalaOptionParser {
     "-Yrepl-sync", "-Yshow-member-pos", "-Yshow-symkinds", "-Yshow-symowners", "-Yshow-syms", "-Yshow-trees", "-Yshow-trees-compact", "-Yshow-trees-stringified", "-Ytyper-debug",
     "-Ywarn-dead-code", "-Ywarn-numeric-widen", "-Ywarn-value-discard", "-Ywarn-extra-implicit", "-Ywarn-self-implicit",
     "-deprecation", "-explaintypes", "-feature", "-help", "-no-specialization", "-nobootcp", "-nowarn", "-optimise", "-print", "-unchecked", "-uniqid", "-usejavacp", "-usemanifestcp", "-verbose", "-version")
-  private def stringSettingNames = List("-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
+  private def stringSettingNames = List("-Xjline", "-Xgenerate-phase-graph", "-Xmain-class", "-Xpluginsdir", "-Xshow-class", "-Xshow-object", "-Xsource-reader", "-Ydump-classes", "-Ygen-asmp",
     "-Ypresentation-log", "-Ypresentation-replay", "-Yrepl-outdir", "-d", "-dependencyfile", "-encoding", "-Xscript")
   private def pathSettingNames = List("-bootclasspath", "-classpath", "-extdirs", "-javabootclasspath", "-javaextdirs", "-sourcepath", "-toolcp")
   private val phases = List("all", "parser", "namer", "packageobjects", "typer", "patmat", "superaccessors", "extmethods", "pickler", "refchecks", "uncurry", "tailcalls", "specialize", "explicitouter", "erasure", "posterasure", "fields", "lambdalift", "constructors", "flatten", "mixin", "cleanup", "delambdafy", "icode", "jvm", "terminal")

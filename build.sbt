@@ -45,8 +45,9 @@ val junitInterfaceDep = "com.novocode"                   % "junit-interface"    
 val scalacheckDep     = "org.scalacheck"                %% "scalacheck"                       % "1.14.3"                          % "test"
 val jolDep            = "org.openjdk.jol"                % "jol-core"                         % "0.9"
 val asmDep            = "org.scala-lang.modules"         % "scala-asm"                        % versionProps("scala-asm.version")
-val jlineDep          = "jline"                          % "jline"                            % versionProps("jline.version")
-val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % "1.12"
+val jlineDep          = "org.jline"                      % "jline"                            % versionProps("jline.version")
+val jansiDep          = "org.fusesource.jansi"           % "jansi"                            % versionProps("jansi.version")
+val jlineDeps         = Seq(jlineDep, jansiDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
@@ -635,7 +636,7 @@ lazy val compiler = configureAsSubproject(project)
     libraryDependencies += asmDep,
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
-    libraryDependencies ++= Seq(jlineDep, jansiDep),
+    libraryDependencies ++= jlineDeps,
     buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
     resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
@@ -676,9 +677,16 @@ lazy val compiler = configureAsSubproject(project)
       "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
     ),
     Osgi.headers ++= Seq(
-      "Import-Package" -> ("jline.*;resolution:=optional," +
-                           raw"""scala.*;version="$${range;[==,=+);$${ver}}",""" +
-                           "*"),
+      "Import-Package" -> raw"""org.jline.keymap.*;resolution:=optional
+                            |org.jline.reader.*;resolution:=optional
+                            |org.jline.style.*;resolution:=optional
+                            |org.jline.terminal;resolution:=optional
+                            |org.jline.terminal.impl;resolution:=optional
+                            |org.jline.terminal.impl.jansi.*;resolution:=optional
+                            |org.jline.terminal.spi;resolution:=optional
+                            |org.jline.utils;resolution:=optional
+                            |scala.*;version="$${range;[==,=+);$${ver}}"
+                            |*""".stripMargin.linesIterator.mkString(","),
       "Class-Path" -> "scala-reflect.jar scala-library.jar"
     ),
     // Generate the ScriptEngineFactory service definition. The old Ant build did this when building
@@ -714,7 +722,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .settings(disableDocs)
   .settings(skip in publish := true)
   .settings(
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
     scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
   )
@@ -1059,7 +1067,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
     }.taskValue,
     managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
-    libraryDependencies += jlineDep,
+    libraryDependencies ++= jlineDeps,
     apiURL := None,
     fixPom(
       "/project/name" -> <name>Scala Distribution Artifacts</name>,
@@ -1203,7 +1211,7 @@ lazy val distDependencies = Seq(replFrontend, compiler, library, reflect, scalap
 lazy val dist = (project in file("dist"))
   .settings(commonSettings)
   .settings(
-    libraryDependencies ++= Seq(jlineDep),
+    libraryDependencies ++= jlineDeps,
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
       val cp = (fullClasspath in IntegrationTest in testP).value
@@ -1218,7 +1226,11 @@ lazy val dist = (project in file("dist"))
     packageBin in Compile := {
       val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
       val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
-      val mappings = Seq((jlineJAR, targetDir / "jline.jar"))
+      val jansiJAR = findJar((dependencyClasspath in Compile).value, jansiDep).get.data
+      val mappings = Seq(
+        (jlineJAR, targetDir / "jline.jar"),
+        (jansiJAR, targetDir / "jansi.jar"),
+      )
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },

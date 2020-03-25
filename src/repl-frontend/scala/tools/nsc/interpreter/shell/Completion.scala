@@ -13,18 +13,26 @@
 package scala.tools.nsc.interpreter.shell
 
 trait Completion {
-  def resetVerbosity(): Unit
+  def reset(): Unit
 
   def complete(buffer: String, cursor: Int): CompletionResult
-
-  // Code accumulated in multi-line REPL input
-  def partialInput: String = ""
-  def withPartialInput[T](code: String)(body: => T): T = body
 }
 object NoCompletion extends Completion {
-  def resetVerbosity() = ()
+  def reset() = ()
   def complete(buffer: String, cursor: Int) = NoCompletions
 }
 
-case class CompletionResult(cursor: Int, candidates: List[String])
+case class CompletionResult(cursor: Int, candidates: List[String]) {
+  final def orElse(other: => CompletionResult): CompletionResult =
+    if (candidates.nonEmpty) this else other
+}
+object CompletionResult {
+  val empty: CompletionResult = NoCompletions
+}
 object NoCompletions extends CompletionResult(-1, Nil)
+
+case class MultiCompletion(underlying: Completion*) extends Completion {
+  override def reset() = underlying.foreach(_.reset())
+  override def complete(buffer: String, cursor: Int) =
+    underlying.foldLeft(CompletionResult.empty)((r,c) => r.orElse(c.complete(buffer, cursor)))
+}

@@ -15,11 +15,11 @@ package scala.tools.nsc.interpreter.shell
 import java.io.{BufferedReader, StringReader, PrintWriter => JPrintWriter}
 
 /** Reads using standard JDK API. */
-class SimpleReader(in: BufferedReader, out: JPrintWriter, val interactive: Boolean, val verbose: Boolean) extends InteractiveReader {
+class SimpleReader(in: BufferedReader, out: JPrintWriter, val completion: Completion, val interactive: Boolean, val verbose: Boolean) extends InteractiveReader {
   val history = NoHistory
-  val completion = NoCompletion
+  val accumulator = new Accumulator
 
-  def reset() = ()
+  override def reset() = accumulator.reset()
   def redrawLine() = ()
 
   // InteractiveReader internals
@@ -48,8 +48,8 @@ object SimpleReader {
   def defaultIn  = Console.in
   def defaultOut = new JPrintWriter(Console.out)
 
-  def apply(in: BufferedReader = defaultIn, out: JPrintWriter = defaultOut, interactive: Boolean = true, verbose: Boolean = false): SimpleReader =
-    new SimpleReader(in, out, interactive, verbose)
+  def apply(in: BufferedReader = defaultIn, out: JPrintWriter = defaultOut, completion: Completion = NoCompletion, interactive: Boolean = true, verbose: Boolean = false): SimpleReader =
+    new SimpleReader(in, out, completion, interactive, verbose)
 
   // a non-interactive SimpleReader that returns the given text
   def apply(text: String): SimpleReader = apply(
