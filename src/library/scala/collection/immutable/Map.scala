@@ -19,6 +19,8 @@ import scala.collection.generic.DefaultSerializable
 import scala.collection.immutable.Map.Map4
 import scala.collection.mutable.{Builder, ReusableBuilder}
 
+import scala.util.control.NonFatal
+
 /** Base type of immutable Maps */
 trait Map[K, +V]
   extends Iterable[(K, V)]
@@ -177,7 +179,8 @@ object Map extends MapFactory[Map] {
     extends AbstractMap[K, V]
       with MapOps[K, V, Map, WithDefault[K, V]] with Serializable {
 
-    def get(key: K): Option[V] = underlying.get(key)
+    override def get(key: K): Option[V] =
+      underlying.get(key).orElse(try Some(defaultValue(key)) catch { case NonFatal(_) => None })
 
     override def default(key: K): V = defaultValue(key)
 

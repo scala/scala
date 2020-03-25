@@ -14,6 +14,8 @@ package scala
 package collection
 package mutable
 
+import scala.util.control.NonFatal
+
 /** Base type of mutable Maps */
 trait Map[K, V]
   extends Iterable[(K, V)]
@@ -241,7 +243,8 @@ object Map extends MapFactory.Delegate[Map](HashMap) {
 
     override def clear(): Unit = underlying.clear()
 
-    def get(key: K): Option[V] = underlying.get(key)
+    override def get(key: K): Option[V] =
+      underlying.get(key).orElse(try Some(defaultValue(key)) catch { case NonFatal(_) => None })
 
     def subtractOne(elem: K): WithDefault.this.type = { underlying.subtractOne(elem); this }
 
