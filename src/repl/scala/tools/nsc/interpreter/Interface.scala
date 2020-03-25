@@ -134,6 +134,11 @@ trait Repl extends ReplCore {
 
   def interpret(line: String, synthetic: Boolean): Result
 
+  def tokenize(line: String): List[TokenData]
+
+  /** TODO resolve scan, parse, compile, interpret, which just indicate how much work to do. */
+  def parseString(line: String): Result
+
   // Error on incomplete input
   def interpretFinally(line: String): Result
 
@@ -316,3 +321,5 @@ trait PresentationCompilationResult {
 
   def candidates(tabCount: Int): (Int, List[String])
 }
+
+case class TokenData(token: Int, start: Int, end: Int)

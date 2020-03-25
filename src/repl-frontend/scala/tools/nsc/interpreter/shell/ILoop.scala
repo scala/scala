@@ -61,13 +61,14 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   // so that this can be a lazy val
   private lazy val defaultIn: InteractiveReader =
     if (batchMode) SimpleReader(batchText)
-    else if (inOverride != null) SimpleReader(inOverride, out, interactive = true)
-    else if (haveInteractiveConsole) new jline.JlineReader(isAcross = isAcross, isPaged = isPaged)
+    else if (inOverride != null) SimpleReader(inOverride, out, completion(new Accumulator), interactive = true)
+    else if (haveInteractiveConsole) {
+      val accumulator = new Accumulator
+      jline.Reader(config, intp, completion(accumulator), accumulator)
+    }
     else SimpleReader()
 
-
   private val interpreterInitialized = new java.util.concurrent.CountDownLatch(1)
-
 
   // TODO: move echo and friends to ReplReporterImpl
   // When you know you are most likely breaking into the middle
@@ -88,9 +89,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     try op finally mum = saved
   }
 
-  private def printShellInterrupt(): Unit = {
-    out print ShellConfig.InterruptedString
-  }
+  private def printShellInterrupt() = out.print(ShellConfig.InterruptedString)
 
   protected def asyncMessage(msg: String): Unit = {
     if (isReplInfo || isReplPower)
@@ -183,11 +182,12 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   /** Standard commands **/
   lazy val standardCommands = List(
-    cmd("completions", "<string>", "output completions for the given string", completionsCommand),
-    cmd("edit", "<id>|<line>", "edit history", editCommand),
     cmd("help", "[command]", "print this summary or command-specific help", helpCommand),
-    historyCommand,
-    cmd("h?", "<string>", "search the history", searchHistory),
+    cmd("completions", "<string>", "output completions for the given string", completionsCommand),
+    // TODO maybe just drop these commands, as jline subsumes them -- before reenabling, finish scala.tools.nsc.interpreter.jline.HistoryAdaptor
+    //cmd("edit", "<id>|<line>", "edit history", editCommand),
+    //historyCommand,
+    //cmd("h?", "<string>", "search the history", searchHistory),
     cmd("imports", "[name name ...]", "show import history, identifying sources of names", importsCommand),
     cmd("implicits", "[-v]", "show the implicits in scope", implicitsCommand),
     cmd("javap", "<path|class>", "disassemble a file or class name", javapCommand),
@@ -215,7 +215,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   // complete filename
   val fileCompletion: Completion = new Completion {
-    def resetVerbosity(): Unit = ()
+    def reset(): Unit = ()
     val emptyWord    = """(\s+)$""".r.unanchored
     val directorily  = """(\S*/)$""".r.unanchored
     val trailingWord = """(\S+)$""".r.unanchored
@@ -240,7 +240,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   // complete settings name
   val settingsCompletion: Completion = new Completion {
-    def resetVerbosity(): Unit = ()
+    def reset(): Unit = ()
     val trailingWord = """(\S+)$""".r.unanchored
     def complete(buffer: String, cursor: Int): CompletionResult = {
       buffer.substring(0, cursor) match {
@@ -420,37 +420,38 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   }
   import LineResults.LineResult
 
+  // Notice failure to create compiler
+  def command(line: String): Result =
+    if (line startsWith ":") colonCommand(line)
+    else if (!intp.initializeCompiler()) Result(keepRunning = false, None)
+    else Result(keepRunning = true, interpretStartingWith(line))
+
   // return false if repl should exit
   def processLine(line: String): Boolean = {
     // Long timeout here to avoid test failures under heavy load.
     interpreterInitialized.await(10, TimeUnit.MINUTES)
 
-    command(line) match {
-      case Result(false, _)      => false
-      case Result(_, Some(line)) => addReplay(line) ; true
-      case _                     => true
-    }
+    val res = command(line)
+    res.lineToRecord.foreach(addReplay)
+    res.keepRunning
   }
 
   lazy val prompt = encolor(promptText)
 
-  private def readOneLine() = {
+  // R as in REPL
+  def readOneLine(): String = {
     out.flush()
-    in readLine prompt
+    in.reset()
+    in.readLine(prompt)
   }
 
-  /** The main read-eval-print loop for the repl.  It calls
-   *  command() for each line of input, and stops when
-   *  command() returns false.
-   */
-  final def loop(): LineResult = loop(readOneLine())
-
-  @tailrec final def loop(line: String): LineResult = {
-    import LineResults._
-    if (line == null) EOF
-    else if (try processLine(line) catch crashRecovery) loop(readOneLine())
-    else ERR
-  }
+  // L as in REPL
+  @tailrec final def loop(): LineResult =
+    readOneLine() match {
+      case null => LineResults.EOF
+      case s if (try processLine(s) catch crashRecovery) => loop()
+      case _    => LineResults.ERR
+    }
 
   /** interpret all lines from a specified file */
   def interpretAllFrom(file: File, verbose: Boolean = false): Unit = {
@@ -529,26 +530,32 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
 
   def lineCommand(what: String): Result = editCommand(what, None)
 
-  def newCompleter(): ReplCompletion =
-    new ReplCompletion(intp) {
-      override def shellCompletion(buffer: String, cursor: Int): Option[CompletionResult] =
-        if (buffer.startsWith(":")) Some(colonCompletion(buffer, cursor).complete(buffer, cursor))
-        else None
-    }
+  def completion(accumulator: Accumulator = new Accumulator) = {
+    val rc = new ReplCompletion(intp, accumulator)
+    MultiCompletion(shellCompletion, rc)
+  }
+  val shellCompletion = new Completion {
+    override def reset() = ()
+    override def complete(buffer: String, cursor: Int) =
+      if (buffer.startsWith(":")) colonCompletion(buffer, cursor).complete(buffer, cursor)
+      else NoCompletions
+  }
 
+  // this may be used by editors that embed the REPL (e.g. emacs) to present completions themselves;
+  // it's also used by ReplTest
   def completionsCommand(what: String): Result = {
-    val completions = newCompleter().complete(what, what.length)
-    val prefix = if (completions == NoCompletions) "" else what.substring(0, completions.cursor)
-
-    val completionLines =
-      completions.candidates.map { c =>
-        s"[completions] $prefix$c"
-      }
-
-    if (completionLines.nonEmpty) {
-      echo(completionLines.mkString("\n"))
+    val completions = in.completion.complete(what, what.length)
+    if (completions.candidates.nonEmpty) {
+      val prefix =
+        if (completions == NoCompletions) ""
+        else what.substring(0, completions.cursor)
+      // hvesalai (emacs sbt-mode maintainer) says it's important to echo only once and not per-line
+      echo(
+        completions.candidates
+          .map(c => s"[completions] $prefix$c")
+          .mkString("\n")
+      )
     }
-
     Result.default // never record completions
   }
 
@@ -744,17 +751,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     replinfo(s"Result printing is ${ if (intp.reporter.printResults) "on" else "off" }.")
   }
 
-  /** Run one command submitted by the user.  Two values are returned:
-   *  (1) whether to keep running, (2) the line to record for replay, if any.
-   */
-  def command(line: String): Result = {
-    if (line startsWith ":") colonCommand(line)
-    else {
-      if (!intp.initializeCompiler()) Result(keepRunning = false, None)  // Notice failure to create compiler
-      else Result(keepRunning = true, interpretStartingWith(line))
-    }
-  }
-
   private def readWhile(cond: String => Boolean) = {
     Iterator continually in.readLine("") takeWhile (x => x != null && cond(x))
   }
@@ -826,12 +822,6 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     result
   }
 
-  private val continueText = {
-    val text   = enversion(continueString)
-    val margin = promptText.linesIterator.toList.last.length - text.length
-    if (margin > 0) " " * margin + text else text
-  }
-
   private object paste extends Pasted(config.promptText, encolor(continueText), continueText) {
     def interpret(line: String) = intp interpret line
     def echo(message: String)   = ILoop.this echo message
@@ -872,51 +862,42 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
     * read, go ahead and interpret it.  Return the full string
     * to be recorded for replay, if any.
     */
-  final def interpretStartingWith(code: String): Option[String] = {
-    // signal completion non-completion input has been received
-    in.completion.resetVerbosity()
+  final def interpretStartingWith(start: String): Option[String] = {
+    def loop(): Option[String] = {
+      val code = in.accumulator.toString
+      intp.interpret(code) match {
+        case Error      => None
+        case Success    => Some(code)
+        case Incomplete if in.interactive && code.endsWith("\n\n") =>
+          echo("You typed two blank lines.  Starting a new command.")
+          None
+        case Incomplete =>
+          in.completion.reset()
+          in.readLine(paste.ContinuePrompt) match {
+            case null =>
+              // partial input with no input forthcoming,
+              // so ask again for parse error message.
+              // This happens at EOF of a :load file.
+              intp.interpretFinally(code)
+              None
+            case line => in.accumulator += line ; loop()
+          }
+      }
+    }
 
-    /* Here we place ourselves between the user and the interpreter and examine
-     * the input they are ostensibly submitting.  We intervene in several cases:
-     *
-     * 1) If the line starts with "scala> " it is assumed to be an interpreter paste.
-     * 2) If the line starts with "." (but not ".." or "./") it is treated as an invocation
-     *    on the previous result.
-     * 3) If the Completion object's execute returns Some(_), we inject that value
-     *    and avoid the interpreter, as it's likely not valid scala code.
-     */
-    code match {
+    // signal completion that non-completion input has been received
+    in.completion.reset()
+
+    start match {
       case "" | lineComment() => None // empty or line comment, do nothing
       case paste() =>
-        paste.transcript(Iterator(code) ++ readWhile(!paste.isPromptOnly(_))) match {
+        val pasted = Iterator(start) ++ readWhile(!paste.isPromptOnly(_))
+        paste.transcript(pasted) match {
           case Some(s) => interpretStartingWith(s)
           case _       => None
         }
-      case invocation() => interpretStartingWith(intp.mostRecentVar + code)
-      case _ =>
-        intp.interpret(code) match {
-          case Error      => None
-          case Success    => Some(code)
-          case Incomplete =>
-            if (in.interactive && code.endsWith("\n\n")) {
-              echo("You typed two blank lines.  Starting a new command.")
-              None
-            } else {
-              val prefix = code + "\n"
-              in.completion.withPartialInput(prefix) {
-                in.readLine(paste.ContinuePrompt) match {
-                  case null =>
-                    // partial input with no input forthcoming,
-                    // so ask again for parse error message.
-                    // This happens at EOF of a :load file.
-                    intp.interpretFinally(code)
-                    None
-                  case line =>
-                    interpretStartingWith(prefix + line) // not in tailpos!
-                }
-              }
-            }
-        }
+      case invocation() => in.accumulator += intp.mostRecentVar + start ; loop()
+      case _ => in.accumulator += start ; loop()
     }
   }
 
@@ -953,35 +934,24 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
   def run(interpreterSettings: Settings): Boolean = {
     if (!batchMode) printWelcome()
 
+    createInterpreter(interpreterSettings)
     in = defaultIn
 
-    // let them start typing, using the splash reader (which avoids tab completion)
-    val firstLine =
-      SplashLoop.readLine(in, prompt) {
-        if (intp eq null) createInterpreter(interpreterSettings)
-        intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
-          intp.initializeCompiler()
-          interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
+    intp.reporter.withoutPrintingResults(intp.withSuppressedSettings {
+      intp.initializeCompiler()
+      interpreterInitialized.countDown() // TODO: move to reporter.compilerInitialized ?
 
-          if (intp.reporter.hasErrors) {
-            echo("Interpreter encountered errors during initialization!")
-            throw new InterruptedException
-          }
+      if (intp.reporter.hasErrors) {
+        echo("Interpreter encountered errors during initialization!")
+        throw new InterruptedException
+      }
 
-          echoOff { interpretPreamble }
-
-          // scala/bug#7418 Now that the interpreter is initialized, and `interpretPreamble` has populated the symbol table,
-          // enable TAB completion (we do this before blocking on input from the splash loop,
-          // so that it can offer tab completion as soon as we're ready).
-          if (doCompletion)
-            in.initCompletion(newCompleter())
-
-        })
-      }.orNull // null is used by readLine to signal EOF (`loop` will exit)
+      echoOff { interpretPreamble }
+    })
 
     // start full loop (if initialization was successful)
     try
-      loop(firstLine) match {
+      loop() match {
         case LineResults.EOF if in.interactive => printShellInterrupt(); true
         case LineResults.ERR => false
         case _ => true

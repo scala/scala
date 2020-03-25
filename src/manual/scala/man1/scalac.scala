@@ -242,8 +242,8 @@ object scalac extends Command {
           CmdOption("Xno-patmat-analysis"),
           "Don't perform exhaustivity/unreachability analysis. Also, ignore " & MItalic("@switch") & " annotation."),
         Definition(
-          CmdOption("Xnojline"),
-          "Do not use JLine for editing."),
+          CmdOption("Xjline"),
+          "The JLine keybindings to use: emacs/vi/off."),
         Definition(
           CmdOptionBound("Xplugin:", Argument("paths")),
           "Load a plugin from each classpath."),

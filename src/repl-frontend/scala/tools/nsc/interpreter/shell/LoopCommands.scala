@@ -136,12 +136,12 @@ trait LoopCommands {
           case cmd :: Nil =>
             val completion = if (cmd.isInstanceOf[NullaryCmd] || cursor < line.length) cmd.name else cmd.name + " "
             new Completion {
-              def resetVerbosity(): Unit = ()
+              def reset(): Unit = ()
               def complete(buffer: String, cursor: Int) = CompletionResult(cursor = 1, List(completion))
             }
           case cmd :: rest =>
             new Completion {
-              def resetVerbosity(): Unit = ()
+              def reset(): Unit = ()
               def complete(buffer: String, cursor: Int) = CompletionResult(cursor = 1, cmds.map(_.name))
             }
         }

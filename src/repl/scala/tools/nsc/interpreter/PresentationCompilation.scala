@@ -30,24 +30,24 @@ trait PresentationCompilation { self: IMain =>
     *
     * The caller is responsible for calling [[PresentationCompileResult#cleanup]] to dispose of the compiler instance.
     */
-  def presentationCompile(cursor: Int, buf: String): Either[Result, PresentationCompileResult] = {
+  def presentationCompile(cursor: Int, buf: String): Either[Result, PresentationCompilationResult] = {
     if (global == null) Left(Error)
     else {
       val pc = newPresentationCompiler()
       val line1 = buf.patch(cursor, Cursor, 0)
       val trees = pc.newUnitParser(line1).parseStats()
       val importer = global.mkImporter(pc)
+      //println(s"pc: [[$line1]], <<${trees.size}>>")
       val request = new Request(line1, trees map (t => importer.importTree(t)), generousImports = true)
       val origUnit = request.mkUnit
       val unit = new pc.CompilationUnit(origUnit.source)
       unit.body = pc.mkImporter(global).importTree(origUnit.body)
-      import pc._
-      val richUnit = new RichCompilationUnit(unit.source)
+      val richUnit = new pc.RichCompilationUnit(unit.source)
       // disable brace patching in the parser, the snippet template isn't well-indented and the results can be surprising
-      currentRun.parsing.withIncompleteHandler((pos, msg) => ()) {
-        unitOfFile(richUnit.source.file) = richUnit
+      pc.currentRun.parsing.withIncompleteHandler((pos, msg) => ()) {
+        pc.unitOfFile(richUnit.source.file) = richUnit
         richUnit.body = unit.body
-        enteringTyper(typeCheck(richUnit))
+        pc.enteringTyper(pc.typeCheck(richUnit))
       }
       val inputRange = pc.wrappingPos(trees)
       // too bad dependent method types don't work for constructors

@@ -35,7 +35,8 @@ object ShellConfig {
       val batchText: String = if (settings.execute.isSetByUser) settings.execute.value else ""
       val batchMode: Boolean = batchText.nonEmpty
       val doCompletion: Boolean = !(settings.noCompletion || batchMode)
-      val haveInteractiveConsole: Boolean = !settings.Xnojline
+      val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
+      override val viMode = super.viMode || settings.Xjline.value == "vi"
     }
     case _ => new ShellConfig {
       val filesToPaste: List[String] = Nil
@@ -43,7 +44,8 @@ object ShellConfig {
       val batchText: String = ""
       val batchMode: Boolean = false
       val doCompletion: Boolean = !settings.noCompletion
-      val haveInteractiveConsole: Boolean = !settings.Xnojline
+      val haveInteractiveConsole: Boolean = settings.Xjline.value != "off"
+      override val viMode = super.viMode || settings.Xjline.value == "vi"
     }
   }
 }
@@ -55,12 +57,15 @@ trait ShellConfig {
   def batchMode: Boolean
   def doCompletion: Boolean
   def haveInteractiveConsole: Boolean
+  def viMode: Boolean = envOrNone("SHELLOPTS").map(_.split(":").contains("vi")).getOrElse(false)
 
   private def bool(name: String) = BooleanProp.keyExists(name)
   private def int(name: String)  = Prop[Int](name)
 
   // This property is used in TypeDebugging. Let's recycle it.
   val colorOk = Properties.coloredOutputEnabled
+
+  val historyFile = s"$userHome/.scala_history_jline3"
 
   private val info  = bool("scala.repl.info")
   private val debug = bool("scala.repl.debug")
@@ -93,6 +98,11 @@ trait ShellConfig {
 
   // Prompt for continued input, will be right-adjusted to width of the primary prompt
   val continueString = Prop[String]("scala.repl.continue").option getOrElse "| "
+  val continueText   = {
+    val text   = enversion(continueString)
+    val margin = promptText.linesIterator.toList.last.length - text.length
+    if (margin > 0) " " * margin + text else text
+  }
 
   // What to display at REPL startup.
   val welcomeString  = Prop[String]("scala.repl.welcome").option match {
@@ -109,6 +119,9 @@ trait ShellConfig {
    *  currently mutually exclusive.
    */
   val format = Prop[String]("scala.repl.format")
+  val isPaged: Boolean  = format.isSet && csv(format.get, "paged")
+  val isAcross: Boolean = format.isSet && csv(format.get, "across")
+  private def csv(p: String, v: String) = p.split(",").contains(v)
 
   val replAutorunCode = Prop[File]("scala.repl.autoruncode")
   val powerInitCode   = Prop[File]("scala.repl.power.initcode")
@@ -124,11 +137,11 @@ trait ShellConfig {
   def repltrace(msg: => String)  = if (isReplTrace) echo(msg)
 
   def isReplPower: Boolean = power
-  def isPaged: Boolean     = format.isSet && csv(format.get, "paged")
-  def isAcross: Boolean    = format.isSet && csv(format.get, "across")
 
-  private def csv(p: String, v: String) = p split "," contains v
   private def echo(msg: => String) =
-    try Console println msg
-    catch { case x: AssertionError => Console.println("Assertion error printing debugging output: " + x) }
+    try Console.println(msg)
+    catch {
+      case e: AssertionError =>
+        Console.println(s"Assertion error printing debugging output: $e")
+    }
 }
