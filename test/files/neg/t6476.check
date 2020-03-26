@@ -1,0 +1,4 @@
+t6476.scala:8: error: unclosed string literal; note that `\"` no longer closes single-quoted interpolated string literals since 2.13.6, you can use a triple-quoted string instead
+  mimi"\"
+       ^
+1 error

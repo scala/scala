@@ -1,0 +1,7 @@
+t6476b.scala:2: error: invalid escape at terminal index 0 in "\". Use \\ for literal \.
+  val sa = s"""\"""
+               ^
+t6476b.scala:4: error: invalid escape '\ ' not one of [\b, \t, \n, \f, \r, \\, \", \', \uxxxx] at index 0 in "\ ". Use \\ for literal \.
+  val sc = s"""\ """
+               ^
+2 errors

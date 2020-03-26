@@ -1,0 +1,12 @@
+
+scala> raw"\""
+val res0: String = \"
+
+scala> raw"\" // this used to be a comment, but after scala/pull#8830 it's part of the string! "
+val res1: String = "\" // this used to be a comment, but after scala/pull#8830 it's part of the string! "
+
+scala> raw"\" // this used to compile, now it's unclosed
+           ^
+       error: unclosed string literal; note that `\"` no longer closes single-quoted interpolated string literals since 2.13.6, you can use a triple-quoted string instead
+
+scala> :quit
