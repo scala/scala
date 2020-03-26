@@ -432,7 +432,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesReplaceKeyOldVlueNewValue() = {
+  def nullValuesReplaceKeyOldValueNewValue() = {
 
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 

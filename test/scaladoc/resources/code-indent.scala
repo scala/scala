@@ -1,7 +1,7 @@
 /** 
  * This is an example of indented comments:
  *    {{{
- *       a typicial indented 
+ *       a typical indented
  *       comment on multiple
  *       comment lines
  *    }}}

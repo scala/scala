@@ -364,7 +364,7 @@ trait StdNames {
     val MIRROR_UNTYPED: NameType           = nameType("$m$untyped")
     val REIFY_FREE_PREFIX: NameType        = nameType("free$")
     val REIFY_FREE_THIS_SUFFIX: NameType   = nameType("$this")
-    val REIFY_FREE_VALUE_SUFFIX: NameType  = nameType("$" + "value") // looks like missing interpolator due to `value` in scopre
+    val REIFY_FREE_VALUE_SUFFIX: NameType  = nameType("$" + "value") // looks like missing interpolator due to `value` in scope
     val REIFY_SYMDEF_PREFIX: NameType      = nameType("symdef$")
     val QUASIQUOTE_CASE: NameType          = nameType("$quasiquote$case$")
     val QUASIQUOTE_EARLY_DEF: NameType     = nameType("$quasiquote$early$def$")

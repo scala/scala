@@ -9,7 +9,7 @@ class Unchecked[C] {
                   (null: Any) match { case _: Some[C]      => } // warn
 
   // These must remain without warnings. These are excerpts from
-  // related tests that are more exhauative.
+  // related tests that are more exhaustive.
   class C; class D extends C
   def okay      = (List(new D) : Seq[D]) match { case _: List[C] => case _ => } // nowarn
   class B2[A, B]

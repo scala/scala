@@ -31,7 +31,7 @@ import scala.util.hashing.MurmurHash3
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
-@deprecatedInheritance("HashMap wil be made final; use .withDefault for the common use case of computing a default value", "2.13.0")
+@deprecatedInheritance("HashMap will be made final; use .withDefault for the common use case of computing a default value", "2.13.0")
 class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   extends AbstractMap[K, V]
     with MapOps[K, V, HashMap, HashMap[K, V]]

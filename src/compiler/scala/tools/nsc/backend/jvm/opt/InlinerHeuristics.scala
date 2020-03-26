@@ -240,7 +240,7 @@ abstract class InlinerHeuristics extends PerRunInit {
           def shouldInlineForwarder = Option {
             // trait super accessors are excluded here because they contain an `invokespecial` of the default method in the trait.
             // this instruction would have different semantics if inlined into some other class.
-            // we *do* inline trait super accessors if selected by a different heuristic. in this case, the `invokespcial` is then
+            // we *do* inline trait super accessors if selected by a different heuristic. in this case, the `invokespecial` is then
             // inlined in turn (chosen by the same heuristic), or the code is rolled back. but we don't inline them just because
             // they are forwarders.
             val isTraitSuperAccessor = backendUtils.isTraitSuperAccessor(callee.callee, callee.calleeDeclarationClass)

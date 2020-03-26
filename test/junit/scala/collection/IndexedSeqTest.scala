@@ -23,7 +23,7 @@ abstract class IndexedTest[T, E] {
 
   /**
     * returns the value of the data that is expected to be present int the original data at index {{{index}}}
-    * This is conceptully the same as the normal apply operation but unavaialbe due to the base types of T not supporting apply
+    * This is conceptually the same as the normal apply operation but unavailable due to the base types of T not supporting apply
     *
     * @param index the index to use for the returned value
     * @return the value at the specified index
@@ -46,15 +46,15 @@ abstract class IndexedTest[T, E] {
   }
 
   /**
-    * check simple equallity of the initial data.
-    * More a test of the infra that we use in this est than a full test of equallity
+    * check simple equality of the initial data.
+    * More a test of the infra that we use in this est than a full test of equality
     */
   @Test def checkEquals: Unit = {
     val test1 = underTest(size)
     val test2 = underTest(size)
     doAssertEquals("", test1, test2)
     assertNotSame(test1, test2)
-    expectSameContent("basic equallity", false, test1, test2, 0, size)
+    expectSameContent("basic equality", false, test1, test2, 0, size)
   }
 
   protected def expectSameContent(txt: String, canBeSame:Boolean, orig: T, test: T, offset: Int, len: Int): Unit = {
@@ -97,7 +97,7 @@ abstract class IndexedTest[T, E] {
 
   /**
     * check the operation of {{{take}}} works for size of 0
-    * There is a special case tha for some implementations empty will be a singleton
+    * There is a special case that for some implementations empty will be a singleton
     */
   @Test def checkTakeEmpty: Unit = {
     val orig = underTest(size)
@@ -109,7 +109,7 @@ abstract class IndexedTest[T, E] {
 
   /**
     * check the operation of {{{slice}}} works for size of 0
-    * There is a special case tha for some implementations empty will be a singleton
+    * There is a special case that for some implementations empty will be a singleton
     */
   @Test def checkSliceEmpty: Unit = {
     val orig = underTest(size)

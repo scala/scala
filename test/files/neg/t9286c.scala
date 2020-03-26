@@ -9,6 +9,6 @@ object Test {
   }
   def main(args: Array[String]): Unit = {
     val m: M[String] = null
-    t.foo(m) // VeriyError: Duplicate method name&signature
+    t.foo(m) // VerifyError: Duplicate method name&signature
   }
 }

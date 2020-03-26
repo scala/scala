@@ -11,7 +11,7 @@ object Test extends StoreReporterDirectTest {
     println("1. Don't refer to Inner")
     compileCode("class Test { def test(x: HasInner) = x }")
     assert(filteredInfos.isEmpty, filteredInfos)
-    println("2. Refering to Inner")
+    println("2. Referring to Inner")
     compileCode("class Test { def test(x: HasInner#Inner) = x }")
     println(filteredInfos.mkString("\n"))
   }

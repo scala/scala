@@ -81,10 +81,10 @@ class SortedMapTest {
 
   @Test
   def testDefaulValueIsNotPersistedWhenNewMapIterableIsConcatenatedToOriginalMutableMap(): Unit = {
-    val originaMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
+    val originalMap: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefaultValue("element missing")
 
-    val newMap: SortedMap[Int, String] = originaMap ++ SortedMap.from(Map(3 -> "Three")).withDefaultValue("foobar")
+    val newMap: SortedMap[Int, String] = originalMap ++ SortedMap.from(Map(3 -> "Three")).withDefaultValue("foobar")
 
     try {
       newMap(4)

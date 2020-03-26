@@ -40,7 +40,7 @@ class BaseNCNSP[T] {
 }
 
 object NoClashNoSigPoly extends BaseNCNSP[Boolean]
-// TODO: position error at definition of apply in superclass instead of on case clss
+// TODO: position error at definition of apply in superclass instead of on case class
 // error: recursive method apply needs result type
 case class NoClashNoSigPoly private(x: Int)
 
@@ -52,6 +52,6 @@ class BaseCNSP[T] {
 }
 
 object ClashNoSigPoly extends BaseCNSP[Int]
-// TODO: position error at definition of apply in superclass instead of on case clss
+// TODO: position error at definition of apply in superclass instead of on case class
 // error: recursive method apply needs result type
 case class ClashNoSigPoly private(x: Int)

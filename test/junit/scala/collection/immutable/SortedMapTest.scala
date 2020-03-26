@@ -9,7 +9,7 @@ import scala.tools.testkit.AllocationTest
 @RunWith(classOf[JUnit4])
 class SortedMapTest extends AllocationTest {
   @Test
-  def testWithDefaultValueReturnsSortedMapWithDeaultValue(): Unit = {
+  def testWithDefaultValueReturnsSortedMapWithDefaultValue(): Unit = {
     val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
       .withDefault(defaultValueFunction)
 
@@ -91,9 +91,9 @@ class SortedMapTest extends AllocationTest {
 
   @Test
   def testDefaulValueIsPersistedWhenNewMapIterableIsConcatenatedToOriginalMap(): Unit = {
-    val originaMap: SortedMap[Int, String] = TreeMap(1 -> "One", 2 -> "Two")
+    val originalMap: SortedMap[Int, String] = TreeMap(1 -> "One", 2 -> "Two")
       .withDefaultValue("element missing")
-    val newMap: SortedMap[Int, String] = originaMap ++ Map(3 -> "Three")
+    val newMap: SortedMap[Int, String] = originalMap ++ Map(3 -> "Three")
 
     assertEquals("element missing", newMap(4))
   }

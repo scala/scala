@@ -526,7 +526,7 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *    actionable information. As noted above, even the collection library itself
     *    does not use it. When there is no guarantee that a collection is finite, it
     *    is generally best to attempt a computation anyway and document that it will
-    *    not terminate for inifinite collections rather than backing out because this
+    *    not terminate for infinite collections rather than backing out because this
     *    would prevent performing the computation on collections that are in fact
     *    finite even though `hasDefiniteSize` returns `false`.
     *

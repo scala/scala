@@ -96,7 +96,7 @@ class IndexedSeqTest extends AllocationTest {
     assertEquals(new MyRange(0, 1), new MyRange(0, 1))
   }
 
-  @Test def testforwardSliceEquals(): Unit = {
+  @Test def testForwardSliceEquals(): Unit = {
 
     def generateTestIter = (0 to 10).view.iterator
 
@@ -116,7 +116,7 @@ class IndexedSeqTest extends AllocationTest {
     assertSameElements((4 to 6).toList,       generateTestIter.slice(3, 7).slice(1, 10))
   }
 
-  @Test def testbackwardSliceEquals(): Unit = {
+  @Test def testBackwardSliceEquals(): Unit = {
 
     def generateTestIter = (0 to 10).view.reverseIterator
 
