@@ -6,7 +6,7 @@ object Test {
     var vb = new VectorBuilder[Int]
     for (i <- 0 until n)
       vb += i
-    val v = vb.result
+    val v = vb.result()
     assert(v == (0 until n), "not same as (0 until " + n + "): " + v)
   }
 

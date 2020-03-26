@@ -33,7 +33,7 @@ package scala.reflect.internal.util {
     def checkEmpty: Unit = {
       val hs = new WeakHashSet[String]()
       assert(hs.size == 0)
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // make sure += works
@@ -44,7 +44,7 @@ package scala.reflect.internal.util {
       assert(hs.size == 2)
       assert(hs contains "hello")
       assert(hs contains "goodbye")
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // make sure += works when there are collisions
@@ -55,7 +55,7 @@ package scala.reflect.internal.util {
       assert(hs.size == 2)
       assert(hs contains Collider("hello"))
       assert(hs contains Collider("goodbye"))
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // add a large number of elements to force rehashing and then validate
@@ -65,7 +65,7 @@ package scala.reflect.internal.util {
       val elements = (0 until size).toList map ("a" + _)
       elements foreach (hs += _)
       elements foreach {i => assert(hs contains i)}
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // make sure rehashing works properly when the set is rehashed
@@ -75,7 +75,7 @@ package scala.reflect.internal.util {
       val elements = (0 until size).toList map {x => Collider("a" + x)}
       elements foreach (hs += _)
       elements foreach {i => assert(hs contains i)}
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // test that unreferenced objects are removed
@@ -97,7 +97,7 @@ package scala.reflect.internal.util {
       for (i <- 0 until size) {
         assert(!(hs contains Collider("b" + i)))
       }
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // make sure findOrUpdate returns the originally entered element
@@ -111,7 +111,7 @@ package scala.reflect.internal.util {
         // original put in
         assert(hs findEntryOrUpdate(Collider("a" + i)) eq elements(i))
       }
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // check -= functionality
@@ -123,7 +123,7 @@ package scala.reflect.internal.util {
       assert(hs.size == 1)
       assert(hs contains "hello")
       assert(!(hs contains "goodbye"))
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // check -= when there are collisions
@@ -138,7 +138,7 @@ package scala.reflect.internal.util {
       hs -= Collider("hello")
       assert(hs.size == 0)
       assert(!(hs contains Collider("hello")))
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // check that the clear method actually cleans everything
@@ -150,7 +150,7 @@ package scala.reflect.internal.util {
       hs.clear()
       assert(hs.size == 0)
       elements foreach {i => assert(!(hs contains i))}
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // check that the iterator covers all the contents
@@ -159,7 +159,7 @@ package scala.reflect.internal.util {
       val elements = (0 until 20).toList map ("a" + _)
       elements foreach (hs += _)
       assert(elements.iterator.toList.sorted == elements.sorted)
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
 
     // check that the iterator covers all the contents even when there is a collision
@@ -168,7 +168,7 @@ package scala.reflect.internal.util {
       val elements = (0 until 20).toList map {x => Collider("a" + x)}
       elements foreach (hs += _)
       assert(elements.iterator.toList.sorted == elements.sorted)
-      hs.diagnostics.fullyValidate
+      hs.diagnostics.fullyValidate()
     }
   }
 }

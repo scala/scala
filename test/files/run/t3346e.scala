@@ -28,7 +28,7 @@ class QuickSort[Coll](a: Coll) {
       b ++= new QuickSort(lower).quickSortAnything
       b ++= same
       b ++= new QuickSort(upper).quickSortAnything
-      b.result
+      b.result()
     }
   }
 }

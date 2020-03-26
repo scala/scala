@@ -110,7 +110,7 @@ object Test {
     assert(map(Symbol("ddd")) == Symbol("mfsa"))
     assert(map(Symbol("WeirdKey1")) == Symbol("WeirdVal1"))
 
-    map.clear
+    map.clear()
     for (i <- 0 until 100) map.put(Symbol("symKey" + i), Symbol("symVal" + i))
     assert(map(Symbol("symKey15")) == Symbol("symVal15"))
     assert(map(Symbol("symKey22")) == Symbol("symVal22"))

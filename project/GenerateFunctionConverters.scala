@@ -348,7 +348,7 @@ object GenerateFunctionConverters {
 
   def sameText(f: java.io.File, text: String): Boolean = {
     val x = scala.io.Source.fromFile(f)
-    val lines = try { x.getLines.toVector } finally { x.close }
+    val lines = try { x.getLines().toVector } finally { x.close }
     // work around scala/bug#11125
     lines.iterator.filter(_.nonBlank) == Predef.augmentString(text).lines.filter(_.nonBlank)
   }

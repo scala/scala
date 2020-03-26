@@ -117,15 +117,15 @@ class FutureCallbacks extends TestBase {
   }
 
   def testThatNestedCallbacksDoNotYieldStackOverflow(): Unit = {
-    val promise = Promise[Int]
+    val promise = Promise[Int]()
     (0 to 10000).map(Future(_)).foldLeft(promise.future)((pf, f) => f.flatMap(i => pf))
     promise.success(-1)
   }
 
   def stressTestNumberofCallbacks(): Unit = once {
     done =>
-      val promise = Promise[Unit]
-      val otherPromise = Promise[Unit]
+      val promise = Promise[Unit]()
+      val otherPromise = Promise[Unit]()
       def attachMeaninglessCallbacksTo[T](f: Future[T]): Future[T] = {
         (1 to 20000).foreach(_ => f.onComplete(_ => ()))
         f
@@ -359,7 +359,7 @@ def testTransformFailure(): Unit = once {
   def testFlatMapDelayed(): Unit = once {
     done =>
       val f = Future { 5 }
-      val p = Promise[Int]
+      val p = Promise[Int]()
       val g = f flatMap { _ => p.future }
       g onComplete {
         case Success(x) => done(x == 10)

@@ -29,20 +29,20 @@ object M0 {
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(quicksort[Int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -69,20 +69,20 @@ object M1 {
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 0)));
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 5)));
     Console.println(partition[Int](List(8,7,6,5,4,3,2,1), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 0)));
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 5)));
     Console.println(partition[Int](List(7,2,1,5,4,3,8,6), (x => x < 9)));
-    Console.println;
+    Console.println()
 
     Console.println(quicksort[Int]((x,y) => x < y)(List(7,2,1,5,4,3,8,6)));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -106,7 +106,7 @@ object M2 {
     Console.println(powerset(List(1,2)));
     Console.println(powerset(List(1,2,3)));
     Console.println(powerset(List(1,2,3,4)));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -149,7 +149,7 @@ object M3 {
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
     Console.println("queens(4) = " + queens(4));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -194,7 +194,7 @@ object M4 {
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
     Console.println("queens(4) = " + queens(4));
-    Console.println;
+    Console.println()
   }
 }
 

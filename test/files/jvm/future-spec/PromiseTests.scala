@@ -104,7 +104,7 @@ class PromiseTests extends MinimalScalaTest {
     "not be completable with a completed Promise" in {
       {
         val p = Promise[String]().failure(new RuntimeException("unbr0ken"))
-        p.tryCompleteWith(Promise[String].failure(new Exception("br0ken")).future)
+        p.tryCompleteWith(Promise[String]().failure(new Exception("br0ken")).future)
         intercept[RuntimeException] {
           Await.result(p.future, defaultTimeout)
         }.getMessage mustBe ("unbr0ken")

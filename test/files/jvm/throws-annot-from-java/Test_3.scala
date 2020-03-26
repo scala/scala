@@ -13,7 +13,7 @@ object Test extends ReplTest {
   	println("atp.typeParams.isEmpty: " + atp.typeParams.isEmpty)
   	println(throwsAnn)
   }
-  println
+  println()
 
   {
   	val method = clazz.info.member(newTermName("bar"))

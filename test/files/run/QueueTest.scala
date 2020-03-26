@@ -19,7 +19,7 @@ object Test {
     assert(queue.dequeueFirst(_ > 500) == None)
     assert(queue.dequeueAll(_ > 500).isEmpty)
 
-    queue.clear
+    queue.clear()
     assert(queue.isEmpty)
     assert(queue.size == 0)
     assert(queue.length == 0)
@@ -39,7 +39,7 @@ object Test {
     assert(queue.init.isEmpty)
     assert(queue.tail.isEmpty)
 
-    queue.clear
+    queue.clear()
     assert(queue.isEmpty)
     assert(queue.length == 0)
 
@@ -49,7 +49,7 @@ object Test {
     assert(queue.head == 11)
     assert(queue.front == 11)
 
-    val deq = queue.dequeue
+    val deq = queue.dequeue()
     assert(deq == 11)
     assert(queue.isEmpty)
     assert(queue.length == 0)
@@ -93,7 +93,7 @@ object Test {
     assert(queue.last == 20)
     assert(queue.front == 10)
 
-    val ten = queue.dequeue
+    val ten = queue.dequeue()
     assert(ten == 10)
     assert(queue.length == 1)
 
@@ -143,7 +143,7 @@ object Test {
     for (i <- 0 until 10) queue.enqueue(i * 2)
 
     for (i <- 0 until 10) {
-      val top = queue.dequeue
+      val top = queue.dequeue()
       assert(top == i * 2)
       assert(queue.length == 10 - i - 1)
     }
@@ -159,7 +159,7 @@ object Test {
     assert(queue.length == 3)
     assert(queue.nonEmpty)
 
-    queue.clear
+    queue.clear()
     assert(queue.length == 0)
     assert(queue.isEmpty)
 
@@ -223,7 +223,7 @@ object Test {
     assert(queue.head == 0)
     assert(queue.last == 3)
 
-    queue.dequeue
+    queue.dequeue()
     assert(queue.head == 3)
 
     queue.enqueue(9)
@@ -232,7 +232,7 @@ object Test {
     assert(queue.length == 1)
     assert(queue.head == 9)
 
-    queue.clear
+    queue.clear()
     for (i <- -100 until 100) queue.enqueue(i * i + i % 7 + 5)
     assert(queue.length == 200)
 

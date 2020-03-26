@@ -22,7 +22,7 @@ object Test {
     f(List(1,2,3,4,5))
     f(null)
 
-    println
+    println()
 
     f2(List(1, 2))
     f2(List('a', 'b', 'c'))

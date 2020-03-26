@@ -16,7 +16,7 @@ object M0 {
     count = count + 1;
     Console.println("x     = " + x);
     Console.println("count = " + count);
-    Console.println;
+    Console.println()
   }
 }
 
@@ -45,7 +45,7 @@ object M1 {
     Console.print("account withdraw 20 -> ");
     Console.println(account withdraw 20);
     Console.print("account withdraw 15 -> ");
-    Console.println;
+    Console.println()
   }
 
   def test1 = {
@@ -54,7 +54,7 @@ object M1 {
     Console.print("x deposit  30 -> ");
     Console.println((x deposit  30).toString()); // !!! .toString
     Console.print("y withdraw 20 -> ");
-    Console.println;
+    Console.println()
   }
 
   def test2 = {
@@ -76,10 +76,10 @@ object M1 {
   }
 
   def test = {
-    test0; Console.println;
-    test1; Console.println;
-    test2; Console.println;
-    test3; Console.println;
+    test0; Console.println()
+    test1; Console.println()
+    test2; Console.println()
+    test3; Console.println()
   }
 }
 
@@ -106,7 +106,7 @@ object M2 {
     Console.println("2^1 = " + power(2,1));
     Console.println("2^2 = " + power(2,2));
     Console.println("2^3 = " + power(2,3));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -126,7 +126,7 @@ object M3 {
     Console.println("2^1 = " + power(2,1));
     Console.println("2^2 = " + power(2,2));
     Console.println("2^3 = " + power(2,3));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -136,9 +136,9 @@ object M4 {
 
   def test = {
     for (i <- range(1, 4)) { Console.print(s"$i ") };
-    Console.println;
+    Console.println()
     Console.println(for (i <- range(1, 4)) yield i);
-    Console.println;
+    Console.println()
   }
 }
 
@@ -274,7 +274,7 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         run;
         Console.println("!" + a + " = " + result);
-        Console.println;
+        Console.println()
       }
 
       probe("out  ", cout);
@@ -296,11 +296,11 @@ object M5 {
         bin setSignal (if (b == 0) false else true);
         run;
         Console.println(a.toString + " & " + b + " = " + result);
-        Console.println;
+        Console.println()
       }
 
       probe("out  ", cout);
-      Console.println;
+      Console.println()
 
       test(0,0);
       test(0,1);
@@ -321,11 +321,11 @@ object M5 {
         bin setSignal (if (b == 0) false else true);
         run;
         Console.println(a.toString + " | " + b + " = " + result);
-        Console.println;
+        Console.println()
       }
 
       probe("out  ", cout);
-      Console.println;
+      Console.println()
 
       test(0,0);
       test(0,1);
@@ -349,12 +349,12 @@ object M5 {
         bin setSignal (if (b == 0) false else true);
         run;
         Console.println(a.toString + " + " + b + " = " + result);
-        Console.println;
+        Console.println()
       }
 
       probe("sum  ", sout);
       probe("carry", cout);
-      Console.println;
+      Console.println()
 
       test(0,0);
       test(0,1);
@@ -380,12 +380,12 @@ object M5 {
         cin setSignal (if (c == 0) false else true);
         run;
         Console.println(a.toString + " + " + b + " + " + c + " = " + result);
-        Console.println;
+        Console.println()
       }
 
       probe("sum  ", sout);
       probe("carry", cout);
-      Console.println;
+      Console.println()
 
       test(0,0,0);
       test(0,0,1);

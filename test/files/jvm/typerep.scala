@@ -49,7 +49,7 @@ object testPrimitives {
   println(getType("abc"))
   println(getType(())) // Unit
   println(getType(classOf[Int])) // Class
-  println
+  println()
 }
 
 object testOptions {
@@ -62,7 +62,7 @@ object testOptions {
   println(getType(None: Option[Int]))
   val y: Option[Int] = None
   println(getType(y))
-  println
+  println()
 }
 
 object testLists {
@@ -71,7 +71,7 @@ object testLists {
   println(getType(List(List(3))))
   println(getType(Nil: List[Int]))
   println(getType(List(1, "abc")))
-  println
+  println()
 }
 
 object testArrays {
@@ -81,7 +81,7 @@ object testArrays {
   println(getType(List(1).toArray))
   println(getType(List[Int]().toArray))
   println(getType(Array(3).drop(1).toArray)) // empty
-  println
+  println()
 }
 
 object testTuples {
@@ -90,7 +90,7 @@ object testTuples {
   println(getType(((3, "abc"), (4, "xyz"))))
   println(getType(((Some('b'), 3), (Some('a'), 4))))
   //println(getType(((Some('b'), 3), (None, 4))))
-  println
+  println()
 }
 
 object testFuncs {
@@ -109,7 +109,7 @@ object testFuncs {
   def f5(f: Int => Int, x: Int) = f(x)
   println(getType(f5 _))
   println(getType(f5(f1, 1)))
-  println
+  println()
 }
 
 class Foo {
@@ -135,12 +135,12 @@ object testClasses {
   val foo2 = new Foo
   println(getType(foo2))
   println(getType(new foo2.Bar(1)))
-  println
+  println()
 
   println(getType(pkg1.c1))
   val c1 = new pkg1.C1
   println(getType(c1))
-  println
+  println()
   */
 }
 

@@ -9,7 +9,7 @@ class A {
   implicit class BooleanOps(val b: Boolean) {
     @deprecated("bobo", since="2.11.0")
     @migration("Used to return 5", changedIn="2.12.6")
-    def bippy() = 42
+    def bippy = 42
   }
   def f = (null == null).bippy
   def g = true.bippy

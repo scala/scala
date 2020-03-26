@@ -186,19 +186,19 @@ object M0 {
 
     c.setValue(0);
     c.forgetValue;
-    Console.println;
+    Console.println()
 
     c.setValue(100);
     c.forgetValue;
-    Console.println;
+    Console.println()
 
     f.setValue(32);
     f.forgetValue;
-    Console.println;
+    Console.println()
 
     f.setValue(212);
     f.forgetValue;
-    Console.println;
+    Console.println()
   }
 }
 
@@ -239,7 +239,7 @@ object M1 {
     show_c2f(c, f, 100);
     show_f2c(c, f, 32);
     show_f2c(c, f, 212);
-    Console.println;
+    Console.println()
   }
 }
 
@@ -273,7 +273,7 @@ object M2 {
     show(Some(2), None , Some(6));
     show(None , Some(3), Some(6));
     show(Some(2), Some(3), Some(6));
-    Console.println;
+    Console.println()
 
     show(Some(0), None , None );
     show(None , Some(0), None );
@@ -286,7 +286,7 @@ object M2 {
     show(Some(0), Some(7), Some(0));
     show(Some(7), Some(0), Some(0));
     show(Some(0), Some(0), Some(0));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -313,7 +313,7 @@ object M3 {
     Console.println("b = 4, c = 5 => a = " + a.str);
     b.forgetValue; c.forgetValue;
 
-    Console.println;
+    Console.println()
   }
 }
 

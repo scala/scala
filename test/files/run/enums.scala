@@ -145,7 +145,7 @@ object Test {
         exception.printStackTrace();
       }
     }
-    Console.println;
+    Console.println()
   }
 
   def main(args: Array[String]): Unit = {
@@ -153,9 +153,9 @@ object Test {
     check_success("Test2", Test2.run, 5);
     check_success("Test3", Test3.run, 1);
     check_success("Test4", Test4.run, 0);
-    Console.println;
+    Console.println()
     Test5.run;
-    Console.println;
+    Console.println()
     SerializationTest.run;
   }
 }

@@ -9,11 +9,11 @@ object Test {
     Console.print("### fib(");
     Console.print(n);
     Console.print(") = ");
-    Console.flush;
+    Console.flush()
     val v = fib(n);
     Console.print(v);
-    Console.println;
-    Console.flush;
+    Console.println()
+    Console.flush()
     v
   }
 
@@ -57,7 +57,7 @@ object Test {
     Console.print("### ");
     Console.println(17);
     Console.println("### Bye");
-    Console.println;
+    Console.println()
     val x = 13;
     x;
     // !!! why are DefDef replaced by Block(Tree[0])? we should use Empty!
@@ -99,10 +99,10 @@ object Test {
     val mySub = new MySubclass();
     Console.println(mySub);
     myObj.test();
-    Console.println;
+    Console.println()
 
     Console.println(apply_any(id_any, "identity").toString());
-    Console.println;
+    Console.println()
   };
 
   foobar;
@@ -135,13 +135,13 @@ case class Y(y: Int, z: Int) extends X(y + z) {
   Console.println("A.a = " + a.getA);
   Console.println("B.a = " + b.getA);
   Console.println("B.b = " + b.getB);
-  Console.println;
+  Console.println()
 
   Console.println("X.a = " + x.getX);
   Console.println("Y.a = " + y.getX);
   Console.println("Y.b = " + y.getY);
   Console.println("Y.b = " + y.y);
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -168,10 +168,10 @@ val x: X = new X();
 val y: X = new Y();
 
 x.foo;
-Console.println;
+Console.println()
 
 y.foo;
-Console.println;
+Console.println()
 }
 
 //############################################################################
@@ -210,7 +210,7 @@ class O(a: Int) {
 Console.println(new O(1).foo)
 }
 
-Console.println;
+Console.println()
 
   case class Bar();
 

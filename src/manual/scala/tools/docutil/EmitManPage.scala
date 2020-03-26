@@ -70,9 +70,9 @@ object EmitManPage {
           for (d <- definitions) {
             out println ".TP"
             emitText(d.term)
-            out.println
+            out.println()
             emitText(d.description)
-            if (n > 1) { out.println; n -= 1 }
+            if (n > 1) { out.println(); n -= 1 }
           }
 
         case Link(label, url) =>
@@ -88,7 +88,7 @@ object EmitManPage {
         case TextParagraph(text) =>
           out println ".PP"
           emitText(text)
-          out.println
+          out.println()
 
         case BlockQuote(text) =>
           out println ".TP"

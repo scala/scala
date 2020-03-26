@@ -60,7 +60,7 @@ import scala.language.implicitConversions
  *  def printUrl(url: String) : Unit = {
  *    val con = new URL(url) openConnection()
  *    val source = scala.io.Source.fromInputStream(con.getInputStream())
- *    source.getLines.foreach(println)
+ *    source.getLines().foreach(println)
  *  }
  *
  *  val badUrl = "htt/xx"

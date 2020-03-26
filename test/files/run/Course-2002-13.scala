@@ -166,30 +166,30 @@ import Programs._;
 class Parser(s: String) {
   val it = new Tokenizer(s, "(),.?");
 
-  var token: String = it.next;
+  var token: String = it.next();
 
   def syntaxError(msg: String): Unit = sys.error(msg + ", but " + token + " found");
 
   def rep[a](p: => a): List[a] = {
     val t = p;
-    if (token == ",") { token = it.next; t :: rep(p) } else List(t)
+    if (token == ",") { token = it.next(); t :: rep(p) } else List(t)
   }
 
   def constructor: Term = {
     val a = token;
-    token = it.next;
+    token = it.next();
     Con(a,
 	if (token equals "(") {
-	  token = it.next;
+	  token = it.next();
 	  val ts: List[Term] = if (token equals ")") List() else rep(term);
-	  if (token equals ")") token = it.next else syntaxError("`)` expected");
+	  if (token equals ")") token = it.next() else syntaxError("`)` expected");
 	  ts
 	} else List())
   }
 
   def term: Term = {
     val ch = token.charAt(0);
-    if ('A' <= ch && ch <= 'Z') { val a = token; token = it.next; Var(a) }
+    if ('A' <= ch && ch <= 'Z') { val a = token; token = it.next(); Var(a) }
     else if (it.isDelimiter(ch)) { syntaxError("term expected"); null }
     else constructor
   }
@@ -197,14 +197,14 @@ class Parser(s: String) {
   def line: Clause = {
     val result =
       if (token equals "?") {
-        token = it.next;
+        token = it.next();
         Clause(NoTerm, rep(constructor));
       } else {
 	Clause(
           constructor,
-          if (token equals ":-") { token = it.next; rep(constructor) } else List())
+          if (token equals ":-") { token = it.next(); rep(constructor) } else List())
       }
-    if (token equals ".") token = it.next else syntaxError("`.` expected");
+    if (token equals ".") token = it.next() else syntaxError("`.` expected");
     result
   }
 
@@ -268,7 +268,7 @@ object Test {
 
       "?phrase(S,V,A,D,N).\n" + "?more.\n"
     );
-    Console.println;
+    Console.println()
 
     Prolog.process(
       "sujet(jean).\n" +
@@ -287,7 +287,7 @@ object Test {
 
       "?phrase(S,V,A,D,N).\n" + "?more.\n"
     );
-    Console.println;
+    Console.println()
 
     Prolog.process(
       "sujet(jean).\n" +
@@ -313,7 +313,7 @@ object Test {
       "?phrase(jean,mange,le,cons(grand,nil),cheval).\n" +
       "?phrase(jean,mange,le,cons(grand,nil),table).\n"
     );
-    Console.println;
+    Console.println()
 
     ()
   }

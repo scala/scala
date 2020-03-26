@@ -8,7 +8,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     val x = tryBreakable {
-      break
+      break()
       2
     } catchBreak {
       3
@@ -23,7 +23,7 @@ object Test {
     assert(y == 2, y)
 
     val z = tryBreakable {
-      break
+      break()
       1.0
     } catchBreak {
       2

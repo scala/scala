@@ -318,7 +318,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
   def t5313(): Unit = {
     val code =
       """class C {
-        |  def randomBoolean = scala.util.Random.nextInt % 2 == 0
+        |  def randomBoolean = scala.util.Random.nextInt() % 2 == 0
         |
         |  // 3 stores to kept1 (slot 1), 1 store to result (slot 2)
         |  def t1 = {
@@ -430,7 +430,7 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |    println(y)
         |  }
         |
-        |  def f = nextInt
+        |  def f = nextInt()
         |
         |  def t4 = {
         |    val x = f
@@ -439,11 +439,11 @@ class MethodLevelOptsTest extends BytecodeTesting {
         |  }
         |
         |  def t5 = {
-        |    var x = nextInt
+        |    var x = nextInt()
         |    var y = x
         |    println(y)
         |
-        |    y = nextInt
+        |    y = nextInt()
         |    x = y
         |    println(x)
         |  }

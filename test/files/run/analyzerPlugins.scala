@@ -22,10 +22,10 @@ object Test extends DirectTest {
 
       var count = 0
 
-      math.random // some statement
+      math.random() // some statement
 
       def method: String = {
-        math.random
+        math.random()
         val f = inferField
 
         def nested(): String = {
@@ -38,7 +38,7 @@ object Test extends DirectTest {
 
       def this(str: String) = {
         this(str.toDouble)
-        math.random
+        math.random()
         count += 1
       }
     }

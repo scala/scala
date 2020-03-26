@@ -33,11 +33,11 @@ object Test {
 
     for (c <- badChars)
       test(("a"+c+"b").split(c),"RichString split('"+ c + "')")
-    println
+    println()
 
     for (c <- badChars)
       test(RS("a"+c+"b").split(c),"RS split('"+ c + "')")
-    println
+    println()
 
     val badCases = List(
       ']' -> "x]", '&' -> "&&",'\\' -> "\\x", '[' -> "[x",
@@ -45,7 +45,7 @@ object Test {
     )
     for ((c,str) <- badCases)
       test(("a"+c+"b").split(str.toArray),"RichString split(\""+ str + "\")")
-    println
+    println()
 
     for ((c,str) <- badCases)
       test(RS("a"+c+"b").split(str.toArray),"RS split(\""+ str + "\")")

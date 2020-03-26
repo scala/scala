@@ -3,13 +3,13 @@ import scala.language.{ existentials }
 import scala.reflect.runtime.universe._
 
 object Test {
-  def f() = { case class Bar(x: Int); Bar }
-  def g() = { case class Bar(x: Int); Bar(5) }
-  def h() = { case object Bar ; Bar }
+  def f = { case class Bar(x: Int); Bar }
+  def g = { case class Bar(x: Int); Bar(5) }
+  def h = { case object Bar ; Bar }
 
-  val f1 = f()
-  val g1 = g()
-  val h1 = h()
+  val f1 = f
+  val g1 = g
+  val h1 = h
 
   def m[T: WeakTypeTag](x: T) = println(weakTypeOf[T].toString + ", underlying = " + weakTypeOf[T].typeSymbol.info)
 

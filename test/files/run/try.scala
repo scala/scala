@@ -123,7 +123,7 @@ object Test extends AnyRef with App {
   try4;
   try5;
   try6;
-  Console.println;
+  Console.println()
   new A();
   ()
 }

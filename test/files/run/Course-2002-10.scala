@@ -15,7 +15,7 @@ object M0 {
   def test = {
     var i = 0;
     fib.take(20).foreach(n => {Console.println("fib("+i+") = "+n); i=i+1});
-    Console.println;
+    Console.println()
   }
 }
 
@@ -76,7 +76,7 @@ object M1 {
     Console.print(str(Pi) + ", ");
     Console.print(str(Pi) + ", ");
     Console.print(str(Pi) + "\n");
-    Console.println;
+    Console.println()
     i = 0;
     while (i < 10) {
       Console.print("ln("+i+") = ");
@@ -89,7 +89,7 @@ object M1 {
     Console.print(str(log(2)) + ", ");
     Console.print(str(log(2)) + ", ");
     Console.print(str(log(2)) + "\n");
-    Console.println;
+    Console.println()
   }
 }
 
@@ -107,7 +107,7 @@ object M2 {
     var current: Iterator[Int] = new IntIterator(2);
     def hasNext = true;
     def next = {
-      val p = current.next;
+      val p = current.next();
       current = current filter { x => !((x % p) == 0) };
       p
     }
@@ -116,8 +116,8 @@ object M2 {
   def test = {
     val i = (new PrimeIterator()).take(30);
     Console.print("prime numbers:");
-    while (i.hasNext) { Console.print(" " + i.next); }
-    Console.println;
+    while (i.hasNext) { Console.print(" " + i.next()); }
+    Console.println()
   }
 }
 

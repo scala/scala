@@ -3584,13 +3584,13 @@ object Test {
       if (!Help.check(count, value)) {
         Console.print(name + " failed: ");
         Help.print;
-        Console.println;
+        Console.println()
         errors = errors + 1;
       }
     } catch {
       case exception: Throwable => {
         Console.print(name + " raised exception " + exception);
-        Console.println;
+        Console.println()
         errors = errors + 1;
       }
     }
@@ -7115,7 +7115,7 @@ object Test {
     // */test("S_TZIfwFooXIfwBarYIf", new S_TZIfwFooXIfwBarYIf[D], 4, "mix");
 
     if (errors > 0) {
-      Console.println;
+      Console.println()
       Console.println(s"$errors error" + (if (errors > 1) "s" else ""));
     }
   }

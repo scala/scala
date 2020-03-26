@@ -18,13 +18,13 @@ class BaseG[T](val arr: Array[T]) extends SuperG[T] { }
 
 object Test {
   def main(args: Array[String]): Unit = {
-    (new BaseS(new Array[String](1)): SuperS[String]).foo
+    (new BaseS(new Array[String](1)): SuperS[String]).foo()
     println(arrayApplyCount)
     (new BaseS(new Array[String](1)): SuperS[String]).bar(new Array[String](1))
     println(arrayApplyCount)
     println(arrayUpdateCount)
 
-    (new BaseG(new Array[String](1)): SuperG[String]).foo
+    (new BaseG(new Array[String](1)): SuperG[String]).foo()
     println(arrayApplyCount)
     (new BaseG(new Array[String](1)): SuperG[String]).bar(new Array[String](1))
     println(arrayApplyCount)

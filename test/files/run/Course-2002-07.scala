@@ -58,7 +58,7 @@ object M0 {
       eval(new Sum(new Number(1),new Number(2))));
     Console.println("2 + 3 + 4 = " +
       eval(new Sum(new Sum(new Number(2),new Number(3)),new Number(4))));
-    Console.println;
+    Console.println()
   }
 
 }
@@ -86,7 +86,7 @@ object M1 {
       new Sum(new Number(1),new Number(2)).eval);
     Console.println("2 + 3 + 4 = " +
       new Sum(new Sum(new Number(2),new Number(3)),new Number(4)).eval);
-    Console.println;
+    Console.println()
   }
 }
 
@@ -110,7 +110,7 @@ object M2 {
     Console.println("    1 + 2 = " + eval(Sum(Number(1),Number(2))));
     Console.println("2 + 3 + 4 = " + eval(Sum(Sum(Number(2),Number(3)),
                                              Number(4))));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -134,7 +134,7 @@ object M3 {
     Console.println("    1 + 2 = " + Sum(Number(1),Number(2)).eval);
     Console.println("2 + 3 + 4 = " + Sum(Sum(Number(2),Number(3)),
                                              Number(4)).eval);
-    Console.println;
+    Console.println()
   }
 
 }
@@ -172,7 +172,7 @@ object M4 {
     test_concat(List(List[Int](),List(1),List(2,3,4,5,6))); // !!! [int]
     test_concat(List(List[Int](),List[Int](),List(1,2,3,4,5,6))); // !!! [int]
     test_concat(List(List(1,2),List(3,4),List(5,6)));
-    Console.println;
+    Console.println()
   }
 
 }
@@ -206,7 +206,7 @@ object M5 {
 
     test_zipFun(List(1,2,3),List('a','b','c'));
 
-    Console.println;
+    Console.println()
   }
 
 }
@@ -240,7 +240,7 @@ object M6 {
 
     test_zipFun(List(1,2,3),List('a','b','c'));
 
-    Console.println;
+    Console.println()
   }
 
 }
@@ -283,7 +283,7 @@ object M7 {
 
     test_heads(List(List(1,2),List(3,4),List(5,6)));
 
-    Console.println;
+    Console.println()
   }
 
 }
@@ -329,7 +329,7 @@ object M8 {
 
     test_heads(List(List(1,2),List(3,4),List(5,6)));
 
-    Console.println;
+    Console.println()
   }
 
 }
@@ -365,7 +365,7 @@ object M9 {
     val f1 = f0 derive x;
     Console.println("f (x) = " + f0);
     Console.println("f'(x) = " + f1);
-    Console.println;
+    Console.println()
   }
 
 }
@@ -440,7 +440,7 @@ object MA {
     Console.println("g (3) = " + evalvars(List(("x",3)))(g0));
     Console.println("g'(3) = " + evalvars(List(("x",3)))(g1));
 
-    Console.println;
+    Console.println()
   }
 
 }
@@ -651,7 +651,7 @@ object MB {
     Console.println("tf(x) = " + tf);
     Console.println("tg(x) = " + tg);
     Console.println("th(x) = " + th);
-    Console.println;
+    Console.println()
 
     val f4 = (x+ _3)*(_2+x)*x*(x+ _1) + (x+ _5)*(x*(x+ _2)+x+ _1) + (x^2) + x;
     val f3 = f4.derive(x);
@@ -664,7 +664,7 @@ object MB {
     Console.println("f2(x) = " + f2);
     Console.println("f1(x) = " + f1);
     Console.println("f0(x) = " + f0);
-    Console.println;
+    Console.println()
 
     def check(n: String, f: Expr, x: Int, e: Int): Unit = {
       val a: Int = f.evaluate(List(("x",x)));
@@ -677,25 +677,25 @@ object MB {
     check("f4", f4, 2, 203);
     check("f4", f4, 3, 524);
     check("f4", f4, 4, 1121);
-    Console.println;
+    Console.println()
 
     check("f3", f3, 0, 23);
     check("f3", f3, 1, 88);
     check("f3", f3, 2, 219);
     check("f3", f3, 3, 440);
-    Console.println;
+    Console.println()
 
     check("f2", f2, 0, 40);
     check("f2", f2, 1, 94);
     check("f2", f2, 2, 172);
-    Console.println;
+    Console.println()
 
     check("f1", f1, 0, 42);
     check("f1", f1, 1, 66);
-    Console.println;
+    Console.println()
 
     check("f0", f0, 0, 24);
-    Console.println;
+    Console.println()
   }
 }
 

@@ -23,7 +23,7 @@ object M0 {
   Console.println(x.denom);
   Console.println(makeString(x));
   Console.println(makeString(addRational(x,y)));
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -50,7 +50,7 @@ object M1 {
   Console.println(y);
   Console.println(z);
   Console.println(x.add(y).mul(z));
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -87,7 +87,7 @@ object M2 {
   Console.println(y);
   Console.println(z);
   Console.println(x.add(y).mul(z));
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -109,7 +109,7 @@ object M3 {
   Console.println(y);
   Console.println(x.max(y));
   Console.println(y.max(x));
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -142,7 +142,7 @@ object M4 {
   val x = new Rational(1, 2);
   val y = new Rational(1, 3);
   Console.println(x * x + y * y);
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -174,7 +174,7 @@ object M5 {
   Console.println(x contains 1);
   Console.println(x contains 2);
   Console.println(x contains 3);
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -301,27 +301,27 @@ object M8 {
     Console.println("set2 = " + set2);
     Console.println("set3 = " + (set3.toString()));
     Console.println("set4 = " + set4);
-    Console.println;
+    Console.println()
 
     Console.println("set2 contains the following elements:");
     set2.foreach(Console.println);
-    Console.println;
+    Console.println()
 
     Console.println("set3 contains the following elements:");
-    set3 foreach Console.println;
-    Console.println;
+    set3 foreach Console.println
+    Console.println()
 
     Console.println("set4 contains the following elements:");
     set4.print();
-    Console.println;
+    Console.println()
 
     Console.println("2 <- set2: " + (set2 contains 2));
     Console.println("3 <- set2: " + set2.contains(3));
-    Console.println;
+    Console.println()
 
     Console.println("setx     = " + setx);
     Console.println("setx * 2 = " + (setx.map(x => 2 * x)));
-    Console.println;
+    Console.println()
 
     Console.println("setx        = " + setx);
     Console.println("sety        = " + sety);
@@ -331,7 +331,7 @@ object M8 {
     Console.println("sety > 0    = " + (sety.filter(x => x > 0)));
     Console.println("setx & sety = " + (setx.intersect2(sety)));
     Console.println("sety & setx = " + (sety.intersect2(setx)));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -367,7 +367,7 @@ object M9 {
     Console.println(new Rational(2,2).asString);
     Console.println(new Rational(2,2).toString());
     Console.println(new Rational(2,2));
-    Console.println;
+    Console.println()
   }
 }
 

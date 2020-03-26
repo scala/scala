@@ -8,7 +8,7 @@ object Test {
          |it is split on several lines.
          |
          |isn't it?
-         |""".stripMargin).getLines.toList
+         |""".stripMargin).getLines().toList
     println("lines.size = " + lines.size)
     lines.foreach(println)
   }

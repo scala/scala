@@ -42,7 +42,7 @@ object Test {
     val r = new util.Random(10)
     val x = new Matrix[Double](n, m)
     for (i <- 0 until n; j <- 0 until m)
-      x(i, j) = (r.nextInt % 1000).toDouble
+      x(i, j) = (r.nextInt() % 1000).toDouble
     x
   }
 
@@ -50,7 +50,7 @@ object Test {
     for (i <- 0 until m.rows) {
       for (j <- 0 until m.cols)
         print("%5.3f ".format(m(i, j)))
-      println
+      println()
     }
   }
 

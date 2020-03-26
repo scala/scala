@@ -3,7 +3,7 @@ trait Bug1[@specialized(Boolean) A] extends IterableOnce[A] {
   def ++[B >: A](that: IterableOnce[B]): Iterator[B] = new Iterator[B] {
     lazy val it = that.iterator
     def hasNext = it.hasNext
-    def next = it.next
+    def next = it.next()
   }
 
 }

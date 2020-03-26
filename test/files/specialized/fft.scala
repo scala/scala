@@ -126,8 +126,8 @@ object Test  {
   def setUp(): Unit = {
     //print("Loading from %s.. ".format(inputFileName))
     def readData() = Using(io.Source.fromFile(inputFileName)) { f =>
-      val lines = f.getLines
-      val n = lines.next.toInt
+      val lines = f.getLines()
+      val n = lines.next().toInt
       val data = new Array[Complex](n)
       var i = 0
       for (line <- lines if line != "") {

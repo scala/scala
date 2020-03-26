@@ -15,7 +15,7 @@ object Test {
       for (i <- 0 until n)
         a += (label + i)
 
-      val res = a.result
+      val res = a.result()
       assertVector(res, label, 0, n)
     }
 

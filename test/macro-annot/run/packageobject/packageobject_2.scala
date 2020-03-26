@@ -25,6 +25,6 @@ object Test extends App {
 
   // @Test  def packageObjectItself: Unit =
   {
-    assertEquals(pkg2.hello, "hello")
+    assertEquals(pkg2.hello(), "hello")
   }
 }

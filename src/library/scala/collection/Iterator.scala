@@ -40,7 +40,7 @@ import scala.runtime.Statics
   * {{{
   * def f[A](it: Iterator[A]) = {
   *   if (it.hasNext) {            // Safe to reuse "it" after "hasNext"
-  *     it.next                    // Safe to reuse "it" after "next"
+  *     it.next()                  // Safe to reuse "it" after "next"
   *     val remainder = it.drop(2) // it is *not* safe to use "it" again after this line!
   *     remainder.take(2)          // it is *not* safe to use "remainder" after this line!
   *   } else it

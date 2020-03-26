@@ -15,7 +15,7 @@ object Test0Test {
       i = i + 1;
     }
     Console.print("]");
-    Console.println;
+    Console.println()
   }
 
   def test(args: Array[String]): Unit = {
@@ -51,7 +51,7 @@ package test1.bar {
 
   class PrintStream() {
     def println(): Unit = {
-      Console.println;
+      Console.println()
     }
   }
 
@@ -60,13 +60,13 @@ package test1.bar {
 object Test1Test {
 
   def test(args: Array[String]): Unit = {
-    {Console.print(10)}; Console.println;
+    {Console.print(10)}; Console.println();
     // {System.out.print(11); java}.lang.System.out.println();
     // {System.out.print(12); java.lang}.System.out.println();
     // {System.out.print(13); java.lang.System}.out.println();
-    {Console.print(14); Console}.println;
-    {Console.print(15); (() => Console.println):(() => Unit)}.apply();
-    {Console.print(16); Console.println};
+    {Console.print(14); Console}.println();
+    {Console.print(15); (() => Console.println()):(() => Unit)}.apply();
+    {Console.print(16); Console.println()};
 
     {Console.print(20)}; test1.bar.System.out.println();
     // {System.out.print(21); test1}.bar.System.out.println();
@@ -113,10 +113,10 @@ package test2 {
 
 object Test2Test {
   def test(args: Array[String]): Unit = {
-    test2.M0N0.run; Console.println;
-    test2.N0M0.run; Console.println;
-    test2.M1N0.run; Console.println;
-    test2.N1M0.run; Console.println;
+    test2.M0N0.run; Console.println()
+    test2.N0M0.run; Console.println()
+    test2.M1N0.run; Console.println()
+    test2.N1M0.run; Console.println()
   }
 }
 
@@ -174,12 +174,12 @@ object Test  {
       case exception: Throwable => {
         //val name: String = Thread.currentThread().getName();
         Console.print("Exception in thread \"" + name + "\" " + exception);
-        Console.println;
+        Console.println()
         errors = errors + 1;
       }
     }
     Console.println(">>> " + name);
-    Console.println;
+    Console.println()
   }
 
   def main(args: Array[String]): Unit = {
@@ -190,7 +190,7 @@ object Test  {
     test("Test3"  , Test3Test.test(args));
 
     if (errors > 0) {
-      Console.println;
+      Console.println()
       Console.println(s"$errors error" + (if (errors > 1) "s" else ""));
     }
   }

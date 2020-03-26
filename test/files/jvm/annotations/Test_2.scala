@@ -120,7 +120,7 @@ object Test4 {
       anns foreach printSourceAnnotation
       if (anns.length > 0) {
         println(target)
-        println
+        println()
       }
     }
     def printParamSourceAnnotations(target: { def getParameterAnnotations(): Array[Array[Annotation]] }): Unit = {
@@ -128,7 +128,7 @@ object Test4 {
       anns foreach printSourceAnnotation
       if (anns.length > 0) {
         println(target)
-        println
+        println()
       }
     }
     printSourceAnnotations(classOf[Foo1])

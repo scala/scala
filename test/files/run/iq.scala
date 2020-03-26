@@ -95,7 +95,7 @@ object iq {
      */
     Console.print("Elements: ");
     q6.iterator.foreach(e => Console.print(" "+ e + " "))
-    Console.println;
+    Console.println()
 
    /* Testing mkString
      *  Expected: String: <1-2-3-4-5-6-7-8-9>

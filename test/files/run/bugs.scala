@@ -426,11 +426,11 @@ object Test  {
     } catch {
       case exception: Throwable =>
         Console.print("Exception in thread \"" + Thread.currentThread + "\" " + exception);
-        Console.println;
+        Console.println();
         errors += 1
     }
     Console.println(">>> bug " + bug)
-    Console.println
+    Console.println()
   }
 
   def main(args: Array[String]): Unit = {
@@ -459,7 +459,7 @@ object Test  {
     test(399, Bug399Test.test(args));
 
     if (errors > 0) {
-      Console.println;
+      Console.println();
       Console.println(s"$errors error" + (if (errors > 1) "s" else ""));
     }
   }
