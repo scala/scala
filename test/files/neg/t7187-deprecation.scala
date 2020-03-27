@@ -28,11 +28,11 @@ class EtaExpand214 {
   val t5a: Int        = t5 // ok
   val t6a: Int => Any = t6 // ok
 
-  val t7 = m1 _
+  val t7 = m1 _ // error: eta-expanding a nullary method
   val t8 = m2 _
   val t9 = m3 _
 
-  val t7a: () => Any  = t7 // ok
+  val t7a: () => Any  = t7 // error: t7 is an error
   val t8a: () => Any  = t8 // ok
   val t9a: Int => Any = t9 // ok
 

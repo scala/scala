@@ -26,6 +26,12 @@ t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to th
 Write foo() to invoke method foo, or change the expected type.
   val t1b: () => Any = foo   // eta-expansion, but lint warning
                        ^
+t7187.scala:21: warning: Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, write a function literal `() => m` instead
+  val t2c: () => Any = bar _ // warning: eta-expanding a nullary method
+                       ^
+t7187.scala:22: warning: Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, write a function literal `() => m` instead
+  val t2d: Any       = bar _ // warning: eta-expanding a nullary method
+                       ^
 t7187.scala:26: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write baz() to invoke method baz, or change the expected type.
   val t3a: () => Any = baz   // eta-expansion, but lint warning
@@ -43,5 +49,5 @@ even though trait AcciSamOne is not annotated with `@FunctionalInterface`;
 to suppress warning, add the annotation or write out the equivalent function literal.
   val t5AcciSam: AcciSamOne = zup // ok, but warning
                               ^
-5 warnings
+7 warnings
 6 errors

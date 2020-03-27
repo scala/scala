@@ -4916,7 +4916,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val funSym = context.owner.newAnonymousFunctionValue(pos)
           new ChangeOwnerTraverser(context.owner, funSym) traverse methodValue
 
-          typed(Function(List(), methodValue) setSymbol funSym setPos pos, mode, pt)
+          val result = typed(Function(List(), methodValue) setSymbol funSym setPos pos, mode, pt)
+
+          if (currentRun.isScala3) {
+            UnderscoreNullaryEtaError(methodValue)
+          } else {
+            context.deprecationWarning(pos, NoSymbol, UnderscoreNullaryEtaWarnMsg, "2.13.2")
+            result
+          }
 
         case ErrorType =>
           methodValue

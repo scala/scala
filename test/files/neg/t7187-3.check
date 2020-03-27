@@ -3,6 +3,9 @@ t7187-3.scala:13: error: type mismatch;
  required: () => Any
   val t1: () => Any  = m1   // error
                        ^
+t7187-3.scala:27: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead
+  val t7 = m1 _ // error: eta-expanding a nullary method
+           ^
 t7187-3.scala:14: warning: An unapplied 0-arity method was eta-expanded (due to the expected type () => Any), rather than applied to `()`.
 Write m2() to invoke method m2, or change the expected type.
   val t2: () => Any  = m2   // eta-expanded with lint warning
@@ -21,4 +24,4 @@ Write m2() to invoke method m2, or change the expected type.
   val t2Sam: SamZero = m2   // eta-expanded with lint warning
                        ^
 4 warnings
-1 error
+2 errors

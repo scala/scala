@@ -8,7 +8,7 @@ def test[A](name: String, expect: A, actual: => A): Unit = {
 def testNoBraces = 1
 test("no braces", 1, testNoBraces)
 
-val testNoBracesR = testNoBraces _
+val testNoBracesR = () => testNoBraces
 test("no braces r", 1, testNoBracesR())
 
 def testPlain(x: String, y: String): String = x + y
