@@ -21,8 +21,8 @@ object TestRefinements extends Suite("TestRefinements") {
   }
 
   test(assert((new Refinements.Bar[String, Int].bar(new FooStringInt)) == ("I am foo", 23)))
-  test(assert((new Refinements.Baz[String, Int, FooStringInt].baz(new FooStringInt): (String, Int)) === ("I am foo", 23)))
-  test(assert((new Refinements.Qux[String, Int, FooString with FooInt].qux( new FooString with FooInt ): (String, Int)) === ("I am foo", 23)))
+  test(assert((new Refinements.Baz[String, Int, FooStringInt].baz(new FooStringInt)) == ("I am foo", 23)))
+  test(assert((new Refinements.Qux[String, Int, FooString with FooInt].qux( new FooString with FooInt )) == ("I am foo", 23)))
   test(assert((new Refinements.Zot[String, Int].zot( new FooString with FooInt )) == ("I am foo", 23)))
 
   class MethodicInt extends Refinements.Methodic {
@@ -83,6 +83,11 @@ object TestRefinements extends Suite("TestRefinements") {
     def output: Int = 23
   }
 
+  class TString {
+    type T = String
+    val t: T = "I am TString"
+  }
+
   test(assert(new Refinements.Structural1[OutputterInt1].get(new OutputterInt1) === 23))
   test(assert(new Refinements.Structural2[OutputterInt2].get(new OutputterInt2) === 23))
   test(assert(new Refinements.Structural3[EncoderInt].encodeWith(new EncoderInt, 23) === "23"))
@@ -93,6 +98,8 @@ object TestRefinements extends Suite("TestRefinements") {
   test(assert(new Refinements.StructuralFlip4().get(new OutputterInt1) === 23))
   test(assert(new Refinements.StructuralFlip5().get(new OutputterInt2) === 23))
   test(assert(new Refinements.StructuralFlip6().encodeWith(new EncoderInt, 23) === "23"))
+  test(assert(new Refinements.StructuralTypeAliasFlip().get(new TString) === "I am TString"))
+  test(assert(new Refinements.StructuralTypeBoundsFlip().get(new TString) === "I am TString"))
 
   class EncoderIntSel extends Selectable {
 

@@ -170,33 +170,19 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
-  object ByNameType {
-    def unapply(ref: TypeRef): Option[Type] = {
-      if (ref.sym == defn.ByNameParamClass && ref.args.length == 1) Some(ref.args.head)
-      else None
-    }
-  }
-
-  object MethodRefinement {
-    def normalise(tpe: Type): Type = tpe match {
-      case ByNameType(arg) => mkNullaryMethodType(arg)
-      case poly: PolyType  => mkPolyType(poly.typeParams, mkNullaryMethodType(poly.resultType))
-      case _               => mkNullaryMethodType(tpe)
-    }
-  }
-
   object NamedType {
     def apply(prefix: Type, designator: Symbol)(implicit ctx: Context): Type = {
       if (designator.isType) {
         prefix match {
-          case _: SingleType => designator.termRef(prefix)
-          case _             => designator.ref
+          case tp: ThisType if tp.sym.isRefinementClass => designator.preciseRef(prefix)
+          case _:SingleType | _:RefinedType             => designator.preciseRef(prefix)
+          case _                                        => designator.ref
         }
       }
       else if (designator.is(JavaStatic)) {
         // With this second constraint, we avoid making singleton types for
         // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-        designator.termRef(prefix)
+        designator.preciseRef(prefix)
       }
       else {
         mkSingleType(prefix, designator)
@@ -355,7 +341,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override val productPrefix = "RecType"
     override val productArity = 2
 
-    val refinementClass = ctx.newRefinedClassSymbol(noPosition)
+    val refinementClass = ctx.newRefinedClassSymbol(noPosition).setInfo(EmptyRecTypeInfo)
     val recThis: Type   = mkThisType(refinementClass)
     val parent: Type    = run(this)
 
@@ -369,6 +355,10 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def safeToString: String = s"RecType(rt @ $hashCode => ${if (parent == null) "<under-construction>" else parent})"
 
+  }
+
+  case object EmptyRecTypeInfo extends Type {
+    override def isTrivial: Boolean = true
   }
 
   object MethodType extends MethodTypeCompanion(emptyFlags)
