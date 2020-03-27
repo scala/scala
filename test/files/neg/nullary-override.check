@@ -1,6 +1,9 @@
+nullary-override.scala:15: warning: nullary method assumes an empty parameter list from the overridden definition
+class Q extends P { override def x: Int = 4 }
+                                 ^
 nullary-override.scala:4: warning: non-nullary method overrides nullary method
 class B extends A { override def x(): Int = 4 }
                                  ^
 error: No warnings can be incurred under -Werror.
-1 warning
+2 warnings
 1 error
