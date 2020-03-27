@@ -899,7 +899,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         val arity = mt.params.length
 
-        val sourceLevel2_14 = currentRun.isScala214
+        val sourceLevel3 = currentRun.isScala3
 
         def warnTree = original orElse tree
 
@@ -927,7 +927,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // until 2.13:
         //   - for arity > 0: function or sam type is expected
         //   - for arity == 0: Function0 is expected -- SAM types do not eta-expand because it could be an accidental SAM scala/bug#9489
-        // 2.14:
+        // 3.0:
         //   - for arity > 0: unconditional
         //   - for arity == 0: a function-ish type of arity 0 is expected (including SAM)
         //
@@ -935,7 +935,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //   - 2.12: eta-expansion of zero-arg methods was deprecated (scala/bug#7187)
         //   - 2.13: deprecation dropped in favor of setting the scene for uniform eta-expansion in 3.0
         //           (arity > 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
-        //   - 2.14: (arity == 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
+        //   - 3.0: (arity == 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
         def checkCanEtaExpand(): Boolean = {
           def expectingSamOfArity = {
             val sam = samOf(ptUnderlying)
@@ -950,7 +950,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val doIt =
             if (arity == 0) {
               val doEtaZero =
-                expectingFunctionOfArity || sourceLevel2_14 && expectingSamOfArity
+                expectingFunctionOfArity || sourceLevel3 && expectingSamOfArity
 
               if (doEtaZero && settings.warnEtaZero) {
                 val ptHelp =
@@ -963,7 +963,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   WarningCategory.LintEtaZero)
               }
               doEtaZero
-            } else sourceLevel2_14 || expectingFunctionOfArity || expectingSamOfArity
+            } else sourceLevel3 || expectingFunctionOfArity || expectingSamOfArity
 
           if (doIt && !expectingFunctionOfArity && settings.warnEtaSam) warnEtaSam()
 
@@ -979,7 +979,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         // (4.2) condition for auto-application by -Xsource level
         //
-        // until 2.14: none (assuming condition for (4.3) was not met)
+        // until 3.0: none (assuming condition for (4.3) was not met)
         // in 3.0: `meth.isJavaDefined`
         //         (TODO decide -- currently the condition is more involved to give slack to Scala methods overriding Java-defined ones;
         //          I think we should resolve that by introducing slack in overriding e.g. a Java-defined `def toString()` by a Scala-defined `def toString`.
@@ -988,10 +988,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //          > val vparamSymssOrEmptyParamsFromOverride =
         //          This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
-          if (sourceLevel2_14 && !isPastTyper && !matchNullaryLoosely) {
+          if (sourceLevel3 && !isPastTyper && !matchNullaryLoosely) {
             context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
                                                            s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
-                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.14.0")
+                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "3.0.0")
           }
           true
         }

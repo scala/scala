@@ -24,7 +24,7 @@ package scala.concurrent
  *  @param  f      the function to obtain the current value at any point in time
  *  @param  body   the computation to run to completion in another thread
  */
-@deprecated("`DelayedLazyVal` Will be removed in Scala 2.14.0 release.", since = "2.13.0")
+@deprecated("`DelayedLazyVal` Will be removed in the future.", since = "2.13.0")
 class DelayedLazyVal[T](f: () => T, body: => Unit)(implicit exec: ExecutionContext){
   @volatile private[this] var _isDone = false
   private[this] lazy val complete = f()

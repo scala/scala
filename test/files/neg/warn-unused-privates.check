@@ -1,4 +1,4 @@
-warn-unused-privates.scala:31: warning: early initializers are deprecated; they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits.
+warn-unused-privates.scala:31: warning: early initializers are deprecated; they will be replaced by trait parameters in 3.0, see the migration guide on avoiding var/val in traits.
 class Boppy extends {
                     ^
 warn-unused-privates.scala:5: warning: private constructor in class Bippy is never used

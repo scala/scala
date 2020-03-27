@@ -1,6 +1,7 @@
+warning: -Xsource is deprecated: instead of -Xsource:2.14, use -Xsource:3
 warning: -Xfuture is deprecated: Not used since 2.13.
 warning: -optimize is deprecated: Since 2.12, enables -opt:l:inline -opt-inline-from:**. See -opt:help.
 warning: -Xexperimental is deprecated: Not used since 2.13.
 error: No warnings can be incurred under -Werror.
-3 warnings
+4 warnings
 1 error

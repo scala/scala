@@ -1,4 +1,4 @@
-// scalac: -Xsource:2.14
+// scalac: -Xsource:3
 
 object Literals214 {
   def inTripleQuoted = """\u000A"""

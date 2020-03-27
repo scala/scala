@@ -35,7 +35,7 @@ class EtaExpandZeroArg {
   val t4d: () => Any = zap() _ // ok
 
   def zup(x: Int) = x
-  val t5a = zup // error in 2.13, eta-expansion in 2.14
+  val t5a = zup // error in 2.13, eta-expansion in 3.0
   val t5Fun: Int => Int = zup // ok
   val t5AcciSam: AcciSamOne = zup // ok, but warning
   val t5Sam: SamOne = zup // ok

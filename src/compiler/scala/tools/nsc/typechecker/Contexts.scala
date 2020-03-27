@@ -1049,9 +1049,9 @@ trait Contexts { self: Analyzer =>
       sym.isImplicit &&
       isAccessible(sym, pre) &&
       !(
-        // [eed3si9n] ideally I'd like to do this: val fd = currentRun.isScala214 && sym.isDeprecated
+        // [eed3si9n] ideally I'd like to do this: val fd = currentRun.isScala3 && sym.isDeprecated
         // but implicit caching currently does not report sym.isDeprecated correctly.
-        currentRun.isScala214 && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
+        currentRun.isScala3 && (sym == currentRun.runDefinitions.Predef_any2stringaddMethod)
       ) &&
       !(imported && {
         val e = scope.lookupEntry(name)

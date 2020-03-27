@@ -1,4 +1,4 @@
-// scalac: -Werror -Xsource:2.14
+// scalac: -Werror -Xsource:3
 
 class Channel {
   def ! (msg: String): Channel = this

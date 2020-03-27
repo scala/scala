@@ -1313,7 +1313,7 @@ self =>
       else if (in.token == SYMBOLLIT) {
         def msg(what: String) =
           s"""symbol literal is $what; use Symbol("${in.strVal}") instead"""
-        if (settings.isScala214) syntaxError(in.offset, msg("unsupported"))
+        if (settings.isScala3) syntaxError(in.offset, msg("unsupported"))
         else deprecationWarning(in.offset, msg("deprecated"), "2.13.0")
         Apply(scalaDot(nme.Symbol), List(finish(in.strVal)))
       }
@@ -1907,7 +1907,7 @@ self =>
         def msg(what: String, instead: String): String = s"`val` keyword in for comprehension is $what: $instead"
         if (hasEq) {
           val without = "instead, bind the value without `val`"
-          if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported", without))
+          if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", without))
           else deprecationWarning(in.offset, msg("deprecated", without), "2.10.0")
         }
         else syntaxError(in.offset, msg("unsupported", "just remove `val`"))
@@ -2462,7 +2462,7 @@ self =>
           def msg(what: String) = s"""view bounds are $what; use an implicit parameter instead.
                                      |  example: instead of `def f[A <% Int](a: A)` use `def f[A](a: A)(implicit ev: A => Int)`""".stripMargin
           while (in.token == VIEWBOUND) {
-            if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported"))
+            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported"))
             else deprecationWarning(in.offset, msg("deprecated"), "2.12.0")
             contextBoundBuf += atPos(in.skipToken())(makeFunctionTypeTree(List(Ident(pname)), typ()))
           }
@@ -2744,8 +2744,8 @@ self =>
           val vparamss = paramClauses(nme.CONSTRUCTOR, classContextBounds map (_.duplicate), ofCaseClass = false)
           newLineOptWhenFollowedBy(LBRACE)
           val rhs = in.token match {
-            case LBRACE if !currentRun.isScala214 => missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
-            case _                                => accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
+            case LBRACE if !currentRun.isScala3 => missingEquals(); atPos(in.offset) { constrBlock(vparamss) }
+            case _                              => accept(EQUALS) ; atPos(in.offset) { constrExpr(vparamss) }
           }
           DefDef(mods, nme.CONSTRUCTOR, List(), vparamss, TypeTree(), rhs)
         }
@@ -2773,14 +2773,14 @@ self =>
         val rhs =
           if (isStatSep || in.token == RBRACE) {
             if (restype.isEmpty) {
-              if (currentRun.isScala214) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
+              if (currentRun.isScala3) syntaxError(in.lastOffset, msg("unsupported", ": Unit"))
               else deprecationWarning(in.lastOffset, msg("deprecated", ": Unit"), "2.13.0")
               restype = scalaUnitConstr
             }
             newmods |= Flags.DEFERRED
             EmptyTree
           } else if (restype.isEmpty && in.token == LBRACE) {
-            if (currentRun.isScala214) syntaxError(in.offset, msg("unsupported", ": Unit ="))
+            if (currentRun.isScala3) syntaxError(in.offset, msg("unsupported", ": Unit ="))
             else deprecationWarning(in.offset, msg("deprecated", ": Unit ="), "2.13.0")
             restype = scalaUnitConstr
             blockExpr()
@@ -2922,7 +2922,7 @@ self =>
           classContextBounds = contextBoundBuf.toList
           val tstart = (in.offset :: classContextBounds.map(_.pos.start)).min
           if (!classContextBounds.isEmpty && mods.isTrait) {
-            val viewBoundsExist = if (currentRun.isScala214) "" else " nor view bounds `<% ...`"
+            val viewBoundsExist = if (currentRun.isScala3) "" else " nor view bounds `<% ...`"
               syntaxError(s"traits cannot have type parameters with context bounds `: ...`$viewBoundsExist", skipIt = false)
             classContextBounds = List()
           }
@@ -3016,8 +3016,8 @@ self =>
         val (self, body) = templateBody(isPre = true)
         if (in.token == WITH && (self eq noSelfType)) {
           val advice =
-            if (currentRun.isScala214) "use trait parameters instead."
-            else "they will be replaced by trait parameters in 2.14, see the migration guide on avoiding var/val in traits."
+            if (currentRun.isScala3) "use trait parameters instead."
+            else "they will be replaced by trait parameters in 3.0, see the migration guide on avoiding var/val in traits."
           deprecationWarning(braceOffset, s"early initializers are deprecated; $advice", "2.13.0")
           val earlyDefs: List[Tree] = body.map(ensureEarlyDef).filter(_.nonEmpty)
           in.nextToken()
@@ -3039,7 +3039,7 @@ self =>
         copyValDef(vdef)(mods = mods | Flags.PRESUPER)
       case tdef @ TypeDef(mods, name, tparams, rhs) =>
         def msg(what: String): String = s"early type members are $what: move them to the regular body; the semantics are the same"
-        if (currentRun.isScala214) syntaxError(tdef.pos.point, msg("unsupported"))
+        if (currentRun.isScala3) syntaxError(tdef.pos.point, msg("unsupported"))
         else deprecationWarning(tdef.pos.point, msg("deprecated"), "2.11.0")
         treeCopy.TypeDef(tdef, mods | Flags.PRESUPER, name, tparams, rhs)
       case docdef @ DocDef(comm, rhs) =>
@@ -3082,9 +3082,9 @@ self =>
       val tstart1 = if (body.isEmpty && in.lastOffset < tstart) in.lastOffset else tstart
 
       // we can't easily check this later, because `gen.mkParents` adds the default AnyRef parent, and we need to warn based on what the user wrote
-      if (name == nme.PACKAGEkw && parents.nonEmpty && settings.isScala214)
+      if (name == nme.PACKAGEkw && parents.nonEmpty && settings.isScala3)
         deprecationWarning(tstart, s"package object inheritance is deprecated (https://github.com/scala/scala-dev/issues/441);\n" +
-                                   s"drop the `extends` clause or use a regular object instead", "2.14.0")
+                                   s"drop the `extends` clause or use a regular object instead", "3.0.0")
 
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.

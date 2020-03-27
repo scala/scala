@@ -13,7 +13,7 @@
 package scala
 package compat
 
-@deprecated("Will be removed in Scala 2.14.0.", since = "2.13.0")
+@deprecated("Will be removed in the future.", since = "2.13.0")
 object Platform {
 
   /** Thrown when a stack overflow occurs because a method or function recurses too deeply.

@@ -46,7 +46,7 @@ import scala.annotation.meta._
  *  be preserved at least for the current major version.
  *
  *  This means that an element deprecated in some 2.13.x release will be preserved in
- *  all 2.13.x releases, but may be removed in 2.14. (A deprecated element
+ *  all 2.13.x releases, but may be removed in the future. (A deprecated element
  *  might be kept longer to ease migration, but developers should not rely on this.)
  *
  *  @see    The official documentation on [[http://www.scala-lang.org/news/2.11.0/#binary-compatibility binary compatibility]].
@@ -57,5 +57,5 @@ import scala.annotation.meta._
  *  @see    [[scala.deprecatedName]]
  */
 @getter @setter @beanGetter @beanSetter @field
-@deprecatedInheritance("Scheduled for being final in 2.14", "2.13.0")
+@deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class deprecated(message: String = "", since: String = "") extends scala.annotation.StaticAnnotation
