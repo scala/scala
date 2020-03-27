@@ -43,6 +43,7 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   }
   private val matchRes: TermNameCache = new TermNameCache("match")
   private val ifRes: TermNameCache = new TermNameCache("if")
+  private val qual: TermNameCache = new TermNameCache("qual")
   private val await: TermNameCache = new TermNameCache("await")
 
 
@@ -54,6 +55,7 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   class AsyncName {
     final val matchRes = new NameSource[U#TermName](self.matchRes)
     final val ifRes = new NameSource[U#TermName](self.ifRes)
+    final val qual = new NameSource[U#TermName](self.qual)
     final val await = new NameSource[U#TermName](self.await)
 
     private val seenPrefixes = mutable.AnyRefMap[Name, AtomicInteger]()

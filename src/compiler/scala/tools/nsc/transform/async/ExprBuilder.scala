@@ -113,7 +113,14 @@ trait ExprBuilder extends TransformUtils {
           // An exception should bubble out to the enclosing handler, don't insert a complete call.
         } else {
           val expr = stats.remove(stats.size - 1)
-          stats += completeSuccess(expr)
+          def pushIntoMatchEnd(t: Tree): Tree = {
+            t match {
+              case MatchEnd(ld) => treeCopy.LabelDef(ld, ld.name, ld.params, pushIntoMatchEnd(ld.rhs))
+              case b@Block(caseStats, caseExpr) => assignUnitType(treeCopy.Block(b, caseStats, pushIntoMatchEnd(caseExpr)))
+              case expr => completeSuccess(expr)
+            }
+          }
+          stats += pushIntoMatchEnd(expr)
         }
         stats += typed(Return(literalUnit).setSymbol(currentTransformState.applySym))
         allNextStates -= nextState
@@ -243,7 +250,7 @@ trait ExprBuilder extends TransformUtils {
           }
 
         case ld @ LabelDef(name, params, rhs) =>
-          if (isCaseLabel(ld.symbol) || isMatchEndLabel(ld.symbol)) {
+          if (isCaseLabel(ld.symbol) || (isMatchEndLabel(ld.symbol) && labelDefStates.contains(ld.symbol))) {
             // LabelDefs from patterns are a bit trickier as they can (forward) branch to each other.
 
             labelDefStates.get(ld.symbol).foreach { startLabelState =>
@@ -259,7 +266,7 @@ trait ExprBuilder extends TransformUtils {
             }
 
             val afterLabelState = afterState()
-            val (inlinedState, nestedStates) = buildNestedStatesFirstForInlining(rhs,  afterLabelState)
+            val (inlinedState, nestedStates) = buildNestedStatesFirstForInlining(rhs, afterLabelState)
 
             // Leave this label here for synchronous jumps from previous cases. This is
             // allowed even if this case has its own state (ie if there is an asynchrounous path
@@ -288,7 +295,6 @@ trait ExprBuilder extends TransformUtils {
             checkForUnsupportedAwait(stat)
             stateBuilder += stat
           }
-
         case _ =>
           checkForUnsupportedAwait(stat)
           stateBuilder += stat

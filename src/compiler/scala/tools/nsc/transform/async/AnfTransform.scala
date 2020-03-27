@@ -164,6 +164,8 @@ private[async] trait AnfTransform extends TransformUtils {
 
         case ld @ LabelDef(name, params, rhs) =>
           treeCopy.LabelDef(tree, name, params, transformNewControlFlowBlock(rhs))
+        case t @ Typed(expr, tpt) =>
+          transform(expr).setType(t.tpe)
         case _ =>
           super.transform(tree)
       }

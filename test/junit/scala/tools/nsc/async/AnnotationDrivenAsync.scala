@@ -35,6 +35,43 @@ class AnnotationDrivenAsync {
   }
 
   @Test
+  def patternTailPosition(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test = async {
+        |     {
+        |       await(f(1))
+        |       "foo" match {
+        |         case x if "".isEmpty => x
+        |       }
+        |     }: AnyRef
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals("foo", run(code))
+  }
+
+  @Test
+  def awaitTyped(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test = async {(("msg: " + await(f(0))): String).toString}
+        |}
+        |""".stripMargin
+    assertEquals("msg: 0", run(code))
+  }
+
+  @Test
   def testBooleanAndOr(): Unit = {
     val code =
       """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
@@ -646,8 +683,8 @@ class AnnotationDrivenAsync {
 
       // settings.debug.value = true
       // settings.uniqid.value = true
-      // settings.processArgumentString("-Xprint:async -nowarn")
-      // settings.log.value = List("async")
+      settings.processArgumentString("-Xprint:async -nowarn")
+      settings.log.value = List("async")
 
       // NOTE: edit ANFTransform.traceAsync to `= true` to get additional diagnostic tracing.
 
