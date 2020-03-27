@@ -356,6 +356,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
                     && !sym.owner.isTrait
                     && sym.owner.enclosingPackageClass != currentClass.enclosingPackageClass
                     && qual.symbol.info.member(sym.name).exists
+                    && !(currentClass.typeOfThis.typeSymbol.isSubClass(sym.owner)) // scala/bug#11924
                     && !needsProtectedAccessor(sym, tree.pos)
                   )
                   if (shouldEnsureAccessor) {
