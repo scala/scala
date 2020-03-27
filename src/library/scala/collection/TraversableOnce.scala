@@ -351,9 +351,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toMap[T, U](implicit ev: A <:< (T, U)): immutable.Map[T, U] = {
     val b = immutable.Map.newBuilder[T, U]
-    for (x <- self)
-      b += x
-
+    b ++= seq.asInstanceOf[TraversableOnce[(T, U)]]
     b.result()
   }
 
