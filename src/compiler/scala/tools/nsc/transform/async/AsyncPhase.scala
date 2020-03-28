@@ -122,7 +122,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
             val trSym = dd.vparamss.head.head.symbol
             val saved = currentTransformState
             currentTransformState = new AsyncTransformState(asyncAttachment.awaitSymbol,
-              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, trSym, asyncBody.tpe)
+              asyncAttachment.postAnfTransform, asyncAttachment.stateDiagram, this, trSym, asyncBody.tpe, asyncNames)
             try {
               val (newRhs, liftableFields) = asyncTransform(asyncBody)
               liftableMap(dd.symbol.owner) = (dd.symbol, liftableFields)

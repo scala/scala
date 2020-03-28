@@ -22,9 +22,6 @@ private[async] trait TransformUtils extends AsyncTransformStates {
   import global._
 
   private[async] val asyncNames: AsyncNames[global.type]
-  object name extends asyncNames.AsyncName {
-    def fresh(name: TermName): TermName = freshenIfNeeded(name)
-  }
 
   def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
   def typed(tree: Tree): Tree = typedPos(currentTransformState.applySym.pos)(tree)

@@ -26,10 +26,14 @@ trait AsyncTransformStates extends TypingTransformers {
                             val dotDiagram: (Symbol, Tree) => Option[String => Unit],
                             val typingTransformer: TypingTransformer,
                             val applyTrParam: Symbol,
-                            val asyncType: Type) {
+                            val asyncType: Type,
+                            val asyncNames: AsyncNames[global.type]) {
     val localTyper: analyzer.Typer = typingTransformer.localTyper
     val stateAssigner = new StateAssigner
     val labelDefStates = collection.mutable.Map[Symbol, Int]()
+    object name extends asyncNames.AsyncName {
+      def fresh(name: TermName): TermName = freshenIfNeeded(name)
+    }
 
     lazy val Async_await: Symbol = awaitSymbol
 

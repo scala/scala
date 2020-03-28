@@ -45,6 +45,7 @@ private[async] trait AnfTransform extends TransformUtils {
     // `qual` before the `args` of a `Apply`). This is the default transform behaviour and the
     // conventional way to write transforms in any case.
     private var currentStats = ListBuffer[Tree]()
+    private val transformState = AnfTransform.this.currentTransformState
 
     override def transform(tree: Tree): Tree = trace(tree) {
       curTree = tree
@@ -76,7 +77,7 @@ private[async] trait AnfTransform extends TransformUtils {
                     currentStats += expr1
                     literalBoxedUnit
                   } else {
-                    val valDef = defineVal(name.freshen(argName), expr1, expr1.pos)
+                    val valDef = defineVal(transformState.name.freshen(argName), expr1, expr1.pos)
                     currentStats += valDef
                     gen.mkAttributedIdent(valDef.symbol)
                   }
@@ -88,7 +89,7 @@ private[async] trait AnfTransform extends TransformUtils {
           val simpleApply = treeCopy.Apply(tree, simpleFun, argExprss)
           simpleApply.attachments.remove[ContainsAwait.type]
           if (isAwait(fun)) {
-            val valDef = defineVal(name.await(), treeCopy.Apply(tree, fun, argExprss), tree.pos)
+            val valDef = defineVal(transformState.name.await(), treeCopy.Apply(tree, fun, argExprss), tree.pos)
             val ref = gen.mkAttributedStableRef(valDef.symbol).setType(tree.tpe)
             currentStats += valDef
             atPos(tree.pos)(ref)
@@ -144,7 +145,7 @@ private[async] trait AnfTransform extends TransformUtils {
 
         case If(cond, thenp, elsep) =>
           val needsResultVar = (containsAwait(thenp) || containsAwait(elsep))
-          transformMatchOrIf(tree, needsResultVar, name.ifRes) { varSym =>
+          transformMatchOrIf(tree, needsResultVar, transformState.name.ifRes) { varSym =>
             val condExpr = transform(cond)
             val thenBlock = transformNewControlFlowBlock(thenp)
             val elseBlock = transformNewControlFlowBlock(elsep)
@@ -153,7 +154,7 @@ private[async] trait AnfTransform extends TransformUtils {
 
         case Match(scrut, cases) =>
           val needResultVar = cases.exists(containsAwait)
-          transformMatchOrIf(tree, needResultVar, name.matchRes) { varSym =>
+          transformMatchOrIf(tree, needResultVar, transformState.name.matchRes) { varSym =>
             val scrutExpr = transform(scrut)
             val casesWithAssign = cases map {
               case cd@CaseDef(pat, guard, body) =>
@@ -180,7 +181,7 @@ private[async] trait AnfTransform extends TransformUtils {
       }
     }
 
-    private def transformMatchOrIf[T <: Tree](tree: Tree, needsResultVar: Boolean, nameSource: asyncNames.NameSource[TermName])(core: Symbol => T): Tree = {
+    private def transformMatchOrIf[T <: Tree](tree: Tree, needsResultVar: Boolean, nameSource: transformState.asyncNames.NameSource[TermName])(core: Symbol => T): Tree = {
       if (isPatMatGeneratedJump(tree)) assignUnitType(tree)
 
       if (!needsResultVar || isUnitType(tree.tpe) || (tree.tpe =:= definitions.NothingTpe)) {
@@ -283,7 +284,7 @@ private[async] trait AnfTransform extends TransformUtils {
           // Otherwise, create the matchres var. We'll callers of the label def below.
           // Remember: we're iterating through the statement sequence in reverse, so we'll get
           // to the LabelDef and mutate `matchResults` before we'll get to its callers.
-          val matchResult = defineVar(name.matchRes(), param.tpe, ld.pos)
+          val matchResult = defineVar(transformState.name.matchRes(), param.tpe, ld.pos)
           matchResults += matchResult
           caseDefToMatchResult(ld.symbol) = matchResult.symbol
           (unitLabelDef, ld.rhs.substituteSymbols(param.symbol :: Nil, matchResult.symbol :: Nil))

@@ -152,12 +152,12 @@ trait Lifter extends ExprBuilder {
             val isLazy = sym.isLazy
             sym.setFlag(STABLE | PRIVATE | LOCAL)
             if (isLazy) sym.resetFlag(LAZY) else sym.setFlag(MUTABLE)
-            sym.setName(name.fresh(sym.name.toTermName))
+            sym.setName(currentTransformState.name.fresh(sym.name.toTermName))
             sym.setInfo(sym.info.deconst)
             val rhs1 = if (isLazy) rhs else EmptyTree
             treeCopy.ValDef(vd, Modifiers(sym.flags), sym.name, TypeTree(sym.info).setPos(t.pos), rhs1)
           case dd@DefDef(_, _, tparams, vparamss, tpt, rhs) =>
-            sym.setName(this.name.freshen(sym.name.toTermName))
+            sym.setName(currentTransformState.name.freshen(sym.name.toTermName))
             sym.setFlag(PRIVATE | LOCAL)
             // Was `DefDef(sym, rhs)`, but this ran afoul of `ToughTypeSpec.nestedMethodWithInconsistencyTreeAndInfoParamSymbols`
             // due to the handling of type parameter skolems in `thisMethodType` in `Namers`
@@ -165,7 +165,7 @@ trait Lifter extends ExprBuilder {
           case cd@ClassDef(_, _, tparams, impl)             =>
             val companion = companionship.companionOf(cd.symbol)
             if (!cd.symbol.isModuleClass) {
-              sym.setName(name.freshen(sym.name.toTypeName))
+              sym.setName(currentTransformState.name.freshen(sym.name.toTypeName))
               companion match {
                 case NoSymbol =>
                 case moduleClassSymbol =>
@@ -176,7 +176,7 @@ trait Lifter extends ExprBuilder {
             } else {
               companion match {
                 case NoSymbol    =>
-                  sym.setName(name.freshen(sym.name.toTypeName))
+                  sym.setName(currentTransformState.name.freshen(sym.name.toTypeName))
                   sym.setName(sym.name.toTypeName)
                 case classSymbol => // will be renamed by above.
               }
