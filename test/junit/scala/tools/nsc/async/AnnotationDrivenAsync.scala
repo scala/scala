@@ -2,6 +2,7 @@ package scala.tools.nsc
 package async
 
 import java.io.File
+import java.lang.reflect.InvocationTargetException
 import java.nio.file.{Files, Paths}
 import java.util.concurrent.CompletableFuture
 
@@ -12,6 +13,7 @@ import scala.annotation.StaticAnnotation
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
+import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.transform.TypingTransformers
@@ -54,6 +56,42 @@ class AnnotationDrivenAsync {
         |}
         |""".stripMargin
     assertEquals("foo", run(code))
+  }
+
+  @Test
+  def patternTailPositionMatchEndCast(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |trait A1
+        |trait B1
+        |trait B2
+        |trait Z1
+        |class C1 extends B1 with A1 with Z1
+        |class C2 extends A1 with B2 with Z1
+        |class C2A extends C2
+        |class C2B extends C2
+        |object Test {
+        |  def test = async[Z1] {
+        |    val result = if ("foo".isEmpty) {
+        |      await(f(1))
+        |      null : Z1
+        |    } else {
+        |      (0: Any) match {
+        |        case 0 =>
+        |          await(f(1))
+        |          null: C2 with Z1
+        |        case _ =>
+        |          null: C1 with Z1
+        |      }
+        |    }
+        |    result
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals(null, run(code))
   }
 
   @Test
@@ -683,8 +721,8 @@ class AnnotationDrivenAsync {
 
       // settings.debug.value = true
       // settings.uniqid.value = true
-      settings.processArgumentString("-Xprint:async -nowarn")
-      settings.log.value = List("async")
+      // settings.processArgumentString("-Xprint:typer,posterasure,async -nowarn")
+      // settings.log.value = List("async")
 
       // NOTE: edit ANFTransform.traceAsync to `= true` to get additional diagnostic tracing.
 
@@ -712,6 +750,7 @@ class AnnotationDrivenAsync {
       val result = try {
         cls.getMethod("test").invoke(null)
       } catch {
+        case ite: InvocationTargetException => throw ite.getCause
         case _: NoSuchMethodException =>
           cls.getMethod("main", classOf[Array[String]]).invoke(null, null)
       }
@@ -724,6 +763,15 @@ class AnnotationDrivenAsync {
           cf.get()
         case value => value
       }
+    } catch {
+      case ve: VerifyError =>
+        val asm = out.listFiles().filter(_.getName.contains("stateMachine")).flatMap { file =>
+          import scala.sys.process._
+          val javap = List("/usr/local/bin/javap", "-v", file.getAbsolutePath).!!
+          val asmp = AsmUtils.textify(AsmUtils.readClass(file.getAbsolutePath))
+          javap :: asmp :: Nil
+        }.mkString("\n\n")
+        throw new AssertionError(asm, ve)
     } finally {
       scala.reflect.io.Path.apply(out).deleteRecursively()
     }

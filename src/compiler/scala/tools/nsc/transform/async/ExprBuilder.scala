@@ -611,7 +611,7 @@ trait ExprBuilder extends TransformUtils {
     case _ => tree :: Nil
   }
 
-  private def addLabelState(label: Symbol): Int =
+  def addLabelState(label: Symbol): Int =
     labelDefStates.getOrElseUpdate(label, StateAssigner.stateIdForLabel(label))
 
   // Replace jumps to qualifying labels as a state transition.
