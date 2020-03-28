@@ -17,14 +17,14 @@ which are collectively called _bindings_.
 Bindings of different kinds have a precedence defined on them:
 
 1. Definitions and declarations that are local, inherited, or made
-   available by a package clause and also defined in the same compilation unit
+   available by a package clause, and also defined in the same compilation unit
    as the reference to them, have highest precedence.
 1. Explicit imports have next highest precedence.
 1. Wildcard imports have next highest precedence.
-1. Definitions made available by a package clause, but not also defined in the
-   same compilation unit as the reference to them, as well as imports which
-   are supplied by the compiler but not explicitly written in source code,
-   have lowest precedence.
+1. Bindings made available by definitions in other compilation units than the unit
+   containing the reference to them have lowest precedence. Such bindings may be
+   introduced by a package clause, inheritance, or imports which
+   are supplied by the compiler but not explicitly written in source code.
 
 There are two different name spaces, one for [types](03-types.html#types)
 and one for [terms](06-expressions.html#expressions). The same name may designate a

@@ -547,6 +547,7 @@ trait Namers extends MethodSynthesis {
 
       // warn proactively if specific import loses to definition in scope,
       // since it may result in desired implicit not imported into scope.
+      // Note they should be using -Xlint for -Wunused:imports. Will it always trigger after errors?
       def checkNotRedundant(pos: Position, from: Name, to0: Name): Unit = {
         def check(to: Name): Unit = {
           val e = context.scope.lookupEntry(to)
@@ -555,10 +556,12 @@ trait Namers extends MethodSynthesis {
             if (!context.isPackageOwnedInDifferentUnit(e.sym))
               typer.permanentlyHiddenWarning(pos, to0, e.sym)
           } else if (context ne context.enclClass) {
-            val defSym = context.prefix.member(to) filter (
-              sym => sym.exists && context.isAccessible(sym, context.prefix, superAccess = false))
-
-            defSym andAlso (typer.permanentlyHiddenWarning(pos, to0, _))
+            val defSym = context.prefix.member(to).filter(sym =>
+              sym.exists
+              && context.isAccessible(sym, context.prefix, superAccess = false)
+              && !context.isPackageOwnedInDifferentUnit(sym)
+            )
+            defSym.andAlso(typer.permanentlyHiddenWarning(pos, to0, _))
           }
         }
         if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {

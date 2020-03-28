@@ -67,7 +67,7 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
   private class ResizableArrayAccess[A0] extends ArrayBuffer[A0] {
     override def mapInPlace(f: A0 => A0): this.type = {
       var i = 1 // see "we do not use array(0)" comment below (???)
-      val siz = size
+      val siz = ResizableArrayAccess.this.size
       while (i < siz) { this(i) = f(this(i)); i += 1 }
       this
     }

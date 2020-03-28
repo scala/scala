@@ -1,0 +1,27 @@
+t11921a.scala:14: error: reference to X is ambiguous;
+it is both defined in package p and imported subsequently by
+import Z.X
+      def f = X       // ambiguous if p.X defined in this file
+              ^
+t11921a.scala:19: error: reference to x is ambiguous;
+it is both defined in class C and imported subsequently by
+import Z.x
+        x             // ambiguous if inherited member defined in this file
+        ^
+t11921a.scala:15: warning: imported `x` is permanently hidden by definition of value x in class C
+      import Z.x      // unused because shadowed by inherited member defined in this file
+               ^
+t11921a.scala:13: warning: Unused import
+      import Z.X      // unused due to ambiguity
+               ^
+t11921a.scala:15: warning: Unused import
+      import Z.x      // unused because shadowed by inherited member defined in this file
+               ^
+t11921a.scala:18: warning: Unused import
+        import Z.x    // unused due to ambiguity
+                 ^
+t11921a.scala:23: warning: parameter value x in method f is never used
+      def f(x: Int) = {
+            ^
+5 warnings
+2 errors

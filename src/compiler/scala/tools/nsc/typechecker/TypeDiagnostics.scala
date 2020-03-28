@@ -761,7 +761,7 @@ trait TypeDiagnostics {
     self: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
-      context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)
+      context.warning(pos, s"imported `$hidden` is permanently hidden by definition of ${defn.fullLocationString}", WarningCategory.OtherShadowing)
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
     private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"

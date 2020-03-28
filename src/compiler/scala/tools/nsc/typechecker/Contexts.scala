@@ -1226,10 +1226,7 @@ trait Contexts { self: Analyzer =>
 
     def isPackageOwnedInDifferentUnit(s: Symbol): Boolean =
       if (s.isOverloaded) s.alternatives.exists(isPackageOwnedInDifferentUnit)
-      else (s.isDefinedInPackage && (
-           !currentRun.compiles(s)
-        || unit.exists && s.sourceFile != unit.source.file)
-      )
+      else !currentRun.compiles(s) || unit.exists && s.sourceFile != unit.source.file
 
 
     /** Does the import just import the defined symbol?
@@ -1241,13 +1238,14 @@ trait Contexts { self: Analyzer =>
      *
      *  Don't attempt to interfere with correctness everywhere.
      *  `object X { def f = ??? ; def g = { import X.f ; f } }`
-     *
-     *  This method doesn't use the ImportInfo, `imp1`.
      */
     private[Contexts] def reconcileAmbiguousImportAndDef(name: Name, impSym: Symbol, defSym: Symbol): Boolean = {
-      val res = impSym == defSym
-      if (res) log(s"Suppressing ambiguous import, taking $defSym for $name")
-      res
+      val reconciled =
+        if (impSym.isOverloaded) { val others = defSym.alternatives ; impSym.alternatives.exists(others.contains) }
+        else if (defSym.isOverloaded) defSym.alternatives.exists(_ == impSym)
+        else impSym == defSym
+      if (reconciled) log(s"Suppressing ambiguous import, taking $defSym for $name")
+      reconciled
     }
 
     /** If the given import is permitted, fetch the symbol and filter for accessibility.
@@ -1493,8 +1491,8 @@ trait Contexts { self: Analyzer =>
        *     a package clause and also defined in the same compilation unit as the reference, have highest precedence.
        *  2) Explicit imports have next highest precedence.
        *  3) Wildcard imports have next highest precedence.
-       *  4) Definitions made available by a package clause, but not also defined in the same compilation unit
-       *     as the reference, have lowest precedence. Also "root" imports added implicitly.
+       *  4) Bindings made available by definitions in other compilation units than the reference have lowest precedence.
+       *     This includes definitions introduced by a package clause, inheritance, and "root" imports.
        */
       def foreignDefined = defSym.exists && thisContext.isPackageOwnedInDifferentUnit(defSym)  // SI-2458
       // can an import at this depth possibly shadow the definition found in scope if any?
@@ -1530,10 +1528,13 @@ trait Contexts { self: Analyzer =>
       })
 
       // If the defSym is at 4, and there is a def at 1 in scope, then the reference is ambiguous.
-      if (foreignDefined && !defSym.isPackage) {
+      if (preferDef && foreignDefined && !defSym.isPackage) {
         val defSym0 = defSym
         val pre0    = pre
         val cx0     = cx
+        // for inherited member, skip possibly-aliased class parameters
+        //cx = cx.enclClass
+        cx = cx.enclClass.outer.nextEnclosing(!_.tree.isInstanceOf[Template])
         while ((cx ne NoContext) && cx.depth >= symbolDepth) cx = cx.outer
         var done = false
         while (!done) {
@@ -1543,6 +1544,7 @@ trait Contexts { self: Analyzer =>
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
         if (defSym.exists && (defSym ne defSym0)) {
+          // TODO if defSym.isParamAccessor then check aliasing
           val ambiguity =
             if (preferDef) ambiguousDefinitions(owner = defSym.owner, defSym0)
             else ambiguousDefnAndImport(owner = defSym.owner, imp1)
