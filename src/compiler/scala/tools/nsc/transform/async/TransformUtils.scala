@@ -61,6 +61,24 @@ private[async] trait TransformUtils extends AsyncTransformStates {
 
   def assignUnitType(t: Tree): t.type = t.setType(definitions.UnitTpe)
 
+  // Avoid moving a Try into expression position with a potentially non-empty stack.
+  // Uncurry has already run and is responsible for faking try expressions! See needsTryLift.
+  final def deriveTree(tree: Tree, exprType: Type)(deriveExpr: Tree => Tree): Tree = tree match {
+    case Try(block, catches, finalizer) =>
+      val block1 = deriveTree(block, exprType)(deriveExpr)
+      val catches1 = catches.mapConserve(cd => deriveCaseDef(cd)(body => deriveTree(body, exprType)(deriveExpr)))
+      treeCopy.Try(tree, block1, catches1, finalizer).setType(exprType)
+    case Block(stats, expr) =>
+      treeCopy.Block(tree, stats, deriveTree(expr, exprType)(deriveExpr))
+    case MatchEnd(ld) =>
+      ld.symbol.modifyInfo {
+        case MethodType(params, _) => MethodType(params, exprType)
+      }
+      treeCopy.LabelDef(ld, ld.name, ld.params, deriveTree(ld.rhs, exprType)(deriveExpr)).setType(exprType)
+    case _ =>
+      deriveExpr(tree).setType(exprType)
+  }
+
   def isUnitType(tp: Type): Boolean = tp.typeSymbol == definitions.UnitClass || tp =:= definitions.BoxedUnitTpe
 
   def literalUnit: Tree = Literal(Constant(())).setType(definitions.UnitTpe) // a def to avoid sharing trees

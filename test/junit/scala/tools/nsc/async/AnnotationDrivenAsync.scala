@@ -110,6 +110,131 @@ class AnnotationDrivenAsync {
   }
 
   @Test
+  def avoidLiftingTryIntoExpression(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test = async {
+        |    //var info = ""
+        |    var info = try {
+        |      "body1"
+        |    } catch {
+        |      case _: Throwable => "fallback"
+        |    }
+        |    var info1 = ""
+        |    info1 = try {
+        |      "body2"
+        |    } catch {
+        |      case _: Throwable => "fallback"
+        |    }
+        |
+        |    await(f(0))
+        |    (info, info1)
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals(("body1", "body2"), run(code))
+  }
+
+  @Test
+  def avoidLiftingTryIntoExpression2(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test = async {
+        |    await(f(1))
+        |    try {
+        |      "body"
+        |    } catch {
+        |      case _: Throwable =>
+        |        "catch"
+        |    }
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals("body", run(code))
+  }
+
+  @Test
+  def avoidWhileExprPosition(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test = async {
+        |    if ("".isEmpty) {
+        |      ()
+        |    } else {
+        |      var continue = true
+        |      while (continue) {
+        |        continue = await(f(false))
+        |      }
+        |    }
+        |    await(f("result"))
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals("result", run(code))
+  }
+
+  @Test
+  def whileExpr1(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  var continue = true
+        |  def test = async { (await(test1), await(test2)) }
+        |  def test1 = async {
+        |    while(continue) {
+        |      continue = false
+        |      await(f(()))
+        |    }
+        |    await(f("result1"))
+        |  }
+        |  def test2 = async {
+        |    await(f(""))
+        |    while(continue) {
+        |      continue = false
+        |      await(f(()))
+        |    }
+        |    await(f("result2"))
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals(("result1", "result2"), run(code))
+  }
+
+  @Test
+  def genericUnitTypedAssert(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def finish[T](t: T): T = t
+        |  def test = async {
+        |    finish(this match { case _ if "".isEmpty => (); case _ => await(f(())) })
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals((), run(code))
+  }
+
+  @Test
   def testBooleanAndOr(): Unit = {
     val code =
       """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global

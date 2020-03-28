@@ -204,7 +204,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       override def transform(tree: Tree): Tree = tree match {
         case ValDef(_, _, _, rhs) if liftedSyms(tree.symbol) && currentOwner == applySym =>
           // Drop the lifted definitions from the apply method
-          assignUnitType(treeCopy.Assign(tree, fieldSel(tree), transform(rhs.changeOwner(tree.symbol, currentOwner))))
+          val rhs1 = transform(rhs.changeOwner(tree.symbol, currentOwner))
+          deriveTree(rhs1, definitions.UnitTpe)(t => treeCopy.Assign(rhs1, fieldSel(tree), adapt(t, tree.symbol.tpe)))
         case _: DefTree if liftedSyms(tree.symbol) && currentOwner == applySym =>
           // Drop the lifted definitions from the apply method
           EmptyTree

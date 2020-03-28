@@ -287,7 +287,7 @@ trait ExprBuilder extends TransformUtils {
             //   while (cond) { if (z) { await(f); return }; i += 1 }
             //
             val startLabelState = addLabelState(ld.symbol)
-            val afterLabelState = stateAssigner.nextState()
+            val afterLabelState = afterState()
             val nestedStates = buildNestedStates(rhs, startLabelState, afterLabelState)
             nestedStates.foreach(addState)
             buildStateAndOpenNextState(startLabelState, afterLabelState, StateTransitionStyle.UpdateAndContinue)
@@ -459,18 +459,17 @@ trait ExprBuilder extends TransformUtils {
         } else state
         all.foreach {state =>
           val state1 = followEmptyState(state)
-          if (state1 ne state)
+          if ((state1 ne state) && state.state != StateAssigner.Initial)
             emptyReplacements(state.state) = state1.state
         }
         all.foreach {
           state => state.nextStates = state.nextStates.map(s => emptyReplacements.getOrElse[Integer](s, s).toInt).distinct
         }
         def loop(state: AsyncState): Unit = {
-          if (!emptyReplacements.contains(state.state)) {
+          if (!emptyReplacements.contains(state.state))
             seen.add(state.state)
-            for (i <- state.nextStates if !seen.contains(i) && i != StateAssigner.Terminal) {
-              loop(map(i))
-            }
+          for (i <- state.nextStates if !seen.contains(i) && i != StateAssigner.Terminal) {
+            loop(map(i))
           }
         }
         loop(initial)
@@ -528,7 +527,9 @@ trait ExprBuilder extends TransformUtils {
 
   // Comlete the Promise in the `result` field with the final successful result of this async block.
   private def completeSuccess(expr: Tree): Tree = {
-    typed(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteSuccess), expr :: Nil))
+    deriveTree(expr, definitions.UnitTpe) { expr =>
+      typed(Apply(currentTransformState.memberRef(currentTransformState.stateCompleteSuccess), expr :: Nil))
+    }
   }
 
   /** What trailing statements should be added to the code for this state to transition to the nest state? */

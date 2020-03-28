@@ -71,7 +71,7 @@ private[async] trait AnfTransform extends TransformUtils {
                 // argument containing an `await` calls.
                 val elideVal = treeInfo.isExprSafeToInline(expr1) || lastAwaitArgIndex < 0 || i > lastAwaitArgIndex || !treeContainsAwait
                 val result = if (elideVal) {
-                  expr1
+                  localTyper.typed(expr1, arg.tpe) // Adapt () to BoxedUnit
                 } else {
                   if (isUnitType(expr1.tpe)) {
                     currentStats += expr1
@@ -173,12 +173,8 @@ private[async] trait AnfTransform extends TransformUtils {
     }
 
     private def pushAssignmentIntoExpr(varSym: Symbol, t: Tree): Tree = {
-      t match {
-        case _ if varSym == NoSymbol || t.tpe.typeSymbol == definitions.NothingClass => t
-        case MatchEnd(ld) => treeCopy.LabelDef(ld, ld.name, ld.params, pushAssignmentIntoExpr(varSym, ld.rhs))
-        case b@Block(caseStats, caseExpr) => assignUnitType(treeCopy.Block(b, caseStats, pushAssignmentIntoExpr(varSym, caseExpr)))
-        case _ => typedAssign(t, varSym)
-      }
+      if (varSym == NoSymbol || t.tpe.typeSymbol == definitions.NothingClass) t
+      else deriveTree(t, definitions.UnitTpe)(t => typedAssign(t, varSym))
     }
 
     private def transformMatchOrIf[T <: Tree](tree: Tree, needsResultVar: Boolean, nameSource: transformState.asyncNames.NameSource[TermName])(core: Symbol => T): Tree = {
