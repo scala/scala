@@ -1,6 +1,3 @@
-/*
- * filter: inliner warning; re-run with
- */
 import scala.language.postfixOps
 import scala.tools.nsc._
 import scala.tools.partest.CompilerTest
