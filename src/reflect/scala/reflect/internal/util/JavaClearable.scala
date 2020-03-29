@@ -22,10 +22,10 @@ object JavaClearable {
   def forMap[T <: JMap[_,_]](data: T): JavaClearable[T] = new JavaClearableMap(new WeakReference(data))
 
   private final class JavaClearableMap[T <: JMap[_,_]](dataRef:WeakReference[T]) extends JavaClearable(dataRef) {
-    override def clear: Unit = Option(dataRef.get) foreach (_.clear())
+    override def clear() = Option(dataRef.get).foreach(_.clear())
   }
   private final class JavaClearableCollection[T <: JCollection[_]](dataRef:WeakReference[T]) extends JavaClearable(dataRef) {
-    override def clear: Unit = Option(dataRef.get) foreach (_.clear())
+    override def clear() = Option(dataRef.get).foreach(_.clear())
   }
 }
 sealed abstract class JavaClearable[T <: AnyRef] protected (protected val dataRef: WeakReference[T]) extends Clearable {
@@ -44,7 +44,7 @@ sealed abstract class JavaClearable[T <: AnyRef] protected (protected val dataRe
     case _ => false
   }
 
-  def clear : Unit
+  def clear(): Unit
 
   def isValid = dataRef.get() ne null
 }

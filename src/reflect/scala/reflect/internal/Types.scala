@@ -310,7 +310,7 @@ trait Types
      *  This is assessed to be the case if the class is final,
      *  and all type parameters (if any) are invariant.
      */
-    def isFinalType = typeSymbol.hasOnlyBottomSubclasses && prefix.isStable
+    def isFinalType: Boolean = typeSymbol.hasOnlyBottomSubclasses && prefix.isStable
 
     /** Is this type completed (i.e. not a lazy type)? */
     def isComplete: Boolean = true
@@ -319,7 +319,7 @@ trait Types
     def isShowAsInfixType: Boolean = false
 
     /** If this is a lazy type, assign a new type to `sym`. */
-    def complete(sym: Symbol): Unit = {}
+    def complete(sym: Symbol): Unit = ()
 
     /** If this is a lazy type corresponding to a subclass add it to its
      *  parents children
@@ -417,7 +417,7 @@ trait Types
     /** For a class with !isEmpty parents, the first parent.
      *  Otherwise some specific fixed top type.
      */
-    def firstParent = if (!parents.isEmpty) parents.head else ObjectTpe
+    def firstParent: Type = if (!parents.isEmpty) parents.head else ObjectTpe
 
     /** For a typeref or single-type, the prefix of the normalized type (@see normalize).
      *  NoType for all other types. */
@@ -2127,9 +2127,9 @@ trait Types
       super.invalidateTypeRefCaches()
       narrowedCache = null
     }
-    override def forceDirectSuperclasses: Unit =
+    override def forceDirectSuperclasses() =
       sym0.rawInfo.decls.foreach { decl =>
-        if(decl.isModule || !decl.isTerm) decl.rawInfo.forceDirectSuperclasses
+        if (decl.isModule || !decl.isTerm) decl.rawInfo.forceDirectSuperclasses()
       }
     override protected def finishPrefix(rest: String) = objectPrefix + rest
     override def directObjectString = super.safeToString

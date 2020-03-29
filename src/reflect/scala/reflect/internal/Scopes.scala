@@ -68,7 +68,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     private[this] var elem: ScopeEntry = owner.elems
 
     def hasNext: Boolean = (elem ne null) && (elem.owner == this.owner)
-    def next: Symbol =
+    def next(): Symbol =
       if (hasNext){
         val res = elem
         elem = elem.next
