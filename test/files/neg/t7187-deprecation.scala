@@ -15,13 +15,13 @@ class EtaExpand214 {
   def m3(x: Int) = x
 
   val t1: () => Any  = m1   // error
-  val t2: () => Any  = m2   // eta-expanded with lint warning
-  val t2AcciSam: AcciSamZero = m2   // eta-expanded with lint warning + sam warning
-  val t2Sam: SamZero = m2   // eta-expanded with lint warning
+  val t2: () => Any  = m2   // eta-expanded, only warns w/ -Xlint:eta-zero
+  val t2AcciSam: AcciSamZero = m2   // eta-expanded, only warns w/ -Xlint:eta-zero or -Xlint:eta-sam
+  val t2Sam: SamZero = m2   // eta-expanded, only warns w/ -Xlint:eta-zero
   val t3: Int => Any = m3   // ok
 
   val t4 = m1 // apply
-  val t5 = m2 // apply, ()-insertion
+  val t5 = m2 // warn: apply, ()-insertion
   val t6 = m3 // eta-expansion in 3.0
 
   val t4a: Int        = t4 // ok
@@ -37,7 +37,7 @@ class EtaExpand214 {
   val t9a: Int => Any = t9 // ok
 
   val a = new A
-  a.boom // error
+  a.boom // warning: apply, ()-insertion
 
   import scala.collection.mutable.Map
   val xs = Map(1 -> "foo")
