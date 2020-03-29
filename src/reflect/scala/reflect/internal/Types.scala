@@ -10,22 +10,20 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package reflect
+package scala.reflect
 package internal
 
 import java.util.Objects
 
-import scala.collection.{immutable, mutable}
-import scala.ref.WeakReference
-import mutable.{ListBuffer, LinkedHashSet}
-import Flags._
-import scala.util.control.ControlThrowable
 import scala.annotation.{tailrec, unused}
+import scala.collection.{immutable, mutable}, mutable.{ListBuffer, LinkedHashSet}
+import scala.ref.WeakReference
+import scala.util.control.ControlThrowable
+import Flags._
 import util.{Statistics, StatisticsStatics}
 import util.ThreeValues._
 import Variance._
-import Depth._
+import Depth.{apply => _, _}
 import TypeConstants._
 
 /* A standard type pattern match:
@@ -777,8 +775,8 @@ trait Types
     def withFilter(p: Type => Boolean) = new FilterMapForeach(p)
 
     class FilterMapForeach(p: Type => Boolean) extends FilterTypeCollector(p){
-      def foreach[U](f: Type => U): Unit = collect(Type.this) foreach f
-      def map[T](f: Type => T): List[T]  = collect(Type.this) map f
+      def foreach[U](f: Type => U): Unit = this.collect(Type.this).foreach(f)
+      def map[T](f: Type => T): List[T]  = this.collect(Type.this).map(f)
     }
 
     @inline final def orElse(alt: => Type): Type = if (this ne NoType) this else alt

@@ -1050,16 +1050,18 @@ private[internal] trait TypeMaps {
         if (pred(t.symbol)) result = true else apply(t.tpe)
         result
       }
-      new FindTreeTraverser(inTree) {
-        def collect(arg: Tree): Boolean = {
-          /*super[FindTreeTraverser].*/ result = None
-          traverse(arg)
-          /*super[FindTreeTraverser].*/ result.isDefined
-        }
-      }
+      new FindTreeTraverser2(inTree)
     }
 
     override def foldOver(arg: Tree) = if (!result) findInTree.collect(arg)
+  }
+
+  private class FindTreeTraverser2(p: Tree => Boolean) extends FindTreeTraverser(p) {
+    def collect(arg: Tree): Boolean = {
+      result = None
+      traverse(arg)
+      result.isDefined
+    }
   }
 
   /** A map to implement the `contains` method. */

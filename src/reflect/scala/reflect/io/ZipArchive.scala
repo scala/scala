@@ -163,7 +163,7 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
     override def lastModified: Long = time // could be stale
     override def input: InputStream = {
       val zipFile  = openZipFile()
-      val entry    = zipFile.getEntry(name) // with `-release`, returns the correct version under META-INF/versions
+      val entry    = zipFile.getEntry(this.name) // with `-release`, returns the correct version under META-INF/versions
       val delegate = zipFile.getInputStream(entry)
       new FilterInputStream(delegate) {
         override def close(): Unit = { zipFile.close() }
@@ -334,7 +334,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
       if (!zipEntry.isDirectory) {
         class FileEntry() extends Entry(zipEntry.getName) {
           override def lastModified = zipEntry.getTime()
-          override def input        = resourceInputStream(path)
+          override def input        = resourceInputStream(this.path)
           override def sizeOption   = None
         }
         val f = new FileEntry()

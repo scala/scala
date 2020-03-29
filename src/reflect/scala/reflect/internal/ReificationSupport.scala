@@ -10,12 +10,10 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package reflect
-package internal
+package scala.reflect.internal
 
 import Flags._
-import util._
+import util.{FreshNameCreator, ListOfNil, SomeOfNil}
 
 trait ReificationSupport { self: SymbolTable =>
   import definitions._

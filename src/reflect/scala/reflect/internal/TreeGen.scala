@@ -10,9 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package reflect
-package internal
+package scala.reflect.internal
 
 import Flags._
 import util._
@@ -21,7 +19,7 @@ import scala.collection.mutable.ListBuffer
 abstract class TreeGen {
   val global: SymbolTable
 
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
 
   def rootId(name: Name)             = Select(Ident(nme.ROOTPKG), name)
