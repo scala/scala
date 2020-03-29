@@ -1107,8 +1107,8 @@ trait Types
     override def safeToString: String = {
       // Avoiding printing Predef.type and scala.package.type as "type",
       // since in all other cases we omit those prefixes.
-      val pre = underlying.typeSymbol.skipPackageObject
-      if (pre.isOmittablePrefix) pre.fullName + ".type"
+      val sym = termSymbol.skipPackageObject
+      if (sym.isOmittablePrefix) sym.fullName + ".type"
       else prefixString + "type"
     }
   }

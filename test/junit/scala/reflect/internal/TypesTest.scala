@@ -151,6 +151,16 @@ class TypesTest {
     assert(merged1 =:= merged2)
   }
 
+  trait Enum
+  object Enum {
+    val x = new Enum { }
+  }
+
+  @Test
+  def testSingletonWithUnderlyingRefinementToString(): Unit = {
+    assertEquals("TypesTest.this.Enum.x.type", typeOf[Enum.x.type].toString)
+  }
+
   class Foo[A]
   class Bar[+T, A]
   class Baz {
