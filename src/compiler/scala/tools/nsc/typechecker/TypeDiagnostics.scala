@@ -592,8 +592,8 @@ trait TypeDiagnostics {
       )
     def isSyntheticWarnable(sym: Symbol) = {
       def rescindPrivateConstructorDefault: Boolean =
-        cond(nme.splitDefaultGetterName(sym.name)) {
-          case (nme.CONSTRUCTOR, _) => true
+        cond(nme.defaultGetterToMethod(sym.name)) {
+          case nme.CONSTRUCTOR => true
         }
       sym.isDefaultGetter && !rescindPrivateConstructorDefault
     }
