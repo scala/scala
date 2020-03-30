@@ -2984,6 +2984,9 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def moduleClass = referenced
 
+    final override def skipPackageObject: Symbol =
+      if (isPackageObject) owner else this
+
     override def owner = {
       // a non-static module symbol gets the METHOD flag in uncurry's info transform -- see isModuleNotMethod
       if (!isMethod && needsFlatClasses) rawowner.owner
