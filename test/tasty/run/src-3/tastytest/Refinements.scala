@@ -128,6 +128,15 @@ object Refinements {
     def read[M <: MethodicComplex { def contextual(using ls: List[String]): A }](m: M)(using ls: List[String]): A = m.contextual
   }
 
+  trait Box {
+    val value: Any
+  }
+
+  class PreciseRefinement[B <: Box { val value: String }] {
+    def identity(b: B): b.type = b
+    def valueOf(b: B): b.value.type = b.value
+  }
+
   class Structural1[M <: { val output: Int } ] {
     import reflect.Selectable.reflectiveSelectable
     def get(m: M): Int = m.output

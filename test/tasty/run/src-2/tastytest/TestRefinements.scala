@@ -71,6 +71,16 @@ object TestRefinements extends Suite("TestRefinements") {
     assert(new Refinements.MethodOrPoly5_2[Int].read[MethodicComplexInt](new MethodicComplexInt) === 3)
   }
 
+  test {
+    import Refinements._
+    class BoxHello extends Box {
+      val value: "Hello" = "Hello"
+    }
+    val preciseRefinement = new PreciseRefinement[Box { val value: "Hello" }]
+    assert((preciseRefinement.identity(new BoxHello).value: "Hello") === "Hello")
+    assert((preciseRefinement.valueOf(new BoxHello): "Hello") === "Hello")
+  }
+
   class EncoderInt {
     def encode(t: Int): String = t.toString
   }

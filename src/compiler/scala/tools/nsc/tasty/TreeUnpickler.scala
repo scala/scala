@@ -400,7 +400,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                       case poly: PolyType if poly.resultType.paramss.isEmpty =>
                         mkPolyType(poly.typeParams, mkNullaryMethodType(poly.resultType))
                       case _:MethodType | _:PolyType => tpe
-                      case _ => // val
+                      case _ => // val, which is not stable if structural. Dotty does not support vars
                         if (isOverride && overridden.is(Stable)) flags |= Stable
                         mkNullaryMethodType(tpe)
                     }
