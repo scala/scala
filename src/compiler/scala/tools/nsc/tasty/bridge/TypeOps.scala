@@ -124,7 +124,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
    */
   case object AndType extends Type
 
-  def selectType(pre: Type, name: TastyName)(implicit ctx: Context): Type = {
+  def selectType(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type = {
     if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) {
         AndType
@@ -135,12 +135,12 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       }
     }
     else {
-      selectFromPrefix(pre, name, selectingTerm = false)
+      selectFromSpaceWithPrefix(pre, space, name, selectingTerm = false)
     }
   }
 
-  def selectTerm(pre: Type, name: TastyName)(implicit ctx: Context): Type =
-    selectFromPrefix(pre, name, selectingTerm = true)
+  def selectTerm(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
+    selectFromSpaceWithPrefix(pre, space, name, selectingTerm = true)
 
   /**
    * Ported from dotc
@@ -190,8 +190,8 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  private def selectSymFromSig0(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String,(Int, Symbol)] =
-    selectSymFromSig(qualType, name, sig).toRight(s"No matching overload of $qualType.$name with signature ${sig.show}")
+  private def selectSymFromSig0(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String,(Int, Symbol)] =
+    selectSymFromSig(space, name, sig).toRight(s"No matching overload of $space.$name with signature ${sig.show}")
 
   private def reportThenErrorTpe(msg: String): Type = {
     reporter.error(noPosition, msg)
@@ -199,23 +199,32 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
   }
 
   def selectFromPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+    selectFromSpaceWithPrefix(pre, pre, name, selectingTerm)
+  }
+
+  def selectFromSpaceWithPrefix(pre: Type, space: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
     val encoded  = name.toEncodedTermName
     val selector = if (selectingTerm) encoded else encoded.toTypeName
     def debugSelectedSym(sym: Symbol): Symbol = {
       ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
       sym
     }
+    def memberOfSpace(space: Type, name: Name): Symbol = {
+      def lookInTypeCtor = space.typeConstructor.typeParams.filter(_.name == name).headOption.getOrElse(noSymbol)
+      val fetched = space.member(name)
+      if (name.isTypeName) fetched.orElse(lookInTypeCtor) else fetched
+    }
     val resolved = name match {
       case SignedName(_, sig) =>
-        selectSymFromSig0(pre, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
-      case _ => Right(pre.member(selector))
+        selectSymFromSig0(space, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
+      case _ => Right(memberOfSpace(space, selector))
     }
     val tpeOrErr = resolved.map(sym => NamedType(pre, if (name.isModuleName) sym.linkedClassOfClass else sym))
     tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 
-  def selectFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
-    val tpeOrErr = selectSymFromSig0(qualType, name, sig).map {
+  def selectFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
+    val tpeOrErr = selectSymFromSig0(space, name, sig).map {
       case (tyParamCount, sym) =>
         var tpe = sym.tpe
         if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(sym.owner.typeParams, tpe)

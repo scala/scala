@@ -33,11 +33,11 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  def selectSymFromSig(qualType: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
-    ctx.log(s"""looking for overload member[$qualType]("$name") @@ ${sig.show}""")
+  def selectSymFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
+    ctx.log(s"""looking for overload member[$space]("$name") @@ ${sig.show}""")
     val MethodSignature(args, ret) = sig
     var seenTypeParams = false
-    val member = qualType.member(name)
+    val member = space.member(name)
     val (tyParamCount, argsSyms) = {
       val (tyParamCounts, params) = args.partitionMap(identity)
       if (tyParamCounts.length > 1) {
@@ -54,7 +54,7 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
           || tyParamCount === sym.typeParams.length) &&
         params.zip(argsSyms).forall { case (param, tpe) => param.tpe.erasure =:= tpe }
       case _ =>
-        ctx.log(s"""member[$qualType]("$name") ${showSym(sym)} is not a method""")
+        ctx.log(s"""member[$space]("$name") ${showSym(sym)} is not a method""")
         false
     }
     member.asTerm.alternatives.find(compareSym).map(tyParamCount -> _)

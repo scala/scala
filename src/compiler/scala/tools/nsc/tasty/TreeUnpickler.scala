@@ -347,25 +347,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case TERMREFin =>
-              var sname = readTastyName()
+              var name   = readTastyName()
               val prefix = readType()
-              val space = readType()
-              throw new TASTyException(ctx.owner, s"TERMREFin - ($sname found within $space, with prefix $prefix)")
-              // sname match {
-              //   case SignedName(name, sig) =>
-              //     TermRef(prefix, name, space.decl(name).asSeenFrom(prefix).atSignature(sig))
-              //   case name =>
-              //     TermRef(prefix, name, space.decl(name).asSeenFrom(prefix))
-              // }
+              val space  = readType()
+              selectTerm(prefix, space, name)
             case TYPEREFin =>
-              val name = readEncodedName().toTypeName
+              val name   = readTastyName()
               val prefix = readType()
-              val space = readType()
-              throw new TASTyException(ctx.owner, s"TYPEREFin - ($name found within $space, with prefix $prefix)")
-            //   space.decl(name) match {
-            //     case symd: SymDenotation if prefix.isArgPrefixOf(symd.symbol) => TypeRef(prefix, symd.symbol)
-            //     case _ => TypeRef(prefix, name, space.decl(name).asSeenFrom(prefix))
-            //   }
+              val space  = readType()
+              selectType(prefix, space, name)
             case REFINEDtype =>
               val selected = readEncodedName()
               val parent   = readType()
@@ -465,13 +455,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case TERMREFpkg =>
             readPackageRef().termRef
           case TYPEREF =>
-            val name = readTastyName()
-            val pre  = readType()
-            selectType(pre, name)
-          case TERMREF =>
-            val name  = readTastyName()
+            val name   = readTastyName()
             val prefix = readType()
-            selectTerm(prefix, name)
+            selectType(prefix, prefix, name)
+          case TERMREF =>
+            val name   = readTastyName()
+            val prefix = readType()
+            selectTerm(prefix, prefix, name)
           case THIS =>
             val sym = readType() match {
               case tpe: TypeRef => tpe.sym
