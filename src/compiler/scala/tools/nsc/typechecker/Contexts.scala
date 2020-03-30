@@ -1543,7 +1543,7 @@ trait Contexts { self: Analyzer =>
           done = (cx eq NoContext) || defSym.exists && !foreignDefined
           if (!done && (cx ne NoContext)) cx = cx.outer
         }
-        if (defSym.exists && (defSym ne defSym0)) {
+        if (defSym.exists && (defSym ne defSym0) && !defSym0.overrides.contains(defSym) && !defSym.overrides.contains(defSym0)) {
           // TODO if defSym.isParamAccessor then check aliasing
           val ambiguity =
             if (preferDef) ambiguousDefinitions(owner = defSym.owner, defSym0)
