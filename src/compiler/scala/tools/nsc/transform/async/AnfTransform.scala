@@ -139,8 +139,13 @@ private[async] trait AnfTransform extends TransformUtils {
           // Definitions within stats lifted out of the `ValDef` rhs should no longer be owned by the
           // the ValDef.
           statsIterator.foreach(_.changeOwner((currentOwner, currentOwner.owner)))
-
-          treeCopy.ValDef(tree, mods, name, tpt, expr)
+          val expr1 = if (isUnitType(expr.tpe)) {
+            currentStats += expr
+            literalBoxedUnit
+          } else {
+            expr
+          }
+          treeCopy.ValDef(tree, mods, name, tpt, expr1)
         }
 
         case If(cond, thenp, elsep) =>

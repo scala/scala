@@ -59,6 +59,85 @@ class AnnotationDrivenAsync {
   }
 
   @Test
+  @Ignore // TODO XASYNC
+  def testBoxedUnitNotImplemented(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.successful
+        |class A {
+        |  def f = successful(this)
+        |}
+        |object Test {
+        |  val data = List(("0", "0"))
+        |  def test = async {
+        |    val s1 = await(new A().f)
+        |    s1.toString
+        |    val s2 = await(s1.f)
+        |    s2.toString
+        |    val it = data.iterator
+        |    while (it.hasNext) {
+        |      val v = it.next()
+        |      v match {
+        |        case (x, y) =>
+        |          "".isEmpty
+        |          val r1 = await(s1.f).toString
+        |          val r2 = await(s1.f).toString
+        |          (r1, r2)
+        |          val it = Nil.iterator
+        |          while (it.hasNext) {
+        |            val v = it.next()
+        |            val r = await(s1.f).equals(v)
+        |          }
+        |      }
+        |    }
+        |  }
+        |}
+        |""".stripMargin
+     assertEquals((), run(code))
+  }
+
+  @Test
+  def testMixedBagNPE(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.successful
+        |class A {
+        |  def f = successful(this)
+        |}
+        |object Test {
+        |  val data = List(("0", "0"))
+        |  def test = async {
+        |    val s1 = await(new A().f)
+        |    s1.toString
+        |    val s2 = await(s1.f)
+        |    s2.toString
+        |    val it = data.iterator
+        |    while (it.hasNext) {
+        |      val v = it.next()
+        |      v match {
+        |        case (x, y) =>
+        |          "".isEmpty
+        |          val r1 = await(s2.f).toString
+        |          val r2 = await(s2.f).toString
+        |          (r1, r2)
+        |          val it = List("").iterator
+        |          while (it.hasNext) {
+        |            val v = it.next()
+        |            val r = await(s2.f).equals(v)
+        |          }
+        |      }
+        |    }
+        |  }
+        |}
+        |""".stripMargin
+     assertEquals((), run(code))
+  }
+
+  @Test
   def patternTailPositionMatchEndCast(): Unit = {
     val code =
       """
@@ -232,6 +311,81 @@ class AnnotationDrivenAsync {
         |}
         |""".stripMargin
     assertEquals((), run(code))
+  }
+
+  @Test
+  def unitTypedValAwaitingWhileRhs(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def finish[T](t: T): T = t
+        |  var continue = true
+        |  def test = async {
+        |    val x = while(continue) {
+        |      await(f(()))
+        |      continue = false
+        |      ()
+        |    }
+        |    "result"
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals("result", run(code))
+  }
+
+  @Test
+  def nestedBlock(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def finish[T](t: T): T = t
+        |  var continue = true
+        |  def condition = true
+        |  def test = async {
+        |    if (condition) {
+        |      toString
+        |      if (condition) {
+        |        scala.runtime.BoxedUnit.UNIT
+        |      } else {
+        |        ( { if (condition) await(f("")) ; scala.runtime.BoxedUnit.UNIT } : scala.runtime.BoxedUnit )
+        |      }
+        |    } else {
+        |      identity(())
+        |    }
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals((), run(code))
+  }
+
+  @Test
+  def matchWithIf(): Unit = {
+    val code =
+      """import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def finish[T](t: T): T = t
+        |  def condition = true
+        |  def scrut: Some[AnyRef] = Some("")
+        |  def test = async {
+        |    scrut match {
+        |      case Some(_) =>
+        |        val a = "a"
+        |        val x = if (condition) "then" else { await(f("")); "else" }
+        |        identity((a, x))
+        |      }
+        |  }
+        |}
+        |""".stripMargin
+    assertEquals(("a", "then"), run(code))
   }
 
   @Test

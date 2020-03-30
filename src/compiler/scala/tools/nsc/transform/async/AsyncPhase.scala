@@ -159,15 +159,14 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       val asyncBlock = buildAsyncBlock(anfTree)
 
       val liftedFields: List[Tree] = liftables(asyncBlock.asyncStates)
-      val liftedSyms = liftedFields.map(_.symbol).toSet
 
       // Null out lifted fields become unreachable at each state.
       val nullOut = true
       if (nullOut) {
-        for ((state, flds) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
+        for ((state, (preNulls, postNulls)) <- fieldsToNullOut(asyncBlock.asyncStates, asyncBlock.asyncStates.last, liftedFields)) {
           val asyncState = asyncBlock.asyncStates.find(_.state == state).get
           if (asyncState.nextStates.nonEmpty)
-            asyncState.insertNullAssignments(flds.iterator)
+            asyncState.insertNullAssignments(preNulls.iterator, postNulls.iterator)
         }
       }
 

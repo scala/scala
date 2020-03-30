@@ -68,8 +68,12 @@ private[async] trait TransformUtils extends AsyncTransformStates {
       val block1 = deriveTree(block, exprType)(deriveExpr)
       val catches1 = catches.mapConserve(cd => deriveCaseDef(cd)(body => deriveTree(body, exprType)(deriveExpr)))
       treeCopy.Try(tree, block1, catches1, finalizer).setType(exprType)
+    case If(cond, thenp, elsep) =>
+      treeCopy.If(tree, cond, deriveTree(thenp, exprType)(deriveExpr), deriveTree(elsep, exprType)(deriveExpr)).setType(exprType)
+    case Match(scrut, cases) =>
+      treeCopy.Match(tree, scrut, cases.map(cd => deriveCaseDef(cd)(body => deriveTree(body, exprType)(deriveExpr)))).setType(exprType)
     case Block(stats, expr) =>
-      treeCopy.Block(tree, stats, deriveTree(expr, exprType)(deriveExpr))
+      treeCopy.Block(tree, stats, deriveTree(expr, exprType)(deriveExpr)).setType(exprType)
     case MatchEnd(ld) =>
       ld.symbol.modifyInfo {
         case MethodType(params, _) => MethodType(params, exprType)

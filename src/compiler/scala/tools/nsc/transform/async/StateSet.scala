@@ -46,4 +46,5 @@ final class StateSet {
       })
     }
   }
+  override def toString: String = toArray.sorted.toSeq.mkString("[", ",", "]")
 }

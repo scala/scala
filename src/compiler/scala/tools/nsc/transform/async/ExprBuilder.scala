@@ -29,14 +29,15 @@ trait ExprBuilder extends TransformUtils {
     private def mkToString = s"AsyncState #$state, next = ${nextStates.toList}"
     override def toString: String = mkToString //+ " (was: " + initToString + ")"
     // private val initToString = mkToString
-    def insertNullAssignments(flds: Iterator[Symbol]): Unit = {
+    def insertNullAssignments(preNulls: Iterator[Symbol], postNulls: Iterator[Symbol]): Unit = {
       val stats1 = mutable.ListBuffer[Tree]()
-      def addNullAssigments(): Unit = {
-        // Insert the null assignments immediately after the state transition
-        for (fieldSym <- flds) {
+      def addNullAssigments(syms: Iterator[Symbol]): Unit = {
+        for (fieldSym <- syms) {
           stats1 += typed(Assign(gen.mkAttributedStableRef(fieldSym.owner.thisPrefix, fieldSym), gen.mkZero(fieldSym.info)))
         }
       }
+      // Add pre-state null assigments at the beginning.
+      addNullAssigments(preNulls)
       var foundStateTransition = false
       stats.foreach {
         stat =>
@@ -44,12 +45,12 @@ trait ExprBuilder extends TransformUtils {
           if (stat.attachments.containsElement(StateTransitionTree)) {
             assert(!foundStateTransition)
             foundStateTransition = true
-            // Insert the null assignments immediately after the state transition
-            addNullAssigments()
+            // Insert post-state null assignments immediately after the state transition
+            addNullAssigments(postNulls)
           }
       }
       if (!foundStateTransition) {
-        addNullAssigments()
+        addNullAssigments(postNulls)
       }
       stats = stats1.toList
     }
@@ -94,8 +95,11 @@ trait ExprBuilder extends TransformUtils {
       this
     }
 
+    private[this] var built: Boolean = false
     /** Build the state using the accumulated `stats` followed by a state transition. */
     def build(nextState: Int, style: StateTransitionStyle): AsyncState = {
+      assert(!built)
+      built = true
       // Record whether this state was free of meaningful stats (exclkuding unit literals which creep in after
       // the ANF and state maching transforms and the state transition code added bekow.
       //
@@ -113,19 +117,15 @@ trait ExprBuilder extends TransformUtils {
           // An exception should bubble out to the enclosing handler, don't insert a complete call.
         } else {
           val expr = stats.remove(stats.size - 1)
-          def pushIntoMatchEnd(t: Tree): Tree = {
-            t match {
-              case MatchEnd(ld) => treeCopy.LabelDef(ld, ld.name, ld.params, pushIntoMatchEnd(ld.rhs))
-              case b@Block(caseStats, caseExpr) => assignUnitType(treeCopy.Block(b, caseStats, pushIntoMatchEnd(caseExpr)))
-              case expr => completeSuccess(expr)
-            }
-          }
-          stats += pushIntoMatchEnd(expr)
+          stats += completeSuccess(expr)
         }
+
+        allNextStates += nextState
         stats += typed(Return(literalUnit).setSymbol(currentTransformState.applySym))
-        allNextStates -= nextState
       }
-      if (nextState == StateAssigner.Terminal)
+      if (state == StateAssigner.Terminal) {
+        // noop
+      } else if (nextState == StateAssigner.Terminal)
         completeAsyncBlock()
       else if (!concludesWithJump)
         stats ++= style.trees(nextState, allNextStates)
@@ -175,14 +175,17 @@ trait ExprBuilder extends TransformUtils {
       statesMap(state.state) = state
       state
     }
+    def isRoot = outer.isEmpty
 
     private def addStats(): Unit = {
       stats.foreach(stat => add(stat, isExpr = false))
       add(expr, isExpr = true)
-      def isRoot = outer.isEmpty
       if (!stateBuilder.stats.isEmpty || isRoot) {
-        val style = if (currState == startState) startToEndUpdateStyle else StateTransitionStyle.Update
+        val style = if (currState == startState) startToEndUpdateStyle else StateTransitionStyle.UpdateAndContinue
         addState(stateBuilder.build(endState, style = style))
+      }
+      if (isRoot && currState != endState) {
+        addState(new AsyncState(Nil, endState, Array(), true))
       }
     }
 
@@ -220,7 +223,7 @@ trait ExprBuilder extends TransformUtils {
           stateBuilder.stats += treeCopy.If(stat, cond, mkBranch(thenp), mkBranch(elsep))
           if (needAfterIfState) {
             stateBuilder.nextStates += afterIfState
-            buildStateAndOpenNextState(afterIfState, style = StateTransitionStyle.Update)
+            buildStateAndOpenNextState(afterIfState, style = StateTransitionStyle.UpdateAndContinue)
           }
 
         case Match(scrutinee, cases) if containsAwait(stat) =>
@@ -247,7 +250,7 @@ trait ExprBuilder extends TransformUtils {
 
           if (needAfterMatchState) {
             stateBuilder.nextStates += afterMatchState
-            buildStateAndOpenNextState(afterMatchState, StateTransitionStyle.Update)
+            buildStateAndOpenNextState(afterMatchState, StateTransitionStyle.UpdateAndContinue)
           }
 
         case ld @ LabelDef(name, params, rhs) =>
@@ -306,6 +309,7 @@ trait ExprBuilder extends TransformUtils {
       val (nestedStats, nestedExpr) = statsAndExpr(nestedTree)
       val nestedBuilder = new AsyncBlockBuilder(nestedStats, nestedExpr, currState, endState, StateTransitionStyle.None, Some(this))
       val ((inlinedState :: Nil), nestedStates) = nestedBuilder.build.partition(_.state == currState)
+      inlinedState.nextStates.foreach(stateBuilder.nextStates += _)
       (inlinedState, nestedStates)
     }
     private def buildNestedStates(nestedTree: Tree, startState: Int, endState: Int): List[AsyncState] = {
@@ -339,7 +343,6 @@ trait ExprBuilder extends TransformUtils {
         case Nil => needsAfterState
         case state :: rest =>
           addState(state)
-          stateBuilder.nextStates += state.state
           loop(rest, needsAfterState || state.nextStates.contains(afterState))
       }
       loop(nestedStates, false)
@@ -453,6 +456,7 @@ trait ExprBuilder extends TransformUtils {
         val ((initial :: Nil), rest) = all.partition(_.state == blockBuilder.startState)
         val map = all.iterator.map(x => (x.state, x)).toMap
         val seen = mutable.HashSet[Int]()
+        seen.add(all.last.state)
         def followEmptyState(state: AsyncState): AsyncState = if (state.isEmpty && state.nextStates.size == 1) {
           val next = state.nextStates(0)
           if (next == blockBuilder.endState) state
