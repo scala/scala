@@ -2,13 +2,8 @@ import scala.tools.nsc.Settings
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {
-    override def transformSettings(s: Settings) = {
-    s.Yreplclassbased.value = false // macros are object-based only
-    s
-  }
-
   def code = """
-    |import language.experimental.macros
+    |import scala.language.experimental.macros
     |import scala.reflect.macros.blackbox.Context
     |
     |object Impls {
@@ -30,6 +25,10 @@ object Test extends ReplTest {
     |    c.Expr[Int](body)
     |  }
     |}
+    |object Macros {
+    |  def bar(x: Int): Int = macro Impls.bar
+    |}
+    |:replay -Yrepl-class-based:false
     |object Macros {
     |  object Shmacros {
     |    def foo(x: Int): Int = macro Impls.foo
