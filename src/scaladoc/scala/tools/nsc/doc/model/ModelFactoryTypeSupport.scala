@@ -29,7 +29,7 @@ trait ModelFactoryTypeSupport {
                with TreeFactory
                with MemberLookup =>
 
-  import global._
+  import global.{settings => _, _}
   import definitions.{ ObjectClass, AnyClass, AnyRefClass }
 
   protected val typeCache = new mutable.LinkedHashMap[Type, TypeEntity]

@@ -16,7 +16,7 @@ package codegen
 trait GenTypes {
   self: Reifier =>
 
-  import global._
+  import global.{reify => _, _}
   import definitions._
   private val runDefinitions = currentRun.runDefinitions
   import runDefinitions.{ReflectRuntimeUniverse, ReflectRuntimeCurrentMirror, _}

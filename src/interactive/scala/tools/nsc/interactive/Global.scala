@@ -44,8 +44,8 @@ trait CommentPreservingTypers extends Typers {
 }
 
 trait InteractiveAnalyzer extends Analyzer {
-  val global : Global
-  import global._
+  val global: Global
+  import global.{Context => _, _}
 
   override def newTyper(context: Context): InteractiveTyper = new Typer(context) with InteractiveTyper
   override def newNamer(context: Context): InteractiveNamer = new Namer(context) with InteractiveNamer

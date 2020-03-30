@@ -18,7 +18,7 @@ import scala.reflect.internal.Flags._
 trait GenSymbols {
   self: Reifier =>
 
-  import global._
+  import global.{reify => _, _}
 
   /** Symbol table of the reifee.
    *

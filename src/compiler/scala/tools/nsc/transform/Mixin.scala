@@ -21,10 +21,9 @@ import scala.reflect.NameTransformer
 
 
 abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
   import CODE._
-
 
   /** The name of the phase: */
   val phaseName: String = "mixin"

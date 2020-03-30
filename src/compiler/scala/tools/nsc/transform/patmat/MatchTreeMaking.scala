@@ -23,7 +23,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
-  import global._
+  import global.{typer => _, _}
   import definitions._
 
   final case class Suppression(suppressExhaustive: Boolean, suppressUnreachable: Boolean)

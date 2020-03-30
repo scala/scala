@@ -19,7 +19,7 @@ import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
 
 abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
   import CODE._
   import treeInfo.StripCast

@@ -67,7 +67,7 @@ import symtab.Flags._
  *  TODO: Rename phase to "Accessors" because it handles more than just super accessors
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
   import analyzer.restrictionError
 

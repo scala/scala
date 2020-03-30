@@ -54,7 +54,7 @@ trait PatternMatching extends Transform
                       with MatchOptimization
                       with MatchWarnings
                       with PatternExpansion {
-  import global._
+  import global.{treeCopy => _, _}
 
   val phaseName: String = "patmat"
 

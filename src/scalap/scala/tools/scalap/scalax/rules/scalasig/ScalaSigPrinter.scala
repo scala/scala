@@ -21,7 +21,7 @@ import scala.reflect.NameTransformer
 
 
 class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
-  import stream._
+  import stream.{toString => _, _}
 
   val CONSTRUCTOR_NAME = "<init>"
 

@@ -23,7 +23,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 trait MemberLookupBase {
 
   val global: Global
-  import global._
+  import global.{toString => _, _}
 
   def internalLink(sym: Symbol, site: Symbol): Option[LinkTo]
   def chooseLink(links: List[LinkTo]): LinkTo
@@ -31,7 +31,6 @@ trait MemberLookupBase {
   def findExternalLink(sym: Symbol, name: String): Option[LinkTo]
   def warnNoLink: Boolean
 
-  import global._
   import rootMirror.{RootPackage, EmptyPackage}
 
   private def isRoot(s: Symbol) = (s eq NoSymbol) || s.isRootSymbol || s.isEmptyPackage || s.isEmptyPackageClass

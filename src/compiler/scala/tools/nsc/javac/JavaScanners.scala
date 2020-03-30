@@ -24,8 +24,8 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 // Todo merge these better with Scanners
 trait JavaScanners extends ast.parser.ScannersCommon {
-  val global : Global
-  import global._
+  val global: Global
+  import global.{error => _, _}
 
   abstract class AbstractJavaTokenData {
     def token: Int

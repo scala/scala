@@ -18,7 +18,7 @@ import scala.reflect.reify.{Reifier => ReflectReifier}
 import scala.reflect.internal.Flags._
 
 trait Reifiers { self: Quasiquotes =>
-  import global._
+  import global.{reify => _, _}
   import global.build._
   import global.definitions._
   import Rank._

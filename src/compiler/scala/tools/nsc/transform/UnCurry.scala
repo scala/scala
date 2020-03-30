@@ -65,7 +65,7 @@ abstract class UnCurry extends InfoTransform
                           with TypingTransformers with ast.TreeDSL {
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
-  import global._                  // the global environment
+  import global.{treeCopy => _, uncurry => _, _}
   import definitions._             // standard classes and methods
   import CODE._
 

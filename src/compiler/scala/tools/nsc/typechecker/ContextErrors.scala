@@ -26,7 +26,7 @@ import scala.reflect.internal.util.NoSourceFile
 trait ContextErrors {
   self: Analyzer =>
 
-  import global._
+  import global.{explainTypes => _, typer => _, _}
   import definitions._
 
   sealed abstract class AbsTypeError {
@@ -1468,7 +1468,7 @@ trait ContextErrors {
   }
 
   object NamesDefaultsErrorsGen {
-    import typer.infer.setError
+    import global.typer.infer.setError
 
     def NameClashError(sym: Symbol, arg: Tree)(implicit context: Context) = {
       setError(arg) // to distinguish it from ambiguous reference error

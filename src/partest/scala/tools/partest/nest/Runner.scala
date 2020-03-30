@@ -238,7 +238,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
           try {
             val out = Files.newOutputStream(log.toPath, StandardOpenOption.APPEND)
             try {
-              val loader = new URLClassLoader(classesDir.toURI.toURL :: Nil, getClass.getClassLoader)
+              val loader = new URLClassLoader(classesDir.toURI.toURL :: Nil, this.getClass.getClassLoader)
               StreamCapture.capturingOutErr(out) {
                 val cls = loader.loadClass("Test")
                 val main = cls.getDeclaredMethod("main", classOf[Array[String]])

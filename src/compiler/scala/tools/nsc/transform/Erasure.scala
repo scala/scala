@@ -27,7 +27,7 @@ abstract class Erasure extends InfoTransform
                           with ast.TreeDSL
                           with TypeAdaptingTransformer
 {
-  import global._
+  import global.{erasure => _, _}
   import definitions._
   import CODE._
 
@@ -1146,7 +1146,7 @@ abstract class Erasure extends InfoTransform
                 // need to do the cast in adaptMember
                 // Note: No specialErasure needed here because we simply cast, on
                 // elimination of SelectFromArray, no boxing or unboxing is done there.
-                treeCopy.Apply(
+                this.treeCopy.Apply(
                   tree,
                   SelectFromArray(qual, name, erasure(tree.symbol)(qual.tpe)).copyAttrs(fn),
                   args)
@@ -1228,7 +1228,7 @@ abstract class Erasure extends InfoTransform
                 // Ideally this should not be reached or reachable; anything which would
                 // get here should have been caught in the surrounding Apply.
                 devWarning(s"Failed to rewrite reflective apply - now don't know what to do with " + tree)
-                return treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name)
+                return this.treeCopy.Select(tree, gen.mkAttributedCast(qual, qual.tpe.widen), name)
             }
           }
 
@@ -1283,10 +1283,10 @@ abstract class Erasure extends InfoTransform
         case Template(parents, self, body) =>
           //Console.println("checking no dble defs " + tree)//DEBUG
           checkNoDoubleDefs(tree.symbol.owner)
-          treeCopy.Template(tree, parents, noSelfType, addBridgesToTemplate(body, currentOwner))
+          this.treeCopy.Template(tree, parents, noSelfType, addBridgesToTemplate(body, currentOwner))
 
         case Match(selector, cases) =>
-          treeCopy.Match(tree, Typed(selector, TypeTree(selector.tpe)), cases)
+          this.treeCopy.Match(tree, Typed(selector, TypeTree(selector.tpe)), cases)
 
         case Literal(ct) =>
           // We remove the original tree attachments in pre-erasure to free up memory
@@ -1296,7 +1296,7 @@ abstract class Erasure extends InfoTransform
             val typeValue = ct.typeValue.dealiasWiden
             val erased = erasure(typeValue.typeSymbol) applyInArray typeValue
 
-            treeCopy.Literal(cleanLiteral, Constant(erased))
+            this.treeCopy.Literal(cleanLiteral, Constant(erased))
           } else cleanLiteral
 
         case ClassDef(_,_,_,_) =>
@@ -1331,11 +1331,11 @@ abstract class Erasure extends InfoTransform
             case TypeApply(fun, targs @ List(targ)) if (fun.symbol == Any_asInstanceOf  || fun.symbol == Object_synchronized) && targ.tpe == UnitTpe =>
               // scala/bug#9066 prevent transforming `o.asInstanceOf[Unit]` to `o.asInstanceOf[BoxedUnit]`.
               // adaptMember will then replace the call by a reference to BoxedUnit.UNIT.
-              treeCopy.TypeApply(tree1, transform(fun), targs).clearType()
+              this.treeCopy.TypeApply(tree1, transform(fun), targs).clearType()
             case EmptyTree | TypeTree() =>
               tree1 setType specialScalaErasure(tree1.tpe)
             case ArrayValue(elemtpt, trees) =>
-              treeCopy.ArrayValue(
+              this.treeCopy.ArrayValue(
                 tree1, elemtpt setType specialScalaErasure.applyInArray(elemtpt.tpe), trees map transform).clearType()
             case ValDef(_, _, tpt, rhs) =>
               val vd1 = super.transform(tree1).clearType().asInstanceOf[ValDef]

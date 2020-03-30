@@ -24,11 +24,10 @@ import scala.tools.nsc.Reporting.WarningCategory
  */
 // TODO: split out match analysis
 trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
-  import global._
-  import global.definitions._
 
-  ////
   trait CommonSubconditionElimination extends OptimizedCodegen with MatchApproximator {
+    import global.{Tree => _, Type => _, _}, definitions._
+
     /** a flow-sensitive, generalised, common sub-expression elimination
      * reuse knowledge from performed tests
      * the only sub-expressions we consider are the conditions and results of the three tests (type, type&equality, equality)
@@ -215,6 +214,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
 
   //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
   trait SwitchEmission extends TreeMakers with MatchMonadInterface {
+    import global._, definitions._
     import treeInfo.isGuardedCase
 
     abstract class SwitchMaker {
@@ -607,6 +607,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
   trait MatchOptimizer extends OptimizedCodegen
                           with SwitchEmission
                           with CommonSubconditionElimination {
+    import global._
+
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
       // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
       val optCases = doCSE(prevBinder, cases, pt, selectorPos)

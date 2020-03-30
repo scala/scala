@@ -16,7 +16,7 @@ package contexts
 trait ExprUtils {
   self: Context =>
 
-  import universe._
+  import universe.{definitions, Constant, Literal}
 
   def literalNull = Expr[Null](Literal(Constant(null)))(TypeTag.Null)
 

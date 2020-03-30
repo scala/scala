@@ -23,7 +23,7 @@ import scala.annotation.tailrec
  *  @author Iulian Dragos
  */
 abstract class TailCalls extends Transform {
-  import global._                     // the global environment
+  import global.{treeCopy => _, _}
   import definitions._                // standard classes and methods
   import typer.typedPos               // methods to type trees
 

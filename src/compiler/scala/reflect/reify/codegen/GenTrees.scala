@@ -16,7 +16,7 @@ package codegen
 trait GenTrees {
   self: Reifier =>
 
-  import global._
+  import global.{reify => _, _}
   import definitions._
 
   // unfortunately, these are necessary to reify AnnotatedTypes

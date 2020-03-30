@@ -24,7 +24,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
 
   class MacroAnnotationNamer(context: Context) extends Namer(context) {
     import NamerErrorGen._
-    import typer.TyperErrorGen._
+    import this.typer.TyperErrorGen._
 
     override def standardEnterSym(tree: Tree): Context = {
       def dispatch() = {

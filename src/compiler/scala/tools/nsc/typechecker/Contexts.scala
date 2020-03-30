@@ -23,7 +23,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *  @author  Martin Odersky
  */
 trait Contexts { self: Analyzer =>
-  import global._
+  import global.{treeCopy => _, _}
   import definitions.{JavaLangPackage, ScalaPackage, PredefModule, ScalaXmlTopScope, ScalaXmlPackage}
   import ContextMode._
   import scala.reflect.internal.Flags._

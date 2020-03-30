@@ -12,8 +12,10 @@
 
 package scala.tools.partest
 
+import scala.reflect.io
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc._
+import scala.tools.nsc.ScalaDoc
+import scala.tools.nsc.doc
 import scala.tools.nsc.doc.base.comment._
 import scala.tools.nsc.doc.model._
 import scala.tools.nsc.doc.model.diagram._

@@ -52,7 +52,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 trait ModelFactoryImplicitSupport {
   thisFactory: ModelFactory with ModelFactoryTypeSupport with CommentFactory with TreeFactory =>
 
-  import global._
+  import global.{settings => _, _}
   import global.analyzer._
   import global.definitions._
   import settings.hardcoded

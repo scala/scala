@@ -22,7 +22,7 @@ import symtab.Flags._
  *  fields, which are assigned to from constructors.
  */
 abstract class Constructors extends Statics with Transform with TypingTransformers with ast.TreeDSL {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
 
   /** the following two members override abstract members in Transform */

@@ -39,7 +39,7 @@ import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCate
 trait Typers extends Adaptations with Tags with TypersTracking with PatternTypers {
   self: Analyzer =>
 
-  import global._
+  import global.{adaptAnnotations => _, canAdaptAnnotations => _, _}
   import definitions._
   import statistics._
 

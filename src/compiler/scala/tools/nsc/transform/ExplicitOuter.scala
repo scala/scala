@@ -28,7 +28,7 @@ abstract class ExplicitOuter extends InfoTransform
       with TypingTransformers
       with ast.TreeDSL
 {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
   import CODE._
 

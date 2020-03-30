@@ -19,7 +19,7 @@ trait Validators {
   self: DefaultMacroCompiler =>
 
   import global._
-  import analyzer._
+  import analyzer.{isBlackbox => _, _}
   import definitions._
   import runDefinitions.Predef_???
 

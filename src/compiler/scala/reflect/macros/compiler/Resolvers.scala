@@ -16,7 +16,7 @@ package compiler
 trait Resolvers {
   self: DefaultMacroCompiler =>
 
-  import global._
+  import global.{abort => _, _}
   import analyzer._
   import treeInfo._
 

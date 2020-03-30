@@ -15,7 +15,6 @@ package reporters
 
 import scala.annotation.unchecked.uncheckedStable
 import scala.collection.mutable
-import scala.reflect.internal.Reporter.Severity
 import scala.reflect.internal.util.Position
 
 /** This class implements a Reporter that stores its reports in the set `infos`. */
@@ -40,6 +39,7 @@ class StoreReporter(val settings: Settings) extends FilteringReporter {
   }
 }
 object StoreReporter {
+  import scala.reflect.internal.Reporter.Severity
   case class Info(pos: Position, msg: String, severity: Severity) {
     override def toString: String = s"pos: $pos $msg $severity"
   }

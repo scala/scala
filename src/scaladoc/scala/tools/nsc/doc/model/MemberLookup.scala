@@ -20,7 +20,7 @@ import base._
 trait MemberLookup extends base.MemberLookupBase {
   thisFactory: ModelFactory =>
 
-  import global._
+  import global.{settings => _, _}
   import definitions.{ NothingClass, AnyClass, AnyValClass, AnyRefClass }
 
   override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] =
@@ -73,7 +73,7 @@ trait MemberLookup extends base.MemberLookupBase {
       }
     }
     classpathEntryFor(sym1) flatMap { path =>
-      settings.extUrlMapping get path map { url => {
+      this.settings.extUrlMapping get path map { url => {
          LinkToExternalTpl(name, url, makeTemplate(sym))
         }
       }

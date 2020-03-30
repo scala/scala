@@ -91,7 +91,7 @@ trait Parsers { self: Quasiquotes =>
               case _ => gen.mkBlock(stats, doFlatten = true)
             }
           case nme.unapply => gen.mkBlock(stats, doFlatten = false)
-          case other       => global.abort("unreachable")
+          case other       => this.global.abort("unreachable")
         }
 
         // tq"$a => $b"

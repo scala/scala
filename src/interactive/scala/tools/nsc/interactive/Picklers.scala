@@ -13,22 +13,23 @@
 package scala.tools.nsc
 package interactive
 
-import util.InterruptReq
-import scala.reflect.internal.util.{ SourceFile, BatchSourceFile }
-import io.{ AbstractFile, PlainFile }
-import util.EmptyAction
-import scala.reflect.internal.util.Position
+import scala.collection.mutable, mutable.ListBuffer
+import scala.reflect.internal.util.{
+  BatchSourceFile,
+  SourceFile,
+}
+import scala.reflect.internal.util.Position.{offset, range}
+import scala.reflect.io.{AbstractFile, PlainFile}
+import scala.tools.nsc.util.{EmptyAction, InterruptReq}
 import Pickler._
-import scala.collection.mutable
-import mutable.ListBuffer
 
 trait Picklers { self: Global =>
 
   lazy val freshRunReq =
     unitPickler
-      .wrapped { _ => new FreshRunReq } { x => () }
-      .labelled ("FreshRunReq")
-      .cond (_.isInstanceOf[FreshRunReq])
+      .wrapped(_ => new FreshRunReq)(x => ())
+      .labelled("FreshRunReq")
+      .cond(_.isInstanceOf[FreshRunReq])
 
       lazy val shutdownReq = singletonPickler(ShutdownReq)
 
@@ -73,17 +74,17 @@ trait Picklers { self: Global =>
 
   lazy val offsetPosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int])
-      .wrapped { case x ~ y => Position.offset(x, y) } { p => p.source ~ p.point }
+      .wrapped { case x ~ y => offset(x, y) } { p => p.source ~ p.point }
       .asClass (classOf[Position])
 
   lazy val rangePosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int] ~ pkl[Int] ~ pkl[Int])
-      .wrapped { case source ~ start ~ point ~ end => Position.range(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
+      .wrapped { case source ~ start ~ point ~ end => range(source, start, point, end) } { p => p.source ~ p.start ~ p.point ~ p.end }
       .asClass (classOf[Position])
 
   lazy val transparentPosition: CondPickler[Position] =
     (pkl[SourceFile] ~ pkl[Int] ~ pkl[Int] ~ pkl[Int])
-      .wrapped { case source ~ start ~ point ~ end => Position.range(source, start, point, end).makeTransparent } { p => p.source ~ p.start ~ p.point ~ p.end }
+      .wrapped { case source ~ start ~ point ~ end => range(source, start, point, end).makeTransparent } { p => p.source ~ p.start ~ p.point ~ p.end }
       .asClass (classOf[Position])
 
   lazy val noPosition = singletonPickler(NoPosition)

@@ -57,9 +57,9 @@ import Fingerprint._
 trait Macros extends MacroRuntimes with Traces with Helpers {
   self: Analyzer =>
 
-  import global._
-  import definitions._
-  import treeInfo.{isRepeatedParamType => _, _}
+  import global.{Expr => _, TypeTag => _, _}
+  import global.definitions._
+  import global.treeInfo.{isRepeatedParamType => _, _}
 
   lazy val fastTrack = new FastTrack[self.type](self)
 
@@ -417,7 +417,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
               val fingerprint = implParams(min(j, implParams.length - 1))
               val duplicatedArg = duplicateAndKeepPositions(arg)
               fingerprint match {
-                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(TypeTag.Nothing) // TODO: scala/bug#5752
+                case LiftedTyped => context.Expr[Nothing](duplicatedArg)(context.TypeTag.Nothing) // TODO: scala/bug#5752
                 case LiftedUntyped => duplicatedArg
                 case _ => abort(s"unexpected fingerprint $fingerprint in $binding with paramss being $paramss " +
                                 s"corresponding to arg $arg in $argss")
@@ -593,8 +593,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *  @param outerPt Expected type that comes from enclosing context (something that's traditionally called `pt`).
    *  @param innerPt Expected type that comes from the signature of a macro def, possibly wildcarded to help type inference.
    */
-  class DefMacroExpander(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type)
-  extends MacroExpander(typer, expandee) {
+  class DefMacroExpander(typer: Typer, expandee: Tree, mode: Mode, outerPt: Type) extends MacroExpander(typer, expandee) {
     lazy val innerPt = {
       val tp = if (isNullaryInvocation(expandee)) expandee.tpe.finalResultType else expandee.tpe
       if (isBlackbox(expandee)) tp
@@ -789,7 +788,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
             Success(result)
           }
           expanded match {
-            case expanded: Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
+            case expanded: global.Expr[_] if expandee.symbol.isTermMacro => validateResultingTree(expanded.tree)
             case expanded: Tree if expandee.symbol.isTermMacro    => validateResultingTree(expanded)
             case _ => MacroExpansionHasInvalidTypeError(expandee, expanded)
           }

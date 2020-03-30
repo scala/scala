@@ -14,7 +14,7 @@ package scala.tools.nsc
 package transform
 
 abstract class Statics extends Transform with ast.TreeDSL {
-  import global._
+  import global.{treeCopy => _, _}
 
   trait StaticsTransformer extends Transformer {
     /** generate a static constructor with symbol fields inits, or an augmented existing static ctor

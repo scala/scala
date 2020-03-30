@@ -19,10 +19,10 @@ import scala.reflect.macros.util.Traces
 trait Errors extends Traces {
   self: DefaultMacroCompiler =>
 
-  import global._
-  import analyzer._
+  import global.{abort => _, _}
+  import analyzer.{global => _, _}
   import definitions._
-  import treeInfo._
+  import treeInfo.{global => _, _}
   import typer.infer.InferErrorGen._
   import runDefinitions._
   def globalSettings = global.settings

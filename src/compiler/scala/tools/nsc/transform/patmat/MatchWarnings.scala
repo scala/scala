@@ -17,7 +17,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 trait MatchWarnings {
   self: PatternMatching =>
 
-  import global._
+  import global.{typer => _, _}
 
   trait TreeMakerWarnings {
     self: MatchTranslator =>

@@ -18,7 +18,7 @@ import scala.collection.mutable
 trait Metalevels {
   self: Reifier =>
 
-  import global._
+  import global.{reify => _, _}
 
   /**
    *  Makes sense of cross-stage bindings.

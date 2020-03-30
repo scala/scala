@@ -10,16 +10,14 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package tools
-package nsc
+package scala.tools.nsc
 
 import java.util.regex.PatternSyntaxException
 
 import scala.collection.mutable
 import scala.reflect.internal
+import scala.reflect.internal.util.SourceFile
 import scala.reflect.internal.util.StringOps.countElementsAsString
-import scala.reflect.internal.util.{Position, SourceFile}
 import scala.tools.nsc.Reporting.Version.{NonParseableVersion, ParseableVersion}
 import scala.tools.nsc.Reporting._
 import scala.util.matching.Regex
@@ -285,6 +283,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
 }
 
 object Reporting {
+  import scala.reflect.internal.util.Position
   sealed trait Message {
     def pos: Position
     def msg: String

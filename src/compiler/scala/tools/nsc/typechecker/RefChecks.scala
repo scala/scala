@@ -1764,7 +1764,7 @@ abstract class RefChecks extends Transform {
               inPattern = true
               transform(pat)
             }
-            treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
+            this.treeCopy.CaseDef(tree, pat1, transform(guard), transform(body))
           case _ =>
             result.transform(this)
         }

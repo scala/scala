@@ -198,8 +198,7 @@ trait TreeAndTypeAnalysis extends Debugging {
 }
 
 trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchTreeMaking {
-  import global._
-  import global.definitions._
+  import global.{Tree => _, Type => _, _}, definitions._
 
   /**
    * Represent a match as a formula in propositional logic that encodes whether the match matches (abstractly: we only consider types)
@@ -419,8 +418,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
 }
 
 trait MatchAnalysis extends MatchApproximation {
-  import global._
-  import global.definitions._
+  import global.{Tree => _, Type => _, _}, definitions._
 
   trait MatchAnalyzer extends MatchApproximator  {
     def uncheckedWarning(pos: Position, msg: String, site: Symbol) = runReporting.warning(pos, msg, WarningCategory.Unchecked, site)

@@ -32,7 +32,7 @@ import scala.collection._
   * The captured arguments include `this` if `liftedBody` is unable to be made STATIC.
   */
 abstract class Delambdafy extends Transform with TypingTransformers with ast.TreeDSL with TypeAdaptingTransformer {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
 
   val analyzer: global.analyzer.type = global.analyzer

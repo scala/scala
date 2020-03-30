@@ -19,7 +19,7 @@ import scala.reflect.internal.util.StatisticsStatics
 trait MatchTranslation {
   self: PatternMatching =>
 
-  import global._
+  import global.{treeCopy => _, typer => _, _}
   import definitions._
   import treeInfo.{ Unapplied, unbind }
   import CODE._

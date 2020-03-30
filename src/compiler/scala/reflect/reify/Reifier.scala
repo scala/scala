@@ -26,7 +26,7 @@ abstract class Reifier extends States
                           with Utils {
 
   val global: Global
-  import global._
+  import global.{reify => _, _}
   import definitions._
   private val runDefinitions = currentRun.runDefinitions
 

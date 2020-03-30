@@ -21,7 +21,7 @@ trait Phases extends Reshape
 
   self: Reifier =>
 
-  import global._
+  import global.{reify => _, _}
 
   private var alreadyRun = false
 

@@ -20,7 +20,7 @@ import scala.collection.mutable
 import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
 
 abstract class LambdaLift extends InfoTransform {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
 
   /** the following two members override abstract members in Transform */

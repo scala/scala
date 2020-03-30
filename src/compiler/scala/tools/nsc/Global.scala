@@ -1153,7 +1153,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       def iterator: Iterator[CompilationUnit] = new collection.AbstractIterator[CompilationUnit] {
         private var used = 0
         def hasNext = self.synchronized{ used < underlying.size }
-        def next = self.synchronized {
+        def next() = self.synchronized {
           if (!hasNext) throw new NoSuchElementException("next on empty Iterator")
           used += 1
           underlying(used-1)

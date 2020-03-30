@@ -18,7 +18,7 @@ package transform
 abstract class SampleTransform extends Transform {
   // inherits abstract value `global` and class `Phase` from Transform
 
-  import global._       // the global environment
+  import global.{treeCopy => _, _} // the global environment
   import typer.typed    // method to type trees
 
   /** the following two members override abstract members in Transform */

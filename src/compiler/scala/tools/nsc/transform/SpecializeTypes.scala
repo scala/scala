@@ -56,7 +56,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  *     Above, `A\$mcI\$sp` cannot access `d`, so the method cannot be typechecked.
  */
 abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
-  import global._
+  import global.{treeCopy => _, _}
   import definitions._
   import Flags._
 
