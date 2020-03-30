@@ -15,5 +15,8 @@ object Test extends ReplTest with Hashless {
     |val y = new T.Meter(2)
     |object S { object T { class Meter(val value: Int) extends AnyVal } }
     |val z = new S.T.Meter(3)
+    |case class Foo(x: Int) extends AnyVal
+    |val a = Foo(1)
+    |val b = new Foo(1)
     |""".stripMargin
 }
