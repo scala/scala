@@ -187,7 +187,7 @@ object WrappedArray {
   def newBuilder[A]: Builder[A, IndexedSeq[A]] = new ArrayBuffer
 
   final class ofRef[T <: AnyRef](val array: Array[T]) extends WrappedArray[T] with Serializable {
-    lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
+    def elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }

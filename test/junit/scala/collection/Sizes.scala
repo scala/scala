@@ -13,7 +13,7 @@ object Sizes {
   def refArray(length:Int): Long = {
     (16 + (length+1) * 4) /8 * 8
   }
-  def wrappedRefArray(length:Int): Long = refArray(length) + 24
+  def wrappedRefArray(length:Int): Long = refArray(length) + 16
 
 }
 class Sizes{
