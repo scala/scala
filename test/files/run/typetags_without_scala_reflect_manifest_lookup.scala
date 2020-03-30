@@ -25,5 +25,5 @@ object Test extends DirectTest {
     }
   """
 
-  def show = compile()
+  def show() = compile()
 }

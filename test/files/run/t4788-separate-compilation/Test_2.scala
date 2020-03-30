@@ -31,7 +31,7 @@ object Test extends BytecodeTest {
         .map(_.trim)
   }
 
-  def show: Unit = {
+  def show(): Unit = {
     // It seems like @java.lang.Deprecated shows up in both the
     // Deprecated attribute and RuntimeVisibleAnnotation attribute,
     // while @scala.deprecated only shows up in the Deprecated attribute.

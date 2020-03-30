@@ -1461,12 +1461,17 @@ trait Namers extends MethodSynthesis {
         // Note that matching MethodType of NullaryMethodType must be nilary not nelary.
         def overriddenNilary(sym: Symbol) = sym.info.isInstanceOf[MethodType]
         if (overridden != NoSymbol && vparamSymss.isEmpty && overridden.alternatives.exists(overriddenNilary)) {
-          if (settings.warnNullaryOverride)
-            context.unit.toCheck += {() =>
-              def javaDetermined(sym: Symbol) = sym.isJavaDefined || isUniversalMember(sym)
-              if (!meth.overrides.exists(javaDetermined))
-                context.warning(ddef.pos, "nullary method assumes an empty parameter list from the overridden definition", WarningCategory.LintNullaryOverride)
-            }
+          def exempt() = meth.overrides.exists(sym => sym.isJavaDefined || isUniversalMember(sym))
+          val msg = "method without a parameter list overrides a method with a single empty one"
+          def error(): Unit = if (!exempt()) {
+            ErrorUtils.issueNormalTypeError(ddef, msg)
+            ddef.tpt.defineType(ErrorType)
+          }
+          def warn(): Unit = if (!exempt()) {
+            context.warning(ddef.pos, msg, WarningCategory.OtherNullaryOverride)
+            meth.updateAttachment(NullaryOverrideAdapted)
+          }
+          context.unit.toCheck += (if (currentRun.isScala3) error _ else warn _)
           ListOfNil
         } else vparamSymss
       }

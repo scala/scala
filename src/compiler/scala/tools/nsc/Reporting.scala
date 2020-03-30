@@ -318,7 +318,7 @@ object Reporting {
   object WarningCategory {
     private val insertDash = "(?=[A-Z][a-z])".r
 
-    var all: mutable.Map[String, WarningCategory] = mutable.Map.empty
+    val all: mutable.Map[String, WarningCategory] = mutable.Map.empty
     private def add(c: WarningCategory): Unit = all += ((c.name, c))
 
     object Deprecation extends WarningCategory; add(Deprecation)
@@ -336,8 +336,9 @@ object Reporting {
     object OtherShadowing extends Other; add(OtherShadowing)
     object OtherPureStatement extends Other; add(OtherPureStatement)
     object OtherMigration extends Other; add(OtherMigration)
-    object OtherMatchAnalysis extends WarningCategory; add(OtherMatchAnalysis)
-    object OtherDebug extends WarningCategory; add(OtherDebug)
+    object OtherMatchAnalysis extends Other; add(OtherMatchAnalysis)
+    object OtherDebug extends Other; add(OtherDebug)
+    object OtherNullaryOverride extends Other; add(OtherNullaryOverride)
 
     sealed trait WFlag extends WarningCategory { override def summaryCategory: WarningCategory = WFlag }
     object WFlag extends WFlag { override def includes(o: WarningCategory): Boolean = o.isInstanceOf[WFlag] }; add(WFlag)
@@ -361,7 +362,6 @@ object Reporting {
     object LintAdaptedArgs extends Lint; add(LintAdaptedArgs)
     object LintNullaryUnit extends Lint; add(LintNullaryUnit)
     object LintInaccessible extends Lint; add(LintInaccessible)
-    object LintNullaryOverride extends Lint; add(LintNullaryOverride)
     object LintInferAny extends Lint; add(LintInferAny)
     object LintMissingInterpolator extends Lint; add(LintMissingInterpolator)
     object LintDocDetached extends Lint; add(LintDocDetached)

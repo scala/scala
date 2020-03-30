@@ -20,7 +20,7 @@ class Matrix[@specialized A: ClassTag](val rows: Int, val cols: Int) {
   def rowsIterator: Iterator[Array[A]] = new Iterator[Array[A]] {
     var idx = 0;
     def hasNext = idx < rows
-    def next = {
+    def next() = {
       idx += 1
       arr(idx - 1)
     }

@@ -5,7 +5,7 @@ class Raw_1[T]{
 
 
 class X extends Raw_1[X] {
-  override def t = this
+  override def t() = this
   def exxx = 0
 }
 

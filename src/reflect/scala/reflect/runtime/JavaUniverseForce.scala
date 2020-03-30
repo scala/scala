@@ -65,6 +65,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.KnownDirectSubclassesCalled
     this.ConstructorNeedsFence
     this.MultiargInfixAttachment
+    this.NullaryOverrideAdapted
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner

@@ -9,7 +9,7 @@ import scala.jdk.CollectionConverters._
 object Test extends BytecodeTest {
   val nullChecks = Set(asm.Opcodes.IFNONNULL, asm.Opcodes.IFNULL)
 
-  def show: Unit = {
+  def show(): Unit = {
     def test(methodName: String, expected: Int): Unit = {
       val classNode = loadClassNode("Lean")
       val methodNode = getMethod(classNode, methodName)

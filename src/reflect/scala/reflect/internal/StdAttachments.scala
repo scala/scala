@@ -122,4 +122,6 @@ trait StdAttachments {
 
   /** Mark the syntax for linting purposes. */
   case object MultiargInfixAttachment extends PlainAttachment
+
+  case object NullaryOverrideAdapted extends PlainAttachment
 }
