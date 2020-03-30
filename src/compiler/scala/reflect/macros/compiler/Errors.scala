@@ -47,7 +47,7 @@ trait Errors extends Traces {
 
   private def replClassBasedMacroAddendum(isReplClassBased: Boolean): String =
     if (isReplClassBased)
-      "\nnote: macro definition is not supported in the REPL when using -Yrepl-classbased."
+      "\nnote: macro definition is not supported in the REPL when using -Yrepl-classbased, run :replay -Yrepl-class-based:false."
     else ""
 
 
