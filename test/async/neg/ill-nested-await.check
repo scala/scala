@@ -31,7 +31,10 @@ ill-nested-await.scala:60: error: await must not be used under a nested method.
 ill-nested-await.scala:69: error: await must not be used under a lazy val initializer.
     def foo(): Any = async { val x = { lazy val y = await(f(0)); y } }
                                                     ^
+ill-nested-await.scala:75: error: await must not be used under a nested method.
+    async { fooAsByNameLambda(await(f(""))) }
+                              ^
 ill-nested-await.scala:9: error: `await` must be enclosed in an `async` block
      await[Any](f(null))
      ^
-12 errors found
+13 errors found

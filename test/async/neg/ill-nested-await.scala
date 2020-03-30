@@ -68,4 +68,10 @@ class NakedAwait {
     //expectError("await must not be used under a lazy val initializer")
     def foo(): Any = async { val x = { lazy val y = await(f(0)); y } }
   }
+
+  def byNameFunction(): Unit = {
+    def foo(x: String)(a: => String): String = a.reverse
+    def fooAsByNameLambda = foo("") _ // : (_ => String) = String
+    async { fooAsByNameLambda(await(f(""))) }
+  }
 }
