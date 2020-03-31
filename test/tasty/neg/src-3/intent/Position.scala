@@ -23,7 +23,7 @@ import scala.quoted._
 
 case class Position(filePath: String, lineNumber0: Int, columnNumber0: Int)
 
-object Position with
+object Position:
 
   implicit inline def here: Position = ${ genPosition }
 

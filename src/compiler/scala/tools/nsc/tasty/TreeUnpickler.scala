@@ -528,11 +528,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def localContext(owner: Symbol)(implicit ctx: Context): Context =
       ctx.fresh.setOwner(owner)
 
-    private def normalizeFlags(tag: Int, owner: Symbol, givenFlags: FlagSet, name: Name, tname: TastyName, isAbsType: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
+    private def normalizeFlags(tag: Int, owner: Symbol, givenFlags: FlagSet, tastyFlags: TastyFlagSet, name: Name, tname: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
       val lacksDefinition =
         rhsIsEmpty &&
           name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
-        isAbsType
+        isAbsType ||
+        tastyFlags.is(Opaque) && !isClass
       var flags = givenFlags
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (tag === DEFDEF) flags |= Method
@@ -622,7 +623,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (!rhsIsEmpty) skipTree()
       val (givenFlags, tastyFlagSet, annotFns, privateWithin) =
         readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-      val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, tname, isAbsType, rhsIsEmpty)
+      val flags = normalizeFlags(tag, ctx.owner, givenFlags, tastyFlagSet, name, tname, isAbsType, isClass, rhsIsEmpty)
       def showFlags = {
         if (!tastyFlagSet)
           show(flags)
@@ -765,6 +766,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case EXTENSION => addTastyFlag(Extension)
           case GIVEN => addFlag(Implicit) //addTastyFlag(Given)
           case PARAMsetter => addFlag(ParamAccessor)
+          case PARAMalias => addTastyFlag(SuperParamAlias)
           case EXPORTED => addTastyFlag(Exported)
           case OPEN => addTastyFlag(Open)
           case PRIVATEqualified =>
@@ -927,7 +929,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           NoCycle(at = symAddr)
         case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
           val isInline = completer.tastyFlagSet.is(Inline)
-          val unsupported = completer.tastyFlagSet &~ (Inline | Enum)
+          val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension)
           assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
@@ -938,21 +940,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
           NoCycle(at = symAddr)
         case TYPEDEF | TYPEPARAM =>
-          val unsupported = completer.tastyFlagSet &~ Enum
+          val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque)
           assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
           if (sym.isClass) {
             sym.owner.ensureCompleted()
             readTemplate(symAddr)(localCtx)
           }
           else {
-            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see i3816.scala
-            // sym.setFlag(Provisional)
+            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see https://github.com/lampepfl/dotty/blob/master/tests/pos/i3816.scala
+            // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
             val rhs = readTpt()(localCtx)
-            sym.info = new NoCompleter {
-              override def completerTypeParams(sym: Symbol)(implicit ctx: Context) =
-                rhs.tpe.typeParams
-            }
-            // TODO check for cycles
+            sym.info = new NoCompleter {}
+            // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
+            //               refine self type of the owner to be aware of the alias.
             sym.info = rhs.tpe match {
               case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
                 new ErrorCompleter(owner =>
@@ -961,12 +961,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               case tpe             => tpe
             }
             if (sym.is(Param)) sym.flags &= ~(Private | Protected)
-            // sym.normalizeOpaque()
+            // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)
           }
         case PARAM =>
-          assertTasty(!completer.tastyFlagSet, s"unsupported Scala 3 flags on parameter $sym: ${show(completer.tastyFlagSet)}")
+          val unsupported = completer.tastyFlagSet &~ SuperParamAlias
+          assertTasty(!unsupported, s"unsupported Scala 3 flags on parameter $sym: ${show(unsupported)}")
           val tpt = readTpt()(localCtx)
           if (nothingButMods(end) && sym.not(ParamAccessor)) {
             sym.info = tpt.tpe
@@ -1040,6 +1041,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readIndexedMember() // ctor
       cls.info = {
         val classInfo = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
+        // TODO [tasty]: if support opaque types, refine the self type with any opaque members here
         if (tparams.isEmpty) classInfo
         else new PolyType(tparams.map(symFromNoCycle), classInfo)
       }
@@ -1565,9 +1567,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //                if (nextUnsharedTag === CASEDEF) (EmptyTree, fst) else (fst, readTpt())
 //              MatchTypeTree(bound, scrut, readCases(end))
             case TYPEBOUNDStpt =>
-              val lo = readTpt()
-              val hi = if (currentAddr === end) lo else readTpt()
-              TypeBoundsTree(lo, hi).setType(TypeBounds.bounded(lo.tpe, hi.tpe))
+              val lo    = readTpt()
+              val hi    = if (currentAddr == end) lo else readTpt()
+              val alias = if (currentAddr == end) emptyTree else readTpt()
+              if (alias != emptyTree) alias // only for opaque type alias
+              else TypeBoundsTree(lo, hi).setType(TypeBounds.bounded(lo.tpe, hi.tpe))
 //            case HOLE =>
 //              readHole(end, isType = false)
 //            case _ =>

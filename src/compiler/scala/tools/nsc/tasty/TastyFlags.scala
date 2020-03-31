@@ -18,7 +18,8 @@ object TastyFlags {
   final val TastyMacro: TastyFlagSet      = NoInits.next
   final val Enum: TastyFlagSet            = TastyMacro.next
   final val Open: TastyFlagSet            = Enum.next
-  final val maxFlag: Int                  = Open.shift
+  final val SuperParamAlias: TastyFlagSet = Open.next
+  final val maxFlag: Int                  = SuperParamAlias.shift
 
   case class TastyFlagSet private[TastyFlags](private val flags: Int) extends AnyVal {
 
@@ -46,7 +47,6 @@ object TastyFlags {
     def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean = if (!butNot) is(mask) else is(mask) && not(butNot)
     def not(mask: TastyFlagSet): Boolean                      = !isOneOf(mask)
     def hasFlags: Boolean                                     = this.flags != 0
-    def except(mask: TastyFlagSet): (Boolean, TastyFlagSet)   = is(mask) -> (this &~ mask)
 
     def debug: String = {
       if (!this) {
@@ -55,19 +55,20 @@ object TastyFlags {
       else {
         toSingletonSets.map { f =>
           (f: @unchecked) match {
-            case Erased      => "Erased"
-            case Internal    => "Internal"
-            case Inline      => "Inline"
-            case InlineProxy => "InlineProxy"
-            case Opaque      => "Opaque"
-            case Scala2x     => "Scala2x"
-            case Extension   => "Extension"
-            case Given       => "Given"
-            case Exported    => "Exported"
-            case NoInits     => "NoInits"
-            case TastyMacro  => "TastyMacro"
-            case Enum        => "Enum"
-            case Open        => "Open"
+            case Erased          => "Erased"
+            case Internal        => "Internal"
+            case Inline          => "Inline"
+            case InlineProxy     => "InlineProxy"
+            case Opaque          => "Opaque"
+            case Scala2x         => "Scala2x"
+            case Extension       => "Extension"
+            case Given           => "Given"
+            case Exported        => "Exported"
+            case NoInits         => "NoInits"
+            case TastyMacro      => "TastyMacro"
+            case Enum            => "Enum"
+            case Open            => "Open"
+            case SuperParamAlias => "SuperParamAlias"
           }
         } mkString(" | ")
       }

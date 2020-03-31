@@ -152,11 +152,6 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
     private[this] var myTastyFlagSet: TastyFlagSet = emptyTastyFlags
 
-    /** The type parameters computed by the completer before completion has finished */
-    def completerTypeParams(sym: Symbol)(implicit ctx: Context): List[Symbol] = sym.info.typeParams
-    //      if (sym.is(Touched)) Nil // return `Nil` instead of throwing a cyclic reference
-    //      else sym.info.typeParams
-
     override def decls: Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
     def moduleClass(implicit ctx: Context): Symbol = myModuleClassFn(ctx)

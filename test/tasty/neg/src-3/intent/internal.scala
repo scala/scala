@@ -1,21 +1,21 @@
 package tastytest.intent
 
 trait TestLanguage {
-  def expect[T](expr: => T)(given pos: Position): Expect[T] = new Expect[T](expr, pos)
+  def expect[T](expr: => T)(using pos: Position): Expect[T] = new Expect[T](expr, pos)
 }
 
 trait Eq[T]
 
 object IntEq extends Eq[Int]
 
-trait EqGivens with
+trait EqGivens:
   given Eq[Int] = IntEq
 
 trait Formatter[T]
 
 object IntFmt extends Formatter[Int]
 
-trait FormatterGivens with
+trait FormatterGivens:
   given Formatter[Int] = IntFmt
 
 abstract class TestSuite
@@ -25,11 +25,11 @@ trait Stateless extends IntentStatelessSyntax with ExpectGivens with EqGivens wi
 
 class Expect[T](blk: => T, position: Position, negated: Boolean = false)
 
-trait ExpectGivens with
+trait ExpectGivens:
 
-  def [T](expect: Expect[T]) toEqual (expected: T)(given eqq: Eq[T], fmt: Formatter[T]): Expectation = ???
+  def [T](expect: Expect[T]) toEqual (expected: T)(using eqq: Eq[T], fmt: Formatter[T]): Expectation = ???
 
-trait IntentStatelessSyntax extends TestLanguage with
+trait IntentStatelessSyntax extends TestLanguage:
 
-  def (testName: String) in (testImpl: => Expectation)(given pos: Position): Unit = ???
-  def (blockName: String) apply (block: => Unit)(given pos: Position): Unit = ???
+  def (testName: String) in (testImpl: => Expectation)(using pos: Position): Unit = ???
+  def (blockName: String) apply (block: => Unit)(using pos: Position): Unit = ???

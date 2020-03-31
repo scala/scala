@@ -256,7 +256,7 @@ Standard Section: "Comments" Comment*
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 19
+  val MajorVersion: Int = 20
   val MinorVersion: Int = 0
 
   /** Tags used to serialize names */
@@ -352,6 +352,7 @@ object TastyFormat {
   final val EXPORTED = 39
   final val OPEN = 40
   final val PARAMEND = 41
+  final val PARAMalias = 42
 
   // Cat. 2:    tag Nat
 
@@ -478,7 +479,7 @@ object TastyFormat {
 
   /** Useful for debugging */
   def isLegalTag(tag: Int): Boolean =
-    firstSimpleTreeTag <= tag && tag <= PARAMEND ||
+    firstSimpleTreeTag <= tag && tag <= PARAMalias ||
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
@@ -521,6 +522,7 @@ object TastyFormat {
        | STABLE
        | EXTENSION
        | PARAMsetter
+       | PARAMalias
        | EXPORTED
        | OPEN
        | ANNOTATION
@@ -585,6 +587,7 @@ object TastyFormat {
     case EXPORTED => "EXPORTED"
     case OPEN => "OPEN"
     case PARAMEND => "PARAMEND"
+    case PARAMalias => "PARAMalias"
 
     case SHAREDterm => "SHAREDterm"
     case SHAREDtype => "SHAREDtype"

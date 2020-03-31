@@ -71,19 +71,20 @@ trait FlagOps extends TastyKernel { self: TastyUniverse =>
     if (!flags) "EmptyTastyFlags"
     else flags.toSingletonSets.map { f =>
       (f: @unchecked) match {
-        case Erased      => "erased"
-        case Internal    => "<internal>"
-        case Inline      => "inline"
-        case InlineProxy => "<inlineproxy>"
-        case Opaque      => "opaque"
-        case Scala2x     => "<scala2x>"
-        case Extension   => "<extension>"
-        case Given       => "given"
-        case Exported    => "<exported>"
-        case NoInits     => "<noinits>"
-        case TastyMacro  => "<tastymacro>"
-        case Enum        => "enum"
-        case Open        => "open"
+        case Erased          => "erased"
+        case Internal        => "<internal>"
+        case Inline          => "inline"
+        case InlineProxy     => "<inlineproxy>"
+        case Opaque          => "opaque"
+        case Scala2x         => "<scala2x>"
+        case Extension       => "<extension>"
+        case Given           => "given"
+        case Exported        => "<exported>"
+        case NoInits         => "<noinits>"
+        case TastyMacro      => "<tastymacro>"
+        case Enum            => "enum"
+        case Open            => "open"
+        case SuperParamAlias => "<superparamalias>"
       }
     } mkString(" | ")
 }
