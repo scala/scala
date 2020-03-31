@@ -868,8 +868,11 @@ class AnnotationDrivenAsync {
       val source = newSourceFile(code)
       run.compileSources(source :: Nil)
       if (compileOnly) return null
-      Assert.assertTrue(reporter.infos.mkString("\n"), !reporter.hasErrors)
-      Assert.assertTrue(reporter.infos.mkString("\n"), !reporter.hasWarnings)
+      def showInfo(info: StoreReporter#Info): String = {
+        Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
+      }
+      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)
+      Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasWarnings)
       val loader = new URLClassLoader(Seq(new File(settings.outdir.value).toURI.toURL), global.getClass.getClassLoader)
       val cls = loader.loadClass("Test")
       val result = try {
