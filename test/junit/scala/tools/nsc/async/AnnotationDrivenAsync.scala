@@ -17,7 +17,6 @@ import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.nsc.transform.async.StateAssigner
 import scala.tools.partest.async.AsyncStateMachine
 
 class AnnotationDrivenAsync {
@@ -986,7 +985,9 @@ final class customAsync extends StaticAnnotation
 
 abstract class CustomFutureStateMachine extends AsyncStateMachine[CustomFuture[AnyRef], scala.util.Either[Throwable, AnyRef]] with Function1[scala.util.Either[Throwable, AnyRef], Unit] {
   private val result$async: CustomPromise[AnyRef] = new CustomPromise[AnyRef](scala.concurrent.Promise.apply[AnyRef]);
-  protected var state$async: Int = StateAssigner.Initial
+  private[this] var _state = 0
+  protected def state$async: Int = _state
+  protected def state$async_=(i: Int) = _state = i
   def apply(tr$async: R[AnyRef]): Unit
 
   type F[A] = CustomFuture[A]

@@ -41,7 +41,7 @@ trait AsyncTransformStates extends TypingTransformers {
     lazy val applySym: Symbol = applyTr.owner
     lazy val stateMachineClass: Symbol = applySym.owner
     lazy val stateGetter: Symbol = stateMachineMember(nme.state)
-    lazy val stateSetter: Symbol = stateGetter.setterIn(stateGetter.owner)
+    lazy val stateSetter: Symbol = stateMachineMember(nme.state.setterName)
     lazy val stateOnComplete: Symbol = stateMachineMember(TermName("onComplete"))
     lazy val stateCompleteSuccess: Symbol = stateMachineMember(TermName("completeSuccess"))
     lazy val stateCompleteFailure: Symbol = stateMachineMember(TermName("completeFailure"))
