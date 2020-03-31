@@ -1002,7 +1002,6 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     else cachedSize()
   override def isEmpty: Boolean = size == 0
   override protected[this] def className = "TrieMap"
-  override def toString: String = mkString(className + "(", ", ", ")")
 
 }
 
