@@ -801,17 +801,19 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         } getOrElse ""
       case (eof, _) =>
         echo(s"// Entering paste mode (${ eof getOrElse "ctrl-D" } to finish)\n")
-        val delimiter = eof orElse config.pasteDelimiter.option
-        val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
-        val text = (
-          margin filter (_.nonEmpty) map {
-            case "-" => input.linesIterator map (_.trim) mkString "\n"
-            case m   => input stripMargin m.head   // ignore excess chars in "<<||"
-          } getOrElse input
-        ).trim
-        if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
-        else echo("\n// Exiting paste mode, now interpreting.\n")
-        text
+        in.withSecondaryPrompt("") {
+          val delimiter = eof orElse config.pasteDelimiter.option
+          val input = readWhile(s => delimiter.isEmpty || delimiter.get != s) mkString "\n"
+          val text = (
+            margin filter (_.nonEmpty) map {
+              case "-" => input.linesIterator map (_.trim) mkString "\n"
+              case m => input stripMargin m.head // ignore excess chars in "<<||"
+            } getOrElse input
+            ).trim
+          if (text.isEmpty) echo("\n// Nothing pasted, nothing gained.\n")
+          else echo("\n// Exiting paste mode, now interpreting.\n")
+          text
+        }
     }
     def interpretCode() = {
       if (intp.withLabel(label)(intp interpret code) == Incomplete)

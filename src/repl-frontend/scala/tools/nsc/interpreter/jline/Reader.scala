@@ -40,9 +40,16 @@ class Reader private (
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
     }
   }
-  override def redrawLine(): Unit = ???
-  override def reset(): Unit = accumulator.reset()
+  def redrawLine(): Unit = ???
+  def reset(): Unit = accumulator.reset()
   override def close(): Unit = terminal.close()
+
+  override def withSecondaryPrompt[T](prompt: String)(body: => T): T = {
+    val oldPrompt = reader.getVariable(LineReader.SECONDARY_PROMPT_PATTERN)
+    reader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, prompt)
+    try body
+    finally reader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, oldPrompt)
+  }
 }
 
 object Reader {
