@@ -15,7 +15,6 @@ package reflect
 package internal
 
 import Variance._
-import scala.collection.mutable
 import scala.annotation.tailrec
 import scala.reflect.internal.util.ReusableInstance
 

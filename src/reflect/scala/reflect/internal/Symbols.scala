@@ -1229,7 +1229,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def ownersIterator: Iterator[Symbol] = new collection.AbstractIterator[Symbol] {
       private[this] var current = Symbol.this
       def hasNext = current ne NoSymbol
-      def next = { val r = current; current = current.owner; r }
+      def next() = { val r = current; current = current.owner; r }
     }
 
     /** Same as `ownerChain contains sym` but more efficient, and
