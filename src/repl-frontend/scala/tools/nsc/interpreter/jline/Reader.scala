@@ -32,7 +32,6 @@ class Reader private (
     terminal: Terminal) extends shell.InteractiveReader {
   override val history: shell.History = new HistoryAdaptor(reader.getHistory)
   override def interactive: Boolean = true
-  protected def readOneKey(prompt: String): Int = ???
   protected def readOneLine(prompt: String): String = {
     try {
       reader.readLine(prompt)

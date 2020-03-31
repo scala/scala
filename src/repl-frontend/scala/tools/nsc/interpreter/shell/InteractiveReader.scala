@@ -26,15 +26,14 @@ trait InteractiveReader {
   def redrawLine(): Unit
   def withSecondaryPrompt[T](prompt: String)(body: => T): T = body
 
-  def readYesOrNo(prompt: String, alt: => Boolean): Boolean = readOneKey(prompt) match {
-    case 'y'  => true
-    case 'n'  => false
-    case -1   => false // EOF
-    case _    => alt
-  }
+  def readYesOrNo(prompt: String, alt: => Boolean): Boolean =
+    readOneLine(prompt).trim.toUpperCase.headOption match {
+      case Some('Y') => true
+      case Some('N') => false
+      case _ => alt
+    }
 
   protected def readOneLine(prompt: String): String
-  protected def readOneKey(prompt: String): Int
 
   def readLine(prompt: String): String = readOneLine(prompt)
     /*
