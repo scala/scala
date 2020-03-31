@@ -346,13 +346,17 @@ private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
 /** Flat ArraySeq-like structure */
 private final class Vector1[+A](_data1: Arr1) extends VectorImpl[A](_data1) {
 
-  @inline def apply(index: Int): A =
-    try prefix1(index).asInstanceOf[A]
-    catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  @inline def apply(index: Int): A = {
+    if(index >= 0 && index < prefix1.length)
+      prefix1(index).asInstanceOf[A]
+    else throw ioob(index)
+  }
 
-  override def updated[B >: A](index: Int, elem: B): Vector[B] =
-    try new Vector1(copyUpdate(prefix1, index, elem))
-    catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < prefix1.length)
+      new Vector1(copyUpdate(prefix1, index, elem))
+    else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     val len1 = prefix1.length
@@ -404,28 +408,30 @@ private final class Vector2[+A](_prefix1: Arr1, private[immutable] val len1: Int
     new Vector2(prefix1, len1, data2, suffix1, length0)
 
   @inline def apply(index: Int): A = {
-    try {
+    if(index >= 0 && index < length0) {
+      val io = index - len1
+      if(io >= 0) {
+        val i2 = io >>> BITS
+        val i1 = io & MASK
+        if(i2 < data2.length) data2(i2)(i1)
+        else suffix1(io & MASK)
+      } else prefix1(index)
+    }.asInstanceOf[A] else throw ioob(index)
+  }
+
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < length0) {
       if(index >= len1) {
         val io = index - len1
         val i2 = io >>> BITS
         val i1 = io & MASK
-        if(i2 != data2.length) data2(i2)(i1)
-        else suffix1(i1)
-      } else prefix1(index)
-    } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
-  }.asInstanceOf[A]
-
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = try {
-    if(index >= len1) {
-      val io = index - len1
-      val i2 = io >>> BITS
-      val i1 = io & MASK
-      if(i2 != data2.length) copy(data2 = copyUpdate(data2, i2, i1, elem))
-      else copy(suffix1 = copyUpdate(suffix1, i1, elem))
-    } else {
-      copy(prefix1 = copyUpdate(prefix1, index, elem))
-    }
-  } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+        if(i2 < data2.length) copy(data2 = copyUpdate(data2, i2, i1, elem))
+        else copy(suffix1 = copyUpdate(suffix1, i1, elem))
+      } else {
+        copy(prefix1 = copyUpdate(prefix1, index, elem))
+      }
+    } else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     if     (suffix1.length < WIDTH  ) copy(suffix1 = copyAppend1(suffix1, elem), length0 = length0+1)
@@ -493,38 +499,40 @@ private final class Vector3[+A](_prefix1: Arr1, private[immutable] val len1: Int
     new Vector3(prefix1, len1, prefix2, len12, data3, suffix2, suffix1, length0)
 
   @inline def apply(index: Int): A = {
-    try {
-      if(index >= len12) {
-        val io = index - len12
+    if(index >= 0 && index < length0) {
+      val io = index - len12
+      if(io >= 0) {
         val i3 = io >>> BITS2
         val i2 = (io >>> BITS) & MASK
         val i1 = io & MASK
-        if(i3 != data3.length) data3(i3)(i2)(i1)
-        else if(i2 != suffix2.length) suffix2(i2)(i1)
+        if(i3 < data3.length) data3(i3)(i2)(i1)
+        else if(i2 < suffix2.length) suffix2(i2)(i1)
         else suffix1(i1)
       } else if(index >= len1) {
         val io = index - len1
         prefix2(io >>> BITS)(io & MASK)
       } else prefix1(index)
-    } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
-  }.asInstanceOf[A]
+    }.asInstanceOf[A] else throw ioob(index)
+  }
 
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = try {
-    if(index >= len12) {
-      val io = index - len12
-      val i3 = io >>> BITS2
-      val i2 = (io >>> BITS) & MASK
-      val i1 = io & MASK
-      if     (i3 != data3.length  ) copy(data3   = copyUpdate(data3, i3, i2, i1, elem))
-      else if(i2 != suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
-      else                          copy(suffix1 = copyUpdate(suffix1, i1, elem))
-    } else if(index >= len1) {
-      val io = index - len1
-      copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
-    } else {
-      copy(prefix1 = copyUpdate(prefix1, index, elem))
-    }
-  } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < length0) {
+      if(index >= len12) {
+        val io = index - len12
+        val i3 = io >>> BITS2
+        val i2 = (io >>> BITS) & MASK
+        val i1 = io & MASK
+        if     (i3 < data3.length  ) copy(data3   = copyUpdate(data3, i3, i2, i1, elem))
+        else if(i2 < suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
+        else                         copy(suffix1 = copyUpdate(suffix1, i1, elem))
+      } else if(index >= len1) {
+        val io = index - len1
+        copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
+      } else {
+        copy(prefix1 = copyUpdate(prefix1, index, elem))
+      }
+    } else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     if     (suffix1.length < WIDTH  ) copy(suffix1 = copyAppend1(suffix1, elem), length0 = length0+1)
@@ -604,16 +612,16 @@ private final class Vector4[+A](_prefix1: Arr1, private[immutable] val len1: Int
     new Vector4(prefix1, len1, prefix2, len12, prefix3, len123, data4, suffix3, suffix2, suffix1, length0)
 
   @inline def apply(index: Int): A = {
-    try {
-      if(index >= len123) {
-        val io = index - len123
+    if(index >= 0 && index < length0) {
+      val io = index - len123
+      if(io >= 0) {
         val i4 = io >>> BITS3
         val i3 = (io >>> BITS2) & MASK
         val i2 = (io >>> BITS) & MASK
         val i1 = io & MASK
-        if(i4 != data4.length) data4(i4)(i3)(i2)(i1)
-        else if(i3 != suffix3.length) suffix3(i3)(i2)(i1)
-        else if(i2 != suffix2.length) suffix2(i2)(i1)
+        if(i4 < data4.length) data4(i4)(i3)(i2)(i1)
+        else if(i3 < suffix3.length) suffix3(i3)(i2)(i1)
+        else if(i2 < suffix2.length) suffix2(i2)(i1)
         else suffix1(i1)
       } else if(index >= len12) {
         val io = index - len12
@@ -622,30 +630,32 @@ private final class Vector4[+A](_prefix1: Arr1, private[immutable] val len1: Int
         val io = index - len1
         prefix2(io >>> BITS)(io & MASK)
       } else prefix1(index)
-    } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
-  }.asInstanceOf[A]
+    }.asInstanceOf[A] else throw ioob(index)
+  }
 
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = try {
-    if(index >= len123) {
-      val io = index - len123
-      val i4 = io >>> BITS3
-      val i3 = (io >>> BITS2) & MASK
-      val i2 = (io >>> BITS) & MASK
-      val i1 = io & MASK
-      if     (i4 != data4.length  ) copy(data4   = copyUpdate(data4, i4, i3, i2, i1, elem))
-      else if(i3 != suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
-      else if(i2 != suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
-      else                          copy(suffix1 = copyUpdate(suffix1, i1, elem))
-    } else if(index >= len12) {
-      val io = index - len12
-      copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len1) {
-      val io = index - len1
-      copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
-    } else {
-      copy(prefix1 = copyUpdate(prefix1, index, elem))
-    }
-  } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < length0) {
+      if(index >= len123) {
+        val io = index - len123
+        val i4 = io >>> BITS3
+        val i3 = (io >>> BITS2) & MASK
+        val i2 = (io >>> BITS) & MASK
+        val i1 = io & MASK
+        if     (i4 < data4.length  ) copy(data4   = copyUpdate(data4, i4, i3, i2, i1, elem))
+        else if(i3 < suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
+        else if(i2 < suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
+        else                         copy(suffix1 = copyUpdate(suffix1, i1, elem))
+      } else if(index >= len12) {
+        val io = index - len12
+        copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len1) {
+        val io = index - len1
+        copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
+      } else {
+        copy(prefix1 = copyUpdate(prefix1, index, elem))
+      }
+    } else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     if     (suffix1.length < WIDTH  ) copy(suffix1 = copyAppend1(suffix1, elem), length0 = length0+1)
@@ -735,18 +745,18 @@ private final class Vector5[+A](_prefix1: Arr1, private[immutable] val len1: Int
     new Vector5(prefix1, len1, prefix2, len12, prefix3, len123, prefix4, len1234, data5, suffix4, suffix3, suffix2, suffix1, length0)
 
   @inline def apply(index: Int): A = {
-    try {
-      if(index >= len1234) {
-        val io = index - len1234
+    if(index >= 0 && index < length0) {
+      val io = index - len1234
+      if(io >= 0) {
         val i5 = io >>> BITS4
         val i4 = (io >>> BITS3) & MASK
         val i3 = (io >>> BITS2) & MASK
         val i2 = (io >>> BITS) & MASK
         val i1 = io & MASK
         if(i5 < data5.length) data5(i5)(i4)(i3)(i2)(i1)
-        else if(i4 != suffix4.length) suffix4(i4)(i3)(i2)(i1)
-        else if(i3 != suffix3.length) suffix3(i3)(i2)(i1)
-        else if(i2 != suffix2.length) suffix2(i2)(i1)
+        else if(i4 < suffix4.length) suffix4(i4)(i3)(i2)(i1)
+        else if(i3 < suffix3.length) suffix3(i3)(i2)(i1)
+        else if(i2 < suffix2.length) suffix2(i2)(i1)
         else suffix1(i1)
       } else if(index >= len123) {
         val io = index - len123
@@ -758,35 +768,37 @@ private final class Vector5[+A](_prefix1: Arr1, private[immutable] val len1: Int
         val io = index - len1
         prefix2(io >>> BITS)(io & MASK)
       } else prefix1(index)
-    } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
-  }.asInstanceOf[A]
+    }.asInstanceOf[A] else throw ioob(index)
+  }
 
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = try {
-    if(index >= len1234) {
-      val io = index - len1234
-      val i5 = io >>> BITS4
-      val i4 = (io >>> BITS3) & MASK
-      val i3 = (io >>> BITS2) & MASK
-      val i2 = (io >>> BITS) & MASK
-      val i1 = io & MASK
-      if     (i5 != data5.length  ) copy(data5   = copyUpdate(data5,   i5, i4, i3, i2, i1, elem))
-      else if(i4 != suffix4.length) copy(suffix4 = copyUpdate(suffix4, i4, i3, i2, i1, elem))
-      else if(i3 != suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
-      else if(i2 != suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
-      else                          copy(suffix1 = copyUpdate(suffix1, i1, elem))
-    } else if(index >= len123) {
-      val io = index - len123
-      copy(prefix4 = copyUpdate(prefix4, io >>> BITS3, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len12) {
-      val io = index - len12
-      copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len1) {
-      val io = index - len1
-      copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
-    } else {
-      copy(prefix1 = copyUpdate(prefix1, index, elem))
-    }
-  } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < length0) {
+      if(index >= len1234) {
+        val io = index - len1234
+        val i5 = io >>> BITS4
+        val i4 = (io >>> BITS3) & MASK
+        val i3 = (io >>> BITS2) & MASK
+        val i2 = (io >>> BITS) & MASK
+        val i1 = io & MASK
+        if     (i5 < data5.length  ) copy(data5   = copyUpdate(data5,   i5, i4, i3, i2, i1, elem))
+        else if(i4 < suffix4.length) copy(suffix4 = copyUpdate(suffix4, i4, i3, i2, i1, elem))
+        else if(i3 < suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
+        else if(i2 < suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
+        else                         copy(suffix1 = copyUpdate(suffix1, i1, elem))
+      } else if(index >= len123) {
+        val io = index - len123
+        copy(prefix4 = copyUpdate(prefix4, io >>> BITS3, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len12) {
+        val io = index - len12
+        copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len1) {
+        val io = index - len1
+        copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
+      } else {
+        copy(prefix1 = copyUpdate(prefix1, index, elem))
+      }
+    } else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     if     (suffix1.length < WIDTH  ) copy(suffix1 = copyAppend1(suffix1, elem), length0 = length0+1)
@@ -886,20 +898,20 @@ private final class Vector6[+A](_prefix1: Arr1, private[immutable] val len1: Int
     new Vector6(prefix1, len1, prefix2, len12, prefix3, len123, prefix4, len1234, prefix5, len12345, data6, suffix5, suffix4, suffix3, suffix2, suffix1, length0)
 
   @inline def apply(index: Int): A = {
-    try {
-      if(index >= len12345) {
-        val io = index - len12345
+    if(index >= 0 && index < length0) {
+      val io = index - len12345
+      if(io >= 0) {
         val i6 = io >>> BITS5
         val i5 = (io >>> BITS4) & MASK
         val i4 = (io >>> BITS3) & MASK
         val i3 = (io >>> BITS2) & MASK
         val i2 = (io >>> BITS) & MASK
         val i1 = io & MASK
-        if(i6 != data6.length) data6(i6)(i5)(i4)(i3)(i2)(i1)
-        else if(i5 != suffix5.length) suffix5(i5)(i4)(i3)(i2)(i1)
-        else if(i4 != suffix4.length) suffix4(i4)(i3)(i2)(i1)
-        else if(i3 != suffix3.length) suffix3(i3)(i2)(i1)
-        else if(i2 != suffix2.length) suffix2(i2)(i1)
+        if(i6 < data6.length) data6(i6)(i5)(i4)(i3)(i2)(i1)
+        else if(i5 < suffix5.length) suffix5(i5)(i4)(i3)(i2)(i1)
+        else if(i4 < suffix4.length) suffix4(i4)(i3)(i2)(i1)
+        else if(i3 < suffix3.length) suffix3(i3)(i2)(i1)
+        else if(i2 < suffix2.length) suffix2(i2)(i1)
         else suffix1(i1)
       } else if(index >= len1234) {
         val io = index - len1234
@@ -914,40 +926,42 @@ private final class Vector6[+A](_prefix1: Arr1, private[immutable] val len1: Int
         val io = index - len1
         prefix2(io >>> BITS)(io & MASK)
       } else prefix1(index)
-    } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
-  }.asInstanceOf[A]
+    }.asInstanceOf[A] else throw ioob(index)
+  }
 
-  override def updated[B >: A](index: Int, elem: B): Vector[B] = try {
-    if(index >= len12345) {
-      val io = index - len12345
-      val i6 = io >>> BITS5
-      val i5 = (io >>> BITS4) & MASK
-      val i4 = (io >>> BITS3) & MASK
-      val i3 = (io >>> BITS2) & MASK
-      val i2 = (io >>> BITS) & MASK
-      val i1 = io & MASK
-      if     (i6 != data6.length  ) copy(data6   = copyUpdate(data6,   i6, i5, i4, i3, i2, i1, elem))
-      else if(i5 != suffix5.length) copy(suffix5 = copyUpdate(suffix5, i5, i4, i3, i2, i1, elem))
-      else if(i4 != suffix4.length) copy(suffix4 = copyUpdate(suffix4, i4, i3, i2, i1, elem))
-      else if(i3 != suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
-      else if(i2 != suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
-      else                          copy(suffix1 = copyUpdate(suffix1, i1, elem))
-    } else if(index >= len1234) {
-      val io = index - len1234
-      copy(prefix5 = copyUpdate(prefix5, io >>> BITS4, (io >>> BITS3) & MASK, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len123) {
-      val io = index - len123
-      copy(prefix4 = copyUpdate(prefix4, io >>> BITS3, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len12) {
-      val io = index - len12
-      copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
-    } else if(index >= len1) {
-      val io = index - len1
-      copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
-    } else {
-      copy(prefix1 = copyUpdate(prefix1, index, elem))
-    }
-  } catch { case _: ArrayIndexOutOfBoundsException => throw ioob(index) }
+  override def updated[B >: A](index: Int, elem: B): Vector[B] = {
+    if(index >= 0 && index < length0) {
+      if(index >= len12345) {
+        val io = index - len12345
+        val i6 = io >>> BITS5
+        val i5 = (io >>> BITS4) & MASK
+        val i4 = (io >>> BITS3) & MASK
+        val i3 = (io >>> BITS2) & MASK
+        val i2 = (io >>> BITS) & MASK
+        val i1 = io & MASK
+        if     (i6 < data6.length  ) copy(data6   = copyUpdate(data6,   i6, i5, i4, i3, i2, i1, elem))
+        else if(i5 < suffix5.length) copy(suffix5 = copyUpdate(suffix5, i5, i4, i3, i2, i1, elem))
+        else if(i4 < suffix4.length) copy(suffix4 = copyUpdate(suffix4, i4, i3, i2, i1, elem))
+        else if(i3 < suffix3.length) copy(suffix3 = copyUpdate(suffix3, i3, i2, i1, elem))
+        else if(i2 < suffix2.length) copy(suffix2 = copyUpdate(suffix2, i2, i1, elem))
+        else                         copy(suffix1 = copyUpdate(suffix1, i1, elem))
+      } else if(index >= len1234) {
+        val io = index - len1234
+        copy(prefix5 = copyUpdate(prefix5, io >>> BITS4, (io >>> BITS3) & MASK, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len123) {
+        val io = index - len123
+        copy(prefix4 = copyUpdate(prefix4, io >>> BITS3, (io >>> BITS2) & MASK, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len12) {
+        val io = index - len12
+        copy(prefix3 = copyUpdate(prefix3, io >>> BITS2, (io >>> BITS) & MASK, io & MASK, elem))
+      } else if(index >= len1) {
+        val io = index - len1
+        copy(prefix2 = copyUpdate(prefix2, io >>> BITS, io & MASK, elem))
+      } else {
+        copy(prefix1 = copyUpdate(prefix1, index, elem))
+      }
+    } else throw ioob(index)
+  }
 
   override def appended[B >: A](elem: B): Vector[B] = {
     if     (suffix1.length < WIDTH      ) copy(suffix1 = copyAppend1(suffix1, elem), length0 = length0+1)
