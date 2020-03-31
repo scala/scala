@@ -250,15 +250,16 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
     new IndexOutOfBoundsException(s"$index is out of bounds (min 0, max ${length-1})")
 
   override final def head: A =
-    try prefix1(0).asInstanceOf[A]
-    catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("empty.head") }
+    if (prefix1.length == 0) throw new NoSuchElementException("empty.head")
+    else prefix1(0).asInstanceOf[A]
 
-  override final def last: A = try {
+  override final def last: A = {
     if(this.isInstanceOf[BigVector[_]]) {
-      val v = this.asInstanceOf[BigVector[_]]
-      v.suffix1(v.suffix1.length-1)
+      val suffix = this.asInstanceOf[BigVector[_]].suffix1
+      if(suffix.length == 0) throw new NoSuchElementException("empty.tail")
+      else suffix(suffix.length-1)
     } else prefix1(prefix1.length-1)
-  }.asInstanceOf[A] catch { case _: ArrayIndexOutOfBoundsException => throw new NoSuchElementException("empty.tail") }
+  }.asInstanceOf[A]
 
   override final def foreach[U](f: A => U): Unit = {
     val c = vectorSliceCount
