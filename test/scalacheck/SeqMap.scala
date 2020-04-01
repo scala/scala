@@ -15,7 +15,7 @@ object SeqMapTest extends Properties("SeqMap") {
       def updated[V1 >: String](key: Int, value: V1): SeqMap[Int, V1] = ???
       override def get(key: Int): Option[String] = ???
       override def iterator: Iterator[(Int, String)] = Iterator(1 -> "hi")
-    }.toString == "SeqMap(<iterable>)"
+    }.toString == "SeqMap(1 -> hi)"
   }
 
   property("ordering") = forAll { (m: Map[Int, Int]) =>
