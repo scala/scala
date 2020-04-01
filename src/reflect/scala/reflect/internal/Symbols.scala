@@ -2567,7 +2567,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // return actual source code.) So sourceFile has classfiles filtered out.
     final def sourceFile: AbstractFile = {
       val file = associatedFile
-      if ((file eq NoAbstractFile) || (file.path endsWith ".class")) null else file
+      if (
+        (file eq NoAbstractFile) || {
+          val path = file.path
+          path.endsWith(".class") || path.endsWith(".sig")
+        }) null else file
     }
 
     /** Overridden in ModuleSymbols to delegate to the module class.
