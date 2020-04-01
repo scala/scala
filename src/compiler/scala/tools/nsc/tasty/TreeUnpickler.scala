@@ -10,21 +10,16 @@ import scala.util.chaining._
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
- *  @param posUnpicklerOpt     the unpickler for positions, if it exists
- *  @param commentUnpicklerOpt the unpickler for comments, if it exists
  *  @param splices
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
     nameAtRef: NameRef => TastyName,
-    posUnpicklerOpt: Option[PositionUnpickler],
-    commentUnpicklerOpt: Option[CommentUnpickler],
     splices: Seq[Any])(implicit
     val tasty: Tasty) { self =>
   import tasty._
   import TastyFormat._
   import FlagSets._
-  import NameOps._
   import SymbolOps._
   import TreeUnpickler._
   import MaybeCycle._
@@ -85,17 +80,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       rdr.indexStats(reader.endAddr)
   }
 
-//  /** The unpickled trees */
-//  def unpickle(mode: UnpickleMode)(implicit ctx: Context): List[Tree] = {
-//    assert(roots != null, "unpickle without previous enterTopLevel")
-//    val rdr = new TreeReader(reader)
-//    mode match {
-//      case UnpickleMode.TopLevel => rdr.readTopLevel()
-//      case UnpickleMode.Term => rdr.readTerm() :: Nil
-//      case UnpickleMode.TypeTree => rdr.readTpt() :: Nil
-//    }
-//  }
-
   private def completeClassTpe1(implicit ctx: Context): ClassSymbol = {
     val cls = ctx.owner.asClass
     val assumedSelfType =
@@ -108,15 +92,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   class Completer(reader: TastyReader, tastyFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType { self =>
     import reader._
 
-    //    val owner = ctx.owner
-    //    val source = ctx.source
-
     self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
       try {
-        cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) { // TODO really this needs to construct a new Context from the current symbolTable that this is completed from
-          new TreeReader(reader).readIndexedMember()//(ctx.withOwner(owner).withSource(source))
+        // implicit assertion that the completion is done by the same mirror that loaded owner
+        cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) {
+          new TreeReader(reader).readIndexedMember()
         }
       } catch {
         case err: TASTyException =>
@@ -228,7 +210,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     def readTastyName(): TastyName = nameAtRef(readNameRef())
-    def readEncodedName(): TermName = readTastyName().toEncodedTermName
+    def readEncodedName(): TermName = encodeAsTermName(readTastyName())
 
 // ------ Reading types -----------------------------------------------------
 
@@ -424,17 +406,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             // case MATCHtype =>
             //   MatchType(readType(), readType(), until(end)(readType()))
             case POLYtype =>
-              readMethodic(PolyType, _.toEncodedTermName.toTypeName)
+              readMethodic(PolyType, encodeAsTermName(_).toTypeName)
             case METHODtype =>
-              readMethodic(MethodType, _.toEncodedTermName)
+              readMethodic(MethodType, encodeAsTermName)
             // case ERASEDMETHODtype =>
             //   readMethodic(ErasedMethodType, _.toTermName)
             // case ERASEDGIVENMETHODtype =>
             //   readMethodic(ErasedContextualMethodType, _.toTermName)
             case IMPLICITMETHODtype | GIVENMETHODtype =>
-              readMethodic(ImplicitMethodType, _.toEncodedTermName)
+              readMethodic(ImplicitMethodType, encodeAsTermName)
             case TYPELAMBDAtype =>
-              readMethodic(HKTypeLambda, _.toEncodedTermName.toTypeName)
+              readMethodic(HKTypeLambda, encodeAsTermName(_).toTypeName)
             case PARAMtype => // reference to a type parameter within a LambdaType
               readTypeRef().typeParams(readNat()).ref
           }
@@ -509,8 +491,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     private def readPackageRef()(implicit ctx: Context): TermSymbol = {
       val name = readEncodedName()
-      if (name === nme.ROOT || name === nme.ROOTPKG) ctx.RootPackage
-      else if (name === nme.EMPTY_PACKAGE_NAME) ctx.EmptyPackage
+      if (name === nme.ROOT || name === nme.ROOTPKG) ctx.loadingMirror.RootPackage
+      else if (name === nme.EMPTY_PACKAGE_NAME) ctx.loadingMirror.EmptyPackage
       else ctx.requiredPackage(name)
     }
 
@@ -525,13 +507,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def nothingButMods(end: Addr): Boolean =
       currentAddr === end || isModifierTag(nextByte)
 
-    private def localContext(owner: Symbol)(implicit ctx: Context): Context =
-      ctx.fresh.setOwner(owner)
-
     private def normalizeFlags(tag: Int, owner: Symbol, givenFlags: FlagSet, tastyFlags: TastyFlagSet, name: Name, tname: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
       val lacksDefinition =
         rhsIsEmpty &&
-          name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
+          name.isTermName && !isConstructorName(name) && !givenFlags.isOneOf(TermParamOrAccessor) ||
         isAbsType ||
         tastyFlags.is(Opaque) && !isClass
       var flags = givenFlags
@@ -578,7 +557,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case BIND =>
         createBindSymbol()
       case TEMPLATE =>
-        val localDummy = ctx.newLocalDummy(ctx.owner)
+        val localDummy = ctx.newLocalDummy
         registerSym(currentAddr, localDummy)
         localDummy
       case tag =>
@@ -610,7 +589,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
       val tname: TastyName = readTastyName()
-      var name: Name = tname.toEncodedTermName
+      var name: Name = encodeAsTermName(tname)
       if (isTypeTag) name = name.toTypeName
       skipParams()
       val ttag = nextUnsharedTag
@@ -641,7 +620,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def adjustIfModule(completer: TastyLazyType) = {
         if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
       }
-//      val coord = coordAt(start)
       val sym = {
         if (isTypeTag && nme.CONSTRUCTOR === ctx.owner.name.toTermName && tag === TYPEPARAM) {
           ctx.owner.owner.typeParams.find(name === _.name).getOrElse {
@@ -652,29 +630,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
           roots.find(root => (root.owner `eq` ctx.owner) && name === root.name) match {
             case Some(found) =>
-  //            rootd.coord = coord
               val rootd   = if (isModuleClass) found.linkedClassOfClass else found
               rootd.info  = completer
-              rootd.flags = flags // rootd.flags = flags &~ Touched // allow one more completion
+              rootd.flags = flags // dotty "removes one completion" here from the flags, which is not possible in nsc
               rootd.privateWithin = privateWithin
               seenRoots += rootd
               ctx.log(s"replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
-              if (isModuleClass) {
-                val moduleName            = name.toTermName
-                val moduleClass           = ctx.unlinkModule(moduleName).moduleClass
-                moduleClass.info          = completer
-                moduleClass.flags         = flags
-                moduleClass.privateWithin = privateWithin
-                moduleClass
-              }
-              else {
-                if (isClass)
-                  ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-                else
-                  ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
-              }
+              if (isModuleClass) ctx.moduleClassFor(name.toTermName, flags, completer, privateWithin)
+              else if (isClass) ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
+              else ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
           }
         }
       }
@@ -689,21 +655,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       registerSym(start, sym)
       if (isClass) {
         sym.completer.withDecls(mkScope)
-        val localCtx = localContext(sym)
+        val localCtx = ctx.withOwner(sym)
         forkAt(templateStart).indexTemplateParams()(localCtx)
       }
-//      else if (sym.isInlineMethod)
-//        sym.addAnnotation(LazyBodyAnnotation { ctx0 =>
-//          val ctx1 = localContext(sym)(ctx0).addMode(Mode.ReadPositions)
-//          implicit val ctx: Context = sourceChangeContext(Addr(0))(ctx1)
-//            // avoids space leaks by not capturing the current context
-//          forkAt(rhsStart).readTerm()
-//        })
       goto(start)
       sym
     }
 
-    private def allowsOverload(sym: Symbol) = ( // taken from Namer. TODO [tasty]: added module to allows overload
+    private def allowsOverload(sym: Symbol) = ( // TODO [tasty]: taken from Namer. Added module symbols
       (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
     )
 
@@ -745,7 +704,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case OVERRIDE => addFlag(Override)
           case INLINE => addTastyFlag(Inline)
           case INLINEPROXY => addTastyFlag(InlineProxy)
-          case MACRO => addTastyFlag(TastyMacro) // addFlag(Macro)
+          case MACRO => addTastyFlag(TastyMacro)
           case OPAQUE => addTastyFlag(Opaque)
           case STATIC => addFlag(JavaStatic)
           case OBJECT => addFlag(Module)
@@ -763,7 +722,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case DEFAULTparameterized => addFlag(DefaultParameterized)
           case STABLE => addFlag(Stable)
           case EXTENSION => addTastyFlag(Extension)
-          case GIVEN => addFlag(Implicit) //addTastyFlag(Given)
+          case GIVEN => addFlag(Implicit)
           case PARAMsetter => addFlag(ParamAccessor)
           case PARAMalias => addTastyFlag(SuperParamAlias)
           case EXPORTED => addTastyFlag(Exported)
@@ -783,49 +742,34 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       (flags, tastyFlagSet, if (ctx.ignoreAnnotations) Nil else annotFns.reverse, privateWithin)
     }
 
-    private val readTypedWithin: Context => Symbol =
-      implicit ctx => readType().typeSymbolDirect
+    private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
 
     private val readTypedAnnot: Context => Symbol => Annotation = { implicit ctx =>
       readByte()
       val end = readEnd()
       val tp = readType()
       val lazyAnnotTree = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
-      owner => Annotation.deferredSymAndTree(owner)(tp.typeSymbolDirect)(lazyAnnotTree(owner).complete)
+      owner => Annotation.deferredSymAndTree(owner)(tp.typeSymbolDirect)(lazyAnnotTree(owner))
     }
 
     /** Create symbols for the definitions in the statement sequence between
      *  current address and `end`.
-     *  @return  the largest subset of {NoInits, PureInterface} that a
-     *           trait owning the indexed statements can have as flags.
      */
-    def indexStats(end: Addr)(implicit ctx: Context): (FlagSet, TastyFlagSet) = {
-      var (initsFlags, initsTastyFlags) = NoInitsInterface
-      def clearFlags() = {
-        initsFlags      = emptyFlags
-        initsTastyFlags = emptyTastyFlags
-      }
+    def indexStats(end: Addr)(implicit ctx: Context): Unit = {
       while (currentAddr.index < end.index) {
         nextByte match {
           case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
-            val sym = symbolAtCurrent()
+            symbolAtCurrent()
             skipTree()
-            if (sym.isTerm && !sym.isOneOf(DeferredOrLazyOrMethod))
-              clearFlags()
-            else if (sym.isClass ||
-              sym.is(Method, butNot = Deferred) && !sym.isConstructor)
-              initsTastyFlags &= NoInits
           case IMPORT =>
             skipTree()
           case PACKAGE =>
-            processPackage { (_, end) => implicit ctx => indexStats(end) }
+            processPackage(end => implicit ctx => indexStats(end))
           case _ =>
             skipTree()
-            clearFlags()
         }
       }
       assert(currentAddr.index === end.index)
-      (initsFlags, initsTastyFlags)
     }
 
     /** Process package with given operation `op`. The operation takes as arguments
@@ -833,18 +777,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *   - an end address,
      *   - a context which has the processed package as owner
      */
-    def processPackage[T](op: (RefTree, Addr) => Context => T)(implicit ctx: Context): T = {
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return processPackage(op)(sctx)
+    def processPackage[T](op: Addr => Context => T)(implicit ctx: Context): T = {
       readByte()
       val end = readEnd()
       val tpe = readTypeAsTypeRef()
-      val pid = ref(tpe).asInstanceOf[RefTree]
-      op(pid, end)(localContext(tpe.typeSymbolDirect.moduleClass))
-    }
-
-    def ref[T <: TypeRef](tp: T): Tree = {
-      RefTree(TypeTree(tp), tp.sym.name.toTypeName)
+      op(end)(ctx.withOwner(tpe.typeSymbolDirect.moduleClass))
     }
 
     /** Create symbols the longest consecutive sequence of parameters with given
@@ -880,14 +817,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     private def readNewMember()(implicit ctx: Context): NoCycle = {
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return readNewMember()(sctx)
       val symAddr = currentAddr
       val sym     = symAtAddr(symAddr)
       val tag     = readByte()
       val end     = readEnd()
       val tname   = readTastyName()
-      val name    = tname.toEncodedTermName
+      val name    = encodeAsTermName(tname)
 
       ctx.log(s"completing member $name at $symAddr. ${showSym(sym)}")
 
@@ -901,7 +836,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case _ => Nil
       }
 
-      val localCtx = localContext(sym)
+      val localCtx = ctx.withOwner(sym)
       val noCycle  = tag match {
         case DEFDEF =>
           val supported = Extension | Inline | TastyMacro
@@ -989,19 +924,22 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val parentCtx = ctx.withOwner(localDummy)
       assert(readByte() === TEMPLATE)
       val end = readEnd()
+
+      // ** PARAMETERS **
       ctx.log(s"Template: reading parameters of $cls")
       val tparams = readIndexedParams[NoCycle](TYPEPARAM)
       if (tparams.nonEmpty) {
         cls.info = new PolyType(tparams.map(symFromNoCycle), cls.info)
       }
       readIndexedParams[NoCycle](PARAM) // skip value parameters
+
+      // ** MEMBERS **
       ctx.log(s"Template: indexing members of $cls")
-      val (bodyFlags, bodyTastyFlags) = {
-        val bodyIndexer = fork
-        // The first DEFDEF corresponds to the primary constructor
-        while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()
-        bodyIndexer.indexStats(end)
-      }
+      val bodyIndexer = fork
+      while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
+      bodyIndexer.indexStats(end)
+
+      // ** PARENTS **
       ctx.log(s"Template: adding parents of $cls")
       val parents = collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
         nextUnsharedTag match {
@@ -1014,6 +952,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (tpe.typeSymbolDirect === defn.ObjectClass) defn.AnyRefTpe
         else tpe
       }
+
+      // ** CREATE EXTENSION METHODS **
       if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
         withPhaseNoLater(ctx.extmethodsPhase) {
@@ -1028,16 +968,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }
+
       if (nextByte === SELFDEF) {
         ctx.log(s"Template: adding self-type of $cls")
         readByte()
-        readTastyName()
+        readLongNat()
         val selfTpe = readTpt().tpe
         ctx.log(s"Template: self-type is $selfTpe")
         cls.typeOfThis = selfTpe
       }
-      ctx.log(s"Template: reading constructor of $cls")
-      readIndexedMember() // ctor
       cls.info = {
         val classInfo = new ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
         // TODO [tasty]: if support opaque types, refine the self type with any opaque members here
@@ -1048,252 +987,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       NoCycle(at = symAddr)
     }
 
-//    private def readNewDef()(implicit ctx: Context): Tree = {
-//      val sctx = sourceChangeContext()
-//      if (sctx `ne` ctx) return readNewDef()(sctx)
-//      val start = currentAddr
-//      val sym = symAtAddr(start)
-//      val tag = readByte()
-//      val end = readEnd()
-//
-//     def readParamss(implicit ctx: Context): List[List[ValDef]] =nextByte match {
-//        case PARAM | PARAMEND =>
-//          readParams[ValDef](PARAM) ::
-//            (if (nextByte == PARAMEND) { readByte(); readParamss } else Nil)
-//
-//        case _ => Nil
-//      }
-//
-//      val localCtx = localContext(sym)
-//
-//      def readRhs(implicit ctx: Context): LazyTree =
-//        if (nothingButMods(end))
-//          EmptyTree
-//        else if (sym.isInlineMethod)
-//          // The body of an inline method is stored in an annotation, so no need to unpickle it again
-//          new Trees.Lazy[Tree] {
-//            def complete(implicit ctx: Context) = typer.Inliner.bodyToInline(sym)
-//          }
-//        else
-//          readLater(end, rdr => ctx => rdr.readTerm()(ctx.retractMode(Mode.InSuperCall)))
-//
-//      def ValDef(tpt: Tree) =
-//        ta.assignType(untpd.ValDef(sym.name.asTermName, tpt, readRhs(localCtx)), sym)
-//
-//      def DefDef(tparams: List[TypeDef], vparamss: List[List[ValDef]], tpt: Tree) =
-//         ta.assignType(
-//            untpd.DefDef(sym.name.asTermName, tparams, vparamss, tpt, readRhs(localCtx)),
-//            sym)
-//
-//      def TypeDef(rhs: Tree) =
-//        ta.assignType(untpd.TypeDef(sym.name.asTypeName, rhs), sym)
-//
-//      def ta =  ctx.typeAssigner
-//
-//      val name = readName()
-//      pickling.println(s"reading def of $name at $start")
-//      val tree: MemberDef = tag match {
-//        case DEFDEF =>
-//          val tparams = readParams[TypeDef](TYPEPARAM)(localCtx)
-//          val vparamss = readParamss(localCtx)
-//          val tpt = readTpt()(localCtx)
-//          val typeParams = tparams.map(_.symbol)
-//          val valueParamss = ctx.normalizeIfConstructor(
-//              vparamss.nestedMap(_.symbol), name === nme.CONSTRUCTOR)
-//          val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
-//          sym.info = ctx.methodType(typeParams, valueParamss, resType)
-//          DefDef(tparams, vparamss, tpt)
-//        case VALDEF =>
-//          val tpt = readTpt()(localCtx)
-//          sym.info = tpt.tpe
-//          ValDef(tpt)
-//        case TYPEDEF | TYPEPARAM =>
-//          if (sym.isClass) {
-//            sym.owner.ensureCompleted() // scalacLinkedClass uses unforcedDecls. Make sure it does not miss anything.
-//            val companion = sym.scalacLinkedClass
-//
-//            // Is the companion defined in the same Tasty file as `sym`?
-//            // The only case to check here is if `sym` is a root. In this case
-//            // `companion` might have been entered by the environment but it might
-//            // be missing from the Tasty file. So we check explicitly for that.
-//            def isCodefined = roots.contains(companion.denot) === seenRoots.contains(companion)
-//
-//            if (companion.exists && isCodefined) sym.registerCompanion(companion)
-//            TypeDef(readTemplate(localCtx))
-//          } else {
-//            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see i3816.scala
-//            sym.setFlag(Provisional)
-//            val rhs = readTpt()(localCtx)
-//            sym.info = new NoCompleter {
-//              override def completerTypeParams(sym: Symbol)(implicit ctx: Context) =
-//                rhs.tpe.typeParams
-//            }
-//            sym.info = rhs.tpe match {
-//              case _: TypeBounds | _: ClassInfo => checkNonCyclic(sym, rhs.tpe, reportErrors = false)
-//              case _ => rhs.tpe.toBounds
-//            }
-//            sym.normalizeOpaque()
-//            sym.resetFlag(Provisional)
-//            TypeDef(rhs)
-//          }
-//        case PARAM =>
-//          val tpt = readTpt()(localCtx)
-//          if (nothingButMods(end)) {
-//            sym.info = tpt.tpe
-//            ValDef(tpt)
-//          }
-//          else {
-//            sym.info = ExprType(tpt.tpe)
-//            pickling.println(i"reading param alias $name -> $currentAddr")
-//            DefDef(Nil, Nil, tpt)
-//          }
-//      }
-//      goto(end)
-//      setSpan(start, tree)
-//      if (!sym.isType) { // Only terms might have leaky aliases, see the documentation of `checkNoPrivateLeaks`
-//        sym.info = ta.avoidPrivateLeaks(sym)
-//      }
-//
-//      if (ctx.mode.is(Mode.ReadComments)) {
-//        assert(ctx.docCtx.isDefined, "Mode is `ReadComments`, but no `docCtx` is set.")
-//        commentUnpicklerOpt.foreach { commentUnpickler =>
-//          val comment = commentUnpickler.commentAt(start)
-//          ctx.docCtx.get.addDocstring(tree.symbol, comment)
-//          tree.setComment(comment)
-//        }
-//      }
-//
-//      tree.setDefTree
-//    }
-
-//    private def readTemplate(implicit ctx: Context): Template = {
-//      val start = currentAddr
-//      assert(sourcePathAt(start).isEmpty)
-//      val cls = ctx.owner.asClass
-//      val assumedSelfType =
-//        if (cls.is(Module) && cls.owner.isClass) TermRef(cls.owner.thisType, cls.name.sourceModuleName)
-//        else NoType
-//      cls.info = new TempClassInfo(cls.owner.thisType, cls, cls.unforcedDecls, assumedSelfType)
-//      val localDummy = symbolAtCurrent()
-//      val parentCtx = ctx.withOwner(localDummy)
-//      assert(readByte() === TEMPLATE)
-//      val end = readEnd()
-//      val tparams = readIndexedParams[TypeDef](TYPEPARAM)
-//      val vparams = readIndexedParams[ValDef](PARAM)
-//      // It's important to index the class definitions before unpickling the parents
-//      // (see the parents-cycle test for examples where this matter)
-//      val bodyFlags = {
-//        val bodyIndexer = fork
-//        // The first DEFDEF corresponds to the primary constructor
-//        while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree()
-//        bodyIndexer.indexStats(end)
-//      }
-//      val parents = collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
-//        nextUnsharedTag match {
-//          case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentCtx)
-//          case _ => readTpt()(parentCtx)
-//        }
-//      }
-//      val parentTypes = parents.map(_.tpe.dealias)
-//      val self =
-//        if (nextByte === SELFDEF) {
-//          readByte()
-//          untpd.ValDef(readName(), readTpt(), EmptyTree).withType(NoType)
-//        }
-//        else EmptyValDef
-//      cls.setNoInitsFlags(parentsKind(parents), bodyFlags)
-//      cls.info = ClassInfo(cls.owner.thisType, cls, parentTypes, cls.unforcedDecls,
-//        if (self.isEmpty) NoType else self.tpt.tpe)
-//      val constr = readIndexedDef().asInstanceOf[DefDef]
-//      val mappedParents = parents.map(_.changeOwner(localDummy, constr.symbol))
-//
-//      val lazyStats = readLater(end, rdr => implicit ctx => {
-//        val stats = rdr.readIndexedStats(localDummy, end)
-//        tparams ++ vparams ++ stats
-//      })
-//      setSpan(start,
-//        untpd.Template(constr, mappedParents, Nil, self, lazyStats)
-//          .withType(localDummy.termRef))
-//    }
-
-//    def skipToplevel()(implicit ctx: Context): Unit= {
-//      if (!isAtEnd && isTopLevel) {
-//        skipTree()
-//        skipToplevel()
-//      }
-//    }
-
     def isTopLevel: Boolean =
       nextByte === IMPORT || nextByte === PACKAGE
-
-//    def readTopLevel()(implicit ctx: Context): List[Tree] = {
-//      @tailrec def read(acc: ListBuffer[Tree]): List[Tree] = {
-//        if (isTopLevel) {
-//          acc += readIndexedStat(NoSymbol)
-//          if (!isAtEnd) read(acc) else acc.toList
-//        }
-//        else // top-level trees which are not imports or packages are not part of tree
-//          acc.toList
-//      }
-//      read(new ListBuffer[tpd.Tree])
-//    }
-
-//    def readIndexedStat(exprOwner: Symbol)(implicit ctx: Context): Tree = nextByte match {
-//      case TYPEDEF | VALDEF | DEFDEF =>
-//        readIndexedDef()
-//      case IMPORT =>
-//        readImport()
-//      case PACKAGE =>
-//        val start = currentAddr
-//        processPackage { (pid, end) => implicit ctx =>
-//          setSpan(start, PackageDef(pid, readIndexedStats(exprOwner, end)(ctx)))
-//        }
-//      case _ =>
-//        readTerm()(ctx.withOwner(exprOwner))
-//    }
-
-//    def readImport()(implicit ctx: Context): Tree = {
-//      val start = currentAddr
-//      assert(sourcePathAt(start).isEmpty)
-//      readByte()
-//      readEnd()
-//      val importGiven = nextByte === GIVEN // TODO: drop the next time we bump Tasty versions
-//      if (importGiven) readByte()
-//      val expr = readTerm()
-//      setSpan(start, Import(expr, expr, readSelectors()))
-//    }
-
-//    def readSelectors()(implicit ctx: Context): List[untpd.Tree] = nextByte match { // TODO fetch latest
-//      case IMPORTED =>
-//        val start = currentAddr
-//        assert(sourcePathAt(start).isEmpty)
-//        readByte()
-//        val from = setSpan(start, untpd.Ident(readName()))
-//        nextByte match {
-//          case RENAMED =>
-//            val start2 = currentAddr
-//            readByte()
-//            val to = setSpan(start2, untpd.Ident(readName()))
-//            untpd.Thicket(from, to) :: readSelectors()
-//          case _ =>
-//            from :: readSelectors()
-//        }
-//      case BOUNDED =>
-//        val start = currentAddr
-//        readByte()
-//        val bounded = setSpan(start, untpd.TypeBoundsTree(untpd.EmptyTree, untpd.TypedSplice(readTpt())))
-//        bounded :: readSelectors()
-//      case _ =>
-//        Nil
-//    }
-
-//    def readIndexedStats(exprOwner: Symbol, end: Addr)(implicit ctx: Context): List[Tree] =
-//      until(end)(readIndexedStat(exprOwner))
-
-//    def readStats(exprOwner: Symbol, end: Addr)(implicit ctx: Context): List[Tree] = {
-//      fork.indexStats(end)
-//      readIndexedStats(exprOwner, end)
-//    }
 
     def readIndexedStatAsSym(exprOwner: Symbol)(implicit ctx: Context): NoCycle = nextByte match {
       case TYPEDEF | VALDEF | DEFDEF =>
@@ -1329,20 +1024,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     def completeSelection[T](name: TastyName, sig: Signature[Type], isTerm: Boolean)(f: (Context, Name, (Context, Name, Type) => Type) => T)(implicit ctx: Context): T = {
-      val encoded = name.toEncodedTermName
-      val selector = if (isTerm) encoded else encoded.toTypeName
-      val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.) else ctx
-      def tpeFun(localCtx: Context, selector: Name, qualType: Type): Type =
+      val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.InSuperCall) else ctx
+      def tpeFun(localCtx: Context, selector: Name, qualType: Type): Type = {
         if (sig `eq` NotAMethod) selectFromPrefix(qualType, name, isTerm)
         else selectFromSig(qualType, selector, sig)(localCtx)
-      f(localCtx, selector, tpeFun)
+      }
+      f(localCtx, encodeTastyName(name, isTerm), tpeFun)
     }
 
 // ------ Reading trees -----------------------------------------------------
 
     def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return readTerm()(sctx)
       val start = currentAddr
       val tag = readByte()
       ctx.log(s"reading term ${astTagToString(tag)} at $start")
@@ -1368,13 +1060,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val qualType = qual.tpe
           Select(qual, selector).setType(tpeFun(localCtx, selector, qualType))
         }
-
-//      def accessibleDenot(qualType: Type, name: Name, sig: Signature) = {
-//        val pre = ctx.typeAssigner.maybeSkolemizePrefix(qualType, name)
-//        val d = qualType.findMember(name, pre).atSignature(sig)
-//        if (!d.symbol.exists || d.symbol.isAccessibleFrom(pre)) d
-//        else qualType.findMember(name, pre, excluded = Private).atSignature(sig)
-//      }
 
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm =>
@@ -1527,11 +1212,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val argPats = until(end)(readTerm())
               UnApply(fn, implicitArgs, argPats, patType)
             case REFINEDtpt =>
-              val refineCls = symAtAddr.getOrElse(start, ctx.newRefinedClassSymbol(coordAt(start)))
+              val refineCls = symAtAddr.getOrElse(start, ctx.newRefinedClassSymbol(noPosition/*coordAt(start)*/))
               registerSym(start, refineCls)
               typeAtAddr(start) = refineCls.ref
               val refinement = mkRefinedType(readTpt().tpe :: Nil, refineCls)
-              readStatsAsSyms(refineCls, end)(localContext(refineCls))
+              readStatsAsSyms(refineCls, end)(ctx.withOwner(refineCls))
               TypeTree(refinement)
             case APPLIEDtpt =>
               // If we do directly a tpd.AppliedType tree we might get a
@@ -1581,16 +1266,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         result
       }
 
-      val tree = if (tag < firstLengthTreeTag) readSimpleTerm() else readLengthTerm()
-//      if (!tree.isInstanceOf[TypTree]) // FIXME: Necessary to avoid self-type cyclic reference in tasty_tools
-//        tree.overwriteType(tree.tpe.simplified)
-//      setSpan(start, tree)
-      tree
+      if (tag < firstLengthTreeTag) readSimpleTerm() else readLengthTerm() // dotty sets span of tree to start
     }
 
     def readTpt()(implicit ctx: Context): Tree = {
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return readTpt()(sctx)
       val tpt: Tree = nextByte match {
         case SHAREDterm =>
           readByte()
@@ -1619,8 +1298,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
     def readParentFromTerm()(implicit ctx: Context): Type = {  // TODO: rename to readTree
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return readParentFromTerm()(sctx)
       val start = currentAddr
       val tag = readByte()
       ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
@@ -1667,14 +1344,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       collectWhile((nextUnsharedTag === CASEDEF) && currentAddr != end) {
         if (nextByte === SHAREDterm) {
           readByte()
-          forkAt(readAddr()).readCase()(ctx.fresh.setNewScope)
+          forkAt(readAddr()).readCase()(ctx.withNewScope)
         }
-        else readCase()(ctx.fresh.setNewScope)
+        else readCase()(ctx.withNewScope)
       }
 
     def readCase()(implicit ctx: Context): CaseDef = {
-      // val sctx = sourceChangeContext()
-      // if (sctx `ne` ctx) return readCase()(sctx)
       assert(readByte() === CASEDEF)
       val end = readEnd()
       val pat = readTerm()
@@ -1683,117 +1358,36 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
     }
 
-//    def readLater[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Trees.Lazy[T] =
-//      readLaterWithOwner(end, op)(ctx)(ctx.owner)
-
-    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Trees.Lazy[Option[T]] = {
+    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Option[T] = {
       val localReader = fork
       goto(end)
-      owner => new LazyReader(localReader, owner/*, ctx.mode*/, ctx.source, op)
+      owner => readOptional(localReader, owner/*, ctx.mode*/, ctx.source, op)
     }
 
-//    def readHole(end: Addr, isType: Boolean)(implicit ctx: Context): Tree = {
-//      val idx = readNat()
-//      val args = until(end)(readTerm())
-//      val splice = splices(idx)
-//      def wrap(arg: Tree) =
-//        if (arg.isTerm) { implicit qctx: scala.quoted.QuoteContext => new TastyTreeExpr(arg, ToolboxImpl.scopeId)}
-//        else new TreeType(arg, ToolboxImpl.scopeId)
-//      val reifiedArgs = args.map(wrap)
-//      val filled = if (isType) {
-//        val quotedType = splice.asInstanceOf[Seq[Any] => quoted.Type[_]](reifiedArgs)
-//        PickledQuotes.quotedTypeToTree(quotedType)
-//      } else {
-//        val splice1 = splice.asInstanceOf[Seq[Any] => scala.quoted.QuoteContext => quoted.Expr[_]]
-//        val quotedExpr = splice1(reifiedArgs)(dotty.tools.dotc.quoted.QuoteContext())
-//        PickledQuotes.quotedExprToTree(quotedExpr)
-//      }
-//      // We need to make sure a hole is created with the source file of the surrounding context, even if
-//      // it filled with contents a different source file. Otherwise nodes containing holes might end
-//      // up without a position. PositionPickler makes sure that holes always get spans assigned,
-//      // so we can just return the filler tree with the new source and no span here.
-//      if (filled.source === ctx.source) filled
-//      else {
-//        val filled1 = filled.cloneIn(ctx.source)
-//        filled1.span = NoSpan
-//        filled1
-//      }
-//    }
-
-// ------ Setting positions ------------------------------------------------
-
-//    /** Pickled span for `addr`. */
-//    def spanAt(addr: Addr)(implicit ctx: Context): Span =
-//      if (ctx.mode.is(Mode.ReadPositions)) {
-//        posUnpicklerOpt match {
-//          case Some(posUnpickler) =>
-//            posUnpickler.spanAt(addr)
-//          case _  =>
-//            NoSpan
-//        }
-//      } else NoSpan
-
-    /** Coordinate for the symbol at `addr`. */
-    def coordAt(addr: Addr)(implicit ctx: Context): Position /*Coord*/ = {
-      // val span = spanAt(addr)
-      // if (span.exists)
-      //   spanCoord(span)
-      // else
-      //   indexCoord(addr.index)
-      ctx.emptyPosition
-    }
-
-    // /** Pickled source path at `addr`. */
-    // def sourcePathAt(addr: Addr)(implicit ctx: Context): String =
-    //  if (ctx.mode.is(Mode.ReadPositions)) {
-    //    posUnpicklerOpt match {
-    //      case Some(posUnpickler) =>
-    //        posUnpickler.sourcePathAt(addr)
-    //      case _  =>
-    //        ""
-    //    }
-    //  } else ""
-
-    // /** If currentAddr carries a source path, the current context with
-    //  *  the source of that path, otherwise the current context itself.
-    //  */
-    // def sourceChangeContext(addr: Addr = currentAddr)(implicit ctx: Context): Context = {
-    //   val path = sourcePathAt(addr)
-    //   if (!path.isEmpty) {
-    //     ctx.log(s"source change at $addr: $path")
-    //     sys.error("Context requires to change source.") // ctx.withSource(ctx.getSource(path))
-    //   }
-    //   else ctx
-    // }
-
-//    /** Set position of `tree` at given `addr`. */
-//    def setSpan[T <: untpd.Tree](addr: Addr, tree: T)(implicit ctx: Context): tree.type = {
-//      val span = spanAt(addr)
-//      if (span.exists) tree.span = span
-//      tree
-//    }
   }
 
-  class LazyReader[T <: AnyRef](
-      reader: TreeReader, owner: Symbol/*, mode: Mode*/, source: AbstractFile,
-      op: TreeReader => Context => T) extends Trees.Lazy[Option[T]] {
-    def complete(implicit ctx: Context): Option[T] = {
-      try {
-        ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
-        withPhaseNoLater(ctx.picklerPhase) {
-          Some(
-            op(reader)(ctx
-              .withOwner(owner)
-              // .withModeBits(mode)
-              // .withSource(source)
-            )
+  def readOptional[T <: AnyRef](
+      reader: TreeReader,
+      owner: Symbol/*, mode: Mode*/,
+      source: AbstractFile,
+      op: TreeReader => Context => T)(
+      implicit
+      ctx: Context): Option[T] = {
+    try {
+      ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
+      withPhaseNoLater(ctx.picklerPhase) {
+        Some(
+          op(reader)(ctx
+            .withOwner(owner)
+            // .withModeBits(mode)
+            // .withSource(source)
           )
-        }
-      } catch {
-        case err: TASTyException =>
-          errorTasty(s"${err.getMessage} on ${err.sym}")
-          None
+        )
       }
+    } catch {
+      case err: TASTyException =>
+        errorTasty(s"${err.getMessage} on ${err.sym}")
+        None
     }
   }
 

@@ -192,13 +192,15 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   def selectFromSpaceWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
-    val encoded  = tname.toEncodedTermName
-    val name = if (selectingTerm) encoded else encoded.toTypeName
+    val name = encodeTastyName(tname, selectingTerm)
     def debugSelectedSym(sym: Symbol): Symbol = {
       ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
       sym
     }
     def memberOfSpace(space: Type, name: Name): Symbol = {
+      // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
+      //    or else filters for non private.
+      // There should be an investigation to see what code makes that false, and what is an equivalent check.
       def lookInTypeCtor = space.typeConstructor.typeParams.filter(_.name == name).headOption.getOrElse(noSymbol)
       val fetched = space.member(name)
       if (name.isTypeName) fetched.orElse(lookInTypeCtor) else fetched

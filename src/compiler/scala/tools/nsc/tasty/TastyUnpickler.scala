@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty
 
 import scala.collection.mutable
 
-import TastyFormat.NameTags._, TastyFormat.nameTagToString
+import TastyFormat.NameTags._
 import TastyRefs.NameRef
 import Names.TastyName, Names.TastyName._
 
@@ -48,58 +48,46 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
     val length = readNat()
     val start = currentAddr
     val end = start + length
+    def debugName(name: TastyName): name.type = {
+      logTasty(s"${nameAtRef.size}: ${name.debug}")
+      name
+    }
     val result = tag match {
       case UTF8 =>
         goto(end)
-        val res = SimpleName(new String(bytes.slice(start.index, start.index + length), "UTF-8"))
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res
+        debugName(SimpleName(new String(bytes.slice(start.index, start.index + length), "UTF-8")))
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
           case QUALIFIED    => TastyName.PathSep
           case EXPANDED     => TastyName.ExpandedSep
           case EXPANDPREFIX => TastyName.ExpandPrefixSep
         }
-        val res = QualifiedName(readName(), sep, readName().asSimpleName)
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res // qualifiedNameKindOfTag(tag)(readName(), readName().asSimpleName)
+        debugName(QualifiedName(readName(), sep, readName().asSimpleName))
       case UNIQUE =>
         val separator = readName().asSimpleName
-        val num = readNat()
+        val num       = readNat()
         val originals = until(end)(readName())
         val original = if (originals.isEmpty) TastyName.Empty else originals.head
-        val res = UniqueName(original, separator, num)
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res // uniqueNameKindOfSeparator(separator)(original, num)
+        debugName(UniqueName(original, separator, num))
       case DEFAULTGETTER =>
-        val qual = readName()
-        val nat = readNat()
-        val res = DefaultName(qual, nat)
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res // numberedNameKindOfTag(tag)(readName(), readNat())
+        debugName(DefaultName(readName(), readNat()))
       case SIGNED =>
         val original  = readName()
         val result    = readName()
         val paramsSig = until(end)(readParamSig())
         val sig       = Signature(paramsSig, result)
-        val res    = SignedName(original, sig)
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res
+        debugName(SignedName(original, sig))
       case OBJECTCLASS =>
-        val res = ModuleName(readName())
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res
+        debugName(ModuleName(readName()))
       case INLINEACCESSOR | SUPERACCESSOR =>
         val prefix = tag match {
           case INLINEACCESSOR => TastyName.InlinePrefix
           case SUPERACCESSOR  => TastyName.SuperPrefix
         }
-        val res = PrefixName(prefix, readName())
-        logTasty(s"${nameAtRef.size}: ${res.debug}")
-        res
+        debugName(PrefixName(prefix, readName()))
       case _ =>
-        val qual = readName() // simpleNameKindOfTag(tag)(readName())
-        sys.error(s"at Addr(${nameAtRef.size}): unknown ${nameTagToString(tag)} name: $qual")
+        val qual = readName()
+        sys.error(s"at NameRef(${nameAtRef.size}): name `${qual.debug}` is qualified by unknown tag $tag")
     }
     assert(currentAddr == end, s"bad name ${result.debug} $start $currentAddr $end")
     result

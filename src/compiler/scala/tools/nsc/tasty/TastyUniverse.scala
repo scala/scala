@@ -10,4 +10,3 @@ abstract class TastyUniverse extends TastyKernel
   with ContextOps
   with SymbolOps
   with NameOps
-  with TreeOps
