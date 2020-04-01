@@ -21,11 +21,11 @@ object TastyFlags {
   final val SuperParamAlias: TastyFlagSet = Open.next
   final val maxFlag: Int                  = SuperParamAlias.shift
 
-  case class TastyFlagSet private[TastyFlags](private val flags: Int) extends AnyVal {
+  case class TastyFlagSet(val toInt: Int) extends AnyVal {
 
     private[TastyFlags] def shift: Int = {
       var acc = 0
-      var curr = flags
+      var curr = toInt
       while (curr != 0) {
         acc += 1
         curr = curr >> 1
@@ -37,16 +37,16 @@ object TastyFlags {
       TastyFlagSet(1 << shift + 1)
     }
 
-    def toSingletonSets: SingletonSets                        = SingletonSets(flags)
-    def |(other: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(flags | other.flags)
-    def &(mask: TastyFlagSet): TastyFlagSet                   = TastyFlagSet(flags & mask.flags)
-    def &~(mask: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(flags & ~mask.flags)
-    def unary_! : Boolean                                     = this.flags == 0
+    def toSingletonSets: SingletonSets                        = SingletonSets(toInt)
+    def |(other: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(toInt | other.toInt)
+    def &(mask: TastyFlagSet): TastyFlagSet                   = TastyFlagSet(toInt & mask.toInt)
+    def &~(mask: TastyFlagSet): TastyFlagSet                  = TastyFlagSet(toInt & ~mask.toInt)
+    def unary_! : Boolean                                     = this.toInt == 0
     def is(mask: TastyFlagSet): Boolean                       = (this & mask) == mask
     def isOneOf(mask: TastyFlagSet): Boolean                  = (this & mask).hasFlags
     def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean = if (!butNot) is(mask) else is(mask) && not(butNot)
     def not(mask: TastyFlagSet): Boolean                      = !isOneOf(mask)
-    def hasFlags: Boolean                                     = this.flags != 0
+    def hasFlags: Boolean                                     = this.toInt != 0
 
     def debug: String = {
       if (!this) {
@@ -75,13 +75,13 @@ object TastyFlags {
     }
   }
 
-  case class SingletonSets private[TastyFlags](private val set: Int) extends AnyVal {
+  case class SingletonSets(val toInt: Int) extends AnyVal {
     def map[A](f: TastyFlagSet => A): Iterable[A] = {
       val buf = Iterable.newBuilder[A]
       var i = 0
       while (i <= maxFlag) {
         val flag = 1 << i
-        if ((flag & set) != 0) {
+        if ((flag & toInt) != 0) {
           buf += f(TastyFlagSet(flag))
         }
         i += 1

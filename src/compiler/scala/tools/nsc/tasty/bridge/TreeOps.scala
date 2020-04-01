@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyUniverse
 
-trait TreeOps extends TastyKernel { self: TastyUniverse =>
+trait TreeOps { self: TastyUniverse =>
   import Contexts._
 
   object Trees {

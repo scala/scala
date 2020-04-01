@@ -6,7 +6,7 @@ import scala.tools.nsc.tasty.TastyUniverse
 import scala.tools.nsc.tasty.Signature
 import scala.tools.nsc.tasty.Signature.MethodSignature
 
-trait SymbolOps extends TastyKernel { self: TastyUniverse =>
+trait SymbolOps { self: TastyUniverse =>
   import Contexts.Context
 
   object SymbolOps {
@@ -33,10 +33,9 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  def selectSymFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Option[(Int, Symbol)] = {
+  def selectSymFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String, (Int, Symbol)] = {
     ctx.log(s"""looking for overload member[$space]("$name") @@ ${sig.show}""")
     val MethodSignature(args, ret) = sig
-    var seenTypeParams = false
     val member = space.member(name)
     val (tyParamCount, argsSyms) = {
       val (tyParamCounts, params) = args.partitionMap(identity)
@@ -57,7 +56,9 @@ trait SymbolOps extends TastyKernel { self: TastyUniverse =>
         ctx.log(s"""member[$space]("$name") ${showSym(sym)} is not a method""")
         false
     }
-    member.asTerm.alternatives.find(compareSym).map(tyParamCount -> _)
+    member.asTerm.alternatives.find(compareSym)
+      .map(tyParamCount -> _)
+      .toRight(s"No matching overload of $space.$name with signature ${sig.show}")
   }
 
   def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.hashCode})"

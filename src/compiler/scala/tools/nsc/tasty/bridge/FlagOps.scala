@@ -4,7 +4,7 @@ import scala.tools.nsc.tasty.TastyFlags
 import TastyFlags._
 import scala.tools.nsc.tasty.TastyUniverse
 
-trait FlagOps extends TastyKernel { self: TastyUniverse =>
+trait FlagOps { self: TastyUniverse =>
 
   object FlagSets {
     import symbolTable.Flag

@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc
 import nsc.symtab
-import nsc.tasty.{SafeEq, TastyUniverse}
+import nsc.tasty.TastyUniverse
 import nsc.tasty.TastyFlags.{EmptyTastyFlags, TastyFlagSet}
 import nsc.tasty.Names.TastyName, TastyName._
 

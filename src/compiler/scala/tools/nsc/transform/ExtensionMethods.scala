@@ -13,8 +13,6 @@
 package scala.tools.nsc
 package transform
 
-import symtab._
-import Flags._
 import scala.annotation.tailrec
 import scala.collection.mutable
 

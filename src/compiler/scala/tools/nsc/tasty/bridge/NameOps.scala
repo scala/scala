@@ -3,7 +3,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.Names.TastyName
 import scala.tools.nsc.tasty.TastyUniverse
 
-trait NameOps extends TastyKernel { self: TastyUniverse =>
+trait NameOps { self: TastyUniverse =>
   import TastyName._
 
   object NameOps {

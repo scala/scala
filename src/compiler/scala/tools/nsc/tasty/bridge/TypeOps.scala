@@ -7,14 +7,13 @@ import scala.tools.nsc.tasty.Names.TastyName.QualifiedName
 import scala.tools.nsc.tasty.Names.TastyName.SimpleName
 
 import scala.tools.nsc.tasty._
-import scala.tools.nsc.tasty.Names.TastyName.ModuleName
 import scala.tools.nsc.tasty.Names.TastyName.SignedName
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
 import scala.collection.mutable
 
-trait TypeOps extends TastyKernel { self: TastyUniverse =>
+trait TypeOps { self: TastyUniverse =>
   import Contexts._
   import SymbolOps._
   import FlagSets._
@@ -37,7 +36,7 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     }
   }
 
-  def normaliseBounds(bounds: TypeBounds)(implicit ctx: Context): Type = {
+  def normaliseBounds(bounds: TypeBounds): Type = {
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
       if (mergeableParams(lo, hi)) {
@@ -165,28 +164,23 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
-  object NamedType {
-    def apply(prefix: Type, designator: Symbol)(implicit ctx: Context): Type = {
-      if (designator.isType) {
-        prefix match {
-          case tp: ThisType if tp.sym.isRefinementClass => designator.preciseRef(prefix)
-          case _:SingleType | _:RefinedType             => designator.preciseRef(prefix)
-          case _                                        => designator.ref
-        }
-      }
-      else if (designator.is(JavaStatic)) {
-        // With this second constraint, we avoid making singleton types for
-        // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-        designator.preciseRef(prefix)
-      }
-      else {
-        mkSingleType(prefix, designator)
+  def mkNamedType(prefix: Type, designator: Symbol): Type = {
+    if (designator.isType) {
+      prefix match {
+        case tp: ThisType if tp.sym.isRefinementClass => designator.preciseRef(prefix)
+        case _:SingleType | _:RefinedType             => designator.preciseRef(prefix)
+        case _                                        => designator.ref
       }
     }
+    else if (designator.is(JavaStatic)) {
+      // With this second constraint, we avoid making singleton types for
+      // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
+      designator.preciseRef(prefix)
+    }
+    else {
+      mkSingleType(prefix, designator)
+    }
   }
-
-  private def selectSymFromSig0(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String,(Int, Symbol)] =
-    selectSymFromSig(space, name, sig).toRight(s"No matching overload of $space.$name with signature ${sig.show}")
 
   private def reportThenErrorTpe(msg: String): Type = {
     reporter.error(noPosition, msg)
@@ -197,9 +191,9 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
     selectFromSpaceWithPrefix(pre, pre, name, selectingTerm)
   }
 
-  def selectFromSpaceWithPrefix(pre: Type, space: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
-    val encoded  = name.toEncodedTermName
-    val selector = if (selectingTerm) encoded else encoded.toTypeName
+  def selectFromSpaceWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+    val encoded  = tname.toEncodedTermName
+    val name = if (selectingTerm) encoded else encoded.toTypeName
     def debugSelectedSym(sym: Symbol): Symbol = {
       ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
       sym
@@ -209,17 +203,19 @@ trait TypeOps extends TastyKernel { self: TastyUniverse =>
       val fetched = space.member(name)
       if (name.isTypeName) fetched.orElse(lookInTypeCtor) else fetched
     }
-    val resolved = name match {
-      case SignedName(_, sig) =>
-        selectSymFromSig0(space, selector, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
-      case _ => Right(memberOfSpace(space, selector))
+    val resolved = tname match {
+      case SignedName(_, sig) => // method
+        selectSymFromSig(space, name, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
+      case _ =>
+        val member = memberOfSpace(space, name)
+        Right(if (tname.isModuleName) member.linkedClassOfClass else member)
     }
-    val tpeOrErr = resolved.map(sym => NamedType(pre, if (name.isModuleName) sym.linkedClassOfClass else sym))
+    val tpeOrErr = resolved.map(mkNamedType(pre, _))
     tpeOrErr.fold(reportThenErrorTpe, identity)
   }
 
   def selectFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
-    val tpeOrErr = selectSymFromSig0(space, name, sig).map {
+    val tpeOrErr = selectSymFromSig(space, name, sig).map {
       case (tyParamCount, sym) =>
         var tpe = sym.tpe
         if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(sym.owner.typeParams, tpe)

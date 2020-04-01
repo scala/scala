@@ -1,7 +1,7 @@
 package scala.tools.nsc.tasty
 
 import TastyRefs._
-import scala.annotation.{switch, tailrec}
+import scala.annotation.switch
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import Names.TastyName
@@ -187,7 +187,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           if (mode === MemberDefsOnly) skipTree(tag)
           else if (tag >= firstLengthTreeTag) {
             val end = readEnd()
-            var nrefs = numRefs(tag)
+            val nrefs = numRefs(tag)
             if (nrefs < 0) {
               for (i <- nrefs until 0) scanTree(buf)
               goto(end)
@@ -347,7 +347,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case TERMREFin =>
-              var name   = readTastyName()
+              val name   = readTastyName()
               val prefix = readType()
               val space  = readType()
               selectTerm(prefix, space, name)
@@ -504,7 +504,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         //   // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
         //   // the problem arises when a self type of a trait is a type parameter of the same trait.
       // }
-      NamedType(prefix, sym)
+      mkNamedType(prefix, sym)
     }
 
     private def readPackageRef()(implicit ctx: Context): TermSymbol = {
@@ -609,7 +609,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
-      var tname: TastyName = readTastyName()
+      val tname: TastyName = readTastyName()
       var name: Name = tname.toEncodedTermName
       if (isTypeTag) name = name.toTypeName
       skipParams()
@@ -618,7 +618,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val isClass = ttag === TEMPLATE
       val templateStart = currentAddr
       skipTree() // tpt
-      val rhsStart = currentAddr
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
       val (givenFlags, tastyFlagSet, annotFns, privateWithin) =
@@ -835,8 +834,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *   - a context which has the processed package as owner
      */
     def processPackage[T](op: (RefTree, Addr) => Context => T)(implicit ctx: Context): T = {
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return processPackage(op)(sctx)
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return processPackage(op)(sctx)
       readByte()
       val end = readEnd()
       val tpe = readTypeAsTypeRef()
@@ -881,8 +880,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     private def readNewMember()(implicit ctx: Context): NoCycle = {
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return readNewMember()(sctx)
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return readNewMember()(sctx)
       val symAddr = currentAddr
       val sym     = symAtAddr(symAddr)
       val tag     = readByte()
@@ -995,7 +994,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (tparams.nonEmpty) {
         cls.info = new PolyType(tparams.map(symFromNoCycle), cls.info)
       }
-      val vparams = readIndexedParams[NoCycle](PARAM)
+      readIndexedParams[NoCycle](PARAM) // skip value parameters
       ctx.log(s"Template: indexing members of $cls")
       val (bodyFlags, bodyTastyFlags) = {
         val bodyIndexer = fork
@@ -1342,8 +1341,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 // ------ Reading trees -----------------------------------------------------
 
     def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return readTerm()(sctx)
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return readTerm()(sctx)
       val start = currentAddr
       val tag = readByte()
       ctx.log(s"reading term ${astTagToString(tag)} at $start")
@@ -1468,10 +1467,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 val elsep = readTerm()
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
-            case LAMBDA => // TODO [tasty]: if we need trees then we need to either turn this closure to the result of Delambdafy, or resugar to a Function
-              val meth = readTerm()
-              val tpt = ifBefore(end)(readTpt(), emptyTree)
-              TypeTree(meth.tpe) //Closure(Nil, meth, tpt)
+            case LAMBDA =>
+              throw new TASTyException(ctx.owner, "LAMBDA")
+              // val meth = readTerm()
+              // val tpt = ifBefore(end)(readTpt(), emptyTree)
+              // Closure(Nil, meth, tpt)
             case MATCH =>
               if (nextByte === IMPLICIT) {
                 readByte()
@@ -1589,9 +1589,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     def readTpt()(implicit ctx: Context): Tree = {
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return readTpt()(sctx)
-      val start = currentAddr
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return readTpt()(sctx)
       val tpt: Tree = nextByte match {
         case SHAREDterm =>
           readByte()
@@ -1620,8 +1619,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
     def readParentFromTerm()(implicit ctx: Context): Type = {  // TODO: rename to readTree
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return readParentFromTerm()(sctx)
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return readParentFromTerm()(sctx)
       val start = currentAddr
       val tag = readByte()
       ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
@@ -1674,9 +1673,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
     def readCase()(implicit ctx: Context): CaseDef = {
-      val sctx = sourceChangeContext()
-      if (sctx `ne` ctx) return readCase()(sctx)
-      val start = currentAddr
+      // val sctx = sourceChangeContext()
+      // if (sctx `ne` ctx) return readCase()(sctx)
       assert(readByte() === CASEDEF)
       val end = readEnd()
       val pat = readTerm()
@@ -1742,31 +1740,31 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       //   spanCoord(span)
       // else
       //   indexCoord(addr.index)
-      noPosition
+      ctx.emptyPosition
     }
 
-    /** Pickled source path at `addr`. */
-    def sourcePathAt(addr: Addr)(implicit ctx: Context): String = ""
-//      if (ctx.mode.is(Mode.ReadPositions)) {
-//        posUnpicklerOpt match {
-//          case Some(posUnpickler) =>
-//            posUnpickler.sourcePathAt(addr)
-//          case _  =>
-//            ""
-//        }
-//      } else ""
+    // /** Pickled source path at `addr`. */
+    // def sourcePathAt(addr: Addr)(implicit ctx: Context): String =
+    //  if (ctx.mode.is(Mode.ReadPositions)) {
+    //    posUnpicklerOpt match {
+    //      case Some(posUnpickler) =>
+    //        posUnpickler.sourcePathAt(addr)
+    //      case _  =>
+    //        ""
+    //    }
+    //  } else ""
 
-    /** If currentAddr carries a source path, the current context with
-     *  the source of that path, otherwise the current context itself.
-     */
-    def sourceChangeContext(addr: Addr = currentAddr)(implicit ctx: Context): Context = {
-      val path = sourcePathAt(addr)
-      if (!path.isEmpty) {
-        ctx.log(s"source change at $addr: $path")
-        sys.error("Context requires to change source.") // ctx.withSource(ctx.getSource(path))
-      }
-      else ctx
-    }
+    // /** If currentAddr carries a source path, the current context with
+    //  *  the source of that path, otherwise the current context itself.
+    //  */
+    // def sourceChangeContext(addr: Addr = currentAddr)(implicit ctx: Context): Context = {
+    //   val path = sourcePathAt(addr)
+    //   if (!path.isEmpty) {
+    //     ctx.log(s"source change at $addr: $path")
+    //     sys.error("Context requires to change source.") // ctx.withSource(ctx.getSource(path))
+    //   }
+    //   else ctx
+    // }
 
 //    /** Set position of `tree` at given `addr`. */
 //    def setSpan[T <: untpd.Tree](addr: Addr, tree: T)(implicit ctx: Context): tree.type = {

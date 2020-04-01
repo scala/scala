@@ -1,8 +1,6 @@
 package scala.tools.nsc.tasty
 
-import scala.annotation.tailrec
 import scala.reflect.NameTransformer
-import scala.reflect.internal.Variance
 
 object Names {
 

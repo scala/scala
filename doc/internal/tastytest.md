@@ -1,6 +1,6 @@
 # TASTy Test
 
-TASTy Test is a testing framework for scala 2 code that depends on code compiled with the `dotc`, the Scala 3 compiler, which outputs TASTy trees. The framework supports `run` and `neg` suites.
+TASTy Test is a testing framework for scala 2 code that depends on code compiled with the `dotc`, the Scala 3 compiler, which outputs TASTy trees. The framework supports `run`, `pos` and `neg` suites, which may be customised with extra flags.
 
 ## `run`
 A `run` suite tests the runtime behaviour of Scala 2 code that may extend or call into code compiled with `dotc`, and is specified as follows:
@@ -23,12 +23,6 @@ A `neg` suite asserts which Scala 2 code is not compatible with code compiled wi
      - Classes compiled in `(1)` are now on the classpath.
      - If a Scala source fails compilation, check that it is in the set of expected fail cases, and that there is a corresponding check file that matches the compiler output, else collect in the list of failures.
      - If an expected fail case compiles successfully, collect it in the list of failures.
-
-## `neg-false`
-A `neg-false` test runs identically to a `neg` test, but asserts that a test is a false positive.
-
-## `pos-false`
-A `pos-false` test runs identically to a `pos` test, but asserts that a test is a false positive.
 
 ## General Notes
 - In each suite, the dotty library is available to all test sources.

@@ -1,7 +1,5 @@
 package scala.tools.nsc.tasty
 
-import scala.reflect.ClassTag
-
 object TastyRefs {
 
   /** An address pointing to an index in a Tasty buffer's byte array */

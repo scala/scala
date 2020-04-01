@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.{SafeEq, TastyUniverse}
 
-trait AnnotationOps extends TastyKernel { self: TastyUniverse =>
+trait AnnotationOps { self: TastyUniverse =>
 
   object Annotation {
     def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Option[Tree])(implicit ctx: Contexts.Context): Annotation =

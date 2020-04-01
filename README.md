@@ -1,26 +1,3 @@
-# TASTy Reader For Scala 2
-
-This branch is the home for development of the Scala Center project [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), which will enable the reference compiler of Scala 2.x to consume dependencies compiled with dotc, the reference compiler of Scala 3. The scope of this project is to enable all Scala 2 compatible features of TASTy files to be read during class file unpickling. There is no goal to backport non-compatible features. Features are tested with `ch.epfl.lamp:dotty-compiler_0.22:0.22.0-RC1`. Check the issues at [scalacenter/scala](https://github.com/scalacenter/scala/issues)
-
-## Testing
-
-The framework for testing TASTy reader is contained in the `tastytest` subproject. A description of its functionality is provided at [tastytest.md](doc/internal/tastytest.md)
-
-The `tasty` project is an example subproject depending on `tastytest`, used to test the functionality of the TASTy reader. Test sources are placed in the `test/tasty` directory of this repository.
-
-`tasty/test` is used to run the full suite of tests, isolated tests can be made by following the example of [TastyTestJUnit](test/tasty/test/scala/tools/tastytest/TastyTestJUnit.scala) and running with `tasty/testOnly <test class>`
-
-Individual tasks exist to help debug issues:
-
-- `tasty/dotc <out directory> <filename>` to compile a Scala 3 source file with the supported version of dotty, where the classpath is set to the out directory.
-- `tasty/dotcd <filename> <arg>*` to decompile a tasty file with the supported version of dotty. Can pass additional flags.
-- `tasty/scalac <out directory> <filename> <arg>*` to compile a Scala 2 file, where the classpath is set to the out directory, along with the dotty library. Can pass additional flags.
-- `tasty/runDotty <classpath> <classname>` to execute a main method with the dotty library added to the given classpath.
-
-## Notes
-
-comments beginning with `// TODO [tasty]:` should be considered carefully as they are special accomodations for the TASTy reader that are particulary expensive, or leak out of the classfile parser or `scala.tools.nsc.tasty` package.
-
 # Welcome!
 
 This is the official repository for the [Scala Programming Language](http://www.scala-lang.org)

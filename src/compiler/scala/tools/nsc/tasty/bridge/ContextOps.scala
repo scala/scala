@@ -6,7 +6,7 @@ import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
 
-trait ContextOps extends TastyKernel { self: TastyUniverse =>
+trait ContextOps { self: TastyUniverse =>
   import FlagSets._
   import Contexts._
 
@@ -26,12 +26,12 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
       def adjustModuleCompleter(completer: TastyLazyType, name: Name): TastyLazyType = {
         val scope = this.effectiveScope
         if (name.isTermName)
-          completer withModuleClass (implicit ctx => findModuleBuddy(name.toTypeName, scope))
+          completer withModuleClass (_.findModuleBuddy(name.toTypeName, scope))
         else
-          completer withSourceModule (implicit ctx => findModuleBuddy(name.toTermName, scope))
+          completer withSourceModule (_.findModuleBuddy(name.toTermName, scope))
       }
 
-      private def findModuleBuddy(name: Name, scope: Scope)(implicit ctx: Context): Symbol = {
+      private def findModuleBuddy(name: Name, scope: Scope): Symbol = {
         val it = scope.lookupAll(name).filter(_.is(Module))
         if (it.hasNext) it.next()
         else noSymbol
@@ -67,6 +67,8 @@ trait ContextOps extends TastyKernel { self: TastyUniverse =>
 
       final lazy val loadingMirror: Mirror = initialContext.baseLoadingMirror
       final lazy val classRoot: Symbol = initialContext.baseClassRoot
+
+      def emptyPosition: Position = noPosition
 
       def newLocalDummy(owner: Symbol): TermSymbol = owner.newLocalDummy(noPosition)
 
