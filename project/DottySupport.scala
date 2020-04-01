@@ -8,6 +8,14 @@ import sbt.librarymanagement.{
   ivy, DependencyResolution, ScalaModuleInfo, UpdateConfiguration, UnresolvedWarningConfiguration
 }
 
+/**
+  * Settings to support validation of TastyUnpickler against the release of dotty with the matching TASTy version
+  */
+object TastySupport {
+  val supportedTASTyRelease = "0.23.0-RC1" // TASTy version 20
+  val dottyCompiler = "ch.epfl.lamp" % "dotty-compiler_0.23" % supportedTASTyRelease
+}
+
 /** Settings needed to compile with Dotty,
  *  Only active when sbt is started with `sbt -Dscala.build.compileWithDotty=true`
  *  This is currently only used to check that the standard library compiles with
@@ -15,9 +23,6 @@ import sbt.librarymanagement.{
  */
 object DottySupport {
   val dottyVersion = "0.24.0-RC1"
-  val currentDottyRelease = "0.23.0-RC1" // TASTy version 20
-  val dottyLibrary = "ch.epfl.lamp" % "dotty-library_0.23" % currentDottyRelease
-  val dottyCompiler = "ch.epfl.lamp" % "dotty-compiler_0.23" % currentDottyRelease
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(

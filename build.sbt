@@ -898,24 +898,13 @@ lazy val tastytest = configureAsSubproject(project)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
-    libraryDependencies ++= List(/*testInterfaceDep,*/ diffUtilsDep, DottySupport.dottyCompiler),
+    libraryDependencies ++= List(/*testInterfaceDep,*/ diffUtilsDep, TastySupport.dottyCompiler),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala TASTyTest</name>,
       "/project/description" -> <description>Scala TASTy Integration Testing Tool</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     )
-  )
-
-// ??? TODO [tasty]: WTF is this?
-lazy val scalacheckLib = project.in(file("src") / "scalacheck")
-  .dependsOn(library)
-  .settings(commonSettings)
-  .settings(disableDocs)
-  .settings(skip in publish := true)
-  .settings(
-    name := "scalacheck-lib",
-    libraryDependencies += testInterfaceDep
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
@@ -1323,30 +1312,30 @@ lazy val root: Project = (project in file("."))
 
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
+        SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
+        (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
+        (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
+        partestDesc("run"),
+        partestDesc("pos neg jvm"),
+        partestDesc("res scalap specialized"),
+        partestDesc("instrumented presentation"),
+        partestDesc("--srcpath scaladoc"),
+        partestDesc("--srcpath macro-annot"),
+        partestDesc("--srcpath async"),
         (tasty / Test / Keys.test).result map (_ -> "tasty/test"),
-        // SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
-        // (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
-        // (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
-        // partestDesc("run"),
-        // partestDesc("pos neg jvm"),
-        // partestDesc("res scalap specialized"),
-        // partestDesc("instrumented presentation"),
-        // partestDesc("--srcpath scaladoc"),
-        // partestDesc("--srcpath macro-annot"),
-        // partestDesc("--srcpath async"),
-        // (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
-        // (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
-        // (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
-        // (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
-        // testJDeps.result map (_ -> "testJDeps"),
-        // testJarSize.result map (_ -> "testJarSize"),
-        // (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
-        // Def.task(()).dependsOn( // Run these in parallel:
-        //   library / Compile / doc,
-        //   reflect / Compile / doc,
-        //   compiler / Compile / doc,
-        //   scalap / Compile / doc,
-        // ).result map (_ -> "doc")
+        (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
+        (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
+        (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
+        (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
+        testJDeps.result map (_ -> "testJDeps"),
+        testJarSize.result map (_ -> "testJarSize"),
+        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
+        Def.task(()).dependsOn( // Run these in parallel:
+          library / Compile / doc,
+          reflect / Compile / doc,
+          compiler / Compile / doc,
+          scalap / Compile / doc,
+        ).result map (_ -> "doc")
       )).value
       val log = streams.value.log
       val failed = results.collect { case (Inc(i), d) => (i, d) }
