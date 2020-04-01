@@ -52,8 +52,15 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       debuglog("Dependency phase took : " + ((stop - start) / 1000.0) + " s")
     }
 
+    // TODO In 2.13, shouldSkipThisPhaseForJava should be overridden instead of cancelled
+    // override def shouldSkipThisPhaseForJava = !global.callback.isPickleJava
+    override def cancelled(unit: CompilationUnit) = {
+      if (Thread.interrupted()) reporter.cancelled = true
+      reporter.cancelled || unit.isJava && !global.callback.isPickleJava
+    }
+
     def apply(unit: CompilationUnit): Unit = {
-      if (!unit.isJava) {
+      if (!unit.isJava || global.callback.isPickleJava) {
         // Process dependencies if name hashing is enabled, fail otherwise
         val dependencyProcessor = new DependencyProcessor(unit)
         val dependencyTraverser = new DependencyTraverser(dependencyProcessor)
