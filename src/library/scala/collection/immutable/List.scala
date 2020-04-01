@@ -108,7 +108,19 @@ sealed abstract class List[+A]
   def ::: [B >: A](prefix: List[B]): List[B] =
     if (isEmpty) prefix
     else if (prefix.isEmpty) this
-    else (new ListBuffer[B] ++= prefix).prependToList(this)
+    else {
+      val result = new ::[B](prefix.head, this)
+      var curr = result
+      var that = prefix.tail
+      while (!that.isEmpty) {
+        val temp = new ::[B](that.head, this)
+        curr.next = temp
+        curr = temp
+        that = that.tail
+      }
+      releaseFence()
+      result
+    }
 
   /** Adds the elements of a given list in reverse order in front of this list.
     *  `xs reverse_::: ys` is equivalent to
@@ -131,10 +143,25 @@ sealed abstract class List[+A]
 
   override def prepended[B >: A](elem: B): List[B] = elem :: this
 
-  // When calling prependAll with another list `prefix`, avoid copying `this`
   override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): List[B] = prefix match {
     case xs: List[B] => xs ::: this
-    case _ => super.prependedAll(prefix)
+    case _ if prefix.knownSize == 0 => this
+    case b: ListBuffer[B] if this.isEmpty => b.toList
+    case _ =>
+      val iter = prefix.iterator
+      if (iter.hasNext) {
+        val result = new ::[B](iter.next(), this)
+        var curr = result
+        while (iter.hasNext) {
+          val temp = new ::[B](iter.next(), this)
+          curr.next = temp
+          curr = temp
+        }
+        releaseFence()
+        result
+      } else {
+        this
+      }
   }
 
   // When calling appendAll with another list `suffix`, avoid copying `suffix`
@@ -241,7 +268,7 @@ sealed abstract class List[+A]
         if (x.asInstanceOf[AnyRef] ne List.partialNotApplied) h = new ::(x.asInstanceOf[B], Nil)
         rest = rest.tail
         if (rest eq Nil) return if (h eq null) Nil else h
-      } 
+      }
       var t = h
       // Remaining elements
       while (rest ne Nil) {
@@ -252,7 +279,7 @@ sealed abstract class List[+A]
           t = nx
         }
         rest = rest.tail
-      } 
+      }
       releaseFence()
       h
     }
@@ -621,12 +648,7 @@ case object Nil extends List[Nothing] {
 object List extends StrictOptimizedSeqFactory[List] {
   private val TupleOfNil = (Nil, Nil)
 
-  def from[B](coll: collection.IterableOnce[B]): List[B] = coll match {
-    case coll: List[B] => coll
-    case _ if coll.knownSize == 0 => empty[B]
-    case b: ListBuffer[B] => b.toList
-    case _ => ListBuffer.from(coll).toList
-  }
+  def from[B](coll: collection.IterableOnce[B]): List[B] = Nil.prependedAll(coll)
 
   def newBuilder[A]: Builder[A, List[A]] = new ListBuffer()
 
