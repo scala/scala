@@ -465,7 +465,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   // parseStats, returning status but no trees
-  def parseString(line: String): Result = parse(line).fold(e => e, _ => Success)
+  def parseString(line: String): Result =
+    reporter.suppressOutput {
+      parse(line).fold(e => e, _ => Success)
+    }
 
   def tokenize(line: String): List[TokenData] = {
     import collection.mutable.ListBuffer
