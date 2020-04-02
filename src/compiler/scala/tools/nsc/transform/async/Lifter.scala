@@ -152,7 +152,7 @@ trait Lifter extends ExprBuilder {
             val isLazy = sym.isLazy
             sym.setFlag(STABLE | PRIVATE | LOCAL)
             if (isLazy) sym.resetFlag(LAZY) else sym.setFlag(MUTABLE)
-            sym.setName(currentTransformState.name.fresh(sym.name.toTermName))
+            sym.setName(currentTransformState.name.freshenIfNeeded(sym.name.toTermName))
             sym.setInfo(sym.info.deconst)
             val rhs1 = if (isLazy) rhs else EmptyTree
             treeCopy.ValDef(vd, Modifiers(sym.flags), sym.name, TypeTree(sym.info).setPos(t.pos), rhs1)

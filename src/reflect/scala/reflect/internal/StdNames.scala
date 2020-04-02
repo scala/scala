@@ -842,11 +842,8 @@ trait StdNames {
     val completed        : NameType       = "completed$async"
     val stateMachine     : NameType       = "stateMachine$async"
     val state            : NameType       = "state$async"
-    val execContextTemp  : NameType       = "execContext0$async"
-    val execContext      : NameType       = "execContext$async"
     val tr               : NameType       = "tr$async"
     val t                : NameType       = "throwable$async"
-    val future           : NameType       = "future"
 
     // quasiquote interpolators:
     val q: NameType  = "q"

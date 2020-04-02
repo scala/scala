@@ -109,7 +109,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
             })
           }
           assert(localTyper.context.owner == cd.symbol.owner)
-          new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
+          val withFields = new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
+          withFields
 
         case dd: DefDef if dd.hasAttachment[AsyncAttachment] =>
           val asyncAttachment = dd.getAndRemoveAttachment[AsyncAttachment].get
@@ -117,7 +118,6 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
             case blk@Block(stats, Literal(Constant(()))) => treeCopy.Block(blk, stats.init, stats.last).setType(stats.last.tpe)
           }
 
-          val saved = currentTransformState
           atOwner(dd, dd.symbol) {
             val trSym = dd.vparamss.head.head.symbol
             val saved = currentTransformState

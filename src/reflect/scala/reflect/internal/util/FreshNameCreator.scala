@@ -27,9 +27,45 @@ class FreshNameCreator(creatorPrefix: String = "") {
    */
   def newName(prefix: String): String = {
     val safePrefix = NameTransformer.encode(prefix)
-    val counter = counters.computeIfAbsent(safePrefix, (s: String) => new AtomicLong(0))
-    val idx = counter.incrementAndGet()
+    val idx = allocateCounter(safePrefix).incrementAndGet()
+    assemble(safePrefix, idx)
+  }
+
+  /** Low level API for clients that want to perform multiple fresh names from the same prefix. */
+  def newNameFactory(prefix: String): NameFactory = {
+    val safePrefix = NameTransformer.encode(prefix)
+    val counter = allocateCounter(safePrefix)
+    new NameFactory(safePrefix, counter)
+  }
+
+  private def assemble(safePrefix: String, idx: Long) = {
+    val result = new java.lang.StringBuilder(creatorPrefix.length + safePrefix.length + decimalLength(idx))
+    result.append(creatorPrefix)
+    result.append(safePrefix)
+    result.append(idx)
     creatorPrefix + safePrefix + idx
   }
 
+  private def allocateCounter(safePrefix: String): AtomicLong = {
+    counters.computeIfAbsent(safePrefix, (s: String) => new AtomicLong(0))
+  }
+
+  final class NameFactory(safePrefix: String, counter: AtomicLong) {
+    def index(): Long = counter.incrementAndGet()
+    def newNameAtIndex(index: Long): String = assemble(safePrefix, index)
+    def newName(): String = newNameAtIndex(index())
+  }
+
+  def decimalLength(i: Long): Int = {
+    require(i >= 0, i)
+    var ceiling = 10
+    var numDigits = 1
+    val MaxValueLength = 19 // = Long.MaxValue.toString.length
+    while (numDigits <= MaxValueLength) {
+      if (i < ceiling) return numDigits
+      numDigits += 1
+      ceiling *= 10
+    }
+    MaxValueLength
+  }
 }

@@ -29,6 +29,7 @@ class AnnotationDrivenAsync {
         |
         |object Test {
         |  def test: Future[Int] = async { await(f(1)) + await(f(2)) }
+        |  def test1: Future[Int] = async { await(f(1)) + await(f(2)) }
         |  def f(x: Int): Future[Int] = Future.successful(x)
         |}
         |""".stripMargin
@@ -805,6 +806,31 @@ class AnnotationDrivenAsync {
         | }
         | """.stripMargin)
     assertEquals(classOf[Array[String]], result.getClass)
+  }
+
+  @Test def testLambdaLiftClash(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.partest.async.Async.{async, await}
+        |import Future.{successful => f}
+        |
+        |object Test {
+        |  def test: Future[Int] = async {
+        |    def foo = 42
+        |    await(f("")); // so that the preceding def will be lifted to foo$N
+        |
+        |    {
+        |      // lambdalift will later lift this to foo$N.
+        |      def foo = 43
+        |      foo
+        |    };
+        |    foo
+        |  }
+        |}
+        |""".stripMargin
+    // If async and lambdalift phase both use the compilation units FreshNameCreator, we get foo$1 and foo$2, no clash!
+    assertEquals(42, run(code))
   }
 
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.

@@ -12,10 +12,8 @@
 
 package scala.tools.nsc.transform.async
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.reflect.internal.util.FreshNameCreator
 
 /**
   * A per-global cache of names needed by the Async macro.
@@ -24,16 +22,25 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   self =>
   import u._
 
-  abstract class NameCache[N <: U#Name](base: String) {
-    val cached = new ArrayBuffer[N]()
+  abstract class NameCache[N <: U#Name](val base: String) {
+    val prefix: String = base + "$"
+    private final val CacheLimit = 128
+    val cached = new java.util.ArrayList[N](CacheLimit)
+    cached.addAll(java.util.Collections.nCopies(CacheLimit, null.asInstanceOf[N]))
     protected def newName(s: String): N
-    def apply(i: Int): N = {
-      if (cached.isDefinedAt(i)) cached(i)
-      else {
-        assert(cached.length == i)
-        val name = newName(freshenString(base, i))
-        cached += name
-        name
+    def apply(nameFactory: FreshNameCreator#NameFactory): N = {
+      val i = nameFactory.index()
+      if (i < CacheLimit.toLong) {
+        cached.get(i.toInt) match {
+          case null =>
+            val result = newName(nameFactory.newNameAtIndex(i))
+            cached.set(i.toInt, result)
+            result
+          case name =>
+            name
+        }
+      } else {
+        newName(nameFactory.newNameAtIndex(i))
       }
     }
   }
@@ -45,58 +52,41 @@ final class AsyncNames[U <: reflect.internal.Names with Singleton](val u: U) {
   private val ifRes: TermNameCache = new TermNameCache("if")
   private val await: TermNameCache = new TermNameCache("await")
 
-  final class NameSource[N <: U#Name](cache: NameCache[N]) {
-    private val count = new AtomicInteger(0)
-    def apply(): N = cache(count.getAndIncrement())
+  final class NameSource[N <: U#Name](cache: NameCache[N], freshNameCreator: FreshNameCreator) {
+    private val factory = freshNameCreator.newNameFactory(cache.prefix)
+    def apply(): N = {
+      cache(factory)
+    }
   }
 
-  class AsyncName {
-    final val matchRes = new NameSource[U#TermName](self.matchRes)
-    final val ifRes = new NameSource[U#TermName](self.ifRes)
-    final val await = new NameSource[U#TermName](self.await)
+  class AsyncName(freshNameCreator: FreshNameCreator) {
+    final val matchRes = new NameSource[U#TermName](self.matchRes, freshNameCreator)
+    final val ifRes = new NameSource[U#TermName](self.ifRes, freshNameCreator)
+    final val await = new NameSource[U#TermName](self.await, freshNameCreator)
 
-    private val seenPrefixes = mutable.AnyRefMap[Name, AtomicInteger]()
-    private val freshened = mutable.HashSet[Name]()
+    private val seenPrefixes = mutable.HashSet[Name]()
 
     final def freshenIfNeeded(name: TermName): TermName = {
-      seenPrefixes.getOrNull(name) match {
-        case null =>
-          seenPrefixes.put(name, new AtomicInteger())
-          name
-        case counter =>
-          freshen(name, counter)
+      if (seenPrefixes.contains(name)) {
+        TermName(freshNameCreator.newName(name.toStringWithSuffix("$")))
+      } else {
+        seenPrefixes.add(name)
+        name
+      }
+    }
+    final def freshenIfNeeded(name: TypeName): TypeName = {
+      if (seenPrefixes.contains(name)) {
+        TypeName(freshNameCreator.newName(name.toStringWithSuffix("$")))
+      } else {
+        seenPrefixes.add(name)
+        name
       }
     }
     final def freshen(name: TermName): TermName = {
-      val counter = seenPrefixes.getOrElseUpdate(name, new AtomicInteger())
-      freshen(name, counter)
+      TermName(freshNameCreator.newName(name.toStringWithSuffix("$")))
     }
     final def freshen(name: TypeName): TypeName = {
-      val counter = seenPrefixes.getOrElseUpdate(name, new AtomicInteger())
-      freshen(name, counter)
+      TypeName(freshNameCreator.newName(name.toStringWithSuffix("$")))
     }
-    private def freshen(name: TermName, counter: AtomicInteger): TermName = {
-      if (freshened.contains(name)) name
-      else TermName(freshenString(name, counter.incrementAndGet()))
-    }
-    private def freshen(name: TypeName, counter: AtomicInteger): TypeName = {
-      if (freshened.contains(name)) name
-      else TypeName(freshenString(name, counter.incrementAndGet()))
-    }
-  }
-
-  private def freshenString(name: CharSequence, counter: Int): String = {
-    val suffix = "$async$"
-    val length = name.length + suffix.length + decimalLength(counter)
-    val buffer = new java.lang.StringBuffer(length)
-    buffer.append(name)
-    buffer.append(suffix)
-    buffer.append(counter)
-    buffer.toString
-  }
-
-  private def decimalLength(i: Int): Int = {
-    require(i >= 0, i)
-    if (i == 0) 1 else (Math.log10(i).floor + 1d).toInt
   }
 }

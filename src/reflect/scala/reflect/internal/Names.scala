@@ -487,6 +487,12 @@ trait Names extends api.Names {
     def isOperatorName: Boolean = decode != toString  // used by ide
     def longString: String      = nameKind + " " + decode
     def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
+    final def toStringWithSuffix(suffix: String): String = {
+      val builder = new java.lang.StringBuilder(length + suffix.length)
+      builder.append(this: CharSequence)
+      builder.append(suffix)
+      builder.toString
+    }
 
     override final def toString: String = if (cachedString == null) new String(_chrs, index, len) else cachedString
     final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit = {
