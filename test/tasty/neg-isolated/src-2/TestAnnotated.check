@@ -1,0 +1,4 @@
+TestAnnotated_fail.scala:5: error: can't find type required by a member of package tastytest: tastytest.annot; perhaps it is missing from the classpath.
+  def test = new Annotated {}
+                 ^
+1 error

@@ -4,7 +4,6 @@ import TastyUnpickler.SectionUnpickler
 import TastyRefs.NameRef
 
 import scala.reflect.io.AbstractFile
-import scala.util.control.NonFatal
 
 object ScalacUnpickler {
 
@@ -30,20 +29,12 @@ object ScalacUnpickler {
     def unpickle(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
       import Contexts._
       implicit val thisTasty: tasty.type = tasty
-      try {
-        logTasty(s"Unpickling $filename")
 
-        val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
+      logTasty(s"Unpickling $filename")
 
-        val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get
-
-        implicit val ctx: Context = new InitialContext(classRoot, AbstractFile.getFile(filename))
-        treeUnpickler.enter(classRoot, moduleRoot)
-      } catch {
-        case NonFatal(ex) =>
-          ex.printStackTrace()
-          throw new RuntimeException(s"error reading TASTy from $filename: ${ex.getMessage()}")
-      }
+      val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
+      val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get
+      treeUnpickler.enter(classRoot, moduleRoot)(new InitialContext(classRoot, AbstractFile.getFile(filename)))
     }
   }
 }
