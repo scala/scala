@@ -22,14 +22,14 @@ object Dotc {
     }
   }
 
-  def dotc(out: String, sources: String*): Try[Boolean] = {
+  def dotc(out: String, classpath: String, sources: String*): Try[Boolean] = {
     if (sources.isEmpty) {
       Success(true)
     }
     else {
       val args = Array(
         "-d", out,
-        "-classpath", out,
+        "-classpath", classpath,
         "-deprecation",
         "-Xfatal-warnings",
         "-usejavacp"
@@ -40,7 +40,7 @@ object Dotc {
 
   def main(args: Array[String]): Unit = {
     val Array(out, src) = args
-    val success = dotc(out, src).get
+    val success = dotc(out, out, src).get
     sys.exit(if (success) 0 else 1)
   }
 }

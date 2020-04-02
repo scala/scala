@@ -39,6 +39,14 @@ class TastyTestJUnit {
     additionalSettings = Nil
   ).get
 
+  @test def negIsolated(): Unit = TastyTest.negSuiteIsolated(
+    src                = "neg-isolated",
+    srcRoot            = assertPropIsSet(propSrc),
+    pkgName            = assertPropIsSet(propPkgName),
+    outDirs            = None,
+    additionalSettings = Nil
+  ).get
+
   val propSrc          = "tastytest.src"
   val propPkgName      = "tastytest.packageName"
 

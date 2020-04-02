@@ -6,11 +6,18 @@ import java.nio.file.FileSystems
 
 import scala.util.Try
 
-import Files.pathSep
+import Files.{pathSep, classpathSep}
 
   def printerrln(str: String): Unit = System.err.println(red(str))
   def printwarnln(str: String): Unit = System.err.println(yellow(str))
   def printsuccessln(str: String): Unit = System.err.println(green(str))
+
+  implicit final class ZipOps[T](val t: Try[T]) extends AnyVal {
+    @inline final def *>[U](u: Try[U]): Try[(T, U)] = for {
+      x <- t
+      y <- u
+    } yield (x, y)
+  }
 
   def cyan(str: String): String = Console.CYAN + str + Console.RESET
   def yellow(str: String): String = Console.YELLOW + str + Console.RESET
@@ -25,6 +32,7 @@ import Files.pathSep
   }
 
   private def path(part: String, parts: String*): String = (part +: parts).mkString(pathSep)
+  def classpath(path: String, paths: String*): String = (path +: paths).mkString(classpathSep)
 
   implicit final class OptionOps[A](val opt: Option[A]) extends AnyVal {
     @inline final def failOnEmpty(ifEmpty: => Throwable): Try[A] = opt.toRight(ifEmpty).toTry

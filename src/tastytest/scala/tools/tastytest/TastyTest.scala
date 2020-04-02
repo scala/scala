@@ -41,6 +41,14 @@ object TastyTest {
     _                 <- scalacNeg(out, additionalSettings, src2:_*)
   } yield ()
 
+  def negSuiteIsolated(src: String, srcRoot: String, pkgName: String, outDirs: Option[(String, String)], additionalSettings: Seq[String]): Try[Unit] = for {
+    (src2, src3A, src3B) <- getNegIsolatedSources(srcRoot/src, src2Filters = Set(Scala, Check, SkipCheck))
+    (out1, out2)         <- outDirs.fold(tempDir(pkgName) *> tempDir(pkgName))(p => dir(p._1) *> dir(p._2))
+    _                    <- dotcPos(out1, sourceRoot=srcRoot/src/"src-3-A", src3A:_*)
+    _                    <- dotcPos(out2, classpath(out1, out2), sourceRoot=srcRoot/src/"src-3-B", src3B:_*)
+    _                    <- scalacNeg(out2, additionalSettings, src2:_*)
+  } yield ()
+
   private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
     successWhen(Scalac.scalac(out, additionalSettings, sources:_*))("scalac failed to compile sources.")
@@ -130,9 +138,11 @@ object TastyTest {
     }
   }
 
-  def dotcPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
+  def dotcPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = dotcPos(out, out, sourceRoot, sources:_*)
+
+  def dotcPos(out: String, classpath: String, sourceRoot: String, sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with dotc.")
-    successWhen(Dotc.dotc(out, sources:_*))("dotc failed to compile sources.")
+    successWhen(Dotc.dotc(out, classpath, sources:_*))("dotc failed to compile sources.")
   }
 
   private def getSourceAsName(path: String): String =
@@ -154,6 +164,16 @@ object TastyTest {
       src2 <- getFiles(root/"src-2")
       src3 <- getFiles(root/"src-3")
     } yield (whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3:_*))
+  }
+
+  private def getNegIsolatedSources(root: String, src2Filters: Set[SourceKind] = Set(Scala),
+    src3Filters: Set[SourceKind] = Set(Scala)
+  ): Try[(Seq[String], Seq[String], Seq[String])] = {
+    for {
+      src2  <- getFiles(root/"src-2")
+      src3A <- getFiles(root/"src-3-A")
+      src3B <- getFiles(root/"src-3-B")
+    } yield (whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3A:_*), whitelist(src3Filters, src3B:_*))
   }
 
   private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {

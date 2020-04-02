@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
 import scala.tools.nsc.tasty.TastyName
+import scala.tools.nsc.tasty.TastyModes._
 
 trait ContextOps { self: TastyUniverse =>
   import FlagSets._
@@ -53,6 +54,7 @@ trait ContextOps { self: TastyUniverse =>
 
       def owner: Symbol
       def source: AbstractFile
+      def mode: TastyMode
 
       private[this] var _modules: mutable.AnyRefMap[TermName, ModuleSymbol] = null
       private[this] def modules = {
@@ -162,15 +164,17 @@ trait ContextOps { self: TastyUniverse =>
         withOwner(newLocalDummy)
 
       final def selectionCtx(name: TastyName): Context = this // if (name.isConstructorName) this.addMode(Mode.InSuperCall) else this
-      final def fresh(owner: Symbol): FreshContext = new FreshContext(owner, this)
-      final def fresh: FreshContext = new FreshContext(this.owner, this)
+      final def fresh(owner: Symbol): FreshContext = new FreshContext(owner, this, this.mode)
+      final def fresh: FreshContext = new FreshContext(this.owner, this, this.mode)
+      final def withMode(mode: TastyMode): FreshContext = new FreshContext(this.owner, this, this.mode | mode)
     }
 
     final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {
+      def mode: TastyMode = EmptyTastyMode
       def owner: Symbol = topLevelClass.owner
     }
 
-    final class FreshContext(val owner: Symbol, val outer: Context) extends Context {
+    final class FreshContext(val owner: Symbol, val outer: Context, val mode: TastyMode) extends Context {
       def source: AbstractFile = outer.source
     }
   }

@@ -189,23 +189,17 @@ trait TypeOps { self: TastyUniverse =>
     tpe
   }
 
-  def reportThenErrorTpe(msg: String): Type = {
-    reporter.error(noPosition, msg)
-    errorType
-  }
+  def typeError[T](msg: String): T = throw new symbolTable.TypeError(msg)
 
-  def namedMemberOfPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+  def namedMemberOfPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type =
     namedMemberOfTypeWithPrefix(pre, pre, name, selectingTerm)
-  }
 
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
-    namedMemberOfType(space, tname, selectingTerm).map(prefixedRef(pre, _)).fold(reportThenErrorTpe, identity)
-  }
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type =
+    prefixedRef(pre, namedMemberOfType(space, tname, selectingTerm))
 
   def constructorOfPrefix(pre: Type)(implicit ctx: Context): Type = {
-    def selectedCtor(ctor: Symbol): Type =
-      normaliseConstructorRef(ctor).tap(tpe => ctx.log(s"selected ${showSym(ctor)} : $tpe"))
-    constructorOfType(pre).fold(reportThenErrorTpe, selectedCtor)
+    val ctor = constructorOfType(pre)
+    normaliseConstructorRef(ctor).tap(tpe => ctx.log(s"selected ${showSym(ctor)} : $tpe"))
   }
 
   def lambdaResultType(resType: Type): Type = resType match {

@@ -25,6 +25,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import TreeUnpickler._
   import MaybeCycle._
   import TastyFlags._
+  import TastyModes._
   import Signature._
   import Contexts._
 
@@ -922,7 +923,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def readTemplate(symAddr: Addr)(implicit ctx: Context): NoCycle = {
       val cls = completeClassTpe1
       val localDummy = symbolAtCurrent()
-      val parentCtx = ctx.withOwner(localDummy)
       assert(readByte() === TEMPLATE)
       val end = readEnd()
 
@@ -942,10 +942,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       // ** PARENTS **
       ctx.log(s"Template: adding parents of $cls")
-      val parents = collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
-        nextUnsharedTag match {
-          case APPLY | TYPEAPPLY | BLOCK => readParentFromTerm()(parentCtx)
-          case _ => readTpt()(parentCtx).tpe
+      val parents = {
+        val parentCtx = ctx.withOwner(localDummy).withMode(InParents)
+        collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
+          nextUnsharedTag match {
+            case APPLY | TYPEAPPLY | BLOCK => readParentFromTerm()(parentCtx)
+            case _ => readTpt()(parentCtx).tpe
+          }
         }
       }
       val parentTypes = parents.map { tp =>
@@ -1298,7 +1301,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SignedName(TastyName.Constructor, _: MethodSignature[_]) =>
           constructorOfPrefix(readParentFromTerm())(ctx.selectionCtx(name))
         case _ =>
-          reportThenErrorTpe(s"Parent of ${ctx.owner} is not a constructor.")
+          typeError(s"Parent of ${ctx.owner} is not a constructor.")
       }
 
       def readSimpleTermAsType(): Type = tag match {

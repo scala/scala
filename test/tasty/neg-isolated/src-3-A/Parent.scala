@@ -1,0 +1,3 @@
+package tastytest
+
+class Parent
