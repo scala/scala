@@ -43,19 +43,30 @@ trait SymbolOps { self: TastyUniverse =>
   def namedMemberOfType(space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Either[String, Symbol] = {
     val selector = encodeTastyName(tname, selectingTerm)
     tname.signature match {
-      case NotAMethod => Right(memberOfSpace(space, selector, tname.isModuleName))
+      case NotAMethod => memberOfSpace(space, selector, tname.isModuleName)
       case sig        => signedMemberOfSpace(space, selector, sig.map(erasedNameToErasedType))
     }
   }
 
-  private def memberOfSpace(space: Type, name: Name, isModuleName: Boolean): Symbol = {
+  private def memberOfSpace(space: Type, name: Name, isModuleName: Boolean): Either[String, Symbol] = {
     // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
     //    or else filters for non private.
     // There should be an investigation to see what code makes that false, and what is an equivalent check.
     def lookInTypeCtor = space.typeConstructor.typeParams.filter(_.name == name).headOption.getOrElse(noSymbol)
     val fetched = space.member(name)
     val corrected = if (name.isTypeName) fetched.orElse(lookInTypeCtor) else fetched
-    if (isModuleName) corrected.linkedClassOfClass else corrected
+    val finalSym = if (isModuleName) corrected.linkedClassOfClass else corrected
+    if (isSymbol(finalSym)) {
+      Right(finalSym)
+    } else {
+      val kind = if (name.isTermName) "term" else "type"
+      val msg =
+        if (space.typeSymbol.isPackage)
+          s"can't find $kind $name in package ${space.typeSymbol.fullNameString}, perhaps it is missing from the classpath."
+        else
+          s"can't find $kind $name in $space"
+      Left(msg)
+    }
   }
 
   private def signedMemberOfSpace(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Either[String, Symbol] = {
