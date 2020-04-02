@@ -2,7 +2,6 @@ package scala.tools.nsc.tasty
 
 import TastyUnpickler.SectionUnpickler
 import TastyRefs.NameRef
-import Names.TastyName
 
 import scala.reflect.io.AbstractFile
 import scala.util.control.NonFatal

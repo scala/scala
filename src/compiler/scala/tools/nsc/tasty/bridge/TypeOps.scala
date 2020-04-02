@@ -2,12 +2,9 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.Names.TastyName
-import scala.tools.nsc.tasty.Names.TastyName.QualifiedName
-import scala.tools.nsc.tasty.Names.TastyName.SimpleName
+import scala.tools.nsc.tasty.TastyName, TastyName.{QualifiedName, SimpleName}
 
 import scala.tools.nsc.tasty._
-import scala.tools.nsc.tasty.Names.TastyName.SignedName
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
@@ -134,12 +131,12 @@ trait TypeOps { self: TastyUniverse =>
       }
     }
     else {
-      selectFromSpaceWithPrefix(pre, space, name, selectingTerm = false)
+      namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = false)
     }
   }
 
   def selectTerm(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
-    selectFromSpaceWithPrefix(pre, space, name, selectingTerm = true)
+    namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = true)
 
   /**
    * Ported from dotc
@@ -164,67 +161,51 @@ trait TypeOps { self: TastyUniverse =>
     override def load(sym: Symbol): Unit = complete(sym)
   }
 
-  def mkNamedType(prefix: Type, designator: Symbol): Type = {
-    if (designator.isType) {
+  def prefixedRef(prefix: Type, sym: Symbol): Type = {
+    if (sym.isType) {
       prefix match {
-        case tp: ThisType if tp.sym.isRefinementClass => designator.preciseRef(prefix)
-        case _:SingleType | _:RefinedType             => designator.preciseRef(prefix)
-        case _                                        => designator.ref
+        case tp: ThisType if tp.sym.isRefinementClass => sym.preciseRef(prefix)
+        case _:SingleType | _:RefinedType             => sym.preciseRef(prefix)
+        case _                                        => sym.ref
       }
     }
-    else if (designator.is(JavaStatic)) {
-      // With this second constraint, we avoid making singleton types for
-      // static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-      designator.preciseRef(prefix)
+    else if (sym.isConstructor) {
+      normaliseConstructorRef(sym)
+    }
+    else if (sym.is(JavaStatic)) {
+      // With this constraint, we avoid making singleton types for
+      //  static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
+      sym.preciseRef(prefix)
     }
     else {
-      mkSingleType(prefix, designator)
+      mkSingleType(prefix, sym)
     }
   }
 
-  private def reportThenErrorTpe(msg: String): Type = {
+  def normaliseConstructorRef(ctor: Symbol): Type = {
+    var tpe = ctor.tpe
+    val tParams = ctor.owner.typeParams
+    if (tParams.nonEmpty) tpe = mkPolyType(tParams, tpe)
+    tpe
+  }
+
+  def reportThenErrorTpe(msg: String): Type = {
     reporter.error(noPosition, msg)
     errorType
   }
 
-  def selectFromPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
-    selectFromSpaceWithPrefix(pre, pre, name, selectingTerm)
+  def namedMemberOfPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+    namedMemberOfTypeWithPrefix(pre, pre, name, selectingTerm)
   }
 
-  def selectFromSpaceWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
-    val name = encodeTastyName(tname, selectingTerm)
-    def debugSelectedSym(sym: Symbol): Symbol = {
-      ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
-      sym
-    }
-    def memberOfSpace(space: Type, name: Name): Symbol = {
-      // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
-      //    or else filters for non private.
-      // There should be an investigation to see what code makes that false, and what is an equivalent check.
-      def lookInTypeCtor = space.typeConstructor.typeParams.filter(_.name == name).headOption.getOrElse(noSymbol)
-      val fetched = space.member(name)
-      if (name.isTypeName) fetched.orElse(lookInTypeCtor) else fetched
-    }
-    val resolved = tname match {
-      case SignedName(_, sig) => // method
-        selectSymFromSig(space, name, sig.map(erasedNameToErasedType)).map(pair => debugSelectedSym(pair._2))
-      case _ =>
-        val member = memberOfSpace(space, name)
-        Right(if (tname.isModuleName) member.linkedClassOfClass else member)
-    }
-    val tpeOrErr = resolved.map(mkNamedType(pre, _))
-    tpeOrErr.fold(reportThenErrorTpe, identity)
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type = {
+    namedMemberOfType(space, tname, selectingTerm).map(prefixedRef(pre, _)).fold(reportThenErrorTpe, identity)
   }
 
-  def selectFromSig(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Type = {
-    val tpeOrErr = selectSymFromSig(space, name, sig).map {
-      case (tyParamCount, sym) =>
-        var tpe = sym.tpe
-        if (name === nme.CONSTRUCTOR && tyParamCount > 0) tpe = mkPolyType(sym.owner.typeParams, tpe)
-        ctx.log(s"selected ${showSym(sym)} : $tpe")
-        tpe
-    }
-    tpeOrErr.fold(reportThenErrorTpe, identity)
+  def constructorOfPrefix(pre: Type)(implicit ctx: Context): Type = {
+    def selectedCtor(ctor: Symbol): Type =
+      normaliseConstructorRef(ctor).tap(tpe => ctx.log(s"selected ${showSym(ctor)} : $tpe"))
+    constructorOfType(pre).fold(reportThenErrorTpe, selectedCtor)
   }
 
   def lambdaResultType(resType: Type): Type = resType match {

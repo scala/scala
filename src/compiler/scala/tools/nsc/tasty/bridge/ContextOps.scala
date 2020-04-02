@@ -5,6 +5,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.TastyName
 
 trait ContextOps { self: TastyUniverse =>
   import FlagSets._
@@ -160,6 +161,7 @@ trait ContextOps { self: TastyUniverse =>
       final def withNewScope: Context =
         withOwner(newLocalDummy)
 
+      final def selectionCtx(name: TastyName): Context = this // if (name.isConstructorName) this.addMode(Mode.InSuperCall) else this
       final def fresh(owner: Symbol): FreshContext = new FreshContext(owner, this)
       final def fresh: FreshContext = new FreshContext(this.owner, this)
     }

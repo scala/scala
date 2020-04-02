@@ -1,10 +1,11 @@
 package scala.tools.nsc.tasty
 
 import TastyRefs._
+import TastyName.SignedName
+
 import scala.annotation.switch
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
-import Names.TastyName
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
@@ -486,7 +487,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         //   // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
         //   // the problem arises when a self type of a trait is a type parameter of the same trait.
       // }
-      mkNamedType(prefix, sym)
+      prefixedRef(prefix, sym)
     }
 
     private def readPackageRef()(implicit ctx: Context): TermSymbol = {
@@ -1023,15 +1024,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
     }
 
-    def completeSelection[T](name: TastyName, sig: Signature[Type], isTerm: Boolean)(f: (Context, Name, (Context, Name, Type) => Type) => T)(implicit ctx: Context): T = {
-      val localCtx = ctx // if (name === nme.CONSTRUCTOR) ctx.addMode(Mode.InSuperCall) else ctx
-      def tpeFun(localCtx: Context, selector: Name, qualType: Type): Type = {
-        if (sig `eq` NotAMethod) selectFromPrefix(qualType, name, isTerm)
-        else selectFromSig(qualType, selector, sig)(localCtx)
-      }
-      f(localCtx, encodeTastyName(name, isTerm), tpeFun)
-    }
-
 // ------ Reading trees -----------------------------------------------------
 
     def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
@@ -1054,12 +1046,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def completeSelect(name: TastyName, sig: Signature[Type], isTerm: Boolean)(implicit ctx: Context): Select =
-        completeSelection(name, sig, isTerm) { (localCtx, selector, tpeFun) =>
-          val qual     = readTerm()(localCtx)
-          val qualType = qual.tpe
-          Select(qual, selector).setType(tpeFun(localCtx, selector, qualType))
-        }
+      def completeSelect(name: TastyName, sig: Signature[Type], isTerm: Boolean)(implicit ctx: Context): Select = {
+        val localCtx = ctx.selectionCtx(name)
+        val qual     = readTerm()(localCtx)
+        val qualType = qual.tpe
+        Select(qual, encodeTastyName(name, isTerm)).setType(namedMemberOfPrefix(qualType, name, isTerm)(localCtx))
+      }
 
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm =>
@@ -1302,17 +1294,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
 
-      def completeSelectParent(name: TastyName, sig: Signature[Type], isTerm: Boolean)(implicit ctx: Context): Type =
-        completeSelection(name, sig, isTerm) { (localCtx, selector, tpeFun) =>
-          val qualType = readParentFromTerm()(localCtx).widen
-          tpeFun(localCtx, selector, qualType)
-        }
+      def completeSelectionParent(name: TastyName)(implicit ctx: Context): Type = name match {
+        case SignedName(TastyName.Constructor, _: MethodSignature[_]) =>
+          constructorOfPrefix(readParentFromTerm())(ctx.selectionCtx(name))
+        case _ =>
+          reportThenErrorTpe(s"Parent of ${ctx.owner} is not a constructor.")
+      }
 
       def readSimpleTermAsType(): Type = tag match {
-        case SELECT =>
-          val qual = readTastyName()
-          completeSelectParent(qual, qual.signature.map(erasedNameToErasedType), isTerm = true)
-        case NEW => readTpt().tpe
+        case SELECT => completeSelectionParent(readTastyName())
+        case NEW    => readTpt().tpe
       }
 
       def readLengthTermAsType(): Type = {

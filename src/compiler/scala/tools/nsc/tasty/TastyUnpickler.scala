@@ -4,7 +4,7 @@ import scala.collection.mutable
 
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
-import Names.TastyName, Names.TastyName._
+import TastyName._
 
 object TastyUnpickler {
   class UnpickleException(msg: String) extends RuntimeException(msg)

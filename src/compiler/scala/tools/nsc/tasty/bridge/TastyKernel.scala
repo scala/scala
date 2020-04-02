@@ -4,7 +4,7 @@ import scala.tools.nsc
 import nsc.symtab
 import nsc.tasty.TastyUniverse
 import nsc.tasty.TastyFlags.{EmptyTastyFlags, TastyFlagSet}
-import nsc.tasty.Names.TastyName, TastyName._
+import nsc.tasty.TastyName
 
 import scala.util.chaining._
 
@@ -96,6 +96,7 @@ trait TastyKernel { self: TastyUniverse =>
     final val NothingTpe: Type = symbolTable.definitions.NothingTpe
     final val AnyRefTpe: Type = symbolTable.definitions.AnyRefTpe
     final val UnitTpe: Type = symbolTable.definitions.UnitTpe
+    final val JavaEnumClass: ClassSymbol = symbolTable.definitions.JavaEnumClass
     final val CompileTimeOnlyAttr: Symbol = symbolTable.definitions.CompileTimeOnlyAttr
     final val ByNameParamClass: ClassSymbol = symbolTable.definitions.ByNameParamClass
     final val ObjectClass: ClassSymbol = symbolTable.definitions.ObjectClass
@@ -113,8 +114,8 @@ trait TastyKernel { self: TastyUniverse =>
   }
 
   object nme {
-    final val Or = SimpleName("|")
-    final val And = SimpleName("&")
+    final val Or: TastyName.SimpleName = TastyName.SimpleName("|")
+    final val And: TastyName.SimpleName = TastyName.SimpleName("&")
     final val EMPTY: TermName = symbolTable.nme.EMPTY
     final val SELF: TermName = symbolTable.nme.SELF
     final val CONSTRUCTOR: TermName = symbolTable.nme.CONSTRUCTOR
