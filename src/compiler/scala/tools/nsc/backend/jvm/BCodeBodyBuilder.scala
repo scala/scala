@@ -432,44 +432,48 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * Otherwise it's safe to call from multiple threads.
      */
     def genConstant(const: Constant): Unit = {
+
+      def handleEnum(sym: Symbol): Unit = {
+        val ownerName = internalName(sym.owner)
+        val fieldName = sym.javaSimpleName.toString
+        val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
+        mnode.visitFieldInsn(
+          asm.Opcodes.GETSTATIC,
+          ownerName,
+          fieldName,
+          fieldDesc
+        )
+      }
+
       (const.tag: @switch) match {
 
-        case BooleanTag => bc.boolconst(const.booleanValue)
+        case BooleanTag   => bc.boolconst(const.booleanValue)
 
-        case ByteTag    => bc.iconst(const.byteValue)
-        case ShortTag   => bc.iconst(const.shortValue)
-        case CharTag    => bc.iconst(const.charValue)
-        case IntTag     => bc.iconst(const.intValue)
+        case ByteTag      => bc.iconst(const.byteValue)
+        case ShortTag     => bc.iconst(const.shortValue)
+        case CharTag      => bc.iconst(const.charValue)
+        case IntTag       => bc.iconst(const.intValue)
 
-        case LongTag    => bc.lconst(const.longValue)
-        case FloatTag   => bc.fconst(const.floatValue)
-        case DoubleTag  => bc.dconst(const.doubleValue)
+        case LongTag      => bc.lconst(const.longValue)
+        case FloatTag     => bc.fconst(const.floatValue)
+        case DoubleTag    => bc.dconst(const.doubleValue)
 
-        case UnitTag    => ()
+        case UnitTag      => ()
 
-        case StringTag  =>
+        case StringTag    =>
           assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
           mnode.visitLdcInsn(const.stringValue) // `stringValue` special-cases null, but not for a const with StringTag
 
-        case NullTag    => emit(asm.Opcodes.ACONST_NULL)
+        case NullTag      => emit(asm.Opcodes.ACONST_NULL)
 
-        case ClazzTag   =>
+        case ClazzTag     =>
           val tp = typeToBType(const.typeValue)
           // classOf[Int] is transformed to Integer.TYPE by CleanUp
           assert(!tp.isPrimitive, s"expected class type in classOf[T], found primitive type $tp")
           mnode.visitLdcInsn(tp.toASMType)
 
-        case EnumTag   =>
-          val sym       = const.symbolValue
-          val ownerName = internalName(sym.owner)
-          val fieldName = sym.javaSimpleName.toString
-          val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
-          mnode.visitFieldInsn(
-            asm.Opcodes.GETSTATIC,
-            ownerName,
-            fieldName,
-            fieldDesc
-          )
+        case EnumTag      => handleEnum(const.symbolValue)
+        case DottyEnumTag => handleEnum(const.dottyEnumValue._1)
 
         case _ => abort(s"Unknown constant value: $const")
       }

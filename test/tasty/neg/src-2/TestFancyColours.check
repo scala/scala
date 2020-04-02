@@ -1,0 +1,11 @@
+TestFancyColours_fail.scala:7: warning: match may not be exhaustive.
+It would fail on the following input: Red
+  def describe(c: Colour) = c match { // error: would fail on case Red
+                            ^
+TestFancyColours_fail.scala:11: warning: match may not be exhaustive.
+It would fail on the following input: Violet
+  def describePretty(c: Pretty) = c match { // error: would fail on case Violet
+                                  ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

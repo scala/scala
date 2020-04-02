@@ -869,7 +869,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val tpe = readTpt()(localCtx).tpe
           if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
           sym.info = {
-            if (completer.tastyFlagSet.is(Enum)) mkConstantType(Constant(sym))
+            if (completer.tastyFlagSet.is(Enum)) mkConstantType(Constant((sym, tpe))).tap(_.typeSymbol.setFlag(Final))
             else if (sym.isMethod) mkNullaryMethodType(tpe)
             else tpe
           }
@@ -895,7 +895,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               case tpe: TypeBounds => normaliseBounds(tpe)
               case tpe             => tpe
             }
-            if (sym.is(Param)) sym.flags &= ~(Private | Protected)
+            if (sym.is(Param)) sym.resetFlag(Private | Protected)
             // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
             // sym.resetFlag(Provisional)
             NoCycle(at = symAddr)

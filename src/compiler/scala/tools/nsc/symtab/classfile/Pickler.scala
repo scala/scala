@@ -391,6 +391,7 @@ abstract class Pickler extends SubComponent {
         if (c.tag == StringTag) putEntry(newTermName(c.stringValue))
         else if (c.tag == ClazzTag) putType(c.typeValue)
         else if (c.tag == EnumTag) putSymbol(c.symbolValue)
+        else if (c.tag == DottyEnumTag) putSymbol(c.dottyEnumValue._1)
       }
     }
 

@@ -1,0 +1,11 @@
+TestFancyColours2_fail.scala:10: error: type mismatch;
+ found   : tastytest.FancyColours.Colour with tastytest.FancyColours.Dull(Red)
+ required: tastytest.FancyColours.Pretty
+    case Colour.Red    => "Pretty!" // error: Red not instance of Pretty
+                ^
+TestFancyColours2_fail.scala:14: error: type mismatch;
+ found   : tastytest.FancyColours.Colour with tastytest.FancyColours.Pretty(Pink)
+ required: tastytest.FancyColours.Dull
+    case Colour.Pink => "Dull!" // error: Pink not instance of Dull
+                ^
+2 errors
