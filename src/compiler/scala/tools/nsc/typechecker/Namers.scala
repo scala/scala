@@ -562,9 +562,9 @@ trait Namers extends MethodSynthesis {
           }
         }
         if (!tree.symbol.isSynthetic && expr.symbol != null && !expr.symbol.isInterpreterWrapper) {
-          if (base.member(from) != NoSymbol)
+          if (base.member(from).exists)
             check(to0)
-          if (base.member(from.toTypeName) != NoSymbol)
+          if (base.member(from.toTypeName).exists)
             check(to0.toTypeName)
         }
       }

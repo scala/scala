@@ -27,4 +27,4 @@ package scala.annotation
  * @param changedIn The version, in which the behaviour change was
  * introduced.
  */
- private[scala] final class migration(message: String, changedIn: String) extends scala.annotation.StaticAnnotation
+private[scala] final class migration(message: String, changedIn: String) extends scala.annotation.StaticAnnotation
