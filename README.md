@@ -39,6 +39,7 @@ If you need some help with your PR at any time, please feel free to @-mention an
  <img src="https://avatars.githubusercontent.com/dragos"        height="50px" title="Iulian Dragos"/>        | [`@dragos`](https://github.com/dragos)               | specialization, back end |
  <img src="https://avatars.githubusercontent.com/janekdb"       height="50px" title="Janek Bogucki"/>        | [`@janekdb`](https://github.com/janekdb)             | documentation |
  <img src="https://avatars.githubusercontent.com/sjrd"          height="50px" title="Sébastien Doeraene"/>   | [`@sjrd`](https://github.com/sjrd)             | interactions with Scala.js |
+  <img src="https://avatars.githubusercontent.com/NthPortal"          height="50px" title="Princess \| April"/>   | [`@NthPortal`](https://github.com/NthPortal)             | library, concurrency, `scala.math`, `LazyList`, `Using` |
 
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
