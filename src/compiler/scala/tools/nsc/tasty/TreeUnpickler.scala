@@ -18,23 +18,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     nameAtRef: NameRef => TastyName,
     splices: Seq[Any])(implicit
     val tasty: Tasty) { self =>
-  import tasty._
+  import tasty._, FlagSets._, SymbolOps._, Contexts._
   import TastyFormat._
-  import FlagSets._
-  import SymbolOps._
   import TreeUnpickler._
   import MaybeCycle._
   import TastyFlags._
   import TastyModes._
   import Signature._
-  import Contexts._
-
-  final class TASTyException(val sym: Symbol, msg: String) extends Exception(msg)
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
     if (!cond) {
-      errorTasty(msg)
+      ctx.unsupportedError(msg)
     }
 
   /** A map from addresses of definition entries to the symbols they define */
@@ -97,15 +92,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
-      try {
-        // implicit assertion that the completion is done by the same mirror that loaded owner
-        cycleAtAddr(currentAddr) = withPhaseNoLater(ctx.picklerPhase) {
-          new TreeReader(reader).readIndexedMember()
-        }
-      } catch {
-        case err: TASTyException =>
-          sym.info = errorType
-          errorTasty(s"${err.getMessage} on ${err.sym}")
+      // implicit assertion that the completion is done by the same mirror that loaded owner
+      cycleAtAddr(currentAddr) = withPhaseNoLater(picklerPhase) {
+        new TreeReader(reader).readIndexedMember()
       }
     }
   }
@@ -113,12 +102,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   /** A missing completer - from dotc */
   trait NoCompleter extends TastyLazyType {
     override def complete(sym: Symbol): Unit = throw new UnsupportedOperationException("complete")
-  }
-
-  final class ErrorCompleter(msg: Symbol => String) extends TastyLazyType {
-    override def complete(sym: Symbol): Unit = {
-      throw new symbolTable.TypeError(msg(sym))
-    }
   }
 
   class TreeReader(val reader: TastyReader) {
@@ -279,8 +262,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         Constant(readType())
       case ENUMconst =>
         Constant(readTypeRef().termSymbol)
-      case _ =>
-        sys.error(s"unknown tag ${astTagToString(tag)} when reading constant")
     }
 
     /** Read a type */
@@ -836,89 +817,86 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case _ => Nil
       }
 
-      val localCtx = ctx.withOwner(sym)
-      val noCycle  = tag match {
-        case DEFDEF =>
-          val supported = Extension | Inline | TastyMacro
-          val unsupported = completer.tastyFlagSet &~ supported
-          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
-          if (completer.tastyFlagSet.is(Inline)) {
-            attachCompiletimeOnly(sym, s"Unsupported Scala 3 inline $sym")
-          }
-          if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$name is a Scala 3 extension method.")
-          val typeParams = {
-            if (nme.CONSTRUCTOR === sym.name.toTermName) {
-              skipTypeParams()
-              sym.owner.typeParams
+      try {
+        val localCtx = ctx.withOwner(sym)
+        tag match {
+          case DEFDEF =>
+            val supported = Extension | Inline | TastyMacro
+            val unsupported = completer.tastyFlagSet &~ supported
+            assertTasty(!unsupported, s"flags on $sym: ${show(unsupported)}")
+            assertTasty(completer.tastyFlagSet.not(Inline), s"inline $sym")
+            if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$name is a Scala 3 extension method.")
+            val typeParams = {
+              if (nme.CONSTRUCTOR === sym.name.toTermName) {
+                skipTypeParams()
+                sym.owner.typeParams
+              }
+              else {
+                readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
+              }
+            }
+            val vparamss = readParamss(localCtx)
+            val tpt = readTpt()(localCtx)
+            val valueParamss = normalizeIfConstructor(vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
+            val resType = effectiveResultType(sym, typeParams, tpt.tpe)
+            sym.info = mkDefDefType(if (name === nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
+          case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
+            val isInline = completer.tastyFlagSet.is(Inline)
+            val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension)
+            assertTasty(!unsupported, s"flags on $sym: ${show(unsupported)}")
+            val tpe = readTpt()(localCtx).tpe
+            if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
+            sym.info = {
+              if (completer.tastyFlagSet.is(Enum)) mkConstantType(Constant((sym, tpe))).tap(_.typeSymbol.setFlag(Final))
+              else if (sym.isMethod) mkNullaryMethodType(tpe)
+              else tpe
+            }
+          case TYPEDEF | TYPEPARAM =>
+            val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque)
+            assertTasty(!unsupported, s"flags on $sym: ${show(unsupported)}")
+            if (sym.isClass) {
+              sym.owner.ensureCompleted()
+              readTemplate(symAddr)(localCtx)
             }
             else {
-              readParams[NoCycle](TYPEPARAM)(localCtx).map(symFromNoCycle)
+              sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see https://github.com/lampepfl/dotty/blob/master/tests/pos/i3816.scala
+              // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
+              val rhs = readTpt()(localCtx)
+              sym.info = new NoCompleter {}
+              // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
+              //               refine self type of the owner to be aware of the alias.
+              sym.info = rhs.tpe match {
+                case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
+                  typeError(s"$sym has diverging type lambdas as bounds:$bounds")
+                case tpe: TypeBounds => normaliseBounds(tpe)
+                case tpe             => tpe
+              }
+              if (sym.is(Param)) sym.resetFlag(Private | Protected)
+              // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
+              // sym.resetFlag(Provisional)
             }
-          }
-          val vparamss = readParamss(localCtx)
-          val tpt = readTpt()(localCtx)
-          val valueParamss = ctx.normalizeIfConstructor(vparamss.map(_.map(symFromNoCycle)), name === nme.CONSTRUCTOR)
-          val resType = ctx.effectiveResultType(sym, typeParams, tpt.tpe)
-          sym.info = ctx.methodType(if (name === nme.CONSTRUCTOR) Nil else typeParams, valueParamss, resType)
-          NoCycle(at = symAddr)
-        case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
-          val isInline = completer.tastyFlagSet.is(Inline)
-          val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension)
-          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
-          val tpe = readTpt()(localCtx).tpe
-          if (isInline) assertTasty(isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
-          sym.info = {
-            if (completer.tastyFlagSet.is(Enum)) mkConstantType(Constant((sym, tpe))).tap(_.typeSymbol.setFlag(Final))
-            else if (sym.isMethod) mkNullaryMethodType(tpe)
-            else tpe
-          }
-          NoCycle(at = symAddr)
-        case TYPEDEF | TYPEPARAM =>
-          val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque)
-          assertTasty(!unsupported, s"unsupported Scala 3 flags on $sym: ${show(unsupported)}")
-          if (sym.isClass) {
-            sym.owner.ensureCompleted()
-            readTemplate(symAddr)(localCtx)
-          }
-          else {
-            sym.info = TypeBounds.empty // needed to avoid cyclic references when unpickling rhs, see https://github.com/lampepfl/dotty/blob/master/tests/pos/i3816.scala
-            // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
-            val rhs = readTpt()(localCtx)
-            sym.info = new NoCompleter {}
-            // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
-            //               refine self type of the owner to be aware of the alias.
-            sym.info = rhs.tpe match {
-              case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
-                new ErrorCompleter(owner =>
-                  s"$owner has diverging type lambdas as bounds:$bounds")
-              case tpe: TypeBounds => normaliseBounds(tpe)
-              case tpe             => tpe
+          case PARAM =>
+            val unsupported = completer.tastyFlagSet &~ SuperParamAlias
+            assertTasty(!unsupported, s"flags on parameter $sym: ${show(unsupported)}")
+            val tpt = readTpt()(localCtx)
+            if (nothingButMods(end) && sym.not(ParamAccessor)) {
+              sym.info = tpt.tpe
             }
-            if (sym.is(Param)) sym.resetFlag(Private | Protected)
-            // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
-            // sym.resetFlag(Provisional)
-            NoCycle(at = symAddr)
-          }
-        case PARAM =>
-          val unsupported = completer.tastyFlagSet &~ SuperParamAlias
-          assertTasty(!unsupported, s"unsupported Scala 3 flags on parameter $sym: ${show(unsupported)}")
-          val tpt = readTpt()(localCtx)
-          if (nothingButMods(end) && sym.not(ParamAccessor)) {
-            sym.info = tpt.tpe
-            NoCycle(at = symAddr)
-          }
-          else {
-            sym.info = mkNullaryMethodType(tpt.tpe)
-            NoCycle(at = symAddr)
-          }
-        case _ => sys.error(s"Reading new member with tag ${astTagToString(tag)}")
+            else {
+              sym.info = mkNullaryMethodType(tpt.tpe)
+            }
+        }
+        ctx.log(s"typed ${showSym(sym)} : ${if (sym.isClass) sym.tpe else sym.info} in owner ${showSym(sym.owner)}")
+        goto(end)
+        NoCycle(at = symAddr)
+      } catch {
+        case err: symbolTable.TypeError =>
+          sym.info = errorType
+          throw err
       }
-      ctx.log(s"typed ${showSym(sym)} : ${if (sym.isClass) sym.tpe else sym.info} in owner ${showSym(sym.owner)}")
-      goto(end)
-      noCycle
     }
 
-    private def readTemplate(symAddr: Addr)(implicit ctx: Context): NoCycle = {
+    private def readTemplate(symAddr: Addr)(implicit ctx: Context): Unit = {
       val cls = completeClassTpe1
       val localDummy = symbolAtCurrent()
       assert(readByte() === TEMPLATE)
@@ -958,7 +936,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       // ** CREATE EXTENSION METHODS **
       if (parentTypes.head.typeSymbolDirect === defn.AnyValClass) {
         // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
-        withPhaseNoLater(ctx.extmethodsPhase) {
+        withPhaseNoLater(extmethodsPhase) {
           // duplicated from scala.tools.nsc.transform.ExtensionMethods
           cls.primaryConstructor.makeNotPrivate(noSymbol)
           for (decl <- cls.info.decls if decl.isMethod) {
@@ -986,7 +964,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         else new PolyType(tparams.map(symFromNoCycle), classInfo)
       }
       ctx.log(s"Template: Updated info of $cls with parents $parentTypes.")
-      NoCycle(at = symAddr)
     }
 
     def isTopLevel: Boolean =
@@ -996,9 +973,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case TYPEDEF | VALDEF | DEFDEF =>
         readIndexedMember()
       case IMPORT =>
-        throw new TASTyException(ctx.owner, "IMPORT in expression")
+        ctx.unsupportedError("IMPORT in expression")
       case PACKAGE =>
-        throw new TASTyException(ctx.owner, "PACKAGE in expression")
+        ctx.unsupportedError("PACKAGE in expression")
       case _ =>
         skipTree() // readTerm()(ctx.withOwner(exprOwner))
         NoCycle(at = NoAddr)
@@ -1133,10 +1110,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //              Inlined(call, bindings, expansion)
             case IF =>
               if (nextByte === INLINE) {
-                readByte()
-                readTerm(); readTerm(); readTerm() // InlineIf(readTerm(), readTerm(), readTerm())
-                errorTasty("inline if")
-                emptyTree
+                ctx.unsupportedError("inline if")
+                // readByte()
+                // InlineIf(readTerm(), readTerm(), readTerm())
               }
               else {
                 val cond = readTerm()
@@ -1145,7 +1121,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
             case LAMBDA =>
-              throw new TASTyException(ctx.owner, "LAMBDA")
+              ctx.unsupportedError("LAMBDA")
               // val meth = readTerm()
               // val tpt = ifBefore(end)(readTpt(), emptyTree)
               // Closure(Nil, meth, tpt)
@@ -1153,14 +1129,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nextByte === IMPLICIT) {
                 readByte()
                 readCases(end) //InlineMatch(EmptyTree, readCases(end))
-                errorTasty("implicit match")
-                emptyTree
+                ctx.unsupportedError("implicit match")
               }
               else if (nextByte === INLINE) {
                 readByte()
                 readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
-                errorTasty("inline match")
-                emptyTree
+                ctx.unsupportedError("inline match")
               }
               else {
                 val sel = readTerm()
@@ -1349,36 +1323,28 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
     }
 
-    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Option[T] = {
+    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => T = {
       val localReader = fork
       goto(end)
-      owner => readOptional(localReader, owner/*, ctx.mode*/, ctx.source, op)
+      owner => readWith(localReader, owner/*, ctx.mode*/, ctx.source, op)
     }
 
   }
 
-  def readOptional[T <: AnyRef](
+  def readWith[T <: AnyRef](
       reader: TreeReader,
       owner: Symbol/*, mode: Mode*/,
       source: AbstractFile,
       op: TreeReader => Context => T)(
       implicit
-      ctx: Context): Option[T] = {
-    try {
+      ctx: Context): T = {
+    withPhaseNoLater(picklerPhase) {
       ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
-      withPhaseNoLater(ctx.picklerPhase) {
-        Some(
-          op(reader)(ctx
-            .withOwner(owner)
-            // .withModeBits(mode)
-            // .withSource(source)
-          )
-        )
-      }
-    } catch {
-      case err: TASTyException =>
-        errorTasty(s"${err.getMessage} on ${err.sym}")
-        None
+      op(reader)(ctx
+        .withOwner(owner)
+        // .withModeBits(mode)
+        // .withSource(source)
+      )
     }
   }
 

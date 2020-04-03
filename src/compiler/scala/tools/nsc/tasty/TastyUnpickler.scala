@@ -23,11 +23,11 @@ object TastyUnpickler {
 
 import TastyUnpickler._
 
-class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self =>
-  import tasty.{logTasty, typeError}
+class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty: Tasty) { self =>
+  import tasty.{typeError, Contexts}, Contexts.Context
   import reader._
 
-  def this(bytes: Array[Byte])(implicit tasty: TastyUniverse) = this(new TastyReader(bytes))
+  def this(bytes: Array[Byte])(implicit tasty: Tasty) = this(new TastyReader(bytes))
 
   private val sectionReader = new mutable.HashMap[String, TastyReader]
 
@@ -47,13 +47,13 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
     }
   }
 
-  private def readNameContents(): TastyName = {
+  private def readNameContents()(implicit ctx: Context): TastyName = {
     val tag = readByte()
     val length = readNat()
     val start = currentAddr
     val end = start + length
     def debugName(name: TastyName): name.type = {
-      logTasty(s"${nameAtRef.size}: ${name.debug}")
+      ctx.log(s"${nameAtRef.size}: ${name.debug}")
       name
     }
     val result = tag match {
@@ -99,7 +99,8 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
 
   new TastyHeaderUnpickler(reader).readHeader()
 
-  locally {
+  def readSections()(implicit ctx: Context): Unit = {
+    ctx.log(s"reading names:")
     doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
     while (!isAtEnd) {
       val secName = readName().asSimpleName.raw

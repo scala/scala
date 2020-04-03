@@ -5,9 +5,10 @@ import TastyFlags._
 import scala.tools.nsc.tasty.TastyUniverse
 
 trait FlagOps { self: TastyUniverse =>
+  import self.{symbolTable => u}
 
   object FlagSets {
-    import symbolTable.Flag
+    import u.Flag
     import scala.reflect.internal.{Flags, ModifierFlags}
 
     val Package: FlagSet = Flags.PACKAGE
@@ -53,7 +54,7 @@ trait FlagOps { self: TastyUniverse =>
 
     implicit class FlagSetOps(private val flagSet: FlagSet) {
       private def flags: FlagSet = {
-        val fs = flagSet & phase.flagMask
+        val fs = flagSet & u.phase.flagMask
         (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
       }
       private def getFlag(mask: FlagSet): FlagSet = {
@@ -67,7 +68,7 @@ trait FlagOps { self: TastyUniverse =>
     }
   }
 
-  def show(flags: FlagSet): String = symbolTable.show(flags)
+  def show(flags: FlagSet): String = u.show(flags)
 
   def show(flags: TastyFlagSet): String =
     if (!flags) "EmptyTastyFlags"

@@ -9,21 +9,20 @@ import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyModes._
 
 trait ContextOps { self: TastyUniverse =>
+  import self.{symbolTable => u}
   import FlagSets._
-  import Contexts._
-
-  @inline
-  final def errorTasty(msg: String)(implicit ctx: Context): Unit =
-    reporter.error(noPosition, s"Scala 2 incompatible TASTy signature of ${ctx.source.name} in ${ctx.owner}: $msg")
+  import SymbolOps._
 
   object Contexts {
 
     sealed abstract class Context {
-      import SymbolOps._
 
-      def ignoreAnnotations: Boolean = settings.YtastyNoAnnotations
+      @inline final def unsupportedError[T](noun: String): T =
+        typeError(s"Unsupported Scala 3 $noun; found in ${owner.fullLocationString}.")
 
-      def adjustModuleCompleter(completer: TastyLazyType, name: Name): TastyLazyType = {
+      def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
+
+      def adjustModuleCompleter(completer: TastyLazyType, name: Name): completer.type = {
         val scope = this.effectiveScope
         if (name.isTermName)
           completer withModuleClass (_.findModuleBuddy(name.toTypeName, scope))
@@ -46,11 +45,13 @@ trait ContextOps { self: TastyUniverse =>
 
       def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
 
-      final def log(str: => String): Unit =
-        logTasty(str.linesIterator.map(line => s"#[$classRoot]: $line").mkString(System.lineSeparator))
-
-      final def picklerPhase: Phase = symbolTable.picklerPhase
-      final def extmethodsPhase: Phase = symbolTable.findPhaseWithName("extmethods")
+      final def log(str: => String): Unit = {
+        if (u.settings.YdebugTasty)
+          u.reporter.echo(
+            pos = noPosition,
+            msg = str.linesIterator.map(line => s"#[$classRoot]: $line").mkString(System.lineSeparator)
+          )
+      }
 
       def owner: Symbol
       def source: AbstractFile
@@ -120,36 +121,6 @@ trait ContextOps { self: TastyUniverse =>
       }
 
       def newRefinedClassSymbol(coord: Position): RefinementClassSymbol = owner.newRefinementClass(coord)
-
-      /** if isConstructor, make sure it has one non-implicit parameter list */
-      def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
-        if (isConstructor &&
-          (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.is(Implicit)))
-          Nil :: termParamss
-        else
-          termParamss
-
-      /** The given type, unless `sym` is a constructor, in which case the
-       *  type of the constructed instance is returned
-       */
-      def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
-        if (sym.name == nme.CONSTRUCTOR) sym.owner.tpe
-        else givenTp
-
-      /** The method type corresponding to given parameters and result type */
-      def methodType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
-        val monotpe = valueParamss.foldRight(resultType)((ts, f) => mkMethodType(ts, f))
-        val exprMonotpe = {
-          if (valueParamss.nonEmpty)
-            monotpe
-          else
-            mkNullaryMethodType(monotpe)
-        }
-        if (typeParams.nonEmpty)
-          mkPolyType(typeParams, exprMonotpe)
-        else
-          exprMonotpe
-      }
 
       @tailrec
       final def initialContext: InitialContext = this match {

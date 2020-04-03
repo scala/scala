@@ -4,9 +4,10 @@ import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyUniverse
 
 trait NameOps { self: TastyUniverse =>
+  import self.{symbolTable => u}
   import TastyName._
 
-  def isConstructorName(name: Name) = symbolTable.nme.isConstructorName(name)
+  def isConstructorName(name: Name) = u.nme.isConstructorName(name)
 
   private def encodeAsTermName(tastyName: TastyName): TermName = tastyName match {
     case Empty          => termNames.EMPTY

@@ -3,14 +3,16 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.Signature
 import scala.tools.nsc.tasty.Signature.MethodSignature
 import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyModes._
 import scala.tools.nsc.tasty.Signature.NotAMethod
 
 trait SymbolOps { self: TastyUniverse =>
+  import self.{symbolTable => u}
   import Contexts.Context
+  import FlagSets._
+  import SymbolOps._
 
   object SymbolOps {
     implicit class SymbolDecorator(sym: Symbol) {
@@ -19,11 +21,11 @@ trait SymbolOps { self: TastyUniverse =>
         sym.rawInfo.asInstanceOf[TastyLazyType]
       }
       def ensureCompleted(): Unit = sym.info
-      def ref(args: List[Type]): Type = mkAppliedType(sym, args)
+      def ref(args: List[Type]): Type = u.appliedType(sym, args)
       def ref: Type = sym.ref(Nil)
       def singleRef: Type = mkSingleType(noPrefix, sym)
       def termRef: Type = sym.preciseRef(noPrefix)
-      def preciseRef(pre: Type): Type = mkTypeRef(pre, sym, Nil)
+      def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
       def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
       def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
       def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
@@ -36,6 +38,14 @@ trait SymbolOps { self: TastyUniverse =>
     }
   }
 
+  /** if isConstructor, make sure it has one non-implicit parameter list */
+  def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
+    if (isConstructor &&
+      (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.is(Implicit)))
+      Nil :: termParamss
+    else
+      termParamss
+
   def constructorOfType(space: Type): Symbol =
     space.member(nme.CONSTRUCTOR).asTerm.alternatives.find(_.isInstanceOf[MethodSymbol]).getOrElse(
       typeError(s"${space.typeSymbol} has no constructor")
@@ -45,7 +55,7 @@ trait SymbolOps { self: TastyUniverse =>
     val selector = encodeTastyName(tname, selectingTerm)
     tname.signature match {
       case NotAMethod => memberOfSpace(space, selector, tname.isModuleName)
-      case sig        => signedMemberOfSpace(space, selector, sig.map(resolveErasedTypeRef))
+      case sig        => signedMemberOfSpace(space, selector, sig.map(resolveErasedTypeRef).asMethod)
     }
   }
 
@@ -74,21 +84,20 @@ trait SymbolOps { self: TastyUniverse =>
     }
   }
 
-  private def signedMemberOfSpace(space: Type, name: Name, sig: Signature[Type])(implicit ctx: Context): Symbol = {
+  private def signedMemberOfSpace(space: Type, name: Name, sig: MethodSignature[Type])(implicit ctx: Context): Symbol = {
     ctx.log(s"""looking for overload member[$space]("$name") @@ ${sig.show}""")
-    val MethodSignature(args, ret) = sig
     val member = space.member(name)
     val (tyParamCount, argTpes) = {
-      val (tyParamCounts, params) = args.partitionMap(identity)
+      val (tyParamCounts, params) = sig.params.partitionMap(identity)
       if (tyParamCounts.length > 1) {
-        reporter.error(noPosition, s"Multiple type parameter lists on signature ${sig.show} for $member.")
+        ctx.unsupportedError(s"multiple type parameter lists on erased method signature ${sig.show}")
       }
       (tyParamCounts.headOption.getOrElse(0), params)
     }
     def compareSym(sym: Symbol): Boolean = sym match {
       case sym: MethodSymbol =>
         val params = sym.paramss.flatten
-        sym.returnType.erasure =:= ret &&
+        sym.returnType.erasure =:= sig.result &&
         params.length === argTpes.length &&
         (name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&

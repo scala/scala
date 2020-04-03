@@ -1,10 +1,7 @@
-TestIntent_fail.scala:7: error: Unsupported Scala 3 inline method here
-    in("should be 6")(toEqual(expect(3 + 3))(6))
-                                    ^
-TestIntent_fail.scala:7: error: Unsupported Scala 3 inline method here
-    in("should be 6")(toEqual(expect(3 + 3))(6))
-                     ^
-TestIntent_fail.scala:6: error: Unsupported Scala 3 inline method here
+TestIntent_fail.scala:6: error: Unsupported Scala 3 inline method here; found in object Position in package intent.
   apply("3 + 3") {
                  ^
-3 errors
+TestIntent_fail.scala:7: error: could not find implicit value for parameter pos: tastytest.intent.Position
+    in("should be 6")(toEqual(expect(3 + 3))(6))
+                     ^
+2 errors

@@ -19,6 +19,7 @@ object ScalacUnpickler {
 
   final implicit class Unpickler[Tasty <: TastyUniverse](private val tasty: Tasty) extends AnyVal {
     import tasty._
+    import Contexts._
 
     /** Unpickle symbol table information descending from a class and/or module root
      *  from an array of bytes.
@@ -27,14 +28,14 @@ object ScalacUnpickler {
      *  @param filename   filename associated with bytearray, only used for error messages
      */
     def unpickle(bytes: Array[Byte]/*, mode: UnpickleMode = UnpickleMode.TopLevel*/, classRoot: ClassSymbol, moduleRoot: ModuleSymbol, filename: String): Unit = {
-      import Contexts._
-      implicit val thisTasty: tasty.type = tasty
+      implicit val ctx: Context = new InitialContext(classRoot, AbstractFile.getFile(filename))
 
-      logTasty(s"Unpickling $filename")
+      ctx.log(s"Unpickling $filename")
 
-      val unpickler: TastyUnpickler = new TastyUnpickler(bytes)
+      val unpickler = new TastyUnpickler[tasty.type](bytes)(tasty)
+      unpickler.readSections()
       val treeUnpickler = unpickler.unpickle[TreeUnpickler[tasty.type]](new TreeSectionUnpickler()(tasty)).get
-      treeUnpickler.enter(classRoot, moduleRoot)(new InitialContext(classRoot, AbstractFile.getFile(filename)))
+      treeUnpickler.enter(classRoot, moduleRoot)
     }
   }
 }
