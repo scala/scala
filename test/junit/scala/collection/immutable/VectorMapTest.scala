@@ -73,4 +73,40 @@ class VectorMapTest {
     val m = VectorMap(1 -> "a") - 1 + (2 -> "b") - 2
     assertEquals(List(), m.toList)
   }
+
+  @Test
+  def removeLast_t11220: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b").removed(2).updated(3, "c")
+    assertEquals(List(1 -> "a", 3 -> "c"), m.toList)
+  }
+
+  @Test
+  def removeLast_t11220_2: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b").removed(2).updated(3, "c").removed(3)
+    assertEquals(List(1 -> "a"), m.toList)
+  }
+
+  @Test
+  def hasCorrectInit_t11218_2: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(3).init
+    assertEquals(List(2 -> "b"), m.toList)
+  }
+
+  @Test
+  def hasCorrectTail: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").tail.removed(3)
+    assertEquals(List(2 -> "b"), m.toList)
+  }
+
+  @Test
+  def removeInit: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(1).init
+    assertEquals(List(2 -> "b"), m.toList)
+  }
+
+  @Test
+  def removeInit_2: Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d", 5 -> "e").removed(1).removed(4).init
+    assertEquals(List(2 -> "b", 3 -> "c"), m.toList)
+  }
 }
