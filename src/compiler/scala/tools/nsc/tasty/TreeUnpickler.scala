@@ -28,9 +28,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
-    if (!cond) {
-      ctx.unsupportedError(msg)
-    }
+    if (!cond) ctx.unsupportedError(msg)
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
@@ -198,7 +196,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
 // ------ Reading types -----------------------------------------------------
 
-   /** Read names in an interleaved sequence of (parameter) names and types/bounds */
+    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
     def readParamNames(end: Addr): List[TastyName] =
       until(end) {
         val name = readTastyName()
@@ -206,7 +204,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         name
       }
 
-   /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
+    /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
     def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
       until(end) { readNat(); readType().asInstanceOf[T] }
 
@@ -454,7 +452,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             mkConstantType(readConstant(tag))
         }
       }
-
       if (tag < firstLengthTreeTag) readSimpleType() else readLengthType()
     }
 
@@ -478,11 +475,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       else ctx.requiredPackage(name)
     }
 
-   def readTypeRef(): Type =
-     typeAtAddr(readAddr())
+    def readTypeRef(): Type = typeAtAddr(readAddr())
 
-    def readTypeAsTypeRef()(implicit ctx: Context): TypeRef =
-      readType().asInstanceOf[TypeRef]
+    def readTypeAsTypeRef()(implicit ctx: Context): TypeRef = readType().asInstanceOf[TypeRef]
 
 // ------ Reading definitions -----------------------------------------------------
 
@@ -598,9 +593,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val msg = if (isSymbol(privateWithin)) s" private within $privateWithin" else ""
         s"""creating symbol ${name}${msg} at $start with flags $showFlags"""
       }
-      def adjustIfModule(completer: TastyLazyType) = {
-        if (flags.is(Module)) ctx.adjustModuleCompleter(completer, name) else completer
-      }
+      def adjustIfModule(completer: TastyLazyType) =
+        if (isModuleClass) ctx.adjustModuleClassCompleter(completer, name) else completer
       val sym = {
         if (isTypeTag && nme.CONSTRUCTOR === ctx.owner.name.toTermName && tag === TYPEPARAM) {
           ctx.owner.owner.typeParams.find(name === _.name).getOrElse {
@@ -612,16 +606,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           roots.find(root => (root.owner `eq` ctx.owner) && name === root.name) match {
             case Some(found) =>
               val rootd   = if (isModuleClass) found.linkedClassOfClass else found
-              rootd.info  = completer
-              rootd.flags = flags // dotty "removes one completion" here from the flags, which is not possible in nsc
-              rootd.privateWithin = privateWithin
+              ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
               seenRoots += rootd
               ctx.log(s"replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
-              if (isModuleClass) ctx.moduleClassFor(name.toTermName, flags, completer, privateWithin)
-              else if (isClass) ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-              else ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
+              if (isModuleClass)
+                ctx.adjustSymbol(completer.sourceModule.moduleClass, flags, completer, privateWithin)
+              else if (isClass)
+                ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
+              else
+                ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
           }
         }
       }
@@ -919,7 +914,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       // ** PARENTS **
       ctx.log(s"Template: adding parents of $cls")
       val parents = {
-        val parentCtx = ctx.withOwner(localDummy).withMode(InParents)
+        val parentCtx = ctx.withOwner(localDummy).addMode(InParents)
         collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
           nextUnsharedTag match {
             case APPLY | TYPEAPPLY | BLOCK => readParentFromTerm()(parentCtx)
@@ -966,8 +961,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       ctx.log(s"Template: Updated info of $cls with parents $parentTypes.")
     }
 
-    def isTopLevel: Boolean =
-      nextByte === IMPORT || nextByte === PACKAGE
+    def isTopLevel: Boolean = nextByte === IMPORT || nextByte === PACKAGE
 
     def readIndexedStatAsSym(exprOwner: Symbol)(implicit ctx: Context): NoCycle = nextByte match {
       case TYPEDEF | VALDEF | DEFDEF =>
@@ -1263,7 +1257,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
-    def readParentFromTerm()(implicit ctx: Context): Type = {  // TODO: rename to readTree
+    def readParentFromTerm()(implicit ctx: Context): Type = {
       val start = currentAddr
       val tag = readByte()
       ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
@@ -1301,7 +1295,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
       }
-
       if (tag < firstLengthTreeTag) readSimpleTermAsType() else readLengthTermAsType()
     }
 
@@ -1326,26 +1319,24 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => T = {
       val localReader = fork
       goto(end)
-      owner => readWith(localReader, owner/*, ctx.mode*/, ctx.source, op)
+      owner => readWith(localReader, owner, ctx.mode, ctx.source, op)
     }
 
   }
 
   def readWith[T <: AnyRef](
-      reader: TreeReader,
-      owner: Symbol/*, mode: Mode*/,
-      source: AbstractFile,
-      op: TreeReader => Context => T)(
-      implicit
-      ctx: Context): T = {
-    withPhaseNoLater(picklerPhase) {
-      ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
-      op(reader)(ctx
-        .withOwner(owner)
-        // .withModeBits(mode)
-        // .withSource(source)
-      )
-    }
+    reader: TreeReader,
+    owner: Symbol, mode: TastyMode,
+    source: AbstractFile,
+    op: TreeReader => Context => T)(
+    implicit ctx: Context
+  ): T = withPhaseNoLater(picklerPhase) {
+    ctx.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
+    op(reader)(ctx
+      .withOwner(owner)
+      .withMode(mode)
+      .withSource(source)
+    )
   }
 
   /** A lazy datastructure that records how definitions are nested in TASTY data.
@@ -1412,29 +1403,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
 object TreeUnpickler {
 
-//  /** Define the expected format of the tasty bytes
-//   *   - TopLevel: Tasty that contains a full class nested in its package
-//   *   - Term: Tasty that contains only a term tree
-//   *   - TypeTree: Tasty that contains only a type tree or a reference to a type
-//   */
-//  sealed trait UnpickleMode
-//  object UnpickleMode {
-//    /** Unpickle a full class in some package */
-//    object TopLevel extends UnpickleMode
-//    /** Unpickle as a TermTree */
-//    object Term extends UnpickleMode
-//    /** Unpickle as a TypeTree */
-//    object TypeTree extends UnpickleMode
-//  }
-
   sealed trait MaybeCycle
   object MaybeCycle {
     case class  NoCycle(at: Addr) extends MaybeCycle
     case object Tombstone         extends MaybeCycle
   }
-
-  //  /** A marker value used to detect cyclic reference while unpickling definitions. */
-  //  case object PoisonTree extends TermTree with CannotHaveAttrs { override def isEmpty: Boolean = true }
 
   /** An enumeration indicating which subtrees should be added to an OwnerTree. */
   type MemberDefMode = Int

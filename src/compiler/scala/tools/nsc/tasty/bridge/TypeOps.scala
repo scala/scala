@@ -104,24 +104,22 @@ trait TypeOps { self: TastyUniverse =>
   def selectTerm(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
     namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = true)
 
+  private[this] val NoSymbolFn = (_: Context) => noSymbol
+
   /**
    * Ported from dotc
    */
-  abstract class TastyLazyType extends u.LazyType with u.FlagAgnosticCompleter { self =>
-    private[this] val NoSymbolFn = (_: Context) => noSymbol
+  abstract class TastyLazyType extends u.LazyType with u.FlagAgnosticCompleter {
     private[this] var myDecls: Scope = emptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
-    private[this] var myModuleClassFn: Context => Symbol = NoSymbolFn
     private[this] var myTastyFlagSet: TastyFlagSet = emptyTastyFlags
 
     override def decls: Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
-    def moduleClass(implicit ctx: Context): Symbol = myModuleClassFn(ctx)
     def tastyFlagSet: TastyFlagSet = myTastyFlagSet
 
     def withDecls(decls: Scope): this.type = { myDecls = decls; this }
     def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
-    def withModuleClass(moduleClassFn: Context => Symbol): this.type = { myModuleClassFn = moduleClassFn; this }
     def withTastyFlagSet(flags: TastyFlagSet): this.type = { myTastyFlagSet = flags; this }
 
     override def load(sym: Symbol): Unit = complete(sym)
