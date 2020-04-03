@@ -89,7 +89,7 @@ class VectorMapTest {
   @Test
   def hasCorrectInit_t11218_2: Unit = {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c").removed(3).init
-    assertEquals(List(2 -> "b"), m.toList)
+    assertEquals(List(1 -> "a"), m.toList)
   }
 
   @Test
