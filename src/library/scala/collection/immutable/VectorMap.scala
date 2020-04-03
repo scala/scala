@@ -29,7 +29,7 @@ import scala.annotation.tailrec
   */
 final class VectorMap[K, +V] private (
     private[immutable] val fields: Vector[Any],
-    private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean)
+    private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean, dropped: Int)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
@@ -40,7 +40,7 @@ final class VectorMap[K, +V] private (
   override protected[this] def className: String = "VectorMap"
 
   private[immutable] def this(fields: Vector[K], underlying: Map[K, (Int, V)]) = {
-    this(fields, underlying, false)
+    this(fields, underlying, false, 0)
   }
 
   override val size = underlying.size
@@ -52,9 +52,9 @@ final class VectorMap[K, +V] private (
   def updated[V1 >: V](key: K, value: V1): VectorMap[K, V1] = {
     underlying.get(key) match {
       case Some((slot, _)) =>
-        new VectorMap(fields, underlying.updated[(Int, V1)](key, (slot, value)), false)
+        new VectorMap(fields, underlying.updated[(Int, V1)](key, (slot, value)), false, dropped)
       case None =>
-        new VectorMap(fields :+ key, underlying.updated[(Int, V1)](key, (fields.length, value)), false)
+        new VectorMap(fields :+ key, underlying.updated[(Int, V1)](key, (fields.length + dropped, value)), false, dropped)
     }
   }
 
@@ -70,12 +70,11 @@ final class VectorMap[K, +V] private (
   }
 
   @tailrec
-  private def field(slot: Int): (Int, K) = {
-    fields(slot) match {
-      case Tombstone.Kinless =>
-        (-1, null.asInstanceOf[K])
-      case Tombstone.NextOfKin(distance) =>
-        field(slot + distance)
+  private def nextValidField(slot: Int): (Int, K) = {
+    if (slot >= fields.size) (-1, null.asInstanceOf[K])
+    else fields(slot) match {
+      case Tombstone(distance) =>
+        nextValidField(slot + distance)
       case k =>
         (slot, k.asInstanceOf[K])
     }
@@ -92,7 +91,7 @@ final class VectorMap[K, +V] private (
         slot = fieldsLength
         key = null.asInstanceOf[K]
       } else {
-        field(nextSlot) match {
+        nextValidField(nextSlot) match {
           case (-1, _) =>
             slot = fieldsLength
             key = null.asInstanceOf[K]
@@ -133,31 +132,35 @@ final class VectorMap[K, +V] private (
       underlying.get(key) match {
         case Some(_) if size == 1 => empty
         case Some((slot, _)) =>
-          val s = field(slot)._1
-          // Calculate distance to next of kin
-          val d =
+          val s = slot - dropped
+
+          // Calculate next of kin
+          val next =
             if (s < sz - 1) fs(s + 1) match {
-              case Tombstone.Kinless => 0
-              case Tombstone.NextOfKin(d) => d + 1
-              case _ => 1
-            } else 0
-          fs = fs.updated(s, Tombstone(d))
-          if (s > 0) {
-            // Adjust distance to next of kin for all preceding tombstones
-            var t = s - 1
-            var prev = fs(t)
-            while (t >= 0 && prev.isInstanceOf[Tombstone]) {
-              fs = prev match {
-                case Tombstone.Kinless => throw new IllegalStateException("kinless tombstone found in prefix: " + key)
-                case Tombstone.NextOfKin(_) if d == 0 => fs.updated(t, Tombstone.Kinless)
-                case Tombstone.NextOfKin(d) => fs.updated(t, Tombstone(d + 1))
-                case _ => fs
+              case Tombstone(d) => s + d + 1
+              case _ => s + 1
+            } else s + 1
+
+          fs = fs.updated(s, Tombstone(next - s))
+
+          // Calculate first index of preceding tombstone sequence
+          val first =
+            if (s > 0) {
+              fs(s - 1) match {
+                case Tombstone(d) if d < 0 => if (s + d >= 0) s + d else 0
+                case Tombstone(d) if d == 1 => s - 1
+                case Tombstone(d) => throw new IllegalStateException("tombstone indicate wrong position: " + d)
+                case _ => s
               }
-              t -= 1
-              if (t >= 0) prev = fs(t)
-            }
+            }else s
+          fs = fs.updated(first, Tombstone(next - first))
+
+          // Calculate last index of succeeding tombstone sequence
+          val last = next - 1
+          if (last != first) {
+            fs = fs.updated(last, Tombstone(first - 1 - last))
           }
-          new VectorMap(fs, underlying - key, false)
+          new VectorMap(fs, underlying - key, false, dropped)
         case _ =>
           this
       }
@@ -190,14 +193,21 @@ final class VectorMap[K, +V] private (
   }
 
   override def tail: VectorMap[K, V] = {
-    val (slot, key) = field(0)
-    new VectorMap(fields.drop(slot + 1), underlying - key, false)
+    if (isEmpty) throw new UnsupportedOperationException("empty.tail")
+    val (slot, key) = nextValidField(0)
+    new VectorMap(fields.drop(slot + 1), underlying - key, false, dropped + slot + 1)
   }
 
   override def init: VectorMap[K, V] = {
-    val lastSlot = size - 1
-    val (slot, key) = field(lastSlot)
-    new VectorMap(fields.dropRight(slot - lastSlot + 1), underlying - key, false)
+    if (isEmpty) throw new UnsupportedOperationException("empty.init")
+    val lastSlot = fields.size - 1
+    val (slot, key) = fields.last match {
+      case Tombstone(d) if d < 0 => (lastSlot + d, fields(lastSlot + d).asInstanceOf[K])
+      case Tombstone(d) if d == 1 => (lastSlot - 1, fields(lastSlot - 1).asInstanceOf[K])
+      case Tombstone(d) => throw new IllegalStateException("tombstone indicate wrong position: " + d)
+      case k => (lastSlot, k.asInstanceOf[K])
+    }
+    new VectorMap(fields.dropRight(fields.size - slot), underlying - key, false, dropped)
   }
 
   override def keys: Vector[K] = keysIterator.toVector
@@ -208,18 +218,7 @@ final class VectorMap[K, +V] private (
 }
 
 object VectorMap extends MapFactory[VectorMap] {
-  private[VectorMap] sealed trait Tombstone
-  private[VectorMap] object Tombstone {
-    case object Kinless extends Tombstone {
-      override def toString = "⤞"
-    }
-    final case class NextOfKin private[Tombstone] (distance: Int) extends Tombstone {
-      override def toString = "⥅" + distance
-    }
-    def apply(distance: Int): Tombstone =
-      if (distance <= 0) Kinless
-      else NextOfKin(distance)
-  }
+  private[VectorMap] final case class Tombstone(distance: Int)
 
   private[this] final val EmptyMap: VectorMap[Nothing, Nothing] =
     new VectorMap[Nothing, Nothing](Vector.empty[Nothing], HashMap.empty[Nothing, (Int, Nothing)])
