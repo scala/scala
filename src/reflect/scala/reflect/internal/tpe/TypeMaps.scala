@@ -580,7 +580,7 @@ private[internal] trait TypeMaps {
       // rhsSym. One can see examples of it at scala/bug#4365.
       val argIndex = rhsSym.typeParams indexWhere (lhsSym.name == _.name)
       // don't be too zealous with the exceptions, see #2641
-      if (argIndex < 0 && rhs.parents.exists(typeIsErroneous))
+      if (argIndex < 0 && rhs.parents.exists(_.isErroneous))
         ErrorType
       else {
         // It's easy to get here when working on hardcore type machinery (not to
