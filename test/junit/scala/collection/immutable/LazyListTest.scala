@@ -368,4 +368,12 @@ class LazyListTest {
     assertNoStackOverflow((new L).a)
     assertNoStackOverflow((new L).b)
   }
+
+  // scala/bug#11931
+  @Test
+  def lazyAppendedAllExecutesOnce(): Unit = {
+    var count = 0
+    LazyList(1).lazyAppendedAll({ count += 1; Seq(2)}).toList
+    assertEquals(1, count)
+  }
 }
