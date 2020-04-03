@@ -43,13 +43,19 @@ class WConfTest extends BytecodeTesting {
   def reports(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] = {
     // lint has a postSetHook to enable `deprecated`, which in turn adds to `Wconf`,
     // but since we override Wconf after, that effect is cancelled
-    if (lint) global.settings.lint.tryToSet(List("_"))
+    if (lint) {
+      global.settings.warnUnused.clear()
+      global.settings.lint.tryToSet(List("_"))
+    }
     Wconf.clear()
     Wconf.tryToSet(WconfDefault)
     if (extraWconf.nonEmpty) Wconf.tryToSet(extraWconf.split(',').toList)
     val run = newRun
     run.compileSources(makeSourceFile(code, "unitTestSource.scala") :: Nil)
-    if (lint) global.settings.lint.clear()
+    if (lint) {
+      global.settings.lint.clear()
+      global.settings.warnUnused.clear()
+    }
     global.reporter.asInstanceOf[StoreReporter].infos.toList.sortBy(p => (if (p.pos.isDefined) p.pos.point else -1, p.msg))
   }
 
@@ -77,6 +83,8 @@ class WConfTest extends BytecodeTesting {
       |
       |  def tupleMethod(a: (Int, Int)) = 0
       |  def lintAdaptedArgs = tupleMethod(1, 2)
+      |
+      |  def unusedLocal = { val h = hashCode; 1 }
       |}
       |""".stripMargin
 
@@ -90,6 +98,7 @@ class WConfTest extends BytecodeTesting {
   val l16 = (16, "The outer reference in this type test cannot be checked at run time")
   val l20 = (20, "A::nonFinal()I is annotated @inline but could not be inlined")
   val l23 = (23, "Adapting argument list by creating a 2-tuple")
+  val l25 = (25, "local val h in method unusedLocal is never used")
 
   val s1a = (-1, "one deprecation")
   val s1b = (-1, "one deprecation (since my specs2 1.2.3-custom)")
@@ -101,7 +110,7 @@ class WConfTest extends BytecodeTesting {
   def check(obtained: List[Info], expected: List[(Int, String)]): Unit = {
     def m(a: Info, e: (Int, String)) = a != null && e != null && (if (a.pos.isDefined) a.pos.line else -1) == e._1 && a.msg.contains(e._2)
     assert(obtained.zipAll(expected, null, null).forall { case (a, e) => m(a, e) }, {
-      val unexpected = obtained.collect { case o if !expected.exists(m(o, _)) => s"unexpected: $o" }
+      val unexpected = obtained.collect { case o if !expected.exists(m(o, _)) => s"unexpected: (${o.pos.line}, ${o.msg})" }
       val unobtained = expected.collect { case e if !obtained.exists(m(_, e)) => s"unobtained: $e" }
       val msgs = unexpected ++ unobtained
       if (msgs.isEmpty) s"""
@@ -124,7 +133,7 @@ class WConfTest extends BytecodeTesting {
   @Test
   def noSummarizing(): Unit = {
     check(reports(code, "any:w"), List(l2, l5a, l5b, l7, l9, l11, l13, l16, l20)) // FIXME l2
-    check(reports(code, "any:w", lint = true), List(l2, l5a, l5b, l7, l9, l11, l13, l16, l20, l23))
+    check(reports(code, "any:w", lint = true), List(l2, l5a, l5b, l7, l9, l11, l13, l16, l20, l23, l25))
   }
 
   @Test
@@ -216,6 +225,12 @@ class WConfTest extends BytecodeTesting {
     check(infos(code, "msg=.*is deprecated.*:i"), List(l5a, l5b))
     check(infos(code, "msg=is deprecated$:i"), List(l5a))
     check(infos(code, "msg=^is deprecated:i"), Nil)
+  }
+
+  @Test
+  def unusedSite(): Unit = {
+    check(infos(code, "cat=unused:iv", lint = true), (25, "[unused-locals @ A.unusedLocal.h] local val h in method unusedLocal is never used") :: Nil)
+    check(errors(code, "site=A\\.unusedLocal\\..*:e", lint = true), l25 :: Nil)
   }
 
   @Test
