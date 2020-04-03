@@ -666,6 +666,10 @@ trait TypeDiagnostics {
       warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams
     }
 
+    // `checkUnused` is invoked after type checking. we have to avoid using `typer.context.warning`, which uses
+    // `context.owner` as the `site` of the warning, but that's the root symbol at this point.
+    def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit = runReporting.warning(pos, msg, category, site)
+
     def run(unusedPrivates: UnusedPrivates)(body: Tree): Unit = {
       unusedPrivates.traverse(body)
 
@@ -704,23 +708,23 @@ trait TypeDiagnostics {
             else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"
           )
-          typer.context.warning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym))
+          emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
           val why = if (defn.symbol.isPrivate) "private" else "local"
-          typer.context.warning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used", wcat(defn.symbol))
+          emitUnusedWarning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used", wcat(defn.symbol), defn.symbol)
         }
 
         for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          typer.context.warning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates)
+          emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {
         for (v <- unusedPrivates.unusedPatVars)
-          typer.context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars)
+          emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars, v)
       }
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
@@ -741,7 +745,7 @@ trait TypeDiagnostics {
             && !isConvention(s)
           )
         for (s <- unusedPrivates.unusedParams if warnable(s))
-          typer.context.warning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams)
+          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams, s)
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
