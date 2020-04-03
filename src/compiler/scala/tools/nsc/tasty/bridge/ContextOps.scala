@@ -16,8 +16,21 @@ trait ContextOps { self: TastyUniverse =>
 
     sealed abstract class Context {
 
-      @inline final def unsupportedError[T](noun: String): T =
-        typeError(s"Unsupported Scala 3 $noun; found in ${owner.fullLocationString}.")
+      final def unsupportedError[T](noun: String): T =
+        firstGlobalOwner(owner => typeError(s"Unsupported Scala 3 $noun; found in ${owner.fullLocationString}."))
+
+      final def firstGlobalOwner[T](op: Symbol => T): T =
+        firstOwnerMatching(!_.is(Param), op)
+
+      final def firstOwnerMatching[T](filter: Symbol => Boolean, op: Symbol => T): T = {
+        def loop(ctx: Context): T =
+          if (filter(ctx.owner)) op(ctx.owner)
+          else this match {
+            case ctx: InitialContext => op(noSymbol)
+            case ctx: FreshContext   => loop(ctx.outer)
+          }
+        loop(this)
+      }
 
       final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
 

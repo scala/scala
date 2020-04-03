@@ -1,4 +1,4 @@
-TestHKNest2_fail.scala:6: error: Scala 3 union types are not supported for method foo
+TestHKNest2_fail.scala:6: error: Unsupported Scala 3 union type; found in method foo in class HKClass_15.
   def test16 = new HKClass_15().foo(List(1,2,3)) // error: Union type not supported
                                 ^
 1 error

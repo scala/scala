@@ -862,7 +862,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               //               refine self type of the owner to be aware of the alias.
               sym.info = rhs.tpe match {
                 case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
-                  typeError(s"$sym has diverging type lambdas as bounds:$bounds")
+                  ctx.unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
                 case tpe: TypeBounds => normaliseBounds(tpe)
                 case tpe             => tpe
               }

@@ -19,12 +19,6 @@ trait TypeOps { self: TastyUniverse =>
   def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
-  def attachTypeError[T](msg: Symbol => String)(implicit ctx: Context): T =
-    findOwner(owner => typeError(msg(owner)))
-
-  def findOwner[T](op: Symbol => T)(implicit ctx: Context): T =
-    ctx.owner.ownerChain.find(sym => !sym.is(Param)).fold(op(noSymbol))(op)
-
   def normaliseBounds(bounds: TypeBounds): Type = {
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
@@ -54,8 +48,7 @@ trait TypeOps { self: TastyUniverse =>
 
     def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
       case tycon: TypeRef if tycon.typeArgs.nonEmpty =>
-        attachTypeError(owner =>
-          s"Unsupported Scala 3 curried type application $tycon[${args.mkString(",")}] in signature of $owner")
+        ctx.unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
       case _ =>
         u.appliedType(tycon, args)
     }
@@ -94,7 +87,7 @@ trait TypeOps { self: TastyUniverse =>
   def selectType(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type = {
     if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) AndType
-      else attachTypeError(owner => s"Scala 3 union types are not supported for $owner")
+      else ctx.unsupportedError("union type")
     }
     else {
       namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = false)
