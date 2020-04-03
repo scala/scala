@@ -234,8 +234,24 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
       new Candidate(value, displayed, group, descr, suffix, key, complete)
     }
     val result = complete(parsedLine.line, parsedLine.cursor)
-    //Console.err.println(s"completing $parsedLine to ${result.candidates}")
-    for (s <- result.candidates) newCandidates.add(candidateForResult(s))
+    result.candidates match {
+      // the presence of the empty string here is a signal that the symbol
+      // is already complete and so instead of completing, we want to show
+      // the user the method signature. there are various JLine 3 features
+      // one might use to do this instead; sticking to basics for now
+      case "" :: defStrings if defStrings.nonEmpty =>
+        // specifics here are cargo-culted from Ammonite
+        lineReader.getTerminal.writer.println()
+        for (s <- defStrings)
+          lineReader.getTerminal.writer.println(s)
+        lineReader.callWidget(LineReader.REDRAW_LINE)
+        lineReader.callWidget(LineReader.REDISPLAY)
+        lineReader.getTerminal.flush()
+      // normal completion
+      case cs =>
+        for (s <- result.candidates)
+          newCandidates.add(candidateForResult(s))
+    }
   }
 }
 
