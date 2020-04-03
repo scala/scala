@@ -3,7 +3,7 @@ Any
 it's important to print the list of Any's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 method !=: (x$1: Any): Boolean
-method ##: (): Int
+method ##: Int
 method ==: (x$1: Any): Boolean
 method asInstanceOf: [T0]T0
 method equals: (x$1: Any): Boolean
@@ -36,7 +36,7 @@ it's important to print the list of AnyRef's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Object: (): Object
 method !=: (x$1: Any): Boolean
-method ##: (): Int
+method ##: Int
 method $asInstanceOf: [T0](): T0
 method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean
@@ -81,7 +81,7 @@ it's important to print the list of Array's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Array: (_length: Int): Array[T]
 method !=: (x$1: Any): Boolean
-method ##: (): Int
+method ##: Int
 method $asInstanceOf: [T0](): T0
 method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean

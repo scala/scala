@@ -38,14 +38,16 @@ trait Definitions extends api.StandardDefinitions {
     val clazz = owner.newClassSymbol(name, NoPosition, flags)
     clazz.setInfoAndEnter(ClassInfoType(parents, newScope, clazz)).markAllCompleted
   }
-  private def newMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long): MethodSymbol = {
+  private def newMethod(owner: Symbol, name: TermName, formals: List[Type], mkMeth: List[TermSymbol] => Type, flags: Long): MethodSymbol = {
     val msym   = owner.newMethod(name.encode, NoPosition, flags)
     val params = msym.newSyntheticValueParams(formals)
-    val info = MethodType(params, restpe)
+    val info = mkMeth(params)
     msym.setInfo(info).markAllCompleted
   }
   private def enterNewMethod(owner: Symbol, name: TermName, formals: List[Type], restpe: Type, flags: Long = 0L): MethodSymbol =
-    owner.info.decls enter newMethod(owner, name, formals, restpe, flags)
+    owner.info.decls enter newMethod(owner, name, formals, MethodType(_, restpe), flags)
+  private def enterNewNullaryMethod(owner: Symbol, name: TermName, restpe: Type, flags: Long): MethodSymbol =
+    owner.info.decls enter newMethod(owner, name, Nil, _ => NullaryMethodType(restpe), flags)
 
   // the scala value classes
   trait ValueClassDefinitions {
@@ -1108,7 +1110,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Any_equals   = enterNewMethod(AnyClass, nme.equals_, AnyTpe :: Nil, BooleanTpe)
     lazy val Any_hashCode = enterNewMethod(AnyClass, nme.hashCode_, Nil, IntTpe)
     lazy val Any_toString = enterNewMethod(AnyClass, nme.toString_, Nil, StringTpe)
-    lazy val Any_##       = enterNewMethod(AnyClass, nme.HASHHASH, Nil, IntTpe, FINAL)
+    lazy val Any_##       = enterNewNullaryMethod(AnyClass, nme.HASHHASH, IntTpe, FINAL)
 
     // Any_getClass requires special handling.  The return type is determined on
     // a per-call-site basis as if the function being called were actually:
@@ -1206,7 +1208,7 @@ trait Definitions extends api.StandardDefinitions {
     }
 
     // members of class java.lang.{ Object, String }
-    lazy val Object_## = enterNewMethod(ObjectClass, nme.HASHHASH, Nil, IntTpe, FINAL)
+    lazy val Object_## = enterNewNullaryMethod(ObjectClass, nme.HASHHASH, IntTpe, FINAL)
     lazy val Object_== = enterNewMethod(ObjectClass, nme.EQ, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)

@@ -11,7 +11,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Int
 method %: (x: Char): Int
 method %: (x: Double): Double
@@ -219,7 +219,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Int
 method %: (x: Char): Int
 method %: (x: Double): Double
@@ -427,7 +427,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Int
 method %: (x: Char): Int
 method %: (x: Double): Double
@@ -635,7 +635,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Int
 method %: (x: Char): Int
 method %: (x: Double): Double
@@ -843,7 +843,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Long
 method %: (x: Char): Long
 method %: (x: Double): Double
@@ -1051,7 +1051,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Float
 method %: (x: Char): Float
 method %: (x: Double): Double
@@ -1237,7 +1237,7 @@ method !=: (x: Float): Boolean
 method !=: (x: Int): Boolean
 method !=: (x: Long): Boolean
 method !=: (x: Short): Boolean
-method ##: (): Int
+method ##: Int
 method %: (x: Byte): Double
 method %: (x: Char): Double
 method %: (x: Double): Double
@@ -1417,7 +1417,7 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Boolean: (): Boolean
 method !=: (x$1: Any): Boolean
 method !=: (x: Boolean): Boolean
-method ##: (): Int
+method ##: Int
 method &&: (x: Boolean): Boolean
 method &: (x: Boolean): Boolean
 method ==: (x$1: Any): Boolean
@@ -1446,7 +1446,7 @@ it's important to print the list of Byte's members
 if some of them change (possibly, adding and/or removing magic symbols), we must update this test
 constructor Unit: (): Unit
 method !=: (x$1: Any): Boolean
-method ##: (): Int
+method ##: Int
 method ==: (x$1: Any): Boolean
 method asInstanceOf: [T0]T0
 method equals: (x$1: Any): Boolean

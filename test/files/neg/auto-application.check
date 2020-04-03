@@ -1,0 +1,10 @@
+auto-application.scala:2: error: Int does not take parameters
+  ("": Any).##()
+              ^
+auto-application.scala:3: error: Int does not take parameters
+  ("": AnyRef).##()
+                 ^
+auto-application.scala:4: error: Int does not take parameters
+  ("": Object).##()
+                 ^
+3 errors
