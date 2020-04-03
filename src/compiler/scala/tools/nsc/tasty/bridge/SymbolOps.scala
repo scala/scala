@@ -45,7 +45,7 @@ trait SymbolOps { self: TastyUniverse =>
     val selector = encodeTastyName(tname, selectingTerm)
     tname.signature match {
       case NotAMethod => memberOfSpace(space, selector, tname.isModuleName)
-      case sig        => signedMemberOfSpace(space, selector, sig.map(erasedNameToErasedType))
+      case sig        => signedMemberOfSpace(space, selector, sig.map(resolveErasedTypeRef))
     }
   }
 

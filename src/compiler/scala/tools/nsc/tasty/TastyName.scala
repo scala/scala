@@ -6,13 +6,13 @@ object TastyName {
 
   // TODO [tasty]: cache chars for Names. SimpleName acts as a cursor
 
-  final case class SimpleName(raw: String)                                                extends TastyName
-  final case class ModuleName(base: TastyName)                                            extends TastyName
-  final case class QualifiedName(qual: TastyName, sep: SimpleName, selector: SimpleName)  extends TastyName
-  final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[TastyName]) extends TastyName
-  final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                 extends TastyName
-  final case class DefaultName(qual: TastyName, num: Int)                                 extends TastyName
-  final case class PrefixName(prefix: SimpleName, qual: TastyName)                        extends TastyName
+  final case class SimpleName(raw: String)                                                    extends TastyName
+  final case class ModuleName(base: TastyName)                                                extends TastyName
+  final case class QualifiedName(qual: TastyName, sep: SimpleName, selector: SimpleName)      extends TastyName
+  final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[ErasedTypeRef]) extends TastyName
+  final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                     extends TastyName
+  final case class DefaultName(qual: TastyName, num: Int)                                     extends TastyName
+  final case class PrefixName(prefix: SimpleName, qual: TastyName)                            extends TastyName
 
   final val Empty: SimpleName = SimpleName("")
   final val PathSep: SimpleName = SimpleName(".")
@@ -24,6 +24,7 @@ object TastyName {
   final val Constructor: SimpleName = SimpleName("<init>")
   final val EmptyPkg: SimpleName = SimpleName("<empty>")
   final val RootClass: SimpleName = SimpleName("<root>")
+  final val RepeatedClass: SimpleName = SimpleName("<repeated>")
 
   object WildcardName {
     def unapply(name: TastyName): Boolean = name match {
@@ -71,7 +72,7 @@ object TastyName {
       case DefaultName(qual, num)   => traverse(sb, qual).append("[Default ").append(num + 1).append(']')
       case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
       case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
-      case SignedName(name,sig)     => sig.map(_.debug).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
+      case SignedName(name,sig)     => sig.map(_.signature).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
 
       case QualifiedName(qual, sep, name) =>
         traverse(traverse(traverse(sb, qual).append("[Qualified "), sep).append(' '), name).append(']')
@@ -87,18 +88,15 @@ object TastyName {
    */
   object ScalaNameEncoder extends NameEncoder[StringBuilder] {
 
+    /** Escapes all symbolic characters. Special names should be handled before calling this.
+      */
     final def encode(name: TastyName): String = name match {
-      case SimpleName(raw) => escapeSimple(raw)
+      case SimpleName(raw) => NameTransformer.encode(raw)
       case _               => super.encode(name)(new StringBuilder(25), _.toString)
     }
 
-    final def escapeSimple(raw: String) = raw match {
-      case raw @ ("<init>" | "<empty>" | "<root>") => raw
-      case raw                                     => NameTransformer.encode(raw)
-    }
-
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
-      case name: SimpleName    => sb.append(escapeSimple(name.raw))
+      case name: SimpleName    => sb.append(NameTransformer.encode(name.raw))
       case name: ModuleName    => traverse(sb, name.base)
       case name: SignedName    => traverse(sb, name.qual)
       case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
@@ -116,7 +114,7 @@ object TastyName {
 
 /** class to represent Names as defined in TASTy, with methods to extract scala identifiers
  */
-sealed trait TastyName extends Product with Serializable { self =>
+sealed abstract class TastyName extends Product with Serializable { self =>
   import TastyName._
 
   final override def toString: String = source
@@ -146,7 +144,12 @@ sealed trait TastyName extends Product with Serializable { self =>
     case name             => name
   }
 
-  final def signature: Signature[TastyName] = self match {
+  final def stripSignedPart: TastyName = self match {
+    case SignedName(pre, _) => pre
+    case name               => name
+  }
+
+  final def signature: Signature[ErasedTypeRef] = self match {
     case SignedName(_, signature) => signature
     case _                        => Signature.NotAMethod
   }

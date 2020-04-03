@@ -24,7 +24,7 @@ object TastyUnpickler {
 import TastyUnpickler._
 
 class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self =>
-  import tasty.logTasty
+  import tasty.{logTasty, typeError}
   import reader._
 
   def this(bytes: Array[Byte])(implicit tasty: TastyUniverse) = this(new TastyReader(bytes))
@@ -35,12 +35,16 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
 
   private def readName(): TastyName = nameAtRef(readNameRef())
 
-  private def readParamSig(): Signature.ParamSig[TastyName] = {
+  private def toErasedTypeRef(tname: TastyName): ErasedTypeRef =
+    ErasedTypeRef(tname).getOrElse(typeError(s"Unexpected erased type ref ${tname.debug}"))
+
+  private def readParamSig(): Signature.ParamSig[ErasedTypeRef] = {
     val ref = readInt()
     if (ref < 0)
       Left(ref.abs)
-    else
-      Right(nameAtRef(NameRef(ref)))
+    else {
+      Right(toErasedTypeRef(nameAtRef(NameRef(ref))))
+    }
   }
 
   private def readNameContents(): TastyName = {
@@ -73,7 +77,7 @@ class TastyUnpickler(reader: TastyReader)(implicit tasty: TastyUniverse) { self 
         debugName(DefaultName(readName(), readNat()))
       case SIGNED =>
         val original  = readName()
-        val result    = readName()
+        val result    = toErasedTypeRef(readName())
         val paramsSig = until(end)(readParamSig())
         val sig       = Signature(paramsSig, result)
         debugName(SignedName(original, sig))

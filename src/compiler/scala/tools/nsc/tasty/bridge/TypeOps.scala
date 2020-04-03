@@ -2,7 +2,6 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName, TastyName.{QualifiedName, SimpleName}
 
 import scala.tools.nsc.tasty._
 import scala.reflect.internal.Variance
@@ -84,35 +83,15 @@ trait TypeOps { self: TastyUniverse =>
       typeRefUncurried(tycon, args)
     }
 
-  }.tap(res => ctx.log(s"boundedAppliedType: $tycon => $res"))
+  }
 
-  def erasedNameToErasedType(name: TastyName)(implicit ctx: Context): Type = {
-    def specialised(terminal: SimpleName) = terminal.raw match {
-      case s"$raw[]" => (true, SimpleName(raw))
-      case _         => (false, terminal)
-    }
-    def erasedType(isArray: Boolean, isModule: Boolean, erasedName: TastyName): Type = {
-      val qualifiedName = erasedName.source
-      val sym = {
-        if (isModule) {
-          ctx.loadingMirror.getModuleIfDefined(qualifiedName)
-        }
-        else {
-          ctx.loadingMirror.getClassIfDefined(qualifiedName)
-        }
-      }
-      assert(isSymbol(sym), s"could not find ${if (isModule) "object" else "class"} for $qualifiedName")
-      val tpe0 = sym.tpe.erasure
-      if (isArray) defn.arrayType(tpe0) else tpe0
-    }
-    (name.stripModulePart: @unchecked) match {
-      case terminal: SimpleName => // unqualified in the <empty> package
-        val (isArray, sel) = specialised(terminal)
-        erasedType(isArray, name.isModuleName, sel)
-      case QualifiedName(path, TastyName.PathSep, terminal) =>
-        val (isArray, sel) = specialised(terminal)
-        erasedType(isArray, name.isModuleName, QualifiedName(path, TastyName.PathSep, sel))
-    }
+  def resolveErasedTypeRef(ref: ErasedTypeRef)(implicit ctx: Context): Type = {
+    val sym =
+      if (ref.isModule) ctx.loadingMirror.getModuleIfDefined(ref.qualifiedName)
+      else ctx.loadingMirror.getClassIfDefined(ref.qualifiedName)
+    if (!isSymbol(sym))
+      typeError(s"could not find ${if (ref.isModule) "object" else "class"} for ${ref.qualifiedName}")
+    defn.arrayType(ref.arrayDims, sym.tpe.erasure)
   }
 
   /** A type which accepts two type arguments, representing an intersection type

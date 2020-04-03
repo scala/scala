@@ -110,7 +110,7 @@ trait TastyKernel { self: TastyUniverse =>
     final def scalaRepeatedType(arg: Type): Type = symbolTable.definitions.scalaRepeatedType(arg)
     final def repeatedAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Repeated").toOption
     final def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
-    final def arrayType(arg: Type): Type = symbolTable.definitions.arrayType(arg)
+    final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => symbolTable.definitions.arrayType(acc))
   }
 
   object nme {
@@ -124,6 +124,10 @@ trait TastyKernel { self: TastyUniverse =>
     final val EMPTY_PACKAGE_NAME: TermName = symbolTable.nme.EMPTY_PACKAGE_NAME
     final val WILDCARD: TermName = symbolTable.nme.WILDCARD
     final def freshWhileName: TermName = symbolTable.freshTermName(symbolTable.nme.WHILE_PREFIX)(symbolTable.currentFreshNameCreator)
+  }
+
+  object tpnme {
+    final val REPEATED_PARAM_CLASS_NAME: TypeName = symbolTable.tpnme.REPEATED_PARAM_CLASS_NAME
   }
 
   object untpd {

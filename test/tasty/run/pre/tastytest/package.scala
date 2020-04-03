@@ -16,7 +16,7 @@ package object tastytest {
         c.Expr[Boolean](q"true")
       }
       else {
-        c.error(NoPosition, s"${weakTypeOf[T]} does not have a member with annotation ${weakTypeOf[A]}")
+        c.error(c.enclosingPosition, s"${weakTypeOf[T]} does not have a member with annotation ${weakTypeOf[A]}")
         c.Expr[Boolean](q"false")
       }
     }

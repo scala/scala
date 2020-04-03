@@ -212,7 +212,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     def readTastyName(): TastyName = nameAtRef(readNameRef())
-    def readEncodedName(): TermName = encodeAsTermName(readTastyName())
 
 // ------ Reading types -----------------------------------------------------
 
@@ -341,8 +340,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val space  = readType()
               selectType(prefix, space, name)
             case REFINEDtype =>
-              val selected = readEncodedName()
-              val parent   = readType()
+              val tname  = readTastyName()
+              val parent = readType()
               val refinementClass = ctx.owner match {
                 case enclosingRefinement: RefinementClassSymbol =>
                   enclosingRefinement.rawInfo match {
@@ -356,18 +355,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 }
               }
               val decl = {
-                val isType     = nextUnsharedTag === TYPEBOUNDS
-                val name       = if (isType) selected.toTypeName else selected
+                val isTerm     = nextUnsharedTag !== TYPEBOUNDS
+                val name       = encodeTastyName(tname, isTerm)
                 val tpe        = readType()
                 val overridden = parent.member(name)
                 val isOverride = isSymbol(overridden)
                 var flags      = if (isOverride && overridden.isType) Override else emptyFlags
                 val info = {
-                  if (isType) {
-                    if (tpe.isInstanceOf[TypeBounds]) flags |= Deferred
-                    tpe
-                  }
-                  else {
+                  if (isTerm) {
                     flags |= Method | Deferred
                     tpe match {
                       case byNameType: TypeRef // nullary method
@@ -380,6 +375,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                         if (isOverride && overridden.is(Stable)) flags |= Stable
                         mkNullaryMethodType(tpe)
                     }
+                  }
+                  else {
+                    if (tpe.isInstanceOf[TypeBounds]) flags |= Deferred
+                    tpe
                   }
                 }
                 ctx.newSymbol(refinementClass, name, flags, info)
@@ -408,17 +407,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             // case MATCHtype =>
             //   MatchType(readType(), readType(), until(end)(readType()))
             case POLYtype =>
-              readMethodic(PolyType, encodeAsTermName(_).toTypeName)
+              readMethodic(PolyType, encodeTastyNameAsType)
             case METHODtype =>
-              readMethodic(MethodType, encodeAsTermName)
+              readMethodic(MethodType, encodeTastyNameAsTerm)
             // case ERASEDMETHODtype =>
             //   readMethodic(ErasedMethodType, _.toTermName)
             // case ERASEDGIVENMETHODtype =>
             //   readMethodic(ErasedContextualMethodType, _.toTermName)
             case IMPLICITMETHODtype | GIVENMETHODtype =>
-              readMethodic(ImplicitMethodType, encodeAsTermName)
+              readMethodic(ImplicitMethodType, encodeTastyNameAsTerm)
             case TYPELAMBDAtype =>
-              readMethodic(HKTypeLambda, encodeAsTermName(_).toTypeName)
+              readMethodic(HKTypeLambda, encodeTastyNameAsType)
             case PARAMtype => // reference to a type parameter within a LambdaType
               readTypeRef().typeParams(readNat()).ref
           }
@@ -492,7 +491,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     private def readPackageRef()(implicit ctx: Context): TermSymbol = {
-      val name = readEncodedName()
+      val name = encodeTastyNameAsTerm(readTastyName())
       if (name === nme.ROOT || name === nme.ROOTPKG) ctx.loadingMirror.RootPackage
       else if (name === nme.EMPTY_PACKAGE_NAME) ctx.loadingMirror.EmptyPackage
       else ctx.requiredPackage(name)
@@ -570,8 +569,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val start = currentAddr
       readByte() // tag
       readEnd()  // end
-      var name: Name = readEncodedName()
-      if (nextUnsharedTag == TYPEBOUNDS) name = name.toTypeName
+      val name = encodeTastyName(readTastyName(), nextUnsharedTag !== TYPEBOUNDS)
       val typeReader = fork
       val completer = new TastyLazyType {
         override def complete(sym: Symbol): Unit =
@@ -589,10 +587,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val start = currentAddr
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
+      def isTerm = !isTypeTag
       val end = readEnd()
       val tname: TastyName = readTastyName()
-      var name: Name = encodeAsTermName(tname)
-      if (isTypeTag) name = name.toTypeName
+      val name: Name = encodeTastyName(tname, isTerm)
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -824,7 +822,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag     = readByte()
       val end     = readEnd()
       val tname   = readTastyName()
-      val name    = encodeAsTermName(tname)
+      val name    = encodeTastyName(tname, sym.isTerm)
 
       ctx.log(s"completing member $name at $symAddr. ${showSym(sym)}")
 
@@ -1049,7 +1047,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (Ident(qual.name), qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def completeSelect(name: TastyName, sig: Signature[Type], isTerm: Boolean)(implicit ctx: Context): Select = {
+      def completeSelect(name: TastyName, isTerm: Boolean)(implicit ctx: Context): Select = {
         val localCtx = ctx.selectionCtx(name)
         val qual     = readTerm()(localCtx)
         val qualType = qual.tpe
@@ -1060,14 +1058,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SHAREDterm =>
           forkAt(readAddr()).readTerm()
         case IDENT =>
-          Ident(readEncodedName()).setType(readType())
+          Ident(encodeTastyNameAsTerm(readTastyName())).setType(readType())
         case IDENTtpt =>
-          Ident(readEncodedName().toTypeName).setType(readType())
+          Ident(encodeTastyNameAsType(readTastyName())).setType(readType())
         case SELECT =>
-          val qual = readTastyName()
-          completeSelect(qual, qual.signature.map(erasedNameToErasedType), isTerm = true)
+          completeSelect(readTastyName(), isTerm = true)
         case SELECTtpt =>
-          completeSelect(readTastyName(), NotAMethod, isTerm = false)
+          completeSelect(readTastyName(), isTerm = false)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
           new This(qual.name.toTypeName).setType(mkThisType(tref.sym))
@@ -1083,7 +1080,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           val tpt = readTpt()
           mkFunctionTypeTree(Nil, tpt).setType(defn.byNameType(tpt.tpe))
         case NAMEDARG =>
-          val name  = readEncodedName()
+          val name  = encodeTastyNameAsTerm(readTastyName())
           val value = readTerm()
           NamedArg(name, value).setType(value.tpe)
         case _ =>
