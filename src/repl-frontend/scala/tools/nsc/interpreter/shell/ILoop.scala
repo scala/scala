@@ -137,6 +137,10 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
       intp.close()
       intp = null
     }
+    if (in ne null) {
+      in.close()
+      in = null
+    }
   }
 
 

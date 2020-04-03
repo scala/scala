@@ -13,19 +13,25 @@
 package scala.tools.nsc.interpreter
 package jline
 
-import shell.{Accumulator, ShellConfig}
-import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
-import Parser.ParseContext
-import org.jline.reader.impl.DefaultParser
-import java.util.{List => JList}
 
+import java.util.{List => JList}
+import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
+import org.jline.reader.impl.DefaultParser
 import org.jline.reader.LineReader.Option
+import org.jline.terminal.Terminal
+import shell.{Accumulator, ShellConfig}
+import Parser.ParseContext
 
 /** A Reader that delegates to JLine3.
  */
-class Reader private (config: ShellConfig, reader: LineReader, val accumulator: Accumulator, val completion: shell.Completion) extends shell.InteractiveReader {
-  val history: shell.History = new HistoryAdaptor(reader.getHistory)
-  def interactive: Boolean = true
+class Reader private (
+    config: ShellConfig,
+    reader: LineReader,
+    val accumulator: Accumulator,
+    val completion: shell.Completion,
+    terminal: Terminal) extends shell.InteractiveReader {
+  override val history: shell.History = new HistoryAdaptor(reader.getHistory)
+  override def interactive: Boolean = true
   protected def readOneKey(prompt: String): Int = ???
   protected def readOneLine(prompt: String): String = {
     try {
@@ -34,8 +40,9 @@ class Reader private (config: ShellConfig, reader: LineReader, val accumulator: 
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
     }
   }
-  def redrawLine(): Unit = ???
-  def reset(): Unit = accumulator.reset()
+  override def redrawLine(): Unit = ???
+  override def reset(): Unit = accumulator.reset()
+  override def close(): Unit = terminal.close()
 }
 
 object Reader {
@@ -46,13 +53,17 @@ object Reader {
   /** Construct a Reader with various JLine3-specific set-up.
    *  The `shell.Completion` is wrapped in the `jline.Completion` bridge to enable completion from JLine3.
    */
-  def apply(config: ShellConfig, repl: Repl, completion: shell.Completion, accumulator: Accumulator): Reader = {
+  def apply(
+      config: ShellConfig,
+      repl: Repl,
+      completion: shell.Completion,
+      accumulator: Accumulator): Reader = {
     require(repl != null)
     if (config.isReplDebug) initLogging()
 
     System.setProperty(LineReader.PROP_SUPPORT_PARSEDLINE, java.lang.Boolean.TRUE.toString())
 
-    val terminal = TerminalBuilder.builder().jna(true).build()
+    val jlineTerminal = TerminalBuilder.builder().jna(true).build()
     val completer = new Completion(completion)
     val parser    = new ReplParser(repl)
     val history   = new DefaultHistory
@@ -63,7 +74,7 @@ object Reader {
       .completer(completer)
       .history(history)
       .parser(parser)
-      .terminal(terminal)
+      .terminal(jlineTerminal)
 
     locally {
       import LineReader._, Option._
@@ -109,7 +120,7 @@ object Reader {
         backupHistory()
         history.attach(reader)
     }
-    new Reader(config, reader, accumulator, completer)
+    new Reader(config, reader, accumulator, completer, jlineTerminal)
   }
 
   class ReplParser(repl: Repl) extends Parser {
