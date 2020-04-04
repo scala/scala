@@ -1,0 +1,4 @@
+TestCompiletimeQuoteType_fail.scala:4: error: can't find type scala.AnyKind while unpickling type T; perhaps it is missing from the classpath.
+  def test = CompiletimeQuoteType.f[Int]
+                                   ^
+1 error

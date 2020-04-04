@@ -67,15 +67,15 @@ trait SymbolOps { self: TastyUniverse =>
       finalSym
     } else {
       val kind = if (name.isTermName) "term" else "type"
-      val addendum =
-        if (ctx.mode.is(InParents)) s"$kind in parents of ${if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner}:"
-        else if (ctx.owner.isClass) s"$kind required by a member of ${ctx.owner}:"
-        else s"$kind in signature of ${ctx.owner}:"
+      def addendum(name: String) =
+        if (ctx.mode.is(InParents)) s"$kind in parents of ${if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner}: $name"
+        else if (ctx.owner.isClass) s"$kind required by a member of ${ctx.owner}: $name"
+        else s"$kind $name while unpickling ${ctx.owner}"
       val msg =
         if (name.isTypeName && space.typeSymbol.hasPackageFlag)
-          s"can't find $addendum ${space.typeSymbol.fullNameString}.$name; perhaps it is missing from the classpath."
+          s"can't find ${addendum(s"${space.typeSymbol.fullNameString}.$name")}; perhaps it is missing from the classpath."
         else
-          s"can't find $addendum $name, in $space"
+          s"can't find ${addendum("" + name)}, in $space"
       typeError(msg)
     }
   }

@@ -1222,8 +1222,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val alias = if (currentAddr == end) emptyTree else readTpt()
               if (alias != emptyTree) alias // only for opaque type alias
               else TypeBoundsTree(lo, hi).setType(TypeBounds.bounded(lo.tpe, hi.tpe))
-//            case HOLE =>
-//              readHole(end, isType = false)
+            case HOLE => assertNoMacroHole
 //            case _ =>
 //              readPathTerm()
           }
@@ -1239,19 +1238,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SHAREDterm =>
           readByte()
           forkAt(readAddr()).readTpt()
-//        case BLOCK =>
-//          readByte()
-//          val end = readEnd()
-//          val typeReader = fork
-//          skipTree()
-//          val aliases = readStats(ctx.owner, end)
-//          val tpt = typeReader.readTpt()
-//          Block(aliases, tpt)
-//        case HOLE =>
-//          readByte()
-//          val end = readEnd()
-//          readHole(end, isType = true)
-        case tag =>
+        case BLOCK =>
+          // BLOCK appears in type position when quoting a type, but only in the body of a method
+          unsupportedError("Scala 3 metaprogramming features")
+        case HOLE => assertNoMacroHole
+        case tag  =>
           if (isTypeTreeTag(tag)) readTerm()
           else {
             val tp = readType()
@@ -1260,6 +1251,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
       tpt
     }
+
+    /**
+      * A HOLE should never appear in TASTy for a top level class, only in quotes.
+      */
+    private def assertNoMacroHole[T]: T = assertError("Scala 3 macro hole in pickled TASTy")
 
     /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
     def readParentFromTerm()(implicit ctx: Context): Type = {

@@ -286,4 +286,14 @@ abstract class TastyKernel { self: TastyUniverse =>
   @inline final def showRaw(tpe: Type): String = u.showRaw(tpe)
 
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
+
+  @inline final def assertError[T](msg: String): T =
+    throw new AssertionError(s"assertion failed: ${u.supplementErrorMessage(msg)}")
+
+  @inline final def assert(assertion: Boolean, msg: => Any): Unit =
+    if (!assertion) assertError(String.valueOf(msg))
+
+  @inline final def assert(assertion: Boolean): Unit =
+    if (!assertion) assertError("")
+
 }

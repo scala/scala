@@ -24,7 +24,7 @@ object TastyUnpickler {
 import TastyUnpickler._
 
 class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty: Tasty) { self =>
-  import tasty.Context
+  import tasty.{Context, assert}
   import reader._
 
   def this(bytes: Array[Byte])(implicit tasty: Tasty) = this(new TastyReader(bytes))
@@ -36,9 +36,9 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
   private def readName(): TastyName = nameAtRef(readNameRef())
 
   private def toErasedTypeRef(tname: TastyName): ErasedTypeRef = {
-    ErasedTypeRef(tname)
-      .ensuring(_.isDefined, s"Unexpected erased type ref ${tname.debug}")
-      .get
+    val erasedTypeRef = ErasedTypeRef(tname)
+    assert(erasedTypeRef.isDefined, s"Unexpected erased type ref ${tname.debug}")
+    erasedTypeRef.get
   }
 
   private def readParamSig(): Signature.ParamSig[ErasedTypeRef] = {
