@@ -6,7 +6,7 @@ trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object Annotation {
-    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Tree)(implicit ctx: Contexts.Context): Annotation =
+    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Tree)(implicit ctx: Context): Annotation =
       new symbolTable.LazyAnnotationInfo({
         val annotSym = symf
         val annotTree = tree

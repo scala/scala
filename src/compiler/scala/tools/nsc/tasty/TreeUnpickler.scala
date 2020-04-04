@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.reflect.io.AbstractFile
 import scala.reflect.internal.Variance
 import scala.util.chaining._
+import scala.util.control.NonFatal
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
@@ -18,7 +19,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     nameAtRef: NameRef => TastyName,
     splices: Seq[Any])(implicit
     val tasty: Tasty) { self =>
-  import tasty._, FlagSets._, SymbolOps._, Contexts._
+  import tasty._, FlagSets._
   import TastyFormat._
   import TreeUnpickler._
   import MaybeCycle._
@@ -27,8 +28,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import Signature._
 
   @inline
-  final protected def assertTasty(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
-    if (!cond) ctx.unsupportedError(msg)
+  final protected def assertTasty(cond: Boolean, msg: => String): Unit =
+    if (!cond) unsupportedError(msg)
 
   /** A map from addresses of definition entries to the symbols they define */
   private val symAtAddr = new mutable.HashMap[Addr, Symbol]
@@ -862,7 +863,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               //               refine self type of the owner to be aware of the alias.
               sym.info = rhs.tpe match {
                 case bounds @ TypeBounds(lo: PolyType, hi: PolyType) if !(mergeableParams(lo,hi)) =>
-                  ctx.unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
+                  unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
                 case tpe: TypeBounds => normaliseBounds(tpe)
                 case tpe             => tpe
               }
@@ -885,7 +886,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         goto(end)
         NoCycle(at = symAddr)
       } catch {
-        case err: symbolTable.TypeError =>
+        case err: UnsupportedError =>
+          sym.info = errorType
+          if (ctx.inGlobalScope) err.unsupportedInScopeError
+          else throw err
+        case NonFatal(err) =>
           sym.info = errorType
           throw err
       }
@@ -967,9 +972,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case TYPEDEF | VALDEF | DEFDEF =>
         readIndexedMember()
       case IMPORT =>
-        ctx.unsupportedError("IMPORT in expression")
+        unsupportedError("IMPORT in expression")
       case PACKAGE =>
-        ctx.unsupportedError("PACKAGE in expression")
+        unsupportedError("PACKAGE in expression")
       case _ =>
         skipTree() // readTerm()(ctx.withOwner(exprOwner))
         NoCycle(at = NoAddr)
@@ -1104,7 +1109,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 //              Inlined(call, bindings, expansion)
             case IF =>
               if (nextByte === INLINE) {
-                ctx.unsupportedError("inline if")
+                unsupportedError("inline if")
                 // readByte()
                 // InlineIf(readTerm(), readTerm(), readTerm())
               }
@@ -1115,7 +1120,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
             case LAMBDA =>
-              ctx.unsupportedError("LAMBDA")
+              unsupportedError("LAMBDA")
               // val meth = readTerm()
               // val tpt = ifBefore(end)(readTpt(), emptyTree)
               // Closure(Nil, meth, tpt)
@@ -1123,12 +1128,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nextByte === IMPLICIT) {
                 readByte()
                 readCases(end) //InlineMatch(EmptyTree, readCases(end))
-                ctx.unsupportedError("implicit match")
+                unsupportedError("implicit match")
               }
               else if (nextByte === INLINE) {
                 readByte()
                 readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
-                ctx.unsupportedError("inline match")
+                unsupportedError("inline match")
               }
               else {
                 val sel = readTerm()

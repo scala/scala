@@ -19,7 +19,6 @@ object ScalacUnpickler {
 
   final implicit class Unpickler[Tasty <: TastyUniverse](private val tasty: Tasty) extends AnyVal {
     import tasty._
-    import Contexts._
 
     /** Unpickle symbol table information descending from a class and/or module root
      *  from an array of bytes.

@@ -1,17 +1,13 @@
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.TastyFlags
-import TastyFlags._
-import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.{TastyFlags, TastyUniverse}, TastyFlags._
+import scala.reflect.internal.{Flags, ModifierFlags}
 
 trait FlagOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object FlagSets {
     import u.Flag
-    import scala.reflect.internal.{Flags, ModifierFlags}
-
-    val Package: FlagSet = Flags.PACKAGE
 
     val Private: FlagSet = Flag.PRIVATE
     val Protected: FlagSet = Flag.PROTECTED
@@ -46,26 +42,24 @@ trait FlagOps { self: TastyUniverse =>
     val Deferred: FlagSet = Flag.DEFERRED
     val Method: FlagSet = Flags.METHOD
 
-    val NoInitsInterface: (FlagSet, TastyFlagSet) = (Interface, NoInits)
     val TermParamOrAccessor: FlagSet = Param | ParamAccessor
     val ModuleCreationFlags: FlagSet = Module | Lazy | Final | Stable
     val ModuleClassCreationFlags: FlagSet = Module | Final
-    val DeferredOrLazyOrMethod: FlagSet = Deferred | Lazy | Method
+  }
 
-    implicit class FlagSetOps(private val flagSet: FlagSet) {
-      private def flags: FlagSet = {
-        val fs = flagSet & u.phase.flagMask
-        (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
-      }
-      private def getFlag(mask: FlagSet): FlagSet = {
-        mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
-      }
-      def not(mask: FlagSet): Boolean = !isOneOf(mask)
-      def is(mask: FlagSet): Boolean = getFlag(mask) == mask
-      def ensuring(is: FlagSet, when: FlagSet): FlagSet = if (flagSet.is(when)) (flagSet | is) else flagSet
-      def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
-      def isOneOf(mask: FlagSet): Boolean = getFlag(mask) != 0
+  implicit class FlagSetOps(private val flagSet: FlagSet) {
+    private def flags: FlagSet = {
+      val fs = flagSet & u.phase.flagMask
+      (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
     }
+    private def getFlag(mask: FlagSet): FlagSet = {
+      mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
+    }
+    def not(mask: FlagSet): Boolean = !isOneOf(mask)
+    def is(mask: FlagSet): Boolean = getFlag(mask) == mask
+    def ensuring(is: FlagSet, when: FlagSet): FlagSet = if (flagSet.is(when)) (flagSet | is) else flagSet
+    def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
+    def isOneOf(mask: FlagSet): Boolean = getFlag(mask) != 0
   }
 
   def show(flags: FlagSet): String = u.show(flags)

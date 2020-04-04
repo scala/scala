@@ -11,10 +11,7 @@ import scala.collection.mutable
 
 trait TypeOps { self: TastyUniverse =>
   import self.{symbolTable => u}
-  import Contexts._
-  import SymbolOps._
   import FlagSets._
-  import SymbolOps._
 
   def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
@@ -48,7 +45,7 @@ trait TypeOps { self: TastyUniverse =>
 
     def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
       case tycon: TypeRef if tycon.typeArgs.nonEmpty =>
-        ctx.unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
+        unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
       case _ =>
         u.appliedType(tycon, args)
     }
@@ -87,7 +84,7 @@ trait TypeOps { self: TastyUniverse =>
   def selectType(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type = {
     if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) AndType
-      else ctx.unsupportedError("union type")
+      else unsupportedError("union type")
     }
     else {
       namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = false)

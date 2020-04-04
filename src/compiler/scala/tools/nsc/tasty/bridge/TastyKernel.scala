@@ -97,8 +97,8 @@ abstract class TastyKernel { self: TastyUniverse =>
     final val SeqClass: ClassSymbol = u.definitions.SeqClass
     @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
     @inline final def scalaRepeatedType(arg: Type): Type = u.definitions.scalaRepeatedType(arg)
-    @inline final def repeatedAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Repeated").toOption
-    @inline final def childAnnotationClass(implicit ctx: Contexts.Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
+    @inline final def repeatedAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Repeated").toOption
+    @inline final def childAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
     @inline final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => u.definitions.arrayType(acc))
   }
 
@@ -284,5 +284,6 @@ abstract class TastyKernel { self: TastyUniverse =>
   @inline final def lub(tpes: List[Type]): Type = u.lub(tpes)
 
   @inline final def showRaw(tpe: Type): String = u.showRaw(tpe)
+
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
 }

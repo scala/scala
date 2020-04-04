@@ -10,32 +10,28 @@ import scala.tools.nsc.tasty.Signature.NotAMethod
 
 trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
-  import Contexts.Context
   import FlagSets._
-  import SymbolOps._
 
-  object SymbolOps {
-    implicit class SymbolDecorator(sym: Symbol) {
-      def completer: TastyLazyType = {
-        assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${showRaw(sym.rawInfo)} ")
-        sym.rawInfo.asInstanceOf[TastyLazyType]
-      }
-      def ensureCompleted(): Unit = sym.info
-      def ref(args: List[Type]): Type = u.appliedType(sym, args)
-      def ref: Type = sym.ref(Nil)
-      def singleRef: Type = mkSingleType(noPrefix, sym)
-      def termRef: Type = sym.preciseRef(noPrefix)
-      def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
-      def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
-      def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
-      def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
-      def is(mask: FlagSet, butNot: FlagSet): Boolean =
-        if (isEmpty(butNot))
-          sym.hasFlag(mask)
-        else
-          sym.hasFlag(mask) && sym.hasNoFlags(butNot)
-      def not(mask: FlagSet): Boolean = !is(mask)
+  implicit class SymbolDecorator(sym: Symbol) {
+    def completer: TastyLazyType = {
+      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${showRaw(sym.rawInfo)} ")
+      sym.rawInfo.asInstanceOf[TastyLazyType]
     }
+    def ensureCompleted(): Unit = sym.info
+    def ref(args: List[Type]): Type = u.appliedType(sym, args)
+    def ref: Type = sym.ref(Nil)
+    def singleRef: Type = mkSingleType(noPrefix, sym)
+    def termRef: Type = sym.preciseRef(noPrefix)
+    def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
+    def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
+    def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
+    def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
+    def is(mask: FlagSet, butNot: FlagSet): Boolean =
+      if (isEmpty(butNot))
+        sym.hasFlag(mask)
+      else
+        sym.hasFlag(mask) && sym.hasNoFlags(butNot)
+    def not(mask: FlagSet): Boolean = !is(mask)
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
@@ -90,7 +86,7 @@ trait SymbolOps { self: TastyUniverse =>
     val (tyParamCount, argTpes) = {
       val (tyParamCounts, params) = sig.params.partitionMap(identity)
       if (tyParamCounts.length > 1) {
-        ctx.unsupportedError(s"multiple type parameter lists on erased method signature ${sig.show}")
+        unsupportedError(s"multiple type parameter lists on erased method signature ${sig.show}")
       }
       (tyParamCounts.headOption.getOrElse(0), params)
     }

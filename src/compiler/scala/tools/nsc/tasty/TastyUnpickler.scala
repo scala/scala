@@ -24,7 +24,7 @@ object TastyUnpickler {
 import TastyUnpickler._
 
 class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty: Tasty) { self =>
-  import tasty.{typeError, Contexts}, Contexts.Context
+  import tasty.{typeError, Context}
   import reader._
 
   def this(bytes: Array[Byte])(implicit tasty: Tasty) = this(new TastyReader(bytes))
