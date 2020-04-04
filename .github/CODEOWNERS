@@ -1,0 +1,3 @@
+# Files of which NthPortal has a lot of knowledge. Wildcards cover tests
+*LazyList*  @NthPortal
+**/scala/util/Using*  @NthPortal
