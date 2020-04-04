@@ -17,6 +17,8 @@ trait TypeOps { self: TastyUniverse =>
     t.typeParams.size == u.typeParams.size
 
   def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
+  def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in bounds of ${ctx.owner}")
+  def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
 
   def normaliseBounds(bounds: TypeBounds): Type = {
     val TypeBounds(lo, hi) = bounds

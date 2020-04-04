@@ -31,6 +31,7 @@ object Dotc {
         "-d", out,
         "-classpath", classpath,
         "-deprecation",
+        "-Yerased-terms",
         "-Xfatal-warnings",
         "-usejavacp"
       ) ++ sources

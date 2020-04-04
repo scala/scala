@@ -384,16 +384,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               unionIsUnsupported
             case SUPERtype =>
               mkSuperType(readType(), readType())
-            // case MATCHtype =>
-            //   MatchType(readType(), readType(), until(end)(readType()))
+            case MATCHtype => matchTypeIsUnsupported
             case POLYtype =>
               readMethodic(PolyType, encodeTastyNameAsType)
             case METHODtype =>
               readMethodic(MethodType, encodeTastyNameAsTerm)
-            // case ERASEDMETHODtype =>
-            //   readMethodic(ErasedMethodType, _.toTermName)
-            // case ERASEDGIVENMETHODtype =>
-            //   readMethodic(ErasedContextualMethodType, _.toTermName)
+            case ERASEDMETHODtype | ERASEDGIVENMETHODtype => erasedRefinementIsUnsupported
             case IMPLICITMETHODtype | GIVENMETHODtype =>
               readMethodic(ImplicitMethodType, encodeTastyNameAsTerm)
             case TYPELAMBDAtype =>
@@ -448,7 +444,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             typeAtAddr.getOrElseUpdate(ref, forkAt(ref).readType())
           case BYNAMEtype =>
             val tpe = readType()
-            defn.byNameType(tpe) // ExprType(readType())
+            defn.byNameType(tpe)
           case _ =>
             mkConstantType(readConstant(tag))
         }
@@ -1211,11 +1207,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val tparams = readParams[NoCycle](TYPEPARAM)
               val body    = readTpt()
               TypeTree(mkLambdaFromParams(tparams.map(symFromNoCycle), body.tpe)) //LambdaTypeTree(tparams, body)
-//            case MATCHtpt =>
-//              val fst = readTpt()
-//              val (bound, scrut) =
-//                if (nextUnsharedTag === CASEDEF) (EmptyTree, fst) else (fst, readTpt())
-//              MatchTypeTree(bound, scrut, readCases(end))
+            case MATCHtpt => matchTypeIsUnsupported
             case TYPEBOUNDStpt =>
               val lo    = readTpt()
               val hi    = if (currentAddr == end) lo else readTpt()
@@ -1223,8 +1215,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (alias != emptyTree) alias // only for opaque type alias
               else TypeBoundsTree(lo, hi).setType(TypeBounds.bounded(lo.tpe, hi.tpe))
             case HOLE => assertNoMacroHole
-//            case _ =>
-//              readPathTerm()
+            case _    => readPathTerm()
           }
         assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
         result
