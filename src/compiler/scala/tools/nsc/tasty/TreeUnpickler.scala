@@ -1271,7 +1271,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SignedName(TastyName.Constructor, _: MethodSignature[_]) =>
           constructorOfPrefix(readParentFromTerm())(ctx.selectionCtx(name))
         case _ =>
-          typeError(s"Parent of ${ctx.owner} is not a constructor.")
+          throw new AssertionError(s"Parent of ${ctx.owner} is not a constructor.")
       }
 
       def readSimpleTermAsType(): Type = tag match {

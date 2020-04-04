@@ -44,7 +44,7 @@ trait SymbolOps { self: TastyUniverse =>
 
   def constructorOfType(space: Type): Symbol =
     space.member(nme.CONSTRUCTOR).asTerm.alternatives.find(_.isInstanceOf[MethodSymbol]).getOrElse(
-      typeError(s"${space.typeSymbol} has no constructor")
+      typeError(s"${space.typeSymbol} does not have a constructor")
     )
 
   def namedMemberOfType(space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Symbol = {

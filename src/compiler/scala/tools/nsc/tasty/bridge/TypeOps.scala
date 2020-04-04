@@ -73,8 +73,8 @@ trait TypeOps { self: TastyUniverse =>
     val sym =
       if (ref.isModule) ctx.loadingMirror.getModuleIfDefined(ref.qualifiedName)
       else ctx.loadingMirror.getClassIfDefined(ref.qualifiedName)
-    if (!isSymbol(sym))
-      typeError(s"could not find ${if (ref.isModule) "object" else "class"} for ${ref.qualifiedName}")
+    if (!isSymbol(sym)) // TODO [tasty]: add mode to Context to track if in an annotation, then addendum can include symbol of annot
+      typeError(s"could not find ${if (ref.isModule) "object" else "class"} for ${ref.qualifiedName}; perhaps it is missing from the classpath")
     defn.arrayType(ref.arrayDims, sym.tpe.erasure)
   }
 
