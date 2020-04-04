@@ -16,6 +16,8 @@ trait TypeOps { self: TastyUniverse =>
   def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
+  def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
+
   def normaliseBounds(bounds: TypeBounds): Type = {
     val TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
@@ -84,7 +86,7 @@ trait TypeOps { self: TastyUniverse =>
   def selectType(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type = {
     if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) AndType
-      else unsupportedError("union type")
+      else unionIsUnsupported
     }
     else {
       namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = false)

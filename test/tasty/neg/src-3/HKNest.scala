@@ -25,6 +25,10 @@ object HKNest {
     def foo[F <: [T] =>> [U] =>> (U, T),T,U](x: M[F[T][U]]): String = x.toString()
   }
 
+  class HKClass_17[F[X] <: List[X] | Option[X]] {
+    def foo[A](fa: F[A]): String = fa.toString()
+  }
+
   def test13 = new HKClass_13[HKLam].foo[Int,String](("",0))
   def test16 = new HKClass_16[List].foo[HKLam,Int,String](("",0) :: Nil)
   // def test6 = new HKClass_6[Qux]

@@ -380,8 +380,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               mkAnnotatedType(readType(), mkAnnotation(readTerm()))
             case ANDtype =>
               mkIntersectionType(readType(), readType())
-            // case ORtype =>
-            //   OrType(readType(), readType())
+            case ORtype =>
+              unionIsUnsupported
             case SUPERtype =>
               mkSuperType(readType(), readType())
             // case MATCHtype =>
