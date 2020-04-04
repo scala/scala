@@ -455,13 +455,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def readSymNameRef()(implicit ctx: Context): Type = {
       val sym    = readSymRef()
       val prefix = readType()
-      // TODO [tasty]: restore this if github:lampepfl/dotty/tests/pos/extmethods.scala causes infinite loop
-      // prefix match {
-        // case prefix: ThisType if (prefix.sym `eq` sym.owner) && sym.isTypeParameter /*&& !sym.is(Opaque)*/ =>
-        //   mkAppliedType(sym, Nil)
-        //   // without this precaution we get an infinite cycle when unpickling pos/extmethods.scala
-        //   // the problem arises when a self type of a trait is a type parameter of the same trait.
-      // }
       prefixedRef(prefix, sym)
     }
 
@@ -1068,7 +1061,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val (mixId, mixTpe) = ifBefore(end)(readQualId(), (untpd.EmptyTypeIdent, noType))
               val owntype = (
                 if (!mixId.isEmpty) mixTpe
-                // else if (context.inSuperInit) qual.tpe.firstParent // sourced from Typer
                 else mkIntersectionType(qual.tpe.parents)
               )
               Super(qual, mixId.name.toTypeName).setType(mkSuperType(qual.tpe, owntype))
