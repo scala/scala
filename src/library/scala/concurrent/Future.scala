@@ -239,6 +239,17 @@ trait Future[+T] extends Awaitable[T] {
    */
   def map[S](f: T => S)(implicit executor: ExecutionContext): Future[S] = transform(_ map f)
 
+
+  /** Applies a side-effecting function to the encapsulated value in this Futur
+    * @param f a function to apply to each element in this Future
+    * @tparam U the return type of f
+    * @return The same Future as this
+    */
+  def tapEach[U](f: T => U)(implicit executor: ExecutionContext): Future[T] = transform{ t =>
+    try t.foreach(f(_)) catch { case e if NonFatal(e) => executor.reportFailure(e)}
+    t
+  }
+
   /** Creates a new future by applying a function to the successful result of
    *  this future, and returns the result of the function as the new future.
    *  If this future is completed with an exception then the new future will
