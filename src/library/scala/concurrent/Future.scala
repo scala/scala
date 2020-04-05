@@ -240,7 +240,7 @@ trait Future[+T] extends Awaitable[T] {
   def map[S](f: T => S)(implicit executor: ExecutionContext): Future[S] = transform(_ map f)
 
 
-  /** Applies a side-effecting function to the encapsulated value in this Futur
+  /** Applies a side-effecting function to the encapsulated value in this Future
     * @param f a function to apply to each element in this Future
     * @tparam U the return type of f
     * @return The same Future as this
