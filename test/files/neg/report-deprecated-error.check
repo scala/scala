@@ -1,7 +1,7 @@
-report-deprecated-error.scala:26: error: method <<= is removed; use := syntax instead (foo-lib 1.0)
+report-deprecated-error.scala:34: error: method <<= is removed; use := syntax instead (foo-lib 1.0)
   <<=()
   ^
-report-deprecated-error.scala:28: warning: should DSL is incubating, and future compatibility is not guaranteed (foo-lib 1.0)
+report-deprecated-error.scala:36: warning: should DSL is incubating, and future compatibility is not guaranteed
   "bar" should {
   ^
 1 warning

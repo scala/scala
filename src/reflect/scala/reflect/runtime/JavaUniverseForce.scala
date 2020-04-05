@@ -423,6 +423,9 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.DeprecatedInheritanceAttr
     definitions.DeprecatedOverridingAttr
     definitions.ApiStatusAttr
+    definitions.ApiStatusMessageAttr
+    definitions.ApiStatusDefaultActionAttr
+    definitions.ApiStatusCategoryAttr
     definitions.NativeAttr
     definitions.ScalaInlineClass
     definitions.ScalaNoInlineClass

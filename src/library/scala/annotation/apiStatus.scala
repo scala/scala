@@ -66,6 +66,33 @@ import scala.annotation.meta._
  * Using `-Wconf:cat=api-may-change&origin=foo\..*:silent` option, the user of the library can opt out of
  * the `api-may-change` warnings afterwards.
  *
+ * ==Defining a custom status annotation==
+ * Instead of directly using `@apiStatus` we can create a specific status annotation by extending `apiStatus`.
+ * However, due to the information available to the compiler, the default values for `message`, `category`, or
+ * `defaultAction` can be specified through the corresponding meta-annotations.
+ *
+ * {{{
+ * import scala.annotation.{ apiStatus, apiStatusCategory, apiStatusDefaultAction }
+ * import scala.annotation.meta._
+ *
+ * @apiStatusCategory(apiStatus.Category.ApiMayChange)
+ * @apiStatusDefaultAction(apiStatus.Action.Warning)
+ * @companionClass @companionMethod
+ * final class apiMayChange(
+ *   message: String,
+ *   since: String = "",
+ * ) extends apiStatus(message, since = since)
+ * }}}
+ *
+ * This can be used as follows:
+ *
+ * {{{
+ * @apiMayChange("should DSL is incubating, and future compatibility is not guaranteed")
+ * implicit class ShouldDSL(s: String) {
+ *   def should(o: String): Unit = ()
+ * }
+ * }}}
+ *
  * @param  message the advisory to print during compilation
  * @param  category a string identifying the categorization of the restriction
  * @param  since a string identifying the first version in which the status is applied
@@ -77,9 +104,10 @@ import scala.annotation.meta._
 @getter @setter @beanGetter @beanSetter @companionClass @companionMethod
 class apiStatus(
   message: String,
-  category: String,
+  category: String = apiStatus.Category.Unspecified,
   since: String = "",
-  defaultAction: String = apiStatus.Action.Warning) extends scala.annotation.StaticAnnotation
+  defaultAction: String = apiStatus.Action.Warning,
+) extends scala.annotation.StaticAnnotation
 
 object apiStatus {
   object Action {
@@ -96,5 +124,21 @@ object apiStatus {
     final val InternalOnly = "internal-only"
     final val ApiMayChange = "api-may-change"
     final val Mistake      = "mistake"
+    final val Unspecified  = "unspecified"
   }
 }
+
+/**
+ * Consult the documentation in [[scala.annotation.apiStatus]].
+ */
+final class apiStatusMessage(message: String) extends scala.annotation.StaticAnnotation
+
+/**
+ * Consult the documentation in [[scala.annotation.apiStatus]].
+ */
+final class apiStatusDefaultAction(defaultAction: String) extends scala.annotation.StaticAnnotation
+
+/**
+ * Consult the documentation in [[scala.annotation.apiStatus]].
+ */
+final class apiStatusCategory(category: String) extends scala.annotation.StaticAnnotation

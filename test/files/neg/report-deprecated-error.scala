@@ -1,4 +1,5 @@
-import scala.annotation.apiStatus
+import scala.annotation.{ apiStatus, apiStatusCategory, apiStatusDefaultAction }
+import scala.annotation.meta._
 
 package foo {
   object syntax {
@@ -10,15 +11,22 @@ package foo {
     )
     def <<=() = ???
 
-    @apiStatus(
-      "should DSL is incubating, and future compatibility is not guaranteed",
-      category = apiStatus.Category.ApiMayChange,
-      since = "foo-lib 1.0",
-    )
+    @apiMayChange("should DSL is incubating, and future compatibility is not guaranteed")
     implicit class ShouldDSL(s: String) {
       def should(o: String): Unit = ()
     }
   }
+
+  /**
+   * Demo of custom API status annotation.
+   */
+  @apiStatusCategory(apiStatus.Category.ApiMayChange)
+  @apiStatusDefaultAction(apiStatus.Action.Warning)
+  @companionClass @companionMethod
+  final class apiMayChange(
+    message: String,
+    since: String = "",
+  ) extends apiStatus(message, since = since)
 }
 
 object Test1 {

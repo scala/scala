@@ -914,10 +914,17 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def deprecatedOverridingVersion
                                = getAnnotation(DeprecatedOverridingAttr) flatMap (_ stringArg 1)
     def isApiStatus            = hasAnnotation(ApiStatusAttr)
-    def apiStatusMessage       = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 0)
-    def apiStatusCategory      = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 1)
-    def apiStatusVersion       = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 2)
-    def apiStatusDefaultAction = getAnnotation(ApiStatusAttr) flatMap (_ stringArg 3)
+    def apiStatusMessage       = apiStatusField(TermName("message"), Some(ApiStatusMessageAttr))
+    def apiStatusVersion       = apiStatusField(TermName("since"), None)
+    def apiStatusDefaultAction = apiStatusField(TermName("defaultAction"), Some(ApiStatusDefaultActionAttr))
+    def apiStatusCategory      = apiStatusField(TermName("category"), Some(ApiStatusCategoryAttr))
+    private[this] def apiStatusField(name: TermName, metaField: Option[Symbol]): Option[String] =
+      getAnnotation(ApiStatusAttr) flatMap { attr =>
+        val ctor = attr.atp.decl(nme.CONSTRUCTOR)
+        val idx = ctor.paramss.flatten indexWhere { _.name == name }
+        if (idx >= 0) attr.stringArg(idx)
+        else metaField.flatMap(m =>  attr.atp.typeSymbol.getAnnotation(m).flatMap(_.stringArg(0)))
+      }
 
     // !!! when annotation arguments are not literal strings, but any sort of
     // assembly of strings, there is a fair chance they will turn up here not as
