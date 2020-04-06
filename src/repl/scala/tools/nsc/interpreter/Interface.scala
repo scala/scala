@@ -322,4 +322,4 @@ trait PresentationCompilationResult {
   def candidates(tabCount: Int): (Int, List[String])
 }
 
-case class TokenData(token: Int, start: Int, end: Int)
+case class TokenData(token: Int, start: Int, end: Int, isIdentifier: Boolean)

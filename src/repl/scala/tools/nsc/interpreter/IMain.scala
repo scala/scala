@@ -465,7 +465,10 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
   }
 
   // parseStats, returning status but no trees
-  def parseString(line: String): Result = parse(line).fold(e => e, _ => Success)
+  def parseString(line: String): Result =
+    reporter.suppressOutput {
+      parse(line).fold(e => e, _ => Success)
+    }
 
   def tokenize(line: String): List[TokenData] = {
     import collection.mutable.ListBuffer
@@ -479,8 +482,9 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
       u.nextToken()
     }
     b += u.lastOffset
+    import scala.tools.nsc.ast.parser.Tokens.isIdentifier
     b.drop(1).grouped(3).flatMap(triple => triple.toList match {
-      case List(token, start, end) => Some(TokenData(token, start, end))
+      case List(token, start, end) => Some(TokenData(token, start, end, isIdentifier(token)))
       case _ => println(s"Skipping token ${scala.runtime.ScalaRunTime.stringOf(triple)}") ; None
     }).toList
   }

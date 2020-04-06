@@ -35,8 +35,6 @@ class SimpleReader(in: BufferedReader, out: JPrintWriter, val completion: Comple
     input
   }
 
-  protected def readOneKey(prompt: String) = throw new IllegalStateException("No char-based input in SimpleReader")
-
   protected def readOneLine(): String = in.readLine()
   protected def echo(s: String): Unit = if (interactive) {
     out.print(s)

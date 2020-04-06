@@ -32,7 +32,6 @@ class Reader private (
     terminal: Terminal) extends shell.InteractiveReader {
   override val history: shell.History = new HistoryAdaptor(reader.getHistory)
   override def interactive: Boolean = true
-  protected def readOneKey(prompt: String): Int = ???
   protected def readOneLine(prompt: String): String = {
     try {
       reader.readLine(prompt)
@@ -40,9 +39,16 @@ class Reader private (
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
     }
   }
-  override def redrawLine(): Unit = ???
-  override def reset(): Unit = accumulator.reset()
+  def redrawLine(): Unit = ???
+  def reset(): Unit = accumulator.reset()
   override def close(): Unit = terminal.close()
+
+  override def withSecondaryPrompt[T](prompt: String)(body: => T): T = {
+    val oldPrompt = reader.getVariable(LineReader.SECONDARY_PROMPT_PATTERN)
+    reader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, prompt)
+    try body
+    finally reader.setVariable(LineReader.SECONDARY_PROMPT_PATTERN, oldPrompt)
+  }
 }
 
 object Reader {
@@ -148,13 +154,14 @@ object Reader {
     }
     def tokenize(line: String, cursor: Int): ScalaParsedLine = {
       val tokens = repl.tokenize(line)
-      //println(s"Got ${tokens.size} tokens")
-      if (tokens.isEmpty) ScalaParsedLine(line, cursor, 0, 0, List(TokenData(0,0,0)))
+      if (tokens.isEmpty) ScalaParsedLine(line, cursor, 0, 0, Nil)
       else {
         val current = tokens.find(t => t.start <= cursor && cursor <= t.end)
         val (wordCursor, wordIndex) = current match {
-          case Some(t) => (cursor - t.start, tokens.indexOf(t))
-          case _ => (tokens.last.end - tokens.last.start, tokens.size - 1)
+          case Some(t) if t.isIdentifier =>
+            (cursor - t.start, tokens.indexOf(t))
+          case _ =>
+            (0, -1)
         }
         ScalaParsedLine(line, cursor, wordCursor, wordIndex, tokens)
       }
@@ -172,25 +179,26 @@ object Reader {
    * @param line the line
    */
   case class ScalaParsedLine(line: String, cursor: Int, wordCursor: Int, wordIndex: Int, tokens: List[TokenData]) extends CompletingParsedLine {
-    require(wordIndex < tokens.size, s"wordIndex $wordIndex out of range ${tokens.size}")
-    require(wordCursor <= tokens(wordIndex).end - tokens(wordIndex).start, s"wordCursor $wordCursor should be in range ${tokens(wordIndex)}")
+    require(wordIndex <= tokens.size,
+      s"wordIndex $wordIndex out of range ${tokens.size}")
+    require(wordIndex == -1 || wordCursor == 0 || wordCursor <= tokens(wordIndex).end - tokens(wordIndex).start,
+      s"wordCursor $wordCursor should be in range ${tokens(wordIndex)}")
     // Members declared in org.jline.reader.CompletingParsedLine.
     // This is where backticks could be added, for example.
     def escape(candidate: CharSequence, complete: Boolean): CharSequence = candidate
     def rawWordCursor: Int = wordCursor
     def rawWordLength: Int = word.length
-
-    // Members declared in org.jline.reader.ParsedLine
-    //def cursor(): Int = ???
-    //def line(): String = ???
-    def word: String = {
-      val t = tokens(wordIndex)
-      line.substring(t.start, t.end)
+    def word: String =
+      if (wordIndex == -1 || wordIndex == tokens.size)
+        ""
+      else {
+        val t = tokens(wordIndex)
+        line.substring(t.start, t.end)
+      }
+    def words: JList[String] = {
+      import scala.jdk.CollectionConverters._
+      tokens.map(t => line.substring(t.start, t.end)).asJava
     }
-    //def wordCursor: Int = 0  // offset in current word
-    //def wordIndex: Int = 0   // index of current word in tokens
-    import scala.jdk.CollectionConverters._
-    def words: JList[String] = tokens.map(t => line.substring(t.start, t.end)).asJava
   }
 
   private def initLogging(): Unit = {
@@ -226,8 +234,24 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
       new Candidate(value, displayed, group, descr, suffix, key, complete)
     }
     val result = complete(parsedLine.line, parsedLine.cursor)
-    //Console.err.println(s"completing $parsedLine to ${result.candidates}")
-    for (s <- result.candidates) newCandidates.add(candidateForResult(s))
+    result.candidates match {
+      // the presence of the empty string here is a signal that the symbol
+      // is already complete and so instead of completing, we want to show
+      // the user the method signature. there are various JLine 3 features
+      // one might use to do this instead; sticking to basics for now
+      case "" :: defStrings if defStrings.nonEmpty =>
+        // specifics here are cargo-culted from Ammonite
+        lineReader.getTerminal.writer.println()
+        for (s <- defStrings)
+          lineReader.getTerminal.writer.println(s)
+        lineReader.callWidget(LineReader.REDRAW_LINE)
+        lineReader.callWidget(LineReader.REDISPLAY)
+        lineReader.getTerminal.flush()
+      // normal completion
+      case cs =>
+        for (s <- result.candidates)
+          newCandidates.add(candidateForResult(s))
+    }
   }
 }
 

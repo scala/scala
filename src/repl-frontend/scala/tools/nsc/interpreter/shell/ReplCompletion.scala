@@ -22,17 +22,17 @@ class ReplCompletion(intp: Repl, val accumulator: Accumulator = new Accumulator)
   import ReplCompletion._
 
   def complete(buffer: String, cursor: Int): CompletionResult = {
-      // special case for:
-      //
-      // scala> 1
-      // scala> .toInt
-      val bufferWithVar =
-        if (Parsed.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
-        else buffer
+    // special case for:
+    //
+    // scala> 1
+    // scala> .toInt
+    val bufferWithVar =
+      if (Parsed.looksLikeInvocation(buffer)) intp.mostRecentVar + buffer
+      else buffer
 
-      val bufferWithMultiLine = accumulator.toString + bufferWithVar
-      val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
-      codeCompletion(bufferWithMultiLine, cursor1)
+    val bufferWithMultiLine = accumulator.toString + bufferWithVar
+    val cursor1 = cursor + (bufferWithMultiLine.length - buffer.length)
+    codeCompletion(bufferWithMultiLine, cursor1)
   }
 
   private var lastRequest = NoRequest

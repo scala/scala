@@ -1,0 +1,8 @@
+
+scala> "foobar"
+val res0: String = foobar
+
+scala> .size
+val res1: Int = 6
+
+scala> :quit
