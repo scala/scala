@@ -320,7 +320,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
   }
   private val macroImplBindingCache = perRunCaches.newAnyRefMap[Symbol, Option[MacroImplBinding]]()
 
-  def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectApplied(expandee).core.symbol)
+  def isBlackbox(expandee: Tree): Boolean = isBlackbox(dissectCore(expandee).symbol)
   def isBlackbox(macroDef: Symbol): Boolean = pluginsIsBlackbox(macroDef)
 
   /** Default implementation of `isBlackbox`.
