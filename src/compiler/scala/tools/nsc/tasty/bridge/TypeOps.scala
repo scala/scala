@@ -153,11 +153,6 @@ trait TypeOps { self: TastyUniverse =>
   def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type =
     prefixedRef(pre, namedMemberOfType(space, tname, selectingTerm))
 
-  def constructorOfPrefix(pre: Type)(implicit ctx: Context): Type = {
-    val ctor = constructorOfType(pre)
-    normaliseConstructorRef(ctor).tap(tpe => ctx.log(s"selected ${showSym(ctor)} : $tpe"))
-  }
-
   def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
     case res                 => res

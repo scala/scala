@@ -154,4 +154,12 @@ sealed abstract class TastyName extends Product with Serializable { self =>
     case _                        => Signature.NotAMethod
   }
 
+  final def isSignedConstructor = self match {
+    case SignedName(TastyName.Constructor, sig) if isMethodSignature(sig) => true
+    case _                                                                => false
+  }
+
+  /** Guard against API change to SignedName */
+  @inline private final def isMethodSignature(sig: Signature.MethodSignature[ErasedTypeRef]): true = true
+
 }

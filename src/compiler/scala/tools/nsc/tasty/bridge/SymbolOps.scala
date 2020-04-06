@@ -42,11 +42,6 @@ trait SymbolOps { self: TastyUniverse =>
     else
       termParamss
 
-  def constructorOfType(space: Type): Symbol =
-    space.member(nme.CONSTRUCTOR).asTerm.alternatives.find(_.isInstanceOf[MethodSymbol]).getOrElse(
-      typeError(s"${space.typeSymbol} does not have a constructor")
-    )
-
   def namedMemberOfType(space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Symbol = {
     val selector = encodeTastyName(tname, selectingTerm)
     tname.signature match {

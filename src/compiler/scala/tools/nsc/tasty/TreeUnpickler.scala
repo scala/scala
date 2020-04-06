@@ -1,7 +1,6 @@
 package scala.tools.nsc.tasty
 
 import TastyRefs._
-import TastyName.SignedName
 
 import scala.annotation.switch
 import scala.collection.mutable
@@ -25,7 +24,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import MaybeCycle._
   import TastyFlags._
   import TastyModes._
-  import Signature._
 
   @inline
   final protected def assertTasty(cond: Boolean, msg: => String): Unit =
@@ -1246,11 +1244,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
 
-      def completeSelectionParent(name: TastyName)(implicit ctx: Context): Type = name match {
-        case SignedName(TastyName.Constructor, _: MethodSignature[_]) =>
-          constructorOfPrefix(readParentFromTerm())(ctx.selectionCtx(name))
-        case _ =>
-          throw new AssertionError(s"Parent of ${ctx.owner} is not a constructor.")
+      def completeSelectionParent(name: TastyName)(implicit ctx: Context): Type = {
+        assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
+        readParentFromTerm() // just need the type of the parent
       }
 
       def readSimpleTermAsType(): Type = tag match {
