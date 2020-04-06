@@ -11,7 +11,15 @@ trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import FlagSets._
 
-  @inline final def unsupportedError[T](noun: String): T = throw new UnsupportedError(noun)
+  @inline final def unsupportedTermTreeError[T](noun: String)(implicit ctx: Context): T =
+    unsupportedError(
+      if (ctx.mode.is(ReadAnnotation)) s"$noun in an annotation; note that complex trees are not yet supported for Annotations"
+      else noun
+    )
+
+  @inline final def unsupportedError[T](noun: String): T = {
+    throw new UnsupportedError(noun)
+  }
 
   /** A lazy carrier of a partially complete error message. Should be caught within the tasty reader and transformed to
     * throw a TypeError by calling `unsupportedInScopeError`, which inserts `noun` into a larger message.

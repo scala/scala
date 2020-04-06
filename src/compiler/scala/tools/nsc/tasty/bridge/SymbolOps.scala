@@ -63,7 +63,7 @@ trait SymbolOps { self: TastyUniverse =>
     } else {
       val kind = if (name.isTermName) "term" else "type"
       def addendum(name: String) =
-        if (ctx.mode.is(InParents)) s"$kind in parents of ${if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner}: $name"
+        if (ctx.mode.is(ReadParents)) s"$kind in parents of ${if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner}: $name"
         else if (ctx.owner.isClass) s"$kind required by a member of ${ctx.owner}: $name"
         else s"$kind $name while unpickling ${ctx.owner}"
       val msg =

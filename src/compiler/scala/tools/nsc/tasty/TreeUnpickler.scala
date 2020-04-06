@@ -375,7 +375,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 typeRef(readVariances(lo))
               else TypeBounds.bounded(lo, readVariances(readType()))
             case ANNOTATEDtype =>
-              mkAnnotatedType(readType(), mkAnnotation(readTerm()))
+              mkAnnotatedType(readType(), mkAnnotation(readTerm()(ctx.addMode(ReadAnnotation))))
             case ANDtype =>
               mkIntersectionType(readType(), readType())
             case ORtype =>
@@ -906,7 +906,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       // ** PARENTS **
       ctx.log(s"Template: adding parents of $cls")
       val parents = {
-        val parentCtx = ctx.withOwner(localDummy).addMode(InParents)
+        val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
         collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
           nextUnsharedTag match {
             case APPLY | TYPEAPPLY | BLOCK => readParentFromTerm()(parentCtx)
@@ -959,9 +959,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case TYPEDEF | VALDEF | DEFDEF =>
         readIndexedMember()
       case IMPORT =>
-        unsupportedError("IMPORT in expression")
+        unsupportedTermTreeError("import statement")
       case PACKAGE =>
-        unsupportedError("PACKAGE in expression")
+        unsupportedTermTreeError("package statement")
       case _ =>
         skipTree() // readTerm()(ctx.withOwner(exprOwner))
         NoCycle(at = NoAddr)
@@ -1080,22 +1080,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val exprReader = fork
               skipTree()
               until(end)(skipTree()) //val stats = readStats(ctx.owner, end)
-              val expr = exprReader.readTerm()
-              expr//Block(stats, expr).setType(expr.tpe)
-//            case INLINED =>
-//              val exprReader = fork
-//              skipTree()
-//              def maybeCall = nextUnsharedTag match {
-//                case VALDEF | DEFDEF => EmptyTree
-//                case _ => readTerm()
-//              }
-//              val call = ifBefore(end)(maybeCall, EmptyTree)
-//              val bindings = readStats(ctx.owner, end).asInstanceOf[List[ValOrDefDef]]
-//              val expansion = exprReader.readTerm() // need bindings in scope, so needs to be read before
-//              Inlined(call, bindings, expansion)
+              exprReader.readTerm()
             case IF =>
               if (nextByte === INLINE) {
-                unsupportedError("inline if")
+                unsupportedTermTreeError("inline if")
                 // readByte()
                 // InlineIf(readTerm(), readTerm(), readTerm())
               }
@@ -1106,7 +1094,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 If(cond, thenp, elsep).setType(lub(thenp.tpe, elsep.tpe))
               }
             case LAMBDA =>
-              unsupportedError("LAMBDA")
+              unsupportedTermTreeError("anonymous function literal")
               // val meth = readTerm()
               // val tpt = ifBefore(end)(readTpt(), emptyTree)
               // Closure(Nil, meth, tpt)
@@ -1114,12 +1102,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nextByte === IMPLICIT) {
                 readByte()
                 readCases(end) //InlineMatch(EmptyTree, readCases(end))
-                unsupportedError("implicit match")
+                unsupportedTermTreeError("implicit match")
               }
               else if (nextByte === INLINE) {
                 readByte()
                 readTerm(); readCases(end) // InlineMatch(readTerm(), readCases(end))
-                unsupportedError("inline match")
+                unsupportedTermTreeError("inline match")
               }
               else {
                 val sel = readTerm()
@@ -1183,7 +1171,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               }
             case ANNOTATEDtpt =>
               val tpt = readTpt()
-              val annot = readTerm()
+              val annot = readTerm()(ctx.addMode(ReadAnnotation))
               defn.repeatedAnnotationClass match {
                 case Some(repeated)
                 if annot.tpe.typeSymbol === repeated
@@ -1296,17 +1284,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       CaseDef(pat, guard, rhs).setType(rhs.tpe) //setSpan(start, CaseDef(pat, guard, rhs))
     }
 
-    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => T = {
+    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Context => T = {
       val localReader = fork
       goto(end)
-      owner => readWith(localReader, owner, ctx.mode, ctx.source, op)
+      owner => ctx0 => readWith(localReader, owner, ctx.mode | ReadAnnotation , ctx.source, op)(ctx0)
     }
 
   }
 
   def readWith[T <: AnyRef](
     reader: TreeReader,
-    owner: Symbol, mode: TastyMode,
+    owner: Symbol,
+    mode: TastyMode,
     source: AbstractFile,
     op: TreeReader => Context => T)(
     implicit ctx: Context

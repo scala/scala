@@ -2,6 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.TastyModes._
 
 import scala.tools.nsc.tasty._
 import scala.reflect.internal.Variance
@@ -75,8 +76,13 @@ trait TypeOps { self: TastyUniverse =>
     val sym =
       if (ref.isModule) ctx.loadingMirror.getModuleIfDefined(ref.qualifiedName)
       else ctx.loadingMirror.getClassIfDefined(ref.qualifiedName)
-    if (!isSymbol(sym)) // TODO [tasty]: add mode to Context to track if in an annotation, then addendum can include symbol of annot
-      typeError(s"could not find ${if (ref.isModule) "object" else "class"} for ${ref.qualifiedName}; perhaps it is missing from the classpath")
+    if (!isSymbol(sym)) {
+      val kind = if (ref.isModule) "object" else "class"
+      val addendum = if (ctx.mode.is(ReadAnnotation)) s" whilst reading annotation of ${ctx.owner}" else ""
+      val msg =
+        s"could not find $kind ${ref.qualifiedName}$addendum; perhaps it is missing from the classpath."
+      typeError(msg)
+    }
     defn.arrayType(ref.arrayDims, sym.tpe.erasure)
   }
 

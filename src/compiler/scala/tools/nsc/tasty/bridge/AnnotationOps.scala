@@ -6,10 +6,10 @@ trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object Annotation {
-    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: => Tree)(implicit ctx: Context): Annotation =
+    def deferredSymAndTree(annotee: Symbol)(symf: => Symbol)(tree: Context => Tree)(implicit ctx: Context): Annotation =
       new symbolTable.LazyAnnotationInfo({
         val annotSym = symf
-        val annotTree = tree
+        val annotTree = tree(ctx)
         val isChild = defn.childAnnotationClass.exists(annotSym === _)
         ctx.log(s"annotation of $annotee = $annotTree")
         if (isChild) u.AnnotationInfo(annotTree.tpe, Nil, Nil)
