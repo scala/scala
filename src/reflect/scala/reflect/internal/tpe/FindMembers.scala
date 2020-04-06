@@ -34,26 +34,9 @@ trait FindMembers {
       this.excludedFlags = excludedFlags
       this.requiredFlags = requiredFlags
       initBaseClasses = tpe.baseClasses
-      _selectorClass = null
       _self = null
       _memberTypeHiCache = null
       _memberTypeHiCacheSym = null
-    }
-
-    // The first base class, or the symbol of the ThisType
-    // e.g in:
-    // trait T { self: C => }
-    //
-    // The selector class of `T.this.type` is `T`, and *not* the first base class, `C`.
-    private[this] var _selectorClass: Symbol = null
-    private def selectorClass: Symbol = {
-      if (_selectorClass eq null) {
-        _selectorClass = tpe match {
-          case tt: ThisType => tt.sym // scala/bug#7507 the first base class is not necessarily the selector class.
-          case _            => initBaseClasses.head
-        }
-      }
-      _selectorClass
     }
 
     // Cache for the narrowed type of `tp` (in `tp.findMember`).
@@ -77,9 +60,21 @@ trait FindMembers {
 
     // SLS 5.1.3 First, a concrete definition always overrides an abstract definition
     private def searchConcreteThenDeferred: T = {
-      val deferredSeen = walkBaseClasses(requiredFlags, excludedFlags | DEFERRED)
+      // The first base class, or the symbol of the ThisType
+      // e.g in:
+      // trait T { self: C => }
+      //
+      // The selector class of `T.this.type` is `T`, and *not* the first base class, `C`.
+      val selectorClass = tpe match {
+        case tt: ThisType => tt.sym // scala/bug#7507 the first base class is not necessarily the selector class.
+        case _            => initBaseClasses match {
+          case Nil => NoSymbol // tpe might have been NoPrefix
+          case xs => xs.head
+        }
+      }
+      val deferredSeen = walkBaseClasses(selectorClass, requiredFlags, excludedFlags | DEFERRED)
       if (deferredSeen) // OPT: the `if` avoids a second pass if the first pass didn't spot any candidates.
-        walkBaseClasses(requiredFlags | DEFERRED, excludedFlags & ~(DEFERRED.toLong))
+        walkBaseClasses(selectorClass, requiredFlags | DEFERRED, excludedFlags & ~(DEFERRED.toLong))
       result
     }
 
@@ -91,7 +86,7 @@ trait FindMembers {
      * @return if a potential deferred member was seen on the first pass that calls for a second pass,
                and `excluded & DEFERRED != 0L`
      */
-    private def walkBaseClasses(required: Long, excluded: Long): Boolean = {
+    private def walkBaseClasses(selectorClass: Symbol, required: Long, excluded: Long): Boolean = {
       var bcs = initBaseClasses
 
       // Have we seen a candidate deferred member?
@@ -117,7 +112,7 @@ trait FindMembers {
           if (meetsRequirements) {
             val excl: Long = flags & excluded
             val isExcluded: Boolean = excl != 0L
-            if (!isExcluded && isPotentialMember(sym, flags, currentBaseClass, seenFirstNonRefinementClass, refinementClasses)) {
+            if (!isExcluded && isPotentialMember(sym, flags, selectorClass, currentBaseClass, seenFirstNonRefinementClass, refinementClasses)) {
               if (shortCircuit(sym)) return false
               else addMemberIfNew(sym)
             } else if (excl == DEFERRED) {
@@ -153,7 +148,7 @@ trait FindMembers {
     //
     // Q. When does a potential member fail to be an actual member?
     // A. if it is subsumed by an member in a subclass.
-    private def isPotentialMember(sym: Symbol, flags: Long, owner: Symbol,
+    private def isPotentialMember(sym: Symbol, flags: Long, selectorClass: Symbol, owner: Symbol,
                                   seenFirstNonRefinementClass: Boolean, refinementClasses: List[Symbol]): Boolean = {
       // conservatively (performance wise) doing this with flags masks rather than `sym.isPrivate`
       // to avoid multiple calls to `Symbol#flags`.
@@ -165,11 +160,11 @@ trait FindMembers {
           // private[this] only a member from within the selector class.
           // (Optimization only? Does the spec back this up?)
         !isPrivateLocal && ( !seenFirstNonRefinementClass ||
-          refinementClasses.exists(_.info.parents.exists(_.typeSymbol == owner))
+          refinementClasses.exists(_.info.parents.exists(_.typeSymbol eq owner))
         )
 
-      (!sym.isClassConstructor || owner == initBaseClasses.head) &&
-        (!isPrivate || owner == selectorClass || admitPrivate)
+      (!sym.isClassConstructor || (owner eq initBaseClasses.head)) &&
+        (!isPrivate || (owner eq selectorClass) || admitPrivate)
     }
 
     // True unless the already-found member of type `memberType` matches the candidate symbol `other`.
