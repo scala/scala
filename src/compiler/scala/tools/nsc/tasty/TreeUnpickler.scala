@@ -902,9 +902,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       ctx.log(s"Template: adding parents of $cls")
       val parents = {
         val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
+        val parentWithOuter = parentCtx.addMode(OuterTerm)
         collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
           nextUnsharedTag match {
-            case APPLY | TYPEAPPLY | BLOCK => readParentFromTerm()(parentCtx)
+            case APPLY | TYPEAPPLY | BLOCK => readTerm()(parentWithOuter).tpe
             case _ => readTpt()(parentCtx).tpe
           }
         }
@@ -990,6 +991,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       ctx.log(s"reading term ${astTagToString(tag)} at $start")
 
+      def inParentCtor = ctx.mode.is(ReadParents | OuterTerm)
+
       def readPathTerm(): Tree = {
         goto(start)
         readType() match {
@@ -1012,6 +1015,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         Select(qual, encodeTastyName(name, isTerm)).setType(namedMemberOfPrefix(qualType, name, isTerm)(localCtx))
       }
 
+      def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
+        assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
+        readTerm() // just need the type of the parent
+      }
+
       def readSimpleTerm(): Tree = tag match {
         case SHAREDterm =>
           forkAt(readAddr()).readTerm()
@@ -1020,7 +1028,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case IDENTtpt =>
           Ident(encodeTastyNameAsType(readTastyName())).setType(readType())
         case SELECT =>
-          completeSelect(readTastyName(), isTerm = true)
+          if (inParentCtor) completeSelectionParent(readTastyName())
+          else completeSelect(readTastyName(), isTerm = true)
         case SELECTtpt =>
           completeSelect(readTastyName(), isTerm = false)
         case QUALTHIS =>
@@ -1057,12 +1066,24 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               Super(qual, mixId.name.toTypeName).setType(mkSuperType(qual.tpe, owntype))
             case APPLY =>
               val fn = readTerm()
-              val args = until(end)(readTerm())
-              Apply(fn, args).setType(fn.tpe.dealiasWiden.finalResultType)
+              if (inParentCtor) {
+                until(end)(skipTree())
+                TypeTree(fn.tpe.dealiasWiden.finalResultType)
+              } else {
+                Apply(fn, until(end)(readTerm())).setType(fn.tpe.dealiasWiden.finalResultType)
+              }
             case TYPEAPPLY =>
+              def resultTpe(term: Tree, args: List[Tree]): Type = {
+                val tycon = term.tpe
+                tycon.resultType.substituteTypes(tycon.typeParams, args.map(_.tpe))
+              }
               val term = readTerm()
               val args = until(end)(readTpt())
-              TypeApply(term, args).setType(term.tpe.resultType.substituteTypes(term.tpe.typeParams, args.map(_.tpe)))
+              if (inParentCtor) {
+                TypeTree(resultTpe(term, args))
+              } else {
+                TypeApply(term, args).setType(resultTpe(term, args))
+              }
             case TYPED =>
               val expr = readTerm()
               val tpt = readTpt()
@@ -1122,8 +1143,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val alias = if (currentAddr == end) untpd.EmptyTree else readTpt()
               if (alias != untpd.EmptyTree) alias // only for opaque type alias
               else TypeBoundsTree(lo, hi).setType(mkTypeBounds(lo.tpe, hi.tpe))
+            case BLOCK =>
+              if (inParentCtor) {
+                val exprReader = fork
+                skipTree()
+                until(end)(skipTree()) //val stats = readStats(ctx.owner, end)
+                exprReader.readTerm()
+              }
+              else unsupportedTermTreeError("block expression")
             case ASSIGN      => unsupportedTermTreeError("assignment expression")
-            case BLOCK       => unsupportedTermTreeError("block expression")
             case LAMBDA      => unsupportedTermTreeError("anonymous function literal")
             case MATCH       => unsupportedTermTreeError("match expression")
             case RETURN      => unsupportedTermTreeError("return statement")
@@ -1149,12 +1177,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case SHAREDterm =>
           readByte()
           forkAt(readAddr()).readTpt()
-        case BLOCK =>
-          // BLOCK appears in type position when quoting a type, but only in the body of a method
+        case BLOCK => // BLOCK appears in type position when quoting a type, but only in the body of a method
           metaprogrammingIsUnsupported
         case HOLE => assertNoMacroHole
         case tag  =>
-          if (isTypeTreeTag(tag)) readTerm()
+          if (isTypeTreeTag(tag)) readTerm()(ctx.retractMode(OuterTerm))
           else {
             val tp = readType()
             if (!(isNoType(tp) || isError(tp))) TypeTree(tp) else untpd.EmptyTree
@@ -1170,46 +1197,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     private def metaprogrammingIsUnsupported[T](implicit ctx: Context): T =
       unsupportedError("Scala 3 metaprogramming features")
-
-    /** TODO [tasty]: SPECIAL OPTIMAL CASE FOR TEMPLATES */
-    def readParentFromTerm()(implicit ctx: Context): Type = {
-      val start = currentAddr
-      val tag = readByte()
-      ctx.log(s"reading parent-term ${astTagToString(tag)} at $start")
-
-      def completeSelectionParent(name: TastyName)(implicit ctx: Context): Type = {
-        assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
-        readParentFromTerm() // just need the type of the parent
-      }
-
-      def readSimpleTermAsType(): Type = tag match {
-        case SELECT => completeSelectionParent(readTastyName())
-        case NEW    => readTpt().tpe
-      }
-
-      def readLengthTermAsType(): Type = {
-        val end = readEnd()
-        val result: Type =
-          (tag: @switch) match {
-            case APPLY =>
-              val fn = readParentFromTerm()
-              until(end)(skipTree())
-              fn.dealiasWiden.finalResultType
-            case TYPEAPPLY =>
-              val fn = readParentFromTerm()
-              val args = until(end)(readTpt())
-              fn.resultType.substituteTypes(fn.typeParams, args.map(_.tpe))
-            case BLOCK =>
-              val exprReader = fork
-              skipTree()
-              until(end)(skipTree()) //val stats = readStats(ctx.owner, end)
-              exprReader.readParentFromTerm()
-          }
-        assert(currentAddr === end, s"$start $currentAddr $end ${astTagToString(tag)}")
-        result
-      }
-      if (tag < firstLengthTreeTag) readSimpleTermAsType() else readLengthTermAsType()
-    }
 
     def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Context => Either[String, T] = {
       val localReader = fork

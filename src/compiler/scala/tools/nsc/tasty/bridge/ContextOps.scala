@@ -179,18 +179,29 @@ trait ContextOps { self: TastyUniverse =>
 
     final def selectionCtx(name: TastyName): Context = this // if (name.isConstructorName) this.addMode(Mode.InSuperCall) else this
     final def fresh(owner: Symbol): FreshContext = new FreshContext(owner, this, this.mode)
-    final def fresh: FreshContext = new FreshContext(this.owner, this, this.mode)
+
+    private def sibling(mode: TastyMode): FreshContext = new FreshContext(this.owner, outerOrThis, mode)
+    private def sibling: FreshContext = sibling(mode)
+
+    private def outerOrThis: Context = this match {
+      case ctx: FreshContext => ctx.outer
+      case ctx               => ctx
+    }
 
     final def addMode(mode: TastyMode): Context =
-      if (!this.mode.is(mode)) new FreshContext(this.owner, this, this.mode | mode)
+      if (!this.mode.is(mode)) sibling(this.mode | mode)
+      else this
+
+    final def retractMode(mode: TastyMode): Context =
+      if (this.mode.isOneOf(mode)) sibling(this.mode &~ mode)
       else this
 
     final def withMode(mode: TastyMode): Context =
-      if (mode != this.mode) new FreshContext(this.owner, this, mode)
+      if (mode != this.mode) sibling(mode)
       else this
 
     final def withSource(source: AbstractFile): Context =
-      if (source `ne` this.source) fresh.atSource(source)
+      if (source `ne` this.source) sibling.atSource(source)
       else this
 
     final def withPhaseNoLater[T](phase: Phase)(op: Context => T): T = u.enteringPhaseNotLaterThan[T](phase)(op(this))
