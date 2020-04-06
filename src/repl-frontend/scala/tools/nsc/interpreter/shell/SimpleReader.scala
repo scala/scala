@@ -42,6 +42,8 @@ class SimpleReader(in: BufferedReader, out: JPrintWriter, val completion: Comple
     out.print(s)
     out.flush()
   }
+
+  override def close(): Unit = ()
 }
 
 object SimpleReader {
