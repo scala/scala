@@ -68,10 +68,10 @@ trait CompilationUnits { global: Global =>
     /** Note: depends now contains toplevel classes.
      *  To get their sourcefiles, you need to dereference with .sourcefile
      */
-    private[this] val _depends = mutable.HashSet[Symbol]()
+    private[this] val _depends = if (settings.YtrackDependencies.value) mutable.HashSet[Symbol]() else null
     @deprecated("Not supported and no longer used by Zinc", "2.12.9")
-    def depends = _depends
-    def registerDependency(symbol: Symbol): Unit = {
+    def depends: mutable.HashSet[Symbol] = if (_depends == null) mutable.HashSet[Symbol]() else _depends
+    def registerDependency(symbol: Symbol): Unit = if (settings.YtrackDependencies.value) {
       // sbt compatibility (scala/bug#6875)
       //
       // imagine we have a file named A.scala, which defines a trait named Foo and a module named Main
