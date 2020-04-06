@@ -1,4 +1,4 @@
-TestIntent_fail.scala:6: error: Unsupported Scala 3 inline method here; found in object Position in package intent.
+TestIntent_fail.scala:6: error: Unsupported Scala 3 macro method here; found in object tastytest.intent.Position.
   apply("3 + 3") {
                  ^
 TestIntent_fail.scala:7: error: could not find implicit value for parameter pos: tastytest.intent.Position

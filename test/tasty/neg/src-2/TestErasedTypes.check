@@ -1,7 +1,7 @@
-TestErasedTypes_fail.scala:6: error: Unsupported Scala 3 erased modifier in refinement of type F; found in class Bar in object ErasedTypes.
+TestErasedTypes_fail.scala:6: error: Unsupported Scala 3 erased modifier in refinement of type F; found in class tastytest.ErasedTypes.Bar.
   def test1 = new Bar[Foo]
                   ^
-TestErasedTypes_fail.scala:7: error: Unsupported Scala 3 erased modifier in refinement of type F; found in class Baz in object ErasedTypes.
+TestErasedTypes_fail.scala:7: error: Unsupported Scala 3 erased modifier in refinement of type F; found in class tastytest.ErasedTypes.Baz.
   def test2 = new Baz[Foo]
                   ^
 2 errors

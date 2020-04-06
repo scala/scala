@@ -62,8 +62,11 @@ trait FlagOps { self: TastyUniverse =>
     def isOneOf(mask: FlagSet): Boolean = getFlag(mask) != 0
   }
 
-  def show(flags: FlagSet): String = u.show(flags)
+  def isEmpty(flags: FlagSet): Boolean = flags == u.NoFlags
+  def emptyFlags: FlagSet = u.NoFlags
+  def emptyTastyFlags: TastyFlagSet = EmptyTastyFlags
 
+  def show(flags: FlagSet): String = u.show(flags)
   def show(flags: TastyFlagSet): String =
     if (!flags) "EmptyTastyFlags"
     else flags.toSingletonSets.map { f =>

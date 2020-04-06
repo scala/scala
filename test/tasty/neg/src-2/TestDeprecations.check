@@ -4,6 +4,7 @@ TestDeprecations_fail.scala:5: warning: method unused in class Old is deprecated
 TestDeprecations_fail.scala:6: warning: method completelyUseless in class Old is deprecated: this is useless
   def test2 = new Deprecations.Old().completelyUseless() // error: completelyUseless is deprecated: this is useless
                                      ^
-error: No warnings can be incurred under -Werror.
+error: Unsupported Scala 3 match expression in an annotation of method matchAnnot; note that complex trees are not yet supported for Annotations; found in method matchAnnot in class tastytest.Deprecations.Old.
+error: Unsupported Scala 3 block expression in an annotation of method classAnnot; note that complex trees are not yet supported for Annotations; found in method classAnnot in class tastytest.Deprecations.Old.
 2 warnings
-1 error
+2 errors

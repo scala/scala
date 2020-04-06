@@ -12,9 +12,12 @@ trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import FlagSets._
 
+  @inline final def noSymbol: Symbol = u.NoSymbol
+  @inline final def isSymbol(sym: Symbol): Boolean = sym ne u.NoSymbol
+
   implicit class SymbolDecorator(sym: Symbol) {
     def completer: TastyLazyType = {
-      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${showRaw(sym.rawInfo)} ")
+      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo: Type)} ")
       sym.rawInfo.asInstanceOf[TastyLazyType]
     }
     def ensureCompleted(): Unit = sym.info

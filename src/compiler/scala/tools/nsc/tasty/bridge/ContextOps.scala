@@ -11,32 +11,71 @@ trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import FlagSets._
 
+  object defn {
+    final val AnyTpe: Type = u.definitions.AnyTpe
+    final val NothingTpe: Type = u.definitions.NothingTpe
+    final val AnyRefTpe: Type = u.definitions.AnyRefTpe
+    final val UnitTpe: Type = u.definitions.UnitTpe
+    final val JavaEnumClass: ClassSymbol = u.definitions.JavaEnumClass
+    final val CompileTimeOnlyAttr: Symbol = u.definitions.CompileTimeOnlyAttr
+    final val ByNameParamClass: ClassSymbol = u.definitions.ByNameParamClass
+    final val ObjectClass: ClassSymbol = u.definitions.ObjectClass
+    final val AnyValClass: ClassSymbol = u.definitions.AnyValClass
+    final val ScalaPackage: ModuleSymbol = u.definitions.ScalaPackage
+    final val TailrecClass: ClassSymbol = u.definitions.TailrecClass
+    final val StaticAnnotationClass: ClassSymbol = u.definitions.StaticAnnotationClass
+    final val SeqClass: ClassSymbol = u.definitions.SeqClass
+    @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
+    @inline final def scalaRepeatedType(arg: Type): Type = u.definitions.scalaRepeatedType(arg)
+    @inline final def repeatedAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Repeated").toOption
+    @inline final def childAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.loadingMirror.getClassIfDefined("scala.annotation.internal.Child").toOption
+    @inline final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => u.definitions.arrayType(acc))
+  }
+
+  def picklerPhase: Phase = u.picklerPhase
+  def namer: Phase = u.findPhaseWithName("namer")
+  def extmethodsPhase: Phase = u.findPhaseWithName("extmethods")
+
+  private def describeOwner(owner: Symbol): String = {
+    val kind =
+      if (owner.is(Param)) {
+        if (owner.isType) "type parameter"
+        else "parameter"
+      }
+      else {
+        owner.kindString
+      }
+    s"$kind ${owner.nameString}"
+  }
+
   @inline final def unsupportedTermTreeError[T](noun: String)(implicit ctx: Context): T =
     unsupportedError(
-      if (ctx.mode.is(ReadAnnotation)) s"$noun in an annotation; note that complex trees are not yet supported for Annotations"
+      if (ctx.mode.is(ReadAnnotation)) s"$noun in an annotation of ${describeOwner(ctx.owner)}; note that complex trees are not yet supported for Annotations"
       else noun
     )
 
-  @inline final def unsupportedError[T](noun: String): T = {
-    throw new UnsupportedError(noun)
+  @inline final def unsupportedError[T](noun: String)(implicit ctx: Context): T = {
+    def location(owner: Symbol): String = {
+      if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
+      else s"${describeOwner(owner)} in ${location(owner.owner)}"
+    }
+    typeError(s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}.")
   }
 
-  /** A lazy carrier of a partially complete error message. Should be caught within the tasty reader and transformed to
-    * throw a TypeError by calling `unsupportedInScopeError`, which inserts `noun` into a larger message.
-    *
-    * @param noun a description of an unsupported feature. To be a part of a larger error message.
-    */
-  final class UnsupportedError private[ContextOps] (val noun: String) extends RuntimeException {
-    /** throws a TypeError with the message that `noun` is an unsupported Scala 3 feature, and the location of the
-     *  current context.
-      */
-    def unsupportedInScopeError[T](implicit ctx: Context): T =
-      typeError(s"Unsupported Scala 3 $noun; found in ${ctx.owner.fullLocationString}.")
-  }
+  @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
+
+  @inline final def assertError[T](msg: String): T =
+    throw new AssertionError(s"assertion failed: ${u.supplementErrorMessage(msg)}")
+
+  @inline final def assert(assertion: Boolean, msg: => Any): Unit =
+    if (!assertion) assertError(String.valueOf(msg))
+
+  @inline final def assert(assertion: Boolean): Unit =
+    if (!assertion) assertError("")
 
   sealed abstract class Context {
 
-    final def inGlobalScope: Boolean = !owner.is(Param)
+    final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
 
@@ -70,14 +109,14 @@ trait ContextOps { self: TastyUniverse =>
     def source: AbstractFile
     def mode: TastyMode
 
-    final def loadingMirror: Mirror = mirrorThatLoaded(owner)
+    final def loadingMirror: Mirror = u.mirrorThatLoaded(owner)
 
     final lazy val classRoot: Symbol = initialContext.topLevelClass
 
     final def newLocalDummy: TermSymbol = owner.newLocalDummy(noPosition)
 
     final def newWildcardSym(info: TypeBounds): Symbol =
-      owner.newTypeParameter(nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
+      owner.newTypeParameter(u.nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
 
     final def newSymbol(owner: Symbol, name: Name, flags: FlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       adjustSymbol(
@@ -153,6 +192,25 @@ trait ContextOps { self: TastyUniverse =>
     final def withSource(source: AbstractFile): Context =
       if (source `ne` this.source) fresh.atSource(source)
       else this
+
+    final def withPhaseNoLater[T](phase: Phase)(op: Context => T): T = u.enteringPhaseNotLaterThan[T](phase)(op(this))
+
+    /** Enter a phase and apply an error handler if the current phase is after the one specified
+      */
+    final def withSafePhaseNoLater[E, T](phase: Phase)(pf: PartialFunction[Throwable, E])(op: Context => T): Either[E, T] =
+      if (u.isAtPhaseAfter(phase)) {
+        try {
+          u.enteringPhaseNotLaterThan(phase)(Right(op(this)))
+        } catch pf andThen (Left(_))
+      } else {
+        Right(op(this))
+      }
+
+    final def currentPhase: Phase = u.phase
+
+    @inline final def mkScope(syms: Symbol*): Scope = u.newScopeWith(syms:_*)
+    def mkScope: Scope = u.newScope
+    def emptyScope: Scope = u.EmptyScope
   }
 
   final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {

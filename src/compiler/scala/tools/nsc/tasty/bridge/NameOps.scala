@@ -10,16 +10,16 @@ trait NameOps { self: TastyUniverse =>
   def isConstructorName(name: Name) = u.nme.isConstructorName(name)
 
   private def encodeAsTermName(tastyName: TastyName): TermName = tastyName match {
-    case Empty          => termNames.EMPTY
+    case Empty          => u.termNames.EMPTY
     case Constructor    => nme.CONSTRUCTOR
     case EmptyPkg       => nme.EMPTY_PACKAGE_NAME
     case RootClass      => nme.ROOT
-    case WildcardName() => nme.WILDCARD
-    case name           => mkTermName(name.encoded)
+    case WildcardName() => u.nme.WILDCARD
+    case name           => u.TermName(name.encoded)
   }
 
   private def encodeAsTypeName(tastyName: TastyName): TypeName = tastyName match {
-    case RepeatedClass => tpnme.REPEATED_PARAM_CLASS_NAME
+    case RepeatedClass => u.tpnme.REPEATED_PARAM_CLASS_NAME
     case name          => encodeAsTermName(name).toTypeName
   }
 
@@ -29,5 +29,15 @@ trait NameOps { self: TastyUniverse =>
   def encodeTastyName(tastyName: TastyName, isTerm: Boolean): Name =
     if (isTerm) encodeTastyNameAsTerm(tastyName)
     else encodeTastyNameAsType(tastyName)
+
+  object nme {
+    final val Or: TastyName.SimpleName = TastyName.SimpleName("|")
+    final val And: TastyName.SimpleName = TastyName.SimpleName("&")
+    final val EMPTY: TermName = u.nme.EMPTY
+    final val CONSTRUCTOR: TermName = u.nme.CONSTRUCTOR
+    final val ROOT: TermName = u.nme.ROOT
+    final val ROOTPKG: TermName = u.nme.ROOTPKG
+    final val EMPTY_PACKAGE_NAME: TermName = u.nme.EMPTY_PACKAGE_NAME
+  }
 
 }

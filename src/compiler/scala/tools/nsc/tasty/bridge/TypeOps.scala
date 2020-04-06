@@ -11,18 +11,73 @@ import scala.util.chaining._
 import scala.collection.mutable
 
 trait TypeOps { self: TastyUniverse =>
-  import self.{symbolTable => u}
+  import self.{symbolTable => u}, u.{internal => ui}
   import FlagSets._
 
-  def mergeableParams(t: Type, u: Type): Boolean =
+  @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
-  def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
-  def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in bounds of ${ctx.owner}")
-  def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
+  @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
+  @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in bounds of ${ctx.owner}")
+  @inline final def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
+
+  @inline final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[u.ConstantType]
+
+  def errorType: Type = u.ErrorType
+  def noType: Type = u.NoType
+  def noPrefix: Type = u.NoPrefix
+
+  @inline final def isError(tpe: Type): Boolean = tpe `eq` u.ErrorType
+  @inline final def isNoType(tpe: Type): Boolean = tpe `eq` u.NoType
+
+  object UnmergablePolyBounds {
+    def unapply(tpe: TypeBounds): Boolean = tpe match {
+      case u.TypeBounds(lo: PolyType, hi: PolyType) => !mergeableParams(lo,hi)
+      case _                                        => false
+    }
+  }
+
+  def emptyTypeBounds: TypeBounds = u.TypeBounds.empty
+
+  @inline final def mkTypeBounds(lo: Type, hi: Type): TypeBounds = u.TypeBounds.apply(lo, hi)
+  @inline final def mkSingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
+  @inline final def mkNullaryMethodType(res: Type): NullaryMethodType = ui.nullaryMethodType(res)
+  @inline final def mkPolyType(params: List[Symbol], res: Type): PolyType = ui.polyType(params, res)
+  @inline final def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): ClassInfoType = ui.classInfoType(parents, decls, sym)
+  @inline final def mkThisType(sym: Symbol): Type = ui.thisType(sym)
+  @inline final def mkConstantType(c: Constant): ConstantType = ui.constantType(c)
+  @inline final def mkIntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
+  @inline final def mkIntersectionType(tps: List[Type]): Type = ui.intersectionType(tps)
+  @inline final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = u.AnnotatedType(annot :: Nil, tpe)
+  @inline final def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): RefinedType = u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
+  @inline final def mkRefinedType(parents: List[Type], clazz: Symbol): RefinedType = mkRefinedTypeWith(parents, clazz, u.newScope)
+  @inline final def mkSuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
+  @inline final def mkLambdaPolyType(typeParams: List[Symbol], resTpe: Type): LambdaPolyType = new LambdaPolyType(typeParams, resTpe)
+  @inline final def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): PolyType = ui.polyType(typeParams, lambdaResultType(ret))
+  def mkRecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+
+  /** The method type corresponding to given parameters and result type */
+  def mkDefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
+    val monotpe = valueParamss.foldRight(resultType)((ts, f) => ui.methodType(ts, f))
+    val exprMonotpe = {
+      if (valueParamss.nonEmpty)
+        monotpe
+      else
+        ui.nullaryMethodType(monotpe)
+    }
+    if (typeParams.nonEmpty)
+      ui.polyType(typeParams, exprMonotpe)
+    else
+      exprMonotpe
+  }
+
+  @inline final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
+    u.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
+
+  @inline final def lub(tpe1: Type, tpe2: Type): Type = u.lub(tpe1 :: tpe2 :: Nil)
 
   def normaliseBounds(bounds: TypeBounds): Type = {
-    val TypeBounds(lo, hi) = bounds
+    val u.TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
       if (mergeableParams(lo, hi)) {
         val nuLo = lo.resultType.upperBound.subst(lo.typeParams, hi.typeParams.map(_.ref))
@@ -31,17 +86,17 @@ trait TypeOps { self: TastyUniverse =>
           sym.owner.rawInfo.members.unlink(sym)
           sym.owner = noSymbol
         }
-        mkPolyType(hi.typeParams, TypeBounds.bounded(nuLo, hi.resultType.upperBound))
+        ui.polyType(hi.typeParams, u.TypeBounds(nuLo, hi.resultType.upperBound))
       }
       else bounds match {
-        case TypeBounds(lo: LambdaPolyType, hi: LambdaPolyType) => TypeBounds.bounded(lo.toNested,hi.toNested)
-        case _                                                  => bounds
+        case u.TypeBounds(lo: LambdaPolyType, hi: LambdaPolyType) => u.TypeBounds(lo.toNested,hi.toNested)
+        case _                                                    => bounds
       }
     }
     else if (hi.isHigherKinded)
-      mkPolyType(hi.typeParams, TypeBounds.bounded(lo.upperBound, hi.resultType.upperBound))
+      ui.polyType(hi.typeParams, u.TypeBounds(lo.upperBound, hi.resultType.upperBound))
     else if (lo.isHigherKinded)
-      mkPolyType(lo.typeParams, TypeBounds.bounded(lo.resultType.upperBound, hi.upperBound))
+      ui.polyType(lo.typeParams, u.TypeBounds(lo.resultType.upperBound, hi.upperBound))
     else
       bounds
   }
@@ -64,7 +119,7 @@ trait TypeOps { self: TastyUniverse =>
       }
       val args1 = args.map(bindWildcards)
       if (syms.isEmpty) typeRefUncurried(tycon, args1)
-      else u.internal.existentialType(syms.toList, typeRefUncurried(tycon, args1))
+      else ui.existentialType(syms.toList, typeRefUncurried(tycon, args1))
     }
     else {
       typeRefUncurried(tycon, args)
@@ -110,7 +165,7 @@ trait TypeOps { self: TastyUniverse =>
    * Ported from dotc
    */
   abstract class TastyLazyType extends u.LazyType with u.FlagAgnosticCompleter {
-    private[this] var myDecls: Scope = emptyScope
+    private[this] var myDecls: Scope = u.EmptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
     private[this] var myTastyFlagSet: TastyFlagSet = emptyTastyFlags
 
@@ -142,14 +197,14 @@ trait TypeOps { self: TastyUniverse =>
       sym.preciseRef(prefix)
     }
     else {
-      mkSingleType(prefix, sym)
+      u.singleType(prefix, sym)
     }
   }
 
   def normaliseConstructorRef(ctor: Symbol): Type = {
     var tpe = ctor.tpe
     val tParams = ctor.owner.typeParams
-    if (tParams.nonEmpty) tpe = mkPolyType(tParams, tpe)
+    if (tParams.nonEmpty) tpe = ui.polyType(tParams, tpe)
     tpe
   }
 
@@ -174,7 +229,7 @@ trait TypeOps { self: TastyUniverse =>
   final class LambdaPolyType(typeParams: List[Symbol], resType: Type) extends PolyType(typeParams, LambdaPolyType.addLower(resType)) {
     def toNested: PolyType = resType match {
       case _: TypeBounds => this
-      case _             => mkPolyType(typeParams, resType)
+      case _             => ui.polyType(typeParams, resType)
     }
     def withVariances(variances: List[Variance]): this.type = {
       typeParams.lazyZip(variances).foreach { (sym, variance) => // TODO [tasty]: should this be cloned instead?
@@ -191,7 +246,7 @@ trait TypeOps { self: TastyUniverse =>
   object LambdaPolyType {
     private def addLower(tpe: Type): TypeBounds = tpe match {
       case tpe: TypeBounds => tpe
-      case tpe             => TypeBounds.upper(tpe)
+      case tpe             => u.TypeBounds.upper(tpe)
     }
   }
 
@@ -203,24 +258,6 @@ trait TypeOps { self: TastyUniverse =>
   def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
     if (sym.name == nme.CONSTRUCTOR) sym.owner.tpe
     else givenTp
-
-  /** The method type corresponding to given parameters and result type */
-  def mkDefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
-    val monotpe = valueParamss.foldRight(resultType)((ts, f) => u.internal.methodType(ts, f))
-    val exprMonotpe = {
-      if (valueParamss.nonEmpty)
-        monotpe
-      else
-        mkNullaryMethodType(monotpe)
-    }
-    if (typeParams.nonEmpty)
-      mkPolyType(typeParams, exprMonotpe)
-    else
-      exprMonotpe
-  }
-
-  def mkLambdaPolyType(typeParams: List[Symbol], resTpe: Type): LambdaPolyType = new LambdaPolyType(typeParams, resTpe)
-  def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): PolyType = mkPolyType(typeParams, lambdaResultType(ret))
 
   type LambdaType = Type with Lambda
   type TypeLambda = LambdaType with TypeLike
@@ -291,14 +328,12 @@ trait TypeOps { self: TastyUniverse =>
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
-  def mkRecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
-
   final class RecType(run: RecType => Type)(implicit ctx: Context) extends Type with Product {
     override val productPrefix = "RecType"
     override val productArity = 2
 
     val refinementClass = ctx.newRefinedClassSymbol(noPosition).setInfo(EmptyRecTypeInfo)
-    val recThis: Type   = mkThisType(refinementClass)
+    val recThis: Type   = ui.thisType(refinementClass)
     val parent: Type    = run(this)
 
     def canEqual(that: Any): Boolean = that.isInstanceOf[RecType]
@@ -345,7 +380,7 @@ trait TypeOps { self: TastyUniverse =>
 
     validateThisLambda()
 
-    def canonical: MethodType = u.internal.methodType(params, resType)
+    def canonical: MethodType = ui.methodType(params, resType)
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[MethodTermLambda]
   }
@@ -397,7 +432,7 @@ trait TypeOps { self: TastyUniverse =>
 
     validateThisLambda()
 
-    def canonical: PolyType = mkPolyType(typeParams, resType)
+    def canonical: PolyType = ui.polyType(typeParams, resType)
 
     override def canEqual(that: Any): Boolean = that.isInstanceOf[PolyTypeLambda]
   }

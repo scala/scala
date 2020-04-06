@@ -1,4 +1,4 @@
-TestHello_fail.scala:4: error: Unsupported Scala 3 inline val msg with non-constant type String; found in object HelloWorld in package helloworld.
+TestHello_fail.scala:4: error: Unsupported Scala 3 inline val msg with non-constant type String; found in object helloworld.HelloWorld.
   val helloworld = HelloWorld.msg
                               ^
 TestHello_fail.scala:6: error: inferred type arguments [List[String]] do not conform to method higherBounded2's type parameter bounds [T <: List[_ <: Int]]
