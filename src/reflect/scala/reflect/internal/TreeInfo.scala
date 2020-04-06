@@ -328,7 +328,7 @@ abstract class TreeInfo {
   /** Is tree a self constructor call this(...)? I.e. a call to a constructor of the
    *  same object?
    */
-  def isSelfConstrCall(tree: Tree): Boolean = dissectApplied(tree).core match {
+  def isSelfConstrCall(tree: Tree): Boolean = dissectCore(tree) match {
     case Ident(nme.CONSTRUCTOR)           => true
     case Select(This(_), nme.CONSTRUCTOR) => true
     case _                                => false
@@ -336,7 +336,7 @@ abstract class TreeInfo {
 
   /** Is tree a super constructor call?
    */
-  def isSuperConstrCall(tree: Tree): Boolean = dissectApplied(tree).core match {
+  def isSuperConstrCall(tree: Tree): Boolean = dissectCore(tree) match {
     case Select(Super(_, _), nme.CONSTRUCTOR) => true
     case _                                    => false
   }
@@ -774,7 +774,7 @@ abstract class TreeInfo {
    *      * targs = Nil
    *      * argss = List(List(arg11, arg12...), List(arg21, arg22, ...))
    */
-  class Applied(val tree: Tree) {
+  final class Applied(val tree: Tree) {
     /** The tree stripped of the possibly nested applications.
      *  The original tree if it's not an application.
      */
@@ -818,7 +818,18 @@ abstract class TreeInfo {
 
   /** Returns a wrapper that knows how to destructure and analyze applications.
    */
-  def dissectApplied(tree: Tree) = new Applied(tree)
+  final def dissectApplied(tree: Tree) = new Applied(tree)
+  /** Equivalent ot disectApplied(tree).core, but more efficient */
+  @scala.annotation.tailrec
+  final def dissectCore(tree: Tree): Tree = tree match {
+    case TypeApply(fun, _) =>
+      dissectCore(fun)
+    case Apply(fun, _) =>
+      dissectCore(fun)
+    case t =>
+      t
+  }
+
 
   /** Destructures applications into important subparts described in `Applied` class,
    *  namely into: core, targs and argss (in the specified order).

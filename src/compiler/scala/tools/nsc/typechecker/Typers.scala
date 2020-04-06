@@ -4295,7 +4295,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         // If tp == NoType, pass only explicit type arguments to applyXXX.  Not used at all
         // here - it is for scala-virtualized, where tp will be passed as an argument (for
         // selection on a staged Struct)
-        def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
+        def matches(t: Tree)          = isDesugaredApply || treeInfo.dissectCore(t) == treeSelection
 
         /* Note that the trees which arrive here are potentially some distance from
          * the trees of direct interest. `cxTree` is some enclosing expression which
