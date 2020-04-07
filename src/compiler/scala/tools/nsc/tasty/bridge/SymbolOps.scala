@@ -20,7 +20,10 @@ trait SymbolOps { self: TastyUniverse =>
       assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo: Type)} ")
       sym.rawInfo.asInstanceOf[TastyLazyType]
     }
-    def ensureCompleted(): Unit = sym.info
+    def ensureCompleted(): Unit = {
+      sym.info
+      sym.annotations.foreach(_.completeInfo())
+    }
     def ref(args: List[Type]): Type = u.appliedType(sym, args)
     def ref: Type = sym.ref(Nil)
     def singleRef: Type = mkSingleType(noPrefix, sym)
@@ -94,7 +97,7 @@ trait SymbolOps { self: TastyUniverse =>
       (tyParamCounts.headOption.getOrElse(0), params)
     }
     def compareSym(sym: Symbol): Boolean = sym match {
-      case sym: MethodSymbol =>
+      case sym: u.MethodSymbol =>
         val params = sym.paramss.flatten
         sym.returnType.erasure =:= sig.result &&
         params.length === argTpes.length &&
