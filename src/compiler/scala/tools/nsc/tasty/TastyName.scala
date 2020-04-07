@@ -15,18 +15,30 @@ object TastyName {
   final case class PrefixName(prefix: SimpleName, qual: TastyName)                            extends TastyName
   final case class TypeName private (base: TastyName)                                         extends TastyName
 
-  final val Empty: SimpleName = SimpleName("")
+  object TypeName {
+    private[TastyName] def apply(base: TastyName): TypeName = base match {
+      case name: TypeName => name
+      case name           => new TypeName(name)
+    }
+  }
+
+  // Separators
   final val PathSep: SimpleName = SimpleName(".")
   final val ExpandedSep: SimpleName = SimpleName("$$")
   final val ExpandPrefixSep: SimpleName = SimpleName("$")
   final val WildcardSep: SimpleName = SimpleName("_$")
   final val InlinePrefix: SimpleName = SimpleName("inline$")
   final val SuperPrefix: SimpleName = SimpleName("super$")
+
+  // TermNames
+  final val Empty: SimpleName = SimpleName("")
   final val Constructor: SimpleName = SimpleName("<init>")
   final val MixinConstructor: SimpleName = SimpleName("$init$")
   final val EmptyPkg: SimpleName = SimpleName("<empty>")
-  final val RootClass: SimpleName = SimpleName("<root>")
-  final val RepeatedClass: SimpleName = SimpleName("<repeated>")
+  final val Root: SimpleName = SimpleName("<root>")
+
+  // TypeNames
+  final val RepeatedClass: TypeName = SimpleName("<repeated>").toTypeName
 
   object WildcardName {
     def unapply(name: TastyName): Boolean = name match {
@@ -126,6 +138,8 @@ sealed abstract class TastyName extends Product with Serializable { self =>
 
   final def isModuleName: Boolean = self.isInstanceOf[ModuleName]
   final def isDefaultName: Boolean = self.isInstanceOf[DefaultName]
+  final def isTypeName: Boolean = self.isInstanceOf[TypeName]
+  final def isTermName: Boolean = !isTypeName
 
   final def asSimpleName: SimpleName = self match {
     case self: SimpleName => self
@@ -144,32 +158,16 @@ sealed abstract class TastyName extends Product with Serializable { self =>
    */
   final def debug: String = DebugEncoder.encode(self)
 
-  final def stripModulePart: TastyName = self match {
-    case ModuleName(name) => name
-    case name             => name
-  }
-
-  final def isTypeName: Boolean = self.isInstanceOf[TypeName]
-  final def isTermName: Boolean = !isTypeName
-
   final def toTermName: TastyName = self match {
-    case TypeName(name) => name.toTermName
+    case TypeName(name) => name
     case name           => name
   }
 
-  final def toTypeName: TypeName = self match {
-    case name: TypeName => name
-    case name           => TypeName(name)
-  }
+  final def toTypeName: TypeName = TypeName(self)
 
   final def stripSignedPart: TastyName = self match {
     case SignedName(pre, _) => pre
     case name               => name
-  }
-
-  final def signature: Signature[ErasedTypeRef] = self match {
-    case SignedName(_, signature) => signature
-    case _                        => Signature.NotAMethod
   }
 
   final def isSignedConstructor = self match {

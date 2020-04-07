@@ -23,6 +23,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   import MaybeCycle._
   import TastyFlags._
   import TastyModes._
+  import TastyName.TypeName
 
   @inline
   final protected def unsupportedWhen(cond: Boolean, msg: => String)(implicit ctx: Context): Unit =
@@ -307,7 +308,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case TERMREFin => selectTerm(readTastyName(), readType(), readType())
-            case TYPEREFin => selectType(readTastyName(), readType(), readType())
+            case TYPEREFin => selectType(readTastyName().toTypeName, readType(), readType())
             case REFINEDtype =>
               val tname  = readTastyName()
               val parent = readType()
@@ -343,7 +344,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case TYPEREFsymbol | TERMREFsymbol => readSymNameRef()
           case TYPEREFpkg => readPackageRef().moduleClass.ref
           case TERMREFpkg => readPackageRef().termRef
-          case TYPEREF => selectType(readTastyName(), readType())
+          case TYPEREF => selectType(readTastyName().toTypeName, readType())
           case TERMREF => selectTerm(readTastyName(), readType())
           case THIS => mkThisType(singletonLike(readType()))
           case RECtype =>
@@ -486,9 +487,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (!tastyFlagSet)
           show(flags)
         else if (isEmpty(givenFlags))
-          show(tastyFlagSet)
+          tastyFlagSet.debug
         else
-          show(flags) + " | " + show(tastyFlagSet)
+          show(flags) + " | " + tastyFlagSet.debug
       }
       def isModuleClass   = flags.is(Module) && isClass
       def isTypeParameter = flags.is(Param) && isTypeTag
@@ -923,12 +924,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         (qual, qual.tpe.asInstanceOf[TypeRef])
       }
 
-      def completeSelect(name: TastyName, isTerm: Boolean)(implicit ctx: Context): Select = {
+      def completeSelectType(name: TypeName)(implicit ctx: Context): Select = completeSelect(name)
+
+      def completeSelect(name: TastyName)(implicit ctx: Context): Select = {
         val localCtx = ctx.selectionCtx(name)
         val qual     = readTerm()(localCtx)
         val qualType = qual.tpe
-        val tname = if (isTerm) name else name.toTypeName
-        tpd.Select(qual, tname)(namedMemberOfPrefix(qualType, name, isTerm)(localCtx))
+        tpd.Select(qual, name)(namedMemberOfPrefix(qualType, name)(localCtx))
       }
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
@@ -942,8 +944,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         case IDENTtpt => tpd.Ident(readTastyName().toTypeName)(readType())
         case SELECT =>
           if (inParentCtor) completeSelectionParent(readTastyName())
-          else completeSelect(readTastyName(), isTerm = true)
-        case SELECTtpt => completeSelect(readTastyName(), isTerm = false)
+          else completeSelect(readTastyName())
+        case SELECTtpt => completeSelectType(readTastyName().toTypeName)
         case QUALTHIS =>
           val (qual, tref) = readQualId()
           tpd.This(qual)(tref)

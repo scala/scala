@@ -161,20 +161,20 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndType extends Type
 
-  def selectType(name: TastyName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
-  def selectType(name: TastyName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
-      if (name === nme.And) AndType
+  def selectType(name: TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
+  def selectType(name: TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
+    if (prefix.typeSymbol === defn.ScalaPackage && ( name === tpnme.And || name === tpnme.Or ) ) {
+      if (name === tpnme.And) AndType
       else unionIsUnsupported
     }
     else {
-      namedMemberOfTypeWithPrefix(prefix, space, name, selectingTerm = false)
+      namedMemberOfTypeWithPrefix(prefix, space, name)
     }
   }
 
   def selectTerm(name: TastyName, prefix: Type)(implicit ctx: Context): Type = selectTerm(name, prefix, prefix)
   def selectTerm(name: TastyName, prefix: Type, space: Type)(implicit ctx: Context): Type =
-    namedMemberOfTypeWithPrefix(prefix, space, name, selectingTerm = true)
+    namedMemberOfTypeWithPrefix(prefix, space, name.toTermName)
 
   def singletonLike(tpe: Type): Symbol = tpe match {
     case u.SingleType(_, sym) => sym
@@ -230,11 +230,11 @@ trait TypeOps { self: TastyUniverse =>
     tpe
   }
 
-  def namedMemberOfPrefix(pre: Type, name: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type =
-    namedMemberOfTypeWithPrefix(pre, pre, name, selectingTerm)
+  def namedMemberOfPrefix(pre: Type, name: TastyName)(implicit ctx: Context): Type =
+    namedMemberOfTypeWithPrefix(pre, pre, name)
 
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Type =
-    prefixedRef(pre, namedMemberOfType(space, tname, selectingTerm))
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type =
+    prefixedRef(pre, namedMemberOfType(space, tname))
 
   def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
