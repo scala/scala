@@ -12,6 +12,13 @@ trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import FlagSets._
 
+  object defn {
+    @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
+    @inline final def repeatedAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Repeated")
+    @inline final def childAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Child")
+    @inline final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => u.definitions.arrayType(acc))
+  }
+
   @inline final def noSymbol: Symbol = u.NoSymbol
   @inline final def isSymbol(sym: Symbol): Boolean = sym ne u.NoSymbol
 

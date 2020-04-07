@@ -1,7 +1,7 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
+import scala.tools.nsc.tasty.TastyName
 
 trait TreeOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
@@ -17,8 +17,7 @@ trait TreeOps { self: TastyUniverse =>
     @inline final def Constant(value: Any): Constant = u.Constant(value)
     def Ident(name: TastyName)(tpe: Type): Ident = u.Ident(encodeTastyName(name)).setType(tpe)
     def Select(qual: Tree, name: TastyName)(tpe: Type): Tree = u.Select(qual, encodeTastyName(name)).setType(tpe)
-    def This(name: TypeName)(tpe: Type): Tree = u.This(encodeTypeName(name)).setType(tpe)
-    def This(qual: Ident)(tref: TypeRef): Tree = u.This(qual.name.toTypeName).setType(ui.thisType(tref.sym))
+    def This(qual: Ident)(tpe: Type): Tree = u.This(qual.name.toTypeName).setType(tpe)
     def New(tpt: Tree): Tree = u.New(tpt).setType(tpt.tpe)
     def SingletonTypeTree(ref: Tree): Tree = u.SingletonTypeTree(ref).setType(ref.tpe)
     def ByNameTypeTree(arg: Tree): Tree = u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
@@ -32,9 +31,9 @@ trait TreeOps { self: TastyUniverse =>
     }
 
     def PathTree(tpe: Type): Tree = tpe match {
-      case _:TypeRef | _:u.SingleType => u.TypeTree(tpe)
-      case path: u.ThisType           => u.This(path.sym.name.toTypeName).setType(path)
-      case path: u.ConstantType       => u.Literal(path.value).setType(tpe)
+      case _:u.TypeRef | _:u.SingleType => u.TypeTree(tpe)
+      case path: u.ThisType             => u.This(path.sym.name.toTypeName).setType(path)
+      case path: u.ConstantType         => u.Literal(path.value).setType(tpe)
     }
 
     @inline final def TypeTree(tp: Type): Tree = u.TypeTree(tp)
@@ -51,7 +50,10 @@ trait TreeOps { self: TastyUniverse =>
       u.TypeApply(fun, args).setType(tyconResult(fun.tpe, args.map(_.tpe)))
 
     def If(cond: Tree, thenp: Tree, elsep: Tree): Tree =
-      u.If(cond, thenp, elsep).setType(if (elsep == u.EmptyTree) defn.UnitTpe else u.lub(thenp.tpe :: elsep.tpe :: Nil))
+      u.If(cond, thenp, elsep).setType(
+        if (elsep == u.EmptyTree) u.definitions.UnitTpe
+        else u.lub(thenp.tpe :: elsep.tpe :: Nil)
+      )
 
     def SeqLiteral(trees: List[Tree], tpt: Tree): Tree = u.ArrayValue(tpt, trees).setType(tpt.tpe)
 
@@ -67,9 +69,9 @@ trait TreeOps { self: TastyUniverse =>
       defn.repeatedAnnotationClass match {
         case Some(repeated)
         if annot.tpe.typeSymbol === repeated
-        && tpt.tpe.typeSymbol.isSubClass(defn.SeqClass)
+        && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
         && tpt.tpe.typeArgs.length == 1 =>
-          tpd.TypeTree(defn.scalaRepeatedType(tpt.tpe.typeArgs.head))
+          tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
         case _ =>
           u.Annotated(annot, tpt).setType(u.AnnotatedType(mkAnnotation(annot) :: Nil, tpt.tpe))
       }

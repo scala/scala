@@ -4,26 +4,12 @@ import scala.annotation.tailrec
 
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
+import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyModes._
 
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
   import FlagSets._
-
-  object defn {
-    final val AnyRefTpe: Type = u.definitions.AnyRefTpe
-    final val UnitTpe: Type = u.definitions.UnitTpe
-    final val ObjectClass: ClassSymbol = u.definitions.ObjectClass
-    final val AnyValClass: ClassSymbol = u.definitions.AnyValClass
-    final val ScalaPackage: ModuleSymbol = u.definitions.ScalaPackage
-    final val SeqClass: ClassSymbol = u.definitions.SeqClass
-    @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
-    @inline final def scalaRepeatedType(arg: Type): Type = u.definitions.scalaRepeatedType(arg)
-    @inline final def repeatedAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Repeated")
-    @inline final def childAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Child")
-    @inline final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => u.definitions.arrayType(acc))
-  }
 
   private def describeOwner(owner: Symbol): String = {
     val kind =
@@ -120,7 +106,7 @@ trait ContextOps { self: TastyUniverse =>
       (root.owner `eq` this.owner) && selector === root.name
     }
 
-    final def findOuterClassTypeParameter(name: TypeName): Symbol = {
+    final def findOuterClassTypeParameter(name: TastyName.TypeName): Symbol = {
       val selector: u.Name = encodeTypeName(name)
       owner.owner.typeParams.find(selector === _.name).getOrElse {
         throw new AssertionError(s"${owner.owner} has no type params.")
@@ -180,12 +166,36 @@ trait ContextOps { self: TastyUniverse =>
         privateWithin = privateWithin
       )
 
-    final def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
+    final def newClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
       adjustSymbol(
         symbol = owner.newClassSymbol(name = encodeTypeName(typeName), newFlags = flags.ensuring(Abstract, when = Trait)),
         info = completer,
         privateWithin = privateWithin
       )
+    }
+
+    /** Normalises the parents and sets up value class machinery */
+    final def adjustParents(cls: Symbol, parents: List[Type]): List[Type] = {
+      val parentTypes = parents.map { tp =>
+        val tpe = tp.dealias
+        if (tpe.typeSymbolDirect === u.definitions.ObjectClass) u.definitions.AnyRefTpe
+        else tpe
+      }
+      if (parentTypes.head.typeSymbolDirect === u.definitions.AnyValClass) {
+        // TODO [tasty]: please reconsider if there is some shared optimised logic that can be triggered instead.
+        withPhaseNoLater("extmethods") { ctx0 =>
+          // duplicated from scala.tools.nsc.transform.ExtensionMethods
+          cls.primaryConstructor.makeNotPrivate(noSymbol)
+          for (decl <- cls.info.decls if decl.isMethod) {
+            if (decl.isParamAccessor) decl.makeNotPrivate(cls)
+            if (!decl.isClassConstructor) {
+              val extensionMeth = decl.newExtensionMethodSymbol(cls.companion, u.NoPosition)
+              extensionMeth setInfo extensionMethInfo(cls, extensionMeth, decl.info, cls)
+            }
+          }
+        }
+      }
+      parentTypes
     }
 
     final def adjustSymbol(symbol: Symbol, flags: FlagSet, info: Type, privateWithin: Symbol): symbol.type =
@@ -222,10 +232,7 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
 
-    final def newExtensionMethodSymbol(owner: Symbol, companionModule: Symbol) =
-      owner.newExtensionMethodSymbol(companionModule, u.NoPosition)
-
-    final def setTypeDefInfo(sym: Symbol, info: Type): Unit = sym.info = normaliseIfBounds(info, sym)(this)
+    final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 
     @tailrec
     final def initialContext: InitialContext = this match {

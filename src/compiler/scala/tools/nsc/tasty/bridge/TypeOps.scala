@@ -2,7 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
+import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyModes._
 
 import scala.tools.nsc.tasty._
@@ -90,7 +90,7 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     u.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
 
-  private[bridge] def normaliseIfBounds(tpe: Type, sym: Symbol)(implicit ctx: Context): Type = tpe match {
+  def normaliseIfBounds(tpe: Type, sym: Symbol)(implicit ctx: Context): Type = tpe match {
     case bounds @ UnmergablePolyBounds() =>
       unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
     case tpe: TypeBounds => normaliseBounds(tpe)
@@ -166,9 +166,9 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndType extends Type
 
-  def selectType(name: TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
-  def selectType(name: TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === defn.ScalaPackage && ( name === tpnme.And || name === tpnme.Or ) ) {
+  def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
+  def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
+    if (prefix.typeSymbol === u.definitions.ScalaPackage && ( name === tpnme.And || name === tpnme.Or ) ) {
       if (name === tpnme.And) AndType
       else unionIsUnsupported
     }
@@ -291,7 +291,7 @@ trait TypeOps { self: TastyUniverse =>
   private[TypeOps] type TermLambda = LambdaType with TermLike
 
   private[TypeOps] trait TypeLike { self: Type with Lambda =>
-    type ThisTName = TypeName
+    type ThisTName = TastyName.TypeName
     type ThisName  = u.TypeName
     type PInfo     = TypeBounds
   }
@@ -341,13 +341,13 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   object HKTypeLambda extends TypeLambdaCompanion {
-    def factory(params: List[TypeName])(registerCallback: Type => Unit,
+    def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
         paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new HKTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
   object PolyType extends TypeLambdaCompanion {
-    def factory(params: List[TypeName])(registerCallback: Type => Unit,
+    def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
          paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
@@ -359,6 +359,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   def recThis(tpe: Type): Type = tpe.asInstanceOf[RecType].recThis
+  def symOfTypeRef(tpe: Type): Symbol = tpe.asInstanceOf[u.TypeRef].sym
 
   private[TypeOps] final class RecType(run: RecType => Type)(implicit ctx: Context) extends Type with Product {
 
@@ -392,7 +393,7 @@ trait TypeOps { self: TastyUniverse =>
     extends LambdaTypeCompanion[TastyName, Type]
 
   abstract class TypeLambdaCompanion
-    extends LambdaTypeCompanion[TypeName, TypeBounds]
+    extends LambdaTypeCompanion[TastyName.TypeName, TypeBounds]
 
   private[TypeOps] final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: FlagSet)(registerCallback: MethodTermLambda => Unit,
     paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
@@ -420,7 +421,7 @@ trait TypeOps { self: TastyUniverse =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[MethodTermLambda]
   }
 
-  private[TypeOps] final class HKTypeLambda(paramTNames: List[TypeName])(registerCallback: HKTypeLambda => Unit,
+  private[TypeOps] final class HKTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: HKTypeLambda => Unit,
     paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 
@@ -448,7 +449,7 @@ trait TypeOps { self: TastyUniverse =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }
 
-  private[TypeOps] final class PolyTypeLambda(paramTNames: List[TypeName])(registerCallback: PolyTypeLambda => Unit,
+  private[TypeOps] final class PolyTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: PolyTypeLambda => Unit,
     paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 

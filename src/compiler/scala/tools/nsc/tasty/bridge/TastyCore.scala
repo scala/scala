@@ -19,7 +19,6 @@ abstract class TastyCore { self: TastyUniverse =>
 
   // Types
   type Type       = u.Type
-  type TypeRef    = u.TypeRef
   type TypeBounds = u.TypeBounds
 
   // Symbols
@@ -29,7 +28,7 @@ abstract class TastyCore { self: TastyUniverse =>
 
   // Trees
   type Tree  = u.Tree
-  type Ident = u.Ident
+  type Ident = u.Ident // wraps a mangled name
 
   private val Identity = (x: Any) => x
 
