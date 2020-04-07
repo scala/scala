@@ -6,7 +6,7 @@ trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   final def mkAnnotation(tree: Tree): Annotation = tree match {
-    case u.Apply(u.Select(u.New(tpt), nme.CONSTRUCTOR), args) =>
+    case u.Apply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), args) =>
       u.AnnotationInfo(tpt.tpe, args, Nil)
     case _ =>
       throw new Exception("unexpected annotation kind from TASTy")

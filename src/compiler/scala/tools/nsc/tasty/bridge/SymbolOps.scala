@@ -46,14 +46,14 @@ trait SymbolOps { self: TastyUniverse =>
       termParamss
 
   def namedMemberOfType(space: Type, tname: TastyName, selectingTerm: Boolean)(implicit ctx: Context): Symbol = {
-    val selector = encodeTastyName(tname, selectingTerm)
+    val selector = encodeTastyName(if (selectingTerm) tname else tname.toTypeName)
     tname.signature match {
       case NotAMethod => memberOfSpace(space, selector, tname.isModuleName)
       case sig        => signedMemberOfSpace(space, selector, sig.map(resolveErasedTypeRef).asMethod)
     }
   }
 
-  private def memberOfSpace(space: Type, name: Name, isModuleName: Boolean)(implicit ctx: Context): Symbol = {
+  private def memberOfSpace(space: Type, name: u.Name, isModuleName: Boolean)(implicit ctx: Context): Symbol = {
     // TODO [tasty]: dotty uses accessibleDenot which asserts that `fetched.isAccessibleFrom(pre)`,
     //    or else filters for non private.
     // There should be an investigation to see what code makes that false, and what is an equivalent check.
@@ -78,7 +78,7 @@ trait SymbolOps { self: TastyUniverse =>
     }
   }
 
-  private def signedMemberOfSpace(space: Type, name: Name, sig: MethodSignature[Type])(implicit ctx: Context): Symbol = {
+  private def signedMemberOfSpace(space: Type, name: u.Name, sig: MethodSignature[Type])(implicit ctx: Context): Symbol = {
     ctx.log(s"""looking for overload member[$space]("$name") @@ ${sig.show}""")
     val member = space.member(name)
     val (tyParamCount, argTpes) = {
@@ -93,7 +93,7 @@ trait SymbolOps { self: TastyUniverse =>
         val params = sym.paramss.flatten
         sym.returnType.erasure =:= sig.result &&
         params.length === argTpes.length &&
-        (name === nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length
+        (name === u.nme.CONSTRUCTOR && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&
         params.zip(argTpes).forall { case (param, tpe) => param.tpe.erasure =:= tpe } && {
           ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")

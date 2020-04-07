@@ -7,37 +7,33 @@ trait NameOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import TastyName._
 
-  def isConstructorName(name: Name) = u.nme.isConstructorName(name)
+  def isConstructorName(name: TastyName) = name == TastyName.Constructor || name == TastyName.MixinConstructor // u.nme.isConstructorName(encodeTastyName(name))
 
-  private def encodeAsTermName(tastyName: TastyName): TermName = tastyName match {
+  private def encodeAsTermName(tastyName: TastyName): u.TermName = tastyName match {
     case Empty          => u.termNames.EMPTY
-    case Constructor    => nme.CONSTRUCTOR
-    case EmptyPkg       => nme.EMPTY_PACKAGE_NAME
-    case RootClass      => nme.ROOT
+    case Constructor    => u.nme.CONSTRUCTOR
+    case EmptyPkg       => u.nme.EMPTY_PACKAGE_NAME
+    case RootClass      => u.nme.ROOT
     case WildcardName() => u.nme.WILDCARD
     case name           => u.TermName(name.encoded)
   }
 
-  private def encodeAsTypeName(tastyName: TastyName): TypeName = tastyName match {
+  private def encodeAsTypeName(tastyName: TastyName): u.TypeName = tastyName match {
     case RepeatedClass => u.tpnme.REPEATED_PARAM_CLASS_NAME
     case name          => encodeAsTermName(name).toTypeName
   }
 
-  def encodeTastyNameAsTerm(tastyName: TastyName): TermName = encodeAsTermName(tastyName.stripSignedPart)
-  def encodeTastyNameAsType(tastyName: TastyName): TypeName = encodeAsTypeName(tastyName.stripSignedPart)
+  def encodeTypeName(name: TypeName): u.TypeName = encodeAsTypeName(name.toTermName.stripSignedPart)
+  def encodeTermName(name: TastyName): u.TermName = encodeAsTermName(name.toTermName.stripSignedPart)
 
-  def encodeTastyName(tastyName: TastyName, isTerm: Boolean): Name =
-    if (isTerm) encodeTastyNameAsTerm(tastyName)
-    else encodeTastyNameAsType(tastyName)
+  def encodeTastyName(name: TastyName): u.Name = name match {
+    case name: TypeName => encodeTypeName(name)
+    case name           => encodeTermName(name)
+  }
 
   object nme {
     final val Or: TastyName.SimpleName = TastyName.SimpleName("|")
     final val And: TastyName.SimpleName = TastyName.SimpleName("&")
-    final val EMPTY: TermName = u.nme.EMPTY
-    final val CONSTRUCTOR: TermName = u.nme.CONSTRUCTOR
-    final val ROOT: TermName = u.nme.ROOT
-    final val ROOTPKG: TermName = u.nme.ROOTPKG
-    final val EMPTY_PACKAGE_NAME: TermName = u.nme.EMPTY_PACKAGE_NAME
   }
 
 }

@@ -44,11 +44,6 @@ abstract class TastyCore { self: TastyUniverse =>
   type FreeTypeSymbol        = u.FreeTypeSymbol
   type RefinementClassSymbol = u.RefinementClassSymbol
 
-  // Names
-  type Name     = u.Name
-  type TermName = u.TermName
-  type TypeName = u.TypeName
-
   // Trees
   type SingletonTypeTree  = u.SingletonTypeTree
   type Apply              = u.Apply
@@ -71,5 +66,10 @@ abstract class TastyCore { self: TastyUniverse =>
   type New                = u.New
   type If                 = u.If
   type Select             = u.Select
+
+  private val Identity = (x: Any) => x
+
+  def id[T]: T => T = Identity.asInstanceOf[T => T]
+  def map[T, U](ts: List[T], f: T => U): List[U] = if (f `eq` Identity) ts.asInstanceOf[List[U]] else ts.map(f)
 
 }

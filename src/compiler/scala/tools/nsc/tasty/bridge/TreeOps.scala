@@ -1,12 +1,13 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
 
 trait TreeOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
 
   object untpd {
-    final val EmptyTypeIdent: Ident = new Ident(nme.EMPTY) {
+    final val EmptyTypeIdent: Ident = new Ident(u.nme.EMPTY) {
       override def isEmpty: Boolean = true
     }
     final val EmptyTree: Tree = u.EmptyTree
@@ -15,13 +16,15 @@ trait TreeOps { self: TastyUniverse =>
   object tpd {
     @inline final def Constant(value: Any): Constant = u.Constant(value)
     @inline final def Literal(tpe: ConstantType): Literal = u.Literal(tpe.value).setType(tpe)
-    def Ident(name: Name)(tpe: Type): Ident = u.Ident(name).setType(tpe)
-    def Select(qual: Tree, name: Name)(tpe: Type): Select = u.Select(qual, name).setType(tpe)
-    def This(name: TypeName)(tpe: Type): This = u.This(name).setType(tpe)
+    def Ident(name: TastyName)(tpe: Type): Ident = u.Ident(encodeTastyName(name)).setType(tpe)
+    def Select(qual: Tree, name: TastyName)(tpe: Type): Select = u.Select(qual, encodeTastyName(name)).setType(tpe)
+    def This(name: TypeName)(tpe: Type): This = u.This(encodeTypeName(name)).setType(tpe)
+    def This(tpe: ThisType): This = u.This(tpe.sym.name.toTypeName).setType(tpe)
+    def This(qual: Ident)(tref: TypeRef): This = u.This(qual.name.toTypeName).setType(ui.thisType(tref.sym))
     def New(tpt: Tree): New = u.New(tpt).setType(tpt.tpe)
     def SingletonTypeTree(ref: Tree): SingletonTypeTree = u.SingletonTypeTree(ref).setType(ref.tpe)
     def ByNameTypeTree(arg: Tree): Tree = u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
-    def NamedArg(name: Name, value: Tree): NamedArg = u.NamedArg(u.Ident(name), value).setType(value.tpe)
+    def NamedArg(name: TastyName, value: Tree): NamedArg = u.NamedArg(u.Ident(encodeTastyName(name)), value).setType(value.tpe)
     def Super(qual: Tree, mixId: Ident)(mixTpe: Type): Super = {
       val owntype = (
         if (!mixId.isEmpty) mixTpe

@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName
+import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
 import scala.tools.nsc.tasty.TastyModes._
 
 trait ContextOps { self: TastyUniverse =>
@@ -72,9 +72,9 @@ trait ContextOps { self: TastyUniverse =>
 
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
 
-    final def adjustModuleClassCompleter(completer: TastyLazyType, name: Name): completer.type = {
-      def findModule(name: Name, scope: Scope): Symbol = {
-        val it = scope.lookupAll(name).filter(_.is(Module))
+    final def adjustModuleClassCompleter(completer: TastyLazyType, name: TastyName): completer.type = {
+      def findModule(name: TastyName, scope: Scope): Symbol = {
+        val it = scope.lookupAll(encodeTermName(name)).filter(_.is(Module))
         if (it.hasNext) it.next()
         else noSymbol
       }
@@ -88,7 +88,12 @@ trait ContextOps { self: TastyUniverse =>
       if (owner != null && owner.isClass) owner.rawInfo.decls
       else emptyScope
 
-    final def requiredPackage(name: TermName): TermSymbol = loadingMirror.getPackage(name.toString)
+    final def requiredPackage(name: TastyName): TermSymbol = {
+      val n = encodeTermName(name)
+      if (n === u.nme.ROOT || n === u.nme.ROOTPKG) loadingMirror.RootPackage
+      else if (n === u.nme.EMPTY_PACKAGE_NAME) loadingMirror.EmptyPackage
+      loadingMirror.getPackage(name.toString)
+    }
 
     final def log(str: => String): Unit = {
       if (u.settings.YdebugTasty)
@@ -111,8 +116,20 @@ trait ContextOps { self: TastyUniverse =>
     final def newWildcardSym(info: TypeBounds): Symbol =
       owner.newTypeParameter(u.nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
 
-    final def newRefinementSymbol(parent: Type, owner: Symbol, name: Name, tpe: Type): Symbol = {
-      val overridden = parent.member(name)
+    final def isSameRoot(root: Symbol, name: TastyName): Boolean = {
+      val selector = encodeTastyName(name)
+      (root.owner `eq` this.owner) && selector === root.name
+    }
+
+    final def findOuterClassTypeParameter(name: TypeName): Symbol = {
+      val selector: u.Name = encodeTypeName(name)
+      owner.owner.typeParams.find(selector === _.name).getOrElse {
+        throw new AssertionError(s"${owner.owner} has no type params.")
+      }
+    }
+
+    final def newRefinementSymbol(parent: Type, owner: Symbol, name: TastyName, tpe: Type): Symbol = {
+      val overridden = parent.member(encodeTastyName(name))
       val isOverride = isSymbol(overridden)
       var flags      = if (isOverride && overridden.isType) Override else emptyFlags
       val info = {
@@ -136,28 +153,28 @@ trait ContextOps { self: TastyUniverse =>
       newSymbol(owner, name, flags, info)
     }
 
-    final def newSymbol(owner: Symbol, name: Name, flags: FlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
+    final def newSymbol(owner: Symbol, name: TastyName, flags: FlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       adjustSymbol(
         symbol = {
           if (flags.is(Param)) {
             if (name.isTypeName) {
-              owner.newTypeParameter(name.toTypeName, noPosition, flags)
+              owner.newTypeParameter(encodeTypeName(name.toTypeName), noPosition, flags)
             }
             else {
-              owner.newValueParameter(name.toTermName, noPosition, flags)
+              owner.newValueParameter(encodeTermName(name), noPosition, flags)
             }
           }
-          else if (name == nme.CONSTRUCTOR) {
+          else if (name === TastyName.Constructor) {
             owner.newConstructor(noPosition, flags & ~Stable)
           }
           else if (flags.is(Module)) {
-            owner.newModule(name.toTermName, noPosition, flags)
+            owner.newModule(encodeTermName(name), noPosition, flags)
           }
           else if (name.isTypeName) {
-            owner.newTypeSymbol(name.toTypeName, noPosition, flags)
+            owner.newTypeSymbol(encodeTypeName(name.toTypeName), noPosition, flags)
           }
           else {
-            owner.newMethodSymbol(name.toTermName, noPosition, flags)
+            owner.newMethodSymbol(encodeTermName(name), noPosition, flags)
           }
         },
         info = info,
@@ -166,7 +183,7 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newClassSymbol(owner: Symbol, typeName: TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
       adjustSymbol(
-        symbol = owner.newClassSymbol(name = typeName, newFlags = flags.ensuring(Abstract, when = Trait)),
+        symbol = owner.newClassSymbol(name = encodeTypeName(typeName), newFlags = flags.ensuring(Abstract, when = Trait)),
         info = completer,
         privateWithin = privateWithin
       )

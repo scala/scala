@@ -13,6 +13,7 @@ object TastyName {
   final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                     extends TastyName
   final case class DefaultName(qual: TastyName, num: Int)                                     extends TastyName
   final case class PrefixName(prefix: SimpleName, qual: TastyName)                            extends TastyName
+  final case class TypeName private (base: TastyName)                                         extends TastyName
 
   final val Empty: SimpleName = SimpleName("")
   final val PathSep: SimpleName = SimpleName(".")
@@ -22,6 +23,7 @@ object TastyName {
   final val InlinePrefix: SimpleName = SimpleName("inline$")
   final val SuperPrefix: SimpleName = SimpleName("super$")
   final val Constructor: SimpleName = SimpleName("<init>")
+  final val MixinConstructor: SimpleName = SimpleName("$init$")
   final val EmptyPkg: SimpleName = SimpleName("<empty>")
   final val RootClass: SimpleName = SimpleName("<root>")
   final val RepeatedClass: SimpleName = SimpleName("<repeated>")
@@ -54,6 +56,7 @@ object TastyName {
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
       case name: SimpleName    => sb.append(name.raw)
       case name: ModuleName    => traverse(sb, name.base)
+      case name: TypeName      => traverse(sb, name.base)
       case name: SignedName    => traverse(sb, name.qual)
       case name: UniqueName    => traverse(traverse(sb, name.qual), name.sep).append(name.num)
       case name: DefaultName   => traverse(sb, name.qual).append(DefaultGetterStr).append(name.num + 1)
@@ -72,6 +75,7 @@ object TastyName {
       case DefaultName(qual, num)   => traverse(sb, qual).append("[Default ").append(num + 1).append(']')
       case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
       case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
+      case TypeName(name)           => traverse(sb, name).append("[Type]")
       case SignedName(name,sig)     => sig.map(_.signature).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
 
       case QualifiedName(qual, sep, name) =>
@@ -98,6 +102,7 @@ object TastyName {
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
       case name: SimpleName    => sb.append(NameTransformer.encode(name.raw))
       case name: ModuleName    => traverse(sb, name.base)
+      case name: TypeName      => traverse(sb, name.base)
       case name: SignedName    => traverse(sb, name.qual)
       case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
       case name: QualifiedName => traverse(traverse(sb, name.qual).append(name.sep.raw), name.selector)
@@ -142,6 +147,19 @@ sealed abstract class TastyName extends Product with Serializable { self =>
   final def stripModulePart: TastyName = self match {
     case ModuleName(name) => name
     case name             => name
+  }
+
+  final def isTypeName: Boolean = self.isInstanceOf[TypeName]
+  final def isTermName: Boolean = !isTypeName
+
+  final def toTermName: TastyName = self match {
+    case TypeName(name) => name.toTermName
+    case name           => name
+  }
+
+  final def toTypeName: TypeName = self match {
+    case name: TypeName => name
+    case name           => TypeName(name)
   }
 
   final def stripSignedPart: TastyName = self match {

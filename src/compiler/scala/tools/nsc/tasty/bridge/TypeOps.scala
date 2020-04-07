@@ -2,6 +2,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.TastyName, TastyName.TypeName
 import scala.tools.nsc.tasty.TastyModes._
 
 import scala.tools.nsc.tasty._
@@ -61,7 +62,7 @@ trait TypeOps { self: TastyUniverse =>
   private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): RefinedType =
     u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
 
-  def refinedType(parent: Type, clazz: Symbol, name: Name, tpe: Type)(implicit ctx: Context): Type = {
+  def refinedType(parent: Type, clazz: Symbol, name: TastyName, tpe: Type)(implicit ctx: Context): Type = {
     val decl = ctx.newRefinementSymbol(parent, clazz, name, tpe)
     parent match {
       case nested: RefinedType =>
@@ -240,7 +241,7 @@ trait TypeOps { self: TastyUniverse =>
     case res                 => res
   }
 
-  abstract class LambdaTypeCompanion[N <: Name, PInfo <: Type, LT <: LambdaType] {
+  abstract class LambdaTypeCompanion[N <: TastyName, PInfo <: Type, LT <: LambdaType] {
     def factory(params: List[N])(registerCallback: LT => Unit, paramInfosOp: () => List[PInfo], resultTypeOp: () => Type)(implicit ctx: Context): LT
 
     final def apply(params: List[N])(registerCallback: LT => Unit, paramInfosOp: () => List[PInfo], resultTypeOp: () => Type)(implicit ctx: Context): Type =
@@ -277,7 +278,7 @@ trait TypeOps { self: TastyUniverse =>
    *  type of the constructed instance is returned
    */
   def effectiveResultType(sym: Symbol, typeParams: List[Symbol], givenTp: Type): Type =
-    if (sym.name == nme.CONSTRUCTOR) sym.owner.tpe
+    if (sym.name == u.nme.CONSTRUCTOR) sym.owner.tpe
     else givenTp
 
   type LambdaType = Type with Lambda
@@ -285,17 +286,20 @@ trait TypeOps { self: TastyUniverse =>
   type TermLambda = LambdaType with TermLike
 
   trait TypeLike { self: Type with Lambda =>
-    type ThisName = TypeName
+    type ThisTName = TypeName
+    type ThisName  = u.TypeName
     type PInfo = TypeBounds
   }
 
   trait TermLike { self: Type with Lambda =>
-    type ThisName = TermName
+    type ThisTName = TastyName
+    type ThisName  = u.TermName
     type PInfo = Type
   }
 
   trait Lambda extends Product with Serializable { self: Type =>
-    type ThisName <: Name
+    type ThisTName <: TastyName
+    type ThisName <: u.Name
     type PInfo <: Type
     type This <: Type
 
@@ -344,7 +348,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   abstract class MethodTypeCompanion(defaultFlags: FlagSet) extends TermLambdaCompanion[MethodTermLambda] { self =>
-    def factory(params: List[TermName])(registerCallback: MethodTermLambda => Unit,
+    def factory(params: List[TastyName])(registerCallback: MethodTermLambda => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): MethodTermLambda =
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
   }
@@ -377,15 +381,17 @@ trait TypeOps { self: TastyUniverse =>
   object ImplicitMethodType extends MethodTypeCompanion(Implicit)
 
   abstract class TermLambdaCompanion[LT <: TermLambda]
-    extends LambdaTypeCompanion[TermName, Type, LT]
+    extends LambdaTypeCompanion[TastyName, Type, LT]
 
   abstract class TypeLambdaCompanion[LT <: TypeLambda]
     extends LambdaTypeCompanion[TypeName, TypeBounds, LT]
 
-  final class MethodTermLambda(val paramNames: List[TermName], defaultFlags: FlagSet)(registerCallback: MethodTermLambda => Unit,
+  final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: FlagSet)(registerCallback: MethodTermLambda => Unit,
     paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TermLike { methodLambda =>
     type This = MethodType
+
+    val paramNames: List[u.TermName] = paramTNames.map(encodeTermName)
 
     override val productPrefix = "MethodTermLambda"
 
@@ -406,11 +412,12 @@ trait TypeOps { self: TastyUniverse =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[MethodTermLambda]
   }
 
-  final class HKTypeLambda(val paramNames: List[TypeName])(registerCallback: HKTypeLambda => Unit,
+  final class HKTypeLambda(paramTNames: List[TypeName])(registerCallback: HKTypeLambda => Unit,
     paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 
     type This = LambdaPolyType
+    val paramNames: List[u.TypeName] = paramTNames.map(encodeTypeName)
 
     override val productPrefix = "HKTypeLambda"
 
@@ -433,11 +440,13 @@ trait TypeOps { self: TastyUniverse =>
     override def canEqual(that: Any): Boolean = that.isInstanceOf[HKTypeLambda]
   }
 
-  final class PolyTypeLambda(val paramNames: List[TypeName])(registerCallback: PolyTypeLambda => Unit,
+  final class PolyTypeLambda(paramTNames: List[TypeName])(registerCallback: PolyTypeLambda => Unit,
     paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 
     type This = PolyType
+
+    val paramNames: List[u.TypeName] = paramTNames.map(encodeTypeName)
 
     override val productPrefix = "PolyTypeLambda"
 
