@@ -37,6 +37,9 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
+  def fnResult(fn: Type): Type = fn.dealiasWiden.finalResultType
+  def tyconResult(tycon: Type, args: List[Type]): Type = tycon.resultType.substituteTypes(tycon.typeParams, args)
+
   def emptyTypeBounds: TypeBounds = u.TypeBounds.empty
 
   @inline final def mkTypeBounds(lo: Type, hi: Type): TypeBounds = u.TypeBounds.apply(lo, hi)
@@ -49,12 +52,25 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def mkIntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
   @inline final def mkIntersectionType(tps: List[Type]): Type = ui.intersectionType(tps)
   @inline final def mkAnnotatedType(tpe: Type, annot: Annotation): AnnotatedType = u.AnnotatedType(annot :: Nil, tpe)
-  @inline final def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): RefinedType = u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
   @inline final def mkRefinedType(parents: List[Type], clazz: Symbol): RefinedType = mkRefinedTypeWith(parents, clazz, u.newScope)
   @inline final def mkSuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
   @inline final def mkLambdaPolyType(typeParams: List[Symbol], resTpe: Type): LambdaPolyType = new LambdaPolyType(typeParams, resTpe)
   @inline final def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): PolyType = ui.polyType(typeParams, lambdaResultType(ret))
   def mkRecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+
+  private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): RefinedType =
+    u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
+
+  def refinedType(parent: Type, clazz: Symbol, name: Name, tpe: Type)(implicit ctx: Context): Type = {
+    val decl = ctx.newRefinementSymbol(parent, clazz, name, tpe)
+    parent match {
+      case nested: RefinedType =>
+        mkRefinedTypeWith(nested.parents, clazz, nested.decls.cloneScope.tap(_.enter(decl)))
+      case _ =>
+        mkRefinedTypeWith(parent :: Nil, clazz, ctx.mkScope(decl))
+    }
+  }
+
 
   /** The method type corresponding to given parameters and result type */
   def mkDefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
@@ -73,8 +89,6 @@ trait TypeOps { self: TastyUniverse =>
 
   @inline final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
     u.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
-
-  @inline final def lub(tpe1: Type, tpe2: Type): Type = u.lub(tpe1 :: tpe2 :: Nil)
 
   def normaliseBounds(bounds: TypeBounds): Type = {
     val u.TypeBounds(lo, hi) = bounds
@@ -146,18 +160,25 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndType extends Type
 
-  def selectType(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type = {
-    if (pre.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
+  def selectType(name: TastyName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
+  def selectType(name: TastyName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
+    if (prefix.typeSymbol === defn.ScalaPackage && ( name === nme.And || name === nme.Or ) ) {
       if (name === nme.And) AndType
       else unionIsUnsupported
     }
     else {
-      namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = false)
+      namedMemberOfTypeWithPrefix(prefix, space, name, selectingTerm = false)
     }
   }
 
-  def selectTerm(pre: Type, space: Type, name: TastyName)(implicit ctx: Context): Type =
-    namedMemberOfTypeWithPrefix(pre, space, name, selectingTerm = true)
+  def selectTerm(name: TastyName, prefix: Type)(implicit ctx: Context): Type = selectTerm(name, prefix, prefix)
+  def selectTerm(name: TastyName, prefix: Type, space: Type)(implicit ctx: Context): Type =
+    namedMemberOfTypeWithPrefix(prefix, space, name, selectingTerm = true)
+
+  def singletonLike(tpe: Type): Symbol = tpe match {
+    case u.SingleType(_, sym) => sym
+    case u.TypeRef(_,sym,_)   => sym
+  }
 
   private[this] val NoSymbolFn = (_: Context) => noSymbol
 
@@ -332,7 +353,7 @@ trait TypeOps { self: TastyUniverse =>
     override val productPrefix = "RecType"
     override val productArity = 2
 
-    val refinementClass = ctx.newRefinedClassSymbol(noPosition).setInfo(EmptyRecTypeInfo)
+    val refinementClass = ctx.newRefinementClassSymbol(noPosition).setInfo(EmptyRecTypeInfo)
     val recThis: Type   = ui.thisType(refinementClass)
     val parent: Type    = run(this)
 

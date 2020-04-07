@@ -8,22 +8,15 @@ import scala.tools.nsc.tasty.TastyName
 import scala.tools.nsc.tasty.TastyModes._
 
 trait ContextOps { self: TastyUniverse =>
-  import self.{symbolTable => u}
+  import self.{symbolTable => u}, u.{internal => ui}
   import FlagSets._
 
   object defn {
-    final val AnyTpe: Type = u.definitions.AnyTpe
-    final val NothingTpe: Type = u.definitions.NothingTpe
     final val AnyRefTpe: Type = u.definitions.AnyRefTpe
     final val UnitTpe: Type = u.definitions.UnitTpe
-    final val JavaEnumClass: ClassSymbol = u.definitions.JavaEnumClass
-    final val CompileTimeOnlyAttr: Symbol = u.definitions.CompileTimeOnlyAttr
-    final val ByNameParamClass: ClassSymbol = u.definitions.ByNameParamClass
     final val ObjectClass: ClassSymbol = u.definitions.ObjectClass
     final val AnyValClass: ClassSymbol = u.definitions.AnyValClass
     final val ScalaPackage: ModuleSymbol = u.definitions.ScalaPackage
-    final val TailrecClass: ClassSymbol = u.definitions.TailrecClass
-    final val StaticAnnotationClass: ClassSymbol = u.definitions.StaticAnnotationClass
     final val SeqClass: ClassSymbol = u.definitions.SeqClass
     @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
     @inline final def scalaRepeatedType(arg: Type): Type = u.definitions.scalaRepeatedType(arg)
@@ -118,6 +111,31 @@ trait ContextOps { self: TastyUniverse =>
     final def newWildcardSym(info: TypeBounds): Symbol =
       owner.newTypeParameter(u.nme.WILDCARD.toTypeName, noPosition, emptyFlags).setInfo(info)
 
+    final def newRefinementSymbol(parent: Type, owner: Symbol, name: Name, tpe: Type): Symbol = {
+      val overridden = parent.member(name)
+      val isOverride = isSymbol(overridden)
+      var flags      = if (isOverride && overridden.isType) Override else emptyFlags
+      val info = {
+        if (name.isTermName) {
+          flags |= Method | Deferred
+          tpe match {
+            case u.TypeRef(_, u.definitions.ByNameParamClass, arg :: Nil) => // nullary method
+              mkNullaryMethodType(arg)
+            case u.PolyType(tparams, res) if res.paramss.isEmpty => ui.polyType(tparams, mkNullaryMethodType(res))
+            case _:MethodType | _:PolyType => tpe
+            case _ => // val, which is not stable if structural. Dotty does not support vars
+              if (isOverride && overridden.is(Stable)) flags |= Stable
+              mkNullaryMethodType(tpe)
+          }
+        }
+        else {
+          if (tpe.isInstanceOf[TypeBounds]) flags |= Deferred
+          tpe
+        }
+      }
+      newSymbol(owner, name, flags, info)
+    }
+
     final def newSymbol(owner: Symbol, name: Name, flags: FlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       adjustSymbol(
         symbol = {
@@ -163,7 +181,30 @@ trait ContextOps { self: TastyUniverse =>
       symbol
     }
 
-    final def newRefinedClassSymbol(coord: Position): RefinementClassSymbol = owner.newRefinementClass(coord)
+    /** Determines the owner of a refinement in the current context by the following steps:
+     *  1) if the owner if this context is a refinement symbol, we are in a recursive RefinedType. Ensure that the
+     *     context owner is initialised with the parent and reuse it.
+     *  2) if the parent is also a RefinedType, then we will flatten the nested structure by reusing its owner
+     *  3) the parent is not a RefinedType, and we are not in an enclosing RefinedType, so create a new RefinementClassSymbol.
+     *  The Parent alongside the RefinedType owner are passed to the given operation
+     */
+    final def withRefinementOwner[T](parent: Type)(op: (Type, Symbol) => T): T = {
+      val clazz = owner match {
+        case enclosing: RefinementClassSymbol =>
+          enclosing.rawInfo match {
+            case EmptyRecTypeInfo => mkRefinedTypeWith(parent :: Nil, enclosing, mkScope)
+            case _                => ()
+          }
+          enclosing
+        case _ => parent match {
+          case nested: RefinedType => nested.typeSymbol
+          case _                   => newRefinementClassSymbol(noPosition)
+        }
+      }
+      op(parent, clazz)
+    }
+
+    final def newRefinementClassSymbol(coord: Position): RefinementClassSymbol = owner.newRefinementClass(coord)
 
     @tailrec
     final def initialContext: InitialContext = this match {
