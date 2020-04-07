@@ -48,22 +48,36 @@ trait Positions extends api.Positions { self: SymbolTable =>
   def wrappingPos(default: Position, trees: List[Tree]): Position = wrappingPos(default, trees, focus = true)
   def wrappingPos(default: Position, trees: List[Tree], focus: Boolean): Position = {
     if (useOffsetPositions) default else {
+      val accum = new WrappingPosAccumulator()
       var rest = trees
-      var min = Int.MaxValue
-      var max = Int.MinValue
       while (rest ne Nil) {
         val head = rest.head
         rest = rest.tail
-        val pos = head.pos
-        if (pos.isRange) {
-          min = Math.min(min, pos.start)
-          max = Math.max(max, pos.end)
-        }
+        accum(head)
       }
+      accum.result(default, focus)
+    }
+  }
+  private final class WrappingPosAccumulator extends (Tree => Boolean) {
+    private[this] var min: Int = _
+    private[this] var max: Int = _
+    def reset(): Unit = {
+      min = Int.MaxValue
+      max = Int.MinValue
+    }
+    reset()
+    def result(default: Position, focus: Boolean): Position = {
       if (min > max)
-      //there are no ranges
-        if (focus) default.focus else default
+        if (focus) default.focus else default //there are no ranges
       else Position.range(default.source, min, default.point, max)
+    }
+    override def apply(v1: Tree): Boolean = {
+      val pos = v1.pos
+      if (pos.isRange) {
+        min = Math.min(min, pos.start)
+        max = Math.max(max, pos.end)
+      }
+      true
     }
   }
 
@@ -269,26 +283,38 @@ trait Positions extends api.Positions { self: SymbolTable =>
    *                Uses the point of the position as the point of all positions it assigns.
    *                Uses the start of this position as an Offset position for unpositioned trees
    *                without children.
-   *  @param  trees  The children to position. All children must be positionable.
+   *  @param  parent The parent of the child trees to position. All children must be positionable.
    */
-  private def setChildrenPos(pos: Position, trees: List[Tree]): Unit = try {
-    for (tree <- trees) {
-      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
-        val children = tree.children
-        if (children.isEmpty) {
-          tree setPos pos.focus
-        } else {
-          setChildrenPos(pos, children)
-          tree setPos wrappingPos(pos, children)
-        }
-      }
-    }
+  private def setChildrenPos(pos: Position, parent: Tree): Unit = try {
+    setChildrenPosAccumulator.using(_.set(pos, parent))
   } catch {
     case ex: Exception =>
-      inform("error while set children pos "+pos+" of "+trees)
+      inform("error while set children pos "+pos+" of "+parent.children)
       throw ex
   }
-
+  private val setChildrenPosAccumulator = new ReusableInstance[SetChildrenPosAccumulator](() => new SetChildrenPosAccumulator, isCompilerUniverse)
+  private final class SetChildrenPosAccumulator extends (Tree => Boolean) {
+    private[this] val wrappingPosAccumulator = new WrappingPosAccumulator
+    private[this] var pos: Position = _
+    def set(pos: Position, parent: Tree): Unit = {
+      wrappingPosAccumulator.reset()
+      this.pos = pos
+      try parent.foreachChild(this)
+      finally {
+        this.pos = null
+      }
+    }
+    def apply(tree: Tree): Boolean = {
+      wrappingPosAccumulator.reset()
+      if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
+        tree.foreachChild(this)
+        tree.foreachChild(wrappingPosAccumulator)
+        val wrappingPos = wrappingPosAccumulator.result(pos, focus = true)
+        tree setPos wrappingPos
+      }
+      true
+    }
+  }
 
   class ValidateException(msg : String) extends Exception(msg)
 
@@ -372,10 +398,11 @@ trait Positions extends api.Positions { self: SymbolTable =>
     else {
       if (!tree.isEmpty && tree.canHaveAttrs && tree.pos == NoPosition) {
         tree.setPos(pos)
-        val children = tree.children
-        if (children.nonEmpty) {
-          if (children.tail.isEmpty) atPos(pos)(children.head)
-          else setChildrenPos(pos, children)
+        tree.onlyChild match {
+          case EmptyTree =>
+            setChildrenPos(pos, tree)
+          case only =>
+            atPos(pos)(only)
         }
       }
       tree
