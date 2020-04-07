@@ -14,8 +14,6 @@ package scala
 package collection
 package mutable
 
-import java.util.NoSuchElementException
-
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 import scala.reflect.ClassTag

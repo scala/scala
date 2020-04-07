@@ -17,7 +17,6 @@ import scala.reflect.ClassTag
 import scala.collection.{immutable, mutable}
 import scala.annotation.tailrec
 import mutable.ListBuffer
-import java.util.NoSuchElementException
 import scala.runtime.Statics.releaseFence
 
 /** Profiler driven changes.
