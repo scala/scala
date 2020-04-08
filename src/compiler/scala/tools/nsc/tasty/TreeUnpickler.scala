@@ -709,7 +709,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val localCtx = ctx.withOwner(sym)
         tag match {
           case DEFDEF =>
-            val unsupported = completer.tastyFlagSet &~ (Extension | Inline | TastyMacro)
+            val unsupported = completer.tastyFlagSet &~ (Extension | Inline | TastyMacro | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${show(unsupported)}")
             if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$tname is a Scala 3 extension method.")
             unsupportedWhen(completer.tastyFlagSet.is(Inline, butNot = TastyMacro), s"inline $sym")
@@ -731,7 +731,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             ctx.setInfo(sym, mkDefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
           case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
             val isInline = completer.tastyFlagSet.is(Inline)
-            val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension)
+            val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${show(unsupported)}")
             val tpe = readTpt()(localCtx).tpe
             if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
@@ -741,7 +741,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque)
+            val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${show(unsupported)}")
             if (sym.isClass) {
               sym.owner.ensureCompleted()
@@ -758,7 +758,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // sym.resetFlag(Provisional)
             }
           case PARAM =>
-            val unsupported = completer.tastyFlagSet &~ SuperParamAlias
+            val unsupported = completer.tastyFlagSet &~ (SuperParamAlias | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on parameter $sym: ${show(unsupported)}")
             val tpt = readTpt()(localCtx)
             ctx.setInfo(sym,
