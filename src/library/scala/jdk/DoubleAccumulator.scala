@@ -107,7 +107,7 @@ final class DoubleAccumulator
           }
           else current
         pv = pv + index
-        x(x.length - 1) = pv
+        x(x.length - 1) = pv.toDouble // see comment on Accumulator.cumulative
         history(hIndex) = x
         hIndex += 1
       }
@@ -116,7 +116,7 @@ final class DoubleAccumulator
         pv = pv + cuml - prev
         prev = cuml
         val x = that.history(h)
-        x(x.length - 1) = pv
+        x(x.length - 1) = pv.toDouble // see comment on Accumulator.cumulative
         history(hIndex) = x
         h += 1
         hIndex += 1

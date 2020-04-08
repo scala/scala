@@ -26,9 +26,6 @@ final class AnyAccumulator[A]
     with mutable.SeqOps[A, AnyAccumulator, AnyAccumulator[A]]
     with IterableFactoryDefaults[A, AnyAccumulator]
     with Serializable {
-  // Elements are added to `current`. Once full, it's added to `history`, and a new `current` is
-  // created with `nextBlockSize` (which depends on `totalSize`).
-  // `cumul(i)` is `(0 until i).map(history(_).length)`
   private[jdk] var current: Array[AnyRef] = AnyAccumulator.emptyAnyRefArray
   private[jdk] var history: Array[Array[AnyRef]] = AnyAccumulator.emptyAnyRefArrayArray
   private[jdk] var cumul: Array[Long] = AnyAccumulator.emptyLongArray
