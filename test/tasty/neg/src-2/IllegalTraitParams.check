@@ -1,0 +1,4 @@
+IllegalTraitParams_fail.scala:3: error: trait Foo is a trait; does not take constructor arguments
+class Illegal extends TraitParams.Foo("?")
+                      ^
+1 error
