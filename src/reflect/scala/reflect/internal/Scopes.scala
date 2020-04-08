@@ -145,7 +145,7 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
     }
 
     final def enterBefore(sym: Symbol, next: ScopeEntry): Symbol = {
-      assert(this != EmptyScope)
+      assert(this != EmptyScope, sym)
       require(sym.name.hashCode() == next.sym.name.hashCode(), (sym, next.sym))
       require(sym != next.sym, (sym, next.sym))
 
@@ -158,8 +158,6 @@ trait Scopes extends api.Scopes { self: SymbolTable =>
       next.next = newNext
       if (hasHashTable) next.tail = newNext
       flushElemsCache()
-      assert(lookupSymbolEntry(sym) != null)
-      assert(lookupSymbolEntry(newNext.sym) != null)
       sym
     }
 
