@@ -12,12 +12,10 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
-import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName
-import scala.tools.nsc.tasty.TastyModes._
+import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyFlags}, TastyFlags.TastyFlagSet
 
-import scala.tools.nsc.tasty._
+import scala.tools.tasty.{TastyName, ErasedTypeRef}
+
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
@@ -55,59 +53,84 @@ trait TypeOps { self: TastyUniverse =>
 
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
-  @inline final def mkTypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
-  @inline final def mkSingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
-  @inline final def mkExprType(res: Type): Type = ui.nullaryMethodType(res)
-  @inline final def mkPolyType(params: List[Symbol], res: Type): Type = ui.polyType(params, res)
-  @inline final def mkClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): Type = ui.classInfoType(parents, decls, sym)
-  @inline final def mkThisType(sym: Symbol): Type = ui.thisType(sym)
-  @inline final def mkConstantType(c: Constant): Type = ui.constantType(c)
-  @inline final def mkIntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
-  @inline final def mkIntersectionType(tps: List[Type]): Type = ui.intersectionType(tps)
-  @inline final def mkAnnotatedType(tpe: Type, annot: Annotation): Type = u.AnnotatedType(annot :: Nil, tpe)
-  @inline final def mkRefinedType(parents: List[Type], clazz: Symbol): Type = mkRefinedTypeWith(parents, clazz, u.newScope)
-  @inline final def mkSuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
-  @inline final def mkLambdaFromParams(typeParams: List[Symbol], ret: Type): Type = ui.polyType(typeParams, lambdaResultType(ret))
-  def mkRecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+  object defn {
+    def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
+    def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
+    def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
+    def ExprType(res: Type): Type = ui.nullaryMethodType(res)
+    def PolyType(params: List[Symbol], res: Type): Type = ui.polyType(params, res)
+    def ClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): Type = ui.classInfoType(parents, decls, sym)
+    def ThisType(sym: Symbol): Type = ui.thisType(sym)
+    def ConstantType(c: Constant): Type = ui.constantType(c)
+    def IntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
+    def IntersectionType(tps: List[Type]): Type = ui.intersectionType(tps)
+    def AnnotatedType(tpe: Type, annot: Annotation): Type = u.AnnotatedType(annot :: Nil, tpe)
+    def RefinedType(parents: List[Type], clazz: Symbol): Type = mkRefinedTypeWith(parents, clazz, u.newScope)
+    def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
+    def LambdaFromParams(typeParams: List[Symbol], ret: Type): Type = ui.polyType(typeParams, lambdaResultType(ret))
+    def RecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
+
+    /** The method type corresponding to given parameters and result type */
+    def DefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
+      val monotpe = valueParamss.foldRight(resultType)((ts, f) => ui.methodType(ts, f))
+      val exprMonotpe = {
+        if (valueParamss.nonEmpty)
+          monotpe
+        else
+          ui.nullaryMethodType(monotpe)
+      }
+      if (typeParams.nonEmpty)
+        ui.polyType(typeParams, exprMonotpe)
+      else
+        exprMonotpe
+    }
+
+    def RefinedType(parent: Type, clazz: Symbol, name: TastyName, tpe: Type)(implicit ctx: Context): Type = {
+      val decl = ctx.newRefinementSymbol(parent, clazz, name, tpe)
+      parent match {
+        case nested: u.RefinedType =>
+          mkRefinedTypeWith(nested.parents, clazz, nested.decls.cloneScope.tap(_.enter(decl)))
+        case _ =>
+          mkRefinedTypeWith(parent :: Nil, clazz, ctx.mkScope(decl))
+      }
+    }
+
+    def NormalisedBounds(tpe: Type, sym: Symbol)(implicit ctx: Context): Type = tpe match {
+      case bounds @ UnmergablePolyBounds() =>
+        unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
+      case tpe: TypeBounds => normaliseBounds(tpe)
+      case tpe             => tpe
+    }
+
+    def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
+
+      def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
+        case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
+          unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
+        case _ =>
+          u.appliedType(tycon, args)
+      }
+
+      if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
+        val syms = mutable.ListBuffer.empty[Symbol]
+        def bindWildcards(tpe: Type) = tpe match {
+          case tpe: TypeBounds     => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+          case tpe: LambdaPolyType => tpe.toNested
+          case tpe                 => tpe
+        }
+        val args1 = args.map(bindWildcards)
+        if (syms.isEmpty) typeRefUncurried(tycon, args1)
+        else ui.existentialType(syms.toList, typeRefUncurried(tycon, args1))
+      }
+      else {
+        typeRefUncurried(tycon, args)
+      }
+
+    }
+  }
 
   private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): Type =
     u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
-
-  def refinedType(parent: Type, clazz: Symbol, name: TastyName, tpe: Type)(implicit ctx: Context): Type = {
-    val decl = ctx.newRefinementSymbol(parent, clazz, name, tpe)
-    parent match {
-      case nested: u.RefinedType =>
-        mkRefinedTypeWith(nested.parents, clazz, nested.decls.cloneScope.tap(_.enter(decl)))
-      case _ =>
-        mkRefinedTypeWith(parent :: Nil, clazz, ctx.mkScope(decl))
-    }
-  }
-
-
-  /** The method type corresponding to given parameters and result type */
-  def mkDefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
-    val monotpe = valueParamss.foldRight(resultType)((ts, f) => ui.methodType(ts, f))
-    val exprMonotpe = {
-      if (valueParamss.nonEmpty)
-        monotpe
-      else
-        ui.nullaryMethodType(monotpe)
-    }
-    if (typeParams.nonEmpty)
-      ui.polyType(typeParams, exprMonotpe)
-    else
-      exprMonotpe
-  }
-
-  @inline final def extensionMethInfo(currentOwner: Symbol, extensionMeth: Symbol, origInfo: Type, clazz: Symbol): Type =
-    u.extensionMethInfo(currentOwner, extensionMeth, origInfo, clazz)
-
-  def normaliseIfBounds(tpe: Type, sym: Symbol)(implicit ctx: Context): Type = tpe match {
-    case bounds @ UnmergablePolyBounds() =>
-      unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
-    case tpe: TypeBounds => normaliseBounds(tpe)
-    case tpe             => tpe
-  }
 
   private def normaliseBounds(bounds: TypeBounds): Type = {
     val u.TypeBounds(lo, hi) = bounds
@@ -134,43 +157,15 @@ trait TypeOps { self: TastyUniverse =>
       bounds
   }
 
-  def boundedAppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
+  private[bridge] def resolveErasedTypeRef(ref: ErasedTypeRef)(implicit ctx: Context): Type = {
+    import TastyName._
 
-    def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
-      case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
-        unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
-      case _ =>
-        u.appliedType(tycon, args)
+    val sym = ref.qualifiedName match {
+      case TypeName(module: ModuleName) => ctx.requiredModule(module)
+      case clazz                        => ctx.requiredClass(clazz)
     }
 
-    if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
-      val syms = mutable.ListBuffer.empty[Symbol]
-      def bindWildcards(tpe: Type) = tpe match {
-        case tpe: TypeBounds     => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
-        case tpe: LambdaPolyType => tpe.toNested
-        case tpe                 => tpe
-      }
-      val args1 = args.map(bindWildcards)
-      if (syms.isEmpty) typeRefUncurried(tycon, args1)
-      else ui.existentialType(syms.toList, typeRefUncurried(tycon, args1))
-    }
-    else {
-      typeRefUncurried(tycon, args)
-    }
-
-  }
-
-  def resolveErasedTypeRef(ref: ErasedTypeRef)(implicit ctx: Context): Type = {
-    val sym =
-      if (ref.isModule) ctx.moduleDependency(ref.qualifiedName)
-      else ctx.classDependency(ref.qualifiedName)
-    sym.fold {
-      val kind = if (ref.isModule) "object" else "class"
-      val addendum = if (ctx.mode.is(ReadAnnotation)) s" whilst reading annotation of ${ctx.owner}" else ""
-      val msg =
-        s"could not find $kind ${ref.qualifiedName}$addendum; perhaps it is missing from the classpath."
-      typeError(msg)
-    }(sym => defn.arrayType(ref.arrayDims, sym.tpe.erasure))
+    (0 until ref.arrayDims).foldLeft(sym.tpe.erasure)((acc, _) => u.definitions.arrayType(acc))
   }
 
   /** A type which accepts two type arguments, representing an intersection type

@@ -14,12 +14,10 @@ package scala.tools.nsc.tasty
 
 import scala.collection.mutable
 
-import TastyFormat.NameTags._
-import TastyRefs.NameRef
-import TastyName._
+import scala.tools.tasty.{TastyFormat, TastyRefs, TastyReader, TastyName, ErasedTypeRef, Signature, TastyHeaderUnpickler}
+import TastyFormat.NameTags._, TastyRefs.NameRef, TastyName._
 
 object TastyUnpickler {
-  class UnpickleException(msg: String) extends RuntimeException(msg)
 
   abstract class SectionUnpickler[R](val name: String) {
     def unpickle(reader: TastyReader, nameTable: NameRef => TastyName): R
@@ -47,18 +45,12 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
 
   private def readName(): TastyName = nameAtRef(readNameRef())
 
-  private def toErasedTypeRef(tname: TastyName): ErasedTypeRef = {
-    val erasedTypeRef = ErasedTypeRef(tname)
-    assert(erasedTypeRef.isDefined, s"Unexpected erased type ref ${tname.debug}")
-    erasedTypeRef.get
-  }
-
   private def readParamSig(): Signature.ParamSig[ErasedTypeRef] = {
     val ref = readInt()
     if (ref < 0)
       Left(ref.abs)
     else {
-      Right(toErasedTypeRef(nameAtRef(NameRef(ref))))
+      Right(ErasedTypeRef(nameAtRef(NameRef(ref))))
     }
   }
 
@@ -92,7 +84,7 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
         debugName(DefaultName(readName(), readNat()))
       case SIGNED =>
         val original  = readName()
-        val result    = toErasedTypeRef(readName())
+        val result    = ErasedTypeRef(readName())
         val paramsSig = until(end)(readParamSig())
         val sig       = Signature(paramsSig, result)
         debugName(SignedName(original, sig))

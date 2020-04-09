@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.tasty
+package scala.tools.tasty
 
 import scala.reflect.NameTransformer
 
@@ -34,6 +34,15 @@ object TastyName {
     }
   }
 
+  final def qualifiedClass(initial: String, parts: String*): TypeName =
+    qualifiedPath(initial, parts:_*).toTypeName
+
+  final def qualifiedModule(initial: String, parts: String*): ModuleName =
+    ModuleName(qualifiedPath(initial, parts:_*))
+
+  private def qualifiedPath(initial: String, parts: String*): TastyName =
+    parts.reverse.foldRight(SimpleName(initial): TastyName)((n, acc) => QualifiedName(acc, PathSep, SimpleName(n)))
+
   // Separators
   final val PathSep: SimpleName = SimpleName(".")
   final val ExpandedSep: SimpleName = SimpleName("$$")
@@ -48,6 +57,7 @@ object TastyName {
   final val MixinConstructor: SimpleName = SimpleName("$init$")
   final val EmptyPkg: SimpleName = SimpleName("<empty>")
   final val Root: SimpleName = SimpleName("<root>")
+  final val RootPkg: SimpleName = SimpleName("_root_")
 
   // TypeNames
   final val RepeatedClass: TypeName = SimpleName("<repeated>").toTypeName
@@ -152,6 +162,7 @@ sealed abstract class TastyName extends Product with Serializable { self =>
   final def isDefaultName: Boolean = self.isInstanceOf[DefaultName]
   final def isTypeName: Boolean = self.isInstanceOf[TypeName]
   final def isTermName: Boolean = !isTypeName
+  final def isConstructorName = self == TastyName.Constructor || self == TastyName.MixinConstructor
 
   final def asSimpleName: SimpleName = self match {
     case self: SimpleName => self

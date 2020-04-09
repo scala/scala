@@ -14,25 +14,19 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.SafeEq
 
-import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.Signature.MethodSignature
-import scala.tools.nsc.tasty.TastyName
-import scala.tools.nsc.tasty.TastyModes._
-import scala.tools.nsc.tasty.TastyName.SignedName
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
+import scala.tools.tasty.{TastyName, Signature}, TastyName.SignedName, Signature.MethodSignature
 
 trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import FlagSets._
 
-  object defn {
-    @inline final def byNameType(arg: Type): Type = u.definitions.byNameType(arg)
-    @inline final def repeatedAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Repeated")
-    @inline final def childAnnotationClass(implicit ctx: Context): Option[Symbol] = ctx.classDependency("scala.annotation.internal.Child")
-    @inline final def arrayType(dims: Int, arg: Type): Type = (0 until dims).foldLeft(arg)((acc, _) => u.definitions.arrayType(acc))
-  }
-
   @inline final def noSymbol: Symbol = u.NoSymbol
   @inline final def isSymbol(sym: Symbol): Boolean = sym ne u.NoSymbol
+
+  def allowsOverload(sym: Symbol) = ( // TODO [tasty]: taken from Namer. Added module symbols
+    (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
+  )
 
   implicit class SymbolDecorator(sym: Symbol) {
     def completer: TastyLazyType = {
@@ -45,7 +39,7 @@ trait SymbolOps { self: TastyUniverse =>
     }
     def ref(args: List[Type]): Type = u.appliedType(sym, args)
     def ref: Type = sym.ref(Nil)
-    def singleRef: Type = mkSingleType(noPrefix, sym)
+    def singleRef: Type = u.singleType(noPrefix, sym)
     def termRef: Type = sym.preciseRef(noPrefix)
     def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner

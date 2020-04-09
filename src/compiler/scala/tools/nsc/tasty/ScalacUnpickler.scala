@@ -13,7 +13,8 @@
 package scala.tools.nsc.tasty
 
 import TastyUnpickler.SectionUnpickler
-import TastyRefs.NameRef
+
+import scala.tools.tasty.{TastyRefs, TastyReader, TastyName}, TastyRefs.NameRef
 
 import scala.reflect.io.AbstractFile
 
@@ -21,7 +22,7 @@ object ScalacUnpickler {
 
   final class TreeSectionUnpickler[Tasty <: TastyUniverse](implicit tasty: Tasty)
   extends SectionUnpickler[TreeUnpickler[Tasty]]("ASTs") { self =>
-    def unpickle(reader: TastyReader, nameAtRef: NameRef => TastyName ): TreeUnpickler[Tasty] =
+    def unpickle(reader: TastyReader, nameAtRef: NameRef => TastyName): TreeUnpickler[Tasty] =
       new TreeUnpickler(reader, nameAtRef, Seq.empty)
   }
 

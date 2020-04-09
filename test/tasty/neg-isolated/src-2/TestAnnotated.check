@@ -1,7 +1,10 @@
 TestAnnotated_fail.scala:5: error: can't find type required by a member of package tastytest: tastytest.annot; perhaps it is missing from the classpath.
-  def test1 = new Annotated {}
+  def test1 = new Annotated {} // error: can't find type required by a member of package tastytest: tastytest.annot
                   ^
 TestAnnotated_fail.scala:6: error: could not find class tastytest.Parent whilst reading annotation of trait PublicAnnotated; perhaps it is missing from the classpath.
-  def test2 = new PublicAnnotated {}
+  def test2 = new PublicAnnotated {} // error: could not find class tastytest.Parent
                   ^
-2 errors
+TestAnnotated_fail.scala:7: error: could not find class tastytest.<<< whilst reading annotation of trait SymbollicAnnotated; perhaps it is missing from the classpath.
+  def test3 = new SymbollicAnnotated {} // error: could not find class tastytest.<<<
+                  ^
+3 errors

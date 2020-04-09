@@ -13,11 +13,11 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.annotation.tailrec
-
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName
-import scala.tools.nsc.tasty.TastyModes._
+
+import scala.tools.tasty.TastyName
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
+import scala.reflect.internal.MissingRequirementError
 
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
@@ -82,13 +82,6 @@ trait ContextOps { self: TastyUniverse =>
       if (owner != null && owner.isClass) owner.rawInfo.decls
       else emptyScope
 
-    final def requiredPackage(name: TastyName): Symbol = {
-      val n = encodeTermName(name)
-      if (n === u.nme.ROOT || n === u.nme.ROOTPKG) loadingMirror.RootPackage
-      else if (n === u.nme.EMPTY_PACKAGE_NAME) loadingMirror.EmptyPackage
-      loadingMirror.getPackage(name.toString)
-    }
-
     final def log(str: => String): Unit = {
       if (u.settings.YdebugTasty)
         u.reporter.echo(
@@ -103,8 +96,32 @@ trait ContextOps { self: TastyUniverse =>
 
     private final def loadingMirror: u.Mirror = u.mirrorThatLoaded(owner)
 
-    final def classDependency(fullname: String): Option[Symbol] = loadingMirror.getClassIfDefined(fullname).toOption
-    final def moduleDependency(fullname: String): Option[Symbol] = loadingMirror.getModuleIfDefined(fullname).toOption
+    final def requiredPackage(fullname: TastyName): Symbol = {
+      if (fullname === TastyName.Root || fullname === TastyName.RootPkg) loadingMirror.RootPackage
+      else if (fullname === TastyName.EmptyPkg) loadingMirror.EmptyPackage
+      symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
+    }
+
+    final def requiredClass(fullname: TastyName.TypeName): Symbol =
+      symOrDependencyError(false, false, fullname)(loadingMirror.getRequiredClass(encodeTypeName(fullname).toString))
+
+    final def optionalClass(fullname: TastyName.TypeName): Option[Symbol] =
+      loadingMirror.getClassIfDefined(encodeTypeName(fullname).toString).toOption
+
+    final def requiredModule(fullname: TastyName.ModuleName): Symbol =
+      symOrDependencyError(true, false, fullname)(loadingMirror.getRequiredModule(encodeTermName(fullname).toString))
+
+    private def symOrDependencyError(isModule: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
+      try sym
+      catch {
+        case _: MissingRequirementError =>
+          val kind = if (isModule) "object" else if (isPackage) "package" else "class"
+          val addendum = if (mode.is(ReadAnnotation)) s" whilst reading annotation of $owner" else ""
+          val msg =
+            s"could not find $kind ${fullname.source}$addendum; perhaps it is missing from the classpath."
+          typeError(msg)
+      }
+    }
 
     final lazy val classRoot: Symbol = initialContext.topLevelClass
 
@@ -186,6 +203,15 @@ trait ContextOps { self: TastyUniverse =>
       )
     }
 
+    final def enterClassCompletion(): ClassSymbol = {
+      val cls = globallyVisibleOwner.asClass
+      val assumedSelfType =
+        if (cls.is(Module) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
+        else noType
+      cls.info = defn.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls
+    }
+
     /** Normalises the parents and sets up value class machinery */
     final def adjustParents(cls: Symbol, parents: List[Type]): List[Type] = {
       val parentTypes = parents.map { tp =>
@@ -202,7 +228,7 @@ trait ContextOps { self: TastyUniverse =>
             if (decl.isParamAccessor) decl.makeNotPrivate(cls)
             if (!decl.isClassConstructor) {
               val extensionMeth = decl.newExtensionMethodSymbol(cls.companion, u.NoPosition)
-              extensionMeth setInfo extensionMethInfo(cls, extensionMeth, decl.info, cls)
+              extensionMeth setInfo u.extensionMethInfo(cls, extensionMeth, decl.info, cls)
             }
           }
         }
@@ -226,7 +252,7 @@ trait ContextOps { self: TastyUniverse =>
      *  3) the parent is not a RefinedType, and we are not in an enclosing RefinedType, so create a new RefinementClassSymbol.
      *  The Parent alongside the RefinedType owner are passed to the given operation
      */
-    final def withRefinementOwner[T](parent: Type)(op: (Type, Symbol) => T): T = {
+    final def enterRefinement[T](parent: Type)(op: (Type, Symbol) => T): T = {
       val clazz = owner match {
         case enclosing: u.RefinementClassSymbol =>
           enclosing.rawInfo match {

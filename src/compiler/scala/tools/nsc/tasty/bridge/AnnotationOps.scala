@@ -33,7 +33,7 @@ trait AnnotationOps { self: TastyUniverse =>
             u.reporter.error(u.NoPosition, err)
             u.UnmappableAnnotation
           case Right(annotTree) =>
-            val isChild = defn.childAnnotationClass.exists(annotSym === _)
+            val isChild = ctx.optionalClass(tpnme.ScalaAnnotationInternal_Child).exists(annotSym === _)
             ctx.log(s"annotation of $annotee = $annotTree")
             if (isChild) u.AnnotationInfo(annotTree.tpe, Nil, Nil)
             else mkAnnotation(annotTree)

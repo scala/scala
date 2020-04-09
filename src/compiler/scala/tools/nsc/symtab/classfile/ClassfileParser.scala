@@ -30,7 +30,8 @@ import scala.tools.nsc.Reporting.WarningCategory
 import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
-import scala.tools.nsc.tasty.{TastyHeaderUnpickler, TastyUniverse, TastyReader, ScalacUnpickler}
+import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
+import scala.tools.nsc.tasty.{TastyUniverse, ScalacUnpickler}
 import ScalacUnpickler._
 import scala.util.control.NonFatal
 

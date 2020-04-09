@@ -12,14 +12,13 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.TastyName
+import scala.tools.tasty.TastyName
+
 import scala.tools.nsc.tasty.TastyUniverse
 
 trait NameOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import TastyName._
-
-  def isConstructorName(name: TastyName) = name == TastyName.Constructor || name == TastyName.MixinConstructor // u.nme.isConstructorName(encodeTastyName(name))
 
   private def encodeAsTermName(tastyName: TastyName): u.TermName = tastyName match {
     case Empty          => u.termNames.EMPTY
@@ -46,6 +45,13 @@ trait NameOps { self: TastyUniverse =>
   object tpnme {
     final val Or: TypeName = TastyName.SimpleName("|").toTypeName
     final val And: TypeName = TastyName.SimpleName("&").toTypeName
+
+    final val ScalaAnnotationInternal_Repeated: TypeName =
+      TastyName.qualifiedClass("scala", "annotation", "internal", "Repeated")
+
+    final val ScalaAnnotationInternal_Child: TypeName =
+      TastyName.qualifiedClass("scala", "annotation", "internal", "Child")
+
   }
 
 }

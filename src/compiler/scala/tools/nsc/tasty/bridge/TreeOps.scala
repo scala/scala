@@ -13,7 +13,9 @@
 package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.TastyUniverse
-import scala.tools.nsc.tasty.TastyName
+
+import scala.tools.tasty.TastyName
+
 
 trait TreeOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
@@ -39,7 +41,7 @@ trait TreeOps { self: TastyUniverse =>
         if (!mixId.isEmpty) mixTpe
         else ui.intersectionType(qual.tpe.parents)
       )
-      u.Super(qual, mixId.name.toTypeName).setType(mkSuperType(qual.tpe, owntype))
+      u.Super(qual, mixId.name.toTypeName).setType(u.SuperType(qual.tpe, owntype))
     }
 
     def PathTree(tpe: Type): Tree = tpe match {
@@ -51,7 +53,7 @@ trait TreeOps { self: TastyUniverse =>
     @inline final def TypeTree(tp: Type): Tree = u.TypeTree(tp)
 
     def LambdaTypeTree(tparams: List[Symbol], body: Tree): Tree = {
-      u.TypeTree(mkLambdaFromParams(tparams, body.tpe))
+      u.TypeTree(defn.LambdaFromParams(tparams, body.tpe))
     }
 
     def Typed(expr: Tree, tpt: Tree): Tree = u.Typed(expr, tpt).setType(tpt.tpe)
@@ -73,12 +75,12 @@ trait TreeOps { self: TastyUniverse =>
       if (tpt.tpe === AndType) {
         u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(ui.intersectionType(args.map(_.tpe)))
       } else {
-        u.AppliedTypeTree(tpt, args).setType(boundedAppliedType(tpt.tpe, args.map(_.tpe)))
+        u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe)))
       }
     }
 
     def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
-      defn.repeatedAnnotationClass match {
+      ctx.optionalClass(tpnme.ScalaAnnotationInternal_Repeated) match {
         case Some(repeated)
         if annot.tpe.typeSymbol === repeated
         && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)

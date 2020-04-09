@@ -10,12 +10,11 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.tasty
+package scala.tools.tasty
 
 import java.util.UUID
 
 import TastyFormat.{MajorVersion, MinorVersion, header}
-import TastyUnpickler.UnpickleException
 
 class TastyHeaderUnpickler(reader: TastyReader) {
   import reader._

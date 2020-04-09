@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.tasty
+package scala.tools.tasty
 
 import TastyRefs._
 import collection.mutable
