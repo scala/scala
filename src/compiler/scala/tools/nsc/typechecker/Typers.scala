@@ -5985,31 +5985,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     }
 
     def typed(tree: Tree, mode: Mode, pt: Type): Tree = {
-      // Extract and insert stabilizing ValDefs (if any) which might have been
-      // introduced during the typing of the original expression.
-      @inline def insertStabilizer(doTyped: Mode => Tree): Tree = {
-        if (phase.erasedTypes || mode.in(APPSELmode) || isMacroImplRef(tree)) doTyped(mode)
-        else tree match {
-          case _: Select | _: Apply | _: TypeApply =>
-            val saved = context.pendingStabilizers
-            context.pendingStabilizers = Nil
-            val (res, vdefs) =
-              try {
-                val r = doTyped(mode | APPSELmode)
-                (r, context.pendingStabilizers)
-              }
-              finally
-                context.pendingStabilizers = saved
-            if (vdefs.isEmpty)
-              res
-            else {
-              devWarningIf(vdefs.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(vdefs.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
-              typed1(Block(vdefs.reverse, res) setPos res.pos, mode, pt)
-            }
-          case _ => doTyped(mode)
-        }
-      }
-
       lastTreeToTyper = tree
       val statsEnabled = StatisticsStatics.areSomeHotStatsEnabled() && statistics.areHotStatsLocallyEnabled
       val startByType = if (statsEnabled) statistics.pushTimer(byTypeStack, byTypeNanos(tree.getClass)) else null
@@ -6017,8 +5992,19 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val shouldPrintTyping = printTypings && !phase.erasedTypes && !noPrintTyping(tree)
       val shouldPopTypingStack = shouldPrintTyping && typingStack.beforeNextTyped(tree, mode, pt, context)
 
-      try insertStabilizer { mode =>
-        val ptPlugins = pluginsPt(pt, this, tree, mode)
+      def shouldInsertStabilizersImpl = tree match {
+        case _ if phase.erasedTypes || mode.in(APPSELmode) || isMacroImplRef(tree) => false
+        case _: Select | _: Apply | _: TypeApply                                   => true
+        case _                                                                     => false
+      }
+
+      val shouldInsertStabilizers = shouldInsertStabilizersImpl
+      val mode1: Mode = if (shouldInsertStabilizers) mode | APPSELmode else mode
+      val savedPendingStabilizer = context.pendingStabilizers
+      if (shouldInsertStabilizers) context.pendingStabilizers = Nil
+
+      try {
+        val ptPlugins = pluginsPt(pt, this, tree, mode1)
         def retypingOk = (
           context.retyping
             && (tree.tpe ne null)
@@ -6030,11 +6016,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
         val alreadyTyped = tree.tpe ne null
         val shouldPrint = !alreadyTyped && !phase.erasedTypes
-        val ptWild = if (mode.inPatternMode)
+        val ptWild = if (mode1.inPatternMode)
           ptPlugins // scala/bug#5022 don't widen pt for patterns as types flow from it to the case body.
         else
           dropExistential(ptPlugins) // FIXME: document why this is done.
-        val tree1: Tree = if (alreadyTyped) tree else typed1(tree, mode, ptWild)
+        val tree1: Tree = if (alreadyTyped) tree else typed1(tree, mode1, ptWild)
+
         if (shouldPrint)
           typingStack.showTyped(tree1)
 
@@ -6043,16 +6030,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tree1.tpe eq null)
           return setError(tree)
 
-        tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode, ptPlugins)
+        tree1 setType pluginsTyped(tree1.tpe, this, tree1, mode1, ptPlugins)
 
-        val result =
+        val adapted =
           if (tree1.isEmpty) tree1
           else {
-            val result = adapt(tree1, mode, ptPlugins, tree)
+            val result = adapt(tree1, mode1, ptPlugins, tree)
             if (typerShouldExpandDeferredMacros) {
               macroExpandAll(this, result)
             } else result
           }
+
+        val result =
+          if (shouldInsertStabilizers) addStabilizers(context.pendingStabilizers, adapted)
+          else adapted
 
         if (shouldPrint)
           typingStack.showAdapt(tree1, result, ptPlugins, context)
@@ -6060,7 +6051,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!isPastTyper)
           signalDone(context.asInstanceOf[analyzer.Context], tree, result)
 
-        if (mode.inPatternMode && !mode.inPolyMode && result.isType)
+        if (mode1.inPatternMode && !mode1.inPolyMode && result.isType)
           PatternMustBeValue(result, pt)
 
         if (shouldPopTypingStack) typingStack.showPop(result)
@@ -6084,6 +6075,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       } finally {
         if (shouldPopTypingStack) typingStack.pop(tree)
         if (statsEnabled) statistics.popTimer(byTypeStack, startByType)
+        if (shouldInsertStabilizers) context.pendingStabilizers = savedPendingStabilizer
+      }
+    }
+
+    private def addStabilizers(newStabilizers: List[Tree], expr: Tree): Tree = {
+      if (newStabilizers.isEmpty) expr else {
+        devWarningIf(newStabilizers.forall(_.symbol.owner == context.owner))(s"${context.owner} - ${(newStabilizers.map(vd => (vd.symbol, vd.symbol.owner.fullNameString)), context.owner)}")
+        // Insert stabilizing ValDefs (if any) which might have been introduced during the typing of the original expression.
+        Block(newStabilizers.reverse, expr).setPos(expr.pos).setType(expr.tpe)
       }
     }
 
