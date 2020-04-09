@@ -521,7 +521,7 @@ object Either {
    *  @see [[scala.util.Either#left]]
    */
   final case class LeftProjection[+A, +B](e: Either[A, B]) {
-    /** Returns the value from this `Left` or throws `java.util.NoSuchElementException`
+    /** Returns the value from this `Left` or throws `NoSuchElementException`
      *  if this is a `Right`.
      *
      *  {{{
@@ -529,7 +529,7 @@ object Either {
      *  Right(12).left.get // NoSuchElementException
      *  }}}
      *
-     *  @throws java.util.NoSuchElementException if the projection is [[scala.util.Right]]
+     *  @throws NoSuchElementException if the projection is [[scala.util.Right]]
      */
     @deprecated("use `Either.swap.getOrElse` instead", "2.13.0")
     def get: A = e match {
@@ -681,14 +681,14 @@ object Either {
   final case class RightProjection[+A, +B](e: Either[A, B]) {
 
     /** Returns the value from this `Right` or throws
-     *  `java.util.NoSuchElementException` if this is a `Left`.
+     *  `NoSuchElementException` if this is a `Left`.
      *
      *  {{{
      *  Right(12).right.get // 12
      *  Left(12).right.get // NoSuchElementException
      *  }}}
      *
-     * @throws java.util.NoSuchElementException if the projection is `Left`.
+     * @throws NoSuchElementException if the projection is `Left`.
      */
     @deprecated("Use `Either.getOrElse` instead", "2.13.0")
     def get: B = e match {

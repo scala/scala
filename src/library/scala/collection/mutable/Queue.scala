@@ -70,7 +70,7 @@ class Queue[A] protected (array: Array[AnyRef], start: Int, end: Int)
     * Removes the first element from this queue and returns it
     *
     * @return
-    * @throws java.util.NoSuchElementException when queue is empty
+    * @throws NoSuchElementException when queue is empty
     */
   def dequeue(): A = removeHead()
 

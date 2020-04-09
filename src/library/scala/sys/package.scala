@@ -14,7 +14,6 @@ package scala
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
-import java.util.NoSuchElementException
 
 /** The package object `scala.sys` contains methods for reading
  *  and altering core aspects of the virtual machine as well as the

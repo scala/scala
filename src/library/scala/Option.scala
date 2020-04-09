@@ -180,7 +180,7 @@ sealed abstract class Option[+A] extends IterableOnce[A] with Product with Seria
    * }
    * }}}
    *  @note The option must be nonempty.
-   *  @throws java.util.NoSuchElementException if the option is empty.
+   *  @throws NoSuchElementException if the option is empty.
    */
   def get: A
 

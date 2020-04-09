@@ -102,7 +102,7 @@ class LinkedHashMap[K, V]
 
   override def last: (K, V) = 
     if (size > 0) (lastEntry.key, lastEntry.value) 
-    else throw new java.util.NoSuchElementException("Cannot call .last on empty LinkedHashMap")
+    else throw new NoSuchElementException("Cannot call .last on empty LinkedHashMap")
       
   override def lastOption: Option[(K, V)] = 
     if (size > 0) Some((lastEntry.key, lastEntry.value))
@@ -110,7 +110,7 @@ class LinkedHashMap[K, V]
 
   override def head: (K, V) = 
     if (size > 0) (firstEntry.key, firstEntry.value) 
-    else throw new java.util.NoSuchElementException("Cannot call .head on empty LinkedHashMap")
+    else throw new NoSuchElementException("Cannot call .head on empty LinkedHashMap")
       
   override def headOption: Option[(K, V)] = 
     if (size > 0) Some((firstEntry.key, firstEntry.value))

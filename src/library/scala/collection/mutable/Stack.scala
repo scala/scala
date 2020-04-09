@@ -81,7 +81,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     * Removes the top element from this stack and return it
     *
     * @return
-    * @throws java.util.NoSuchElementException when stack is empty
+    * @throws NoSuchElementException when stack is empty
     */
   def pop(): A = removeHead()
 
@@ -104,7 +104,7 @@ class Stack[A] protected (array: Array[AnyRef], start: Int, end: Int)
     *  the element from the stack. An error is signaled if there is no
     *  element on the stack.
     *
-    *  @throws java.util.NoSuchElementException
+    *  @throws NoSuchElementException
     *  @return the top element
     */
   @`inline` final def top: A = head

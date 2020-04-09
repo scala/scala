@@ -14,7 +14,6 @@ package scala
 package collection
 
 import java.lang.{StringBuilder => JStringBuilder}
-import java.util.NoSuchElementException
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.convert.impl.{CharStringStepper, CodePointStringStepper}

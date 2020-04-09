@@ -52,7 +52,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
     *
     *  @param  n index of the element to return
     *  @return   the element at position `n` in this queue.
-    *  @throws java.util.NoSuchElementException if the queue is too short.
+    *  @throws NoSuchElementException if the queue is too short.
     */
   override def apply(n: Int): A = {
     def indexOutOfRange(): Nothing = throw new IndexOutOfBoundsException(n.toString)
@@ -160,7 +160,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   /** Returns a tuple with the first element in the queue,
     *  and a new queue with this element removed.
     *
-    *  @throws java.util.NoSuchElementException
+    *  @throws NoSuchElementException
     *  @return the first element of the queue.
     */
   def dequeue: (A, Queue[A]) = out match {
@@ -179,7 +179,7 @@ sealed class Queue[+A] protected(protected val in: List[A], protected val out: L
   /** Returns the first element in the queue, or throws an error if there
     *  is no element contained in the queue.
     *
-    *  @throws java.util.NoSuchElementException
+    *  @throws NoSuchElementException
     *  @return the first element.
     */
   def front: A = head
