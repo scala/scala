@@ -119,9 +119,8 @@ object SerializationTest {
   }
 
   def run: Unit = {
-    /* This is no longer possible with the proxy-based serialization for collections: */
-    //serialize(new B())
     serialize(new A())
+    serialize(new B())
   }
 }
 
