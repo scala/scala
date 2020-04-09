@@ -1,8 +1,8 @@
 test Test1 was successful
 test Test2 was successful
 test Test3 was successful
-test Test4 was successful
-
+test Test4
+test Test5
 D1.ValueSet(North, East)
 D2.ValueSet(North, East)
 D1.ValueSet(North, East, West)
@@ -12,4 +12,4 @@ List(101)
 D1.ValueSet(North, East)
 D2.ValueSet(North, East)
 WeekDays.ValueSet(Tue, Wed, Thu, Fri)
-
+test SerializationTest
