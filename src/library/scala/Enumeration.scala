@@ -282,6 +282,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
    *    not fall below zero), organized as a `BitSet`.
    *  @define Coll `collection.immutable.SortedSet`
    */
+  @SerialVersionUID(7229671200427364242L)
   class ValueSet private[ValueSet] (private[this] var nnIds: immutable.BitSet)
     extends immutable.AbstractSet[Value]
       with immutable.SortedSet[Value]
@@ -322,7 +323,7 @@ abstract class Enumeration (initial: Int) extends Serializable {
     override def collect[B](pf: PartialFunction[Value, B])(implicit @implicitNotFound(ValueSet.ordMsg) ev: Ordering[B]): immutable.SortedSet[B] =
       super[SortedSet].collect[B](pf)
 
-    private[Enumeration] lazy val byName: Map[String, Value] = iterator.map( v => v.toString -> v).toMap
+    @transient private[Enumeration] lazy val byName: Map[String, Value] = iterator.map( v => v.toString -> v).toMap
   }
 
   /** A factory object for value sets */
