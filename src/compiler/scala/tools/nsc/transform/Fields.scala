@@ -390,6 +390,8 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
              setInfo site.memberType(module).resultType
              addAnnotation VolatileAttr)
 
+          if (module.hasAnnotation(TransientAttr)) moduleVar.addAnnotation(TransientAttr)
+
           moduleOrLazyVarOf(module) = moduleVar
 
           moduleVar
