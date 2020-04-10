@@ -51,8 +51,6 @@ trait PatternTypers {
     import TyperErrorGen._
     import infer._
 
-    private def unit = context.unit
-
     // If the tree's symbol's type does not define an extractor, maybe the tree's type does.
     // this is the case when we encounter an arbitrary tree as the target of an unapply call
     // (rather than something that looks like a constructor call.) (for now, this only happens

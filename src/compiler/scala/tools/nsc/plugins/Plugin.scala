@@ -141,9 +141,8 @@ object Plugin {
     paths: List[List[Path]],
     dirs: List[Path],
     ignoring: List[String],
-    findPluginClassloader: (Seq[Path] => ClassLoader)): List[Try[AnyClass]] =
-  {
-    type PDResults = List[Try[(PluginDescription, ScalaClassLoader)]]
+    findPluginClassloader: Seq[Path] => ClassLoader,
+  ): List[Try[AnyClass]] = {
 
     def targeted(targets: List[List[Path]]) = targets.map { path =>
       val loader = findPluginClassloader(path)

@@ -3309,9 +3309,6 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isPrimitiveValueClass   = definitions.isPrimitiveValueClass(this)
     override def isPrimitive             = isPrimitiveValueClass
 
-    // The corresponding interface is the last parent by convention.
-    private def lastParent = if (tpe.parents.isEmpty) NoSymbol else tpe.parents.last.typeSymbol
-
     /** Is this class locally defined?
      *  A class is local, if
      *   - it is anonymous, or

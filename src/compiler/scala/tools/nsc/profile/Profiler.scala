@@ -216,10 +216,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
     import java.lang.{Integer => jInt}
     val reportNs = System.nanoTime()
     val data = notification.getUserData
-    val seq = notification.getSequenceNumber
-    val message = notification.getMessage
     val tpe = notification.getType
-    val time= notification.getTimeStamp
     data match {
       case cd: CompositeData if tpe == "com.sun.management.gc.notification" =>
         val name = cd.get("gcName").toString

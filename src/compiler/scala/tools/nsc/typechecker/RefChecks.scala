@@ -272,9 +272,6 @@ abstract class RefChecks extends Transform {
      */
     private def checkAllOverrides(clazz: Symbol, typesOnly: Boolean = false) {
       val self = clazz.thisType
-      def classBoundAsSeen(tp: Type) = {
-        tp.typeSymbol.classBound.asSeenFrom(self, tp.typeSymbol.owner)
-      }
 
       case class MixinOverrideError(member: Symbol, msg: String)
 
@@ -1568,7 +1565,7 @@ abstract class RefChecks extends Transform {
           transform(qual)
       case StringContextIntrinsic(treated, args) =>
         val argsIndexed = args.toVector
-        var concatArgs = ListBuffer[Tree]()
+        val concatArgs = ListBuffer[Tree]()
         val numLits = treated.length
         foreachWithIndex(treated.tail) { (lit, i) =>
           val treatedContents = lit.asInstanceOf[Literal].value.stringValue

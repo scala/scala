@@ -247,20 +247,6 @@ trait Reshape {
       New(TypeTree(ann.atp) setOriginal extractOriginal(ann.original), List(args))
     }
 
-    private def toPreTyperLazyVal(ddef: DefDef): ValDef = {
-      def extractRhs(rhs: Tree) = rhs match {
-        case Block(Assign(lhs, rhs)::Nil, _) if lhs.symbol.isLazy => rhs
-        case _ => rhs // unit or trait case
-      }
-      val DefDef(mods0, name0, _, _, tpt0, rhs0) = ddef
-      val name1 = name0.dropLocal
-      val Modifiers(flags0, privateWithin0, annotations0) = mods0
-      val flags1 = (flags0 & GetterFlags) & ~(STABLE | ACCESSOR | METHOD)
-      val mods1 = Modifiers(flags1, privateWithin0, annotations0) setPositions mods0.positions
-      val mods2 = toPreTyperModifiers(mods1, ddef.symbol)
-      ValDef(mods2, name1, tpt0, extractRhs(rhs0))
-    }
-
     private def trimAccessors(deff: Tree, stats: List[Tree]): List[Tree] = {
       val symdefs = (stats collect { case vodef: ValOrDefDef => vodef } map (vodeff => vodeff.symbol -> vodeff)).toMap
       val accessors = scala.collection.mutable.Map[ValDef, List[DefDef]]()

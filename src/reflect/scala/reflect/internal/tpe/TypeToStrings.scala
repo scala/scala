@@ -28,7 +28,7 @@ private[internal] trait TypeToStrings {
   def toStringRecursions = _toStringRecursions
   def toStringRecursions_=(value: Int) = _toStringRecursions = value
 
-  private var _toStringSubjects = HashSet[Type]()
+  private val _toStringSubjects = HashSet[Type]()
   def toStringSubjects = _toStringSubjects
 
   protected def typeToString(tpe: Type): String =

@@ -262,12 +262,6 @@ abstract class SymbolLoaders {
     }
   }
 
-  private def phaseBeforeRefchecks: Phase = {
-    var resPhase = phase
-    while (resPhase.refChecked) resPhase = resPhase.prev
-    resPhase
-  }
-
   /**
    * Loads contents of a package
    */
