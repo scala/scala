@@ -1933,7 +1933,7 @@ trait Implicits {
     def isShadowed(name: Name): Boolean
   }
   object Shadower {
-    private[this] val localShadowerCache = new ReusableInstance[LocalShadower](() => new LocalShadower, enabled = true)
+    private[this] val localShadowerCache = ReusableInstance[LocalShadower](new LocalShadower)
 
     def using[T](local: Boolean)(f: Shadower => T): T =
       if (local) localShadowerCache.using { shadower =>

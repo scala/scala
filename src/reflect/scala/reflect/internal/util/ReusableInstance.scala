@@ -10,14 +10,12 @@
  * additional information regarding copyright ownership.
  */
 
-package scala
-package reflect
-package internal
-package util
+package scala.reflect.internal.util
 
 import scala.collection.mutable.ArrayBuffer
+import scala.util.chaining._
 
-/** A wrapper for a list of cached instances of a value of type `T`.
+/** A wrapper for a list of cached instances of a type `T`.
   * The wrapper is recursion-reentrant: several instances are kept, so
   * at each depth of reentrance we are reusing the instance for that.
   *
@@ -26,26 +24,24 @@ import scala.collection.mutable.ArrayBuffer
   *
   * Not thread safe.
   */
-final class ReusableInstance[T <: AnyRef](make: () => T, enabled: Boolean) {
-  private[this] val cached = new ArrayBuffer[T]
-  cached += make()
-
-  private var taken: Int = 0
+final class ReusableInstance[T <: AnyRef] private (make: => T, enabled: Boolean) {
+  private[this] val cache = if (enabled) new ArrayBuffer[T](ReusableInstance.InitialSize).tap(_.addOne(make)) else null
+  private[this] var taken = 0
 
   @inline def using[R](action: T => R): R =
     if (!enabled)
-      action(make())
+      action(make)
     else {
-      if (taken == cached.size)
-        cached += make()
-      try {
-        taken += 1
-        action(cached(taken-1))
-      } finally taken -= 1
+      if (taken == cache.size)
+        cache += make
+      taken += 1
+      try action(cache(taken-1)) finally taken -= 1
     }
 }
 
 object ReusableInstance {
-  def apply[T <: AnyRef](make: => T, enabled: Boolean): ReusableInstance[T] =
-    new ReusableInstance[T](make _, enabled)
+  private final val InitialSize = 4
+
+  def apply[T <: AnyRef](make: => T): ReusableInstance[T]                   = new ReusableInstance[T](make, enabled = true)
+  def apply[T <: AnyRef](make: => T, enabled: Boolean): ReusableInstance[T] = new ReusableInstance[T](make, enabled = enabled)
 }

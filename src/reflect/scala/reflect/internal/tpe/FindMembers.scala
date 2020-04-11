@@ -240,7 +240,7 @@ trait FindMembers {
       if (isNew) members.enter(sym)
     }
   }
-  private[reflect] val findMemberInstance: ReusableInstance[FindMember] = new ReusableInstance(() => new FindMember, enabled = isCompilerUniverse)
+  private[reflect] val findMemberInstance: ReusableInstance[FindMember] = ReusableInstance(new FindMember, enabled = isCompilerUniverse)
 
   private[reflect] final class FindMember
     extends FindMemberBase[Symbol] {
