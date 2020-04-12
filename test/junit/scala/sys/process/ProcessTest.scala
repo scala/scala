@@ -86,7 +86,7 @@ class ProcessTest {
     assert(res2.isEmpty)
   }
 
-  @Test def t10823(): Unit = {
+  @Test def t10823(): Unit = testily {
     def createFile(prefix: String) = {
       val file = createTempFile(prefix, "tmp")
       Files.write(file, List(prefix).asJava, UTF_8)
