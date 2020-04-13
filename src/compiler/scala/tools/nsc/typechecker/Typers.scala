@@ -4572,7 +4572,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       def typedBind(tree: Bind) =
         tree match {
           case Bind(name: TypeName, body)  =>
-            assert(body == EmptyTree, s"${context.unit} typedBind: ${name.debugString} $body ${body.getClass}")
+            assert(body.isEmpty, s"${context.unit} typedBind: ${name.debugString} ${body} ${body.getClass}")
             val sym =
               if (tree.symbol != NoSymbol) tree.symbol
               else {
@@ -4600,7 +4600,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             val body1 = typed(body, mode, pt)
-            val impliedType = patmat.binderTypeImpliedByPattern(body1, pt, sym) // scala/bug#1503, scala/bug#5204
+            val impliedType = patmat.binderTypeImpliedByPattern(body1, pt) // scala/bug#1503, scala/bug#5204
             val symTp =
               if (treeInfo.isSequenceValued(body)) seqType(impliedType)
               else impliedType

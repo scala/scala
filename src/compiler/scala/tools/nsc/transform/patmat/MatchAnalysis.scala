@@ -24,14 +24,14 @@ trait TreeAndTypeAnalysis extends Debugging {
 
   /** Compute the type T implied for a value `v` matched by a pattern `pat` (with expected type `pt`).
    *
-   * Usually, this is the pattern's type because pattern matching implies instance-of checks.
+   *  Usually, this is the pattern's type because pattern matching implies instance-of checks.
    *
-   * However, Stable Identifier and Literal patterns are matched using `==`,
-   * which does not imply a type for the binder that binds the matched value.
+   *  However, Stable Identifier and Literal patterns are matched using `==`,
+   *  which does not imply a type for the binder that binds the matched value.
    *
-   * See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
+   *  See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
    */
-  def binderTypeImpliedByPattern(pat: Tree, pt: Type, binder: Symbol): Type =
+  def binderTypeImpliedByPattern(pat: Tree, pt: Type): Type =
     pat match {
       // because `==` decides whether these patterns match, stable identifier patterns (ident or selection)
       // do not contribute any type information (beyond the pattern's expected type)
