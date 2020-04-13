@@ -36,7 +36,7 @@ trait TreeAndTypeAnalysis extends Debugging {
       // because `==` decides whether these patterns match, stable identifier patterns (ident or selection)
       // do not contribute any type information (beyond the pattern's expected type)
       // e.g., in case x@Nil => x --> all we know about `x` is that it satisfies Nil == x, which could be anything
-      case Ident(_) | Select(_, _) => pt
+      case Ident(_) | Select(_, _) | Literal(_) => pt
 
       // the other patterns imply type tests, so we can safely assume the binder has the pattern's type when the pattern matches
       // concretely, a literal, type pattern, a case class (the constructor's result type) or extractor (the unapply's argument type) all imply type tests
