@@ -17,6 +17,7 @@ package immutable
 import generic._
 import immutable.{RedBlackTree => RB}
 import mutable.Builder
+import scala.runtime.AbstractFunction0
 import scala.util.hashing.MurmurHash3
 
 /** $factoryInfo
@@ -49,7 +50,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
  *  @define willNotTerminateInf
  */
 @SerialVersionUID(4714724050750123970L)
-final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
+final class TreeMap[A, +B] private (private[immutable] val tree: RB.Tree[A, B])(implicit val ordering: Ordering[A])
   extends SortedMap[A, B]
      with SortedMapLike[A, B, TreeMap[A, B]]
      with MapLike[A, B, TreeMap[A, B]]
@@ -271,5 +272,49 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
         else new TreeMap(t2).asInstanceOf[That]
       case _ => super.transform(f)
     }
+  }
+  override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case tm: TreeMap[k, v] if tm.ordering == this.ordering =>
+      (tm canEqual this) &&
+        (this.size == tm.size) && (isEmpty ||{
+        try {
+          val i1: RedBlackTree.TreeIterator[A, B, (A, B)] = RB.iterator(this.tree)
+          val i2: RedBlackTree.TreeIterator[k, v, (k,v)] = {
+            implicit val ord2: Ordering[k] = tm.ordering.asInstanceOf[Ordering[k]]
+            RB.iterator(tm.tree)
+          }
+          var allEqual = true
+          while (allEqual && i1.hasNext) {
+            val n1 = i1.moveNext()
+            val n2 = i2.moveNext()
+
+            allEqual = (n1 eq n2) || ((n1.key == n2.key) && (n1.value == n2.value))
+          }
+          allEqual
+        } catch {
+          case ex: ClassCastException => false
+        }
+      })
+    case that: GenMap[b, _] =>
+      (that canEqual this) &&
+        (this.size == that.size) && (isEmpty ||{
+        try {
+          val i1: RedBlackTree.TreeIterator[A, B, (A, B)] = RB.iterator(this.tree)
+          var allEqual = true
+          val marker = new AbstractFunction0[B] {
+            override def apply(): B = this.asInstanceOf[B]
+          }
+          while (allEqual && i1.hasNext) {
+            val n1 = i1.moveNext()
+
+            allEqual = that.getOrElse(n1.key.asInstanceOf[b], marker) == n1.value
+          }
+          allEqual
+        } catch {
+          case ex: ClassCastException => false
+        }
+      })
+    case _ => false
   }
 }

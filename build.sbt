@@ -192,6 +192,11 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$EntriesIterator"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$ValuesIterator"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$TreeIterator"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.RedBlackTree.iterator"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.RedBlackTree.keysIterator"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.RedBlackTree.iterator"),
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.collection.immutable.RedBlackTree.keysIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.moveNext"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedMapFactory#SortedMapCanBuildFrom.ordering"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.tree"),
 

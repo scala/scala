@@ -143,8 +143,8 @@ private[collection] object RedBlackTree {
     if (tree.right ne null) _foreachEntry(tree.right, f)
   }
 
-  def iterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[(A, B)] = new EntriesIterator(tree, start)
-  def keysIterator[A: Ordering](tree: Tree[A, _], start: Option[A] = None): Iterator[A] = new KeysIterator(tree, start)
+  def iterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): TreeIterator[A, B, (A, B)] = new EntriesIterator(tree, start)
+  def keysIterator[A: Ordering](tree: Tree[A, _], start: Option[A] = None): TreeIterator[A, _, A] = new KeysIterator(tree, start)
   def valuesIterator[A: Ordering, B](tree: Tree[A, B], start: Option[A] = None): Iterator[B] = new ValuesIterator(tree, start)
 
   @tailrec
@@ -317,7 +317,7 @@ private[collection] object RedBlackTree {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(implicit ordering: Ordering[A]) extends Iterator[R] {
+  private[immutable] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(implicit ordering: Ordering[A]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R
 
     override def hasNext: Boolean = lookahead ne null
@@ -328,6 +328,14 @@ private[collection] object RedBlackTree {
       if(tree ne null) {
         lookahead = findLeftMostOrPopOnEmpty(goRight(tree))
         nextResult(tree)
+      } else Iterator.empty.next()
+    }
+
+    def moveNext(): Tree[A, B] = {
+      val tree = lookahead
+      if(tree ne null) {
+        lookahead = findLeftMostOrPopOnEmpty(goRight(tree))
+        tree
       } else Iterator.empty.next()
     }
 
@@ -360,7 +368,7 @@ private[collection] object RedBlackTree {
       new Array[Tree[A, B]](maximumHeight)
     }
     private[this] var index = 0
-    private[this] var lookahead: Tree[A, B] = start map startFrom getOrElse findLeftMostOrPopOnEmpty(root)
+    private[this] var lookahead: Tree[A, B] = if (start.isDefined) startFrom(start.get) else findLeftMostOrPopOnEmpty(root)
 
     /**
      * Find the leftmost subtree whose key is equal to the given key, or if no such thing,

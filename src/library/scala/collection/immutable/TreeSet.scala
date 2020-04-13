@@ -243,4 +243,26 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     val (l, r) = RB.partitionKeys(tree, p)
     (newSetOrSelf(l), newSetOrSelf(r))
   }
+  override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case tm: TreeSet[k] if tm.ordering == this.ordering =>
+      (tm canEqual this) &&
+        (this.size == tm.size) && {
+        val i1: RedBlackTree.TreeIterator[A, _, (A, _)] = RB.iterator(this.tree)
+        val i2: RedBlackTree.TreeIterator[k, _, (k, _)] = {
+          implicit val ord2: Ordering[k] = tm.ordering.asInstanceOf[Ordering[k]]
+          RB.iterator(tm.tree)
+        }
+        var allEqual = true
+        while (allEqual && i1.hasNext) {
+          val n1 = i1.moveNext()
+          val n2 = i2.moveNext()
+
+          allEqual = (n1 eq n2) || (n1.key == n2.key)
+        }
+        allEqual
+      }
+    case _ => super.equals(that)
+  }
+
 }
