@@ -948,6 +948,13 @@ object LazyList extends SeqFactory[LazyList] {
   // Eagerly evaluate cached empty instance
   private[this] val _empty = newLL(State.Empty).force
 
+  // We cannot make the arguments be lazily evaluated; Scala 2 doesn't have
+  // by-name varargs, and even Dotty's by-name varargs (SIP-24) don't make the individual
+  // elements by-name separately from each other.  So the arguments have already been
+  // evaluated; calling `force` marks them as such, which matters to `toString`
+  override def apply[A](elems: A*): LazyList[A] =
+    super.apply(elems: _*).force
+
   private sealed trait State[+A] extends Serializable {
     def head: A
     def tail: LazyList[A]

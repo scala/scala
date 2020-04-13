@@ -70,20 +70,20 @@ class LazyListTest {
 
   @Test
   def testLazyListToStringWhenHeadAndTailBothAreNotEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     assertEquals("LazyList(<not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenOnlyHeadIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.head
     assertEquals("LazyList(1, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadAndTailIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.head
     l.tail
     assertEquals("LazyList(1, <not computed>)", l.toString)
@@ -91,36 +91,42 @@ class LazyListTest {
 
   @Test
   def testLazyListToStringWhenHeadAndTailHeadIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.head
     l.tail.head
     assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
+  def testLazyListToStringFromApply = {
+    val l = LazyList(1, 2, 3)
+    assertEquals("LazyList(1, 2, 3)", l.toString)
+  }
+
+  @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndOnlyTailIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.tail
     assertEquals("LazyList(1, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailHeadIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.tail.head
     assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhenHeadIsNotEvaluatedAndTailTailIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.tail.tail
     assertEquals("LazyList(1, 2, <not computed>)", l.toString)
   }
 
   @Test
   def testLazyListToStringWhendHeadIsNotEvaluatedAndTailTailHeadIsEvaluated = {
-    val l = LazyList(1, 2, 3, 4, 5)
+    val l = LazyList.from(1).take(5)
     l.tail.tail.head
     assertEquals("LazyList(1, 2, 3, <not computed>)", l.toString)
   }
@@ -145,7 +151,6 @@ class LazyListTest {
   @Test
   def testLazyListToStringForSingleElementList: Unit = {
     val l = LazyList(1)
-    l.force
     assertEquals("LazyList(1)", l.toString)
   }
 
