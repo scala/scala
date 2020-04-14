@@ -449,10 +449,6 @@ trait Solving extends Logic {
       tseitinSolutions.map(_.projectToSolution(solvable.symbolMapping.symForVar))
     }
 
-    private def withLit(res: TseitinModel, l: Lit): TseitinModel = {
-      if (res eq NoTseitinModel) NoTseitinModel else res + l
-    }
-
     /** Drop trivially true clauses, simplify others by dropping negation of `unitLit`.
      *
      *  Disjunctions that contain the literal we're making true in the returned model are trivially true.

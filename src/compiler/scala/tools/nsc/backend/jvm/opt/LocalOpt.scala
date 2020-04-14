@@ -786,8 +786,6 @@ object LocalOptImpls {
    * Apply various simplifications to branching instructions.
    */
   def simplifyJumps(method: MethodNode): Boolean = {
-    var changed = false
-
     val allHandlers = method.tryCatchBlocks.asScala.toSet
 
     // A set of all exception handlers that guard the current instruction, required for simplifyGotoReturn

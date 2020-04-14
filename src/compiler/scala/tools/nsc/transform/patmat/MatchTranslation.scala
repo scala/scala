@@ -167,12 +167,6 @@ trait MatchTranslation {
       }
       def translate(): List[TreeMaker] = nextStep() merge (_.translate())
 
-      private def setInfo(paramType: Type): Boolean = {
-        devWarning(s"resetting info of $this to $paramType")
-        setVarInfo(binder, paramType)
-        true
-      }
-
       private def concreteType = tpe.upperBound
       private def unbound = unbind(tree)
       private def tpe_s = if (pt <:< concreteType) "" + pt else s"$pt (binder: $tpe)"

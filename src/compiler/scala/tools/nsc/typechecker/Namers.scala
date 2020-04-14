@@ -1516,8 +1516,6 @@ trait Namers extends MethodSynthesis {
       def rtparams = rtparams0.map(_.duplicate)
       def rvparamss = rvparamss0.map(_.map(_.duplicate))
       val search = DefaultGetterNamerSearch(context, meth, initCompanionModule = true)
-      val methOwner  = meth.owner
-      val isConstr   = meth.isConstructor
       val overrides  = overridden != NoSymbol && !overridden.isOverloaded
       // value parameters of the base class (whose defaults might be overridden)
       var baseParamss = (vparamss, overridden.tpe.paramss) match {

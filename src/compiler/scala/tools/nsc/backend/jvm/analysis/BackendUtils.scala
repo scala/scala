@@ -159,7 +159,6 @@ abstract class BackendUtils extends PerRunInit {
     // stack map frames and invokes the `getCommonSuperClass` method. This method expects all
     // ClassBTypes mentioned in the source code to exist in the map.
 
-    val nilLookupDesc = MethodBType(Nil, jliMethodHandlesLookupRef).descriptor
     val serlamObjDesc = MethodBType(jliSerializedLambdaRef :: Nil, ObjectRef).descriptor
     val implMethodsArray = implMethods.toArray
 

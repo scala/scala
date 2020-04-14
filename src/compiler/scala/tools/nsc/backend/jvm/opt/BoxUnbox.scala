@@ -537,7 +537,7 @@ abstract class BoxUnbox {
    * this iterator returns all copy operations (load, store, dup) that are in between.
    */
   class CopyOpsIterator(initialCreations: Set[BoxCreation], finalCons: Set[BoxConsumer], prodCons: ProdConsAnalyzer) extends Iterator[AbstractInsnNode] {
-    private var queue = mutable.Queue.empty[AbstractInsnNode] ++ initialCreations.iterator.flatMap(_.boxConsumers(prodCons, ultimate = false))
+    private val queue = mutable.Queue.empty[AbstractInsnNode] ++ initialCreations.iterator.flatMap(_.boxConsumers(prodCons, ultimate = false))
 
     // a single copy operation can consume multiple producers: val a = if (b) box(1) else box(2).
     // the `ASTORE a` has two producers (the two box operations). we need to handle it only once.

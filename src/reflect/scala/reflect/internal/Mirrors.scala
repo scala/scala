@@ -45,10 +45,6 @@ trait Mirrors extends api.Mirrors {
       else definitions.findNamedMember(segs.tail, RootClass.info member segs.head)
     }
 
-    /** Todo: organize similar to mkStatic in scala.reflect.Base */
-    private def getModuleOrClass(path: Name, len: Int): Symbol =
-      getModuleOrClass(path.toString, len, path.newName(_))
-
     private def getModuleOrClass(path: String, len: Int, toName: String => Name): Symbol = {
       val point = path lastIndexOf ('.', len - 1)
       val owner =
@@ -101,8 +97,7 @@ trait Mirrors extends api.Mirrors {
     /************************ loaders of class symbols ************************/
 
     private def ensureClassSymbol(fullname: String, sym: Symbol): ClassSymbol = {
-      var result = sym
-      result match {
+      sym match {
         case x: ClassSymbol => x
         case _              => MissingRequirementError.notFound("class " + fullname)
       }
