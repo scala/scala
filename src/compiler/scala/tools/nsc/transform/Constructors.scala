@@ -681,7 +681,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
             case dd: DefDef =>
               // either move the RHS to ctor (for getter of stored field) or just drop it (for corresponding setter)
               def shouldMoveRHS =
-                clazz.isTrait && statSym.isAccessor && !statSym.isLazy && (statSym.isSetter || memoizeValue(statSym))
+                clazz.isTrait && statSym.isAccessor && !statSym.isLazy && !statSym.isSpecialized && (statSym.isSetter || memoizeValue(statSym))
 
               if ((dd.rhs eq EmptyTree) || !shouldMoveRHS) { defBuf += dd }
               else {
