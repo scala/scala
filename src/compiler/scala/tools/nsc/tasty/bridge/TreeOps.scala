@@ -91,6 +91,10 @@ trait TreeOps { self: TastyUniverse =>
       }
     }
 
+    def RefinedTypeTree(parent: Tree, decls: List[Tree], refinedCls: Symbol): Tree = {
+      u.CompoundTypeTree(u.Template(parent :: Nil, u.noSelfType, decls)).setType(refinedCls.info)
+    }
+
     def TypeBoundsTree(lo: Tree, hi: Tree): Tree = {
       u.TypeBoundsTree(lo, hi).setType(u.TypeBounds(lo.tpe, hi.tpe))
     }

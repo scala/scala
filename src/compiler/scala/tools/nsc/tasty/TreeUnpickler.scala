@@ -310,7 +310,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               var name   = readTastyName()
               val parent = readType()
               if (nextUnsharedTag === TYPEBOUNDS) name = name.toTypeName
-              ctx.enterRefinement(parent)(defn.RefinedType(_, _, name, readType()))
+              ctx.enterRefinement(parent)(refinedCtx => defn.RefinedType(parent, name, refinedCtx.owner, readType()))
             case APPLIEDtype => defn.AppliedType(readType(), until(end)(readType()))
             case TYPEBOUNDS =>
               val lo = readType()
@@ -941,9 +941,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val refineCls = symAtAddr.getOrElse(start, ctx.newRefinementClassSymbol)
               registerSym(start, refineCls)
               typeAtAddr(start) = refineCls.ref
-              val refinement = defn.RefinedType(readTpt().tpe :: Nil, refineCls)
-              readStatsAsSyms(refineCls, end)(ctx.withOwner(refineCls))
-              tpd.TypeTree(refinement)
+              val parent = readTpt()
+              ctx.withOwner(refineCls).enterRefinement(parent.tpe) { refinedCtx =>
+                readStatsAsSyms(refineCls, end)(refinedCtx)
+                tpd.RefinedTypeTree(parent, Nil, refineCls)
+              }
             case APPLIEDtpt =>
               // If we do directly a tpd.AppliedType tree we might get a
               // wrong number of arguments in some scenarios reading F-bounded

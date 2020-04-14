@@ -65,7 +65,6 @@ trait TypeOps { self: TastyUniverse =>
     def IntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
     def IntersectionType(tps: List[Type]): Type = ui.intersectionType(tps)
     def AnnotatedType(tpe: Type, annot: Annotation): Type = u.AnnotatedType(annot :: Nil, tpe)
-    def RefinedType(parents: List[Type], clazz: Symbol): Type = mkRefinedTypeWith(parents, clazz, u.newScope)
     def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
     def LambdaFromParams(typeParams: List[Symbol], ret: Type): Type = ui.polyType(typeParams, lambdaResultType(ret))
     def RecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
@@ -85,13 +84,13 @@ trait TypeOps { self: TastyUniverse =>
         exprMonotpe
     }
 
-    def RefinedType(parent: Type, clazz: Symbol, name: TastyName, tpe: Type)(implicit ctx: Context): Type = {
-      val decl = ctx.newRefinementSymbol(parent, clazz, name, tpe)
+    def RefinedType(parent: Type, name: TastyName, refinedCls: Symbol, tpe: Type)(implicit ctx: Context): Type = {
+      val decl = ctx.newRefinementSymbol(parent, refinedCls, name, tpe)
       parent match {
         case nested: u.RefinedType =>
-          mkRefinedTypeWith(nested.parents, clazz, nested.decls.cloneScope.tap(_.enter(decl)))
+          mkRefinedTypeWith(nested.parents, refinedCls, nested.decls.cloneScope.tap(_.enter(decl)))
         case _ =>
-          mkRefinedTypeWith(parent :: Nil, clazz, ctx.mkScope(decl))
+          mkRefinedTypeWith(parent :: Nil, refinedCls, ctx.mkScope(decl))
       }
     }
 
@@ -373,7 +372,7 @@ trait TypeOps { self: TastyUniverse =>
     override val productPrefix = "RecType"
     override val productArity = 2
 
-    val refinementClass = ctx.newRefinementClassSymbol.setInfo(EmptyRecTypeInfo)
+    val refinementClass = ctx.newRefinementClassSymbol
     val recThis: Type   = ui.thisType(refinementClass)
     val parent: Type    = run(this)
 
@@ -387,10 +386,6 @@ trait TypeOps { self: TastyUniverse =>
     override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
     override def safeToString: String = s"RecType(rt @ $hashCode => ${if (parent == null) "<under-construction>" else parent})"
 
-  }
-
-  private[bridge] case object EmptyRecTypeInfo extends Type {
-    override def isTrivial: Boolean = true
   }
 
   object MethodType extends MethodTypeCompanion(emptyFlags)

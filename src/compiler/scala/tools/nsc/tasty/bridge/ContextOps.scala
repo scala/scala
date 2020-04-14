@@ -252,20 +252,17 @@ trait ContextOps { self: TastyUniverse =>
      *  3) the parent is not a RefinedType, and we are not in an enclosing RefinedType, so create a new RefinementClassSymbol.
      *  The Parent alongside the RefinedType owner are passed to the given operation
      */
-    final def enterRefinement[T](parent: Type)(op: (Type, Symbol) => T): T = {
+    final def enterRefinement[T](parent: Type)(op: Context => T): T = {
       val clazz = owner match {
         case enclosing: u.RefinementClassSymbol =>
-          enclosing.rawInfo match {
-            case EmptyRecTypeInfo => mkRefinedTypeWith(parent :: Nil, enclosing, mkScope)
-            case _                => ()
-          }
+          if (!enclosing.hasRawInfo) mkRefinedTypeWith(parent :: Nil, enclosing, mkScope)
           enclosing
         case _ => parent match {
           case nested: u.RefinedType => nested.typeSymbol
           case _                     => newRefinementClassSymbol
         }
       }
-      op(parent, clazz)
+      op(withOwner(clazz))
     }
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
