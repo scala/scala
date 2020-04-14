@@ -152,8 +152,11 @@ object Reader {
           ScalaParsedLine(line, cursor, 0, 0, Nil)
       }
     }
-    def tokenize(line: String, cursor: Int): ScalaParsedLine = {
-      val tokens = repl.tokenize(line)
+    private def tokenize(line: String, cursor: Int): ScalaParsedLine = {
+      val tokens = repl.reporter.suppressOutput {
+        repl.tokenize(line)
+      }
+      repl.reporter.reset()
       if (tokens.isEmpty) ScalaParsedLine(line, cursor, 0, 0, Nil)
       else {
         val current = tokens.find(t => t.start <= cursor && cursor <= t.end)
