@@ -136,40 +136,57 @@ trait PresentationCompilation { self: IMain =>
       typeString(typedTreeAt(start, end))
 
     val NoCandidates = (-1, Nil)
-    type Candidates = (Int, List[String])
+    type Candidates = (Int, List[CompletionCandidate])
 
-    override def candidates(tabCount: Int): Candidates = {
+    override def completionCandidates(tabCount: Int): Candidates = {
       import compiler._
       import CompletionResult.NoResults
 
+      def isMemberDeprecated(m: Member) = m match {
+        case tm: TypeMember if tm.viaView.isDeprecated || tm.viaView != NoSymbol && tm.viaView.owner.isDeprecated || !m.sym.exists =>
+          true
+        case _ =>
+          m.sym.isDeprecated ||
+            m.sym.hasGetter && m.sym.getterIn(m.sym.owner).isDeprecated
+      }
+      def isMemberUniversal(m: Member) =
+        definitions.isUniversalMember(m.sym) ||
+          (m match {
+            case t: TypeMember =>
+              t.implicitlyAdded && t.viaView.info.params.head.info.bounds.isEmptyBounds
+            case _ =>
+              false
+          })
+      def memberArity(m: Member): CompletionCandidate.Arity =
+        if (m.sym.paramss.isEmpty) CompletionCandidate.Nullary
+        else if (m.sym.paramss.size == 1 && m.sym.paramss.head.isEmpty) CompletionCandidate.Nilary
+        else CompletionCandidate.Other
       def defStringCandidates(matching: List[Member], name: Name, isNew: Boolean): Candidates = {
-        val defStrings = for {
+        val ccs = for {
           member <- matching
           if member.symNameDropLocal == name
           sym <- if (member.sym.isClass && isNew) member.sym.info.decl(nme.CONSTRUCTOR).alternatives else member.sym.alternatives
           sugared = sym.sugaredSymbolOrSelf
         } yield {
           val tp = member.prefix memberType sym
-          sugared.defStringSeenAs(tp)
+          CompletionCandidate(
+            defString = sugared.defStringSeenAs(tp),
+            arity = memberArity(member),
+            isDeprecated = isMemberDeprecated(member),
+            isUniversal = isMemberUniversal(member))
         }
-        (cursor, "" :: defStrings.distinct)
+        (cursor, CompletionCandidate("") :: ccs.distinct)
       }
+      def toCandidates(members: List[Member]): List[CompletionCandidate] =
+        members
+          .map(m => CompletionCandidate(m.symNameDropLocal.decoded, memberArity(m), isMemberDeprecated(m), isMemberUniversal(m)))
+          .distinctBy(_.defString)
+          .sortBy(_.defString)
       val found = this.completionsAt(cursor) match {
         case NoResults => NoCandidates
         case r =>
-          def shouldHide(m: Member): Boolean = {
-            val isUniversal = definitions.isUniversalMember(m.sym)
-            def viaUniversalExtensionMethod = m match {
-              case t: TypeMember if t.implicitlyAdded && t.viaView.info.params.head.info.bounds.isEmptyBounds => true
-              case _ => false
-            }
-            (
-              isUniversal && nme.isReplWrapperName(m.prefix.typeSymbol.name)
-                || isUniversal && tabCount == 0 && r.name.isEmpty
-                || viaUniversalExtensionMethod && tabCount == 0 && r.name.isEmpty
-              )
-          }
-
+          def shouldHide(m: Member): Boolean =
+            tabCount == 0 && (isMemberDeprecated(m) || isMemberUniversal(m))
           val matching = r.matchingResults().filterNot(shouldHide)
           val tabAfterCommonPrefixCompletion = lastCommonPrefixCompletion.contains(buf.substring(inputRange.start, cursor)) && matching.exists(_.symNameDropLocal == r.name)
           val doubleTab = tabCount > 0 && matching.forall(_.symNameDropLocal == r.name)
@@ -193,25 +210,24 @@ trait PresentationCompilation { self: IMain =>
           } else if (matching.isEmpty) {
             // Lenient matching based on camel case and on eliding JavaBean "get" / "is" boilerplate
             val camelMatches: List[Member] = r.matchingResults(CompletionResult.camelMatch(_)).filterNot(shouldHide)
-            val memberCompletions = camelMatches.map(_.symNameDropLocal.decoded).distinct.sorted
+            val memberCompletions: List[CompletionCandidate] = toCandidates(camelMatches)
             def allowCompletion = (
               (memberCompletions.size == 1)
-                || CompletionResult.camelMatch(r.name)(r.name.newName(StringOps.longestCommonPrefix(memberCompletions)))
+                || CompletionResult.camelMatch(r.name)(r.name.newName(StringOps.longestCommonPrefix(memberCompletions.map(_.defString))))
               )
             if (memberCompletions.isEmpty) NoCandidates
             else if (allowCompletion) (cursor - r.positionDelta, memberCompletions)
-            else (cursor, "" :: memberCompletions)
+            else (cursor, CompletionCandidate("") :: memberCompletions)
           } else if (matching.nonEmpty && matching.forall(_.symNameDropLocal == r.name))
             NoCandidates // don't offer completion if the only option has been fully typed already
           else {
             // regular completion
-            val memberCompletions: List[String] = matching.map(_.symNameDropLocal.decoded).distinct.sorted
-            (cursor - r.positionDelta, memberCompletions)
+            (cursor - r.positionDelta, toCandidates(matching))
           }
       }
       lastCommonPrefixCompletion =
         if (found != NoCandidates && buf.length >= found._1)
-          Some(buf.substring(inputRange.start, found._1) + StringOps.longestCommonPrefix(found._2))
+          Some(buf.substring(inputRange.start, found._1) + StringOps.longestCommonPrefix(found._2.map(_.defString)))
         else
           None
       found

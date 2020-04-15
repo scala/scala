@@ -732,7 +732,7 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .settings(
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
-    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    scalacOptions in Compile += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
   )
   .settings(
     connectInput in run := true,

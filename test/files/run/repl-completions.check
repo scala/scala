@@ -21,9 +21,6 @@ scala> :completions x_y_
 
 scala> :completions x_y_a
 
-scala> :completions fBZ
-[completions] getFooBarZot
-
 scala> :completions object O2 { val x = O.
 [completions] object O2 { val x = O.getFooBarZot
 [completions] object O2 { val x = O.x_y_x

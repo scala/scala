@@ -319,7 +319,29 @@ trait PresentationCompilationResult {
 
   def typeAt(start: Int, end: Int): String
 
-  def candidates(tabCount: Int): (Int, List[String])
+  @deprecated("`completionCandidates` returns richer information (CompletionCandidates, not just strings)", since = "2.13.2")
+  def candidates(tabCount: Int): (Int, List[String]) =
+    completionCandidates(tabCount) match {
+      case (cursor, cands) =>
+        (cursor, cands.map(_.defString))
+    }
+
+  def completionCandidates(tabCount: Int = -1): (Int, List[CompletionCandidate])
+}
+
+case class CompletionCandidate(
+  defString: String,
+  arity: CompletionCandidate.Arity = CompletionCandidate.Nullary,
+  isDeprecated: Boolean = false,
+  isUniversal: Boolean = false)
+object CompletionCandidate {
+  sealed trait Arity
+  case object Nullary extends Arity
+  case object Nilary extends Arity
+  case object Other extends Arity
+  // purely for convenience
+  def fromStrings(defStrings: List[String]): List[CompletionCandidate] =
+    defStrings.map(CompletionCandidate(_))
 }
 
 case class TokenData(token: Int, start: Int, end: Int, isIdentifier: Boolean)
