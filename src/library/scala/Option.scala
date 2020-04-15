@@ -40,11 +40,17 @@ object Option {
   def when[A](cond: Boolean)(a: => A): Option[A] =
     if (cond) Some(a) else None
 
+  def flatWhen[A](cond: Boolean)(a: => Option[A]): Option[A] =
+    if (cond) a else None
+
   /** Unless a given condition is true, this will evaluate the `a` argument and
    *  return Some(a). Otherwise, `a` is not evaluated and None is returned.
    */
   @inline def unless[A](cond: Boolean)(a: => A): Option[A] =
     when(!cond)(a)
+
+  @inline def flatUnless[A](cond: Boolean)(a: => A): Option[A] =
+    flatWhen(!cond)(a)
 }
 
 /** Represents optional values. Instances of `Option`
