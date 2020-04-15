@@ -296,6 +296,8 @@ trait Contexts { self: Analyzer =>
     /** A root import is never unused and always bumps context depth. (e.g scala._ / Predef._ and magic REPL imports) */
     def isRootImport: Boolean = false
 
+    var pendingStabilizers: List[Tree] = Nil
+
     /** Types for which implicit arguments are currently searched */
     var openImplicits: List[OpenImplicit] = List()
     final def isSearchingForImplicitParam: Boolean = {

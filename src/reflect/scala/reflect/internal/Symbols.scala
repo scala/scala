@@ -3846,7 +3846,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     def loop(mt: Type): Boolean = {
       mt match {
         case MethodType(params, restpe) => params.exists(_.info.dealias.exists(_ == tt)) || loop(restpe)
-        case PolyType(tparams, restpe) => loop(restpe)
+        case PolyType(_, restpe) => loop(restpe)
         case _ => false
       }
     }

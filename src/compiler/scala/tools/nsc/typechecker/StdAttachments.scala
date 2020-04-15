@@ -199,27 +199,6 @@ trait StdAttachments {
 
   /** Marks a Typed tree with Unit tpt. */
   case object TypedExpectingUnitAttachment
-
-  case class StabilizingDefinitions(vdefs: List[ValDef])
-  private[this] val StabilizingDefinitionsTag: reflect.ClassTag[StabilizingDefinitions] = reflect.classTag[StabilizingDefinitions]
-
-  def addStabilizingDefinition(tree: Tree, vdef: ValDef): Tree = {
-    tree.updateAttachment(StabilizingDefinitions(
-      tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
-        case Some(StabilizingDefinitions(vdefs)) => vdef :: vdefs
-        case _ => List(vdef)
-      }
-    ))(StabilizingDefinitionsTag)
-  }
-
-  def stabilizingDefinitions(tree: Tree): List[ValDef] =
-    tree.attachments.get[StabilizingDefinitions](StabilizingDefinitionsTag) match {
-      case Some(StabilizingDefinitions(vdefs)) => vdefs
-      case _ => Nil
-    }
-
-  def removeStabilizingDefinitions(tree: Tree): Tree =
-    tree.removeAttachment[StabilizingDefinitions](StabilizingDefinitionsTag)
 }
 
 
