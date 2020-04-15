@@ -197,7 +197,7 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: FlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
       adjustSymbol(
-        symbol = owner.newClassSymbol(name = encodeTypeName(typeName), newFlags = flags.ensuring(Abstract, when = Trait)),
+        symbol = owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, flags),
         info = completer,
         privateWithin = privateWithin
       )
@@ -207,7 +207,7 @@ trait ContextOps { self: TastyUniverse =>
       val cls = globallyVisibleOwner.asClass
       val assumedSelfType =
         if (cls.is(Module) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
-        else noType
+        else u.NoType
       cls.info = defn.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
@@ -269,6 +269,18 @@ trait ContextOps { self: TastyUniverse =>
 
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 
+    final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
+      case err: TypeError =>
+        sym.info = u.ErrorType
+        throw err
+    }
+
+    final def errorInContext: PartialFunction[Throwable, String] = {
+      case err: TypeError =>
+        owner.info = u.ErrorType
+        err.getMessage()
+    }
+
     @tailrec
     final def initialContext: InitialContext = this match {
       case ctx: InitialContext => ctx
@@ -313,12 +325,12 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Enter a phase and apply an error handler if the current phase is after the one specified
       */
-    final def withSafePhaseNoLater[E, T](phase: String)(pf: PartialFunction[Throwable, E])(op: Context => T): Either[E, T] = {
+    final def withSafePhaseNoLater[E, T](phase: String)(pf: Context => PartialFunction[Throwable, E])(op: Context => T): Either[E, T] = {
       val phase0 = u.findPhaseWithName(phase)
       if (u.isAtPhaseAfter(phase0)) {
         try {
           u.enteringPhaseNotLaterThan(phase0)(Right(op(this)))
-        } catch pf andThen (Left(_))
+        } catch pf(this) andThen (Left(_))
       } else {
         Right(op(this))
       }

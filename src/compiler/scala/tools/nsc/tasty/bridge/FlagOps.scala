@@ -60,17 +60,17 @@ trait FlagOps { self: TastyUniverse =>
   }
 
   implicit class FlagSetOps(private val flagSet: FlagSet) {
+    // duplicated from internal.Symbols
     private def flags: FlagSet = {
       val fs = flagSet & u.phase.flagMask
       (fs | ((fs & Flags.LateFlags) >>> Flags.LateShift)) & ~((fs & Flags.AntiFlags) >>> Flags.AntiShift)
     }
+    // duplicated from internal.Symbols
     private def getFlag(mask: FlagSet): FlagSet = {
       mask & (if ((mask & Flags.PhaseIndependentFlags) == mask) flagSet else flags)
     }
     def not(mask: FlagSet): Boolean = !isOneOf(mask)
     def is(mask: FlagSet): Boolean = getFlag(mask) == mask
-    def ensuring(is: FlagSet, when: FlagSet): FlagSet = if (flagSet.is(when)) (flagSet | is) else flagSet
-    def is(mask: FlagSet, butNot: FlagSet): Boolean = is(mask) && not(butNot)
     def isOneOf(mask: FlagSet): Boolean = getFlag(mask) != 0
   }
 
@@ -79,7 +79,8 @@ trait FlagOps { self: TastyUniverse =>
   def emptyTastyFlags: TastyFlagSet = EmptyTastyFlags
 
   def show(flags: FlagSet): String = u.show(flags)
-  def show(flags: TastyFlagSet): String =
+
+  def showTasty(flags: TastyFlagSet): String =
     if (!flags) "EmptyTastyFlags"
     else flags.toSingletonSets.map { f =>
       (f: @unchecked) match {

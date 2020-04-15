@@ -34,12 +34,7 @@ trait TypeOps { self: TastyUniverse =>
 
   @inline final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[u.ConstantType]
 
-  def errorType: Type = u.ErrorType
-  def noType: Type = u.NoType
-  def noPrefix: Type = u.NoPrefix
-
-  @inline final def isError(tpe: Type): Boolean = tpe `eq` u.ErrorType
-  @inline final def isNoType(tpe: Type): Boolean = tpe `eq` u.NoType
+  @inline final def isTypeType(tpe: Type): Boolean = !((tpe `eq` u.ErrorType) || (tpe `eq` u.NoType))
 
   private object UnmergablePolyBounds {
     def unapply(tpe: TypeBounds): Boolean = tpe match {
@@ -54,6 +49,7 @@ trait TypeOps { self: TastyUniverse =>
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
   object defn {
+    final val NoType: Type = u.NoType
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
@@ -71,17 +67,10 @@ trait TypeOps { self: TastyUniverse =>
 
     /** The method type corresponding to given parameters and result type */
     def DefDefType(typeParams: List[Symbol], valueParamss: List[List[Symbol]], resultType: Type): Type = {
-      val monotpe = valueParamss.foldRight(resultType)((ts, f) => ui.methodType(ts, f))
-      val exprMonotpe = {
-        if (valueParamss.nonEmpty)
-          monotpe
-        else
-          ui.nullaryMethodType(monotpe)
-      }
-      if (typeParams.nonEmpty)
-        ui.polyType(typeParams, exprMonotpe)
-      else
-        exprMonotpe
+      var tpe = valueParamss.foldRight(resultType)((ts, res) => ui.methodType(ts, res))
+      if (valueParamss.isEmpty) tpe = ui.nullaryMethodType(tpe)
+      if (typeParams.nonEmpty)  tpe = ui.polyType(typeParams, tpe)
+      tpe
     }
 
     def RefinedType(parent: Type, name: TastyName, refinedCls: Symbol, tpe: Type)(implicit ctx: Context): Type = {

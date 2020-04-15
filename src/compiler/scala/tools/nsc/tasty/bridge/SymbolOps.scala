@@ -39,8 +39,8 @@ trait SymbolOps { self: TastyUniverse =>
     }
     def ref(args: List[Type]): Type = u.appliedType(sym, args)
     def ref: Type = sym.ref(Nil)
-    def singleRef: Type = u.singleType(noPrefix, sym)
-    def termRef: Type = sym.preciseRef(noPrefix)
+    def singleRef: Type = u.singleType(u.NoPrefix, sym)
+    def termRef: Type = sym.preciseRef(u.NoPrefix)
     def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
     def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
