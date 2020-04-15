@@ -195,13 +195,12 @@ private[collection] object RedBlackTree {
     else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
     else tree
   }
-  private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1, overwrite: Boolean): Tree[A, B1] = if (tree eq null) {
+  private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
   } else {
     val rank = count(tree.left) + 1
-    if (idx < rank) balanceLeft(isBlackTree(tree), tree.key, tree.value, updNth(tree.left, idx, k, v, overwrite), tree.right)
-    else if (idx > rank) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, updNth(tree.right, idx - rank, k, v, overwrite))
-    else if (overwrite) mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
+    if (idx < rank) balanceLeft(isBlackTree(tree), tree.key, tree.value, updNth(tree.left, idx, k, v), tree.right)
+    else if (idx > rank) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, updNth(tree.right, idx - rank, k, v))
     else tree
   }
 
@@ -258,7 +257,7 @@ private[collection] object RedBlackTree {
     else {
       val l = count(tree.left)
       if(n <= l) doTake(tree.left, n)
-      else if(n == l+1) maybeBlacken(updNth(tree.left, n, tree.key, tree.value, overwrite = false))
+      else if(n == l+1) maybeBlacken(updNth(tree.left, n, tree.key, tree.value))
       else join(tree.left, tree.key, tree.value, doTake(tree.right, n-l-1))
     }
 
