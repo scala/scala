@@ -1741,7 +1741,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!parent.isErrorTyped) {
           val psym = parent.tpe.typeSymbol.initialize
 
-          checkStablePrefixClassType(parent)
+          if (!context.unit.isJava)
+            checkStablePrefixClassType(parent)
 
           if (psym != superclazz) {
             if (context.unit.isJava && psym.isJavaAnnotation) {
@@ -1771,12 +1772,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
-          if (!(selfType <:< parentTypeOfThis) &&
-              !phase.erasedTypes &&
+          if (!phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !context.unit.isJava &&         // don't check self types for Java (scala/bug#11917)
               !selfType.isErroneous &&
-              !parent.tpe.isErroneous)
-          {
+              !parent.tpe.isErroneous &&
+              !(selfType <:< parentTypeOfThis)
+          ) {
             pending += ParentSelfTypeConformanceError(parent, selfType)
             if (settings.explaintypes) explainTypes(selfType, parentTypeOfThis)
           }
