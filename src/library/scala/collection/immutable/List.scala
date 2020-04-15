@@ -17,7 +17,9 @@ package immutable
 import generic._
 import mutable.{Builder, ListBuffer}
 import scala.annotation.tailrec
-import java.io.{ObjectOutputStream, ObjectInputStream}
+import java.io.{ObjectInputStream, ObjectOutputStream}
+
+import scala.runtime.AbstractFunction1
 
 /** A class for immutable linked lists representing ordered collections
  *  of elements of type `A`.
@@ -203,10 +205,13 @@ sealed abstract class List[+A] extends AbstractSeq[A]
     loop(null, null, this, this)
   }
 
+  private def isLikeListReusableCBF( bf: CanBuildFrom[_,_,_]): Boolean = {
+    (bf eq List.ReusableCBF) ||(bf eq immutable.Seq.ReusableCBF) ||(bf eq collection.Seq.ReusableCBF)
+  }
   // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
 
   override def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That =
-    if (bf eq List.ReusableCBF) (this ::: that.seq.toList).asInstanceOf[That]
+    if (isLikeListReusableCBF(bf)) (this ::: that.seq.toList).asInstanceOf[That]
     else super.++(that)
 
   override def +:[B >: A, That](elem: B)(implicit bf: CanBuildFrom[List[A], B, That]): That = bf match {
@@ -281,7 +286,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   final override def map[B, That](f: A => B)(implicit bf: CanBuildFrom[List[A], B, That]): That = {
-    if (bf eq List.ReusableCBF) {
+    if (isLikeListReusableCBF(bf)) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
         val h = new ::[B](f(head), Nil)
         var t: ::[B] = h
@@ -299,7 +304,7 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   final override def collect[B, That](pf: PartialFunction[A, B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
-    if (bf eq List.ReusableCBF) {
+    if (isLikeListReusableCBF(bf)) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
         var rest = this
         var h: ::[B] = null
@@ -328,18 +333,16 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   final override def flatMap[B, That](f: A => GenTraversableOnce[B])(implicit bf: CanBuildFrom[List[A], B, That]): That = {
-    if (bf eq List.ReusableCBF) {
+    if (isLikeListReusableCBF(bf)) {
       if (this eq Nil) Nil.asInstanceOf[That] else {
         var rest = this
-        var found = false
-        var h: ::[B] = null
-        var t: ::[B] = null
-        while (rest ne Nil) {
-          f(rest.head).seq.foreach{ b =>
-            if (!found) {
+        class Appender extends AbstractFunction1[B, Unit] {
+          var h: ::[B] = null
+          var t: ::[B] = null
+          override def apply(b: B): Unit = {
+            if (h eq null) {
               h = new ::(b, Nil)
               t = h
-              found = true
             }
             else {
               val nx = new ::(b, Nil)
@@ -347,9 +350,43 @@ sealed abstract class List[+A] extends AbstractSeq[A]
               t = nx
             }
           }
-          rest = rest.tail
+          //where flatMap generates a List, we can reuse the last non-empty one
+          def appendLast(last: ::[B]): Unit = {
+            if (h eq null) h = last
+            else t.tl = last
+          }
         }
-        (if (!found) Nil else h).asInstanceOf[That]
+        // we only build an appender if we have to, to reduce allocations. It's a commom case that we have
+        // short lists to map over and often flatMap may provide only zero or one segment that is non empty
+        var appender: Appender = null
+        var lastList: ::[B] = null
+        while (rest ne Nil) {
+          val c = f(rest.head).seq
+          rest = rest.tail
+          if (c.asInstanceOf[AnyRef] ne Nil) {
+            if (lastList ne null) {
+              if (appender eq null)
+                appender = new Appender
+              lastList foreach appender
+              lastList = null
+            }
+            if (c.isInstanceOf[::[B]])
+              lastList = c.asInstanceOf[::[B]]
+            else {
+              if (appender eq null)
+                appender = new Appender
+              c foreach appender
+            }
+          }
+        }
+        val result = if ((appender eq null) || (appender.h eq null))
+          if (lastList eq null) Nil else lastList
+        else {
+          if (lastList ne null)
+            appender.appendLast(lastList)
+          appender.h
+        }
+        result.asInstanceOf[That]
       }
     }
     else super.flatMap(f)
