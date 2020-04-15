@@ -196,12 +196,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
 
         val bridgeParamTypes = map2(samParamTypes, functionParamTypes){ (samParamTp, funParamTp) =>
           if (isReferenceType(samParamTp) && funParamTp <:< samParamTp) funParamTp
-          else samParamTp
+          else postErasure.elimErasedValueType(samParamTp)
         }
 
         val bridgeResultType =
           if (resTpOk && isReferenceType(samResultType) && functionResultType <:< samResultType) functionResultType
-          else samResultType
+          else postErasure.elimErasedValueType(samResultType)
 
         val typeAdapter = new TypeAdapter { def typedPos(pos: Position)(tree: Tree): Tree = localTyper.typedPos(pos)(tree) }
         import typeAdapter.{adaptToType, unboxValueClass}
