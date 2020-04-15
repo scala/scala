@@ -302,6 +302,9 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetBuilder"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeSet.this"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetBuilder$adder$"),
+
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.SortedSet.scala$collection$immutable$SortedSet$$super=uals"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.immutable.SortedMap.scala$collection$immutable$SortedMap$$super=uals"),
     //
     // scala-relect
     //

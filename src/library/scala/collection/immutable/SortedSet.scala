@@ -28,8 +28,23 @@ import generic._
 trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with SortedSetLike[A, SortedSet[A]] {
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = SortedSet.empty[A]
-}
 
+  override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case ss: SortedSet[_] =>
+      (ss canEqual this) &&
+        (this.size == ss.size) && {
+        val i1 = this.iterator
+        val i2 = ss.iterator
+        var allEqual = true
+        while (allEqual && i1.hasNext)
+          allEqual = i1.next() == i2.next
+        allEqual
+      }
+    case _ =>
+      super.equals(that)
+  }
+}
 /** $factoryInfo
  *  @define Coll `immutable.SortedSet`
  *  @define coll immutable sorted set
