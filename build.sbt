@@ -221,6 +221,13 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.this"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.findLeftMostOrPopOnEmpty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.popNext"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.goRight"),
+
     // Some static forwarder changes detected after a MiMa upgrade.
     // e.g. static method apply(java.lang.Object)java.lang.Object in class scala.Symbol does not have a correspondent in current version
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Symbol.apply"),
