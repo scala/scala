@@ -14,7 +14,10 @@ package scala.tools.nsc
 package doc
 package model
 
+import java.nio.file.Paths
+
 import base._
+import scala.tools.nsc.io.AbstractFile
 
 /** This trait extracts all required information for documentation from compilation units */
 trait MemberLookup extends base.MemberLookupBase {
@@ -57,27 +60,82 @@ trait MemberLookup extends base.MemberLookupBase {
         /* Get package object which has associatedFile ne null */
         sym.info.member(newTermName("package"))
       else sym
-    def classpathEntryFor(s: Symbol): Option[String] = {
-      Option(s.associatedFile).flatMap(_.underlyingSource).map { src =>
-        val path = src.canonicalPath
-        if(path.endsWith(".class")) { // Individual class file -> Classpath entry is root dir
-          val nesting = s.ownerChain.count(_.hasPackageFlag)
-          if(nesting > 0) {
-            val p = 0.until(nesting).foldLeft(src) {
-              case (null, _) => null
-              case (f, _) => f.container
-            }
-            if(p eq null) path else p.canonicalPath
-          } else path
-        } else path // JAR file (and fallback option)
-      }
-    }
     classpathEntryFor(sym1) flatMap { path =>
-      settings.extUrlMapping get path map { url => {
-         LinkToExternalTpl(name, url, makeTemplate(sym))
+      if (isJDK(sym1)) {
+        Some(LinkToExternalTpl(name, jdkUrl(path), makeTemplate(sym)))
+      }
+      else {
+        settings.extUrlMapping get path map { url =>
+          LinkToExternalTpl(name, url, makeTemplate(sym))
         }
       }
     }
+  }
+
+  private def classpathEntryFor(s: Symbol): Option[String] = {
+    Option(s.associatedFile).flatMap(_.underlyingSource).map { src =>
+      val path = src.canonicalPath
+      if(path.endsWith(".class")) { // Individual class file -> Classpath entry is root dir
+        val nesting = s.ownerChain.count(_.hasPackageFlag)
+        if(nesting > 0) {
+          val p = 0.until(nesting).foldLeft(src) {
+            case (null, _) => null
+            case (f, _) => f.container
+          }
+          if(p eq null) path else p.canonicalPath
+        } else path
+      } else path // JAR file (and fallback option)
+    }
+  }
+
+  /**
+   * Check if this file is a child of the given directory string. Can only be used
+   * on directories that actually exist in the file system.
+   */
+  def isChildOf(f: AbstractFile, dir: String): Boolean = {
+    val parent = Paths.get(dir).toAbsolutePath().toString
+    f.canonicalPath.startsWith(parent)
+  }
+
+  private def isJDK(sym: Symbol) =
+    sym.associatedFile.underlyingSource.map(f => isChildOf(f, (sys.props("java.home")))).getOrElse(false)
+
+  def jdkUrl(path: String): String = {
+    if (path.endsWith(".jmod")) {
+      val tokens = path.split("/")
+      val module = tokens.last.stripSuffix(".jmod")
+      s"$jdkUrl/$module"
+    }
+    else {
+      jdkUrl
+    }
+  }
+
+  def jdkUrl: String = {
+    if (settings.jdkApiDocBase.isDefault)
+      defaultJdkUrl
+    else
+      settings.jdkApiDocBase.value
+  }
+
+  lazy val defaultJdkUrl = {
+    if (javaVersion < 11) {
+      s"https://docs.oracle.com/javase/$javaVersion/docs/api"
+    }
+    else {
+      s"https://docs.oracle.com/en/java/javase/$javaVersion/docs/api"
+    }
+  }
+
+  lazy val javaVersion: Int = {
+    var version = System.getProperty("java.version")
+    (if (version.startsWith("1.")) {
+      version.substring(2, 3)
+    }
+    else {
+      val dot = version.indexOf(".")
+      version.substring(0, dot)
+    }).toInt
   }
 
   override def warnNoLink = !settings.docNoLinkWarnings.value

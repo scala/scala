@@ -77,7 +77,11 @@ object scaladoc extends Command {
           "Define a URL to be concatenated with source locations for link to source files."),
         Definition(
           CmdOption("doc-external-doc", Argument("external-doc")),
-          "Define a comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."))),
+          "Define a comma-separated list of classpath_entry_path#doc_URL pairs describing external dependencies."),
+        Definition(
+          CmdOption("jdk-api-doc-base", Argument("url")),
+          "Define a URL to be concatenated with source locations for link to Java API."))
+    ),
 
     Section("Compiler Options",
       DefinitionList(
