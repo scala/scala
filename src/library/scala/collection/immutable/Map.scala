@@ -15,6 +15,7 @@ package collection
 package immutable
 
 import generic._
+import scala.collection.immutable.Map.MapBuilderImpl
 import scala.util.hashing.MurmurHash3
 
 /**
@@ -81,6 +82,8 @@ trait Map[K, +V] extends Iterable[(K, V)]
  *  @define coll immutable map
  */
 object Map extends ImmutableMapFactory[Map] {
+
+  override def newBuilder[A, B]: mutable.Builder[(A, B), Map[A, B]] = new MapBuilderImpl[A, B]
 
   /** $mapCanBuildFromInfo */
   implicit def canBuildFrom[K, V]: CanBuildFrom[Coll, (K, V), Map[K, V]] =
@@ -418,6 +421,63 @@ object Map extends ImmutableMapFactory[Map] {
     }
   }
 
+  /** Builder for Map.
+   */
+  private final class MapBuilderImpl[K, V] extends mutable.ReusableBuilder[(K,V), Map[K, V]] {
+
+    private[this] var elems: Map[K, V] = Map.empty[K, V]
+    private[this] var switchedToHashMapBuilder: Boolean = false
+    private[this] var hashMapBuilder: HashMap.HashMapBuilder[K, V] = _
+
+    override def clear(): Unit = {
+      elems =Map.empty[K, V]
+      if (hashMapBuilder ne null)
+        hashMapBuilder.clear()
+      switchedToHashMapBuilder = false
+    }
+
+    override def result(): Map[K, V] =
+      if (switchedToHashMapBuilder) hashMapBuilder.result() else elems
+
+    private def convertToHashMapBuilder(): Unit = {
+      switchedToHashMapBuilder = true
+      if (hashMapBuilder eq null)
+        hashMapBuilder = new HashMap.HashMapBuilder[K, V]
+
+      hashMapBuilder ++= elems
+    }
+
+    override def +=(elem: (K, V)): MapBuilderImpl.this.type = {
+      if (switchedToHashMapBuilder) {
+        hashMapBuilder += elem
+      } else if (elems.size < 4) {
+        elems = elems + elem
+      } else {
+        // assert(elems.size == 4)
+        elems.get(elem._1) match {
+          case Some(x) if x == elem._2 => ()
+          case _ =>
+          convertToHashMapBuilder()
+          hashMapBuilder += elem
+        }
+      }
+      this
+    }
+
+    override def ++=(xs: TraversableOnce[(K, V)]): MapBuilderImpl.this.type = {
+      xs match {
+        case _ if switchedToHashMapBuilder =>
+          hashMapBuilder ++= xs
+
+        case map: collection.Map[K,V] if map.size > 4 =>
+          convertToHashMapBuilder()
+          hashMapBuilder ++= map
+
+        case _ => super.++= (xs)
+      }
+      this
+    }
+  }
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
