@@ -1,9 +1,0 @@
-/J_0.java:2: warning: '_' used as an identifier
-    public int _() { return 42; }
-               ^
-  (use of '_' as an identifier might not be supported in releases after Java SE 8)
-/J_0.java:4: warning: '_' used as an identifier
-    public int underscore() { return _(); }
-                                     ^
-  (use of '_' as an identifier might not be supported in releases after Java SE 8)
-2 warnings
