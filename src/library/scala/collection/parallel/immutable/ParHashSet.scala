@@ -140,11 +140,12 @@ private[immutable] abstract class HashSetCombiner[T]
 extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetCombiner[T]](HashSetCombiner.rootsize) {
 //self: EnvironmentPassingCombiner[T, ParHashSet[T]] =>
   import HashSetCombiner._
+  import HashSet.computeHash
   val emptyTrie = HashSet.empty[T]
 
   def +=(elem: T) = {
     sz += 1
-    val hc = emptyTrie.computeHash(elem)
+    val hc = computeHash(elem)
     val pos = hc & 0x1f
     if (buckets(pos) eq null) {
       // initialize bucket
@@ -200,7 +201,7 @@ extends scala.collection.parallel.BucketCombiner[T, ParHashSet[T], Any, HashSetC
         val chunksz = unrolled.size
         while (i < chunksz) {
           val v = chunkarr(i).asInstanceOf[T]
-          val hc = trie.computeHash(v)
+          val hc = computeHash(v)
           trie = trie.updated0(v, hc, rootbits)  // internal API, private[collection]
           i += 1
         }

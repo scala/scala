@@ -19,7 +19,6 @@ import java.util
 import generic._
 import scala.collection.parallel.immutable.ParHashSet
 import scala.annotation.tailrec
-import scala.collection.mutable.SetBuilder
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -179,8 +178,6 @@ sealed class HashSet[A] extends AbstractSet[A]
       nullToEmpty(filter0(p, true, 0, buffer, 0))
   }
 
-
-
   protected def filter0(p: A => Boolean, negate: Boolean, level: Int, buffer: Array[HashSet[A]], offset0: Int): HashSet[A] = null
 
   protected def elemHashCode(key: A) = key.##
@@ -218,12 +215,7 @@ sealed class HashSet[A] extends AbstractSet[A]
  *  @define willNotTerminateInf
  */
 object HashSet extends ImmutableSetFactory[HashSet] {
-  override def newBuilder[A]: mutable.Builder[A, HashSet[A]] = new SetBuilder[A, HashSet[A]](empty[A]) {
-    override def ++=(xs: TraversableOnce[A]): this.type = {
-      elems = elems ++ xs
-      this
-    }
-  }
+  override def newBuilder[A]: mutable.Builder[A, HashSet[A]] = new HashSetBuilder[A]
 
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, HashSet[A]] =
@@ -541,8 +533,9 @@ object HashSet extends ImmutableSetFactory[HashSet] {
    * elems: [a,b]
    * children:        ---b----------------a-----------
    */
-  class HashTrieSet[A](private val bitmap: Int, private[collection] val elems: Array[HashSet[A]], override val size: Int)
+  class HashTrieSet[A](private[HashSet] var bitmap: Int, private[collection] var elems: Array[HashSet[A]], private[HashSet] var size0: Int)
         extends HashSet[A] {
+    @inline override final def size = size0
     // assert(Integer.bitCount(bitmap) == elems.length)
     // assertion has to remain disabled until scala/bug#6197 is solved
     // assert(elems.length > 1 || (elems.length == 1 && elems(0).isInstanceOf[HashTrieSet[_]]))
@@ -1113,6 +1106,16 @@ object HashSet extends ImmutableSetFactory[HashSet] {
       }
     }
   }
+  protected def elemHashCode(key: Any) = key.##
+
+  protected final def improve(hcode: Int) = {
+    var h: Int = hcode + ~(hcode << 9)
+    h = h ^ (h >>> 14)
+    h = h + (h << 4)
+    h ^ (h >>> 10)
+  }
+
+  private[collection] def computeHash(key: Any) = improve(elemHashCode(key))
 
   /**
    * Calculates the maximum buffer size given the maximum possible total size of the trie-based collection
@@ -1183,4 +1186,298 @@ object HashSet extends ImmutableSetFactory[HashSet] {
     private def readResolve(): AnyRef = orig
   }
 
+
+  /** Builder for HashSet.
+   */
+  private[collection] final class HashSetBuilder[A] extends mutable.ReusableBuilder[A, HashSet[A]] {
+
+
+    /* Nodes in the tree are either regular HashSet1, HashTrieSet, HashSetCollision1, or a mutable HashTrieSet
+      mutable HashTrieSet nodes are designated by having size == -1
+
+      mutable HashTrieSet nodes can have child nodes that are mutable, or immutable
+      immutable HashTrieSet child nodes can only be immutable
+
+      mutable HashTrieSet elems are always a Array of size 32,size -1, bitmap -1
+     */
+
+    /** The root node of the partially build hashmap */
+    private var rootNode: HashSet[A] = HashSet.empty
+
+    private def isMutable(hs: HashSet[A]) = {
+      hs.isInstanceOf[HashTrieSet[A]] && hs.size == -1
+    }
+
+    private def makeMutable(hs: HashTrieSet[A]): HashTrieSet[A] = {
+      if (isMutable(hs)) hs
+      else {
+        val elems = new Array[HashSet[A]](32)
+        var bit = 0
+        var iBit = 0
+        while (bit < 32) {
+          if ((hs.bitmap & (1 << bit)) != 0) {
+            elems(bit) = hs.elems(iBit)
+            iBit += 1
+          }
+          bit += 1
+        }
+        new HashTrieSet[A](-1, elems, -1)
+      }
+    }
+
+    private def makeImmutable(hs: HashSet[A]): HashSet[A] = {
+      hs match {
+        case trie: HashTrieSet[A] if isMutable(trie) =>
+          var bit = 0
+          var bitmap = 0
+          var size = 0
+          while (bit < 32) {
+            if (trie.elems(bit) ne null)
+              trie.elems(bit) = makeImmutable(trie.elems(bit))
+            if (trie.elems(bit) ne null) {
+              bitmap |= 1 << bit
+              size += trie.elems(bit).size
+            }
+            bit += 1
+          }
+          Integer.bitCount(bitmap) match {
+            case 0 => null
+            case 1
+              if trie.elems(Integer.numberOfTrailingZeros(bitmap)).isInstanceOf[LeafHashSet[A]] =>
+              trie.elems(Integer.numberOfTrailingZeros(bitmap))
+
+            case bc =>
+              val elems = if (bc == 32) trie.elems else {
+                val elems = new Array[HashSet[A]](bc)
+                var oBit = 0
+                bit = 0
+                while (bit < 32) {
+                  if (trie.elems(bit) ne null) {
+                    elems(oBit) = trie.elems(bit)
+                    oBit += 1
+                  }
+                  bit += 1
+                }
+                assert(oBit == bc)
+                elems
+              }
+              trie.size0 = size
+              trie.elems = elems
+              trie.bitmap = bitmap
+              trie
+          }
+        case _ => hs
+      }
+    }
+
+    override def clear(): Unit = {
+      rootNode match {
+        case trie: HashTrieSet[A] if isMutable(trie) =>
+          util.Arrays.fill(trie.elems.asInstanceOf[Array[AnyRef]], null)
+        case _ => rootNode = HashSet.empty
+      }
+    }
+
+    override def result(): HashSet[A] = {
+      rootNode = nullToEmpty(makeImmutable(rootNode))
+      VM.releaseFence()
+      rootNode
+    }
+
+
+    override def +=(elem1: A, elem2: A, elems: A*): HashSetBuilder.this.type = {
+      this += elem1
+      this += elem2
+      this ++= elems
+    }
+
+    override def +=(elem: A): HashSetBuilder.this.type = {
+      val hash = computeHash(elem)
+      rootNode = addOne(rootNode, elem, hash, 0)
+      this
+    }
+
+    override def ++=(xs: TraversableOnce[A]): HashSetBuilder.this.type = xs match {
+      case hs: HashSet[A] =>
+        if (rootNode.isEmpty) {
+          if (!hs.isEmpty)
+            rootNode = hs
+        } else
+          rootNode = addHashSet(rootNode, hs, 0)
+        this
+      //      case hs: HashMap.HashMapKeys =>
+      //      //TODO
+      case hs: mutable.HashSet[A] =>
+        //TODO
+        super.++=(xs)
+      case _ =>
+        super.++=(xs)
+    }
+
+    def makeMutableTrie(aLeaf: LeafHashSet[A], bLeaf: LeafHashSet[A], level: Int): HashTrieSet[A] = {
+      val elems = new Array[HashSet[A]](32)
+      val aRawIndex = (aLeaf.hash >>> level) & 0x1f
+      val bRawIndex = (bLeaf.hash >>> level) & 0x1f
+      if (aRawIndex == bRawIndex) {
+        elems(aRawIndex) = makeMutableTrie(aLeaf, bLeaf, level + 5)
+      } else {
+        elems(aRawIndex) = aLeaf
+        elems(bRawIndex) = bLeaf
+      }
+      new HashTrieSet[A](-1, elems, -1)
+    }
+
+    def makeMutableTrie(leaf: LeafHashSet[A], elem: A, elemImprovedHash: Int, level: Int): HashTrieSet[A] = {
+      makeMutableTrie(leaf, new HashSet1(elem, elemImprovedHash), level)
+    }
+
+    private def addOne(toNode: HashSet[A], elem: A, improvedHash: Int, level: Int): HashSet[A] = {
+      toNode match {
+        case leaf: LeafHashSet[A] =>
+          if (leaf.hash == improvedHash)
+            leaf.updated0(elem, improvedHash, level)
+          else makeMutableTrie(leaf, elem, improvedHash, level)
+
+        case trie: HashTrieSet[A] if isMutable((trie)) =>
+          val arrayIndex = (improvedHash >>> level) & 0x1f
+          val old = trie.elems(arrayIndex)
+          trie.elems(arrayIndex) = if (old eq null) new HashSet1(elem, improvedHash)
+          else addOne(old, elem, improvedHash, level + 5)
+          trie
+
+        case trie: HashTrieSet[A] =>
+          val rawIndex = (improvedHash >>> level) & 0x1f
+          val arrayIndex = compressedIndex(trie, rawIndex)
+          if (arrayIndex == -1)
+            addOne(makeMutable(trie), elem, improvedHash, level)
+          else {
+            val old = trie.elems(arrayIndex)
+            val merged = if (old eq null) new HashSet1(elem, improvedHash)
+            else addOne(old, elem, improvedHash, level + 5)
+
+            if (merged eq old) trie
+            else {
+              val newMutableTrie = makeMutable(trie)
+              newMutableTrie.elems(rawIndex) = merged
+              newMutableTrie
+            }
+          }
+        case empty if empty.isEmpty => toNode.updated0(elem, improvedHash, level)
+      }
+    }
+
+    /** return the bit index of the rawIndex in the bitmap of the trie, or -1 if the bit is not in the bitmap */
+    private def compressedIndex(trie: HashTrieSet[A], rawIndex: Int): Int = {
+      if (trie.bitmap == -1) rawIndex
+      else if ((trie.bitmap & (1 << rawIndex)) == 0) {
+        //the value is not in this index
+        -1
+      } else {
+        Integer.bitCount(((1 << rawIndex) - 1) & trie.bitmap)
+      }
+    }
+    /** return the array index for the rawIndex, in the trie elem array
+     * The trei may be mutable, or immutable
+     * returns -1 if the trie is compressed and the index in not in the array */
+    private def trieIndex(trie: HashTrieSet[A], rawIndex: Int): Int = {
+      if (isMutable(trie) || trie.bitmap == -1) rawIndex
+      else compressedIndex(trie, rawIndex)
+    }
+
+    private def addHashSet(toNode: HashSet[A], toBeAdded: HashSet[A], level: Int): HashSet[A] = {
+      toNode match {
+        case aLeaf: LeafHashSet[A] => addToLeafHashSet(aLeaf, toBeAdded, level)
+        case trie: HashTrieSet[A] => addToTrieHashSet(trie, toBeAdded, level)
+        case empty if empty.isEmpty => toNode
+      }
+    }
+
+    private def addToTrieHashSet(toNode: HashTrieSet[A], toBeAdded: HashSet[A], level: Int): HashSet[A] = {
+      if (toNode eq toBeAdded) toNode
+      else toBeAdded match {
+        case bLeaf: LeafHashSet[A] =>
+          val rawIndex = (bLeaf.hash >>> level) & 0x1f
+          val arrayIndex = trieIndex(toNode, rawIndex)
+          if (arrayIndex == -1) {
+            val newToNode = makeMutable(toNode)
+            newToNode.elems(rawIndex) = toBeAdded
+            newToNode
+          } else {
+            val old = toNode.elems(arrayIndex)
+            if (old eq toBeAdded) toNode
+            else if (old eq null) {
+              assert(isMutable(toNode))
+              toNode.elems(arrayIndex) = toBeAdded
+              toNode
+            } else {
+              val result = addHashSet(old, toBeAdded, level + 5)
+              if (result eq old) toNode
+              else {
+                val newToNode = makeMutable(toNode)
+                newToNode.elems(rawIndex) = result
+                newToNode
+              }
+            }
+          }
+        case bTrie: HashTrieSet[A] =>
+          var result = toNode
+          var bBitSet = bTrie.bitmap
+          var bArrayIndex = 0
+          while (bBitSet != 0) {
+            val bValue = bTrie.elems(bArrayIndex)
+            val rawIndex = Integer.numberOfTrailingZeros(bBitSet)
+            val aArrayIndex = trieIndex(result, rawIndex)
+            if (aArrayIndex == -1) {
+              result = makeMutable(result)
+              result.elems(rawIndex) = bValue
+            } else {
+              val aValue = result.elems(aArrayIndex)
+              if (aValue ne bValue) {
+                if (aValue eq null) {
+                  assert(isMutable(result))
+                  result.elems(rawIndex) = bValue
+                } else {
+                  val resultAtIndex = addHashSet(aValue, bValue, level + 5)
+                  if (resultAtIndex ne aValue) {
+                    result = makeMutable(result)
+                    result.elems(rawIndex) = resultAtIndex
+                  }
+                }
+              }
+            }
+            bBitSet ^= 1 << rawIndex
+            bArrayIndex += 1
+          }
+          result
+        case empty if empty.isEmpty => toNode
+      }
+    }
+    private def addToLeafHashSet(toNode: LeafHashSet[A], toBeAdded: HashSet[A], level: Int): HashSet[A] = {
+      if (toNode eq toBeAdded) toNode
+      else toBeAdded match {
+        case bLeaf: LeafHashSet[A] =>
+          if (toNode.hash == bLeaf.hash) toNode.union0(bLeaf, level)
+          else makeMutableTrie(toNode, bLeaf, level)
+        case bTrie: HashTrieSet[A] =>
+          val rawIndex = (toNode.hash >>> level) & 0x1f
+          val arrayIndex = compressedIndex(bTrie, rawIndex)
+          if (arrayIndex == -1) {
+            val result = makeMutable(bTrie)
+            result.elems(rawIndex) = toNode
+            result
+          } else {
+            val newEle = addToLeafHashSet(toNode, bTrie.elems(arrayIndex), level + 5)
+            if (newEle eq toBeAdded)
+              toBeAdded
+            else {
+              val result = makeMutable(bTrie)
+              result.elems(rawIndex) = newEle
+              result
+            }
+          }
+        case empty if empty.isEmpty =>
+          toNode
+      }
+    }
+  }
 }

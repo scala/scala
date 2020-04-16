@@ -16,7 +16,6 @@ package immutable
 
 import generic._
 import parallel.immutable.ParSet
-import scala.collection.mutable.SetBuilder
 
 /** A generic trait for immutable sets.
  *  $setNote
@@ -64,12 +63,7 @@ trait Set[A] extends Iterable[A]
  *  @define coll immutable set
  */
 object Set extends ImmutableSetFactory[Set] {
-  override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilder[A, Set[A]](empty[A]) {
-    override def ++=(xs: TraversableOnce[A]): this.type = {
-      elems = elems ++ xs
-      this
-    }
-  }
+  override def newBuilder[A]: mutable.Builder[A, Set[A]] = new SetBuilderImpl[A]
 
   /** $setCanBuildFromInfo */
   implicit def canBuildFrom[A]: CanBuildFrom[Coll, A, Set[A]] =
@@ -253,5 +247,67 @@ object Set extends ImmutableSetFactory[Set] {
     @deprecatedOverriding("This immutable set should do nothing on toSet but cast itself to a Set with a wider element type.", "2.11.8")
     override def toSet[B >: A]: Set[B] = this.asInstanceOf[Set4[B]]
   }
+  /** Builder for Set.
+   */
+  private final class SetBuilderImpl[A] extends mutable.ReusableBuilder[A, Set[A]] {
+    import scala.collection.immutable.HashSet.HashSetBuilder
+
+    private[this] var elems: Set[A] = Set.empty[A]
+    private[this] var switchedToHashSetBuilder: Boolean = false
+    private[this] var hashSetBuilder: HashSetBuilder[A] = _
+
+    override def clear(): Unit = {
+      elems = Set.empty[A]
+      if (hashSetBuilder ne null)
+        hashSetBuilder.clear()
+      switchedToHashSetBuilder = false
+    }
+
+    override def result(): Set[A] =
+      if (switchedToHashSetBuilder) hashSetBuilder.result() else elems
+
+    override def +=(elem: A) = {
+      if (switchedToHashSetBuilder) {
+        hashSetBuilder += elem
+      } else if (elems.size < 4) {
+        elems = elems + elem
+      } else {
+        // assert(elems.size == 4)
+        if (elems.contains(elem)) {
+          () // do nothing
+        } else {
+          convertToHashSetBuilder()
+          hashSetBuilder += elem
+        }
+      }
+
+      this
+    }
+
+    private def convertToHashSetBuilder(): Unit = {
+      switchedToHashSetBuilder = true
+      if (hashSetBuilder eq null)
+        hashSetBuilder = new HashSetBuilder
+
+      hashSetBuilder ++= elems
+    }
+
+    override def ++=(xs: TraversableOnce[A]): this.type = {
+      xs match {
+        case _ if switchedToHashSetBuilder =>
+          hashSetBuilder ++= xs
+
+        case set: collection.Set[A] if set.size > 4 =>
+          convertToHashSetBuilder()
+          hashSetBuilder ++= set
+
+        case _ => super.++= (xs)
+      }
+      this
+    }
+
+  }
+
+
 }
 
