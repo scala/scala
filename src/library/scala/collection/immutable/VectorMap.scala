@@ -29,7 +29,7 @@ import scala.annotation.tailrec
   */
 final class VectorMap[K, +V] private (
     private[immutable] val fields: Vector[Any],
-    private[immutable] val underlying: Map[K, (Int, V)], dummy: Boolean, dropped: Int)
+    private[immutable] val underlying: Map[K, (Int, V)], dropped: Int)
   extends AbstractMap[K, V]
     with SeqMap[K, V]
     with StrictOptimizedMapOps[K, V, VectorMap, VectorMap[K, V]]
@@ -40,7 +40,7 @@ final class VectorMap[K, +V] private (
   override protected[this] def className: String = "VectorMap"
 
   private[immutable] def this(fields: Vector[K], underlying: Map[K, (Int, V)]) = {
-    this(fields, underlying, false, 0)
+    this(fields, underlying, 0)
   }
 
   override val size = underlying.size
@@ -52,9 +52,9 @@ final class VectorMap[K, +V] private (
   def updated[V1 >: V](key: K, value: V1): VectorMap[K, V1] = {
     underlying.get(key) match {
       case Some((slot, _)) =>
-        new VectorMap(fields, underlying.updated[(Int, V1)](key, (slot, value)), false, dropped)
+        new VectorMap(fields, underlying.updated[(Int, V1)](key, (slot, value)), dropped)
       case None =>
-        new VectorMap(fields :+ key, underlying.updated[(Int, V1)](key, (fields.length + dropped, value)), false, dropped)
+        new VectorMap(fields :+ key, underlying.updated[(Int, V1)](key, (fields.length + dropped, value)), dropped)
     }
   }
 
@@ -160,7 +160,7 @@ final class VectorMap[K, +V] private (
           if (last != first) {
             fs = fs.updated(last, Tombstone(first - 1 - last))
           }
-          new VectorMap(fs, underlying - key, false, dropped)
+          new VectorMap(fs, underlying - key, dropped)
         case _ =>
           this
       }
@@ -195,7 +195,7 @@ final class VectorMap[K, +V] private (
   override def tail: VectorMap[K, V] = {
     if (isEmpty) throw new UnsupportedOperationException("empty.tail")
     val (slot, key) = nextValidField(0)
-    new VectorMap(fields.drop(slot + 1), underlying - key, false, dropped + slot + 1)
+    new VectorMap(fields.drop(slot + 1), underlying - key, dropped + slot + 1)
   }
 
   override def init: VectorMap[K, V] = {
@@ -207,7 +207,7 @@ final class VectorMap[K, +V] private (
       case Tombstone(d) => throw new IllegalStateException("tombstone indicate wrong position: " + d)
       case k => (lastSlot, k.asInstanceOf[K])
     }
-    new VectorMap(fields.dropRight(fields.size - slot), underlying - key, false, dropped)
+    new VectorMap(fields.dropRight(fields.size - slot), underlying - key, dropped)
   }
 
   override def keys: Vector[K] = keysIterator.toVector
