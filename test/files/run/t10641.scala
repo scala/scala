@@ -38,7 +38,7 @@ class S_1 {
       //val jfile = testOutput.jfile.toPath.resolve("J_0.java").tap(Files.writeString(_, jcode, UTF_8)
       val javac = ToolProvider.getSystemJavaCompiler()
       val fm    = javac.getStandardFileManager(null, null, UTF_8)  // null diagnostics, locale
-      val opts  = List("-d", testOutput.path).asJava
+      val opts  = List("-d", testOutput.path, "-nowarn").asJava
       val uri   = URI.create("string:///J_0.java")
       val kind  = JavaFileObject.Kind.SOURCE
       val unit  = new SimpleJavaFileObject(uri, kind) { override def getCharContent(ignore: Boolean) = jcode }
