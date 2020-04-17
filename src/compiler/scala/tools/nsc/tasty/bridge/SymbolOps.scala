@@ -52,8 +52,8 @@ trait SymbolOps { self: TastyUniverse =>
       if (!butNot)
         sym.is(mask)
       else
-        sym.is(mask) && sym.hasNoFlags(encodeFlagSet(butNot))
-    def not(mask: TastyFlagSet): Boolean = !is(mask)
+        sym.is(mask) && sym.not(butNot)
+    def not(mask: TastyFlagSet): Boolean = sym.hasNoFlags(encodeFlagSet(mask))
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
