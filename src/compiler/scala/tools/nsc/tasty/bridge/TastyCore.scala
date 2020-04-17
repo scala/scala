@@ -23,11 +23,8 @@ abstract class TastyCore { self: TastyUniverse =>
   val symbolTable: SymbolTable
 
   // Misc
-  // type FlagSet    = u.FlagSet
-  type Scope      = u.Scope
   type Constant   = u.Constant
   type Annotation = u.Annotation
-  type TypeError  = u.TypeError
 
   // Types
   type Type       = u.Type

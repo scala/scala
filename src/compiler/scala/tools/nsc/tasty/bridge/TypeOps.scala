@@ -12,9 +12,9 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyFlags}, TastyFlags._
+import scala.tools.nsc.tasty.{TastyUniverse, SafeEq}
 
-import scala.tools.tasty.{TastyName, ErasedTypeRef}
+import scala.tools.tasty.{TastyName, ErasedTypeRef, TastyFlags}, TastyFlags._
 
 import scala.reflect.internal.Variance
 import scala.util.chaining._
@@ -55,7 +55,7 @@ trait TypeOps { self: TastyUniverse =>
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
     def ExprType(res: Type): Type = ui.nullaryMethodType(res)
     def PolyType(params: List[Symbol], res: Type): Type = ui.polyType(params, res)
-    def ClassInfoType(parents: List[Type], decls: Scope, sym: Symbol): Type = ui.classInfoType(parents, decls, sym)
+    def ClassInfoType(parents: List[Type], clazz: Symbol): Type = ui.classInfoType(parents, clazz.rawInfo.decls, clazz.asType)
     def ThisType(sym: Symbol): Type = ui.thisType(sym)
     def ConstantType(c: Constant): Type = ui.constantType(c)
     def IntersectionType(tps: Type*): Type = ui.intersectionType(tps.toList)
@@ -79,7 +79,7 @@ trait TypeOps { self: TastyUniverse =>
         case nested: u.RefinedType =>
           mkRefinedTypeWith(nested.parents, refinedCls, nested.decls.cloneScope.tap(_.enter(decl)))
         case _ =>
-          mkRefinedTypeWith(parent :: Nil, refinedCls, ctx.mkScope(decl))
+          mkRefinedTypeWith(parent :: Nil, refinedCls, u.newScopeWith(decl))
       }
     }
 
@@ -117,7 +117,7 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
-  private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: Scope): Type =
+  private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: u.Scope): Type =
     u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
 
   private def normaliseBounds(bounds: TypeBounds): Type = {
@@ -186,18 +186,15 @@ trait TypeOps { self: TastyUniverse =>
   /**
    * Ported from dotc
    */
-  abstract class TastyLazyType extends u.LazyType with u.FlagAgnosticCompleter {
-    private[this] var myDecls: Scope = u.EmptyScope
+  abstract class TastyLazyType(val tastyFlagSet: TastyFlagSet = EmptyTastyFlags) extends u.LazyType with u.FlagAgnosticCompleter {
+    private[this] var myDecls: u.Scope = u.EmptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
-    private[this] var myTastyFlagSet: TastyFlagSet = EmptyTastyFlags
 
-    override def decls: Scope = myDecls
+    override def decls: u.Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
-    def tastyFlagSet: TastyFlagSet = myTastyFlagSet
 
-    def withDecls(decls: Scope): this.type = { myDecls = decls; this }
-    def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
-    def withTastyFlagSet(flags: TastyFlagSet): this.type = { myTastyFlagSet = flags; this }
+    private[bridge] def withDecls(decls: u.Scope): this.type = { myDecls = decls; this }
+    private[bridge] def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
 
     override def load(sym: Symbol): Unit = complete(sym)
   }

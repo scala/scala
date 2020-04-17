@@ -12,7 +12,8 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyFlags, TastyUniverse}, TastyFlags._
+import scala.tools.tasty.TastyFlags._
+import scala.tools.nsc.tasty.TastyUniverse
 import scala.reflect.internal.{Flags, ModifierFlags}
 
 trait FlagOps { self: TastyUniverse =>

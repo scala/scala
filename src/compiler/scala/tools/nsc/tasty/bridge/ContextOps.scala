@@ -15,10 +15,9 @@ package scala.tools.nsc.tasty.bridge
 import scala.annotation.tailrec
 import scala.reflect.io.AbstractFile
 
-import scala.tools.tasty.TastyName
+import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
-import scala.tools.nsc.tasty.TastyFlags._
 
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
@@ -67,20 +66,21 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
 
     final def adjustModuleClassCompleter(completer: TastyLazyType, name: TastyName): completer.type = {
-      def findModule(name: TastyName, scope: Scope): Symbol = {
+      def findModule(name: TastyName, scope: u.Scope): Symbol = {
         val it = scope.lookupAll(encodeTermName(name)).filter(_.is(Object))
         if (it.hasNext) it.next()
         else noSymbol
       }
-      completer.withSourceModule(ctx => findModule(name.toTermName, ctx.effectiveScope))
-    }
 
-    /** Either empty scope, or, if the current context owner is a class,
-     *  the declarations of the current class.
-     */
-    final def effectiveScope: Scope =
-      if (owner != null && owner.isClass) owner.rawInfo.decls
-      else emptyScope
+      /** Either empty scope, or, if the current context owner is a class,
+       *  the declarations of the current class.
+       */
+      def effectiveScope(ctx: Context): u.Scope =
+        if (ctx.owner != null && ctx.owner.isClass) ctx.owner.rawInfo.decls
+        else u.EmptyScope
+
+      completer.withSourceModule(ctx => findModule(name.toTermName, effectiveScope(ctx)))
+    }
 
     final def log(str: => String): Unit = {
       if (u.settings.YdebugTasty)
@@ -208,7 +208,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = defn.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = ui.classInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 
@@ -261,7 +261,7 @@ trait ContextOps { self: TastyUniverse =>
     final def enterRefinement[T](parent: Type)(op: Context => T): T = {
       val clazz = owner match {
         case enclosing: u.RefinementClassSymbol =>
-          if (!enclosing.hasRawInfo) mkRefinedTypeWith(parent :: Nil, enclosing, mkScope)
+          if (!enclosing.hasRawInfo) mkRefinedTypeWith(parent :: Nil, enclosing, u.newScope)
           enclosing
         case _ => parent match {
           case nested: u.RefinedType => nested.typeSymbol
@@ -273,16 +273,19 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
 
+    final def initialiseClassScope(clazz: Symbol): Unit =
+      clazz.completer.withDecls(u.newScope)
+
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 
     final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
-      case err: TypeError =>
+      case err: u.TypeError =>
         sym.info = u.ErrorType
         throw err
     }
 
     final def errorInContext: PartialFunction[Throwable, String] = {
-      case err: TypeError =>
+      case err: u.TypeError =>
         owner.info = u.ErrorType
         err.getMessage()
     }
@@ -341,10 +344,6 @@ trait ContextOps { self: TastyUniverse =>
         Right(op(this))
       }
     }
-
-    @inline final def mkScope(syms: Symbol*): Scope = u.newScopeWith(syms:_*)
-    def mkScope: Scope = u.newScope
-    def emptyScope: Scope = u.EmptyScope
   }
 
   final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {

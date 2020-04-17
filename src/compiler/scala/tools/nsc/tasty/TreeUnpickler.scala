@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty
 
-import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat}, TastyRefs._
+import scala.tools.tasty.{TastyRefs, TastyReader, TastyName, TastyFormat, TastyFlags}, TastyRefs._, TastyFlags._, TastyFormat._
 
 import scala.annotation.switch
 import scala.collection.mutable
@@ -29,11 +29,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     nameAtRef: NameRef => TastyName,
     splices: Seq[Any])(implicit
     val tasty: Tasty) { self =>
-  import tasty._, FlagSets._
-  import TastyFormat._
+  import tasty._
+  import FlagSets._
   import TreeUnpickler._
   import MaybeCycle._
-  import TastyFlags._
   import TastyModes._
 
   @inline
@@ -85,10 +84,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       rdr.indexStats(reader.endAddr)
   }
 
-  class Completer(reader: TastyReader, tastyFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType { self =>
+  class Completer(reader: TastyReader, tastyFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType(tastyFlagSet) { self =>
     import reader._
-
-    self.withTastyFlagSet(tastyFlagSet)
 
     override def complete(sym: Symbol): Unit = {
       // implicit assertion that the completion is done by the same mirror that loaded owner
@@ -518,7 +515,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
       registerSym(start, sym)
       if (isClass) {
-        sym.completer.withDecls(ctx.mkScope)
+        ctx.initialiseClassScope(sym)
         val localCtx = ctx.withOwner(sym)
         forkAt(templateStart).indexTemplateParams()(localCtx)
       }
@@ -801,7 +798,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val parentTypes = ctx.adjustParents(cls, parents)
 
       ctx.setInfo(cls, {
-        val classInfo = defn.ClassInfoType(parentTypes, cls.rawInfo.decls, cls.asType)
+        val classInfo = defn.ClassInfoType(parentTypes, cls)
         // TODO [tasty]: if support opaque types, refine the self type with any opaque members here
         if (tparams.isEmpty) classInfo
         else defn.PolyType(tparams.map(symFromNoCycle), classInfo)

@@ -15,8 +15,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
-import scala.tools.tasty.{TastyName, Signature}, TastyName.SignedName, Signature.MethodSignature
-import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
+import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags.TastyFlagSet
 
 trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
