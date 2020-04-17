@@ -57,7 +57,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   def isTrace: Boolean = config.isReplTrace
 
   var printResults: Boolean = true
-  override def togglePrintResults: Unit = printResults = !printResults
+  override def togglePrintResults(): Unit = printResults = !printResults
   def withoutPrintingResults[T](body: => T): T = {
     val saved = printResults
     printResults = false
@@ -112,8 +112,8 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
   }
 
   /** String unwrapping can be disabled if it is causing issues.
-    *  Setting this to false means you will see Strings like "$iw.$iw.".
-    */
+   *  Setting this to false means you will see Strings like "\$iw.\$iw.".
+   */
   var unwrapStrings = true
   def withoutUnwrapping(op: => Unit): Unit = {
     val saved = unwrapStrings

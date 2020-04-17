@@ -619,9 +619,9 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
       def isEndOfText = char == endOfText
 
-      def isNewline = char == endOfLine
+      //def isNewline = char == endOfLine
 
-      def skipNewline() = jump(endOfLine)
+      //def skipNewline() = jump(endOfLine)
 
       def isStartMarkNewline = check(TableCellStart + endOfLine)
 

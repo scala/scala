@@ -2032,13 +2032,12 @@ trait Namers extends MethodSynthesis {
   }
 
   abstract class TypeCompleter extends LazyType {
-    val tree: Tree
-    override def forceDirectSuperclasses: Unit = {
+    def tree: Tree
+    override def forceDirectSuperclasses(): Unit =
       tree.foreach {
         case dt: DefTree => global.withPropagateCyclicReferences(Option(dt.symbol).map(_.maybeInitialize))
         case _ =>
       }
-    }
   }
 
   @deprecated("Instantiate TypeCompleterBase (for monomorphic, non-wrapping completer) or CompleterWrapper directly.", "2.12.2")

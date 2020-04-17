@@ -14,7 +14,7 @@ class IteratorTest {
 
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
     var counter = 0
-    val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next = { i += 1; i } }
+    val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2
     slidingIt.next
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
@@ -22,16 +22,16 @@ class IteratorTest {
 
   @Test def groupedIteratorIsLazyWhenPadded(): Unit = {
     var counter = 0
-    def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next = { i += 1; i } }
+    def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2 withPadding -1
     slidingIt.next
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 
   @Test def dropDoesNotGrowStack(): Unit = {
-    def it = new Iterator[Throwable] { def hasNext = true ; def next = new Throwable }
+    def it = new Iterator[Throwable] { def hasNext = true ; def next() = new Throwable }
 
-    assertEquals(it.drop(1).next.getStackTrace.length, it.drop(1).drop(1).next.getStackTrace.length)
+    assertEquals(it.drop(1).next().getStackTrace.length, it.drop(1).drop(1).next().getStackTrace.length)
   }
 
   @Test def dropIsChainable(): Unit = {
@@ -243,7 +243,7 @@ class IteratorTest {
     val z = x.toList
     assertEquals(1, z.size)
     assertFalse(x.hasNext)
-    assertEquals(1, y.next)
+    assertEquals(1, y.next())
     assertFalse(x.hasNext)   // was true, after advancing underlying iterator
   }
   // scala/bug#9913
@@ -258,7 +258,7 @@ class IteratorTest {
     val exp = List(1,2,3,1,2,3)
     def it: Iterator[Int] = new Iterator[Int] {
       val parent = List(1,2,3).iterator
-      def next(): Int = parent.next
+      def next(): Int = parent.next()
       def hasNext: Boolean = { counter += 1; parent.hasNext }
     }
     // Iterate separately
@@ -370,7 +370,7 @@ class IteratorTest {
 
   private def knownSizeDecreases[A](it: Iterator[A]): Unit = {
     val size = it.knownSize
-    it.next
+    it.next()
     assertEquals(size - 1, it.knownSize)
   }
 
