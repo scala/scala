@@ -16,10 +16,10 @@ import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature}, TastyName.SignedName, Signature.MethodSignature
+import scala.tools.nsc.tasty.TastyFlags.TastyFlagSet
 
 trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
-  import FlagSets._
 
   @inline final def noSymbol: Symbol = u.NoSymbol
   @inline final def isSymbol(sym: Symbol): Boolean = sym ne u.NoSymbol
@@ -28,7 +28,7 @@ trait SymbolOps { self: TastyUniverse =>
     (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
   )
 
-  implicit class SymbolDecorator(sym: Symbol) {
+  implicit class SymbolDecorator(val sym: Symbol) {
     def completer: TastyLazyType = {
       assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo: Type)} ")
       sym.rawInfo.asInstanceOf[TastyLazyType]
@@ -43,20 +43,24 @@ trait SymbolOps { self: TastyUniverse =>
     def termRef: Type = sym.preciseRef(u.NoPrefix)
     def preciseRef(pre: Type): Type = u.typeRef(pre, sym, Nil)
     def safeOwner: Symbol = if (sym.owner eq sym) sym else sym.owner
-    def isOneOf(mask: FlagSet): Boolean = sym.hasFlag(mask)
-    def is(mask: FlagSet): Boolean = sym.hasAllFlags(mask)
-    def is(mask: FlagSet, butNot: FlagSet): Boolean =
-      if (isEmpty(butNot))
-        sym.hasFlag(mask)
+
+    def set(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.addFlags(sym, mask)
+    def reset(mask: TastyFlagSet)(implicit ctx: Context): sym.type = ctx.removeFlags(sym, mask)
+
+    def isOneOf(mask: TastyFlagSet): Boolean = sym.hasFlag(encodeFlagSet(mask))
+    def is(mask: TastyFlagSet): Boolean = sym.hasAllFlags(encodeFlagSet(mask))
+    def is(mask: TastyFlagSet, butNot: TastyFlagSet): Boolean =
+      if (!butNot)
+        sym.is(mask)
       else
-        sym.hasFlag(mask) && sym.hasNoFlags(butNot)
-    def not(mask: FlagSet): Boolean = !is(mask)
+        sym.is(mask) && sym.hasNoFlags(encodeFlagSet(butNot))
+    def not(mask: TastyFlagSet): Boolean = !is(mask)
   }
 
   /** if isConstructor, make sure it has one non-implicit parameter list */
   def normalizeIfConstructor(termParamss: List[List[Symbol]], isConstructor: Boolean): List[List[Symbol]] =
     if (isConstructor &&
-      (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.is(Implicit)))
+      (termParamss.isEmpty || termParamss.head.nonEmpty && termParamss.head.head.isImplicit))
       Nil :: termParamss
     else
       termParamss

@@ -382,26 +382,26 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def nothingButMods(end: Addr): Boolean =
       currentAddr === end || isModifierTag(nextByte)
 
-    private def normalizeFlags(tag: Int, owner: Symbol, givenFlags: FlagSet, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): FlagSet = {
+    private def normalizeFlags(tag: Int, owner: Symbol, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
       val lacksDefinition =
         rhsIsEmpty &&
-          name.isTermName && !name.isConstructorName && !givenFlags.isOneOf(TermParamOrAccessor) ||
+          name.isTermName && !name.isConstructorName && !tastyFlags.isOneOf(TermParamOrAccessor) ||
         isAbsType ||
         tastyFlags.is(Opaque) && !isClass
-      var flags = givenFlags
+      var flags = tastyFlags
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
         if (flags.not(Mutable)) flags |= Stable
-        if (owner.flags.is(Trait)) flags |= Accessor
+        if (owner.is(Trait)) flags |= FieldAccessor
       }
-      if (givenFlags.is(Module))
+      if (tastyFlags.is(Object))
         flags = flags | (if (tag === VALDEF) ModuleCreationFlags else ModuleClassCreationFlags)
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
         else if (tag === PARAM) {
-          flags |= ParamAccessor | Accessor | Stable
+          flags |= ParamSetter | FieldAccessor | Stable
           if (!rhsIsEmpty) // param alias
             flags |= Method
         }
@@ -450,7 +450,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val completer = new TastyLazyType {
         override def complete(sym: Symbol): Unit = ctx.setInfo(sym, typeReader.readType())
       }
-      val sym = ctx.newSymbol(ctx.owner, name, FlagSets.Case, completer)
+      val sym = ctx.newSymbol(ctx.owner, name, Case, completer)
       registerSym(start, sym)
       sym
     }
@@ -473,23 +473,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (givenFlags, tastyFlagSet, annotFns, privateWithin) =
+      val (givenFlags, annotFns, privateWithin) =
         readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-      val flags = normalizeFlags(tag, ctx.owner, givenFlags, tastyFlagSet, name, isAbsType, isClass, rhsIsEmpty)
-      def showFlags = {
-        if (!tastyFlagSet)
-          show(flags)
-        else if (isEmpty(givenFlags))
-          tastyFlagSet.debug
-        else
-          show(flags) + " | " + tastyFlagSet.debug
-      }
-      def isModuleClass   = flags.is(Module) && isClass
+      val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, isAbsType, isClass, rhsIsEmpty)
+      def isModuleClass   = flags.is(Object) && isClass
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isModuleClass && !isTypeParameter
       ctx.log {
         val msg = if (isSymbol(privateWithin)) s" private within $privateWithin" else ""
-        s"""creating symbol ${name}${msg} at $start with flags $showFlags"""
+        s"""creating symbol ${name}${msg} at $start with flags ${givenFlags.debug}"""
       }
       def adjustIfModule(completer: TastyLazyType) =
         if (isModuleClass) ctx.adjustModuleClassCompleter(completer, name) else completer
@@ -498,7 +490,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = adjustIfModule(new Completer(subReader(start, end), tastyFlagSet))
+          val completer = adjustIfModule(new Completer(subReader(start, end), givenFlags & TastyOnlyFlags))
           roots.find(ctx.isSameRoot(_,name)) match {
             case Some(found) =>
               val rootd   = if (isModuleClass) found.linkedClassOfClass else found
@@ -539,23 +531,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      */
     def readModifiers[WithinType, AnnotType]
         (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
-        (implicit ctx: Context): (FlagSet, TastyFlagSet, List[Symbol => AnnotType], WithinType) = {
-      var tastyFlagSet = emptyTastyFlags
-      var flags = emptyFlags
+        (implicit ctx: Context): (TastyFlagSet, List[Symbol => AnnotType], WithinType) = {
+      var flags = EmptyTastyFlags
       var annotFns: List[Symbol => AnnotType] = Nil
       var privateWithin = defaultWithin
       while (currentAddr.index != end.index) {
-        def addFlag(flag: FlagSet) = {
+        def addFlag(flag: TastyFlagSet) = {
           flags |= flag
-          readByte()
-        }
-        def addTastyFlag(flag: TastyFlagSet) = {
-          tastyFlagSet |= flag
           readByte()
         }
         nextByte match {
           case PRIVATE => addFlag(Private)
-          case INTERNAL => addTastyFlag(Internal)
+          case INTERNAL => addFlag(Internal)
           case PROTECTED => addFlag(Protected)
           case ABSTRACT =>
             readByte()
@@ -567,34 +554,34 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case SEALED => addFlag(Sealed)
           case CASE => addFlag(Case)
           case IMPLICIT => addFlag(Implicit)
-          case ERASED => addTastyFlag(Erased)
+          case ERASED => addFlag(Erased)
           case LAZY => addFlag(Lazy)
           case OVERRIDE => addFlag(Override)
-          case INLINE => addTastyFlag(Inline)
-          case INLINEPROXY => addTastyFlag(InlineProxy)
-          case MACRO => addTastyFlag(TastyMacro)
-          case OPAQUE => addTastyFlag(Opaque)
-          case STATIC => addFlag(JavaStatic)
-          case OBJECT => addFlag(Module)
+          case INLINE => addFlag(Inline)
+          case INLINEPROXY => addFlag(InlineProxy)
+          case MACRO => addFlag(Macro)
+          case OPAQUE => addFlag(Opaque)
+          case STATIC => addFlag(Static)
+          case OBJECT => addFlag(Object)
           case TRAIT => addFlag(Trait)
-          case ENUM => addTastyFlag(Enum)
+          case ENUM => addFlag(Enum)
           case LOCAL => addFlag(Local)
           case SYNTHETIC => addFlag(Synthetic)
           case ARTIFACT => addFlag(Artifact)
           case MUTABLE => addFlag(Mutable)
-          case FIELDaccessor => addFlag(Accessor)
+          case FIELDaccessor => addFlag(FieldAccessor)
           case CASEaccessor => addFlag(CaseAccessor)
           case COVARIANT => addFlag(Covariant)
           case CONTRAVARIANT => addFlag(Contravariant)
-          case SCALA2X => addTastyFlag(Scala2x)
+          case SCALA2X => addFlag(Scala2x)
           case DEFAULTparameterized => addFlag(DefaultParameterized)
           case STABLE => addFlag(Stable)
-          case EXTENSION => addTastyFlag(Extension)
+          case EXTENSION => addFlag(Extension)
           case GIVEN => addFlag(Implicit)
-          case PARAMsetter => addFlag(ParamAccessor)
-          case PARAMalias => addTastyFlag(SuperParamAlias)
-          case EXPORTED => addTastyFlag(Exported)
-          case OPEN => addTastyFlag(Open)
+          case PARAMsetter => addFlag(ParamSetter)
+          case PARAMalias => addFlag(ParamAlias)
+          case EXPORTED => addFlag(Exported)
+          case OPEN => addFlag(Open)
           case PRIVATEqualified =>
             readByte()
             privateWithin = readWithin(ctx)
@@ -607,7 +594,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             assert(assertion = false, s"illegal modifier tag ${astTagToString(tag)} at $currentAddr, end = $end")
         }
       }
-      (flags, tastyFlagSet, if (ctx.ignoreAnnotations) Nil else annotFns.reverse, privateWithin)
+      (flags, if (ctx.ignoreAnnotations) Nil else annotFns.reverse, privateWithin)
     }
 
     private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
@@ -707,11 +694,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val localCtx = ctx.withOwner(sym)
         tag match {
           case DEFDEF =>
-            val unsupported = completer.tastyFlagSet &~ (Extension | Inline | TastyMacro | Exported)
+            val unsupported = completer.tastyFlagSet &~ (Extension | Inline | Macro | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$tname is a Scala 3 extension method.")
-            unsupportedWhen(completer.tastyFlagSet.is(Inline, butNot = TastyMacro), s"inline $sym")
-            unsupportedWhen(completer.tastyFlagSet.is(Inline | TastyMacro), s"macro $sym")
+            unsupportedWhen(completer.tastyFlagSet.is(Inline, butNot = Macro), s"inline $sym")
+            unsupportedWhen(completer.tastyFlagSet.is(Inline | Macro), s"macro $sym")
             val isCtor = sym.isClassConstructor
             val typeParams = {
               if (isCtor) {
@@ -734,7 +721,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val tpe = readTpt()(localCtx).tpe
             if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
-              if (completer.tastyFlagSet.is(Enum)) defn.ConstantType(tpd.Constant((sym, tpe))).tap(_.typeSymbol.setFlag(Final))
+              if (completer.tastyFlagSet.is(Enum)) defn.ConstantType(tpd.Constant((sym, tpe))).tap(_.typeSymbol.set(Final))
               else if (sym.isMethod) defn.ExprType(tpe)
               else tpe
             )
@@ -751,16 +738,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
               //               refine self type of the owner to be aware of the alias.
               ctx.setInfo(sym, defn.NormalisedBounds(rhs.tpe, sym))
-              if (sym.is(Param)) sym.resetFlag(Private | Protected)
+              if (sym.is(Param)) sym.reset(Private | Protected)
               // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
               // sym.resetFlag(Provisional)
             }
           case PARAM =>
-            val unsupported = completer.tastyFlagSet &~ (SuperParamAlias | Exported)
+            val unsupported = completer.tastyFlagSet &~ (ParamAlias | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on parameter $sym: ${showTasty(unsupported)}")
             val tpt = readTpt()(localCtx)
             ctx.setInfo(sym,
-              if (nothingButMods(end) && sym.not(ParamAccessor)) tpt.tpe
+              if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
               else defn.ExprType(tpt.tpe))
         }
         ctx.log(s"typed ${showSym(sym)} : ${if (sym.isClass) sym.tpe else sym.info} in owner ${showSym(sym.owner)}")

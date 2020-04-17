@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyFlags}, TastyFlags.TastyFlagSet
+import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyFlags}, TastyFlags._
 
 import scala.tools.tasty.{TastyName, ErasedTypeRef}
 
@@ -20,10 +20,10 @@ import scala.reflect.internal.Variance
 import scala.util.chaining._
 
 import scala.collection.mutable
+import scala.reflect.internal.Flags
 
 trait TypeOps { self: TastyUniverse =>
   import self.{symbolTable => u}, u.{internal => ui}
-  import FlagSets._
 
   @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
@@ -189,7 +189,7 @@ trait TypeOps { self: TastyUniverse =>
   abstract class TastyLazyType extends u.LazyType with u.FlagAgnosticCompleter {
     private[this] var myDecls: Scope = u.EmptyScope
     private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
-    private[this] var myTastyFlagSet: TastyFlagSet = emptyTastyFlags
+    private[this] var myTastyFlagSet: TastyFlagSet = EmptyTastyFlags
 
     override def decls: Scope = myDecls
     def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
@@ -213,7 +213,7 @@ trait TypeOps { self: TastyUniverse =>
     else if (sym.isConstructor) {
       normaliseConstructorRef(sym)
     }
-    else if (sym.is(JavaStatic)) {
+    else if (sym.is(Static)) {
       // With this constraint, we avoid making singleton types for
       //  static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
       sym.preciseRef(prefix)
@@ -256,8 +256,8 @@ trait TypeOps { self: TastyUniverse =>
     def withVariances(variances: List[Variance]): this.type = {
       typeParams.lazyZip(variances).foreach { (sym, variance) => // TODO [tasty]: should this be cloned instead?
         variance match {
-          case Variance.Covariant => sym.flags |= Covariant
-          case Variance.Contravariant => sym.flags |= Contravariant
+          case Variance.Covariant => sym.flags |= Flags.COVARIANT
+          case Variance.Contravariant => sym.flags |= Flags.CONTRAVARIANT
           case _ => ()
         }
       }
@@ -347,7 +347,7 @@ trait TypeOps { self: TastyUniverse =>
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
-  abstract class MethodTypeCompanion(defaultFlags: FlagSet) extends TermLambdaCompanion { self =>
+  abstract class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
     def factory(params: List[TastyName])(registerCallback: Type => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
@@ -377,7 +377,7 @@ trait TypeOps { self: TastyUniverse =>
 
   }
 
-  object MethodType extends MethodTypeCompanion(emptyFlags)
+  object MethodType extends MethodTypeCompanion(EmptyTastyFlags)
   object ImplicitMethodType extends MethodTypeCompanion(Implicit)
 
   abstract class TermLambdaCompanion
@@ -386,7 +386,7 @@ trait TypeOps { self: TastyUniverse =>
   abstract class TypeLambdaCompanion
     extends LambdaTypeCompanion[TastyName.TypeName, TypeBounds]
 
-  private[TypeOps] final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: FlagSet)(registerCallback: MethodTermLambda => Unit,
+  private[TypeOps] final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: TastyFlagSet)(registerCallback: MethodTermLambda => Unit,
     paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TermLike { methodLambda =>
     type This = u.MethodType
@@ -400,7 +400,7 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[Type] = paramInfosOp()
 
     override val params: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newValueParameter(name, u.NoPosition, defaultFlags).setInfo(argInfo)
+      case (name, argInfo) => ctx.owner.newValueParameter(name, u.NoPosition, encodeFlagSet(defaultFlags)).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp()
@@ -428,7 +428,7 @@ trait TypeOps { self: TastyUniverse =>
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, bounds) =>
         val argInfo = normaliseBounds(bounds)
-        ctx.owner.newTypeParameter(name, u.NoPosition, Deferred).setInfo(argInfo)
+        ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
     }
 
     val resType: Type = lambdaResultType(resultTypeOp())
@@ -455,7 +455,7 @@ trait TypeOps { self: TastyUniverse =>
     val paramInfos: List[TypeBounds] = paramInfosOp()
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
-      case (name, argInfo) => ctx.owner.newTypeParameter(name, u.NoPosition, Deferred).setInfo(argInfo)
+      case (name, argInfo) => ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
     }
 
     val resType: Type = resultTypeOp() // potentially need to flatten? (probably not, happens in typer in dotty)

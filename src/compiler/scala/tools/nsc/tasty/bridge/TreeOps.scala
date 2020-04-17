@@ -65,7 +65,7 @@ trait TreeOps { self: TastyUniverse =>
 
     def If(cond: Tree, thenp: Tree, elsep: Tree): Tree =
       u.If(cond, thenp, elsep).setType(
-        if (elsep == u.EmptyTree) u.definitions.UnitTpe
+        if (elsep === u.EmptyTree) u.definitions.UnitTpe
         else u.lub(thenp.tpe :: elsep.tpe :: Nil)
       )
 
