@@ -42,6 +42,15 @@ object ForDeletion {
     override def release(releasee: ForDeletion) = if (!Properties.isWin) Files.delete(releasee.path)
   }
 }
+object ReleasablePath {
+  import scala.util.Using.Releasable
+  implicit val deleteOnRelease: Releasable[Path] = new Releasable[Path] {
+    override def release(releasee: Path) = if (!Properties.isWin) Files.delete(releasee)
+  }
+  implicit val deleteOnRelease2: Releasable[File] = new Releasable[File] {
+    override def release(releasee: File) = if (!Properties.isWin) releasee.delete()
+  }
+}
 
 /* Things that MiMa won't let us make Autocloseable.
  */
