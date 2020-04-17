@@ -191,8 +191,10 @@ package concurrent {
      */
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
-    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type =
-      blocking(awaitable.ready(atMost)(AwaitPermission))
+    def ready[T](awaitable: Awaitable[T], atMost: Duration): awaitable.type = awaitable match {
+      case f: Future[T] if f.isCompleted => awaitable.ready(atMost)(AwaitPermission)
+      case _ => blocking(awaitable.ready(atMost)(AwaitPermission))
+    }
 
     /**
      * Await and return the result (of type `T`) of an `Awaitable`.
@@ -216,7 +218,9 @@ package concurrent {
      */
     @throws(classOf[TimeoutException])
     @throws(classOf[InterruptedException])
-    def result[T](awaitable: Awaitable[T], atMost: Duration): T =
-      blocking(awaitable.result(atMost)(AwaitPermission))
+    def result[T](awaitable: Awaitable[T], atMost: Duration): T = awaitable match {
+      case f: Future[_] if f.isCompleted => awaitable.result(atMost)(AwaitPermission)
+      case _ => blocking(awaitable.result(atMost)(AwaitPermission))
+    }
   }
 }
