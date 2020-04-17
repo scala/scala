@@ -25,10 +25,7 @@ abstract class TastyCore { self: TastyUniverse =>
   // Misc
   type Constant   = u.Constant
   type Annotation = u.Annotation
-
-  // Types
   type Type       = u.Type
-  type TypeBounds = u.TypeBounds
 
   // Symbols
   type Symbol       = u.Symbol

@@ -269,8 +269,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def readLengthType(): Type = {
         val end = readEnd()
 
-        def readMethodic[N <: TastyName, PInfo <: Type]
-            (companion: LambdaTypeCompanion[N, PInfo], nameMap: TastyName => N)(implicit ctx: Context): Type = {
+        def readMethodic[N <: TastyName]
+            (companion: LambdaTypeCompanion[N], nameMap: TastyName => N)(implicit ctx: Context): Type = {
           val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
@@ -278,7 +278,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val paramNames: List[N] = map(nameReader.readParamNames(end), nameMap)
             companion(paramNames)(
               pt => typeAtAddr(start) = pt,
-              () => paramReader.readParamTypes[PInfo](end),
+              () => paramReader.readParamTypes(end),
               () => readType()
             ).tap(typeAtAddr(start) = _)
           })

@@ -37,7 +37,7 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def isTypeType(tpe: Type): Boolean = !((tpe `eq` u.ErrorType) || (tpe `eq` u.NoType))
 
   private object UnmergablePolyBounds {
-    def unapply(tpe: TypeBounds): Boolean = tpe match {
+    def unapply(tpe: u.TypeBounds): Boolean = tpe match {
       case u.TypeBounds(lo: u.PolyType, hi: u.PolyType) => !mergeableParams(lo,hi)
       case _                                            => false
     }
@@ -86,8 +86,8 @@ trait TypeOps { self: TastyUniverse =>
     def NormalisedBounds(tpe: Type, sym: Symbol)(implicit ctx: Context): Type = tpe match {
       case bounds @ UnmergablePolyBounds() =>
         unsupportedError(s"diverging higher kinded bounds: $sym$bounds")
-      case tpe: TypeBounds => normaliseBounds(tpe)
-      case tpe             => tpe
+      case tpe: u.TypeBounds => normaliseBounds(tpe)
+      case tpe               => tpe
     }
 
     def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
@@ -99,10 +99,10 @@ trait TypeOps { self: TastyUniverse =>
           u.appliedType(tycon, args)
       }
 
-      if (args.exists(tpe => tpe.isInstanceOf[TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
+      if (args.exists(tpe => tpe.isInstanceOf[u.TypeBounds] | tpe.isInstanceOf[LambdaPolyType])) {
         val syms = mutable.ListBuffer.empty[Symbol]
         def bindWildcards(tpe: Type) = tpe match {
-          case tpe: TypeBounds     => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
+          case tpe: u.TypeBounds   => ctx.newWildcardSym(tpe).tap(syms += _).pipe(_.ref)
           case tpe: LambdaPolyType => tpe.toNested
           case tpe                 => tpe
         }
@@ -120,7 +120,12 @@ trait TypeOps { self: TastyUniverse =>
   private[bridge] def mkRefinedTypeWith(parents: List[Type], clazz: Symbol, decls: u.Scope): Type =
     u.RefinedType.apply(parents, decls, clazz).tap(clazz.info = _)
 
-  private def normaliseBounds(bounds: TypeBounds): Type = {
+  private def normaliseIfBounds(tpe: Type): Type = tpe match {
+    case tpe: u.TypeBounds => normaliseBounds(tpe)
+    case tpe               => tpe
+  }
+
+  private def normaliseBounds(bounds: u.TypeBounds): Type = {
     val u.TypeBounds(lo, hi) = bounds
     if (lo.isHigherKinded && hi.isHigherKinded) {
       if (mergeableParams(lo, hi)) {
@@ -238,17 +243,17 @@ trait TypeOps { self: TastyUniverse =>
     case res                 => res
   }
 
-  abstract class LambdaTypeCompanion[N <: TastyName, PInfo <: Type] {
-    def factory(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[PInfo], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType
+  abstract class LambdaTypeCompanion[N <: TastyName] {
+    def factory(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType
 
-    final def apply(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[PInfo], resultTypeOp: () => Type)(implicit ctx: Context): Type =
+    final def apply(params: List[N])(registerCallback: Type => Unit, paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): Type =
       factory(params)(registerCallback, paramInfosOp, resultTypeOp).canonical
   }
 
   final class LambdaPolyType(typeParams: List[Symbol], resType: Type) extends u.PolyType(typeParams, LambdaPolyType.addLower(resType)) {
     def toNested: u.PolyType = resType match {
-      case _: TypeBounds => this
-      case _             => ui.polyType(typeParams, resType)
+      case _: u.TypeBounds => this
+      case _               => ui.polyType(typeParams, resType)
     }
     def withVariances(variances: List[Variance]): this.type = {
       typeParams.lazyZip(variances).foreach { (sym, variance) => // TODO [tasty]: should this be cloned instead?
@@ -263,9 +268,9 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   object LambdaPolyType {
-    private def addLower(tpe: Type): TypeBounds = tpe match {
-      case tpe: TypeBounds => tpe
-      case tpe             => u.TypeBounds.upper(tpe)
+    private def addLower(tpe: Type): u.TypeBounds = tpe match {
+      case tpe: u.TypeBounds => tpe
+      case tpe               => u.TypeBounds.upper(tpe)
     }
   }
 
@@ -285,7 +290,6 @@ trait TypeOps { self: TastyUniverse =>
   private[TypeOps] trait TypeLike { self: Type with Lambda =>
     type ThisTName = TastyName.TypeName
     type ThisName  = u.TypeName
-    type PInfo     = TypeBounds
   }
 
   private[TypeOps] trait TermLike { self: Type with Lambda =>
@@ -297,11 +301,10 @@ trait TypeOps { self: TastyUniverse =>
   private[TypeOps] trait Lambda extends Product with Serializable { self: Type =>
     type ThisTName <: TastyName
     type ThisName <: u.Name
-    type PInfo <: Type
     type This <: Type
 
     val paramNames: List[ThisName]
-    val paramInfos: List[PInfo]
+    val paramInfos: List[Type]
     val resType: Type
 
     def typeParams: List[Symbol] // deferred to final implementation
@@ -334,13 +337,13 @@ trait TypeOps { self: TastyUniverse =>
 
   object HKTypeLambda extends TypeLambdaCompanion {
     def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
-        paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
+        paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new HKTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
   object PolyType extends TypeLambdaCompanion {
     def factory(params: List[TastyName.TypeName])(registerCallback: Type => Unit,
-         paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
+         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
@@ -378,10 +381,10 @@ trait TypeOps { self: TastyUniverse =>
   object ImplicitMethodType extends MethodTypeCompanion(Implicit)
 
   abstract class TermLambdaCompanion
-    extends LambdaTypeCompanion[TastyName, Type]
+    extends LambdaTypeCompanion[TastyName]
 
   abstract class TypeLambdaCompanion
-    extends LambdaTypeCompanion[TastyName.TypeName, TypeBounds]
+    extends LambdaTypeCompanion[TastyName.TypeName]
 
   private[TypeOps] final class MethodTermLambda(paramTNames: List[TastyName], defaultFlags: TastyFlagSet)(registerCallback: MethodTermLambda => Unit,
     paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
@@ -410,7 +413,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private[TypeOps] final class HKTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: HKTypeLambda => Unit,
-    paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
+    paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 
     type This = LambdaPolyType
@@ -420,11 +423,11 @@ trait TypeOps { self: TastyUniverse =>
 
     registerCallback(this)
 
-    val paramInfos: List[TypeBounds] = paramInfosOp()
+    val paramInfos: List[Type] = paramInfosOp()
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, bounds) =>
-        val argInfo = normaliseBounds(bounds)
+        val argInfo = normaliseIfBounds(bounds)
         ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
     }
 
@@ -438,7 +441,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private[TypeOps] final class PolyTypeLambda(paramTNames: List[TastyName.TypeName])(registerCallback: PolyTypeLambda => Unit,
-    paramInfosOp: () => List[TypeBounds], resultTypeOp: () => Type)(implicit ctx: Context)
+    paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context)
   extends Type with Lambda with TypeLike {
 
     type This = u.PolyType
@@ -449,7 +452,7 @@ trait TypeOps { self: TastyUniverse =>
 
     registerCallback(this)
 
-    val paramInfos: List[TypeBounds] = paramInfosOp()
+    val paramInfos: List[Type] = paramInfosOp()
 
     override val typeParams: List[Symbol] = paramNames.lazyZip(paramInfos).map {
       case (name, argInfo) => ctx.owner.newTypeParameter(name, u.NoPosition, u.Flag.DEFERRED).setInfo(argInfo)
