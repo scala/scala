@@ -488,8 +488,12 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         super.transform(treeCopy.ArrayValue(rest, rest.elemtpt, elem0 :: rest.elems))
 
       // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      case Apply(appMeth, List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
-      if wrapArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && appMeth.symbol == List_apply && rest.elems.length < transformListApplyLimit =>
+      // Seq(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
+      case Apply(Select(appQual, nme.apply), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(_, _))))))
+        if wrapArrayMeth.symbol == currentRun.runDefinitions.Predef_wrapRefArray && {
+          val sym = appQual.symbol
+          sym == ListModule || sym == SeqModule || sym == ISeqModule
+        } && rest.elems.length < transformListApplyLimit =>
         val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
           (acc, elem) => New(ConsClass, elem, acc)
         )
@@ -497,6 +501,22 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         reducingTransformListApply(rest.elems.length) {
           super.transform(localTyper.typedPos(tree.pos)(consed))
         }
+
+      // Seq() ~> Nil (note: List() ~> Nil is rewritten in the Typer)
+      case Apply(Select(appQual, nme.apply), List(nil))
+        if nil.symbol == NilModule && {
+          val sym = appQual.symbol
+          sym == ListModule || sym == SeqModule || sym == ISeqModule
+        } =>
+        gen.mkAttributedRef(NilModule)
+
+      // Seq.empty ~> Nil
+      case Apply(Select(appQual, nme.empty), Nil)
+        if {
+          val sym = appQual.symbol
+          sym == SeqModule || sym == ISeqModule
+        } =>
+        gen.mkAttributedRef(NilModule)
 
       case _ =>
         super.transform(tree)

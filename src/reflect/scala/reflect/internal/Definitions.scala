@@ -477,6 +477,7 @@ trait Definitions extends api.StandardDefinitions {
          def List_apply       = getMemberMethod(ListModule, nme.apply)
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     lazy val SeqModule        = requiredModule[scala.collection.Seq.type]
+    lazy val ISeqModule       = requiredModule[scala.collection.immutable.Seq.type]
 
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]
