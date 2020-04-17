@@ -13,11 +13,9 @@
 package scala.tools.nsc.interpreter
 package jline
 
-
 import java.util.{List => JList}
 import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
 import org.jline.reader.impl.DefaultParser
-import org.jline.reader.LineReader.Option
 import org.jline.terminal.Terminal
 import shell.{Accumulator, ShellConfig}
 import Parser.ParseContext

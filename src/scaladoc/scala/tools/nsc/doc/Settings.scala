@@ -303,6 +303,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
       ("scala.reflect.api.TypeTags.WeakTypeTag" -> ((tparam: String) => tparam + " is accompanied by a WeakTypeTag, which is a runtime representation of its type that survives erasure")) +
       ("scala.reflect.api.TypeTags.TypeTag"     -> ((tparam: String) => tparam + " is accompanied by a TypeTag, which is a runtime representation of its type that survives erasure"))
 
+    /*
     private val excludedClassnamePatterns = Set(
       """^scala.Tuple.*""",
       """^scala.Product.*""",
@@ -323,6 +324,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
       "scala.runtime.AbstractFunction1",
       "scala.runtime.AbstractFunction2"
     )
+    */
 
     /** Common conversion targets that affect any class in Scala */
     val commonConversionTargets = Set(

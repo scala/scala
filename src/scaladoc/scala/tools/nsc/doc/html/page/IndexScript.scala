@@ -15,7 +15,6 @@ package html
 package page
 
 import scala.tools.nsc.doc
-import scala.tools.nsc.doc.model.{Package, DocTemplateEntity}
 import scala.tools.nsc.doc.html.{Page, HtmlFactory}
 
 class IndexScript(universe: doc.Universe) extends Page {

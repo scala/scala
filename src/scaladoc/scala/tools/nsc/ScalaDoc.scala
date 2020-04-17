@@ -14,14 +14,13 @@ package scala.tools.nsc
 
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
-import scala.reflect.internal.Reporter
-import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
+import scala.reflect.internal.util.{FakePos, Position}
 
 /** The main class for scaladoc, a front-end for the Scala compiler
  *  that generates documentation from source files.
  */
 class ScalaDoc {
-  val versionMsg = "Scaladoc %s -- %s".format(Properties.versionString, Properties.copyrightString)
+  val versionMsg = s"Scaladoc ${Properties.versionString} -- ${Properties.copyrightString}"
 
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
