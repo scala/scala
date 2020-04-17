@@ -33,7 +33,7 @@ public class OptionJavaTest {
         Option<Integer> optInt = new scala.collection.StringOps("99")
             .toIntOption()
             .map((o) -> (Integer) o);
-        assertEquals(new Integer(99), optInt.get());
+        assertEquals(Integer.valueOf(99), optInt.get());
     }
 
     @Test
@@ -42,7 +42,7 @@ public class OptionJavaTest {
         assertTrue(someIntegerOpt.isDefined());
         assertFalse(someIntegerOpt.isEmpty());
         assertTrue(someIntegerOpt.nonEmpty());
-        assertEquals(1, someIntegerOpt.get().intValue());
+        assertEquals(1, someIntegerOpt.get().intValue());  // junit4 has no assert(int,int)
     }
 
     @Test
@@ -158,7 +158,7 @@ public class OptionJavaTest {
     public void testGetOrElse() {
         assertEquals(1, someIntegerOpt.getOrElse(() -> 2).intValue());
         assertEquals(2, noneIntegerOpt.getOrElse(() -> 2).intValue());
-        assertEquals(new Integer(1), someIntegerOpt.getOrElse(() -> null));
+        assertEquals(Integer.valueOf(1), someIntegerOpt.getOrElse(() -> null));
 
         assertEquals("hi", someStringOpt.getOrElse(() -> "bye"));
         assertEquals("bye", noneStringOpt.getOrElse(() -> "bye"));
@@ -189,13 +189,13 @@ public class OptionJavaTest {
         List<Integer> someIntegerList = CollectionConverters.asJava(someIntegerOpt.toList());
         List<Integer> noneIntegerList = CollectionConverters.asJava(noneIntegerOpt.toList());
 
-        assertEquals(new Integer[]{1}, someIntegerList.toArray());
-        assertEquals(new Integer[0], noneIntegerList.toArray());
+        assertArrayEquals(new Integer[]{1}, someIntegerList.toArray());
+        assertArrayEquals(new Integer[0], noneIntegerList.toArray());
 
         List<String> someStrList = CollectionConverters.asJava(someStringOpt.toList());
         List<String> noneStrList = CollectionConverters.asJava(noneStringOpt.toList());
 
-        assertEquals(new String[]{"hi"}, someStrList.toArray());
-        assertEquals(new String[0], noneStrList.toArray());
+        assertArrayEquals(new String[]{"hi"}, someStrList.toArray());
+        assertArrayEquals(new String[0], noneStrList.toArray());
     }
 }
