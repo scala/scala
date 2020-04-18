@@ -321,16 +321,8 @@ abstract class SymbolLoaders {
     protected def doComplete(root: Symbol) {
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.classReadNanos) else null
       classfileParser.parse(classfile, clazz, module)
-      if (root.associatedFile eq NoAbstractFile) {
-        root match {
-          // In fact, the ModuleSymbol forwards its setter to the module class
-          case _: ClassSymbol | _: ModuleSymbol =>
-            debuglog("ClassfileLoader setting %s.associatedFile = %s".format(root.name, classfile))
-            root.associatedFile = classfile
-          case _ =>
-            debuglog("Not setting associatedFile to %s because %s is a %s".format(classfile, root.name, root.shortSymbolClass))
-        }
-      }
+      if (clazz.associatedFile eq NoAbstractFile) clazz.associatedFile = classfile
+      if (module.associatedFile eq NoAbstractFile) module.associatedFile = classfile
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.classReadNanos, start)
     }
     override def sourcefile: Option[AbstractFile] = classfileParser.srcfile
