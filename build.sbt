@@ -417,6 +417,16 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.seq"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map1.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map2.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map3.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map4.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set1.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set2.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set3.filterImpl"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set4.filterImpl"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Set$SetNIterator"),
   )
 }
 
