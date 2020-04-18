@@ -1,0 +1,25 @@
+
+scala> val e = new AssertionError("oops")
+val e: AssertionError = java.lang.AssertionError: oops
+
+scala> e.addSuppressed(new java.io.IOException("bad io"))
+
+scala> throw e
+java.lang.AssertionError: oops
+  ... ??? elided
+  Suppressed: java.io.IOException: bad io
+    ... ??? elided and ??? more
+
+scala> val f = new Exception("f"); val g = new Exception("g")
+val f: Exception = java.lang.Exception: f
+val g: Exception = java.lang.Exception: g
+
+scala> f.addSuppressed(g)
+
+scala> throw f
+java.lang.Exception: f
+  ... ??? elided
+  Suppressed: java.lang.Exception: g
+    ... ??? more
+
+scala> :quit

@@ -81,10 +81,12 @@ trait StackCleaner extends ReplTest {
   override def normalize(s: String) = stripFrameCount(super.normalize(s))
 }
 object StackCleaner {
-  private val elided = """(\s+\.{3} )\d+( elided)""".r
-  private val frame  = """(\s+at [^(]+\(<console>:)\d+(\))""".r
+  private val elidedAndMore = """(\s+\.{3} )\d+( elided and )\d+( more)""".r
+  private val elidedOrMore        = """(\s+\.{3} )\d+( (?:elided|more))""".r
+  private val frame         = """(\s+at [^(]+\(<console>:)\d+(\))""".r
   private def stripFrameCount(line: String) = line match {
-    case elided(ellipsis, suffix) => s"$ellipsis???$suffix"
+    case elidedAndMore(ellipsis, infix, suffix) => s"$ellipsis???$infix???$suffix" // must be before `elided`
+    case elidedOrMore(ellipsis, suffix) => s"$ellipsis???$suffix"
     case frame(prefix, suffix)    => s"${prefix}XX${suffix}"
     case s                        => s
   }
