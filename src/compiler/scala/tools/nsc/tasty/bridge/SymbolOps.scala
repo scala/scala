@@ -131,5 +131,5 @@ trait SymbolOps { self: TastyUniverse =>
       typeError(s"No matching overload of $space.$qual with signature ${sig.show}"))
   }
 
-  def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.hashCode})"
+  def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.id})"
 }

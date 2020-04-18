@@ -146,13 +146,13 @@ object TastyFlags {
   case class SingletonSets(val toLong: Long) extends AnyVal {
     def map[A](f: TastyFlagSet => A): Iterable[A] = {
       val buf = Iterable.newBuilder[A]
-      var i = 0
-      while (i <= maxFlag) {
-        val flag = 1 << i
-        if ((flag & toLong) != 0) {
-          buf += f(TastyFlagSet(flag))
+      val orig = TastyFlagSet(toLong)
+      var flag = EmptyTastyFlags
+      while (flag.shift <= maxFlag) {
+        flag = flag.next
+        if (orig.is(flag)) {
+          buf += f(flag)
         }
-        i += 1
       }
       buf.result
     }
