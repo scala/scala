@@ -452,7 +452,7 @@ trait TypeComparers {
             val sym2 = tr2.sym
             val pre1 = tr1.pre
             val pre2 = tr2.pre
-            (((if (sym1 eq sym2) phase.erasedTypes || sym1.owner.hasPackageFlag || isSubType(pre1, pre2, depth)
+            (((if (sym1 eq sym2) phase.erasedTypes || sym1.rawowner.hasPackageFlag || isSubType(pre1, pre2, depth)
             else (sym1.name == sym2.name && !sym1.isModuleClass && !sym2.isModuleClass &&
               (isUnifiable(pre1, pre2) ||
                 isSameSpecializedSkolem(sym1, sym2, pre1, pre2) ||
