@@ -109,10 +109,10 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     }
   }
 
-  private def ensureDir(dirs: java.util.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
+  private def ensureDir(dirs: java.util.Map[String, DirEntry], path: String): DirEntry = {
     dirs get path match {
       case null =>
-        val parent = ensureDir(dirs, dirNameUsingLast(path), null)
+        val parent = ensureDir(dirs, dirName(path))
         val dir = new DirEntry(path)
         parent.entries(baseName(path)) = dir
         dirs.put(path, dir)
@@ -134,8 +134,8 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     }
   }
   protected def getDir(dirs: java.util.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
-    if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
-    else ensureDir(dirs, dirNameUsingLast(entry.getName), null)
+    if (entry.isDirectory) ensureDir(dirs, entry.getName)
+    else ensureDir(dirs, dirNameUsingLast(entry.getName))
   }
 
   def close(): Unit
