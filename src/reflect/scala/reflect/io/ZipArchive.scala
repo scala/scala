@@ -112,7 +112,7 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
   private def ensureDir(dirs: java.util.Map[String, DirEntry], path: String, zipEntry: ZipEntry): DirEntry = {
     dirs get path match {
       case null =>
-        val parent = ensureDir(dirs, dirName(path), null)
+        val parent = ensureDir(dirs, dirNameUsingLast(path), null)
         val dir = new DirEntry(path)
         parent.entries(baseName(path)) = dir
         dirs.put(path, dir)
@@ -121,10 +121,24 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     }
   }
 
+  @volatile private[this] var lastDirName: String = ""
+  private def dirNameUsingLast(name: String): String = {
+    val last = lastDirName
+    if (name.length > last.length + 1 && name.startsWith(last) && name.charAt(last.length) == '/' && name.indexOf('/', last.length + 1) == -1) {
+      // OPT: Avoid string allocation when reading successive entries in a zip index from the same directory.
+      assert(lastDirName == dirName(name)) // TODO remove
+      lastDirName
+    } else {
+      val result = dirName(name)
+      lastDirName = result
+      result
+    }
+  }
   protected def getDir(dirs: java.util.Map[String, DirEntry], entry: ZipEntry): DirEntry = {
     if (entry.isDirectory) ensureDir(dirs, entry.getName, entry)
-    else ensureDir(dirs, dirName(entry.getName), null)
+    else ensureDir(dirs, dirNameUsingLast(entry.getName), null)
   }
+
   def close(): Unit
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
