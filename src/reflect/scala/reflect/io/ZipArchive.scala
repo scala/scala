@@ -126,7 +126,6 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
     val last = lastDirName
     if (name.length > last.length + 1 && name.startsWith(last) && name.charAt(last.length) == '/' && name.indexOf('/', last.length + 1) == -1) {
       // OPT: Avoid string allocation when reading successive entries in a zip index from the same directory.
-      assert(lastDirName == dirName(name)) // TODO remove
       lastDirName
     } else {
       val result = dirName(name)
