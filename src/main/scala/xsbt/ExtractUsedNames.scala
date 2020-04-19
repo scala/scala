@@ -138,9 +138,9 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
 
     // Handle names circumscribed to classes
     traverser.usedNamesFromClasses.foreach { (rawClassName, usedNames) =>
-      val className = rawClassName.toString.trim
+      val className = rawClassName.toString.trim.intern()
       usedNames.defaultNames.foreach { rawUsedName =>
-        val useName = rawUsedName.decoded.trim
+        val useName = rawUsedName.decoded.trim.intern()
         val existingScopes = usedNames.scopedNames.get(rawUsedName)
         val useScopes = {
           if (existingScopes == null) DefaultScopes
