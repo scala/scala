@@ -385,10 +385,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   var globalPhase: Phase = NoPhase
 
-  val MaxPhases = 64
-
-  val phaseWithId: Array[Phase] = Array.fill(MaxPhases)(NoPhase)
-
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
 

@@ -97,14 +97,10 @@ class SymbolTableForUnitTesting extends SymbolTable {
   def log(msg: => AnyRef): Unit = println(msg)
   def mirrorThatLoaded(sym: Symbol): Mirror = rootMirror
   val phases: Seq[Phase] = List(NoPhase, SomePhase)
-  val phaseWithId: Array[Phase] = {
-    val maxId = phases.map(_.id).max
-    val phasesArray = Array.ofDim[Phase](maxId+1)
-    phases foreach { phase =>
-      phasesArray(phase.id) = phase
-    }
-    phasesArray
+  phases foreach { phase =>
+    phaseWithId(phase.id) = phase
   }
+
   lazy val treeInfo = new scala.reflect.internal.TreeInfo {
     val global: SymbolTableForUnitTesting.this.type = SymbolTableForUnitTesting.this
   }
