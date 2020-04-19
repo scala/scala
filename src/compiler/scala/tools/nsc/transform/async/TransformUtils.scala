@@ -24,7 +24,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
   private[async] val asyncNames: AsyncNames[global.type]
 
   def typedPos(pos: Position)(tree: Tree): Tree = currentTransformState.localTyper.typedPos(pos)(tree: Tree)
-  def typed(tree: Tree): Tree = typedPos(currentTransformState.applySym.pos)(tree)
+  def typed(tree: Tree): Tree = typedPos(currentTransformState.currentPos)(tree)
 
   lazy val IllegalStateExceptionClass: Symbol = rootMirror.staticClass("java.lang.IllegalStateException")
   lazy val IllegalStateExceptionClass_NEW_String: Symbol = IllegalStateExceptionClass.info.decl(nme.CONSTRUCTOR).suchThat(

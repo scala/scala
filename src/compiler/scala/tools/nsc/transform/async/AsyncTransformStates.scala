@@ -35,8 +35,10 @@ trait AsyncTransformStates extends TypingTransformers {
 
     lazy val Async_await: Symbol = awaitSymbol
 
-    lazy val applyTr: Symbol = applyTrParam
-    lazy val applySym: Symbol = applyTr.owner
+    val applyTr: Symbol = applyTrParam
+    val applySym: Symbol = applyTr.owner
+    var currentPos: Position = applySym.pos
+
     lazy val stateMachineClass: Symbol = applySym.owner
     lazy val stateGetter: Symbol = stateMachineMember(nme.state)
     lazy val stateSetter: Symbol = stateMachineMember(nme.state.setterName)

@@ -188,6 +188,7 @@ trait ExprBuilder extends TransformUtils {
 
     private def add(stat: Tree, isExpr: Boolean): Unit = {
       def afterState() = if (isExpr) endState else stateAssigner.nextState()
+      currentTransformState.currentPos = stat.pos
       stat match {
         case vd @ ValDef(mods, name, tpt, UnwrapBoxedUnit(Apply(fun, arg :: Nil))) if isAwait(fun) =>
           // The val await$0 = await(someFuture) pattern. The ANF tranform makes sure this is
