@@ -226,4 +226,21 @@ class HashMapTest extends AllocationTest {
     check(hm(1, 2, 3), hm(1, 2, 3, 4))
     check(hm((1 to 1000): _*), hm((2000 to 3000): _*))
   }
+  @Test
+  def mixTrie(): Unit = {
+    for (start <- 1 to 20) {
+      val m1: Map[Int, Int] = ((start + 1) to (start + 20)).map(x => x -> x).toMap
+      val m2: Map[Int, Int] = ((start + 101) to (start + 120)).map(x => x -> x).toMap
+
+      val b = HashMap.newBuilder[Int, Int]
+      b ++= m1
+      b ++= m2
+      val res = b.result()
+      assertEquals(40, res.size)
+      for (i <- (start + 1) to (start + 20)) {
+        assertEquals(Some(i), res.get(i))
+        assertEquals(Some(i + 100), res.get(i + 100))
+      }
+    }
+  }
 }

@@ -244,4 +244,22 @@ class HashSetTest extends AllocationTest {
     b ++= s // was scala.MatchError: Set() (of class scala.collection.immutable.HashSet)... at ... addToTrieHashSet(HashSet.scala:1386)
     assertEquals(List(1, 2, 3, 4), b.result().toList.sorted)
   }
+
+  @Test
+  def mixTrie(): Unit = {
+    for (start <- 1 to 10) {
+      val m1: Set[Int] = ((start + 1) to (start + 20)).toSet
+      val m2: Set[Int] = ((start + 101) to (start + 120)).toSet
+
+      val b = HashSet.newBuilder[Int]
+      b ++= m1
+      b ++= m2
+      val res = b.result()
+      assertEquals(40, res.size)
+      for (i <- (start + 1) to (start + 20)) {
+        assertTrue(res.contains(i))
+        assertTrue(res.contains(i + 100))
+      }
+    }
+  }
 }

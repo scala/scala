@@ -1295,17 +1295,23 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           var bArrayIndex = 0
           while (bBitSet != 0) {
             val rawIndex = Integer.numberOfTrailingZeros(bBitSet)
-            val aValue = result.elems(trieIndex(result, rawIndex))
+            val arrayIndex = trieIndex(result, rawIndex)
             val bValue = bTrie.elems(bArrayIndex)
-            if (aValue ne bValue) {
-              if (aValue eq null) {
-                assert (isMutable(result))
-                result.elems(rawIndex) = bValue
-              } else {
-                val resultAtIndex = addHashMap(aValue, bValue, level + 5)
-                if (resultAtIndex ne aValue) {
-                  result = makeMutable(result)
-                  result.elems(rawIndex) = resultAtIndex
+            if (arrayIndex == -1) {
+              result = makeMutable(result)
+              result.elems(rawIndex) = bValue
+            } else {
+              val aValue = result.elems(arrayIndex)
+              if (aValue ne bValue) {
+                if (aValue eq null) {
+                  assert(isMutable(result))
+                  result.elems(rawIndex) = bValue
+                } else {
+                  val resultAtIndex = addHashMap(aValue, bValue, level + 5)
+                  if (resultAtIndex ne aValue) {
+                    result = makeMutable(result)
+                    result.elems(rawIndex) = resultAtIndex
+                  }
                 }
               }
             }
