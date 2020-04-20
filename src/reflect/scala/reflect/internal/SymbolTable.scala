@@ -508,8 +508,9 @@ abstract class SymbolTable extends macros.Universe
     def transform(sym: Symbol, tpe: Type): Type = tpe
   }
 
+  private final val MaxPhases = 256
   /** The phase which has given index as identifier. */
-  val phaseWithId: Array[Phase]
+  final val phaseWithId: Array[Phase] = Array.fill(MaxPhases)(NoPhase)
 
   /** Is this symbol table a part of a compiler universe?
    */

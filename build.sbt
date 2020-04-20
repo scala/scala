@@ -427,6 +427,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set3.filterImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Set#Set4.filterImpl"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Set$SetNIterator"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.scala$reflect$runtime$ReflectSetup$_setter_$phaseWithId_="),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId")
   )
 }
 
