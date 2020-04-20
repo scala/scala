@@ -8,8 +8,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.AllocationTest
+
 @RunWith(classOf[JUnit4])
-class TreeSetTest {
+class TreeSetTest extends AllocationTest{
 
   @Test
   def hasCorrectDropAndTakeMethods() {
@@ -106,4 +108,24 @@ class TreeSetTest {
     assertEquals(tree1.drop(5), tree1.drop(5))
   }
 
+  @Test
+  def plusWithContains() {
+    val data = Array.tabulate(1000)(i => s"${i}Value")
+    val tree = (TreeSet.newBuilder[String] ++= data).result
+
+    data foreach {
+      case (k) =>
+        assertSame(tree, nonAllocating(tree + k))
+    }
+  }
+  @Test
+  def plusWithContainsFromMap() {
+    val data = Array.tabulate(1000)(i => s"${i}Key" -> s"${i}Value")
+    val tree = (TreeMap.newBuilder[String, String] ++= data).result.keySet
+
+    data foreach {
+      case (k, v) =>
+        assertSame(tree, nonAllocating(tree + k))
+    }
+  }
 }

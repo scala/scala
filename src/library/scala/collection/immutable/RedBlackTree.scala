@@ -209,18 +209,31 @@ private[collection] object RedBlackTree {
     RedTree(k, v, null, null)
   } else {
     val cmp = ordering.compare(k, tree.key)
-    if (cmp < 0) balanceLeft(isBlackTree(tree), tree.key, tree.value, upd(tree.left, k, v, overwrite), tree.right)
-    else if (cmp > 0) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, upd(tree.right, k, v, overwrite))
-    else if (overwrite || k != tree.key) mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
+    if (cmp < 0) {
+      val newLeft = upd(tree.left, k, v, overwrite)
+      if (newLeft eq tree.left) tree
+      else balanceLeft(isBlackTree(tree), tree.key, tree.value, newLeft, tree.right)
+    } else if (cmp > 0) {
+      val newRight = upd(tree.right, k, v, overwrite)
+      if (newRight eq tree.right) tree
+      else balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, newRight)
+    } else if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]))
+      mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
     else tree
   }
   private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
   } else {
     val rank = count(tree.left) + 1
-    if (idx < rank) balanceLeft(isBlackTree(tree), tree.key, tree.value, updNth(tree.left, idx, k, v), tree.right)
-    else if (idx > rank) balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, updNth(tree.right, idx - rank, k, v))
-    else tree
+    if (idx < rank) {
+      val newLeft = updNth(tree.left, idx, k, v)
+      if (newLeft eq tree.left) tree
+      else balanceLeft(isBlackTree(tree), tree.key, tree.value, newLeft, tree.right)
+    } else if (idx > rank) {
+      val newRight = updNth(tree.right, idx - rank, k, v)
+      if (newRight eq tree.right) tree
+      else balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, newRight)
+    } else tree
   }
 
   private[this] def doFrom[A, B](tree: Tree[A, B], from: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
