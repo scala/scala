@@ -276,8 +276,8 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val Local(tk, _, idx, isSynth) = locals.getOrMakeLocal(sym)
           if (rhs == EmptyTree) { emitZeroOf(tk) }
           else { genLoad(rhs, tk) }
-          val localVarStart = currProgramPoint()
           bc.store(idx, tk)
+          val localVarStart = currProgramPoint()
           if (!isSynth) { // there are case <synthetic> ValDef's emitted by patmat
             varsInScope ::= (sym -> localVarStart)
           }
