@@ -35,7 +35,7 @@ class UnusedLocalVariablesTest extends BytecodeTesting {
     assertLocalVarCount(code, 6)
 
     val code2 = """def f(a: Long): Unit = { var x = if (a == 0l) return else () }"""
-    assertLocalVarCount(code2, 3) // remains
+    assertLocalVarCount(code2, 2)
   }
 
   @Test
@@ -76,7 +76,7 @@ class UnusedLocalVariablesTest extends BytecodeTesting {
   }
 
   def assertLocalVarCount(code: String, numVars: Int): Unit = {
-    assertTrue(compileMethod(code).localVars.length == numVars)
+    assertEquals(compileMethod(code).localVars.toString, numVars, compileMethod(code).localVars.length)
   }
 
 }

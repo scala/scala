@@ -205,14 +205,14 @@ class BytecodeTest extends BytecodeTesting {
     val t = getMethod(c, "t")
     val isFrameLine = (x: Instruction) => x.isInstanceOf[FrameEntry] || x.isInstanceOf[LineNumber]
     assertSameCode(t.instructions.filterNot(isFrameLine), List(
-      Label(0), Ldc(LDC, ""), Label(3), VarOp(ASTORE, 1),
-      Label(5), VarOp(ALOAD, 1), Jump(IFNULL, Label(21)),
-      Label(10), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "foo", "()V", false), Label(14), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(18), Jump(GOTO, Label(5)),
-      Label(21), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", false), Label(26), Op(RETURN), Label(28)))
+      Label(0), Ldc(LDC, ""), VarOp(ASTORE, 1),
+      Label(4), VarOp(ALOAD, 1), Jump(IFNULL, Label(20)),
+      Label(9), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "foo", "()V", false), Label(13), Op(ACONST_NULL), VarOp(ASTORE, 1), Label(17), Jump(GOTO, Label(4)),
+      Label(20), VarOp(ALOAD, 0), Invoke(INVOKEVIRTUAL, "C", "bar", "()V", false), Label(25), Op(RETURN), Label(27)))
     val labels = t.instructions collect { case l: Label => l }
     val x = t.localVars.find(_.name == "x").get
     assertEquals(x.start, labels(1))
-    assertEquals(x.end, labels(7))
+    assertEquals(x.end, labels(6))
   }
 
   @Test
