@@ -103,7 +103,7 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[Type])(implicit ctx: Context): Symbol = {
-    ctx.log(s"""looking for overload member[$space]("$qual") @@ ${sig.show}""")
+    ctx.log(s"""<<< looking for overload member[$space] @@ $qual: ${sig.show}""")
     val member = space.member(encodeTermName(qual))
     val (tyParamCount, argTpes) = {
       val (tyParamCounts, params) = sig.params.partitionMap(identity)
@@ -120,11 +120,11 @@ trait SymbolOps { self: TastyUniverse =>
         (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&
         params.zip(argTpes).forall { case (param, tpe) => param.tpe.erasure =:= tpe } && {
-          ctx.log(s"selected ${showSym(sym)} : ${sym.tpe}")
+          ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
           true
         }
       case _ =>
-        ctx.log(s"""member[$space]("$qual") ${showSym(sym)} is not a method""")
+        ctx.log(s"""! member[$space]("$qual") ${showSym(sym)} is not a method""")
         false
     }
     member.asTerm.alternatives.find(compareSym).getOrElse(

@@ -41,11 +41,12 @@ trait ContextOps { self: TastyUniverse =>
     )
 
   @inline final def unsupportedError[T](noun: String)(implicit ctx: Context): T = {
-    def location(owner: Symbol): String = {
-      if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
-      else s"${describeOwner(owner)} in ${location(owner.owner)}"
-    }
     typeError(s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}.")
+  }
+
+  final def location(owner: Symbol): String = {
+    if (owner.isClass) s"${owner.kindString} ${owner.fullNameString}"
+    else s"${describeOwner(owner)} in ${location(owner.owner)}"
   }
 
   @inline final def typeError[T](msg: String): T = throw new u.TypeError(msg)
@@ -64,6 +65,7 @@ trait ContextOps { self: TastyUniverse =>
     final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
+    final def verboseDebug: Boolean = u.settings.debug
 
     final def adjustModuleClassCompleter(completer: TastyLazyType, name: TastyName): completer.type = {
       def findModule(name: TastyName, scope: u.Scope): Symbol = {

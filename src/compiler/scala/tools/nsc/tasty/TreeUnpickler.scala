@@ -70,7 +70,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   //---------------- unpickling trees ----------------------------------------------------------------------------------
 
   private def registerSym(addr: Addr, sym: Symbol)(implicit ctx: Context) = {
-    ctx.log(s"registered ${showSym(sym)} in ${sym.owner} at $addr")
+    ctx.log(s"$addr registered ${showSym(sym)} in ${location(sym.owner)}")
     symAtAddr(addr) = sym
   }
 
@@ -209,9 +209,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       case Some(sym) =>
         sym
       case None =>
-        ctx.log(s"No symbol at $addr")
+        ctx.log(s"<<< No symbol found at forward reference $addr, ensuring one exists:")
         val sym = forkAt(addr).createSymbol()(ctx.withOwner(ownerTree.findOwner(addr)))
-        ctx.log(s"forward reference to $sym")
+        ctx.log(s">>> $addr forward reference to ${showSym(sym)}")
         sym
     }
 
@@ -221,6 +221,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         assert(ctx.owner === sym.owner, s"owner discrepancy for ${showSym(sym)}, expected: ${showSym(ctx.owner)}, found: ${showSym(sym.owner)}")
         sym
       case None =>
+        ctx.log(s"$currentAddr No symbol found at current address, ensuring one exists:")
         createSymbol()
     }
 
@@ -259,7 +260,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def readType()(implicit ctx: Context): Type = {
       val start = currentAddr
       val tag = readByte()
-      ctx.log(s"reading type ${astTagToString(tag)} at $start")
+      ctx.log(s"$start reading type ${astTagToString(tag)}:")
 
       def registeringTypeWith[T](tp: Type, op: => T): T = {
         typeAtAddr(start) = tp
@@ -424,17 +425,20 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Create symbol of definition node and enter in symAtAddr map
      *  @return  the created symbol
      */
-    def createSymbol()(implicit ctx: Context): Symbol = nextByte match {
-      case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
-        createMemberSymbol()
-      case BIND =>
-        createBindSymbol()
-      case TEMPLATE =>
-        val localDummy = ctx.newLocalDummy
-        registerSym(currentAddr, localDummy)
-        localDummy
-      case tag =>
-        throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
+    def createSymbol()(implicit ctx: Context): Symbol = {
+      ctx.log(s"$currentAddr createSymbol:")
+      nextByte match {
+        case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
+          createMemberSymbol()
+        case BIND =>
+          createBindSymbol()
+        case TEMPLATE =>
+          val localDummy = ctx.newLocalDummy
+          registerSym(currentAddr, localDummy)
+          localDummy
+        case tag =>
+          throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
+      }
     }
 
     private def createBindSymbol()(implicit ctx: Context): Symbol = {
@@ -462,6 +466,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val end = readEnd()
       var name: TastyName = readTastyName()
       if (isTypeTag) name = name.toTypeName
+      ctx.log(s"$start ${astTagToString(tag)} ${name.debug}")
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -477,8 +482,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isModuleClass && !isTypeParameter
       ctx.log {
-        val msg = if (isSymbol(privateWithin)) s" private within $privateWithin" else ""
-        s"""creating symbol ${name}${msg} at $start with flags ${givenFlags.debug}"""
+        val privateFlag = if (isSymbol(privateWithin)) s"private[$privateWithin] " else ""
+        val flags = {
+          if (privateFlag.nonEmpty) {
+            val given = if (!givenFlags) "" else " " + (givenFlags &~ Private).debug
+            privateFlag + given
+          }
+          else givenFlags.debug
+        }
+        s"""$start parsed flags $flags"""
       }
       def adjustIfModule(completer: TastyLazyType) =
         if (isModuleClass) ctx.adjustModuleClassCompleter(completer, name) else completer
@@ -493,7 +505,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val rootd   = if (isModuleClass) found.linkedClassOfClass else found
               ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
               seenRoots += rootd
-              ctx.log(s"replaced info of ${showSym(rootd)}")
+              ctx.log(s"$start replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
               if (isModuleClass)
@@ -597,10 +609,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
 
     private val readTypedAnnot: Context => Symbol => Annotation = { implicit ctx =>
-      readByte()
+      val start = currentAddr
+      ctx.log(s"<<< $start reading annotation:")
+      readByte() // tag
       val end      = readEnd()
       val annotSym = readType().typeSymbolDirect
       val lzyAnnot = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
+      ctx.log(s">>> LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
       owner => mkAnnotationDeferred(owner, annotSym)(lzyAnnot(owner))
     }
 
@@ -625,12 +640,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     /** Process package with given operation `op`. The operation takes as arguments
-     *   - a `RefTree` representing the `pid` of the package,
      *   - an end address,
      *   - a context which has the processed package as owner
      */
     def processPackage[T](op: Addr => Context => T)(implicit ctx: Context): T = {
-      readByte()
+      readByte() // tag
       val end = readEnd()
       val tpe = readType()
       op(end)(ctx.withOwner(tpe.typeSymbolDirect.moduleClass))
@@ -675,7 +689,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val end     = readEnd()
       val tname   = readTastyName()
 
-      ctx.log(s"completing member $tname at $symAddr. ${showSym(sym)}")
+      ctx.log {
+        val addendum =
+          if (ctx.verboseDebug) Thread.currentThread().getStackTrace().drop(3).mkString("\n  > ", "\n  > ", "")
+          else ""
+        s"$symAddr completing ${showSym(sym)}:$addendum"
+      }
 
       val completer = sym.completer
 
@@ -747,7 +766,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
               else defn.ExprType(tpt.tpe))
         }
-        ctx.log(s"typed ${showSym(sym)} : ${if (sym.isClass) sym.tpe else sym.info} in owner ${showSym(sym.owner)}")
+        ctx.log(s"$symAddr typeOf(${showSym(sym)}) =:= ${if (sym.isType) sym.tpe else sym.info}; owned by ${location(sym.owner)}")
         goto(end)
         NoCycle(at = symAddr)
       } catch ctx.onCompletionError(sym)
@@ -760,7 +779,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val end = readEnd()
 
       // ** PARAMETERS **
-      ctx.log(s"Template: reading parameters of $cls")
+      ctx.log(s"$symAddr Template: reading parameters of $cls:")
       val tparams = readIndexedParams[NoCycle](TYPEPARAM)
       if (tparams.nonEmpty) {
         cls.info = defn.PolyType(tparams.map(symFromNoCycle), cls.info)
@@ -768,13 +787,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readIndexedParams[NoCycle](PARAM) // skip value parameters
 
       // ** MEMBERS **
-      ctx.log(s"Template: indexing members of $cls")
+      ctx.log(s"$symAddr Template: indexing members of $cls:")
       val bodyIndexer = fork
       while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
       bodyIndexer.indexStats(end)
 
       // ** PARENTS **
-      ctx.log(s"Template: adding parents of $cls")
+      ctx.log(s"$symAddr Template: adding parents of $cls:")
       val parents = {
         val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
         val parentWithOuter = parentCtx.addMode(OuterTerm)
@@ -787,11 +806,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
       if (nextByte === SELFDEF) {
-        ctx.log(s"Template: adding self-type of $cls")
+        ctx.log(s"$symAddr Template: adding self-type of $cls:")
         readByte() // read SELFDEF tag
         readLongNat() // skip Name
         val selfTpe = readTpt().tpe
-        ctx.log(s"Template: self-type is $selfTpe")
+        ctx.log(s"$symAddr Template: self-type is $selfTpe")
         cls.typeOfThis = selfTpe
       }
 
@@ -804,7 +823,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         else defn.PolyType(tparams.map(symFromNoCycle), classInfo)
       })
 
-      ctx.log(s"Template: Updated info of $cls with parents $parentTypes.")
+      ctx.log {
+        val addendum = if (parentTypes.isEmpty) "" else parentTypes.mkString(" extends ", " with ", "")
+        s"$symAddr Template: Updated info of $cls$addendum"
+      }
     }
 
     def isTopLevel: Boolean = nextByte === IMPORT || nextByte === PACKAGE
@@ -844,10 +866,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
 // ------ Reading trees -----------------------------------------------------
 
-    def readTerm()(implicit ctx: Context): Tree = {  // TODO: rename to readTree
+    def readTerm()(implicit ctx: Context): Tree = {
       val start = currentAddr
       val tag = readByte()
-      ctx.log(s"reading term ${astTagToString(tag)} at $start")
+      ctx.log(s"$start reading term ${astTagToString(tag)}:")
 
       def inParentCtor = ctx.mode.is(ReadParents | OuterTerm)
 
@@ -1013,7 +1035,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     implicit ctx: Context
   ): Either[String, T] =
     ctx.withSafePhaseNoLater("pickler")(_.errorInContext){ ctx0 =>
-      ctx0.log(s"starting to read at ${reader.reader.currentAddr} with owner $owner")
+      ctx0.log {
+        val kind = if (mode.is(ReadAnnotation)) "annotation" else "tree"
+        s"${reader.reader.currentAddr} starting to read $kind with owner $owner"
+      }
       op(reader)(ctx0
         .withOwner(owner)
         .withMode(mode)
@@ -1053,7 +1078,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         try cs match {
         case ot :: cs1 =>
           if (ot.addr.index === addr.index) {
-            assert(current.exists, s"no symbol at $addr")
+            assert(isSymbol(current), s"no symbol at $addr")
             current
           }
           else if (ot.addr.index < addr.index && addr.index < ot.end.index)
@@ -1068,7 +1093,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           ctx.log(s"no owner for $addr among $cs%, %") // pickling.println
           throw ex
       }
-      try search(children, noSymbol)
+      try search(children, noSymbol).tap(owner => ctx.log(s"$addr within owner ${showSym(owner)} do:"))
       catch {
         case ex: TreeWithoutOwner =>
           ctx.log(s"ownerTree = $ownerTree") // pickling.println
