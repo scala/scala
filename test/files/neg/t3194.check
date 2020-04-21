@@ -1,0 +1,4 @@
+t3194.scala:3: error: value z is not a member of object Nil
+  def zero(): Unit = Nil.z = 0
+                         ^
+1 error
