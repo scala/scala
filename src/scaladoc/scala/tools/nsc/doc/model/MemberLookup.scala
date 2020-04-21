@@ -127,16 +127,13 @@ trait MemberLookup extends base.MemberLookupBase {
     }
   }
 
-  lazy val javaVersion: Int = {
-    var version = System.getProperty("java.version")
-    (if (version.startsWith("1.")) {
-      version.substring(2, 3)
+  lazy val javaVersion: Int =
+    System.getProperty("java.specification.version").split('.').take(2).map(_.toIntOption) match {
+      case Array(Some(1), Some(n)) => n   // example: 1.8.0_242
+      case Array(Some(n))          => n   // example: 14
+      case Array(Some(n), _)       => n   // example: 11.0.7
+      case _                       => 8   // shrug!
     }
-    else {
-      val dot = version.indexOf(".")
-      version.substring(0, dot)
-    }).toInt
-  }
 
   override def warnNoLink = !settings.docNoLinkWarnings.value
 }
