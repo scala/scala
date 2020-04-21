@@ -24,9 +24,10 @@ trait AnnotationOps { self: TastyUniverse =>
       throw new Exception("unexpected annotation kind from TASTy")
   }
 
-  final def mkAnnotationDeferred(annotee: Symbol, annotSym: Symbol)(tree: Context => Either[String, Tree])(implicit ctx: Context): Annotation =
+  final def mkAnnotationDeferred(annotee: Symbol, annotSym: Symbol)(tree: Context => Either[String, Tree])(implicit ctx: Context): Annotation = {
+    lazy val tree0 = tree(ctx)
     u.AnnotationInfo.lazily {
-      tree(ctx) match {
+      tree0 match {
         case Left(err) =>
           u.reporter.error(u.NoPosition, err)
           u.UnmappableAnnotation
@@ -37,5 +38,6 @@ trait AnnotationOps { self: TastyUniverse =>
           else mkAnnotation(annotTree)
       }
     }
+  }
 
 }

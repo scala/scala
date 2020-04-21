@@ -425,20 +425,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Create symbol of definition node and enter in symAtAddr map
      *  @return  the created symbol
      */
-    def createSymbol()(implicit ctx: Context): Symbol = {
-      ctx.log(s"$currentAddr createSymbol:")
-      nextByte match {
-        case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
-          createMemberSymbol()
-        case BIND =>
-          createBindSymbol()
-        case TEMPLATE =>
-          val localDummy = ctx.newLocalDummy
-          registerSym(currentAddr, localDummy)
-          localDummy
-        case tag =>
-          throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
-      }
+    def createSymbol()(implicit ctx: Context): Symbol = nextByte match {
+      case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
+        createMemberSymbol()
+      case BIND =>
+        createBindSymbol()
+      case TEMPLATE =>
+        val localDummy = ctx.newLocalDummy
+        registerSym(currentAddr, localDummy)
+        localDummy
+      case tag =>
+        throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
     }
 
     private def createBindSymbol()(implicit ctx: Context): Symbol = {
@@ -466,7 +463,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val end = readEnd()
       var name: TastyName = readTastyName()
       if (isTypeTag) name = name.toTypeName
-      ctx.log(s"$start ${astTagToString(tag)} ${name.debug}")
+      ctx.log(s"$start ::: => create ${astTagToString(tag)} ${name.debug}")
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -609,14 +606,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
 
     private val readTypedAnnot: Context => Symbol => Annotation = { implicit ctx =>
+      val annotCtx = ctx.addMode(ReadAnnotation)
       val start = currentAddr
       ctx.log(s"<<< $start reading annotation:")
       readByte() // tag
       val end      = readEnd()
-      val annotSym = readType().typeSymbolDirect
-      val lzyAnnot = readLaterWithOwner(end, rdr => ctx => rdr.readTerm()(ctx))
+      val annotSym = readType()(annotCtx).typeSymbolDirect
+      val lzyAnnot = readLaterWithOwner(end, rdr => ctx => {
+        ctx.log(s"${rdr.reader.currentAddr} reading LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
+        rdr.readTerm()(ctx)
+      })(annotCtx)
       ctx.log(s">>> LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
-      owner => mkAnnotationDeferred(owner, annotSym)(lzyAnnot(owner))
+      owner => mkAnnotationDeferred(owner, annotSym)(lzyAnnot(owner))(annotCtx)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -1021,7 +1022,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Context => Either[String, T] = {
       val localReader = fork
       goto(end)
-      owner => ctx0 => readWith(localReader, owner, ctx.mode | ReadAnnotation , ctx.source, op)(ctx0)
+      owner => ctx0 => readWith(localReader, owner, ctx.mode, ctx.source, op)(ctx0)
     }
 
   }
@@ -1035,10 +1036,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     implicit ctx: Context
   ): Either[String, T] =
     ctx.withSafePhaseNoLater("pickler")(_.errorInContext){ ctx0 =>
-      ctx0.log {
-        val kind = if (mode.is(ReadAnnotation)) "annotation" else "tree"
-        s"${reader.reader.currentAddr} starting to read $kind with owner $owner"
-      }
+      ctx0.log(s"${reader.reader.currentAddr} starting to read with owner ${location(owner)}:")
       op(reader)(ctx0
         .withOwner(owner)
         .withMode(mode)
