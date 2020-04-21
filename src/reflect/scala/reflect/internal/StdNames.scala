@@ -694,6 +694,7 @@ trait StdNames {
     val drop: NameType                 = "drop"
     val elem: NameType                 = "elem"
     val noSelfType: NameType           = "noSelfType"
+    val empty: NameType                = "empty"
     val ensureAccessible : NameType    = "ensureAccessible"
     val eq: NameType                   = "eq"
     val equalsNumChar : NameType       = "equalsNumChar"
