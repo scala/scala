@@ -31,7 +31,7 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
 
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case ss: SortedSet[_] =>
+    case ss: SortedSet[_] if ss.ordering == this.ordering =>
       (ss canEqual this) &&
         (this.size == ss.size) && {
         val i1 = this.iterator
