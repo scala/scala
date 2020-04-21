@@ -4694,7 +4694,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def shadowsSetter =
           lhs1 match {
-            case treeInfo.Applied(Select(qual, _), _, _) =>
+            case treeInfo.Applied(Select(qual, _), _, _) if qual.isTyped =>
               qual.tpe.member(varsym.name.setterName).exists
             case _ => false
           }
@@ -4726,10 +4726,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
           wrapErrors(t, _.typed1(t, mode, pt))
         }
-        else if (shadowsSetter) {
-          val res = setterRewrite
-          if (!res.isEmpty) res else fail()
-        }
+        else if (shadowsSetter) setterRewrite orElse fail()
         else fail()
       }
 
