@@ -174,4 +174,9 @@ trait GlobalHelpers { self: Compat =>
       |Some errors like unused import referring to a non-existent class might not be reported.
     """.stripMargin
   }
+
+  final def isSyntheticCoreClass(sym: Symbol): Boolean = {
+    syntheticCoreClassSet.contains(sym)
+  }
+  private val syntheticCoreClassSet = definitions.syntheticCoreClasses.toSet[Symbol]
 }
