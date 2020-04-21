@@ -4758,6 +4758,8 @@ trait Types
     "scala.collection.IndexedSeq",
     "scala.collection.Iterator")
 
+  @deprecated("Use _.tpe", "2.12.12") // used by scala-meta, leave until they remove the dependency.
+  private[scala] val treeTpe = (t: Tree) => t.tpe
   private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
