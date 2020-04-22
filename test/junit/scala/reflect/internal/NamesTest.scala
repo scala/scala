@@ -35,30 +35,30 @@ class NamesTest {
 
   @Test
   def termNamesNotEqualsTypeNames(): Unit = {
-    assert((h1: AnyRef) ne h1y)
-    assert((h1: AnyRef) != h1y)
-    assert((h2: AnyRef) ne h2y)
-    assert((h2: AnyRef) != h2y)
+    assertTrue((h1: AnyRef) ne h1y)
+    assertTrue((h1: AnyRef) != h1y)
+    assertTrue((h2: AnyRef) ne h2y)
+    assertTrue((h2: AnyRef) != h2y)
   }
 
   @Test
   def termNamesTypeNamesSameRange(): Unit = {
-    assert(h1.start == h1y.start && h1.length == h1y.length)
-    assert(h2.start == h2y.start && h2.length == h2y.length)
-    assert(u.start == uy.start && u.length == uy.length)
+    assertTrue(h1.start == h1y.start && h1.length == h1y.length)
+    assertTrue(h2.start == h2y.start && h2.length == h2y.length)
+    assertTrue(u.start == uy.start && u.length == uy.length)
   }
 
   @Test
   def testLookupTypeName(): Unit = {
-    assert(lookupTypeName("hai".toCharArray) eq h1y)
-    assert(lookupTypeName("fisch".toCharArray) eq fy)
-    assert(lookupTypeName("uhu".toCharArray) eq uy)
+    assertTrue(lookupTypeName("hai".toCharArray) eq h1y)
+    assertTrue(lookupTypeName("fisch".toCharArray) eq fy)
+    assertTrue(lookupTypeName("uhu".toCharArray) eq uy)
 
     assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
     val d = newTermName("dog")
     assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
     val dy = d.toTypeName
-    assert(lookupTypeName("dog".toCharArray) eq dy)
+    assertTrue(lookupTypeName("dog".toCharArray) eq dy)
   }
 
   @Test
@@ -67,30 +67,30 @@ class NamesTest {
     val zy = z.toTypeName
     assertEquals(z.toString, "")
     assertEquals(zy.toString, "")
-    assert(z eq newTermName(""))
-    assert(zy eq newTypeName(""))
+    assertTrue(z eq newTermName(""))
+    assertTrue(zy eq newTypeName(""))
   }
 
   @Test
   def subNameTest(): Unit = {
     val i = f.subName(1, f.length)
-    assert(i.start == (f.start + 1) && i.length == (f.length - 1))
-    assert(f.subName(0, f.length) eq f)
+    assertTrue(i.start == (f.start + 1) && i.length == (f.length - 1))
+    assertTrue(f.subName(0, f.length) eq f)
 
     val iy = fy.subName(1, fy.length)
-    assert(iy.start == (fy.start + 1) && iy.length == (fy.length - 1))
-    assert(fy.subName(0, fy.length) eq fy)
+    assertTrue(iy.start == (fy.start + 1) && iy.length == (fy.length - 1))
+    assertTrue(fy.subName(0, fy.length) eq fy)
 
-    assert(f.subName(1,1) eq newTermName(""))
-    assert(f.subName(1, 0) eq newTermName(""))
+    assertTrue(f.subName(1,1) eq newTermName(""))
+    assertTrue(f.subName(1, 0) eq newTermName(""))
 
     assertThrows[IllegalArgumentException](f.subName(0 - f.start - 1, 1))
   }
 
   @Test
   def stringEqualsTest(): Unit = {
-    assert(h1 string_== h2)
-    assert(h1 string_== h1y)
+    assertTrue(h1 string_== h2)
+    assertTrue(h1 string_== h1y)
   }
 
   @Test

@@ -109,9 +109,13 @@ class StringContextTest {
 
   @Test def `f interpolator baseline`(): Unit = {
 
-    implicit def stringToBoolean(s: String): Boolean = java.lang.Boolean.parseBoolean(s)
-    implicit def stringToChar(s: String): Char = s(0)
-    implicit def str2fmt(s: String): java.util.Formattable = new java.util.Formattable {
+    // ignore spurious warning scala/bug#11946
+    type ignore = annotation.unused
+    @ignore def ignore: ignore = ???  // ignore that ignore looks unused
+
+    @ignore implicit def stringToBoolean(s: String): Boolean = java.lang.Boolean.parseBoolean(s)
+    @ignore implicit def stringToChar(s: String): Char = s(0)
+    @ignore implicit def str2fmt(s: String): java.util.Formattable = new java.util.Formattable {
       def formatTo(f: java.util.Formatter, g: Int, w: Int, p: Int) = f.format("%s", s)
     }
 
@@ -131,7 +135,7 @@ class StringContextTest {
     import java.util.{Calendar, Locale}
     val c = Calendar.getInstance(Locale.US)
     c.set(2012, Calendar.MAY, 26)
-    implicit def strToDate(x: String): Calendar = c
+    @ignore implicit def strToDate(x: String): Calendar = c
 
     val ss = List[(String, String)] (
       // 'b' / 'B' (category: general)
@@ -143,14 +147,14 @@ class StringContextTest {
       f"${false}%b" -> "false",
       f"${true}%b"  -> "true",
       f"${true && false}%b"                 -> "false",
-      f"${new java.lang.Boolean(false)}%b"  -> "false",
-      f"${new java.lang.Boolean(true)}%b"   -> "true",
+      f"${java.lang.Boolean.valueOf(false)}%b"  -> "false",
+      f"${java.lang.Boolean.valueOf(true)}%b"   -> "true",
 
       f"${null}%B"  -> "FALSE",
       f"${false}%B" -> "FALSE",
       f"${true}%B"  -> "TRUE",
-      f"${new java.lang.Boolean(false)}%B"  -> "FALSE",
-      f"${new java.lang.Boolean(true)}%B"   -> "TRUE",
+      f"${java.lang.Boolean.valueOf(false)}%B"  -> "FALSE",
+      f"${java.lang.Boolean.valueOf(true)}%B"   -> "TRUE",
 
       f"${"true"}%b" -> "true",
       f"${"false"}%b"-> "false",
@@ -173,7 +177,7 @@ class StringContextTest {
       f"${s}%S"     -> "SCALA",
       f"${5}"       -> "5",
       f"${i}"       -> "42",
-      f"${'foo}"    -> "Symbol(foo)",
+      f"${Symbol("foo")}"    -> "Symbol(foo)",
 
       f"${Thread.State.NEW}" -> "NEW",
 
@@ -183,10 +187,10 @@ class StringContextTest {
       f"${120:Byte}%c"   -> "x",
       f"${120:Short}%c"  -> "x",
       f"${120:Int}%c"    -> "x",
-      f"${new java.lang.Character('x')}%c"   -> "x",
-      f"${new java.lang.Byte(120:Byte)}%c"   -> "x",
-      f"${new java.lang.Short(120:Short)}%c" -> "x",
-      f"${new java.lang.Integer(120)}%c"     -> "x",
+      f"${java.lang.Character.valueOf('x')}%c"   -> "x",
+      f"${java.lang.Byte.valueOf(120:Byte)}%c"   -> "x",
+      f"${java.lang.Short.valueOf(120:Short)}%c" -> "x",
+      f"${java.lang.Integer.valueOf(120)}%c"     -> "x",
 
       f"${'x' : java.lang.Character}%c"     -> "x",
       f"${(120:Byte) : java.lang.Byte}%c"   -> "x",
@@ -202,10 +206,10 @@ class StringContextTest {
       f"${120:Int}%d"     -> "120",
       f"${120:Long}%d"    -> "120",
       f"${60 * 2}%d"      -> "120",
-      f"${new java.lang.Byte(120:Byte)}%d"   -> "120",
-      f"${new java.lang.Short(120:Short)}%d" -> "120",
-      f"${new java.lang.Integer(120)}%d"     -> "120",
-      f"${new java.lang.Long(120)}%d"        -> "120",
+      f"${java.lang.Byte.valueOf(120:Byte)}%d"   -> "120",
+      f"${java.lang.Short.valueOf(120:Short)}%d" -> "120",
+      f"${java.lang.Integer.valueOf(120)}%d"     -> "120",
+      f"${java.lang.Long.valueOf(120)}%d"        -> "120",
       f"${120 : java.lang.Integer}%d"        -> "120",
       f"${120 : java.lang.Long}%d"           -> "120",
       f"${BigInt(120)}%d"                    -> "120",
@@ -218,8 +222,8 @@ class StringContextTest {
 
       f"Just want to say ${"hello, world"}%#s..." -> "Just want to say hello, world...",
 
-      { implicit val strToShort = (s: String) => java.lang.Short.parseShort(s) ; f"${"120"}%d" } -> "120",
-      { implicit val strToInt = (s: String) => 42 ; f"${"120"}%d" } -> "42",
+      { @ignore implicit val strToShort = (s: String) => java.lang.Short.parseShort(s) ; f"${"120"}%d" } -> "120",
+      { @ignore implicit val strToInt = (s: String) => 42 ; f"${"120"}%d" } -> "42",
 
       // 'e' | 'E' | 'g' | 'G' | 'f' | 'a' | 'A' (category: floating point)
       // ------------------------------------------------------------------

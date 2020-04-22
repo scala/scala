@@ -71,7 +71,7 @@ class ArraySeqTest {
     assertEquals(a.copyToArray(Array(1,1,2), 0, -1), 0)
   }
 
-  private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]) {
+  private def check[T : ClassTag](array: ArraySeq[T], expectedSliceResult1: ArraySeq[T], expectedSliceResult2: ArraySeq[T]): Unit = {
     assertEquals(array, array.slice(-1, 4))
     assertEquals(array, array.slice(0, 5))
     assertEquals(array, array.slice(-1, 5))
@@ -80,8 +80,8 @@ class ArraySeqTest {
     assertEquals(ArraySeq.empty[T], array.slice(1, 1))
     assertEquals(ArraySeq.empty[T], array.slice(2, 1))
   }
-
-  @Test def checkSearch: Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
+  
+  @Test def checkSearch(): Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
   @Test
   def testCooperativeEquality(): Unit = {

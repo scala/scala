@@ -1,13 +1,10 @@
 package scala.collection.immutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
 import scala.collection.{IterableOnce, Iterator, SeqFactory}
 
-@RunWith(classOf[JUnit4])
 class LazyListLazinessTest {
   import LazyListLazinessTest._
 
@@ -224,6 +221,7 @@ class LazyListLazinessTest {
     genericAppendedCollValue_properlyLazy(_ ++ _)
   }
 
+  @deprecated("Uses deprecated union", since="2.13.0")
   @Test
   def union_properlyLazy(): Unit = {
     genericAppendedCollValue_properlyLazy(_ union _)
@@ -717,7 +715,7 @@ class LazyListLazinessTest {
         if (i >= LazinessChecker.count) None
         else {
           init.evaluate(i)
-          Some(i, i + 1)
+          Some((i, i + 1))
         }
       }
     }

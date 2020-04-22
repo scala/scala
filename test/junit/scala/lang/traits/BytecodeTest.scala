@@ -5,7 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree.ClassNode
@@ -19,8 +19,8 @@ class BytecodeTest extends BytecodeTesting {
 
   val noForwardersCompiler = newCompiler(extraArgs = "-Xmixin-force-forwarders:false")
 
-  def checkForwarder(classes: Map[String, ClassNode], clsName: Symbol, target: String) = {
-    val f = getMethod(classes(clsName.name), "f")
+  def checkForwarder(classes: Map[String, ClassNode], clsName: String, target: String) = {
+    val f = getMethod(classes(clsName), "f")
     assertSameCode(f, List(VarOp(ALOAD, 0), Invoke(INVOKESTATIC, target, "f$", s"(L$target;)I", true), Op(IRETURN)))
   }
 
@@ -92,18 +92,18 @@ class BytecodeTest extends BytecodeTesting {
 
     val c = noForwardersCompiler.compileClasses(code).map(c => (c.name, c)).toMap
 
-    val noForwarder = List('C1, 'C2, 'C3, 'C4, 'C10, 'C11, 'C12, 'C13, 'C16, 'C17)
-    for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
+    val noForwarder = List("C1", "C2", "C3", "C4", "C10", "C11", "C12", "C13", "C16", "C17")
+    for (cn <- noForwarder) assertEquals(getMethods(c(cn), "f"), Nil)
 
-    checkForwarder(c, 'C5, "T3")
-    checkForwarder(c, 'C6, "T4")
-    checkForwarder(c, 'C7, "T5")
-    checkForwarder(c, 'C8, "T4")
-    checkForwarder(c, 'C9, "T5")
-    checkForwarder(c, 'C14, "T4")
-    checkForwarder(c, 'C15, "T5")
+    checkForwarder(c, "C5", "T3")
+    checkForwarder(c, "C6", "T4")
+    checkForwarder(c, "C7", "T5")
+    checkForwarder(c, "C8", "T4")
+    checkForwarder(c, "C9", "T5")
+    checkForwarder(c, "C14", "T4")
+    checkForwarder(c, "C15", "T5")
     assertSameSummary(getMethod(c("C18"), "f"), List(BIPUSH, IRETURN))
-    checkForwarder(c, 'C19, "T7")
+    checkForwarder(c, "C19", "T7")
     assertSameCode(getMethod(c("C19"), "T7$$super$f"), List(VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "C18", "f", "()I", false), Op(IRETURN)))
     assertInvoke(getMethod(c("C20"), "clone"), "T8", "clone$") // mixin forwarder
   }
@@ -148,10 +148,10 @@ class BytecodeTest extends BytecodeTesting {
       """.stripMargin
     val c = noForwardersCompiler.compileClasses(code, List(j1, j2, j3, j4)).map(c => (c.name, c)).toMap
 
-    val noForwarder = List('K1, 'K2, 'K3, 'K4, 'K5, 'K6, 'K7, 'K8, 'K9, 'K10, 'K11)
-    for (cn <- noForwarder) assertEquals(getMethods(c(cn.name), "f"), Nil)
+    val noForwarder = List("K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8", "K9", "K10", "K11")
+    for (cn <- noForwarder) assertEquals(getMethods(c(cn), "f"), Nil)
 
-    checkForwarder(c, 'K12, "T2")
+    checkForwarder(c, "K12", "T2")
   }
 
   @Test

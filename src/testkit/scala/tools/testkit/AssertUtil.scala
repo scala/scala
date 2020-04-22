@@ -12,7 +12,8 @@
 
 package scala.tools.testkit
 
-import org.junit.Assert, Assert._
+import org.junit.Assert.{assertEquals, assertTrue}
+
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
 import scala.collection.mutable
@@ -35,10 +36,13 @@ object AssertUtil {
 
   /** Assert on Java 8, but on later versions, just print if assert would fail. */
   def assert8(b: => Boolean, msg: => Any) =
-    if (!isJavaAtLeast("9"))
+    if (!isJavaAtLeast(9))
       assert(b, msg)
     else if (!b)
       println(s"assert not $msg")
+
+  // junit fail is Unit
+  def fail(message: String): Nothing = throw new AssertionError(message)
 
   private final val timeout = 60 * 1000L                 // wait a minute
 

@@ -2,12 +2,9 @@ package scala.tools.nsc.transform.patmat
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.collection.mutable
 import scala.reflect.internal.util.Position
-import scala.tools.nsc.transform.patmat.TestSolver.global
 import scala.tools.nsc.{Global, Settings}
 
 object TestSolver extends Logic with Solving {
@@ -203,7 +200,6 @@ object TestSolver extends Logic with Solving {
 /**
  * Testing CNF conversion via Tseitin vs NNF & expansion.
  */
-@RunWith(classOf[JUnit4])
 class SolvingTest {
 
   import scala.tools.nsc.transform.patmat.TestSolver.TestSolver._

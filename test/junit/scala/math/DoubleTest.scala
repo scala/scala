@@ -11,7 +11,7 @@ class DoubleTest {
 
   /* Test for scala/bug#11386 */
   @Test
-  def testDoubleSign: Unit = {
+  def testDoubleSign(): Unit = {
     assertTrue(Double.NaN.sign.isNaN)
     assertEquals(doubleToLongBits(1.0), doubleToLongBits(Double.MaxValue.sign))
     assertEquals(doubleToLongBits(1.0), doubleToLongBits(Double.PositiveInfinity.sign))
@@ -21,8 +21,9 @@ class DoubleTest {
     assertEquals(doubleToLongBits(-0.0), doubleToLongBits(-0.0.sign))
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def testDoubleSignum: Unit = {
+  def testDoubleSignum(): Unit = {
     assertEquals(0, Double.NaN.signum)
     assertEquals(1, Double.MaxValue.signum)
     assertEquals(1, Double.PositiveInfinity.signum)

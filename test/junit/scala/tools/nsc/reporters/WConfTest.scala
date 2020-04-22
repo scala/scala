@@ -332,7 +332,7 @@ class WConfTest extends BytecodeTesting {
     def m(p: String) = Reporting.Message.Plain(
       Position.offset(new BatchSourceFile(new PlainFile(new File(new JFile(p))) {
         override lazy val canonicalPath: String = p
-      }, Array()), 0),
+      }, Array().toIndexedSeq), 0),
       msg = "",
       WarningCategory.Other,
       site = "")

@@ -1,11 +1,8 @@
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
-@RunWith(classOf[JUnit4])
 class SeqTest {
 
   @Test def `t9936 indexWhere`(): Unit = {
@@ -25,12 +22,12 @@ class SeqTest {
   }
 
   @Test
-  def hasCorrectDistinct: Unit = {
+  def hasCorrectDistinct(): Unit = {
     assertEquals(Seq(1, 2, 3, 4, 5), Seq(1, 1, 2, 3, 3, 3, 4, 5, 5).distinct)
   }
 
   @Test
-  def hasCorrectDistinctBy: Unit = {
+  def hasCorrectDistinctBy(): Unit = {
     val result = Seq("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").distinctBy(_.length)
 
     assertEquals(Seq("a", "aa", "aaa", "bbbb"), result)
@@ -70,6 +67,7 @@ class SeqTest {
     assertEquals(Seq(1, 3, 5), s1.intersect(s2))
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def unionAlias(): Unit = {
     val s1 = Seq(1, 2, 3)

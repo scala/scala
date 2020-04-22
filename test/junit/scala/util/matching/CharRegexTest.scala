@@ -1,10 +1,7 @@
 
 package scala.util.matching
 
-import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import PartialFunction._
 
@@ -12,7 +9,6 @@ import PartialFunction._
  *  If the pattern includes a group,
  *  always return a single char.
  */
-@RunWith(classOf[JUnit4])
 class CharRegexTest {
   implicit class Averrable(val b: Boolean) /*extends AnyVal*/ {
     def yes = assert(b)

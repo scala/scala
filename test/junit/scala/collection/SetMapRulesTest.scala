@@ -16,8 +16,10 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
-import scala.collection
+
+import scala.annotation.unused
 import scala.collection.{mutable, immutable, concurrent}
+import scala.jdk.CollectionConverters._
 
 /**
   * Test that various set and map implementation conform to the following rules:
@@ -113,7 +115,7 @@ class SetMapRulesTest {
     val entries1a = v1.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
     val v2 = f(v1)
     val entries1b = v1.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
-    val entries2 = v2.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
+    @unused val entries2 = v2.iterator.map { case (k, v) => (k.toTuple, v.toTuple) }.toSet
     assertEquals(s"$op should preserve original values ($entries1a should be equal to $entries1b)", entries1a, entries1b)
   }
 
@@ -214,6 +216,7 @@ class SetMapRulesTest {
   @Test def testMutableHashMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.HashMap.from(d)))
 
+  @deprecated("Uses OpenHashMap", since="2.13")
   @Test def testMutableOpenHashMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.OpenHashMap.from(d)))
 
@@ -229,6 +232,7 @@ class SetMapRulesTest {
   @Test def testMutableSeqMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.SeqMap.from(d)))
 
+  @deprecated("Uses ListMap", since="2.13")
   @Test def testMutableListMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.ListMap.from(d)))
 
@@ -236,7 +240,7 @@ class SetMapRulesTest {
     mapdata.foreach(d => checkMutableMap(() => concurrent.TrieMap.from(d)))
 
   @Test def testJavaHashMap: Unit =
-    mapdata.foreach(d => checkMutableMap(() => JavaConverters.mapAsScalaMap(new java.util.HashMap[Value, Value]).addAll(d)))
+    mapdata.foreach(d => checkMutableMap(() => new java.util.HashMap[Value, Value].asScala.addAll(d)))
 
   // Immutable sets
 
@@ -267,5 +271,5 @@ class SetMapRulesTest {
     setdata.foreach(d => checkMutableSet(() => mutable.TreeSet.from(d)))
 
   @Test def testJavaHashSet: Unit =
-    setdata.foreach(d => checkMutableSet(() => JavaConverters.asScalaSet(new java.util.HashSet[Value]).addAll(d)))
+    setdata.foreach(d => checkMutableSet(() => new java.util.HashSet[Value].asScala.addAll(d)))
 }

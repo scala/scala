@@ -9,7 +9,6 @@ import javax.tools.ToolProvider
 import org.junit.Test
 
 import scala.jdk.CollectionConverters._
-import scala.language.implicitConversions
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.tools.nsc.reporters.StoreReporter
 import FileUtils._
@@ -36,7 +35,7 @@ class DeterminismTest {
         |package demo
         |
         |class b {
-        |  def test: Unit = {
+        |  def test(): Unit = {
         |    new a().y
         |  }
         |}
@@ -66,7 +65,7 @@ class DeterminismTest {
         |package demo
         |
         |class b {
-        |  def test: Unit = {
+        |  def test(): Unit = {
         |    new a().y
         |  }
         |}
@@ -102,7 +101,7 @@ class DeterminismTest {
         |package demo
         |
         |class b {
-        |  def test: Unit = {
+        |  def test(): Unit = {
         |    new a().y(null)
         |  }
         |}
@@ -121,12 +120,12 @@ class DeterminismTest {
           |import scala.reflect.macros.blackbox.Context
           |
           |object Macro {
-          |  def impl(c: Context): c.Tree = {
+          |  def impl(c: Context)(): c.Tree = {
           |    import c.universe._
           |    val name = c.freshName("foo")
           |    Block(ValDef(NoMods, TermName(name), tq"_root_.scala.Int", Literal(Constant(0))) :: Nil, Ident(name))
           |  }
-          |  def m: Unit = macro impl
+          |  def m(): Unit = macro impl
           |}
           |
       """.stripMargin)
@@ -136,7 +135,7 @@ class DeterminismTest {
         |package demo
         |
         |class a {
-        |  def test: Unit = {
+        |  def test(): Unit = {
         |    Macro.m
         |  }
         |}
@@ -146,7 +145,7 @@ class DeterminismTest {
         |package demo
         |
         |class b {
-        |  def test: Unit = {
+        |  def test(): Unit = {
         |    Macro.m
         |  }
         |}
@@ -313,6 +312,7 @@ class DeterminismTest {
     }
     compile(referenceOutput, groups.last)
 
+    @annotation.unused
     class CopyVisitor(src: Path, dest: Path) extends SimpleFileVisitor[Path] {
       override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
         Files.createDirectories(dest.resolve(src.relativize(dir)))

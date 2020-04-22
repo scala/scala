@@ -5,7 +5,7 @@ import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
 import difflib.DiffUtils
 
-import scala.collection.JavaConverters.{asJavaIteratorConverter, asScalaBufferConverter, asScalaIteratorConverter}
+import scala.jdk.CollectionConverters._
 import scala.reflect.io.PlainNioFile
 import scala.tools.nsc.backend.jvm.AsmUtils
 
@@ -60,12 +60,14 @@ object FileUtils {
     val diffs = collection.mutable.ListBuffer[Diff]()
     def allFiles(dir: Path): Map[Path, Map[String, Path]] = {
       val classFiles: List[(Path, Path)] = Files.walk(dir).iterator().asScala.map(x => (dir.relativize(x), x)).toList.filter(_._2.getFileName.toString.endsWith(".class")).toList
-      classFiles.groupBy(_._1).mapValues(ps => ps.map { case (_, p) => (p.getFileName.toString, p)}.toMap).toMap
+      classFiles.groupBy(_._1).view.mapValues(ps => ps.map { case (_, p) => (p.getFileName.toString, p)}.toMap).toMap
     }
     val dir1Files = allFiles(dir1)
     val dir2Files = allFiles(dir2)
     val allSubDirs = dir1Files.keySet ++ dir2Files.keySet
-    for (subDir <- allSubDirs.toList.sortBy(_.iterator().asScala.map(_.toString).toIterable)) {
+    // TODO
+    //for (subDir <- allSubDirs) {
+    for (subDir <- allSubDirs.toList.sortBy(_.iterator().asScala.map(_.toString).iterator.to(Iterable))) {
       val files1 = dir1Files.getOrElse(subDir, Map.empty)
       val files2 = dir2Files.getOrElse(subDir, Map.empty)
       val allFileNames = files1.keySet ++ files2.keySet

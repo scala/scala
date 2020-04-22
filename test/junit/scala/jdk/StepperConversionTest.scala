@@ -14,13 +14,11 @@ package scala.jdk
 
 import org.junit.Test
 import org.junit.Assert.{assertFalse, assertTrue}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.collection.{AnyStepper, DoubleStepper, IntStepper, LongStepper, Stepper, concurrent => cc, immutable => ci, mutable => cm}
 import scala.{collection => co}
 
-@RunWith(classOf[JUnit4])
+@deprecated("Tests deprecated API", since="2.13")
 class StepperConversionTest {
   def isAcc[X](x: X): Boolean = x match {
     case _: AnyAccumulatorStepper[_] => true
@@ -75,7 +73,7 @@ class StepperConversionTest {
     nay( co.SortedMap[String, String]("fish" -> "salmon").valueStepper )
     nay( co.SortedSet[String]("salmon").stepper )
     yay( co.Iterable[String]("salmon").to(Accumulator).stepper )
-    yay( (co.Iterator[String]("salmon"): co.IterableOnce[String]).to(Accumulator).stepper )
+    yay( (co.Iterator[String]("salmon"): co.IterableOnce[String]).iterator.to(Accumulator).stepper )
     yay( co.Iterable[String]("salmon").view.to(Accumulator).stepper )
 
     // Immutable section
@@ -200,7 +198,7 @@ class StepperConversionTest {
     nay( co.SortedMap[Double, Double](2.718281828 -> 3.14159).valueStepper )
     nay( co.SortedSet[Double](3.14159).stepper )
     yay( co.Iterable[Double](3.14159).to(Accumulator).stepper )
-    yay( (co.Iterator[Double](3.14159): co.IterableOnce[Double]).to(Accumulator).stepper )
+    yay( (co.Iterator[Double](3.14159): co.IterableOnce[Double]).iterator.to(Accumulator).stepper )
     yay( co.Iterable[Double](3.14159).view.to(Accumulator).stepper )
 
     // Immutable section

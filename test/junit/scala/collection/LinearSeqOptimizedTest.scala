@@ -17,7 +17,7 @@ class LinearSeqOptimizedTest {
     assertEquals(2, "abcde".toList.indexWhere(_ == 'c', -2))
   }
 
-  @Test def test_efficientTails_list_SI9892: Unit = {
+  @Test def test_efficientTails_list_SI9892(): Unit = {
     val tails = List(1,2,3,4).tails.toList
 
     assert(tails(0).tail eq tails(1))
@@ -27,7 +27,8 @@ class LinearSeqOptimizedTest {
     assert(tails(4) eq List())
   }
 
-  @Test def test_efficientTails_stream_SI9892: Unit = {
+  @deprecated("Tests deprecated Stream", since="2.13.0")
+  @Test def test_efficientTails_stream_SI9892(): Unit = {
     val stream = Stream.from(1)
     val tails = stream.tails.toStream
     assert(tails.head eq stream)

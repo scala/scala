@@ -3,13 +3,11 @@ package classpath
 
 import org.junit.Assert._
 import org.junit.Test
-import java.io.Closeable
 import java.net.{URI, URL}
 import java.nio.file._
 import java.nio.file.attribute.FileTime
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.AbstractFile
-import scala.tools.nsc.util.ClassPath
 import scala.tools.testkit.ForDeletion
 import scala.tools.testkit.Releasables._
 import scala.util.chaining._

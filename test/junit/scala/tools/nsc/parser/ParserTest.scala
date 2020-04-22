@@ -1,5 +1,6 @@
 package scala.tools.nsc.parser
 
+import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -22,11 +23,11 @@ class ParserTest extends BytecodeTesting{
       """.stripMargin
     val crlfCode = code.linesIterator.map(_ + "\r\n").mkString
     val lfCode = code.linesIterator.map(_ + "\n").mkString
-    assert(crlfCode != lfCode)
+    assertNotEquals(crlfCode, lfCode)
     import compiler._, global._
     val run = new Run
     run.compileSources(newSourceFile(lfCode) :: Nil)
-    assert(!reporter.hasErrors)
+    assertFalse(reporter.hasErrors)
     run.compileSources(newSourceFile(crlfCode) :: Nil)
   }
 }

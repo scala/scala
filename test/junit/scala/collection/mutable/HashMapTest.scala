@@ -48,6 +48,7 @@ class HashMapTest {
     assertEquals(List((key, "value2")), map.toList)
   }
 
+  @deprecated("Uses deprecated extension", since="2.13")
   @Test
   def customGet(): Unit = {
     val gotItAll = new mutable.HashMap[String, String] {
@@ -57,7 +58,7 @@ class HashMapTest {
     assertEquals("a", gotItAll.getOrElseUpdate("a", "b"))
   }
   @Test
-  def testWithDefaultValue: Unit = {
+  def testWithDefaultValue(): Unit = {
     val m1 = mutable.HashMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue("")
 
@@ -86,8 +87,9 @@ class HashMapTest {
     assertEquals(m2(3), "")
     assertEquals(m3(3), "333")
   }
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def testWithDefault: Unit = {
+  def testWithDefault(): Unit = {
     val m1 = mutable.HashMap(1 -> "a", 2 -> "b")
 
     val m2: mutable.Map[Int, String] = m1.withDefault(i => (i + 1).toString)

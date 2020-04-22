@@ -1,30 +1,21 @@
 package scala.collection
 
-import scala.collection.immutable.List
-
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+
+import scala.annotation.unused
+import scala.tools.testkit.AssertUtil.assertThrows
 import scala.util.Random
 
-@RunWith(classOf[JUnit4])
 /* Test for scala/bug#7614 */
 class MinByMaxByTest {
-  val list = List.fill(1000)(scala.util.Random.nextInt(10000) - 5000)
+  val list = List.fill(1000)(Random.nextInt(10000) - 5000)
 
   // Basic emptiness check
   @Test
-  def checkEmpty: Unit = {
-    def hasException(code: => Any): Boolean = try {
-      code
-      false
-    } catch {
-      case u: UnsupportedOperationException => true
-      case t: Throwable => false
-    }
-    assert(hasException({ List[Int]().maxBy(_ * 3) }), "maxBy: on empty list should throw UnsupportedOperationException.")
-    assert(hasException({ List[Int]().minBy(_ * 3) }), "minBy: on empty list should throw UnsupportedOperationException.")
+  def checkEmpty(): Unit = {
+    assertThrows[UnsupportedOperationException](List[Int]().maxBy(_ * 3))
+    assertThrows[UnsupportedOperationException](List[Int]().minBy(_ * 3))
   }
 
   // Basic definition of minBy/maxBy.
@@ -32,10 +23,9 @@ class MinByMaxByTest {
   def testCorrectness() = {
     def f(x: Int) = -1 * x
     val max = list.maxBy(f)
-    assert(list.forall(f(_) <= f(max)), "f(list.maxBy(f)) should ≥ f(x) where x is any element of list.")
-
+    assertTrue("f(list.maxBy(f)) should ≥ f(x) where x is any element of list.", list.forall(f(_) <= f(max)))
     val min = list.minBy(f)
-    assert(list.forall(f(_) >= f(min)), "f(list.minBy(f)) should ≤ f(x) where x is any element of list.")
+    assertTrue("f(list.minBy(f)) should ≤ f(x) where x is any element of list.", list.forall(f(_) >= f(min)))
   }
 
   // Ensure that it always returns the first match if more than one element have the same largest/smallest f(x).
@@ -54,7 +44,7 @@ class MinByMaxByTest {
   def testOnlyEvaluateOnce() = {
     var evaluatedCountOfMaxBy = 0
 
-    val max = list.maxBy(x => {
+    @unused val max = list.maxBy(x => {
       evaluatedCountOfMaxBy += 1
       x * 10
     })
@@ -62,11 +52,35 @@ class MinByMaxByTest {
 
     var evaluatedCountOfMinBy = 0
 
-    val min = list.minBy(x => {
+    @unused val min = list.minBy(x => {
       evaluatedCountOfMinBy += 1
       x * 10
     })
     assert(evaluatedCountOfMinBy == list.length, s"minBy: should evaluate f only ${list.length} times, but it evaluated $evaluatedCountOfMinBy times.")
+  }
+
+  @Test
+  def checkEmptyOption(): Unit = {
+    assert(Seq.empty[Int].maxOption == None, "maxOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minOption == None, "minOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].maxByOption(identity) == None, "maxByOption on a Empty Iterable is None")
+    assert(Seq.empty[Int].minByOption(identity) == None, "minByOption on a Empty Iterable is None")
+  }
+
+  @Test
+  def checkNonEmptyOption(): Unit = {
+    assert(Seq(1).maxOption == Some(1), "maxOption on a Non Empty Iterable has value")
+    assert(Seq(1).minOption == Some(1), "minOption on a Non Empty Iterable has value")
+    assert(Seq(1).maxByOption(identity) == Some(1), "maxByOption on a Non Empty Iterable has value")
+    assert(Seq(1).minByOption(identity) == Some(1), "minByOption on a Non Empty Iterable has value")
+  }
+
+  @Test
+  def testMinMaxCorrectness(): Unit = {
+    import Ordering.Double.IeeeOrdering
+    val seq = Seq(5.0, 3.0, Double.NaN, 4.0)
+    assert(seq.min.isNaN)
+    assert(seq.max.isNaN)
   }
 
 }

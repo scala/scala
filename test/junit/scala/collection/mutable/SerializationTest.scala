@@ -99,11 +99,10 @@ class SerializationTest {
     assertEquals(Seq(1, 2, 3), serializeDeserialize(mutable.Queue(1, 2, 3)).toSeq)
   }
 
-  private def assertEqualsAfterDeserialization[A](original: mutable.Iterable[A], expectedClass: Class[_] = null): Unit = {
+  private def assertEqualsAfterDeserialization[A](original: mutable.Iterable[A], expectedClass: Class[_]): Unit = {
     val after = serializeDeserialize(original)
     assertEquals(original, after)
-    if(expectedClass ne null)
-      assertTrue("Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName, expectedClass.isInstance(after))
+    assertTrue("Deserialized class "+after.getClass.getName+" is not assignable to "+expectedClass.getName, expectedClass.isInstance(after))
   }
 
   private def serializeDeserialize[T <: AnyRef](obj: T): T = {

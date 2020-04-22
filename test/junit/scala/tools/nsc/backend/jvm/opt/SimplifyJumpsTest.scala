@@ -4,15 +4,12 @@ package opt
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
+import scala.annotation.unused
 import scala.tools.asm.Opcodes._
-import scala.tools.testkit.ASMConverters
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class SimplifyJumpsTest {
   @Test
   def simpleGotoReturn(): Unit = {
@@ -262,7 +259,7 @@ class SimplifyJumpsTest {
 
   @Test
   def noSimplifyNonConst(): Unit = {
-    val ops = List(
+    @unused val ops = List(
       Ldc(LDC, ""),
       Invoke(INVOKEVIRTUAL, "java/lang/String", "length", "()I", itf = false),
       Jump(IFEQ, Label(1)),

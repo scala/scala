@@ -49,7 +49,7 @@ class CollisionProofHashMapTest {
   }
 
   @Test
-  def testWithDefaultValue: Unit = {
+  def testWithDefaultValue(): Unit = {
     val m1 = mutable.CollisionProofHashMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue("")
 
@@ -78,8 +78,10 @@ class CollisionProofHashMapTest {
     assertEquals(m2(3), "")
     assertEquals(m3(3), "333")
   }
+
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def testWithDefault: Unit = {
+  def testWithDefault(): Unit = {
     val m1 = mutable.CollisionProofHashMap(1 -> "a", 2 -> "b")
 
     val m2: mutable.Map[Int, String] = m1.withDefault(i => (i + 1).toString)
@@ -102,8 +104,10 @@ class CollisionProofHashMapTest {
     assertEquals(m4(2), "3")
     assertEquals(m4(100), "101")
   }
+
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def testPreserveType: Unit = {
+  def testPreserveType(): Unit = {
     val m1 = mutable.CollisionProofHashMap(1 -> "a", 2 -> "b")
     val m2 = (m1 map { case (k, v) => k -> (v + "!") }).addOne(3 -> "c")
     assertEquals(m2(3), "c")

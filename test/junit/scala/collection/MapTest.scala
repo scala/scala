@@ -1,13 +1,11 @@
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Assert._
 import org.junit.Test
 
-@RunWith(classOf[JUnit4])
 class MapTest {
-  @Test def test: Unit = {
+  @deprecated("Tests deprecated API", since="2.13")
+  @Test def test(): Unit = {
     val map = collection.Map(
       1 -> 1,
       2 -> 2,
@@ -38,6 +36,7 @@ class MapTest {
       "foo [1 -> 1, 2 -> 2] bar")
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test def t11188(): Unit = {
     import scala.collection.immutable.ListMap
     val m = ListMap(1 -> "one")
@@ -46,6 +45,7 @@ class MapTest {
     assertEquals(mm.mkString("[", ", ", "]"), "[1 -> one, 2 -> two]")
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test def deprecatedPPE(): Unit = {
     val m = (1 to 10).map(x => (x, x)).toMap
     val m1 = m ++: m
@@ -56,7 +56,7 @@ class MapTest {
 
   @Test
   def flatMapOption(): Unit = {
-    def f(p: (Int, Int)) = if (p._1 < p._2) Some(p._1, p._2) else None
+    def f(p: (Int, Int)) = if (p._1 < p._2) Some((p._1, p._2)) else None
     val m = (1 to 10).zip(11 to 20).toMap
     val m2 = m.flatMap(f)
     (m2: Map[Int, Int]).head
@@ -66,6 +66,7 @@ class MapTest {
     (m4: Iterable[Int]).head
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def t11589(): Unit = {
     // tests the strictness of Map#values

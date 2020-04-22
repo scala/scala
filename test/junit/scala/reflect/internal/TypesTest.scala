@@ -18,22 +18,22 @@ class TypesTest {
   @Test
   def testRefinedTypeSI8611(): Unit = {
     def stringNarrowed = StringTpe.narrow
-    assert(stringNarrowed != stringNarrowed)
-    assert(!(stringNarrowed =:= stringNarrowed))
+    assertTrue(stringNarrowed != stringNarrowed)
+    assertTrue(!(stringNarrowed =:= stringNarrowed))
 
     def boolWithString = refinedType(BooleanTpe :: StringTpe :: Nil, NoSymbol)
-    assert(boolWithString != boolWithString)
-    assert(boolWithString =:= boolWithString)
+    assertTrue(boolWithString != boolWithString)
+    assertTrue(boolWithString =:= boolWithString)
 
     val boolWithString1 = boolWithString
     val boolWithString1narrow1 = boolWithString1.narrow
     val boolWithString1narrow2 = boolWithString1.narrow
     // Two narrowings of the same refinement end up =:=. This was the root
     // cause of scala/bug#8611. See `narrowUniquely` in `Logic` for the workaround.
-    assert(boolWithString1narrow1 =:= boolWithString1narrow2)
+    assertTrue(boolWithString1narrow1 =:= boolWithString1narrow2)
     val uniquelyNarrowed1 = refinedType(boolWithString1narrow1 :: Nil, NoSymbol)
     val uniquelyNarrowed2 = refinedType(boolWithString1narrow2 :: Nil, NoSymbol)
-    assert(uniquelyNarrowed1 =:= uniquelyNarrowed2)
+    assertTrue(uniquelyNarrowed1 =:= uniquelyNarrowed2)
   }
 
   @Test
@@ -64,11 +64,11 @@ class TypesTest {
   @Test
   def testRefinementContains(): Unit = {
     val refinement = typeOf[{def foo: Int}]
-    assert(refinement.isInstanceOf[RefinedType])
-    assert(refinement.contains(IntClass))
+    assertTrue(refinement.isInstanceOf[RefinedType])
+    assertTrue(refinement.contains(IntClass))
     val elem0 = refinement.baseTypeSeq(0)
-    assert(elem0.isInstanceOf[RefinementTypeRef])
-    assert(elem0.contains(IntClass))
+    assertTrue(elem0.isInstanceOf[RefinementTypeRef])
+    assertTrue(elem0.contains(IntClass))
   }
 
   @Test
@@ -102,7 +102,7 @@ class TypesTest {
     TypeRef(NoPrefix, RefinementClass, Nil) match {
       case rtr : RefinementTypeRef =>
         // ContainsCollector needs to look inside the info of symbols of RefinementTypeRefs
-        assert(rtr.contains(X))
+        assertTrue(rtr.contains(X))
     }
 
     val underlying = T.underlying
@@ -146,9 +146,9 @@ class TypesTest {
     def merge(ts: List[Type]) = mergePrefixAndArgs(ts, Variance.Contravariant, lubDepth(ts))
     val merged1 = merge(ts)
     val merged2 = merge(ts.reverse)
-    assert(ts.forall(_ <:< merged1)) // use to fail before fix to mergePrefixAndArgs for existentials
-    assert(ts.forall(_ <:< merged2))
-    assert(merged1 =:= merged2)
+    assertTrue(ts.forall(_ <:< merged1)) // use to fail before fix to mergePrefixAndArgs for existentials
+    assertTrue(ts.forall(_ <:< merged2))
+    assertTrue(merged1 =:= merged2)
   }
 
   trait Enum
@@ -170,11 +170,11 @@ class TypesTest {
 
   var storedXsource: ScalaVersion = null
   @Before
-  def storeXsource: Unit = {
+  def storeXsource(): Unit = {
     storedXsource = settings.source.value
   }
   @After
-  def restoreXsource: Unit = {
+  def restoreXsource(): Unit = {
     settings.source.value = storedXsource
   }
 
@@ -237,98 +237,98 @@ class TypesTest {
     settings.source.value = ScalaVersion("2.13")
 
     // test that ?F unifies with Foo
-    assert(F() <:< FooTpe)
-    assert(FooTpe <:< F())
-    assert(F() =:= FooTpe)
-    assert(FooTpe =:= F)
+    assertTrue(F() <:< FooTpe)
+    assertTrue(FooTpe <:< F())
+    assertTrue(F() =:= FooTpe)
+    assertTrue(FooTpe =:= F)
 
     // test that ?F unifies with [A]Foo[A]
-    assert(F() <:< polyType(A => Foo(A)))
-    assert(polyType(A => Foo(A)) <:< F())
-    assert(F() =:= polyType(A => Foo(A)))
-    assert(polyType(A => Foo(A)) =:= F())
+    assertTrue(F() <:< polyType(A => Foo(A)))
+    assertTrue(polyType(A => Foo(A)) <:< F())
+    assertTrue(F() =:= polyType(A => Foo(A)))
+    assertTrue(polyType(A => Foo(A)) =:= F())
 
     // test that ?F unifies with [A]Bar[Int, A]
-    assert(F() <:< polyType(A => Bar(Int, A)))
-    assert(polyType(A => Bar(Int, A)) <:< F())
-    assert(F() =:= polyType(A => Bar(Int, A)))
-    assert(polyType(A => Bar(Int, A)) =:= F())
+    assertTrue(F() <:< polyType(A => Bar(Int, A)))
+    assertTrue(polyType(A => Bar(Int, A)) <:< F())
+    assertTrue(F() =:= polyType(A => Bar(Int, A)))
+    assertTrue(polyType(A => Bar(Int, A)) =:= F())
 
     // test that ?F unifies with [A]Bar[A, Int]
-    assert(F() <:< polyType(A => Bar(A, Int)))
-    assert(polyType(A => Bar(A, Int)) <:< F())
-    assert(F() =:= polyType(A => Bar(A, Int)))
-    assert(polyType(A => Bar(A, Int)) =:= F())
+    assertTrue(F() <:< polyType(A => Bar(A, Int)))
+    assertTrue(polyType(A => Bar(A, Int)) <:< F())
+    assertTrue(F() =:= polyType(A => Bar(A, Int)))
+    assertTrue(polyType(A => Bar(A, Int)) =:= F())
 
     // test that ?F unifies with [+A]Bar[A, Int]
-    assert(F() <:< coPolyType(A => Bar(A, Int)))
-    assert(coPolyType(A => Bar(A, Int)) <:< F())
-    assert(F() =:= coPolyType(A => Bar(A, Int)))
-    assert(coPolyType(A => Bar(A, Int)) =:= F())
+    assertTrue(F() <:< coPolyType(A => Bar(A, Int)))
+    assertTrue(coPolyType(A => Bar(A, Int)) <:< F())
+    assertTrue(F() =:= coPolyType(A => Bar(A, Int)))
+    assertTrue(coPolyType(A => Bar(A, Int)) =:= F())
 
     // test that ?F unifies with [A]Foo[Foo[A]]
-    assert(F() <:< polyType(A => Foo(Foo(A))))
-    assert(polyType(A => Foo(Foo(A))) <:< F())
-    assert(F() =:= polyType(A => Foo(Foo(A))))
-    assert(polyType(A => Foo(Foo(A))) =:= F())
+    assertTrue(F() <:< polyType(A => Foo(Foo(A))))
+    assertTrue(polyType(A => Foo(Foo(A))) <:< F())
+    assertTrue(F() =:= polyType(A => Foo(Foo(A))))
+    assertTrue(polyType(A => Foo(Foo(A))) =:= F())
 
     // test that ?F unifies with [A]Foo[Bar[A, A]]
-    assert(F() <:< polyType(A => Foo(Bar(A, A))))
-    assert(polyType(A => Foo(Bar(A, A))) <:< F())
-    assert(F() =:= polyType(A => Foo(Bar(A, A))))
-    assert(polyType(A => Foo(Bar(A, A))) =:= F())
+    assertTrue(F() <:< polyType(A => Foo(Bar(A, A))))
+    assertTrue(polyType(A => Foo(Bar(A, A))) <:< F())
+    assertTrue(F() =:= polyType(A => Foo(Bar(A, A))))
+    assertTrue(polyType(A => Foo(Bar(A, A))) =:= F())
 
     // test that ?F unifies with [A]Bar[Foo[A], Foo[A]]
-    assert(F() <:< polyType(A => Bar(Foo(A), Foo(A))))
-    assert(polyType(A => Bar(Foo(A), Foo(A))) <:< F())
-    assert(F() =:= polyType(A => Bar(Foo(A), Foo(A))))
-    assert(polyType(A => Bar(Foo(A), Foo(A))) =:= F())
+    assertTrue(F() <:< polyType(A => Bar(Foo(A), Foo(A))))
+    assertTrue(polyType(A => Bar(Foo(A), Foo(A))) <:< F())
+    assertTrue(F() =:= polyType(A => Bar(Foo(A), Foo(A))))
+    assertTrue(polyType(A => Bar(Foo(A), Foo(A))) =:= F())
 
     // test that ?F unifies with [A]A
-    assert(F() <:< polyType(A => A))
-    assert(polyType(A => A) <:< F())
-    assert(F() =:= polyType(A => A))
-    assert(polyType(A => A) =:= F())
+    assertTrue(F() <:< polyType(A => A))
+    assertTrue(polyType(A => A) <:< F())
+    assertTrue(F() =:= polyType(A => A))
+    assertTrue(polyType(A => A) =:= F())
 
     // test that ?F unifies with [A]Int
-    assert(F() <:< polyType(A => Int))
-    assert(polyType(A => Int) <:< F())
-    assert(F() =:= polyType(A => Int))
-    assert(polyType(A => Int) =:= F())
+    assertTrue(F() <:< polyType(A => Int))
+    assertTrue(polyType(A => Int) <:< F())
+    assertTrue(F() =:= polyType(A => Int))
+    assertTrue(polyType(A => Int) =:= F())
 
     // test that ?F unifies with [A]Foo[Int]
-    assert(F() <:< polyType(A => Foo(Int)))
-    assert(polyType(A => Foo(Int)) <:< F())
-    assert(F() =:= polyType(A => Foo(Int)))
-    assert(polyType(A => Foo(Int)) =:= F())
+    assertTrue(F() <:< polyType(A => Foo(Int)))
+    assertTrue(polyType(A => Foo(Int)) <:< F())
+    assertTrue(F() =:= polyType(A => Foo(Int)))
+    assertTrue(polyType(A => Foo(Int)) =:= F())
 
     // test that ?G unifies with Bar
-    assert(G() <:< BarTpe)
-    assert(BarTpe <:< G())
-    assert(G() =:= BarTpe)
-    assert(BarTpe =:= G())
+    assertTrue(G() <:< BarTpe)
+    assertTrue(BarTpe <:< G())
+    assertTrue(G() =:= BarTpe)
+    assertTrue(BarTpe =:= G())
 
     // test that ?G unifies with [A, B]Bar[A, B]
-    assert(G() <:< polyType2((A, B) => Bar(A, B)))
-    assert(polyType2((A, B) => Bar(A, B)) <:< G())
-    assert(G() =:= polyType2((A, B) => Bar(A, B)))
-    assert(polyType2((A, B) => Bar(A, B)) =:= G())
+    assertTrue(G() <:< polyType2((A, B) => Bar(A, B)))
+    assertTrue(polyType2((A, B) => Bar(A, B)) <:< G())
+    assertTrue(G() =:= polyType2((A, B) => Bar(A, B)))
+    assertTrue(polyType2((A, B) => Bar(A, B)) =:= G())
 
     // test that ?G unifies with [A, B]Bar[B, A]
-    assert(G() <:< polyType2((A, B) => Bar(B, A)))
-    assert(polyType2((B, A) => Bar(A, B)) <:< G())
-    assert(G() =:= polyType2((A, B) => Bar(B, A)))
-    assert(polyType2((B, A) => Bar(A, B)) =:= G())
+    assertTrue(G() <:< polyType2((A, B) => Bar(B, A)))
+    assertTrue(polyType2((B, A) => Bar(A, B)) <:< G())
+    assertTrue(G() =:= polyType2((A, B) => Bar(B, A)))
+    assertTrue(polyType2((B, A) => Bar(A, B)) =:= G())
 
     // test that ?G unifies with [A, B]Bar[Bar[B, A], A]
-    assert(G() <:< polyType2((A, B) => Bar(Bar(B, A), A)))
-    assert(polyType2((A, B) => Bar(Bar(B, A), A)) <:< G())
-    assert(G() =:= polyType2((A, B) => Bar(Bar(B, A), A)))
-    assert(polyType2((A, B) => Bar(Bar(B, A), A)) =:= G())
+    assertTrue(G() <:< polyType2((A, B) => Bar(Bar(B, A), A)))
+    assertTrue(polyType2((A, B) => Bar(Bar(B, A), A)) <:< G())
+    assertTrue(G() =:= polyType2((A, B) => Bar(Bar(B, A), A)))
+    assertTrue(polyType2((A, B) => Bar(Bar(B, A), A)) =:= G())
 
     // test that [A]Bar[Int, A] <:< ?F <:< [A]Bar[Any, A]
     F() match { case _F =>
-      assert(polyType(A => Bar(Int, A)) <:< _F && _F <:< polyType(A => Bar(Any, A)))
+      assertTrue(polyType(A => Bar(Int, A)) <:< _F && _F <:< polyType(A => Bar(Any, A)))
     }
   }
 
@@ -338,16 +338,16 @@ class TypesTest {
     val aSym = typeOf[Foo.type].member(TermName("a"))
     val nSym = typeOf[Foo.type].member(TermName("n"))
 
-    assert(typeIsAnyOrJavaObject(AnyTpe))
-    assert(typeIsNothing(NothingTpe))
-    assert(!typeIsAnyOrJavaObject(LiteralType(Constant(1))))
-    assert(!typeIsAnyOrJavaObject(SingleType(NoPrefix, aSym)))
-    assert(!typeIsNothing(SingleType(NoPrefix, nSym)))
+    assertTrue(typeIsAnyOrJavaObject(AnyTpe))
+    assertTrue(typeIsNothing(NothingTpe))
+    assertTrue(!typeIsAnyOrJavaObject(LiteralType(Constant(1))))
+    assertTrue(!typeIsAnyOrJavaObject(SingleType(NoPrefix, aSym)))
+    assertTrue(!typeIsNothing(SingleType(NoPrefix, nSym)))
   }
 
   @Test
   def testSameTypesLub(): Unit = {
-    def testSameType(tpe: Type, num: Int = 5) = assert(lub(List.fill(num)(tpe)) =:= tpe)
+    def testSameType(tpe: Type, num: Int = 5) = assertTrue(lub(List.fill(num)(tpe)) =:= tpe)
 
     testSameType(IntTpe)
     testSameType(StringTpe)
@@ -393,7 +393,7 @@ class TypesTest {
     )
 
     interestingCombos foreach { case (result, checks) =>
-      checks.foreach(check => assert(lub(check) =:= result))
+      checks.foreach(check => assertTrue(lub(check) =:= result))
     }
   }
 }

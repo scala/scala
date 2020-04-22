@@ -5,10 +5,12 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.unused
 import scala.ref.WeakReference
 import scala.util.Try
 
 @RunWith(classOf[JUnit4])
+@deprecated("Tests deprecated Stream", since="2.13")
 class StreamTest {
 
   @Test
@@ -93,9 +95,9 @@ class StreamTest {
     }
 
     // call op on a stream which records every strict evaluation
-    val result = op(trackEffectsOnNaturals)
+    @unused val result = op(trackEffectsOnNaturals)
 
-    assertTrue( evaluated == expectedEvaluated )
+    assertEquals(expectedEvaluated, evaluated)
   }
 
   @Test // scala/bug#9134

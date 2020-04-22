@@ -42,10 +42,12 @@ class CollectTest {
   def testOptionCollect2: Unit =
     testing(Seq(2), None)(Some(2) collect { case x if f(x) && x < 2 => x})
 
+  @deprecated("Tests deprecated Stream", since="2.13")
   @Test
   def testStreamCollect: Unit =
     testing(Seq(1, 2), List(1))((Stream(1, 2).collect { case x if f(x) && x < 2 => x}).toList)
 
+  @deprecated("Tests deprecated Stream", since="2.13")
   @Test
   def testStreamCollectFirst: Unit =
     testing(Seq(1), Some(1))(Stream.continually(1) collectFirst { case x if f(x) && x < 2 => x})

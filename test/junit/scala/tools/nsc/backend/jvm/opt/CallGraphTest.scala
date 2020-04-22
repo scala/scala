@@ -4,20 +4,17 @@ package opt
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.collection.JavaConverters._
+import scala.annotation.unused
 import scala.collection.immutable.IntMap
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
 
-@RunWith(classOf[JUnit4])
 class CallGraphTest extends BytecodeTesting {
   override def compilerArgs = "-opt:inline -opt-inline-from:** -opt-warnings"
   import compiler._
@@ -145,7 +142,7 @@ class CallGraphTest extends BytecodeTesting {
     val List(fn) = callsInMethod(m)
     val forNameMeth = byteCodeRepository.methodNode("java/lang/Class", "forName", "(Ljava/lang/String;)Ljava/lang/Class;").get._1
     val classTp = cachedClassBType("java/lang/Class")
-    val r = callGraph.callsites(m)(fn)
+    @unused val r = callGraph.callsites(m)(fn)
     checkCallsite(fn, m, forNameMeth, classTp, safeToInline = false, atInline = false, atNoInline = false)
   }
 

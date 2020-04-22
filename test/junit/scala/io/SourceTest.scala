@@ -3,14 +3,9 @@ package scala.io
 
 import org.junit.Test
 import org.junit.Assert._
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.tools.testkit.AssertUtil._
+import java.io.{Console => _, _}
 
-import java.io.{ Console => _, _ }
-
-@RunWith(classOf[JUnit4])
 class SourceTest {
 
   private implicit val `our codec` = Codec.UTF8
@@ -55,7 +50,7 @@ class SourceTest {
     val s = new CapitalReporting(in)
     // skip to next line and report an error
     do {
-      val c = s.next()
+      s.next()
     } while (s.ch != '\n')
     s.next()
     val out = new ByteArrayOutputStream
@@ -85,7 +80,7 @@ class SourceTest {
     val s = new CapitalReporting(in)
     // skip to next line and report an error
     do {
-      val c = s.next()
+      s.next()
     } while (s.ch != '\n')
     s.next()
     val out = new ByteArrayOutputStream

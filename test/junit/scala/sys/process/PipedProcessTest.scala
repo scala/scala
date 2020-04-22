@@ -296,7 +296,7 @@ class PipeSourceMock extends Process.PipeSource("PipeSourceMock") {
 
 class PipedProcessesMock(a: ProcessBuilder, b: ProcessBuilder, defaultIO: ProcessIO, toError: Boolean)
   extends Process.PipedProcesses(a, b, defaultIO, toError) {
-  def callRunAndExitValue(source: Process.PipeSource, sink: Process.PipeSink) = {
+  private[process] final def callRunAndExitValue(source: Process.PipeSource, sink: Process.PipeSink) = {
     val m = classOf[Process.PipedProcesses].getDeclaredMethod("runAndExitValue", classOf[Process.PipeSource], classOf[Process.PipeSink])
     m.setAccessible(true)
     try m.invoke(this, source, sink).asInstanceOf[Option[Int]]

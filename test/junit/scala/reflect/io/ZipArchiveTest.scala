@@ -3,11 +3,10 @@ package scala.reflect.io
 import java.io.IOException
 import java.net.{URI, URL}
 import java.nio.file.{Files, Path, Paths}
-import java.util.jar.{Attributes, Manifest, JarEntry, JarFile, JarOutputStream}
+import java.util.jar.{Attributes, Manifest, JarEntry, JarOutputStream}
+
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.tools.testkit.AssertUtil._
@@ -16,11 +15,10 @@ import scala.tools.testkit.Releasables._
 import scala.util.chaining._
 import scala.util.Using
 
-@RunWith(classOf[JUnit4])
 class ZipArchiveTest {
 
   @Test
-  def corruptZip: Unit = {
+  def corruptZip(): Unit = {
     val f = Files.createTempFile("test", ".jar")
     val fza = new FileZipArchive(f.toFile)
     try {
@@ -31,7 +29,7 @@ class ZipArchiveTest {
   }
 
   @Test
-  def missingFile: Unit = {
+  def missingFile(): Unit = {
     val f = Paths.get("xxx.does.not.exist")
     val fza = new FileZipArchive(f.toFile)
     assertThrown[IOException](_.getMessage.contains(f.toString))(fza.iterator)

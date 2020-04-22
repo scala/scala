@@ -2,17 +2,15 @@ package scala.tools.nsc.backend.jvm
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
+import scala.annotation.unused
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.testkit.ASMConverters._
 import scala.tools.testkit.BytecodeTesting
 import scala.tools.testkit.BytecodeTesting._
-import scala.collection.JavaConverters._
 import scala.tools.asm.Opcodes
 
-@RunWith(classOf[JUnit4])
 class BytecodeTest extends BytecodeTesting {
   import compiler._
 
@@ -196,7 +194,7 @@ class BytecodeTest extends BytecodeTesting {
       """.stripMargin
     val t = compileClass(code)
     val tMethod = getMethod(t, "t$")
-    val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
+    @unused val invoke = Invoke(INVOKEVIRTUAL, "java/lang/Object", "toString", "()Ljava/lang/String;", false)
     // ths static accessor is positioned at the line number of the accessed method.
     assertSameCode(tMethod.instructions,
       List(Label(0), LineNumber(2, Label(0)), VarOp(ALOAD, 0), Invoke(INVOKESPECIAL, "T", "t", "()V", true), Op(RETURN), Label(4))

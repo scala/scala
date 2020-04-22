@@ -3,11 +3,8 @@ package settings
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class ScalaVersionTest {
   // scala/bug#8711
   @Test def versionUnparse(): Unit = {
@@ -20,7 +17,6 @@ class ScalaVersionTest {
   // scala/bug#9167
   @Test def `version parses with rigor`(): Unit = {
     import settings.{ SpecificScalaVersion => V }
-    import ScalaVersion._
 
     // no-brainers
     assertEquals(V(2,11,7,Final), ScalaVersion("2.11.7"))

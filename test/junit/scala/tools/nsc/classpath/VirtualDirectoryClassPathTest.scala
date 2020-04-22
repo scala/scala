@@ -5,13 +5,10 @@ package scala.tools.nsc.classpath
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
+import scala.annotation.unused
 import scala.reflect.io.VirtualDirectory
 
-
-@RunWith(classOf[JUnit4])
 class VirtualDirectoryClassPathTest {
 
   @Test
@@ -22,7 +19,7 @@ class VirtualDirectoryClassPathTest {
     val p2 = base subdirectoryNamed "p2"
     val p3 = p2 subdirectoryNamed "p3"
     val p4 = p3 subdirectoryNamed "p4"
-    val p4_Test1_class = p4.fileNamed("Test.class")
+    @unused val p4_Test1_class = p4.fileNamed("Test.class")
     val classPath = VirtualDirectoryClassPath(base)
 
     assertEquals(Some(p1_Test_class), classPath.findClassFile("p1/Test"))

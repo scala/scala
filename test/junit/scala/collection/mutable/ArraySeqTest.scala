@@ -6,7 +6,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.collection.immutable.Seq
-import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnit4])
 class ArraySeqTest {

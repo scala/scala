@@ -13,6 +13,7 @@ import scala.jdk.CollectionConverters._
 class MapWrapperTest {
 
   /* Test for scala/bug#7883 */
+  @deprecated("Uses deprecated extension", since="2.13")
   @Test
   def testContains(): Unit = {
     import scala.language.reflectiveCalls  // for accessing containsCounter

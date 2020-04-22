@@ -16,15 +16,13 @@ import java.io.NotSerializableException
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
+import scala.annotation.unused
 import scala.jdk.FunctionConverters._
 import scala.jdk.javaapi.{FunctionConverters => conv}
 import scala.language.implicitConversions
 import scala.tools.testkit.AssertUtil._
 
-@RunWith(classOf[JUnit4])
 class FunctionConvertersTest {
   import java.io.File
   import java.util.function._
@@ -57,12 +55,12 @@ class FunctionConvertersTest {
     implicit def unUnboxer[T]: Unboxer[T, T] = new Unboxer
   }
 
-  implicit def f0conv[T, U](f: Function0[T])(implicit u: Unboxer[T, U]): Function0[U] = f.asInstanceOf[Function0[U]]
-  implicit def f1conv[T1, U1, T2, U2](f: Function1[T1, T2])(implicit u1: Unboxer[T1, U1], u2: Unboxer[T2, U2]): Function1[U1, U2] = f.asInstanceOf[Function1[U1, U2]]
-  implicit def f2conv[T1, U1, T2, U2, T3, U3](f: Function2[T1, T2, T3])(implicit u1: Unboxer[T1, U1], u2: Unboxer[T2, U2], u3: Unboxer[T3, U3]): Function2[U1, U2, U3] = f.asInstanceOf[Function2[U1, U2, U3]]
+  implicit def f0conv[T, U](f: Function0[T])(implicit @unused u: Unboxer[T, U]): Function0[U] = f.asInstanceOf[Function0[U]]
+  implicit def f1conv[T1, U1, T2, U2](f: Function1[T1, T2])(implicit @unused u1: Unboxer[T1, U1], @unused u2: Unboxer[T2, U2]): Function1[U1, U2] = f.asInstanceOf[Function1[U1, U2]]
+  implicit def f2conv[T1, U1, T2, U2, T3, U3](f: Function2[T1, T2, T3])(implicit @unused u1: Unboxer[T1, U1], @unused u2: Unboxer[T2, U2], @unused u3: Unboxer[T3, U3]): Function2[U1, U2, U3] = f.asInstanceOf[Function2[U1, U2, U3]]
 
   private val aa = <:<.refl[Any]
-  implicit def boxeq[T, U](implicit u: Unboxer[T, U]): T =:= U = aa.asInstanceOf[T =:= U]
+  implicit def boxeq[T, U](implicit @unused u: Unboxer[T, U]): T =:= U = aa.asInstanceOf[T =:= U]
 
   val str = "fish"
   val fyl = new File("salmon")

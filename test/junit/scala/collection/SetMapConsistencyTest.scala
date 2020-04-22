@@ -1,13 +1,11 @@
 package scala.collection
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import scala.collection.{mutable => cm, immutable => ci}
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 /* Tests various maps by making sure they all agree on the same answers. */
-@RunWith(classOf[JUnit4])
+@deprecated("Tests deprecated API", since="2.13")
 class SetMapConsistencyTest {
   
   trait MapBox[A] {
@@ -238,7 +236,7 @@ class SetMapConsistencyTest {
   def churn[A](map1: MapBox[A], map2: MapBox[A], keys: Array[A], n: Int = 1000, seed: Int = 42, valuer: Int => Int = identity) = {
     def check = map1.keys.forall(map2 has _) && map2.keys.forall(map1 has _)
     val rn = new scala.util.Random(seed)
-    var what = new StringBuilder
+    val what = new StringBuilder
     what ++= "creation"
     for (i <- 0 until n) {
       if (!check) {
@@ -463,18 +461,19 @@ class SetMapConsistencyTest {
     val densities = List(0, 0.05, 0.2, 0.5, 0.8, 0.95, 1)
     def repeat = rn.nextInt(100) < 33
     def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble < density).toSet
-    def test: Boolean = {
-      for (i <- 0 to 100) {
+    def test: Boolean =
+      (1 to 100).forall { _ =>
         var ms = List(mhm, mohm, ihm)
-        do {
+        var res = 0
+        while (res == 0) {
           val density = densities(rn.nextInt(densities.length))
           val keep = pick(ms.head, density)
           ms = ms.map(_.filter(keep contains _._1))
-          if (!ms.sliding(2).forall(s => s(0) == s(1))) return false
-        } while (repeat)
+          if (!ms.sliding(2).forall(s => s(0) == s(1))) res = -1
+          else if (!repeat) res = 1
+        }
+        res > 0
       }
-      true
-    }
     assert(test)
   }
   
@@ -533,11 +532,9 @@ class SetMapConsistencyTest {
 
   @Test
   def test_SI8727(): Unit = {
-    import scala.tools.testkit.AssertUtil._
-    type NSEE = NoSuchElementException
     val map = Map(0 -> "zero", 1 -> "one")
-    val m = map.view.filterKeys(i => if (map contains i) true else throw new NSEE).toMap
-    assert{ (m contains 0) && (m get 0).nonEmpty }
+    val m = map.view.filterKeys(i => if (map contains i) true else throw new NoSuchElementException).toMap
+    assert(m.contains(0) && m.get(0).nonEmpty)
     // The Scala 2.13 collections library reverses the decision taken in https://github.com/scala/scala/pull/4159.
     // Now filterKeys may only apply its predicate to keys of the source map. In Scala 2.12 the following expressions
     // would have thrown a NSEE:

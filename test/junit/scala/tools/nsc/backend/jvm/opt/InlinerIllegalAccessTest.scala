@@ -6,10 +6,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.AsmUtils._
+import scala.tools.testkit.AssertUtil.fail
 import scala.tools.testkit.BytecodeTesting
 
 @RunWith(classOf[JUnit4])
@@ -54,7 +55,7 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
 
     def check(classNode: ClassNode, test: List[AbstractInsnNode] => Unit) = {
       for (m <- methods)
-        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(cClass.name), classBTypeFromParsedClassfile(classNode.name)).right.get)
+        test(inliner.findIllegalAccess(m.instructions, classBTypeFromParsedClassfile(cClass.name), classBTypeFromParsedClassfile(classNode.name)).getOrElse(fail("check")))
     }
 
     check(cClass, assertEmpty)
@@ -156,9 +157,8 @@ class InlinerIllegalAccessTest extends BytecodeTesting {
 
     val List(rbD, rcD, rfD, rgD) = dCl.methods.asScala.toList.filter(_.name(0) == 'r').sortBy(_.name)
 
-    def check(method: MethodNode, decl: ClassNode, dest: ClassNode, test: List[AbstractInsnNode] => Unit): Unit = {
-      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(decl.name), classBTypeFromParsedClassfile(dest.name)).right.get)
-    }
+    def check(method: MethodNode, decl: ClassNode, dest: ClassNode, test: List[AbstractInsnNode] => Unit): Unit =
+      test(inliner.findIllegalAccess(method.instructions, classBTypeFromParsedClassfile(decl.name), classBTypeFromParsedClassfile(dest.name)).getOrElse(fail(s"check $method")))
 
     val cOrDOwner = (_: List[AbstractInsnNode] @unchecked) match {
       case List(mi: MethodInsnNode) if Set("a/C", "a/D")(mi.owner) => ()

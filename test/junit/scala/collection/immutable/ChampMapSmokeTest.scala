@@ -61,7 +61,7 @@ class ChampMapSmokeTest {
   @Test def testCheckCompactionFromBeginUponDelete(): Unit = {
     val map: HashMap[Int, Int] = emptyMap
     val res1 = map + mkTuple(1) + mkTuple(2)
-    val res2 = res1 + mkTuple(32769) - 2
+    @annotation.unused val res2 = res1 + mkTuple(32769) - 2
     /* should trigger assertion in data structure if not compacting */
   }
 

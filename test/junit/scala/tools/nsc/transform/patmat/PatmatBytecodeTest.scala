@@ -84,7 +84,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c :: _ = optCompiler.compileClasses(code)
+    val c :: _ = optCompiler.compileClasses(code): @unchecked
 
     assertSameSummary(getMethod(c, "a"), List(
       NEW, DUP, ICONST_1, LDC, "<init>",
@@ -101,7 +101,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c :: _ = optCompiler.compileClasses(code)
+    val c :: _ = optCompiler.compileClasses(code): @unchecked
     assert(!getInstructions(c, "a").exists(i => i.opcode == IFNULL || i.opcode == IFNONNULL), textify(getAsmMethod(c, "a")))
   }
 
@@ -115,7 +115,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c :: _ = optCompiler.compileClasses(code)
+    val c :: _ = optCompiler.compileClasses(code): @unchecked
     assertSameSummary(getMethod(c, "a"), List(
       NEW, DUP, ICONST_1, "valueOf", LDC, "<init>", ASTORE /*1*/,
       ALOAD /*1*/, "y", ASTORE /*2*/,

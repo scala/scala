@@ -97,7 +97,7 @@ class ClassOfTest extends RunTesting {
 
     val l = Class.forName("scala.collection.immutable.List")
     val i = Integer.TYPE
-    val ig = new Integer(1).getClass
+    val ig = Integer.valueOf(1).getClass
     val v = new ClassOfTest.VC(1).getClass
     val ai = Array(1).getClass
     val al = Array(List()).getClass

@@ -4,15 +4,11 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.collection.JavaConverters._
-import scala.collection.{concurrent, mutable}
+import scala.jdk.CollectionConverters._
 
 // scala/bug#9113: tests to insure that wrappers return null instead of wrapping it as a collection
 
-@RunWith(classOf[JUnit4])
 class NullSafetyToScalaTest {
   @Test def testIteratorDecoration(): Unit = {
     val nullJIterator: ju.Iterator[AnyRef] = null

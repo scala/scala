@@ -14,7 +14,7 @@ class PickleWriteTest {
 
   // Enables verbose output to console to help understand what the test is doing.
   private val debug = false
-  private var deleteBaseAfterTest = true
+  private val deleteBaseAfterTest = true
 
   @Before def before(): Unit = {
     base = Files.createTempDirectory("pickleWriteTest")

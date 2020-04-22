@@ -86,6 +86,7 @@ class SerializationTest {
     assertEqualsAfterDeserialization(LazyList.from(1).take(10000).force, classOf[LazyList[_]])
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def stream(): Unit = {
     assertEqualsAfterDeserialization(Stream.empty, classOf[Stream[_]])

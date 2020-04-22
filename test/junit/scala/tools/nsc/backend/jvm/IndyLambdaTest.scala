@@ -3,7 +3,7 @@ package scala.tools.nsc.backend.jvm
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.tools.asm.Handle
 import scala.tools.asm.tree.InvokeDynamicInsnNode
 import scala.tools.testkit.BytecodeTesting
