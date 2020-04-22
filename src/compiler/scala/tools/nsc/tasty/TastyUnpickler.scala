@@ -89,7 +89,7 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
         val sig       = Signature(paramsSig, result)
         debugName(SignedName(original, sig))
       case OBJECTCLASS =>
-        debugName(ModuleName(readName()))
+        debugName(ObjectName(readName()))
       case INLINEACCESSOR | SUPERACCESSOR =>
         val prefix = tag match {
           case INLINEACCESSOR => TastyName.InlinePrefix

@@ -36,6 +36,8 @@ trait SymbolOps { self: TastyUniverse =>
       sym.info
       sym.annotations.foreach(_.completeInfo())
     }
+    def objectImplementation: Symbol = sym.moduleClass
+    def sourceObject: Symbol = sym.sourceModule
     def ref(args: List[Type]): Type = u.appliedType(sym, args)
     def ref: Type = sym.ref(Nil)
     def singleRef: Type = u.singleType(u.NoPrefix, sym)
@@ -76,7 +78,7 @@ trait SymbolOps { self: TastyUniverse =>
     val member = {
       if (tname.isTypeName) {
         val asTerm = tname.toTermName
-        if (asTerm.isModuleName) space.member(encodeTermName(asTerm)).moduleClass
+        if (asTerm.isObjectName) space.member(encodeTermName(asTerm)).moduleClass
         else {
           val selector = encodeTastyName(tname)
           def lookInTypeCtor =

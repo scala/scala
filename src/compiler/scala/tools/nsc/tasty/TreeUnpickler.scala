@@ -22,12 +22,10 @@ import scala.util.chaining._
 
 /** Unpickler for typed trees
  *  @param reader              the reader from which to unpickle
- *  @param splices
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
-    nameAtRef: NameRef => TastyName,
-    splices: Seq[Any])(implicit
+    nameAtRef: NameRef => TastyName)(implicit
     val tasty: Tasty) { self =>
   import tasty._
   import FlagSets._
@@ -59,11 +57,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
    */
   private[this] var roots: Set[Symbol] = _
 
-  /** The root symbols that are defined in this Tasty file. This
-   *  is a subset of `roots.map(_.symbol)`.
-   */
-  private[this] var seenRoots: Set[Symbol] = Set()
-
   /** The root owner tree. See `OwnerTree` class definition. Set by `enterTopLevel`. */
   private[this] var ownerTree: OwnerTree = _
 
@@ -76,8 +69,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
   /** Enter all toplevel classes and objects into their scopes
    */
-  def enter(classRoot: Symbol, moduleRoot: Symbol)(implicit ctx: Context): Unit = {
-    this.roots = Set(moduleRoot, classRoot)
+  def enterTopLevel(classRoot: Symbol, objectRoot: Symbol)(implicit ctx: Context): Unit = {
+    this.roots = Set(objectRoot, classRoot)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     if (rdr.isTopLevel)
@@ -337,7 +330,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case TYPEREFdirect => readSymRef().termRef
           case TERMREFdirect => readSymRef().singleRef
           case TYPEREFsymbol | TERMREFsymbol => readSymNameRef()
-          case TYPEREFpkg => readPackageRef().moduleClass.ref
+          case TYPEREFpkg => readPackageRef().objectImplementation.ref
           case TERMREFpkg => readPackageRef().termRef
           case TYPEREF => selectType(readTastyName().toTypeName, readType())
           case TERMREF => selectTerm(readTastyName(), readType())
@@ -395,7 +388,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         if (owner.is(Trait)) flags |= FieldAccessor
       }
       if (tastyFlags.is(Object))
-        flags = flags | (if (tag === VALDEF) ModuleCreationFlags else ModuleClassCreationFlags)
+        flags = flags | (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
         else if (tag === PARAM) {
@@ -448,7 +441,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val completer = new TastyLazyType {
         override def complete(sym: Symbol): Unit = ctx.setInfo(sym, typeReader.readType())
       }
-      val sym = ctx.newSymbol(ctx.owner, name, Case, completer)
+      val sym = ctx.delayCompletion(ctx.owner, name, Case, completer)
       registerSym(start, sym)
       sym
     }
@@ -475,9 +468,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val (givenFlags, annotFns, privateWithin) =
         readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
       val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, isAbsType, isClass, rhsIsEmpty)
-      def isModuleClass   = flags.is(Object) && isClass
       def isTypeParameter = flags.is(Param) && isTypeTag
-      def canEnterInClass = !isModuleClass && !isTypeParameter
+      def canEnterInClass = !isTypeParameter
       ctx.log {
         val privateFlag = if (isSymbol(privateWithin)) s"private[$privateWithin] " else ""
         val flags = {
@@ -489,37 +481,36 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
         s"""$start parsed flags $flags"""
       }
-      def adjustIfModule(completer: TastyLazyType) =
-        if (isModuleClass) ctx.adjustModuleClassCompleter(completer, name) else completer
       val sym = {
         if (tag === TYPEPARAM && ctx.owner.isClassConstructor) {
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = adjustIfModule(new Completer(subReader(start, end), givenFlags & TastyOnlyFlags))
-          roots.find(ctx.isSameRoot(_,name)) match {
-            case Some(found) =>
-              val rootd   = if (isModuleClass) found.linkedClassOfClass else found
+          val completer = new Completer(subReader(start, end), givenFlags & TastyOnlyFlags)
+          ctx.findRootSymbol(roots, name) match {
+            case Some(rootd) =>
               ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
-              seenRoots += rootd
               ctx.log(s"$start replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
-              if (isModuleClass)
-                ctx.adjustSymbol(completer.sourceModule.moduleClass, flags, completer, privateWithin)
-              else if (isClass)
-                ctx.newClassSymbol(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-              else
-                ctx.newSymbol(ctx.owner, name, flags, completer, privateWithin)
+              if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, flags, completer, privateWithin)
+              else ctx.delayCompletion(ctx.owner, name, flags, completer, privateWithin)
           }
         }
-      }
+      }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
-        case cls: ClassSymbol if canEnterInClass =>
+        case cls if cls.isClass && canEnterInClass =>
+          val decl = if (flags.is(Object) && isClass) sym.sourceObject else sym
           val decls = cls.rawInfo.decls
-          if (allowsOverload(sym)) decls.enter(sym)
-          else decls.enterIfNew(sym)
+          if (allowsOverload(decl)) {
+            if (ctx.canEnterOverload(decl)) {
+              decls.enter(decl)
+            }
+          }
+          else {
+            decls.enterIfNew(decl)
+          }
         case _ =>
       }
       registerSym(start, sym)
@@ -648,7 +639,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readByte() // tag
       val end = readEnd()
       val tpe = readType()
-      op(end)(ctx.withOwner(tpe.typeSymbolDirect.moduleClass))
+      op(end)(ctx.withOwner(tpe.typeSymbolDirect.objectImplementation))
     }
 
     /** Create symbols the longest consecutive sequence of parameters with given
@@ -731,7 +722,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val valueParamss = normalizeIfConstructor(vparamss.map(_.map(symFromNoCycle)), isCtor)
             val resType = effectiveResultType(sym, typeParams, tpt.tpe)
             ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
-          case VALDEF => // valdef in TASTy is either a module value or a method forwarder to a local value.
+          case VALDEF => // valdef in TASTy is either a singleton object or a method forwarder to a local value.
             val isInline = completer.tastyFlagSet.is(Inline)
             val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")

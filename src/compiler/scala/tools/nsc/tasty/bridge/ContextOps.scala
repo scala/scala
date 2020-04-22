@@ -67,21 +67,17 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
-    final def adjustModuleClassCompleter(completer: TastyLazyType, name: TastyName): completer.type = {
-      def findModule(name: TastyName, scope: u.Scope): Symbol = {
-        val it = scope.lookupAll(encodeTermName(name)).filter(_.is(Object))
-        if (it.hasNext) it.next()
-        else noSymbol
-      }
+    def canEnterOverload(decl: Symbol): Boolean = {
+      !(decl.isModule && isSymbol(findObject(decl.name)))
+    }
 
-      /** Either empty scope, or, if the current context owner is a class,
-       *  the declarations of the current class.
-       */
-      def effectiveScope(ctx: Context): u.Scope =
-        if (ctx.owner != null && ctx.owner.isClass) ctx.owner.rawInfo.decls
+    private final def findObject(name: u.Name): Symbol = {
+      val scope =
+        if (owner != null && owner.isClass) owner.rawInfo.decls
         else u.EmptyScope
-
-      completer.withSourceModule(ctx => findModule(name.toTermName, effectiveScope(ctx)))
+      val it = scope.lookupAll(name).filter(_.isModule)
+      if (it.hasNext) it.next()
+      else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
     }
 
     final def log(str: => String): Unit = {
@@ -110,14 +106,14 @@ trait ContextOps { self: TastyUniverse =>
     final def optionalClass(fullname: TastyName.TypeName): Option[Symbol] =
       loadingMirror.getClassIfDefined(encodeTypeName(fullname).toString).toOption
 
-    final def requiredModule(fullname: TastyName.ModuleName): Symbol =
+    final def requiredObject(fullname: TastyName.ObjectName): Symbol =
       symOrDependencyError(true, false, fullname)(loadingMirror.getRequiredModule(encodeTermName(fullname).toString))
 
-    private def symOrDependencyError(isModule: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
+    private def symOrDependencyError(isObject: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
       try sym
       catch {
         case _: MissingRequirementError =>
-          val kind = if (isModule) "object" else if (isPackage) "package" else "class"
+          val kind = if (isObject) "object" else if (isPackage) "package" else "class"
           val addendum = if (mode.is(ReadAnnotation)) s" whilst reading annotation of $owner" else ""
           val msg =
             s"could not find $kind ${fullname.source}$addendum; perhaps it is missing from the classpath."
@@ -132,9 +128,19 @@ trait ContextOps { self: TastyUniverse =>
     final def newWildcardSym(info: Type): Symbol =
       owner.newTypeParameter(u.nme.WILDCARD.toTypeName, u.NoPosition, u.NoFlags).setInfo(info)
 
-    final def isSameRoot(root: Symbol, name: TastyName): Boolean = {
+    final def findRootSymbol(roots: Set[Symbol], name: TastyName): Option[Symbol] = {
+      import TastyName._
+
+      def isSameRoot(root: Symbol, selector: u.Name): Boolean =
+        (root.owner `eq` this.owner) && selector === root.name
+
       val selector = encodeTastyName(name)
-      (root.owner `eq` this.owner) && selector === root.name
+      roots.find(isSameRoot(_,selector)).map(found =>
+        name match {
+          case TypeName(_: ObjectName) => found.linkedClassOfClass
+          case _                       => found
+        }
+      )
     }
 
     final def findOuterClassTypeParameter(name: TastyName.TypeName): Symbol = {
@@ -169,7 +175,21 @@ trait ContextOps { self: TastyUniverse =>
       newSymbol(owner, name, flags, info)
     }
 
-    final def newSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
+    final def delayCompletion(owner: Symbol, name: TastyName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
+      def default() = newSymbol(owner, name, flags, completer, privateWithin)
+      if (flags.is(Object)) {
+        val sourceObject = findObject(encodeTermName(name))
+        if (isSymbol(sourceObject))
+          adjustSymbol(sourceObject, flags, completer, privateWithin)
+        else
+          default()
+      }
+      else {
+        default()
+      }
+    }
+
+    private final def newSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       adjustSymbol(
         symbol = {
           if (flags.is(Param)) {
@@ -183,8 +203,12 @@ trait ContextOps { self: TastyUniverse =>
           else if (name === TastyName.Constructor) {
             owner.newConstructor(u.NoPosition, encodeFlagSet(flags &~ Stable))
           }
-          else if (flags.is(Object)) {
-            owner.newModule(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
+          else if (flags.is(FlagSets.ObjectCreationFlags)) {
+            log(s"!!! visited module value $name first")
+            assert(!owner.rawInfo.decls.lookupAll(encodeTermName(name)).exists(_.isModule))
+            val module = owner.newModule(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
+            module.moduleClass.info = u.NoType
+            module
           }
           else if (name.isTypeName) {
             owner.newTypeSymbol(encodeTypeName(name.toTypeName), u.NoPosition, encodeFlagSet(flags))
@@ -197,15 +221,37 @@ trait ContextOps { self: TastyUniverse =>
         privateWithin = privateWithin
       )
 
-    final def newClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol): ClassSymbol = {
-      adjustSymbol(
-        symbol = owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, encodeFlagSet(flags)),
-        info = completer,
-        privateWithin = privateWithin
-      )
+    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
+      def default() = newClassSymbol(owner, typeName, flags, completer, privateWithin)
+      if (flags.is(Object)) {
+        val sourceObject = findObject(encodeTermName(typeName.toTermName))
+        if (isSymbol(sourceObject))
+          adjustSymbol(sourceObject.objectImplementation, flags, completer, privateWithin)
+        else
+          default()
+      }
+      else {
+        default()
+      }
     }
 
-    final def enterClassCompletion(): ClassSymbol = {
+    private final def newClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
+      val sym = {
+        if (flags.is(FlagSets.ObjectClassCreationFlags)) {
+          log(s"!!! visited module class $typeName first")
+          val module = owner.newModule(encodeTermName(typeName), u.NoPosition, encodeFlagSet(FlagSets.ObjectCreationFlags))
+          module.info = u.NoType
+          module.moduleClass.flags = encodeFlagSet(flags)
+          module.moduleClass
+        }
+        else {
+          owner.newClassSymbol(encodeTypeName(typeName), u.NoPosition, encodeFlagSet(flags))
+        }
+      }
+      adjustSymbol(sym, completer, privateWithin)
+    }
+
+    final def enterClassCompletion(): Symbol = {
       val cls = globallyVisibleOwner.asClass
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)

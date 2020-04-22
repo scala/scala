@@ -19,7 +19,7 @@ object TastyName {
   // TODO [tasty]: cache chars for Names. SimpleName acts as a cursor
 
   final case class SimpleName(raw: String)                                                    extends TastyName
-  final case class ModuleName(base: TastyName)                                                extends TastyName
+  final case class ObjectName(base: TastyName)                                                extends TastyName
   final case class QualifiedName(qual: TastyName, sep: SimpleName, selector: SimpleName)      extends TastyName
   final case class SignedName(qual: TastyName, sig: Signature.MethodSignature[ErasedTypeRef]) extends TastyName
   final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                     extends TastyName
@@ -37,8 +37,8 @@ object TastyName {
   final def qualifiedClass(initial: String, parts: String*): TypeName =
     qualifiedPath(initial, parts:_*).toTypeName
 
-  final def qualifiedModule(initial: String, parts: String*): ModuleName =
-    ModuleName(qualifiedPath(initial, parts:_*))
+  final def qualifiedModule(initial: String, parts: String*): ObjectName =
+    ObjectName(qualifiedPath(initial, parts:_*))
 
   private def qualifiedPath(initial: String, parts: String*): TastyName =
     parts.reverse.foldRight(SimpleName(initial): TastyName)((n, acc) => QualifiedName(acc, PathSep, SimpleName(n)))
@@ -89,7 +89,7 @@ object TastyName {
   object SourceEncoder extends StringBuilderEncoder {
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
       case name: SimpleName    => sb.append(name.raw)
-      case name: ModuleName    => traverse(sb, name.base)
+      case name: ObjectName    => traverse(sb, name.base)
       case name: TypeName      => traverse(sb, name.base)
       case name: SignedName    => traverse(sb, name.qual)
       case name: UniqueName    => traverse(traverse(sb, name.qual), name.sep).append(name.num)
@@ -108,7 +108,7 @@ object TastyName {
       case SimpleName(raw)          => sb.append(raw)
       case DefaultName(qual, num)   => traverse(sb, qual).append("[Default ").append(num + 1).append(']')
       case PrefixName(prefix, qual) => traverse(traverse(sb, qual).append("[Prefix "), prefix).append(']')
-      case ModuleName(name)         => traverse(sb, name).append("[ModuleClass]")
+      case ObjectName(name)         => traverse(sb, name).append("[ModuleClass]")
       case TypeName(name)           => traverse(sb, name).append("[Type]")
       case SignedName(name,sig)     => sig.map(_.signature).mergeShow(traverse(sb, name).append("[Signed ")).append(']')
 
@@ -135,7 +135,7 @@ object TastyName {
 
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
       case name: SimpleName    => sb.append(NameTransformer.encode(name.raw))
-      case name: ModuleName    => traverse(sb, name.base)
+      case name: ObjectName    => traverse(sb, name.base)
       case name: TypeName      => traverse(sb, name.base)
       case name: SignedName    => traverse(sb, name.qual)
       case name: UniqueName    => traverse(sb, name.qual).append(name.sep.raw).append(name.num)
@@ -158,7 +158,7 @@ sealed abstract class TastyName extends Product with Serializable { self =>
 
   final override def toString: String = source
 
-  final def isModuleName: Boolean = self.isInstanceOf[ModuleName]
+  final def isObjectName: Boolean = self.isInstanceOf[ObjectName]
   final def isDefaultName: Boolean = self.isInstanceOf[DefaultName]
   final def isTypeName: Boolean = self.isInstanceOf[TypeName]
   final def isTermName: Boolean = !isTypeName

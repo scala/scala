@@ -12,7 +12,7 @@
 
 package scala.tools.tasty
 
-import TastyName.{ModuleName, QualifiedName, SimpleName, TypeName, Empty, PathSep}
+import TastyName.{ObjectName, QualifiedName, SimpleName, TypeName, Empty, PathSep}
 
 /** Represents an erased type of a scala class/object with the number of array dimensions.
   *
@@ -23,7 +23,7 @@ import TastyName.{ModuleName, QualifiedName, SimpleName, TypeName, Empty, PathSe
 case class ErasedTypeRef(qualifiedName: TypeName, arrayDims: Int) {
   def signature: String = {
     val qualified = qualifiedName.source
-    "[" * arrayDims + (if (qualifiedName.toTermName.isModuleName) s"object $qualified" else qualified)
+    "[" * arrayDims + (if (qualifiedName.toTermName.isObjectName) s"object $qualified" else qualified)
   }
 }
 
@@ -33,7 +33,7 @@ object ErasedTypeRef {
 
     def name(qual: TastyName, tname: SimpleName, isModule: Boolean) = {
       val qualified = if (qual == Empty) tname else QualifiedName(qual, PathSep, tname)
-      if (isModule) ModuleName(qualified) else qualified
+      if (isModule) ObjectName(qualified) else qualified
     }
 
     def specialised(qual: TastyName, terminal: String, isModule: Boolean, arrayDims: Int = 0): ErasedTypeRef = terminal match {
@@ -44,7 +44,7 @@ object ErasedTypeRef {
     var isModule = false
 
     val classKind = tname.toTermName match {
-      case ModuleName(classKind) =>
+      case ObjectName(classKind) =>
         isModule = true
         classKind
       case nonModule => nonModule

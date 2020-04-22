@@ -154,8 +154,8 @@ trait TypeOps { self: TastyUniverse =>
     import TastyName._
 
     val sym = ref.qualifiedName match {
-      case TypeName(module: ModuleName) => ctx.requiredModule(module)
-      case clazz                        => ctx.requiredClass(clazz)
+      case TypeName(obj: ObjectName) => ctx.requiredObject(obj)
+      case clazz                     => ctx.requiredClass(clazz)
     }
 
     (0 until ref.arrayDims).foldLeft(sym.tpe.erasure)((acc, _) => u.definitions.arrayType(acc))
@@ -186,21 +186,15 @@ trait TypeOps { self: TastyUniverse =>
     case u.TypeRef(_,sym,_)   => sym
   }
 
-  private[this] val NoSymbolFn = (_: Context) => noSymbol
+  private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol
 
   /**
    * Ported from dotc
    */
   abstract class TastyLazyType(val tastyFlagSet: TastyFlagSet = EmptyTastyFlags) extends u.LazyType with u.FlagAgnosticCompleter {
     private[this] var myDecls: u.Scope = u.EmptyScope
-    private[this] var mySourceModuleFn: Context => Symbol = NoSymbolFn
-
     override def decls: u.Scope = myDecls
-    def sourceModule(implicit ctx: Context): Symbol = mySourceModuleFn(ctx)
-
     private[bridge] def withDecls(decls: u.Scope): this.type = { myDecls = decls; this }
-    private[bridge] def withSourceModule(sourceModuleFn: Context => Symbol): this.type = { mySourceModuleFn = sourceModuleFn; this }
-
     override def load(sym: Symbol): Unit = complete(sym)
   }
 

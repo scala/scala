@@ -25,8 +25,8 @@ trait FlagOps { self: TastyUniverse =>
       | Open | ParamAlias
     )
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
-    val ModuleCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
-    val ModuleClassCreationFlags: TastyFlagSet = Object | Final
+    val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
+    val ObjectClassCreationFlags: TastyFlagSet = Object | Final
   }
 
   private[bridge] def encodeFlagSet(tflags: TastyFlagSet): u.FlagSet = {
