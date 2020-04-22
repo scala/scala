@@ -10,7 +10,6 @@ object Test extends ReplTest {
        |import O._
        |:completions x_y_
        |:completions x_y_a
-       |:completions fBZ
        |:completions object O2 { val x = O.
        |:completions :completion
        |""".stripMargin

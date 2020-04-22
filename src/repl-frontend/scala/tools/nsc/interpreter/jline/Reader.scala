@@ -220,22 +220,27 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
   // REPL Completion
   def complete(buffer: String, cursor: Int): shell.CompletionResult = delegate.complete(buffer, cursor)
 
-  def reset(): Unit = delegate.reset()
-
   // JLine Completer
   def complete(lineReader: LineReader, parsedLine: ParsedLine, newCandidates: JList[Candidate]): Unit = {
-    def candidateForResult(s: String): Candidate = {
-      val value = s
-      val displayed = s
+    def candidateForResult(cc: CompletionCandidate): Candidate = {
+      val value = cc.defString
+      val displayed = cc.defString + (cc.arity match {
+        case CompletionCandidate.Nullary => ""
+        case CompletionCandidate.Nilary => "()"
+        case _ => "("
+      })
       val group = null        // results may be grouped
-      val descr = null        // "Scala member", displayed alongside `displayed`
+      val descr =             // displayed alongside
+        if (cc.isDeprecated) "deprecated"
+        else if (cc.isUniversal) "universal"
+        else null
       val suffix = null       // such as slash after directory name
       val key = null          // same key implies mergeable result
       val complete = false    // more to complete?
       new Candidate(value, displayed, group, descr, suffix, key, complete)
     }
     val result = complete(parsedLine.line, parsedLine.cursor)
-    result.candidates match {
+    result.candidates.map(_.defString) match {
       // the presence of the empty string here is a signal that the symbol
       // is already complete and so instead of completing, we want to show
       // the user the method signature. there are various JLine 3 features
@@ -243,15 +248,15 @@ class Completion(delegate: shell.Completion) extends shell.Completion with Compl
       case "" :: defStrings if defStrings.nonEmpty =>
         // specifics here are cargo-culted from Ammonite
         lineReader.getTerminal.writer.println()
-        for (s <- defStrings)
-          lineReader.getTerminal.writer.println(s)
+        for (cc <- result.candidates.tail)
+          lineReader.getTerminal.writer.println(cc.defString)
         lineReader.callWidget(LineReader.REDRAW_LINE)
         lineReader.callWidget(LineReader.REDISPLAY)
         lineReader.getTerminal.flush()
       // normal completion
-      case cs =>
-        for (s <- result.candidates)
-          newCandidates.add(candidateForResult(s))
+      case _ =>
+        for (cc <- result.candidates)
+          newCandidates.add(candidateForResult(cc))
     }
   }
 }
