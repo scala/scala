@@ -987,6 +987,25 @@ class AnnotationDrivenAsync {
     assertEquals(42, run(code))
   }
 
+  @Test def testOutputMonad(): Unit = {
+    val code =
+      """
+        |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
+        |import scala.tools.nsc.async._
+        |import OutputAwait._
+        |
+        |object Test {
+        |  def v1 = Output("v1", ("line" -> "1"))
+        |  def v2 = Output("v2", ("line" -> "2"), ("foo", "bar"))
+        |  def test: Output[String] = writing {
+        |    value(v1) + value(v2)
+        |  }
+        |}
+        |""".stripMargin
+    // If async and lambdalift phase both use the compilation units FreshNameCreator, we get foo$1 and foo$2, no clash!
+    assertEquals("Output(Some(v1v2),Map(line -> Vector(1, 2), foo -> Vector(bar)))", run(code).toString)
+  }
+
   // Handy to debug the compiler or to collect code coverage statistics in IntelliJ.
   @Test
   @Ignore
