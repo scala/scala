@@ -171,10 +171,12 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
 
         case None => // The compiler outputs class files in a classes directory (the default)
           // This lookup could be improved if a hint where to look is given.
-          outputDirs
-            .map(_.resolve(classFilePath))
-            .find(Files.exists(_))
-            .map(Compat.plainNioFile(_))
+          if (classFilePath.contains("<")) None
+          else
+            outputDirs
+              .map(_.resolve(classFilePath))
+              .find(Files.exists(_))
+              .map(Compat.plainNioFile(_))
       }
     }
 
