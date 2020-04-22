@@ -206,7 +206,9 @@ sealed abstract class List[+A] extends AbstractSeq[A]
   }
 
   private def isLikeListReusableCBF( bf: CanBuildFrom[_,_,_]): Boolean = {
-    (bf eq List.ReusableCBF) ||(bf eq immutable.Seq.ReusableCBF) ||(bf eq collection.Seq.ReusableCBF)
+    (bf eq List.ReusableCBF) ||
+      (bf eq immutable.LinearSeq.ReusableCBF) || (bf eq collection.LinearSeq.ReusableCBF) ||
+      (bf eq immutable.Seq.ReusableCBF) ||(bf eq collection.Seq.ReusableCBF)
   }
   // Overridden methods from IterableLike and SeqLike or overloaded variants of such methods
 

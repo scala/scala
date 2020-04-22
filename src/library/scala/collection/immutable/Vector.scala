@@ -129,7 +129,9 @@ extends AbstractSeq[A]
 
   // If we have a default builder, there are faster ways to perform some operations
   @inline private[this] def isDefaultCBF[A, B, That](bf: CanBuildFrom[Vector[A], B, That]): Boolean =
-    (bf eq IndexedSeq.ReusableCBF) || (bf eq collection.immutable.Seq.ReusableCBF) || (bf eq collection.Seq.ReusableCBF)
+    (bf eq immutable.Vector.ReusableCBF) ||
+      (bf eq immutable.IndexedSeq.ReusableCBF) || (bf eq collection.IndexedSeq.ReusableCBF) ||
+      (bf eq immutable.Seq.ReusableCBF) || (bf eq collection.Seq.ReusableCBF)
 
   // SeqLike api
 
