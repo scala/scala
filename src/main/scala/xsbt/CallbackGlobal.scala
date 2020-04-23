@@ -187,6 +187,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
       val newResult = findOnPreviousCompilationProducts(fqn)
         .map(f => (f, true))
         .orElse(findOnClassPath(fqn).map(f => (f, false)))
+
       newResult.foreach(res => fqnsToAssociatedFiles.put(fqn, res))
       newResult
     }
@@ -222,18 +223,18 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
     def loop(size: Int, sym: Symbol): Unit = {
       val symName = sym.name
       // Use of encoded to produce correct paths for names that have symbols
-      val encodedName = symName.encoded
+      val encodedName = symName.encode
       val nSize = encodedName.length - (if (symName.endsWith(nme.LOCAL_SUFFIX_STRING)) 1 else 0)
       if (sym.isRoot || sym.isRootPackage || sym == NoSymbol || sym.owner.isEffectiveRoot) {
         val capacity = size + nSize
         b = new java.lang.StringBuffer(capacity)
-        b.append(chrs, symName.start, nSize)
+        b.append(chrs, encodedName.start, nSize)
       } else {
         val next = if (sym.owner.isPackageObjectClass) sym.owner else sym.effectiveOwner.enclClass
         loop(size + nSize + 1, next)
         // Addition to normal `fullName` to produce correct names for nested non-local classes
         if (sym.isNestedClass) b.append(nme.MODULE_SUFFIX_STRING) else b.append(separator)
-        b.append(chrs, symName.start, nSize)
+        b.append(chrs, encodedName.start, nSize)
       }
       ()
     }

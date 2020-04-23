@@ -148,12 +148,16 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       val targetSymbol = dep.to
       val onSource = targetSymbol.sourceFile
       if (onSource == null) {
-        // Ignore packages right away as they don't map to a class file/jar
-        if (targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE)) ()
-        // Ignore `Any` which by default has no `associatedFile`
-        else if (targetSymbol == definitions.AnyClass) ()
-        else {
-          classFile(targetSymbol) match {
+        val noByteCode = (
+          // Ignore packages right away as they don't map to a class file/jar
+          targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE) ||
+            // Seen in the wild: an Ident as the original of a TypeTree from a synthetic case accessor was symbol-less
+            targetSymbol == NoSymbol ||
+            // Also ignore magic symbols that don't have bytecode like Any/Nothing/Singleton/<byname>/<repeated>/...
+            isSyntheticCoreClass(targetSymbol)
+        )
+        if (!noByteCode) {
+          classFile(targetSymbol.initialize) match {
             case Some((at, binaryClassName)) =>
               // Associated file is set, so we know which classpath entry it came from
               processExternalDependency(binaryClassName, at)
