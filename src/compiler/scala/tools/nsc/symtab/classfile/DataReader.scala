@@ -17,6 +17,8 @@ trait DataReader {
   def bp: Int
   def bp_=(i: Int): Unit
 
+  def buf: Array[Byte]
+
   /** read a byte
     */
   @throws(classOf[IndexOutOfBoundsException])
