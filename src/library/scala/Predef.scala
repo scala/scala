@@ -412,7 +412,7 @@ object Predef extends LowPriorityImplicits {
    *  @param x the object to print; may be null.
    *  @group console-output
    */
-  def print(x: Any): Unit = Console.print(x)
+  def print(@deprecatedName("x") x: Any): Unit = Console.print(x)
 
   /** Prints a newline character on the default output.
    *  @group console-output
@@ -424,7 +424,7 @@ object Predef extends LowPriorityImplicits {
    *  @param x the object to print.
    *  @group console-output
    */
-  def println(x: Any): Unit = Console.println(x)
+  def println(@deprecatedName("x") x: Any): Unit = Console.println(x)
 
   /** Prints its arguments as a formatted string to the default output,
    *  based on a string pattern (in a fashion similar to printf in C).
@@ -435,13 +435,13 @@ object Predef extends LowPriorityImplicits {
    *  Consider using the [[scala.StringContext.f f interpolator]] as more type safe and idiomatic.
    *
    *  @param text the pattern for formatting the arguments.
-   *  @param xs   the arguments used to instantiate the pattern.
+   *  @param args the arguments used to instantiate the pattern.
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *
    *  @see [[scala.StringContext.f StringContext.f]]
    *  @group console-output
    */
-  def printf(text: String, xs: Any*): Unit = Console.print(text.format(xs: _*))
+  def printf(text: String, @deprecatedName("xs") args: Any*): Unit = Console.print(text.format(args: _*))
 
   // views --------------------------------------------------------------
 

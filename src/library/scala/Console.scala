@@ -12,7 +12,8 @@
 
 package scala
 
-import java.io.{ BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader }
+import java.io.{BufferedReader, InputStream, InputStreamReader, OutputStream, PrintStream, Reader}
+
 import scala.io.AnsiColor
 import scala.util.DynamicVariable
 
@@ -160,8 +161,7 @@ object Console extends AnsiColor {
    *  @see `withOut[T](out:OutputStream)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withOut[T](out: PrintStream)(thunk: => T): T =
-    outVar.withValue(out)(thunk)
+  def withOut[T](out: PrintStream)(thunk: => T): T = outVar.withValue(out)(thunk)
 
   /** Sets the default output stream for the duration
    *  of execution of one thunk.
@@ -173,8 +173,7 @@ object Console extends AnsiColor {
    *  @see `withOut[T](out:PrintStream)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withOut[T](out: OutputStream)(thunk: => T): T =
-    withOut(new PrintStream(out))(thunk)
+  def withOut[T](out: OutputStream)(thunk: => T): T = withOut(new PrintStream(out))(thunk)
 
   /** Set the default error stream for the duration
    *  of execution of one thunk.
@@ -189,8 +188,7 @@ object Console extends AnsiColor {
    *  @see `withErr[T](err:OutputStream)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withErr[T](err: PrintStream)(thunk: => T): T =
-    errVar.withValue(err)(thunk)
+  def withErr[T](err: PrintStream)(thunk: => T): T = errVar.withValue(err)(thunk)
 
   /** Sets the default error stream for the duration
    *  of execution of one thunk.
@@ -202,8 +200,7 @@ object Console extends AnsiColor {
    *  @see `withErr[T](err:PrintStream)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withErr[T](err: OutputStream)(thunk: => T): T =
-    withErr(new PrintStream(err))(thunk)
+  def withErr[T](err: OutputStream)(thunk: => T): T = withErr(new PrintStream(err))(thunk)
 
   /** Sets the default input stream for the duration
    *  of execution of one thunk.
@@ -223,8 +220,7 @@ object Console extends AnsiColor {
    *  @see `withIn[T](in:InputStream)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withIn[T](reader: Reader)(thunk: => T): T =
-    inVar.withValue(new BufferedReader(reader))(thunk)
+  def withIn[T](reader: Reader)(thunk: => T): T = inVar.withValue(new BufferedReader(reader))(thunk)
 
   /** Sets the default input stream for the duration
    *  of execution of one thunk.
@@ -236,36 +232,33 @@ object Console extends AnsiColor {
    *  @see `withIn[T](reader:Reader)(thunk: => T)`
    *  @group io-redefinition
    */
-  def withIn[T](in: InputStream)(thunk: => T): T =
-    withIn(new InputStreamReader(in))(thunk)
+  def withIn[T](in: InputStream)(thunk: => T): T = withIn(new InputStreamReader(in))(thunk)
 
   /** Prints an object to `out` using its `toString` method.
    *
    *  @param obj the object to print; may be null.
    *  @group console-output
    */
-  def print(obj: Any): Unit = {
-    out.print(if (null == obj) "null" else obj.toString())
-  }
+  def print(@deprecatedName("obj") obj: Any): Unit = out.print(obj)
 
   /** Flushes the output stream. This function is required when partial
    *  output (i.e. output not terminated by a newline character) has
    *  to be made visible on the terminal.
     * @group console-output
    */
-  def flush(): Unit = { out.flush() }
+  def flush(): Unit = out.flush()
 
   /** Prints a newline character on the default output.
     * @group console-output
    */
-  def println(): Unit = { out.println() }
+  def println(): Unit = out.println()
 
   /** Prints out an object to the default output, followed by a newline character.
    *
    *  @param x the object to print.
    *  @group console-output
    */
-  def println(x: Any): Unit = { out.println(x) }
+  def println(@deprecatedName("x") x: Any): Unit = out.println(x)
 
   /** Prints its arguments as a formatted string to the default output,
    *  based on a string pattern (in a fashion similar to printf in C).
@@ -277,5 +270,5 @@ object Console extends AnsiColor {
    *  @throws java.lang.IllegalArgumentException if there was a problem with the format string or arguments
    *  @group console-output
    */
-  def printf(text: String, args: Any*): Unit = { out.print(text.format(args: _*)) }
+  def printf(text: String, args: Any*): Unit = out.print(text.format(args: _*))
 }
