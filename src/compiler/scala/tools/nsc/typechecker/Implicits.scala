@@ -234,16 +234,22 @@ trait Implicits {
    *  @param   sym    The symbol of the implicit
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
-    private var tpeCache: Type = null
-    private var isErroneousCache: TriState = TriState.Unknown
+    private[this] var tpeCache: Type = null
+    private[this] var tpeDepolyCache : Type = null
+    private[this] var isErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
-    def tpe: Type = {
+    final def tpe: Type = {
       if (tpeCache eq null) tpeCache = pre.memberType(sym)
       tpeCache
     }
 
-    def isCyclicOrErroneous: Boolean =
+    final def tpeDepoly: Type = {
+      if (tpeDepolyCache eq null) tpeDepolyCache = depoly(tpe)
+      tpeDepolyCache
+    }
+
+    final def isCyclicOrErroneous: Boolean =
       if(sym.hasFlag(LOCKED)) true
       else {
         if(!isErroneousCache.isKnown)
@@ -255,13 +261,13 @@ trait Implicits {
       try containsError(tpe)
       catch { case _: CyclicReference => true }
 
-    var useCountArg: Int = 0
-    var useCountView: Int = 0
-    def useCount(isView: Boolean): Int = if (isView) useCountView else useCountArg
+    final var useCountArg: Int = 0
+    final var useCountView: Int = 0
+    final def useCount(isView: Boolean): Int = if (isView) useCountView else useCountArg
 
     /** Does type `tp` contain an Error type as parameter or result?
      */
-    private def containsError(tp: Type): Boolean = tp match {
+    private final def containsError(tp: Type): Boolean = tp match {
       case PolyType(tparams, restpe) =>
         containsError(restpe)
       case NullaryMethodType(restpe) =>
@@ -273,7 +279,7 @@ trait Implicits {
         tp.isError
     }
 
-    def isStablePrefix = pre.isStable
+    final def isStablePrefix = pre.isStable
 
     override def equals(other: Any) = other match {
       case that: ImplicitInfo =>
@@ -564,7 +570,7 @@ trait Implicits {
       result
     }
     private def matchesPt(info: ImplicitInfo): Boolean = (
-      info.isStablePrefix && matchesPt(depoly(info.tpe), wildPt, Nil)
+      info.isStablePrefix && matchesPt(info.tpeDepoly, wildPt, Nil)
     )
 
     private def matchesPtView(tp: Type, ptarg: Type, ptres: Type, undet: List[Symbol]): Boolean = tp match {
