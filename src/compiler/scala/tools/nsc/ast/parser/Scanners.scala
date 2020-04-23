@@ -1150,7 +1150,7 @@ trait Scanners extends ScannersCommon {
           syntaxError("missing integer number") // e.g., 0x; previous error shadows this one
           0L
         } else {
-          if (settings.warnOctalLiteral && strVal.charAt(0) == '0')
+          if (settings.warnOctalLiteral && base == 10 && strVal.charAt(0) == '0' && strVal.length() > 1)
             deprecationWarning("Decimal integer literals should not have a leading zero. (Octal syntax is obsolete.)", since="2.10")
           convertIt
         }

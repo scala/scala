@@ -1,4 +1,4 @@
-// scalac: -Ywarn-octal-literal -Xfatal-warnings -deprecation
+// scalac: -Woctal-literal -Werror -deprecation
 trait RejectedLiterals {
 
   def missingHex: Int    = { 0x }        // line 4: was: not reported, taken as zero
@@ -50,4 +50,9 @@ trait Lengthy {
   def bad = 1l
 
   def worse = 123l
+}
+
+trait Regressions {
+  def oopsy = 0         // nowarn
+  def hexed = 0x0F      // nowarn
 }
