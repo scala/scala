@@ -13,7 +13,6 @@
 package scala.tools.nsc
 
 import java.io.File
-import java.lang.Thread.UncaughtExceptionHandler
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.{Collections, Locale}
@@ -22,16 +21,16 @@ import javax.tools.Diagnostic.Kind
 import javax.tools.{Diagnostic, DiagnosticListener, JavaFileObject, ToolProvider}
 
 import scala.collection.JavaConverters._
-import scala.collection.{immutable, mutable, parallel}
+import scala.collection.{mutable, parallel}
 import scala.concurrent._
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.{BatchSourceFile, FakePos, NoPosition, Position}
 import scala.reflect.io.PlainNioFile
-import scala.tools.nsc.PipelineMain.{OutlineTypePipeline, Pipeline, Traditional}
+import scala.tools.nsc.PipelineMain._
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.util.ClassPath
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.PipelineSettings) {
   import pipelineSettings._
@@ -55,15 +54,9 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
   }
 
   private var reporter: Reporter = _
+  private val pool = new java.util.concurrent.ForkJoinPool(parallelism)
+  implicit val executor = ExecutionContext.fromExecutor(pool, { t => t.printStackTrace(); sys.exit(-1) })
 
-  private object handler extends UncaughtExceptionHandler {
-    override def uncaughtException(t: Thread, e: Throwable): Unit = {
-      e.printStackTrace()
-      System.exit(-1)
-    }
-  }
-
-  implicit val executor = ExecutionContext.fromExecutor(new java.util.concurrent.ForkJoinPool(parallelism), t => handler.uncaughtException(Thread.currentThread(), t))
   def changeExtension(p: Path, newExtension: String): Path = {
     val fileName = p.getFileName.toString
     val changedFileName = fileName.lastIndexOf('.') match {
@@ -73,7 +66,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     p.getParent.resolve(changedFileName)
   }
 
-  def writeDotFile(logDir: Path, dependsOn: mutable.LinkedHashMap[Task, List[Dependency]]): Unit = {
+  def writeDotFile(logDir: Path, dependsOn: Map[Task, List[Dependency]]): Unit = {
     val builder = new java.lang.StringBuilder()
     builder.append("digraph projects {\n")
     for ((p, deps) <- dependsOn) {
@@ -99,33 +92,32 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
     def commandFor(argFileArg: Path): Task = {
       val ss = new Settings(scalacError)
-      val command = new CompilerCommand(("@" + argFileArg) :: Nil, ss)
+      val command = new CompilerCommand(s"@$argFileArg" :: Nil, ss)
       Task(argFileArg, command, command.files)
     }
 
     val projects: List[Task] = argFiles.toList.map(commandFor)
+
     if (reporter.hasErrors) return false
 
-    val numProjects = projects.size
-    val produces = mutable.LinkedHashMap[Path, Task]()
-    for (p <- projects) {
-      produces(p.outputDir) = p
-    }
-    val dependsOn = mutable.LinkedHashMap[Task, List[Dependency]]()
-    for (p <- projects) {
-      val macroDeps = p.macroClassPath.flatMap(p => produces.get(p)).toList.filterNot(_ == p).map(t => Dependency(t, isMacro = true, isPlugin = false))
-      val pluginDeps = p.pluginClassPath.flatMap(p => produces.get(p)).toList.filterNot(_ == p).map(t => Dependency(t, isMacro = false, isPlugin = true))
-      val classPathDeps = p.classPath.flatMap(p => produces.get(p)).toList.filterNot(_ == p).filterNot(p => macroDeps.exists(_.t == p)).map(t => Dependency(t, isMacro = false, isPlugin = false))
-      dependsOn(p) = classPathDeps ++ macroDeps ++ pluginDeps
-    }
+    val produces: Map[Path, Task] = projects.map(p => p.outputDir -> p).toMap
+
+    val dependsOn: Map[Task, List[Dependency]] = projects.map { p =>
+      def toTask(path: Path) = produces.get(path).filter(p != _)
+      val macroDeps     = p.macroClassPath.flatMap(toTask).map(Dependency(_, isMacro = true, isPlugin = false))
+      val pluginDeps    = p.pluginClassPath.flatMap(toTask).map(Dependency(_, isMacro = false, isPlugin = true))
+      val classPathDeps = p.classPath.flatMap(toTask).filter(t => macroDeps.forall(_.t != t)).map(Dependency(_, isMacro = false, isPlugin = false))
+      p -> (classPathDeps ::: macroDeps ::: pluginDeps)
+    }.toMap.withDefaultValue(Nil)
+
     val dependedOn: Set[Task] = dependsOn.valuesIterator.flatten.map(_.t).toSet
-    val externalClassPath = projects.iterator.flatMap(_.classPath).filter(p => !produces.contains(p) && Files.exists(p)).toSet
 
     if (strategy != Traditional) {
       if (stripExternalClassPath) {
+        val externalClassPath =
+          for (p <- projects; e <- p.classPath; if !produces.contains(e) && Files.exists(e)) yield e
         val exportTimer = new Timer
-        exportTimer.start()
-        for (entry <- externalClassPath) {
+        for (entry <- externalClassPath.distinct) {
           val extracted = cachePath(entry)
           val sourceTimeStamp = Files.getLastModifiedTime(entry)
           if (Files.exists(extracted) && Files.getLastModifiedTime(extracted) == sourceTimeStamp) {
@@ -143,9 +135,6 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       }
     }
 
-    val timer = new Timer
-    timer.start()
-
     def sequenceFailSlow[A](fs: Seq[Future[A]]): Future[Seq[A]] = {
       Future.traverse(fs)(_.transform(tr => Success(tr.toEither))).map { results =>
         results.collect { case Left(throwable) => throwable }.toList match {
@@ -155,10 +144,10 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       }
     }
 
-    def awaitDone(): Unit = {
-      val allFutures: immutable.Seq[Future[Any]] = projects.flatMap(_.futures)
+    def awaitDone(timer: Timer): Unit = {
+      val allFutures = projects.flatMap(_.futures)
       val numAllFutures = allFutures.size
-      val awaitAllFutures: Future[_] = sequenceFailSlow(allFutures)
+      val awaitAllFutures = sequenceFailSlow[Any](allFutures)
       var lastNumCompleted = allFutures.count(_.isCompleted)
       while (true) try {
         Await.result(awaitAllFutures, Duration(60, "s"))
@@ -172,11 +161,14 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           if (numCompleted == lastNumCompleted) {
             reporter.echo(s"STALLED: $numCompleted / $numAllFutures")
             reporter.echo("Outline/Scala/Javac")
-            projects.map {
-              p =>
-                def toX(b: Future[_]): String = b.value match { case None => "-"; case Some(Success(_)) => "x"; case Some(Failure(_)) => "!" }
-                val s = List(p.outlineDoneFuture, p.groupsDoneFuture, p.javaDoneFuture).map(toX).mkString(" ")
-                reporter.echo(s + " " + p.label)
+            def toX(b: Future[_]): String = b.value match {
+              case None             => "-"
+              case Some(Success(_)) => "x"
+              case Some(Failure(_)) => "!"
+            }
+            projects.foreach { p =>
+              val s = p.stages.map(toX).mkString(" ")
+              reporter.echo(s"$s ${p.label}")
             }
           } else {
             reporter.echo(s"PROGRESS: $numCompleted / $numAllFutures")
@@ -185,111 +177,59 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       }
     }
 
-    strategy match {
-      case OutlineTypePipeline =>
-        projects.foreach { p: Task =>
-          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
-          val f = for {
-            _ <- depsReady
-            _ <- {
-              p.outlineCompile()
-              p.outlineDone.future
-            }
-            _ <- {
-              p.fullCompile()
-              Future.traverse(p.groups)(_.done.future)
-            }
-            _ <- Future.traverse(dependsOn.getOrElse(p, Nil))(task => task.t.javaDone.future)
-          } yield {
-            p.javaCompile()
-          }
-          f.onComplete { _ => p.close() }
-        }
+    def compile(p: Task) = {
+      lazy val depsReady = Future.traverse(dependsOn(p))(dep => p.dependencyReadyFuture(dep))
+      lazy val depsDone = Future.traverse(dependsOn(p))(dep => dep.t.javaDone.future)
 
-        awaitDone()
-
-        for (p <- projects) {
-          val dependencies = dependsOn(p).map(_.t)
-
-          def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
-
-          val maxOutlineCriticalPathMs = maxByOrZero(dependencies)(_.outlineCriticalPathMs)
-          p.outlineCriticalPathMs = maxOutlineCriticalPathMs + p.outlineTimer.durationMs
-          p.regularCriticalPathMs = maxOutlineCriticalPathMs + maxByOrZero(p.groups)(_.timer.durationMs)
-          p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
-        }
-
-        if (parallelism == 1) {
-          val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
-        } else
-          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
-      case Pipeline =>
-        projects.foreach { p =>
-          val depsReady = Future.traverse(dependsOn.getOrElse(p, Nil))(task => p.dependencyReadyFuture(task))
-          val f = for {
-            _ <- depsReady
-            _ <- {
-              val isLeaf = !dependedOn.contains(p)
-              if (isLeaf && useTraditionalForLeaf) {
-                p.outlineDone.complete(Success(()))
-                p.fullCompile()
-              } else
-                p.fullCompileExportPickles()
-              // Start javac after scalac has completely finished
-              Future.traverse(p.groups)(_.done.future)
-            }
-            _ <- Future.traverse(dependsOn.getOrElse(p, Nil))(task => task.t.javaDone.future)
-          } yield {
-            p.javaCompile()
-          }
-          f.onComplete { _ => p.close() }
-        }
-        awaitDone()
-
-        for (p <- projects) {
-          val dependencies = dependsOn(p).map(_.t)
-
-          def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
-
-          val maxOutlineCriticalPathMs = maxByOrZero(dependencies)(_.outlineCriticalPathMs)
-          p.outlineCriticalPathMs = maxOutlineCriticalPathMs + p.outlineTimer.durationMs
-          p.regularCriticalPathMs = maxOutlineCriticalPathMs + maxByOrZero(p.groups)(_.timer.durationMs)
-          p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
-        }
-
-        if (parallelism == 1) {
-          val criticalPath = projects.maxBy(_.regularCriticalPathMs)
-          reporter.echo(f"Critical path: ${criticalPath.regularCriticalPathMs}%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
-        } else
-          reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
-      case Traditional =>
-        projects.foreach { p =>
-          val f1 = Future.traverse(dependsOn.getOrElse(p, Nil))(_.t.javaDone.future)
-          val f2 = f1.flatMap { _ =>
-            p.outlineDone.complete(Success(()))
-            p.fullCompile()
-            val eventualUnits: Future[List[Unit]] = Future.traverse(p.groups)(_.done.future)
-            eventualUnits.map(_ => p.javaCompile())
-          }
-          f2.onComplete { _ => p.close() }
-        }
-        awaitDone()
-
-        for (p <- projects) {
-          val dependencies = dependsOn(p).map(_.t)
-
-          def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
-
-          p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
-        }
-        if (parallelism == 1) {
-          val maxFullCriticalPath: Double = projects.map(_.fullCriticalPathMs).max
-          reporter.echo(f"Critical path: $maxFullCriticalPath%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
-        } else {
-          reporter.echo(f"Wall Clock: ${timer.durationMs}%.0f ms")
-        }
+      val f = strategy match {
+        case OutlineTypePipeline => for {
+          _ <- depsReady
+          _ <- p.outlineCompile()
+          _ <- p.fullCompile()
+          _ <- depsDone
+          _ <- p.javaCompile()
+        } yield ()
+        case Pipeline => for {
+          _ <- depsReady
+          isLeaf = !dependedOn.contains(p)
+          useTraditional = isLeaf && useTraditionalForLeaf
+          _ <- if (useTraditional) p.fullCompile() else p.fullCompileExportPickles()
+          _ <- depsDone
+          _ <- p.javaCompile()
+        } yield ()
+        case Traditional => for {
+          _ <- depsDone
+          _ <- p.fullCompile()
+          _ <- p.javaCompile()
+        } yield ()
+      }
+      f.onComplete(_ => p.close())
     }
+
+    def reportAll(timer: Timer) = {
+      for (p <- projects) {
+        val dependencies = dependsOn(p).map(_.t)
+        if (p.outlineTimer.durationMs > 0) {
+          val maxOutlineCriticalPathMs = maxByOrZero(dependencies)(_.outlineCriticalPathMs)
+          p.outlineCriticalPathMs = maxOutlineCriticalPathMs + p.outlineTimer.durationMs
+          p.regularCriticalPathMs = maxOutlineCriticalPathMs + maxByOrZero(p.groups)(_.timer.durationMs)
+        }
+        p.fullCriticalPathMs = maxByOrZero(dependencies)(_.fullCriticalPathMs) + p.groups.map(_.timer.durationMs).sum
+      }
+
+      if (parallelism == 1) {
+        val criticalPathMs = projects.map { p =>
+          if (p.outlineTimer.durationMs > 0) p.regularCriticalPathMs else p.fullCriticalPathMs
+        }.max
+        reporter.echo(f"Critical path: $criticalPathMs%.0f ms. Wall Clock: ${timer.durationMs}%.0f ms")
+      } else
+        reporter.echo(f" Wall Clock: ${timer.durationMs}%.0f ms")
+    }
+
+    val timer = new Timer
+    for (p <- projects) compile(p)
+    awaitDone(timer)
+    reportAll(timer)
 
     logDir.foreach { dir =>
       Files.createDirectories(dir)
@@ -323,7 +263,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       }
       for ((g, ix) <- p.groups.zipWithIndex) {
         if (g.timer.durationMicros > 0d)
-          events += durationEvent(p.label, "compile-" + ix, g.timer)
+          events += durationEvent(p.label, s"compile-$ix", g.timer)
       }
       if (p.javaTimer.durationMicros > 0d) {
         val desc = "javac"
@@ -339,27 +279,29 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     reporter.echo("Chrome trace written to " + traceFile.toAbsolutePath)
   }
 
-  case class Group(files: List[String]) {
-    val timer = new Timer
-    val done = Promise[Unit]()
+  case class Group(prefix: String, files: List[String]) {
+    val done = new TimedPromise(prefix)
+    def timer = done.timer
   }
 
   private case class Task(argsFile: Path, command: CompilerCommand, files: List[String]) {
     val label = argsFile.toString.replaceAll(".*/target/", "").replaceAll("""(.*)/(.*).args""", "$1:$2")
+
     override def toString: String = argsFile.toString
-    def outputDir: Path = command.settings.outputDirs.getSingleOutput.get.file.toPath.toAbsolutePath.normalize()
+
+    val outDir: File    = command.settings.outputDirs.getSingleOutput.get.file
+    def outputDir: Path = outDir.toPath.toAbsolutePath.normalize()
+    outDir.mkdirs()
+    command.settings.classpath.prepend(outDir.getPath)
+
     private def expand(s: command.settings.PathSetting): List[Path] = {
       ClassPath.expandPath(s.value, expandStar = true).map(s => Paths.get(s).toAbsolutePath.normalize())
     }
-    lazy val classPath: Seq[Path] = expand(command.settings.classpath)
-    lazy val macroClassPath: Seq[Path] = expand(command.settings.YmacroClasspath)
-    lazy val macroClassPathSet: Set[Path] = macroClassPath.toSet
-    lazy val pluginClassPath: Set[Path] = {
-      def asPath(p: String) = ClassPath split p
 
-      val paths = command.settings.plugin.value filter (_ != "") flatMap (s => asPath(s) map (s => Paths.get(s)))
-      paths.toSet
-    }
+    lazy val       classPath: List[Path] = expand(command.settings.classpath)
+    lazy val  macroClassPath: List[Path] = expand(command.settings.YmacroClasspath)
+    lazy val pluginClassPath: List[Path] = command.settings.plugin.value.flatMap(ClassPath.split(_)).map(Paths.get(_)).distinct
+
     def dependencyReadyFuture(dependency: Dependency) = if (dependency.isMacro) {
       log(s"dependency is on macro classpath, will wait for .class files: ${dependency.t.label}")
       dependency.t.javaDone.future
@@ -380,224 +322,159 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
 
     val groupSize = Integer.getInteger("scala.pipeline.group.size", 128)
-
     val groups: List[Group] = {
       val isScalaLibrary = files.exists(_.endsWith("Predef.scala"))
       if (strategy != OutlineTypePipeline || isScalaLibrary) {
-        Group(files) :: Nil
+        Group("scalac", files) :: Nil
       } else {
-        command.settings.classpath.value = command.settings.outputDirs.getSingleOutput.get.toString + File.pathSeparator + command.settings.classpath.value
-        val length = files.length
-        val groups = (length.toDouble / groupSize).toInt.max(1)
-        files.grouped((length.toDouble / groups).ceil.toInt.max(1)).toList.map(Group(_))
+        val numGroups = (files.length.toDouble / groupSize).toInt.max(1)
+        val groupedFiles = files.grouped((files.length.toDouble / numGroups).ceil.toInt.max(1))
+        groupedFiles.zipWithIndex.map { case (files, ix) =>
+          val prefix = if (numGroups > 1) s"scalac (${ix + 1}/$numGroups)" else "scalac"
+          Group(prefix, files)
+        }.toList
       }
     }
-    command.settings.outputDirs.getSingleOutput.get.file.mkdirs()
 
-    val isGrouped = groups.size > 1
-
-    val outlineTimer = new Timer()
-    val javaTimer = new Timer()
+    def outlineTimer = outlineDone.timer
+    def javaTimer = javaDone.timer
 
     var outlineCriticalPathMs = 0d
     var regularCriticalPathMs = 0d
     var fullCriticalPathMs = 0d
-    val outlineDone: Promise[Unit] = Promise[Unit]()
-    val outlineDoneFuture = outlineDone.future
-    val javaDone: Promise[Unit] = Promise[Unit]()
-    val javaDoneFuture: Future[_] = javaDone.future
+    val outlineDone = new TimedPromise("scalac outline")
+    val outlineDoneFuture: Future[Unit] = outlineDone.future
+    val javaDone = new TimedPromise("javac")
+    val javaDoneFuture: Future[Unit] = javaDone.future
     val groupsDoneFuture: Future[List[Unit]] = Future.traverse(groups)(_.done.future)
-    val futures: List[Future[_]] = {
-      outlineDone.future :: javaDone.future :: groups.map(_.done.future)
+    val futures: List[Future[Unit]] = {
+      outlineDoneFuture :: javaDoneFuture :: groups.map(_.done.future)
+    }
+    val stages: List[Future[Unit]] = {
+      List(outlineDoneFuture, groupsDoneFuture.map(_ => ()), javaDoneFuture)
     }
 
-    val originalClassPath: String = command.settings.classpath.value
-
-    private[this] var initCompiler: () => Global = () => try {
-      val result = newCompiler(command.settings)
-      val reporter = result.reporter
+    private[this] var initCompiler: () => Global = () => {
+      val g = newCompiler(command.settings)
+      val reporter = g.reporter
       if (reporter.hasErrors)
         reporter.flush()
       else if (command.shouldStopWithInfo)
-        reporter.echo(command.getInfoMessage(result))
-      result.reporter = createReporter(result.settings)
-      result
-    } catch {
-      case t: Throwable =>
-        t.printStackTrace()
-        throw t
+        reporter.echo(command.getInfoMessage(g))
+      g.reporter = createReporter(g.settings)
+      g
     }
 
     lazy val compiler: Global = { val res = initCompiler(); initCompiler = null; res }
 
     def close() = if (initCompiler == null) compiler.close()
 
-    def outlineCompile(): Unit = {
-      outlineTimer.start()
+    def outlineCompile(): Future[Unit] = doCompile(outlineDone) {
+      command.settings.Youtline.value = true
+      command.settings.stopAfter.value = List("pickler")
+      command.settings.Ymacroexpand.value = command.settings.MacroExpand.None
+      command.settings.YpickleWrite.value = cachePath(outDir.toPath).toAbsolutePath.toString
+      runCompile(compiler)(files)
+    }
+
+    def doCompile(done: TimedPromise, earlyTimed: Option[TimedPromise] = None)(thunk: => Boolean): Future[Unit] = {
+      import done.{ prefix, timer }
       try {
-        log("scalac outline: start")
-        command.settings.Youtline.value = true
-        command.settings.stopAfter.value = List("pickler")
-        command.settings.Ymacroexpand.value = command.settings.MacroExpand.None
-        command.settings.YpickleWrite.value = cachePath(command.settings.outputDirs.getSingleOutput.get.file.toPath).toAbsolutePath.toString
-        val run1 = new compiler.Run()
-        run1 compile files
-        outlineTimer.stop()
-        log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
-        compiler.reporter.finish()
-        if (compiler.reporter.hasErrors) {
-          log("scalac outline: failed")
-          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
+        log(s"$prefix: start")
+        earlyTimed.getOrElse(done).timer
+        if (thunk) {
+          val failure = Failure(new RuntimeException(s"$label: compile failed: "))
+          earlyTimed.foreach(_.tryComplete(failure))
+          done.complete(failure)
+          log(f"$prefix: failed ${timer.durationMs}%.0f ms")
         } else {
-          log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
-          outlineDone.complete(Success(()))
+          done.complete(Success(()))
+          log(f"$prefix: done ${timer.durationMs}%.0f ms")
         }
       } catch {
         case t: Throwable =>
-          outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ", t)))
+          val failure = Failure(new RuntimeException(s"$label: compile failed: ", t))
+          earlyTimed.foreach(_.complete(failure))
+          done.complete(failure)
       }
+      done.future
     }
 
-    def fullCompile(): Unit = {
+    def fullCompile(): Future[List[Unit]] = {
+      outlineDone.tryComplete(Success(()))
+
       command.settings.Youtline.value = false
       command.settings.stopAfter.value = Nil
       command.settings.Ymacroexpand.value = command.settings.MacroExpand.Normal
       command.settings.YpickleWrite.value = ""
 
-      val groupCount = groups.size
-      for ((group, ix) <- groups.zipWithIndex) {
-        group.done.completeWith {
-          Future {
-            log(s"scalac (${ix + 1}/$groupCount): start")
-            group.timer.start()
-            val compiler2 = newCompiler(command.settings)
-            try {
-              try {
-                val run2 = new compiler2.Run()
-                run2 compile group.files
-                compiler2.reporter.finish()
-              } finally {
-                group.timer.stop()
-                log(f"scalac (${ix + 1}/$groupCount): done ${group.timer.durationMs}%.0f ms")
-              }
-              if (compiler2.reporter.hasErrors) {
-                throw new RuntimeException(label + ": compile failed: ")
-              }
-            } finally {
-              compiler2.close()
-            }
-          }
-        }
-      }
+      Future.traverse(groups)(group => doCompile(group.done) {
+        val g = newCompiler(command.settings)
+        try runCompile(g)(group.files) finally g.close()
+      })
     }
 
-    def fullCompileExportPickles(): Unit = {
-      assert(groups.size == 1)
-      val group = groups.head
-      log("scalac: start")
-      command.settings.YpickleWrite.value = cachePath(command.settings.outputDirs.getSingleOutput.get.file.toPath).toString
-      outlineTimer.start()
-      try {
-        val run2 = new compiler.Run() {
+    def fullCompileExportPickles(): Future[List[Unit]] = {
+      val List(group) = groups
+      doCompile(group.done, Some(outlineDone)) {
+        command.settings.YpickleWrite.value = cachePath(outDir.toPath).toString
+        runCompile(compiler)(group.files, new compiler.Run() {
           override def advancePhase(): Unit = {
-            if (compiler.phase == this.picklerPhase) {
-              outlineTimer.stop()
-              log(f"scalac outline: done ${outlineTimer.durationMs}%.0f ms")
+            if (compiler.phase == picklerPhase) {
               outlineDone.complete(Success(()))
-              group.timer.start()
+              log(f"${outlineDone.prefix}: done ${outlineTimer.durationMs}%.0f ms")
+              group.timer
             }
             super.advancePhase()
           }
-        }
-
-        run2 compile group.files
-        compiler.reporter.finish()
-        group.timer.stop()
-        if (compiler.reporter.hasErrors) {
-          log("scalac: failed")
-          if (!outlineDone.isCompleted)
-            outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-          group.done.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-        } else {
-          log(f"scalac: done ${group.timer.durationMs}%.0f ms")
-          group.done.complete(Success(()))
-        }
-      } catch {
-        case t: Throwable =>
-          t.printStackTrace()
-          if (!outlineDone.isCompleted)
-            outlineDone.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-          if (!group.done.isCompleted)
-            group.done.complete(Failure(new RuntimeException(label + ": compile failed: ")))
-      }
+        })
+      }.map(_ :: Nil)
     }
 
-    def javaCompile(): Unit = {
+    def javaCompile(): Future[Unit] = {
       val javaSources = files.filter(_.endsWith(".java"))
       if (javaSources.nonEmpty) {
-        log("javac: start")
-        javaTimer.start()
-        javaDone.completeWith(Future {
-          val opts: java.util.List[String] = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.outdir.value + File.pathSeparator + originalClassPath)
+        doCompile(javaDone) {
+          val opts: java.util.List[String] = java.util.Arrays.asList("-d", command.settings.outdir.value, "-cp", command.settings.classpath.value)
           val javaCompiler = ToolProvider.getSystemJavaCompiler()
           //If the running JRE isn't from a JDK distribution, getSystemJavaCompiler returns null
           if (javaCompiler == null) throw new UnsupportedOperationException("no java compiler found in current Java runtime")
-          val listener = new DiagnosticListener[JavaFileObject] {
-            override def report(diagnostic: Diagnostic[_ <: JavaFileObject]): Unit = {
-              val msg = diagnostic.getMessage(Locale.getDefault)
-              val source: JavaFileObject = diagnostic.getSource
-              val path = Paths.get(source.toUri)
-              val position = if (diagnostic.getPosition == Diagnostic.NOPOS) NoPosition else {
-                val sourceFile = new BatchSourceFile(new PlainNioFile(path))
-                Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
-              }
-              diagnostic.getKind match {
-                case Kind.ERROR => reporter.error(position, msg)
-                case Kind.WARNING | Kind.MANDATORY_WARNING => reporter.warning(position, msg)
-                case Kind.NOTE => reporter.info(position, msg, true)
-                case Kind.OTHER => reporter.echo(position, msg)
-              }
-            }
-          }
-
           val fileManager = javaCompiler.getStandardFileManager(null, null, null)
-          val compileTask = javaCompiler.getTask(null, fileManager, listener, opts, null, fileManager.getJavaFileObjects(javaSources.toArray: _*))
+          val units = fileManager.getJavaFileObjects(javaSources: _*)
+          val compileTask = javaCompiler.getTask(null, fileManager, javacDiagnosticListener, opts, null, units)
           compileTask.setProcessors(Collections.emptyList())
-          val success = compileTask.call()
-          javaTimer.stop()
-          if (success)
-            log(f"javac: done ${javaTimer.durationMs}%.0f ms ")
-          else
-            throw new RuntimeException(f"javac: error ${javaTimer.durationMs}%.0f ms ")
-        })
+          !compileTask.call()
+        }
       } else {
         javaDone.complete(Success(()))
       }
     }
-    def log(msg: String): Unit = reporter.echo(this.label + ": " + msg)
+
+    def log(msg: String): Unit = reporter.echo(s"$label: $msg")
   }
 
-  final class Timer() {
-    private var startNanos: Long = 0
-    private var endNanos: Long = 0
-    def start(): Unit = {
-      assert(startNanos == 0L)
-      startNanos = System.nanoTime
-    }
-    var thread: Thread = Thread.currentThread()
-    def stop(): Unit = {
-      thread = Thread.currentThread()
-      endNanos = System.nanoTime()
-    }
-    def startMs: Double = startNanos.toDouble / 1000 / 1000
-    def durationMs: Double = {
-      val result = (endNanos - startNanos).toDouble / 1000 / 1000
-      if (result < 0)
-        getClass
-      result
-    }
-    def startMicros: Double = startNanos.toDouble / 1000d
-    def durationMicros: Double = (endNanos - startNanos).toDouble / 1000d
+  final class Timer {
+    private var stopped = false
+
+    val startNanos: Long    = System.nanoTime()
+    lazy val thread: Thread = Thread.currentThread()
+    lazy val endNanos: Long = { stopped = true; thread; System.nanoTime() }
+
+    def stop(): Unit = endNanos: Unit
+
+    def wasStopped: Boolean    = stopped
+    def startMicros: Double    = startNanos.toDouble / 1000
+    def durationMicros: Double = (if (stopped) endNanos - startNanos else 0.0) / 1000
+    def durationMs: Double     = durationMicros / 1000
+  }
+
+  final class TimedPromise(val prefix: String) {
+    private val promise = Promise[Unit]()
+    lazy val timer      = new Timer
+    def future          = promise.future
+
+    def complete(t: Try[Unit]): Future[Unit] = { timer.stop(); promise.complete(t).future  }
+    def tryComplete(t: Try[Unit]): Unit      = { if (promise.tryComplete(t)) timer.stop()  }
   }
 
   protected def newCompiler(settings: Settings): Global = {
@@ -606,7 +483,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
       val modifiedClassPath = classPath.map { entry =>
         val entryPath = Paths.get(entry)
         if (Files.exists(entryPath))
-          strippedAndExportedClassPath.getOrElse(entryPath.toRealPath().normalize(), entryPath).toString
+          strippedAndExportedClassPath.getOrElse(entryPath.toRealPath().normalize(), entryPath)
         else
           entryPath
       }
@@ -614,14 +491,39 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     }
     Global(settings)
   }
-}
 
+  private def runCompile[G <: Global](g: G)(files: List[String], run: g.Run = new g.Run()) = {
+    run.compile(files)
+    g.reporter.finish()
+    g.reporter.hasErrors
+  }
+
+  def javacDiagnosticListener = new DiagnosticListener[JavaFileObject] {
+    def report(diagnostic: Diagnostic[_ <: JavaFileObject]) = {
+      val msg = diagnostic.getMessage(Locale.getDefault)
+      val position = if (diagnostic.getPosition == Diagnostic.NOPOS) NoPosition else {
+        val sourceFile = new BatchSourceFile(new PlainNioFile(Paths.get(diagnostic.getSource.toUri)))
+        Position.range(sourceFile, diagnostic.getStartPosition.toInt, diagnostic.getPosition.toInt, diagnostic.getEndPosition.toInt)
+      }
+      diagnostic.getKind match {
+        case Kind.ERROR             => reporter.error(position, msg)
+        case Kind.WARNING           => reporter.warning(position, msg)
+        case Kind.MANDATORY_WARNING => reporter.warning(position, msg)
+        case Kind.NOTE              => reporter.info(position, msg, force = true)
+        case Kind.OTHER             => reporter.echo(position, msg)
+      }
+    }
+  }
+
+  private def maxByOrZero[A](as: List[A])(f: A => Double): Double = if (as.isEmpty) 0d else as.map(f).max
+}
 
 object PipelineMain {
   sealed abstract class BuildStrategy
 
-  /** Outline type check sources to compute type signatures an input to downstream compilation. Compile sources (optionally */
+  /** Outline type check sources to compute type signatures as input to downstream compilation. Compile sources (optionally). */
   case object OutlineTypePipeline extends BuildStrategy
+
   /** Transport pickles as an input to downstream compilation. */
   case object Pipeline extends BuildStrategy
 
@@ -632,27 +534,28 @@ object PipelineMain {
                               configuredPickleCache: Option[Path], cacheMacro: Boolean, cachePlugin: Boolean,
                               stripExternalClassPath: Boolean, useTraditionalForLeaf: Boolean, logDir: Option[Path],
                               createReporter: (Settings => Reporter))
-  def defaultSettings: PipelineSettings = {
-    val strategies = List(OutlineTypePipeline, Pipeline, Traditional)
-    val strategy = strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get
-    val parallelism = java.lang.Integer.getInteger("scala.pipeline.parallelism", parallel.availableProcessors)
-    val useJars = java.lang.Boolean.getBoolean("scala.pipeline.use.jar")
-    val cacheMacro = java.lang.Boolean.getBoolean("scala.pipeline.cache.macro.classloader")
-    val cachePlugin = java.lang.Boolean.getBoolean("scala.pipeline.cache.plugin.classloader")
-    val stripExternalClassPath = java.lang.Boolean.getBoolean("scala.pipeline.strip.external.classpath")
-    val useTraditionalForLeaf = java.lang.Boolean.getBoolean("scala.pipeline.use.traditional.for.leaf")
-    val configuredPickleCache = Option(System.getProperty("scala.pipeline.picklecache")).map(Paths.get(_))
-    val logDir = Paths.get(".")
-    new PipelineSettings("1", parallelism, strategy, useJars, configuredPickleCache,
-      cacheMacro, cachePlugin, stripExternalClassPath, useTraditionalForLeaf, Some(logDir), new ConsoleReporter(_))
-  }
+
+  private val strategies = List(OutlineTypePipeline, Pipeline, Traditional)
+
+  def defaultSettings: PipelineSettings = PipelineSettings(
+    label = "1",
+    java.lang.Integer.getInteger("scala.pipeline.parallelism", parallel.availableProcessors),
+    strategies.find(_.productPrefix.equalsIgnoreCase(System.getProperty("scala.pipeline.strategy", "pipeline"))).get,
+    java.lang.Boolean.getBoolean("scala.pipeline.use.jar"),
+    Option(System.getProperty("scala.pipeline.picklecache")).map(Paths.get(_)),
+    java.lang.Boolean.getBoolean("scala.pipeline.cache.macro.classloader"),
+    java.lang.Boolean.getBoolean("scala.pipeline.cache.plugin.classloader"),
+    java.lang.Boolean.getBoolean("scala.pipeline.strip.external.classpath"),
+    java.lang.Boolean.getBoolean("scala.pipeline.use.traditional.for.leaf"),
+    logDir = Some(Paths.get(".")),
+    createReporter = new ConsoleReporter(_)
+  )
 
   def main(args: Array[String]): Unit = {
-    val argFiles: Seq[Path] = args match {
-      case Array(path) if Files.isDirectory(Paths.get(path)) =>
-        Files.walk(Paths.get(path)).iterator().asScala.filter(_.getFileName.toString.endsWith(".args")).toList
-      case _ =>
-        args.map(Paths.get(_))
+    val argFiles: Seq[Path] = args.map(Paths.get(_)) match {
+      case Array(path) if Files.isDirectory(path) =>
+        Files.walk(path).iterator().asScala.filter(_.toString.endsWith(".args")).toList
+      case xs => xs
     }
     val main = new PipelineMainClass(argFiles, defaultSettings)
     val result = main.process()
