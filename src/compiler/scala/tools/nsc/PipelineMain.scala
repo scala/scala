@@ -203,7 +203,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           } yield {
             p.javaCompile()
           }
-          f.onComplete { _ => p.compiler.close() }
+          f.onComplete { _ => p.close() }
         }
 
         awaitDone()
@@ -243,7 +243,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
           } yield {
             p.javaCompile()
           }
-          f.onComplete { _ => p.compiler.close() }
+          f.onComplete { _ => p.close() }
         }
         awaitDone()
 
@@ -272,7 +272,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
             val eventualUnits: Future[List[Unit]] = Future.traverse(p.groups)(_.done.future)
             eventualUnits.map(_ => p.javaCompile())
           }
-          f2.onComplete { _ => p.compiler.close() }
+          f2.onComplete { _ => p.close() }
         }
         awaitDone()
 
@@ -413,7 +413,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
 
     val originalClassPath: String = command.settings.classpath.value
 
-    lazy val compiler: Global = try {
+    private[this] var initCompiler: () => Global = () => try {
       val result = newCompiler(command.settings)
       val reporter = result.reporter
       if (reporter.hasErrors)
@@ -427,6 +427,10 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
         t.printStackTrace()
         throw t
     }
+
+    lazy val compiler: Global = { val res = initCompiler(); initCompiler = null; res }
+
+    def close() = if (initCompiler == null) compiler.close()
 
     def outlineCompile(): Unit = {
       outlineTimer.start()
