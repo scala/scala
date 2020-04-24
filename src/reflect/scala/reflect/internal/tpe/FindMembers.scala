@@ -101,13 +101,20 @@ trait FindMembers {
 
       val findAll = name == nme.ANYname
 
+      val phaseFlagMask = phase.flagMask
+      val fastFlags = (phaseFlagMask & ~InitialFlags) == 0
+
       while (!bcs.isEmpty) {
         val currentBaseClass = bcs.head
         val decls = currentBaseClass.info.decls
         var entry = if (findAll) decls.elems else decls.lookupEntry(name)
         while (entry ne null) {
           val sym = entry.sym
-          val flags = sym.flags
+          val flags =
+            if (fastFlags)
+              sym.rawflags & phaseFlagMask
+            else
+              sym.flags(phaseFlagMask)
           val meetsRequirements = (flags & required) == required
           if (meetsRequirements) {
             val excl: Long = flags & excluded
