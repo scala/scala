@@ -12,7 +12,9 @@ import org.junit.runners.JUnit4
   * @tparam E the element type
   */
 @RunWith(classOf[JUnit4])
-abstract class IndexedTest[T, E] {
+abstract class IndexedTest[TT, EE] {
+  final type T = TT
+  final type E = EE
 
   protected def size = 10
 
@@ -37,6 +39,24 @@ abstract class IndexedTest[T, E] {
     for (i <- 0 until size) {
       assertEquals(s" at index $i", expectedValueAtIndex(i), get(test, i))
     }
+  }
+
+  protected def foldLeft[A](t: T, z: A)(f: (A, E) => A): A
+  protected def foldRight[A](t: T, z: A)(f: (E, A) => A): A
+  protected def iterator(t: T): Iterator[E]
+
+  @Test def checkFoldLeft(): Unit = {
+    val test = underTest(size)
+    val actual = foldLeft(test, Vector.empty[E])(_ :+ _)
+    val expect = iterator(test).toVector
+    assert(actual == expect)
+  }
+
+  @Test def checkFoldRight(): Unit = {
+    val test = underTest(size)
+    val actual = foldRight(test, List.empty[E])(_ :: _)
+    val expect = iterator(test).toList
+    assert(actual == expect)
   }
 
   /** check that lengthCompare compares values correctly */
@@ -320,6 +340,17 @@ package IndexedTestImpl {
     def toType(n: Int)= if ((n & 0) == 0) null else BoxedUnit.UNIT
   }
 
+  abstract class AbstractSeqTest[T <: Seq[E], E] extends IndexedTest[T, E] {
+    override def foldLeft[A](t: T, z: A)(f: (A, E) => A): A =
+      t.foldLeft(z)(f)
+
+    override def foldRight[A](t: T, z: A)(f: (E, A) => A): A =
+      t.foldRight(z)(f)
+
+    override def iterator(t: T): Iterator[E] =
+      t.iterator
+  }
+
   abstract class ArrayTest[E] (
                                //the object or primitive type of the array
                                val TYPE: Class[_]) extends IndexedTest[Array[E], E]{
@@ -350,11 +381,20 @@ package IndexedTestImpl {
       }
       res.asInstanceOf[Array[E]]
     }
+
+    override def foldLeft[A](t: T, z: A)(f: (A, E) => A): A =
+      t.foldLeft(z)(f)
+
+    override def foldRight[A](t: T, z: A)(f: (E, A) => A): A =
+      t.foldRight(z)(f)
+
+    override def iterator(t: T): Iterator[E] =
+      t.iterator
   }
 
   abstract class ArraySeqTest[E](
                                       //the object or primitive type of the array
-                                      val TYPE: Class[_]) extends IndexedTest[mutable.ArraySeq[E], E]  with DataProvider[E]{
+                                      val TYPE: Class[_]) extends AbstractSeqTest[mutable.ArraySeq[E], E]  with DataProvider[E]{
     import mutable.ArraySeq
     override final def length(underTest: ArraySeq[E]) = underTest.length
 
@@ -387,7 +427,7 @@ package IndexedTestImpl {
 
   //construct the data using java as much as possible to avoid invalidating the test
 
-  abstract class MutableIndexedSeqTest[T <: mutable.Seq[E], E] extends IndexedTest[T, E]   with DataProvider[E]{
+  abstract class MutableIndexedSeqTest[T <: mutable.Seq[E], E] extends AbstractSeqTest[T, E] with DataProvider[E]{
     override final def length(underTest: T) = underTest.length
 
     override final def lengthCompare(underTest: T, len: Int): Int = underTest.lengthCompare(len)
@@ -419,7 +459,7 @@ package IndexedTestImpl {
 
   }
 
-  abstract class ImmutableIndexedSeqTest[T <: SeqOps[E, Seq, T], E] extends IndexedTest[T, E]   with DataProvider[E] {
+  abstract class ImmutableIndexedSeqTest[T <: SeqOps[E, Seq, T], E] extends IndexedTest[T, E] with DataProvider[E] {
     override final def length(underTest: T) = underTest.length
 
     override final def lengthCompare(underTest: T, len: Int): Int = underTest.lengthCompare(len)
@@ -440,6 +480,14 @@ package IndexedTestImpl {
       assertEquals(txt, expected, actual)
     }
 
+    override def foldLeft[A](t: T, z: A)(f: (A, E) => A): A =
+      t.foldLeft(z)(f)
+
+    override def foldRight[A](t: T, z: A)(f: (E, A) => A): A =
+      t.foldRight(z)(f)
+
+    override def iterator(t: T): Iterator[E] =
+      t.iterator
   }
 
   abstract class StringOpsBaseTest extends IndexedTest[StringOps, Char] with DataProvider[Char]  {
@@ -463,6 +511,14 @@ package IndexedTestImpl {
       assertEquals(txt, expected, actual)
     }
 
+    override def foldLeft[A](t: T, z: A)(f: (A, E) => A): A =
+      t.foldLeft(z)(f)
+
+    override def foldRight[A](t: T, z: A)(f: (E, A) => A): A =
+      t.foldRight(z)(f)
+
+    override def iterator(t: T): Iterator[E] =
+      t.iterator
   }
 
   class BooleanArrayTest extends ArrayTest[Boolean](jlBoolean.TYPE) with BooleanTestData

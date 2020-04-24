@@ -25,6 +25,28 @@ trait IndexedSeq[+A] extends Seq[A]
   override protected[this] def stringPrefix: String = "IndexedSeq"
 
   override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq
+
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
+    var b = z
+    var i = 0
+    while (i < length) {
+      val a = apply(i)
+      i += 1
+      b = f(b, a)
+    }
+    b
+  }
+
+  override def foldRight[B](z: B)(f: (A, B) => B): B = {
+    var b = z
+    var i = length
+    while (i > 0) {
+      i -= 1
+      val a = apply(i)
+      b = f(a, b)
+    }
+    b
+  }
 }
 
 @SerialVersionUID(3L)
