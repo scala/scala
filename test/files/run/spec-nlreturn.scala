@@ -1,4 +1,4 @@
-
+//scalac: -Xlint:-nonlocal-return
 object Test {
   def f(): Int = {
     try {

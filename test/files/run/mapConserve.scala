@@ -1,8 +1,6 @@
 /*
  * filter: inliner warning
  */
-import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
 
 object Test {
   val maxListLength = 7 // up to 16, but larger is slower
@@ -13,7 +11,7 @@ object Test {
     for (i <- 0 until 250000)
         xs = "X" :: xs
 
-    val lowers = xs.mapConserve(_.toLowerCase)
+    @annotation.unused val lowers = xs.mapConserve(_.toLowerCase)
     assert(xs.mapConserve(x => x) eq xs)
   }
 

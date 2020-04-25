@@ -1,7 +1,5 @@
 
 object Test extends App {
-  import util.matching._
-  import Regex._
 
   val r = "(\\d+)".r
   val q = """(\d)""".r

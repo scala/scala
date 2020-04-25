@@ -79,7 +79,7 @@ class IM[T] {
   def map2(f: T => String): String = "a"
 }
 abstract class BTypes { trait Foo }
-class C[BT <: BTypes](val bt: BT) {
+class CC[BT <: BTypes](val bt: BT) {
   import bt.Foo
   val im1: IM[String] = new IM[String]
   val im2: IM[Foo] = new IM[Foo]

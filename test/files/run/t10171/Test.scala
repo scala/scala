@@ -4,10 +4,12 @@ import java.io.File
 object Test extends StoreReporterDirectTest {
   def code = ???
 
-  def compileCode(code: String) = {
+  override def extraSettings = {
     val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
+    s"-cp $classpath"
   }
+
+  def compileCode(code: String) = compileString(newCompiler())(code)
 
   def library = """
 package a {

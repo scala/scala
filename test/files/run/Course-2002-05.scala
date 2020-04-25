@@ -25,7 +25,7 @@ object M0 {
     }
   }
 
-  def test = {
+  def test() = {
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
@@ -65,7 +65,7 @@ object M1 {
     }
   }
 
-  def test = {
+  def test() = {
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 0)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 5)));
     Console.println(partition[Int](List(1,2,3,4,5,6,7,8), (x => x < 9)));
@@ -100,7 +100,7 @@ object M2 {
     }
   }
 
-  def test = {
+  def test() = {
     Console.println(powerset(List()));
     Console.println(powerset(List(1)));
     Console.println(powerset(List(1,2)));
@@ -144,7 +144,7 @@ object M3 {
     placeQueens(n)
   }
 
-  def test: Unit = {
+  def test(): Unit = {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -189,7 +189,7 @@ object M4 {
     placeQueens(n);
   }
 
-  def test: Unit = {
+  def test(): Unit = {
     Console.println("queens(1) = " + queens(1));
     Console.println("queens(2) = " + queens(2));
     Console.println("queens(3) = " + queens(3));
@@ -202,11 +202,11 @@ object M4 {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
-    M1.test;
-    M2.test;
-    M3.test;
-    M4.test;
+    M0.test()
+    M1.test()
+    M2.test()
+    M3.test()
+    M4.test()
     ()
   }
 }

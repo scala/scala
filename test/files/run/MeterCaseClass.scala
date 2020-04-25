@@ -9,11 +9,11 @@ package a {
   case class Meter(underlying: Double) extends AnyVal with _root_.b.Printable {
     def + (other: Meter): Meter =
       new Meter(this.underlying + other.underlying)
-    def / (other: Meter)(implicit dummy: Meter.MeterArg = null): Double = this.underlying / other.underlying
+    def / (other: Meter)(implicit @annotation.unused dummy: Meter.MeterArg = null): Double = this.underlying / other.underlying
     def / (factor: Double): Meter = new Meter(this.underlying / factor)
     def < (other: Meter): Boolean = this.underlying < other.underlying
     def toFoot: Foot = new Foot(this.underlying * 0.3048)
-    override def print = { Console.print(">>>"); super.print; proprint }
+    override def print() = { Console.print(">>>"); super.print(); proprint() }
   }
 
   object Meter extends (Double => Meter) {
@@ -41,8 +41,8 @@ package a {
 }
 package b {
   trait Printable extends Any {
-    def print: Unit = Console.print(this)
-    protected def proprint = Console.print("<<<")
+    def print(): Unit = Console.print(this)
+    protected def proprint() = Console.print("<<<")
   }
 }
 import a._
@@ -52,11 +52,11 @@ object Test extends App {
   {
   val x: Meter = new Meter(1)
   val a: Object = x.asInstanceOf[Object]
-  val y: Meter = a.asInstanceOf[Meter]
+  @annotation.unused val y: Meter = a.asInstanceOf[Meter]
 
   val u: Double = 1
   val b: Object = u.asInstanceOf[Object]
-  val v: Double = b.asInstanceOf[Double]
+  @annotation.unused val v: Double = b.asInstanceOf[Double]
   }
 
   val x = new Meter(1)
@@ -80,7 +80,7 @@ object Test extends App {
     val arr = Array(x, y + x)
     println(arr.deep)
     def foo[T <: Printable](x: Array[T]): Unit = {
-      for (i <- 0 until x.length) { x(i).print; println(" "+x(i)) }
+      for (i <- 0 until x.length) { x(i).print(); println(" "+x(i)) }
     }
     val m = arr(0)
     println(m)

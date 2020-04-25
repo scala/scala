@@ -22,12 +22,12 @@ final class A {
   class B {
     def f() = 1 to 10 foreach (_ => f3)
   }
-  def f = (new B).f()
+  def f() = (new B).f()
 }
 
 object Test {
   def main(args: Array[String]): Unit = {
     // force the loading of B
-    (new A).f
+    (new A).f()
   }
 }

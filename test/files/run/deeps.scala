@@ -8,21 +8,21 @@ import scala.tools.partest.Util.ArrayDeep
 // need to revisit array equality
 object Test {
 
-  def testEquals1: Unit = {
+  def testEquals1(): Unit = {
     println(Array(1) == Array(1))
     println(Array(1) equals Array(1))
     println(Array(1).deep == Array(1).deep)
     println()
   }
 
-  def testEquals2: Unit = {
+  def testEquals2(): Unit = {
     println(Array(Array(1), Array(2)) == Array(Array(1), Array(2)))
     println(Array(Array(1), Array(2)) equals Array(Array(1), Array(2)))
     println(Array(Array(1), Array(2)).deep equals Array(Array(1), Array(2)).deep)
     println()
   }
 
-  def testEquals3: Unit = {
+  def testEquals3(): Unit = {
     val a1 = Array(1)
     val b1 = Array(1)
     val a2 = Array(a1, b1)
@@ -42,7 +42,7 @@ object Test {
     test(a3, b3)
   }
 
-  def testEquals4: Unit = {
+  def testEquals4(): Unit = {
     println("boo:and:foo".split(':') == "boo:and:foo".split(':'))
     println("boo:and:foo".split(':') equals "boo:and:foo".split(':'))
     println("boo:and:foo".split(':').deep == "boo:and:foo".split(':').deep)
@@ -54,7 +54,7 @@ object Test {
     println(xs.toArray.deep == ys.toArray.deep)
   }
 
-  def testToString1: Unit = {
+  def testToString1(): Unit = {
     def sweep(s: String) = (
       s.replaceAll("D@[0-9a-fA-F]+", "D@0000000")
        .replaceAll("Z@[0-9a-fA-F]+", "Z@0000000")
@@ -90,14 +90,14 @@ object Test {
     test(sa3)
   }
 
-  def testToString2: Unit = {
+  def testToString2(): Unit = {
     println(Array(Array(true, false), Array(false)).deep.mkString("[", "; ", "]"))
     println(Array(Array('1', '2'), Array('3')).deep.mkString("[", "; ", "]"))
     println(Array(Array(1, 2), Array(3)).deep.mkString("[", "; ", "]"))
     println()
   }
 
-  def testToString3: Unit = {
+  def testToString3(): Unit = {
     println("boo:and:foo".split(':').deep.toString)
 
     val xs = new java.util.ArrayList[String](); xs.add("a")
@@ -105,12 +105,12 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    println("testEquals1") ; testEquals1
-    println("testEquals2") ; testEquals2
-    println("testEquals3") ; testEquals3
-    println("testEquals4") ; testEquals4
-    testToString1
-    testToString2
-    testToString3
+    println("testEquals1") ; testEquals1()
+    println("testEquals2") ; testEquals2()
+    println("testEquals3") ; testEquals3()
+    println("testEquals4") ; testEquals4()
+    testToString1()
+    testToString2()
+    testToString3()
   }
 }

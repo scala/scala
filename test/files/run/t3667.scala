@@ -19,10 +19,10 @@ object Test {
     o6.Inner
     ser(new o6.Inner(1))
 
-    foo
+    foo()
   }
 
-  def foo: Unit = {
+  def foo(): Unit = {
     case class C(x: Int)
     ser(new C(1))
     ser(C)

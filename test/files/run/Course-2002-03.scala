@@ -287,7 +287,7 @@ object M8 {
         if (f(elem)) accu.incl(elem) else accu));
   }
 
-  def test = {
+  def test() = {
     val set0: IntSet = new Empty;
     val set1: IntSet = new Empty incl 1;
     val set2: IntSet = new Empty incl 1 incl 2;
@@ -363,7 +363,7 @@ object M9 {
     override def toString() = asString;
   }
 
-  def test = {
+  def test() = {
     Console.println(new Rational(2,2).asString);
     Console.println(new Rational(2,2).toString());
     Console.println(new Rational(2,2));
@@ -383,8 +383,8 @@ object Test {
     M5;
     M6;
     M7;
-    M8.test;
-    M9.test;
+    M8.test()
+    M9.test()
     ()
   }
 }

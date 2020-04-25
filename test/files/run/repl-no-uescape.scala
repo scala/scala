@@ -1,5 +1,4 @@
 import scala.tools.partest.ReplTest
-import scala.tools.nsc.Settings
 
 /*
 scala> object A

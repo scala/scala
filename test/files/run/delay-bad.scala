@@ -1,3 +1,4 @@
+// scalac: -Xmaxwarns 0
 trait A extends DelayedInit
 {
   print("-A")

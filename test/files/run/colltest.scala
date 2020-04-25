@@ -46,7 +46,7 @@ class TestSet(s0: Set[Int], s1: Set[Int]) {
   Console.println("succeeded for "+Iterations+" iterations.")
 }
 object Test extends App {
-  def t3954: Unit = {
+  def t3954(): Unit = {
     import scala.collection.mutable
     val result2 = new mutable.HashSet[Int]
     println(result2.add(1))
@@ -55,7 +55,7 @@ object Test extends App {
     println(result3.add(1))
     println(result3.add(1))
   }
-  t3954
+  t3954()
 
   new TestSet(HashSet.empty, new LinkedHashSet)
 }

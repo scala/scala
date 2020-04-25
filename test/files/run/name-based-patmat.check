@@ -1,4 +1,10 @@
-name-based-patmat.scala:73: warning: unreachable code
+name-based-patmat.scala:71: warning: Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected.
+      case Foo(5, 10, 15, 20, _*) => 1 // wildcard does not align with repeated param
+           ^
+name-based-patmat.scala:72: warning: Sequence wildcard (_*) does not align with repeated case parameter or extracted sequence; the result may be unexpected.
+      case Foo(5, 10, 15, _*)     => 2 // wildcard does not align with repeated param
+           ^
+name-based-patmat.scala:74: warning: unreachable code
       case Foo(5, 10)             => 4 // should warn unreachable
                                      ^
 `catdog only` has 11 chars

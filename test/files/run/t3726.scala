@@ -1,6 +1,10 @@
+// Blocks which contain application of a function-typed variable are seen as pure by the compiler
+//
+import annotation.unused
+
 object Test extends App {
   def test(f: () => Int) = {
-    val x = f()
+    @unused val x = f()
     5
   }
 

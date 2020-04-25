@@ -9,7 +9,7 @@ object Test extends App {
   def implicitSam() = {
     import language.implicitConversions
     var ok = true
-    implicit def fun2sam(fun: Int => String): MySam = { ok = false; new MySam { def apply(x: Int) = fun(x) } }
+    @annotation.unused implicit def fun2sam(fun: Int => String): MySam = { ok = false; new MySam { def apply(x: Int) = fun(x) } }
     val className = (((x: Int) => x.toString): MySam).getClass.toString
     assert(ok, "implicit conversion not called")
     assert(!(className contains AnonFunClass), className)

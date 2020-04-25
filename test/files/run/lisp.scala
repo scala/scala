@@ -12,7 +12,7 @@ class LispTokenizer(s: String) extends Iterator[String] {
     while (i < s.length() && s.charAt(i) <= ' ') i += 1
     i < s.length()
   }
-  def next: String =
+  def next(): String =
     if (hasNext) {
       val start = i
       if (isDelimiter(s charAt i)) i += 1
@@ -453,7 +453,7 @@ class LispUser(lisp: Lisp) {
 
   def evaluate(s: String) = lisp2string(lisp.evaluate(s));
 
-  def run = {
+  def run() = {
 
     Console.println(string2lisp("(lambda (x) (+ (* x x) 1))").asInstanceOf[AnyRef]);
     Console.println(lisp2string(string2lisp("(lambda (x) (+ (* x x) 1))")));
@@ -509,8 +509,8 @@ class LispUser(lisp: Lisp) {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    new LispUser(LispCaseClasses).run;
-    new LispUser(LispAny).run;
+    new LispUser(LispCaseClasses).run()
+    new LispUser(LispAny).run()
     ()
   }
 }

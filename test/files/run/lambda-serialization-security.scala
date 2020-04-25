@@ -13,14 +13,14 @@ object Test {
     val lambda = (p: Param) => ("a", p, c)
     val reconstituted1 = serializeDeserialize(lambda).asInstanceOf[Object => Any]
     val p = new Param
-    assert(reconstituted1.apply(p) == ("a", p, c))
+    assert(reconstituted1.apply(p) == (("a", p, c)))
     val reconstituted2 = serializeDeserialize(lambda).asInstanceOf[Object => Any]
     assert(reconstituted1.getClass == reconstituted2.getClass)
 
     val reconstituted3 = serializeDeserialize(reconstituted1)
-    assert(reconstituted3.apply(p) == ("a", p, c))
+    assert(reconstituted3.apply(p) == (("a", p, c)))
 
-    val specializedLambda = (p: Int) => List(p, c).length
+    val specializedLambda = (p: Int) => List[Any](p, c).length
     assert(serializeDeserialize(specializedLambda).apply(42) == 2)
     assert(serializeDeserialize(serializeDeserialize(specializedLambda)).apply(42) == 2)
   }

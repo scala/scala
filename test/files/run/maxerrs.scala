@@ -1,6 +1,6 @@
 
 import scala.tools.partest._
-import scala.tools.nsc.{Global, Settings}
+import scala.tools.nsc.Settings
 import scala.tools.nsc.reporters.Reporter
 
 /** Test that compiler enforces maxerrs when given a plain Reporter. */

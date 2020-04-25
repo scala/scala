@@ -1,4 +1,4 @@
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.ClassTag
 
 object Test extends App{
   BooleanArrayClone;

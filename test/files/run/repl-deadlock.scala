@@ -1,4 +1,3 @@
-import scala.tools.nsc.Settings
 import scala.tools.partest.ReplTest
 
 object Test extends ReplTest {

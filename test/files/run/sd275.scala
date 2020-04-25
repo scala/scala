@@ -2,15 +2,7 @@ import scala.tools.partest._
 import java.io.File
 
 object Test extends StoreReporterDirectTest {
-  def code = ???
-
-  def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
-  }
-
-  def show(): Unit = {
-    compileCode("""
+  def code = """
 package sample {
 
   class A1 {
@@ -29,12 +21,19 @@ package p1 {
     }
   }
 }
-      """)
+  """
+
+  override def extraSettings = {
+    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    s"-cp $classpath"
+  }
+
+  def show(): Unit = {
+    compile()
     assert(filteredInfos.isEmpty, filteredInfos)
     deletePackage("p1/p2/p3")
     deletePackage("p1/p2")
-
-    compileCode("""
+    compileString(newCompiler())("""
 package sample
 
 class Test {

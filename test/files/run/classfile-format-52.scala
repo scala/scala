@@ -1,8 +1,9 @@
 import java.io.{File, FileOutputStream}
 
-import scala.tools.partest._
+import scala.tools.partest.DirectTest
+import scala.tools.partest.nest.StreamCapture
 import scala.tools.asm
-import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor, Opcodes}
+import asm.{ClassWriter, Opcodes}
 import Opcodes._
 
 // This test ensures that we can read JDK 8 (classfile format 52) files, including those
@@ -13,7 +14,7 @@ import Opcodes._
 // By its nature the test can only work on JDK 8+ because under JDK 7- the
 // interface won't verify.
 object Test extends DirectTest {
-  override def extraSettings: String = "-opt:l:inline -opt-inline-from:** -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = s"-opt:l:inline -opt-inline-from:** -usejavacp -cp ${testOutput.path}"
 
   def generateInterface(): Unit = {
     val interfaceName =  "HasDefaultMethod"
@@ -54,23 +55,10 @@ class Driver extends HasDefaultMethod {
 }
 """
 
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    try {
-      // this test is only valid under JDK 1.8+
-      testUnderJavaAtLeast("1.8") {
-        generateInterface()
-        compile()
-        Class.forName("Driver").getDeclaredConstructor().newInstance()
-        ()
-      } otherwise {
-        println("hello from publicMethod")
-        println("hello from staticMethod")
-      }
-    }
-    finally
-      System.setErr(prevErr)
+  override def show(): Unit = StreamCapture.redirErr {
+    generateInterface()
+    compile()
+    Class.forName("Driver").getDeclaredConstructor().newInstance()
+    ()
   }
 }

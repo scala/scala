@@ -9,7 +9,7 @@ object M0 {
   var x: String = "abc";
   var count = 111;
 
-  def test = {
+  def test() = {
     Console.println("x     = " + x);
     Console.println("count = " + count);
     x = "hello";
@@ -36,7 +36,7 @@ object M1 {
       } else sys.error("insufficient funds");
   }
 
-  def test0 = {
+  def test0() = {
     val account = new BankAccount();
     Console.print("account deposit  50 -> ");
     Console.println((account deposit  50).toString()); // !!! .toString
@@ -48,25 +48,25 @@ object M1 {
     Console.println()
   }
 
-  def test1 = {
+  def test1() = {
     val x = new BankAccount();
-    val y = new BankAccount();
+    @annotation.unused val y = new BankAccount();
     Console.print("x deposit  30 -> ");
     Console.println((x deposit  30).toString()); // !!! .toString
     Console.print("y withdraw 20 -> ");
     Console.println()
   }
 
-  def test2 = {
+  def test2() = {
     val x = new BankAccount();
-    val y = new BankAccount();
+    @annotation.unused val y = new BankAccount();
     Console.print("x deposit  30 -> ");
     Console.println((x deposit  30).toString()); // !!! .toString
     Console.print("x withdraw 20 -> ");
     Console.println(x withdraw 20);
   }
 
-  def test3 = {
+  def test3() = {
     val x = new BankAccount();
     val y = x;
     Console.print("x deposit  30 -> ");
@@ -75,11 +75,11 @@ object M1 {
     Console.println(y withdraw 20);
   }
 
-  def test = {
-    test0; Console.println()
-    test1; Console.println()
-    test2; Console.println()
-    test3; Console.println()
+  def test() = {
+    test0(); Console.println()
+    test1(); Console.println()
+    test2(); Console.println()
+    test3(); Console.println()
   }
 }
 
@@ -101,7 +101,7 @@ object M2 {
     r
   }
 
-  def test = {
+  def test() = {
     Console.println("2^0 = " + power(2,0));
     Console.println("2^1 = " + power(2,1));
     Console.println("2^2 = " + power(2,2));
@@ -121,7 +121,7 @@ object M3 {
     r
   }
 
-  def test = {
+  def test() = {
     Console.println("2^0 = " + power(2,0));
     Console.println("2^1 = " + power(2,1));
     Console.println("2^2 = " + power(2,2));
@@ -134,7 +134,7 @@ object M3 {
 
 object M4 {
 
-  def test = {
+  def test() = {
     for (i <- range(1, 4)) { Console.print(s"$i ") };
     Console.println()
     Console.println(for (i <- range(1, 4)) yield i);
@@ -179,7 +179,7 @@ object M5 {
       agenda = insert(agenda, curtime + delay)
     }
 
-    private def next: Unit = agenda match {
+    private def next(): Unit = agenda match {
       case List() => ()
       case (time, action) :: ag1 => {
         agenda = ag1;
@@ -188,9 +188,9 @@ object M5 {
       }
     }
 
-    def run: Unit = {
+    def run(): Unit = {
       afterDelay(0){() => Console.println("*** simulation started ***"); }
-      while (!agenda.isEmpty) { next }
+      while (!agenda.isEmpty) { next() }
     }
   }
 
@@ -263,7 +263,7 @@ object M5 {
     val AndGateDelay = 3;
     val OrGateDelay = 5;
 
-    def invert = {
+    def invert() = {
       val ain  = new Wire();
       val cout = new Wire();
       inverter(ain, cout);
@@ -272,7 +272,7 @@ object M5 {
 
       def test(a: Int) = {
         ain setSignal (if (a == 0) false else true);
-        run;
+        run()
         Console.println("!" + a + " = " + result);
         Console.println()
       }
@@ -283,7 +283,7 @@ object M5 {
       test(1);
     }
 
-    def and = {
+    def and() = {
       val ain  = new Wire();
       val bin  = new Wire();
       val cout = new Wire();
@@ -294,7 +294,7 @@ object M5 {
       def test(a: Int, b: Int) = {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
-        run;
+        run()
         Console.println(a.toString + " & " + b + " = " + result);
         Console.println()
       }
@@ -308,7 +308,7 @@ object M5 {
       test(1,1);
     }
 
-    def or = {
+    def or() = {
       val ain  = new Wire();
       val bin  = new Wire();
       val cout = new Wire();
@@ -319,7 +319,7 @@ object M5 {
       def test(a: Int, b: Int) = {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
-        run;
+        run()
         Console.println(a.toString + " | " + b + " = " + result);
         Console.println()
       }
@@ -333,7 +333,7 @@ object M5 {
       test(1,1);
     }
 
-    def half = {
+    def half() = {
       val ain  = new Wire();
       val bin  = new Wire();
       val sout = new Wire();
@@ -347,7 +347,7 @@ object M5 {
       def test(a: Int, b: Int) = {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
-        run;
+        run()
         Console.println(a.toString + " + " + b + " = " + result);
         Console.println()
       }
@@ -362,7 +362,7 @@ object M5 {
       test(1,1);
     }
 
-    def full = {
+    def full() = {
       val ain  = new Wire();
       val bin  = new Wire();
       val cin  = new Wire();
@@ -378,7 +378,7 @@ object M5 {
         ain setSignal (if (a == 0) false else true);
         bin setSignal (if (b == 0) false else true);
         cin setSignal (if (c == 0) false else true);
-        run;
+        run()
         Console.println(a.toString + " + " + b + " + " + c + " = " + result);
         Console.println()
       }
@@ -398,13 +398,13 @@ object M5 {
     }
   }
 
-  def test = {
-    val sim = new Test();
-    sim.invert;
-    sim.and;
-    sim.or;
-    sim.half;
-    sim.full;
+  def test() = {
+    val sim = new Test()
+    sim.invert()
+    sim.and()
+    sim.or()
+    sim.half()
+    sim.full()
   }
 }
 
@@ -429,7 +429,7 @@ class Simulator() {
     agenda = insert(agenda, curtime + delay)
   }
 
-  def next: Unit = agenda match {
+  def next(): Unit = agenda match {
     case List() => ()
     case (time, action) :: rest => {
       agenda = rest;
@@ -440,9 +440,9 @@ class Simulator() {
 
   protected def currentTime: Int = curtime;
 
-  def run = {
+  def run() = {
     afterDelay(0){() => Console.println("*** simulation started ***"); }
-    while (!agenda.isEmpty) { next }
+    while (!agenda.isEmpty) { next() }
   }
 }
 
@@ -556,7 +556,7 @@ class Main() extends CircuitSimulator() {
   val AndGateDelay = 3;
   val OrGateDelay = 5;
 
-  def main = {
+  def main() = {
     val n = 3;
     val outNum = 1 << n;
 
@@ -571,15 +571,15 @@ class Main() extends CircuitSimulator() {
     for ((x,o) <- range(0,outNum) zip out) { probe("out" + x, o) }
 
     in.setSignal(true);
-    run;
+    run()
     ctrl(0).setSignal(true);
-    run;
+    run()
     ctrl(1).setSignal(true);
-    run;
+    run()
     ctrl(2).setSignal(true);
-    run;
+    run()
     ctrl(0).setSignal(false);
-    run;
+    run()
   }
 }
 
@@ -587,13 +587,13 @@ class Main() extends CircuitSimulator() {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
-    M1.test;
-    M2.test;
-    M3.test;
-    M4.test;
-    M5.test;
-    new Main().main;
+    M0.test()
+    M1.test()
+    M2.test()
+    M3.test()
+    M4.test()
+    M5.test()
+    new Main().main()
     ()
   }
 }

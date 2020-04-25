@@ -17,10 +17,10 @@ class Tokenizer(s: String, delimiters: String) extends Iterator[String] {
     i < s.length()
   }
 
-  def next: String =
+  def next(): String =
     if (hasNext) {
       val start = i;
-      var ch = s.charAt(i); i = i + 1;
+      val ch = s.charAt(i); i = i + 1;
       if (isDelimiter(ch)) ch.toString()
       else {
 	while (i < s.length() &&

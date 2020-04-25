@@ -70,10 +70,10 @@ abstract class Graphics(_width: Double, _height: Double) {
     }
 
   /** updates the contents of the output device*/
-  def repaint = ();
+  def repaint() = ();
 
   /** Add the last touch to the picture.*/
-  def close : Unit;
+  def close(): Unit;
 }
 
 //############################################################################
@@ -135,7 +135,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
   Console.println(mm2ps(line_thickness).toString + " setlinewidth\nnewpath");
 
   /** Terminate the PS document and close the file stream. */
-  def close : Unit = {
+  def close(): Unit = {
     Console.println("stroke\nshowpage\n%%EOF");
     Console.flush()
   }
@@ -224,10 +224,10 @@ object M0 {
                                        new Vector(0.0, 0.0),
                                        new Vector(0.0, 2.0/3.0),
                                        new Vector(1.0, 0.0)));
-    canvas.repaint
+    canvas.repaint()
   }
 
-  def test = {
+  def test() = {
     val psfile = "-";
     val canvas: Graphics = new PostScript(psfile, 2, 2);
 
@@ -245,7 +245,7 @@ object M0 {
     threeHouses(identFrame);
 
     // Don't forget to close the canvas!
-    canvas.close
+    canvas.close()
   }
 }
 
@@ -253,7 +253,7 @@ object M0 {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
+    M0.test()
     ()
   }
 }

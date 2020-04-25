@@ -5,7 +5,7 @@ object Test {
 
     while (x<=5) {
       println(x)
-      val a = ar(x)
+      @annotation.unused val a = ar(x)
       x+=1
     }
   }

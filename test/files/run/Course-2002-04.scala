@@ -17,7 +17,7 @@ object M0 {
     }
   }
 
-  def test = {
+  def test() = {
     val isort: List[Int] => List[Int] = quicksort[Int]((x,y) => x < y);
     val list0 = List(6,3,1,8,7,1,2,5,8,4,3,4,8);
     val list1 = quicksort[Int]((x,y) => x < y)(list0);
@@ -92,7 +92,7 @@ object M1 {
     array2list(array);
   }
 
-  def test = {
+  def test() = {
     val list0 = List();
     val list1 = List(0);
     val list2 = List(0,1);
@@ -132,7 +132,7 @@ object M2 {
       horner(x, coefs.tail) * x + coefs.head
   }
 
-  def test = {
+  def test() = {
     val poly = List(9.0,5.0,7.0,5.0);
     Console.println("f(x) = 5x^3+7x^2+5x+9");
     Console.println("f(0) = " + horner(0, poly));
@@ -172,14 +172,12 @@ object M3 {
     m1.map(row => matrixTimesVector(columns, row))
   }
 
-  def test = {
+  def test() = {
     val v1 = List(2.0,3.0,4.0);
     val v2 = List(6.0,7.0,8.0);
     def id = List(List(1.0,0.0,0.0),List(0.0,1.0,0.0),List(0.0,0.0,1.0));
     def m1 = List(List(2.0,0.0,0.0),List(0.0,2.0,0.0),List(0.0,0.0,2.0));
     def m2 = List(List(1.0,2.0,3.0),List(4.0,5.0,6.0),List(7.0,8.0,9.0));
-
-    def v = List(2.0,3.0,4.0);
 
     Console.println("v1        = " + v1);
     Console.println("v2        = " + v2);
@@ -233,10 +231,10 @@ object M3 {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
-    M1.test;
-    M2.test;
-    M3.test;
+    M0.test()
+    M1.test()
+    M2.test()
+    M3.test()
     ()
   }
 }

@@ -1,6 +1,8 @@
 // scalac: -Werror -Xlint:deprecation
 //
 
+import annotation.unused
+
 //############################################################################
 // Bugs
 //############################################################################
@@ -35,7 +37,7 @@ object Bug120Test {
     println(str); res
   }
   def test(args: Array[String]): Unit = {
-    val c = new Bug120C(1)
+    @unused val c = new Bug120C(1)
     ()
   }
 }
@@ -203,12 +205,12 @@ object Bug199Test {
 // Bug 213
 
 trait Bug213Foo {
-  def testAll: Unit;
+  def testAll(): Unit;
   def testAllRef: String;
 }
 
 class Bug213Bar extends Bug213Foo {
-  def testAll = (().asInstanceOf[Nothing] : Nothing);
+  def testAll() = (().asInstanceOf[Nothing] : Nothing);
   def testAllRef = ("".asInstanceOf[Null] : Null);
 }
 
@@ -216,7 +218,7 @@ object Bug213Test {
   def test(args: Array[String]): Unit = {
     val foo: Bug213Foo = new Bug213Bar;
     try {
-      foo.testAll;
+      foo.testAll()
     } catch {
       case e: ClassCastException =>
         Console.println("Cannot cast unit to Nothing");
@@ -248,7 +250,7 @@ object Bug217Test {
 
 object Bug222Test {
   def test(args:Array[String]): Unit = {
-    val array: Array[String] = new Array(16);
+    @unused val array: Array[String] = new Array(16);
     ()
   }
 }
@@ -276,7 +278,7 @@ object Bug226Test {
 
   def test(args: Array[String]): Unit = {
     var xs = new Array[Int](1);
-    class X { xs };
+    @unused class X { xs };
     xs = id(xs);
     id(xs);
     ()
@@ -381,7 +383,7 @@ object Bug266Test {
 
 class Bug316MyIterator extends Iterator[Int] {
   def hasNext = false
-  def next = 42
+  def next() = 42
 }
 
 object Bug316Test {

@@ -4,7 +4,39 @@ names-defaults.scala:269: warning: a pure expression does nothing in statement p
 names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
     spawn(b = { val ttt = 1; ttt }, a = 0)
                              ^
-warning: 4 deprecations; re-run with -deprecation for details
+names-defaults.scala:359: warning: the parameter name y is deprecated: use b instead
+  deprNam1(y = 10, a = 1)
+             ^
+names-defaults.scala:360: warning: the parameter name x is deprecated: use a instead
+  deprNam1(b = 2, x = 10)
+                    ^
+names-defaults.scala:369: warning: the parameter name s is deprecated: use x instead
+  println(deprNam2.f(s = "dlf"))
+                       ^
+names-defaults.scala:371: warning: the parameter name x is deprecated: use s instead
+  println(deprNam2.g(x = "sljkfd"))
+                       ^
+names-defaults.scala:35: warning: local var var2 in value <local Test> is never used
+    var var2 = 0
+        ^
+names-defaults.scala:108: warning: local val x$34 in value <local Test> is never used
+  println(t7.f(b = "sl19", a = 28)) // first
+                   ^
+names-defaults.scala:279: warning: local val u in method foo is never used
+  class A2489 { def foo(): Unit = { def bar(a: Int = 1) = a; bar(); val u = 0 } }
+                                                                        ^
+names-defaults.scala:280: warning: local val v in method foo is never used
+  class A2489x2 { def foo(): Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
+                                          ^
+names-defaults.scala:280: warning: local val u in method foo is never used
+  class A2489x2 { def foo(): Unit = { val v = 10; def bar(a: Int = 1, b: Int = 2) = a; bar(); val u = 0 } }
+                                                                                                  ^
+names-defaults.scala:380: warning: local val x$104 in value <local Test> is never used
+  println(t3697.a(3)())
+                  ^
+names-defaults.scala:385: warning: local val x$112 in value <local Test> is never used
+  println(t3697.b(b = 1, a = 2, c = 3))
+                                    ^
 1: @
 get: $
 get: 2

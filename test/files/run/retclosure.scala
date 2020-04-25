@@ -1,5 +1,5 @@
 /* Test return expressions inside closures.
- *
+ * scalac: -Xlint:-nonlocal-return
  * See bug#834  */
 
 object Test {

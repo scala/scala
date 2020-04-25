@@ -1,7 +1,6 @@
 
-import scala.language.{ postfixOps }
 object Test {
-  def shortName(x: AnyRef) = x.getClass.getName split '.' last
+  def shortName(x: AnyRef) = x.getClass.getName.split('.').last
   type Handler[+T] = PartialFunction[Throwable, T]
 
   val standardHandler: Handler[String] = {
@@ -9,17 +8,16 @@ object Test {
     case x: java.lang.IllegalArgumentException  => shortName(x)
   }
 
-  def fn[T: Handler](body: => T): T = {
+  def fn[T: Handler](body: => T): T =
     try body
     catch implicitly[Handler[T]]
-  }
 
-  def f1 = {
+  def f1() = {
     implicit val myHandler = standardHandler
     println(fn(Nil.head))
     println(fn(null.toString))
   }
-  def f2 = {
+  def f2() = {
     implicit val myHandler: Handler[String] = standardHandler orElse {
       case x => "DEBUG: " + shortName(x)
     }
@@ -28,9 +26,9 @@ object Test {
   }
 
   def main(args: Array[String]): Unit = {
-    try f1
+    try f1()
     catch { case x: Throwable => println(shortName(x) + " slipped by.") }
 
-    f2
+    f2()
   }
 }

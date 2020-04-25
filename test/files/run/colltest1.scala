@@ -4,6 +4,7 @@
 import scala.collection._
 import scala.language.postfixOps
 
+@deprecated("Tests deprecated API", since="2.13.0")
 object Test extends App {
 
   def orderedTraversableTest(empty: Traversable[Int]): Unit = {
@@ -51,8 +52,8 @@ object Test extends App {
     assert((ten.slice(3, 6)) == List(4, 5, 6), ten.slice(3, 6))
     assert((ten takeWhile (_ <= 5)) == firstFive)
     assert((ten dropWhile (_ <= 5)) == secondFive)
-    assert((ten span (_ <= 5)) == (firstFive, secondFive))
-    assert((ten splitAt 5) == (firstFive, secondFive), ten splitAt 5)
+    assert(ten.span(_ <= 5) == ((firstFive, secondFive)))
+    assert(ten.splitAt(5) == ((firstFive, secondFive)), ten.splitAt(5))
     val buf = new mutable.ArrayBuffer[Int]
     buf ++= firstFive
     buf ++= secondFive
@@ -73,7 +74,7 @@ object Test extends App {
     assert(six.iterator.toStream == six)
     assert(six.takeRight(4) == List(3, 4, 5, 6), six.takeRight(4))
     assert(six.dropRight(3) == List(1, 2, 3))
-    assert(six sameElements (1 to 6))
+    assert(six.iterator.sameElements(1 to 6))
   }
 
   def sequenceTest(empty: Seq[Int]): Unit = {

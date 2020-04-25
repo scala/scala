@@ -1,7 +1,4 @@
-import scala.language.postfixOps
-import scala.tools.nsc._
 import scala.tools.partest.CompilerTest
-import scala.collection.{ mutable, immutable, generic }
 
 /** It's too messy but it's better than not having it.
  */
@@ -37,24 +34,22 @@ package ll {
 """
 
   object syms extends SymsInPackage("ll") {
-    def isPossibleEnclosure(encl: Symbol, sym: Symbol) = sym.enclClassChain drop 1 exists (_ isSubClass encl)
+    def isPossibleEnclosure(encl: Symbol, sym: Symbol) = sym.enclClassChain.drop(1).exists(_ isSubClass encl)
     def isInterestingPrefix(pre: Type) = pre.typeConstructor.typeParams.nonEmpty && pre.members.exists(_.isType)
 
-    def asSeenPrefixes  = tpes map (_.finalResultType) distinct
-    def typeRefPrefixes = asSeenPrefixes filter isInterestingPrefix
+    def asSeenPrefixes  = tpes.map(_.finalResultType).distinct
+    def typeRefPrefixes = asSeenPrefixes.filter(isInterestingPrefix)
 
-    def nestsIn(outer: Symbol) = classes filter (c => c.enclClassChain drop 1 exists(_ isSubClass outer))
+    def nestsIn(outer: Symbol) = classes.filter(_.enclClassChain.drop(1).exists(_ isSubClass outer))
     def typeRefs(targs: List[Type]) = (
-      for (p <- typeRefPrefixes ; c <- classes filter (isPossibleEnclosure(p.typeSymbol, _)) ; a <- targs) yield
+      for (p <- typeRefPrefixes ; c <- classes.filter(isPossibleEnclosure(p.typeSymbol, _)) ; a <- targs) yield
         typeRef(p, c, List(a))
     )
 
     val wfmt      = "%-" + 25 + "s"
     def to_s(x: Any): String    = wfmt.format(x.toString.replaceAll("""\bll\.""", ""))
 
-    def fmt(args: Any*): String = {
-      (args map to_s mkString "  ").replaceAll("""\s+$""", "")
-    }
+    def fmt(args: Any*): String = args.map(to_s).mkString("  ").replaceAll("""\s+$""", "")
     def fname(sym: Symbol) = {
       val p = "" + sym.owner.name
       val x = if (sym.owner.isPackageClass || sym.owner.isModuleClass || sym.owner.isTerm) "." else "#"
@@ -63,7 +58,7 @@ package ll {
 
     def permuteAsSeenFrom(targs: List[Type]) = (
       for {
-        tp <- typeRefs(targs filterNot (_ eq NoType))
+        tp <- typeRefs(targs.filterNot(_ eq NoType))
         prefix <- asSeenPrefixes
         if tp.prefix != prefix
         site <- classes
@@ -71,7 +66,7 @@ package ll {
         if tp != seen
         if !seen.isInstanceOf[ExistentialType]
       }
-      yield ((site, tp, prefix, seen))
+      yield (site, tp, prefix, seen)
     )
 
     def block(label: Any)(lines: List[String]): List[String] = {

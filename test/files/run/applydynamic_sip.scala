@@ -11,9 +11,9 @@ object Test extends App {
     def update(as: Any*) = println(".update"+as.toList.mkString("(",", ", ")"))
   }
   class MyDynamic extends Dynamic {
-    def applyDynamic[T](n: String)(as: Any*) = {println("qual.applyDynamic("+ n +")"+ as.toList.mkString("(",", ", ")")); stub}
-    def applyDynamicNamed[T](n: String)(as: (String, Any)*) = {println("qual.applyDynamicNamed("+ n +")"+ as.toList.mkString("(",", ", ")")); stub}
-    def selectDynamic[T](n: String) = {println("qual.selectDynamic("+ n +")"); stub}
+    def applyDynamic[A](n: String)(as: Any*) = {println("qual.applyDynamic("+ n +")"+ as.toList.mkString("(",", ", ")")); stub}
+    def applyDynamicNamed[A](n: String)(as: (String, Any)*) = {println("qual.applyDynamicNamed("+ n +")"+ as.toList.mkString("(",", ", ")")); stub}
+    def selectDynamic[A](n: String) = {println("qual.selectDynamic("+ n +")"); stub}
     def updateDynamic(n: String)(x: Any): Unit = {println("qual.updateDynamic("+ n +")("+ x +")")}
   }
   val qual = new MyDynamic

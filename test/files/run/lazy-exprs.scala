@@ -1,6 +1,6 @@
 object TestExpressions {
 
-  def patmatchScrut: Unit = {
+  def patmatchScrut(): Unit = {
     lazy val z1: Option[String] = { println("forced <z1>"); Some("lazy z1") }
 
     val res = z1 match {
@@ -14,7 +14,7 @@ object TestExpressions {
       println("failed")
   }
 
-  def patmatchCase: Unit = {
+  def patmatchCase(): Unit = {
     val t: Option[String] = Some("test")
     val res = t match {
       case Some(msg) =>
@@ -31,7 +31,7 @@ object TestExpressions {
   }
 
 
-  def patmatchPat: Unit = {
+  def patmatchPat(): Unit = {
     lazy val Z1 = { println("forced <z1>"); "lazy Z1" }
     print("lazy val in case: ")
     val t: Option[String] = Some("lazy Z1")
@@ -44,7 +44,7 @@ object TestExpressions {
     }
   }
 
-  def ifcond: Unit = {
+  def ifcond(): Unit = {
     lazy val z1 = { println("forced <z1>"); "lazy z1" }
     print("lazy val in if condition: ")
     if (z1 == "lazy z1")
@@ -56,7 +56,7 @@ object TestExpressions {
 
   lazy val LazyField = { println("forced LazyField"); "LazyField" }
 
-  def testPatMatchField: Unit = {
+  def testPatMatchField(): Unit = {
     print("lazy val in pattern: ")
     val t: Option[String] = Some("LazyField")
     t match {
@@ -69,7 +69,7 @@ object TestExpressions {
   }
 
   lazy val (x, y) = ({print("x"); "x"}, {print("y"); "y"})
-  def testPatLazyVal: Unit = {
+  def testPatLazyVal(): Unit = {
     println("lazy val with patterns:")
     print("x and y: ")
     println("(" + x + ", " + y + ")")
@@ -78,18 +78,18 @@ object TestExpressions {
     println("(" + x1 + ", " + y1 + ")")
   }
 
-  def test: Unit = {
-    patmatchScrut
-    patmatchCase
-    patmatchPat
-    ifcond
-    testPatMatchField
-    testPatLazyVal
+  def test(): Unit = {
+    patmatchScrut()
+    patmatchCase()
+    patmatchPat()
+    ifcond()
+    testPatMatchField()
+    testPatLazyVal()
   }
 }
 
 
 object Test extends App {
 
-  TestExpressions.test
+  TestExpressions.test()
 }

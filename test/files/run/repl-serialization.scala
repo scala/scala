@@ -3,7 +3,6 @@ import java.io._
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.util._
 import scala.reflect.internal.util.AbstractFileClassLoader
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 

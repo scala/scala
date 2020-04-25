@@ -1,9 +1,7 @@
 /*
  * filter: inliner warnings; re-run with
  */
-import scala.tools.nsc._
 import scala.tools.partest.CompilerTest
-import scala.collection.{ mutable, immutable, generic }
 
 object Test extends CompilerTest {
   import global._

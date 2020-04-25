@@ -1,3 +1,4 @@
+// scalac: -Xmaxwarns 0
 trait CaseClass
 trait ProdCaseClass extends CaseClass { def x: Int }
 trait SeqCaseClass extends CaseClass { def xs: Seq[Int] }
@@ -10,7 +11,7 @@ case class CaseClass4(x: Int, xs: Int*) extends ProdCaseClass with SeqCaseClass
 object Extractor1 { def unapply(x: CaseClass): Boolean = false }
 object Extractor2 { def unapplySeq(x: SeqCaseClass): Option[Seq[Int]] = Some(x.xs) }
 object Extractor3 { def unapply(x: ProdCaseClass): Option[Int] = Some(x.x) }
-object Extractor4 { def unapplySeq(x: ProdCaseClass with SeqCaseClass): Option[(Int, Seq[Int])] = Some(x.x, x.xs) }
+object Extractor4 { def unapplySeq(x: ProdCaseClass with SeqCaseClass): Option[(Int, Seq[Int])] = Some((x.x, x.xs)) }
 
 class A {
   def f1(x: Any) = x match {

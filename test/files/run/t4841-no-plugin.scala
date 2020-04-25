@@ -7,7 +7,7 @@ import java.io.File
 object Test extends DirectTest {
   override def code = "class Code"
 
-  override def extraSettings = s"-usejavacp -d ${testOutput.path}"
+  override def extraSettings = s"-usejavacp"
 
   override def show() = {
     val tmp = new File(testOutput.jfile, "plugins.partest").getAbsolutePath

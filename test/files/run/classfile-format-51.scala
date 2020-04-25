@@ -1,8 +1,9 @@
 import java.io.{File, FileOutputStream}
 
-import scala.tools.partest._
+import scala.tools.partest.DirectTest
+import scala.tools.partest.nest.StreamCapture
 import scala.tools.asm
-import asm.{AnnotationVisitor, ClassWriter, FieldVisitor, Handle, MethodVisitor, Opcodes}
+import asm.{ClassWriter, Handle, Opcodes}
 import Opcodes._
 
 // This test ensures that we can read JDK 7 (classfile format 51) files, including those
@@ -16,7 +17,7 @@ import Opcodes._
 // verify. So the test includes a version check that short-circuits the whole test
 // on JDK 6
 object Test extends DirectTest {
-  override def extraSettings: String = "-opt:l:inline -opt-inline-from:** -usejavacp -d " + testOutput.path + " -cp " + testOutput.path
+  override def extraSettings: String = s"-opt:l:inline -opt-inline-from:** -usejavacp -cp ${testOutput.path}"
 
   def generateClass(): Unit = {
     val invokerClassName =  "DynamicInvoker"
@@ -104,22 +105,8 @@ object Driver {
   println(invoker.test())
 }
 """
-
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
-    System.setErr(System.out)
-    try {
-      // this test is only valid under JDK 1.7+
-      testUnderJavaAtLeast("1.7") {
-        generateClass()
-        compile()
-        ()
-      } otherwise {
-        ()
-      }
-    }
-    finally
-      System.setErr(prevErr)
+  override def show(): Unit = StreamCapture.redirErr {
+    generateClass()
+    compile()
   }
 }

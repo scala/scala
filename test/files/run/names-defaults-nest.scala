@@ -1,5 +1,5 @@
 object Test {
-  def multinest = {
+  def multinest() = {
     def baz = {bar()}
     def bar(x: String = "a"): Any = {
       def bar(x: String = "b") = x
@@ -9,6 +9,6 @@ object Test {
     assert(baz == "ba", baz)
   }
   def main(args: Array[String]): Unit = {
-    multinest
+    multinest()
   }
 }

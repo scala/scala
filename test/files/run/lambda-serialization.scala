@@ -21,7 +21,7 @@ class C extends java.io.Serializable {
     () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => (),
     () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => (), () => () ,() => (), () => (), () => (), () => (), () => ()
   )
-  private def foo(): Unit = {
+  @annotation.unused private def foo(): Unit = {
     assert(false, "should not be called!!!")
   }
 }

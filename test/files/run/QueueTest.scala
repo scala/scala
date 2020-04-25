@@ -3,14 +3,14 @@ import scala.collection.mutable.Queue
 object Test {
 
   def main(args: Array[String]): Unit = {
-    testEmpty
-    testEnqueue
-    testTwoEnqueues
-    testFewEnqueues
-    testMoreEnqueues
+    testEmpty()
+    testEnqueue()
+    testTwoEnqueues()
+    testFewEnqueues()
+    testMoreEnqueues()
   }
 
-  def testEmpty: Unit = {
+  def testEmpty(): Unit = {
     val queue = new Queue[Int]
 
     assert(queue.isEmpty)
@@ -27,7 +27,7 @@ object Test {
     assert(queue.dequeueAll(_ > 500).isEmpty)
   }
 
-  def testEnqueue: Unit = {
+  def testEnqueue(): Unit = {
     val queue = new Queue[Int]
 
     queue.enqueue(10)
@@ -64,7 +64,7 @@ object Test {
     assert(queue.isEmpty && queue.length == 0)
   }
 
-  def testTwoEnqueues: Unit = {
+  def testTwoEnqueues(): Unit = {
     val queue = new Queue[Int]
     queue.enqueue(30)
     queue.enqueue(40)
@@ -82,7 +82,7 @@ object Test {
     assert(queue.isEmpty)
   }
 
-  def testFewEnqueues: Unit = {
+  def testFewEnqueues(): Unit = {
     val queue = new Queue[Int]
     queue.enqueue(10)
     queue.enqueue(20)
@@ -138,7 +138,7 @@ object Test {
     assert(queue.front == 80)
   }
 
-  def testMoreEnqueues: Unit = {
+  def testMoreEnqueues(): Unit = {
     val queue = new Queue[Int]
     for (i <- 0 until 10) queue.enqueue(i * 2)
 

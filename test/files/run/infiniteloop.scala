@@ -1,7 +1,7 @@
 /** Tests the optimiser (not to loop on 'reverse'). */
 
 object Test extends App {
-  def foo: Unit = {
+  def foo(): Unit = {
     val s3 = LazyList.range(1, 1000) //100000 (ticket #153: Stackoverflow)
 
     // ticket #153
@@ -10,5 +10,5 @@ object Test extends App {
     println(s3.flatMap(powers).reverse.toList)
   }
 
-  foo
+  foo()
 }

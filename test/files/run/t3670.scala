@@ -12,7 +12,7 @@ class C {
 }
 
 class M extends App {
-  def foo: Unit = {
+  def foo(): Unit = {
     lazy val a = {
         lazy val b = 1
         lazy val c = 2
@@ -27,5 +27,5 @@ class M extends App {
 
 object Test extends App {
     new C()
-    new M().foo
+    new M().foo()
 }

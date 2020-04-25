@@ -1,3 +1,4 @@
+// scalac: -Xlint:-nonlocal-return
 object Test {
   def wrap[K](body: => K): K = body
 
