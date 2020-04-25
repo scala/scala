@@ -98,19 +98,20 @@ abstract class FilteringReporter extends Reporter {
   private def maxErrors: Int = settings.maxerrs.value
   private def maxWarnings: Int = settings.maxwarns.value
 
-  private def noWarnings: Boolean = settings.nowarn.value
-
   override def filter(pos: Position, msg: String, severity: Severity): Int = {
+    import internal.Reporter.{ERROR => Error, WARNING => Warning, _}
     def maxOk = severity match {
-      case internal.Reporter.ERROR   => maxErrors < 0 || errorCount < maxErrors
-      case internal.Reporter.WARNING => !noWarnings && (maxWarnings < 0 || warningCount < maxWarnings)
-      case _ => true
+      case Error   => maxErrors < 0   || errorCount < maxErrors
+      case Warning => maxWarnings < 0 || warningCount < maxWarnings
+      case _       => true
     }
-    if (!duplicateOk(pos, severity, msg)) {
-      notifySuppressed(pos, msg, severity)
-      2 // don't count, don't display
-    } else if (!maxOk) 1 // count, but don't display
-      else 0
+    // Invoked when an error or warning is filtered by position.
+    @inline def suppress = {
+      if (settings.prompt) doReport(pos, msg, severity)
+      else if (settings.debug) doReport(pos, s"[ suppressed ] $msg", severity)
+      Suppress
+    }
+    if (!duplicateOk(pos, severity, msg)) suppress else if (!maxOk) Count else Display
   }
 
   /** Returns `true` if the message should be reported. Messages are skipped if:
@@ -138,12 +139,6 @@ abstract class FilteringReporter extends Reporter {
       }
       show
     }
-  }
-
-  /* Invoked when an error or warning is filtered by position. */
-  private def notifySuppressed(pos: Position, msg: String, severity: Severity): Unit = {
-    if (settings.prompt) doReport(pos, msg, severity)
-    else if (settings.debug) doReport(pos, "[ suppressed ] " + msg, severity)
   }
 
   override def reset(): Unit = {

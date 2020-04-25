@@ -51,7 +51,7 @@ trait StandardScalaSettings {
   }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options") withAbbreviation "--help"
-  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings"
+  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withAbbreviation "--no-warnings" withPostSetHook { s => if (s) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.") withAbbreviation "--print"
   val target =         ChoiceSetting  ("-target", "target", "Target platform for object files.", AllTargetVersions, "8") withPreSetHook normalizeTarget _ withAbbreviation "--target"
