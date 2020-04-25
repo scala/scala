@@ -135,9 +135,16 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
       import global.{ settings, Symbol }
       def parseComment(comment: DocComment) = {
         val nowarnings = settings.nowarn.value
-        settings.nowarn.value = true
+        val maxwarns   = settings.maxwarns.value
+        if (!nowarnings) {
+          settings.nowarn.value = true
+        }
         try parseAtSymbol(comment.raw, comment.raw, comment.pos)
-        finally settings.nowarn.value = nowarnings
+        finally
+          if (!nowarnings) {
+            settings.nowarn.value   = false
+            settings.maxwarns.value = maxwarns
+          }
       }
 
       override def internalLink(sym: Symbol, site: Symbol): Option[LinkTo] = None

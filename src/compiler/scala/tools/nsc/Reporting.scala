@@ -266,7 +266,8 @@ trait Reporting extends scala.reflect.internal.Reporting { self: ast.Positions w
     /** Has any macro expansion used a fallback during this run? */
     var seenMacroExpansionsFallingBack = false
 
-    def summarizeErrors(): Unit = if (!reporter.hasErrors) {
+    // i.e., summarize warnings
+    def summarizeErrors(): Unit = if (!reporter.hasErrors && !settings.nowarn) {
       for (c <- summarizedWarnings.keys.toList.sortBy(_.name))
         summarize(Action.WarningSummary, c)
       for (c <- summarizedInfos.keys.toList.sortBy(_.name))

@@ -51,7 +51,7 @@ trait StandardScalaSettings { _: MutableSettings =>
   }
   val g =               ChoiceSetting ("-g", "level", "Set level of generated debugging info.", List("none", "source", "line", "vars", "notailcalls"), "vars")
   val help =           BooleanSetting ("-help", "Print a synopsis of standard options")
-  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.")
+  val nowarn =         BooleanSetting ("-nowarn", "Generate no warnings.") withPostSetHook { s => if (s) maxwarns.value = 0 }
   val optimise:        BooleanSetting // depends on post hook which mutates other settings
   val print =          BooleanSetting ("-print", "Print program with Scala-specific features removed.")
   val target =         ChoiceSettingForcedDefault ("-target", "target", "Target platform for object files. All JVM 1.5 - 1.7 targets are deprecated.",

@@ -26,8 +26,10 @@ class ConsoleReporter(val settings: Settings, val reader: BufferedReader, val wr
 
   override def finish(): Unit = {
     import reflect.internal.util.StringOps.{countElementsAsString => countAs}
-    if (hasWarnings) echo(s"${countAs(warningCount, WARNING.toString.toLowerCase)} found")
-    if (hasErrors)   echo(s"${countAs(errorCount, ERROR.toString.toLowerCase)} found")
+    if (!settings.nowarn && hasWarnings)
+      echo(s"${countAs(warningCount, WARNING.toString.toLowerCase)} found")
+    if (hasErrors)
+      echo(s"${countAs(errorCount, ERROR.toString.toLowerCase)} found")
     super.finish()
   }
 }

@@ -101,12 +101,9 @@ abstract class Reporter {
   // If `force`, INFO messages were always printed. Now, INFO messages are always printed.
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit
 
-  /** Return
-    *   - 0: count and display
-    *   - 1: count only, don't display
-    *   - 2: don't count, don't display
-    */
-  def filter(pos: Position, msg: String, severity: Severity): Int = 0
+  /** @return Reporter.Display, or override for Count, Suppress
+   */
+  def filter(pos: Position, msg: String, severity: Severity): Int = Reporter.Display
 
   final def echo(msg: String): Unit                   = echo(util.NoPosition, msg)
   final def echo(pos: Position, msg: String): Unit    = if (filter(pos, msg, INFO) == 0) info0(pos, msg, INFO, force = true)
@@ -152,7 +149,11 @@ abstract class Reporter {
 }
 
 object Reporter {
-  sealed class Severity(val id: Int, override val toString: String)
+  final val Display  = 0    // display and count toward hasWarnings
+  final val Count    = 1    // no display but count toward hasWarnings
+  final val Suppress = 2    // no display, does not bump count for hasWarnings
+
+  sealed abstract class Severity(val id: Int, override val toString: String)
   object INFO    extends Severity(0, "INFO")
   object WARNING extends Severity(1, "WARNING")
   object ERROR   extends Severity(2, "ERROR")

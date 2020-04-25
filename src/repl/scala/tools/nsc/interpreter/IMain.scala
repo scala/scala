@@ -1275,6 +1275,7 @@ object IMain {
   private[interpreter] def withSuppressedSettings[A](settings: Settings, global: => Global)(body: => A): A = {
     import settings._
     val wasWarning = !nowarn
+    val oldMaxWarn = maxwarns.value
     val noisy = List(Xprint, Ytyperdebug, browse)
     val current = (Xprint.value, Ytyperdebug.value, browse.value)
     val noisesome = wasWarning || noisy.exists(!_.isDefault)
@@ -1289,7 +1290,10 @@ object IMain {
         Xprint.value       = current._1
         Ytyperdebug.value  = current._2
         browse.value       = current._3
-        if (wasWarning) nowarn.value = false
+        if (wasWarning) {
+          nowarn.value = false
+          maxwarns.value = oldMaxWarn
+        }
         // ctl-D in repl can result in no compiler
         val g = global
         if (g != null) {

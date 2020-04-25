@@ -8,9 +8,6 @@ defined class Value
 defined object Value
 
 scala> class C { final case class Num(value: Double) } // here it should still warn
-<console>:11: warning: The outer reference in this type test cannot be checked at run time.
-class C { final case class Num(value: Double) } // here it should still warn
-                           ^
 defined class C
 
 scala> :quit
