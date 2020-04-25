@@ -126,4 +126,51 @@ class SetTest extends AllocationTest {
     nonAllocatingEmptyPlusPlusN(100)
   }
 
+  @Test def builderCompare1: Unit = {
+    for (size <- 0 to 100;
+         start <- (0 to 10)) {
+      val tBuilder = TreeMap.newBuilder[String, String]
+      val sBuilder = SortedMap.newBuilder[String, String]
+      val control = HashMap.newBuilder[String, String]
+      for (i <- start to start + size) {
+        sBuilder += i.toString -> ""
+        tBuilder += i.toString -> ""
+        control += i.toString -> ""
+      }
+      val treeMap = tBuilder.result()
+      val sortMap = sBuilder.result()
+      val expected = control.result()
+
+      assertEquals(expected.size, treeMap.size)
+      assertEquals(expected.size, sortMap.size)
+
+      assertEquals(expected, treeMap)
+      assertEquals(expected, sortMap)
+
+      assertEquals(expected, treeMap.iterator.toMap)
+      assertEquals(expected, sortMap.iterator.toMap)
+
+    }
+  }
+  @Test def builderCompare2: Unit = {
+    for (size <- 0 to 100;
+         start <- (0 to 10)) {
+      val data = for (i <- start to start + size) yield {
+        i -> ""
+      }
+      val treeMap =  TreeMap(data : _*)
+      val sortMap =  SortedMap(data : _*)
+      val expected = HashMap( data : _*)
+
+      assertEquals(expected.size, treeMap.size)
+      assertEquals(expected.size, sortMap.size)
+
+      assertEquals(expected, treeMap)
+      assertEquals(expected, sortMap)
+
+      assertEquals(expected, treeMap.iterator.toMap)
+      assertEquals(expected, sortMap.iterator.toMap)
+
+    }
+  }
 }

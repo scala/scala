@@ -31,32 +31,19 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), TreeMap[A, B]] = new SortedMapCanBuildFrom[A, B]
 
   override def newBuilder[A, B](implicit ord: Ordering[A]): mutable.Builder[(A, B), TreeMap[A, B]] = new TreeMapBuilder
-  private final class TreeMapBuilder[A, B](implicit ordering: Ordering[A]) extends mutable.Builder[(A, B), TreeMap[A, B]] {
+
+  private class TreeMapBuilder[A, B](implicit ordering: Ordering[A])
+    extends RB.MapHelper[A, B]
+      with Builder[(A, B), TreeMap[A, B]] {
     type Tree = RB.Tree[A, B]
     private [this] var tree:Tree = null
-    override def +=(elem: (A, B)): this.type = {
-      tree = RB.update(tree, elem._1, elem._2, overwrite = true)
+
+    def +=(elem: (A, B)): this.type = {
+      tree = mutableUpd(tree, elem._1, elem._2)
       this
     }
-
     private object adder extends Function2[A, B, Unit] {
       var accumulator :Tree = null
-      def addTree(aTree:Tree, bTree: Tree): Tree = {
-        // TODO should consider non overlapping trees
-        // just bulk add the non overlapping parts and
-        // only addAll for the intersecting range
-        //
-        // TODO consider adding the smaller map to the larger one with a flag to
-        // say who wins
-
-        accumulator = aTree
-        RB.foreachEntry(bTree, this)
-
-        val result = accumulator
-        // be friendly to GC
-        accumulator = null
-        result
-      }
       def addForEach(aTree:Tree, hasForEach: HasForeachEntry[A, B]): Tree = {
         accumulator = aTree
         hasForEach.foreachEntry(this)
@@ -73,10 +60,15 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
 
     override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
       xs match {
-        case ts: TreeMap[A, B] if ts.ordering == ordering =>
+        // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
+        // for the moment we have to force immutability before the union
+        // which will waste some time and space
+        // calling `beforePublish` makes `tree` immutable
+        case ts: TreeMap[A, B] if ts.ordering eq ordering =>
           if (tree eq null) tree = ts.tree0
-          else tree = adder.addTree(tree, ts.tree0)
+          else tree = RB.union(beforePublish(tree), ts.tree0)
         case that: HasForeachEntry[A, B] =>
+          //add avoiding creation of tuples
           tree = adder.addForEach(tree, that)
         case _ =>
           super.++=(xs)
@@ -88,7 +80,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
       tree = null
     }
 
-    override def result(): TreeMap[A, B] = new TreeMap(tree)(ordering)
+    override def result(): TreeMap[A, B] = new TreeMap[A, B](beforePublish(tree))
   }
   private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") != "false"
 
@@ -124,34 +116,6 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
     @throws[IOException]
     private[this] def readResolve(): AnyRef =
       new TreeMap(tree)(ordering)
-  }
-
-  private class TreeMapBuilder[A, B](implicit val ordering: Ordering[A]) extends Builder[(A, B), TreeMap[A, B]] {
-    type Tree = RB.Tree[A, B]
-    private [this] var tree:Tree = null
-    private [this] val helper = new RB.MapHelper[A, B]()
-
-    def +=(elem: (A, B)): this.type = {
-      tree = helper.addMutable(tree, elem._1, elem._2)
-      this
-    }
-
-    override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
-      xs match {
-        case ts: TreeMap[A, B] if ts.ordering eq ordering =>
-          if (tree eq null) tree = ts.tree0
-          else tree = RB.union(tree, ts.tree0)
-        case _ =>
-          super.++=(xs)
-      }
-      this
-    }
-
-    override def clear(): Unit = {
-      tree = null
-    }
-
-    override def result(): TreeMap[A, B] = new TreeMap[A, B](helper.beforePublish(tree))
   }
 
 }
@@ -420,7 +384,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   @throws[IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream) = {
     out.writeObject(ordering)
-    out.writeObject(RedBlackTree.from(tree))
+    out.writeObject(immutable.RedBlackTree.from(tree))
   }
 
 

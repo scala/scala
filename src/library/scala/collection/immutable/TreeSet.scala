@@ -32,24 +32,29 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   /** The empty set of this type
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
-  private class TreeSetBuilder[A](implicit val ordering: Ordering[A]) extends Builder[A, TreeSet[A]] {
+  private class TreeSetBuilder[A](implicit ordering: Ordering[A])
+    extends RB.SetHelper[A]
+      with Builder[A, TreeSet[A]] {
     type Tree = RB.Tree[A, Any]
-    private [this] var tree:Tree = null
-    private [this] val helper = new RB.SetHelper[A]()
+    private [this] var tree:RB.Tree[A, Any] = null
 
     override def +=(elem: A): this.type = {
-      tree = helper.addMutable(tree, elem)
+      tree = mutableUpd(tree, elem)
       this
     }
 
     override def ++=(xs: TraversableOnce[A]): this.type = {
       xs match {
+          // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
+          // for the moment we have to force immutability before the union
+          // which will waste some time and space
+          // calling `beforePublish` makes `tree` immutable
         case ts: TreeSet[A] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree
-          else tree = RB.union(tree, ts.tree)
+          else tree = RB.union(beforePublish(tree), ts.tree)(ordering)
         case ts: TreeMap[A, _] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree0
-          else tree = RB.union(tree, ts.tree0)
+          else tree = RB.union(beforePublish(tree), ts.tree0)(ordering)
         case _ =>
           super.++=(xs)
       }
@@ -60,7 +65,7 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
       tree = null
     }
 
-    override def result(): TreeSet[A] = new TreeSet[A](helper.beforePublish(tree))
+    override def result(): TreeSet[A] = new TreeSet[A](beforePublish(tree))(ordering)
   }
   private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") != "false"
 
@@ -293,6 +298,6 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   @throws[IOException]
   private[this] def writeObject(out: java.io.ObjectOutputStream) = {
     out.writeObject(ordering)
-    out.writeObject(RedBlackTree.from(tree))
+    out.writeObject(immutable.RedBlackTree.from(tree))
   }
 }
