@@ -166,7 +166,7 @@ Assume the current `starr` version is `2.12.0` (defined in
 ### IDE setup
 
 We suggest using IntelliJ IDEA (see
-[src/intellij/README.md](src/intellij/README.md).
+[src/intellij/README.md](src/intellij/README.md)).
 
 ([Metals](https://scalameta.org/metals/) should also work, but we don't yet have instructions or sample
 configuration for that. A pull request in this area would be
