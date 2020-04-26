@@ -21,9 +21,22 @@ import scala.collection.immutable.NumericRange
 
 object BigInt {
 
+  private val longMinValueAsBigInteger = BigInteger.valueOf(Long.MinValue)
+
   private[this] val minCached = -1024
   private[this] val maxCached = 1024
   private[this] val cache = new Array[BigInt](maxCached - minCached + 1)
+
+  private[this] def getCached(i: Int): BigInt = {
+    val offset = i - minCached
+    var n = cache(offset)
+    if (n eq null) {
+      n = new BigInt(i.toLong)
+      cache(offset) = n
+    }
+    n
+  }
+
   private val minusOne = BigInteger.valueOf(-1)
 
   /** Constructs a `BigInt` whose value is equal to that of the
@@ -33,12 +46,7 @@ object BigInt {
    *  @return  the constructed `BigInt`
    */
   def apply(i: Int): BigInt =
-    if (minCached <= i && i <= maxCached) {
-      val offset = i - minCached
-      var n = cache(offset)
-      if (n eq null) { n = new BigInt(BigInteger.valueOf(i.toLong)); cache(offset) = n }
-      n
-    } else new BigInt(BigInteger.valueOf(i.toLong))
+    if (minCached <= i && i <= maxCached) getCached(i) else new BigInt(i: Long)
 
   /** Constructs a `BigInt` whose value is equal to that of the
    *  specified long value.
@@ -47,8 +55,7 @@ object BigInt {
    *  @return  the constructed `BigInt`
    */
   def apply(l: Long): BigInt =
-    if (minCached <= l && l <= maxCached) apply(l.toInt)
-    else new BigInt(BigInteger.valueOf(l))
+    if (minCached <= l && l <= maxCached) getCached(l.toInt) else new BigInt(l)
 
   /** Translates a byte array containing the two's-complement binary
    *  representation of a BigInt into a BigInt.
@@ -110,14 +117,87 @@ object BigInt {
   /** Implicit conversion from `java.math.BigInteger` to `scala.BigInt`.
    */
   implicit def javaBigInteger2bigInt(x: BigInteger): BigInt = apply(x)
+
+  /** Computes the GCD of the two positive Long arguments, according to the binary GCD algorithm.
+   * Taken from the Spire library. */
+  private def longGcd(_x: Long, _y: Long): Long = {
+    if (_x == 1L || _y == 1L) return 1L
+
+    var x = _x
+    val xz = java.lang.Long.numberOfTrailingZeros(x)
+    x >>= xz
+
+    var y = _y
+    val yz = java.lang.Long.numberOfTrailingZeros(y)
+    y >>= yz
+
+    while (x != y) {
+      if (x > y) {
+        x -= y
+        x >>= java.lang.Long.numberOfTrailingZeros(x)
+      } else {
+        y -= x
+        y >>= java.lang.Long.numberOfTrailingZeros(y)
+      }
+    }
+
+    if (xz < yz) x << xz else x << yz
+  }
+
 }
 
-final class BigInt(val bigInteger: BigInteger)
+/** A type with efficient encoding of arbitrary integers.
+ *
+ * It wraps `java.math.BigInteger`, with optimization for small values that can be encoded in a `Long`.
+ */
+final class BigInt private (private var _bigInteger: BigInteger, private val _long: Long)
   extends ScalaNumber
     with ScalaNumericConversions
     with Serializable
     with Ordered[BigInt]
 {
+  // The class has a special encoding for integer that fit in a Long *and* are not equal to Long.MinValue.
+  //
+  // The Long value Long.MinValue is a tag specifying that the integer is encoded in the BigInteger field.
+  //
+  // There are three possible states for the class fields (_bigInteger, _long)
+  // 1. (null, l) where l != Long.MinValue, encodes the integer "l"
+  // 2. (b, l) where l != Long.MinValue; then b is a BigInteger with value l, encodes "l" == "b"
+  // 3a. (b, Long.MinValue) where b == Long.MinValue, encodes Long.MinValue
+  // 3b. (b, Long.MinValue) where b does not fit in a Long, encodes "b"
+  //
+  // There is only one possible transition 1. -> 2., when the method .bigInteger is called, then the field
+  // _bigInteger caches the result.
+  //
+  // The case 3a. is the only one where the BigInteger could actually fit in a Long, but as its value is used as a
+  // tag, we'll take the slow path instead.
+  //
+  // Additionally, we know that if this.isValidLong is true, then _long is the encoded value.
+
+  /** Public constructor present for compatibility. Use the BigInt.apply companion object method instead. */
+  def this(bi: BigInteger) = this(
+    bi, // even if it is a short BigInteger, we cache the instance
+    if (bi.bitLength <= 63)
+      bi.longValue // if _bigInteger is actually equal to Long.MinValue, no big deal, we'll take the slow path then
+    else
+      Long.MinValue
+  )
+
+  private def this(_long: Long) = this(if (_long == Long.MinValue) BigInt.longMinValueAsBigInteger else null, _long)
+
+  /** Returns whether the integer is encoded in the Long. Returns true for all values fitting in a Long except
+   *  Long.MinValue. */
+  private def longEncoding: Boolean = _long != Long.MinValue
+
+  def bigInteger: BigInteger = {
+    val read = _bigInteger
+    if (read ne null) _bigInteger else {
+      val write = BigInteger.valueOf(_long)
+      _bigInteger = write // reference assignment is atomic; this is multi-thread safe (if possibly wasteful)
+      write
+    }
+  }
+
   /** Returns the hash code for this BigInt. */
   override def hashCode(): Int =
     if (isValidLong) unifiedPrimitiveHashcode
@@ -132,11 +212,13 @@ final class BigInt(val bigInteger: BigInteger)
     case that: Float      => isValidFloat && toFloat == that
     case x                => isValidLong && unifiedPrimitiveEquals(x)
   }
-  override def isValidByte: Boolean = this >= Byte.MinValue && this <= Byte.MaxValue
-  override def isValidShort: Boolean = this >= Short.MinValue && this <= Short.MaxValue
-  override def isValidChar: Boolean = this >= Char.MinValue && this <= Char.MaxValue
-  override def isValidInt: Boolean = this >= Int.MinValue && this <= Int.MaxValue
-           def isValidLong: Boolean = this >= Long.MinValue && this <= Long.MaxValue
+
+  override def isValidByte: Boolean = isValidLong && _long >= Byte.MinValue && _long <= Byte.MaxValue
+  override def isValidShort: Boolean = isValidLong && _long >= Short.MinValue && _long <= Short.MaxValue
+  override def isValidChar: Boolean = isValidLong && _long >= Char.MinValue && _long <= Char.MaxValue
+  override def isValidInt: Boolean = isValidLong && _long >= Int.MinValue && _long <= Int.MaxValue
+           def isValidLong: Boolean = longEncoding || _bigInteger.bitLength() <= 63 // rhs of || tests == Long.MinValue
+
   /** Returns `true` iff this can be represented exactly by [[scala.Float]]; otherwise returns `false`.
     */
   def isValidFloat: Boolean = {
@@ -178,80 +260,173 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Compares this BigInt with the specified BigInt for equality.
    */
-  def equals (that: BigInt): Boolean = compare(that) == 0
+  def equals (that: BigInt): Boolean =
+    if (this.longEncoding)
+      that.longEncoding && (this._long == that._long)
+    else
+      !that.longEncoding && (this._bigInteger == that._bigInteger)
 
   /** Compares this BigInt with the specified BigInt
    */
-  def compare (that: BigInt): Int = this.bigInteger.compareTo(that.bigInteger)
+  def compare (that: BigInt): Int =
+    if (this.longEncoding) {
+      if (that.longEncoding) java.lang.Long.compare(this._long, that._long) else -that._bigInteger.signum()
+    } else {
+      if (that.longEncoding) _bigInteger.signum() else this._bigInteger.compareTo(that._bigInteger)
+    }
 
   /** Addition of BigInts
    */
-  def +  (that: BigInt): BigInt = new BigInt(this.bigInteger.add(that.bigInteger))
+  def +  (that: BigInt): BigInt = {
+    if (this.longEncoding && that.longEncoding) { // fast path
+      val x = this._long
+      val y = that._long
+      val z = x + y
+      if ((~(x ^ y) & (x ^ z)) >= 0L) return BigInt(z)
+    }
+    new BigInt(this.bigInteger.add(that.bigInteger))
+  }
 
   /** Subtraction of BigInts
    */
-  def -  (that: BigInt): BigInt = new BigInt(this.bigInteger.subtract(that.bigInteger))
+  def -  (that: BigInt): BigInt = {
+    if (this.longEncoding && that.longEncoding) { // fast path
+      val x = this._long
+      val y = that._long
+      val z = x - y
+      if (((x ^ y) & (x ^ z)) >= 0L) return BigInt(z)
+    }
+    new BigInt(this.bigInteger.subtract(that.bigInteger))
+  }
 
   /** Multiplication of BigInts
    */
-  def *  (that: BigInt): BigInt = new BigInt(this.bigInteger.multiply(that.bigInteger))
+  def *  (that: BigInt): BigInt = {
+    if (this.longEncoding && that.longEncoding) { // fast path
+      val x = this._long
+      val y = that._long
+      val z = x * y
+      if (x == 0 || (y == z / x && !(x == -1 && y == Long.MinValue))) return BigInt(z)
+    }
+    new BigInt(this.bigInteger.multiply(that.bigInteger))
+  }
 
   /** Division of BigInts
    */
-  def /  (that: BigInt): BigInt = new BigInt(this.bigInteger.divide(that.bigInteger))
+  def /  (that: BigInt): BigInt = {
+    if (this.longEncoding && that.longEncoding) { // fast path
+      if (this._long != Long.MinValue || that._long != -1) return BigInt(this._long / that._long)
+    }
+    new BigInt(this.bigInteger.divide(that.bigInteger))
+  }
 
   /** Remainder of BigInts
    */
-  def %  (that: BigInt): BigInt = new BigInt(this.bigInteger.remainder(that.bigInteger))
+  def %  (that: BigInt): BigInt = {
+    if (this.longEncoding && that.longEncoding) { // fast path
+      if (this._long != Long.MinValue || that._long != -1) return BigInt(this._long % that._long)
+    }
+    new BigInt(this.bigInteger.remainder(that.bigInteger))
+  }
 
   /** Returns a pair of two BigInts containing (this / that) and (this % that).
    */
   def /% (that: BigInt): (BigInt, BigInt) = {
+    if (this.longEncoding && that.longEncoding) {
+      val x = this._long
+      val y = that._long
+      if (x != Long.MinValue || y != -1) return (BigInt(x / y), BigInt(x % y))
+    }
     val dr = this.bigInteger.divideAndRemainder(that.bigInteger)
     (new BigInt(dr(0)), new BigInt(dr(1)))
   }
 
   /** Leftshift of BigInt
    */
-  def << (n: Int): BigInt = new BigInt(this.bigInteger.shiftLeft(n))
+  def << (n: Int): BigInt =
+    if (longEncoding && n <= 0) this >> (-n) else new BigInt(this.bigInteger.shiftLeft(n))
 
   /** (Signed) rightshift of BigInt
    */
-  def >> (n: Int): BigInt = new BigInt(this.bigInteger.shiftRight(n))
-
+  def >> (n: Int): BigInt =
+    if (longEncoding && n >= 0) {
+      if (n < 64) BigInt(_long >> n)
+      else if (_long < 0) BigInt(-1)
+      else BigInt(0) // for _long >= 0
+    } else new BigInt(this.bigInteger.shiftRight(n))
+  
   /** Bitwise and of BigInts
    */
-  def &  (that: BigInt): BigInt = new BigInt(this.bigInteger.and(that.bigInteger))
+  def &  (that: BigInt): BigInt =
+    if (this.longEncoding && that.longEncoding)
+      BigInt(this._long & that._long)
+    else new BigInt(this.bigInteger.and(that.bigInteger))
 
   /** Bitwise or of BigInts
    */
-  def |  (that: BigInt): BigInt = new BigInt(this.bigInteger.or (that.bigInteger))
+  def |  (that: BigInt): BigInt =
+    if (this.longEncoding && that.longEncoding)
+      BigInt(this._long | that._long)
+    else new BigInt(this.bigInteger.or (that.bigInteger))
 
   /** Bitwise exclusive-or of BigInts
    */
-  def ^  (that: BigInt): BigInt = new BigInt(this.bigInteger.xor(that.bigInteger))
+  def ^  (that: BigInt): BigInt =
+    if (this.longEncoding && that.longEncoding)
+      BigInt(this._long ^ that._long)
+    else new BigInt(this.bigInteger.xor(that.bigInteger))
 
   /** Bitwise and-not of BigInts. Returns a BigInt whose value is (this & ~that).
    */
-  def &~ (that: BigInt): BigInt = new BigInt(this.bigInteger.andNot(that.bigInteger))
+  def &~ (that: BigInt): BigInt =
+    if (this.longEncoding && that.longEncoding)
+      BigInt(this._long & ~that._long)
+    else new BigInt(this.bigInteger.andNot(that.bigInteger))
 
   /** Returns the greatest common divisor of abs(this) and abs(that)
    */
-  def gcd (that: BigInt): BigInt = new BigInt(this.bigInteger.gcd(that.bigInteger))
+  def gcd (that: BigInt): BigInt =
+    if (this.longEncoding) {
+      if (this._long == 0) return that.abs
+      // if (this._long == Long.MinValue) return (-this) gcd that
+      // this != 0 && this != Long.MinValue
+      if (that.longEncoding) {
+        if (that._long == 0) return this.abs
+        // if (that._long == Long.MinValue) return this gcd (-that)
+        BigInt(BigInt.longGcd(this._long.abs, that._long.abs))
+      } else that gcd this // force the BigInteger on the left
+    } else {
+      // this is not a valid long
+      if (that.longEncoding) {
+        if (that._long == 0) return this.abs
+        // if (that._long == Long.MinValue) return this gcd (-that)
+        val red = (this._bigInteger mod BigInteger.valueOf(that._long.abs)).longValue()
+        if (red == 0) return that.abs
+        BigInt(BigInt.longGcd(that._long.abs, red))
+      } else
+        new BigInt(this.bigInteger.gcd(that.bigInteger))
+    }
+
 
   /** Returns a BigInt whose value is (this mod that).
    *  This method differs from `%` in that it always returns a non-negative BigInt.
    *  @param that A positive number
    */
-  def mod (that: BigInt): BigInt = new BigInt(this.bigInteger.mod(that.bigInteger))
+  def mod (that: BigInt): BigInt =
+    if (this.longEncoding && that.longEncoding) {
+      val res = this._long % that._long
+      if (res >= 0) BigInt(res) else BigInt(res + that._long)
+    } else new BigInt(this.bigInteger.mod(that.bigInteger))
 
   /** Returns the minimum of this and that
    */
-  def min (that: BigInt): BigInt = new BigInt(this.bigInteger.min(that.bigInteger))
+  def min (that: BigInt): BigInt =
+    if (this <= that) this else that
 
   /** Returns the maximum of this and that
    */
-  def max (that: BigInt): BigInt = new BigInt(this.bigInteger.max(that.bigInteger))
+  def max (that: BigInt): BigInt =
+    if (this >= that) this else that
 
   /** Returns a BigInt whose value is (<tt>this</tt> raised to the power of <tt>exp</tt>).
    */
@@ -269,18 +444,19 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Returns a BigInt whose value is the negation of this BigInt
    */
-  def unary_- : BigInt   = new BigInt(this.bigInteger.negate())
+  def unary_- : BigInt   =
+    if (longEncoding) BigInt(-_long) else new BigInt(this.bigInteger.negate())
 
   /** Returns the absolute value of this BigInt
    */
-  def abs: BigInt = new BigInt(this.bigInteger.abs())
+  def abs: BigInt = if (signum < 0) -this else this
 
   /** Returns the sign of this BigInt;
    *   -1 if it is less than 0,
    *   +1 if it is greater than 0,
    *   0  if it is equal to 0.
    */
-  def signum: Int = this.bigInteger.signum()
+  def signum: Int = if (longEncoding) java.lang.Long.signum(_long) else _bigInteger.signum()
 
   /** Returns the sign of this BigInt;
    *   -1 if it is less than 0,
@@ -291,38 +467,61 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Returns the bitwise complement of this BigInt
    */
-  def unary_~ : BigInt = new BigInt(this.bigInteger.not())
+  def unary_~ : BigInt =
+    // it is equal to -(this + 1)
+    if (longEncoding && _long != Long.MaxValue) BigInt(-(_long + 1)) else new BigInt(this.bigInteger.not())
 
   /** Returns true if and only if the designated bit is set.
    */
-  def testBit (n: Int): Boolean = this.bigInteger.testBit(n)
+  def testBit (n: Int): Boolean =
+    if (longEncoding) {
+      if (n <= 63)
+        (_long & (1L << n)) != 0
+      else
+        _long < 0 // give the sign bit
+    } else _bigInteger.testBit(n)
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit set.
    */
-  def setBit  (n: Int): BigInt  = new BigInt(this.bigInteger.setBit(n))
+  def setBit  (n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
+    if (longEncoding && n <= 62) BigInt(_long | (1L << n)) else new BigInt(this.bigInteger.setBit(n))
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit cleared.
    */
-  def clearBit(n: Int): BigInt  = new BigInt(this.bigInteger.clearBit(n))
+  def clearBit(n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
+    if (longEncoding && n <= 62) BigInt(_long & ~(1L << n)) else new BigInt(this.bigInteger.clearBit(n))
 
   /** Returns a BigInt whose value is equivalent to this BigInt with the designated bit flipped.
    */
-  def flipBit (n: Int): BigInt  = new BigInt(this.bigInteger.flipBit(n))
+  def flipBit (n: Int): BigInt  = // note that we do not operate on the Long sign bit #63
+    if (longEncoding && n <= 62) BigInt(_long ^ (1L << n)) else new BigInt(this.bigInteger.flipBit(n))
 
   /** Returns the index of the rightmost (lowest-order) one bit in this BigInt
    * (the number of zero bits to the right of the rightmost one bit).
    */
-  def lowestSetBit: Int         = this.bigInteger.getLowestSetBit()
+  def lowestSetBit: Int =
+    if (longEncoding) {
+      if (_long == 0) -1 else java.lang.Long.numberOfTrailingZeros(_long)
+    } else this.bigInteger.getLowestSetBit()
 
   /** Returns the number of bits in the minimal two's-complement representation of this BigInt,
    *  excluding a sign bit.
    */
-  def bitLength: Int            = this.bigInteger.bitLength()
+  def bitLength: Int =
+  // bitLength is defined as ceil(log2(this < 0 ? -this : this + 1)))
+  // where ceil(log2(x)) = 64 - numberOfLeadingZeros(x - 1)
+    if (longEncoding) {
+      if (_long < 0) 64 - java.lang.Long.numberOfLeadingZeros(-(_long + 1)) // takes care of Long.MinValue
+      else 64 - java.lang.Long.numberOfLeadingZeros(_long)
+    } else _bigInteger.bitLength()
 
   /** Returns the number of bits in the two's complement representation of this BigInt
    *  that differ from its sign bit.
    */
-  def bitCount: Int             = this.bigInteger.bitCount()
+  def bitCount: Int =
+    if (longEncoding) {
+      if (_long < 0) java.lang.Long.bitCount(-(_long + 1)) else java.lang.Long.bitCount(_long)
+    } else this.bigInteger.bitCount()
 
   /** Returns true if this BigInt is probably prime, false if it's definitely composite.
    *  @param certainty  a measure of the uncertainty that the caller is willing to tolerate:
@@ -360,7 +559,7 @@ final class BigInt(val bigInteger: BigInteger)
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
    */
-  def intValue: Int = this.bigInteger.intValue
+  def intValue: Int = if (longEncoding) _long.intValue else this.bigInteger.intValue
 
   /** Converts this BigInt to a <tt>long</tt>.
    *  If the BigInt is too big to fit in a long, only the low-order 64 bits
@@ -368,7 +567,7 @@ final class BigInt(val bigInteger: BigInteger)
    *  overall magnitude of the BigInt value as well as return a result with
    *  the opposite sign.
    */
-  def longValue: Long = this.bigInteger.longValue
+  def longValue: Long = if (longEncoding) _long else _bigInteger.longValue
 
   /** Converts this `BigInt` to a `float`.
    *  If this `BigInt` has too great a magnitude to represent as a float,
@@ -382,7 +581,9 @@ final class BigInt(val bigInteger: BigInteger)
    *  it will be converted to `Double.NEGATIVE_INFINITY` or
    *  `Double.POSITIVE_INFINITY` as appropriate.
    */
-  def doubleValue: Double = this.bigInteger.doubleValue
+  def doubleValue: Double =
+    if (isValidLong && (-(1L << 53) <= _long && _long <= (1L << 53))) _long.toDouble
+    else this.bigInteger.doubleValue
 
   /** Create a `NumericRange[BigInt]` in range `[start;end)`
    *  with the specified step, where start is the target BigInt.
@@ -399,7 +600,7 @@ final class BigInt(val bigInteger: BigInteger)
 
   /** Returns the decimal String representation of this BigInt.
    */
-  override def toString(): String = this.bigInteger.toString()
+  override def toString(): String = if (longEncoding) _long.toString() else _bigInteger.toString()
 
   /** Returns the String representation in the specified radix of this BigInt.
    */

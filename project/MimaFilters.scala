@@ -25,6 +25,9 @@ object MimaFilters extends AutoPlugin {
     // don't publish the artifact built with JDK 11 anyways
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.convert.JavaCollectionWrappers#IteratorWrapper.asIterator"),
 
+    // for the method this(Long)Unit in class scala.math.BigInt does not have a correspondent in other version
+    // which is nevertheless private
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.math.BigInt.this"),
   )
 
   override val buildSettings = Seq(
