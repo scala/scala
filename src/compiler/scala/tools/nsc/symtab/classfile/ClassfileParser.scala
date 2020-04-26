@@ -144,23 +144,24 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     this.file = file
     pushBusy(clazz) {
       reader.using { reader =>
-        this.clazz = clazz
+        this.in           = reader.reset(file)
+        this.clazz        = clazz
         this.staticModule = module
-        this.isScala = false
+        this.isScala      = false
 
-        val fileContents = file.unsafeToByteArray
-        this.in = new AbstractFileReader(fileContents)
         val magic = in.getInt(in.bp)
         if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
           currentClass = clazz.javaClassName
           isScala = true
-          unpickler.unpickle(fileContents, 0, clazz, staticModule, file.name)
+          unpickler.unpickle(in.buf.take(file.sizeOption.get), 0, clazz, staticModule, file.name)
         } else {
           parseHeader()
           this.pool = new ConstantPool
           parseClass()
+          pool = null
         }
       }
+      in = null
     }
   }
 
