@@ -68,6 +68,9 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   def get(key: A): Option[B] =
     get0(key, computeHash(key), 0)
 
+  override def getOrElse[V1 >: B](key: A, default: => V1): V1 =
+    getOrElse0(key, computeHash(key), 0, default)
+
   override final def contains(key: A): Boolean =
     contains0(key, computeHash(key), 0)
 
@@ -111,6 +114,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   import HashMap.{Merger, MergeFunction, liftMerger}
 
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
+  private[collection] def getOrElse0[V1 >: B](key: A, hash: Int, level: Int, f: => V1): V1 = f
   protected def contains0(key: A, hash: Int, level: Int): Boolean = false
   private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
     new HashMap.HashMap1(key, hash, value, kv)
@@ -322,6 +326,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash && key == this.key) Some(value) else None
+    override private[collection] def getOrElse0[V1 >: B](key: A, hash: Int, level: Int, f: => V1): V1 =
+      if (hash == this.hash && key == this.key) value else f
 
     override protected def contains0(key: A, hash: Int, level: Int): Boolean =
       hash == this.hash && key == this.key
@@ -408,6 +414,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override def get0(key: A, hash: Int, level: Int): Option[B] =
       if (hash == this.hash) kvs.get(key) else None
+    override private[collection] def getOrElse0[V1 >: B](key: A, hash: Int, level: Int, f: => V1): V1 =
+      if (hash == this.hash) kvs.getOrElse(key, f) else f
 
     override protected def contains0(key: A, hash: Int, level: Int): Boolean =
       hash == this.hash && kvs.contains(key)
@@ -528,7 +536,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     @inline override final def size = size0
 
     override def get0(key: A, hash: Int, level: Int): Option[B] = {
-      // Note: this code is duplicated with `contains0`
+      // Note: this code is duplicated in contains0/getOrElse0/get0
       val index = (hash >>> level) & 0x1f
       if (bitmap == - 1) {
         elems(index).get0(key, hash, level + 5)
@@ -542,9 +550,24 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         }
       }
     }
+    override private[collection] def getOrElse0[V1 >: B](key: A, hash: Int, level: Int, f: => V1): V1 = {
+      // Note: this code is duplicated in contains0/getOrElse0/get0
+      val index = (hash >>> level) & 0x1f
+      if (bitmap == - 1) {
+        elems(index).getOrElse0(key, hash, level + 5, f)
+      } else {
+        val mask = (1 << index)
+        if ((bitmap & mask) != 0) {
+          val offset = Integer.bitCount(bitmap & (mask - 1))
+          elems(offset).getOrElse0(key, hash, level + 5, f)
+        } else {
+          f
+        }
+      }
+    }
 
     override protected def contains0(key: A, hash: Int, level: Int): Boolean = {
-      // Note: this code is duplicated from `get0`
+      // Note: this code is duplicated in contains0/getOrElse0/get0
       val index = (hash >>> level) & 0x1f
       if (bitmap == - 1) {
         elems(index).contains0(key, hash, level + 5)
