@@ -31,6 +31,7 @@ import ClassPath.join
 import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
+import scala.util.{Failure, Success, Try, Using}
 import scala.util.control.ControlThrowable
 
 /** pos/t1234.scala or pos/t1234 if dir */
@@ -197,25 +198,29 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  error out to output file.
    */
   protected def runCommand(args: Seq[String], outFile: File): Boolean = {
-    //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
-    val pl = ProcessLogger(outFile)
     val nonzero = 17     // rounding down from 17.3
-    def run: Int = {
-      val p = Process(args) run pl
-      try p.exitValue
-      catch {
-        case e: InterruptedException =>
-          suiteRunner.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
-          p.destroy
-          nonzero
-        case t: Throwable =>
-          suiteRunner.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
-          p.destroy
-          throw t
+    //(Process(args) #> outFile !) == 0 or (Process(args) ! pl) == 0
+    Using.resource(ProcessLogger(outFile)) { pl =>
+      def run: Int = {
+        val p =
+          Try(Process(args).run(pl)) match {
+            case Failure(e) => outFile.appendAll(stackTraceString(e)) ; return -1
+            case Success(v) => v
+          }
+        try p.exitValue
+        catch {
+          case e: InterruptedException =>
+            suiteRunner.verbose(s"Interrupted waiting for command to finish (${args mkString " "})")
+            p.destroy
+            nonzero
+          case t: Throwable =>
+            suiteRunner.verbose(s"Exception waiting for command to finish: $t (${args mkString " "})")
+            p.destroy
+            throw t
+        }
       }
-      finally pl.close()
+      pl.buffer(run) == 0
     }
-    (pl buffer run) == 0
   }
 
   private def execTest(outDir: File, logFile: File): TestState = {
@@ -478,7 +483,6 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     def argsFor(f: File): List[String] = {
       import scala.jdk.OptionConverters._
       import scala.tools.cmd.CommandLineParser.tokenize
-      import scala.util.Using
       val max  = 10
       val tag  = s"$tool:"
       val endc = "*" + "/"    // be forgiving of /* scalac: ... */
