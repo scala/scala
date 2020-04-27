@@ -124,7 +124,7 @@ abstract class BrowsingLoaders extends GlobalSymbolLoaders {
 
   /** Enter top-level symbols from a source file
    */
-  override def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+  override def enterToplevelsFromSource(root: Symbol, name: TermName, src: AbstractFile) {
     try {
       if (root.isEffectiveRoot || !src.name.endsWith(".scala")) // RootClass or EmptyPackageClass
         super.enterToplevelsFromSource(root, name, src)
