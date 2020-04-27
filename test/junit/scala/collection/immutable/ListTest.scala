@@ -119,16 +119,21 @@ class ListTest extends AllocationTest {
     // - List.ReusableCBF
     // - collection.immutable.Seq.ReusableCBF
     // - collection.Seq.ReusableCBF
+    // - collection.immutable.LinearSeq.ReusableCBF
+    // - collection.LinearSeq.ReusableCBF
     // are distinct all generate List instances ( and that other don't behave the same way)
     // If this changes then (at least) the method List#isLikeListReusableCBF should be changed accordingly
 
-    assertNotSame(List.ReusableCBF, collection.immutable.Seq.ReusableCBF)
-    assertNotSame(List.ReusableCBF, collection.Seq.ReusableCBF)
-    assertNotSame(collection.immutable.Seq.ReusableCBF, collection.Seq.ReusableCBF)
+    val allCompatibleCBFs = List[CanBuildFrom[_,_,_]](List.ReusableCBF,
+      LinearSeq.ReusableCBF, collection.LinearSeq.ReusableCBF,
+      Seq.ReusableCBF, collection.Seq.ReusableCBF)
 
-    assertSame(Nil, build(0, List.ReusableCBF))
-    assertSame(Nil, build(0, collection.immutable.Seq.ReusableCBF))
-    assertSame(Nil, build(0, collection.Seq.ReusableCBF))
+    //really only concerned with separate JVM instance
+    assertSame(allCompatibleCBFs.length, allCompatibleCBFs.distinct.length)
+
+    allCompatibleCBFs foreach { cbf =>
+      assertSame(Nil, build(0, cbf))
+    }
 
     def build(size: Int, cbf: CanBuildFrom[_, _, _]) = {
       val builder = cbf.apply().asInstanceOf[mutable.Builder[String, _]]
