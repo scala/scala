@@ -129,9 +129,9 @@ abstract class SymbolLoaders {
   /** Enter class and module with given `name` into scope of `root`
    *  and give them `completer` as type.
    */
-  def enterClassAndModule(root: Symbol, name: String, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
-    val clazz0 = newClass(root, name)
-    val module0 = newModule(root, name)
+  def enterClassAndModule(root: Symbol, name: TermName, getCompleter: (ClassSymbol, ModuleSymbol) => SymbolLoader) {
+    val clazz0 = root.newClass(name.toTypeName)
+    val module0 = root.newModule(name)
     val completer = getCompleter(clazz0, module0)
     // enterClass/Module may return an existing symbol instead of the ones we created above
     // this may happen when there's both sources and binaries on the classpath, but the class
@@ -159,7 +159,7 @@ abstract class SymbolLoaders {
    *  with source completer for given `src` as type.
    *  (overridden in interactive.Global).
    */
-  def enterToplevelsFromSource(root: Symbol, name: String, src: AbstractFile) {
+  def enterToplevelsFromSource(root: Symbol, name: TermName, src: AbstractFile) {
     enterClassAndModule(root, name, (_, _) => new SourcefileLoader(src))
   }
 
@@ -170,8 +170,8 @@ abstract class SymbolLoaders {
    *  Note: We do a name-base comparison here because the method is called before we even
    *  have ReflectPackage defined.
    */
-  def binaryOnly(owner: Symbol, name: String): Boolean =
-    name == "package" &&
+  def binaryOnly(owner: Symbol, name: TermName): Boolean =
+    name == nme.PACKAGE &&
     (owner.fullName == "scala" || owner.fullName == "scala.reflect")
 
   /** Initialize toplevel class and module symbols in `owner` from class path representation `classRep`
@@ -179,16 +179,26 @@ abstract class SymbolLoaders {
   def initializeFromClassPath(owner: Symbol, classRep: ClassRepresentation) {
     ((classRep.binary, classRep.source) : @unchecked) match {
       case (Some(bin), Some(src))
-      if platform.needCompile(bin, src) && !binaryOnly(owner, classRep.name) =>
+      if platform.needCompile(bin, src) && !binaryOnly(owner, nameOf(classRep)) =>
         if (settings.verbose) inform("[symloader] picked up newer source file for " + src.path)
-        enterToplevelsFromSource(owner, classRep.name, src)
+        enterToplevelsFromSource(owner, nameOf(classRep), src)
       case (None, Some(src)) =>
         if (settings.verbose) inform("[symloader] no class, picked up source file for " + src.path)
-        enterToplevelsFromSource(owner, classRep.name, src)
+        enterToplevelsFromSource(owner, nameOf(classRep), src)
       case (Some(bin), _) =>
-        enterClassAndModule(owner, classRep.name, new ClassfileLoader(bin, _, _))
+        enterClassAndModule(owner, nameOf(classRep), new ClassfileLoader(bin, _, _))
     }
   }
+  private def nameOf(classRep: ClassRepresentation): TermName = {
+    while(true) {
+      val len = classRep.nameChars(nameCharBuffer)
+      if (len == -1) nameCharBuffer = new Array[Char](nameCharBuffer.length * 2)
+      else return newTermName(nameCharBuffer, 0, len)
+    }
+    throw new IllegalStateException()
+  }
+  private var nameCharBuffer = new Array[Char](256)
+
 
   /**
    * A lazy type that completes itself by calling parameter doComplete.
