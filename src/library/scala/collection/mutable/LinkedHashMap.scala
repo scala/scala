@@ -71,6 +71,13 @@ class LinkedHashMap[A, B] extends AbstractMap[A, B]
     else Some(e.value)
   }
 
+  override def contains(key: A): Boolean = {
+    if (getClass eq classOf[LinkedHashMap[_, _]])
+      findEntry(key) != null
+    else
+      super.contains(key) // A subclass might override `get`, use the default implementation `contains`.
+  }
+
   override def put(key: A, value: B): Option[B] = {
     val e = findOrAddEntry(key, value)
     if (e eq null) None
