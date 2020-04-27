@@ -27,6 +27,67 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   def empty[A, B](implicit ord: Ordering[A]) = new TreeMap[A, B]()(ord)
   /** $sortedMapCanBuildFromInfo */
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), TreeMap[A, B]] = new SortedMapCanBuildFrom[A, B]
+
+  override def newBuilder[A, B](implicit ord: Ordering[A]): mutable.Builder[(A, B), TreeMap[A, B]] = new TreeMapBuilder
+  private final class TreeMapBuilder[A, B](implicit ordering: Ordering[A]) extends mutable.Builder[(A, B), TreeMap[A, B]] {
+    type Tree = RB.Tree[A, B]
+    private [this] var tree:Tree = null
+    override def +=(elem: (A, B)): this.type = {
+      tree = RB.update(tree, elem._1, elem._2, overwrite = true)
+      this
+    }
+
+    private object adder extends Function2[A, B, Unit] {
+      var accumulator :Tree = null
+      def addTree(aTree:Tree, bTree: Tree): Tree = {
+        // TODO should consider non overlapping trees
+        // just bulk add the non overlapping parts and
+        // only addAll for the intersecting range
+        //
+        // TODO consider adding the smaller map to the larger one with a flag to
+        // say who wins
+
+        accumulator = aTree
+        RB.foreachEntry(bTree, this)
+
+        val result = accumulator
+        // be friendly to GC
+        accumulator = null
+        result
+      }
+      def addForEach(aTree:Tree, hasForEach: HasForeachEntry[A, B]): Tree = {
+        accumulator = aTree
+        hasForEach.foreachEntry(this)
+        val result = accumulator
+        // be friendly to GC
+        accumulator = null
+        result
+      }
+
+      override def apply(key: A, value: B): Unit = {
+        accumulator = RB.update(accumulator, key, value, overwrite = true)
+      }
+    }
+
+    override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
+      xs match {
+        case ts: TreeMap[A, B] if ts.ordering == ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = adder.addTree(tree, ts.tree0)
+        case that: HasForeachEntry[A, B] =>
+          tree = adder.addForEach(tree, that)
+        case _ =>
+          super.++=(xs)
+      }
+      this
+    }
+
+    override def clear(): Unit = {
+      tree = null
+    }
+
+    override def result(): TreeMap[A, B] = new TreeMap(tree)(ordering)
+  }
 }
 
 /** This class implements immutable maps using a tree.
