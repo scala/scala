@@ -3,6 +3,7 @@ import scala.tools.nsc, nsc.doc
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
 import scala.tools.partest.DirectTest
+import scala.tools.partest.nest.StreamCapture
 
 object Test extends DirectTest {
 
@@ -135,12 +136,10 @@ object Test extends DirectTest {
     }
   """.trim
 
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
+  // redirect err to out, for logging
+  override def show(): Unit = StreamCapture.savingSystem {
     System.setErr(System.out)
     compile()
-    System.setErr(prevErr)
   }
   // doc.Settings
   override def newSettings(args: List[String]) = {
