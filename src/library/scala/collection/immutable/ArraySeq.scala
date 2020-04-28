@@ -135,6 +135,34 @@ sealed abstract class ArraySeq[+A]
     else
       ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).slice(from, until)).asInstanceOf[ArraySeq[A]]
 
+  override def foldLeft[B](z: B)(f: (B, A) => B): B = {
+    // For ArraySeqs with sizes of [100, 1000, 10000] this is [1.3, 1.8, 1.8]x as fast
+    // as the same while-loop over this instead of unsafeArray.
+    val array = unsafeArray
+    var b = z
+    var i = 0
+    while (i < array.length) {
+      val a = array(i).asInstanceOf[A]
+      b = f(b, a)
+      i += 1
+    }
+    b
+  }
+
+  override def foldRight[B](z: B)(f: (A, B) => B): B = {
+    // For ArraySeqs with sizes of [100, 1000, 10000] this is [1.6, 1.8, 2.7]x as fast
+    // as the same while-loop over this instead of unsafeArray.
+    val array = unsafeArray
+    var b = z
+    var i = array.length
+    while (i > 0) {
+      i -= 1
+      val a = array(i).asInstanceOf[A]
+      b = f(a, b)
+    }
+    b
+  }
+
   override def tail: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).tail).asInstanceOf[ArraySeq[A]]
 
   override def reverse: ArraySeq[A] = ArraySeq.unsafeWrapArray(new ArrayOps(unsafeArray).reverse).asInstanceOf[ArraySeq[A]]

@@ -80,7 +80,7 @@ class ArraySeqTest {
     assertEquals(ArraySeq.empty[T], array.slice(1, 1))
     assertEquals(ArraySeq.empty[T], array.slice(2, 1))
   }
-  
+
   @Test def checkSearch: Unit = SeqTests.checkSearch(ArraySeq(0 to 1000: _*), 15,  implicitly[Ordering[Int]])
 
   @Test
@@ -94,6 +94,27 @@ class ArraySeqTest {
     val x = Seq[Byte](10)
     val y = Array[Byte](10).toSeq
     assertEquals(x.hashCode(), y.hashCode())
+  }
+
+  @Test
+  def foldInt(): Unit = {
+    val a = ArraySeq(1, 3)
+    assertEquals(a.foldLeft(0)(_ + _), 4)
+    assertEquals(a.foldRight(List.empty[Int])(_ :: _), List(1, 3))
+  }
+
+  @Test
+  def foldString(): Unit = {
+    val a = ArraySeq("1", "3")
+    assertEquals(a.foldLeft("")(_ + _), "13")
+    assertEquals(a.foldRight(List.empty[String])(_ :: _), List("1", "3"))
+  }
+
+  @Test
+  def foldAny(): Unit = {
+    val a = ArraySeq[Any](1, "3")
+    assertEquals(a.foldLeft("")(_ + _), "13")
+    assertEquals(a.foldRight(List.empty[Any])(_ :: _), List(1, "3"))
   }
 
   @Test
