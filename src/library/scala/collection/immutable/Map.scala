@@ -15,7 +15,7 @@ package collection
 package immutable
 
 import generic._
-import scala.collection.immutable.Map.MapBuilderImpl
+import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
 
 /**
@@ -478,7 +478,7 @@ object Map extends ImmutableMapFactory[Map] {
 
   /** Builder for Map.
    */
-  private final class MapBuilderImpl[K, V] extends mutable.ReusableBuilder[(K,V), Map[K, V]] {
+  private final class MapBuilderImpl[K, V] extends mutable.ReusableBuilder[(K,V), Map[K, V]] with mutable.EfficientMapBuilder[K, V] {
 
     private[this] var elems: Map[K, V] = Map.empty[K, V]
     private[this] var switchedToHashMapBuilder: Boolean = false
@@ -502,20 +502,24 @@ object Map extends ImmutableMapFactory[Map] {
       hashMapBuilder ++= elems
     }
 
-    override def +=(elem: (K, V)): MapBuilderImpl.this.type = {
+    private[collection] def addOne(k: K, v: V, kvOrNull: (K, V)): Unit = {
       if (switchedToHashMapBuilder) {
-        hashMapBuilder += elem
+        hashMapBuilder.addOne(k, v, kvOrNull)
       } else if (elems.size < 4) {
-        elems = elems + elem
+        elems = elems.updated(k, v)
       } else {
         // assert(elems.size == 4)
-        elems.get(elem._1) match {
-          case Some(x) if x == elem._2 => ()
+        elems.get(k) match {
+          case Some(x) if x == v => ()
           case _ =>
-          convertToHashMapBuilder()
-          hashMapBuilder += elem
+            convertToHashMapBuilder()
+            hashMapBuilder.addOne(k, v, kvOrNull)
         }
       }
+    }
+
+    override def +=(elem: (K, V)): MapBuilderImpl.this.type = {
+      addOne(elem._1, elem._2, elem)
       this
     }
 

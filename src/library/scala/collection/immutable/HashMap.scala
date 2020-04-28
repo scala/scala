@@ -116,8 +116,8 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   private[collection] def get0(key: A, hash: Int, level: Int): Option[B] = None
   private[collection] def getOrElse0[V1 >: B](key: A, hash: Int, level: Int, f: => V1): V1 = f
   protected def contains0(key: A, hash: Int, level: Int): Boolean = false
-  private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
-    new HashMap.HashMap1(key, hash, value, kv)
+  private[collection] def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kvOrNull: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
+    new HashMap.HashMap1(key, hash, value, kvOrNull)
 
   protected def removed0(key: A, hash: Int, level: Int): HashMap[A, B] = this
 
@@ -331,31 +331,35 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     override protected def contains0(key: A, hash: Int, level: Int): Boolean =
       hash == this.hash && key == this.key
-    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kvOrNull: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash) {
         if (key == this.key) {
           if (merger eq null) {
             if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
-            else new HashMap1(key, hash, value, kv)
+            else new HashMap1(key, hash, value, kvOrNull)
           } else if (
             (key.asInstanceOf[AnyRef] eq this.key.asInstanceOf[AnyRef]) &&
               (value.asInstanceOf[AnyRef] eq this.value.asInstanceOf[AnyRef]) &&
               merger.retainIdentical) {
             this
           } else {
-            val current = this.ensurePair
-            val nkv = merger(current, if (kv != null) kv else (key, value))
-            if ((current eq nkv) || (
-              (this.key.asInstanceOf[AnyRef] eq nkv._1.asInstanceOf[AnyRef]) &&
-                (this.value.asInstanceOf[AnyRef] eq nkv._2.asInstanceOf[AnyRef]))) this
-            else new HashMap1(nkv._1, hash, nkv._2, nkv)
+            if (merger eq defaultMerger) {
+              this
+            } else {
+              val current = this.ensurePair
+              val nkv = merger(current, if (kvOrNull ne null) kvOrNull else (key, value))
+              if ((current eq nkv) || (
+                (this.key.asInstanceOf[AnyRef] eq nkv._1.asInstanceOf[AnyRef]) &&
+                  (this.value.asInstanceOf[AnyRef] eq nkv._2.asInstanceOf[AnyRef]))) this
+              else new HashMap1(nkv._1, hash, nkv._2, nkv)
+            }
           }
         } else
         // 32-bit hash collision (rare, but not impossible)
           new HashMapCollision1(hash, ListMap.empty.updated(this.key, this.value).updated(key, value))
       } else {
         // they have different hashes, but may collide at this level - find a level at which they don't
-        val that = new HashMap1[A, B1](key, hash, value, kv)
+        val that = new HashMap1[A, B1](key, hash, value, kvOrNull)
         makeHashTrieMap[A, B1](this.hash, this, hash, that, level, 2)
       }
 
@@ -420,12 +424,15 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override protected def contains0(key: A, hash: Int, level: Int): Boolean =
       hash == this.hash && kvs.contains(key)
 
-    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kvOrNull: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] =
       if (hash == this.hash) {
         if ((merger eq null) || !kvs.contains(key)) new HashMapCollision1(hash, kvs.updated(key, value))
-        else new HashMapCollision1(hash, kvs + merger((key, kvs(key)), kv))
+        else {
+          val kv = if (kvOrNull eq null) (key, value) else kvOrNull
+          new HashMapCollision1(hash, kvs + merger((key, kvs(key)), kv))
+        }
       } else {
-        val that = new HashMap1(key, hash, value, kv)
+        val that = new HashMap1(key, hash, value, kvOrNull)
         makeHashTrieMap(this.hash, this, hash, that, level, size + 1)
       }
 
@@ -582,13 +589,13 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
     }
 
-    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kv: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] = {
+    private[collection] override def updated0[B1 >: B](key: A, hash: Int, level: Int, value: B1, kvOrNull: (A, B1), merger: Merger[A, B1]): HashMap[A, B1] = {
       val index = (hash >>> level) & 0x1f
       val mask = (1 << index)
       val offset = Integer.bitCount(bitmap & (mask - 1))
       if ((bitmap & mask) != 0) {
         val sub = elems(offset)
-        val subNew = sub.updated0(key, hash, level + 5, value, kv, merger)
+        val subNew = sub.updated0(key, hash, level + 5, value, kvOrNull, merger)
         if(subNew eq sub) this else {
           val elemsNew = elems.clone().asInstanceOf[Array[HashMap[A, B1]]]
           elemsNew(offset) = subNew
@@ -597,7 +604,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       } else {
         val elemsNew = new Array[HashMap[A,B1]](elems.length + 1)
         System.arraycopy(elems, 0, elemsNew, 0, offset)
-        elemsNew(offset) = new HashMap1(key, hash, value, kv)
+        elemsNew(offset) = new HashMap1(key, hash, value, kvOrNull)
         System.arraycopy(elems, offset, elemsNew, offset + 1, elems.length - offset)
         new HashTrieMap(bitmap | mask, elemsNew, size + 1)
       }
@@ -1035,7 +1042,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
   /** Builder for HashMap.
    */
-  private[collection] final class HashMapBuilder[A, B] extends mutable.ReusableBuilder[(A, B), HashMap[A, B]] {
+  private[collection] final class HashMapBuilder[A, B] extends mutable.ReusableBuilder[(A, B), HashMap[A, B]] with mutable.EfficientMapBuilder[A, B] {
     import java.util
 
     /* Nodes in the tree are either regular HashMap1, HashTrieMap, HashMapCollision1, or a mutable HashTrieMap
@@ -1146,6 +1153,11 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       this
     }
 
+    private[collection] def addOne(a: A, b: B, abOrNull: (A, B)): Unit = {
+      val hash = computeHash(a)
+      rootNode = addOne(rootNode, a, b, abOrNull, hash, 0)
+    }
+
     override def ++=(xs: TraversableOnce[(A, B)]): this.type = xs match {
       case hm: HashMap[A, B] =>
         if (rootNode eq EmptyHashMap) {
@@ -1198,33 +1210,35 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       }
       new HashTrieMap[A, B](-1, elems, -1)
     }
-
     private def addOne(toNode: HashMap[A, B], kv: (A, B), improvedHash: Int, level: Int): HashMap[A, B] = {
+      addOne(toNode, kv._1, kv._2, kv, improvedHash, level)
+    }
+    private def addOne(toNode: HashMap[A, B], k: A, v: B, kvOrNull: (A, B), improvedHash: Int, level: Int): HashMap[A, B] = {
       toNode match {
         case leaf: HashMap1[A, B] =>
           if (leaf.hash == improvedHash)
-            leaf.updated0(kv._1, improvedHash, level, kv._2, kv, null)
-          else makeMutableTrie(leaf, new HashMap1(kv._1, improvedHash, kv._2, kv), level)
+            leaf.updated0(k, improvedHash, level, v, kvOrNull, null)
+          else makeMutableTrie(leaf, new HashMap1(k, improvedHash, v, kvOrNull), level)
         case leaf: HashMapCollision1[A, B] =>
           if (leaf.hash == improvedHash)
-            leaf.updated0(kv._1, improvedHash, level, kv._2, kv, null)
-          else makeMutableTrie(leaf, new HashMap1(kv._1, improvedHash, kv._2, kv), level)
+            leaf.updated0(k, improvedHash, level, v, kvOrNull, null)
+          else makeMutableTrie(leaf, new HashMap1(k, improvedHash, v, kvOrNull), level)
 
         case trie: HashTrieMap[A, B] if isMutable((trie)) =>
           val arrayIndex = (improvedHash >>> level) & 0x1f
           val old = trie.elems(arrayIndex)
-          trie.elems(arrayIndex) = if (old eq null) new HashMap1(kv._1, improvedHash, kv._2, kv)
-          else addOne(old, kv, improvedHash, level + 5)
+          trie.elems(arrayIndex) = if (old eq null) new HashMap1(k, improvedHash, v, kvOrNull)
+          else addOne(old, k, v, kvOrNull, improvedHash, level + 5)
           trie
         case trie: HashTrieMap[A, B] =>
           val rawIndex = (improvedHash >>> level) & 0x1f
           val arrayIndex = compressedIndex(trie, rawIndex)
           if (arrayIndex == -1)
-            addOne(makeMutable(trie), kv, improvedHash, level)
+            addOne(makeMutable(trie), k, v, kvOrNull, improvedHash, level)
           else {
             val old = trie.elems(arrayIndex)
-            val merged = if (old eq null) new HashMap1(kv._1, improvedHash, kv._2, kv)
-            else addOne(old, kv, improvedHash, level + 5)
+            val merged = if (old eq null) new HashMap1(k, improvedHash, v, kvOrNull)
+            else addOne(old, k, v, kvOrNull, improvedHash, level + 5)
 
             if (merged eq old) trie
             else {
@@ -1233,7 +1247,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
               newMutableTrie
             }
           }
-        case empty if empty eq EmptyHashMap => toNode.updated0(kv._1, improvedHash, level, kv._2, kv, null)
+        case empty if empty eq EmptyHashMap => toNode.updated0(k, improvedHash, level, v, kvOrNull, null)
       }
     }
     private def addHashMap(toNode: HashMap[A, B], toBeAdded: HashMap[A, B], level: Int): HashMap[A, B] = {

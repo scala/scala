@@ -464,7 +464,7 @@ trait TraversableLike[+A, +Repr] extends Any
     val it = m.entriesIterator
     while (it.hasNext) {
       val entry = it.next()
-      b += ((entry.key, entry.value.result()))
+      b.asInstanceOf[mutable.EfficientMapBuilder[K, Repr]].addOne(entry.key, entry.value.result(), null)
     }
 
     b.result()

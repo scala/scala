@@ -440,6 +440,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.getOrElse0"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.EfficientMapBuilder")
   )
 }
 
