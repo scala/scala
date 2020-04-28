@@ -41,7 +41,7 @@ abstract class DirectTest {
   def testPath   = SFile(sys.props("partest.test-path"))
   def testOutput = Directory(sys.props("partest.output"))
 
-  // override to add additional settings with strings
+  // override to add additional settings besides -d testOutput.path
   def extraSettings: String = ""
   // a default Settings object using only extraSettings
   def settings: Settings = newSettings(CommandLineParser.tokenize(extraSettings))
@@ -50,7 +50,8 @@ abstract class DirectTest {
     val s = new Settings
     val allArgs = args ++ CommandLineParser.tokenize(debugSettings)
     log("newSettings: allArgs = " + allArgs)
-    s.processArguments(allArgs, true)
+    val (success, residual) = s.processArguments(allArgs, processAll = false)
+    assert(success && residual.isEmpty, s"Bad settings [${args.mkString(",")}], residual [${residual.mkString(",")}]")
     s
   }
   // new compiler using given ad hoc args, -d and extraSettings
