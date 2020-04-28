@@ -4,7 +4,7 @@ class X$u0022
 
 scala> val m = Map(("": Any) -> `X"`("\""), ('s: Any) -> `X"`("\""))
 warning: 1 deprecation (since 2.13.0); for details, enable `:setting -deprecation' or `:replay -deprecation'
-val m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), 's -> X"("))
+val m: scala.collection.immutable.Map[Any,X"] = Map("" -> X"("), Symbol(s) -> X"("))
 
 scala> m("")
 val res0: X" = X"(")

@@ -20,7 +20,7 @@ object Test extends App {
   }
 
   val replStr = scala.runtime.ScalaRunTime.replStringOf(lb1, 100)
-  if (replStr == "ListBuffer('a, 'b, 'c, 'd, 'e)\n")
+  if (replStr == "ListBuffer(Symbol(a), Symbol(b), Symbol(c), Symbol(d), Symbol(e))\n")
     println("replStringOf OK")
   else
     println("replStringOf FAILED: " + replStr)

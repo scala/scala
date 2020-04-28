@@ -164,7 +164,7 @@ object Test {
     }
     assert(nested.sign == Symbol("sign"))
     assert(nested.insignia == Symbol("insignia"))
-    assert((Symbol("insignia")).toString == "'insignia")
+    assert((Symbol("insignia")).toString == "Symbol(insignia)")
   }
 
   def testInheritance: Unit = {
@@ -187,7 +187,7 @@ object Test {
     assert(nested.objsymbol == Symbol("symobj"))
     assert(nested.subsymbol == Symbol("symsub"))
     assert(nested.basesymbol == Symbol("symbase"))
-    assert((Symbol("symbase")).toString == "'symbase")
+    assert((Symbol("symbase")).toString == "Symbol(symbase)")
   }
 
   def testTraits: Unit = {
@@ -198,7 +198,7 @@ object Test {
     assert(fromTrait.traitsymbol == Symbol("traitSymbol"))
     assert(fromTrait.ind == Symbol("indication"))
     assert(fromTrait.trace == Symbol("trace"))
-    assert((Symbol("trace")).toString == "'trace")
+    assert((Symbol("trace")).toString == "Symbol(trace)")
 
     trait Compl {
       val s1 = Symbol("s1")
@@ -237,7 +237,7 @@ object Test {
     assert(Local.s2 == Symbol("s2"))
     assert(Local.trace == Symbol("trace"))
     assert(Local.ind == Symbol("indication"))
-    assert((Symbol("s8")).toString == "'s8")
+    assert((Symbol("s8")).toString == "Symbol(s8)")
   }
 
   def testLazyTraits: Unit = {
@@ -248,7 +248,7 @@ object Test {
     l1.v1
     l2.v2
     l3.v3
-    assert((l1.s1).toString == "'lazySymbol1")
+    assert((l1.s1).toString == "Symbol(lazySymbol1)")
     assert(l2.s2 == Symbol("lazySymbol" + 2))
     assert(l3.s3 == Symbol("lazySymbol3"))
   }
@@ -256,7 +256,7 @@ object Test {
   def testLazyObjects: Unit = {
     assert(SingletonOfLazyness.lazysym == Symbol("lazySymbol"))
     assert(SingletonOfLazyness.another == Symbol("ano" + "ther"))
-    assert((SingletonOfLazyness.lastone).toString == "'lastone")
+    assert((SingletonOfLazyness.lastone).toString == "Symbol(lastone)")
 
     object nested {
       lazy val sym1 = Symbol("snested1")
