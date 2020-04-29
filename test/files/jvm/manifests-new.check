@@ -4,13 +4,13 @@ x=true, t=TypeTag[Boolean], k=TypeRef, s=class Boolean
 x=a, t=TypeTag[Char], k=TypeRef, s=class Char
 x=1, t=TypeTag[Int], k=TypeRef, s=class Int
 x=abc, t=TypeTag[String], k=TypeRef, s=class String
-x='abc, t=TypeTag[Symbol], k=TypeRef, s=class Symbol
+x=Symbol(abc), t=TypeTag[Symbol], k=TypeRef, s=class Symbol
 
 x=List(()), t=TypeTag[List[Unit]], k=TypeRef, s=class List
 x=List(true), t=TypeTag[List[Boolean]], k=TypeRef, s=class List
 x=List(1), t=TypeTag[List[Int]], k=TypeRef, s=class List
 x=List(abc), t=TypeTag[List[String]], k=TypeRef, s=class List
-x=List('abc), t=TypeTag[List[Symbol]], k=TypeRef, s=class List
+x=List(Symbol(abc)), t=TypeTag[List[Symbol]], k=TypeRef, s=class List
 
 x=[Z, t=TypeTag[Array[Boolean]], k=TypeRef, s=class Array
 x=[C, t=TypeTag[Array[Char]], k=TypeRef, s=class Array
@@ -22,7 +22,7 @@ x=((),()), t=TypeTag[(Unit, Unit)], k=TypeRef, s=class Tuple2
 x=(true,false), t=TypeTag[(Boolean, Boolean)], k=TypeRef, s=class Tuple2
 x=(1,2), t=TypeTag[(Int, Int)], k=TypeRef, s=class Tuple2
 x=(abc,xyz), t=TypeTag[(String, String)], k=TypeRef, s=class Tuple2
-x=('abc,'xyz), t=TypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
+x=(Symbol(abc),Symbol(xyz)), t=TypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
 
 x=Test$, t=TypeTag[Test.type], k=SingleType, s=object Test
 x=scala.collection.immutable.List$, t=TypeTag[scala.collection.immutable.List.type], k=SingleType, s=object List
@@ -39,11 +39,11 @@ x=Test1$$anon$2, t=TypeTag[Bar[String]], k=RefinedType, s=<refinement of Bar[Str
 true=true
 a=a
 1=1
-'abc='abc
+'abc=Symbol(abc)
 
 List(())=List(())
 List(true)=List(true)
-List('abc)=List('abc)
+List('abc)=List(Symbol(abc))
 
 Array()=Array()
 Array(true)=Array(true)

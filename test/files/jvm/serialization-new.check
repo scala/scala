@@ -55,8 +55,8 @@ _o2 = Some(1)
 o2 eq _o2: false, _o2 eq o2: false
 o2 equals _o2: true, _o2 equals o2: true
 
-s1 = 'hello
-_s1 = 'hello
+s1 = Symbol(hello)
+_s1 = Symbol(hello)
 s1 eq _s1: true, _s1 eq s1: true
 s1 equals _s1: true, _s1 equals s1: true
 
@@ -125,8 +125,8 @@ x = TreeSet(0, 2)
 y = TreeSet(0, 2)
 x equals y: true, y equals x: true
 
-x = Vector('a, 'b, 'c)
-y = Vector('a, 'b, 'c)
+x = Vector(Symbol(a), Symbol(b), Symbol(c))
+y = Vector(Symbol(a), Symbol(b), Symbol(c))
 x equals y: true, y equals x: true
 
 x = ArrayBuffer(one, two)
