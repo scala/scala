@@ -182,7 +182,7 @@ trait Variances {
 
       private def checkPolyTypeParam(pt: PolyType, tparam: Symbol, tpe: Type): Unit =
         if (!tparam.isInvariant) {
-          val required = varianceInType(tpe)(tparam)
+          val required = varianceInType(tpe, considerUnchecked = true)(tparam)
           if (!required.isBivariant && tparam.variance != required)
             issueVarianceError(ownerOf(pt), tparam, required, pt)
         }
@@ -266,20 +266,22 @@ trait Variances {
     Variance.foldExtract(tps)(t => varianceInType(t)(tparam))
 
   /** Compute variance of type parameter `tparam` in type `tp`. */
-  final def varianceInType(tp: Type)(tparam: Symbol): Variance = {
-    varianceInTypeCache.using(_.apply(tp, tparam))
-  }
+  final def varianceInType(tp: Type, considerUnchecked: Boolean = false)(tparam: Symbol): Variance =
+    varianceInTypeCache.using(_.apply(tp, tparam, considerUnchecked))
+
   private[this] val varianceInTypeCache = ReusableInstance[varianceInType](new varianceInType)
 
   private final class varianceInType {
     private[this] var tp: Type = _
     private[this] var tparam: Symbol = _
+    private[this] var considerUnchecked = false
 
     import Variance._
     private def inArgs(sym: Symbol, args: List[Type]): Variance = foldExtract2(args, sym.typeParams)(inArgParam)
     private def inSyms(syms: List[Symbol]): Variance            = foldExtract(syms)(inSym)
     private def inTypes(tps: List[Type]): Variance              = foldExtract(tps)(inType)
     private def inAnnots(anns: List[AnnotationInfo]): Variance  = foldExtract(anns)(inAnnotationAtp)
+    private def unchecked(anns: List[AnnotationInfo]): Boolean  = considerUnchecked && anns.exists(_.matches(definitions.uncheckedVarianceClass))
 
     // OPT these extractors are hoisted to fields to reduce allocation. We're also avoiding Function1[_, Variance] to
     //     avoid value class boxing.
@@ -300,17 +302,20 @@ trait Variances {
       case MethodType(params, restpe)                      => inSyms(params).flip  & inType(restpe)
       case PolyType(tparams, restpe)                       => inSyms(tparams).flip & inType(restpe)
       case ExistentialType(tparams, restpe)                => inSyms(tparams)      & inType(restpe)
+      case AnnotatedType(annots, _) if unchecked(annots)   => Bivariant
       case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
       case SuperType(thistpe, supertpe)                    => inType(thistpe)      & inType(supertpe)
     }
 
-    def apply(tp: Type, tparam: Symbol): Variance = {
+    def apply(tp: Type, tparam: Symbol, considerUnchecked: Boolean): Variance = {
       this.tp = tp
       this.tparam = tparam
+      this.considerUnchecked = considerUnchecked
       try inType(tp)
       finally {
         this.tp = null
         this.tparam = null
+        this.considerUnchecked = false
       }
     }
   }
