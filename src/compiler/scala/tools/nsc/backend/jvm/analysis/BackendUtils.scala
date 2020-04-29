@@ -467,8 +467,6 @@ abstract class BackendUtils extends PerRunInit {
         r
       }
 
-      val subroutineRetTargets = new mutable.Stack[AbstractInsnNode]
-
       // for each instruction in the queue, contains the stack height at this instruction.
       // once an instruction has been treated, contains -1 to prevent re-enqueuing
       val stackHeights = new Array[Int](size)
@@ -490,6 +488,19 @@ abstract class BackendUtils extends PerRunInit {
         enqInsn(tcb.handler, 1)
         if (maxStack == 0) maxStack = 1
       }
+
+      /* Subroutines are jumps, historically used for `finally` (https://www.artima.com/underthehood/finally.html)
+       *   - JSR pushes the return address (next instruction) on the stack and jumps to a label
+       *   - The subroutine typically saves the address to a local variable (ASTORE x)
+       *   - The subroutine typically jumps back to the return address using `RET x`, where `x` is the local variable
+       *
+       * However, the JVM spec does not require subroutines to `RET x` to their caller, they could return back to an
+       * outer subroutine caller (nested subroutines), or `RETURN`, or use a static jump. Static analysis of subroutines
+       * is therefore complex (http://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
+       *
+       * The asm.Analyzer however makes the assumption that subroutines only occur in the shape emitted by early
+       * javac, i.e., `RET` always returns to the next enclosing caller. So we do that as well.
+       */
 
       enq(0)
       while (top != -1) {
@@ -519,14 +530,14 @@ abstract class BackendUtils extends PerRunInit {
 
           insn match {
             case j: JumpInsnNode =>
-              if (j.getOpcode == JSR) {
+              val opc = j.getOpcode
+              if (opc == JSR) {
                 val jsrTargetHeight = heightAfter + 1
                 if (jsrTargetHeight > maxStack) maxStack = jsrTargetHeight
-                subroutineRetTargets.push(j.getNext)
                 enqInsn(j.label, jsrTargetHeight)
+                enqInsnIndex(insnIndex + 1, heightAfter) // see subroutine shape assumption above
               } else {
                 enqInsn(j.label, heightAfter)
-                val opc = j.getOpcode
                 if (opc != GOTO) enqInsnIndex(insnIndex + 1, heightAfter) // jump is conditional, so the successor is also a possible control flow target
               }
 
@@ -545,11 +556,10 @@ abstract class BackendUtils extends PerRunInit {
               enqInsn(t.dflt, heightAfter)
 
             case r: VarInsnNode if r.getOpcode == RET =>
-              enqInsn(subroutineRetTargets.pop(), heightAfter)
+              // the target is already enqueued, see subroutine shape assumption above
 
             case _ =>
-              val opc = insn.getOpcode
-              if (opc != ATHROW && !isReturn(insn))
+              if (insn.getOpcode != ATHROW && !isReturn(insn))
                 enqInsnIndex(insnIndex + 1, heightAfter)
           }
         }

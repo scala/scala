@@ -105,7 +105,7 @@ abstract class ClosureOptimizer {
         val ownerClass = closureInitsBeforeDCE.head._2.ownerClass.internalName
 
         // Advanced ProdCons queries (initialProducersForValueAt) expect no unreachable code.
-        localOpt.minimalRemoveUnreachableCode(method, ownerClass)
+        localOpt.minimalRemoveUnreachableCode(method)
 
         if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
           case Some(closureInits) =>
