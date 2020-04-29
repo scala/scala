@@ -392,7 +392,7 @@ abstract class Inliner {
     //   def g = f; println() // println is unreachable after inlining f
     // If we have an inline request for a call to g, and f has been already inlined into g, we
     // need to run DCE on g's body before inlining g.
-    localOpt.minimalRemoveUnreachableCode(callee, calleeDeclarationClass.internalName)
+    localOpt.minimalRemoveUnreachableCode(callee)
 
     // If the callsite was eliminated by DCE, do nothing.
     if (!callGraph.containsCallsite(callsite)) return

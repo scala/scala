@@ -24,7 +24,7 @@ class UnreachableCodeTest extends ClearAfterClass {
 
   def assertEliminateDead(code: (Instruction, Boolean)*): Unit = {
     val method = genMethod()(code.map(_._1): _*)
-    dceCompiler.global.genBCode.postProcessor.localOpt.removeUnreachableCodeImpl(method, "C")
+    dceCompiler.global.genBCode.postProcessor.localOpt.removeUnreachableCodeImpl(method)
     val nonEliminated = instructionsFromMethod(method)
     val expectedLive = code.filter(_._2).map(_._1).toList
     assertSameCode(nonEliminated, expectedLive)
