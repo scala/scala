@@ -158,7 +158,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
   /** The implementation class of the set returned by `keySet`.
     */
   protected class KeySet extends AbstractSet[K] with GenKeySet with DefaultSerializable {
-    def diff(that: Set[K]): Set[K] = fromSpecific(view.filterNot(that))
+    def diff(that: Set[K]): Set[K] = fromSpecific(this.view.filterNot(that))
   }
 
   /** A generic trait that is reused by keyset implementations */
