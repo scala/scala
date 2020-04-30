@@ -48,7 +48,7 @@ trait Growable[-A] extends Clearable {
    *  @param elems the remaining elements to $add.
    *  @return the $coll itself
    */
-  @deprecated("Use `++=` (addAll) instead of varargs `+=`", "2.13.0")
+  @deprecated("Use `++=` aka `addAll` instead of varargs `+=`; infix operations with an operand of multiple args will be deprecated", "2.13.0")
   @`inline` final def += (elem1: A, elem2: A, elems: A*): this.type = this += elem1 += elem2 ++= (elems: IterableOnce[A])
 
   /** ${Add}s all elements produced by an IterableOnce to this $coll.
