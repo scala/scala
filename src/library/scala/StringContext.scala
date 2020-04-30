@@ -389,7 +389,7 @@ object StringContext {
 
   protected[scala] def processUnicode(str: String): String =
     str indexOf "\\" match {
-      case i if i == -1 || i >= (str.length() - 5)  => str
+      case i if i == -1 || i >= (str.length() - 5) => str
       case i => replaceU(str, i)
     }
 
@@ -438,27 +438,28 @@ object StringContext {
       if (next >= 0) {
         //require(str(next) == '\\')
         if (next > i) b.append(str, i, next)
-          var idx = next + 1
-          if (idx >= len) {
-            b.toString()
-          }
-          else {
-            val (ch, advance) = str(idx) match {
-              case 'u'  => readUEscape(str, idx)
-              case chr  => {
-                b.append('\\')
-                (chr, 1)
-              }
-            }
-            idx += advance
-            b append ch
-            loop(idx, str.indexOf('\\', idx))
-          }
-        } else {
-          if (i < len) b.append(str, i, len)
-          b.toString
+        var idx = next + 1
+        if (idx >= len) {
+          if (idx == len) b.append('\\')
+          b.toString()
         }
+        else {
+          val (ch, advance) = str(idx) match {
+            case 'u'  => readUEscape(str, idx)
+            case chr  => {
+              b.append('\\')
+              (chr, 1)
+            }
+          }
+          idx += advance
+          b.append(ch)
+          loop(idx, str.indexOf('\\', idx))
+        }
+      } else {
+        if (i < len) b.append(str, i, len)
+        b.toString()
       }
+    }
     loop(0, first)
   }
 

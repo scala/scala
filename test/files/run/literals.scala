@@ -28,11 +28,11 @@ object Test {
     check_success("'\\u005f' == '_'", '\u005f', '_')
 
     //unicode escapes escape in interpolations
-    check_success("bleh", s"\u0024", "$")
-    check_success("bleh", s"""\u0024""", "$")
+    check_success("""s"\\u0024" == "$"""", s"\u0024", "$")
+    check_success("s\"\"\"\\u0024\"\"\" == \"$\"", s"""\u0024""", "$")
 
 
-    //Int#asInstanceOf[Char] gets the char at the codepont
+    //Int#asInstanceOf[Char] gets the char at the codepoint
     check_success("65.asInstanceOf[Char] == 'A'", 65.asInstanceOf[Char], 'A')
     
     // boolean
