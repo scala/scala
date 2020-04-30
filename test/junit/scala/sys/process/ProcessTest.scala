@@ -91,7 +91,7 @@ class ProcessTest {
 
   private def createFile(prefix: String) = createTempFile(prefix, "tmp").tap(f => Files.write(f, List(prefix).asJava, UTF_8))
 
-  @Test def t10823(): Unit =
+  @Test def t10823(): Unit = testily {
     Using.resources(createFile("hello"), createFile("world"), createTempFile("out", "tmp")) { (file1, file2, out) =>
       val cat = Process.cat(List(file1, file2).map(_.toFile))
       val p = cat #> out.toFile
@@ -99,9 +99,10 @@ class ProcessTest {
       assertEquals(0, p.!)
       Using.resource(IOSource.fromFile(out.toFile))(src => assertEquals("hello, world", src.mkString.linesIterator.mkString(", ")))
     }
+  }
 
   // a test for A && B where A fails and B is not started
-  @Test def t10823_short_circuit(): Unit = {
+  @Test def t10823_short_circuit(): Unit = testily {
 
     val noFile = Paths.get("total", "junk")
     val p2     = new ProcessMock(error = false)
