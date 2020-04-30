@@ -6,6 +6,11 @@ t7187-deprecation.scala:17: error: type mismatch;
 t7187-deprecation.scala:31: error: Methods without a parameter list and by-name params can not be converted to functions as `m _`, write a function literal `() => m` instead
   val t7 = m1 _ // error: eta-expanding a nullary method
            ^
+t7187-deprecation.scala:19: warning: Eta-expansion performed to meet expected type AcciSamZero, which is SAM-equivalent to () => Int,
+even though trait AcciSamZero is not annotated with `@FunctionalInterface`;
+to suppress warning, add the annotation or write out the equivalent function literal.
+  val t2AcciSam: AcciSamZero = m2   // warn, eta-expanded to non @FunctionalInterface SAM
+                               ^
 t7187-deprecation.scala:24: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method m2,
 or remove the empty argument list from its definition (Java-defined methods are exempt).
 In Scala 3, an unapplied method like this will be eta-expanded into a function.
@@ -16,5 +21,5 @@ or remove the empty argument list from its definition (Java-defined methods are 
 In Scala 3, an unapplied method like this will be eta-expanded into a function.
   a.boom // warning: apply, ()-insertion
     ^
-2 warnings
+3 warnings
 2 errors

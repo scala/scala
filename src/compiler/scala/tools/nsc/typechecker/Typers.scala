@@ -967,7 +967,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               doEtaZero
             } else sourceLevel3 || expectingFunctionOfArity || expectingSamOfArity
 
-          if (doIt && !expectingFunctionOfArity && settings.warnEtaSam) warnEtaSam()
+          if (doIt && !expectingFunctionOfArity && (currentRun.isScala3 || settings.warnEtaSam)) warnEtaSam()
 
           doIt
         }
