@@ -413,11 +413,28 @@ trait Names extends api.Names {
       false
     }
 
+    def lastIndexOf(s: String): Int = {
+      if (s.isEmpty()) return length
+
+      val last = s(s.length - 1)
+      var i = length
+      while (s.length() <= i) {
+        if (_chrs(start + i - 1) == last) {
+          var j = 2
+          while (j <= s.length() && _chrs(start + i - j) == s.charAt(s.length() - j))
+            j += 1
+          if (j > s.length()) return i - s.length()
+        }
+        i -= 1
+      }
+      return -1
+    }
+
     /** Some thoroughly self-explanatory convenience functions.  They
      *  assume that what they're being asked to do is known to be valid.
      */
-    final def startChar: Char                   = this charAt 0
-    final def endChar: Char                     = this charAt len - 1
+    final def startChar: Char                   = charAt(0)
+    final def endChar: Char                     = charAt(len - 1)
     final def startsWith(char: Char): Boolean   = len > 0 && startChar == char
     final def startsWith(name: String): Boolean = startsWith(name, 0)
     final def endsWith(char: Char): Boolean     = len > 0 && endChar == char
@@ -434,7 +451,6 @@ trait Names extends api.Names {
 
     /** The lastPos methods already return -1 on failure. */
     def lastIndexOf(ch: Char): Int  = lastPos(ch)
-    def lastIndexOf(s: String): Int = toString lastIndexOf s
 
     /** Replace all occurrences of `from` by `to` in
      *  name; result is always a term name.

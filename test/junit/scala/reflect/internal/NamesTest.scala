@@ -12,15 +12,15 @@ class NamesTest {
   object symbolTable extends SymbolTableForUnitTesting
   import symbolTable._
 
-  val h1 = newTermName("hai")
-  val h2 = newTermName("hai")
-  val f  = newTermName("fisch")
+  val h1 = TermName("hai")
+  val h2 = TermName("hai")
+  val f  = TermName("fisch")
 
   val h1y = h1.toTypeName
-  val h2y = newTypeName("hai")
-  val fy  = newTypeName("fisch")
+  val h2y = TypeName("hai")
+  val fy  = TypeName("fisch")
 
-  val uy = newTypeName("uhu")
+  val uy = TypeName("uhu")
   val u  = uy.toTermName // calling toTermName after constructing a typeName. This tests the fact
                          // that creating a typeName always also first creates a termName. There is
                          // an assertion for that in toTermName.
@@ -55,7 +55,7 @@ class NamesTest {
     assertTrue(lookupTypeName("uhu".toCharArray) eq uy)
 
     assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
-    val d = newTermName("dog")
+    val d = TermName("dog")
     assertThrows[AssertionError](lookupTypeName("dog".toCharArray), _ contains "not yet created")
     val dy = d.toTypeName
     assertTrue(lookupTypeName("dog".toCharArray) eq dy)
@@ -63,12 +63,12 @@ class NamesTest {
 
   @Test
   def emptyName(): Unit = {
-    val z = newTermName("")
+    val z = TermName("")
     val zy = z.toTypeName
     assertEquals(z.toString, "")
     assertEquals(zy.toString, "")
-    assertTrue(z eq newTermName(""))
-    assertTrue(zy eq newTypeName(""))
+    assertTrue(z eq TermName(""))
+    assertTrue(zy eq TypeName(""))
   }
 
   @Test
@@ -81,8 +81,8 @@ class NamesTest {
     assertTrue(iy.start == (fy.start + 1) && iy.length == (fy.length - 1))
     assertTrue(fy.subName(0, fy.length) eq fy)
 
-    assertTrue(f.subName(1,1) eq newTermName(""))
-    assertTrue(f.subName(1, 0) eq newTermName(""))
+    assertTrue(f.subName(1,1) eq TermName(""))
+    assertTrue(f.subName(1, 0) eq TermName(""))
 
     assertThrows[IllegalArgumentException](f.subName(0 - f.start - 1, 1))
   }
@@ -116,5 +116,24 @@ class NamesTest {
     check("ab", "ba")
     check("", "x")
     check("", "xy")
+  }
+
+  @Test
+  def `name.lastIndexOf is name.toString.lastIndexOf`(): Unit = {
+    def check(name: Name, sub: String): Unit = {
+      val javaResult = name.toString.lastIndexOf(sub)
+      val nameResult = name.lastIndexOf(sub)
+      assertEquals(s""""$name".lastIndexOf("$sub")""", javaResult, nameResult)
+    }
+    check(f,  "isch")  // put the isch in fisch
+    check(fy, "isch")
+    check(f,  "")
+    check(TermName(""),  "")
+    check(TermName(""),  "abc")
+    check(f,  "ischbiisch")
+    check(fy, "ischbiisch")
+    check(fy, "fyou")
+    check(f,  "disch")
+    check(fy, "disch")
   }
 }
