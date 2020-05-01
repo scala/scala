@@ -39,4 +39,4 @@ if (Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).
 else
   Seq()
 
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
