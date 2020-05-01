@@ -150,48 +150,48 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
       val targetSymbol = dep.to
       val onSource = targetSymbol.sourceFile
-      if (onSource == null) {
-        val noByteCode = (
-          // Ignore packages right away as they don't map to a class file/jar
-          targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE) ||
-            // Seen in the wild: an Ident as the original of a TypeTree from a synthetic case accessor was symbol-less
-            targetSymbol == NoSymbol ||
-            // Also ignore magic symbols that don't have bytecode like Any/Nothing/Singleton/<byname>/<repeated>/...
-            isSyntheticCoreClass(targetSymbol)
-        )
-        if (!noByteCode) {
-          classFile(targetSymbol.initialize) match {
-            case Some((at, binaryClassName)) =>
-              // Associated file is set, so we know which classpath entry it came from
-              processExternalDependency(binaryClassName, at)
-            case None =>
-              /* If there is no associated file, it's likely the compiler didn't set it correctly.
-               * This happens very rarely, see https://github.com/sbt/zinc/issues/559 as an example,
-               * but when it does we must ensure the incremental compiler tries its best no to lose
-               * any dependency. Therefore, we do a last-time effort to get the origin of the symbol
-               * by inspecting the classpath manually.
-               */
-              val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, false)
-              global.findAssociatedFile(fqn) match {
-                case Some((at, true)) =>
-                  processExternalDependency(fqn, at)
-                case Some((_, false)) | None =>
-                  // Study the possibility of warning or adding this to the zinc profiler so that
-                  // if users reports errors, the lost dependencies are present in the zinc profiler
-                  debuglog(Feedback.noOriginFileForExternalSymbol(targetSymbol))
-              }
+      onSource match {
+        case v: VirtualFileWrap =>
+          val onSourceFile: VirtualFile = v.underlying
+          if (onSourceFile != sourceFile || allowLocal) {
+            // We cannot ignore dependencies coming from the same source file because
+            // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
+            val onClassName = classNameAsString(dep.to)
+            callback.classDependency(onClassName, fromClassName, context)
+          } else ()
+        // This could match null or scala.reflect.io.FileZipArchive$LeakyEntry
+        case _ =>
+          val noByteCode = (
+            // Ignore packages right away as they don't map to a class file/jar
+            targetSymbol.hasFlag(scala.tools.nsc.symtab.Flags.PACKAGE) ||
+              // Seen in the wild: an Ident as the original of a TypeTree from a synthetic case accessor was symbol-less
+              targetSymbol == NoSymbol ||
+              // Also ignore magic symbols that don't have bytecode like Any/Nothing/Singleton/<byname>/<repeated>/...
+              isSyntheticCoreClass(targetSymbol)
+          )
+          if (!noByteCode) {
+            classFile(targetSymbol.initialize) match {
+              case Some((at, binaryClassName)) =>
+                // Associated file is set, so we know which classpath entry it came from
+                processExternalDependency(binaryClassName, at)
+              case None =>
+                /* If there is no associated file, it's likely the compiler didn't set it correctly.
+                 * This happens very rarely, see https://github.com/sbt/zinc/issues/559 as an example,
+                 * but when it does we must ensure the incremental compiler tries its best no to lose
+                 * any dependency. Therefore, we do a last-time effort to get the origin of the symbol
+                 * by inspecting the classpath manually.
+                 */
+                val fqn = fullName(targetSymbol, '.', targetSymbol.moduleSuffix, false)
+                global.findAssociatedFile(fqn) match {
+                  case Some((at, true)) =>
+                    processExternalDependency(fqn, at)
+                  case Some((_, false)) | None =>
+                    // Study the possibility of warning or adding this to the zinc profiler so that
+                    // if users reports errors, the lost dependencies are present in the zinc profiler
+                    debuglog(Feedback.noOriginFileForExternalSymbol(targetSymbol))
+                }
+            }
           }
-        }
-      } else {
-        val onSourceFile: VirtualFile = onSource match {
-          case v: VirtualFileWrap => v.underlying
-        }
-        if (onSourceFile != sourceFile || allowLocal) {
-          // We cannot ignore dependencies coming from the same source file because
-          // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
-          val onClassName = classNameAsString(dep.to)
-          callback.classDependency(onClassName, fromClassName, context)
-        } else ()
       }
     }
   }
