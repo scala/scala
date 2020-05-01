@@ -40,7 +40,7 @@ trait LowPriorityEquiv {
   self: Equiv.type =>
 
   /**
-   * @deprecated since 2.13.0. This implicit universal `Equiv` instance allows accidentally
+   * @deprecated This implicit universal `Equiv` instance allows accidentally
    * comparing instances of types for which equality isn't well-defined or implemented.
    * (For example, it does not make sense to compare two `Function1` instances.)
    *
@@ -48,9 +48,9 @@ trait LowPriorityEquiv {
    * despite the potential problems, consider `implicit def universalEquiv[T]: Equiv[T] = universal[T]`.
    */
   @deprecated("Use explicit Equiv.universal instead. See Scaladoc entry for more information: " +
-    "https://www.scala-lang.org/api/2.13.0/scala/math/Equiv$.html#universalEquiv[T]:scala.math.Equiv[T]",
+    "https://www.scala-lang.org/api/current/scala/math/Equiv$.html#universalEquiv[T]:scala.math.Equiv[T]",
     since = "2.13.0")
-  implicit def universalEquiv[T] : Equiv[T] = universal[T]
+  implicit def universalEquiv[T]: Equiv[T] = universal[T]
 }
 
 object Equiv extends LowPriorityEquiv {
@@ -125,11 +125,11 @@ object Equiv extends LowPriorityEquiv {
   implicit object Short extends Equiv[Short] {
     def equiv(x: Short, y: Short): Boolean = x == y
   }
-  
+
   implicit object Int extends Equiv[Int] {
     def equiv(x: Int, y: Int): Boolean = x == y
   }
-  
+
   implicit object Long extends Equiv[Long] {
     def equiv(x: Long, y: Long): Boolean = x == y
   }
@@ -147,7 +147,7 @@ object Equiv extends LowPriorityEquiv {
   object Float {
     /** An equivalence for `Float`s which is reflexive (treats all `NaN`s
       * as equivalent), and treats `-0.0` and `0.0` as not equivalent; it
-      * behaves the same as [[java.lang.Float#compare]].
+      * behaves the same as [[java.lang.Float.compare]].
       *
       * $floatEquiv
       *
@@ -173,6 +173,7 @@ object Equiv extends LowPriorityEquiv {
     }
     implicit object IeeeEquiv extends IeeeEquiv
   }
+
   @deprecated("There are multiple equivalences for Floats (Equiv.Float.TotalEquiv, " +
     "Equiv.Float.IeeeEquiv). Specify one by using a local import, assigning an implicit val, or passing it " +
     "explicitly. See the documentation for details.", since = "2.13.0")
@@ -191,7 +192,7 @@ object Equiv extends LowPriorityEquiv {
   object Double {
     /** An equivalence for `Double`s which is reflexive (treats all `NaN`s
       * as equivalent), and treats `-0.0` and `0.0` as not equivalent; it
-      * behaves the same as [[java.lang.Double#compare]].
+      * behaves the same as [[java.lang.Double.compare]].
       *
       * $doubleEquiv
       *
