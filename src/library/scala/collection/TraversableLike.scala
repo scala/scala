@@ -451,17 +451,23 @@ trait TraversableLike[+A, +Repr] extends Any
   }
 
   def groupBy[K](f: A => K): immutable.Map[K, Repr] = {
-    val m = mutable.Map.empty[K, Builder[A, Repr]]
-    for (elem <- this) {
-      val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newBuilder)
+    object m extends mutable.HashMap[K, Builder[A, Repr]] {
+      override def entriesIterator: Iterator[mutable.DefaultEntry[K, Builder[A, Repr]]] =
+        super.entriesIterator
+    }
+    val newBuilderFunction = () => newBuilder
+    for (elem <- this.seq) {
+      val key  = f(elem)
+      val bldr = m.getOrElseUpdate(key, newBuilderFunction())
       bldr += elem
     }
-    val b = immutable.Map.newBuilder[K, Repr]
-    for ((k, v) <- m)
-      b += ((k, v.result))
-
-    b.result
+    val it = m.entriesIterator
+    val m1 = if (m.size > 4) immutable.HashMap.newBuilder[K, Repr] else immutable.Map.newBuilder[K, Repr]
+    while (it.hasNext) {
+      val entry = it.next()
+      m1.+=((entry.key, entry.value.result()))
+    }
+    m1.result()
   }
 
   def forall(p: A => Boolean): Boolean = {
