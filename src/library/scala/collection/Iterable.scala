@@ -549,21 +549,22 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     *
     */
   def groupBy[K](f: A => K): immutable.Map[K, C] = {
-    val m = mutable.Map.empty[K, Builder[A, C]]
     val it = iterator
-    while (it.hasNext) {
-      val elem = it.next()
-      val key = f(elem)
-      val bldr = m.getOrElseUpdate(key, newSpecificBuilder)
-      bldr += elem
+    if (it.isEmpty) immutable.Map.empty
+    else {
+      val m = mutable.HashMap.empty[K, Any /*C | Builder[A, C] */]
+      while (it.hasNext) {
+        val elem = it.next()
+        val key  = f(elem)
+        val bldr = m.getOrElseUpdate(key, newSpecificBuilder).asInstanceOf[Builder[A, C]]
+        bldr += elem
+      }
+      m.mapValuesInPlace((_, v) => v.asInstanceOf[Builder[A, C]].result())
+      val m1 = immutable.HashMap.newBuilder[K, C]
+      // OPT: This avoids recomputing hashcodes of the keys. The casts above are needed to unlock this!
+      m1.addAll(m.asInstanceOf[mutable.HashMap[K, C]])
+      m1.result()
     }
-    var result = immutable.HashMap.empty[K, C]
-    val mapIt = m.iterator
-    while (mapIt.hasNext) {
-      val (k, v) = mapIt.next()
-      result = result.updated(k, v.result())
-    }
-    result
   }
 
   /**
@@ -587,17 +588,22 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * @tparam B the type of values returned by the transformation function
     */
   def groupMap[K, B](key: A => K)(f: A => B): immutable.Map[K, CC[B]] = {
-    val m = mutable.Map.empty[K, Builder[B, CC[B]]]
-    for (elem <- this) {
-      val k = key(elem)
-      val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B])
-      bldr += f(elem)
+    val it = iterator
+    if (it.isEmpty) immutable.Map.empty
+    else {
+      val m = mutable.HashMap.empty[K, Any /*C | Builder[B, CC[B]] */]
+      while (it.hasNext) {
+        val elem = it.next()
+        val k    = key(elem)
+        val bldr = m.getOrElseUpdate(k, iterableFactory.newBuilder[B]).asInstanceOf[Builder[B, CC[B]]]
+        bldr += f(elem)
+      }
+      m.mapValuesInPlace((_, v) => v.asInstanceOf[Builder[B, CC[B]]].result())
+      val m1 = immutable.HashMap.newBuilder[K, CC[B]]
+      // OPT: This avoids recomputing hashcodes of the keys. The casts above are needed to unlock this!
+      m1.addAll(m.asInstanceOf[mutable.HashMap[K, CC[B]]])
+      m1.result()
     }
-    var result = immutable.Map.empty[K, CC[B]]
-    m.foreach { case (k, v) =>
-      result = result + ((k, v.result()))
-    }
-    result
   }
 
   /**
@@ -615,17 +621,21 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
     * $willForceEvaluation
     */
   def groupMapReduce[K, B](key: A => K)(f: A => B)(reduce: (B, B) => B): immutable.Map[K, B] = {
-    val m = mutable.Map.empty[K, B]
-    for (elem <- this) {
-      val k = key(elem)
-      val v =
-        m.get(k) match {
-          case Some(b) => reduce(b, f(elem))
-          case None => f(elem)
-        }
-      m.put(k, v)
+    val it = iterator
+    if (it.isEmpty) immutable.Map.empty
+    else {
+      val m = mutable.Map.empty[K, B]
+      for (elem <- this) {
+        val k = key(elem)
+        val v =
+          m.get(k) match {
+            case Some(b) => reduce(b, f(elem))
+            case None    => f(elem)
+          }
+        m.put(k, v)
+      }
+      m.to(immutable.Map)
     }
-    m.to(immutable.Map)
   }
 
   /** Computes a prefix scan of the elements of the collection.
