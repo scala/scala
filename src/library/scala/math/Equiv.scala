@@ -14,6 +14,7 @@ package scala
 package math
 
 import java.util.Comparator
+import scala.annotation.migration
 
 /** A trait for representing equivalence relations.  It is important to
  *  distinguish between a type that can be compared for equality or
@@ -174,9 +175,11 @@ object Equiv extends LowPriorityEquiv {
     implicit object IeeeEquiv extends IeeeEquiv
   }
 
-  @deprecated("There are multiple equivalences for Floats (Equiv.Float.TotalEquiv, " +
-    "Equiv.Float.IeeeEquiv). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See the documentation for details.", since = "2.13.0")
+  @migration(
+    "  The default implicit equivalence for floats no longer conforms to\n" +
+    "  to IEEE 754's behavior for -0.0F and NaN.\n" +
+    "  Import `Equiv.Float.IeeeEquiv` to recover the previous behavior.\n" +
+    "  See also https://www.scala-lang.org/api/current/scala/math/Equiv$$Float$.html.", "2.13.2")
   implicit object DeprecatedFloatEquiv extends Float.StrictEquiv
 
   /** `Equiv`s for `Double`s.
@@ -186,7 +189,7 @@ object Equiv extends LowPriorityEquiv {
     *                     relation for `NaN` (it is not reflexive), there are two
     *                     equivalences defined for `Double`: `StrictEquiv`, which
     *                     is reflexive, and `IeeeEquiv`, which is consistent
-    *                     with IEEE spec and doubleing point operations defined in
+    *                     with IEEE spec and floating point operations defined in
     *                     [[scala.math]].
     */
   object Double {
@@ -218,9 +221,11 @@ object Equiv extends LowPriorityEquiv {
     }
     implicit object IeeeEquiv extends IeeeEquiv
   }
-  @deprecated("There are multiple equivalences for Doubles (Equiv.Double.TotalEquiv, " +
-    "Equiv.Double.IeeeEquiv). Specify one by using a local import, assigning an implicit val, or passing it " +
-    "explicitly. See the documentation for details.", since = "2.13.0")
+  @migration(
+    "  The default implicit equivalence for doubles no longer conforms to\n" +
+    "  to IEEE 754's behavior for -0.0D and NaN.\n" +
+    "  Import `Equiv.Double.IeeeEquiv` to recover the previous behavior.\n" +
+    "  See also https://www.scala-lang.org/api/current/scala/math/Equiv$$Double$.html.", "2.13.2")
   implicit object DeprecatedDoubleEquiv extends Double.StrictEquiv
 
   implicit object BigInt extends Equiv[BigInt] {
