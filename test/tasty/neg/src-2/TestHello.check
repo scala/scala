@@ -1,6 +1,3 @@
-TestHello_fail.scala:4: error: Unsupported Scala 3 inline val msg with non-constant type String; found in object helloworld.HelloWorld.
-  val helloworld = HelloWorld.msg
-                              ^
 TestHello_fail.scala:6: error: inferred type arguments [List[String]] do not conform to method higherBounded2's type parameter bounds [T <: List[_ <: Int]]
   HelloWorld.higherBounded2(List(""))
              ^
@@ -35,4 +32,4 @@ List's type parameters do not match type F's expected parameters:
 type A is covariant, but type _ is declared contravariant
   HelloWorld.higherBounded6[List]
                            ^
-9 errors
+8 errors

@@ -439,7 +439,7 @@ trait TypeOps { self: TastyUniverse =>
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
-  abstract class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
+  final class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
     def factory(params: List[TastyName])(registerCallback: Type => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
@@ -469,8 +469,7 @@ trait TypeOps { self: TastyUniverse =>
 
   }
 
-  object MethodType extends MethodTypeCompanion(EmptyTastyFlags)
-  object ImplicitMethodType extends MethodTypeCompanion(Implicit)
+  def methodTypeCompanion(initialFlags: TastyFlagSet): MethodTypeCompanion = new MethodTypeCompanion(initialFlags)
 
   abstract class TermLambdaCompanion
     extends LambdaTypeCompanion[TastyName]

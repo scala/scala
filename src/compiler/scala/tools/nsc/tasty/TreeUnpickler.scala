@@ -193,17 +193,35 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
 // ------ Reading types -----------------------------------------------------
 
-    /** Read names in an interleaved sequence of (parameter) names and types/bounds */
-    def readParamNames(end: Addr): List[TastyName] =
-      until(end) {
-        val name = readTastyName()
-        skipTree()
-        name
+    /** Read names in an interleaved sequence of types/bounds and (parameter) names,
+      *  possibly followed by a sequence of modifiers.
+      */
+    def readParamNamesAndMods(end: Addr): (List[TastyName], TastyFlagSet) = {
+      val names =
+        collectWhile(currentAddr != end && !isModifierTag(nextByte)) {
+          skipTree()
+          readTastyName()
+        }
+      var mods = EmptyTastyFlags
+      while (currentAddr != end) { // avoid boxing the mods
+        readByte() match {
+          case IMPLICIT => mods |= Implicit
+          case ERASED   => mods |= Erased
+          case GIVEN    => mods |= Given
+        }
       }
+      (names, mods)
+    }
 
-    /** Read types or bounds in an interleaved sequence of (parameter) names and types/bounds */
-    def readParamTypes[T <: Type](end: Addr)(implicit ctx: Context): List[T] =
-      until(end) { readNat(); readType().asInstanceOf[T] }
+    /** Read `n` parameter types or bounds which are interleaved with names */
+    def readParamTypes[T <: Type](n: Int)(implicit ctx: Context): List[T] = {
+      if (n == 0) Nil
+      else {
+        val t = readType().asInstanceOf[T]
+        readNat() // skip name
+        t :: readParamTypes(n - 1)
+      }
+    }
 
     /** Read reference to definition and return symbol created at that definition */
     def readSymRef()(implicit ctx: Context): Symbol = symbolAt(readAddr())
@@ -276,15 +294,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val end = readEnd()
 
         def readMethodic[N <: TastyName]
-            (companion: LambdaTypeCompanion[N], nameMap: TastyName => N)(implicit ctx: Context): Type = {
+            (companionOp: TastyFlagSet => LambdaTypeCompanion[N], nameMap: TastyName => N)(implicit ctx: Context): Type = {
           val result = typeAtAddr.getOrElse(start, {
             val nameReader = fork
             nameReader.skipTree() // skip result
             val paramReader = nameReader.fork
-            val paramNames: List[N] = map(nameReader.readParamNames(end), nameMap)
-            companion(paramNames)(
+            val (paramNames, mods) = nameReader.readParamNamesAndMods(end)
+            companionOp(mods)(paramNames.map(nameMap))(
               pt => typeAtAddr(start) = pt,
-              () => paramReader.readParamTypes(end),
+              () => paramReader.readParamTypes(paramNames.length),
               () => readType()
             ).tap(typeAtAddr(start) = _)
           })
@@ -325,11 +343,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             case ORtype => unionIsUnsupported
             case SUPERtype => defn.SuperType(readType(), readType())
             case MATCHtype => matchTypeIsUnsupported
-            case POLYtype => readMethodic(PolyType, _.toTypeName)
-            case METHODtype => readMethodic(MethodType, id)
-            case ERASEDMETHODtype | ERASEDGIVENMETHODtype => erasedRefinementIsUnsupported
-            case IMPLICITMETHODtype | GIVENMETHODtype => readMethodic(ImplicitMethodType, id)
-            case TYPELAMBDAtype => readMethodic(HKTypeLambda, _.toTypeName)
+            case POLYtype => readMethodic(Function.const(PolyType), _.toTypeName)
+            case METHODtype =>
+              def companion(mods0: TastyFlagSet) = {
+                var mods = EmptyTastyFlags
+                if (mods0.is(Erased)) erasedRefinementIsUnsupported[Unit]
+                if (mods0.isOneOf(Given | Implicit)) mods |= Implicit
+                methodTypeCompanion(mods)
+              }
+              readMethodic(companion, id)
+            case TYPELAMBDAtype => readMethodic(Function.const(HKTypeLambda), _.toTypeName)
             case PARAMtype => // reference to a type parameter within a LambdaType
               readTypeRef().typeParams(readNat()).ref
           }
@@ -409,9 +432,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
       else if (isParamTag(tag)) flags |= Param
-      if (name.isDefaultName || flags.is(Param) && owner.isMethod && owner.is(DefaultParameterized)) {
-        flags |= DefaultParameterized
-      }
       if (flags.is(Object)) flags |= (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
       flags
     }
@@ -560,8 +580,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case CASEaccessor => addFlag(CaseAccessor)
           case COVARIANT => addFlag(Covariant)
           case CONTRAVARIANT => addFlag(Contravariant)
-          case SCALA2X => addFlag(Scala2x)
-          case DEFAULTparameterized => addFlag(DefaultParameterized)
+          case HASDEFAULT => addFlag(HasDefault)
           case STABLE => addFlag(Stable)
           case EXTENSION => addFlag(Extension)
           case GIVEN => addFlag(Implicit)

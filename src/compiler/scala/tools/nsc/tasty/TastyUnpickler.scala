@@ -89,9 +89,9 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
         debugName(SimpleName(new String(bytes.slice(start.index, start.index + length), "UTF-8")))
       case tag @ (QUALIFIED | EXPANDED | EXPANDPREFIX) =>
         val sep = tag match {
-          case QUALIFIED    => TastyName.PathSep
-          case EXPANDED     => TastyName.ExpandedSep
-          case EXPANDPREFIX => TastyName.ExpandPrefixSep
+          case QUALIFIED    => PathSep
+          case EXPANDED     => ExpandedSep
+          case EXPANDPREFIX => ExpandPrefixSep
         }
         debugName(QualifiedName(readName(), sep, readName().asSimpleName))
       case UNIQUE =>
@@ -110,10 +110,12 @@ private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implic
         debugName(SignedName(original, sig))
       case OBJECTCLASS =>
         debugName(ObjectName(readName()))
+      case BODYRETAINER =>
+        debugName(SuffixName(readName(), BodyRetainerSuffix))
       case INLINEACCESSOR | SUPERACCESSOR =>
         val prefix = tag match {
-          case INLINEACCESSOR => TastyName.InlinePrefix
-          case SUPERACCESSOR  => TastyName.SuperPrefix
+          case INLINEACCESSOR => InlinePrefix
+          case SUPERACCESSOR  => SuperPrefix
         }
         debugName(PrefixName(prefix, readName()))
       case _ =>

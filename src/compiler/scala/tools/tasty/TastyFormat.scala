@@ -15,35 +15,38 @@ package scala.tools.tasty
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 20
+  val MajorVersion: Int = 22
   val MinorVersion: Int = 0
 
   /** Tags used to serialize names */
   class NameTags {
-    final val UTF8 = 1               // A simple name in UTF8 encoding.
+    final val UTF8 = 1            // A simple name in UTF8 encoding.
 
-    final val QUALIFIED = 2          // A fully qualified name `<prefix>.<suffix>`.
+    final val QUALIFIED = 2       // A fully qualified name `<prefix>.<suffix>`.
 
-    final val EXPANDED = 3           // An expanded name `<prefix>$$<suffix>`,
-                                     // used by Scala-2 for private names.
+    final val EXPANDED = 3        // An expanded name `<prefix>$$<suffix>`,
+                                  // used by Scala-2 for private names.
 
-    final val EXPANDPREFIX = 4       // An expansion prefix `<prefix>$<suffix>`,
-                                     // used by Scala-2 for private names.
+    final val EXPANDPREFIX = 4    // An expansion prefix `<prefix>$<suffix>`,
+                                  // used by Scala-2 for private names.
 
-    final val UNIQUE = 10            // A unique name `<name>$<num>` where `<num>`
-                                     // is used only once for each `<name>`.
+    final val UNIQUE = 10         // A unique name `<name>$<num>` where `<num>`
+                                  // is used only once for each `<name>`.
 
-    final val DEFAULTGETTER = 11     // The name `<meth-name>$default$<param-num>`
-                                     // of a default getter that returns a default argument.
+    final val DEFAULTGETTER = 11  // The name `<meth-name>$default$<param-num>`
+                                  // of a default getter that returns a default argument.
 
-    final val SUPERACCESSOR = 20     // The name of a super accessor `super$name` created by SuperAccesors.
+    final val SUPERACCESSOR = 20  // The name of a super accessor `super$name` created by SuperAccesors.
 
-    final val INLINEACCESSOR = 21    // The name of an inline accessor `inline$name`
+    final val INLINEACCESSOR = 21 // The name of an inline accessor `inline$name`
 
-    final val OBJECTCLASS = 23       // The name of an object class (or: module class) `<name>$`.
+    final val BODYRETAINER = 22   // The name of a synthetic method that retains the runtime
+                                  // body of an inline method
 
-    final val SIGNED = 63            // A pair of a name and a signature, used to identify
-                                     // possibly overloaded methods.
+    final val OBJECTCLASS = 23    // The name of an object class (or: module class) `<name>$`.
+
+    final val SIGNED = 63         // A pair of a name and a signature, used to identify
+                                  // possibly overloaded methods.
   }
   object NameTags extends NameTags
 
@@ -83,8 +86,7 @@ object TastyFormat {
   final val CASEaccessor = 27
   final val COVARIANT = 28
   final val CONTRAVARIANT = 29
-  final val SCALA2X = 30
-  final val DEFAULTparameterized = 31
+  final val HASDEFAULT = 31
   final val STABLE = 32
   final val MACRO = 33
   final val ERASED = 34
@@ -196,22 +198,9 @@ object TastyFormat {
   final val TYPEREFin = 175
 
   final val METHODtype = 180
-  final val ERASEDMETHODtype = 181
-  final val GIVENMETHODtype = 182
-  final val ERASEDGIVENMETHODtype = 183
-  final val IMPLICITMETHODtype = 184
 
   final val MATCHtype = 190
   final val MATCHtpt = 191
-
-  def methodTypeTag(isContextual: Boolean, isImplicit: Boolean, isErased: Boolean): Int = {
-    val implicitOffset =
-      if (isContextual) 2
-      else if (isImplicit) { assert(!isErased); 4 }
-      else 0
-    val erasedOffset = if (isErased) 1 else 0
-    METHODtype + erasedOffset + implicitOffset
-  }
 
   final val HOLE = 255
 
@@ -260,8 +249,7 @@ object TastyFormat {
        | CASEaccessor
        | COVARIANT
        | CONTRAVARIANT
-       | SCALA2X
-       | DEFAULTparameterized
+       | HASDEFAULT
        | STABLE
        | EXTENSION
        | PARAMsetter
@@ -321,8 +309,7 @@ object TastyFormat {
     case CASEaccessor => "CASEaccessor"
     case COVARIANT => "COVARIANT"
     case CONTRAVARIANT => "CONTRAVARIANT"
-    case SCALA2X => "SCALA2X"
-    case DEFAULTparameterized => "DEFAULTparameterized"
+    case HASDEFAULT => "HASDEFAULT"
     case STABLE => "STABLE"
     case EXTENSION => "EXTENSION"
     case GIVEN => "GIVEN"
@@ -416,10 +403,6 @@ object TastyFormat {
     case BYNAMEtpt => "BYNAMEtpt"
     case POLYtype => "POLYtype"
     case METHODtype => "METHODtype"
-    case ERASEDMETHODtype => "ERASEDMETHODtype"
-    case GIVENMETHODtype => "GIVENMETHODtype"
-    case ERASEDGIVENMETHODtype => "ERASEDGIVENMETHODtype"
-    case IMPLICITMETHODtype => "IMPLICITMETHODtype"
     case TYPELAMBDAtype => "TYPELAMBDAtype"
     case LAMBDAtpt => "LAMBDAtpt"
     case MATCHtype => "MATCHtype"
@@ -438,10 +421,7 @@ object TastyFormat {
     case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM | NAMEDARG | RETURN | BIND |
          SELFDEF | REFINEDtype | TERMREFin | TYPEREFin | HOLE => 1
     case RENAMED | PARAMtype => 2
-    case POLYtype | TYPELAMBDAtype |
-         METHODtype | ERASEDMETHODtype |
-         GIVENMETHODtype | ERASEDGIVENMETHODtype |
-         IMPLICITMETHODtype => -1
+    case POLYtype | TYPELAMBDAtype | METHODtype => -1
     case _ => 0
   }
 }

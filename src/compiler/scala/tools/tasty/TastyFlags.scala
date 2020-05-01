@@ -41,8 +41,8 @@ object TastyFlags {
   final val CaseAccessor          = FieldAccessor.next
   final val Covariant             = CaseAccessor.next
   final val Contravariant         = Covariant.next
-  final val DefaultParameterized  = Contravariant.next
-  final val Stable                = DefaultParameterized.next
+  final val HasDefault            = Contravariant.next
+  final val Stable                = HasDefault.next
   final val ParamSetter           = Stable.next
   final val Param                 = ParamSetter.next
   final val Deferred              = Param.next
@@ -52,8 +52,7 @@ object TastyFlags {
   final val Inline                = Internal.next
   final val InlineProxy           = Inline.next
   final val Opaque                = InlineProxy.next
-  final val Scala2x               = Opaque.next
-  final val Extension             = Scala2x.next
+  final val Extension             = Opaque.next
   final val Given                 = Extension.next
   final val Exported              = Given.next
   final val Macro                 = Exported.next
@@ -119,7 +118,7 @@ object TastyFlags {
             case CaseAccessor => "CaseAccessor"
             case Covariant => "Covariant"
             case Contravariant => "Contravariant"
-            case DefaultParameterized => "DefaultParameterized"
+            case HasDefault => "HasDefault"
             case Stable => "Stable"
             case ParamSetter => "ParamSetter"
             case Param => "Param"
@@ -130,7 +129,6 @@ object TastyFlags {
             case Inline => "Inline"
             case InlineProxy => "InlineProxy"
             case Opaque => "Opaque"
-            case Scala2x => "Scala2x"
             case Extension => "Extension"
             case Given => "Given"
             case Exported => "Exported"

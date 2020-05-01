@@ -30,6 +30,8 @@ object Signature {
   /** Encodes either an [[Int]] which is the size of a type parameter list, or [[T]], which represents a type */
   type ParamSig[T] = Either[Int, T]
 
+  def merge[T](sb: StringBuilder, sig: Signature[T]): StringBuilder = sig.mergeShow(sb)
+
   def apply[T](params: List[ParamSig[T]], result: T): MethodSignature[T] = new MethodSignature(params, result)
 
   /** Encodes the structure of an uncurried Scala method signature, with generic type parameter lists erased to just
