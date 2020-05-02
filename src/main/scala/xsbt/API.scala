@@ -34,6 +34,10 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       val start = System.currentTimeMillis
       super.run()
 
+      //  We're running right after pickling, so store pickles now.
+      val pickleData = Compat.picklePaths(currentRun)
+      callback.pickleData(pickleData.toArray)
+
       // After processing all units, register generated classes
       registerGeneratedClasses(nonLocalClassSymbolsInCurrentUnits.iterator)
       nonLocalClassSymbolsInCurrentUnits.clear()

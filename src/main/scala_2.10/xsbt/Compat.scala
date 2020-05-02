@@ -13,6 +13,7 @@ package xsbt
 
 import java.io.PrintWriter
 import java.nio.file.Path
+import xsbti.PickleData
 import xsbti.compile.Output
 import scala.reflect.{ internal => sri }
 import scala.reflect.internal.{ util => sriu }
@@ -190,6 +191,9 @@ object Compat {
   }
 
   def plainNioFile(path: Path): AbstractFile = new PlainNioFile(path)
+
+  // No pileline pickling in 2.10
+  def picklePaths(run: Global#Run) = Iterable.empty[PickleData]
 }
 
 private trait CachedCompilerCompat { self: CachedCompiler0 =>
