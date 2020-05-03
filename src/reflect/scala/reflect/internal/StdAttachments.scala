@@ -119,4 +119,7 @@ trait StdAttachments {
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment
+
+  /** Mark the syntax for linting purposes. */
+  case object MultiargInfixAttachment extends PlainAttachment
 }

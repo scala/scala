@@ -37,9 +37,9 @@ object Test extends DirectTest {
     val g = newCompiler()
 
     assert(compileString(g)(code))
-    ScalaClassLoader(getClass.getClassLoader) run ("Main", Nil)
+    ScalaClassLoader(getClass.getClassLoader).run("Main", Nil)
     assert(compileString(g)(code))
-    ScalaClassLoader(getClass.getClassLoader) run ("Main", Nil)
+    ScalaClassLoader(getClass.getClassLoader).run("Main", Nil)
   }
 
   override def extraSettings = s"-usejavacp -d ${testOutput.path} -cp ${testOutput.path}"

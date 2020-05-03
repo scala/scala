@@ -16,12 +16,11 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.mutable
-import mutable.ListBuffer
-import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
+import scala.annotation.tailrec
+import scala.collection.mutable, mutable.ListBuffer
+import scala.reflect.internal.{Chars, ModifierFlags => Flags, Precedence}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
 import Tokens._
-import scala.annotation.tailrec
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
@@ -868,11 +867,18 @@ self =>
           }
         }
       }
-      def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
+      def mkNamed(args: List[Tree]) = if (isExpr) args.map(treeInfo.assignmentToMaybeNamedArg) else args
+      var isMultiarg = false
       val arguments = right match {
-        case Parens(Nil)  => literalUnit :: Nil
-        case Parens(args) => mkNamed(args)
-        case _            => right :: Nil
+        case Parens(Nil)               => literalUnit :: Nil
+        case Parens(args @ (_ :: Nil)) => mkNamed(args)
+        case Parens(args)              => isMultiarg = true ; mkNamed(args)
+        case _                         => right :: Nil
+      }
+      def mkApply(fun: Tree, args: List[Tree]) = {
+        val apply = Apply(fun, args)
+        if (isMultiarg) apply.updateAttachment(MultiargInfixAttachment)
+        apply
       }
       if (isExpr) {
         if (rightAssoc) {
@@ -881,15 +887,12 @@ self =>
           val liftedArg = atPos(left.pos) {
             ValDef(Modifiers(FINAL | SYNTHETIC | ARTIFACT), x, TypeTree(), stripParens(left))
           }
-          Block(
-            liftedArg :: Nil,
-            Apply(mkSelection(right), List(Ident(x) setPos left.pos.focus)))
-        } else {
-          Apply(mkSelection(left), arguments)
-        }
-      } else {
-        Apply(Ident(op.encode), stripParens(left) :: arguments)
-      }
+          val apply = mkApply(mkSelection(right), List(Ident(x) setPos left.pos.focus))
+          Block(liftedArg :: Nil, apply)
+        } else
+          mkApply(mkSelection(left), arguments)
+      } else
+        mkApply(Ident(op.encode), stripParens(left) :: arguments)
     }
 
     /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
@@ -2795,6 +2798,12 @@ self =>
               accept(EQUALS)
             }
             expr()
+          }
+        if (settings.multiargInfix)
+          vparamss match {
+            case (_ :: _ :: _) :: Nil if settings.multiargInfix && Chars.isOperatorPart(name.decoded.last) =>
+              warning(nameOffset, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+            case _ =>
           }
         DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
