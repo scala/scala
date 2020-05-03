@@ -339,6 +339,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size0_="),
     ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedMapFactory#SortedMapCanBuildFrom.factory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.factory"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
+
     //
     // scala-relect
     //
