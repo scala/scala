@@ -16,7 +16,10 @@ sd503.scala:29: warning: multiarg infix syntax looks like a tuple and will be de
 sd503.scala:34: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def x_=(i: Int, j: Int = 1): Unit = devalue = i + j     // multiarg, warn
       ^
-sd503.scala:47: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:46: warning: multiarg infix syntax looks like a tuple and will be deprecated
+    def ++(i: Int, j: Int): Int = i + j                   // nowarn! (TODO)
+        ^
+sd503.scala:54: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // very multiarg, warn
       ^
 sd503.scala:13: warning: multiarg infix syntax looks like a tuple and will be deprecated
@@ -28,8 +31,8 @@ sd503.scala:15: warning: multiarg infix syntax looks like a tuple and will be de
 sd503.scala:19: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def f5() = c x_= (42, 27)           // multiarg, warn
                ^
-sd503.scala:52: warning: multiarg infix syntax looks like a tuple and will be deprecated
+sd503.scala:59: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def f[A](as: Embiggen[A], x: A, y: A, z: A): as.type = as += (x, y, z)      // very multiarg, warn
                                                             ^
-8 warnings
+9 warnings
 2 errors

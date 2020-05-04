@@ -39,6 +39,13 @@ class D {
 trait OK {
   def f(p: (Int, Int)) = p == (42, 17)                    // nowarn!
   def g(ps: Embiggen[(Int, Int)]) = ps :+ (42, 17)        // nowarn!
+
+  def ?[A: List: reflect.ClassTag] = ???                  // nowarn!
+
+  def calculate(): Int = {
+    def ++(i: Int, j: Int): Int = i + j                   // nowarn! (TODO)
+    ++ (42, 17)
+  }
 }
 
 // Growable is the paradigmatic example

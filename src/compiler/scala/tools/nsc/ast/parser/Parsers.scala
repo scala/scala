@@ -2355,13 +2355,12 @@ self =>
           warning(in.offset, s"$ttl parameter sections are effectively implicit", WarningCategory.WFlagExtraImplicit)
       }
       val result = vds.toList
-      if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
+      if (owner == nme.CONSTRUCTOR && (result.isEmpty || result.head.take(1).exists(_.mods.isImplicit)))
         in.token match {
           case LBRACKET   => syntaxError(in.offset, "no type parameters allowed here", skipIt = false)
           case EOF        => incompleteInputError("auxiliary constructor needs non-implicit parameter list")
           case _          => syntaxError(start, "auxiliary constructor needs non-implicit parameter list", skipIt = false)
         }
-      }
       addEvidenceParams(owner, result, contextBounds)
     }
 
@@ -2801,7 +2800,7 @@ self =>
           }
         if (settings.multiargInfix)
           vparamss match {
-            case (_ :: _ :: _) :: Nil if settings.multiargInfix && Chars.isOperatorPart(name.decoded.last) =>
+            case (h :: _ :: _) :: Nil if !h.mods.hasFlag(Flags.IMPLICIT) && Chars.isOperatorPart(name.decoded.last) =>
               warning(nameOffset, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
             case _ =>
           }
