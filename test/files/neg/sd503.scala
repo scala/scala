@@ -43,7 +43,7 @@ trait OK {
   def ?[A: List: reflect.ClassTag] = ???                  // nowarn!
 
   def calculate(): Int = {
-    def ++(i: Int, j: Int): Int = i + j                   // nowarn! (TODO)
+    def ++(i: Int, j: Int): Int = i + j                   // nowarn!
     ++ (42, 17)
   }
 }

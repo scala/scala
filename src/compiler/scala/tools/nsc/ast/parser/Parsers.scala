@@ -18,7 +18,7 @@ package ast.parser
 
 import scala.annotation.tailrec
 import scala.collection.mutable, mutable.ListBuffer
-import scala.reflect.internal.{Chars, ModifierFlags => Flags, Precedence}
+import scala.reflect.internal.{ModifierFlags => Flags, Precedence}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
 import Tokens._
 import scala.tools.nsc.Reporting.WarningCategory
@@ -2797,12 +2797,6 @@ self =>
               accept(EQUALS)
             }
             expr()
-          }
-        if (settings.multiargInfix)
-          vparamss match {
-            case (h :: _ :: _) :: Nil if !h.mods.hasFlag(Flags.IMPLICIT) && Chars.isOperatorPart(name.decoded.last) =>
-              warning(nameOffset, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
-            case _ =>
           }
         DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
