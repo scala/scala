@@ -97,4 +97,70 @@ class TreeMapTest extends AllocationTest {
         assertSame(tree, nonAllocating(tree.updated(k, v)))
     }
   }
+  @Test def consistentEquals: Unit = {
+    class V(val s: String) {
+
+      override def equals(obj: Any): Boolean = obj match {
+        case v:V => v.s == s
+        case _ => false
+      }
+      override def toString: String = s"V-$s"
+    }
+    class K(val s: String) extends Ordered[K] {
+      override def toString: String = s"K-$s"
+
+      override def compare(that: K): Int = {
+        fail("compare should not be called  - should be handled by the custom ordering")
+        0
+      }
+      override def equals(obj: Any): Boolean = obj match {
+        case k:K => k.s == s
+        case _ => false
+      }
+      override def hashCode(): Int = s.hashCode
+
+    }
+    class CustomOrder(val selfEqual: Boolean) extends Ordering[K] {
+      override def compare(x: K, y: K): Int = x.s compareTo y.s
+
+      override def equals(obj: Any): Boolean = obj match {
+        case c: CustomOrder => (c eq this) || this.selfEqual && c.selfEqual
+        case _ => false
+      }
+    }
+    val o1 = new CustomOrder(true)
+    val o2_1 = new CustomOrder(false)
+    val o2_2 = new CustomOrder(false)
+
+    val b1_1 = TreeMap.newBuilder[K, V](o1)
+    val b1_2 = TreeMap.newBuilder[K, V](o1)
+
+    val b2_1 = TreeMap.newBuilder[K, V](o2_1)
+    val b2_2 = TreeMap.newBuilder[K, V](o2_2)
+
+    val bHash = HashMap.newBuilder[K,V]
+    for (i <- 10 to 20) {
+      b1_1 += new K(i.toString) -> new V(s"$i value")
+      b1_2 += new K(i.toString) -> new V(s"$i value")
+
+      b2_1 += new K(i.toString) -> new V(s"$i value")
+      b2_2 += new K(i.toString) -> new V(s"$i value")
+
+      bHash += new K(i.toString) -> new V(s"$i value")
+    }
+    val tree1_1 = b1_1.result()
+    val tree1_2 = b1_2.result()
+
+    val tree2_1 = b1_1.result()
+    val tree2_2 = b1_2.result()
+
+    val treeHash = bHash.result()
+
+    val all = List((tree1_1,"tree1_1"), (tree1_2, "tree1_2"), (tree2_1, "tree2_1"), (tree2_2, "tree2_2"), (treeHash, "treeHash"))
+    for ((lhs, lText ) <- all;
+         (rhs, rText) <-all) {
+      assertEquals(s"$lText $rText", lhs, rhs)
+      assertEquals(s"$rText $lText", rhs, lhs)
+    }
+  }
 }
