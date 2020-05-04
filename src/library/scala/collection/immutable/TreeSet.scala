@@ -205,10 +205,13 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   override def firstKey = head
   override def lastKey = last
 
-
   private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
     bf match {
-      case tsb: TreeSet.TreeSetBuilder[_] if tsb.ordering == ordering => true
+      case cbf: SortedSetFactory[_]#SortedSetCanBuildFrom[_] => {
+        val factory:AnyRef = cbf.factory
+        ((factory eq TreeSet) || (factory eq immutable.SortedSet) || (factory eq collection.SortedSet)) &&
+          cbf.ordering == ordering
+      }
       case w: WrappedCanBuildFrom[_,_,_] => sameCBF(w.wrapped)
       case _ => false
     }
@@ -221,7 +224,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   private[scala] def addAllImpl[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[TreeSet[A], B, That]): That = {
     that match {
-      case ts: TreeSet[A] if ordering == ts.ordering && sameCBF(bf) =>
+      case ts: TreeSet[A] if sameCBF(bf) =>
         newSetOrSelf(RB.union(tree, ts.tree)).asInstanceOf[That]
       case _ =>
         val b = bf(repr)

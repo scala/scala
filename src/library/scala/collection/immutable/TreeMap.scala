@@ -328,14 +328,22 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     val (l, r) = RB.partitionEntries[A, B](tree, (k, v) => p((k, v)))
     (newMapOrSelf(l), newMapOrSelf(r))
   }
+  private def sameCBF(bf: CanBuildFrom[_,_,_]): Boolean = {
+    bf match {
+      case cbf: SortedMapFactory[_]#SortedMapCanBuildFrom[_,_] => {
+        val factory:AnyRef = cbf.factory
+        ((factory eq TreeMap) || (factory eq immutable.SortedMap) || (factory eq collection.SortedMap)) &&
+          cbf.ordering == ordering
+      }
+      case w: WrappedCanBuildFrom[_,_,_] => sameCBF(w.wrapped)
+      case _ => false
+    }
+  }
+
 
   override def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[TreeMap[A, B], (A, W), That]): That = {
-    bf match {
-      case sm: TreeMap.SortedMapCanBuildFrom[A, B] if sm.ordering == ordering =>
-        val t2 = RB.transform[A, B, W](tree, f)
-        if (t2 eq tree) this.asInstanceOf[That]
-        else new TreeMap(t2).asInstanceOf[That]
-      case _ => super.transform(f)
-    }
+    if (sameCBF(bf))
+      newMapOrSelf(RB.transform[A, B, W](tree, f)).asInstanceOf[That]
+    else super.transform(f)
   }
 }
