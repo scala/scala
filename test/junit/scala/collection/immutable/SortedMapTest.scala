@@ -13,14 +13,14 @@ class SortedMapTest extends AllocationTest{
   }
   @Test def apply0: Unit ={
     val ord = Ordering[String]
-    exactAllocates(48)(SortedMap()(ord))
+    exactAllocates(24)(SortedMap()(ord))
   }
   @Test def apply1: Unit ={
     val ord = Ordering[String]
-    exactAllocates(216)(SortedMap("a" -> "a")(ord))
+    exactAllocates(192)(SortedMap("a" -> "a")(ord))
   }
   @Test def apply2: Unit ={
     val ord = Ordering[String]
-    exactAllocates(328)(SortedMap("a" -> "a", "b" -> "b")(ord))
+    exactAllocates(280)(SortedMap("a" -> "a", "b" -> "b")(ord))
   }
 }

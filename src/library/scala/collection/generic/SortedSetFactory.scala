@@ -26,7 +26,10 @@ abstract class SortedSetFactory[CC[A] <: SortedSet[A] with SortedSetLike[A, CC[A
 
   def empty[A](implicit ord: Ordering[A]): CC[A]
 
-  def apply[A](elems: A*)(implicit ord: Ordering[A]): CC[A] = (newBuilder[A](ord) ++= elems).result()
+  def apply[A](elems: A*)(implicit ord: Ordering[A]): CC[A] = {
+    if (elems isEmpty) empty
+    else (newBuilder[A](ord) ++= elems).result()
+  }
 
   def newBuilder[A](implicit ord: Ordering[A]): Builder[A, CC[A]] = new SetBuilder[A, CC[A]](empty)
 

@@ -13,14 +13,14 @@ class SortedSetTest extends AllocationTest{
   }
   @Test def apply0: Unit ={
     val ord = Ordering[String]
-    exactAllocates(48)(SortedSet()(ord))
+    exactAllocates(24)(SortedSet()(ord))
   }
   @Test def apply1: Unit ={
     val ord = Ordering[String]
-    exactAllocates(192)(SortedSet("a")(ord))
+    exactAllocates(168)(SortedSet("a")(ord))
   }
   @Test def apply2: Unit ={
     val ord = Ordering[String]
-    exactAllocates(280)(SortedSet("a", "b")(ord))
+    exactAllocates(232)(SortedSet("a", "b")(ord))
   }
 }
