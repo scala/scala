@@ -90,22 +90,44 @@ class TreeSetTest extends AllocationTest{
     assertEquals(tree1.drop(5).keySet, tree1.drop(5).keySet)
   }
   @Test def equalFastPath: Unit = {
-    class K(private val s: String) extends Comparable[K]{
+    var compareCount = 0
+    class K(val s: String) extends Ordered[K] {
+      override def toString: String = s"K-$s"
 
-      override def equals(obj: Any): Boolean = {
-        fail("equals should not be called = the trees should be  the same")
-        false
+      override def compare(that: K): Int = {
+        val res = s.compareTo(that.s)
+        compareCount += 1
+        res
       }
 
-      override def compareTo(o: K): Int = s.compareTo(o.s)
+      override def equals(obj: Any): Boolean = {
+        fail("equals should not be called = the trees should be ordered and compared via the sort order")
+        false
+      }
     }
     val b1 = TreeSet.newBuilder[K]
     for ( i <- 10 to 1000) {
-      b1 += new K(s"$i **")
+      b1 += new K(i.toString)
     }
     val tree1 = b1.result()
+    compareCount = 0
+    nonAllocating(assertEquals(tree1, tree1))
+    assertEquals(0, compareCount)
 
-    assertEquals(tree1.drop(5), tree1.drop(5))
+    var exp = tree1.drop(5)
+    var act = tree1.drop(5)
+    compareCount = 0
+    onlyAllocates(240)(assertEquals(exp, act))
+    assertEquals(0, compareCount)
+
+    exp += new K("XXX")
+    act += new K("XXX")
+
+    compareCount = 0
+    assertEquals(exp, act)
+    assertTrue(compareCount.toString, compareCount < 30)
+    //we cant combine this with th above assertion as onlyAllocates run lots of time to determne the allocation
+    onlyAllocates(408)(assertEquals(exp, act))
   }
 
   @Test
