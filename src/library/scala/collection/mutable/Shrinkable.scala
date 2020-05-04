@@ -40,6 +40,7 @@ trait Shrinkable[-A] {
     *  @param elems the remaining elements to remove.
     *  @return the $coll itself
     */
+  @deprecated("Use `--=` aka `subtractAll` instead of varargs `-=`; infix operations with an operand of multiple args will be deprecated", "2.13.3")
   def -= (elem1: A, elem2: A, elems: A*): this.type = {
     this -= elem1
     this -= elem2
