@@ -41,7 +41,7 @@ abstract class CodeGen[G <: Global](val global: G) extends PerRunInit {
       val fullSymbolName = sym.javaClassName
       val mainClassNode = genClass(cd, unit)
       generatedClasses += GeneratedClass(mainClassNode, fullSymbolName, position, isArtifact = false)
-      if (bTypes.isTopLevelModuleClass(sym)) {
+      if (!settings.noForwarders && bTypes.isTopLevelModuleClass(sym)) {
         if (sym.companionClass == NoSymbol) {
           val mirrorClassNode = genMirrorClass(sym, unit)
           generatedClasses += GeneratedClass(mirrorClassNode, fullSymbolName, position, isArtifact = true)
