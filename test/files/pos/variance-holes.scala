@@ -1,3 +1,5 @@
+import scala.annotation.unchecked.uncheckedVariance
+
 object Test {
   type Lower1[+A] >: List[A]
 
@@ -44,4 +46,16 @@ object Test {
   }
 
   def generic[A]: Unit = ()
+
+  trait UncheckedHKT {
+    type F[+_, -_]
+  }
+
+  object UncheckedHKT {
+    def impl1[G[_, _]]: UncheckedHKT { type F[+A, -B] = G[A @uncheckedVariance, B @uncheckedVariance] } =
+      new UncheckedHKT { type F[+A, -B] = G[A @uncheckedVariance, B @uncheckedVariance] }
+
+    def impl2[G[_, _]]: UncheckedHKT { type F[+A, -B] = G[A, B] @uncheckedVariance } =
+      new UncheckedHKT { type F[+A, -B] = G[A, B] @uncheckedVariance }
+  }
 }
