@@ -173,4 +173,35 @@ class RegexTest {
     assertTrue(r.matches("foo2"))
     assertTrue(r.matches("2foo"))
   }
+
+  @Test def replacementMatching(): Unit = {
+    val regex = """\$\{(.+?)\}""".r
+    val replaced = regex.replaceAllIn("Replacing: ${main}. And another method: ${foo}.",
+        (m: util.matching.Regex.Match) => {
+      val identifier = m.group(1)
+      identifier
+    })
+    assertEquals("Replacing: main. And another method: foo.", replaced)
+
+    val regex3 = """\$\{(.+?)\}""".r
+    val replaced3 = regex3.replaceSomeIn("Replacing: ${main}. And another: ${foo}.", (m: util.matching.Regex.Match) => {
+      val id = m.group(1)
+      if (id.startsWith("m")) Some(id) else None
+    })
+    assertEquals("Replacing: main. And another: ${foo}.", replaced3)
+  }
+
+  @Test def groupsMatching(): Unit = {
+    val Date = """(\d+)/(\d+)/(\d+)""".r
+    for (Regex.Groups(a, b, c) <- Date findFirstMatchIn "1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.") {
+      assertEquals("1", a)
+      assertEquals("1", b)
+      assertEquals("2001", c)
+    }
+    for (Regex.Groups(a, b, c) <- Date.findAllIn("1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.").matchData) {
+      assert(a == "1" || a == "31")
+      assert(b == "1" || b == "12")
+      assert(c == "2001" || c == "2000")
+    }
+  }
 }

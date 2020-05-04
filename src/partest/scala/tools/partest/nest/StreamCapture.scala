@@ -10,38 +10,41 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.partest
-package nest
+package scala.tools.partest.nest
 
 import java.io.{Console => _, _}
 import java.nio.charset.Charset
 
+import scala.util.Using
+
 object StreamCapture {
-  def savingSystem[T](body: => T): T = {
+  def savingSystem[A](body: => A): A = {
     val savedOut  = System.out
     val savedErr  = System.err
     try body
     finally {
-      System setErr savedErr
-      System setOut savedOut
+      System.setErr(savedErr)
+      System.setOut(savedOut)
     }
   }
 
-  def capturingOutErr[A](output: OutputStream)(f: => A): A = {
-    import java.io._
+  /** Set err to out. */
+  def redirErr[A](body: => A): A = savingSystem {
+    System.setOut(System.err)
+    body
+  }
+
+  def capturingOutErr[A](output: OutputStream)(body: => A): A = {
     val charset = Charset.defaultCharset()
-    val printStream = new PrintStream(output, true, charset.name())
-    savingSystem {
-      System.setOut(printStream)
-      System.setErr(printStream)
-      try {
-        scala.Console.withErr(printStream) {
-          scala.Console.withOut(printStream) {
-            f
+    Using.resource(new PrintStream(output, /*autoflush=*/true, charset.name())) { printStream =>
+      savingSystem {
+        System.setOut(printStream)
+        System.setErr(printStream)
+        Console.withErr(printStream) {
+          Console.withOut(printStream) {
+            body
           }
         }
-      } finally {
-        printStream.close()
       }
     }
   }

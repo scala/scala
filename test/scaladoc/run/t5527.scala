@@ -1,13 +1,14 @@
-import scala.tools.partest._
-import java.io._
-import scala.tools.nsc._
 import scala.tools.cmd.CommandLineParser
-import scala.tools.nsc.doc.{Settings, DocFactory}
+import scala.tools.nsc, nsc.doc
+import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.partest.DirectTest
+import scala.tools.partest.nest.StreamCapture
+import scala.util.chaining._
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Vprint:parser -Yrangepos -Ystop-after:parser -d " + testOutput.path
+  override def extraSettings = "-usejavacp -Vprint:parser -Yrangepos -Ystop-after:parser"
 
   override def code = """
     // scala/bug#5527
@@ -136,18 +137,14 @@ object Test extends DirectTest {
     }
   """.trim
 
-  override def show(): Unit = {
-    // redirect err to out, for logging
-    val prevErr = System.err
+  // redirect err to out, for logging
+  override def show(): Unit = StreamCapture.savingSystem {
     System.setErr(System.out)
     compile()
-    System.setErr(prevErr)
   }
-
-  override def newCompiler(args: String*): Global = {
-    // we want the Scaladoc compiler here, because it keeps DocDef nodes in the tree
-    val settings = new Settings(_ => ())
-    val command = new ScalaDoc.Command((CommandLineParser tokenize extraSettings) ++ args.toList, settings)
-    new DocFactory(new ConsoleReporter(settings), settings).compiler
-  }
+  // doc.Settings
+  override def newSettings(args: List[String]) = new doc.Settings(_ => ()).tap(_.processArguments(args, true))
+  // ScaladocGlobal yielded by DocFactory#compiler, requires doc.Settings
+  // we want the Scaladoc compiler here, because it keeps DocDef nodes in the tree
+  override def newCompiler(settings: nsc.Settings) = new DocFactory(reporter(settings), settings.asInstanceOf[doc.Settings]).compiler
 }

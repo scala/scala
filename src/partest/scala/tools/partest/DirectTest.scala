@@ -41,26 +41,29 @@ abstract class DirectTest {
   def testPath   = SFile(sys.props("partest.test-path"))
   def testOutput = Directory(sys.props("partest.output"))
 
-  // override to add additional settings with strings
+  // override to add additional settings besides -d testOutput.path
   def extraSettings: String = ""
-  // a default Settings object
-  def settings: Settings = newSettings(CommandLineParser tokenize extraSettings)
-  // a custom Settings object
+  // a default Settings object using only extraSettings
+  def settings: Settings = newSettings(CommandLineParser.tokenize(extraSettings))
+  // settings factory using given args and also debug settings
   def newSettings(args: List[String]) = {
     val s = new Settings
-    val allArgs = args ++ (CommandLineParser tokenize debugSettings)
+    val allArgs = args ++ CommandLineParser.tokenize(debugSettings)
     log("newSettings: allArgs = " + allArgs)
-    s processArguments (allArgs, true)
+    val (success, residual) = s.processArguments(allArgs, processAll = false)
+    assert(success && residual.isEmpty, s"Bad settings [${args.mkString(",")}], residual [${residual.mkString(",")}]")
     s
   }
-  // new compiler
+  // new compiler using given ad hoc args, -d and extraSettings
   def newCompiler(args: String*): Global = {
     val settings = newSettings(CommandLineParser.tokenize(s"""-d "${testOutput.path}" ${extraSettings}""") ++ args.toList)
     newCompiler(settings)
   }
 
+  // compiler factory
   def newCompiler(settings: Settings): Global = Global(settings, reporter(settings))
 
+  // reporter factory, console by default
   def reporter(settings: Settings): Reporter = new ConsoleReporter(settings)
 
   private def newSourcesWithExtension(ext: String)(codes: String*): List[BatchSourceFile] =
