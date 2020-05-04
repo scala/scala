@@ -396,7 +396,7 @@ class SetMapConsistencyTest {
 
     assert {
       val lm2 = new LongMap[String](_.toString)
-      lm2 += (5L -> "fish", 0L -> "unicorn")
+      lm2.+=(5L -> "fish", 0L -> "unicorn")
       val hm2 = (new HashMap[Long,String]) ++= lm2
       List(Long.MinValue, 0L, 1L, 5L).forall(i =>
         lm2.get(i) == hm2.get(i) &&
@@ -443,7 +443,7 @@ class SetMapConsistencyTest {
 
     assert {
       val arm2 = new AnyRefMap[String, String](x => if (x==null) "null" else x)
-      arm2 += ("cod" -> "fish", "Rarity" -> "unicorn")
+      arm2.+=("cod" -> "fish", "Rarity" -> "unicorn")
       val hm2 = (new HashMap[String,String]) ++= arm2
       List(null, "cod", "sparrow", "Rarity").forall { i =>
         //println((arm2.get(i), hm2.get(i)))
@@ -519,10 +519,10 @@ class SetMapConsistencyTest {
   @Test
   def testSI8815(): Unit = {
     val lm = new scala.collection.mutable.LongMap[String]
-    lm += (Long.MinValue, "min")
-    lm += (-1, "neg-one")
-    lm += (0, "zero")
-    lm += (Long.MaxValue, "max")
+    lm.+=(Long.MinValue, "min")
+    lm.+=(-1, "neg-one")
+    lm.+=(0, "zero")
+    lm.+=(Long.MaxValue, "max")
     var nit = 0
     lm.iterator.foreach(_ => nit += 1)
     var nfe = 0

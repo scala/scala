@@ -491,11 +491,11 @@ class JavapTask(val loader: ScalaClassLoader, intp: Repl) extends JavapTool {
 
   // DisassemblerTool.getStandardFileManager(reporter,locale,charset)
   val defaultFileManager: JavaFileManager =
-    (loader.tryToLoadClass[JavaFileManager]("com.sun.tools.javap.JavapFileManager").get getMethod (
+    (loader.tryToLoadClass[JavaFileManager]("com.sun.tools.javap.JavapFileManager").get.getMethod(
       "create",
       classOf[DiagnosticListener[_]],
       classOf[PrintWriter]
-    ) invoke (null, reporter, new PrintWriter(System.err, true))).asInstanceOf[JavaFileManager]
+    ).invoke(null, reporter, new PrintWriter(System.err, true))).asInstanceOf[JavaFileManager]
 
   // manages named arrays of bytes, which might have failed to load
   class JavapFileManager(val managed: Seq[Input])(delegate: JavaFileManager = defaultFileManager)

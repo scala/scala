@@ -174,7 +174,7 @@ abstract class TailCalls extends Transform {
         val thisParam = method.newSyntheticValueParam(currentClass.typeOfThis)
         label setInfo MethodType(thisParam :: method.tpe.params, method.tpe_*.finalResultType)
         if (isEligible)
-          label substInfo (method.tpe.typeParams, tparams)
+          label.substInfo(method.tpe.typeParams, tparams)
 
         label
       }

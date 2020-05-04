@@ -58,6 +58,7 @@ trait SymbolTables {
         case None => EmptyTree
       }
 
+    @deprecated("use add instead", since="2.13.3")
     def +(sym: Symbol, name: TermName, reification: Tree): SymbolTable = add(sym, name, reification)
     def +(symDef: Tree): SymbolTable = add(symDef)
     def ++(symDefs: IterableOnce[Tree]): SymbolTable = symDefs.iterator.foldLeft(this)((symtab, symDef) => symtab.add(symDef))

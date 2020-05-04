@@ -21,7 +21,7 @@ class ArrayDequeTest {
       assertEquals(buffer.reverse, buffer2.reverse)
     }
 
-    apply(_ += (1, 2, 3, 4, 5))
+    apply(_.+=(1, 2, 3, 4, 5))
     apply(_.prepend(6).prepend(7).prepend(8))
     apply(_.trimStart(2))
     apply(_.trimEnd(3))

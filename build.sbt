@@ -374,6 +374,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   connectInput in run := true,
   //scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
   //scalacOptions in Compile ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
+  scalacOptions in Compile += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:ws",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",

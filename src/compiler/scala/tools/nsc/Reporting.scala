@@ -229,7 +229,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
         )
       reportedFeature += featureTrait
 
-      val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain" replace ("#", construct)
+      val msg = s"$featureDesc $req be enabled\nby making the implicit value $fqname visible.$explain".replace("#", construct)
       // maybe pos.source.file.file.getParentFile.getName or Path(source.file.file).parent.name
       def parentFileName(source: internal.util.SourceFile) =
         Option(java.nio.file.Paths.get(source.path).getParent).map(_.getFileName.toString)

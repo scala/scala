@@ -138,14 +138,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
       val resultType    = MethodType(List(thisParam), dropNullaryMethod(methodResult))
       val selfParamType = singleType(currentOwner.companionModule.thisType, thisParam)
 
-      def fixres(tp: Type)    = tp substThisAndSym (clazz, selfParamType, clazz.typeParams, tparamsFromClass)
-      def fixtparam(tp: Type) = tp substSym (clazz.typeParams, tparamsFromClass)
+      def fixres(tp: Type)    = tp.substThisAndSym(clazz, selfParamType, clazz.typeParams, tparamsFromClass)
+      def fixtparam(tp: Type) = tp.substSym(clazz.typeParams, tparamsFromClass)
 
       // We can't substitute symbols on the entire polytype because we
       // need to modify the bounds of the cloned type parameters, but we
       // don't want to substitute for the cloned type parameters themselves.
       val tparams = tparamsFromMethod ::: tparamsFromClass
-      tparams foreach (_ modifyInfo fixtparam)
+      tparams.foreach(_ modifyInfo fixtparam)
       GenPolyType(tparams, fixres(resultType))
 
       // For reference, calling fix on the GenPolyType plays out like this:

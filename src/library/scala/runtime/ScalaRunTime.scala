@@ -14,13 +14,13 @@ package scala
 package runtime
 
 import scala.collection.{AbstractIterator, AnyConstr, SortedOps, StrictOptimizedIterableOps, StringOps, StringView, View}
+import scala.collection.generic.IsIterable
 import scala.collection.immutable.{ArraySeq, NumericRange}
 import scala.collection.mutable.StringBuilder
+import scala.math.min
 import scala.reflect.{ClassTag, classTag}
 import java.lang.{Class => jClass}
 import java.lang.reflect.{Method => JMethod}
-
-import scala.collection.generic.IsIterable
 
 /** The object ScalaRunTime provides support methods required by
  *  the scala runtime.  All these methods should be considered
@@ -239,7 +239,7 @@ object ScalaRunTime {
     // Special casing Unit arrays, the value class which uses a reference array type.
     def arrayToString(x: AnyRef) = {
       if (x.getClass.getComponentType == classOf[BoxedUnit])
-        0 until (array_length(x) min maxElements) map (_ => "()") mkString ("Array(", ", ", ")")
+        (0 until min(array_length(x), maxElements)).map(_ => "()").mkString("Array(", ", ", ")")
       else
         x.asInstanceOf[Array[_]].iterator.take(maxElements).map(inner).mkString("Array(", ", ", ")")
     }
@@ -254,10 +254,10 @@ object ScalaRunTime {
       case x: String                    => if (x.head.isWhitespace || x.last.isWhitespace) "\"" + x + "\"" else x
       case x if useOwnToString(x)       => x.toString
       case x: AnyRef if isArray(x)      => arrayToString(x)
-      case x: scala.collection.Map[_, _] => x.iterator take maxElements map mapInner mkString (x.collectionClassName + "(", ", ", ")")
-      case x: Iterable[_]               => x.iterator take maxElements map inner mkString (x.collectionClassName + "(", ", ", ")")
+      case x: scala.collection.Map[_, _] => x.iterator.take(maxElements).map(mapInner).mkString(x.collectionClassName + "(", ", ", ")")
+      case x: Iterable[_]               => x.iterator.take(maxElements).map(inner).mkString(x.collectionClassName + "(", ", ", ")")
       case x: Product1[_] if isTuple(x) => "(" + inner(x._1) + ",)" // that special trailing comma
-      case x: Product if isTuple(x)     => x.productIterator map inner mkString ("(", ",", ")")
+      case x: Product if isTuple(x)     => x.productIterator.map(inner).mkString("(", ",", ")")
       case x                            => x.toString
     }
 

@@ -2187,7 +2187,7 @@ self =>
     private def addMod(mods: Modifiers, mod: Long, pos: Position): Modifiers = {
       if (mods hasFlag mod) syntaxError(in.offset, "repeated modifier", skipIt = false)
       in.nextToken()
-      (mods | mod) withPosition (mod, pos)
+      (mods | mod).withPosition(mod, pos)
     }
 
     private def tokenRange(token: TokenData) =
@@ -2397,7 +2397,7 @@ self =>
         if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
         in.token match {
           case v @ (VAL | VAR) =>
-            mods = mods withPosition (in.token.toLong, tokenRange(in))
+            mods = mods.withPosition(in.token.toLong, tokenRange(in))
             if (v == VAR) mods |= Flags.MUTABLE
             in.nextToken()
           case _ =>
@@ -2632,13 +2632,13 @@ self =>
         syntaxError("lazy not allowed here. Only vals can be lazy", skipIt = false)
       in.token match {
         case VAL =>
-          patDefOrDcl(pos, mods withPosition(VAL, tokenRange(in)))
+          patDefOrDcl(pos, mods.withPosition(VAL, tokenRange(in)))
         case VAR =>
-          patDefOrDcl(pos, (mods | Flags.MUTABLE) withPosition (VAR, tokenRange(in)))
+          patDefOrDcl(pos, (mods | Flags.MUTABLE).withPosition(VAR, tokenRange(in)))
         case DEF =>
-          List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
+          List(funDefOrDcl(pos, mods.withPosition(DEF, tokenRange(in))))
         case TYPE =>
-          List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
+          List(typeDefOrDcl(pos, mods.withPosition(TYPE, tokenRange(in))))
         case _ =>
           List(tmplDef(pos, mods))
       }
@@ -2897,15 +2897,15 @@ self =>
       if (mods.isLazy) syntaxError("classes cannot be lazy", skipIt = false)
       in.token match {
         case TRAIT =>
-          classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT) withPosition (Flags.TRAIT, tokenRange(in)))
+          classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT).withPosition(Flags.TRAIT, tokenRange(in)))
         case CLASS =>
           classDef(pos, mods)
         case CASECLASS =>
-          classDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'class', thus take prev*/)))
+          classDef(pos, (mods | Flags.CASE).withPosition(Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'class', thus take prev*/)))
         case OBJECT =>
           objectDef(pos, mods)
         case CASEOBJECT =>
-          objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
+          objectDef(pos, (mods | Flags.CASE).withPosition(Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
           syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(
             // assume a class definition so as to have somewhere to stash the annotations

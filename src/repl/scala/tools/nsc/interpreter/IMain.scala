@@ -1324,7 +1324,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
         val termMsg        = if (terms.isEmpty) "" else s"${terms.size} terms"
         val implicitMsg    = if (imps.isEmpty) "" else s"${imps.size} are implicit"
         val foundMsg       = if (found.isEmpty) "" else found.mkString(" // imports: ", ", ", "")
-        val statsMsg       = List(typeMsg, termMsg, implicitMsg) filterNot (_ == "") mkString ("(", ", ", ")")
+        val statsMsg       = List(typeMsg, termMsg, implicitMsg).filterNot(_ == "").mkString("(", ", ", ")")
 
         f"${idx + 1}%2d) ${handler.importString}%-30s $statsMsg$foundMsg"
     }

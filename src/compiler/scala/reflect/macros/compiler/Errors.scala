@@ -100,7 +100,7 @@ trait Errors extends Traces {
 
     private def showMeth(pss: List[List[Symbol]], restpe: Type, abbreviate: Boolean, untype: Boolean) = {
       def preprocess(tpe: Type) = if (untype) untypeMetalevel(tpe) else tpe
-      var pssPart = (pss map (ps => ps map (p => p.defStringSeenAs(preprocess(p.info))) mkString ("(", ", ", ")"))).mkString
+      var pssPart = pss.map(_.map(p => p.defStringSeenAs(preprocess(p.info))).mkString("(", ", ", ")")).mkString
       if (abbreviate) pssPart = abbreviateCoreAliases(pssPart)
       var retPart = preprocess(restpe).toString
       if (abbreviate || macroDdef.tpt.tpe == null) retPart = abbreviateCoreAliases(retPart)

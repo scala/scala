@@ -294,7 +294,7 @@ trait Interface extends ast.TreeDSL {
         }
         new Substitution(newFrom.prependToList(other.from), newTo.prependToList(other.to.mapConserve(apply)))
       }
-      override def toString = (from.map(_.name) zip to) mkString("Substitution(", ", ", ")")
+      override def toString = from.map(_.name).zip(to).mkString("Substitution(", ", ", ")")
     }
 
     object EmptySubstitution extends Substitution(Nil, Nil) {

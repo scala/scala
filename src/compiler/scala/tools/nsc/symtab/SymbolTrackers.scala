@@ -147,7 +147,7 @@ trait SymbolTrackers {
         else {
           indicatorString + indent + symString(root) + (
             if (children.isEmpty) ""
-            else children map (c => c.indentString(indent + "    ")) mkString ("\n", "\n", "")
+            else children.map(_.indentString(indent + "    ")).mkString("\n", "\n", "")
           )
         }
       }

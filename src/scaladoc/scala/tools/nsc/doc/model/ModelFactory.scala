@@ -209,7 +209,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         case d: MemberEntity with Def =>
           val paramLists: List[String] =
             if (d.valueParams.isEmpty) Nil
-            else d.valueParams map (ps => ps map (_.resultType.name) mkString ("(",",",")"))
+            else d.valueParams.map(ps => ps.map(_.resultType.name).mkString("(",",",")"))
           paramLists.mkString
         case _ => ""
       }

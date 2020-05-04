@@ -12,6 +12,8 @@ import Seq.empty
 @RunWith(classOf[JUnit4])
 class IteratorTest {
 
+  private def from0 = Iterator.from(0)
+
   @Test def groupedIteratorShouldNotAskForUnneededElement(): Unit = {
     var counter = 0
     val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
@@ -48,16 +50,16 @@ class IteratorTest {
   }
 
   @Test def sliceIsChainable(): Unit = {
-    assertSameElements(3 to 6, Iterator from 0 slice (3, 7))
-    assertSameElements(empty,  Iterator from 0 slice (3, 3))
-    assertSameElements(0 to 2, Iterator from 0 slice (-1, 3))
-    assertSameElements(empty,  Iterator from 0 slice (3, -1))
-    assertSameElements(6 to 12 by 2, Iterator from 0 slice (3, 7) map (2 * _))
-    assertSameElements(6 to 12 by 2, Iterator from 0 map (2 * _) slice (3, 7))
-    assertSameElements(4 to 6, Iterator from 0 slice (3, 7) drop 1)
-    assertSameElements(4 to 7, Iterator from 0 drop 1 slice (3, 7))
-    assertSameElements(4 to 5, Iterator from 0 slice (3, 7) slice (1, 3))
-    assertSameElements(4 to 6, Iterator from 0 slice (3, 7) slice (1, 10))
+    assertSameElements(3 to 6, from0.slice(3, 7))
+    assertSameElements(empty,  from0.slice(3, 3))
+    assertSameElements(0 to 2, from0.slice(-1, 3))
+    assertSameElements(empty,  from0.slice(3, -1))
+    assertSameElements(6 to 12 by 2, from0.slice(3, 7).map(2 * _))
+    assertSameElements(6 to 12 by 2, from0.map(2 * _).slice(3, 7))
+    assertSameElements(4 to 6, from0.slice(3, 7).drop(1))
+    assertSameElements(4 to 7, from0.drop(1).slice(3, 7))
+    assertSameElements(4 to 5, from0.slice(3, 7).slice(1, 3))
+    assertSameElements(4 to 6, from0.slice(3, 7).slice(1, 10))
   }
 
   // test/files/run/iterator-concat.scala

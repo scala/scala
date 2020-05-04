@@ -517,7 +517,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
       def resetUniques() = {_nextId = 0; uniques.clear()}
       private val uniques = new mutable.HashMap[Tree, Var]
-      def apply(x: Tree): Var = uniques getOrElseUpdate(x, new Var(x, x.tpe))
+      def apply(x: Tree): Var = uniques.getOrElseUpdate(x, new Var(x, x.tpe))
       def unapply(v: Var) = Some(v.path)
     }
     class Var(val path: Tree, staticTp: Type) extends AbsVar {
@@ -575,11 +575,11 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
 
       // populate equalitySyms
       // don't care about the result, but want only one fresh symbol per distinct constant c
-      def registerEquality(c: Const): Unit = {ensureCanModify(); symForEqualsTo getOrElseUpdate(c, Sym(this, c))}
+      def registerEquality(c: Const): Unit = { ensureCanModify() ; symForEqualsTo.getOrElseUpdate(c, Sym(this, c)) }
 
       // return the symbol that represents this variable being equal to the constant `c`, if it exists, otherwise False (for robustness)
       // (registerEquality(c) must have been called prior, either when constructing the domain or from outside)
-      def propForEqualsTo(c: Const): Prop = {observed(); symForEqualsTo.getOrElse(c, False)}
+      def propForEqualsTo(c: Const): Prop = { observed() ; symForEqualsTo.getOrElse(c, False) }
 
       // [implementation NOTE: don't access until all potential equalities have been registered using registerEquality]p
       /** the information needed to construct the boolean proposition that encodes the equality proposition (V = C)
@@ -709,8 +709,8 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
       // don't call until all equalities have been registered and registerNull has been called (if needed)
       def describe = {
         def domain_s = domain match {
-          case Some(d) => d mkString (" ::= ", " | ", "// "+ symForEqualsTo.keys)
-          case _       => symForEqualsTo.keys mkString (" ::= ", " | ", " | ...")
+          case Some(d) => d.mkString(" ::= ", " | ", "// "+ symForEqualsTo.keys)
+          case _       => symForEqualsTo.keys.mkString(" ::= ", " | ", " | ...")
         }
         s"$this: ${staticTp}${domain_s} // = $path"
       }

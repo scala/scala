@@ -804,7 +804,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           def overrideIn(clazz: Symbol, sym: Symbol) = {
             val newFlags = (sym.flags | OVERRIDE | SPECIALIZED) & ~(DEFERRED | CASEACCESSOR | PARAMACCESSOR)
             val sym1     = sym.cloneSymbol(clazz, newFlags)
-            sym1 modifyInfo (_ asSeenFrom (clazz.tpe, sym1.owner))
+            sym1.modifyInfo(_.asSeenFrom(clazz.tpe, sym1.owner))
           }
           val specVal = specializedOverload(sClass, m, env)
 

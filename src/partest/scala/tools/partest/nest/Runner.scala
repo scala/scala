@@ -369,7 +369,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
     // Apply judiciously; there are line comments in the "stub implementations" error output.
     val slashes    = """[/\\]+""".r
-    def squashSlashes(s: String) = slashes replaceAllIn (s, "/")
+    def squashSlashes(s: String) = slashes.replaceAllIn(s, "/")
 
     // this string identifies a path and is also snipped from log output.
     val elided     = parentFile.getAbsolutePath
@@ -379,14 +379,12 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
 
     // no spaces in test file paths below root, because otherwise how to detect end of path string?
     val pathFinder = raw"""(?i)\Q${elided}${File.separator}\E([\${File.separator}\S]*)""".r
-    def canonicalize(s: String): String = (
-      pathFinder replaceAllIn (s, m =>
-        Regex.quoteReplacement(ellipsis + squashSlashes(m group 1)))
-    )
+    def canonicalize(s: String): String =
+      pathFinder.replaceAllIn(s, m => Regex.quoteReplacement(ellipsis + squashSlashes(m group 1)))
 
     def masters    = {
       val files = List(new File(parentFile, "filters"), new File(suiteRunner.pathSettings.srcDir.path, "filters"))
-      files filter (_.exists) flatMap (_.fileLines) map (_.trim) filter (s => !(s startsWith "#"))
+      files.filter(_.exists).flatMap(_.fileLines).map(_.trim).filter(s => !(s startsWith "#"))
     }
     val filters    = toolArgs("filter", split = false) ++ masters
     val elisions   = ListBuffer[String]()
@@ -403,7 +401,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     if (suiteRunner.verbose && elisions.nonEmpty) {
       import suiteRunner.log._
       val emdash = bold(yellow("--"))
-      pushTranscript(s"filtering ${logFile.getName}$EOL${elisions mkString (emdash, EOL + emdash, EOL)}")
+      pushTranscript(s"filtering ${logFile.getName}$EOL${elisions.mkString(emdash, EOL + emdash, EOL)}")
     }
   }
 
