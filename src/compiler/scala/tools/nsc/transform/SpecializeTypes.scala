@@ -17,6 +17,7 @@ package transform
 import scala.collection.mutable
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.Reporting.WarningCategory
+import scala.util.chaining._
 
 /** Specialize code on types.
  *
@@ -743,16 +744,6 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         if (m.isConstructor) {
           val specCtor = enterMember(cloneInSpecializedClass(m, x => x))
-          if (settings.unitSpecialization && m.isPrimaryConstructor && specCtor.paramLists.exists(_.exists(_.tpe =:= UnitTpe)))
-            m.paramLists.flatten.zip(specCtor.paramLists.flatten).foreach {
-              case (orig, spec) if spec.tpe =:= UnitTpe && m.enclClass.typeParams.contains(orig.tpe.typeSymbol) =>
-                runReporting.warning(
-                  m.pos,
-                  "Fruitless specialization of Unit in parameter position. Consider using `@specialized(Specializable.Arg)` instead.",
-                  WarningCategory.LintUnitSpecialization,
-                  m)
-              case _ =>
-            }
           info(specCtor) = Forward(m)
         }
         else if (isNormalizedMember(m)) {  // methods added by normalization
@@ -1708,19 +1699,17 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
         case Template(parents, self, body) =>
           def transformTemplate = {
-          val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
-          if (!symbol.isPackageClass)
-            (new CollectMethodBodies)(tree)
-          val parents1 = map2Conserve(parents, currentOwner.info.parents)((parent, tpe) =>
-            parent match {
-              case tt @ TypeTree() if tpe eq tt.tpe => tt
-              case _ => TypeTree(tpe) setPos parent.pos
-            })
-
-          treeCopy.Template(tree,
-            parents1    /*currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)*/ ,
-            self,
-            atOwner(currentOwner)(transformTrees(body ::: specMembers)))
+            val specMembers = makeSpecializedMembers(tree.symbol.enclClass) ::: (implSpecClasses(body) map localTyper.typed)
+            if (!symbol.isPackageClass)
+              new CollectMethodBodies()(tree)
+            // currentOwner.info.parents.map(tpe => TypeTree(tpe) setPos parents.head.pos)
+            val parents1 = map2Conserve(parents, currentOwner.info.parents)((parent, tpe) =>
+              parent match {
+                case tt @ TypeTree() if tpe eq tt.tpe => tt
+                case _ => TypeTree(tpe) setPos parent.pos
+              }
+            )
+            treeCopy.Template(tree, parents1, self, atOwner(currentOwner)(transformTrees(body ::: specMembers)))
           }
           transformTemplate
 
@@ -1729,8 +1718,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val vparamss = ddef.vparamss
           if (symbol.isConstructor) {
             val t = atOwner(symbol)(forwardCtorCall(tree.pos, gen.mkSuperInitCall, vparamss, symbol.owner))
+            def check(fwd: Tree) = if (settings.unitSpecialization) {
+              val Apply(_, args) = fwd
+              args.find(arg => (arg.tpe =:= UnitTpe) && arg.symbol.name.endsWith(nme.SPECIALIZED_SUFFIX)).foreach { arg =>
+                val msg = "Class parameter is specialized for type Unit. Consider using `@specialized(Specializable.Arg)` instead."
+                runReporting.warning(arg.pos, msg, WarningCategory.LintUnitSpecialization, symbol.owner)
+              }
+            }
             if (symbol.isPrimaryConstructor)
-              localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant(())))))
+              localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant(()))))).tap(_ => check(t))
             else // duplicate the original constructor
               duplicateBody(ddef, info(symbol).target)
           }
@@ -1801,7 +1797,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
               debuglog(s"special super accessor: $tree with $symbol -> ${symbol.alias} in ${symbol.alias.owner} (in $currentClass)")
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
           }
-          }
+          } // end transformDefDef
           expandInnerNormalizedMembers(transformDefDef(ddef))
 
         case ddef @ DefDef(_, _, _, _, _, _) =>
@@ -2044,7 +2040,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *   - there is a getter for the specialized field in the same class
      */
     def initializesSpecializedField(f: Symbol) = (
-         (f.name endsWith nme.SPECIALIZED_SUFFIX)
+         f.name.endsWith(nme.SPECIALIZED_SUFFIX)
       && clazz.info.member(f.unexpandedName).isPublic
       && clazz.info.decl(f.name).suchThat(_.isGetter) != NoSymbol
     )
