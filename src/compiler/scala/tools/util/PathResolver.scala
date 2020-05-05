@@ -246,7 +246,7 @@ final class PathResolver(settings: Settings, closeableRegistry: CloseableRegistr
      * [scaladoc] case class ReificationException(val pos: reflect.api.PositionApi, val msg: String) extends Throwable(msg)
      * [scaladoc]                                              ^
      * because the bootstrapping will look at the sourcepath and create package "reflect" in "<root>"
-     * and then when typing relative names, instead of picking <root>.scala.relect, typedIdentifier will pick up the
+     * and then when typing relative names, instead of picking <root>.scala.reflect, typedIdentifier will pick up the
      * <root>.reflect package created by the bootstrapping. Thus, no bootstrapping for scaladoc!
      * TODO: we should refactor this as a separate -bootstrap option to have a clean implementation, no? */
     def sourcePath          = if (!settings.isScaladoc) cmdLineOrElse("sourcepath", Defaults.scalaSourcePath) else ""
