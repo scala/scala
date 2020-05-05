@@ -14,9 +14,13 @@ package scala
 package collection
 package immutable
 
+import java.io.IOException
+
 import generic._
-import immutable.{RedBlackTree => RB}
+import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
+import scala.annotation.tailrec
+import scala.runtime.{AbstractFunction1, AbstractFunction2}
 import scala.util.hashing.MurmurHash3
 
 /** $factoryInfo
@@ -29,53 +33,46 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), TreeMap[A, B]] = new SortedMapCanBuildFrom[A, B]
 
   override def newBuilder[A, B](implicit ord: Ordering[A]): mutable.Builder[(A, B), TreeMap[A, B]] = new TreeMapBuilder
-  private final class TreeMapBuilder[A, B](implicit ordering: Ordering[A]) extends mutable.Builder[(A, B), TreeMap[A, B]] {
+
+  private class TreeMapBuilder[A, B](implicit ordering: Ordering[A])
+    extends RB.MapHelper[A, B]
+      with Builder[(A, B), TreeMap[A, B]] {
     type Tree = RB.Tree[A, B]
-    private [this] var tree:Tree = null
-    override def +=(elem: (A, B)): this.type = {
-      tree = RB.update(tree, elem._1, elem._2, overwrite = true)
+    private var tree:Tree = null
+
+    def +=(elem: (A, B)): this.type = {
+      tree = mutableUpd(tree, elem._1, elem._2)
       this
     }
-
-    private object adder extends Function2[A, B, Unit] {
-      var accumulator :Tree = null
-      def addTree(aTree:Tree, bTree: Tree): Tree = {
-        // TODO should consider non overlapping trees
-        // just bulk add the non overlapping parts and
-        // only addAll for the intersecting range
-        //
-        // TODO consider adding the smaller map to the larger one with a flag to
-        // say who wins
-
-        accumulator = aTree
-        RB.foreachEntry(bTree, this)
-
-        val result = accumulator
-        // be friendly to GC
-        accumulator = null
-        result
-      }
-      def addForEach(aTree:Tree, hasForEach: HasForeachEntry[A, B]): Tree = {
-        accumulator = aTree
+    private object adder extends AbstractFunction2[A, B, Unit] {
+      // we cache tree to avoid the outer access to tree
+      // in the hot path (apply)
+      private[this] var accumulator :Tree = null
+      def addForEach(hasForEach: HasForeachEntry[A, B]): Unit = {
+        accumulator = tree
         hasForEach.foreachEntry(this)
-        val result = accumulator
+        tree = accumulator
         // be friendly to GC
         accumulator = null
-        result
       }
 
       override def apply(key: A, value: B): Unit = {
-        accumulator = RB.update(accumulator, key, value, overwrite = true)
+        accumulator = mutableUpd(accumulator, key, value)
       }
     }
 
     override def ++=(xs: TraversableOnce[(A, B)]): this.type = {
       xs match {
+        // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
+        // for the moment we have to force immutability before the union
+        // which will waste some time and space
+        // calling `beforePublish` makes `tree` immutable
         case ts: TreeMap[A, B] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree0
-          else tree = adder.addTree(tree, ts.tree0)
+          else tree = RB.union(beforePublish(tree), ts.tree0)
         case that: HasForeachEntry[A, B] =>
-          tree = adder.addForEach(tree, that)
+          //add avoiding creation of tuples
+          adder.addForEach(that)
         case _ =>
           super.++=(xs)
       }
@@ -86,8 +83,45 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
       tree = null
     }
 
-    override def result(): TreeMap[A, B] = new TreeMap(tree)(ordering)
+    override def result(): TreeMap[A, B] = new TreeMap[A, B](beforePublish(tree))
   }
+  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") == "false"
+
+  @SerialVersionUID(-5672253444750945796L)
+  private class TreeMapProxy[A, B](
+    @transient private[this] var tree: RB.Tree[A, B],
+    @transient private[this] var ordering: Ordering[A]) extends Serializable {
+
+    @throws[IOException]
+    private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+      out.writeInt(RB.count(tree))
+      out.writeObject(ordering)
+      RB.foreachEntry(tree, {
+        (k: A, v: B) =>
+          out.writeObject(k)
+          out.writeObject(v)
+      })
+    }
+    @throws[IOException]
+    private[this] def readObject(in: java.io.ObjectInputStream) = {
+      val size = in.readInt()
+      ordering = in.readObject().asInstanceOf[Ordering[A]]
+      implicit val ord = ordering
+
+      val data = Array.newBuilder[(A, B)]
+      data.sizeHint(size)
+      for (i <- 0 until size) {
+        val key = in.readObject().asInstanceOf[A]
+        val value = in.readObject().asInstanceOf[B]
+        data += ((key, value))
+      }
+      tree = RB.fromOrderedEntries(data.result.iterator, size)
+    }
+    @throws[IOException]
+    private[this] def readResolve(): AnyRef =
+      new TreeMap(tree)(ordering)
+  }
+
 }
 
 /** This class implements immutable maps using a tree.
@@ -118,7 +152,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
      with HasForeachEntry[A, B] {
   // Manually use this from inner classes to avoid having scalac rename `tree` to an expanded name which is not
   // serialization compatible.
-  private def tree0: RB.Tree[A, B] = tree
+  private[immutable] def tree0: RB.Tree[A, B] = tree
 
   override protected[this] def newBuilder : Builder[(A, B), TreeMap[A, B]] =
     TreeMap.newBuilder[A, B]
@@ -234,17 +268,35 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     xs match {
       case tm: TreeMap[A, B] if ordering == tm.ordering =>
         newMapOrSelf(RB.union(tree, tm.tree0))
+      case ls: LinearSeq[(A,B1)] =>
+        if (ls.isEmpty) this //to avoid the creation of the adder
+        else {
+          val adder = new Adder[B1]
+          adder addAll ls
+          newMapOrSelf(adder.finalTree)
+        }
       case _ =>
-        // probably should be something like
-        //        val builder = TreeMap.newBuilder[A, B1]
-        //        builder ++= this
-        //        builder ++= xs
-        //        builder.result()
-        //but for compat and simplicity
-
-        ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
+        val adder = new Adder[B1]
+        xs foreach adder
+        newMapOrSelf(adder.finalTree)
     }
   }
+  private final class Adder[B1 >: B]
+    extends RB.MapHelper[A, B1] with Function1[(A, B1), Unit] {
+    private var currentMutableTree: RB.Tree[A,B1] = tree0
+    def finalTree = beforePublish(currentMutableTree)
+    override def apply(kv: (A, B1)): Unit = {
+      currentMutableTree = mutableUpd(currentMutableTree, kv._1, kv._2)
+    }
+    @tailrec def addAll(ls: LinearSeq[(A, B1)]): Unit = {
+      if (!ls.isEmpty) {
+        val kv = ls.head
+        currentMutableTree = mutableUpd(currentMutableTree, kv._1, kv._2)
+        addAll(ls.tail)
+      }
+    }
+  }
+
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
@@ -262,10 +314,22 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   def - (key:A): TreeMap[A, B] =
    newMapOrSelf(RB.delete(tree, key))
 
-  private[collection] def removeAllImpl(ts: TreeSet[A]): TreeMap[A, B] =  {
-    assert(ordering == ts.ordering)
-    newMapOrSelf(RB.difference(tree, ts.tree))
+  private[collection] def removeAllImpl(xs: GenTraversableOnce[A]): TreeMap[A, B] =  xs match {
+    case ts: TreeSet[A] if ordering == ts.ordering =>
+      newMapOrSelf(RB.difference(tree, ts.tree))
+    case _ =>
+      //TODO add an implementation of a mutable subtractor similar to ++
+      //but at least this doesnt create a TreeMap for each iteration
+      object sub extends AbstractFunction1[A, Unit] {
+        var currentTree = tree0
+        override def apply(k: A): Unit = {
+          currentTree = RB.delete(currentTree, k)
+        }
+      }
+      xs.foreach(sub)
+      newMapOrSelf(sub.currentTree)
   }
+
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.
@@ -346,4 +410,16 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       newMapOrSelf(RB.transform[A, B, W](tree, f)).asInstanceOf[That]
     else super.transform(f)
   }
+
+  @throws[IOException]
+  private[this] def writeReplace(): AnyRef =
+    if (TreeMap.legacySerialisation) this else new TreeMap.TreeMapProxy(tree, ordering)
+
+  @throws[IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+    out.writeObject(ordering)
+    out.writeObject(immutable.RedBlackTree.from(tree))
+  }
+
+
 }
