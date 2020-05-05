@@ -123,4 +123,60 @@ class ArraySeqTest {
     assert(ArraySeq.from(as) eq as)
     assert(ArraySeq(as: _*) eq as)
   }
+
+  private def assertConcat[A](lhs: ArraySeq[A], rhs: ArraySeq[A], expect: ArraySeq[A]): Array[_] = {
+    val appended = lhs ++ rhs
+    val prepended = lhs ++: rhs
+    assertEquals(appended, expect)
+    assertEquals(prepended, expect)
+    assertEquals(appended.unsafeArray.getClass, prepended.unsafeArray.getClass)
+    appended.unsafeArray
+  }
+
+  @Test
+  def concatPrimative(): Unit = {
+    val a = ArraySeq(1, 3)
+    val b = ArraySeq(5, 7)
+    val underlyingArray = assertConcat(a, b, ArraySeq(1, 3, 5, 7))
+    assertEquals(underlyingArray.getClass, classOf[Array[Int]])
+  }
+
+  @Test
+  def concatObject(): Unit = {
+    val v = Vector(1)
+    val a = ArraySeq[Vector[Int]](v)
+    val b = ArraySeq[AnyRef]("hi")
+    assertConcat(a, a, ArraySeq(v, v))
+    assertConcat(a, b, ArraySeq(v, "hi"))
+    assertConcat(b, a, ArraySeq("hi", v))
+  }
+
+  @Test
+  def concatAny(): Unit = {
+    val a = ArraySeq(1)
+    val b = ArraySeq("5")
+    assertConcat(a, b, ArraySeq[Any](1, "5"))
+    assertConcat(b, a, ArraySeq[Any]("5", 1))
+  }
+
+  @Test
+  def concatEmpty(): Unit = {
+    val candidates = Seq[ArraySeq[Any]](
+      ArraySeq[Int](1),
+      ArraySeq[String]("Nimander"),
+      ArraySeq[Any]("Aiden", 123),
+      ArraySeq.empty[Any],
+      ArraySeq.empty[AnyRef],
+      ArraySeq.empty[Int],
+      ArraySeq.empty[String],
+    )
+    for {
+      a <- candidates
+      b <- candidates
+    } {
+      val expect = a.toList ++ b.toList
+      assertEquals(a ++ b, expect)
+      assertEquals(a ++: b, expect)
+    }
+  }
 }

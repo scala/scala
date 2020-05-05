@@ -76,23 +76,91 @@ sealed abstract class ArraySeq[+A]
   override def appended[B >: A](elem: B): ArraySeq[B] =
     ArraySeq.unsafeWrapArray(unsafeArray.appended[Any](elem)).asInstanceOf[ArraySeq[B]]
 
+  /** Fast concatenation of two [[ArraySeq]]s.
+    *
+    * @return null if optimisation not possible.
+    */
+  private def appendedAllArraySeq[B >: A](that: ArraySeq[B]): ArraySeq[B] = {
+    // Optimise concatenation of two ArraySeqs
+    // For ArraySeqs with sizes of [100, 1000, 10000] this is [3.5, 4.1, 5.2]x as fast
+    if (isEmpty)
+      that
+    else if (that.isEmpty)
+      this
+    else {
+      val thisIsObj = this.unsafeArray.isInstanceOf[Array[AnyRef]]
+      val thatIsObj = that.unsafeArray.isInstanceOf[Array[AnyRef]]
+      val mismatch = thisIsObj != thatIsObj
+      if (mismatch)
+        // Combining primatives and objects: abort
+        null
+      else if (thisIsObj) {
+        // A and B are objects
+        val ax = this.unsafeArray.asInstanceOf[Array[A]]
+        val ay = that.unsafeArray.asInstanceOf[Array[B]]
+        val len = ax.length + ay.length
+        val a = new Array[AnyRef](len)
+        System.arraycopy(ax, 0, a, 0, ax.length)
+        System.arraycopy(ay, 0, a, ax.length, ay.length)
+        ArraySeq.unsafeWrapArray(a).asInstanceOf[ArraySeq[B]]
+      } else {
+        // A is a primative and B = A. Use this instance's protected ClassTag.
+        val ax = this.unsafeArray.asInstanceOf[Array[A]]
+        val ay = that.unsafeArray.asInstanceOf[Array[A]]
+        val len = ax.length + ay.length
+        val a = iterableEvidence.newArray(len)
+        System.arraycopy(ax, 0, a, 0, ax.length)
+        System.arraycopy(ay, 0, a, ax.length, ay.length)
+        ArraySeq.unsafeWrapArray(a).asInstanceOf[ArraySeq[B]]
+      }
+    }
+  }
+
   override def appendedAll[B >: A](suffix: collection.IterableOnce[B]): ArraySeq[B] = {
-    val b = ArrayBuilder.make[Any]
-    val k = suffix.knownSize
-    if(k >= 0) b.sizeHint(k + unsafeArray.length)
-    b.addAll(unsafeArray)
-    b.addAll(suffix)
-    ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
+    def genericResult = {
+      val k = suffix.knownSize
+      if (k == 0) this
+      else {
+        val b = ArrayBuilder.make[Any]
+        if(k >= 0) b.sizeHint(k + unsafeArray.length)
+        b.addAll(unsafeArray)
+        b.addAll(suffix)
+        ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
+      }
+    }
+
+    suffix match {
+      case that: ArraySeq[_] =>
+        val result = appendedAllArraySeq(that.asInstanceOf[ArraySeq[B]])
+        if (result == null) genericResult
+        else result
+      case _ =>
+        genericResult
+    }
   }
 
   override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): ArraySeq[B] = {
-    val b = ArrayBuilder.make[Any]
-    val k = prefix.knownSize
-    if(k >= 0) b.sizeHint(k + unsafeArray.length)
-    b.addAll(prefix)
-    if(k < 0) b.sizeHint(b.length + unsafeArray.length)
-    b.addAll(unsafeArray)
-    ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
+    def genericResult = {
+      val k = prefix.knownSize
+      if (k == 0) this
+      else {
+        val b = ArrayBuilder.make[Any]
+        if(k >= 0) b.sizeHint(k + unsafeArray.length)
+        b.addAll(prefix)
+        if(k < 0) b.sizeHint(b.length + unsafeArray.length)
+        b.addAll(unsafeArray)
+        ArraySeq.unsafeWrapArray(b.result()).asInstanceOf[ArraySeq[B]]
+      }
+    }
+
+    prefix match {
+      case that: ArraySeq[_] =>
+        val result = that.asInstanceOf[ArraySeq[B]].appendedAllArraySeq(this)
+        if (result == null) genericResult
+        else result
+      case _ =>
+        genericResult
+    }
   }
 
   override def zip[B](that: collection.IterableOnce[B]): ArraySeq[(A, B)] =
