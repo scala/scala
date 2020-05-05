@@ -42,22 +42,50 @@ class TreeMapTest extends AllocationTest {
     assertEquals((tree1+ (9999 -> "zzz")), (tree2+ (9999 -> "zzz")))
     assertNotEquals((tree1+ (9999 -> "zzz")), (tree2+ (9999999 -> "zzz")))
   }
-  @Test def EqualFastPath: Unit = {
-    class V(s: String) {
+  @Test def equalFastPath: Unit = {
+    class V(val s: String) {
+      override def equals(obj: Any): Boolean = obj match {
+        case v:V => v.s == s
+      }
+    }
+    var compareCount = 0
+    class K(val s: String) extends Ordered[K] {
+      override def toString: String = s"K-$s"
+
+      override def compare(that: K): Int = {
+        val res = s.compareTo(that.s)
+        compareCount += 1
+        res
+      }
 
       override def equals(obj: Any): Boolean = {
-        fail("equals should not be called = the trees should be  the same")
+        fail("equals should not be called = the trees should be ordered and compared via the sort order")
         false
       }
     }
-    val b1 = TreeMap.newBuilder[String, V]
+    val b1 = TreeMap.newBuilder[K, V]
     for ( i <- 10 to 1000) {
-      b1 += s"$i" -> new V("$i value")
+      b1 += new K(i.toString) -> new V(s"$i value")
     }
     val tree1 = b1.result()
+    compareCount = 0
+    nonAllocating(assertEquals(tree1, tree1))
+    assertEquals(0, compareCount)
+    var exp = tree1.drop(5)
+    var act = tree1.drop(5)
 
-    assertEquals(tree1, tree1)
-    assertEquals(tree1.drop(5), tree1.drop(5))
+    compareCount = 0
+    onlyAllocates(240)(assertEquals(exp, act))
+    assertEquals(0, compareCount)
+
+    exp += new K("XXX") -> new V("YYY")
+    act += new K("XXX") -> new V("YYY")
+
+    compareCount = 0
+    assertEquals(exp, act)
+    assertTrue(compareCount.toString, compareCount < 30)
+
+    onlyAllocates(408)(assertEquals(exp, act))
   }
   @Test
   def plusWithContains() {

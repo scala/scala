@@ -408,7 +408,7 @@ private[collection] object RedBlackTree {
     def unapply[A, B](t: BlackTree[A, B]) = Some((t.key, t.value, t.left, t.right))
   }
 
-  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(implicit ordering: Ordering[A]) extends Iterator[R] {
+  private[this] abstract class TreeIterator[A, B, R](root: Tree[A, B], start: Option[A])(protected implicit val ordering: Ordering[A]) extends Iterator[R] {
     protected[this] def nextResult(tree: Tree[A, B]): R
 
     override def hasNext: Boolean = lookahead ne null
@@ -487,7 +487,8 @@ private[collection] object RedBlackTree {
           this.lookahead = this.popNext()
           that.lookahead = that.popNext()
         } else {
-          equal = this.lookahead.key == that.lookahead.key
+          equal = (this.lookahead.key.asInstanceOf[AnyRef] eq that.lookahead.key.asInstanceOf[AnyRef]) ||
+            ordering.equiv(this.lookahead.key, that.lookahead.key)
           this.lookahead =  this.findLeftMostOrPopOnEmpty(this.goRight(this.lookahead))
           that.lookahead =  that.findLeftMostOrPopOnEmpty(that.goRight(that.lookahead))
         }
@@ -515,7 +516,8 @@ private[collection] object RedBlackTree {
           this.lookahead = this.popNext()
           that.lookahead = that.popNext()
         } else {
-          equal = this.lookahead.key == that.lookahead.key && this.lookahead.value == that.lookahead.value
+          equal = ((this.lookahead.key.asInstanceOf[AnyRef] eq that.lookahead.key.asInstanceOf[AnyRef]) ||
+            ordering.equiv(this.lookahead.key, that.lookahead.key)) && this.lookahead.value == that.lookahead.value
           this.lookahead =  this.findLeftMostOrPopOnEmpty(this.goRight(this.lookahead))
           that.lookahead =  that.findLeftMostOrPopOnEmpty(that.goRight(that.lookahead))
         }

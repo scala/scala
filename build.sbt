@@ -193,6 +193,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$ValuesIterator"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.RedBlackTree$TreeIterator"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedMapFactory#SortedMapCanBuildFrom.ordering"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.ordering"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.removeAllImpl"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.filterImpl"),
@@ -347,7 +348,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
 
     //
-    // scala-relect
+    // scala-reflect
     //
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.unpickleClass"),
