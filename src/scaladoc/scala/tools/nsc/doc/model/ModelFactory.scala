@@ -834,7 +834,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     assert(modelFinished)
 
     def makeNoDocTemplate(aSym: Symbol, inTpl: TemplateImpl): NoDocTemplateImpl =
-      noDocTemplatesCache getOrElse (aSym, new NoDocTemplateImpl(aSym, inTpl))
+      noDocTemplatesCache.getOrElse(aSym, new NoDocTemplateImpl(aSym, inTpl))
 
     findTemplateMaybe(aSym) getOrElse {
       val bSym = normalizeTemplate(aSym)

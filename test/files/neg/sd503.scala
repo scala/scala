@@ -69,3 +69,8 @@ trait Exceptions[A] {
 
   def f(x: A, y: A, zs: A*): this.type = this += (x, y, zs: _*)               // warn but could defer to deprecation
 }
+@deprecated("Quit using old infix style!", since="lately")
+trait AlsoExceptions[A] {
+  def addAll(as: Seq[A]): this.type
+  def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // nowarn!
+}
