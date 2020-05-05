@@ -31,6 +31,7 @@ object Vector extends IndexedSeqFactory[Vector] {
   // Constants governing concat strategy for performance
   private final val Log2ConcatFaster = 5
   private final val TinyAppendFaster = 2
+  private val emptyIterator: VectorIterator[Nothing] = new VectorIterator[Nothing](0, 0)
 }
 
 // in principle, most members should be private. however, access privileges must
@@ -94,9 +95,12 @@ extends AbstractSeq[A]
   }
 
   override def iterator: VectorIterator[A] = {
-    val s = new VectorIterator[A](startIndex, endIndex)
-    initIterator(s)
-    s
+    if (length == 0) Vector.emptyIterator
+    else {
+      val s = new VectorIterator[A](startIndex, endIndex)
+      initIterator(s)
+      s
+    }
   }
 
   override /*SeqLike*/
