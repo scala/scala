@@ -45,9 +45,9 @@ abstract class RedBlackTreeTest(tname: String) extends Properties(tname) with Re
         right <- mkTree(nextLevel, !isRed, label + "R")
       } yield {
         if (isRed)
-          RedTree(label + "N", 0, left, right)
+          RB.RedTree(label + "N", 0, left, right)
         else
-          BlackTree(label + "N", 0, left, right)
+          RB.BlackTree(label + "N", 0, left, right)
       }
     }
 
@@ -76,6 +76,13 @@ trait RedBlackTreeInvariants[K, V] {
   self: Properties =>
 
   import RB._
+
+  object RedTree {
+    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isRed) Some(t.key, t.value, t.left, t.right) else None
+  }
+  object BlackTree {
+    def unapply[A, B](t: Tree[A, B]) = if ((t ne null) && t.isBlack) Some(t.key, t.value, t.left, t.right) else None
+  }
 
   implicit def ordering: Ordering[K]
 
