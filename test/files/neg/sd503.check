@@ -31,5 +31,8 @@ sd503.scala:54: warning: multiarg infix syntax looks like a tuple and will be de
 sd503.scala:59: warning: multiarg infix syntax looks like a tuple and will be deprecated
   def f[A](as: Embiggen[A], x: A, y: A, z: A): as.type = as += (x, y, z)      // very multiarg, warn
                                                             ^
-8 warnings
+sd503.scala:70: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f(x: A, y: A, zs: A*): this.type = this += (x, y, zs: _*)               // warn but could defer to deprecation
+                                              ^
+9 warnings
 2 errors

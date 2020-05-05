@@ -58,3 +58,14 @@ trait Embiggen[A] {
 trait NotOK {
   def f[A](as: Embiggen[A], x: A, y: A, z: A): as.type = as += (x, y, z)      // very multiarg, warn
 }
+
+// Don't warn if deprecated or not used
+trait Exceptions[A] {
+  def addAll(as: Seq[A]): this.type
+  @deprecated("Quit using old infix style!", since="lately")
+  def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // nowarn!
+  @annotation.unused
+  private def ++=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)       // nowarn!
+
+  def f(x: A, y: A, zs: A*): this.type = this += (x, y, zs: _*)               // warn but could defer to deprecation
+}
