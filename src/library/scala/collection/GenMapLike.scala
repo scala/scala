@@ -13,6 +13,8 @@
 package scala
 package collection
 
+import scala.runtime.AbstractFunction1
+
 /** A trait for all maps upon which operations may be
  *  implemented in parallel.
  *
@@ -120,13 +122,13 @@ trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals
       (that canEqual this) &&
       (this.size == that.size) && {
       try {
-        this forall {
-          case (k, v) => that.get(k.asInstanceOf[b]) match {
-            case Some(`v`) =>
-              true
-            case _ => false
+        val checker = new AbstractFunction1[(K, V),Boolean] with Function0[V]{
+          override def apply(kv: (K,V)): Boolean = {
+            that.getOrElse(kv._1.asInstanceOf[b], this) == kv._2
           }
+          override def apply(): V = this.asInstanceOf[V]
         }
+        this forall checker
       } catch {
         case ex: ClassCastException => false
       }}
