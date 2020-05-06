@@ -71,7 +71,7 @@ class SourceTest {
       override def pos = _pos
       private[this] var _ch: Char = _
       override def ch = _ch
-      override def next = {
+      override def next() = {
         _ch = iter.next()
         _pos += 1
         _ch

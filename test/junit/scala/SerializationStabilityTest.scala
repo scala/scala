@@ -100,6 +100,7 @@ object SerializationStability {
     check(g)(Some(1))("rO0ABXNyAApzY2FsYS5Tb21lESLyaV6hi3QCAAFMAAV2YWx1ZXQAEkxqYXZhL2xhbmcvT2JqZWN0O3hyAAxzY2FsYS5PcHRpb27+aTf92w5mdAIAAHhwc3IAEWphdmEubGFuZy5JbnRlZ2VyEuKgpPeBhzgCAAFJAAV2YWx1ZXhyABBqYXZhLmxhbmcuTnVtYmVyhqyVHQuU4IsCAAB4cAAAAAE=")
     check(g)(None)("rO0ABXNyACZzY2FsYS5ydW50aW1lLk1vZHVsZVNlcmlhbGl6YXRpb25Qcm94eQAAAAAAAAABAgABTAALbW9kdWxlQ2xhc3N0ABFMamF2YS9sYW5nL0NsYXNzO3hwdnIAC3NjYWxhLk5vbmUkRlAk9lPKlKwCAAB4cgAMc2NhbGEuT3B0aW9u/mk3/dsOZnQCAAB4cA==")
 
+    // TODO what is the status of the following checks?
     //val f0: Function0[Int] = () => 0
     //val f1: Function1[Int, Int] = _ => 0
     //val f2: Function2[Int, Int, Int] = (_, _) => 0

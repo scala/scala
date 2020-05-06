@@ -144,9 +144,11 @@ class ArrayBufferTest {
     assertEquals(ArrayBuffer(0, 1), b3)
   }
 
+  @Test
   def testRemoveWithNegativeIndex(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0, 1, 2).remove(-1))
 
+  @Test
   def testRemoveWithTooLargeIndex(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0).remove(1))
 
@@ -167,15 +169,19 @@ class ArrayBufferTest {
     testRemoveMany(index = 2, count = 1, expectation = ArrayBuffer(0, 1))
   }
 
+  @Test
   def testRemoveManyWithNegativeIndex(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0, 1, 2).remove(index = -1, count = 1))
 
+  @Test
   def testRemoveManyWithTooLargeIndex(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0).remove(index = 1, count = 1))
 
+  @Test
   def testRemoveManyWithNegativeCount(): Unit =
     assertThrows[IllegalArgumentException](ArrayBuffer(0).remove(index = 0, count = -1))
 
+  @Test
   def testRemoveManyWithTooLargeCount(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0).remove(index = 0, count = 100))
 
@@ -244,18 +250,22 @@ class ArrayBufferTest {
     testPatchInPlace(from = 0, replaced = 100, expectation = ArrayBuffer(-3, -2, -1))
   }
 
+  @Test
   def testApplyWhenEmpty(): Unit =
     assertThrows[IndexOutOfBoundsException](new ArrayBuffer().apply(0))
 
+  @Test
   def testApplyAfterClearing(): Unit = assertThrows[IndexOutOfBoundsException] {
     val buffer = ArrayBuffer(1, 2, 3)
     buffer.clear()
     buffer(0)
   }
 
+  @Test
   def testUpdateWhenEmpty(): Unit =
     assertThrows[IndexOutOfBoundsException](new ArrayBuffer().update(0, 100))
 
+  @Test
   def testUpdateAfterClearing(): Unit = assertThrows[IndexOutOfBoundsException] {
     val buffer = ArrayBuffer(1, 2, 3)
     buffer.clear()

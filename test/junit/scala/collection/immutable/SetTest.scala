@@ -1,5 +1,6 @@
 package scala.collection.immutable
 
+// "Disabled string conversions so as not to get confused!"
 import scala.Predef.{any2stringadd => _, _}
 
 import org.junit.Assert._
@@ -8,7 +9,6 @@ import org.junit.Test
 class SetTest {
   @Test
   def test_SI8346_toSet_soundness(): Unit = {
-    //val any2stringadd = "Disabled string conversions so as not to get confused!"
     
     def any[A](set: Set[A]): Set[Any] = {
       val anyset = set.toSet[Any]

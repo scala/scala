@@ -8,7 +8,6 @@ import org.junit.runners.JUnit4
 import java.{lang => jl}
 
 import scala.collection.SortedSet
-import scala.math.Ordering.Float.TotalOrdering
 import scala.math.Ordering.Double.TotalOrdering
 
 @RunWith(classOf[JUnit4])

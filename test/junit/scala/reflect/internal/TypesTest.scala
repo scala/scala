@@ -19,7 +19,7 @@ class TypesTest {
   def testRefinedTypeSI8611(): Unit = {
     def stringNarrowed = StringTpe.narrow
     assertTrue(stringNarrowed != stringNarrowed)
-    assertTrue(!(stringNarrowed =:= stringNarrowed))
+    assertFalse(stringNarrowed =:= stringNarrowed)
 
     def boolWithString = refinedType(BooleanTpe :: StringTpe :: Nil, NoSymbol)
     assertTrue(boolWithString != boolWithString)

@@ -65,8 +65,6 @@ object FileUtils {
     val dir1Files = allFiles(dir1)
     val dir2Files = allFiles(dir2)
     val allSubDirs = dir1Files.keySet ++ dir2Files.keySet
-    // TODO
-    //for (subDir <- allSubDirs) {
     for (subDir <- allSubDirs.toList.sortBy(_.iterator().asScala.map(_.toString).iterator.to(Iterable))) {
       val files1 = dir1Files.getOrElse(subDir, Map.empty)
       val files2 = dir2Files.getOrElse(subDir, Map.empty)
