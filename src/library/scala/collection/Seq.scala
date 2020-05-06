@@ -297,17 +297,19 @@ trait SeqOps[+A, +CC[_], +C] extends Any
    */
   def padTo[B >: A](len: Int, elem: B): CC[B] = iterableFactory.from(new View.PadTo(this, len, elem))
 
-  /** Computes length of longest segment whose elements all satisfy some predicate.
+  /** Computes the length of the longest segment that starts from the first element
+    *  and whose elements all satisfy some predicate.
     *
     *  $mayNotTerminateInf
     *
     *  @param   p     the predicate used to test elements.
-    *  @return  the length of the longest segment of this $coll such that
-    *           every element of the segment satisfies the predicate `p`.
+    *  @return  the length of the longest segment of this $coll that starts from the first element
+    *           such that every element of the segment satisfies the predicate `p`.
     */
   final def segmentLength(p: A => Boolean): Int = segmentLength(p, 0)
 
-  /** Computes length of longest segment whose elements all satisfy some predicate.
+  /** Computes the length of the longest segment that starts from some index
+    *  and whose elements all satisfy some predicate.
     *
     *  $mayNotTerminateInf
     *
