@@ -21,7 +21,7 @@ object Test extends App {
   }
   def slicedIssue = {
     val viewed : Iterable[Iterable[Int]] = List(List(0).view).view
-    val filtered = viewed flatMap { x => List( x slice (2,3) ) }
+    val filtered = viewed.flatMap(x => List(x.slice(2,3)))
     filtered.iterator.to(Iterable).flatten
   }
   filterIssue

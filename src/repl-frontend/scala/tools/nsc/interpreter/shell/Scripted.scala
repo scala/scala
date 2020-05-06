@@ -214,7 +214,7 @@ class Scripted(@BeanProperty val factory: ScriptEngineFactory, settings: Setting
     override def eval(context: ScriptContext) =
       withScriptContext(context) {
         if (!first)
-          intp.addBackReferences(req) fold (
+          intp.addBackReferences(req).fold(
             { line => Scripted.this.eval(line); null }, // we're evaluating after recording the request instead of other way around, but that should be ok, right?
             evalAndRecord(context, _))
         else try evalAndRecord(context, req) finally first = false

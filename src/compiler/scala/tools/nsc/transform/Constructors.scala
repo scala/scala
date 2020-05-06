@@ -272,16 +272,10 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
           closureClass setInfoAndEnter new ClassInfoType(closureParents, newScope, closureClass)
 
-          val outerField: TermSymbol = (
-            closureClass
-              newValue(nme.OUTER, impl.pos, PrivateLocal | PARAMACCESSOR)
-              setInfoAndEnter clazz.tpe
-          )
-          val applyMethod: MethodSymbol = (
-            closureClass
-              newMethod(nme.apply, impl.pos, FINAL)
-              setInfoAndEnter MethodType(Nil, ObjectTpe)
-          )
+          val outerField: TermSymbol =
+            closureClass.newValue(nme.OUTER, impl.pos, PrivateLocal | PARAMACCESSOR) setInfoAndEnter clazz.tpe
+          val applyMethod: MethodSymbol =
+            closureClass.newMethod(nme.apply, impl.pos, FINAL) setInfoAndEnter MethodType(Nil, ObjectTpe)
           val outerFieldDef     = ValDef(outerField)
           val closureClassTyper = localTyper.atOwner(closureClass)
           val applyMethodTyper  = closureClassTyper.atOwner(applyMethod)

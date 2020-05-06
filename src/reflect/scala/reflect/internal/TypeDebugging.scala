@@ -85,7 +85,7 @@ trait TypeDebugging {
       // otherwise case classes are caught looking like products
       case _: Tree | _: Type     => "" + x
       case x: IterableOnce[_]    => x.iterator mkString ", "
-      case x: Product            => x.productIterator mkString ("(", ", ", ")")
+      case x: Product            => x.productIterator.mkString("(", ", ", ")")
       case _                     => "" + x
     }
     def ptBlock(label: String, pairs: (String, Any)*): String = {
@@ -129,7 +129,7 @@ trait TypeDebugging {
       def parentheses(xs: List[_]): String     = xs.mkString("(", ", ", ")")
       def params(params: List[Symbol]): String = {
         val paramsStrPre = if (params.nonEmpty && params.head.isImplicit) "(implicit " else "("
-        params map (_.defStringWithoutImplicit) mkString (paramsStrPre, ", ", ")")
+        params.map(_.defStringWithoutImplicit).mkString(paramsStrPre, ", ", ")")
       }
       def brackets(xs: List[_]): String        = if (xs.isEmpty) "" else xs.mkString("[", ", ", "]")
       def tparams(tparams: List[Type]): String = brackets(tparams map debug)

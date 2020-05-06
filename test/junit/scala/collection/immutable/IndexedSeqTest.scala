@@ -4,7 +4,6 @@ import org.junit._
 import Assert._
 
 import scala.collection.Seq.empty
-import scala.language.postfixOps
 import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.AllocationTest
 
@@ -99,43 +98,42 @@ class IndexedSeqTest extends AllocationTest {
 
   @Test def testforwardSliceEquals(): Unit = {
 
-    def generateTestIter = (0 to 10).view iterator
+    def generateTestIter = (0 to 10).view.iterator
 
-
-    assertSameElements(empty toList,  generateTestIter slice (3, -1))
-    assertSameElements(empty toList,  generateTestIter slice (0, 0))
-    assertSameElements(empty,  generateTestIter slice (3, 3))
-    assertSameElements(List(0) ,  generateTestIter slice (0, 1))
-    assertSameElements(0 to 1 ,  generateTestIter slice (0, 2))
-    assertSameElements(3 to 6 toList, generateTestIter slice(3,7))
-    assertSameElements(0 to 2 toList, generateTestIter slice (-1, 3))
-    assertSameElements(0 to 10 toList, generateTestIter slice (0, 11))
-    assertSameElements(6 to 12 by 2 toList, generateTestIter slice (3, 7) map (2 * _))
-    assertSameElements(6 to 12 by 2 toList, generateTestIter map (2 * _) slice (3, 7))
-    assertSameElements(4 to 6 toList, generateTestIter slice (3, 7) drop 1)
-    assertSameElements(4 to 7 toList, generateTestIter drop 1 slice (3, 7))
-    assertSameElements(4 to 5 toList, generateTestIter slice (3, 7) slice (1, 3))
-    assertSameElements(4 to 6 toList, generateTestIter slice (3, 7) slice (1, 10))
+    assertSameElements(empty.toList,          generateTestIter.slice(3, -1))
+    assertSameElements(empty.toList,          generateTestIter.slice(0, 0))
+    assertSameElements(empty,                 generateTestIter.slice(3, 3))
+    assertSameElements(List(0),               generateTestIter.slice(0, 1))
+    assertSameElements(0 to 1,                generateTestIter.slice(0, 2))
+    assertSameElements((3 to 6).toList,       generateTestIter.slice(3,7))
+    assertSameElements((0 to 2).toList,       generateTestIter.slice(-1, 3))
+    assertSameElements((0 to 10).toList,      generateTestIter.slice(0, 11))
+    assertSameElements((6 to 12 by 2).toList, generateTestIter.slice(3, 7).map(2 * _))
+    assertSameElements((6 to 12 by 2).toList, generateTestIter.map(2 * _).slice(3, 7))
+    assertSameElements((4 to 6).toList,       generateTestIter.slice(3, 7).drop(1))
+    assertSameElements((4 to 7).toList,       generateTestIter.drop(1).slice(3, 7))
+    assertSameElements((4 to 5).toList,       generateTestIter.slice(3, 7).slice(1, 3))
+    assertSameElements((4 to 6).toList,       generateTestIter.slice(3, 7).slice(1, 10))
   }
 
   @Test def testbackwardSliceEquals(): Unit = {
 
-    def generateTestIter = (0 to 10).view reverseIterator
+    def generateTestIter = (0 to 10).view.reverseIterator
 
-    assertSameElements(empty toList,  generateTestIter slice (3, -1))
-    assertSameElements(empty toList,  generateTestIter slice (3, 2))
-    assertSameElements(empty,  generateTestIter slice (0, 0))
-    assertSameElements(empty,  generateTestIter slice (3, 3))
-    assertSameElements(List(10) ,  generateTestIter slice (0, 1))
-    assertSameElements(10 to 9 by -1 ,  generateTestIter slice (0, 2))
-    assertSameElements(7 to 4 by -1 toList, generateTestIter slice(3,7))
-    assertSameElements(10 to 8 by -1 toList, generateTestIter slice (-1, 3))
-    assertSameElements(14 to 8 by -2 toList, generateTestIter slice (3, 7) map (2 * _))
-    assertSameElements(14 to 8 by -2 toList, generateTestIter map (2 * _) slice (3, 7))
-    assertSameElements(6 to 4 by -1 toList, generateTestIter slice (3, 7) drop 1)
-    assertSameElements(6 to 3 by -1 toList, generateTestIter drop 1 slice (3, 7))
-    assertSameElements(6 to 5 by -1 toList, generateTestIter slice (3, 7) slice (1, 3))
-    assertSameElements(6 to 4 by -1 toList, generateTestIter slice (3, 7) slice (1, 10))
+    assertSameElements(empty.toList,           generateTestIter.slice(3, -1))
+    assertSameElements(empty.toList,           generateTestIter.slice(3, 2))
+    assertSameElements(empty,                  generateTestIter.slice(0, 0))
+    assertSameElements(empty,                  generateTestIter.slice(3, 3))
+    assertSameElements(List(10),               generateTestIter.slice(0, 1))
+    assertSameElements(10 to 9 by -1,          generateTestIter.slice(0, 2))
+    assertSameElements((7 to 4 by -1).toList,  generateTestIter.slice(3,7))
+    assertSameElements((10 to 8 by -1).toList, generateTestIter.slice(-1, 3))
+    assertSameElements((14 to 8 by -2).toList, generateTestIter.slice(3, 7).map(2 * _))
+    assertSameElements((14 to 8 by -2).toList, generateTestIter.map(2 * _).slice(3, 7))
+    assertSameElements((6 to 4 by -1).toList,  generateTestIter.slice(3, 7).drop(1))
+    assertSameElements((6 to 3 by -1).toList,  generateTestIter.drop(1).slice(3, 7))
+    assertSameElements((6 to 5 by -1).toList,  generateTestIter.slice(3, 7).slice(1, 3))
+    assertSameElements((6 to 4 by -1).toList,  generateTestIter.slice(3, 7).slice(1, 10))
   }
 
 }

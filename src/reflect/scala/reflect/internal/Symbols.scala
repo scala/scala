@@ -1819,9 +1819,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
         }
         val oldsyms = oldsymbuf.toList
         val newsyms = newsymbuf.toList
-        for (sym <- newsyms) {
-          addMember(thistp, tp, sym modifyInfo (_ substThisAndSym(this, thistp, oldsyms, newsyms)))
-        }
+        for (sym <- newsyms)
+          addMember(thistp, tp, sym.modifyInfo(_.substThisAndSym(this, thistp, oldsyms, newsyms)))
       }
       tp
     }

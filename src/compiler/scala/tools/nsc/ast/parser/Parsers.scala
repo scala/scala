@@ -16,12 +16,11 @@
 package scala.tools.nsc
 package ast.parser
 
-import scala.collection.mutable
-import mutable.ListBuffer
-import scala.reflect.internal.{Precedence, ModifierFlags => Flags}
+import scala.annotation.tailrec
+import scala.collection.mutable, mutable.ListBuffer
+import scala.reflect.internal.{ModifierFlags => Flags, Precedence}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Position, SourceFile}
 import Tokens._
-import scala.annotation.tailrec
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** Historical note: JavaParsers started life as a direct copy of Parsers
@@ -868,11 +867,18 @@ self =>
           }
         }
       }
-      def mkNamed(args: List[Tree]) = if (isExpr) args map treeInfo.assignmentToMaybeNamedArg else args
+      def mkNamed(args: List[Tree]) = if (isExpr) args.map(treeInfo.assignmentToMaybeNamedArg) else args
+      var isMultiarg = false
       val arguments = right match {
-        case Parens(Nil)  => literalUnit :: Nil
-        case Parens(args) => mkNamed(args)
-        case _            => right :: Nil
+        case Parens(Nil)               => literalUnit :: Nil
+        case Parens(args @ (_ :: Nil)) => mkNamed(args)
+        case Parens(args)              => isMultiarg = true ; mkNamed(args)
+        case _                         => right :: Nil
+      }
+      def mkApply(fun: Tree, args: List[Tree]) = {
+        val apply = Apply(fun, args)
+        if (isMultiarg) apply.updateAttachment(MultiargInfixAttachment)
+        apply
       }
       if (isExpr) {
         if (rightAssoc) {
@@ -881,15 +887,12 @@ self =>
           val liftedArg = atPos(left.pos) {
             ValDef(Modifiers(FINAL | SYNTHETIC | ARTIFACT), x, TypeTree(), stripParens(left))
           }
-          Block(
-            liftedArg :: Nil,
-            Apply(mkSelection(right), List(Ident(x) setPos left.pos.focus)))
-        } else {
-          Apply(mkSelection(left), arguments)
-        }
-      } else {
-        Apply(Ident(op.encode), stripParens(left) :: arguments)
-      }
+          val apply = mkApply(mkSelection(right), List(Ident(x) setPos left.pos.focus))
+          Block(liftedArg :: Nil, apply)
+        } else
+          mkApply(mkSelection(left), arguments)
+      } else
+        mkApply(Ident(op.encode), stripParens(left) :: arguments)
     }
 
     /* --------- OPERAND/OPERATOR STACK --------------------------------------- */
@@ -2184,7 +2187,7 @@ self =>
     private def addMod(mods: Modifiers, mod: Long, pos: Position): Modifiers = {
       if (mods hasFlag mod) syntaxError(in.offset, "repeated modifier", skipIt = false)
       in.nextToken()
-      (mods | mod) withPosition (mod, pos)
+      (mods | mod).withPosition(mod, pos)
     }
 
     private def tokenRange(token: TokenData) =
@@ -2352,13 +2355,12 @@ self =>
           warning(in.offset, s"$ttl parameter sections are effectively implicit", WarningCategory.WFlagExtraImplicit)
       }
       val result = vds.toList
-      if (owner == nme.CONSTRUCTOR && (result.isEmpty || (result.head take 1 exists (_.mods.isImplicit)))) {
+      if (owner == nme.CONSTRUCTOR && (result.isEmpty || result.head.take(1).exists(_.mods.isImplicit)))
         in.token match {
           case LBRACKET   => syntaxError(in.offset, "no type parameters allowed here", skipIt = false)
           case EOF        => incompleteInputError("auxiliary constructor needs non-implicit parameter list")
           case _          => syntaxError(start, "auxiliary constructor needs non-implicit parameter list", skipIt = false)
         }
-      }
       addEvidenceParams(owner, result, contextBounds)
     }
 
@@ -2394,7 +2396,7 @@ self =>
         if (mods.isLazy) syntaxError("lazy modifier not allowed here. Use call-by-name parameters instead", skipIt = false)
         in.token match {
           case v @ (VAL | VAR) =>
-            mods = mods withPosition (in.token.toLong, tokenRange(in))
+            mods = mods.withPosition(in.token.toLong, tokenRange(in))
             if (v == VAR) mods |= Flags.MUTABLE
             in.nextToken()
           case _ =>
@@ -2629,13 +2631,13 @@ self =>
         syntaxError("lazy not allowed here. Only vals can be lazy", skipIt = false)
       in.token match {
         case VAL =>
-          patDefOrDcl(pos, mods withPosition(VAL, tokenRange(in)))
+          patDefOrDcl(pos, mods.withPosition(VAL, tokenRange(in)))
         case VAR =>
-          patDefOrDcl(pos, (mods | Flags.MUTABLE) withPosition (VAR, tokenRange(in)))
+          patDefOrDcl(pos, (mods | Flags.MUTABLE).withPosition(VAR, tokenRange(in)))
         case DEF =>
-          List(funDefOrDcl(pos, mods withPosition(DEF, tokenRange(in))))
+          List(funDefOrDcl(pos, mods.withPosition(DEF, tokenRange(in))))
         case TYPE =>
-          List(typeDefOrDcl(pos, mods withPosition(TYPE, tokenRange(in))))
+          List(typeDefOrDcl(pos, mods.withPosition(TYPE, tokenRange(in))))
         case _ =>
           List(tmplDef(pos, mods))
       }
@@ -2888,15 +2890,15 @@ self =>
       if (mods.isLazy) syntaxError("classes cannot be lazy", skipIt = false)
       in.token match {
         case TRAIT =>
-          classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT) withPosition (Flags.TRAIT, tokenRange(in)))
+          classDef(pos, (mods | Flags.TRAIT | Flags.ABSTRACT).withPosition(Flags.TRAIT, tokenRange(in)))
         case CLASS =>
           classDef(pos, mods)
         case CASECLASS =>
-          classDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'class', thus take prev*/)))
+          classDef(pos, (mods | Flags.CASE).withPosition(Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'class', thus take prev*/)))
         case OBJECT =>
           objectDef(pos, mods)
         case CASEOBJECT =>
-          objectDef(pos, (mods | Flags.CASE) withPosition (Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
+          objectDef(pos, (mods | Flags.CASE).withPosition(Flags.CASE, tokenRange(in.prev /*scanner skips on 'case' to 'object', thus take prev*/)))
         case _ =>
           syntaxErrorOrIncompleteAnd("expected start of definition", skipIt = true)(
             // assume a class definition so as to have somewhere to stash the annotations

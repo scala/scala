@@ -125,7 +125,7 @@ class CollisionProofHashMapTest {
     assertEquals(m7(3), "c")
 
     // deprecated
-    val m8 = (m1 + (4 -> "d", 5 -> "e")).addOne(3 -> "c")
+    val m8 = m1.+(4 -> "d", 5 -> "e").addOne(3 -> "c")
     assertEquals(m8(3), "c")
 
     // deprecated

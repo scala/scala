@@ -49,7 +49,7 @@ object Test extends DirectTest {
 
   override def show(): Unit = {
     compile()
-    ScalaClassLoader(getClass.getClassLoader) run ("Main", Nil)
+    ScalaClassLoader(getClass.getClassLoader).run("Main", Nil)
 
   }
 }

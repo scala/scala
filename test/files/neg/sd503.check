@@ -1,0 +1,38 @@
+sd503.scala:18: error: not enough arguments for method x_=: (i: Int, j: Int): Unit.
+Unspecified value parameter j.
+  def f4() = c.x = (42, 27)           // missing arg
+                 ^
+sd503.scala:23: error: type mismatch;
+ found   : (Int, Int)
+ required: Int
+  def f7() = d.x = (42, 27)           // type mismatch (same as doti)
+                   ^
+sd503.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def % (i: Int, j: Int) = i + j      // operator, warn
+      ^
+sd503.scala:13: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f1(t: T) = t m (1, 2)           // multiarg, warn
+                   ^
+sd503.scala:15: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f3(t: T) = t % (1, 2)           // multiarg, warn
+                   ^
+sd503.scala:19: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f5() = c x_= (42, 27)           // multiarg, warn
+               ^
+sd503.scala:29: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def x_=(i: Int, j: Int): Unit = value = i + j           // multiarg, warn
+      ^
+sd503.scala:34: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def x_=(i: Int, j: Int = 1): Unit = devalue = i + j     // multiarg, warn
+      ^
+sd503.scala:54: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // very multiarg, warn
+      ^
+sd503.scala:59: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f[A](as: Embiggen[A], x: A, y: A, z: A): as.type = as += (x, y, z)      // very multiarg, warn
+                                                            ^
+sd503.scala:70: warning: multiarg infix syntax looks like a tuple and will be deprecated
+  def f(x: A, y: A, zs: A*): this.type = this += (x, y, zs: _*)               // warn but could defer to deprecation
+                                              ^
+9 warnings
+2 errors

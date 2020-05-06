@@ -145,7 +145,7 @@ trait TypeDiagnostics {
     case _                                  => Nil
   }
   def alternativesString(tree: Tree) =
-    alternatives(tree) map (x => "  " + methodTypeErrorString(x)) mkString ("", " <and>\n", "\n")
+    alternatives(tree).map(x => "  " + methodTypeErrorString(x)).mkString("", " <and>\n", "\n")
 
   /** The symbol which the given accessor represents (possibly in part).
     * This is used for error messages, where we want to speak in terms
@@ -278,7 +278,7 @@ trait TypeDiagnostics {
           val messages = relationships.flatten
           // the condition verifies no type argument came back None
           if (messages.size == foundArgs.size)
-            return messages filterNot (_ == "") mkString ("\n", "\n", "")
+            return messages.filterNot(_ == "").mkString("\n", "\n", "")
         }
       }
     }
@@ -344,13 +344,13 @@ trait TypeDiagnostics {
     val caseString =
       if (clazz.isCaseClass && (clazz isSubClass ptSym))
         ( clazz.caseFieldAccessors
-          map (_ => "_")    // could use the actual param names here
-          mkString (s"`case ${clazz.name}(", ",", ")`")
+          .map(_ => "_")    // could use the actual param names here
+          .mkString(s"`case ${clazz.name}(", ",", ")`")
         )
       else
         "`case _: " + (clazz.typeParams match {
           case Nil  => "" + clazz.name
-          case xs   => xs map (_ => "_") mkString (clazz.name + "[", ",", "]")
+          case xs   => xs.map(_ => "_").mkString(clazz.name + "[", ",", "]")
         })+ "`"
 
     if (!clazz.exists) ""

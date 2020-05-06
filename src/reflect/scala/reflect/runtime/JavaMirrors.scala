@@ -693,7 +693,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val tparam = sOwner(jtvar).newTypeParameter(newTypeName(jtvar.getName))
         .setInfo(new TypeParamCompleter(jtvar))
       markFlagsCompleted(tparam)(mask = AllFlags)
-      tparamCache enter (jtvar, tparam)
+      tparamCache.enter(jtvar, tparam)
       tparam
     }
 
@@ -1206,7 +1206,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
     private def jmethodAsScala1(jmeth: jMethod): MethodSymbol = {
       val clazz = sOwner(jmeth)
       val meth = clazz.newMethod(newTermName(jmeth.getName), NoPosition, jmeth.scalaFlags)
-      methodCache enter (jmeth, meth)
+      methodCache.enter(jmeth, meth)
       val tparams = jmeth.getTypeParameters.toList map createTypeParameter
       val params = jparamsAsScala(meth, jmeth.getParameters.toList)
       val resulttpe = typeToScala(jmeth.getGenericReturnType)
@@ -1232,7 +1232,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       // [Martin] Note: I know there's a lot of duplication wrt jmethodAsScala, but don't think it's worth it to factor this out.
       val clazz = sOwner(jconstr)
       val constr = clazz.newConstructor(NoPosition, jconstr.scalaFlags)
-      constructorCache enter (jconstr, constr)
+      constructorCache.enter(jconstr, constr)
       val tparams = jconstr.getTypeParameters.toList map createTypeParameter
       val params = jparamsAsScala(constr, jconstr.getParameters.toList)
       setMethType(constr, tparams, params, clazz.tpe)
@@ -1337,10 +1337,10 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val jclazz = classToJava(meth.owner.asClass)
       val paramClasses = transformedType(meth).paramTypes map typeToJavaClass
       val jname = meth.name.dropLocal.toString
-      try jclazz getDeclaredMethod (jname, paramClasses: _*)
+      try jclazz.getDeclaredMethod(jname, paramClasses: _*)
       catch {
         case ex: NoSuchMethodException =>
-          jclazz getDeclaredMethod (expandedName(meth), paramClasses: _*)
+          jclazz.getDeclaredMethod(expandedName(meth), paramClasses: _*)
       }
     }
 

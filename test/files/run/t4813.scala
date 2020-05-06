@@ -26,6 +26,6 @@ object Test extends App {
   runTest(TreeSet(1,2,3))(_.clone) { buf => buf add 4 }
 
   // Maps
-  runTest(HashMap(1->1,2->2,3->3))(_.clone) { buf => buf put (4,4) }
-  runTest(WeakHashMap(1->1,2->2,3->3))(_.clone) { buf => buf put (4,4) }
+  runTest(HashMap(1->1,2->2,3->3))(_.clone)(_.put(4,4))
+  runTest(WeakHashMap(1->1,2->2,3->3))(_.clone)(_.put(4,4))
 }

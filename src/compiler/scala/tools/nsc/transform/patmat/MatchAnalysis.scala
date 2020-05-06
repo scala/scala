@@ -234,14 +234,14 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       private[this] val uniqueTypeProps     = new mutable.HashMap[(Tree, Type), Eq]
 
       def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
-        uniqueEqualityProps getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
+        uniqueEqualityProps.getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
 
       // overridden in TreeMakersToPropsIgnoreNullChecks
       def uniqueNonNullProp (testedPath: Tree): Prop =
-        uniqueNonNullProps getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
+        uniqueNonNullProps.getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
 
       def uniqueTypeProp(testedPath: Tree, pt: Type): Prop =
-        uniqueTypeProps getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
+        uniqueTypeProps.getOrElseUpdate((testedPath, pt), Eq(Var(testedPath), TypeConst(checkableType(pt))))
 
       // a variable in this set should never be replaced by a tree that "does not consist of a selection on a variable in this set" (intuitively)
       private val pointsToBound = mutable.HashSet(root)
@@ -646,7 +646,7 @@ trait MatchAnalysis extends MatchApproximation {
 
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
-         val assignment = "== "+ (trues mkString("(", ", ", ")")) +"  != ("+ (falses mkString(", ")) +")"
+         val assignment = "== "+ trues.mkString("(", ", ", ")") +"  != ("+ falses.mkString(", ") +")"
          v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
        }.mkString("\n")
 

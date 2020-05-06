@@ -187,7 +187,7 @@ abstract class HashMapBaseBulkBenchmark {
     def base (i:Int) = {
       baseData(if (i < 0) baseData.length+i else i)
     }
-    shared(0) = (-10 to (0, 1)).foldLeft (base(-10)) {case (a, b) => a ++ base(b)}
+    shared(0) = (-10.to(0, 1)).foldLeft(base(-10)) { case (a, b) => a ++ base(b) }
     for (i <- 1 until baseData.length - 10) {
       shared(i) = shared(i - 1) -- base(i - 10).keys ++ base(i)
     }

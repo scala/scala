@@ -2,6 +2,6 @@ t2641.scala:22: error: wrong number of type arguments for ManagedSeq, should be 
         with TraversableViewLike[A, ManagedSeqStrict[A], ManagedSeq[A]]
                                                          ^
 t2641.scala:28: error: value managedIterator is not a member of ManagedSeq[A,Coll]
-    override def managedIterator = self.managedIterator slice (0, 0)
+    override def managedIterator = self.managedIterator.slice(0, 0)
                                         ^
 2 errors

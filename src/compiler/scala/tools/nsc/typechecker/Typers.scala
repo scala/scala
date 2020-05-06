@@ -21,14 +21,14 @@ package tools.nsc
 package typechecker
 
 import scala.collection.mutable
+import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
-import scala.reflect.internal.TypesStats
+import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 import scala.util.chaining._
 import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
 import PartialFunction.cond
-import scala.tools.nsc.Reporting.{MessageFilter, Suppression, WConf, WarningCategory}
 
 // Suggestion check whether we can do without priming scopes with symbols of outer scopes,
 // like the IDE does.
@@ -2372,7 +2372,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         val tparams1 = ddef.tparams mapConserve typedTypeDef
-        val vparamss1 = ddef.vparamss mapConserve (_ mapConserve typedValDef)
+        val vparamss1 = ddef.vparamss.mapConserve(_.mapConserve(typedValDef))
 
         warnTypeParameterShadow(tparams1, meth)
 
@@ -2416,21 +2416,26 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (tpt1.tpe.typeSymbol != NothingClass && !context.returnsSeen && rhs1.tpe.typeSymbol != NothingClass)
           rhs1 = checkDead(context, rhs1)
 
-        if (!isPastTyper && meth.owner.isClass &&
-          meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
-          StarWithDefaultError(meth)
-
         if (!isPastTyper) {
-          for (pp <- meth.paramss ; p <- pp){
-            for (n <- p.deprecatedParamName) {
+          if (meth.owner.isClass && meth.paramss.exists(ps => ps.exists(_.hasDefault) && isRepeatedParamType(ps.last.tpe)))
+            StarWithDefaultError(meth)
+
+          for (pp <- meth.paramss ; p <- pp)
+            for (n <- p.deprecatedParamName)
               if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
                 DeprecatedParamNameError(p, n)
+
+          if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated))
+            meth.paramss match {
+              case (h :: _ :: _) :: Nil if !h.isImplicit && Chars.isOperatorPart(meth.name.decoded.last) =>
+                context.warning(meth.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
+              case _ =>
             }
-          }
+
           if (meth.isStructuralRefinementMember)
             checkMethodStructuralCompatible(ddef)
 
-          if (meth.isImplicit && !meth.isSynthetic) meth.info.paramss match {
+          if (meth.isImplicit && !meth.isSynthetic) meth.paramss match {
             case List(param) :: _ if !param.isImplicit =>
               checkFeature(ddef.pos, currentRun.runDefinitions.ImplicitConversionsFeature, meth.toString)
             case _ =>
@@ -2775,7 +2780,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         // applyOrElse's default parameter:
         val B1 = methodSym newTypeParameter (newTypeName("B1")) setInfo TypeBounds.empty
-        val default = methodSym newValueParameter (newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
+        val default = methodSym.newValueParameter(newTermName("default"), tree.pos.focus, SYNTHETIC) setInfo functionType(List(A1.tpe), B1.tpe)
 
         val paramSyms = List(x, default)
         methodSym setInfo genPolyType(List(A1, B1), MethodType(paramSyms, B1.tpe))
@@ -5126,6 +5131,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // In a pattern, just use the final result type, C in this case.
               // The enclosing context may be case c @ C(_) => or val c @ C(_) = v.
               tree1 modifyType (_.finalResultType)
+              tree1
+            case tree1 @ Apply(_, args1) if tree.hasAttachment[MultiargInfixAttachment.type] && args1.lengthCompare(1) > 0 =>
+              context.warning(tree1.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
               tree1
             case tree1                                                               => tree1
           }

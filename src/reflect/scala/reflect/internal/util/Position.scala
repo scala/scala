@@ -152,7 +152,7 @@ private[util] trait InternalPositionImpl {
    *    |^  means union, taking the point of the rhs
    *    ^|  means union, taking the point of the lhs
    */
-  def |(that: Position, poses: Position*): Position = poses.foldLeft(this | that)(_ | _)
+  //def |(that: Position, poses: Position*): Position = poses.foldLeft(this | that)(_ | _)
   def |(that: Position): Position                   = this union that
   def ^(point: Int): Position                       = this withPoint point
   def |^(that: Position): Position                  = (this | that) ^ that.point

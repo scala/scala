@@ -51,7 +51,7 @@ trait Mirrors extends api.Mirrors {
       getModuleOrClass(path.toString, len, path.newName(_))
 
     private def getModuleOrClass(path: String, len: Int, toName: String => Name): Symbol = {
-      val point = path lastIndexOf ('.', len - 1)
+      val point = path.lastIndexOf('.', len - 1)
       val owner =
         if (point > 0) getModuleOrClass(path, point, newTermName(_))
         else RootClass

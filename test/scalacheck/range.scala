@@ -10,15 +10,15 @@ class Counter(r: Range) {
   def apply(x: Int) = {
     cnt += 1L
     if (cnt % 500000000L == 0L) {
-      println("Working: %s %d %d" format (str, cnt, x))
+      println(f"Working: $str $cnt%d $x%d")
     }
     if (cnt > (Int.MaxValue.toLong + 1) * 2) {
-      val msg = "Count exceeds maximum possible for an Int Range: %s" format str
+      val msg = s"Count exceeds maximum possible for an Int Range: $str"
       println(msg) // exception is likely to be eaten by an out of memory error
       sys error msg
     }
     if ((r.step > 0 && last.exists(_ > x)) || (r.step < 0 && last.exists(_ < x))) {
-      val msg = "Range %s wrapped: %d %s" format (str, x, last.toString)
+      val msg = f"Range $str wrapped: $x%d ${last.toString}"
       println(msg) // exception is likely to be eaten by an out of memory error
       sys error msg
     }

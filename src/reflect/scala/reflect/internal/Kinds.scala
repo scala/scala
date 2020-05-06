@@ -77,7 +77,7 @@ trait Kinds {
 
     private def buildMessage(xs: List[SymPair], f: (Symbol, Symbol) => String) = (
       if (xs.isEmpty) ""
-      else xs map f.tupled mkString ("\n", ", ", "")
+      else xs.map(f.tupled).mkString("\n", ", ", "")
     )
 
     def errorMessage(targ: Type, tparam: Symbol): String = (

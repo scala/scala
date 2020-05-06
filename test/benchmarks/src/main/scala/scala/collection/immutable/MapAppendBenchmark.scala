@@ -43,7 +43,7 @@ class MapAppendBenchmark {
     var m = Map.empty[Int, Unit]
     var i = 0
     while(i < size) {
-      m = m + ((i -> ()), ((i+size) -> ()))
+      m = m.+((i -> ()), ((i+size) -> ()))
       i += 1
     }
     bh.consume(m)
@@ -54,7 +54,7 @@ class MapAppendBenchmark {
     var m = Map.empty[Int, Unit]
     var i = 0
     while(i < size) {
-      m = m + ((i -> ()), ((i+size) -> ()), empty: _*)
+      m = m.+((i -> ()), ((i+size) -> ()), empty: _*)
       i += 1
     }
     bh.consume(m)

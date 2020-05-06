@@ -10,7 +10,7 @@ object Test extends App {
     } catch {
       case e: Exception => e.toString
     }
-    println("%s: %s" format (label, status))
+    println(s"$label: $status")
   }
 
   tryit("start at -5", -5, 10)

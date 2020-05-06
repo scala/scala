@@ -17,6 +17,7 @@ import scala.tools.cmd.CommandLineParser
 import scala.tools.nsc._
 import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.settings.ScalaVersion
+import scala.util.chaining._
 
 /** Test with code which is embedded as a string.
  *
@@ -46,13 +47,11 @@ abstract class DirectTest {
   // a default Settings object using only extraSettings
   def settings: Settings = newSettings(CommandLineParser.tokenize(extraSettings))
   // settings factory using given args and also debug settings
-  def newSettings(args: List[String]) = {
-    val s = new Settings
+  def newSettings(args: List[String]) = (new Settings).tap { s =>
     val allArgs = args ++ CommandLineParser.tokenize(debugSettings)
-    log("newSettings: allArgs = " + allArgs)
+    log(s"newSettings: allArgs = $allArgs")
     val (success, residual) = s.processArguments(allArgs, processAll = false)
     assert(success && residual.isEmpty, s"Bad settings [${args.mkString(",")}], residual [${residual.mkString(",")}]")
-    s
   }
   // new compiler using given ad hoc args, -d and extraSettings
   def newCompiler(args: String*): Global = {

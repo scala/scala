@@ -1567,8 +1567,8 @@ trait Types
       */
     private[internal] def starNotation(typeString: Type => String): String = {
       if (emptyLowerBound && emptyUpperBound) ""
-      else if (emptyLowerBound) "(" + typeString(hi) + ")"
-      else "(%s, %s)" format (typeString(lo), typeString(hi))
+      else if (emptyLowerBound) s"(${typeString(hi)})"
+      else s"(${typeString(lo)}, ${typeString(hi)})"
     }
     override def kind = "TypeBoundsType"
     override def mapOver(map: TypeMap): Type = {
@@ -2640,7 +2640,7 @@ trait Types
     private def refinementDecls = fullyInitializeScope(decls) filter (sym => sym.isPossibleInRefinement && sym.isPublic)
     private def refinementString = (
       if (sym.isStructuralRefinement)
-        refinementDecls map (_.defString) mkString("{", "; ", "}")
+        refinementDecls.map(_.defString).mkString("{", "; ", "}")
       else ""
     )
     protected def finishPrefix(rest: String) = (
@@ -3146,7 +3146,7 @@ trait Types
     }
 
     private def existentialClauses = {
-      val str = quantified map (_.existentialToString) mkString (" forSome { ", "; ", " }")
+      val str = quantified.map(_.existentialToString).mkString(" forSome { ", "; ", " }")
       if (settings.explaintypes) "(" + str + ")" else str
     }
 
@@ -3747,7 +3747,7 @@ trait Types
 
     private def tparamsOfSym(sym: Symbol) = sym.info match {
       case PolyType(tparams, _) if !tparams.isEmpty =>
-        tparams map (_.defString) mkString("[", ",", "]")
+        tparams.map(_.defString).mkString("[", ",", "]")
       case _ => ""
     }
     def originName = origin.typeSymbolDirect.decodedName
@@ -4426,7 +4426,7 @@ trait Types
           case _: ConstantType => tp // Java enum constants: don't widen to the enum type!
           case _               => tp.widen // C.X.type widens to C.this.X.type, otherwise `tp asSeenFrom (pre, C)` has no effect.
         }
-        val memType = widened asSeenFrom (pre, tp.typeSymbol.owner)
+        val memType = widened.asSeenFrom(pre, tp.typeSymbol.owner)
         if (tp eq widened) memType else memType.narrow
       }
       else loop(tp.prefix) memberType tp.typeSymbol
