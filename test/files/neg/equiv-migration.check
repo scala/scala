@@ -1,0 +1,17 @@
+equiv-migration.scala:3: warning: object DeprecatedFloatEquiv in object Equiv has changed semantics in version 2.13.2:
+  The default implicit equivalence for floats no longer conforms to
+  to IEEE 754's behavior for -0.0F and NaN.
+  Import `Equiv.Float.IeeeEquiv` to recover the previous behavior.
+  See also https://www.scala-lang.org/api/current/scala/math/Equiv$$Float$.html.
+  val f = Equiv[Float]
+               ^
+equiv-migration.scala:4: warning: object DeprecatedDoubleEquiv in object Equiv has changed semantics in version 2.13.2:
+  The default implicit equivalence for doubles no longer conforms to
+  to IEEE 754's behavior for -0.0D and NaN.
+  Import `Equiv.Double.IeeeEquiv` to recover the previous behavior.
+  See also https://www.scala-lang.org/api/current/scala/math/Equiv$$Double$.html.
+  val d = Equiv[Double]
+               ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
