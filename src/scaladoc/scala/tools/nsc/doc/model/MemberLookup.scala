@@ -102,7 +102,7 @@ trait MemberLookup extends base.MemberLookupBase {
 
   def jdkUrl(path: String): String = {
     if (path.endsWith(".jmod")) {
-      val tokens = path.split("/")
+      val tokens = path.split(java.io.File.separatorChar)
       val module = tokens.last.stripSuffix(".jmod")
       s"$jdkUrl/$module"
     }
