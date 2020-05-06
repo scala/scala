@@ -16,7 +16,7 @@ class EtaExpand214 {
 
   val t1: () => Any  = m1   // error
   val t2: () => Any  = m2   // eta-expanded, only warns w/ -Xlint:eta-zero
-  val t2AcciSam: AcciSamZero = m2   // eta-expanded, only warns w/ -Xlint:eta-zero or -Xlint:eta-sam
+  val t2AcciSam: AcciSamZero = m2   // warn, eta-expanded to non @FunctionalInterface SAM
   val t2Sam: SamZero = m2   // eta-expanded, only warns w/ -Xlint:eta-zero
   val t3: Int => Any = m3   // ok
 
