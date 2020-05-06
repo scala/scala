@@ -303,6 +303,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParIntStepper(new WidenedByteArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new WidenedByteArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Byte](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Byte => new ArraySeq.ofByte(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Byte](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Byte => new ArraySeq.ofByte(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Byte](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Byte => new ArraySeq.ofByte(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -329,6 +344,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParIntStepper(new WidenedShortArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new WidenedShortArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Short](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Short => new ArraySeq.ofShort(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Short](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Short => new ArraySeq.ofShort(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Short](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Short => new ArraySeq.ofShort(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -355,6 +385,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParIntStepper(new WidenedCharArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new WidenedCharArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Char](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Char => new ArraySeq.ofChar(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Char](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Char => new ArraySeq.ofChar(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Char](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Char => new ArraySeq.ofChar(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
 
     override def addString(sb: StringBuilder, start: String, sep: String, end: String): StringBuilder =
       (new MutableArraySeq.ofChar(unsafeArray)).addString(sb, start, sep, end)
@@ -384,6 +429,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParIntStepper(new IntArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new IntArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Int](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Int => new ArraySeq.ofInt(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Int](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Int => new ArraySeq.ofInt(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Int](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Int => new ArraySeq.ofInt(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -410,6 +470,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParLongStepper(new LongArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new LongArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Long](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Long => new ArraySeq.ofLong(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Long](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Long => new ArraySeq.ofLong(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Long](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Long => new ArraySeq.ofLong(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -429,6 +504,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParDoubleStepper(new WidenedFloatArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new WidenedFloatArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Float](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Float => new ArraySeq.ofFloat(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Float](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Float => new ArraySeq.ofFloat(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Float](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Float => new ArraySeq.ofFloat(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -448,6 +538,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
         AnyStepper.ofParDoubleStepper(new DoubleArrayStepper(unsafeArray, 0, unsafeArray.length))
       else new DoubleArrayStepper(unsafeArray, 0, unsafeArray.length)
     ).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Double](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Double => new ArraySeq.ofDouble(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Double](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Double => new ArraySeq.ofDouble(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Double](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Double => new ArraySeq.ofDouble(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
@@ -471,6 +576,21 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
     override def iterator: Iterator[Boolean] = new ArrayOps.ArrayIterator[Boolean](unsafeArray)
     override def stepper[S <: Stepper[_]](implicit shape: StepperShape[Boolean, S]): S with EfficientSplit =
       new BoxedBooleanArrayStepper(unsafeArray, 0, unsafeArray.length).asInstanceOf[S with EfficientSplit]
+    override def updated[B >: Boolean](index: Int, elem: B): ArraySeq[B] =
+      elem match {
+        case b: Boolean => new ArraySeq.ofBoolean(unsafeArray.updated(index, b))
+        case _ => super.updated(index, elem)
+      }
+    override def appended[B >: Boolean](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Boolean => new ArraySeq.ofBoolean(unsafeArray.appended(b))
+        case _ => super.appended(elem)
+      }
+    override def prepended[B >: Boolean](elem: B): ArraySeq[B] =
+      elem match {
+        case b: Boolean => new ArraySeq.ofBoolean(unsafeArray.prepended(b))
+        case _ => super.prepended(elem)
+      }
   }
 
   @SerialVersionUID(3L)
