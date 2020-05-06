@@ -1,0 +1,55 @@
+warn-unused-imports_2.scala:135: error: type mismatch;
+ found   : Int(42)
+ required: Sample.X
+    f(42)                       // error
+      ^
+warn-unused-imports_2.scala:59: warning: Unused import
+    import p1.A // warn
+              ^
+warn-unused-imports_2.scala:64: warning: Unused import
+    import p1.{ A, B } // warn on A
+                ^
+warn-unused-imports_2.scala:69: warning: Unused import
+    import p1.{ A, B } // warn on both
+                ^
+warn-unused-imports_2.scala:69: warning: Unused import
+    import p1.{ A, B } // warn on both
+                   ^
+warn-unused-imports_2.scala:75: warning: Unused import
+    import c._  // warn
+             ^
+warn-unused-imports_2.scala:80: warning: Unused import
+    import p1._ // warn
+              ^
+warn-unused-imports_2.scala:87: warning: Unused import
+    import c._  // warn
+             ^
+warn-unused-imports_2.scala:93: warning: Unused import
+    import p1.c._  // warn
+                ^
+warn-unused-imports_2.scala:100: warning: Unused import
+    import p1._   // warn
+              ^
+warn-unused-imports_2.scala:120: warning: Unused import
+    import p1.A   // warn
+              ^
+warn-unused-imports_2.scala:134: warning: Unused import
+    import Sample.Implicits._   // warn
+                            ^
+warn-unused-imports_2.scala:145: warning: Unused import
+    import Sample.Implicits.useless     // warn
+                            ^
+warn-unused-imports_2.scala:149: warning: Unused import
+    import java.io.File                 // warn
+                   ^
+warn-unused-imports_2.scala:150: warning: Unused import
+    import scala.concurrent.Future      // warn
+                            ^
+warn-unused-imports_2.scala:151: warning: Unused import
+    import scala.concurrent.ExecutionContext.Implicits.global // warn
+                                                       ^
+warn-unused-imports_2.scala:152: warning: Unused import
+    import p1.A                         // warn
+              ^
+16 warnings
+1 error
