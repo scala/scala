@@ -7,7 +7,7 @@ import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.JavaClearable
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
@@ -298,7 +298,7 @@ class InlinerTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code)
+    @annotation.unused val c = compileClass(code)
     assert(callGraph.callsites.valuesIterator.flatMap(_.valuesIterator) exists (_.callsiteInstruction.name == "clone"))
   }
 
@@ -1443,7 +1443,7 @@ class InlinerTest extends BytecodeTesting {
         |final class K extends V with U { override def m = super[V].m }
         |class C { def t = (new K).f }
       """.stripMargin
-    val c :: _ = compileClasses(code)
+    val c :: _ = compileClasses(code): @unchecked
     assertSameSummary(getMethod(c, "t"), List(NEW, "<init>", ICONST_1, IRETURN))  // ICONST_1, U.f is inlined (not T.f)
   }
 
@@ -1480,7 +1480,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t(): Unit = new ScalaObservable("").scMap("")
         |}
       """.stripMargin)
-    val c :: _ = compileClassesSeparately(codes, extraArgs = compilerArgs)
+    val c :: _ = compileClassesSeparately(codes, extraArgs = compilerArgs): @unchecked
     assertNoInvoke(getMethod(c, "t"))
   }
 
@@ -2253,7 +2253,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t2b = TT.m2      // mixin forwarder is inlined, static forwarder then as well because the final method is forwarder
         |}
       """.stripMargin
-    val c :: _ = compileClasses(code)
+    val c :: _ = compileClasses(code): @unchecked
     assertNoInvoke(getMethod(c, "t1a"))
     assertNoInvoke(getMethod(c, "t1b"))
     assertInvoke(getMethod(c, "t2a"), "T", "p")

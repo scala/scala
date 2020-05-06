@@ -3,20 +3,15 @@ package scala.collection
 import scala.collection.immutable.List
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import language.postfixOps
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
-@RunWith(classOf[JUnit4])
 class ViewTest {
 
   @Test
   def hasCorrectDropAndTakeMethods(): Unit = {
     val iter = Iterable(1, 2, 3)
 
-    import scala.language.postfixOps
     assertEquals(Iterable.empty[Int], iter.view take Int.MinValue to Iterable)
     assertEquals(Iterable.empty[Int],
                  iter.view takeRight Int.MinValue to Iterable)
@@ -72,7 +67,7 @@ class ViewTest {
   }
 
   @Test
-  def tapEach: Unit = {
+  def tapEach(): Unit = {
     val lb = ListBuffer[Int]()
 
     val v =
@@ -90,7 +85,7 @@ class ViewTest {
   }
 
   @Test
-  def updated: Unit = {
+  def updated(): Unit = {
     def checkThrows[U](f: => U) = try { f; assertTrue(false) } catch { case _: IndexOutOfBoundsException => }
     // View.Updated can update the last element but not the one after:
     val v1 = new View.Updated(0 until 5, 4, 0)
@@ -107,8 +102,9 @@ class ViewTest {
     checkThrows(ll.toList)
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def t10103(): Unit = {
+  def `t10103 result of view must be indexed seq`(): Unit = {
     val ints: IndexedSeq[Int] = Vector(1, 2, 3, 4)
     ints.view(1, 3): scala.collection.IndexedSeqView[Int]
   }

@@ -16,6 +16,7 @@ class PriorityQueueTest {
   val elements = List.fill(1000)(scala.util.Random.nextInt(Int.MaxValue))
   priorityQueue.enqueue(elements :_*)
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def orderedCompanion(): Unit = {
     val pq = new mutable.PriorityQueue[Int]()
@@ -58,7 +59,7 @@ class PriorityQueueTest {
   }
 
   @Test
-  def copyToArray: Unit = {
+  def copyToArray(): Unit = {
 
     for {
       size <- Seq(0, 1, 2, 5, 10, 65, 10000)

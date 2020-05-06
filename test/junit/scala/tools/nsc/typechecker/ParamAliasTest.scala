@@ -1,16 +1,15 @@
 package scala.tools.nsc.typechecker
 
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
+import scala.annotation.unused
 import scala.reflect.io.VirtualDirectory
 import scala.tools.nsc.Global
 import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
 class ParamAliasTest extends BytecodeTesting {
 
   @Test
@@ -35,10 +34,10 @@ class ParamAliasTest extends BytecodeTesting {
       val out = compiler1.global.settings.outputDirs.getSingleOutput.get.asInstanceOf[VirtualDirectory]
       compiler2.global.platform.classPath
       compiler2.global.platform.currentClassPath = Some(AggregateClassPath(new VirtualDirectoryClassPath(out) :: compiler2.global.platform.currentClassPath.get :: Nil))
-      val r2 = new compiler2.global.Run
+      @unused val r2 = new compiler2.global.Run
       val aliasInfoUnpickled = aliasNames(compiler2.global)
-      Assert.assertEquals(expected.sorted, aliasInfoAfterCompilation.sorted)
-      Assert.assertEquals(expected.sorted, aliasInfoUnpickled.sorted)
+      assertEquals(expected.sorted, aliasInfoAfterCompilation.sorted)
+      assertEquals(expected.sorted, aliasInfoUnpickled.sorted)
     }
 
     {

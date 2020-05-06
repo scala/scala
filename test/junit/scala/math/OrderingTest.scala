@@ -8,7 +8,6 @@ import org.junit.runners.JUnit4
 import java.{lang => jl}
 
 import scala.collection.SortedSet
-import scala.math.Ordering.Float.TotalOrdering
 import scala.math.Ordering.Double.TotalOrdering
 
 @RunWith(classOf[JUnit4])
@@ -40,6 +39,7 @@ class OrderingTest {
   )
 
   /* Test for scala/bug#9077 */
+  @deprecated("Tests deprecated Ordering for Iterable", since="2.13")
   @Test
   def reverseOrdering(): Unit = {
     def check[T: Ordering](t1: T, t2: T): Unit = {
@@ -240,7 +240,7 @@ class OrderingTest {
   /* Test for scala/bug#8664 */
   @Test
   def symbolOrdering(): Unit = {
-    assertEquals(Seq('b, 'c, 'a).sorted, Seq('a, 'b, 'c))
+    assertEquals(Seq("b", "c", "a").sorted, Seq("a", "b", "c"))
   }
 
   @Test

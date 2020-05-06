@@ -67,7 +67,7 @@ import PrinterHelper._
 
 @RunWith(classOf[JUnit4])
 class BasePrintTest {
-  @Test def testIdent = assertTreeCode(Ident("*"))("*")
+  @Test def testIdent = assertTreeCode(Ident(TermName("*")))("*")
 
   @Test def testConstant1 = assertTreeCode(Literal(Constant("*")))("\"*\"")
 
@@ -77,7 +77,7 @@ class BasePrintTest {
 
   @Test def testConstantDouble = assertTreeCode(Literal(Constant(42d)))("42.0")
 
-  @Test def testConstantLong = assertTreeCode(Literal(Constant(42l)))("42L")
+  @Test def testConstantLong = assertTreeCode(Literal(Constant(42L)))("42L")
 
   val sq  = "\""
   val tq  = "\"" * 3
@@ -984,10 +984,11 @@ class ValAndDefPrintTest {
 
   @Test def testDef6 = assertPrintedCode("def a_(b_ : scala.Int) = ()")
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test def testDef7 = assertTreeCode{
     Block(
-      DefDef(NoMods, newTermName("test1"), Nil, Nil, EmptyTree, Literal(Constant(()))),
-      DefDef(NoMods, newTermName("test2"), Nil, Nil :: Nil, EmptyTree, Literal(Constant(())))
+      DefDef(NoMods, TermName("test1"), Nil, Nil, EmptyTree, Literal(Constant(()))),
+      DefDef(NoMods, TermName("test2"), Nil, Nil :: Nil, EmptyTree, Literal(Constant(())))
     )
   }(sm"""
     |{
@@ -996,11 +997,11 @@ class ValAndDefPrintTest {
     |}""")
 
   @Test def testDef8 = {
-    val arg = ValDef(Modifiers(Flag.IMPLICIT) , newTermName("a"),
-      AppliedTypeTree(Ident(newTypeName("R")), List(Ident(newTypeName("X")))), EmptyTree)
+    val arg = ValDef(Modifiers(Flag.IMPLICIT) , TermName("a"),
+      AppliedTypeTree(Ident(TypeName("R")), List(Ident(TypeName("X")))), EmptyTree)
 
     //def m[X](implicit a: R[X]) = ()
-    val tree = DefDef(NoMods, newTermName("test"), TypeDef(NoMods, newTypeName("X"), Nil, EmptyTree) :: Nil,
+    val tree = DefDef(NoMods, TermName("test"), TypeDef(NoMods, TypeName("X"), Nil, EmptyTree) :: Nil,
       List(List(arg)), EmptyTree, Literal(Constant(())))
 
     assertTreeCode(tree)("def test[X](implicit a: R[X]) = ()")

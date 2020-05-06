@@ -2,8 +2,7 @@ package scala.util
 
 import org.junit.Test
 import org.junit.Assert._
-import scala.math.{ Ordered, Ordering }
-import scala.reflect.ClassTag
+import scala.math.{Ordered, Ordering}
 
 class SortingTest {
   case class N(i: Int, j: Int) extends Ordered[N] { def compare(n: N) = if (i < n.i) -1 else if (i > n.i) 1 else 0 }
@@ -34,7 +33,7 @@ class SortingTest {
     val pxs = { val temp = xs.clone; Sorting.quickSort(temp)(backwardsN); temp }
     val sxs = { val temp = xs.clone; Sorting.stableSort(temp); temp }
     val rxs = { val temp = xs.clone; Sorting.stableSort(temp)(backwardsN); temp }
-    val sys = Sorting.stableSort(ys.clone: Seq[Int], (i: Int) => xs(i))
+    val sys = Sorting.stableSort(ys.clone.toIndexedSeq, (i: Int) => xs(i))
     
     assertTrue("Quicksort should be in order", isSorted(qxs))
     assertTrue("Quicksort should be in reverse order", isAntisorted(pxs))
@@ -48,7 +47,7 @@ class SortingTest {
     assertTrue("Proxy sort and direct sort should produce exactly the same thing", (sxs zip sys.map(i => xs(i))).forall{ case (a,b) => a == b })
   }
   
-  @Test def testSortConsistency: Unit = {
+  @Test def testSortConsistency(): Unit = {
     for {
       size <- sizes
       v <- variety
@@ -57,8 +56,8 @@ class SortingTest {
     
     for (size <- sizes) {
       val b = Array.fill(size)(rng.nextBoolean)
-      val bfwd = Sorting.stableSort(b.clone: Seq[Boolean])
-      val bbkw = Sorting.stableSort(b.clone: Seq[Boolean], (x: Boolean, y: Boolean) => x && !y)
+      val bfwd = Sorting.stableSort(b.clone.toIndexedSeq)
+      val bbkw = Sorting.stableSort(b.clone.toIndexedSeq, (x: Boolean, y: Boolean) => x && !y)
       assertTrue("All falses should be first", bfwd.dropWhile(_ == false).forall(_ == true))
       assertTrue("All falses should be last when sorted backwards", bbkw.dropWhile(_ == true).forall(_ == false))
       assertTrue("Sorting booleans should preserve the number of trues", b.count(_ == true) == bfwd.count(_ == true))

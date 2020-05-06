@@ -372,7 +372,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
   connectInput in run := true,
-  //scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,_",
+  // for ease of development while breaking things
   //scalacOptions in Compile ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
   scalacOptions in Compile += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:ws",
   scalacOptions in Compile in doc ++= Seq(
@@ -872,7 +872,8 @@ lazy val testkit = configureAsSubproject(project)
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(commonSettings)
-  .settings(scalacOptions in Compile += "-Xlint:-adapted-args,-deprecation,-inaccessible,-nonlocal-return,-nullary-unit,-unused,-valpattern,-doc-detached,_")
+  .settings(scalacOptions in Compile += "-Xlint:-adapted-args,-nullary-unit,_")
+  .settings(javacOptions in Compile ++= Seq("-Xlint"))
   .settings(disableDocs)
   .settings(skip in publish := true)
   .settings(

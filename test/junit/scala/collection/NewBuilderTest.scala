@@ -1,18 +1,15 @@
 package scala.collection
 
-import scala.{collection => sc}
-import scala.collection.{mutable => scm, immutable => sci, concurrent => scc}
-
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.junit.Test
+import scala.{collection => sc}, sc.{mutable => scm, immutable => sci}
 import scala.reflect.ClassTag
+
 import org.junit.Assert._
+import org.junit.Test
 
 /* Tests various maps by making sure they all agree on the same answers. */
-@RunWith(classOf[JUnit4])
 class NewBuilderTest {
 
+  @deprecated("Tests old collection types", since="2.13.0")
   @Test
   def mapPreservesCollectionType(): Unit = {
     def test[T: ClassTag](mapped: Any): Unit = {

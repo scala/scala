@@ -1,16 +1,9 @@
-package scala.collection.mutable
-
-import java.util.NoSuchElementException
+package scala.collection
+package mutable
 
 import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.collection.mutable
-import scala.{Option, Unit}
-
-@RunWith(classOf[JUnit4])
 class SortedMapTest {
   @Test
   def testWithDefaultValueReturnsSortedMapWithDefaultValue(): Unit = {
@@ -107,7 +100,7 @@ class SortedMapTest {
     i => s"$i is not present in this map"
   }
   @Test
-  def testWithDefaultValue: Unit = {
+  def testWithDefaultValue(): Unit = {
     val m1 = mutable.SortedMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue("")
 
@@ -136,8 +129,9 @@ class SortedMapTest {
     assertEquals(m2(3), "")
     assertEquals(m3(3), "333")
   }
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def testWithDefault: Unit = {
+  def testWithDefault(): Unit = {
     val m1 = mutable.SortedMap(1 -> "a", 2 -> "b")
 
     val m2: mutable.Map[Int, String] = m1.withDefault(i => (i + 1).toString)

@@ -5,7 +5,7 @@ import java.{util => ju}
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
-import scala.collection.immutable.ChampMapSmokeTest.{emptyMap, mkTuple}
+import scala.collection.immutable.ChampMapSmokeTest.mkTuple
 
 object ChampSetSmokeTest {
 

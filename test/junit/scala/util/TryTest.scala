@@ -1,13 +1,11 @@
 package scala.util
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
-import scala.tools.testkit.AssertUtil._
+import scala.annotation.unused
+import scala.tools.testkit.AssertUtil.assertThrows
 
-@RunWith(classOf[JUnit4])
 class TryTest {
   /* Test Try's withFilter method, which was added along with the fix for scala/bug#6455 */
   @Test def withFilterFail(): Unit = {
@@ -151,7 +149,7 @@ class TryTest {
 
   @Test def testFlatMapFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    val n = t.flatMap{ x => fail(); Try(()) }
+    @unused val n = t.flatMap{ x => fail(); Try(()) }
   }
 
   @Test def testMapSuccess(): Unit = {
@@ -183,7 +181,7 @@ class TryTest {
 
   @Test def testFilterFailure(): Unit = {
     val t = Failure(new Exception("foo"))
-    val n = t.filter{ x => fail() ; true }
+    @unused val n = t.filter{ x => fail() ; true }
   }
 
   @Test def testRescueSuccess(): Unit = {
@@ -220,7 +218,7 @@ class TryTest {
     val recovered = Failure(new Exception("bar"))
     val n = t.recoverWith{ case _ => Success(1) }
     assertEquals(1, n.get)
-    val Failure(f) = t.recoverWith{ case _ => recovered}
+    val Failure(f) = t.recoverWith{ case _ => recovered}: @unchecked
     assertSame(recovered.exception, f)
   }
 

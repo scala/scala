@@ -2,7 +2,8 @@ package scala.tools.nsc
 
 import java.io.Closeable
 
-import org.junit.{Assert, Test}
+import org.junit.Assert.{assertEquals, assertTrue, fail}
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -48,7 +49,7 @@ class GlobalCustomizeClassloaderTest {
     g.settings.usejavacp.value = true
     g.settings.plugin.value = List("sample")
     new g.Run
-    assert(g.settings.log.value == List("typer"))
+    assertTrue(g.settings.log.value == List("typer"))
 
     val unit = new g.CompilationUnit(NoSourceFile)
     val context = g.analyzer.rootContext(unit)
@@ -56,10 +57,10 @@ class GlobalCustomizeClassloaderTest {
     import g._
     SampleMacro.data = "in this classloader"
     val typed = typer.typed(q"scala.tools.nsc.SampleMacro.m")
-    assert(!reporter.hasErrors)
+    assertTrue(!reporter.hasErrors)
     typed match {
-      case Typed(Literal(Constant(s: String)), _) => Assert.assertEquals(SampleMacro.data, s)
-      case _ => Assert.fail()
+      case Typed(Literal(Constant(s: String)), _) => assertEquals(SampleMacro.data, s)
+      case _ => fail()
     }
     g.close()
   }

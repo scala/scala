@@ -6,7 +6,7 @@ import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
 
 import org.junit.{After, Before, Test}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import FileUtils._
 import scala.tools.nsc.PipelineMain._
 import scala.tools.nsc.reporters.{ConsoleReporter, StoreReporter}

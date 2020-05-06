@@ -116,11 +116,11 @@ class FlagsTest extends BytecodeTesting {
     val javaI2 = "package p; interface I2 { default int m() { return 1; } }"
     compiler.compileClasses(code = scalaCode, javaCode = (javaI1, "I1.java") :: (javaI2, "I2.java") :: Nil)
     import compiler.global.rootMirror._
-    assert( getRequiredClass("p.T1").isInterface)
-    assert(!getRequiredClass("p.T2").isInterface)
-    assert(!getRequiredClass("p.T3").isInterface)
-    assert(!getRequiredClass("p.T4").isInterface)
-    assert( getRequiredClass("p.I1").isInterface)
-    assert( getRequiredClass("p.I2").isInterface)
+    assertTrue( getRequiredClass("p.T1").isInterface)
+    assertFalse(getRequiredClass("p.T2").isInterface)
+    assertFalse(getRequiredClass("p.T3").isInterface)
+    assertFalse(getRequiredClass("p.T4").isInterface)
+    assertTrue( getRequiredClass("p.I1").isInterface)
+    assertTrue( getRequiredClass("p.I2").isInterface)
   }
 }

@@ -339,7 +339,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
   def t8315b(): Unit = {
     val code =
       """class C {
-        |  def crash: Unit = {
+        |  def crash(): Unit = {
         |    val key = ""
         |    try map(new F(key))
         |    catch { case _: Throwable => }

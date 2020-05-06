@@ -1,7 +1,7 @@
 package scala.tools.nsc.transform
 
 import org.junit.Assert.assertEquals
-import org.junit.{Assert, Test}
+import org.junit.Test
 
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 

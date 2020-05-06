@@ -1,4 +1,5 @@
-package scala.sys.process
+// note enclosing package test, junit/testOnly test.scala.sys.process.ProcessTest
+package test.scala.sys.process
 
 import java.io.{ByteArrayInputStream, File, InputStream, IOException}
 import java.nio.file.{Files, Paths}, Files.createTempFile
@@ -6,23 +7,19 @@ import java.nio.charset.StandardCharsets.UTF_8
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicBoolean
 
-import scala.collection.JavaConverters._
-import scala.io.{Source => IOSource, StdIn}
+import scala.io.{Source => IOSource}
+import scala.jdk.CollectionConverters._
+import scala.sys.process._ // test from outside the package to ensure implicits work
 import scala.tools.testkit.AssertUtil._
 import scala.tools.testkit.ReleasablePath._
 import scala.util.Try
-// should test from outside the package to ensure implicits work
-//import scala.sys.process._
 import scala.util.Properties._
 import scala.util.Using
 import scala.util.chaining._
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
-@RunWith(classOf[JUnit4])
 class ProcessTest {
   private def testily(body: => Unit) = if (!isWin) body
 
@@ -113,7 +110,7 @@ class ProcessTest {
         super.run(io)
       }
     }
-    def process = Using.resource(createTempFile("out", "tmp")) { out =>
+    def process() = Using.resource(createTempFile("out", "tmp")) { out =>
       val p0 = (noFile.toFile : ProcessBuilder.Source).cat #&& pb2
       val p = p0 #> out.toFile
 
@@ -123,7 +120,7 @@ class ProcessTest {
 
     def fail(why: String): Option[Throwable] = Some(new AssertionError(why))
 
-    withoutATrace(process) {
+    withoutATrace(process()) {
       case (None, _)                         => fail("No main result")
       case (_, (_, (_: IOException)) :: Nil) => None
       case (_, other)                        => fail(s"Expected one IOException, got $other")

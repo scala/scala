@@ -106,7 +106,7 @@ class ScriptedTest {
       Thread.currentThread.setContextClassLoader(ClassLoader.getSystemClassLoader)
       val saved = Thread.currentThread.getContextClassLoader
       val engine = scripted
-      scripted.eval("42")
+      engine.eval("42")
       val now = Thread.currentThread.getContextClassLoader
       assert(saved eq now)
     } finally {

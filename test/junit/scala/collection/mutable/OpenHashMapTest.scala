@@ -2,16 +2,14 @@ package scala.collection.mutable
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.openjdk.jol.info.{GraphPathRecord, GraphVisitor, GraphWalker}
 
 /** Tests for [[OpenHashMap]]. */
-@RunWith(classOf[JUnit4])
+@deprecated("Tests deprecated API", since="2.13")
 class OpenHashMapTest {
   /** Test that an [[OpenHashMap]] correctly maintains its internal `deleted` count. */
   @Test
-  def maintainsDeletedCount: Unit = {
+  def maintainsDeletedCount(): Unit = {
     val m = OpenHashMap.empty[Int, Int]
 
     // Reflect to get the private `deleted` field's value, which should be zero.
@@ -48,7 +46,7 @@ class OpenHashMapTest {
 
   /** Test that an [[OpenHashMap]] frees references to a deleted key (scala/bug#9522). */
   @Test
-  def freesDeletedKey: Unit = {
+  def freesDeletedKey(): Unit = {
     import scala.language.reflectiveCalls
 
     class MyClass {

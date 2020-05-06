@@ -33,6 +33,7 @@ class AnyRefMapTest {
     assertTrue(sameHashCode.hashCode == badHashCode)  // Make sure test works
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def t10876: Unit = {
     val m = collection.mutable.AnyRefMap("fish" -> 3)

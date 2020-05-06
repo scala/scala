@@ -43,7 +43,7 @@ object SerializationStability {
       content =>
         content.linesIterator.toList.zipWithIndex.map {
           case (content, i) if i == line - 1 =>
-            val newContent = content.replaceAllLiterally(quote(prevResult), quote(result))
+            val newContent = content.replace(quote(prevResult), quote(result))
             if (newContent != content)
               println(s"- $content\n+ $newContent\n")
             newContent
@@ -100,9 +100,10 @@ object SerializationStability {
     check(g)(Some(1))("rO0ABXNyAApzY2FsYS5Tb21lESLyaV6hi3QCAAFMAAV2YWx1ZXQAEkxqYXZhL2xhbmcvT2JqZWN0O3hyAAxzY2FsYS5PcHRpb27+aTf92w5mdAIAAHhwc3IAEWphdmEubGFuZy5JbnRlZ2VyEuKgpPeBhzgCAAFJAAV2YWx1ZXhyABBqYXZhLmxhbmcuTnVtYmVyhqyVHQuU4IsCAAB4cAAAAAE=")
     check(g)(None)("rO0ABXNyACZzY2FsYS5ydW50aW1lLk1vZHVsZVNlcmlhbGl6YXRpb25Qcm94eQAAAAAAAAABAgABTAALbW9kdWxlQ2xhc3N0ABFMamF2YS9sYW5nL0NsYXNzO3hwdnIAC3NjYWxhLk5vbmUkRlAk9lPKlKwCAAB4cgAMc2NhbGEuT3B0aW9u/mk3/dsOZnQCAAB4cA==")
 
-    val f0: Function0[Int] = () => 0
-    val f1: Function1[Int, Int] = _ => 0
-    val f2: Function2[Int, Int, Int] = (_, _) => 0
+    // TODO what is the status of the following checks?
+    //val f0: Function0[Int] = () => 0
+    //val f1: Function1[Int, Int] = _ => 0
+    //val f2: Function2[Int, Int, Int] = (_, _) => 0
     
     // check(g)(f0)("rO0ABXNyACFqYXZhLmxhbmcuaW52b2tlLlNlcmlhbGl6ZWRMYW1iZGFvYdCULCk2hQIACkkADmltcGxNZXRob2RLaW5kWwAMY2FwdHVyZWRBcmdzdAATW0xqYXZhL2xhbmcvT2JqZWN0O0wADmNhcHR1cmluZ0NsYXNzdAARTGphdmEvbGFuZy9DbGFzcztMABhmdW5jdGlvbmFsSW50ZXJmYWNlQ2xhc3N0ABJMamF2YS9sYW5nL1N0cmluZztMAB1mdW5jdGlvbmFsSW50ZXJmYWNlTWV0aG9kTmFtZXEAfgADTAAiZnVuY3Rpb25hbEludGVyZmFjZU1ldGhvZFNpZ25hdHVyZXEAfgADTAAJaW1wbENsYXNzcQB+AANMAA5pbXBsTWV0aG9kTmFtZXEAfgADTAATaW1wbE1ldGhvZFNpZ25hdHVyZXEAfgADTAAWaW5zdGFudGlhdGVkTWV0aG9kVHlwZXEAfgADeHAAAAAGdXIAE1tMamF2YS5sYW5nLk9iamVjdDuQzlifEHMpbAIAAHhwAAAAAHZyAB1zY2FsYS5TZXJpYWxpemF0aW9uU3RhYmlsaXR5JAAAAAAAAAAAAAAAeHB0ACVzY2FsYS9ydW50aW1lL2phdmE4L0pGdW5jdGlvbjAkbWNJJHNwdAAMYXBwbHkkbWNJJHNwdAADKClJdAAdc2NhbGEvU2VyaWFsaXphdGlvblN0YWJpbGl0eSR0AA8kYW5vbmZ1biRtYWluJDRxAH4AC3EAfgAL")
     // check(g)(f1)("rO0ABXNyACFqYXZhLmxhbmcuaW52b2tlLlNlcmlhbGl6ZWRMYW1iZGFvYdCULCk2hQIACkkADmltcGxNZXRob2RLaW5kWwAMY2FwdHVyZWRBcmdzdAATW0xqYXZhL2xhbmcvT2JqZWN0O0wADmNhcHR1cmluZ0NsYXNzdAARTGphdmEvbGFuZy9DbGFzcztMABhmdW5jdGlvbmFsSW50ZXJmYWNlQ2xhc3N0ABJMamF2YS9sYW5nL1N0cmluZztMAB1mdW5jdGlvbmFsSW50ZXJmYWNlTWV0aG9kTmFtZXEAfgADTAAiZnVuY3Rpb25hbEludGVyZmFjZU1ldGhvZFNpZ25hdHVyZXEAfgADTAAJaW1wbENsYXNzcQB+AANMAA5pbXBsTWV0aG9kTmFtZXEAfgADTAATaW1wbE1ldGhvZFNpZ25hdHVyZXEAfgADTAAWaW5zdGFudGlhdGVkTWV0aG9kVHlwZXEAfgADeHAAAAAGdXIAE1tMamF2YS5sYW5nLk9iamVjdDuQzlifEHMpbAIAAHhwAAAAAHZyAB1zY2FsYS5TZXJpYWxpemF0aW9uU3RhYmlsaXR5JAAAAAAAAAAAAAAAeHB0ACZzY2FsYS9ydW50aW1lL2phdmE4L0pGdW5jdGlvbjEkbWNJSSRzcHQADWFwcGx5JG1jSUkkc3B0AAQoSSlJdAAdc2NhbGEvU2VyaWFsaXphdGlvblN0YWJpbGl0eSR0AA8kYW5vbmZ1biRtYWluJDVxAH4AC3EAfgAL")
@@ -276,5 +277,5 @@ object AnEnum extends Enumeration {
 
 class SerializationStabilityTest {
   @Test
-  def testAll: Unit = SerializationStability.main(new Array[String](0))
+  def testAll(): Unit = SerializationStability.main(new Array[String](0))
 }

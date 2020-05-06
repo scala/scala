@@ -1,16 +1,10 @@
 package scala.reflect.internal
 
-import scala.tools.nsc.symtab
-
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-import scala.tools.testkit.AssertUtil.assertThrows
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
 
-@RunWith(classOf[JUnit4])
 class ScopeTest {
   object symbolTable extends SymbolTableForUnitTesting
 
@@ -48,7 +42,7 @@ class ScopeTest {
 
     // Unlinking a symbol in the inner scope doesn't modify the outer
     nested.unlink(bar)
-    assert(!nested.containsName(bar.name))
-    assert(outer.containsName(bar.name))
+    assertFalse(nested.containsName(bar.name))
+    assertTrue(outer.containsName(bar.name))
   }
 }

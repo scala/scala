@@ -1,7 +1,8 @@
 package scala.tools.nsc
 package typechecker
 
-import org.junit.{ After, Before, Test }
+import org.junit.Assert.assertTrue
+import org.junit.{After, Before, Test}
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
@@ -62,41 +63,41 @@ class InferencerTests extends BytecodeTesting {
       // See discussion at https://github.com/lampepfl/dotty/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
 
       // Covariant
-      assert(!typer.infer.isAsSpecific(XA, XB))
-      assert(typer.infer.isAsSpecific(XB, XA))
+      assertTrue(!typer.infer.isAsSpecific(XA, XB))
+      assertTrue(typer.infer.isAsSpecific(XB, XA))
 
       // Invariant
-      assert(!typer.infer.isAsSpecific(YA, YB))
-      assert(!typer.infer.isAsSpecific(YB, YA))
+      assertTrue(!typer.infer.isAsSpecific(YA, YB))
+      assertTrue(!typer.infer.isAsSpecific(YB, YA))
 
       // Contravariant: Scala 2 treats subtype/least derived as most specific
-      assert(typer.infer.isAsSpecific(ZA, ZB))
-      assert(!typer.infer.isAsSpecific(ZB, ZA))
+      assertTrue(typer.infer.isAsSpecific(ZA, ZB))
+      assertTrue(!typer.infer.isAsSpecific(ZB, ZA))
 
       // Inner contravariant: Scala 2 treats subtype/least derived as most specific
-      assert(typer.infer.isAsSpecific(LZA, LZB))
-      assert(!typer.infer.isAsSpecific(LZB, LZA))
+      assertTrue(typer.infer.isAsSpecific(LZA, LZB))
+      assertTrue(!typer.infer.isAsSpecific(LZB, LZA))
 
       // Subtypes of contravaraint effectively unrelated
-      assert(!typer.infer.isAsSpecific(ZA, SubZB))
-      assert(!typer.infer.isAsSpecific(SubZB, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, SubZB))
+      assertTrue(!typer.infer.isAsSpecific(SubZB, ZA))
 
       // Subtypes of contravaraint effectively unrelated
-      assert(!typer.infer.isAsSpecific(ZA, ZBwC))
-      assert(!typer.infer.isAsSpecific(ZBwC, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, ZBwC))
+      assertTrue(!typer.infer.isAsSpecific(ZBwC, ZA))
 
       // Contravariant outer subtypes
-      assert(!typer.infer.isAsSpecific(ZA, QuuxA))
-      assert(typer.infer.isAsSpecific(QuuxA, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, QuuxA))
+      assertTrue(typer.infer.isAsSpecific(QuuxA, ZA))
 
-      assert(!typer.infer.isAsSpecific(ZA, QuuxB))
-      assert(!typer.infer.isAsSpecific(QuuxB, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, QuuxB))
+      assertTrue(!typer.infer.isAsSpecific(QuuxB, ZA))
 
-      assert(!typer.infer.isAsSpecific(ZB, QuuxA))
-      assert(typer.infer.isAsSpecific(QuuxA, ZB))
+      assertTrue(!typer.infer.isAsSpecific(ZB, QuuxA))
+      assertTrue(typer.infer.isAsSpecific(QuuxA, ZB))
 
-      assert(!typer.infer.isAsSpecific(ZB, QuuxB))
-      assert(typer.infer.isAsSpecific(QuuxB, ZB))
+      assertTrue(!typer.infer.isAsSpecific(ZB, QuuxB))
+      assertTrue(typer.infer.isAsSpecific(QuuxB, ZB))
     }
   }
 
@@ -129,41 +130,41 @@ class InferencerTests extends BytecodeTesting {
       // See discussion at https://github.com/lampepfl/dotty/blob/89540268e6c49fb92b9ca61249e46bb59981bf5a/src/dotty/tools/dotc/typer/Applications.scala#L925-L951
 
       // Covariant
-      assert(!typer.infer.isAsSpecific(XA, XB))
-      assert(typer.infer.isAsSpecific(XB, XA))
+      assertTrue(!typer.infer.isAsSpecific(XA, XB))
+      assertTrue(typer.infer.isAsSpecific(XB, XA))
 
       // Invariant
-      assert(!typer.infer.isAsSpecific(YA, YB))
-      assert(!typer.infer.isAsSpecific(YB, YA))
+      assertTrue(!typer.infer.isAsSpecific(YA, YB))
+      assertTrue(!typer.infer.isAsSpecific(YB, YA))
 
       // Contravariant: treat top level as covariant
-      assert(!typer.infer.isAsSpecific(ZA, ZB))
-      assert(typer.infer.isAsSpecific(ZB, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, ZB))
+      assertTrue(typer.infer.isAsSpecific(ZB, ZA))
 
       // Inner contravariant: also changed
-      assert(!typer.infer.isAsSpecific(LZA, LZB))
-      assert(typer.infer.isAsSpecific(LZB, LZA))
+      assertTrue(!typer.infer.isAsSpecific(LZA, LZB))
+      assertTrue(typer.infer.isAsSpecific(LZB, LZA))
 
       // Subtypes of contravaraint effectively unrelated
-      assert(!typer.infer.isAsSpecific(ZA, SubZB))
-      assert(typer.infer.isAsSpecific(SubZB, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, SubZB))
+      assertTrue(typer.infer.isAsSpecific(SubZB, ZA))
 
       // Subtypes of contravaraint effectively unrelated
-      assert(!typer.infer.isAsSpecific(ZA, ZBwC))
-      assert(typer.infer.isAsSpecific(ZBwC, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, ZBwC))
+      assertTrue(typer.infer.isAsSpecific(ZBwC, ZA))
 
       // Contravariant outer subtypes
-      assert(!typer.infer.isAsSpecific(ZA, QuuxA))
-      assert(typer.infer.isAsSpecific(QuuxA, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, QuuxA))
+      assertTrue(typer.infer.isAsSpecific(QuuxA, ZA))
 
-      assert(!typer.infer.isAsSpecific(ZA, QuuxB))
-      assert(typer.infer.isAsSpecific(QuuxB, ZA))
+      assertTrue(!typer.infer.isAsSpecific(ZA, QuuxB))
+      assertTrue(typer.infer.isAsSpecific(QuuxB, ZA))
 
-      assert(!typer.infer.isAsSpecific(ZB, QuuxA))
-      assert(!typer.infer.isAsSpecific(QuuxA, ZB))
+      assertTrue(!typer.infer.isAsSpecific(ZB, QuuxA))
+      assertTrue(!typer.infer.isAsSpecific(QuuxA, ZB))
 
-      assert(!typer.infer.isAsSpecific(ZB, QuuxB))
-      assert(typer.infer.isAsSpecific(QuuxB, ZB))
+      assertTrue(!typer.infer.isAsSpecific(ZB, QuuxB))
+      assertTrue(typer.infer.isAsSpecific(QuuxB, ZB))
     }
   }
 }

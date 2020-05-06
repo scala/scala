@@ -114,7 +114,7 @@ class IteratorTest {
     assertEquals(0, createIterator.min)
     assertEquals((numExpectedSamples - 1) * step, createIterator.max)
   }
-  @Test def rangeOverflow2() : Unit = {
+  @Test def rangeOverflow2(): Unit = {
     val step = (Int.MaxValue / 2) + 1
     val numExpectedSamples = 2
     def createIterator = Iterator.range(0, Int.MaxValue, step)
@@ -122,7 +122,7 @@ class IteratorTest {
     assertEquals(0, createIterator.min)
     assertEquals(step, createIterator.max)
   }
-  @Test def rangeOverflow3() : Unit = {
+  @Test def rangeOverflow3(): Unit = {
     val step = 1000000000
     val numExpectedSamples = 5
     def createIterator = Iterator.range(Int.MinValue +10,Int.MaxValue - 10, step)
@@ -130,7 +130,7 @@ class IteratorTest {
     assertEquals(Int.MinValue + 10, createIterator.min)
     assertEquals(Int.MinValue + 10 + (numExpectedSamples - 1) * step, createIterator.max)
   }
-  @Test def rangeUnderflow() : Unit = {
+  @Test def rangeUnderflow(): Unit = {
     val step = -100000000
     val numExpectedSamples = 22
     def createIterator = Iterator.range(0, -Int.MaxValue, step)
@@ -138,7 +138,7 @@ class IteratorTest {
     assertEquals((numExpectedSamples - 1) * step, createIterator.min)
     assertEquals(0, createIterator.max)
   }
-  @Test def rangeUnderflow2() : Unit = {
+  @Test def rangeUnderflow2(): Unit = {
     val step = -(Int.MaxValue / 2) - 1
     val numExpectedSamples = 2
     def createIterator = Iterator.range(0, -Int.MaxValue, step)
@@ -146,7 +146,7 @@ class IteratorTest {
     assertEquals(step, createIterator.min)
     assertEquals(0, createIterator.max)
   }
-  @Test def rangeUnderflow3() : Unit = {
+  @Test def rangeUnderflow3(): Unit = {
     val step = -1000000000
     val numExpectedSamples = 5
     def createIterator = Iterator.range(Int.MaxValue -10,Int.MinValue + 10,step)
@@ -166,11 +166,11 @@ class IteratorTest {
   // ticket #429
   @Test def fromArray(): Unit = {
     val a = List(1, 2, 3, 4).toArray
-    var xs0 = a.iterator.toList;
-    var xs1 = a.slice(0, 1).iterator
-    var xs2 = a.slice(0, 2).iterator
-    var xs3 = a.slice(0, 3).iterator
-    var xs4 = a.slice(0, 4).iterator
+    val xs0 = a.iterator.toList;
+    val xs1 = a.slice(0, 1).iterator
+    val xs2 = a.slice(0, 2).iterator
+    val xs3 = a.slice(0, 3).iterator
+    val xs4 = a.slice(0, 4).iterator
     assertEquals(14, xs0.size + xs1.size + xs2.size + xs3.size + xs4.size)
   }
   @Test def toSeq(): Unit = {
@@ -210,22 +210,23 @@ class IteratorTest {
     def mkIterator = Range.inclusive(1, 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
-    val s1 = LazyList.from(mkIterator)
-    val s2 = LazyList.from(mkInfinite)
+    LazyList.from(mkIterator): Unit
+    LazyList.from(mkInfinite): Unit
     // back and forth without slipping into nontermination.
     results += LazyList.from(1).iterator.drop(10).to(LazyList).drop(10).iterator.next()
     assertTrue(List(21).sameElements(results))
   }
 
   // scala/bug#3516
+  @deprecated("Tests deprecated Stream", since="2.13")
   @Test def toStreamIsSufficientlyLazy(): Unit = {
     val results = collection.mutable.ListBuffer.empty[Int]
     def mkIterator = (1 to 5).iterator map (x => { results += x ; x })
     def mkInfinite = Iterator continually { results += 1 ; 1 }
 
     // Stream is strict in its head so we should see 1 from each of them.
-    val s1 = mkIterator.toStream
-    val s2 = mkInfinite.toStream
+    mkIterator.toStream: Unit
+    mkInfinite.toStream: Unit
     // back and forth without slipping into nontermination.
     results += (Stream from 1).toIterator.drop(10).toStream.drop(10).toIterator.next()
     assertSameElements(List(1,1,21), results)
@@ -255,7 +256,7 @@ class IteratorTest {
     assertTrue(yes.hasNext)
   }
   // scala/bug#9623
-  @Test def noExcessiveHasNextInJoinIterator: Unit = {
+  @Test def noExcessiveHasNextInJoinIterator(): Unit = {
     var counter = 0
     val exp = List(1,2,3,1,2,3)
     def it: Iterator[Int] = new Iterator[Int] {
@@ -320,7 +321,7 @@ class IteratorTest {
   }
 
   @Test
-  def hasCorrectDistinct: Unit = {
+  def hasCorrectDistinct(): Unit = {
     val result = List(1, 1, 2, 3, 3, 3, 4, 5, 5).iterator.distinct
 
     assertTrue(result.hasNext)
@@ -337,7 +338,7 @@ class IteratorTest {
   }
 
   @Test
-  def hasCorrectDistinctBy: Unit = {
+  def hasCorrectDistinctBy(): Unit = {
     val result = List("a", "aa", "aaa", "b", "bb", "bbb", "bbbb", "c").iterator.distinctBy(_.length)
 
     assertTrue(result.hasNext)
@@ -352,7 +353,7 @@ class IteratorTest {
   }
 
   @Test
-  def knownSize: Unit = {
+  def knownSize(): Unit = {
 
     def indexedSeq[A](xs: IndexedSeq[A]): Unit = {
       val it = xs.iterator
@@ -377,7 +378,7 @@ class IteratorTest {
   }
 
   @Test
-  def knownSize2: Unit = {
+  def knownSize2(): Unit = {
     assertEquals(10, Iterator.fill(10)(1).knownSize)
     assertEquals(0, Iterator.fill(-10)(1).knownSize)
     knownSizeDecreases(Iterator.fill(10)(1))
@@ -402,7 +403,7 @@ class IteratorTest {
   }
 
   @Test
-  def knownSize3: Unit = {
+  def knownSize3(): Unit = {
     def it = Iterator.fill(10)(1)
 
     val buf = it.buffered
@@ -449,7 +450,7 @@ class IteratorTest {
   }
 
   @Test
-  def sliceKnownSize: Unit = {
+  def sliceKnownSize(): Unit = {
     def it = Iterator.fill(10)(1)
 
     assertEquals(4, it.take(4).knownSize)
@@ -477,34 +478,34 @@ class IteratorTest {
   }
 
   @Test
-  def mkString: Unit = {
+  def mkString(): Unit = {
     val it = List("a", null, "b", null, "c", null).iterator
 
     assertEquals("a,null,b,null,c,null", it.mkString(","))
   }
 
   @Test
-  def emptyTypedIteratorsShouldBeEqual: Unit = {
+  def emptyTypedIteratorsShouldBeEqual(): Unit = {
     val emptyDoubleIterator = Iterator.empty[Double]
     val emptyIntIterator = Iterator.empty[Int]
     assertSame(emptyDoubleIterator, emptyIntIterator)
   }
 
   @Test
-  def emptyIteratorInHigherOrderFunctions: Unit = {
+  def emptyIteratorInHigherOrderFunctions(): Unit = {
     val seqOfIterators = Seq(Seq(1, 2, 3).iterator, Seq(3, 2, 1).iterator, Seq(1, 3, 2).iterator)
     val unified = seqOfIterators.foldLeft(Iterator.empty[Int])((a, b) => a ++ b)
     assertEquals(List(1, 2, 3, 3, 2, 1, 1, 3, 2), List.from(unified))
   }
 
   @Test
-  def emptyIteratorBuilder: Unit = {
+  def emptyIteratorBuilder(): Unit = {
     assertSame(Iterator.empty[Int], Iterator.newBuilder[Int].result())
   }
 
   @Test
-  def nonEmptyIteratorBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]
+  def nonEmptyIteratorBuilder(): Unit = {
+    val iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 5
     iteratorBuilder += 4
     iteratorBuilder += 3
@@ -512,32 +513,33 @@ class IteratorTest {
   }
 
   @Test
-  def nonEmptyIteratorAndClearBuilder: Unit = {
-    var iteratorBuilder = Iterator.newBuilder[Int]
+  def nonEmptyIteratorAndClearBuilder(): Unit = {
+    val iteratorBuilder = Iterator.newBuilder[Int]
     iteratorBuilder += 1
     iteratorBuilder.clear()
     assertSame(Iterator.empty, iteratorBuilder.result())
   }
 
-  @Test def partition: Unit = {
+  @Test def partition(): Unit = {
     val it = Iterator(1, 2, 3, 4, 5, 6, 7)
     val (even, odd) = it.partition(n => (n & 1) == 0)
     assertSameElements(List.from(even), List(2, 4, 6))
     assertSameElements(List.from(odd), List(1, 3, 5, 7))
   }
 
-  @Test def padTo: Unit = {
+  @Test def padTo(): Unit = {
     val it = Iterator(2, 4, 6, 8)
     val padded = it.padTo(7, 10)
     assertSameElements(List.from(padded), List(2, 4, 6, 8, 10, 10, 10))
   }
 
-  @Test def corresponds: Unit = {
+  @Test def corresponds(): Unit = {
     val it = Iterator(1, 2, 3, 4, 5)
     assertTrue(it.corresponds(Seq(1, 4, 9, 16, 25)) { (a, b) => b == a*a })
   }
 
-  @Test def aggregate: Unit = {
+  @deprecated("Tests deprecated API", since="2.13")
+  @Test def aggregate(): Unit = {
     val result = Iterator('a', 'b', 'c').aggregate(0)({ (sum, ch) => sum + ch.toInt }, { (p1, p2) => p1 + p2 })
     assertEquals(result, 294)
   }

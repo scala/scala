@@ -1,6 +1,6 @@
 package scala.reflect.internal.util
 
-import org.junit.Assert._
+import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
@@ -12,41 +12,41 @@ class StringOpsTest {
     val so = new StringOps { }
     val ss = Nil
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "")
+    assertEquals("", lcp)
   }
   @Test
   def prefixWithEmpty(): Unit = {
     val so = new StringOps { }
     val ss = List("abc", "", "abd")
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "")
+    assertEquals("", lcp)
   }
   @Test
   def prefixOfOne(): Unit = {
     val so = new StringOps { }
     val ss = List("abc")
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "abc")
+    assertEquals("abc", lcp)
   }
   @Test
   def prefixOfMany(): Unit = {
     val so = new StringOps { }
     val ss = List("abc", "abd", "abe")
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "ab")
+    assertEquals("ab", lcp)
   }
   @Test
   def prefixOfPrefix(): Unit = {
     val so = new StringOps { }
     val ss = List("abc", "abcd")
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "abc")
+    assertEquals("abc", lcp)
   }
   @Test
   def prefixOfPrefixMiddling(): Unit = {
     val so = new StringOps { }
     val ss = List("abce", "abc", "abcd")
     val lcp = so longestCommonPrefix ss
-    assert(lcp == "abc")
+    assertEquals("abc", lcp)
   }
 }

@@ -1,14 +1,12 @@
 package scala.util
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.unused
 import scala.reflect.ClassTag
 import scala.util.control.ControlThrowable
 
-@RunWith(classOf[JUnit4])
 class UsingTest {
   import UsingTest._
 
@@ -441,7 +439,7 @@ class UsingTest {
         Using(new ErrorResource) { _ =>
           throw new UsingException("nested `Using`")
         }.get
-      }
+      }: @unchecked
 
     // uncomment to debug actual suppression nesting
     //usingException.printStackTrace()
@@ -500,10 +498,10 @@ class UsingTest {
   @Test
   def managerMultipleResourcesPropagatesCorrectlySimple(): Unit = {
     val scala.util.Failure(usingException) = Using.Manager { m =>
-      val _r1 = m(new ExceptionResource)
-      val _r2 = m(new ErrorResource)
+      @unused val _r1 = m(new ExceptionResource)
+      @unused val _r2 = m(new ErrorResource)
       throw new UsingException("`Using.Manager`")
-    }
+    }: @unchecked
 
     // uncomment to debug actual suppression nesting
     //usingException.printStackTrace()
@@ -515,9 +513,9 @@ class UsingTest {
   def managerMultipleResourcesPropagatesCorrectlyComplex(): Unit = {
     val vmError = catchThrowable {
       Using.Manager { m =>
-        val _r1 = m(new ExceptionResource)
-        val _r2 = m(new VMErrorResource)
-        val _r3 = m(new ErrorResource)
+        @unused val _r1 = m(new ExceptionResource)
+        @unused val _r2 = m(new VMErrorResource)
+        @unused val _r3 = m(new ErrorResource)
         throw new UsingException("`Using.Manager`")
       }
     }
@@ -532,14 +530,14 @@ class UsingTest {
   def managerMultiplePropagatesCorrectlyExtremelyComplex(): Unit = {
     val vmError = catchThrowable {
       Using.Manager { m =>
-        val _r1 = m(new ExceptionResource)
-        val _r2 = m(new VMErrorResource)
-        val _r3 = m(new ControlResource)
-        val _r4 = m(new ErrorResource)
-        val _r5 = m(new LinkageResource)
-        val _r6 = m(new ExceptionResource)
-        val _r7 = m(new InterruptionResource)
-        val _r8 = m(new ErrorResource)
+        @unused val _r1 = m(new ExceptionResource)
+        @unused val _r2 = m(new VMErrorResource)
+        @unused val _r3 = m(new ControlResource)
+        @unused val _r4 = m(new ErrorResource)
+        @unused val _r5 = m(new LinkageResource)
+        @unused val _r6 = m(new ExceptionResource)
+        @unused val _r7 = m(new InterruptionResource)
+        @unused val _r8 = m(new ErrorResource)
         throw new UsingException("`Using.Manager`")
       }
     }

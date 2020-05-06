@@ -14,7 +14,7 @@ class RegexTest {
     val full = """.*: (.)$""".r
     val text = "   When I use this operator: *"
     // Testing 2.10.x compatibility of the return types of unapplySeq
-    val y :: Nil = full.unapplySeq(text: CharSequence).get
+    val y :: Nil = full.unapplySeq(text: CharSequence).get: @unchecked
     assertEquals("*", y)
   }
 
@@ -22,7 +22,7 @@ class RegexTest {
     val R = """(\d)""".r
     val matchh = R.findFirstMatchIn("a1").get
     // Testing 2.10.x compatibility of the return types of unapplySeq
-    val y :: Nil = R.unapplySeq(matchh).get
+    val y :: Nil = R.unapplySeq(matchh).get: @unchecked
     assertEquals("1", y)
   }
 
@@ -141,7 +141,7 @@ class RegexTest {
       val t = "this is a test"
       val rx = " ".r
       val m = rx.findAllIn(t)
-      assertEquals(5, rx.findAllIn(t).end)
+      assertEquals(5, m.end)
     }
     locally {
       val data = "<a>aaaaa</a><b>bbbbbb</b><c>ccccccc</c>"

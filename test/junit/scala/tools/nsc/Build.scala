@@ -4,8 +4,8 @@ import java.io.File
 import java.nio.charset.Charset
 import java.nio.file.{Files, Path}
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 import FileUtils.createDir
 
 final class Build(base: Path, name: String) {

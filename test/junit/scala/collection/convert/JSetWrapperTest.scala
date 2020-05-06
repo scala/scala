@@ -4,12 +4,10 @@ import java.{util => ju}
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import scala.collection.JavaConverters._
 import scala.collection.Set
 
-@RunWith(classOf[JUnit4])
+@deprecated("Tests deprecated API", since="2.13")
 class JSetWrapperTest {
 
   @Test

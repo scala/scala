@@ -83,7 +83,7 @@ class CompletionTest {
     checkExact(completer, """def method { def x_y_z = 0; val x_z_y = ""; type T = x_""")("x_z_y")
 
     checkExact(completer, "asInstanceO", includeUniversal = false)()
-    checkExact(completer, "asInstanceO", includeUniversal = true)("asInstanceOf")
+    checkExact(completer, "asInstanceO", "", includeUniversal = true)("asInstanceOf")
 
     // Output is sorted
     assertEquals(List("prefix_aaa", "prefix_nnn", "prefix_zzz"), completer.complete( """class C { def prefix_nnn = 0; def prefix_zzz = 0; def prefix_aaa = 0; prefix_""").candidates.filter(!_.isUniversal).map(_.defString))

@@ -1,14 +1,15 @@
 package scala.reflect
 
 import org.junit.Assert._
-import org.junit.Ignore
 import org.junit.Test
 
 class FieldAccessTest {
 
   class TestClass {
     private val x = 123
-    def fn = () => x
+    locally {
+      () => x
+    }
   }
 
   /** scala/bug#9306 */

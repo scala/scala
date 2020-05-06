@@ -1,11 +1,12 @@
 package scala.reflect.internal
 
 import org.junit.Test
+import org.junit.Assert.assertFalse
 
 import scala.reflect.internal.util.NoSourceFile
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.symtab.SymbolTableForUnitTesting
-import scala.tools.testkit.AssertUtil
+import scala.tools.testkit.AssertUtil.assertThrows
 
 class PositionsTest {
 
@@ -18,13 +19,13 @@ class PositionsTest {
     import symbolTable._
     def checkInvalid(tree: Tree): Unit = {
       reporter.reset()
-      AssertUtil.assertThrows[ValidateException](validatePositions(tree))
+      assertThrows[ValidateException](validatePositions(tree))
     }
 
     def checkValid(tree: Tree): Unit = {
       reporter.reset()
       validatePositions(tree)
-      assert(!reporter.hasErrors)
+      assertFalse(reporter.hasErrors)
     }
     def rangePos(start: Int, end: Int): util.Position = util.Position.range(NoSourceFile, start, start, end)
     def offsetPos(point: Int): util.Position = util.Position.offset(NoSourceFile, point)

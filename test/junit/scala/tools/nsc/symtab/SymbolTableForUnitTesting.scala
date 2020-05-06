@@ -20,12 +20,12 @@ import scala.tools.nsc.Reporting.WarningCategory
  */
 class SymbolTableForUnitTesting extends SymbolTable {
   // Members declared in scala.reflect.api.Trees
-  override def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
-  override def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
+  override def newStrictTreeCopier: TreeCopier = new StrictTreeCopierForUnitTesting
+  override def newLazyTreeCopier: TreeCopier = new LazyTreeCopierForUnitTesting
   trait TreeCopier extends InternalTreeCopierOps
   // these should be mocks
-  class StrictTreeCopier extends super.StrictTreeCopier with TreeCopier
-  class LazyTreeCopier extends super.LazyTreeCopier with TreeCopier
+  class StrictTreeCopierForUnitTesting extends super.StrictTreeCopier with TreeCopier
+  class LazyTreeCopierForUnitTesting extends super.LazyTreeCopier with TreeCopier
 
   override def isCompilerUniverse: Boolean = true
 

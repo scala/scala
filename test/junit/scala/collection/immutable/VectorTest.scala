@@ -5,6 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Test
 
+import scala.annotation.unused
 import scala.collection.mutable.{ListBuffer, StringBuilder}
 import scala.reflect.{ClassTag, classTag}
 
@@ -183,7 +184,7 @@ class VectorTest {
     val f: Any => Unit = println
 
     // test that type info is not lost
-    val x: Vector[Char] = Vector[Char]().tapEach(f)
+    @unused val x: Vector[Char] = Vector[Char]().tapEach(f)
   }
 
   @Test
@@ -352,7 +353,7 @@ class VectorTest {
   @Test
   def testSlice2: Unit = for(size <- Seq(10, 100, 1000, 10000)) {
     val o = new AnyRef
-    var coll = Vector.fill(size)(o)
+    val coll = Vector.fill(size)(o)
     val inc = size / 10
     if(inc > 0) {
       var i = 0
@@ -445,27 +446,27 @@ object VectorUtils {
     val len = (0 until v.vectorSliceCount).map(v.vectorSlicePrefixLength)
     sb.append(s"Vector$level(lenghts=[${len.mkString(", ")}])\n")
     for(i <- 0 until v.vectorSliceCount)
-      logArray(sb, v.vectorSlice(i), "  ", s"${sliceName(v, i)}: ")
+      logArray(sb, v.vectorSlice(i), prefix = s"${sliceName(v, i)}: ")
     sb.result()
   }
 
   def toDebugString(v: VectorSliceBuilder): String = {
     val sb = new StringBuilder()
     sb.append(s"$v\n")
-    logArray(sb, v.getSlices, "  ", "slices: ")
+    logArray(sb, v.getSlices, prefix = "slices: ")
     sb.result()
   }
 
-  private def toDebugString(v: VectorBuilder[_]): String = {
+  @unused private def toDebugString(v: VectorBuilder[_]): String = {
     val sb = new StringBuilder()
     sb.append(s"$v\n")
     val d = v.getData.asInstanceOf[Array[Array[AnyRef]]]
-    logArray(sb, d(5), "  ", "a6: ")
-    logArray(sb, d(4), "  ", "a5: ", d(5).asInstanceOf[Array[Array[AnyRef]]], "a6")
-    logArray(sb, d(3), "  ", "a4: ", d(4).asInstanceOf[Array[Array[AnyRef]]], "a5")
-    logArray(sb, d(2), "  ", "a3: ", d(3).asInstanceOf[Array[Array[AnyRef]]], "a4")
-    logArray(sb, d(1), "  ", "a2: ", d(2).asInstanceOf[Array[Array[AnyRef]]], "a3")
-    logArray(sb, d(0), "  ", "a1: ", d(1).asInstanceOf[Array[Array[AnyRef]]], "a2")
+    logArray(sb, d(5), prefix = "a6: ")
+    logArray(sb, d(4), "a5: ", "  ", d(5).asInstanceOf[Array[Array[AnyRef]]], "a6")
+    logArray(sb, d(3), "a4: ", "  ", d(4).asInstanceOf[Array[Array[AnyRef]]], "a5")
+    logArray(sb, d(2), "a3: ", "  ", d(3).asInstanceOf[Array[Array[AnyRef]]], "a4")
+    logArray(sb, d(1), "a2: ", "  ", d(2).asInstanceOf[Array[Array[AnyRef]]], "a3")
+    logArray(sb, d(0), "a1: ", "  ", d(1).asInstanceOf[Array[Array[AnyRef]]], "a2")
     sb.result()
   }
 
@@ -484,7 +485,7 @@ object VectorUtils {
     total
   }
 
-  private[this] def logArray[T <: AnyRef](sb: StringBuilder, a: Array[T], indent: String = "", prefix: String = "", findIn: Array[Array[T]] = null, findInName: String = "<array>"): StringBuilder = {
+  private[this] def logArray[T <: AnyRef](sb: StringBuilder, a: Array[T], prefix: String, indent: String = "  ", findIn: Array[Array[T]] = null, findInName: String = "<array>"): StringBuilder = {
     def classifier(x: AnyRef): String =
       if(x eq null) "-"
       else if(x.isInstanceOf[Array[AnyRef]]) "A"
@@ -530,7 +531,7 @@ object VectorUtils {
         var i = 0
         while(i < a.length) {
           if(a(i).isInstanceOf[Array[AnyRef]]) {
-            logArray(sb, a(i).asInstanceOf[Array[AnyRef]], indent + "  ", s"$i. ")
+            logArray(sb, a(i).asInstanceOf[Array[AnyRef]], s"$i. ", indent = indent + "  ", null, null)
           }
           i += 1
         }

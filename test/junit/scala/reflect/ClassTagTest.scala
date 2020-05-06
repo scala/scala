@@ -5,8 +5,6 @@ import org.junit.Assert._
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testkit.AssertUtil._
-
 class Misc
 
 @RunWith(classOf[JUnit4])
@@ -27,6 +25,7 @@ class ClassTagTest {
   @Test def checkBoolean = assertTrue(checkNotInt[Boolean](false))
   @Test def checkUnit    = assertTrue(checkNotInt[Unit]   ({}))
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test def t9534: Unit = {
     val ct = implicitly[scala.reflect.ClassTag[Unit]]
     val a1 = ct.newArray(1)

@@ -5,8 +5,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 import org.junit.Assert._
 
-import scala.collection.mutable
-import scala.tools.asm.tree.ClassNode
+import scala.jdk.CollectionConverters._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils.NestedClassesCollector
 
@@ -104,7 +103,6 @@ class NestedClassesCollectorTest {
   @Ignore("manually run test")
   def rtJar(): Unit = {
     import java.nio.file._
-    import scala.collection.JavaConverters._
     val zipfile = Paths.get("/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home/jre/lib/rt.jar")
     val fs = FileSystems.newFileSystem(zipfile, null: ClassLoader)
     val root = fs.getRootDirectories.iterator.next()
@@ -122,13 +120,11 @@ class NestedClassesCollectorTest {
   def allJars(): Unit = {
     // for i in $(find /Users/jz/.ivy2/cache -name jars); do find $i -name '*.jar' | head -1; done > /tmp/jars.txt
     import java.nio.file._
-    import collection.JavaConverters._
     val allJars = Files.readAllLines(Paths.get("/tmp/jars.txt")).asScala
     for (path <- allJars) {
       var currentClass: Path = null
       try {
         import java.nio.file._
-        import scala.collection.JavaConverters._
         val zipfile = Paths.get(path)
         println(path)
         val fs = FileSystems.newFileSystem(zipfile, null: ClassLoader)

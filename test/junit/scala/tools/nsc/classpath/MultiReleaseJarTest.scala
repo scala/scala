@@ -62,7 +62,7 @@ class MultiReleaseJarTest extends BytecodeTesting {
       import g._
       settings.release.value = release
       new Run
-      rootMirror.getClassIfDefined(TypeName(className)) != NoSymbol
+      rootMirror.getClassIfDefined(className) != NoSymbol
     }
     Assert.assertTrue(lookup("java.lang.invoke.LambdaMetafactory", "8"))
     Assert.assertFalse(lookup("java.lang.invoke.LambdaMetafactory", "7"))

@@ -3,9 +3,7 @@ package scala.concurrent.impl
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.CountDownLatch
 import org.junit.Assert._
-import org.junit.{ After, Before, Test }
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.Test
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.impl.Promise.DefaultPromise
@@ -13,7 +11,6 @@ import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
 
 /** Tests for the private class DefaultPromise */
-@RunWith(classOf[JUnit4])
 class DefaultPromiseTest {
 
   // Many tests in this class use a helper class, Tester, to track the state of
@@ -83,7 +80,7 @@ class DefaultPromiseTest {
         fireCounts = fireCounts.updated(key, newCount)
       }
 
-      def assertIllegalResult = result match {
+      def assertIllegalResult() = result match {
         case Failure(e: IllegalStateException) => ()
         case _ => fail(s"Expected IllegalStateException: $result")
       }
@@ -99,10 +96,10 @@ class DefaultPromiseTest {
           }
           assertEquals(expectedCounts, fireCounts)
         case MaybeIllegalThrown =>
-          if (result.isFailure) assertIllegalResult
+          if (result.isFailure) assertIllegalResult()
           assertEquals(Map.empty, fireCounts)
         case IllegalThrown =>
-          assertIllegalResult
+          assertIllegalResult()
           assertEquals(Map.empty, fireCounts)
       }
     }
@@ -247,7 +244,7 @@ class DefaultPromiseTest {
     val ps = (0 until count).toList
     val pPairs = for (a <- ps; b <- ps) yield (a, b)
 
-    var allActions = ps.map(Complete(_)) ++ pPairs.map { case (a, b) => Link(a, b) } ++ ps.map(AttachHandler(_))
+    val allActions = ps.map(Complete(_)) ++ pPairs.map { case (a, b) => Link(a, b) } ++ ps.map(AttachHandler(_))
     for ((permutation, i) <- allActions.permutations.zipWithIndex) {
       testActions(permutation)
     }
@@ -255,20 +252,20 @@ class DefaultPromiseTest {
 
   /** Test all permutations of actions with a single promise */
   @Test
-  def testPermutations1: Unit = {
+  def testPermutations1(): Unit = {
     testPermutations(1)
   }
 
   /** Test all permutations of actions with two promises - about 40 thousand */
   @Test
-  def testPermutations2: Unit = {
+  def testPermutations2(): Unit = {
     testPermutations(2)
   }
 
   /** Link promises in different orders, using the same link structure as is
    *  used in Future.flatMap */
   @Test
-  def simulateFlatMapLinking: Unit = {
+  def simulateFlatMapLinking(): Unit = {
     val random = new scala.util.Random(1)
     for (_ <- 0 until 10) {
       val t = new Tester()
@@ -303,7 +300,7 @@ class DefaultPromiseTest {
   /** Link promises together on more than one thread, using the same link
    *  structure as is used in Future.flatMap */
   @Test
-  def testFlatMapLinking: Unit = {
+  def testFlatMapLinking(): Unit = {
     for (_ <- 0 until 100) {
       val flatMapCount = 100
       val startLatch = new CountDownLatch(1)

@@ -6,18 +6,19 @@ import org.junit.Assert.assertEquals
 import scala.util.hashing.Hashing
 import scala.tools.testkit.AssertUtil.assertThrows
 
+@deprecated("Tests deprecated API", since="2.13")
 class TrieMapTest {
 
-  private def check[T](result2: List[Any])(f: TrieMap[String, String] => TraversableOnce[Any]) = {
+  private def check[T](result2: List[Any])(f: TrieMap[String, String] => IterableOnce[Any]) = {
     val m = TrieMap[String, String]()
     val values = f(m)
     m.put("k", "v")
-    assertEquals(Nil, values.toList)
-    assertEquals(result2, f(m).toList)
+    assertEquals(Nil, values.iterator.to(List))
+    assertEquals(result2, f(m).iterator.to(List))
   }
 
   @Test
-  def iterator: Unit = {
+  def iterator(): Unit = {
     check(List(("k", "v")))(_.iterator)
   }
 
@@ -27,7 +28,7 @@ class TrieMapTest {
   }
 
   @Test
-  def valuesIterator: Unit = {
+  def valuesIterator(): Unit = {
     check(List("v"))(_.valuesIterator)
   }
 
@@ -37,7 +38,7 @@ class TrieMapTest {
   }
 
   @Test
-  def keysIterator: Unit = {
+  def keysIterator(): Unit = {
     check(List("k"))(_.keysIterator)
   }
 
@@ -71,7 +72,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValues_t10765: Unit = {
+  def nullValues_t10765(): Unit = {
     val trieMap = TrieMap[String, String]("a" -> null)
     assertEquals(null, trieMap("a"))
     assertEquals(Some(null), trieMap.get("a"))
@@ -82,7 +83,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesUpdate: Unit = {
+  def nullValuesUpdate(): Unit = {
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
     def check(tm: TrieMap[String, String], key: String, beforeValue: Option[String], afterValue: String, resultingSet: Set[(String, String)]): Unit = {
@@ -151,7 +152,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesPut: Unit = {
+  def nullValuesPut(): Unit = {
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
     def check(tm: TrieMap[String, String], key: String, beforeValue: Option[String], afterValue: String, resultingSet: Set[(String, String)]): Unit = {
@@ -219,7 +220,7 @@ class TrieMapTest {
     check(newTrieMap - null, null, None, null, Set("a" -> null, (null,  null), "c" -> "c"))
   }
   @Test
-  def nullValuesPutIfAbsent: Unit = {
+  def nullValuesPutIfAbsent(): Unit = {
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
     def check(tm: TrieMap[String, String], key: String, beforeValue: Option[String], afterValue: String, resultingSet: Set[(String, String)]): Unit = {
@@ -288,7 +289,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesGetOrElseUpdate: Unit = {
+  def nullValuesGetOrElseUpdate(): Unit = {
 
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
@@ -359,7 +360,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesReplaceKeyValue = {
+  def nullValuesReplaceKeyValue() = {
 
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
@@ -431,7 +432,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesReplaceKeyOldVlueNewValue = {
+  def nullValuesReplaceKeyOldVlueNewValue() = {
 
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
@@ -564,7 +565,7 @@ class TrieMapTest {
   }
 
   @Test
-  def nullValuesRemove = {
+  def nullValuesRemove() = {
     def newTrieMap = TrieMap[String, String]("a" -> null, (null,  "b"), "c" -> "c")
 
     def check(

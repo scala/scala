@@ -42,7 +42,7 @@ class HashMapTest {
   }
 
   @Test
-  def testWithDefaultValue: Unit = {
+  def testWithDefaultValue(): Unit = {
     val m1 = HashMap(1 -> "a", 2 -> "b")
     val m2 = m1.withDefaultValue("missing")
     assertEquals("a", m2(1))
@@ -58,7 +58,7 @@ class HashMapTest {
   }
 
   @Test
-  def testGetOrElse: Unit = {
+  def testGetOrElse(): Unit = {
     val m1 = HashMap(1 -> "a", 2 -> "b")
     assertEquals("a", m1.getOrElse(1, ???))
     assertEquals("c", m1.getOrElse(3, "c"))
@@ -73,7 +73,7 @@ class HashMapTest {
   }
 
   @Test
-  def testWithDefault: Unit = {
+  def testWithDefault(): Unit = {
     val m1 = HashMap(1 -> "a", 2 -> "b")
 
     val m2: Map[Int, String] =
@@ -99,7 +99,7 @@ class HashMapTest {
   }
 
   @Test
-  def canMergeHashMapCollision1WithCorrectMerge() {
+  def canMergeHashMapCollision1WithCorrectMerge(): Unit = {
     case class A(k: Int) { override def hashCode = 0 }
     val m1 = HashMap(A(0) -> 2, A(1) -> 2)
     val m2 = HashMap(A(0) -> 1, A(1) -> 1)
@@ -109,7 +109,7 @@ class HashMapTest {
   }
 
   @Test
-  def transformReturnsOriginalMap() {
+  def transformReturnsOriginalMap(): Unit = {
     case class A(i: Int, j: Int) { override def hashCode = j }
 
     val hashMap = HashMap(

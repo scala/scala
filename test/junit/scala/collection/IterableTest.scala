@@ -1,15 +1,10 @@
 package scala.collection
 
-import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
+import org.junit.{Assert, Test}, Assert.{assertEquals, assertTrue}
 
 import scala.collection.immutable.{ArraySeq, List, Range, Vector}
-import scala.language.higherKinds
 import scala.tools.testkit.AssertUtil._
-import org.junit.Assert.assertEquals
 
-@RunWith(classOf[JUnit4])
 class IterableTest {
 
   def f(xs: Seq[Seq[Int]], ys: Seq[Int]): Unit = {
@@ -18,12 +13,13 @@ class IterableTest {
   }
 
   @Test
-  def flattenTest: Unit = {
+  def flattenTest(): Unit = {
     f(List(ArraySeq(1, 2, 3)), List(1, 2, 3))
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
-  def concatTest: Unit = {
+  def concatTest(): Unit = {
     val seq = Seq.concat(Seq(1, 2, 3), Iterable(4, 5, 6))
     assert(seq == Seq(1, 2, 3, 4, 5, 6))
 
@@ -55,7 +51,7 @@ class IterableTest {
     val users =
       Set(User("Alice", 12), User("Bob", 14), User("Charlie", 12))
     val expected = Map(12 -> Set("Alice", "Charlie"), 14 -> Set("Bob"))
-    Assert.assertEquals(expected, namesByAge(users))
+    assertEquals(expected, namesByAge(users))
   }
 
   @Test
@@ -139,6 +135,7 @@ class IterableTest {
     check(new Array(10), l.copyToArray(_, 0, -1), 0, 0, 0)
   }
 
+  @deprecated("Uses deprecated toTraversable", since="2.13.0")
   @Test
   def emptyToTraversable(): Unit = {
     assert(Iterable.empty == Array.empty.toIterable)
@@ -215,50 +212,52 @@ class IterableTest {
       x
     }
 
-    Assert.assertEquals(2, lst.last)
-    Assert.assertEquals(baselist.reverse, checklist)
+    assertEquals(2, lst.last)
+    assertEquals(baselist.reverse, checklist)
   }
 
   @Test
   def unzip(): Unit = {
     val zipped = Seq((1, 'a'), (2, 'b'), (3, 'c'))
     val (s1, s2) = zipped.unzip
-    Assert.assertTrue(Seq(1, 2, 3).sameElements(s1))
-    Assert.assertTrue(Seq('a', 'b', 'c').sameElements(s2))
+    assertTrue(Seq(1, 2, 3).sameElements(s1))
+    assertTrue(Seq('a', 'b', 'c').sameElements(s2))
   }
 
   @Test
   def unzip3(): Unit = {
     val zipped = Seq((1, 'a', true), (2, 'b', false), (3, 'c', true))
     val (s1, s2, s3) = zipped.unzip3
-    Assert.assertTrue(Seq(1, 2, 3).sameElements(s1))
-    Assert.assertTrue(Seq('a', 'b', 'c').sameElements(s2))
-    Assert.assertTrue(Seq(true, false, true).sameElements(s3))
+    assertTrue(Seq(1, 2, 3).sameElements(s1))
+    assertTrue(Seq('a', 'b', 'c').sameElements(s2))
+    assertTrue(Seq(true, false, true).sameElements(s3))
   }
 
   @Test
-  def overrideClassName: Unit = {
+  def overrideClassName(): Unit = {
     class Foo[+A] extends Iterable[A] {
       def iterator = Iterator.empty[A]
       override def className = "Fu"
     }
     val foo = new Foo
-    Assert.assertEquals("Fu()", foo.toString)
+    assertEquals("Fu()", foo.toString)
   }
 
+  @deprecated("Overrides deprecated stringPrefix", since="2.13.0")
   @Test
-  def overrideStringPrefix: Unit = {
+  def overrideStringPrefix(): Unit = {
     class Foo[+A] extends Iterable[A] {
       def iterator = Iterator.empty[A]
       override def stringPrefix = "Bar"
 
     }
     val foo = new Foo
-    Assert.assertEquals("Bar()", foo.toString)
+    assertEquals("Bar()", foo.toString)
   }
 
+  @deprecated("Overrides deprecated stringPrefix", since="2.13.0")
   @Test
-  def overrideClassNameAndStringPrefix: Unit = {
+  def overrideClassNameAndStringPrefix(): Unit = {
     class Foo[+A] extends Iterable[A] {
       def iterator = Iterator.empty[A]
       override def className = "Fu"
@@ -266,21 +265,22 @@ class IterableTest {
 
     }
     val foo = new Foo
-    Assert.assertEquals("Fu()", foo.toString)
+    assertEquals("Fu()", foo.toString)
   }
 
   @Test
-  def partitionMap: Unit = {
+  def partitionMap(): Unit = {
     val (left, right) = Seq(1, "1", 2, "2", 3, "3", 4, "4", 5, "5").partitionMap {
       case i: Int => Left(i)
       case s: String => Right(s)
     }
-    Assert.assertEquals(left, Seq(1, 2, 3, 4 ,5))
-    Assert.assertEquals(right, Seq("1", "2", "3", "4" ,"5"))
+    assertEquals(left, Seq(1, 2, 3, 4 ,5))
+    assertEquals(right, Seq("1", "2", "3", "4" ,"5"))
   }
 
+  @deprecated("Uses deprecated hasDefiniteSize, extends HashMap", since="2.13.0")
   @Test
-  def hasDefiniteSize: Unit = {
+  def hasDefiniteSize(): Unit = {
     import scala.{collection => c}
     import scala.collection.{mutable => m, immutable => i}
     assertEquals(true, Some(1).hasDefiniteSize)
@@ -342,7 +342,7 @@ class IterableTest {
     assertEquals(true, m.ListMap(1 -> 1).hasDefiniteSize)
     assertEquals(true, m.LongMap(1L -> 1).hasDefiniteSize)
     assertEquals(true, m.Map(1 -> 1).hasDefiniteSize)
-    assertEquals(true, (new m.HashMap[Int, m.Set[Int]] with m.MultiMap[Int, Int]).hasDefiniteSize)
+    assertTrue((new m.HashMap[Int, m.Set[Int]] with m.MultiMap[Int, Int]).hasDefiniteSize) // deprecated extension
     assertEquals(true, m.OpenHashMap(1 -> 1).hasDefiniteSize)
     assertEquals(true, m.PriorityQueue(1).hasDefiniteSize)
     assertEquals(true, m.Queue(1).hasDefiniteSize)

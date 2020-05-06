@@ -1,13 +1,9 @@
 package scala.math
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import java.math.{BigDecimal => BD, MathContext => MC}
-import java.util.Formatter.BigDecimalLayoutForm
 
 /* Tests various maps by making sure they all agree on the same answers. */
-@RunWith(classOf[JUnit4])
 class BigDecimalTest {
   
   // Motivated by scala/bug#6173: BigDecimal#isWhole implementation is very heap intensive

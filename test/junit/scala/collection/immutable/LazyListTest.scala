@@ -6,6 +6,7 @@ import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.unused
 import scala.collection.mutable.{Builder, ListBuffer}
 import scala.tools.testkit.AssertUtil
 import scala.util.Try
@@ -59,7 +60,7 @@ class LazyListTest {
   def testLazyListDoesNotForceHead: Unit = {
     var i = 0
     def f: Int = { i += 1; i }
-    val s = LazyList.empty.#::(f).#::(f).#::(f)
+    @unused val s = LazyList.empty.#::(f).#::(f).#::(f)
     assertEquals(0, i)
   }
 
@@ -208,7 +209,7 @@ class LazyListTest {
   def toStringIsStackSafe(): Unit = {
     val l = LazyList.from(Range.inclusive(1, 10000))
     l.foreach(_ => ())
-    val s = l.toString // No exception thrown
+    @unused val s = l.toString // No exception thrown
   }
 
   @Test
@@ -218,7 +219,7 @@ class LazyListTest {
 
     var lazeCount = 0
     def lazeL(i: Int) = { lazeCount += 1; i }
-    val xs21 = lazeL(1) #:: lazeL(2) #:: lazeL(3) #:: LazyList.empty
+    @unused val xs21 = lazeL(1) #:: lazeL(2) #:: lazeL(3) #:: LazyList.empty
 
     assertEquals(0, lazeCount)
   }

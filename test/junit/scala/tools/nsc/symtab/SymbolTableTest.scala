@@ -47,6 +47,6 @@ class SymbolTableTest {
   @Test
   def noSymbolOuterClass_t9133: Unit = {
     import symbolTable._
-    assert(NoSymbol.outerClass == NoSymbol)
+    assertEquals(NoSymbol, NoSymbol.outerClass)
   }
 }

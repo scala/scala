@@ -4,14 +4,12 @@ import java.{lang => jl, util => ju}
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import scala.collection.Iterable
 import scala.collection.JavaConverters._
 
-@RunWith(classOf[JUnit4])
 class JIterableWrapperTest {
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def testIteratorDoesNotCauseStackOverflow(): Unit = {
     val jIterable: jl.Iterable[Int] = ju.Arrays.asList(1, 2, 3)

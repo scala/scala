@@ -29,7 +29,6 @@ class MurmurHash3Test {
 
   @Test
   def testNonRangeConsistency: Unit = for(size <- Seq(2, 3, 4, 10, 100)) {
-    val range = (1 to size)
     val ordered = Array.iterate(1, size)(_ + 1)
     val mixed1 = Array.copyOf(ordered, ordered.length)
     val mixed2 = Array.copyOf(ordered, ordered.length)

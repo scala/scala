@@ -4,14 +4,9 @@ import org.junit.Assert.{assertEquals, assertSame, assertTrue}
 
 import scala.collection.mutable.ArrayBuffer
 import org.junit.{Assert, Test}
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.collection.{immutable => im}
-import scala.language.higherKinds
-import scala.reflect.runtime.universe._
 
-@RunWith(classOf[JUnit4])
 class FactoriesTest {
 
   val seq: Seq[Int] = ArrayBuffer(1, 2, 3)
@@ -164,6 +159,7 @@ class FactoriesTest {
     }
 
 
+  @deprecated("Uses deprecated Stream", since="2.13.0")
   @Test
   def testFactoriesReuseCollectionsWhenPossible(): Unit = {
 

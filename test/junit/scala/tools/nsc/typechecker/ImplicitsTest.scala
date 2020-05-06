@@ -1,15 +1,12 @@
 package scala.tools.nsc
 package typechecker
 
-import org.junit.Assert._
+import org.junit.Assert.{assertEquals, assertNotEquals, assertTrue}
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.tools.testkit.BytecodeTesting
 
-@RunWith(classOf[JUnit4])
-class ImplicitsTests extends BytecodeTesting {
+class ImplicitsTest extends BytecodeTesting {
   import compiler.global._, definitions._, analyzer._
 
   @Test
@@ -20,15 +17,15 @@ class ImplicitsTests extends BytecodeTesting {
       val T0 = IntClass.tpeHK
       val T1 = refinedType(List(T0), NoSymbol)
 
-      assert(T0 =:= T1)
-      assert(T0 != T1)
-      assert(T0.hashCode != T1.hashCode)
+      assertTrue(T0 =:= T1)
+      assertNotEquals(T0, T1)
+      assertNotEquals(T0.hashCode, T1.hashCode)
 
       val I0 = new ImplicitInfo(TermName("dummy"), T0, NoSymbol)
       val I1 = new ImplicitInfo(TermName("dummy"), T1, NoSymbol)
 
-      assert(I0 == I1)
-      assert(I0.hashCode == I1.hashCode)
+      assertEquals(I0, I1)
+      assertEquals(I0.hashCode, I1.hashCode)
 
       def implicitInfoHash(name: TermName, sym: Symbol) = {
         import scala.util.hashing.MurmurHash3._
@@ -37,8 +34,8 @@ class ImplicitsTests extends BytecodeTesting {
 
       val pHash = implicitInfoHash(TermName("dummy"), NoSymbol)
 
-      assert(I0.hashCode == pHash)
-      assert(I1.hashCode == pHash)
+      assertEquals(I0.hashCode, pHash)
+      assertEquals(I1.hashCode, pHash)
     }
   }
 }

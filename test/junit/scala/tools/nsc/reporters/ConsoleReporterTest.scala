@@ -2,15 +2,12 @@ package scala
 package tools.nsc
 package reporters
 
-import java.io.{ByteArrayOutputStream, StringReader, BufferedReader, PrintStream, PrintWriter}
+import java.io.{ByteArrayOutputStream, StringReader, BufferedReader, PrintWriter}
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util._
 
-@RunWith(classOf[JUnit4])
 class ConsoleReporterTest {
   val source = "Test_ConsoleReporter"
   val batchFile = new BatchSourceFile(source, "For testing".toList)
@@ -211,6 +208,7 @@ class ConsoleReporterTest {
     testHelper(msg = "")(filter.error(_, "Testing display for maxerrs to fail"))
   }
 
+  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def filteredInfoTest(): Unit = {
     val reporter = new FilteringReporter {

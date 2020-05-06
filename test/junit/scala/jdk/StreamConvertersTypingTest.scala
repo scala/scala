@@ -16,13 +16,11 @@ import java.util.stream._
 
 import org.junit.Assert._
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
+import scala.annotation.unused
 import scala.collection.Stepper.EfficientSplit
 import scala.collection._
 
-@RunWith(classOf[JUnit4])
 class StreamConvertersTypingTest {
   def anyStepper[T](c: IterableOnce[T]): AnyStepper[T] = c.stepper
 
@@ -88,8 +86,6 @@ class StreamConvertersTypingTest {
   def toArrayTests(): Unit = {
     val ia = Array(1,2,3)
     val ba = Array[Byte](1,2,3)
-
-    def f(a: Any) = ()
 
     /*
     val ias = ia.stepper
@@ -203,8 +199,8 @@ class StreamConvertersTypingTest {
     val saa2 = sa.to(Accumulator)
     (saa2: AnyAccumulator[String]).clear()
 
-    val is = il.stepper
-    val ss = sl.stepper
+    @unused val is = il.stepper
+    @unused val ss = sl.stepper
 
     /*
     val isa1 = is.to(AnyAccumulator)
@@ -343,26 +339,26 @@ class StreamConvertersTypingTest {
   def bitSetStepper(): Unit = {
     locally {
       val ibs = immutable.BitSet(1, 2, 3)
-      val s1 = ibs.stepper
-      val s2: IntStepper = ibs.stepper
-      val s3: IntStepper with EfficientSplit = ibs.stepper
-      val s4: Stepper[Int] = ibs.stepper
-      val s5: Stepper[Int] with EfficientSplit = ibs.stepper
-      val s6: AnyStepper[Int] = ibs.stepper[AnyStepper[Int]]
-      val s7: AnyStepper[Int] with EfficientSplit = ibs.stepper[AnyStepper[Int]]
+      @unused val s1 = ibs.stepper
+      @unused val s2: IntStepper = ibs.stepper
+      @unused val s3: IntStepper with EfficientSplit = ibs.stepper
+      @unused val s4: Stepper[Int] = ibs.stepper
+      @unused val s5: Stepper[Int] with EfficientSplit = ibs.stepper
+      @unused val s6: AnyStepper[Int] = ibs.stepper[AnyStepper[Int]]
+      @unused val s7: AnyStepper[Int] with EfficientSplit = ibs.stepper[AnyStepper[Int]]
       // val s8: Stepper[Any] = ibs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = ibs.stepper // no StepperShape instance
     }
 
     locally {
       val mbs = mutable.BitSet(1, 2, 3)
-      val s1 = mbs.stepper
-      val s2: IntStepper = mbs.stepper
-      val s3: IntStepper with EfficientSplit = mbs.stepper
-      val s4: Stepper[Int] = mbs.stepper
-      val s5: Stepper[Int] with EfficientSplit = mbs.stepper
-      val s6: AnyStepper[Int] = mbs.stepper(StepperShape.anyStepperShape[Int])
-      val s7: AnyStepper[Int] with EfficientSplit = mbs.stepper(StepperShape.anyStepperShape[Int])
+      @unused val s1 = mbs.stepper
+      @unused val s2: IntStepper = mbs.stepper
+      @unused val s3: IntStepper with EfficientSplit = mbs.stepper
+      @unused val s4: Stepper[Int] = mbs.stepper
+      @unused val s5: Stepper[Int] with EfficientSplit = mbs.stepper
+      @unused val s6: AnyStepper[Int] = mbs.stepper(StepperShape.anyStepperShape[Int])
+      @unused val s7: AnyStepper[Int] with EfficientSplit = mbs.stepper(StepperShape.anyStepperShape[Int])
       // val s8: Stepper[Any] = mbs.stepper  // no StepperShape instance
       // val s9: Stepper[Long] = mbs.stepper // no StepperShape instance
     }
@@ -371,13 +367,13 @@ class StreamConvertersTypingTest {
   @Test
   def rangeStepper(): Unit = {
     val r = 1 to 20 by 3
-    val s1 = r.stepper
-    val s2: IntStepper = r.stepper
-    val s3: IntStepper with EfficientSplit = r.stepper
-    val s4: Stepper[Int] = r.stepper
-    val s5: Stepper[Int] with EfficientSplit = r.stepper
-    val s6: AnyStepper[Int] = r.stepper[AnyStepper[Int]]
-    val s7: AnyStepper[Int] with EfficientSplit = r.stepper[AnyStepper[Int]]
+    @unused val s1 = r.stepper
+    @unused val s2: IntStepper = r.stepper
+    @unused val s3: IntStepper with EfficientSplit = r.stepper
+    @unused val s4: Stepper[Int] = r.stepper
+    @unused val s5: Stepper[Int] with EfficientSplit = r.stepper
+    @unused val s6: AnyStepper[Int] = r.stepper[AnyStepper[Int]]
+    @unused val s7: AnyStepper[Int] with EfficientSplit = r.stepper[AnyStepper[Int]]
     // val s8: Stepper[Any] = r.stepper  // no StepperShape instance
     // val s9: Stepper[Long] = r.stepper // no StepperShape instance
   }
@@ -385,10 +381,10 @@ class StreamConvertersTypingTest {
   @Test
   def stringStepper(): Unit = {
     val r = "millie"
-    def s1 = r.stepper
-    def s2: IntStepper = r.stepper
+    @unused def s1 = r.stepper
+    @unused def s2: IntStepper = r.stepper
     def s3: IntStepper with EfficientSplit = r.stepper
-    def s4: Stepper[Int] = r.stepper
+    @unused def s4: Stepper[Int] = r.stepper
     def s5: Stepper[Int] with EfficientSplit = r.stepper
 
     def cs1: IntStepper with EfficientSplit = r.charStepper
