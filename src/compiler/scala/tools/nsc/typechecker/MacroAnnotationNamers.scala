@@ -35,7 +35,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
           case tree @ Import(_, _) =>
             createAssignAndEnterSymbol(tree)
             finishSymbol(tree)
-            returnContext = context.make(tree)
+            returnContext = context.makeImportContext(tree)
           case tree: MemberDef =>
             createAssignAndEnterSymbol(tree)
             finishSymbol(tree)
