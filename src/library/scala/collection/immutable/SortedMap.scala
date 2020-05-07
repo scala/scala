@@ -127,6 +127,8 @@ object SortedMap extends ImmutableSortedMapFactory[SortedMap] {
   implicit def canBuildFrom[A, B](implicit ord: Ordering[A]): CanBuildFrom[Coll, (A, B), SortedMap[A, B]] = new SortedMapCanBuildFrom[A, B]
   def empty[A, B](implicit ord: Ordering[A]): SortedMap[A, B] = TreeMap.empty[A, B]
 
+  override def newBuilder[A, B](implicit ord: Ordering[A]): mutable.Builder[(A, B), SortedMap[A, B]] = TreeMap.newBuilder[A, B]
+
   private[collection] trait Default[A, +B] extends SortedMap[A, B] with scala.collection.SortedMap.Default[A, B] {
   self =>
     override def +[B1 >: B](kv: (A, B1)): SortedMap[A, B1] = {
