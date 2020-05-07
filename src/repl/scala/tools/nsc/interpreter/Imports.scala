@@ -153,14 +153,13 @@ trait Imports {
       trailingBraces append "}\n"+ request.postwrap +"\n"
       accessPath append s".$iw"
     }
-    def addWrapper() {
+    def addWrapper(): Unit =
       if (useMagicImport) {
         addLevelChangingImport()
       } else {
         addWrapperCode()
       }
       currentImps.clear()
-    }
     def maybeWrap(names: Name*) = if (names exists currentImps) addWrapper()
 
     // imports from Predef are relocated to the template header to allow hiding.
@@ -181,11 +180,11 @@ trait Imports {
         // level if the import might conflict with some other import
         case x: ImportHandler if x.importsWildcard =>
           addWrapper()
-          code append (x.member + "\n")
+          code append (x.member.toString + "\n")
           addWrapper()
         case x: ImportHandler =>
           maybeWrap(x.importedNames: _*)
-          code append (x.member + "\n")
+          code append (x.member.toString + "\n")
           currentImps ++= x.importedNames
 
         case x if isClassBased =>

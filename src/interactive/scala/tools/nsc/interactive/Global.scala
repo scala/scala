@@ -16,7 +16,7 @@ package interactive
 import java.io.{FileReader, FileWriter}
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{elidable, tailrec}
+import scala.annotation.{elidable, tailrec, nowarn}
 import scala.collection.mutable
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.jdk.javaapi.CollectionConverters
@@ -424,7 +424,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     while (loop) {
       breakable{
         loop = false
-        if (!interruptsEnabled) return
+        // TODO refactor to eliminate breakable/break/return?
+        (if (!interruptsEnabled) return): @nowarn("cat=lint-nonlocal-return")
         if (pos == NoPosition || nodesSeen % yieldPeriod == 0)
           Thread.`yield`()
 
@@ -636,8 +637,8 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** Reset unit to unloaded state */
   private def reset(unit: RichCompilationUnit): Unit = {
-    unit.depends.clear()
-    unit.defined.clear()
+    unit.depends.clear(): @nowarn("cat=deprecation")
+    unit.defined.clear(): @nowarn("cat=deprecation")
     unit.synthetics.clear()
     unit.toCheck.clear()
     unit.checkedFeatures = Set()

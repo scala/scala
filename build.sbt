@@ -372,9 +372,13 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (Compile / doc / target).value,
   run / fork := true,
   run / connectInput := true,
-  // for ease of development while breaking things
+  // uncomment for ease of development while breaking things
   //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
-  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:ws",
+  // work around https://github.com/scala/bug/issues/11534
+  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:s",
+  // we don't want optimizer warnings to interfere with `-Werror`. we have hundreds of such warnings
+  // when the optimizer is enabled (as it is in CI and release builds, though not in local development)
+  Compile / scalacOptions += "-Wconf:cat=optimizer:is",
   Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
@@ -717,14 +721,16 @@ lazy val interactive = configureAsSubproject(project)
   .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-interactive",
-    description := "Scala Interactive Compiler"
+    description := "Scala Interactive Compiler",
+    // TODO remove `-unit-special` once we re-STARR on 2.13.3, because scala/bug#11965
+    scalacOptions in Compile ++= Seq("-Xlint:-unit-special,_", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"),
   )
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_")
+  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
@@ -733,15 +739,13 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
   .settings(
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
-    Compile / scalacOptions += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / scalacOptions ++= Seq("-Xlint", "-Werror"),
   )
   .settings(
-    run / connectInput := true,
     run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
     Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
   )
   .dependsOn(repl)
-
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
