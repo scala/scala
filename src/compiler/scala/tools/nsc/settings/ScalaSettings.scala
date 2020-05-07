@@ -26,6 +26,7 @@ import scala.collection.mutable
 import scala.tools.nsc.util.DefaultJarFactory
 
 trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
+
   /** Set of settings */
   protected[scala] lazy val allSettings = mutable.LinkedHashMap[String, Setting]()
 
@@ -59,10 +60,11 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
    *  Standard settings
    */
   // argfiles is only for the help message
-  /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
-  val d             = OutputSetting     (outputDirs, ".")
-  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
+  /*val argfiles = */ BooleanSetting("@<file>", "A text file containing compiler arguments (options and source files)")
+  val classpath     = PathSetting   ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
+  val d             = OutputSetting (outputDirs, ".").withPostSetHook(s => try outputDirs.setSingleOutput(s.value) catch { case FatalError(msg) => errorFn(msg) })
+
+  val nospecialization = BooleanSetting("-no-specialization", "Ignore @specialize annotations.")
 
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
@@ -259,7 +261,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YpickleJava = BooleanSetting("-Ypickle-java", "Pickler phase should compute pickles for .java defined symbols for use by build tools").internalOnly()
   val YpickleWrite = StringSetting("-Ypickle-write", "directory|jar", "destination for generated .sig files containing type signatures.", "", None).internalOnly()
   val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
-  val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.").withDefault(true)
+  val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.", default = true)
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {

@@ -33,7 +33,6 @@ abstract class MutableSettings extends AbsSettings {
     def postSetHook(): Unit = ()
     def isDefault = !setByUser
     def isSetByUser = setByUser
-    private[scala] def clearSetByUser(): Unit = setByUser = false
     def value: T = v
     def value_=(arg: T) = {
       setByUser = true

@@ -31,6 +31,7 @@ trait Warnings {
     "-Wconf",
     "patterns",
     "Configure reporting of compiler warnings; use `help` for details.",
+    default = WconfDefault,
     helpText = Some(
       s"""Configure compiler warnings.
          |Syntax: -Wconf:<filters>:<action>,<filters>:<action>,...
@@ -93,7 +94,6 @@ trait Warnings {
          |Note: on the command-line you might need to quote configurations containing `*` or `&`
          |to prevent the shell from expanding patterns.""".stripMargin),
     prepend = true)
-  locally { Wconf.tryToSet(WconfDefault); Wconf.clearSetByUser() }
 
   // Non-lint warnings. -- TODO turn into MultiChoiceEnumeration
   val warnMacros           = ChoiceSetting(
@@ -155,11 +155,7 @@ trait Warnings {
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
   // created using the standard factory methods.
 
-  val warnValueOverrides = {
-    val flag = new BooleanSetting("value-overrides", "Generated value class method overrides an implementation.")
-    flag.value = false
-    flag
-  }
+  val warnValueOverrides = new BooleanSetting("value-overrides", "Generated value class method overrides an implementation.", default = false)
 
   // Lint warnings
 
