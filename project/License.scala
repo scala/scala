@@ -10,7 +10,7 @@ object License extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] =
     List(packageSrc, packageBin, packageDoc)
-      .map(pkg => mappings in (Compile, pkg) ++= licenseMapping.value)
+      .map(task => Compile / task / mappings ++= licenseMapping.value)
 
   override def buildSettings: Seq[Def.Setting[_]] = Seq(
     licenseMapping := List("LICENSE", "NOTICE").map(fn => (baseDirectory.value / fn) -> fn),

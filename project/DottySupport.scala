@@ -18,7 +18,7 @@ object DottySupport {
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(
-    scalacOptions in Compile ++= Seq(
+    Compile / scalacOptions ++= Seq(
       "-language:implicitConversions" // Avoid a million warnings
     )
   )
@@ -27,24 +27,24 @@ object DottySupport {
     compileOrder := CompileOrder.Mixed,
 
     // Add the dotty-library sources to the sourcepath
-    scalacOptions in Compile := {
-      val old = (scalacOptions in Compile).value
+    Compile / scalacOptions := {
+      val old = (Compile / scalacOptions).value
 
       val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = old.span(_ != "-sourcepath")
 
       val newSourcepath =
-        ((sourceManaged in Compile).value / "dotty-library-src").getAbsolutePath +
+        ((Compile / sourceManaged).value / "dotty-library-src").getAbsolutePath +
         File.pathSeparator + oldSourcepath
 
       beforeSourcepath ++ ("-sourcepath" :: newSourcepath :: afterSourcePath)
     },
 
-    scalacOptions in Compile ++= Seq(
+    Compile / scalacOptions ++= Seq(
       "-Yerased-terms" // needed to compile dotty-library
     ),
 
     // Some files shouldn't be compiled
-    excludeFilter in unmanagedSources ~= (old =>
+    unmanagedSources / excludeFilter ~= (old =>
       old ||
       "AnyVal.scala" ||
       "language.scala"  // Replaced by scalaShadowing/language.scala from dotty-library
@@ -53,7 +53,7 @@ object DottySupport {
     // Add the sources of dotty-library to the current project to compile the
     // complete standard library of Dotty in one go.
     // Adapted from similar code in the scala-js build.
-    sourceGenerators in Compile += Def.task {
+    Compile / sourceGenerators += Def.task {
       object DottyLibrarySourceFilter extends FileFilter {
         def accept(file: File): Boolean = {
           val name = file.name
@@ -65,13 +65,13 @@ object DottySupport {
 
       val s = streams.value
       val cacheDir = s.cacheDirectory
-      val trgDir = (sourceManaged in Compile).value / "dotty-library-src"
+      val trgDir = (Compile / sourceManaged).value / "dotty-library-src"
 
       val dottyLibrarySourceJar = fetchSourceJarOf(
         dependencyResolution.value,
         scalaModuleInfo.value,
         updateConfiguration.value,
-        (unresolvedWarningConfiguration in update).value,
+        (update / unresolvedWarningConfiguration).value,
         streams.value.log,
         scalaOrganization.value %% "dotty-library" % scalaVersion.value)
 

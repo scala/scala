@@ -24,9 +24,9 @@ object VersionUtil {
 
   lazy val globalVersionSettings = Seq[Setting[_]](
     // Set the version properties globally (they are the same for all projects)
-    versionProperties in Global := versionPropertiesImpl.value,
+    Global / versionProperties := versionPropertiesImpl.value,
     gitProperties := gitPropertiesImpl.value,
-    version in Global := versionProperties.value.mavenVersion
+    Global / version := versionProperties.value.mavenVersion
   )
 
   lazy val generatePropertiesFileSettings = Seq[Setting[_]](
@@ -37,12 +37,12 @@ object VersionUtil {
       |  __\ \/ /__/ __ |/ /__/ __ |
       | /____/\___/_/ |_/____/_/ | |
       |                          |/  %s""".stripMargin.linesIterator.mkString("%n"),
-    resourceGenerators in Compile += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
+    Compile / resourceGenerators += generateVersionPropertiesFile.map(file => Seq(file)).taskValue,
     generateVersionPropertiesFile := generateVersionPropertiesFileImpl.value
   )
 
   lazy val generateBuildCharacterFileSettings = Seq[Setting[_]](
-    buildCharacterPropertiesFile := ((baseDirectory in ThisBuild).value / "buildcharacter.properties"),
+    buildCharacterPropertiesFile := ((ThisBuild / baseDirectory).value / "buildcharacter.properties"),
     generateBuildCharacterPropertiesFile := generateBuildCharacterPropertiesFileImpl.value
   )
 
@@ -161,7 +161,7 @@ object VersionUtil {
         "copyright.string" -> copyrightString.value,
         "shell.banner"     -> shellBannerString.value
       ),
-      (resourceManaged in Compile).value / s"${thisProject.value.id}.properties")
+      (Compile / resourceManaged).value / s"${thisProject.value.id}.properties")
   }
 
   private lazy val generateBuildCharacterPropertiesFileImpl: Def.Initialize[Task[File]] = Def.task {

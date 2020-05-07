@@ -38,14 +38,14 @@ object Osgi {
     },
     jarlist := false,
     bundle := Def.task {
-      val cp = (products in Compile in packageBin).value
+      val cp = (Compile / packageBin / products).value
       val licenseFiles = License.licenseMapping.value.map(_._1)
       bundleTask(headers.value.toMap, jarlist.value, cp,
-        (artifactPath in (Compile, packageBin)).value, cp ++ licenseFiles, streams.value)
+        (Compile / packageBin / artifactPath).value, cp ++ licenseFiles, streams.value)
     }.value,
-    packagedArtifact in (Compile, packageBin) := (((artifact in (Compile, packageBin)).value, bundle.value)),
+    Compile / packageBin / packagedArtifact := (((Compile / packageBin / artifact).value, bundle.value)),
     // Also create OSGi source bundles:
-    packageOptions in (Compile, packageSrc) += Package.ManifestAttributes(
+    Compile / packageSrc / packageOptions += Package.ManifestAttributes(
       "Bundle-Name" -> (description.value + " Sources"),
       "Bundle-SymbolicName" -> (bundleSymbolicName.value + ".source"),
       "Bundle-Version" -> versionProperties.value.osgiVersion,
