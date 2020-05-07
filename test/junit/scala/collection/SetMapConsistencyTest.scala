@@ -503,7 +503,7 @@ class SetMapConsistencyTest {
       else None
     }
     assert(f() match {
-      case Some((null, _)) => false
+      case Some((null, _) | (_, null)) => false
       case _ => true
     })
   }
