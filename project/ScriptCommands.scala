@@ -115,11 +115,11 @@ object ScriptCommands {
   }
 
   private[this] val enableOptimizer = Seq(
-    scalacOptions in Compile in ThisBuild ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
+    ThisBuild / Compile / scalacOptions ++= Seq("-opt:l:inline", "-opt-inline-from:scala/**")
   )
 
   val noDocs = Seq(
-    publishArtifact in (Compile, packageDoc) in ThisBuild := false
+    ThisBuild / Compile / packageDoc / publishArtifact := false
   )
 
   private[this] def publishTarget(url: String) = {
@@ -127,8 +127,8 @@ object ScriptCommands {
     val url2 = if(url.startsWith("file:")) url else url.replaceAll("/$", "") + ";build.timestamp=" + System.currentTimeMillis
 
     Seq(
-      publishTo in Global := Some("scala-pr-publish" at url2),
-      credentials in Global += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
+      Global / publishTo := Some("scala-pr-publish" at url2),
+      Global / credentials += Credentials("Artifactory Realm", "scala-ci.typesafe.com", "scala-ci", env("PRIVATE_REPO_PASS"))
     )
   }
 

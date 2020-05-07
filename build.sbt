@@ -328,7 +328,7 @@ lazy val instanceSettings = Seq[Setting[_]](
   // Avoid circular dependencies for scalaInstance (see https://github.com/sbt/sbt/issues/1872)
   managedScalaInstance := false,
   scalaInstance := {
-    val s = (scalaInstance in bootstrap).value
+    val s = (bootstrap / scalaInstance).value
     // sbt claims that s.isManagedVersion is false even though s was resolved by Ivy
     // We create a managed copy to prevent sbt from putting it on the classpath where we don't want it
     if(s.isManagedVersion) s else {
@@ -351,38 +351,38 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   // we always assume that Java classes are standalone and do not have any dependency
   // on Scala classes
   compileOrder := CompileOrder.JavaThenScala,
-  javacOptions in Compile ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
-  unmanagedJars in Compile := Seq.empty,  // no JARs in version control!
-  sourceDirectory in Compile := baseDirectory.value,
-  unmanagedSourceDirectories in Compile := List(baseDirectory.value),
-  unmanagedResourceDirectories in Compile += (baseDirectory in ThisBuild).value / "src" / thisProject.value.id,
+  Compile / javacOptions ++= Seq("-g", "-source", "1.8", "-target", "1.8", "-Xlint:unchecked"),
+  Compile / unmanagedJars := Seq.empty,  // no JARs in version control!
+  Compile / sourceDirectory := baseDirectory.value,
+  Compile / unmanagedSourceDirectories := List(baseDirectory.value),
+  Compile / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "src" / thisProject.value.id,
   sourcesInBase := false,
-  scalaSource in Compile := (sourceDirectory in Compile).value,
-  javaSource in Compile := (sourceDirectory in Compile).value,
+  Compile / scalaSource := (Compile / sourceDirectory).value,
+  Compile / javaSource := (Compile / sourceDirectory).value,
   // resources are stored along source files in our current layout
-  resourceDirectory in Compile := (sourceDirectory in Compile).value,
+  Compile / resourceDirectory := (Compile / sourceDirectory).value,
   // each subproject has to ask specifically for files they want to include
-  includeFilter in unmanagedResources in Compile := NothingFilter,
-  target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
-  classDirectory in Compile := buildDirectory.value / "quick/classes" / thisProject.value.id,
-  target in Compile in doc := buildDirectory.value / "scaladoc" / thisProject.value.id,
+  Compile / unmanagedResources / includeFilter := NothingFilter,
+  target := (ThisBuild / baseDirectory).value / "target" / thisProject.value.id,
+  Compile / classDirectory := buildDirectory.value / "quick/classes" / thisProject.value.id,
+  Compile / doc / target := buildDirectory.value / "scaladoc" / thisProject.value.id,
   // given that classDirectory and doc target are overridden to be _outside_ of target directory, we have
   // to make sure they are being cleaned properly
-  cleanFiles += (classDirectory in Compile).value,
-  cleanFiles += (target in Compile in doc).value,
-  fork in run := true,
-  connectInput in run := true,
+  cleanFiles += (Compile / classDirectory).value,
+  cleanFiles += (Compile / doc / target).value,
+  run / fork := true,
+  run / connectInput := true,
   // for ease of development while breaking things
-  //scalacOptions in Compile ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
-  scalacOptions in Compile += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:ws",
-  scalacOptions in Compile in doc ++= Seq(
+  //Compile / scalacOptions ++= Seq("-Xmaxerrs", "5", "-Xmaxwarns", "5"),
+  Compile / scalacOptions += "-Wconf:cat=unchecked&msg=The outer reference in this type test cannot be checked at run time.:ws",
+  Compile / doc / scalacOptions ++= Seq(
     "-doc-footer", "epfl",
     "-diagrams",
     "-implicits",
     "-groups",
     "-doc-version", versionProperties.value.canonicalVersion,
     "-doc-title", description.value,
-    "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+    "-sourcepath", (ThisBuild / baseDirectory).value.toString,
     "-doc-source-url", s"https://github.com/scala/scala/tree/${versionProperties.value.githubTree}€{FILE_PATH_EXT}#L€{FILE_LINE}"
   ),
   //maxErrors := 10,
@@ -425,15 +425,15 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   },
   headerLicense := (ThisBuild / headerLicense).value,
   // Remove auto-generated manifest attributes
-  packageOptions in Compile in packageBin := Seq.empty,
-  packageOptions in Compile in packageSrc := Seq.empty,
+  Compile / packageBin / packageOptions := Seq.empty,
+  Compile / packageSrc / packageOptions := Seq.empty,
 
   // Lets us CTRL-C partest without exiting SBT entirely
-  cancelable in Global := true,
+  Global / cancelable := true,
 
   // Don't log process output (e.g. of forked `compiler/runMain ...Main`), just pass it
   // directly to stdout
-  outputStrategy in run := Some(StdoutOutput)
+  run / outputStrategy := Some(StdoutOutput)
 ) ++ removePomDependencies ++ setForkedWorkingDirectory ++ (
   if (DottySupport.compileWithDotty)
     DottySupport.commonSettings
@@ -471,7 +471,7 @@ def fixPom(extra: (String, scala.xml.Node)*): Setting[_] = {
 val pomDependencyExclusions =
   settingKey[Seq[(String, String)]]("List of (groupId, artifactId) pairs to exclude from the POM and ivy.xml")
 
-pomDependencyExclusions in Global := Nil
+Global / pomDependencyExclusions := Nil
 
 /** Remove unwanted dependencies from the POM and ivy.xml. */
 lazy val removePomDependencies: Seq[Setting[_]] = Seq(
@@ -514,12 +514,12 @@ lazy val removePomDependencies: Seq[Setting[_]] = Seq(
 )
 
 val disableDocs = Seq[Setting[_]](
-  sources in (Compile, doc) := Seq.empty,
-  publishArtifact in (Compile, packageDoc) := false
+  Compile / doc / sources := Seq.empty,
+  Compile / packageDoc / publishArtifact := false
 )
 
 lazy val setJarLocation: Setting[_] =
-  artifactPath in packageBin in Compile := {
+  Compile / packageBin / artifactPath := {
     // two lines below are copied over from sbt's sources:
     // https://github.com/sbt/sbt/blob/0.13/main/src/main/scala/sbt/Defaults.scala#L628
     //val resolvedScalaVersion = ScalaVersion((scalaVersion in artifactName).value, (scalaBinaryVersion in artifactName).value)
@@ -533,14 +533,14 @@ lazy val setJarLocation: Setting[_] =
 lazy val scalaSubprojectSettings: Seq[Setting[_]] = commonSettings :+ setJarLocation
 
 def filterDocSources(ff: FileFilter): Seq[Setting[_]] = Seq(
-  sources in (Compile, doc) ~= (_.filter(ff.accept)),
+  Compile / doc / sources ~= (_.filter(ff.accept)),
   // Excluded sources may still be referenced by the included sources, so we add the compiler
   // output to the scaladoc classpath to resolve them. For the `library` project this is
   // always required because otherwise the compiler cannot even initialize Definitions without
   // binaries of the library on the classpath. Specifically, we get this error:
   // (library/compile:doc) scala.reflect.internal.FatalError: package class scala does not have a member Int
-  dependencyClasspath in (Compile, doc) += (classDirectory in Compile).value,
-  doc in Compile := (doc in Compile).dependsOn(compile in Compile).value
+  Compile / doc / dependencyClasspath += (Compile / classDirectory).value,
+  Compile / doc := (Compile / doc).dependsOn(Compile / compile).value
 )
 
 def regexFileFilter(s: String): FileFilter = new FileFilter {
@@ -551,7 +551,7 @@ def regexFileFilter(s: String): FileFilter = new FileFilter {
 def setForkedWorkingDirectory: Seq[Setting[_]] = {
   // When we fork subprocesses, use the base directory as the working directory.
   // This enables `sbt> partest test/files/run/t1.scala` or `sbt> scalac sandbox/test.scala`
-  val setting = (forkOptions in Compile) := (forkOptions in Compile).value.withWorkingDirectory((baseDirectory in ThisBuild).value)
+  val setting = (Compile / forkOptions) := (Compile / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value)
   setting ++ inTask(run)(setting)
 }
 
@@ -565,25 +565,25 @@ lazy val library = configureAsSubproject(project)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
-    scalacOptions in Compile ++= Seq[String]("-sourcepath", (scalaSource in Compile).value.toString),
-    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
-    scalacOptions in Compile in doc ++= {
-      val libraryAuxDir = (baseDirectory in ThisBuild).value / "src/library-aux"
+    Compile / scalacOptions ++= Seq[String]("-sourcepath", (Compile / scalaSource).value.toString),
+    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / doc / scalacOptions ++= {
+      val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
         "-doc-no-compile", libraryAuxDir.toString,
         "-skip-packages", "scala.concurrent.impl",
-        "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
+        "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
       )
     },
-    scalacOptions in (Compile, console) := {
-      val opts = (scalacOptions in console).value
-      val ix = (scalacOptions in console).value.indexOfSlice(Seq[String]("-sourcepath", (scalaSource in Compile).value.toString))
+    Compile / console / scalacOptions := {
+      val opts = (console / scalacOptions).value
+      val ix = (console / scalacOptions).value.indexOfSlice(Seq[String]("-sourcepath", (Compile / scalaSource).value.toString))
       opts.patch(ix, Nil, 2)
     },
-    includeFilter in unmanagedResources in Compile := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
+    Compile / unmanagedResources / includeFilter := "*.tmpl" | "*.xml" | "*.js" | "*.css" | "rootdoc.txt",
     // Include *.txt files in source JAR:
-    mappings in Compile in packageSrc ++= {
-      val base = (unmanagedResourceDirectories in Compile).value
+    Compile / packageSrc / mappings ++= {
+      val base = (Compile / unmanagedResourceDirectories).value
       base ** "*.txt" pair Path.relativeTo(base)
     },
     Osgi.headers += "Import-Package" -> "sun.misc;resolution:=optional, *",
@@ -614,8 +614,8 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
-    scalacOptions in Compile in doc ++= Seq(
+    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
     Osgi.headers +=
@@ -646,44 +646,44 @@ lazy val compiler = configureAsSubproject(project)
     // These are only needed for the POM:
     // TODO: jline dependency is only needed for the REPL shell, which should move to its own jar
     libraryDependencies ++= jlineDeps,
-    buildCharacterPropertiesFile := (resourceManaged in Compile).value / "scala-buildcharacter.properties",
-    resourceGenerators in Compile += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
+    buildCharacterPropertiesFile := (Compile / resourceManaged).value / "scala-buildcharacter.properties",
+    Compile / resourceGenerators += generateBuildCharacterPropertiesFile.map(file => Seq(file)).taskValue,
     // this a way to make sure that classes from interactive and scaladoc projects
     // end up in compiler jar. note that we need to use LocalProject references
     // (with strings) to deal with mutual recursion
-    products in Compile in packageBin :=
-      (products in Compile in packageBin).value ++
-        Seq((dependencyClasspath in Compile).value.find(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)).contains((asmDep.organization, asmDep.name, asmDep.revision))).get.data) ++
-        (products in Compile in packageBin in LocalProject("interactive")).value ++
-        (products in Compile in packageBin in LocalProject("scaladoc")).value ++
-        (products in Compile in packageBin in LocalProject("repl")).value ++
-        (products in Compile in packageBin in LocalProject("repl-frontend")).value,
-    includeFilter in unmanagedResources in Compile :=
+    Compile / packageBin / products :=
+      (Compile / packageBin / products).value ++
+        Seq((Compile / dependencyClasspath).value.find(_.get(moduleID.key).map(id => (id.organization, id.name, id.revision)).contains((asmDep.organization, asmDep.name, asmDep.revision))).get.data) ++
+        (LocalProject("interactive")   / Compile / packageBin / products).value ++
+        (LocalProject("scaladoc")      / Compile / packageBin / products).value ++
+        (LocalProject("repl")          / Compile / packageBin / products).value ++
+        (LocalProject("repl-frontend") / Compile / packageBin / products).value,
+    Compile / unmanagedResources / includeFilter :=
       "*.tmpl" | "*.xml" | "*.js" | "*.css" | "*.html" | "*.properties" | "*.swf" |
       "*.png" | "*.gif" | "*.gif" | "*.txt",
     // Also include the selected unmanaged resources and source files from the additional projects in the source JAR:
-    mappings in Compile in packageSrc ++= {
-      val base = (unmanagedResourceDirectories in Compile).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("interactive")).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("scaladoc")).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("repl")).value ++
-        (unmanagedResourceDirectories in Compile in LocalProject("repl-frontend")).value
-      base ** ((includeFilter in unmanagedResources in Compile).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair Path.relativeTo(base)
+    Compile / packageSrc / mappings ++= {
+      val base = (Compile / unmanagedResourceDirectories).value ++
+        (LocalProject("interactive")   / Compile / unmanagedResourceDirectories).value ++
+        (LocalProject("scaladoc")      / Compile / unmanagedResourceDirectories).value ++
+        (LocalProject("repl")          / Compile / unmanagedResourceDirectories).value ++
+        (LocalProject("repl-frontend") / Compile / unmanagedResourceDirectories).value
+      base ** ((Compile / unmanagedResources / includeFilter).value || "*.scala" || "*.psd" || "*.ai" || "*.java") pair Path.relativeTo(base)
     },
     // Include the additional projects in the scaladoc JAR:
-    sources in Compile in doc ++= {
+    Compile / doc / sources ++= {
       val base =
-        (unmanagedSourceDirectories in Compile in LocalProject("interactive")).value ++
-        (unmanagedSourceDirectories in Compile in LocalProject("scaladoc")).value ++
-        (unmanagedSourceDirectories in Compile in LocalProject("repl")).value ++
-        (unmanagedSourceDirectories in Compile in LocalProject("repl-frontend")).value
+        (LocalProject("interactive")   / Compile / unmanagedSourceDirectories).value ++
+        (LocalProject("scaladoc")      / Compile / unmanagedSourceDirectories).value ++
+        (LocalProject("repl")          / Compile / unmanagedSourceDirectories).value ++
+        (LocalProject("repl-frontend") / Compile / unmanagedSourceDirectories).value
       ((base ** ("*.scala" || "*.java"))
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
       ).get
     },
-    scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
-    scalacOptions in Compile in doc ++= Seq(
-      "-doc-root-content", (sourceDirectory in Compile).value + "/rootdoc.txt"
+    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / doc / scalacOptions ++= Seq(
+      "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
     ),
     Osgi.headers ++= Seq(
       "Import-Package" -> raw"""org.jline.keymap.*;resolution:=optional
@@ -701,7 +701,7 @@ lazy val compiler = configureAsSubproject(project)
     // Generate the ScriptEngineFactory service definition. The old Ant build did this when building
     // the JAR but sbt has no support for it and it is easier to do as a resource generator:
     generateServiceProviderResources("javax.script.ScriptEngineFactory" -> "scala.tools.nsc.interpreter.shell.Scripted$Factory"),
-    managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
+    Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
     fixPom(
       "/project/name" -> <name>Scala Compiler</name>,
       "/project/description" -> <description>Compiler for the Scala Programming Language</description>,
@@ -714,7 +714,7 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler"
@@ -723,21 +723,21 @@ lazy val interactive = configureAsSubproject(project)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(skip in publish := true)
-  .settings(scalacOptions in Compile += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_")
+  .settings(publish / skip := true)
+  .settings(Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_")
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
-    scalacOptions in Compile += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / scalacOptions += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
   )
   .settings(
-    connectInput in run := true,
-    run := (run in Compile).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
+    run / connectInput := true,
+    run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
     Compile / run / javaOptions += s"-Dscala.color=${!scala.util.Properties.isWin}",
   )
   .dependsOn(repl)
@@ -745,13 +745,13 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
-    includeFilter in unmanagedResources in Compile := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
+    Compile / unmanagedResources / includeFilter := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
     libraryDependencies ++= ScaladocSettings.webjarResoources,
-    resourceGenerators in Compile += ScaladocSettings.extractResourcesFromWebjar
+    Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar
   )
   .dependsOn(compiler)
 
@@ -759,7 +759,7 @@ lazy val scalap = configureAsSubproject(project)
   .settings(
     description := "Scala Bytecode Parser",
     // Include decoder.properties
-    includeFilter in unmanagedResources in Compile := "*.properties",
+    Compile / unmanagedResources / includeFilter := "*.properties",
     fixPom(
       "/project/name" -> <name>Scalap</name>,
       "/project/description" -> <description>bytecode analysis tool</description>,
@@ -805,12 +805,12 @@ lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
-    sourceGenerators in Compile += Def.task {
+    Compile / sourceGenerators += Def.task {
       import scala.collection.JavaConverters._
-      val srcBase = (sourceDirectories in Compile in library).value.head / "scala/runtime"
-      val targetBase = (sourceManaged in Compile).value / "scala/runtime"
+      val srcBase = (library / Compile / sourceDirectories).value.head / "scala/runtime"
+      val targetBase = (Compile / sourceManaged).value / "scala/runtime"
       def patch(srcFile: String, patchFile: String): File = try {
         val p = difflib.DiffUtils.parseUnifiedDiff(IO.readLines(baseDirectory.value / patchFile).asJava)
         val r = difflib.DiffUtils.patch(IO.readLines(srcBase / srcFile).asJava, p)
@@ -836,7 +836,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
   .dependsOn((if (benchmarkScalaVersion == "") Seq[sbt.ClasspathDep[sbt.ProjectReference]](library, compiler) else Nil): _*)
   .settings(if (benchmarkScalaVersion == "") instanceSettings else Seq(scalaVersion := benchmarkScalaVersion, crossPaths := false))
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .enablePlugins(JmhPlugin)
   .settings(
     name := "test-benchmarks",
@@ -858,9 +858,9 @@ lazy val testkit = configureAsSubproject(project)
   .settings(
     name := "scala-testkit",
     description := "Scala Compiler Testkit",
-    scalacOptions in Compile += "-feature",
+    Compile / scalacOptions += "-feature",
     libraryDependencies ++= Seq(junitDep, asmDep),
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value),
+    Compile / unmanagedSourceDirectories := List(baseDirectory.value),
     fixPom(
       "/project/name" -> <name>Scala Testkit</name>,
       "/project/description" -> <description>Scala Compiler Testing Tool</description>,
@@ -872,20 +872,20 @@ lazy val testkit = configureAsSubproject(project)
 lazy val junit = project.in(file("test") / "junit")
   .dependsOn(testkit, compiler, replFrontend, scaladoc)
   .settings(commonSettings)
-  .settings(scalacOptions in Compile += "-Xlint:-adapted-args,-nullary-unit,_")
-  .settings(javacOptions in Compile ++= Seq("-Xlint"))
+  .settings(Compile / scalacOptions += "-Xlint:-adapted-args,-nullary-unit,_")
+  .settings(Compile / javacOptions ++= Seq("-Xlint"))
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
-    fork in Test := true,
-    javaOptions in Test += "-Xss1M",
-    (forkOptions in Test) := (forkOptions in Test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    (forkOptions in Test in testOnly) := (forkOptions in Test in testOnly).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    scalacOptions in Compile += "-feature",
+    Test / fork := true,
+    Test / javaOptions += "-Xss1M",
+    (Test / forkOptions) := (Test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
+    (Test / testOnly / forkOptions) := (Test / testOnly / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
+    Compile / scalacOptions += "-feature",
     libraryDependencies ++= Seq(junitInterfaceDep, jolDep, diffUtilsDep),
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    unmanagedSourceDirectories in Compile := Nil,
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    Compile / unmanagedSourceDirectories := Nil,
+    Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
 
 
@@ -893,20 +893,20 @@ lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
     // Enable forking to workaround https://github.com/sbt/sbt/issues/4009.
-    fork in Test := true,
+    Test / fork := true,
     // Instead of forking above, it should be possible to set:
-    // classLoaderLayeringStrategy in Test := ClassLoaderLayeringStrategy.Flat,
-    javaOptions in Test += "-Xss1M",
-    testOptions in Test += Tests.Argument(
+    // Test / classLoaderLayeringStrategy := ClassLoaderLayeringStrategy.Flat,
+    Test / javaOptions += "-Xss1M",
+    Test / testOptions += Tests.Argument(
       // Full stack trace on failure:
       "-verbosity", "2"
     ),
     libraryDependencies ++= Seq(scalacheckDep),
-    unmanagedSourceDirectories in Compile := Nil,
-    unmanagedSourceDirectories in Test := List(baseDirectory.value)
+    Compile / unmanagedSourceDirectories := Nil,
+    Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
 
 lazy val osgiTestFelix = osgiTestProject(
@@ -921,10 +921,10 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
   .dependsOn(library, reflect, compiler)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
-    fork in Test := true,
-    parallelExecution in Test := false,
+    Test / fork := true,
+    Test / parallelExecution := false,
     libraryDependencies ++= {
       val paxExamVersion = "4.11.0" // Last version which supports Java 9+
       Seq(
@@ -941,23 +941,23 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
         framework % "test"
       )
     },
-    Keys.test in Test := (Keys.test in Test).dependsOn(packageBin in Compile).value,
-    Keys.testOnly in Test := (Keys.testOnly in Test).dependsOn(packageBin in Compile).evaluated,
+    Test / Keys.test := (Test / Keys.test).dependsOn(Compile / packageBin).value,
+    Test / Keys.testOnly := (Test / Keys.testOnly).dependsOn(Compile / packageBin).evaluated,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
-    javaOptions in Test += "-Dscala.bundle.dir=" + (buildDirectory in ThisBuild).value / "osgi",
-    (forkOptions in Test in test) := (forkOptions in Test in test).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
-    unmanagedSourceDirectories in Test := List((baseDirectory in ThisBuild).value / "test" / "osgi" / "src"),
+    Test / javaOptions += "-Dscala.bundle.dir=" + (ThisBuild / buildDirectory).value / "osgi",
+    Test / Keys.test / forkOptions := (Test / Keys.test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
+    unmanagedSourceDirectories in Test := List((ThisBuild / baseDirectory).value / "test" / "osgi" / "src"),
     unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
     includeFilter in unmanagedResources in Compile := "*.xml",
     packageBin in Compile := { // Put the bundle JARs required for the tests into build/osgi
-      val targetDir = (buildDirectory in ThisBuild).value / "osgi"
+      val targetDir = (ThisBuild / buildDirectory).value / "osgi"
       val mappings = ((mkPack in dist).value / "lib").listFiles.collect {
         case f if f.getName.startsWith("scala-") && f.getName.endsWith(".jar") => (f, targetDir / f.getName)
       }
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },
-    cleanFiles += (buildDirectory in ThisBuild).value / "osgi"
+    cleanFiles += (ThisBuild / buildDirectory).value / "osgi"
   )
 
 lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "partest-javaagent")
@@ -966,7 +966,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
   .settings(disableDocs)
   .settings(
     libraryDependencies += asmDep,
-    skip in publish := true,
+    publish / skip := true,
     // Setting name to "scala-partest-javaagent" so that the jar file gets that name, which the Runner relies on
     name := "scala-partest-javaagent",
     description := "Scala Compiler Testing Tool (compiler-specific java agent)",
@@ -983,7 +983,7 @@ lazy val test = project
   .configs(IntegrationTest)
   .settings(commonSettings)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(Defaults.itSettings)
   .settings(
     libraryDependencies ++= Seq(asmDep),
@@ -1001,10 +1001,10 @@ lazy val test = project
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
     testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
-    (forkOptions in IntegrationTest) := (forkOptions in IntegrationTest).value.withWorkingDirectory((baseDirectory in ThisBuild).value),
+    (forkOptions in IntegrationTest) := (forkOptions in IntegrationTest).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
     testOptions in IntegrationTest += {
       val cp = (dependencyClasspath in Test).value
-      val baseDir = (baseDirectory in ThisBuild).value
+      val baseDir = (ThisBuild / baseDirectory).value
       val instrumentedJar = (packagedArtifact in (specLib, Compile, packageBin)).value._2
       Tests.Setup { () =>
         // Copy instrumented.jar (from specLib)to the location where partest expects it.
@@ -1036,7 +1036,7 @@ lazy val test = project
 
 lazy val manual = configureAsSubproject(project)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
     classDirectory in Compile := (target in Compile).value / "classes"
@@ -1051,9 +1051,9 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       val binMappings = (mkBin in dist).value.pair(Path.relativeTo(binBaseDir), errorIfNone = false)
       // With the way the resource files are spread out over the project sources we can't just add
       // an unmanagedResourceDirectory, so we generate the mappings manually:
-      val docBaseDir = (baseDirectory in ThisBuild).value
+      val docBaseDir = (ThisBuild / baseDirectory).value
       val docMappings = (docBaseDir / "doc").allPaths pair Path.relativeTo(docBaseDir)
-      val resBaseDir = (baseDirectory in ThisBuild).value / "src/manual/scala/tools/docutil/resources"
+      val resBaseDir = (ThisBuild / baseDirectory).value / "src/manual/scala/tools/docutil/resources"
       val resMappings = resBaseDir ** ("*.html" | "*.css" | "*.gif" | "*.png") pair (p => Path.relativeTo(resBaseDir)(p).map("doc/tools/" + _))
       docMappings ++ resMappings ++ binMappings
     },
@@ -1096,7 +1096,7 @@ def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
 
 lazy val root: Project = (project in file("."))
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(generateBuildCharacterFileSettings)
   .settings(
     commands ++= ScriptCommands.all,
@@ -1117,7 +1117,7 @@ lazy val root: Project = (project in file("."))
     // source links (could be fixed by shipping these sources with the scaladoc bundles) and scala-js source maps
     // rely on them being on github.
     commands += Command.command("generateSources") { state =>
-      val dir = ((baseDirectory in ThisBuild).value / "src" / "library" / "scala").getAbsoluteFile
+      val dir = ((ThisBuild / baseDirectory).value / "src" / "library" / "scala").getAbsoluteFile
       genprod.run(dir)
       GenerateAnyVals.run(dir)
       GenerateFunctionConverters.run(dir)
@@ -1125,8 +1125,8 @@ lazy val root: Project = (project in file("."))
     },
     // ../docs.scala-lang/_data/compiler-options.yml
     commands += Command.command("generateDocsData") { state =>
-      val dir = (((baseDirectory in ThisBuild).value) / ".." / "docs.scala-lang" / "_data")
-      val target = if (dir.exists) dir else ((baseDirectory in ThisBuild).value)
+      val dir = (((ThisBuild / baseDirectory).value) / ".." / "docs.scala-lang" / "_data")
+      val target = if (dir.exists) dir else ((ThisBuild / baseDirectory).value)
       GenerateDocsData.run(target.getAbsoluteFile)
       state
     },
@@ -1137,26 +1137,26 @@ lazy val root: Project = (project in file("."))
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
-        (testOnly in Test in junit).toTask(" -- +v").result map (_ -> "junit/test"),
-        (Keys.test in Test in scalacheck).result map (_ -> "scalacheck/test"),
+        (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
+        (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
         partestDesc("run"),
         partestDesc("pos neg jvm"),
         partestDesc("res scalap specialized"),
         partestDesc("instrumented presentation"),
         partestDesc("--srcpath scaladoc"),
         partestDesc("--srcpath macro-annot"),
-        (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
-        (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
-        (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),
-        (mimaReportBinaryIssues in reflect).result map (_ -> "reflect/mimaReportBinaryIssues"),
+        (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
+        (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
+        (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
+        (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
         testJDeps.result map (_ -> "testJDeps"),
         testJarSize.result map (_ -> "testJarSize"),
-        (compile in Compile in bench).map(_ => ()).result map (_ -> "bench/compile"),
+        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
         Def.task(()).dependsOn( // Run these in parallel:
-          doc in Compile in library,
-          doc in Compile in reflect,
-          doc in Compile in compiler,
-          doc in Compile in scalap
+          library / Compile / doc,
+          reflect / Compile / doc,
+          compiler / Compile / doc,
+          scalap / Compile / doc,
         ).result map (_ -> "doc")
       )).value
       val log = streams.value.log
@@ -1205,7 +1205,7 @@ lazy val root: Project = (project in file("."))
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
     scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
-    sources in Compile := Seq.empty,
+    Compile / sources := Seq.empty,
     onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
       |Check README.md for more information.""".stripMargin
   )
@@ -1224,19 +1224,19 @@ lazy val dist = (project in file("dist"))
     libraryDependencies ++= jlineDeps,
     mkBin := mkBinImpl.value,
     mkQuick := Def.task {
-      val cp = (fullClasspath in IntegrationTest in testP).value
-      val propsFile = (buildDirectory in ThisBuild).value / "quick" / "partest.properties"
+      val cp = (testP / IntegrationTest / fullClasspath).value
+      val propsFile = (ThisBuild / buildDirectory).value / "quick" / "partest.properties"
       val props = new java.util.Properties()
       props.setProperty("partest.classpath", cp.map(_.data.getAbsolutePath).mkString(sys.props("path.separator")))
       IO.write(props, null, propsFile)
-      (buildDirectory in ThisBuild).value / "quick"
-    }.dependsOn((distDependencies.map(products in Runtime in _) :+ mkBin): _*).value,
-    mkPack := Def.task { (buildDirectory in ThisBuild).value / "pack" }.dependsOn(packagedArtifact in (Compile, packageBin), mkBin).value,
-    target := (baseDirectory in ThisBuild).value / "target" / thisProject.value.id,
-    packageBin in Compile := {
-      val targetDir = (buildDirectory in ThisBuild).value / "pack" / "lib"
-      val jlineJAR = findJar((dependencyClasspath in Compile).value, jlineDep).get.data
-      val jnaJAR = findJar((dependencyClasspath in Compile).value, jnaDep).get.data
+      (ThisBuild / buildDirectory).value / "quick"
+    }.dependsOn((distDependencies.map(_ / Runtime / products) :+ mkBin): _*).value,
+    mkPack := Def.task { (ThisBuild / buildDirectory).value / "pack" }.dependsOn(Compile / packageBin / packagedArtifact, mkBin).value,
+    target := (ThisBuild / baseDirectory).value / "target" / thisProject.value.id,
+    Compile / packageBin := {
+      val targetDir = (ThisBuild / buildDirectory).value / "pack" / "lib"
+      val jlineJAR = findJar((Compile / dependencyClasspath).value, jlineDep).get.data
+      val jnaJAR = findJar((Compile / dependencyClasspath).value, jnaDep).get.data
       val mappings = Seq(
         (jlineJAR, targetDir / "jline.jar"),
         (jnaJAR, targetDir / "jna.jar"),
@@ -1244,11 +1244,11 @@ lazy val dist = (project in file("dist"))
       IO.copy(mappings, CopyOptions() withOverwrite true)
       targetDir
     },
-    cleanFiles += (buildDirectory in ThisBuild).value / "quick",
-    cleanFiles += (buildDirectory in ThisBuild).value / "pack",
-    packagedArtifact in (Compile, packageBin) :=
-      (packagedArtifact in (Compile, packageBin))
-        .dependsOn(distDependencies.map(packagedArtifact in (Compile, packageBin) in _): _*)
+    cleanFiles += (ThisBuild / buildDirectory).value / "quick",
+    cleanFiles += (ThisBuild / buildDirectory).value / "pack",
+    Compile / packageBin / packagedArtifact :=
+      (Compile / packageBin / packagedArtifact)
+        .dependsOn(distDependencies.map(_ / Compile / packageBin / packagedArtifact): _*)
         .value
   )
   .dependsOn(distDependencies.map(p => p: ClasspathDep[ProjectReference]): _*)
@@ -1297,7 +1297,7 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
       properties = Map.empty,
       javaOpts   = "-Xmx256M -Xms32M",
       toolFlags  = "")
-  val rootDir = (classDirectory in Compile in compiler).value
+  val rootDir = (compiler / Compile / classDirectory).value
   val quickOutDir = buildDirectory.value / "quick/bin"
   val packOutDir = buildDirectory.value / "pack/bin"
   def writeScripts(scalaTool: ScalaTool, file: String, outDir: File): Seq[File] = {
@@ -1320,32 +1320,32 @@ lazy val mkBinImpl: Def.Initialize[Task[Seq[File]]] = Def.task {
 
   streams.value.log.info(s"Creating scripts in $quickOutDir and $packOutDir")
 
-  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (fullClasspath in Compile in replFrontend).value) ++
-  mkBin("scalac"   , "scala.tools.nsc.Main",              (fullClasspath in Compile in compiler).value) ++
-  mkBin("fsc"      , "scala.tools.nsc.fsc.CompileClient", (fullClasspath in Compile in compiler).value) ++
-  mkBin("scaladoc" , "scala.tools.nsc.ScalaDoc",          (fullClasspath in Compile in scaladoc).value) ++
-  mkBin("scalap"   , "scala.tools.scalap.Main",           (fullClasspath in Compile in scalap).value)
+  mkBin("scala"    , "scala.tools.nsc.MainGenericRunner", (replFrontend / Compile / fullClasspath).value) ++
+  mkBin("scalac"   , "scala.tools.nsc.Main",              (compiler / Compile / fullClasspath).value) ++
+  mkBin("fsc"      , "scala.tools.nsc.fsc.CompileClient", (compiler / Compile / fullClasspath).value) ++
+  mkBin("scaladoc" , "scala.tools.nsc.ScalaDoc",          (scaladoc / Compile / fullClasspath).value) ++
+  mkBin("scalap"   , "scala.tools.scalap.Main",           (scalap / Compile / fullClasspath).value)
 }
 
 /** Generate service provider definition files under META-INF/services */
 def generateServiceProviderResources(services: (String, String)*): Setting[_] =
-  resourceGenerators in Compile += Def.task {
+  Compile / resourceGenerators += Def.task {
     services.map { case (k, v) =>
-      val f = (resourceManaged in Compile).value / "META-INF/services" / k
+      val f = (Compile / resourceManaged).value / "META-INF/services" / k
       IO.write(f, v + "\n")
       f
     }
   }.taskValue
 
-buildDirectory in ThisBuild := (baseDirectory in ThisBuild).value / "build"
+ThisBuild / buildDirectory := (ThisBuild / baseDirectory).value / "build"
 
 // Add tab completion to partest
-commands += Command("partest")(_ => PartestUtil.partestParser((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")) { (state, parsed) =>
+commands += Command("partest")(_ => PartestUtil.partestParser((ThisBuild / baseDirectory).value, (ThisBuild / baseDirectory).value / "test")) { (state, parsed) =>
   ("test/it:testOnly -- " + parsed) :: state
 }
 
 // Watch the test files also so ~partest triggers on test case changes
-watchSources ++= PartestUtil.testFilePaths((baseDirectory in ThisBuild).value, (baseDirectory in ThisBuild).value / "test")
+watchSources ++= PartestUtil.testFilePaths((ThisBuild / baseDirectory).value, (ThisBuild / baseDirectory).value / "test")
 
 // Add tab completion to scalac et al.
 commands ++= {
@@ -1356,7 +1356,7 @@ commands ++= {
 
   commands.map {
     case (entryPoint, projectRef, mainClassName) =>
-      Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (baseDirectory in ThisBuild).value)) { (state, parsedOptions) =>
+      Command(entryPoint)(_ => ScalaOptionParser.scalaParser(entryPoint, (ThisBuild / baseDirectory).value)) { (state, parsedOptions) =>
         (projectRef + "/runMain " + mainClassName + " -usejavacp " + parsedOptions) :: state
       }
   }
@@ -1366,7 +1366,7 @@ addCommandAlias("scalap",   "scalap/compile:runMain              scala.tools.sca
 
 lazy val intellij = taskKey[Unit]("Update the library classpaths in the IntelliJ project files.")
 
-def moduleDeps(p: Project, config: Configuration = Compile) = (externalDependencyClasspath in config in p).map(a => (p.id, a.map(_.data)))
+def moduleDeps(p: Project, config: Configuration = Compile) = (p / config / externalDependencyClasspath).map(a => (p.id, a.map(_.data)))
 
 // aliases to projects to prevent name clashes
 def compilerP = compiler
@@ -1377,7 +1377,7 @@ intellij := {
   import xml.transform._
 
   val s = streams.value
-  val compilerScalaInstance = (scalaInstance in LocalProject("compiler")).value
+  val compilerScalaInstance = (LocalProject("compiler") / scalaInstance).value
 
   val modules: List[(String, Seq[File])] = {
     // for the sbt build module, the dependencies are fetched from the project's build using sbt-buildinfo
@@ -1454,11 +1454,11 @@ intellij := {
     r
   }
 
-  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
   val ipr = intellijDir / "scala.ipr"
   backupIdea(intellijDir)
   if (!ipr.exists) {
-    intellijCreateFromSample((baseDirectory in ThisBuild).value)
+    intellijCreateFromSample((ThisBuild / baseDirectory).value)
   }
   s.log.info("Updating library classpaths in src/intellij/scala.ipr.")
   val content = XML.loadFile(ipr)
@@ -1495,10 +1495,10 @@ def backupIdea(ideaDir: File): Unit = {
 
 intellijFromSample := {
   val s = streams.value
-  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
   val ipr = intellijDir / "scala.ipr"
   backupIdea(intellijDir)
-  intellijCreateFromSample((baseDirectory in ThisBuild).value)
+  intellijCreateFromSample((ThisBuild / baseDirectory).value)
 }
 
 def intellijCreateFromSample(basedir: File): Unit = {
@@ -1511,7 +1511,7 @@ lazy val intellijToSample = taskKey[Unit]("Update src/intellij/*.SAMPLE using th
 
 intellijToSample := {
   val s = streams.value
-  val intellijDir = (baseDirectory in ThisBuild).value / "src/intellij"
+  val intellijDir = (ThisBuild / baseDirectory).value / "src/intellij"
   val ipr = intellijDir / "scala.ipr"
   backupIdea(intellijDir)
   val existing =intellijDir * "*.SAMPLE"

@@ -11,7 +11,7 @@ enablePlugins(BuildInfoPlugin)
 
 lazy val buildClasspath = taskKey[String]("Colon-separated (or semicolon-separated in case of Windows) list of entries on the sbt build classpath.")
 
-buildClasspath := (externalDependencyClasspath in Compile).value.map(_.data).mkString(java.io.File.pathSeparator)
+buildClasspath := (Compile / externalDependencyClasspath).value.map(_.data).mkString(java.io.File.pathSeparator)
 
 buildInfoKeys := Seq[BuildInfoKey](buildClasspath)
 
@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0"
 )
 
-concurrentRestrictions in Global := Seq(
+Global / concurrentRestrictions := Seq(
   Tags.limitAll(1) // workaround for https://github.com/sbt/sbt/issues/2970
 )
 

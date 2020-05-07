@@ -15,7 +15,7 @@ object AutomaticModuleName  {
   def settings(name: String): Seq[Def.Setting[_]] = {
     val pair = ("Automatic-Module-Name" -> name)
     Seq(
-      packageOptions in (Compile, packageBin) += Package.ManifestAttributes(pair),
+      Compile / packageBin / packageOptions += Package.ManifestAttributes(pair),
       Osgi.headers += pair
     )
   }

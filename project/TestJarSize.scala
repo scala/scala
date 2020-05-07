@@ -16,7 +16,7 @@ object TestJarSize {
   private def testJarSize1(projectId: String, jarSize: JarSize): Def.Initialize[Task[Unit]] = Def.task {
     import jarSize._
     val log = state.value.log
-    val jar = (packageBin in Compile in LocalProject(projectId)).value
+    val jar = (LocalProject(projectId) / Compile / packageBin).value
     val actualBytes = jar.length()
     if (actualBytes > (currentBytes * errorThreshold)) {
       fail(s"The $projectId jar is too big: $actualBytes bytes.")
