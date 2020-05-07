@@ -22,6 +22,7 @@ import scala.collection.mutable.Clearable
 import scala.io.Source
 import scala.reflect.internal.util.{SomeOfNil, StringOps}
 import scala.reflect.{ClassTag, classTag}
+import scala.util.chaining._
 
 /** A mutable Settings object.
  */
@@ -103,11 +104,11 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     s
   }
 
-  /** A list pairing source directories with their output directory.
-   *  This option is not available on the command line, but can be set by
-   *  other tools (IDEs especially). The command line specifies a single
-   *  output directory that is used for all source files, denoted by a
-   *  '*' in this list.
+  /** A list pairing source directories with their respective output directory.
+   *
+   *  Tools may set outputDirs programmatically.
+   *
+   *  The `-d` commandline option sets a single directory for all sources.
    */
   lazy val outputDirs = new OutputDirs
 
@@ -215,16 +216,16 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     s
   }
 
-  def BooleanSetting(name: String, descr: String) = add(new BooleanSetting(name, descr))
+  def BooleanSetting(name: String, descr: String, default: Boolean = false) = add(new BooleanSetting(name, descr, default))
   def ChoiceSetting(name: String, helpArg: String, descr: String, choices: List[String], default: String, choicesHelp: List[String] = Nil) =
     add(new ChoiceSetting(name, helpArg, descr, choices, default, choicesHelp))
   def IntSetting(name: String, descr: String, default: Int, range: Option[(Int, Int)], parser: String => Option[Int]) =
     add(new IntSetting(name, descr, default, range, parser))
-  def MultiStringSetting(name: String, arg: String, descr: String, helpText: Option[String] = None, prepend: Boolean = false) =
-    add(new MultiStringSetting(name, arg, descr, helpText, prepend))
+  def MultiStringSetting(name: String, arg: String, descr: String, default: List[String] = Nil, helpText: Option[String] = None, prepend: Boolean = false) =
+    add(new MultiStringSetting(name, arg, descr, default, helpText, prepend))
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
-  def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(outputDirs, default))
+  def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(default).tap(_ => outputDirs.setSingleOutput(default)))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =
@@ -260,14 +261,10 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
           checkDir(pathFactory.getDirectory(outDir), outDir))
 
     /** Check that dir is exists and is a directory. */
-    private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile = (
-      if (dir != null && dir.isDirectory)
-        dir
-      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false))
-        new PlainFile(Path(name))
-      else
-        throw new FatalError(name + " does not exist or is not a directory")
-    )
+    private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile =
+      if (dir != null && dir.isDirectory) dir
+      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false)) new PlainFile(Path(name))
+      else throw new FatalError(s"$name does not exist or is not a directory")
 
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
@@ -282,9 +279,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
      */
-    def setSingleOutput(dir: AbstractFile): Unit = {
-      singleOutDir = Some(dir)
-    }
+    def setSingleOutput(dir: AbstractFile): Unit = singleOutDir = Some(dir)
 
     def add(src: AbstractFile, dst: AbstractFile): Unit = {
       singleOutDir = None
@@ -297,16 +292,12 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     /** Return the output directory for the given file.
      */
     def outputDirFor(src: AbstractFile): AbstractFile = {
-      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
-        src.path.startsWith(srcDir.path)
+      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) = src.path.startsWith(srcDir.path)
 
       singleOutDir.getOrElse(outputs.find((isBelow _).tupled) match {
-          case Some((_, d)) => d
-          case _ =>
-            throw new FatalError("Could not find an output directory for "
-                                 + src.path + " in " + outputs)
-        }
-      )
+        case Some((_, d)) => d
+        case _ => throw new FatalError(s"Could not find an output directory for ${src.path} in ${outputs}")
+      })
     }
 
     /** Return the source file path(s) which correspond to the given
@@ -327,8 +318,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
      *  paths.
      */
     def srcFilesFor(classFile : AbstractFile, srcPath : String) : List[AbstractFile] = {
-      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) =
-        classFile.path.startsWith(outDir.path)
+      def isBelow(srcDir: AbstractFile, outDir: AbstractFile) = classFile.path.startsWith(outDir.path)
 
       singleOutDir match {
         case Some(_: VirtualDirectory | _: io.ZipArchive) => Nil
@@ -346,7 +336,6 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
    *  Subclasses each define a `value` field of the appropriate type.
    */
   abstract class Setting(val name: String, val helpDescription: String) extends AbsSetting with SettingValue {
-    def withDefault(value: T): this.type = { v = value; this }
 
     /** Will be called after this Setting is set for any extra work. */
     private[this] var _postSetHook: this.type => Unit = (x: this.type) => ()
@@ -429,20 +418,16 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     withHelpSyntax(s"$name <n>")
   }
 
-  /** A setting represented by a boolean flag (false, unless set, or `withDefault` used) */
-  class BooleanSetting private[nsc](
-    name: String,
-    descr: String)
-  extends Setting(name, descr) {
+  /** A setting that is a boolean flag, with default as specified. */
+  class BooleanSetting private[nsc](name: String, descr: String, default: Boolean) extends Setting(name, s"$descr [$default]") {
     type T = Boolean
-    protected var v: Boolean = false
+    protected var v: Boolean = default
     override def value: Boolean = v
 
     def tryToSet(args: List[String]) = { value = true ; Some(args) }
     def unparse: List[String] = if (value) List(name) else Nil
-    override def tryToSetFromPropertyValue(s : String): Unit = { // used from ide
-      value = s.equalsIgnoreCase("true")
-    }
+    // used from ide
+    override def tryToSetFromPropertyValue(s : String): Unit = value = s.equalsIgnoreCase("true")
     override def tryToSetColon(args: List[String]) = args match {
       case Nil     => tryToSet(Nil)
       case List(x) =>
@@ -560,18 +545,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     )
   }
 
-  /** Set the output directory. */
-  class OutputSetting private[nsc](
-    private[nsc] val outputDirs: OutputDirs,
-    default: String)
-    extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None) {
-      postSetHook()
-      override def postSetHook(): Unit = {
-        super.postSetHook()
-        try outputDirs.setSingleOutput(value)
-        catch { case FatalError(msg) => errorFn(msg) }
-      }
-  }
+  /** Set the output directory for all sources. */
+  class OutputSetting private[nsc](default: String) extends StringSetting("-d", "directory|jar", "destination for generated classfiles.", default, None)
 
   /**
    * Each [[MultiChoiceSetting]] takes a MultiChoiceEnumeration as domain. The enumeration may
@@ -785,11 +760,12 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     name: String,
     val arg: String,
     descr: String,
+    default: List[String],
     helpText: Option[String],
     prepend: Boolean)
   extends Setting(name, descr) with Clearable {
     type T = List[String]
-    protected var v: T = Nil
+    protected var v: T = default
     protected var sawHelp: Boolean = false
 
     withHelpSyntax(name + ":<" + arg + ">")
@@ -834,8 +810,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     val default: String,
     val choicesHelp: List[String])
   extends Setting(name,
-    if (choicesHelp.isEmpty) s"$descr ${choices.map(s => if (s == default) s"[$s]" else s).mkString("(", ",", ")")}"
-    else s"$descr Default: `$default`, `help` to list choices.") {
+      if (choicesHelp.isEmpty) s"$descr ${choices.map(s => if (s == default) s"[$s]" else s).mkString("(", ",", ")")}"
+      else s"$descr Default: `$default`, `help` to list choices."
+  ) {
     type T = String
     protected var v: T = default
     def indexOfChoice: Int = choices indexOf value

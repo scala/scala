@@ -15,13 +15,12 @@ package settings
 
 import scala.tools.util.PathResolver.Defaults
 
-/** Settings which aren't behind a -X, -Y, -V, or -P option.
+/** Settings which aren't behind a -V, -W, -X, -Y, or -P option.
  *  When possible, the val and the option have identical names.
  *  The abstract settings are commented as to why they are as yet
  *  implemented in MutableSettings rather than mutation-generically.
  */
-trait StandardScalaSettings {
-  self: MutableSettings =>
+trait StandardScalaSettings { _: MutableSettings =>
 
   import StandardScalaSettings._
 
@@ -68,8 +67,7 @@ trait StandardScalaSettings {
   //   - `jvm-` (from back when we also had `msil`)
   //   - `1.` (from back when Java 2 was a possibility)
   // `-target:1.jvm-13` is ridiculous, though.
-  private[this] def normalizeTarget(in: String): String =
-    in stripPrefix "jvm-" stripPrefix "1."
+  private[this] def normalizeTarget(in: String): String = in.stripPrefix("jvm-").stripPrefix("1.")
 }
 
 object StandardScalaSettings {
@@ -77,5 +75,5 @@ object StandardScalaSettings {
   val MinTargetVersion = 8
   val MaxTargetVersion = 12 // this one goes to twelve
 
-  private val AllTargetVersions = MinTargetVersion to MaxTargetVersion map (_.toString) to List
+  private val AllTargetVersions = (MinTargetVersion to MaxTargetVersion).map(_.toString).to(List)
 }
