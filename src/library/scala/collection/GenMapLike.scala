@@ -124,7 +124,11 @@ trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals
       try {
         val checker = new AbstractFunction1[(K, V),Boolean] with Function0[V]{
           override def apply(kv: (K,V)): Boolean = {
-            that.getOrElse(kv._1.asInstanceOf[b], this) == kv._2
+            // Note: uncurry optimizes this to `get.getOrElse(..., this: Function0)`;  there is no extra lambda allocated.
+            val v2 = that.getOrElse(kv._1.asInstanceOf[b], this.apply())
+            // A mis-behaving user-defined equals method might not expect the sentinel value, and we should try to limit
+            // the chance of it escaping. Its also probably quicker to avoid the virtual call to equals.
+            (v2.asInstanceOf[AnyRef] ne this) && v2 == kv._2
           }
           override def apply(): V = this.asInstanceOf[V]
         }
