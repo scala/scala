@@ -56,6 +56,14 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
       } else Iterator.empty.next()
   }
 
+  override def foldRight[B](z: B)(op: (A, B) => B): B = {
+    val it = reverseIterator
+    var b = z
+    while (it.hasNext)
+      b = op(it.next(), b)
+    b
+  }
+
   override def view: IndexedSeqView[A] = new IndexedSeqView.Id[A](this)
 
   @deprecated("Use .view.slice(from, until) instead of .view(from, until)", "2.13.0")
