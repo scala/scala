@@ -16,6 +16,7 @@ package mutable
 import scala.annotation.tailrec
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
+import scala.util.hashing.MurmurHash3
 
 /** This class implements mutable sets using a hashtable.
   *
@@ -360,6 +361,21 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(new HashSet.DeserializationFactory[A](table.length, loadFactor), this)
 
   override protected[this] def className = "HashSet"
+
+  override def hashCode: Int = {
+    val setIterator = this.iterator
+    val hashIterator: Iterator[Any] =
+      if (setIterator.isEmpty) setIterator
+      else new HashSetIterator[Any] {
+        var hash: Int = 0
+        override def hashCode: Int = hash
+        override protected[this] def extract(nd: Node[A]): Any = {
+          hash = unimproveHash(nd.hash)
+          this
+        }
+      }
+    MurmurHash3.unorderedHash(hashIterator, MurmurHash3.setSeed)
+  }
 }
 
 /**
