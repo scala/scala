@@ -95,7 +95,7 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
   )
 
   final def webjarResources = List(
-    ("jquery.min.js", "CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=")
+    ("jquery.min.js", "9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=")
   )
 
   /** Generates the Scaladoc site for a model into the site root.
@@ -136,8 +136,9 @@ class HtmlFactory(val universe: doc.Universe, val reporter: Reporter) {
         assert(inputStream != null, p)
       }.toByteArray()
       val fileContent = new String(bytes)
-      if (expectedSRI != calsSubResourceIntegrity(fileContent))
-        throw new Exception(s"Subresource Integrity unmatched on ${resourceName}. Could be wrong webjar or hijacked")
+      val actualSRI = calsSubResourceIntegrity(fileContent)
+      if (expectedSRI != actualSRI)
+        throw new Exception(s"Subresource Integrity unmatched on ${resourceName}. Could be wrong webjar or hijacked: $actualSRI")
 
       val dest = Directory(siteRoot) / "lib" / resourceName
       dest.parent.createDirectory()

@@ -43,5 +43,5 @@ This license is used by the following third-party libraries:
 ### [MIT License](http://www.opensource.org/licenses/MIT)
 This license is used by the following third-party libraries:
 
-  * jquery
+  * jQuery
   * tools tooltip
