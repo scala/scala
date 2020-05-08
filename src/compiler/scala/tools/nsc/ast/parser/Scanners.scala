@@ -40,6 +40,9 @@ trait ScannersCommon {
   }
 
   trait ScannerCommon extends CommonTokenData {
+    /** Consume and discard the next token. */
+    def nextToken(): Unit
+
     // things to fill in, in addition to buf, decodeUni which come from CharArrayReader
     def error(off: Offset, msg: String): Unit
     def incompleteInputError(off: Offset, msg: String): Unit

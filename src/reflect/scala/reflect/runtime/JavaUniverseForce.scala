@@ -429,6 +429,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.UncheckedBoundsClass
     definitions.UnspecializedClass
     definitions.VolatileAttr
+    definitions.JavaDeprecatedAttr
     definitions.FunctionalInterfaceClass
     definitions.BeanGetterTargetClass
     definitions.BeanSetterTargetClass

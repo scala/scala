@@ -18,6 +18,19 @@ object Test extends BytecodeTest {
       .map(_.trim)
   }
 
+  def annotationsForField(className: String, fieldName: String): Option[String] = {
+    val field = getField(loadClassNode(className, skipDebugInfo = false), fieldName)
+    val textifier = new Textifier
+    field.accept(new TraceClassVisitor(null, textifier, null))
+
+    val fieldString = stringFromWriter(w => textifier.print(w))
+    fieldString
+        .split('\n')
+        .filterNot(_.contains("@Lscala/reflect/ScalaSignature"))
+        .find(_.contains("@L"))
+        .map(_.trim)
+  }
+
   def show {
     // It seems like @java.lang.Deprecated shows up in both the
     // Deprecated attribute and RuntimeVisibleAnnotation attribute,
@@ -31,5 +44,12 @@ object Test extends BytecodeTest {
     println(annotationsForClass("S"))
     println(annotationsForClass("C"))
     println(annotationsForClass("R"))
+
+    println(annotationsForField("Args", "x1"))
+    println(annotationsForField("Args", "x2"))
+    println(annotationsForField("Args", "x3"))
+    println(annotationsForField("Args", "x4"))
+
+    Seq(Args.x1, Args.x2, Args.x3, Args.x4) // refer the values with annotations
   }
 }
