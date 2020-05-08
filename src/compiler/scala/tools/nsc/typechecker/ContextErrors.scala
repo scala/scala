@@ -605,7 +605,7 @@ trait ContextErrors {
       def NamedAndDefaultArgumentsNotSupportedForMacros(tree: Tree, fun: Tree) =
         NormalTypeError(tree, "macro applications do not support named and/or default arguments")
 
-      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], namelessArgs: List[Tree], argPos: Array[Int]) = {
+      def TooManyArgsNamesDefaultsError(tree: Tree, fun: Tree, formals: List[Type], args: List[Tree], argPos: Array[Int]) = {
         val expected = formals.size
         val supplied = args.size
         // pick a caret. For f(k=1,i=2,j=3), argPos[0,-1,1] b/c `k=1` taken as arg0
@@ -614,27 +614,20 @@ trait ContextErrors {
           if (i < 0) tree else args(i min (supplied - 1))
         }
         val msg = {
-          val badappl = {
-            val excess = supplied - expected
-            val target = treeSymTypeMsg(fun)
+          val target = treeSymTypeMsg(fun)
+          def isAutoTuplable = AnyRefTpe <:< (if (formals.head.typeSymbol.isTypeParameter) formals.head.upperBound else formals.head)
 
-            if (expected == 0) args match {
-              case (c @ Literal(Constant(()))) :: Nil if c.hasAttachment[SyntheticUnitAttachment.type] =>
-                s"can't supply unit value with infix notation because nullary $target takes no arguments; use dotted invocation instead: ${show(treeCopy.Apply(tree, fun, Nil))}"
-              case _ => s"no arguments allowed for nullary $target"
-            } else
-              s"too many arguments ($supplied, expected $expected) for $target"
+          expected match {
+            case 0 =>
+              args match {
+                case (c @ Literal(Constant(()))) :: Nil if c.hasAttachment[SyntheticUnitAttachment.type] =>
+                  s"can't supply unit value with infix notation because nullary $target takes no arguments; use dotted invocation instead: ${show(treeCopy.Apply(tree, fun, Nil))}"
+                case _ => s"no arguments allowed for nullary $target"
+              }
+            case 1 if isTupleType(formals.head) => s"too many arguments (found $supplied, expected ${formals.head.typeArgs.size}-tuple) for $target"
+            case 1 if supplied > MaxTupleArity && isAutoTuplable => s"too many arguments (found $supplied, which exceeds the largest Tuple) for $target"
+            case _ => s"too many arguments (found $supplied, expected $expected) for $target"
           }
-          val unknowns = (namelessArgs zip args) collect {
-            case (_: Assign, NamedArg(Ident(name), _)) => name
-          }
-          val suppl =
-            unknowns.size match {
-              case 0 => ""
-              case 1 => s"\nNote that '${unknowns.head}' is not a parameter name of the invoked method."
-              case _ => unknowns.mkString("\nNote that '", "', '", "' are not parameter names of the invoked method.")
-            }
-          s"${badappl}${suppl}"
         }
         NormalTypeError(excessive, msg)
       }

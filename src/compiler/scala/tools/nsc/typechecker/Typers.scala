@@ -3694,8 +3694,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               duplErrorTree(WrongNumberOfArgsError(tree, fun))
             } else if (lencmp > 0) {
               tryTupleApply orElse duplErrorTree {
-                val (namelessArgs, argPos) = removeNames(Typer.this)(args, params)
-                TooManyArgsNamesDefaultsError(tree, fun, formals, args, namelessArgs, argPos)
+                val (_, argPos) = removeNames(Typer.this)(args, params)
+                TooManyArgsNamesDefaultsError(tree, fun, formals, args, argPos)
               }
             } else if (lencmp == 0) {
               // we don't need defaults. names were used, so this application is transformed
