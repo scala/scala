@@ -591,11 +591,12 @@ trait TypeDiagnostics {
         && !(treeTypes.exists(_.exists(_.typeSymbolDirect == m)))
       )
     def isSyntheticWarnable(sym: Symbol) = {
-      def rescindPrivateConstructorDefault: Boolean =
+      def privateSyntheticDefault: Boolean =
         cond(nme.defaultGetterToMethod(sym.name)) {
-          case nme.CONSTRUCTOR => true
+          case nme.CONSTRUCTOR => sym.owner.companion.isCaseClass
+          case nme.copy        => sym.owner.typeSignature.member(nme.copy).isSynthetic
         }
-      sym.isDefaultGetter && !rescindPrivateConstructorDefault
+      sym.isDefaultGetter && !privateSyntheticDefault
     }
     def isUnusedTerm(m: Symbol): Boolean = (
       m.isTerm
