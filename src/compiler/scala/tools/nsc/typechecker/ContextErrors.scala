@@ -622,16 +622,8 @@ trait ContextErrors {
               case (c @ Literal(Constant(()))) :: Nil if c.hasAttachment[SyntheticUnitAttachment.type] =>
                 s"can't supply unit value with infix notation because nullary $target takes no arguments; use dotted invocation instead: ${show(treeCopy.Apply(tree, fun, Nil))}"
               case _ => s"no arguments allowed for nullary $target"
-            }
-            else if (excess < 3 && expected <= 5) s"too many arguments ($supplied) for $target"
-            else if (expected > 10) s"$supplied arguments but expected $expected for $target"
-            else {
-              val more =
-                if (excess == 1) "one more argument"
-                else if (excess > 0) s"$excess more arguments"
-                else "too many arguments"
-              s"$more than can be applied to $target"
-            }
+            } else
+              s"too many arguments ($supplied, expected $expected) for $target"
           }
           val unknowns = (namelessArgs zip args) collect {
             case (_: Assign, NamedArg(Ident(name), _)) => name
