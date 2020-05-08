@@ -201,6 +201,7 @@ import scala.language.implicitConversions
  *  @define orderDependentFold
  *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
+@SerialVersionUID(4897901117128916054L)
 sealed abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]

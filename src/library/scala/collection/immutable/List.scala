@@ -487,6 +487,15 @@ case object Nil extends List[Nothing] {
 final case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
+  override private[scala] def fromAnyRefArray(arr: Array[AnyRef]) = {
+    var tail: List[B] = Nil
+    var i = arr.length-1
+    while (i >= 0) {
+      tail = new ::(arr(i).asInstanceOf[B], tail)
+      i -= 1
+    }
+    tail
+  }
 }
 
 /** $factoryInfo

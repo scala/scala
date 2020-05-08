@@ -170,4 +170,36 @@ class ListTest extends AllocationTest {
     exactAllocates(Sizes.list * 20 + Sizes.wrappedRefArray(20), "list  size 20")(
       List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
   }
+
+  @Test def emptySortNonAllocating: Unit = {
+    val empty = List.empty[String]
+    val ord = Ordering[String]
+    assertSame(Nil, nonAllocating(empty.sorted(ord)))
+  }
+  @Test def singleSortNonAllocating: Unit = {
+    val single = List("abc")
+    val ord = Ordering[String]
+    assertSame(single, nonAllocating(single.sorted(ord)))
+  }
+  @Test def dualSortSmallAllocating: Unit = {
+    val small = List("AAA", "BBB")
+    val reversed = small.reverse
+    val ord = Ordering[String]
+    assertSame(small, exactAllocates(0)(small.sorted(ord)))
+    assertEquals(small, exactAllocates(48)(reversed.sorted(ord)))
+  }
+  @Test def genSortSmall3Allocating: Unit = {
+    val small = List("AAA", "BBB", "CCC")
+    val reversed = small.reverse
+    val ord = Ordering[String]
+    assertEquals(small, exactAllocates(120)(small.sorted(ord)))
+    assertEquals(small, exactAllocates(120)(reversed.sorted(ord)))
+  }
+  @Test def genSortSmall4Allocating: Unit = {
+    val small = List("AAA", "BBB", "CCC", "DDD")
+    val reversed = small.reverse
+    val ord = Ordering[String]
+    assertEquals(small, exactAllocates(144)(small.sorted(ord)))
+    assertEquals(small, exactAllocates(144)(reversed.sorted(ord)))
+  }
 }

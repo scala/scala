@@ -646,22 +646,44 @@ trait SeqLike[+A, +Repr] extends Any with IterableLike[A, Repr] with GenSeqLike[
    */
   def sorted[B >: A](implicit ord: Ordering[B]): Repr = {
     val len = this.length
-    val b = newBuilder
-    if (len == 1) b ++= this
-    else if (len > 1) {
+    if (len < 2) {
+      val b = newBuilder
       b.sizeHint(len)
-      val arr = new Array[AnyRef](len)  // Previously used ArraySeq for more compact but slower code
-      var i = 0
-      for (x <- this) {
-        arr(i) = x.asInstanceOf[AnyRef]
-        i += 1
+      if (len > 0) b += apply(0)
+      b.result()
+    } else if (len == 2) {
+      val b = newBuilder
+      b.sizeHint(len)
+      if (ord.compare(apply(0), apply(1)) <= 0) {
+        b += apply(0)
+        b += apply(1)
+      } else {
+        b += apply(1)
+        b += apply(0)
       }
+      b.result()
+    }
+    else {
+      val arr = toArray[Any].asInstanceOf[Array[AnyRef]]
       java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
-      i = 0
-      while (i < arr.length) {
-        b += arr(i).asInstanceOf[A]
-        i += 1
-      }
+      fromAnyRefArray(arr)
+    }
+  }
+  /**
+   * constructs a new collection from an internal array
+   *
+   * @param arr the source Content is guaranteed to be compatible with this collection type.
+   *            Guaranteed to be size > 1
+   *            Guaranteed to be not exposed or shared, so can be used directly if appropriate to the receiver
+   * @return a new collection, or `this` if the content is the same, its cheap to check, and this is immutable
+   */
+  private[scala] def fromAnyRefArray(arr: Array[AnyRef]): Repr = {
+    val b = newBuilder
+    b.sizeHint(arr.length)
+    var i = 0
+    while (i < arr.length) {
+      b += arr(i).asInstanceOf[A]
+      i += 1
     }
     b.result()
   }

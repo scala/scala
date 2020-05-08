@@ -18,7 +18,6 @@ import scala.reflect.ClassTag
 import scala.collection.generic._
 import scala.collection.parallel.mutable.ParArray
 import scala.util.hashing.MurmurHash3
-
 import java.util.Arrays
 
 /**
@@ -192,6 +191,15 @@ object WrappedArray {
     def apply(index: Int): T = array(index).asInstanceOf[T]
     def update(index: Int, elem: T) { array(index) = elem }
     override def hashCode = MurmurHash3.wrappedArrayHash(array)
+    override private[scala] def fromAnyRefArray(arr: Array[AnyRef]) = {
+      val raw: Array[T] = if (array.getClass.getComponentType == arr.getClass.getComponentType) arr.asInstanceOf[Array[T]]
+      else {
+        val r = java.lang.reflect.Array.newInstance(array.getClass.getComponentType, arr.length).asInstanceOf[Array[T]]
+        System.arraycopy(arr, 0, r, 0, arr.length)
+        r
+      }
+      new ofRef[T](raw)
+    }
   }
 
   final class ofByte(val array: Array[Byte]) extends WrappedArray[Byte] with Serializable {

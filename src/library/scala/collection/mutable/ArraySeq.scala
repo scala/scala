@@ -97,7 +97,11 @@ extends AbstractSeq[A]
       override val array = cloned
     }
   }
-
+  override private[scala] def fromAnyRefArray(arr: Array[AnyRef]) = {
+    new ArraySeq[A](length) {
+      override val array = arr
+    }
+  }
 }
 
 /** $factoryInfo
