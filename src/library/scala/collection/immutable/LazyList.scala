@@ -961,14 +961,27 @@ object LazyList extends SeqFactory[LazyList] {
     }
 
     @SerialVersionUID(3L)
-    final class Cons[A](val head: A, val tail: LazyList[A]) extends State[A]
+    final class Cons[A](val head: A, tl: => LazyList[A]) extends State[A] {
+      @volatile private[this] var tlVal: LazyList[A] = _
+      @volatile private[this] var tlGen = () => tl
+      protected def tailDefined: Boolean = tlGen eq null
+      override def tail: LazyList[A] = {
+        if (!tailDefined) synchronized {
+          if (!tailDefined) {
+            tlVal = tlGen()
+            tlGen = null
+          }
+        }
+        tlVal
+      }
+    }
   }
 
   /** Creates a new LazyList. */
   @inline private def newLL[A](state: => State[A]): LazyList[A] = new LazyList[A](() => state)
 
   /** Creates a new State.Cons. */
-  @inline private def sCons[A](hd: A, tl: LazyList[A]): State[A] = new State.Cons[A](hd, tl)
+  @inline private def sCons[A](hd: A, tl: => LazyList[A]): State[A] = new State.Cons[A](hd, tl)
 
   private val anyToMarker: Any => Any = _ => Statics.pfMarker
 

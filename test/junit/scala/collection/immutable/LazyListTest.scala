@@ -224,6 +224,14 @@ class LazyListTest {
     assertEquals(0, lazeCount)
   }
 
+  @Test
+  def lazyTailConstruction(): Unit = {
+    var lazeCount = 0
+    def lazeL(i: Int) = { lazeCount += 1; i }
+    val vs = lazeL(1) #:: lazeL(2) #:: lazeL(3) #:: LazyList.empty
+    assertEquals(0, lazeCount)
+  }
+
   @Test  // Strawman issue #529
   def testLazyListMustComputeHeadOnlyOnce(): Unit = {
     var seedCounter = 0
