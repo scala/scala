@@ -848,7 +848,7 @@ private[collection] object RedBlackTree {
     }
 
   private[this] def _union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] =
-    if(t1 eq null) t2
+    if((t1 eq null) || (t1 eq t2)) t2
     else if(t2 eq null) t1
     else {
       val (l1, _, r1) = split(t1, t2.key)
@@ -859,6 +859,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] =
     if((t1 eq null) || (t2 eq null)) null
+    else if (t1 eq t2) t1
     else {
       val (l1, b, r1) = split(t1, t2.key)
       val tl = _intersect(l1, t2.left)
@@ -869,6 +870,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _difference[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] =
     if((t1 eq null) || (t2 eq null)) t1
+    else if (t1 eq t2) null
     else {
       val (l1, _, r1) = split(t1, t2.key)
       val tl = _difference(l1, t2.left)
