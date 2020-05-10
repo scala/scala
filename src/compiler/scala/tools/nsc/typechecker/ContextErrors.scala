@@ -1014,19 +1014,16 @@ trait ContextErrors {
       }
 
       def MacroAnnotationMustBeStaticError(clazz: Symbol) =
-        issueSymbolTypeError(clazz, s"macro annotation must extend scala.annotation.StaticAnnotation")
+        issueSymbolTypeError(clazz, "macro annotation must extend scala.annotation.StaticAnnotation")
 
       def MacroAnnotationCannotBeInheritedError(clazz: Symbol) =
-        issueSymbolTypeError(clazz, s"macro annotation cannot be @Inherited")
+        issueSymbolTypeError(clazz, "macro annotation cannot be @Inherited")
 
       def MacroAnnotationCannotBeMemberError(clazz: Symbol) =
-        issueSymbolTypeError(clazz, s"macro annotation cannot be a member of another class")
+        issueSymbolTypeError(clazz, "macro annotation cannot be a member of another class")
 
-      def MacroAnnotationNotExpandedMessage: String = {
-        "macro annotation could not be expanded " + (
-          if (!settings.YmacroAnnotations) "(since these are experimental, you must enable them with -Ymacro-annotations)"
-          else "(you cannot use a macro annotation in the same compilation run that defines it)")
-      }
+      def MacroAnnotationNotExpandedMessage: String =
+        "macro annotation could not be expanded (since these are experimental, you must enable them with -Ymacro-annotations)"
 
       def MacroAnnotationOnlyDefinitionError(ann: Tree) =
         issueNormalTypeError(ann, "macro annotations can only be put on definitions")

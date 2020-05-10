@@ -1,0 +1,2 @@
+@annot
+class Test
