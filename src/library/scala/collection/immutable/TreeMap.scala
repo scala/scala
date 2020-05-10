@@ -19,6 +19,7 @@ import java.io.IOException
 import generic._
 import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
+import scala.runtime.AbstractFunction2
 import scala.util.hashing.MurmurHash3
 
 /** $factoryInfo
@@ -36,16 +37,18 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
     extends RB.MapHelper[A, B]
       with Builder[(A, B), TreeMap[A, B]] {
     type Tree = RB.Tree[A, B]
-    private [this] var tree:Tree = null
+    private var tree:Tree = null
 
     def +=(elem: (A, B)): this.type = {
       tree = mutableUpd(tree, elem._1, elem._2)
       this
     }
-    private object adder extends Function2[A, B, Unit] {
-      var accumulator :Tree = null
+    private object adder extends AbstractFunction2[A, B, Unit] {
+      // we cache tree to avoid the outer access to tree
+      // in the hot path (apply)
+      private[this] var accumulator :Tree = null
       def addForEach(aTree:Tree, hasForEach: HasForeachEntry[A, B]): Tree = {
-        accumulator = aTree
+        accumulator = tree
         hasForEach.foreachEntry(this)
         val result = accumulator
         // be friendly to GC
@@ -54,7 +57,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
       }
 
       override def apply(key: A, value: B): Unit = {
-        accumulator = RB.update(accumulator, key, value, overwrite = true)
+        accumulator = mutableUpd(accumulator, key, value)
       }
     }
 
@@ -64,7 +67,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
         // for the moment we have to force immutability before the union
         // which will waste some time and space
         // calling `beforePublish` makes `tree` immutable
-        case ts: TreeMap[A, B] if ts.ordering eq ordering =>
+        case ts: TreeMap[A, B] if ts.ordering == ordering =>
           if (tree eq null) tree = ts.tree0
           else tree = RB.union(beforePublish(tree), ts.tree0)
         case that: HasForeachEntry[A, B] =>
