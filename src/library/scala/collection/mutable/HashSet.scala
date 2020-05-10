@@ -307,27 +307,6 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
     this
   }
 
-  /*
-  private[mutable] def checkTable(): Unit = {
-    var i = 0
-    var count = 0
-    var prev: Node[A] = null
-    while(i < table.length) {
-      var n = table(i)
-      prev = null
-      while(n != null) {
-        count += 1
-        assert(index(n.hash) == i)
-        if(prev ne null) assert(prev.hash <= n.hash)
-        prev = n
-        n = n.next
-      }
-      i += 1
-    }
-    assert(contentSize == count)
-  }
-  */
-
   private[this] def tableSizeFor(capacity: Int) =
     (Integer.highestOneBit((capacity-1).max(4))*2).min(1 << 30)
 
