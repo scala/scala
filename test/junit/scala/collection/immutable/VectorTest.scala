@@ -371,6 +371,11 @@ class VectorTest {
   }
 
   @Test
+  def testSlice3: Unit = {
+    assertEquals(Vector(1).slice(1, -2147483648), Vector())
+  }
+
+  @Test
   def testTail: Unit = for(size <- verySmallSizes) {
     var i = 0
     var v = Vector.range(0, size)
