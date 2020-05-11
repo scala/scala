@@ -284,7 +284,7 @@ trait SeqOps[+A, +CC[_], +C] extends Any
     * @param    idx     the index to test
     * @return   `true` if this $coll contains an element at position `idx`, `false` otherwise.
     */
-  def isDefinedAt(idx: Int): Boolean = (idx >= 0) && (idx < length)
+  def isDefinedAt(idx: Int): Boolean = idx >= 0 && lengthIs > idx
 
   /** A copy of this $coll with an element value appended until a given target length is reached.
    *
