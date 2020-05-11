@@ -1049,7 +1049,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     /** The root node of the partially build hashmap */
     private var rootNode: HashMap[A, B] = HashMap.empty
-    private def plusPlusMerger = liftMerger[A, B](null)
+    private def plusPlusMerger = liftMerger[A, B](null).invert
     private def isMutable(hs: HashMap[A, B]) = {
       hs.isInstanceOf[HashTrieMap[A, B]] && hs.size == -1
     }

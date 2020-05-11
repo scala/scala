@@ -243,4 +243,30 @@ class HashMapTest extends AllocationTest {
       }
     }
   }
+  @Test
+  def `++_1`(): Unit = {
+    val m1 = Map[Any, Int] (
+      1 -> 1,
+      2 -> 1,
+      3 -> 1,
+      4 -> 1,
+      5 -> 1
+      )
+    val m2 = Map[Int, Int] (2->2)
+    //calls TraversableLike.++
+    assertEquals(1, (m2 ++ m1).apply(2))
+  }
+  @Test
+  def `++_2`(): Unit = {
+    val m1 = Map[Int, Int] (
+      1 -> 1,
+      2 -> 1,
+      3 -> 1,
+      4 -> 1,
+      5 -> 1
+      )
+    val m2 = Map[Int, Int] (2->2)
+    //calls GenTraversableOnce.++
+    assertEquals(1, (m2 ++ m1).apply(2))
+  }
 }
