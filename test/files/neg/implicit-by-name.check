@@ -1,0 +1,4 @@
+implicit-by-name.scala:2: error: implicit parameters may not be call-by-name
+  implicit def reverseOrd[A](implicit ord: => Ordering[A]): Ordering[A] =
+                                      ^
+one error found

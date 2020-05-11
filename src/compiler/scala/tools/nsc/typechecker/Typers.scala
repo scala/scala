@@ -2336,9 +2336,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           StarWithDefaultError(meth)
 
         if (!isPastTyper) {
-          for (pp <- meth.paramss ; p <- pp){
+          for (pp <- meth.paramss; p <- pp) {
+            if (p.isImplicit && p.isByNameParam) ImplicitByNameError(p)
             for (n <- p.deprecatedParamName) {
-              if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.exists(_ == n))))
+              if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.contains(n))))
                 DeprecatedParamNameError(p, n)
             }
           }

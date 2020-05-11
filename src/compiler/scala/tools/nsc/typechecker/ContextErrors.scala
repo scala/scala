@@ -302,6 +302,9 @@ trait ContextErrors {
       def InvalidConstructorDefError(ddef: Tree) =
         issueNormalTypeError(ddef, "constructor definition not allowed here")
 
+      def ImplicitByNameError(param: Symbol) =
+        issueSymbolTypeError(param, "implicit parameters may not be call-by-name")
+
       def DeprecatedParamNameError(param: Symbol, name: Name) =
         issueSymbolTypeError(param, "deprecated parameter name "+ name +" has to be distinct from any other parameter name (deprecated or not).")
 
