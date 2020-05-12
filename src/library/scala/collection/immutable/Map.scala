@@ -108,7 +108,9 @@ object Map extends ImmutableMapFactory[Map] {
     override def contains(key: Any) = false
     def get(key: Any): Option[Nothing] = None
     override def getOrElse [V1](key: Any, default: => V1): V1 = default
-    def iterator: Iterator[(Any, Nothing)] = Iterator.empty
+    override def iterator: Iterator[(Any, Nothing)] = Iterator.empty
+    override def keysIterator: Iterator[Any] = Iterator.empty
+    override def valuesIterator: Iterator[Nothing] = Iterator.empty
     override def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def + [V1](kv: (Any, V1)): Map[Any, V1] = updated(kv._1, kv._2)
     override def ++[V1 >: Nothing](xs: GenTraversableOnce[(Any, V1)]): Map[Any, V1] = ++[(Any, V1), Map[Any, V1]](xs)(Map.canBuildFrom[Any, V1])
@@ -136,6 +138,24 @@ object Map extends ImmutableMapFactory[Map] {
     override def hashCode: Int = MurmurHash3.emptyMapHash
     override private[immutable] def foreachEntry[U](f: (Any, Nothing) => U): Unit = ()
   }
+  @SerialVersionUID(3L)
+  private abstract class MapNIterator[T]() extends AbstractIterator[T] with Serializable {
+    private[this] var current = 0
+    def hasNext = current < size
+    def apply(i: Int): T
+    def size: Int
+    def next(): T =
+      if (hasNext) {
+        val r = apply(current)
+        current += 1
+        r
+      } else Iterator.empty.next()
+
+    override def drop(n: Int): Iterator[T] = {
+      if (n > 0) current = Math.min(current + n, size)
+      this
+    }
+  }
 
   @SerialVersionUID(-9131943191104946031L)
   class Map1[K, +V](key1: K, value1: V) extends AbstractMap[K, V] with Map[K, V] with Serializable with HasForeachEntry[K, V] {
@@ -146,7 +166,9 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) Some(value1) else None
     override def getOrElse [V1 >: V](key: K, default: => V1): V1 =
       if (key == key1) value1 else default
-    def iterator = Iterator((key1, value1))
+    override def iterator = Iterator.single((key1, value1))
+    override def keysIterator: Iterator[K] = Iterator.single(key1)
+    override def valuesIterator: Iterator[V] = Iterator.single(value1)
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
@@ -198,7 +220,17 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) value1
       else if (key == key2) value2
       else default
-    def iterator = Iterator((key1, value1), (key2, value2))
+    //we have to insert these additional methods to avoid the compiler rewriting the field names and changing binary format
+    private def _getKey(i: Int) = i match { case 0 => key1 case 1 => key2}
+    private def _getValue(i: Int) = i match { case 0 => value1 case 1 => value2}
+    private abstract class Map2Iterator[T] extends MapNIterator[T]{
+      final def getKey(i: Int) = _getKey(i)
+      final def getValue(i: Int) = _getValue(i)
+      override final def size = 2
+    }
+    override def iterator: Iterator[(K,V)] = new Map2Iterator[(K,V)] {def apply(i: Int) = (getKey(i), getValue(i))}
+    override def keysIterator: Iterator[K] = new Map2Iterator[K] {def apply(i: Int) = getKey(i)}
+    override def valuesIterator: Iterator[V] = new Map2Iterator[V] {def apply(i: Int) = getValue(i)}
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1) new Map2(key1, value, key2, value2)
       else if (key == key2) new Map2(key1, value1, key2, value)
@@ -273,7 +305,17 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key2) value2
       else if (key == key3) value3
       else default
-    def iterator = Iterator((key1, value1), (key2, value2), (key3, value3))
+    //we have to insert these additional methods to avoid the compiler rewriting the field names and changing binary format
+    private def _getKey(i: Int) = i match { case 0 => key1 case 1 => key2 case 2 => key3}
+    private def _getValue(i: Int) = i match { case 0 => value1 case 1 => value2  case 2 => value3}
+    private abstract class Map3Iterator[T] extends MapNIterator[T]{
+      final def getKey(i: Int) = _getKey(i)
+      final def getValue(i: Int) = _getValue(i)
+      override final def size = 3
+    }
+    override def iterator: Iterator[(K,V)] = new Map3Iterator[(K,V)] {def apply(i: Int) = (getKey(i), getValue(i))}
+    override def keysIterator: Iterator[K] = new Map3Iterator[K] {def apply(i: Int) = getKey(i)}
+    override def valuesIterator: Iterator[V] = new Map3Iterator[V] {def apply(i: Int) = getValue(i)}
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map3(key1, value, key2, value2, key3, value3)
       else if (key == key2) new Map3(key1, value1, key2, value, key3, value3)
@@ -361,7 +403,17 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key3) value3
       else if (key == key4) value4
       else default
-    def iterator = Iterator((key1, value1), (key2, value2), (key3, value3), (key4, value4))
+    //we have to insert these additional methods to avoid the compiler rewriting the field names and changing binary format
+    private def _getKey(i: Int) = i match { case 0 => key1 case 1 => key2 case 2 => key3 case 3 => key4 }
+    private def _getValue(i: Int) = i match { case 0 => value1 case 1 => value2  case 2 => value3 case 3 => value4}
+    private abstract class Map4Iterator[T] extends MapNIterator[T]{
+      final def getKey(i: Int) = _getKey(i)
+      final def getValue(i: Int) = _getValue(i)
+      override final def size = 4
+    }
+    override def iterator: Iterator[(K,V)] = new Map4Iterator[(K,V)] {def apply(i: Int) = (getKey(i), getValue(i))}
+    override def keysIterator: Iterator[K] = new Map4Iterator[K] {def apply(i: Int) = getKey(i)}
+    override def valuesIterator: Iterator[V] = new Map4Iterator[V] {def apply(i: Int) = getValue(i)}
     override def updated [V1 >: V] (key: K, value: V1): Map[K, V1] =
       if (key == key1)      new Map4(key1, value, key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map4(key1, value1, key2, value, key3, value3, key4, value4)

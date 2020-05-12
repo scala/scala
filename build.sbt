@@ -343,6 +343,11 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size0_="),
     ProblemFilters.exclude[FinalMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size"),
 
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$MapNIterator"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$Map2$Map2Iterator"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$Map3$Map3Iterator"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.Map$Map4$Map4Iterator"),
+
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedMapFactory#SortedMapCanBuildFrom.factory"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.factory"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
