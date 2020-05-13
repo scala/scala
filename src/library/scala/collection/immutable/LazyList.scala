@@ -216,21 +216,19 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     with Serializable {
   import LazyList._
 
-  @volatile private[this] var evaluationState: Int = Unevaluated
-  @inline private def stateEvaluated: Boolean = evaluationState > 0
+  @inline private def stateEvaluated: Boolean = lazyState eq null
   @inline private def stateDefined: Boolean = stateEvaluated
+  @inline private def midEvaluation: Boolean = lazyState.ne(null) && lazyState.eq(midState)
 
   private lazy val state: State[A] = {
-    // if it's already mid-evaluation, we're stuck in an infinite
-    // self-referential loop (also it's empty)
-    if (evaluationState != Unevaluated)
+    // avoid recursion
+    if (midEvaluation)
       throw new RuntimeException("self-referential LazyList or a derivation thereof has no more elements")
-    evaluationState = Midevaluated
-    val res = try lazyState() finally evaluationState = Unevaluated
-    // if we set it to `true` before evaluating, we may infinite loop
-    // if something expects `state` to already be evaluated
-    evaluationState = Evaluated
-    lazyState = null // allow GC
+    val lazyState0 = lazyState
+    lazyState = midState
+    val res = try lazyState0() catch { case t: Throwable => lazyState = lazyState0 ; throw t }
+    // state computation by lazyState may test stateEvaluated, which becomes true now
+    lazyState = null
     res
   }
 
@@ -940,11 +938,6 @@ object LazyList extends SeqFactory[LazyList] {
   // Eagerly evaluate cached empty instance
   private[this] val _empty = newLL(State.Empty).force
 
-  // states of State
-  private final val Unevaluated  = -1
-  private final val Midevaluated = 0
-  private final val Evaluated    = 1
-
   private sealed trait State[+A] extends Serializable {
     def head: A
     def tail: LazyList[A]
@@ -981,6 +974,8 @@ object LazyList extends SeqFactory[LazyList] {
   @inline private def sCons[A](hd: A, tl: => LazyList[A]): State[A] = new State.Cons[A](hd, tl)
 
   private val anyToMarker: Any => Any = _ => Statics.pfMarker
+
+  private val midState: () => State[Nothing] = () => State.Empty
 
   /* All of the following `<op>Impl` methods are carefully written so as not to
    * leak the beginning of the `LazyList`. They copy the initial `LazyList` (`ll`) into
