@@ -228,8 +228,11 @@ class LazyListTest {
   def lazyTailConstruction(): Unit = {
     var lazeCount = 0
     def lazeL(i: Int) = { lazeCount += 1; i }
-    val vs = lazeL(1) #:: lazeL(2) #:: lazeL(3) #:: LazyList.empty
+    def z = { lazeCount += 1; LazyList.empty }
+    val vs = lazeL(1) #:: z
     assertEquals(0, lazeCount)
+    assertFalse(vs.isEmpty)
+    assertEquals(1, lazeCount)   // was: 2
   }
 
   @Test  // Strawman issue #529
