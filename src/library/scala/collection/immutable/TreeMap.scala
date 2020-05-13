@@ -123,6 +123,11 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
   }
 
   def get(key: K): Option[V] = RB.get(tree, key)
+  override def getOrElse[V1 >: V](key: K, default: => V1): V1 = {
+    val resultOrNull = RB.lookup(tree, key)
+    if (resultOrNull eq null) default
+    else resultOrNull.value
+  }
 
   def removed(key: K): TreeMap[K,V] =
     newMapOrSelf(RB.delete(tree, key))
