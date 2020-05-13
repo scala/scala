@@ -309,12 +309,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *  unless the `f` throws an exception.
     */
   @tailrec
-  override def foreach[U](f: A => U): Unit = {
+  override def foreach[U](f: A => U): Unit =
     if (!isEmpty) {
       f(head)
       tail.foreach(f)
     }
-  }
 
   /** LazyList specialization of foldLeft which allows GC to collect along the
     * way.
@@ -569,7 +568,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
-  override def zipAll[A1 >: A, B](that: collection.Iterable[B], thisElem: A1, thatElem: B): LazyList[(A1, B)] = {
+  override def zipAll[A1 >: A, B](that: collection.Iterable[B], thisElem: A1, thatElem: B): LazyList[(A1, B)] =
     if (this.knownIsEmpty) {
       if (that.knownSize == 0) LazyList.empty
       else LazyList.continually(thisElem) zip that
@@ -577,9 +576,8 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       if (that.knownSize == 0) zip(LazyList.continually(thatElem))
       else newLL(zipAllState(that.iterator, thisElem, thatElem))
     }
-  }
 
-  private def zipAllState[A1 >: A, B](it: Iterator[B], thisElem: A1, thatElem: B): State[(A1, B)] = {
+  private def zipAllState[A1 >: A, B](it: Iterator[B], thisElem: A1, thatElem: B): State[(A1, B)] =
     if (it.hasNext) {
       if (this.isEmpty) sCons((thisElem, it.next()), newLL { LazyList.continually(thisElem) zipState it })
       else sCons((this.head, it.next()), newLL { this.tail.zipAllState(it, thisElem, thatElem) })
@@ -587,7 +585,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       if (this.isEmpty) State.Empty
       else sCons((this.head, thatElem), this.tail zip LazyList.continually(thatElem))
     }
-  }
 
   /** @inheritdoc
     *
@@ -638,7 +635,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $initiallyLazy
     */
-  override def dropRight(n: Int): LazyList[A] = {
+  override def dropRight(n: Int): LazyList[A] =
     if (n <= 0) this
     else if (knownIsEmpty) LazyList.empty
     else newLL {
@@ -651,7 +648,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
       }
       dropRightState(scout)
     }
-  }
 
   private def dropRightState(scout: LazyList[_]): State[A] =
     if (scout.isEmpty) State.Empty
@@ -665,13 +661,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (knownIsEmpty) LazyList.empty
     else (takeImpl(n): @inline)
 
-  private def takeImpl(n: Int): LazyList[A] = {
+  private def takeImpl(n: Int): LazyList[A] =
     if (n <= 0) LazyList.empty
     else newLL {
       if (isEmpty) State.Empty
       else sCons(head, tail.takeImpl(n - 1))
     }
-  }
 
   /** @inheritdoc
     *
@@ -764,13 +759,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     *
     * $preservesLaziness
     */
-  override def padTo[B >: A](len: Int, elem: B): LazyList[B] = {
+  override def padTo[B >: A](len: Int, elem: B): LazyList[B] =
     if (len <= 0) this
     else newLL {
       if (isEmpty) LazyList.fill(len)(elem).state
       else sCons(head, tail.padTo(len - 1, elem))
     }
-  }
 
   /** @inheritdoc
     *
@@ -802,13 +796,12 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     if (index < 0) throw new IndexOutOfBoundsException(s"$index")
     else updatedImpl(index, elem, index)
 
-  private def updatedImpl[B >: A](index: Int, elem: B, startIndex: Int): LazyList[B] = {
+  private def updatedImpl[B >: A](index: Int, elem: B, startIndex: Int): LazyList[B] =
     newLL {
       if (index <= 0) sCons(elem, tail)
       else if (tail.isEmpty) throw new IndexOutOfBoundsException(startIndex.toString)
       else sCons(head, tail.updatedImpl(index - 1, elem, startIndex))
     }
-  }
 
   /** Appends all elements of this $coll to a string builder using start, end, and separator strings.
     *  The written text begins with the string `start` and ends with the string `end`.
