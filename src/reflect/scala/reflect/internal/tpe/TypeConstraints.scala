@@ -100,8 +100,8 @@ private[internal] trait TypeConstraints {
       *  guarding addLoBound/addHiBound somehow broke raw types so it
       *  only guards against being created with them.]
       */
-    private[this] var lobounds = lo0 filterNot typeIsNothing
-    private[this] var hibounds = hi0 filterNot typeIsAnyOrJavaObject
+    private[this] var lobounds = lo0 filterNot (_.isNothing)
+    private[this] var hibounds = hi0 filterNot (_.isAny)
     private[this] var numlo = numlo0
     private[this] var numhi = numhi0
     private[this] var avoidWidening = avoidWidening0
@@ -181,7 +181,7 @@ private[internal] trait TypeConstraints {
 
     override def toString = {
       val boundsStr = {
-        val lo = loBounds filterNot typeIsNothing match {
+        val lo = loBounds filterNot (_.isNothing) match {
           case Nil       => ""
           case tp :: Nil => " >: " + tp
           case tps       => tps.mkString(" >: (", ", ", ")")
