@@ -19,7 +19,7 @@ import java.lang.{StringBuilder => JStringBuilder}
 
 import scala.annotation.tailrec
 import scala.collection.generic.SerializeEnd
-import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder, StringBuilder}
+import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder}
 import scala.language.implicitConversions
 import scala.runtime.Statics
 
@@ -216,21 +216,20 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     with Serializable {
   import LazyList._
 
-  @volatile private[this] var stateEvaluated: Boolean = false
+  @volatile private[this] var evaluationState: Int = Unevaluated
+  @inline private def stateEvaluated: Boolean = evaluationState > 0
   @inline private def stateDefined: Boolean = stateEvaluated
-  private[this] var midEvaluation = false
 
   private lazy val state: State[A] = {
     // if it's already mid-evaluation, we're stuck in an infinite
     // self-referential loop (also it's empty)
-    if (midEvaluation) {
+    if (evaluationState != Unevaluated)
       throw new RuntimeException("self-referential LazyList or a derivation thereof has no more elements")
-    }
-    midEvaluation = true
-    val res = try lazyState() finally midEvaluation = false
+    evaluationState = Midevaluated
+    val res = try lazyState() finally evaluationState = Unevaluated
     // if we set it to `true` before evaluating, we may infinite loop
     // if something expects `state` to already be evaluated
-    stateEvaluated = true
+    evaluationState = Evaluated
     lazyState = null // allow GC
     res
   }
@@ -940,6 +939,11 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 object LazyList extends SeqFactory[LazyList] {
   // Eagerly evaluate cached empty instance
   private[this] val _empty = newLL(State.Empty).force
+
+  // states of State
+  private final val Unevaluated  = -1
+  private final val Midevaluated = 0
+  private final val Evaluated    = 1
 
   private sealed trait State[+A] extends Serializable {
     def head: A
