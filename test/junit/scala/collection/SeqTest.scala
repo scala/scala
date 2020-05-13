@@ -3,7 +3,9 @@ package scala.collection
 import org.junit.Assert._
 import org.junit.Test
 
-class SeqTest {
+import scala.tools.testkit.AllocationTest
+
+class SeqTest extends AllocationTest {
 
   @Test def `t9936 indexWhere`(): Unit = {
     assertEquals(2, "abcde".indexOf('c', -1))
@@ -87,5 +89,10 @@ class SeqTest {
     assert(s.lengthIs >= 2)
     assert(s.lengthIs > 2)
     assert(s.lengthIs != 2)
+  }
+
+  @Test def emptyNonAllocating(): Unit = {
+    nonAllocating(Seq.empty)
+    nonAllocating(Seq())
   }
 }
