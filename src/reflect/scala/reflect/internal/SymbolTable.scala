@@ -496,8 +496,9 @@ abstract class SymbolTable extends macros.Universe
   }
   var nextFrom: Array[InfoTransformer] = null
 
+  private final val MaxPhases = 256
   /** The phase which has given index as identifier. */
-  val phaseWithId: Array[Phase]
+  final val phaseWithId: Array[Phase] = Array.fill(MaxPhases)(NoPhase)
 
   /** Is this symbol table a part of a compiler universe?
    */

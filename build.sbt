@@ -314,7 +314,11 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorMap$Tombstone$NextOfKin$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorMap$Tombstone$Kinless$"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorMap$Tombstone$"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap#Tombstone.unapply")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap#Tombstone.unapply"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.scala$reflect$runtime$ReflectSetup$_setter_$phaseWithId_="),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
   ),
 }
 
