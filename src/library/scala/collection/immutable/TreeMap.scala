@@ -258,6 +258,11 @@ final class TreeMap[K, +V] private (private val tree: RB.Tree[K, V])(implicit va
     else new TreeMap(t2)
   }
 
+  override def equals(obj: Any): Boolean = obj match {
+    case that: TreeMap[K, V] if ordering == that.ordering => RB.entriesEqual(tree, that.tree0)
+    case _ => super.equals(obj)
+  }
+
   override protected[this] def className = "TreeMap"
 }
 
