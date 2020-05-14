@@ -94,7 +94,12 @@ final class HashSet[A] private[immutable](private[immutable] val rootNode: Bitma
   override def concat(that: IterableOnce[A]): HashSet[A] =
     that match {
       case hs: HashSet[A] =>
-        newHashSetOrThis(rootNode.concat(hs.rootNode, 0))
+        if (isEmpty) hs
+        else {
+          val newNode = rootNode.concat(hs.rootNode, 0)
+          if (newNode eq hs.rootNode) hs
+          else newHashSetOrThis(newNode)
+        }
       case hs: collection.mutable.HashSet[A] =>
         val iter = hs.nodeIterator
         var current = rootNode

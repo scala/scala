@@ -162,7 +162,13 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
   }
 
   override def concat[V1 >: V](that: scala.IterableOnce[(K, V1)]): HashMap[K, V1] = that match {
-    case hm: HashMap[K, V1] => newHashMapOrThis(rootNode.concat(hm.rootNode, 0))
+    case hm: HashMap[K, V1] =>
+      if (isEmpty) hm
+      else {
+        val newNode = rootNode.concat(hm.rootNode, 0)
+        if (newNode eq hm.rootNode) hm
+        else newHashMapOrThis(rootNode.concat(hm.rootNode, 0))
+      }
     case hm: collection.mutable.HashMap[K, V] =>
       val iter = hm.nodeIterator
       var current = rootNode
@@ -185,7 +191,7 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
       }
       this
     case _ =>
-      object accum extends AbstractFunction2[K, V1, Unit] with Function1[(K, V1), Unit] {
+      class accum extends AbstractFunction2[K, V1, Unit] with Function1[(K, V1), Unit] {
         var changed = false
         var shallowlyMutableNodeMap: Int = 0
         var current: BitmapIndexedMapNode[K, V1] = rootNode
@@ -213,10 +219,22 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
         }
       }
       that match {
-        case thatMap: Map[K, V1] => thatMap.foreachEntry(accum)
-        case _ => that.iterator.foreach(accum)
+        case thatMap: Map[K, V1] =>
+          if (thatMap.isEmpty) this
+          else {
+            val accum = new accum
+            thatMap.foreachEntry(accum)
+            newHashMapOrThis(accum.current)
+          }
+        case _ =>
+          val it = that.iterator
+          if (it.isEmpty) this
+          else {
+            val accum = new accum
+            it.foreach(accum)
+            newHashMapOrThis(accum.current)
+          }
       }
-      newHashMapOrThis(accum.current)
   }
 
   override def tail: HashMap[K, V] = this - head._1
