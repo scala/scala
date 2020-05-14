@@ -4491,7 +4491,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       Option.when(acceptsApplyDynamicWithType(qual, name)) {
-        def matches(t: Tree) = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
+        def matches(t: Tree) = isDesugaredApply || treeInfo.dissectCore(t) == treeSelection
 
         /* Note that the trees which arrive here are potentially some distance from
          * the trees of direct interest. `cxTree` is some enclosing expression which
