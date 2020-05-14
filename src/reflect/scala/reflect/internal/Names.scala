@@ -68,7 +68,8 @@ trait Names extends api.Names {
    */
   private def equals(index: Int, cs: Array[Char], offset: Int, len: Int): Boolean = {
     var i = 0
-    while ((i < len) && (_chrs(index + i) == cs(offset + i)))
+    val chrs = _chrs
+    while ((i < len) && (chrs(index + i) == cs(offset + i)))
       i += 1
     i == len
   }
@@ -295,7 +296,8 @@ trait Names extends api.Names {
      */
     final def pos(c: Char, start: Int): Int = {
       var i = start
-      while (i < len && _chrs(index + i) != c) i += 1
+      val chrs = _chrs
+      while (i < len && chrs(index + i) != c) i += 1
       i
     }
 
@@ -310,9 +312,10 @@ trait Names extends api.Names {
       var i = pos(s.charAt(0), start)
       val sLen = s.length()
       if (sLen == 1) return i
+      val chrs = _chrs
       while (i + sLen <= len) {
         var j = 1
-        while (s.charAt(j) == _chrs(index + i + j)) {
+        while (s.charAt(j) == chrs(index + i + j)) {
           j += 1
           if (j == sLen) return i
         }
@@ -338,7 +341,8 @@ trait Names extends api.Names {
      */
     final def lastPos(c: Char, start: Int): Int = {
       var i = start
-      while (i >= 0 && _chrs(index + i) != c) i -= 1
+      val chrs = _chrs
+      while (i >= 0 && chrs(index + i) != c) i -= 1
       i
     }
 
@@ -347,16 +351,18 @@ trait Names extends api.Names {
 
     /** Does this name start with prefix at given start index? */
     final def startsWith(prefix: Name, start: Int): Boolean = {
+      val chrs = _chrs
       var i = 0
       while (i < prefix.length && start + i < len &&
-             _chrs(index + start + i) == _chrs(prefix.start + i))
+             chrs(index + start + i) == chrs(prefix.start + i))
         i += 1
       i == prefix.length
     }
     final def startsWith(prefix: String, start: Int): Boolean = {
+      val chrs = _chrs
       var i = 0
       while (i < prefix.length && start + i < len &&
-             _chrs(index + start + i) == prefix.charAt(i))
+             chrs(index + start + i) == prefix.charAt(i))
         i += 1
       i == prefix.length
     }
@@ -367,15 +373,17 @@ trait Names extends api.Names {
     /** Does this name end with suffix just before given end index? */
     final def endsWith(suffix: Name, end: Int): Boolean = {
       var i = 1
+      val chrs = _chrs
       while (i <= suffix.length && i <= end &&
-             _chrs(index + end - i) == _chrs(suffix.start + suffix.length - i))
+             chrs(index + end - i) == chrs(suffix.start + suffix.length - i))
         i += 1
       i > suffix.length
     }
     final def endsWith(suffix: String, end: Int): Boolean = {
       var i = 1
+      val chrs = _chrs
       while (i <= suffix.length && i <= end &&
-             _chrs(index + end - i) == suffix.charAt(suffix.length - i))
+             chrs(index + end - i) == suffix.charAt(suffix.length - i))
         i += 1
       i > suffix.length
     }
@@ -390,8 +398,9 @@ trait Names extends api.Names {
     final def containsChar(ch: Char): Boolean = {
       var i = index
       val max = index + len
+      val chrs = _chrs
       while (i < max) {
-        if (_chrs(i) == ch)
+        if (chrs(i) == ch)
           return true
         i += 1
       }
