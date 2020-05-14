@@ -78,7 +78,8 @@ trait AllocationTest {
     //warmup
     for (i <- 0 until execution.warmupCount) {
       val actual = fn
-      assertEquals(s"warmup at index $i $expected $actual", expected, actual)
+      if (!expected.equals(actual))
+        fail(s"warmup at index $i $expected $actual")
     }
 
    //test
@@ -88,7 +89,8 @@ trait AllocationTest {
       val actual = fn
       val after = allocationCounter.getThreadAllocatedBytes(id)
       counts(i) = after - cost - before
-      assertEquals(s"at index $i $expected $actual", expected, actual)
+      if (!expected.equals(actual)) // OPT: Avoid creating the message string when equals
+        fail(s"at index $i $expected $actual")
     }
     AllocationInfo(expected, counts)
   }
