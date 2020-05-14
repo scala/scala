@@ -192,13 +192,13 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.*"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.findLeftMostOrPopOnEmpty"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.popNext"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead_="),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.goRight"),
-
 
     ////////////////////////////////////////////////////////////////////////////// Vector backward compatiblity
 
