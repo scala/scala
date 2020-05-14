@@ -163,7 +163,7 @@ class LazyListTest {
     cyc.tail.tail.head
     assertEquals("LazyList(1, 2, 3, <not computed>)", cyc.toString)
     cyc.tail.tail.tail.head
-    assertEquals("LazyList(1, 2, 3, 4, <cycle>)", cyc.toString)
+    assertEquals("LazyList(1, 2, 3, 4, <not computed>)", cyc.toString)
     cyc.tail.tail.tail.tail.head
     assertEquals("LazyList(1, 2, 3, 4, <cycle>)", cyc.toString)
   }

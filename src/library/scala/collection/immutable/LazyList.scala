@@ -1117,7 +1117,7 @@ object LazyList extends SeqFactory[LazyList] {
     /** Construct a LazyList consisting of a given first element followed by elements
       *  from another LazyList.
       */
-    def #:: [B >: A](elem: => B): LazyList[B] = newLL(sCons(elem, l()))
+    def #:: [B >: A](elem: => B): LazyList[B] = newLL(sCons(elem, newLL(l().state)))
     /** Construct a LazyList consisting of the concatenation of the given LazyList and
       *  another LazyList.
       */
