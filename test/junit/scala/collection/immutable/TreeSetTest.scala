@@ -98,15 +98,16 @@ class TreeSetTest extends AllocationTest {
 
   @Test def keysEqualSimple: Unit = {
     val tree = TreeMap(1 -> "a", 2 -> "b", 3 -> "c")
-    assertEquals(Set(1,2,3), tree.keySet)
+    assertEquals(Set(1, 2, 3), tree.keySet)
     val tree2 = TreeMap(1 -> "x", 2 -> "y", 3 -> "z")
     assertEquals(tree2.keySet, tree.keySet)
-    val tree3 = TreeSet(1,2,3)
+    val tree3 = TreeSet(1, 2, 3)
     assertEquals(tree3, tree.keySet)
     assertEquals(tree.keySet, tree3)
   }
+
   @Test def valuesEqual: Unit = {
-    val data = (Array.tabulate(1000) { i => i.toString}).sorted
+    val data = (Array.tabulate(1000) { i => i.toString }).sorted
     val expectedData = data.drop(30)
 
     Collections.shuffle(util.Arrays.asList(data))
@@ -117,6 +118,7 @@ class TreeSetTest extends AllocationTest {
     assertEquals(tree1, tree1)
     assertEquals(tree1, tree2)
   }
+
   @Test def keysFromMapEqualFastPath: Unit = {
     class V(s: String) {
 
@@ -126,13 +128,14 @@ class TreeSetTest extends AllocationTest {
       }
     }
     val b1 = TreeMap.newBuilder[String, V]
-    for ( i <- 10 to 1000) {
+    for (i <- 10 to 1000) {
       b1 += s"$i" -> new V(s"$i value")
     }
     val tree1 = b1.result()
 
     assertEquals(tree1.drop(5).keySet, tree1.drop(5).keySet)
   }
+
   @Test def equalFastPath: Unit = {
     var compareCount = 0
     class K(val s: String) extends Ordered[K] {
@@ -175,7 +178,7 @@ class TreeSetTest extends AllocationTest {
   }
 
   @Test
-  def plusWithContains() {
+  def plusWithContains(): Unit = {
     val data = Array.tabulate(1000)(i => s"${i}Value")
     val tree = (TreeSet.newBuilder[String] ++= data).result
 
@@ -184,14 +187,74 @@ class TreeSetTest extends AllocationTest {
         assertSame(tree, nonAllocating(tree + k))
     }
   }
+
   @Test
-  def plusWithContainsFromMap() {
+  def plusWithContainsFromMap(): Unit = {
     val data = Array.tabulate(1000)(i => s"${i}Key" -> s"${i}Value")
     val tree = (TreeMap.newBuilder[String, String] ++= data).result.keySet
 
     data foreach {
       case (k, v) =>
         assertSame(tree, nonAllocating(tree + k))
+    }
+  }
+
+  @Test def consistentEquals: Unit = {
+    class K(val s: String) extends Ordered[K] {
+      override def toString: String = s"K-$s"
+
+      override def compare(that: K): Int = {
+        fail("compare should not be called  - should be handled by the custom ordering")
+        0
+      }
+      override def hashCode(): Int = s.hashCode
+
+      override def equals(obj: Any): Boolean = obj match {
+        case k:K => k.s == this.s
+        case _ => false
+      }
+    }
+    class CustomOrder(val selfEqual: Boolean) extends Ordering[K] {
+      override def compare(x: K, y: K): Int = x.s compareTo y.s
+
+      override def equals(obj: Any): Boolean = obj match {
+        case c: CustomOrder => (c eq this) || this.selfEqual && c.selfEqual
+        case _ => false
+      }
+    }
+    val o1 = new CustomOrder(true)
+    val o2_1 = new CustomOrder(false)
+    val o2_2 = new CustomOrder(false)
+
+    val b1_1 = TreeSet.newBuilder[K](o1)
+    val b1_2 = TreeSet.newBuilder[K](o1)
+
+    val b2_1 = TreeSet.newBuilder[K](o2_1)
+    val b2_2 = TreeSet.newBuilder[K](o2_2)
+
+    val bHash = HashSet.newBuilder[K]
+    for (i <- 1 to 10) {
+      b1_1 += new K(i.toString)
+      b1_2 += new K(i.toString)
+
+      b2_1 += new K(i.toString)
+      b2_2 += new K(i.toString)
+
+      bHash += new K(i.toString)
+    }
+    val tree1_1 = b1_1.result()
+    val tree1_2 = b1_2.result()
+
+    val tree2_1 = b1_1.result()
+    val tree2_2 = b1_2.result()
+
+    val treeHash = bHash.result()
+
+    val all = List[(Set[K], String)]((tree1_1, "tree1_1"), (tree1_2, "tree1_2"), (tree2_1, "tree2_1"), (tree2_2, "tree2_2"), (treeHash, "treeHash"))
+    for ((lhs, lText) <- all;
+         (rhs, rText) <- all) {
+      assertEquals(s"$lText $rText", lhs, rhs)
+      assertEquals(s"$rText $lText", rhs, lhs)
     }
   }
 }
