@@ -1,0 +1,11 @@
+t11775.scala:4: error: type mismatch;
+ found   : Test.K[Int]
+ required: Test.K[_ >: String]
+Note: Int <: Any, but class K is invariant in type T.
+You may wish to define T as +T instead. (SLS 4.5)
+  (new K[String]).compareTo(new K[Int])
+                            ^
+t11775.scala:7: error: value weight is not a member of Test.Event[_$4]
+    def compare(that: Event[_ <: T]): Int = weight - that.weight
+                                                          ^
+2 errors

@@ -1332,8 +1332,8 @@ trait Implicits {
        * Parameters as for `getParts`.
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]) = tp match {
-        case TypeRef(pre, sym, args) =>
-          val infos1 = infoMap.get(sym).getOrElse(Nil)
+        case TypeRef(pre, sym, _) =>
+          val infos1 = infoMap.getOrElse(sym, Nil)
           if(!infos1.exists(pre =:= _.pre.prefix)) {
             if (infos1.exists(_.isSearchedPrefix))
               infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: infos1
@@ -1381,11 +1381,11 @@ trait Implicits {
                 (isScala213 || !sym.isAnonOrRefinementClass)) {
               if (sym.isStatic && !(pending contains sym))
                 infoMap ++= {
-                  infoMapCache get sym match {
+                  infoMapCache.get(sym) match {
                     case Some(imap) => imap
                     case None =>
                       val result = new InfoMap
-                      getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
+                      getClassParts(sym.tpeHK)(result, new mutable.HashSet, pending + sym)
                       infoMapCache(sym) = result
                       result
                   }
@@ -1397,17 +1397,12 @@ trait Implicits {
               getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
               // SLS 2.12, section 7.2:
-
               //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.upperBound)
-
-              if (isScala213) {
-                //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
-                args foreach getParts
-
-                //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-                getParts(pre)
-              }
+              //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
+              args.foreach(getParts)
+              //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
+              getParts(pre)
             }
           case ThisType(_) =>
             getParts(tp.widen)
@@ -1420,8 +1415,9 @@ trait Implicits {
             for (p <- ps) getParts(p)
           case AnnotatedType(_, t) =>
             getParts(t)
-          case ExistentialType(_, t) =>
-            getParts(t)
+          case ExistentialType(quantified, underlying) =>
+            // Existential types ruin structural equality, but we can use upped bounds without loss of generality.
+            getParts(underlying.instantiateTypeParams(quantified, quantified.map(_.info.upperBound)))
           case PolyType(_, t) =>
             getParts(t)
           // not needed, a view's expected type is normalized in typer by normalizeProtoForView:
@@ -1431,8 +1427,8 @@ trait Implicits {
       }
 
       val infoMap = new InfoMap
-      getParts(tp)(infoMap, new mutable.HashSet(), Set())
-      val emptyInfos = mutable.ArrayBuffer[Symbol]()
+      getParts(tp)(infoMap, new mutable.HashSet, Set.empty)
+      val emptyInfos = new mutable.ArrayBuffer[Symbol]
       infoMap.foreachEntry { (k, v) =>
         if (v.exists(_.isSearchedPrefix))
           emptyInfos.addOne(k)
