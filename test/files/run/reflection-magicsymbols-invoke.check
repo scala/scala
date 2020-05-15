@@ -14,13 +14,13 @@ method toString: (): String
 testing Any.!=: false
 testing Any.##: 50
 testing Any.==: true
-testing Any.asInstanceOf: class scala.ScalaReflectionException: Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors
-testing Any.asInstanceOf: class scala.ScalaReflectionException: final def asInstanceOf[T0]: T0 takes 0 arguments
+testing Any.asInstanceOf: class scala.ScalaReflectionException: value asInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
+testing Any.asInstanceOf: class scala.ScalaReflectionException: value asInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
 testing Any.equals: true
 testing Any.getClass: class java.lang.String
 testing Any.hashCode: 50
-testing Any.isInstanceOf: class scala.ScalaReflectionException: Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors
-testing Any.isInstanceOf: class scala.ScalaReflectionException: final def isInstanceOf[T0]: Boolean takes 0 arguments
+testing Any.isInstanceOf: class scala.ScalaReflectionException: value isInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
+testing Any.isInstanceOf: class scala.ScalaReflectionException: value isInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
 testing Any.toString: 2
 ============
 AnyVal
@@ -58,10 +58,6 @@ method wait: (x$1: Long): Unit
 method wait: (x$1: Long, x$2: Int): Unit
 testing Object.!=: false
 testing Object.##: 50
-testing Object.$asInstanceOf: class scala.ScalaReflectionException: AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors
-testing Object.$asInstanceOf: class scala.ScalaReflectionException: final def $asInstanceOf[T0](): T0 takes 0 arguments
-testing Object.$isInstanceOf: class scala.ScalaReflectionException: AnyRef.$isInstanceOf is an internal method, it cannot be invoked with mirrors
-testing Object.$isInstanceOf: class scala.ScalaReflectionException: final def $isInstanceOf[T0](): Boolean takes 0 arguments
 testing Object.==: true
 testing Object.clone: class java.lang.CloneNotSupportedException: java.lang.String
 testing Object.eq: true
@@ -72,7 +68,7 @@ testing Object.hashCode: 50
 testing Object.ne: false
 testing Object.notify: class java.lang.IllegalMonitorStateException: null
 testing Object.notifyAll: class java.lang.IllegalMonitorStateException: null
-testing Object.synchronized: 2
+testing Object.synchronized: class scala.ScalaReflectionException: value synchronized encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
 testing Object.toString: 2
 TODO: also test AnyRef.wait overloads
 ============

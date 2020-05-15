@@ -29,8 +29,7 @@ trait Definitions extends api.StandardDefinitions {
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
    *  creation as a function from those symbols to (formal types, result type).
-   *  The Option is to distinguish between nullary methods and empty-param-list
-   *  methods.
+   *  The Option is to distinguish between nullary methods and nilary methods.
    */
   private type PolyMethodCreator = List[Symbol] => (Option[List[Type]], Type)
 
@@ -1123,8 +1122,8 @@ trait Definitions extends api.StandardDefinitions {
     // participation.  At the "Any" level, the return type is Class[_] as it is in
     // java.lang.Object.  Java also special cases the return type.
     lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
-    lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
-    lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
+    lazy val Any_isInstanceOf = enterNewT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
+    lazy val Any_asInstanceOf = enterNewT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
     lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
       ScalaValueClasses map (_.tpe member nme.getClass_)
@@ -1214,11 +1213,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, AnyRefTpe :: Nil, BooleanTpe, FINAL)
-    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)
-    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
-      (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
-    )
+    lazy val Object_isInstanceOf = newT1NilaryMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)
+    lazy val Object_asInstanceOf = newT1NilaryMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
+    lazy val Object_synchronized = enterNewT1Method(ObjectClass, nme.synchronized_, FINAL)(_.typeConstructor)
     lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, AnyTpe :: Nil, StringTpe, FINAL)
 
     def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
@@ -1472,15 +1469,31 @@ trait Definitions extends api.StandardDefinitions {
 
       msym.setInfoAndEnter(genPolyType(tparams, mtpe)).markAllCompleted
     }
-
-    /** T1 means one type parameter.
+    def enterNewPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): MethodSymbol = {
+      val m = newPolyMethod(typeParamCount, owner, name, flags)(createFn)
+      owner.info.decls.enter(m)
+      m
+    }
+    /** T1 means one type parameter. Nullary means no param lists.
      */
-    def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
+    def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
       newPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
-    }
-    def newT1NoParamsMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
+    def enterNewT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
+
+    /** Nilary means one empty param list. The method takes parens.
+     */
+    def newT1NilaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
       newPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
-    }
+    def enterNewT1NilaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
+
+    /** (T1) => T1.
+     */
+    def newT1Method(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      newPolyMethod(1, owner, name, flags) { tparams => val t = createFn(tparams.head) ; (Some(List(t)), t) }
+    def enterNewT1Method(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags) { tparams => val t = createFn(tparams.head) ; (Some(List(t)), t) }
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
