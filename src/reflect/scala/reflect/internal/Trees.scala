@@ -47,9 +47,6 @@ trait Trees extends api.Trees {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
 
-    if (StatisticsStatics.areSomeHotStatsEnabled())
-      statistics.incCounter(statistics.nodeByType, getClass)
-
     final override def pos: Position = rawatt.pos
 
     private[this] var rawtpe: Type = _
@@ -2116,7 +2113,6 @@ trait TreesStats {
   self: Statistics =>
   val symbolTable: SymbolTable
   val treeNodeCount = newView("#created tree nodes")(symbolTable.nodeCount)
-  val nodeByType = newByClass("#created tree nodes by type")(newCounter(""))
   val retainedCount  = newCounter("#retained tree nodes")
   val retainedByType = newByClass("#retained tree nodes by type")(newCounter(""))
 }
