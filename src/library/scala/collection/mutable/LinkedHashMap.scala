@@ -100,22 +100,22 @@ class LinkedHashMap[K, V]
 
     }
 
-  override def last: (K, V) = 
-    if (size > 0) (lastEntry.key, lastEntry.value) 
+  override def last: (K, V) =
+    if (size > 0) (lastEntry.key, lastEntry.value)
     else throw new NoSuchElementException("Cannot call .last on empty LinkedHashMap")
-      
-  override def lastOption: Option[(K, V)] = 
+
+  override def lastOption: Option[(K, V)] =
     if (size > 0) Some((lastEntry.key, lastEntry.value))
     else None
 
-  override def head: (K, V) = 
-    if (size > 0) (firstEntry.key, firstEntry.value) 
+  override def head: (K, V) =
+    if (size > 0) (firstEntry.key, firstEntry.value)
     else throw new NoSuchElementException("Cannot call .head on empty LinkedHashMap")
-      
-  override def headOption: Option[(K, V)] = 
+
+  override def headOption: Option[(K, V)] =
     if (size > 0) Some((firstEntry.key, firstEntry.value))
     else None
-      
+
   override def size = table.tableSize
   override def knownSize: Int = size
   override def isEmpty: Boolean = table.tableSize == 0
@@ -123,6 +123,13 @@ class LinkedHashMap[K, V]
     val e = table.findEntry(key)
     if (e == null) None
     else Some(e.value)
+  }
+
+  override def contains(key: K): Boolean = {
+    if (getClass eq classOf[LinkedHashMap[_, _]])
+      table.findEntry(key) != null
+    else
+      super.contains(key) // A subclass might override `get`, use the default implementation `contains`.
   }
 
   override def put(key: K, value: V): Option[V] = {
