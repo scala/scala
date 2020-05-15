@@ -5,8 +5,9 @@ import sbt.Keys.{ artifact, dependencyClasspath, moduleID, resourceManaged }
 
 object ScaladocSettings {
 
-  val webjarResoources = Seq(
-    "org.webjars" % "jquery" % "3.4.1"
+  // when this changes, the integrity check in HtmlFactory.scala also needs updating
+  val webjarResources = Seq(
+    "org.webjars" % "jquery" % "3.5.1"
   )
 
   def extractResourcesFromWebjar = Def.task {
