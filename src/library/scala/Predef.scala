@@ -348,7 +348,7 @@ object Predef extends LowPriorityImplicits {
 
   /** `!!!` can be used where no words are needed to describe that
    *  something should not happen.
-   *  @throws NotImplementedError when `!!!` is invoked.
+   *  @throws AssertionError when `!!!` is invoked.
    *  @group utilities
    */
   @elidable(ASSERTION)
