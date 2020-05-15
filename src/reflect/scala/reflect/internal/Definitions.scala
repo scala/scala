@@ -488,6 +488,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type]
+    lazy val Collection_SeqModule       = requiredModule[scala.collection.Seq.type]
 
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]
@@ -1643,6 +1644,11 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       private lazy val List_apply = DefinitionsClass.this.List_apply
+      private lazy val Seq_apply = {
+        val result = getMemberMethod(DefinitionsClass.this.SeqModule, nme.apply)
+        assert(result == getMemberMethod(DefinitionsClass.this.Collection_SeqModule, nme.apply), "Expected collection.Seq and immutable.Seq to have the same apply member")
+        result
+      }
       final def isListApply(tree: Tree): Boolean = {
         /*
          * This is translating uses of List() into Nil.  This is less
@@ -1652,8 +1658,23 @@ trait Definitions extends api.StandardDefinitions {
          *  forced during kind-arity checking, so it is guarded by additional
          *  tests to ensure we're sufficiently far along.
          */
-        (tree.symbol eq List_apply) && (tree match {
-          case treeInfo.Applied(core @ Select(qual, _), _, _) => treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
+        (tree.symbol == List_apply) && (tree match {
+          case treeInfo.Applied(core @ Select(qual, _), _, _) =>
+            treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
+          case _ => false
+        })
+      }
+
+      final def isSeqApply(tree: Tree): Boolean = isListApply(tree) || {
+        /*
+         *  This is now also used for converting {Seq, List}.apply(a, b, c) to `a :: b :: c :: Nil`
+         *  in Cleanup.
+         */
+        def isSeqFactory(sym: Symbol) = sym == SeqModule || sym == Collection_SeqModule
+
+        (tree.symbol == Seq_apply) && (tree match {
+          case treeInfo.Applied(core @ Select(qual, _), _, _) =>
+            treeInfo.isQualifierSafeToElide(qual) && isSeqFactory(qual.symbol)
           case _ => false
         })
       }

@@ -860,7 +860,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
     name := "test-benchmarks",
     autoScalaLibrary := false,
     crossPaths := true, // needed to enable per-scala-version source directories (https://github.com/sbt/sbt/pull/1799)
-    libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.6",
+    libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.10",
     libraryDependencies ++= {
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil
