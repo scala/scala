@@ -189,35 +189,99 @@ private[collection] object RedBlackTree {
   private[this] def mkTree[A, B](isBlack: Boolean, k: A, v: B, l: Tree[A, B], r: Tree[A, B]) =
     if (isBlack) BlackTree(k, v, l, r) else RedTree(k, v, l, r)
 
-  private[this] def balanceLeft[A, B, B1 >: B](isBlack: Boolean, z: A, zv: B, l: Tree[A, B1], d: Tree[A, B1]): Tree[A, B1] = {
-    if (isRedTree(l) && isRedTree(l.left))
-      RedTree(l.key, l.value, BlackTree(l.left.key, l.left.value, l.left.left, l.left.right), BlackTree(z, zv, l.right, d))
-    else if (isRedTree(l) && isRedTree(l.right))
-      RedTree(l.right.key, l.right.value, BlackTree(l.key, l.value, l.left, l.right.left), BlackTree(z, zv, l.right.right, d))
-    else
-      mkTree(isBlack, z, zv, l, d)
+  /** Create a new balanced tree where `newLeft` replaces `tree.left`. */
+  private[this] def balanceLeft[A, B1](tree: Tree[A, B1], newLeft: Tree[A, B1]): Tree[A, B1] = {
+    // Parameter trees
+    //            tree              |                   newLeft
+    //     --      KV         R     |    nl.L            nl.KV      nl.R
+    //                              |                     nl.R.L   nl.R.KV  nl.R.R
+    if (tree.left eq newLeft) tree
+    else {
+      val tree_key = tree.key
+      val tree_value = tree.value
+      val tree_right = tree.right
+      if (isRedTree(newLeft)) {
+        val newLeft_left = newLeft.left
+        val newLeft_right = newLeft.right
+        if (isRedTree(newLeft_left)) {
+          //                      RED
+          //    black(nl.L)      nl.KV      black
+          //                          nl.R    KV   R
+          RedTree(newLeft.key, newLeft.value,
+            newLeft_left.black,
+            BlackTree(tree_key, tree_value, newLeft_right, tree_right))
+        } else if (isRedTree(newLeft_right)) {
+          //                              RED
+          //           black            nl.R.KV      black
+          //    nl.L   nl.KV  nl.R.L           nl.R.R  KV   R
+          RedTree(newLeft_right.key, newLeft_right.value,
+            BlackTree(newLeft.key, newLeft.value, newLeft_left, newLeft_right.left),
+            BlackTree(tree_key, tree_value, newLeft_right.right, tree_right))
+        } else {
+          //               tree
+          //    newLeft      KV         R
+          mkTree(isBlack(tree), tree_key, tree_value,
+            newLeft,
+            tree_right)
+        }
+      } else {
+        //                tree
+        //     newLeft      KV         R
+        mkTree(isBlack(tree), tree_key, tree_value, newLeft, tree_right)
+      }
+    }
   }
-  private[this] def balanceRight[A, B, B1 >: B](isBlack: Boolean, x: A, xv: B, a: Tree[A, B1], r: Tree[A, B1]): Tree[A, B1] = {
-    if (isRedTree(r) && isRedTree(r.left))
-      RedTree(r.left.key, r.left.value, BlackTree(x, xv, a, r.left.left), BlackTree(r.key, r.value, r.left.right, r.right))
-    else if (isRedTree(r) && isRedTree(r.right))
-      RedTree(r.key, r.value, BlackTree(x, xv, a, r.left), BlackTree(r.right.key, r.right.value, r.right.left, r.right.right))
-    else
-      mkTree(isBlack, x, xv, a, r)
+
+  /** Create a new balanced tree where `newRight` replaces `tree.right`. */
+  private[this] def balanceRight[A, B1](tree: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = {
+    // Parameter trees
+    //            tree                |                             newRight
+    //      L      KV         --      |              nr.L            nr.KV      nr.R
+    //                                |     nr.L.L   nr.L.KV  nr.L.R
+    if (tree.right eq newRight) tree
+    else {
+      val tree_key = tree.key
+      val tree_value = tree.value
+      val tree_left = tree.left
+      if (isRedTree(newRight)) {
+        val newRight_left = newRight.left
+        val newRight_right = newRight.right
+        if (isRedTree(newRight_left)) {
+          //                                RED
+          //              black           nr.L.KV          black
+          //     L         KV   nr.L.L             nr.L.R  nr.KV    nr.R
+          RedTree(newRight_left.key, newRight_left.value,
+            BlackTree(tree_key, tree_value, tree_left, newRight_left.left),
+            BlackTree(newRight.key, newRight.value, newRight_left.right, newRight_right))
+        } else if (isRedTree(newRight_right)) {
+          //                                RED
+          //              black           nr.KV            black(nr.R)
+          //     L         KV   nr.L
+          RedTree(newRight.key, newRight.value,
+            BlackTree(tree_key, tree_value, tree_left, newRight_left),
+            newRight_right.black)
+        } else {
+          //             tree
+          //     L        KV         newRight
+          mkTree(isBlack(tree), tree_key, tree_value, tree_left, newRight)
+        }
+      } else {
+        //               tree
+        //       L        KV         newRight
+        mkTree(isBlack(tree), tree_key, tree_value, tree_left, newRight)
+      }
+    }
   }
+
   private[this] def upd[A, B, B1 >: B](tree: Tree[A, B], k: A, v: B1, overwrite: Boolean)(implicit ordering: Ordering[A]): Tree[A, B1] = if (tree eq null) {
     RedTree(k, v, null, null)
   } else {
     val cmp = ordering.compare(k, tree.key)
-    if (cmp < 0) {
-      val newLeft = upd(tree.left, k, v, overwrite)
-      if (newLeft eq tree.left) tree
-      else balanceLeft(isBlackTree(tree), tree.key, tree.value, newLeft, tree.right)
-    } else if (cmp > 0) {
-      val newRight = upd(tree.right, k, v, overwrite)
-      if (newRight eq tree.right) tree
-      else balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, newRight)
-    } else if ((overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef])) || k != tree.key)
+    if (cmp < 0)
+      balanceLeft(tree, upd(tree.left, k, v, overwrite))
+    else if (cmp > 0)
+      balanceRight(tree, upd(tree.right, k, v, overwrite))
+    else if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]) || k != tree.key)
       mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
     else tree
   }
@@ -225,15 +289,11 @@ private[collection] object RedBlackTree {
     RedTree(k, v, null, null)
   } else {
     val rank = count(tree.left) + 1
-    if (idx < rank) {
-      val newLeft = updNth(tree.left, idx, k, v)
-      if (newLeft eq tree.left) tree
-      else balanceLeft(isBlackTree(tree), tree.key, tree.value, newLeft, tree.right)
-    } else if (idx > rank) {
-      val newRight = updNth(tree.right, idx - rank, k, v)
-      if (newRight eq tree.right) tree
-      else balanceRight(isBlackTree(tree), tree.key, tree.value, tree.left, newRight)
-    } else tree
+    if (idx < rank)
+      balanceLeft(tree, updNth(tree.left, idx, k, v))
+    else if (idx > rank)
+      balanceRight(tree, updNth(tree.right, idx - rank, k, v))
+    else tree
   }
 
   private[this] def doFrom[A, B](tree: Tree[A, B], from: A)(implicit ordering: Ordering[A]): Tree[A, B] = {
