@@ -346,6 +346,14 @@ object Predef extends LowPriorityImplicits {
    */
   def ??? : Nothing = throw new NotImplementedError
 
+  /** `!!!` can be used where no words are needed to describe that
+   *  something should not happen.
+   *  @throws NotImplementedError when `!!!` is invoked.
+   *  @group utilities
+   */
+  @elidable(ASSERTION)
+  def !!! : Nothing = throw new java.lang.AssertionError("assertion failed")
+
   // implicit classes -----------------------------------------------------
 
   /** @group implicit-classes-any */
