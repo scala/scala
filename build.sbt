@@ -321,6 +321,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.scala$reflect$runtime$ReflectSetup$_setter_$phaseWithId_="),
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#EmptyMap.concat"),
   ),
 }
 
