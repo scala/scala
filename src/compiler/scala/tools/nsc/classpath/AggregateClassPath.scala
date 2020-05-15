@@ -42,22 +42,36 @@ case class AggregateClassPath(aggregates: Seq[ClassPath]) extends ClassPath {
 
   // This method is performance sensitive as it is used by sbt's ExtractDependencies phase.
   override def findClass(className: String): Option[ClassRepresentation] = {
-    val (pkg, _) = PackageNameUtils.separatePkgAndClassNames(className)
-
-    def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
-      aggregatesForPackage(PackageName(pkg)).iterator.map(_.findClass(className)).collectFirst {
-        case Some(s: SourceFileEntry) if isSource => s
-        case Some(s: ClassFileEntry) if !isSource => s
-      }
+    // workaround a performance bug in exiting versions of Zinc.
+    // https://github.com/sbt/zinc/issues/757
+    // Retire this code once the Zinc releases a fix and it is widely used.
+    val noByteCode = className match {
+      case s if s.indexOf('<') >= 0 => true
+      case "scala.Nothing" => true
+      case "scala.Singleton" => true
+      case "scala.Null" => true
+      case _ => false
     }
+    if (noByteCode) None
+    else {
+      val (pkg, _) = PackageNameUtils.separatePkgAndClassNames(className)
+      val packageName = PackageName(pkg)
 
-    val classEntry = findEntry(isSource = false)
-    val sourceEntry = findEntry(isSource = true)
+      def findEntry(isSource: Boolean): Option[ClassRepresentation] = {
+        aggregatesForPackage(packageName).iterator.map(_.findClass(className)).collectFirst {
+          case Some(s: SourceFileEntry) if isSource => s
+          case Some(s: ClassFileEntry) if !isSource => s
+        }
+      }
 
-    (classEntry, sourceEntry) match {
-      case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
-      case (c @ Some(_), _) => c
-      case (_, s) => s
+      val classEntry  = findEntry(isSource = false)
+      val sourceEntry = findEntry(isSource = true)
+
+      (classEntry, sourceEntry) match {
+        case (Some(c: ClassFileEntry), Some(s: SourceFileEntry)) => Some(ClassAndSourceFilesEntry(c.file, s.file))
+        case (c@Some(_), _)                                      => c
+        case (_, s)                                              => s
+      }
     }
   }
 
