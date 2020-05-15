@@ -132,6 +132,7 @@ abstract class CallGraph {
 
   def addMethod(methodNode: MethodNode, definingClass: ClassBType): Unit = {
     if (!BytecodeUtils.isAbstractMethod(methodNode) && !BytecodeUtils.isNativeMethod(methodNode) && AsmAnalyzer.sizeOKForBasicValue(methodNode)) {
+      BackendUtils.computeMaxLocalsMaxStack(methodNode)
       lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(methodNode, definingClass.internalName)
 
       var methodCallsites = Map.empty[MethodInsnNode, Callsite]
