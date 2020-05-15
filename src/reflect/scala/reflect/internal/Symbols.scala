@@ -762,9 +762,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      val fs = _rawflags & phase.flagMask
+      flags(phase.flagMask)
+    }
+
+    private[reflect] final def flags(phaseFlagMask: Long): Long = {
+      val fs = _rawflags & phaseFlagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
+
     def flags_=(fs: Long) = _rawflags = fs
     def rawflags_=(x: Long): Unit = { _rawflags = x }
 
