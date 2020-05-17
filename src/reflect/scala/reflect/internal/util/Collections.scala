@@ -325,7 +325,7 @@ trait Collections {
 
       def hasNext: Boolean = {
         advanceHead()
-        ! head.isEmpty
+        !head.isEmpty
       }
 
       def next(): C = {

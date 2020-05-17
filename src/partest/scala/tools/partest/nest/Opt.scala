@@ -75,7 +75,7 @@ object Opt {
     def --|                             = parsed get opt
     def --^[T: FromString]              = {
       val fs = implicitly[FromString[T]]
-      --| map { arg =>
+      --|.map { arg =>
         if (fs isDefinedAt arg) fs(arg)
         else failOption(arg, "not a " + fs.targetString)
       }
