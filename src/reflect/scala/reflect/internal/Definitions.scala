@@ -1467,7 +1467,7 @@ trait Definitions extends api.StandardDefinitions {
         case (_, restpe)             => NullaryMethodType(restpe)
       }
 
-      msym.setInfoAndEnter(genPolyType(tparams, mtpe)).markAllCompleted
+      msym.setInfo(genPolyType(tparams, mtpe)).markAllCompleted
     }
     def enterNewPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): MethodSymbol = {
       val m = newPolyMethod(typeParamCount, owner, name, flags)(createFn)
