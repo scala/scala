@@ -1852,11 +1852,10 @@ trait Contexts { self: Analyzer =>
       }
     }
 
-    private def selectorString(s: ImportSelector): String = {
+    private def selectorString(s: ImportSelector): String =
       if (s.isWildcard) "_"
-      else if (s.isRename) s.name + " => " + s.rename
-      else "" + s.name
-    }
+      else if (s.isRename) s"${s.name} => ${s.rename}"
+      else s.name.decoded
 
     /** Optionally record that a selector was used to import the given symbol. */
     def recordUsage(sel: ImportSelector, result: Symbol): Unit = {

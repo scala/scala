@@ -302,10 +302,7 @@ trait Implicits {
       import scala.util.hashing.MurmurHash3._
       finalizeHash(mix(mix(productSeed, name.##), sym.##), 2)
     }
-    override def toString = (
-      if (tpeCache eq null) name + ": ?"
-      else name + ": " + tpe
-    )
+    override def toString = s"$name: ${ if (tpeCache eq null) "?" else tpe.toString }"
   }
 
   /** A class which is used to track pending implicits to prevent infinite implicit searches.
@@ -447,7 +444,7 @@ trait Implicits {
 
     @inline final def failure(what: Any, reason: => String, pos: Position = this.pos): SearchResult = {
       if (settings.XlogImplicits)
-        reporter.echo(pos, what+" is not a valid implicit value for "+pt+" because:\n"+reason)
+        reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
     /** Is implicit info `info1` better than implicit info `info2`?

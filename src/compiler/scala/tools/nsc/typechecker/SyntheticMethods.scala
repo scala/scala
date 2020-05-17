@@ -179,7 +179,7 @@ trait SyntheticMethods extends ast.TreeDSL {
      * - asInstanceOf if no equality checks need made (see scala/bug#9240, scala/bug#10361)
      */
     def equalsCore(eqmeth: Symbol, accessors: List[Symbol]) = {
-      val otherName = freshTermName(clazz.name + "$")(freshNameCreatorFor(context))
+      val otherName = freshTermName(s"${clazz.name}$$")(freshNameCreatorFor(context))
       val otherSym  = eqmeth.newValue(otherName, eqmeth.pos, SYNTHETIC) setInfo clazz.tpe
       val pairwise  = {
         //compare primitive fields first, slow equality checks of non-primitive fields can be skipped when primitives differ
@@ -428,9 +428,9 @@ trait SyntheticMethods extends ast.TreeDSL {
         val i = original.owner.caseFieldAccessors.indexOf(original)
         def freshAccessorName = {
           devWarning(s"Unable to find $original among case accessors of ${original.owner}: ${original.owner.caseFieldAccessors}")
-          freshTermName(original.name + "$")(freshNameCreatorFor(context))
+          freshTermName(s"${original.name}$$")(freshNameCreatorFor(context))
         }
-        def nameSuffixedByParamIndex = original.name.append(nme.CASE_ACCESSOR + "$" + i).toTermName
+        def nameSuffixedByParamIndex = original.name.append(s"${nme.CASE_ACCESSOR}$$${i}").toTermName
         val newName = if (i < 0) freshAccessorName else nameSuffixedByParamIndex
         val newAcc = deriveMethod(ddef.symbol, name => newName) { newAcc =>
           newAcc.makePublic

@@ -354,10 +354,10 @@ abstract class RefChecks extends Transform {
 
         def overrideErrorConcreteMissingOverride() = {
           if (isNeitherInClass && !(otherClass isSubClass memberClass))
-            emitOverrideError(clazz + " inherits conflicting members:\n"
-                               + indent + infoStringWithLocation(other) + " and\n"
-                               + indent + infoStringWithLocation(member) + "\n"
-                               + indent + s"(note: this can be resolved by declaring an `override` in $clazz.)")
+            emitOverrideError(sm"""|$clazz inherits conflicting members:
+                                   |$indent${infoStringWithLocation(other)} and
+                                   |$indent${infoStringWithLocation(member)}
+                                   |$indent(note: this can be resolved by declaring an `override` in $clazz.)""")
           else
             overrideErrorWithMemberInfo("`override` modifier required to override concrete member:")
         }
@@ -545,8 +545,8 @@ abstract class RefChecks extends Transform {
         def abstractClassError(mustBeMixin: Boolean, msg: String): Unit = {
           def prelude = (
             if (clazz.isAnonymousClass || clazz.isModuleClass) "object creation impossible."
-            else if (mustBeMixin) clazz + " needs to be a mixin."
-            else clazz + " needs to be abstract."
+            else if (mustBeMixin) s"$clazz needs to be a mixin."
+            else s"$clazz needs to be abstract."
           )
 
           if (abstractErrors.isEmpty) abstractErrors ++= List(prelude, msg)
@@ -984,7 +984,7 @@ abstract class RefChecks extends Transform {
       def onSyms[T](f: List[Symbol] => T) = f(List(receiver, actual))
 
       // @MAT normalize for consistency in error message, otherwise only part is normalized due to use of `typeSymbol`
-      def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
+      def typesString = s"${normalizeAll(qual.tpe.widen)} and ${normalizeAll(other.tpe.widen)}"
 
       // TODO: this should probably be used in more type comparisons in checkSensibleEquals
       def erasedClass(tp: Type) = erasure.javaErasure(tp).typeSymbol

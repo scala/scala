@@ -646,9 +646,8 @@ trait MatchAnalysis extends MatchApproximation {
 
     def varAssignmentString(varAssignment: Map[Var, (Seq[Const], Seq[Const])]) =
       varAssignment.toSeq.sortBy(_._1.toString).map { case (v, (trues, falses)) =>
-         val assignment = "== "+ trues.mkString("(", ", ", ")") +"  != ("+ falses.mkString(", ") +")"
-         v +"(="+ v.path +": "+ v.staticTpCheckable +") "+ assignment
-       }.mkString("\n")
+        s"$v(=${v.path}: ${v.staticTpCheckable}) == ${trues.mkString("(", ", ", ")")}  != (${falses.mkString(", ")})"
+      }.mkString("\n")
 
     /**
      * The models we get from the DPLL solver need to be mapped back to counter examples.

@@ -58,20 +58,19 @@ trait MatchWarnings {
       // Using an iterator so we can recognize the last case
       val it = cases.iterator
 
-      def addendum(pat: Tree) = {
+      def addendum(pat: Tree) =
         matchingSymbolInScope(pat) match {
           case NoSymbol   => ""
           case sym        =>
-            val desc = if (sym.isParameter) s"parameter ${sym.nameString} of" else sym + " in"
+            val desc = if (sym.isParameter) s"parameter ${sym.nameString} of" else s"$sym in"
             s"\nIf you intended to match against $desc ${sym.owner}, you must use backticks, like: case `${sym.nameString}` =>"
         }
-      }
 
       while (it.hasNext) {
         val cdef = it.next()
         // If a default case has been seen, then every succeeding case is unreachable.
         if (vpat != null)
-          typer.context.warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat), WarningCategory.OtherMatchAnalysis) // TODO: make configurable whether this is an error
+          typer.context.warning(cdef.body.pos, s"unreachable code due to $vpat${addendum(cdef.pat)}", WarningCategory.OtherMatchAnalysis) // TODO: make configurable whether this is an error
         // If this is a default case and more cases follow, warn about this one so
         // we have a reason to mention its pattern variable name and any corresponding
         // symbol in scope.  Errors will follow from the remaining cases, at least

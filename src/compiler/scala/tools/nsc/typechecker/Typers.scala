@@ -756,13 +756,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       isPastTyper || {
         val nestedOwners =
           featureTrait.owner.ownerChain.takeWhile(_ != languageFeatureModule.moduleClass).reverse
-        val featureName = (nestedOwners map (_.name + ".")).mkString + featureTrait.name
+        val featureName = nestedOwners.map(s => s"${s.name}.").mkString + featureTrait.name
         def action(): Boolean = {
           def hasImport = inferImplicitByType(featureTrait.tpe, context).isSuccess
-          def hasOption = settings.language contains featureName
+          def hasOption = settings.language.contains(featureName)
           hasOption || hasImport || {
             val Some(AnnotationInfo(_, List(Literal(Constant(featureDesc: String)), Literal(Constant(required: Boolean))), _)) =
-              featureTrait getAnnotation LanguageFeatureAnnot
+              featureTrait.getAnnotation(LanguageFeatureAnnot)
             context.featureWarning(pos, featureName, featureDesc, featureTrait, construct, required)
             false
           }
@@ -5606,7 +5606,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             AppliedTypeNoParametersError(tree, tpt1.tpe)
           } else {
             //Console.println("\{tpt1}:\{tpt1.symbol}:\{tpt1.symbol.info}")
-            if (settings.debug) Console.println(tpt1+":"+tpt1.symbol+":"+tpt1.symbol.info)//debug
+            if (settings.debug) Console.println(s"$tpt1:${tpt1.symbol}:${tpt1.symbol.info}")//debug
             AppliedTypeWrongNumberOfArgsError(tree, tpt1, tparams)
           }
         }
