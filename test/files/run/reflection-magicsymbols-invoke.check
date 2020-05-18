@@ -14,13 +14,13 @@ method toString: (): String
 testing Any.!=: false
 testing Any.##: 50
 testing Any.==: true
-testing Any.asInstanceOf: class scala.ScalaReflectionException: value asInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
-testing Any.asInstanceOf: class scala.ScalaReflectionException: value asInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
+testing Any.asInstanceOf: class scala.ScalaReflectionException: Any.asInstanceOf requires a type argument, it cannot be invoked with mirrors
+testing Any.asInstanceOf: class scala.ScalaReflectionException: final def asInstanceOf[T0]: T0 takes 0 arguments
 testing Any.equals: true
 testing Any.getClass: class java.lang.String
 testing Any.hashCode: 50
-testing Any.isInstanceOf: class scala.ScalaReflectionException: value isInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
-testing Any.isInstanceOf: class scala.ScalaReflectionException: value isInstanceOf encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
+testing Any.isInstanceOf: class scala.ScalaReflectionException: Any.isInstanceOf requires a type argument, it cannot be invoked with mirrors
+testing Any.isInstanceOf: class scala.ScalaReflectionException: final def isInstanceOf[T0]: Boolean takes 0 arguments
 testing Any.toString: 2
 ============
 AnyVal
@@ -37,8 +37,6 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Object: (): Object
 method !=: (x$1: Any): Boolean
 method ##: Int
-method $asInstanceOf: [T0](): T0
-method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean
 method asInstanceOf: [T0]T0
 method clone: (): Object
@@ -68,7 +66,7 @@ testing Object.hashCode: 50
 testing Object.ne: false
 testing Object.notify: class java.lang.IllegalMonitorStateException: null
 testing Object.notifyAll: class java.lang.IllegalMonitorStateException: null
-testing Object.synchronized: class scala.ScalaReflectionException: value synchronized encapsulates multiple overloaded alternatives and cannot be treated as a method. Consider invoking `<offending symbol>.asTerm.alternatives` and manually picking the required method
+testing Object.synchronized: 2
 testing Object.toString: 2
 TODO: also test AnyRef.wait overloads
 ============
@@ -78,8 +76,6 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Array: (_length: Int): Array[T]
 method !=: (x$1: Any): Boolean
 method ##: Int
-method $asInstanceOf: [T0](): T0
-method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean
 method apply: (i: Int): T
 method asInstanceOf: [T0]T0
