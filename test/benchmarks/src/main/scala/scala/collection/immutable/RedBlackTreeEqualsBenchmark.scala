@@ -32,7 +32,7 @@ class RedBlackTreeEqualsSharedBenchmark {
     val r = new Random()
     r.setSeed(0x1234567890abcdefL)
 
-    def aSet(start: Int, end: Int) : TreeSet[Int] = (start to end).to[TreeSet]
+    def aSet(start: Int, end: Int) : TreeSet[Int] = TreeSet.from(start to end)
     def aMap(start: Int, end: Int) : TreeMap[Int, Int] = TreeMap.empty[Int, Int] ++ ((start to end) map {x => x-> x})
 
     set = aSet(1, size)
@@ -74,7 +74,7 @@ class RedBlackTreeEqualsUnsharedBenchmark {
   var otherMap: TreeMap[Int, Int] = _
 
   @Setup(Level.Trial) def init: Unit = {
-    def aSet(start: Int, end: Int) : TreeSet[Int] = (start to end).to[TreeSet]
+    def aSet(start: Int, end: Int) : TreeSet[Int] = TreeSet.from(start to end)
     def aMap(start: Int, end: Int) : TreeMap[Int, Int] = TreeMap.empty[Int, Int] ++ ((start to end) map {x => x-> x})
     set = aSet(1, size)
     otherSet =  aSet(1, size)
