@@ -47,15 +47,12 @@ trait DefaultMemoisable extends Memoisable {
   protected def compute[A](key: AnyRef, a: => A): Any = a match {
     case success: Success[_, _] => onSuccess(key, success); success
     case other =>
-      if(DefaultMemoisable.debug) println(key + " -> " + other)
+      if (DefaultMemoisable.debug) println(s"$key -> $other")
       other
   }
 
   protected def onSuccess[S, T](key: AnyRef,  result: Success[S, T]): Unit =  {
     val Success(out, t) = result
-    if(DefaultMemoisable.debug) println(key + " -> " + t + " (" + out + ")")
+    if (DefaultMemoisable.debug) println(s"$key -> $t ($out)")
   }
 }
-
-
-

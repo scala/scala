@@ -19,7 +19,7 @@ class WeakHashSetTest {
   def checkEmpty: Unit = {
     val hs = new WeakHashSet[String]()
     assertEquals(0, hs.size)
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // make sure += works
@@ -31,7 +31,7 @@ class WeakHashSetTest {
     assertEquals(2, hs.size)
     assertTrue(hs contains "hello")
     assertTrue(hs contains "goodbye")
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // make sure += works when there are collisions
@@ -43,7 +43,7 @@ class WeakHashSetTest {
     assertEquals(2, hs.size)
     assertTrue(hs contains Collider("hello"))
     assertTrue(hs contains Collider("goodbye"))
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // add a large number of elements to force rehashing and then validate
@@ -54,7 +54,7 @@ class WeakHashSetTest {
     val elements = (0 until size).toList map ("a" + _)
     elements foreach (hs += _)
     elements foreach {i => assertTrue(hs contains i)}
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // make sure rehashing works properly when the set is rehashed
@@ -65,7 +65,7 @@ class WeakHashSetTest {
     val elements = (0 until size).toList map {x => Collider("a" + x)}
     elements foreach (hs += _)
     elements foreach {i => assertTrue(hs contains i)}
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // test that unreferenced objects are removed
@@ -88,7 +88,7 @@ class WeakHashSetTest {
     for (i <- 0 until size) {
       assertFalse(hs contains Collider("b" + i))
     }
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // make sure findOrUpdate returns the originally entered element
@@ -103,7 +103,7 @@ class WeakHashSetTest {
       // original put in
       assertTrue(hs.findEntryOrUpdate(Collider("a" + i)) eq elements(i))
     }
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // check -= functionality
@@ -116,7 +116,7 @@ class WeakHashSetTest {
     assertEquals(1, hs.size)
     assertTrue(hs contains "hello")
     assertFalse(hs contains "goodbye")
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // check -= when there are collisions
@@ -132,7 +132,7 @@ class WeakHashSetTest {
     hs -= Collider("hello")
     assertEquals(0, hs.size)
     assertFalse(hs contains Collider("hello"))
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // check that the clear method actually cleans everything
@@ -145,7 +145,7 @@ class WeakHashSetTest {
     hs.clear()
     assertEquals(0, hs.size)
     elements foreach {i => assertFalse(hs contains i)}
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // check that the iterator covers all the contents
@@ -155,7 +155,7 @@ class WeakHashSetTest {
     val elements = (0 until 20).toList map ("a" + _)
     elements foreach (hs += _)
     assertTrue(elements.iterator.toList.sorted == elements.sorted)
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
   // check that the iterator covers all the contents even when there is a collision
@@ -165,7 +165,7 @@ class WeakHashSetTest {
     val elements = (0 until 20).toList map {x => Collider("a" + x)}
     elements foreach (hs += _)
     assertTrue(elements.iterator.toList.sorted == elements.sorted)
-    hs.diagnostics.fullyValidate
+    hs.diagnostics.fullyValidate()
   }
 
 }

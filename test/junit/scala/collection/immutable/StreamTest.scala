@@ -234,7 +234,7 @@ class StreamTest {
     val s2 = it1.toStream
     s2.iterator.next()
     assertEquals(1, it1.current)
-    s2.flatMap { i => (if(i < 3) None else Some(i)): Option[Int] }.iterator.next
+    s2.flatMap { i => (if(i < 3) None else Some(i)): Option[Int] }.iterator.next()
     assertEquals(3, it1.current)
     s2.flatMap { i => (if(i < 5) None else Some(i)): Option[Int] }.headOption
     assertEquals(5, it1.current)

@@ -113,23 +113,23 @@ class VectorTest {
       {
         var it = underlying.iterator.drop(start)
         assertFalse(it.hasNext)
-        intercept[NoSuchElementException](it.next)
+        intercept[NoSuchElementException](it.next())
         it = it.drop(0)
         assertFalse(it.hasNext)
         it = it.drop(1)
         assertFalse(it.hasNext)
         it = it.drop(99)
         assertFalse(it.hasNext)
-        intercept[NoSuchElementException](it.next)
+        intercept[NoSuchElementException](it.next())
       }
 
       {
         var it = underlying.iterator.drop(start)
-        intercept[NoSuchElementException](it.next)
+        intercept[NoSuchElementException](it.next())
         it = it.drop(0)
         it = it.drop(1)
         it = it.drop(99)
-        intercept[NoSuchElementException](it.next)
+        intercept[NoSuchElementException](it.next())
       }
     }
   }

@@ -240,7 +240,7 @@ class TypesTest {
     assertTrue(F() <:< FooTpe)
     assertTrue(FooTpe <:< F())
     assertTrue(F() =:= FooTpe)
-    assertTrue(FooTpe =:= F)
+    assertTrue(FooTpe =:= F())
 
     // test that ?F unifies with [A]Foo[A]
     assertTrue(F() <:< polyType(A => Foo(A)))

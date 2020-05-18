@@ -350,7 +350,7 @@ trait TypeDiagnostics {
       else
         "`case _: " + (clazz.typeParams match {
           case Nil  => "" + clazz.name
-          case xs   => xs.map(_ => "_").mkString(clazz.name + "[", ",", "]")
+          case xs   => xs.map(_ => "_").mkString(s"${clazz.name}[", ",", "]")
         })+ "`"
 
     if (!clazz.exists) ""

@@ -55,7 +55,7 @@ class SortingTest {
     } runOneTest(size, v)
     
     for (size <- sizes) {
-      val b = Array.fill(size)(rng.nextBoolean)
+      val b = Array.fill(size)(rng.nextBoolean())
       val bfwd = Sorting.stableSort(b.clone.toIndexedSeq)
       val bbkw = Sorting.stableSort(b.clone.toIndexedSeq, (x: Boolean, y: Boolean) => x && !y)
       assertTrue("All falses should be first", bfwd.dropWhile(_ == false).forall(_ == true))

@@ -38,7 +38,7 @@ object OwnerOnlyChmod {
 
       val acls = {
         val builder = AclEntry.newBuilder
-        builder.setPrincipal(view.getOwner)
+        builder.setPrincipal(view.getOwner())
         builder.setPermissions(AclEntryPermission.values(): _*)
         builder.setType(AclEntryType.ALLOW)
         val entry = builder.build

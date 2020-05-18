@@ -3797,7 +3797,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
   }
 
   /** A class for type histories */
-  private final case class TypeHistory private (private var _validFrom: Period, private var _info: Type, private var _prev: TypeHistory) {
+  private final case class TypeHistory protected (private var _validFrom: Period, private var _info: Type, private var _prev: TypeHistory) {
     assert((prev eq null) || phaseId(validFrom) > phaseId(prev.validFrom), this)
     assert(validFrom != NoPeriod, this)
 

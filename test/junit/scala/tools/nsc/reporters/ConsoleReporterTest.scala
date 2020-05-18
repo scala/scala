@@ -41,12 +41,12 @@ class ConsoleReporterTest {
       test(pos)
       val buf = writerOut.toString
       if (msg.isEmpty && severity.isEmpty) assertTrue(s"Expected no message output but saw: [$buf]", buf.isEmpty)
-      else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next)
+      else if (!pos.isDefined) assertEquals(severity + msg, buf.linesIterator.next())
       else {
         val it = buf.linesIterator
-        assertEquals(source + ":1: " + severity + msg, it.next)
-        assertEquals(content, it.next)
-        assertEquals("    ^", it.next)
+        assertEquals(source + ":1: " + severity + msg, it.next())
+        assertEquals(content, it.next())
+        assertEquals("    ^", it.next())
       }
     } finally writerOut.reset()
 
@@ -144,8 +144,8 @@ class ConsoleReporterTest {
     val reporter = createConsoleReporter("s", writerOut, echoWriterOut)
     reporter.displayPrompt()
     val it = writerOut.toString.linesIterator
-    assertTrue(it.next.isEmpty)
-    assertEquals(output + "java.lang.Throwable", it.next)
+    assertTrue(it.next().isEmpty)
+    assertEquals(output + "java.lang.Throwable", it.next())
     assertTrue(it.hasNext)
 
     /** Check for no stack trace */
@@ -154,7 +154,7 @@ class ConsoleReporterTest {
     reporter2.displayPrompt()
     val it2 = writerOut2.toString.linesIterator
     assertTrue(it2.next.isEmpty)
-    assertEquals(output, it2.next)
+    assertEquals(output, it2.next())
     assertFalse(it2.hasNext)
 
     /** Check for no stack trace */
@@ -162,8 +162,8 @@ class ConsoleReporterTest {
     val reporter3 = createConsoleReporter("r", writerOut3)
     reporter3.displayPrompt()
     val it3 = writerOut3.toString.linesIterator
-    assertTrue(it3.next.isEmpty)
-    assertEquals(output, it3.next)
+    assertTrue(it3.next().isEmpty)
+    assertEquals(output, it3.next())
     assertFalse(it3.hasNext)
   }
 

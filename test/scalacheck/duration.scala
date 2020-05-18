@@ -32,7 +32,7 @@ object DurationTest extends Properties("Division of Duration by Long") {
   val genClose = for {
     a <- weightedLong
     if a != 0
-    val center = Long.MaxValue / a
+    center = Long.MaxValue / a
     b <-
       if (center - 10 < center + 10) choose(center - 10,  center + 10)
       else choose(center + 10,  center - 10) // deal with overflow if abs(a) == 1

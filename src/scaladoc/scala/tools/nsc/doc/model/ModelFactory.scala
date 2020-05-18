@@ -701,7 +701,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           }
       else {
         // no class inheritance at this point
-        assert(inOriginalOwner(bSym, inTpl), bSym + " in " + inTpl)
+        assert(inOriginalOwner(bSym, inTpl), s"$bSym in $inTpl")
         Some(createDocTemplate(bSym, inTpl))
       }
     }
