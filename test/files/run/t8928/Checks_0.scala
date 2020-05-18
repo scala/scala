@@ -22,7 +22,7 @@ class Checks[U <: Universe with Singleton](val universe: U, ordered: Boolean) {
 
         val parameters: List[(String, Tree)] =
           simple.tree.children.tail.map {
-            case AssignOrNamedArg(Ident(TermName(name)), value) =>
+            case NamedArg(Ident(TermName(name)), value) =>
               name -> value
           }
 
@@ -48,28 +48,28 @@ class Checks[U <: Universe with Singleton](val universe: U, ordered: Boolean) {
             assertMatch("float", float)   { case Literal(Constant(6.7f))      =>  }
             assertMatch("double", double) { case Literal(Constant(8.9d))      =>  }
             assertMatch("string", string) { case Literal(Constant("ten"))     =>  }
-            assertMatch("class", clasz)   { case Literal(Constant(ObjectTpe)) =>  }
+            assertMatch("class", clasz)   { case Literal(Constant(tpe: Type)) if tpe =:= ObjectTpe =>  }
         }
 
         assert(nested.tree.tpe =:= typeOf[Nested_0])
         nested.tree.children match {
           case _ :: inner :: Nil =>
             assertMatch("inner", inner) {
-              case AssignOrNamedArg(Ident(TermName("inner")), Apply(Select(New(tpe), nme.CONSTRUCTOR), AssignOrNamedArg(Ident(TermName("value")), Literal(Constant("turkey"))) :: Nil))
+              case NamedArg(Ident(TermName("inner")), Apply(Select(New(tpe), nme.CONSTRUCTOR), NamedArg(Ident(TermName("value")), Literal(Constant("turkey"))) :: Nil))
                 if tpe.tpe =:= typeOf[Nested_0.Inner] =>
             }
         }
 
         assert(arrays.tree.tpe =:= typeOf[Array_0.Repeated])
         arrays.tree.children match {
-          case _ :: AssignOrNamedArg(Ident(TermName("value")), Apply(arr, fst :: snd :: Nil)) :: Nil =>
+          case _ :: NamedArg(Ident(TermName("value")), Apply(arr, fst :: snd :: Nil)) :: Nil =>
             assertMatch("value(0)", fst) {
-              case Apply(Select(New(tpe), nme.CONSTRUCTOR), AssignOrNamedArg(Ident(TermName("value")), Apply(arr, args)) :: Nil)
+              case Apply(Select(New(tpe), nme.CONSTRUCTOR), NamedArg(Ident(TermName("value")), Apply(arr, args)) :: Nil)
                 if ((args zip Seq(8, 6, 7, 5, 3, 0, 9)) forall { case (Literal(Constant(l)), r) => l == r }) &&
                   tpe.tpe =:= typeOf[Array_0] =>
             }
             assertMatch("value(1)", snd) {
-              case Apply(Select(New(tpe), nme.CONSTRUCTOR), AssignOrNamedArg(Ident(TermName("value")), Apply(arr, args)) :: Nil)
+              case Apply(Select(New(tpe), nme.CONSTRUCTOR), NamedArg(Ident(TermName("value")), Apply(arr, args)) :: Nil)
                 if ((args zip Seq(6)) forall { case (Literal(Constant(l)), r) => l == r }) &&
                   tpe.tpe =:= typeOf[Array_0] =>
             }
