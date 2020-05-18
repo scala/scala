@@ -43,6 +43,7 @@ abstract class CopyProp {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
+      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val aliasAnalysis = new BasicAliasingAnalyzer(method, owner)
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
@@ -112,6 +113,7 @@ abstract class CopyProp {
    */
   def eliminateStaleStoresAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
     if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
+      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
@@ -290,6 +292,7 @@ abstract class CopyProp {
       var castAdded = false
       var nullCheckAdded = false
 
+      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
       /**

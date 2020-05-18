@@ -428,6 +428,7 @@ abstract class LocalOpt {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
+      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val nullnessAnalyzer = new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull)
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
@@ -725,6 +726,7 @@ abstract class LocalOpt {
         bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN))
     }
 
+    BackendUtils.computeMaxLocalsMaxStack(method)
     lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(method, owner)
     lazy val nullnessAnalyzer = new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull)
 

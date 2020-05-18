@@ -363,6 +363,7 @@ abstract class Inliner {
           if (state.illegalAccessInstructions.isEmpty)
             state.undoLog = NoUndoLogging
           state.inlineLog.logSuccess(r, sizeBefore, method.instructions.size, state.outerCallsite(r.callsite.callsiteInstruction))
+          BackendUtils.clearMaxsComputed(method)
           changed = true
           instructionMap
         }
