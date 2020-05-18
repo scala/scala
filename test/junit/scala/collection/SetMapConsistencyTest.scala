@@ -80,11 +80,11 @@ class SetMapConsistencyTest {
       case _ => oor("get", n)
     }
     override def fiddlers = 2
-    override def fiddle(n: Int): Unit = { n match {
+    override def fiddle(n: Int): Unit = n match {
       case 0 => m = arm.clone
-      case 1 => arm.repack
+      case 1 => arm.repack()
       case _ => oor("fiddle", n)
-    }}
+    }
   }
   
   def boxMjm = new BoxMutableMap[Long, cm.LongMap[Int]](new cm.LongMap[Int](_ => -1), "mutable.LongMap") {
@@ -102,7 +102,7 @@ class SetMapConsistencyTest {
     override def fiddlers = 2
     override def fiddle(n: Int): Unit = { n match {
       case 0 => m = lm.clone
-      case 1 => lm.repack
+      case 1 => lm.repack()
       case _ => oor("fiddle", n)
     }}
   }
@@ -265,7 +265,7 @@ class SetMapConsistencyTest {
           n
         })
       }
-      if (rn.nextBoolean) {
+      if (rn.nextBoolean()) {
         val idx = rn.nextInt(keys.length)
         val key = keys(rn.nextInt(keys.length))
         val n1 = rn.nextInt(map1.adders)
@@ -299,7 +299,7 @@ class SetMapConsistencyTest {
           }
           case _ => None
         }
-        throw new Exception(s"Disagreement after ${what.result} between ${map1.title} and ${map2.title} on get of ${keys(j)} (#$j) on step $i: $g1 != $g2 using methods $gn1 and $gn2 resp.; in full\n$map1\n$map2\n$temp")
+        throw new Exception(s"Disagreement after ${what.result()} between ${map1.title} and ${map2.title} on get of ${keys(j)} (#$j) on step $i: $g1 != $g2 using methods $gn1 and $gn2 resp.; in full\n$map1\n$map2\n$temp")
       }
     }
     true
@@ -460,7 +460,7 @@ class SetMapConsistencyTest {
     def ihm: M = ci.HashMap.empty[Int, Boolean] ++ manyKVs
     val densities = List(0, 0.05, 0.2, 0.5, 0.8, 0.95, 1)
     def repeat = rn.nextInt(100) < 33
-    def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble < density).toSet
+    def pick(m: M, density: Double) = m.keys.filter(_ => rn.nextDouble() < density).toSet
     def test: Boolean =
       (1 to 100).forall { _ =>
         var ms = List(mhm, mohm, ihm)
@@ -481,11 +481,11 @@ class SetMapConsistencyTest {
   def testSI8213(): Unit = {
     val am = new scala.collection.mutable.AnyRefMap[String, Int]
     for (i <- 0 until 1024) am += i.toString -> i
-    am.getOrElseUpdate("1024", { am.clear; -1 })
+    am.getOrElseUpdate("1024", { am.clear(); -1 })
     assert(am == scala.collection.mutable.AnyRefMap("1024" -> -1))
     val lm = new scala.collection.mutable.LongMap[Int]
     for (i <- 0 until 1024) lm += i.toLong -> i
-    lm.getOrElseUpdate(1024, { lm.clear; -1 })
+    lm.getOrElseUpdate(1024, { lm.clear(); -1 })
     assert(lm == scala.collection.mutable.LongMap(1024L -> -1))
   }
   
@@ -499,7 +499,7 @@ class SetMapConsistencyTest {
       it.hasNext
       xs.clear()
     
-      if (it.hasNext) Some(it.next)
+      if (it.hasNext) Some(it.next())
       else None
     }
     assert(f() match {

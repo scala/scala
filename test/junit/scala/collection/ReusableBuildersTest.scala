@@ -12,10 +12,10 @@ class ReusableBuildersTest {
   def test_SI8648(): Unit = {
     val b = collection.mutable.HashSet.newBuilder[Int]
     b += 3
-    b.clear
+    b.clear()
     assert(!b.isInstanceOf[collection.mutable.ReusableBuilder[_,_]])
     assert(b.isInstanceOf[collection.mutable.GrowableBuilder[_,_]])
-    assert(b.result == Set[Int]())
+    assert(b.result() == Set[Int]())
   }
 
   // ArrayBuilders ARE reusable, regardless of whether they returned their internal array or not
@@ -23,13 +23,13 @@ class ReusableBuildersTest {
   def test_SI9564(): Unit = {
     val b = Array.newBuilder[Float]
     b += 3f
-    val three = b.result
-    b.clear
+    val three = b.result()
+    b.clear()
     b ++= (1 to 16).map(_.toFloat)
     val sixteen = b.result
-    b.clear
+    b.clear()
     b += 0f
-    val zero = b.result
+    val zero = b.result()
     assert(b.isInstanceOf[collection.mutable.ReusableBuilder[_,_]])
     assert(three.toList == 3 :: Nil)
     assert(sixteen.toList == (1 to 16))

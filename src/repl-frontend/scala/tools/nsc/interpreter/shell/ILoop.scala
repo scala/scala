@@ -798,7 +798,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         label = name
         withFile(name) { f =>
           shouldReplay = Some(s":paste $arg")
-          val s = f.slurp.trim
+          val s = f.slurp().trim()
           if (s.isEmpty) echo(s"File contains no code: $f")
           else echo(s"Pasting file $f...")
           s
@@ -952,7 +952,7 @@ class ILoop(config: ShellConfig, inOverride: BufferedReader = null,
         throw new InterruptedException
       }
 
-      echoOff { interpretPreamble }
+      echoOff { interpretPreamble() }
     })
 
     // start full loop (if initialization was successful)

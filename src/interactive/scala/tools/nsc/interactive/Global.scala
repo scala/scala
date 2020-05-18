@@ -454,7 +454,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
                 debugLog("ask finished"+timeStep)
                 interruptsEnabled = true
               }
-            loop = true; break
+            loop = true; break()
             case _ =>
           }
 

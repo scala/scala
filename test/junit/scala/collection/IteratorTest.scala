@@ -18,7 +18,7 @@ class IteratorTest {
     var counter = 0
     val it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2
-    slidingIt.next
+    slidingIt.next()
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 
@@ -26,7 +26,7 @@ class IteratorTest {
     var counter = 0
     def it = new Iterator[Int] { var i = 0 ; def hasNext = { counter = i; true } ; def next() = { i += 1; i } }
     val slidingIt = it sliding 2 withPadding -1
-    slidingIt.next
+    slidingIt.next()
     assertEquals("Counter should be one, that means we didn't look further than needed", 1, counter)
   }
 
@@ -272,13 +272,13 @@ class IteratorTest {
     assertEquals(8, counter)
     // JoinIterator
     counter = 0
-    res.clear
+    res.clear()
     (it ++ it).foreach(res += _)
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 17
     // ConcatIterator
     counter = 0
-    res.clear
+    res.clear()
     (Iterator.empty ++ it ++ it).foreach(res += _)
     assertSameElements(exp, res)
     assertEquals(8, counter) // was 14

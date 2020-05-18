@@ -187,7 +187,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
 
       // for errors in synthetic code, don't remove wrapping so we can see what's really going on
       def printLineContent() = printMessage(indentation + posIn.lineContent)
-      if (isSynthetic) withoutUnwrapping(printLineContent) else printLineContent
+      if (isSynthetic) withoutUnwrapping(printLineContent()) else printLineContent()
 
       printMessage(indentation + posIn.lineCaret)
 

@@ -20,13 +20,11 @@ class SourceTest {
 
   private def in = new ByteArrayInputStream(sampler.getBytes)
 
-  @Test def canIterateLines() = {
-    assertEquals(sampler.linesIterator.size, (Source fromString sampler).getLines.size)
-  }
+  @Test def canIterateLines() = assertEquals(sampler.linesIterator.size, (Source fromString sampler).getLines().size)
   @Test def loadFromResource() = {
     val res = Source.fromResource("rootdoc.txt")
     val ls = res.getLines()
-    ls.next match {
+    ls.next() match {
       case "The Scala compiler and reflection APIs." =>
       case "This is the documentation for the Scala standard library." =>
       case l =>

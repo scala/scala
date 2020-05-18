@@ -27,8 +27,8 @@ class FileUtilsTest {
     for (i <- 1 to 2000) {
       writeBoth(s"line $i text;", true)
       writeBoth(s"line $i chars", false)
-      sTest.newLine
-      sExpected.newLine
+      sTest.newLine()
+      sExpected.newLine()
     }
     sTest.close()
     sExpected.close()
@@ -66,14 +66,14 @@ class FileUtilsTest {
       val t1 = System.nanoTime()
       List.tabulate(10000) {i =>
         sTest.write(s"line $i text;")
-        sTest.newLine
+        sTest.newLine()
       }
       val t2 = System.nanoTime()
       sTest.close()
       val t3 = System.nanoTime()
       List.tabulate(10000) {i =>
         sExpected.write(s"line $i text;")
-        sExpected.newLine
+        sExpected.newLine()
       }
       val t4 = System.nanoTime()
       sExpected.close()

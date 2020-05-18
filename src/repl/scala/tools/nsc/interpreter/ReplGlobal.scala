@@ -28,8 +28,8 @@ trait ReplGlobal extends Global {
   }
 
   override def findMacroClassLoader(): ClassLoader = {
-    val loader = super.findMacroClassLoader
-    analyzer.macroLogVerbose("macro classloader: initializing from a REPL classloader: %s".format(classPath.asURLs))
+    val loader = super.findMacroClassLoader()
+    analyzer.macroLogVerbose(s"macro classloader: initializing from a REPL classloader: ${classPath.asURLs}")
     val virtualDirectory = analyzer.globalSettings.outputDirs.getSingleOutput.get
     new AbstractFileClassLoader(virtualDirectory, loader) {}
   }

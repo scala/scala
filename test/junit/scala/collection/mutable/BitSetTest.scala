@@ -166,7 +166,7 @@ class BitSetTest {
     assertEquals(Seq(0), BitSet(0).iteratorFrom(0).toSeq)
     assertTrue(a.iteratorFrom(128).isEmpty)
     assertTrue(BitSet.empty.iteratorFrom(0).isEmpty)
-    assertThrows[NoSuchElementException](BitSet.empty.iteratorFrom(0).next)
+    assertThrows[NoSuchElementException](BitSet.empty.iteratorFrom(0).next())
   }
 
 }

@@ -52,30 +52,30 @@ class RangeConsistencyTest {
   def rangeChurnTest(): Unit = {
     val rn = new Random(4370)
     for (i <- 0 to 10000) { control.Breaks.breakable {
-      val start = rn.nextInt
-      val end = rn.nextInt
+      val start = rn.nextInt()
+      val end = rn.nextInt()
       val step = rn.nextInt(4) match {
         case 0 => 1
         case 1 => -1
         case 2 => (rn.nextInt(11)+2)*(2*rn.nextInt(2)+1)
-        case 3 => var x = rn.nextInt; while (x==0) x = rn.nextInt; x
+        case 3 => var x = rn.nextInt(); while (x==0) x = rn.nextInt(); x
       }
-      val r = if (rn.nextBoolean) Range.inclusive(start, end, step) else Range(start, end, step)
+      val r = if (rn.nextBoolean()) Range.inclusive(start, end, step) else Range(start, end, step)
       
       try { r.length }
-      catch { case iae: IllegalArgumentException => control.Breaks.break }
+      catch { case iae: IllegalArgumentException => control.Breaks.break() }
       
       val lpuff = rn.nextInt(4) match {
         case 0 => 1L
         case 1 => rn.nextInt(11)+2L
         case 2 => 1L << rn.nextInt(60)
-        case 3 => math.max(1L, math.abs(rn.nextLong))
+        case 3 => math.max(1L, math.abs(rn.nextLong()))
       }
       val lstride = rn.nextInt(4) match {
         case 0 => lpuff
         case 1 => 1L
         case 2 => 1L << rn.nextInt(60)
-        case 3 => math.max(1L, math.abs(rn.nextLong))
+        case 3 => math.max(1L, math.abs(rn.nextLong()))
       }
       val lr = r2nr[Long](
         r, lpuff, lstride, 
@@ -93,7 +93,7 @@ class RangeConsistencyTest {
       
       val bipuff = rn.nextInt(3) match {
         case 0 => BigInt(1)
-        case 1 => BigInt(rn.nextLong) + Long.MaxValue + 2
+        case 1 => BigInt(rn.nextLong()) + Long.MaxValue + 2
         case 2 => BigInt("1" + "0"*(rn.nextInt(100)+1))
       }
       val bistride = rn.nextInt(3) match {

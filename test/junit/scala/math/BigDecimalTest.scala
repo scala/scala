@@ -177,7 +177,7 @@ class BigDecimalTest {
   def churnRepresentationTest(): Unit = {
     val rn = new scala.util.Random(42)
     for (i <- 1 to 1000) {
-      val d = rn.nextDouble
+      val d = rn.nextDouble()
       assert({
         BigDecimal.decimal(d).isDecimalDouble &&
         BigDecimal.binary(d).isBinaryDouble &&
@@ -185,7 +185,7 @@ class BigDecimalTest {
       }, s"At least one wrong BigDecimal representation for $d")
     }
     for (i <- 1 to 1000) {
-      val f = rn.nextFloat
+      val f = rn.nextFloat()
       assert({
         BigDecimal.decimal(f).isDecimalFloat &&
         BigDecimal.binary(f).isBinaryFloat &&
