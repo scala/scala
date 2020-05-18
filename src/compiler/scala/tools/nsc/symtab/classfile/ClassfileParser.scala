@@ -822,11 +822,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           in.skip(attrLen)
 
         case tpnme.DeprecatedATTR =>
-          val arg = Literal(Constant("see corresponding Javadoc for more information."))
-          sym.addAnnotation(DeprecatedAttr, arg, Literal(Constant("")))
           in.skip(attrLen)
           if (sym == clazz)
-            staticModule.addAnnotation(DeprecatedAttr, arg, Literal(Constant("")))
+            staticModule.addAnnotation(JavaDeprecatedAttr)
 
         case tpnme.ConstantValueATTR =>
           completer.constant = pool.getConstant(u2)
@@ -852,8 +850,15 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
         case tpnme.RuntimeAnnotationATTR =>
             val numAnnots = u2
+          val annots = new ListBuffer[AnnotationInfo]
             for (n <- 0 until numAnnots; annot <- parseAnnotation(u2))
-               sym.addAnnotation(annot)
+            annots += annot
+          /* `sym.withAnnotations(annots)`, like `sym.addAnnotation(annot)`, prepends,
+           * so if we parsed in classfile order we would wind up with the annotations
+           * in reverse order in `sym.annotations`. Instead we just read them out the
+           * other way around, for now. TODO: sym.addAnnotation add to the end?
+           */
+          sym.setAnnotations(sym.annotations ::: annots.toList)
 
         // TODO 1: parse runtime visible annotations on parameters
         // case tpnme.RuntimeParamAnnotationATTR

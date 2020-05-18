@@ -1291,6 +1291,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UnspecializedClass         = requiredClass[scala.annotation.unspecialized]
     lazy val UnusedClass                = requiredClass[scala.annotation.unused]
     lazy val VolatileAttr               = requiredClass[scala.volatile]
+    lazy val JavaDeprecatedAttr         = requiredClass[java.lang.Deprecated]
     lazy val FunctionalInterfaceClass   = requiredClass[java.lang.FunctionalInterface]
 
     // Meta-annotations

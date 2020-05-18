@@ -84,6 +84,31 @@ trait ParsersCommon extends ScannersCommon { self =>
      */
     @inline final def makeParens(body: => List[Tree]): Parens =
       Parens(inParens(if (in.token == RPAREN) Nil else body))
+
+    /** {{{ { `sep` part } }}}. */
+    def tokenSeparated[T](separator: Token, part: => T): List[T] = {
+      val ts = new ListBuffer[T]
+      ts += part
+
+      while (in.token == separator) {
+        in.nextToken()
+        ts += part
+      }
+      ts.toList
+    }
+
+    /** {{{ { `sep` part } }}}. */
+    def separatedToken[T](separator: Token, part: => T): List[T] = {
+      val ts = new ListBuffer[T]
+      while (in.token == separator) {
+        in.nextToken()
+        ts += part
+      }
+      ts.toList
+    }
+
+    /** {{{ tokenSeparated }}}, with the separator fixed to commas. */
+    @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, part)
   }
 }
 
@@ -779,7 +804,7 @@ self =>
     }
 
     /** {{{ part { `sep` part } }}}. */
-    final def tokenSeparated[T](separator: Token, part: => T): List[T] = {
+    override final def tokenSeparated[T](separator: Token, part: => T): List[T] = {
       val ts   = ListBuffer.empty[T].addOne(part)
       var done = in.token != separator
       while (!done) {
@@ -793,10 +818,8 @@ self =>
       ts.toList
     }
 
-    @inline final def commaSeparated[T](part: => T): List[T] = tokenSeparated(COMMA, part)
-
     /** {{{ { `sep` part } }}}. */
-    final def separatedToken[T](separator: Token, part: => T): List[T] = {
+    override final def separatedToken[T](separator: Token, part: => T): List[T] = {
       require(separator != COMMA)
       val ts = ListBuffer.empty[T]
       while (in.token == separator) {

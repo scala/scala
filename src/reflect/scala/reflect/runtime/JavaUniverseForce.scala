@@ -437,6 +437,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.UnspecializedClass
     definitions.UnusedClass
     definitions.VolatileAttr
+    definitions.JavaDeprecatedAttr
     definitions.FunctionalInterfaceClass
     definitions.BeanGetterTargetClass
     definitions.BeanSetterTargetClass
