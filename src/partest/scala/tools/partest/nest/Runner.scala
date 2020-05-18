@@ -32,6 +32,7 @@ import TestState.{Crash, Fail, Pass, Skip, Updated}
 import FileManager.{compareContents, joinPaths, withTempFile}
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
 import scala.util.{Failure, Success, Try, Using}
+import scala.util.chaining._
 import scala.util.control.ControlThrowable
 
 /** pos/t1234.scala or pos/t1234 if dir */
@@ -445,21 +446,17 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   )
 
   /** Source files for the given test file. */
-  def sources(file: File): List[File] = (
-    if (file.isDirectory)
-      file.listFiles.toList filter (_.isJavaOrScala)
-    else
-      List(file)
-  )
+  def sources(file: File): List[File] = if (file.isDirectory) file.listFiles.toList.filter(_.isJavaOrScala) else List(file)
 
   def newCompiler = new DirectCompiler(this)
 
   def attemptCompile(sources: List[File]): TestState = {
-    val state = newCompiler.compile(flagsForCompilation(sources), sources)
-    if (!state.isOk)
-      _transcript.append("\n" + logFile.fileContents)
-
-    state
+    val badflags = (testFile :: (if (testFile.isDirectory) sources else Nil)).map(_.changeExtension("flags")).find(_.exists)
+    if (badflags.isDefined) genFail(s"unexpected flags file ${badflags.get} (use source comment // scalac: -Werror)")
+    else
+      newCompiler.compile(flagsForCompilation(sources), sources).tap { state =>
+        if (!state.isOk) _transcript.append("\n" + logFile.fileContents)
+      }
   }
 
   // all sources in a round may contribute flags via // scalac: -flags
@@ -528,7 +525,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   def runPosTest(): TestState =
-    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Werror with neg test to verify warnings)")
     else runTestCommon()
 
   def runNegTest(): TestState = runInContext {

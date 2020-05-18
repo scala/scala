@@ -3,6 +3,9 @@ import scala.reflect.internal.util.SourceFile
 import scala.tools.nsc.interactive.Response
 
 object Test extends InteractiveTest {
+
+  override def argsString = "-sourcepath src"
+
   override def execute(): Unit = {
     loadSourceAndWaitUntilTypechecked("A.scala")
     val sourceB = loadSourceAndWaitUntilTypechecked("B.scala")

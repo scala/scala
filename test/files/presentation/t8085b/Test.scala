@@ -4,6 +4,8 @@ import scala.tools.nsc.interactive.Response
 
 object Test extends InteractiveTest {
 
+  override def argsString = "-sourcepath src"
+
   override def execute(): Unit = {
     val src = loadSourceAndWaitUntilTypechecked("NodeScalaSuite.scala")
     checkErrors(src)
