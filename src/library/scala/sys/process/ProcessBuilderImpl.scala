@@ -33,7 +33,7 @@ private[process] trait ProcessBuilderImpl {
     override def canPipeTo = true
   }
 
-  private[process] class URLInput(url: URL) extends IStreamBuilder(url.openStream, url.toString)
+  private[process] class URLInput(url: URL) extends IStreamBuilder(url.openStream(), url.toString)
   private[process] class FileInput(file: File) extends IStreamBuilder(new FileInputStream(file), file.getAbsolutePath)
   private[process] class FileOutput(file: File, append: Boolean) extends OStreamBuilder(new FileOutputStream(file, append), file.getAbsolutePath)
 
@@ -85,10 +85,10 @@ private[process] trait ProcessBuilderImpl {
       val inThread =
         if (inherit || (writeInput eq BasicIO.connectNoOp)) null
         else Spawn("Simple-input", daemon = true)(writeInput(process.getOutputStream))
-      val outThread = Spawn("Simple-output", daemonizeThreads)(processOutput(process.getInputStream))
+      val outThread = Spawn("Simple-output", daemonizeThreads)(processOutput(process.getInputStream()))
       val errorThread =
         if (p.redirectErrorStream) Nil
-        else List(Spawn("Simple-error", daemonizeThreads)(processError(process.getErrorStream)))
+        else List(Spawn("Simple-error", daemonizeThreads)(processError(process.getErrorStream())))
 
       new SimpleProcess(process, inThread, outThread :: errorThread)
     }
