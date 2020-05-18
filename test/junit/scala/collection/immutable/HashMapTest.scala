@@ -283,4 +283,31 @@ class HashMapTest extends AllocationTest{
     assertSame(nonEmpty2, nonAllocating(nonEmpty1 ++ nonEmpty2))
   }
 
+  @Test
+  def `++_1`(): Unit = {
+    val m1 = Map[Any, Int] (
+      1 -> 1,
+      2 -> 1,
+      3 -> 1,
+      4 -> 1,
+      5 -> 1
+      )
+    val m2 = Map[Int, Int] (2->2)
+    val m3: Iterable[(Any, Int)] = m2 ++ m1
+    assertEquals(1, Map.from(m3).apply(2))
+  }
+
+  @Test
+  def `++_2`(): Unit = {
+    val m1 = Map[Int, Int] (
+      1 -> 1,
+      2 -> 1,
+      3 -> 1,
+      4 -> 1,
+      5 -> 1
+      )
+    val m2 = Map[Int, Int] (2->2)
+    val m3 = m2 ++ m1
+    assertEquals(1, m3.apply(2))
+  }
 }
