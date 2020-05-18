@@ -356,11 +356,35 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
       annots.toList
     }
 
-    /** Annotation ::= TypeName [`(` [AnnotationArgument {`,` AnnotationArgument}] `)`]
+    /**
+     * Annotation ::= NormalAnnotation
+     *              | MarkerAnnotation
+     *              | SingleElementAnnotation
+     *
+     *  NormalAnnotation     ::= `@` TypeName `(` [ElementValuePairList] `)`
+     *  ElementValuePairList ::= ElementValuePair {`,` ElementValuePair}
+     *  ElementValuePair     ::= Identifier = ElementValue
+     *  ElementValue         ::= ConditionalExpressionSubset
+     *                         | ElementValueArrayInitializer
+     *                         | Annotation
+     *
+     *  // We only support a subset of the Java syntax that can form constant expressions.
+     *  //   https://docs.oracle.com/javase/specs/jls/se14/html/jls-15.html#jls-15.29
+     *  //
+     *  // Luckily, we can just parse matching `(` and `)` to find our way to the end of the the argument list.
+     *  // and drop the arguments until we implement full support for Java constant expressions
+     *  //
+     *  ConditionalExpressionSubset := Literal
+     *                               | Identifier
+     *                               | QualifiedName
+     *                               | ClassLiteral
+     *
+     * ElementValueArrayInitializer ::= `{` [ElementValueList] [`,`] `}`
+     * ElementValueList             ::= ElementValue {`,` ElementValue}
      */
     def annotation(): Tree = {
       def annArg(): Tree = {
-        def annVal(): Tree = {
+        def elementValue(): Tree = {
           tryLiteral() match {
             case Some(lit) => atPos(in.currentPos)(Literal(lit))
             case _ if in.token == AT =>
@@ -368,12 +392,52 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
               annotation()
             case _ if in.token == LBRACE =>
               atPos(in.pos) {
-                val elts = inBracesOrNil(commaSeparated(annVal()))
-                if (elts.exists(_.isEmpty)) EmptyTree
-                else Apply(ArrayModule_overloadedApply, elts: _*)
+                in.nextToken()
+                val ts = new ListBuffer[Tree]
+                if (in.token == RBRACE)
+                  Apply(ArrayModule_overloadedApply)
+                else {
+                  var bailout = false
+                  elementValue() match {
+                    case EmptyTree => bailout = true
+                    case t => ts += t
+                  }
+                  while (in.token == COMMA && !bailout) {
+                    in.nextToken()
+                    if (in.token == RBRACE) {
+                      // trailing comma
+                    } else {
+                      elementValue() match {
+                        case EmptyTree => bailout = true
+                        case t => ts += t
+                      }
+                    }
+                  }
+                  if (!bailout && in.token != RBRACE) {
+                    bailout = true
+                  }
+                  if (bailout) {
+                    var braceDepth = 1
+                    while (braceDepth > 0) {
+                      in.nextToken()
+                      in.token match {
+                        case LBRACE => braceDepth += 1
+                        case RBRACE => braceDepth -= 1
+                        case _ =>
+                      }
+                    }
+                    EmptyTree
+                  } else {
+                    accept(RBRACE)
+                    Apply(ArrayModule_overloadedApply, ts.toList: _*)
+                  }
+                }
               }
             case _ if in.token == IDENTIFIER =>
               qualId(orClassLiteral = true)
+            case _ =>
+              in.nextToken()
+              EmptyTree
           }
         }
 
@@ -382,7 +446,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
             case name: Ident if in.token == EQUALS =>
               in.nextToken()
               /* name = value */
-              val value = annVal()
+              val value = elementValue()
               if (value.isEmpty) EmptyTree else gen.mkNamedArg(name, value)
             case rhs =>
               /* implicit `value` arg with constant value */
@@ -390,7 +454,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
           }
         } else {
           /* implicit `value` arg */
-          val value = annVal()
+          val value = elementValue()
           if (value.isEmpty) EmptyTree else gen.mkNamedArg(nme.value, value)
         }
       }

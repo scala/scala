@@ -33,23 +33,20 @@ class Checks[U <: Universe with Singleton](val universe: U, ordered: Boolean) {
             "_byte", "_char", "_short", "_int", "_long", "_float", "_double", "_string", "_class"))
         }
 
-        parameters.sortBy(_._1) match {
-          case ("_byte", byte)     :: ("_char", char)
-            :: ("_class", clasz)   :: ("_double", double)
-            :: ("_float", float)   :: ("_int", int)
-            :: ("_long", long)     :: ("_short", short)
-            :: ("_string", string) :: Nil =>
+        val List(
+          ("_byte", byte), ("_char", char), ("_class", clasz), ("_double", double),
+          ("_float", float), ("_int", int), ("_long", long), ("_short", short), ("_string", string)
+        ) = parameters.sortBy(_._1)
 
-            assertMatch("byte", byte)     { case Literal(Constant(1))         =>  }
-            assertMatch("char", char)     { case Literal(Constant('2'))       =>  }
-            assertMatch("short", short)   { case Literal(Constant(3))         =>  }
-            assertMatch("int", int)       { case Literal(Constant(4))         =>  }
-            assertMatch("long", long)     { case Literal(Constant(5L))        =>  }
-            assertMatch("float", float)   { case Literal(Constant(6.7f))      =>  }
-            assertMatch("double", double) { case Literal(Constant(8.9d))      =>  }
-            assertMatch("string", string) { case Literal(Constant("ten"))     =>  }
-            assertMatch("class", clasz)   { case Literal(Constant(tpe: Type)) if tpe =:= ObjectTpe =>  }
-        }
+        assertMatch("byte", byte)     { case Literal(Constant(1))         =>  }
+        assertMatch("char", char)     { case Literal(Constant('2'))       =>  }
+        assertMatch("short", short)   { case Literal(Constant(3))         =>  }
+        assertMatch("int", int)       { case Literal(Constant(4))         =>  }
+        assertMatch("long", long)     { case Literal(Constant(5L))        =>  }
+        assertMatch("float", float)   { case Literal(Constant(6.7f))      =>  }
+        assertMatch("double", double) { case Literal(Constant(8.9d))      =>  }
+        assertMatch("string", string) { case Literal(Constant("ten"))     =>  }
+        assertMatch("class", clasz)   { case Literal(Constant(tpe: Type)) if tpe =:= ObjectTpe =>  }
 
         assert(nested.tree.tpe =:= typeOf[Nested_0])
         nested.tree.children match {

@@ -1,0 +1,7 @@
+J.java:11: error: identifier expected but `int' found.
+  int int int // check we get this syntax error
+      ^
+J.java:12: error: `;' expected but `}' found.
+}
+^
+two errors found
