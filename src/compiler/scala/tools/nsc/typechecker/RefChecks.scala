@@ -1764,6 +1764,14 @@ abstract class RefChecks extends Transform {
 
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
+            for (stat <- body) {
+              if (treeInfo.isPureExprForWarningPurposes(stat)) {
+                val msg = "a pure expression does nothing in statement position"
+                val clause = if (body.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
+                reporter.warning(stat.pos, s"${msg}${clause}")
+              }
+            }
+
             validateBaseTypes(currentOwner)
             checkOverloadedRestrictions(currentOwner, currentOwner)
             // scala/bug#7870 default getters for constructors live in the companion module
@@ -1849,7 +1857,27 @@ abstract class RefChecks extends Transform {
                            // probably not, until we allow parameterised extractors
             tree
 
-
+          case Block(stats, expr) =>
+            val (count, result0, adapted) =
+              expr match {
+                case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
+                case Literal(Constant(()))                     => (0, EmptyTree, false)
+                case _                                         => (1, EmptyTree, false)
+              }
+            def checkPure(t: Tree, supple: Boolean): Unit =
+              if (treeInfo.isPureExprForWarningPurposes(t)) {
+                val msg = "a pure expression does nothing in statement position"
+                val parens = if (stats.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+                val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
+                val text =
+                  if (supple) s"${parens}${discard}"
+                  else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
+                reporter.warning(t.pos, text)
+              }
+            // sanity check block for unintended expr placement
+            stats.foreach(checkPure(_, supple = false))
+            if (result0.nonEmpty) checkPure(result0, supple = true)
+            tree
           case _ => tree
         }
 

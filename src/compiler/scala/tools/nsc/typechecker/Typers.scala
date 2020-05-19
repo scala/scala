@@ -2487,31 +2487,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
           }
         }
-        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
+        val statsTyped = typedStats(block.stats, context.owner)
         val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode), pt)
-
-        // sanity check block for unintended expr placement
-        if (!isPastTyper) {
-          val (count, result0, adapted) =
-            expr1 match {
-              case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
-              case Literal(Constant(()))                     => (0, EmptyTree, false)
-              case _                                         => (1, EmptyTree, false)
-            }
-          def checkPure(t: Tree, supple: Boolean): Unit =
-            if (treeInfo.isPureExprForWarningPurposes(t)) {
-              val msg = "a pure expression does nothing in statement position"
-              val parens = if (statsTyped.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
-              val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
-              val text =
-                if (supple) s"${parens}${discard}"
-                else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
-              context.warning(t.pos, text)
-            }
-          statsTyped.foreach(checkPure(_, supple = false))
-          if (result0.nonEmpty) checkPure(result0, supple = true)
-        }
-
         treeCopy.Block(block, statsTyped, expr1)
           .setType(if (treeInfo.isExprSafeToInline(block)) expr1.tpe else expr1.tpe.deconst)
       } finally {
@@ -3193,7 +3170,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _                  => log(s"unhandled import: $imp in $unit"); imp
     }
 
-    def typedStats(stats: List[Tree], exprOwner: Symbol, warnPure: Boolean = true): List[Tree] = {
+    def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
@@ -3223,11 +3200,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               else if (result.symbol.pos.pointOrElse(0) >= exprOwner.enclMethod.pos.pointOrElse(0))
                 ConstructorsOrderError(stat)
             }
-          }
-          if (warnPure && !isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) {
-            val msg = "a pure expression does nothing in statement position"
-            val clause = if (stats.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
-            context.warning(stat.pos, s"${msg}${clause}")
           }
           result
       }
@@ -5373,7 +5345,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val pid1 = typedQualifier(pdef.pid).asInstanceOf[RefTree]
         assert(sym.moduleClass ne NoSymbol, sym)
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
-          .typedStats(pdef.stats, NoSymbol)
+                  .typedStats(pdef.stats, NoSymbol)
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType
       }
 

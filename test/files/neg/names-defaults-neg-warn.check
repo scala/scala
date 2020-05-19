@@ -13,11 +13,8 @@ names-defaults-neg-warn.scala:23: warning: assignments in argument position are 
 names-defaults-neg-warn.scala:34: warning: assignments in argument position are deprecated in favor of named arguments. Wrap the assignment in brackets, e.g., `{ x = ... }`.
     synchronized(x = 1) // deprecation warning in 2.12, error in 2.13
                    ^
-names-defaults-neg-warn.scala:42: warning: a pure expression does nothing in statement position
-    f1(x = 1) // 2.12, 2.13: ok, named arg (value discard)
-           ^
 names-defaults-neg-warn.scala:43: error: reassignment to val
     f2(x = 1) // 2.12, 2.13: error (no such parameter). no deprecation warning in 2.12, x is not a variable.
          ^
-5 warnings found
+four warnings found
 two errors found
