@@ -325,6 +325,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#EmptyMap.concat"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.ordering"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.SortedSet.scala$collection$SortedSet$$super=uals"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.SortedMap.scala$collection$SortedMap$$super=uals"),
   ),
 }
 

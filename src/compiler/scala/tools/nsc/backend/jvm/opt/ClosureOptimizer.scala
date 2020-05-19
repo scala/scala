@@ -165,6 +165,7 @@ abstract class ClosureOptimizer {
    */
   private def localsForClosureRewrite(closureInit: ClosureInstantiation): (LocalsList, LocalsList) = {
     val ownerMethod = closureInit.ownerMethod
+    BackendUtils.computeMaxLocalsMaxStack(ownerMethod)
     val captureLocals = storeCaptures(closureInit)
 
     // allocate locals for storing the arguments of the closure apply callsites.

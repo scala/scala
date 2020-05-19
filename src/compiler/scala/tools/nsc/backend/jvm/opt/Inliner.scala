@@ -718,6 +718,7 @@ abstract class Inliner {
     val calleAsmType = asm.Type.getMethodType(callee.desc)
     val calleeParamTypes = calleAsmType.getArgumentTypes
 
+    BackendUtils.computeMaxLocalsMaxStack(callsiteMethod)
     val f = aliasFrame.getOrElse({
       val aliasAnalysis = new BasicAliasingAnalyzer(callsiteMethod, callsiteClass.internalName)
       aliasAnalysis.frameAt(callsiteInstruction).asInstanceOf[AliasingFrame[Value]]

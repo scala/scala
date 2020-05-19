@@ -613,6 +613,7 @@ abstract class CopyProp {
   def eliminateStoreLoad(method: MethodNode): Boolean = {
     // TODO: use copyProp once we have cached analyses? or is the analysis invalidated anyway because instructions are deleted / changed?
     // if we cache them anyway, we can use an analysis if it exists in the cache, and skip otherwise.
+    BackendUtils.computeMaxLocalsMaxStack(method)
     val removePairs = mutable.Set.empty[RemovePair]
     val liveVars = new Array[Boolean](method.maxLocals)
     val liveLabels = mutable.Set.empty[LabelNode]
