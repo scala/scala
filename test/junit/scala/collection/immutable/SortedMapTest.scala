@@ -147,20 +147,20 @@ class SortedMapTest extends AllocationTest {
     assertEquals(SortedMap(1 -> "a", 2 -> "DEFAULT"), m3)
   }
 
-  @Test def empty: Unit ={
+  @Test def empty: Unit = {
     val ord = Ordering[String]
     exactAllocates(24)(SortedMap.empty[String, String](ord))
   }
-  @Test def apply0: Unit ={
+  @Test def apply0: Unit = {
     val ord = Ordering[String]
     exactAllocates(24)(SortedMap()(ord))
   }
-  @Test def apply1: Unit ={
+  @Test def apply1: Unit = {
     val ord = Ordering[String]
-    exactAllocates(200)(SortedMap("a" -> "a")(ord))
+    onlyAllocates(200)(SortedMap(("a", "a"))(ord))
   }
-  @Test def apply2: Unit ={
+  @Test def apply2: Unit = {
     val ord = Ordering[String]
-    exactAllocates(312)(SortedMap("a" -> "a", "b" -> "b")(ord))
+    onlyAllocates(312)(SortedMap(("a", "a"), ("b", "b"))(ord))
   }
 }
