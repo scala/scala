@@ -775,7 +775,7 @@ abstract class UnCurry extends InfoTransform
                       tpe
                   }
                 val info = info0.normalize
-                val tempValName = unit.freshTermName(s"${p.name.decoded}$$")
+                val tempValName = unit.freshTermName(s"${p.name}$$")
                 val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(info)
                 atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), info)))
               }
