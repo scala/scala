@@ -5,6 +5,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.annotation.nowarn
 import scala.reflect.ClassTag
 
 @RunWith(classOf[JUnit4])
@@ -106,30 +107,24 @@ class ArraySeqTest {
     assertArraySeqAndType(ArraySeq(1, 3) :+ 7, ArraySeq(1, 3, 7), classOf[Array[Int]])
   }
 
-  @Test
-  def appendAny(): Unit = {
-    assertArraySeqAndType(ArraySeq(1, 3) :+ "x", ArraySeq[Any](1, 3, "x"), classOf[Array[AnyRef]])
-  }
+  @Test @nowarn("cat=lint-infer-any")
+  def appendAny(): Unit = assertArraySeqAndType(ArraySeq(1, 3) :+ "x", ArraySeq[Any](1, 3, "x"), classOf[Array[AnyRef]])
 
   @Test
   def prependInt(): Unit = {
     assertArraySeqAndType(87 +: ArraySeq(1, 3), ArraySeq(87, 1, 3), classOf[Array[Int]])
   }
 
-  @Test
-  def prependAny(): Unit = {
-    assertArraySeqAndType("x" +: ArraySeq(1, 3), ArraySeq[Any]("x", 1, 3), classOf[Array[AnyRef]])
-  }
+  @Test @nowarn("cat=lint-infer-any")
+  def prependAny(): Unit = assertArraySeqAndType("x" +: ArraySeq(1, 3), ArraySeq[Any]("x", 1, 3), classOf[Array[AnyRef]])
 
   @Test
   def updatedInt(): Unit = {
     assertArraySeqAndType(ArraySeq(1, 2).updated(0, 3), ArraySeq(3, 2), classOf[Array[Int]])
   }
 
-  @Test
-  def updatedAny(): Unit = {
-    assertArraySeqAndType(ArraySeq(1, 2).updated(0, "x"), ArraySeq[Any]("x", 2), classOf[Array[AnyRef]])
-  }
+  @Test @nowarn("cat=lint-infer-any")
+  def updatedAny(): Unit = assertArraySeqAndType(ArraySeq(1, 2).updated(0, "x"), ArraySeq[Any]("x", 2), classOf[Array[AnyRef]])
 
   @Test
   def foldInt(): Unit = {
