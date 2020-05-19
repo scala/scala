@@ -1196,17 +1196,18 @@ abstract class RefChecks extends Transform {
       try {
         enterSyms(stats)
         var index = -1
-        stats flatMap { stat => index += 1; transformStat(stat, index) }
+        stats.mapConserve(stat => {
+          index += 1;
+          transformStat(stat, index)
+        }).filter(_ ne EmptyTree)
       }
       finally popLevel()
     }
 
-
-
-    def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
+    def transformStat(tree: Tree, index: Int): Tree = tree match {
       case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
-        try transform(tree) :: Nil
+        try transform(tree)
         finally if (currentLevel.maxindex > 0) {
           // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
           debuglog("refsym = " + currentLevel.refsym)
@@ -1214,18 +1215,18 @@ abstract class RefChecks extends Transform {
         }
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree) // important to do before forward reference check
-        if (tree1.symbol.isLazy) tree1 :: Nil
+        if (tree1.symbol.isLazy) tree1
         else {
           val sym = tree.symbol
           if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
             debuglog("refsym = " + currentLevel.refsym)
             reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
           }
-          tree1 :: Nil
+          tree1
         }
-      case Import(_, _)                                                                       => Nil
-      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
-      case _                                                                                  => transform(tree) :: Nil
+      case Import(_, _)                                                                       => EmptyTree
+      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => EmptyTree
+      case _                                                                                  => transform(tree)
     }
 
     /* Check whether argument types conform to bounds of type parameters */
