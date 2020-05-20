@@ -205,7 +205,7 @@ class LazyListLazinessTest {
   }
 
   @Test
-  def lazyAppendedAll_appendedAll_properlyLazy(): Unit = {
+  def lazyAppendedAll_properlyLazy(): Unit = {
     genericAppendedColl_properlyLazy(_ lazyAppendedAll _)
   }
 
@@ -748,7 +748,7 @@ class LazyListLazinessTest {
 
   @Test
   def `#:: properlyLazy`(): Unit = {
-    val factory = lazyListFactory { init =>
+    val headInitFactory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
         def elem(): Int = { init.evaluate(index); index }
         if (index >= LazinessChecker.count) LazyList.empty
@@ -757,12 +757,25 @@ class LazyListLazinessTest {
 
       gen(0)
     }
-    assertRepeatedlyLazy(factory)
+    assertRepeatedlyLazy(headInitFactory)
+
+    val tailInitFactory = lazyListFactory { init =>
+      def gen(index: Int): LazyList[Int] = {
+        if (index >= LazinessChecker.count) LazyList.empty
+        else {
+          init.evaluate(index)
+          index #:: gen(index + 1)
+        }
+      }
+
+      LazyList.empty lazyAppendedAll gen(0) // prevent initial state evaluation
+    }
+    assertRepeatedlyLazy(tailInitFactory)
   }
 
   @Test
   def `#::: properlyLazy`(): Unit = {
-    val factory = lazyListFactory { init =>
+    val headInitFactory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
         def elem(): LazyList[Int] = LazyList.fill(1) { init.evaluate(index); index }
         if (index >= LazinessChecker.count) LazyList.empty
@@ -771,7 +784,20 @@ class LazyListLazinessTest {
 
       gen(0)
     }
-    assertRepeatedlyLazy(factory)
+    assertRepeatedlyLazy(headInitFactory)
+
+    val tailInitFactory = lazyListFactory { init =>
+      def gen(index: Int): LazyList[Int] = {
+        if (index >= LazinessChecker.count) LazyList.empty
+        else {
+          init.evaluate(index)
+          LazyList.fill(1)(index) #::: gen(index + 1)
+        }
+      }
+
+      LazyList.empty lazyAppendedAll gen(0) // prevent initial state evaluation
+    }
+    assertRepeatedlyLazy(tailInitFactory)
   }
 
   @Test
