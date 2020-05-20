@@ -281,7 +281,7 @@ private[collection] object RedBlackTree {
       balanceLeft(tree, upd(tree.left, k, v, overwrite))
     else if (cmp > 0)
       balanceRight(tree, upd(tree.right, k, v, overwrite))
-    else if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]) || k != tree.key)
+    else if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]))
       mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
     else tree
   }
