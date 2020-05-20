@@ -15,6 +15,7 @@ package immutable
 
 import java.lang.IllegalStateException
 
+import scala.language.implicitConversions
 import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
 import scala.collection.mutable.{Builder, ImmutableBuilder, ListBuffer}
 import scala.annotation.tailrec

@@ -15,6 +15,7 @@ package scala.collection
 import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
+import scala.language.implicitConversions
 import scala.collection.convert._
 
 /** A variety of decorators that enable converting between

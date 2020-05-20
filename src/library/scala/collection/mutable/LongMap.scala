@@ -13,6 +13,7 @@
 package scala.collection
 package mutable
 
+import scala.language.implicitConversions
 import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable maps with `Long` keys based on a hash table with open addressing.

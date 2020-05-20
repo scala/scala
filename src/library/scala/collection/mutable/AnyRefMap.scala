@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.language.implicitConversions
 import scala.collection.generic.DefaultSerializationProxy
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.

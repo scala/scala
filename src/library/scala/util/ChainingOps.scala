@@ -14,6 +14,7 @@ package scala
 package util
 
 trait ChainingSyntax {
+  import scala.language.implicitConversions
   @`inline` implicit final def scalaUtilChainingOps[A](a: A): ChainingOps[A] = new ChainingOps(a)
 }
 

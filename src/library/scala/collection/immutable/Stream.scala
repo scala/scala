@@ -17,6 +17,7 @@ package immutable
 import java.io.{ObjectInputStream, ObjectOutputStream}
 import java.lang.{StringBuilder => JStringBuilder}
 
+import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.generic.SerializeEnd

@@ -17,6 +17,7 @@ import java.util.Spliterator
 import java.util.function.{Consumer, IntConsumer}
 import java.{lang => jl}
 
+import scala.language.implicitConversions
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, Factory, IntStepper, SeqFactory, Stepper, StepperShape, mutable}
 
