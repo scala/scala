@@ -163,4 +163,13 @@ class TreeMapTest extends AllocationTest {
       assertEquals(s"$rText $lText", rhs, lhs)
     }
   }
+
+  @Test def keyOverwriteIn212(): Unit = {
+    // see https://github.com/scala/scala/pull/7481 and https://github.com/scala/scala/pull/8783
+    // for 2.13.x changes that we don't want to include in the RedBlackTree backports to 2.12.x
+    // for compatibility.
+    val map = collection.immutable.TreeMap.apply(2 -> 2)(Ordering.by(x => x / 2))
+    val map2 = map.updated(3, 3)
+    assertEquals(List(3 -> 3), map2.toList)
+  }
 }
