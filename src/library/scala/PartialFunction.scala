@@ -221,6 +221,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 object PartialFunction {
 
   final class ElementWiseExtractor[-A, +B] private[PartialFunction] (private val pf: PartialFunction[A, B]) extends AnyVal {
+    @annotation.nowarn("cat=lint-nonlocal-return")
     def unapplySeq(seq: Seq[A]): Option[Seq[B]] = {
       Some(seq.map {
         case pf(b) => b
