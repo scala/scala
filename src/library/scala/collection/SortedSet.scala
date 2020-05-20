@@ -35,7 +35,7 @@ trait SortedSet[A] extends Set[A]
         val i2 = ss.iterator
         var allEqual = true
         while (allEqual && i1.hasNext)
-          allEqual = i1.next() == i2.next
+          allEqual = i1.next() == i2.next()
         allEqual
       }
     case _ =>
