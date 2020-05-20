@@ -151,6 +151,7 @@ trait ClassManifestDeprecatedApis[T] extends OptManifest[T] {
  *  so we need to somehow nudge them into migrating prior to removing stuff out of the blue.
  *  Hence we've introduced this design decision as the lesser of two evils.
  */
+@annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
 object ClassManifestFactory {
   val Byte    = ManifestFactory.Byte
   val Short   = ManifestFactory.Short
@@ -233,6 +234,7 @@ object ClassManifestFactory {
 /** Manifest for the class type `clazz[args]`, where `clazz` is
   * a top-level or static class */
 @SerialVersionUID(1L)
+@annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
 private class ClassTypeManifest[T](
   prefix: Option[OptManifest[_]],
   val runtimeClass: jClass[_],

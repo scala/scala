@@ -36,6 +36,7 @@ import scala.collection.mutable.ListBuffer
  *
  *  Future versions of this trait will no longer extend `DelayedInit`.
  */
+@annotation.nowarn("cat=deprecation&origin=scala.DelayedInit")
 trait App extends DelayedInit {
 
   /** The time when the execution of this program started, in milliseconds since 1

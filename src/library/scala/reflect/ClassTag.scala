@@ -45,6 +45,7 @@ import java.lang.{ Class => jClass }
  *
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
+@annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifestDeprecatedApis")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible

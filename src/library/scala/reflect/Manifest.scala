@@ -45,6 +45,7 @@ import scala.collection.mutable.{ArrayBuilder, ArraySeq}
 @scala.annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
 // TODO undeprecated until Scala reflection becomes non-experimental
 // @deprecated("use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
+@annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
 trait Manifest[T] extends ClassManifest[T] with Equals {
   override def typeArguments: List[Manifest[_]] = Nil
 
@@ -144,6 +145,7 @@ object Manifest {
 // TODO undeprecated until Scala reflection becomes non-experimental
 // @deprecated("use type tags and manually check the corresponding class or type instead", "2.10.0")
 @SerialVersionUID(1L)
+@annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
 abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
   override def <:<(that: ClassManifest[_]): Boolean =
     (that eq this) || (that eq Manifest.Any) || (that eq Manifest.AnyVal)
@@ -320,6 +322,7 @@ object ManifestFactory {
   private[this] val NullTYPE = classOf[scala.runtime.Null$]
 
   @SerialVersionUID(1L)
+  @annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
   final private class AnyManifest extends PhantomManifest[scala.Any](ObjectTYPE, "Any") {
     override def newArray(len: Int) = new Array[scala.Any](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this)
@@ -328,6 +331,7 @@ object ManifestFactory {
   val Any: Manifest[scala.Any] = new AnyManifest
 
   @SerialVersionUID(1L)
+  @annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
   final private class ObjectManifest extends PhantomManifest[java.lang.Object](ObjectTYPE, "Object") {
     override def newArray(len: Int) = new Array[java.lang.Object](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
@@ -338,6 +342,7 @@ object ManifestFactory {
   val AnyRef: Manifest[scala.AnyRef] = Object.asInstanceOf[Manifest[scala.AnyRef]]
 
   @SerialVersionUID(1L)
+  @annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
   final private class AnyValPhantomManifest extends PhantomManifest[scala.AnyVal](ObjectTYPE, "AnyVal") {
     override def newArray(len: Int) = new Array[scala.AnyVal](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that eq this) || (that eq Any)
@@ -346,6 +351,7 @@ object ManifestFactory {
   val AnyVal: Manifest[scala.AnyVal] = new AnyValPhantomManifest
 
   @SerialVersionUID(1L)
+  @annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
   final private class NullManifest extends PhantomManifest[scala.Null](NullTYPE, "Null") {
     override def newArray(len: Int) = new Array[scala.Null](len)
     override def <:<(that: ClassManifest[_]): Boolean =
@@ -355,6 +361,7 @@ object ManifestFactory {
   val Null: Manifest[scala.Null] = new NullManifest
 
   @SerialVersionUID(1L)
+  @annotation.nowarn("cat=deprecation&origin=scala.reflect.ClassManifest")
   final private class NothingManifest extends PhantomManifest[scala.Nothing](NothingTYPE, "Nothing") {
     override def newArray(len: Int) = new Array[scala.Nothing](len)
     override def <:<(that: ClassManifest[_]): Boolean = (that ne null)

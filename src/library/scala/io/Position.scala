@@ -36,7 +36,6 @@ package io
  *  encode(line1,column1) <= encode(line2,column2)
  *  }}}
  */
-@deprecated("this class will be removed", "2.10.0")
 private[scala] abstract class Position {
   /** Definable behavior for overflow conditions.
    */

@@ -378,7 +378,10 @@ private[concurrent] object Promise {
     private[this] final var _arg: Try[F],
     private[this] final val _xform: Int
   ) extends DefaultPromise[T]() with Callbacks[F] with Runnable with Batchable with OnCompleteRunnable {
-    final def this(xform: Int, f: _ => _, ec: ExecutionContext) = this(f.asInstanceOf[Any => Any], ec.prepare(), null, xform)
+    final def this(xform: Int, f: _ => _, ec: ExecutionContext) =
+      this(f.asInstanceOf[Any => Any],
+        ec.prepare(): @annotation.nowarn("cat=deprecation"),
+        null, xform)
 
     final def benefitsFromBatching: Boolean = _xform != Xform_onComplete && _xform != Xform_foreach
 

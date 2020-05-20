@@ -569,9 +569,10 @@ lazy val library = configureAsSubproject(project)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
-    Compile / scalacOptions ++= Seq[String]("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions += "-Wconf:cat=feature:e",
-    Compile / scalacOptions += "-Xlint:-deprecation,_",
+    Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
+    Compile / scalacOptions ++= Seq("-feature", "-Xlint", "-Werror"),
+    // disallow old deprecateds. we should keep clamping down further
+    Compile / scalacOptions ++= Seq("-Wconf:cat=deprecation:is", "-Wconf:cat=deprecation&since<2.13:e"),
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
