@@ -1026,11 +1026,11 @@ final class StringOps(private val s: String) extends AnyVal {
     *  @return        `true` if this string is empty or the given predicate `p`
     *                 holds for all chars of this string, otherwise `false`.
     */
-  def forall(f: Char => Boolean): Boolean = {
+  def forall(@deprecatedName("f", "2.13.3") p: Char => Boolean): Boolean = {
     var i = 0
     val len = s.length
     while(i < len) {
-      if(!f(s.charAt(i))) return false
+      if(!p(s.charAt(i))) return false
       i += 1
     }
     true

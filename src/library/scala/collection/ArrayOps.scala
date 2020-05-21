@@ -559,8 +559,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   /** Selects all elements of this array which do not satisfy a predicate.
     *
-    *  @param pred  the predicate used to test elements.
-    *  @return      a new array consisting of all elements of this array that do not satisfy the given predicate `pred`.
+    *  @param p     the predicate used to test elements.
+    *  @return      a new array consisting of all elements of this array that do not satisfy the given predicate `p`.
     */
   def filterNot(p: A => Boolean): Array[A] = filter(x => !p(x))
 
@@ -678,10 +678,10 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return  the index `>= from` of the first element of this array that satisfies the predicate `p`,
     *           or `-1`, if none exists.
     */
-  def indexWhere(f: A => Boolean, from: Int = 0): Int = {
+  def indexWhere(@deprecatedName("f", "2.13.3") p: A => Boolean, from: Int = 0): Int = {
     var i = from
     while(i < xs.length) {
-      if(f(xs(i))) return i
+      if(p(xs(i))) return i
       i += 1
     }
     -1
@@ -724,8 +724,8 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return        an option value containing the first element in the array
     *                 that satisfies `p`, or `None` if none exists.
     */
-  def find(f: A => Boolean): Option[A] = {
-    val idx = indexWhere(f)
+  def find(@deprecatedName("f", "2.13.3") p: A => Boolean): Option[A] = {
+    val idx = indexWhere(p)
     if(idx == -1) None else Some(xs(idx))
   }
 
@@ -734,7 +734,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @param   p     the predicate used to test elements.
     *  @return        `true` if the given predicate `p` is satisfied by at least one element of this array, otherwise `false`
     */
-  def exists(f: A => Boolean): Boolean = indexWhere(f) >= 0
+  def exists(@deprecatedName("f", "2.13.3") p: A => Boolean): Boolean = indexWhere(p) >= 0
 
   /** Tests whether a predicate holds for all elements of this array.
     *
@@ -742,10 +742,10 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return        `true` if this array is empty or the given predicate `p`
     *                 holds for all elements of this array, otherwise `false`.
     */
-  def forall(f: A => Boolean): Boolean = {
+  def forall(@deprecatedName("f", "2.13.3") p: A => Boolean): Boolean = {
     var i = 0
     while(i < xs.length) {
-      if(!f(xs(i))) return false
+      if(!p(xs(i))) return false
       i += 1
     }
     true
