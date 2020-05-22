@@ -236,6 +236,7 @@ trait ProcessBuilder extends Source with Sink {
    * process exits with a non-zero value, the LazyList will provide all lines up
    * to termination but will not throw an exception.
    */
+  @annotation.nowarn("cat=lint-multiarg-infix")  // should the warning trigger just because the method name ends in punctuation?! currently it does
   def lazyLines_!(log: ProcessLogger, capacity: Integer): LazyList[String]
 
   /** Starts the process represented by this builder.  The output is returned as

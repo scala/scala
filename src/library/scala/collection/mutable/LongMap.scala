@@ -351,6 +351,9 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   /** Adds a new key/value pair to this map and returns the map. */
+  @annotation.nowarn
+  // TODO: after next re-STARR, fix the nowarn (here and in AnyRefMap) to be more specific:
+  // @annotation.nowarn("cat=lint-multiarg-infix")  // scala/bug#12012
   def +=(key: Long, value: V): this.type = { update(key, value); this }
 
   /** Adds a new key/value pair to this map and returns the map. */
