@@ -60,6 +60,8 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
       updateWord(idx, word(idx) & ~(1L << elem))
     } else this
   }
+  @transient override lazy val size = super.size
+  @transient override lazy val hashCode = super.hashCode
 }
 
 /** $factoryInfo
