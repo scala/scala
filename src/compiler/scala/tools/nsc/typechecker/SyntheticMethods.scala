@@ -122,7 +122,7 @@ trait SyntheticMethods extends ast.TreeDSL {
       )
     }
 
-    def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree =
+    def perElementMethod(name: Name, returnType: Type)(caseFn: Symbol => Tree): Tree = 
       createSwitchMethod(name, accessors.indices, returnType)(idx => caseFn(accessors(idx)))
 
     def productElementNameMethod = {

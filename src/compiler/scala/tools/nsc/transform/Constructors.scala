@@ -478,14 +478,12 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
     // The constructor parameter with given name. This means the parameter
     // has given name, or starts with given name, and continues with a `$` afterwards.
-    def parameterNamed(name: Name): Symbol = {
-      def matchesName(param: Symbol) = param.name == name || param.name.startsWith(s"${name}${nme.NAME_JOIN_STRING}")
-
-      primaryConstrParams filter matchesName match {
-        case Nil    => abort(s"$name not in $primaryConstrParams")
-        case p :: _ => p
+    def parameterNamed(name: Name): Symbol =
+      primaryConstrParams.filter(_.name.decodedName == name.decodedName) match {
+        case List(p) => p
+        case Nil     => abort(s"$name not in $primaryConstrParams")
+        case ps      => abort(s"$name matches multiple constructor paramters $ps")
       }
-    }
 
     // A transformer for expressions that go into the constructor
     object intoConstructor extends Transformer {
