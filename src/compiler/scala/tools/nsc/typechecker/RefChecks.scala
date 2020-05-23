@@ -241,8 +241,8 @@ abstract class RefChecks extends Transform {
      *    1.7. If O is an abstract type then
      *       1.7.1 either M is an abstract type, and M's bounds are sharper than O's bounds.
      *             or M is a type alias or class which conforms to O's bounds.
-     *       1.7.2 higher-order type arguments must respect bounds on higher-order type parameters  -- @M
-     *              (explicit bounds and those implied by variance annotations) -- @see checkKindBounds
+     *       1.7.2 higher-order type arguments must respect bounds on higher-order type parameters  — @M
+     *              (explicit bounds and those implied by variance annotations) — @see checkKindBounds
      *    1.8. If O and M are values, then
      *    1.8.1  M's type is a subtype of O's type, or
      *    1.8.2  M is of type []S, O is of type ()T and S <: T, or

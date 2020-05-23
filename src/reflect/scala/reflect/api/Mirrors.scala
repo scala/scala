@@ -109,7 +109,7 @@ package api
  * }}}
  *
  * '''[[scala.reflect.api.Mirrors#MethodMirror]]'''. Used for invoking instance methods (Scala only has
- * instance methods-- methods of objects are instance methods of object instances, obtainable
+ * instance methods—methods of objects are instance methods of object instances, obtainable
  * via `ModuleMirror.instance`). Entry point: `val mm = im.reflectMethod(<method symbol>)`.
  * Example:
  * {{{
@@ -124,7 +124,7 @@ package api
  * }}}
  *
  * '''[[scala.reflect.api.Mirrors#FieldMirror]]'''. Used for getting/setting instance fields
- * (Scala only has instance fields-- fields of objects are instance methods of object instances
+ * (Scala only has instance fields—fields of objects are instance methods of object instances
  * obtainable via ModuleMirror.instance). Entry point:
  * `val fm = im.reflectMethod(<field or accessor symbol>)`.
  * Example:

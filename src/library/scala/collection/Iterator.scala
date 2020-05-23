@@ -31,7 +31,7 @@ import scala.runtime.Statics
   * are also the sole abstract methods: `next` and `hasNext`.
   *
   * Both these methods can be called any number of times without having to discard the
-  * iterator. Note that even `hasNext` may cause mutation -- such as when iterating
+  * iterator. Note that even `hasNext` may cause mutation—such as when iterating
   * from an input stream, where it will block until the stream is closed or some
   * input becomes available.
   *

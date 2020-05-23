@@ -87,7 +87,7 @@ import ProcessBuilder.{Sink, Source}
   *   - `lazyLines`: returns immediately like `run`, and the output being generated
   *     is provided through a `LazyList[String]`. Getting the next element of that
   *     `LazyList` may block until it becomes available. This method will throw an
-  *     exception if the return code is different than zero -- if this is not
+  *     exception if the return code is different than zero—if this is not
   *     desired, use the `lazyLines_!` method.
   *
   * ==Handling Input and Output==
@@ -99,7 +99,7 @@ import ProcessBuilder.{Sink, Source}
   * semantics of these methods.
   *
   * Some methods will cause stdin to be used as input. Output can be controlled
-  * with a [[scala.sys.process.ProcessLogger]] -- `!!` and `lazyLines` will only
+  * with a [[scala.sys.process.ProcessLogger]] — `!!` and `lazyLines` will only
   * redirect error output when passed a `ProcessLogger`. If one desires full
   * control over input and output, then a [[scala.sys.process.ProcessIO]] can be
   * used with `run`.

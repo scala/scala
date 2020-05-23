@@ -275,7 +275,7 @@ trait Infer extends Checkable {
      *  of symbol infos on its way to transforming java raw types (but
      *  only of terms - why?)
      *
-     * Note: pre is not refchecked -- moreover, refchecking the resulting tree may not refcheck pre,
+     * Note: pre is not refchecked—moreover, refchecking the resulting tree may not refcheck pre,
      *       since pre may not occur in its type (callers should wrap the result in a TypeTreeWithDeferredRefCheck)
      */
     def checkAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree, isJava: Boolean): Tree = {

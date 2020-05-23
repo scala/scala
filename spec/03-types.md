@@ -897,8 +897,8 @@ The conformance relation $(<:)$ is the smallest transitive relation that satisfi
   $[a_1 , \ldots , a_n]$ and
   $[a_1' , \ldots , a_n']$, where an $a_i$ or $a_i'$ may include a variance
   annotation, a higher-order type parameter clause, and bounds. Then, $T$
-  conforms to $T'$ if any list $[t_1 , \ldots , t_n]$ -- with declared
-  variances, bounds and higher-order type parameter clauses -- of valid type
+  conforms to $T'$ if any list $[t_1 , \ldots , t_n]$ — with declared
+  variances, bounds and higher-order type parameter clauses—of valid type
   arguments for $T'$ is also a valid list of type arguments for $T$ and
   $T[t_1 , \ldots , t_n] <: T'[t_1 , \ldots , t_n]$. Note that this entails
   that:
@@ -1012,8 +1012,8 @@ trait ToString { def convert(x: Int): String }
 
 The application `foo((x: Int) => x.toString)` [resolves](06-expressions.html#overloading-resolution) to the first overload,
 as it's more specific:
-  - `Int => String` is compatible to `ToString` -- when expecting a value of type `ToString`, you may pass a function literal from `Int` to `String`, as it will be SAM-converted to said function;
-  - `ToString` is not compatible to `Int => String` -- when expecting a function from `Int` to `String`, you may not pass a `ToString`.
+  - `Int => String` is compatible to `ToString` — when expecting a value of type `ToString`, you may pass a function literal from `Int` to `String`, as it will be SAM-converted to said function;
+  - `ToString` is not compatible to `Int => String` — when expecting a function from `Int` to `String`, you may not pass a `ToString`.
 
 ## Volatile Types
 

@@ -327,7 +327,7 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
         /** apply itself must render a faithful representation of the TreeMaker
          *
          * Concretely, True must only be used to represent a TreeMaker that is sure to match and that does not do any computation at all
-         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to True -- scala/bug#6077)
+         * e.g., doCSE relies on apply itself being sound in this sense (since it drops TreeMakers that are approximated to True — scala/bug#6077)
          *
          * handleUnknown may be customized by the caller to approximate further
          *

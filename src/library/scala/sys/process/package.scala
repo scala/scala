@@ -81,7 +81,7 @@ package scala.sys {
     * [[scala.sys.process.Process]]'s companion object, or through implicit
     * conversions available in this package object itself.  Implicitly, each
     * process is created either out of a `String`, with arguments separated by
-    * spaces -- no escaping of spaces is possible -- or out of a
+    * spaces (no escaping of spaces is possible) or out of a
     * [[scala.collection.Seq]], where the first element represents the command
     * name, and the remaining elements are arguments to it. In this latter case,
     * arguments may contain spaces.
@@ -126,7 +126,7 @@ package scala.sys {
     * get `java.io.InputStream` and `java.io.OutputStream` representing its
     * output and input respectively. That is, what one writes to an
     * `OutputStream` is turned into input to the process, and the output of a
-    * process can be read from an `InputStream` -- of which there are two, one
+    * process can be read from an `InputStream` — of which there are two, one
     * representing normal output, and the other representing error output.
     *
     * This model creates a difficulty, which is that the code responsible for

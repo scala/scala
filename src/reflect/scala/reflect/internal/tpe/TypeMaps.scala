@@ -966,7 +966,7 @@ private[internal] trait TypeMaps {
      * (1) If `T` is stable, we can just use that.
      *
      * (2) scala/bug#3873: it'd be unsound to instantiate `param.type` to an unstable `T`,
-     * so we approximate to `X forSome {type X <: T with Singleton}` -- we can't soundly say more.
+     * so we approximate to `X forSome {type X <: T with Singleton}` — we can't soundly say more.
      */
     def apply(tp: Type): Type = tp match {
       case SingleType(NoPrefix, StabilizedArgTp(tp)) => tp

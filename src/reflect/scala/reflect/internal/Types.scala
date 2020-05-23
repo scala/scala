@@ -480,7 +480,7 @@ trait Types
 
     /** Replace formal type parameter symbols with actual type arguments. ErrorType on arity mismatch.
      *
-     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) -- \@M
+     * Amounts to substitution except for higher-kinded types. (See overridden method in TypeRef) — \@M
      */
     def instantiateTypeParams(formals: List[Symbol], actuals: List[Type]): Type =
       if (sameLength(formals, actuals)) this.subst(formals, actuals) else ErrorType
@@ -1003,7 +1003,7 @@ trait Types
 
     /** Find all members meeting the flag requirements.
      *
-     * If you require a DEFERRED member, you will get it if it exists -- even if there's an overriding concrete member.
+     * If you require a DEFERRED member, you will get it if it exists—even if there's an overriding concrete member.
      * If you exclude DEFERRED members, or don't specify any requirements,
      *    you won't get deferred members (whether they have an overriding concrete member or not)
      *
@@ -2296,10 +2296,10 @@ trait Types
      *  The only kind of "binds" we consider is where `prefix` (or its underlying type)
      *  is a refined type that declares `sym` (since the old prefix was discarded,
      *  the old symbol is now stale and we should update it, like in `def rebind`,
-     *  except this is not for overriding symbols -- a vertical move -- but a "lateral" change.)
+     *  except this is not for overriding symbols (a vertical move) but a "lateral" change.)
      *
      *  The reason for this hack is that substitution and asSeenFrom clone RefinedTypes and
-     *  their members, without updating the potential references to those members -- here, we aim to patch
+     *  their members, without updating the potential references to those members—here, we aim to patch
      *  this up, so that: when changing a TypeRef(pre, sym, args) to a TypeRef(pre', sym', args'), and pre
      *  embeds a symbol sym (pre is a RefinedType(_, Scope(..., sym,...)) or a SingleType with such an
      *  underlying type), make sure that we update sym' to compensate for the change of pre -> pre' (which may
@@ -3082,7 +3082,7 @@ trait Types
     // Is this existential of the form: T[Q1, ..., QN] forSome { type Q1 >: L1 <: U1, ..., QN >: LN <: UN}
     private def isStraightApplication = (quantified corresponds underlying.typeArgs){ (q, a) => q.tpe =:= a }
 
-    /** [scala/bug#6169, scala/bug#8197 -- companion to scala/bug#1786]
+    /** [scala/bug#6169, scala/bug#8197 — companion to scala/bug#1786]
      *
      * Approximation to improve the bounds of a Java-defined existential type,
      * based on the bounds of the type parameters of the quantified type

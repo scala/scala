@@ -486,7 +486,7 @@ trait ModelFactoryImplicitSupport {
    *  - before finding a view (implicit method in scope that maps class A[T1,T2,.. Tn] to something else) the type
    * parameters are transformed into "untouchable" type variables so that type inference does not attempt to
    * fully solve them down to a type but rather constrains them on both sides just enough for the view to be
-   * applicable -- now, we want to transform those type variables back to the original type parameters
+   * applicable—now, we want to transform those type variables back to the original type parameters
    *  - some of the bounds fail type inference and therefore refer to Nothing => when performing unification (lub, glb)
    * they start looking ugly => we (unsoundly) transform Nothing to WildcardType so we fool the unification algorithms
    * into thinking there's nothing there

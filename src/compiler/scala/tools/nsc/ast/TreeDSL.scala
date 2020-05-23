@@ -106,7 +106,7 @@ trait TreeDSL {
       // clear how to proceed, so for now it retains the non-duplicating behavior.
       def ===(rhs: Tree)            = Assign(target, rhs)
 
-      /** Casting & type tests -- working our way toward understanding exactly
+      /** Casting & type tests—working our way toward understanding exactly
        *  what differs between the different forms of IS and AS.
        *
        *  See ticket #2168 for one illustration of AS vs. AS_ANY.

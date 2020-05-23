@@ -78,7 +78,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
        * See TreeMakerToCond#updateSubstitution.
        *
        * Overridden in PreserveSubPatBinders to pretend it replaces the subpattern binders by subpattern refs
-       * (Even though we don't do so anymore -- see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
+       * (Even though we don't do so anymore—see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
        *
        * TODO: clean this up, would be nicer to have some higher-level way to compute
        * the binders bound by this tree maker and the symbolic values that correspond to them
@@ -164,7 +164,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       /** The substitution that specifies the trees that compute the values of the subpattern binders.
        *
        * We pretend to replace the subpattern binders by subpattern refs
-       * (Even though we don't do so anymore -- see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
+       * (Even though we don't do so anymore—see scala/bug#5158, scala/bug#5739 and scala/bug#6070.)
        */
       override def subPatternsAsSubstitution =
         Substitution(subPatBinders, subPatRefs) >> super.subPatternsAsSubstitution

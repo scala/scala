@@ -104,10 +104,10 @@ trait Kinds {
     || sym1.variance == sym2.variance
   )
 
-  /** Check well-kindedness of type application (assumes arities are already checked) -- @M
+  /** Check well-kindedness of type application (assumes arities are already checked) — @M
    *
-   * This check is also performed when abstract type members become concrete (aka a "type alias") -- then tparams.length==1
-   * (checked one type member at a time -- in that case, prefix is the name of the type alias)
+   * This check is also performed when abstract type members become concrete (aka a "type alias") — then tparams.length==1
+   * (checked one type member at a time—in that case, prefix is the name of the type alias)
    *
    * Type application is just like value application: it's "contravariant" in the sense that
    * the type parameters of the supplied type arguments must conform to the type parameters of

@@ -290,7 +290,7 @@ class AliasingFrame[V <: Value](nLocals: Int, nStack: Int) extends Frame[V](nLoc
    *   x = a
    *   y = b     // (x, a) and (y, b)
    * }
-   * [...]       // (x, a) -- merge of ((x, y, a)) and ((x, a), (y, b))
+   * [...]       // (x, a) — merge of ((x, y, a)) and ((x, a), (y, b))
    */
   override def merge(other: Frame[_ <: V], interpreter: Interpreter[V]): Boolean = {
     // merge is the main performance hot spot of a data flow analysis.

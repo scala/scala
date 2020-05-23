@@ -552,7 +552,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *  (exception for some symbols in scala package which are dealiased immediately)
      *  Call checkAccessible, which sets tree's attributes.
      *  Also note that checkAccessible looks up sym on pre without checking that pre is well-formed
-     *  (illegal type applications in pre will be skipped -- that's why typedSelect wraps the resulting tree in a TreeWithDeferredChecks)
+     *  (illegal type applications in pre will be skipped—that's why typedSelect wraps the resulting tree in a TreeWithDeferredChecks)
      *  @return modified tree and new prefix type
      */
     private def makeAccessible(tree: Tree, sym: Symbol, pre: Type, site: Tree): Any /*Type | (Tree, Type)*/ =
@@ -596,7 +596,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
     /** Post-process an identifier or selection node, performing the following:
-     *  1. Check that non-function pattern expressions are stable (ignoring volatility concerns -- scala/bug#6815)
+     *  1. Check that non-function pattern expressions are stable (ignoring volatility concerns — scala/bug#6815)
      *       (and narrow the type of modules: a module reference in a pattern has type Foo.type, not "object Foo")
      *  2. Check that packages and static modules are not used as values
      *  3. Turn tree type into stable type if possible and required by context.
@@ -2952,7 +2952,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       * is to keep the implementation of type inference (the computation of `samClassTpFullyDefined`) simple.
       *
       * Impl notes:
-      *   - `fun` has a FunctionType, but the expected type `pt` is some SAM type -- let's remedy that
+      *   - `fun` has a FunctionType, but the expected type `pt` is some SAM type—let's remedy that
       *   - `fun` is fully attributed, so we'll have to wrangle some symbols into shape (owner change, vparam syms)
       *   - after experimentation, it works best to type check function literals fully first and then adapt to a sam type,
       *     as opposed to a sam-specific code paths earlier on in type checking (in typedFunction).
@@ -6213,7 +6213,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /** Types a (fully parameterized) type tree */
     def typedType(tree: Tree): Tree = typedType(tree, NOmode)
 
-    /** Types a higher-kinded type tree -- pt denotes the expected kind and must be one of `Kind.WildCard` and `Kind.FromParams` */
+    /** Types a higher-kinded type tree—pt denotes the expected kind and must be one of `Kind.WildCard` and `Kind.FromParams` */
     def typedHigherKindedType(tree: Tree, mode: Mode, pt: Type): Tree =
       if (pt != Kind.Wildcard && pt.typeParams.isEmpty) typedType(tree, mode) // kind is known and it's *
       else context withinTypeConstructorAllowed typed(tree, NOmode, pt)

@@ -22,7 +22,7 @@ package api
  *
  * [[scala.reflect.api.Universe]] has two specialized sub-universes for different scenarios.
  * [[scala.reflect.api.JavaUniverse]] adds operations that link symbols and types to the underlying
- * classes and runtime values of a JVM instance-- this can be thought of as the `Universe` that
+ * classes and runtime values of a JVM instance—this can be thought of as the `Universe` that
  * should be used for all typical use-cases of Scala reflection. [[scala.reflect.macros.Universe]]
  * adds operations which allow macros to access selected compiler data structures and operations--
  * this type of `Universe` should only ever exist within the implementation of a Scala macro.

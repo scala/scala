@@ -170,7 +170,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         *  Ai =:= Ui || (Ai <:< Ui <:< AnyRef)
         *  Ru =:= void || (Ra =:= Ru || (Ra <:< AnyRef, Ru <:< AnyRef))
         *
-        * We can use the target method as-is -- if not, we create a bridging one that uses the types closest
+        * We can use the target method as-is — if not, we create a bridging one that uses the types closest
         * to the target method that still meet the above requirements.
         */
       val resTpOk = (

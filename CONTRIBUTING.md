@@ -6,7 +6,7 @@ You're always welcome to submit your PR straight away and start the discussion (
 
 ## The Scala Community
 
-In 2014, you -- the Scala community -- matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Lightbend since 2.10. Excellent work! (The split was roughly 25/25/50 for you/EPFL/Lightbend.)
+In 2014, you—the Scala community—matched the core team at EPFL in number of commits contributed to Scala 2.11, doubling the percentage of commits from outside EPFL/Lightbend since 2.10. Excellent work! (The split was roughly 25/25/50 for you/EPFL/Lightbend.)
 
 We are super happy about this, and are eager to make your experience contributing to Scala productive and satisfying, so that we can keep up this growth. We can't do this alone (nor do we want to)!
 
@@ -57,7 +57,7 @@ chance of being accepted.
 
 ### Tests
 
-Bug fixes should include regression tests -- in the same commit as the fix.
+Bug fixes should include regression tests—in the same commit as the fix.
 
 If testing isn't feasible, the commit message should explain why.
 
@@ -280,7 +280,7 @@ When including review feedback, we typically amend the changes into the existing
 and `push -f` to the branch. This is to keep the git history clean. Additional commits
 are OK if they stand on their own.
 
-Once all these conditions are met, we will merge your changes -- if we
+Once all these conditions are met, we will merge your changes—if we
 agree with it!  We are available on scala/contributors (Gitter) or
 contributors.scala-lang.org (Discourse) to discuss changes beforehand,
 before you put in the coding work.

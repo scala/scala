@@ -344,8 +344,8 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     def valueClassList = List("unit", "boolean", "byte", "short", "char", "int", "long", "float", "double")
     def valueClassFilterPrefixes = List("scala.LowPriorityImplicits", "scala.Predef")
 
-    /** Dirty, dirty, dirty hack: the value params conversions can all kick in -- and they are disambiguated by priority
-     *  but showing priority in scaladoc would make no sense -- so we have to manually remove the conversions that we
+    /** Dirty, dirty, dirty hack: the value params conversions can all kick in—and they are disambiguated by priority
+     *  but showing priority in scaladoc would make no sense—so we have to manually remove the conversions that we
      *  know will never get a chance to kick in. Anyway, DIRTY DIRTY DIRTY! */
     def valueClassFilter(value: String, conversionName: String): Boolean = {
       val valueName = value.toLowerCase

@@ -287,11 +287,11 @@ trait MatchTranslation {
       *     1) the substitution due to the variables bound by patterns
       *     2) the combination of the extractor calls using `flatMap`.
       *
-      * 2) is easy -- it looks like: `translatePattern_1.flatMap(translatePattern_2....flatMap(translatePattern_N.flatMap(translateGuard.flatMap((x_i) => success(Xbody(x_i)))))...)`
+      * 2) is easy—it looks like: `translatePattern_1.flatMap(translatePattern_2....flatMap(translatePattern_N.flatMap(translateGuard.flatMap((x_i) => success(Xbody(x_i)))))...)`
       *     this must be right-leaning tree, as can be seen intuitively by considering the scope of bound variables:
       *     variables bound by pat_1 must be visible from the function inside the left-most flatMap right up to Xbody all the way on the right
       * 1) is tricky because translatePattern_i determines the shape of translatePattern_i+1:
-      *    zoom in on `translatePattern_1.flatMap(translatePattern_2)` for example -- it actually looks more like:
+      *    zoom in on `translatePattern_1.flatMap(translatePattern_2)` for example—it actually looks more like:
       *      `translatePattern_1(x_scrut).flatMap((x_1) => {y_i -> x_1._i}translatePattern_2)`
       *
       *    `x_1` references the result (inside the monad) of the extractor corresponding to `pat_1`,
