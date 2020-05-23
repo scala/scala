@@ -250,7 +250,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
   /** An inherited template that was not documented in its original owner - example:
    *  in classpath:  trait T { class C } — T (and implicitly C) are not documented
-   *  in the source: trait U extends T — C appears in U as a MemberTemplateImpl -- that is, U has a member for it
+   *  in the source: trait U extends T — C appears in U as a MemberTemplateImpl — that is, U has a member for it
    *  but C doesn't get its own page
    */
   abstract class MemberTemplateImpl(sym: Symbol, inTpl: DocTemplateImpl) extends MemberImpl(sym, inTpl) with TemplateImpl with HigherKindedImpl with MemberTemplateEntity {
