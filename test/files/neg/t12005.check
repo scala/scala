@@ -1,0 +1,5 @@
+t12005.scala:24: error: diverging implicit expansion for type AbstractSaleRepository.this.context.Encoder[A]
+starting with method mappedDecoder in trait Encoding
+  implicitly[Encoder[A]]
+            ^
+1 error

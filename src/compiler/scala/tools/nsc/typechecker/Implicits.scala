@@ -529,25 +529,24 @@ trait Implicits {
       deriveTypeWithWildcards(syms.distinct)(tp)
     }
 
-    private def allSymbols(tp: Type): Set[Symbol] = {
-      @tailrec
-      def loop(tps: List[Type], acc: Set[Symbol]): Set[Symbol] = tps match {
-        case Nil => acc
-        case hd :: tl =>
-          def hdSym(syms: Set[Symbol]) = {
-            val sym = hd.typeSymbol
-            if(sym != NoSymbol) syms + sym else syms
-          }
-          hd.dealias match {
-            case SingleType(pre, sym)    => loop(pre :: hd.dealiasWiden :: tl, hdSym(acc + sym))
-            case ThisType(sym)           => loop(tl, hdSym(acc + sym))
-            case TypeRef(pre, sym, args) => loop(pre :: args ++ tl, hdSym(acc + sym))
-            case RefinedType(parents, _) => loop(parents ++ tl, hdSym(acc))
-            case _ => loop(tl, hdSym(acc))
-          }
-        }
-
-      loop(List(tp), Set.empty)
+    private object AllSymbols extends TypeCollector(Set[Symbol](NoSymbol)) {
+      def apply(tp: Type): Unit = tp match {
+        case SingleType(pre, sym) =>
+          result += tp.typeSymbol
+          result += sym
+          apply(pre)
+          apply(tp.dealiasWiden)
+        case ThisType(sym) =>
+          result += sym
+        case TypeRef(pre, sym, args) =>
+          result += sym
+          apply(pre)
+          args.foreach(apply)
+        case RefinedType(parents, _) =>
+          parents.foreach(apply)
+        case _ =>
+          tp.foldOver(this)
+      }
     }
 
     /** The expected type with all undetermined type parameters replaced with wildcards. */
@@ -578,12 +577,12 @@ trait Implicits {
         if (tree == EmptyTree) false
         else {
           lazy val ptStripped = stripped(core(pt))
-          lazy val ptStrippedSyms = allSymbols(ptStripped)
+          lazy val ptStrippedSyms = AllSymbols.collect(ptStripped)
 
           // Are all the symbols of the stripped core of dominating pt contained in the stripped core of tp?
           def coversDominatingPt(tp: Type): Boolean = {
             val tpStripped = stripped(core(tp))
-            dominates(ptStripped, tpStripped) && ptStrippedSyms == allSymbols(tpStripped)
+            dominates(ptStripped, tpStripped) && ptStrippedSyms == AllSymbols.collect(tpStripped)
           }
 
           @tailrec
