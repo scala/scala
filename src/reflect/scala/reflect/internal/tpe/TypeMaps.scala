@@ -1063,7 +1063,11 @@ private[internal] trait TypeMaps {
   }
 
   /** A map to implement the `contains` method. */
-  class ContainsCollector(sym: Symbol) extends ExistsTypeRefCollector {
+  class ContainsCollector(private[this] var sym: Symbol) extends ExistsTypeRefCollector {
+    def reset(nsym: Symbol): Unit = {
+      result = false
+      sym = nsym
+    }
     override protected def pred(sym1: Symbol): Boolean = sym1 == sym
   }
   class ContainsAnyCollector(syms: List[Symbol]) extends ExistsTypeRefCollector {
