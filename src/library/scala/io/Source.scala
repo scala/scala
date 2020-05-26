@@ -96,7 +96,7 @@ object Source {
       bufferSize,
       () => fromFile(file, bufferSize)(codec),
       () => inputStream.close()
-    )(codec) withDescription ("file:" + file.getAbsolutePath)
+    )(codec) withDescription s"file:${file.getAbsolutePath}"
   }
 
   /** Create a `Source` from array of bytes, decoding

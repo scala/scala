@@ -6,8 +6,9 @@
   write file, then read back its chars, and get back the original.
 
 */
-object Test
-{
+import scala.util.Using
+
+object Test {
   val N=4
 
   import java.io.{ File => JFile }
@@ -16,12 +17,13 @@ object Test
   def overwrite(file: JFile, w: FileWriter => Unit): Unit = {
     val fw=new FileWriter(file)
     w(fw)
-    fw.close
+    fw.close()
   }
-  def delete_after(f: JFile, g: Source => Unit) = {
-    g(Source.fromFile(f))
-    f.delete
-  }
+  def delete_after(f: JFile, g: Source => Unit) =
+    Using(Source.fromFile(f)) { src =>
+      g(src)
+      f.delete()
+    }
   def store_tempfile(f: FileWriter => Unit)(implicit name: String) : JFile = {
     val tp=JFile.createTempFile(name,null)
     overwrite(tp,f)
@@ -32,20 +34,16 @@ object Test
   val chars=List('\n','\r','a')
 
   type Cs = List[Char]
-  def all_strings(n: Int) : List[Cs] = {
+  def all_strings(n: Int) : List[Cs] =
     if (n==0) List(Nil)
     else {
       val sufs=all_strings(n-1)
       chars.flatMap((c) => sufs.map(c :: _))
     }
-  }
-  def test(n: Int): Unit = {
+  def test(n: Int): Unit =
     for(l <- all_strings(n)) {
       val tmp=store_tempfile((f) => l.foreach(f.write(_)))
       delete_after(tmp,(s) => assert(s.toList == l))
     }
-  }
-  def main(args: Array[String]): Unit = {
-    (0 until N).foreach(test(_))
-  }
+  def main(args: Array[String]): Unit = (0 until N).foreach(test(_))
 }

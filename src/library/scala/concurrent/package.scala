@@ -75,8 +75,8 @@ import scala.annotation.implicitNotFound
  * import ExecutionContext.Implicits.global  // implicit execution context
  *
  * val firstZebra: Future[Int] = Future {
- *   val source = scala.io.Source.fromFile("/etc/dictionaries-common/words")
- *   source.toSeq.indexOfSlice("zebra")
+ *   val words = Files.readAllLines("/etc/dictionaries-common/words").asScala
+ *   words.indexOfSlice("zebra")
  * }
  * }}}
  *

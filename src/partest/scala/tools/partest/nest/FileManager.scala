@@ -15,7 +15,7 @@
 package scala.tools.partest
 package nest
 
-import java.io.{ File, IOException }
+import java.io.{File, IOException}
 import java.net.URLClassLoader
 
 object FileManager {
@@ -64,16 +64,6 @@ object FileManager {
     dir.dirs filter (_.name startsWith name)
 
   def joinPaths(paths: List[Path]) = ClassPath.join(paths.map(_.getAbsolutePath).distinct: _*)
-
-  /** Compares two files using difflib to produce a unified diff.
-   *
-   *  @param  original  the first file to be compared
-   *  @param  revised  the second file to be compared
-   *  @return the unified diff of the compared files or the empty string if they're equal
-   */
-  def compareFiles(original: File, revised: File): String = {
-    compareContents(io.Source.fromFile(original).getLines.toSeq, io.Source.fromFile(revised).getLines.toSeq, original.getName, revised.getName)
-  }
 
   /** Compares two lists of lines using difflib to produce a unified diff.
    *

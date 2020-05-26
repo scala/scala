@@ -1,4 +1,10 @@
+
+import scala.jdk.CollectionConverters._
 import scala.tools.partest.nest.FileManager._
+import scala.util.Using
+
+import java.io.File
+import java.nio.file.Files
 
 object Test extends App {
   val cm = reflect.runtime.currentMirror
@@ -72,11 +78,9 @@ object Test extends App {
         |  }
         |}""".stripMargin
 
-  import java.io.File
   val testFile = new File(sys.props("partest.test-path"))
-  val actualFile = new java.io.File(testFile.getParent + "/../../../src/reflect/scala/reflect/runtime/JavaUniverseForce.scala").getCanonicalFile
-  val actual = scala.io.Source.fromFile(actualFile)
-  val actualLines = actual.getLines.toList
+  val actualFile = new File(testFile.getParent + "/../../../src/reflect/scala/reflect/runtime/JavaUniverseForce.scala").getCanonicalFile
+  val actualLines = Files.readAllLines(actualFile.toPath).asScala.toList
   val generatedLines = code.linesIterator.toList
   if (actualLines != generatedLines) {
     val msg = s"""|${actualFile} must be updated.
