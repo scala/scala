@@ -136,7 +136,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     protected[collection] def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet1(w)
       else if (idx == 1) createSmall(elems, w)
-      else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
+      else this.fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
 
 
     override def diff(other: collection.Set[Int]): BitSet = other match {
@@ -144,14 +144,14 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
         case 0 => this
         case _ =>
           val newElems = elems & ~bs.word(0)
-          if (newElems == 0L) empty else new BitSet1(newElems)
+          if (newElems == 0L) this.empty else new BitSet1(newElems)
       }
       case _ => super.diff(other)
     }
 
     override def filterImpl(pred: Int => Boolean, isFlipped: Boolean): BitSet = {
       val _elems = BitSetOps.computeWordForFilter(pred, isFlipped, elems, 0)
-      if (_elems == 0L) empty else new BitSet1(_elems)
+      if (_elems == 0L) this.empty else new BitSet1(_elems)
     }
   }
 
@@ -162,7 +162,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
     protected[collection] def updateWord(idx: Int, w: Long): BitSet =
       if (idx == 0) new BitSet2(w, elems1)
       else if (idx == 1) createSmall(elems0, w)
-      else fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
+      else this.fromBitMaskNoCopy(updateArray(Array(elems0, elems1), idx, w))
 
 
     override def diff(other: collection.Set[Int]): BitSet = other match {
@@ -176,7 +176,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
           if (_elems1 == 0L) {
             if (_elems0 == 0L) {
-              empty
+              this.empty
             } else {
               new BitSet1(_elems0)
             }
@@ -193,7 +193,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
       if (_elems1 == 0L) {
         if (_elems0 == 0L) {
-          empty
+          this.empty
         }
         else new BitSet1(_elems0)
       }
@@ -207,7 +207,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
 
     protected[collection] def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
 
-    protected[collection] def updateWord(idx: Int, w: Long): BitSet = fromBitMaskNoCopy(updateArray(elems, idx, w))
+    protected[collection] def updateWord(idx: Int, w: Long): BitSet = this.fromBitMaskNoCopy(updateArray(elems, idx, w))
 
     override def diff(that: collection.Set[Int]): BitSet = that match {
       case bs: collection.BitSet =>
@@ -245,7 +245,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
           }
           if (i < 0) {
             // all indices >= 0 have had result 0, so the bitset is empty
-            empty
+            this.empty
           } else {
             val minimumNonZeroIndex: Int = i + 1
             while (!anyChanges && i >= 0) {
@@ -256,7 +256,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
             }
             if (anyChanges) {
               if (minimumNonZeroIndex == -1) {
-                empty
+                this.empty
               } else if (minimumNonZeroIndex == 0) {
                 new BitSet1(currentWord)
               } else if (minimumNonZeroIndex == 1) {
@@ -268,7 +268,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
                   newArray(i) = word(i) & ~bs.word(i)
                   i -= 1
                 }
-                fromBitMaskNoCopy(newArray)
+                this.fromBitMaskNoCopy(newArray)
               }
             } else {
               this
@@ -291,7 +291,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
               newElems(i) = word(i) & ~bs.word(i)
               i -= 1
             }
-            fromBitMaskNoCopy(newElems)
+            this.fromBitMaskNoCopy(newElems)
           } else {
             this
           }
@@ -315,7 +315,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
       }
       if (i < 0) {
         // all indices >= 0 have had result 0, so the bitset is empty
-        if (currentWord == 0) empty else fromBitMaskNoCopy(Array(currentWord))
+        if (currentWord == 0) this.empty else this.fromBitMaskNoCopy(Array(currentWord))
       } else {
         val minimumNonZeroIndex: Int = i + 1
         while (!anyChanges && i >= 0) {
@@ -326,7 +326,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
         }
         if (anyChanges) {
           if (minimumNonZeroIndex == -1) {
-            empty
+            this.empty
           } else if (minimumNonZeroIndex == 0) {
             new BitSet1(currentWord)
           } else if (minimumNonZeroIndex == 1) {
@@ -338,7 +338,7 @@ object BitSet extends SpecificIterableFactory[Int, BitSet] {
               newArray(i) = BitSetOps.computeWordForFilter(pred, isFlipped, word(i), i)
               i -= 1
             }
-            fromBitMaskNoCopy(newArray)
+            this.fromBitMaskNoCopy(newArray)
           }
         } else {
           this
