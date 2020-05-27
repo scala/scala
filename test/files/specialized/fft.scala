@@ -11,6 +11,7 @@
 */
 
 import Math.{sqrt, pow}
+import scala.util.Using
 
 /** Test that specialization handles tuples. Perform FFT transformation
  *  using pairs to represent complex numbers.
@@ -122,24 +123,27 @@ object Test  {
     else "input2.txt"
   }
 
-  def setUp: Unit = {
-//    print("Loading from %s.. ".format(inputFileName))
-    val f = io.Source.fromFile(inputFileName)
-    val lines = f.getLines
-    val n = lines.next.toInt
-    data = new Array[Complex](n)
-    var i = 0
-    for (line <- lines if line != "") {
-      val pair = line.trim.split(" ")
-      data(i) = (pair(0).trim.toDouble, pair(1).trim.toDouble)
-      i += 1
+  def setUp(): Unit = {
+    //print("Loading from %s.. ".format(inputFileName))
+    def readData() = Using(io.Source.fromFile(inputFileName)) { f =>
+      val lines = f.getLines
+      val n = lines.next.toInt
+      val data = new Array[Complex](n)
+      var i = 0
+      for (line <- lines if line != "") {
+        val pair = line.trim.split(" ")
+        data(i) = (pair(0).trim.toDouble, pair(1).trim.toDouble)
+        i += 1
+      }
+      data
     }
-//    println("[loaded]")
-    println("Processing " + n + " items")
+    data = readData().getOrElse(???)
+    //println("[loaded]")
+    println(s"Processing ${data.length} items")
   }
 
   def main(args: Array[String]): Unit = {
-    setUp
+    setUp()
     run()
 
     println("Boxed doubles: " + runtime.BoxesRunTime.doubleBoxCount)

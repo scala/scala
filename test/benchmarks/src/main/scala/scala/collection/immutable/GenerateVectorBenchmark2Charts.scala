@@ -13,9 +13,10 @@
 package scala.collection.immutable
 
 import java.io.{BufferedWriter, File, FileWriter, PrintWriter}
+import java.nio.file.Files
 import java.text.DecimalFormat
 
-import scala.io.Source
+import scala.jdk.CollectionConverters._
 
 /**
   * Generate line charts for Vector benchmarks.
@@ -42,7 +43,7 @@ object GenerateVectorBenchmark2Charts extends App {
 
   def load(file: File): Map[String, IndexedSeq[Result]] = {
     println(s"Loading $file...")
-    Source.fromFile(file, "UTF8").getLines().drop(1).map { s =>
+    Files.readAllLines(file.toPath).asScala.drop(1).map { s =>
       val a = s.split(',')
       def unquote(s: String): String = s.substring(1, s.length-1)
       def local(s: String): String = {
