@@ -1323,37 +1323,38 @@ trait Implicits {
      *  bound, the implicits infos which are members of these companion objects.
      */
     private def companionImplicitMap(tp: Type): InfoMap = {
-      val isScala213 = currentRun.isScala213
 
       /* Populate implicit info map by traversing all parts of type `tp`.
        * Parameters as for `getParts`.
        */
       def getClassParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]) = tp match {
-        case TypeRef(pre, sym, args) =>
-          val infos1 = infoMap.get(sym).getOrElse(Nil)
-          if(!infos1.exists(pre =:= _.pre.prefix)) {
-            if (infos1.exists(_.isSearchedPrefix))
-              infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: infos1
+        case TypeRef(pre, sym, _) =>
+          val symInfos = infoMap.getOrElse(sym, Nil)
+          if(!symInfos.exists(pre =:= _.pre.prefix)) {
+            if (symInfos.exists(_.isSearchedPrefix))
+              infoMap(sym) = SearchedPrefixImplicitInfo(pre) :: symInfos
             else if (pre.isStable && !pre.typeSymbol.isExistentiallyBound) {
               val pre1 =
                 if (sym.isPackageClass) sym.packageObject.typeOfThis
                 else singleType(pre, companionSymbolOf(sym, context))
-              val infos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem)).toList
-              val mergedInfos =
-                if(infos1.isEmpty) infos
-                else {
-                  val nonDependentInfos = infos1.filterNot(_.dependsOnPrefix)
-                  if(nonDependentInfos.nonEmpty)
-                    log(s"Implicit members ${nonDependentInfos.mkString("(", ", ", ")")} of $pre#$sym which are also visible via another prefix: ${infos1.head.pre.prefix}")
-                  infos1.filter(_.dependsOnPrefix) ++ infos.filter(_.dependsOnPrefix)
+              val preInfos = pre1.implicitMembers.iterator.map(mem => new ImplicitInfo(mem.name, pre1, mem))
+              val mergedInfos = if (symInfos.isEmpty) preInfos else {
+                if (shouldLogAtThisPhase && symInfos.exists(!_.dependsOnPrefix)) log {
+                  val nonDepInfos = symInfos.iterator.filterNot(_.dependsOnPrefix).mkString("(", ", ", ")")
+                  val prefix = symInfos.head.pre.prefix
+                  s"Implicit members $nonDepInfos of $pre#$sym which are also visible via another prefix: $prefix"
                 }
-              if(mergedInfos.isEmpty)
-                infoMap(sym) = List(SearchedPrefixImplicitInfo(pre))
+
+                (symInfos.iterator ++ preInfos).filter(_.dependsOnPrefix)
+              }
+
+              if (mergedInfos.hasNext)
+                infoMap(sym) = mergedInfos.toList
               else
-                infoMap(sym) = mergedInfos
+                infoMap(sym) = List(SearchedPrefixImplicitInfo(pre))
             }
             // Only strip annotations on the infrequent path
-            val bts = (if(infos1.isEmpty) tp else tp.map(_.withoutAnnotations)).baseTypeSeq
+            val bts = (if (symInfos.isEmpty) tp else tp.map(_.withoutAnnotations)).baseTypeSeq
             var i = 1
             while (i < bts.length) {
               getParts(bts(i))
@@ -1374,37 +1375,26 @@ trait Implicits {
       def getParts(tp: Type)(implicit infoMap: InfoMap, seen: mutable.HashSet[Type], pending: Set[Symbol]): Unit = {
         if (seen add tp) tp match {
           case TypeRef(pre, sym, args) =>
-            if (sym.isClass && !sym.isRoot &&
-                (isScala213 || !sym.isAnonOrRefinementClass)) {
-              if (sym.isStatic && !(pending contains sym))
-                infoMap ++= {
-                  infoMapCache get sym match {
-                    case Some(imap) => imap
-                    case None =>
-                      val result = new InfoMap
-                      getClassParts(sym.tpeHK)(result, new mutable.HashSet(), pending + sym)
-                      infoMapCache(sym) = result
-                      result
-                  }
-                }
+            if (sym.isClass && !sym.isRoot) {
+              if (sym.isStatic && !pending.contains(sym))
+                infoMap ++= infoMapCache.getOrElseUpdate(sym, {
+                  val result = new InfoMap
+                  getClassParts(sym.tpeHK)(result, new mutable.HashSet, pending + sym)
+                  result
+                })
               else
                 getClassParts(tp)
-              args foreach getParts
+              args.foreach(getParts)
             } else if (sym.isAliasType) {
               getParts(tp.normalize) // scala/bug#7180 Normalize needed to expand HK type refs
             } else if (sym.isAbstractType) {
               // SLS 2.12, section 7.2:
-
               //  - if `T` is an abstract type, the parts of its upper bound;
               getParts(tp.upperBound)
-
-              if (isScala213) {
-                //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
-                args foreach getParts
-
-                //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
-                getParts(pre)
-              }
+              //  - if `T` is a parameterized type `S[T1,…,Tn]`, the union of the parts of `S` and `T1,…,Tn`
+              args.foreach(getParts)
+              //  - if `T` is a type projection `S#U`, the parts of `S` as well as `T` itself;
+              getParts(pre)
             }
           case ThisType(_) =>
             getParts(tp.widen)
