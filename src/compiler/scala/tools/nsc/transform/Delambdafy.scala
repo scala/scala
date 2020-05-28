@@ -54,7 +54,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
   }
 
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = {
-    if (settings.Ydelambdafy.value == "method") new Phase(prev)
+    if (settings.Ydelambdafy.value != "inline") new Phase(prev)
     else new SkipPhase(prev)
   }
 
@@ -130,6 +130,12 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       //   instantiatedMethodType is derived from lambdaTarget's signature
       //   samMethodType is derived from samOf(functionalInterface)'s signature
       apply.updateAttachment(LambdaMetaFactoryCapable(lambdaTarget, fun.vparams.length, functionalInterface, sam, samBridges, isSerializable, addScalaSerializableMarker))
+
+      if (lambdaTarget != target) {
+        // A boxing bridge is needed, so the lambda isn't just a method reference :(
+        // Drop the annotation added in "pretransform" so that the backend doesn't drop it!
+        target.removeAttachment[JustMethodReference]
+      }
 
       apply
     }
@@ -294,12 +300,30 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
       case Template(_, _, _) =>
         def pretransform(tree: Tree): Tree = tree match {
           case dd: DefDef if dd.symbol.isDelambdafyTarget =>
-            if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
+            val ddef = if (!dd.symbol.hasFlag(STATIC) && methodReferencesThis(dd.symbol)) {
               gen.mkStatic(dd, dd.symbol.name, sym => sym)
             } else {
               dd.symbol.setFlag(STATIC)
               dd
             }
+            if (settings.Ydelambdafy.value == "method-ref") {
+              // e.g. `def $anonfun$f$1(x$1: Foo): Unit = x$1.bar()`
+              // x$1.bar() is the Select, with x$1 as both the arg and the select.qualifier
+              def justMethRef(arg: ValDef, sel: Select) = (
+                   sel.symbol.isMethod // must be a method
+                && sel.qualifier.symbol == arg.symbol // the method must be on the first arg
+                && !sel.symbol.owner.isPrimitiveValueClass // can't involve primitives (boxing/specialisation)
+                && sel.symbol.owner != ArrayClass          // ... or arrays
+              )
+              ddef match {
+                case DefDef(_, _, _, List(arg :: Nil), _, Apply(sel @ Select(_: Ident, _), Nil)) if justMethRef(arg, sel) =>
+                  // Store the lambdaTarget while we still have access to the def's body (tree)
+                  // (and now that we're post erasure, so we don't store a reference to un-erased Any)
+                  ddef.symbol.updateAttachment(JustMethodReference(sel.symbol))
+                case _ =>
+              }
+            }
+            ddef
           case t => t
         }
         try {

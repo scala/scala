@@ -51,6 +51,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.CompoundTypeTreeOriginalAttachment
     this.SAMFunction
     this.DelambdafyTarget
+    this.JustMethodReference
     this.BackquotedIdentifierAttachment
     this.NoWarnAttachment
     this.PatVarDefAttachment
