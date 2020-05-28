@@ -233,8 +233,8 @@ A pull request should consist of commits with messages that clearly state what p
 
 Commit logs should be stated in the active, present tense.
 
-A commit's subject should be 72 characters or less.  Overall, think of
-the first line of the commit as a description of the action performed
+The subject line of a commit message should be no more than 72 characters.
+Overall, think of the first line of the commit as a description of the action performed
 by the commit on the code base, so use the active voice and the
 present tense.  That also makes the commit subjects easy to reuse in
 release notes.

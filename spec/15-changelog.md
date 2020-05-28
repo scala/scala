@@ -94,7 +94,7 @@ interpreted.
 
 The contractiveness requirement for
 [implicit method definitions](07-implicits.html#implicit-parameters)
-has been dropped. Instead it is checked for each implicit expansion individually
+has been dropped. Instead, it is checked for each implicit expansion individually
 that the expansion does not result in a cycle or a tree of infinitely
 growing types.
 

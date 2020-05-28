@@ -130,7 +130,7 @@ consists of the following steps.
   up to the template's superclass denoted by $sc$ are
   mixin-evaluated. Mixin-evaluation happens in reverse order of
   occurrence in the linearization.
-- Finally the statement sequence $\mathit{stats}\,$ is evaluated.
+- Finally, the statement sequence $\mathit{stats}\,$ is evaluated.
 
 ###### Delayed Initialization
 This statement sequence constitutes the initialization code for an object
@@ -837,7 +837,7 @@ class LinkedList[A]() {
 ```
 
 This defines a class `LinkedList` with three constructors.  The
-second constructor constructs an singleton list, while the
+second constructor constructs a singleton list, while the
 third one constructs a list with a given head and tail.
 
 ### Case Classes

@@ -706,8 +706,7 @@ it is interpreted as `{ val $x$=$e_1$; $e_2$.$\mathit{op}$($x\,$) }`, where $x$ 
 
 An _assignment operator_ is an operator symbol (syntax category
 `op` in [Identifiers](01-lexical-syntax.html#identifiers)) that ends in an equals character
-“`=`”, with the exception of operators for which one of
-the following conditions holds:
+“`=`”, with the following exceptions:
 
 1. the operator also starts with an equals character, or
 1. the operator is one of `(<=)`, `(>=)`, `(!=)`.
