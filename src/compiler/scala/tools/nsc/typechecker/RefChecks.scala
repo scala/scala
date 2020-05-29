@@ -1244,6 +1244,9 @@ abstract class RefChecks extends Transform {
     // warnings after the first, but I think it'd be better if we didn't have to
     // arbitrarily choose one as more important than the other.
     private def checkUndesiredProperties(sym: Symbol, pos: Position): Unit = {
+      if (sym.isApiStatus && !currentOwner.ownerChain.exists(x => x.isApiStatus))
+        currentRun.reporting.handleApiStatus(pos, sym, currentOwner)
+
       // If symbol is deprecated, and the point of reference is not enclosed
       // in either a deprecated member or a scala bridge method, issue a warning.
       if (sym.isDeprecated && !currentOwner.ownerChain.exists(x => x.isDeprecated))
