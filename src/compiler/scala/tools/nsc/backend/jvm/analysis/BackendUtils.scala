@@ -622,6 +622,16 @@ object BackendUtils {
     }
   }
 
+  def maxLocals(method: MethodNode): Int = {
+    computeMaxLocalsMaxStack(method)
+    method.maxLocals
+  }
+
+  def maxStack(method: MethodNode): Int = {
+    computeMaxLocalsMaxStack(method)
+    method.maxStack
+  }
+
   /**
    * In order to run an Analyzer, the maxLocals / maxStack fields need to be available. The ASM
    * framework only computes these values during bytecode generation.

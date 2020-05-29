@@ -118,7 +118,6 @@ abstract class ClosureOptimizer {
         if (AsmAnalyzer.sizeOKForSourceValue(method)) closureInstantiations.get(method) match {
           case Some(closureInits) =>
             // A lazy val to ensure the analysis only runs if necessary (the value is passed by name to `closureCallsites`)
-            BackendUtils.computeMaxLocalsMaxStack(method)
             lazy val prodCons = new ProdConsAnalyzer(method, ownerClass)
 
             for (init <- closureInits.valuesIterator) closureCallsites(init, prodCons) foreach {
@@ -165,13 +164,12 @@ abstract class ClosureOptimizer {
    */
   private def localsForClosureRewrite(closureInit: ClosureInstantiation): (LocalsList, LocalsList) = {
     val ownerMethod = closureInit.ownerMethod
-    BackendUtils.computeMaxLocalsMaxStack(ownerMethod)
     val captureLocals = storeCaptures(closureInit)
 
     // allocate locals for storing the arguments of the closure apply callsites.
     // if there are multiple callsites, the same locals are re-used.
     val argTypes = closureInit.lambdaMetaFactoryCall.samMethodType.getArgumentTypes
-    val firstArgLocal = ownerMethod.maxLocals
+    val firstArgLocal = BackendUtils.maxLocals(ownerMethod)
 
     val argLocals = LocalsList.fromTypes(firstArgLocal, argTypes)
     ownerMethod.maxLocals = firstArgLocal + argLocals.size
@@ -355,7 +353,7 @@ abstract class ClosureOptimizer {
     // One slot per value is correct for long / double, see comment in the `analysis` package object.
     val numCapturedValues = localsForCapturedValues.locals.length
     val invocationStackHeight = stackHeight + numCapturedValues - 1 + (if (isNew) 2 else 0) // -1 because the closure is gone
-    if (invocationStackHeight > ownerMethod.maxStack)
+    if (invocationStackHeight > BackendUtils.maxStack(ownerMethod))
       ownerMethod.maxStack = invocationStackHeight
 
     // replace the callsite with a new call to the body method
@@ -443,7 +441,7 @@ abstract class ClosureOptimizer {
   private def storeCaptures(closureInit: ClosureInstantiation): LocalsList = {
     val indy = closureInit.lambdaMetaFactoryCall.indy
     val capturedTypes = Type.getArgumentTypes(indy.desc)
-    val firstCaptureLocal = closureInit.ownerMethod.maxLocals
+    val firstCaptureLocal = BackendUtils.maxLocals(closureInit.ownerMethod)
 
     // This could be optimized: in many cases the captured values are produced by LOAD instructions.
     // If the variable is not modified within the method, we could avoid introducing yet another

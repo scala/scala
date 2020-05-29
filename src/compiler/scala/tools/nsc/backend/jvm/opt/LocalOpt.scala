@@ -410,6 +410,7 @@ abstract class LocalOpt {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
+    // clear the non-official "access" flags once we're done and no longer look at them
     BackendUtils.clearMaxsComputed(method)
     BackendUtils.clearDceDone(method)
 
@@ -428,7 +429,6 @@ abstract class LocalOpt {
    */
   def nullnessOptimizations(method: MethodNode, ownerClassName: InternalName): Boolean = {
     AsmAnalyzer.sizeOKForNullness(method) && {
-      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val nullnessAnalyzer = new NullnessAnalyzer(method, ownerClassName, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull)
 
       // When running nullness optimizations the method may still have unreachable code. Analyzer
@@ -726,7 +726,6 @@ abstract class LocalOpt {
         bTypeForDescriptorOrInternalNameFromClassfile(bDescOrIntN))
     }
 
-    BackendUtils.computeMaxLocalsMaxStack(method)
     lazy val typeAnalyzer = new NonLubbingTypeFlowAnalyzer(method, owner)
     lazy val nullnessAnalyzer = new NullnessAnalyzer(method, owner, backendUtils.isNonNullMethodInvocation, compilerSettings.optAssumeModulesNonNull)
 

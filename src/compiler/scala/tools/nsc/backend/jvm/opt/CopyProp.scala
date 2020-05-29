@@ -43,7 +43,6 @@ abstract class CopyProp {
     AsmAnalyzer.sizeOKForAliasing(method) && {
       var changed = false
       val numParams = parametersSize(method)
-      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val aliasAnalysis = new BasicAliasingAnalyzer(method, owner)
 
       // Remember locals that are used in a `LOAD` instruction. Assume a program has two LOADs:
@@ -55,7 +54,7 @@ abstract class CopyProp {
       //
       // In this example, we should change the second load from 1 to 3, which might render the
       // local variable 1 unused.
-      val knownUsed = new Array[Boolean](method.maxLocals)
+      val knownUsed = new Array[Boolean](BackendUtils.maxLocals(method))
 
       def usedOrMinAlias(it: IntIterator, init: Int): Int = {
         if (knownUsed(init)) init
@@ -113,7 +112,6 @@ abstract class CopyProp {
    */
   def eliminateStaleStoresAndRewriteSomeIntrinsics(method: MethodNode, owner: InternalName): (Boolean, Boolean, Boolean) = {
     if (!AsmAnalyzer.sizeOKForSourceValue(method)) (false, false, false) else {
-      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
       def hasNoCons(varIns: AbstractInsnNode, slot: Int) = prodCons.consumersOfValueAt(varIns.getNext, slot).isEmpty
 
@@ -132,7 +130,7 @@ abstract class CopyProp {
       val toInline = mutable.Set.empty[MethodInsnNode]
 
       // `true` for variables that are known to be live and hold non-primitives
-      val liveRefVars = new Array[Boolean](method.maxLocals)
+      val liveRefVars = new Array[Boolean](BackendUtils.maxLocals(method))
 
       val firstLocalIndex = parametersSize(method)
 
@@ -292,7 +290,6 @@ abstract class CopyProp {
       var castAdded = false
       var nullCheckAdded = false
 
-      BackendUtils.computeMaxLocalsMaxStack(method)
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
       /**
@@ -474,7 +471,7 @@ abstract class CopyProp {
               toInsertBefore(methodInsn) = nullCheck.toList
               toRemove += prod
               callGraph.removeCallsite(methodInsn, method)
-              method.maxStack = math.max(method.maxStack, prodCons.frameAt(methodInsn).getStackSize + 1)
+              method.maxStack = math.max(BackendUtils.maxStack(method), prodCons.frameAt(methodInsn).getStackSize + 1)
               nullCheckAdded = true
             } else
               popAfterProd()
@@ -613,9 +610,8 @@ abstract class CopyProp {
   def eliminateStoreLoad(method: MethodNode): Boolean = {
     // TODO: use copyProp once we have cached analyses? or is the analysis invalidated anyway because instructions are deleted / changed?
     // if we cache them anyway, we can use an analysis if it exists in the cache, and skip otherwise.
-    BackendUtils.computeMaxLocalsMaxStack(method)
     val removePairs = mutable.Set.empty[RemovePair]
-    val liveVars = new Array[Boolean](method.maxLocals)
+    val liveVars = new Array[Boolean](BackendUtils.maxLocals(method))
     val liveLabels = mutable.Set.empty[LabelNode]
 
     def mkRemovePair(store: VarInsnNode, other: AbstractInsnNode, depends: List[RemovePairDependency]): RemovePair = {

@@ -41,7 +41,10 @@ class BasicAnalyzer(methodNode: MethodNode, classInternalName: InternalName) ext
 object AsmAnalyzer {
   // jvm limit is 65535 for both number of instructions and number of locals
 
-  private def size(method: MethodNode) = method.instructions.size.toLong * method.maxLocals * method.maxLocals
+  private def size(method: MethodNode) = {
+    val ml = BackendUtils.maxLocals(method)
+    method.instructions.size.toLong * ml * ml
+  }
 
   // with the limits below, analysis should not take more than one second
 
