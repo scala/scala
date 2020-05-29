@@ -366,7 +366,7 @@ object Using {
       }
     }
 
-  /** A typeclass describing how to release a particular type of resource.
+  /** A type class describing how to release a particular type of resource.
     *
     * A resource is anything which needs to be released, closed, or otherwise cleaned up
     * in some way after it is finished being used, and for which waiting for the object's

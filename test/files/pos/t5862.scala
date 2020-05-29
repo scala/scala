@@ -17,7 +17,7 @@ abstract class TaggedMapper[A, K, V]
   extends Serializable {
 }
 
-/** Type-class for sending types across the Hadoop wire. */
+/** Type class for sending types across the Hadoop wire. */
 trait WireFormat[A]
 
 class MapReduceJob {
