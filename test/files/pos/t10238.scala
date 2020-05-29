@@ -14,7 +14,7 @@ object Test {
   type MaybeMaybe[A] = MaybeT[Maybe, A]
 
 
-  // Typeclass
+  // Type class
 
   trait Monad[F[_]]
 

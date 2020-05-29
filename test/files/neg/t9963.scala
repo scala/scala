@@ -5,7 +5,7 @@ object t9963 {
   }
 
   class MySet[A] {
-    def map[B: Equiv](f: A => B): MySet[B] = ??? // must have an implicit typeclass here to trigger this bug
+    def map[B: Equiv](f: A => B): MySet[B] = ??? // must have an implicit type class here to trigger this bug
     def filter(f: A => Boolean): MySet[A] = ???
   }
 
