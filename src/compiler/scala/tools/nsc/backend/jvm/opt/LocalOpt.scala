@@ -398,6 +398,7 @@ abstract class LocalOpt {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
+    // clear the non-official "access" flags once we're done and no longer look at them
     BackendUtils.clearMaxsComputed(method)
     BackendUtils.clearDceDone(method)
 

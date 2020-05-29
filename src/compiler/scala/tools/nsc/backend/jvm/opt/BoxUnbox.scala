@@ -21,6 +21,7 @@ import scala.tools.asm.Opcodes._
 import scala.tools.asm.Type
 import scala.tools.asm.tree._
 import scala.tools.nsc.backend.jvm.BTypes.InternalName
+import scala.tools.nsc.backend.jvm.analysis.BackendUtils
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
 
 abstract class BoxUnbox {
@@ -188,7 +189,7 @@ abstract class BoxUnbox {
 
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
-      var nextLocal = method.maxLocals
+      var nextLocal = backendUtils.maxLocals(method)
       def getLocal(size: Int) = {
         val r = nextLocal
         nextLocal += size
@@ -425,7 +426,7 @@ abstract class BoxUnbox {
       }
 
       method.maxLocals = nextLocal
-      method.maxStack += maxStackGrowth
+      method.maxStack = backendUtils.maxStack(method) + maxStackGrowth
       toInsertBefore.nonEmpty || toReplace.nonEmpty || toDelete.nonEmpty
     }
   }

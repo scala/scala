@@ -53,7 +53,7 @@ abstract class CopyProp {
       //
       // In this example, we should change the second load from 1 to 3, which might render the
       // local variable 1 unused.
-      val knownUsed = new Array[Boolean](method.maxLocals)
+      val knownUsed = new Array[Boolean](backendUtils.maxLocals(method))
 
       def usedOrMinAlias(it: IntIterator, init: Int): Int = {
         if (knownUsed(init)) init
@@ -115,7 +115,7 @@ abstract class CopyProp {
       val toNullOut = mutable.ArrayBuffer.empty[(VarInsnNode, Boolean)]
 
       // `true` for variables that are known to be live
-      val liveVars = new Array[Boolean](method.maxLocals)
+      val liveVars = new Array[Boolean](backendUtils.maxLocals(method))
 
       val it = method.instructions.iterator
       while (it.hasNext) it.next() match {
@@ -499,7 +499,7 @@ abstract class CopyProp {
    */
   def eliminateStoreLoad(method: MethodNode): Boolean = {
     val removePairs = mutable.Set.empty[RemovePair]
-    val liveVars = new Array[Boolean](method.maxLocals)
+    val liveVars = new Array[Boolean](backendUtils.maxLocals(method))
     val liveLabels = mutable.Set.empty[LabelNode]
 
     def mkRemovePair(store: VarInsnNode, other: AbstractInsnNode, depends: List[RemovePairDependency]): RemovePair = {

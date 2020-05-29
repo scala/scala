@@ -409,7 +409,7 @@ abstract class Inliner {
     val (clonedInstructions, instructionMap, targetHandles) = cloneInstructions(callee, labelsMap, keepLineNumbers = sameSourceFile)
 
     // local vars in the callee are shifted by the number of locals at the callsite
-    val localVarShift = callsiteMethod.maxLocals
+    val localVarShift = backendUtils.maxLocals(callsiteMethod)
     clonedInstructions.iterator.asScala foreach {
       case varInstruction: VarInsnNode => varInstruction.`var` += localVarShift
       case iinc: IincInsnNode          => iinc.`var` += localVarShift
@@ -418,7 +418,7 @@ abstract class Inliner {
 
     // add a STORE instruction for each expected argument, including for THIS instance if any
     val argStores = new InsnList
-    var nextLocalIndex = callsiteMethod.maxLocals
+    var nextLocalIndex = backendUtils.maxLocals(callsiteMethod)
     if (!isStaticMethod(callee)) {
       if (!receiverKnownNotNull) {
         argStores.add(new InsnNode(DUP))
@@ -469,7 +469,7 @@ abstract class Inliner {
 
     val returnType = calleAsmType.getReturnType
     val hasReturnValue = returnType.getSort != asm.Type.VOID
-    val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals
+    val returnValueIndex = backendUtils.maxLocals(callsiteMethod) + backendUtils.maxLocals(callee)
     nextLocalIndex += returnType.getSize
 
     def returnValueStore(returnInstruction: AbstractInsnNode) = {
@@ -533,11 +533,11 @@ abstract class Inliner {
     // an exception is thrown in the inlined code.
     callsiteMethod.tryCatchBlocks.addAll(0, cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
-    callsiteMethod.maxLocals += returnType.getSize + callee.maxLocals
+    callsiteMethod.maxLocals = backendUtils.maxLocals(callsiteMethod) + returnType.getSize + backendUtils.maxLocals(callee)
     val maxStackOfInlinedCode = {
       // One slot per value is correct for long / double, see comment in the `analysis` package object.
       val numStoredArgs = calleeParamTypes.length + (if (isStaticMethod(callee)) 0 else 1)
-      callee.maxStack + callsiteStackHeight - numStoredArgs
+      backendUtils.maxStack(callee) + callsiteStackHeight - numStoredArgs
     }
     val stackHeightAtNullCheck = {
       // When adding a null check for the receiver, a DUP is inserted, which might cause a new maxStack.
@@ -547,7 +547,7 @@ abstract class Inliner {
       callsiteStackHeight + stackSlotForNullCheck
     }
 
-    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
+    callsiteMethod.maxStack = math.max(backendUtils.maxStack(callsiteMethod), math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
     val added = addIndyLambdaImplMethod(callsiteClass.internalName, targetHandles)
     undo { removeIndyLambdaImplMethod(callsiteClass.internalName, added) }
