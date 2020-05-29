@@ -216,7 +216,7 @@ class S[K <: String] { … }
 class G[M[ Z <: I ], I] { … }
 ```
 
-the following parameterized types are well formed:
+the following parameterized types are well-formed:
 
 ```scala
 TreeMap[I, String]
@@ -1027,7 +1027,7 @@ A compound type `$T_1$ with … with $T_n$ {$R\,$}`
 is volatile if one of the following two conditions hold.
 
 1. One of $T_2 , \ldots , T_n$ is a type parameter or abstract type, or
-1. $T_1$ is an abstract type and and either the refinement $R$
+1. $T_1$ is an abstract type and either the refinement $R$
    or a type $T_j$ for $j > 1$ contributes an abstract member
    to the compound type, or
 1. one of $T_1 , \ldots , T_n$ is a singleton type.

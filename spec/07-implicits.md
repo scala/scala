@@ -59,10 +59,9 @@ parameter of type $T$ fall into two categories. First, eligible are
 all identifiers $x$ that can be accessed at the point of the method
 call without a prefix and that denote an
 [implicit definition](#the-implicit-modifier)
-or an implicit parameter.  An eligible
-identifier may thus be a local name, or a member of an enclosing
-template, or it may be have been made accessible without a prefix
-through an [import clause](04-basic-declarations-and-definitions.html#import-clauses). If there are no eligible
+or an implicit parameter. To be accessible without a prefix, an identifier
+must be a local name, a member of an enclosing template or a name introduced by an
+[import clause](04-basic-declarations-and-definitions.html#import-clauses). If there are no eligible
 identifiers under this rule, then, second, eligible are also all
 `implicit` members of some object that belongs to the implicit
 scope of the implicit parameter's type, $T$.
@@ -307,7 +306,7 @@ Int => Ordered[Int]
 ```
 
 All types share the common type constructor `scala.Function1`,
-but the complexity of the each new type is lower than the complexity of the previous types.
+but the complexity of each new type is lower than the complexity of the previous types.
 Hence, the code typechecks.
 
 ###### Example

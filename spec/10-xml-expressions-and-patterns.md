@@ -24,7 +24,7 @@ XmlExpr ::= XmlContent {Element}
 
 Well-formedness constraints of the XML specification apply, which
 means for instance that start tags and end tags must match, and
-attributes may only be defined once, with the exception of constraints
+attributes may only be defined once, except for constraints
 related to entity resolution.
 
 The following productions describe Scala's extensible markup language,

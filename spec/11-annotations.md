@@ -53,7 +53,7 @@ Java platform, the following annotations have a standard meaning.
 
   * `@SerialVersionUID(<longlit>)` Attaches a serial version identifier (a
     `long` constant) to a class.
-    This is equivalent to a the following field
+    This is equivalent to the following field
     definition in Java:
 
     ```java

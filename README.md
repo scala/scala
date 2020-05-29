@@ -89,7 +89,7 @@ We are grateful for the following OSS licenses:
 ### Basics
 
 During ordinary development, a new Scala build is built by the
-previously released version.  For short we call the previous release
+previously released version. For short, we call the previous release
 "starr": the stable reference release.  Building with starr is
 sufficient for most kinds of changes.
 
