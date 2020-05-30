@@ -1,7 +1,7 @@
-// scalac: -Xfatal-warnings -Ywarn-self-implicit
+// scalac: -Werror -Xlint:implicit-recursion
 //
 
-trait TC[T] { def ix: Int }
+trait TC[A] { def ix: Int }
 
 object Test {
   implicit def c: Char = implicitly[Char]
@@ -11,4 +11,14 @@ object Test {
     f
   }
   implicit object tcString extends TC[String] { def ix = implicitly[TC[String]].ix + 1 }
+}
+
+import language.implicitConversions
+
+trait T
+trait Sizeable { def size: Int }
+
+class `t8357 warn on self-involved implicit` {
+  implicit def bad[A](a: A)(implicit ev: A => T): Sizeable = ev(a)
+  bad(new T{})
 }

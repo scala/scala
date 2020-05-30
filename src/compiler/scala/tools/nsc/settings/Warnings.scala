@@ -148,7 +148,8 @@ trait Warnings {
 
   val warnExtraImplicit   = BooleanSetting("-Wextra-implicit", "Warn when more than one implicit parameter section is defined.") withAbbreviation "-Ywarn-extra-implicit"
 
-  val warnSelfImplicit    = BooleanSetting("-Wself-implicit", "Warn when an implicit resolves to an enclosing self-definition.") withAbbreviation "-Ywarn-self-implicit"
+  @deprecated("Use lintImplicitRecursion", since="2.13.3")
+  val warnSelfImplicit    = BooleanSetting("-Wself-implicit", "An implicit resolves to an enclosing definition.") withAbbreviation "-Ywarn-self-implicit" withDeprecationMessage "Use -Xlint:implicit-recursion"
 
   // Experimental lint warnings that are turned off, but which could be turned on programmatically.
   // They are not activated by -Xlint and can't be enabled on the command line because they are not
@@ -189,6 +190,7 @@ trait Warnings {
     val RecurseWithDefault     = LintWarning("recurse-with-default",      "Recursive call used default argument.")
     val UnitSpecialization     = LintWarning("unit-special",              "Warn for specialization of Unit in parameter position.")
     val MultiargInfix          = LintWarning("multiarg-infix",            "Infix operator was defined or used with multiarg operand.")
+    val ImplicitRecursion      = LintWarning("implicit-recursion",        "Implicit resolves to an enclosing definition.")
 
     def allLintWarnings = values.toSeq.asInstanceOf[Seq[LintWarning]]
   }
@@ -221,6 +223,7 @@ trait Warnings {
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
   def unitSpecialization         = lint contains UnitSpecialization
   def multiargInfix              = lint contains MultiargInfix
+  def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || warnSelfImplicit
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

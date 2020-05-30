@@ -1,4 +1,4 @@
-// scalac: -Werror -Wself-implicit
+// scalac: -Werror -Xlint:implicit-recursion
 //
 package warner
 
