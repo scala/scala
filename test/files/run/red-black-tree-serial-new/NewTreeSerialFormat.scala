@@ -1,6 +1,6 @@
-package scala.collection.immutable
+import scala.collection.immutable.{TreeSet, TreeMap}
 
-object NewTreeSerialFormat extends App {
+object Test extends App {
 
   def write(o: AnyRef): Array[Byte] = {
     val ba = new java.io.ByteArrayOutputStream(512)
