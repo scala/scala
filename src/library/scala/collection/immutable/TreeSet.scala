@@ -67,8 +67,9 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
 
     override def result(): TreeSet[A] = new TreeSet[A](beforePublish(tree))(ordering)
   }
-  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") != "false"
+  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") == "false"
 
+  @SerialVersionUID(-8462554036344260506L)
   private class TreeSetProxy[A](
     @transient private[this] var tree: RB.Tree[A, Any],
     @transient private[this] var ordering: Ordering[A]) extends Serializable {
@@ -292,7 +293,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   }
 
   @throws[IOException]
-  private[this] def writeReplace(out: java.io.ObjectOutputStream): AnyRef =
+  private[this] def writeReplace(): AnyRef =
     if (TreeSet.legacySerialisation) this else new TreeSet.TreeSetProxy(tree, ordering)
 
   @throws[IOException]

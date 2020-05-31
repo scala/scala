@@ -85,8 +85,9 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
 
     override def result(): TreeMap[A, B] = new TreeMap[A, B](beforePublish(tree))
   }
-  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") != "false"
+  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") == "false"
 
+  @SerialVersionUID(-5672253444750945796L)
   private class TreeMapProxy[A, B](
     @transient private[this] var tree: RB.Tree[A, B],
     @transient private[this] var ordering: Ordering[A]) extends Serializable {
@@ -381,7 +382,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   }
 
   @throws[IOException]
-  private[this] def writeReplace(out: java.io.ObjectOutputStream): AnyRef =
+  private[this] def writeReplace(): AnyRef =
     if (TreeMap.legacySerialisation) this else new TreeMap.TreeMapProxy(tree, ordering)
 
   @throws[IOException]
