@@ -281,8 +281,8 @@ private[collection] object RedBlackTree {
       balanceLeft(tree, upd(tree.left, k, v, overwrite))
     else if (cmp > 0)
       balanceRight(tree, upd(tree.right, k, v, overwrite))
-    else if (overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef]))
-      mkTree(isBlackTree(tree), tree.key, v, tree.left, tree.right)
+    else if ((overwrite && (v.asInstanceOf[AnyRef] ne tree.value.asInstanceOf[AnyRef])) || k != tree.key)
+      mkTree(isBlackTree(tree), k, v, tree.left, tree.right)
     else tree
   }
   private[this] def updNth[A, B, B1 >: B](tree: Tree[A, B], idx: Int, k: A, v: B1): Tree[A, B1] = if (tree eq null) {
