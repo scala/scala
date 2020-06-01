@@ -350,6 +350,7 @@ final class LongMap[V] private[collection] (defaultEntry: Long => V, initialBuff
   }
 
   /** Adds a new key/value pair to this map and returns the map. */
+  @deprecated("Use `addOne` or `update` instead; infix operations with an operand of multiple args will be deprecated", "2.13.3")
   def +=(key: Long, value: V): this.type = { update(key, value); this }
 
   /** Adds a new key/value pair to this map and returns the map. */
