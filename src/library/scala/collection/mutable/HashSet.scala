@@ -39,6 +39,11 @@ final class HashSet[A](initialCapacity: Int, loadFactor: Double)
 
   import HashSet.Node
 
+  /* The Hashset class holds the following invariant:
+   * - For each i between  0 and table.length, the bucket at table(i) only contains elements whose hash-index is i.
+   * - Every bucket is sorted in ascendent hash order
+   * - The sum of the lengths of all buckets is equal to contentSize.
+   */
   /** The actual hash table. */
   private[this] var table = new Array[Node[A]](tableSizeFor(initialCapacity))
 
