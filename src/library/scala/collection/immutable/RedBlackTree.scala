@@ -151,6 +151,10 @@ private[collection] object NewRedBlackTree {
           mutableBalanceLeft(tree, mutableUpd(tree.left, k))
         else if (cmp > 0)
           mutableBalanceRight(tree, mutableUpd(tree.right, k))
+        else if (k != tree.key)
+          tree.mutableWithK(k)
+        //Note - in 2.13 remove the above else clause
+        // due to the different handling of key equality
         else tree
       }
   }
@@ -166,6 +170,10 @@ private[collection] object NewRedBlackTree {
           mutableBalanceLeft(tree, mutableUpd(tree.left, k, v))
         else if (cmp > 0)
           mutableBalanceRight(tree, mutableUpd(tree.right, k, v))
+        else if (k != tree.key)
+          tree.mutableWithKV(k,v)
+        //Note - in 2.13 remove the above else clause
+       // due to the different handling of key equality
         else tree.mutableWithV(v)
       }
   }
@@ -569,12 +577,32 @@ private[collection] object NewRedBlackTree {
 //      }
 //      else new Tree(_key, _value, _left, _right, initialRedCount)
 //    }
-    def mutableWithV[B1 >: B](value: B1): Tree[A, B1] = {
-      if (value.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef]) this
+    //Note - in 2.13 remove his method
+    //due to the handling of keys in 2.13 we never replace a key
+    def mutableWithK[B1 >: B](newKey: A): Tree[A, B1] = {
+      if (newKey.asInstanceOf[AnyRef] eq _key.asInstanceOf[AnyRef]) this
       else if (mutable) {
+        _key = newKey
+        this
+      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, _count)
+    }
+    def mutableWithV[B1 >: B](newValue: B1): Tree[A, B1] = {
+      if (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef]) this
+      else if (mutable) {
+        _value = newValue.asInstanceOf[AnyRef]
+        this
+      } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, _count)
+    }
+    //Note - in 2.13 remove his method
+    //due to the handling of keys in 2.13 we never replace a key
+    def mutableWithKV[B1 >: B](newKey: A, newValue: B1): Tree[A, B1] = {
+      if ((newKey.asInstanceOf[AnyRef] eq _key.asInstanceOf[AnyRef]) &&
+        (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef])) this
+      else if (mutable) {
+        _key = newKey
         _value = value.asInstanceOf[AnyRef]
         this
-      } else new Tree(_key, value.asInstanceOf[AnyRef], _left, _right, _count)
+      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, _count)
     }
     def mutableWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
       if (_left eq newLeft) this
