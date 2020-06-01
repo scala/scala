@@ -36,9 +36,15 @@ import scala.util.Random.alphanumeric
  */
 object Path {
   def isExtensionJarOrZip(jfile: JFile): Boolean = isExtensionJarOrZip(jfile.getName)
-  def isExtensionJarOrZip(name: String): Boolean = {
-    name.endsWith(".jar") || name.endsWith(".zip")
-  }
+  def isExtensionJarOrZip(name: String): Boolean =
+    name.lastIndexOf('.') match {
+      case i if i >= 0 =>
+        val xt = name.substring(i + 1)
+        xt.equalsIgnoreCase("jar") || xt.equalsIgnoreCase("zip")
+      case _ => false
+    }
+
+  /** Lower case "extension", following the last dot. */
   def extension(name: String): String = {
     val i = name.lastIndexOf('.')
     if (i < 0) ""

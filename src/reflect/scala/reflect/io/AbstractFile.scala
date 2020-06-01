@@ -48,7 +48,7 @@ object AbstractFile {
    */
   def getDirectory(file: File): AbstractFile =
     if (file.isDirectory) new PlainFile(file)
-    else if (file.isFile && Path.isExtensionJarOrZip(file.jfile)) ZipArchive fromFile file
+    else if (file.isFile && Path.isExtensionJarOrZip(file.jfile)) ZipArchive.fromFile(file)
     else null
 
   /**
@@ -63,7 +63,7 @@ object AbstractFile {
       else getFile(f)
     } else null
 
-  def getResources(url: URL): AbstractFile = ZipArchive fromManifestURL url
+  def getResources(url: URL): AbstractFile = ZipArchive.fromManifestURL(url)
 }
 
 /**
