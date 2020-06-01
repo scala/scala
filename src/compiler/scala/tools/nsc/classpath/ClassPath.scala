@@ -52,22 +52,24 @@ trait PackageEntry {
 }
 
 private[nsc] case class ClassFileEntryImpl(file: AbstractFile) extends ClassFileEntry {
-  override val name = FileUtils.stripClassExtension(file.name) // class name
+  override final def fileName: String = file.name
+  override lazy val name = FileUtils.stripClassExtension(file.name) // class name
 
   override def binary: Option[AbstractFile] = Some(file)
   override def source: Option[AbstractFile] = None
 }
 
 private[nsc] case class SourceFileEntryImpl(file: AbstractFile) extends SourceFileEntry {
-  override val name = FileUtils.stripSourceExtension(file.name)
+  override final def fileName: String = file.name
+  override lazy val name = FileUtils.stripSourceExtension(file.name)
 
   override def binary: Option[AbstractFile] = None
   override def source: Option[AbstractFile] = Some(file)
 }
 
 private[nsc] case class ClassAndSourceFilesEntry(classFile: AbstractFile, srcFile: AbstractFile) extends ClassRepresentation {
-  override val name = FileUtils.stripClassExtension(classFile.name)
-
+  override final def fileName: String = classFile.name
+  override lazy val name = FileUtils.stripClassExtension(fileName)
   override def binary: Option[AbstractFile] = Some(classFile)
   override def source: Option[AbstractFile] = Some(srcFile)
 }

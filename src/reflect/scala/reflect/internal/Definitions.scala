@@ -29,8 +29,7 @@ trait Definitions extends api.StandardDefinitions {
   /** Since both the value parameter types and the result type may
    *  require access to the type parameter symbols, we model polymorphic
    *  creation as a function from those symbols to (formal types, result type).
-   *  The Option is to distinguish between nullary methods and empty-param-list
-   *  methods.
+   *  The Option is to distinguish between nullary methods and nilary methods.
    */
   private type PolyMethodCreator = List[Symbol] => (Option[List[Type]], Type)
 
@@ -488,6 +487,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NilModule        = requiredModule[scala.collection.immutable.Nil.type]
     @migration("SeqModule now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqModule        = requiredModule[scala.collection.immutable.Seq.type]
+    lazy val Collection_SeqModule       = requiredModule[scala.collection.Seq.type]
 
     // arrays and their members
     lazy val ArrayModule                   = requiredModule[scala.Array.type]
@@ -1122,8 +1122,8 @@ trait Definitions extends api.StandardDefinitions {
     // participation.  At the "Any" level, the return type is Class[_] as it is in
     // java.lang.Object.  Java also special cases the return type.
     lazy val Any_getClass     = enterNewMethod(AnyClass, nme.getClass_, Nil, getMemberMethod(ObjectClass, nme.getClass_).tpe.resultType, DEFERRED)
-    lazy val Any_isInstanceOf = newT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
-    lazy val Any_asInstanceOf = newT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
+    lazy val Any_isInstanceOf = enterNewT1NullaryMethod(AnyClass, nme.isInstanceOf_, FINAL)(_ => BooleanTpe)
+    lazy val Any_asInstanceOf = enterNewT1NullaryMethod(AnyClass, nme.asInstanceOf_, FINAL)(_.typeConstructor)
 
     lazy val primitiveGetClassMethods = Set[Symbol](Any_getClass, AnyVal_getClass) ++ (
       ScalaValueClasses map (_.tpe member nme.getClass_)
@@ -1213,11 +1213,9 @@ trait Definitions extends api.StandardDefinitions {
     lazy val Object_!= = enterNewMethod(ObjectClass, nme.NE, AnyTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_eq = enterNewMethod(ObjectClass, nme.eq, AnyRefTpe :: Nil, BooleanTpe, FINAL)
     lazy val Object_ne = enterNewMethod(ObjectClass, nme.ne, AnyRefTpe :: Nil, BooleanTpe, FINAL)
-    lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)
-    lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
-      (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
-    )
+    lazy val Object_isInstanceOf = newT1NilaryMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_ => BooleanTpe)
+    lazy val Object_asInstanceOf = newT1NilaryMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC | ARTIFACT)(_.typeConstructor)
+    lazy val Object_synchronized = enterNewT1Method(ObjectClass, nme.synchronized_, FINAL)(_.typeConstructor)
     lazy val String_+ = enterNewMethod(StringClass, nme.raw.PLUS, AnyTpe :: Nil, StringTpe, FINAL)
 
     def Object_getClass  = getMemberMethod(ObjectClass, nme.getClass_)
@@ -1293,6 +1291,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val UnspecializedClass         = requiredClass[scala.annotation.unspecialized]
     lazy val UnusedClass                = requiredClass[scala.annotation.unused]
     lazy val VolatileAttr               = requiredClass[scala.volatile]
+    lazy val JavaDeprecatedAttr         = requiredClass[java.lang.Deprecated]
     lazy val FunctionalInterfaceClass   = requiredClass[java.lang.FunctionalInterface]
 
     // Meta-annotations
@@ -1469,17 +1468,33 @@ trait Definitions extends api.StandardDefinitions {
         case (_, restpe)             => NullaryMethodType(restpe)
       }
 
-      msym.setInfoAndEnter(genPolyType(tparams, mtpe)).markAllCompleted
+      msym.setInfo(genPolyType(tparams, mtpe)).markAllCompleted
     }
-
-    /** T1 means one type parameter.
+    def enterNewPolyMethod(typeParamCount: Int, owner: Symbol, name: TermName, flags: Long)(createFn: PolyMethodCreator): MethodSymbol = {
+      val m = newPolyMethod(typeParamCount, owner, name, flags)(createFn)
+      owner.info.decls.enter(m)
+      m
+    }
+    /** T1 means one type parameter. Nullary means no param lists.
      */
-    def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
+    def newT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
       newPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
-    }
-    def newT1NoParamsMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol = {
+    def enterNewT1NullaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags)(tparams => (None, createFn(tparams.head)))
+
+    /** Nilary means one empty param list. The method takes parens.
+     */
+    def newT1NilaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
       newPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
-    }
+    def enterNewT1NilaryMethod(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags)(tparams => (util.SomeOfNil, createFn(tparams.head)))
+
+    /** (T1) => T1.
+     */
+    def newT1Method(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      newPolyMethod(1, owner, name, flags) { tparams => val t = createFn(tparams.head) ; (Some(List(t)), t) }
+    def enterNewT1Method(owner: Symbol, name: TermName, flags: Long)(createFn: Symbol => Type): MethodSymbol =
+      enterNewPolyMethod(1, owner, name, flags) { tparams => val t = createFn(tparams.head) ; (Some(List(t)), t) }
 
     /** Is symbol a phantom class for which no runtime representation exists? */
     lazy val isPhantomClass = Set[Symbol](AnyClass, AnyValClass, NullClass, NothingClass)
@@ -1643,6 +1658,11 @@ trait Definitions extends api.StandardDefinitions {
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
       private lazy val List_apply = DefinitionsClass.this.List_apply
+      private lazy val Seq_apply = {
+        val result = getMemberMethod(DefinitionsClass.this.SeqModule, nme.apply)
+        assert(result == getMemberMethod(DefinitionsClass.this.Collection_SeqModule, nme.apply), "Expected collection.Seq and immutable.Seq to have the same apply member")
+        result
+      }
       final def isListApply(tree: Tree): Boolean = {
         /*
          * This is translating uses of List() into Nil.  This is less
@@ -1652,8 +1672,23 @@ trait Definitions extends api.StandardDefinitions {
          *  forced during kind-arity checking, so it is guarded by additional
          *  tests to ensure we're sufficiently far along.
          */
-        (tree.symbol eq List_apply) && (tree match {
-          case treeInfo.Applied(core @ Select(qual, _), _, _) => treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
+        (tree.symbol == List_apply) && (tree match {
+          case treeInfo.Applied(core @ Select(qual, _), _, _) =>
+            treeInfo.isQualifierSafeToElide(qual) && qual.symbol == ListModule
+          case _ => false
+        })
+      }
+
+      final def isSeqApply(tree: Tree): Boolean = isListApply(tree) || {
+        /*
+         *  This is now also used for converting {Seq, List}.apply(a, b, c) to `a :: b :: c :: Nil`
+         *  in Cleanup.
+         */
+        def isSeqFactory(sym: Symbol) = sym == SeqModule || sym == Collection_SeqModule
+
+        (tree.symbol == Seq_apply) && (tree match {
+          case treeInfo.Applied(core @ Select(qual, _), _, _) =>
+            treeInfo.isQualifierSafeToElide(qual) && isSeqFactory(qual.symbol)
           case _ => false
         })
       }

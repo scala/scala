@@ -596,9 +596,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         } transform this
 
       // List(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
-      case Apply(appMeth @ Select(qual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
+      // Seq(a, b, c) ~> new ::(a, new ::(b, new ::(c, Nil)))
+      case Apply(appMeth @ Select(appQual, _), List(Apply(wrapArrayMeth, List(StripCast(rest @ ArrayValue(elemtpt, _))))))
       if wrapArrayMeth.symbol == currentRun.runDefinitions.wrapVarargsRefArrayMethod
-        && currentRun.runDefinitions.isListApply(appMeth) && rest.elems.lengthIs < transformListApplyLimit =>
+        && currentRun.runDefinitions.isSeqApply(appMeth) && rest.elems.lengthIs < transformListApplyLimit =>
         val consed = rest.elems.reverse.foldLeft(gen.mkAttributedRef(NilModule): Tree)(
           (acc, elem) => New(ConsClass, elem, acc)
         )
@@ -606,7 +607,10 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         reducingTransformListApply(rest.elems.length) {
           super.transform(localTyper.typedPos(tree.pos)(consed))
         }
-
+      // Seq() ~> Nil (note: List() ~> Nil is rewritten in the Typer)
+      case Apply(appMeth @ Select(appQual, _), List(nil))
+      if nil.symbol == NilModule && currentRun.runDefinitions.isSeqApply(appMeth) =>
+        gen.mkAttributedRef(NilModule)
       case switch: Match =>
         super.transform(transformSwitch(switch))
 

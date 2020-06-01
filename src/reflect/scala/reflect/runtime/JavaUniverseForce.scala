@@ -300,6 +300,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ListModule
     definitions.NilModule
     definitions.SeqModule
+    definitions.Collection_SeqModule
     definitions.ArrayModule
     definitions.ArrayModule_overloadedApply
     definitions.ArrayClass
@@ -436,6 +437,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.UnspecializedClass
     definitions.UnusedClass
     definitions.VolatileAttr
+    definitions.JavaDeprecatedAttr
     definitions.FunctionalInterfaceClass
     definitions.BeanGetterTargetClass
     definitions.BeanSetterTargetClass

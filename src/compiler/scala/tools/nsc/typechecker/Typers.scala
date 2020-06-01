@@ -690,12 +690,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     def silent[T](op: Typer => T,
                   reportAmbiguousErrors: Boolean = context.ambiguousErrors,
                   newtree: Tree = context.tree): SilentResult[T] = {
-      val rawTypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(rawTypeFailed) else null
       val findMemberStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(findMemberFailed) else null
       val subtypeStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeFailed) else null
       val failedSilentStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(failedSilentNanos) else null
       def stopStats() = {
-        if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeFailed, rawTypeStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberFailed, findMemberStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeFailed, subtypeStart)
         if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(failedSilentNanos, failedSilentStart)
@@ -1823,7 +1821,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (!parent.isErrorTyped) {
           val psym = parent.tpe.typeSymbol.initialize
 
-          checkStablePrefixClassType(parent)
+          if (!context.unit.isJava)
+            checkStablePrefixClassType(parent)
 
           if (psym != superclazz) {
             if (context.unit.isJava && psym.isJavaAnnotation) {
@@ -1853,12 +1852,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
           val parentTypeOfThis = parent.tpe.dealias.typeOfThis
 
-          if (!(selfType <:< parentTypeOfThis) &&
-              !phase.erasedTypes &&
+          if (!phase.erasedTypes &&
               !context.owner.isSynthetic &&   // don't check synthetic concrete classes for virtuals (part of DEVIRTUALIZE)
+              !context.unit.isJava &&         // don't check self types for Java (scala/bug#11917)
               !selfType.isErroneous &&
-              !parent.tpe.isErroneous)
-          {
+              !parent.tpe.isErroneous &&
+              !(selfType <:< parentTypeOfThis)
+          ) {
             pending += ParentSelfTypeConformanceError(parent, selfType)
             if (settings.explaintypes) explainTypes(selfType, parentTypeOfThis)
           }
@@ -3909,6 +3909,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      */
     def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = context.withinAnnotation {
       var hasError: Boolean = false
+      var unmappable: Boolean = false
       val pending = ListBuffer[AbsTypeError]()
       def ErroneousAnnotation = new ErroneousAnnotation().setOriginal(ann)
 
@@ -3982,7 +3983,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         if (const == null) {
-          reportAnnotationError(AnnotationNotAConstantError(ttree)); None
+          if (unit.isJava) unmappable = true
+          else reportAnnotationError(AnnotationNotAConstantError(ttree))
+          None
         } else if (const.value == null) {
           reportAnnotationError(AnnotationArgNullError(tr)); None
         } else
@@ -4029,6 +4032,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         case Typed(t, _) =>
           tree2ConstArg(t, pt)
+
+        case tree if unit.isJava && pt.typeSymbol == ArrayClass =>
+          /* If we get here, we have a Java array annotation argument which was passed
+           * as a single value, and needs to be wrapped. */
+          trees2ConstArg(tree :: Nil, pt.typeArgs.head)
 
         case tree =>
           tryConst(tree, pt)
@@ -4119,6 +4127,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           }
 
           if (hasError) ErroneousAnnotation
+          else if (unmappable) UnmappableAnnotation
           else AnnotationInfo(annType, Nil, nvPairs.map(p => (p._1, p._2.get))).setOriginal(Apply(typedFun, namedArgs).setPos(ann.pos))
         }
       }
@@ -4351,7 +4360,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // lifted out of typed1 because it's needed in typedImplicit0
     protected def typedTypeApply(tree: Tree, mode: Mode, fun: Tree, args: List[Tree]): Tree = fun.tpe match {
       case OverloadedType(_, _) =>
-        inferPolyAlternatives(fun, mapList(args)(treeTpe))
+        inferPolyAlternatives(fun, mapList(args)(_.tpe))
 
         // scala/bug#8267 `memberType` can introduce existentials *around* a PolyType/MethodType, see AsSeenFromMap#captureThis.
         //         If we had selected a non-overloaded symbol, `memberType` would have been called in `makeAccessible`
@@ -4382,9 +4391,12 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         typedTypeApply(tree, mode, fun setType fun.tpe.widen, args)
       case PolyType(tparams, restpe) if tparams.nonEmpty =>
         if (sameLength(tparams, args)) {
-          val targs = mapList(args)(treeTpe)
+          val isJava = context.unit.isJava
+          val isClassOf = fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol)
+          if (isJava && fun.symbol.isTerm) args.foreach(_.modifyType(rawToExistential)) // e.g. List.class, parsed as classOf[List]
+          val targs = mapList(args)(_.tpe)
           checkBounds(tree, NoPrefix, NoSymbol, tparams, targs, "")
-          if (fun.symbol.rawname == nme.classOf && currentRun.runDefinitions.isPredefClassOf(fun.symbol))
+          if (isClassOf)
             typedClassOf(tree, args.head, noGen = true)
           else {
             if (!isPastTyper && fun.symbol == Any_isInstanceOf && targs.nonEmpty) {
@@ -4491,7 +4503,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       Option.when(acceptsApplyDynamicWithType(qual, name)) {
-        def matches(t: Tree) = isDesugaredApply || treeInfo.dissectApplied(t).core == treeSelection
+        def matches(t: Tree) = isDesugaredApply || treeInfo.dissectCore(t) == treeSelection
 
         /* Note that the trees which arrive here are potentially some distance from
          * the trees of direct interest. `cxTree` is some enclosing expression which
@@ -5562,7 +5574,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
               typedHigherKindedType(arg, mode, pt)
             }
-            val argtypes = mapList(args1)(treeTpe)
+            val argtypes = mapList(args1)(_.tpe)
 
             foreach2(args, tparams) { (arg, tparam) =>
               // note: can't use args1 in selector, because Binds got replaced
@@ -6341,7 +6353,6 @@ trait TypersStats {
   val typedIdentCount     = newCounter("#typechecked identifiers")
   val typedSelectCount    = newCounter("#typechecked selections")
   val typedApplyCount     = newCounter("#typechecked applications")
-  val rawTypeFailed       = newSubCounter ("  of which in failed", rawTypeCount)
   val subtypeFailed       = newSubCounter("  of which in failed", subtypeCount)
   val findMemberFailed    = newSubCounter("  of which in failed", findMemberCount)
   val failedSilentNanos   = newSubTimer("time spent in failed", typerNanos)

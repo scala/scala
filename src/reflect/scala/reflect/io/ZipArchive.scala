@@ -135,9 +135,23 @@ abstract class ZipArchive(override val file: JFile, release: Option[String]) ext
           dir
         case dir => dir
       }
-    val name = if (entry.isDirectory) entry.getName else dirName(entry.getName)
+    val name = if (entry.isDirectory) entry.getName else dirNameUsingLast(entry.getName)
     ensureDir(name)
   }
+
+  @volatile private[this] var lastDirName: String = ""
+  private def dirNameUsingLast(name: String): String = {
+    val last = lastDirName
+    if (name.length > last.length + 1 && name.startsWith(last) && name.charAt(last.length) == '/' && name.indexOf('/', last.length + 1) == -1) {
+      // OPT: Avoid string allocation when reading successive entries in a zip index from the same directory.
+      lastDirName
+    } else {
+      val result = dirName(name)
+      lastDirName = result
+      result
+    }
+  }
+
   def close(): Unit
 }
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */

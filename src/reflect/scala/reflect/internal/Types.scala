@@ -970,6 +970,9 @@ trait Types
 
     def nameAndArgsString = typeSymbol.name.toString
 
+    final def isAny: Boolean = typeSymbolDirect eq AnyClass
+    final def isNothing: Boolean = typeSymbolDirect eq NothingClass
+
     /** A test whether a type contains any unification type variables.
      *  Overridden with custom logic except where trivially true.
      */
@@ -1803,7 +1806,7 @@ trait Types
                          override val decls: Scope) extends CompoundType with RefinedTypeApi {
     override def isHigherKinded = (
       !parents.isEmpty &&
-      (parents forall typeIsHigherKinded) &&
+      (parents.forall(_.isHigherKinded)) &&
       !phase.erasedTypes
     )
     override def typeParams =
@@ -2869,7 +2872,7 @@ trait Types
 
     override def paramss: List[List[Symbol]] = params :: resultType.paramss
 
-    override def paramTypes = mapList(params)(symTpe) // OPT use mapList rather than .map
+    override def paramTypes = mapList(params)(_.tpe) // OPT use mapList rather than .map
 
     final def resultTypeOwnParamTypes: Type =
       if (isTrivial || phase.erasedTypes) resultType
@@ -4273,7 +4276,6 @@ trait Types
   final def howManyUniqueTypes: Int = if (uniques == null) 0 else uniques.size
 
   protected def unique[T <: Type](tp: T): T =  {
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(rawTypeCount)
     if (uniqueRunId != currentRunId) {
       uniques = util.WeakHashSet[Type](initialUniquesCapacity)
       // JZ: We used to register this as a perRunCache so it would be cleared eagerly at
@@ -4350,8 +4352,8 @@ trait Types
     else existentialAbstraction(existentialsInType(tp), tp)
   )
 
-  def containsExistential(tpe: Type) = tpe exists typeIsExistentiallyBound
-  def existentialsInType(tpe: Type) = tpe withFilter typeIsExistentiallyBound map (_.typeSymbol)
+  def containsExistential(tpe: Type) = tpe.exists(_.typeSymbol.isExistentiallyBound)
+  def existentialsInType(tpe: Type) = tpe.withFilter(_.typeSymbol.isExistentiallyBound).map(_.typeSymbol)
 
   private def isDummyOf(tpe: Type)(targ: Type) = {
     val sym = targ.typeSymbol
@@ -4924,13 +4926,13 @@ trait Types
     def instantiatedBound(tparam: Symbol): TypeBounds =
       tparam.info.asSeenFrom(pre, owner).instantiateTypeParams(tparams, targs).bounds
 
-    if (targs exists typeHasAnnotations){
+    if (targs.exists(!_.annotations.isEmpty)){
       var bounds = mapList(tparams)(instantiatedBound)
       bounds = adaptBoundsToAnnotations(bounds, tparams, targs)
-      (bounds corresponds targs)(boundsContainType)
+      (bounds corresponds targs)(_ containsType _)
     } else
       (tparams corresponds targs){ (tparam, targ) =>
-        boundsContainType(instantiatedBound(tparam), targ)
+        instantiatedBound(tparam) containsType targ
       }
   }
 
@@ -5029,7 +5031,7 @@ trait Types
             // special treatment for lubs of array types after erasure:
             // if argss contain one value type and some other type, the lub is Object
             // if argss contain several reference types, the lub is an array over lub of argtypes
-            if (argss exists typeListIsEmpty) {
+            if (argss.exists(_.isEmpty)) {
               NoType  // something is wrong: an array without a type arg.
             }
             else {
@@ -5242,20 +5244,9 @@ trait Types
     "scala.collection.Iterable",
     "scala.collection.Iterator")
 
-// ----- Hoisted closures and convenience methods, for compile time reductions -------
-
-  private[scala] val isTypeVar = (tp: Type) => tp.isInstanceOf[TypeVar]
-  private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(isTypeVar); (tp: Type) => collector.collect(tp).isDefined }
-  private[scala] val typeIsNonClassType = (tp: Type) => tp.typeSymbolDirect.isNonClassType
-  private[scala] val typeIsExistentiallyBound = (tp: Type) => tp.typeSymbol.isExistentiallyBound
-  private[scala] val typeIsErroneous = (tp: Type) => tp.isErroneous
-  private[scala] val symTypeIsError = (sym: Symbol) => sym.tpe.isError
+  @deprecated("Use _.tpe", "2.12.12") // used by scala-meta, leave until they remove the dependency.
   private[scala] val treeTpe = (t: Tree) => t.tpe
-  private[scala] val symTpe = (sym: Symbol) => sym.tpe
-  private[scala] val symInfo = (sym: Symbol) => sym.info
-  private[scala] val typeHasAnnotations = (tp: Type) => tp.annotations ne Nil
-  private[scala] val boundsContainType = (bounds: TypeBounds, tp: Type) => bounds containsType tp
-  private[scala] val typeListIsEmpty = (ts: List[Type]) => ts.isEmpty
+  private[scala] val typeContainsTypeVar = { val collector = new FindTypeCollector(_.isInstanceOf[TypeVar]); (tp: Type) => collector.collect(tp).isDefined }
   private[scala] val typeIsSubTypeOfSerializable = (tp: Type) => tp <:< SerializableTpe
 
   @tailrec

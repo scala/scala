@@ -762,9 +762,14 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     final def flags: Long = {
-      val fs = _rawflags & phase.flagMask
+      flags(phase.flagMask)
+    }
+
+    private[reflect] final def flags(phaseFlagMask: Long): Long = {
+      val fs = _rawflags & phaseFlagMask
       (fs | ((fs & LateFlags) >>> LateShift)) & ~((fs & AntiFlags) >>> AntiShift)
     }
+
     def flags_=(fs: Long) = _rawflags = fs
     def rawflags_=(x: Long): Unit = { _rawflags = x }
 
@@ -896,7 +901,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     @tailrec
     final def isStrictFP: Boolean    = this != NoSymbol && !isDeferred && (hasAnnotation(ScalaStrictFPAttr) || originalOwner.isStrictFP)
     def isSerializable         = info.baseClasses.exists(_ == SerializableClass)
-    def isDeprecated           = hasAnnotation(DeprecatedAttr)
+    def isDeprecated           = hasAnnotation(DeprecatedAttr) || (isJava && hasAnnotation(JavaDeprecatedAttr))
     def deprecationMessage     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 0)
     def deprecationVersion     = getAnnotation(DeprecatedAttr) flatMap (_ stringArg 1)
     def deprecatedParamName    = getAnnotation(DeprecatedNameAttr) flatMap (ann => ann.symbolArg(0).orElse(ann.stringArg(0).map(newTermName)).orElse(Some(nme.NO_NAME)))
@@ -2591,7 +2596,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     // return actual source code.) So sourceFile has classfiles filtered out.
     final def sourceFile: AbstractFile = {
       val file = associatedFile
-      if ((file eq NoAbstractFile) || (file.path endsWith ".class")) null else file
+      if (
+        (file eq NoAbstractFile) || {
+          val path = file.path
+          path.endsWith(".class") || path.endsWith(".sig")
+        }) null else file
     }
 
     /** Overridden in ModuleSymbols to delegate to the module class.

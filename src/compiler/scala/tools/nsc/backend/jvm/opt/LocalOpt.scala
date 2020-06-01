@@ -182,7 +182,6 @@ abstract class LocalOpt {
     // classfile. So we run both removeUnreachableCodeImpl and removeEmptyExceptionHandlers.
     if (method.instructions.size == 0) return false  // fast path for abstract methods
     if (BackendUtils.isDceDone(method)) return false // we know there is no unreachable code
-    if (!AsmAnalyzer.sizeOKForBasicValue(method)) return false // the method is too large for running an analyzer
 
     // For correctness, after removing unreachable code, we have to eliminate empty exception
     // handlers, see scaladoc of def methodOptimizations. Removing an live handler may render more
@@ -411,6 +410,7 @@ abstract class LocalOpt {
     assert(nullOrEmpty(method.visibleLocalVariableAnnotations), method.visibleLocalVariableAnnotations)
     assert(nullOrEmpty(method.invisibleLocalVariableAnnotations), method.invisibleLocalVariableAnnotations)
 
+    // clear the non-official "access" flags once we're done and no longer look at them
     BackendUtils.clearMaxsComputed(method)
     BackendUtils.clearDceDone(method)
 
@@ -521,52 +521,147 @@ abstract class LocalOpt {
    * or not. This can be queried using `BackendUtils.isLabelReachable`.
    */
   def removeUnreachableCodeImpl(method: MethodNode, ownerClassName: InternalName): Boolean = {
-    val a = new BasicAnalyzer(method, ownerClassName)
-    val frames = a.analyzer.getFrames
+    val size = method.instructions.size
 
-    var i = 0
-    var changed = false
-    var maxLocals = parametersSize(method)
-    var maxStack = 0
-    val itr = method.instructions.iterator
-    while (itr.hasNext) {
-      val insn = itr.next()
-      val isLive = frames(i) != null
-      if (isLive) maxStack = math.max(maxStack, frames(i).getStackSize)
+    // queue of instruction indices where analysis should start
+    var queue = new Array[Int](8)
+    var top = -1
+    def enq(i: Int): Unit = {
+      if (top == queue.length - 1) {
+        val nq = new Array[Int](queue.length * 2)
+        Array.copy(queue, 0, nq, 0, queue.length)
+        queue = nq
+      }
+      top += 1
+      queue(top) = i
+    }
+    def deq(): Int = {
+      val r = queue(top)
+      top -= 1
+      r
+    }
 
-      insn match {
-        case l: LabelNode =>
-          // label nodes are not removed: they might be referenced for example in a LocalVariableNode
-          if (isLive) BackendUtils.setLabelReachable(l) else BackendUtils.clearLabelReachable(l)
+    val handlers = new Array[mutable.ArrayBuffer[TryCatchBlockNode]](size)
+    val tcbIt = method.tryCatchBlocks.iterator()
+    while (tcbIt.hasNext) {
+      val tcb = tcbIt.next()
+      var i = method.instructions.indexOf(tcb.start)
+      val e = method.instructions.indexOf(tcb.end)
+      while (i < e) {
+        var insnHandlers = handlers(i)
+        if (insnHandlers == null) {
+          insnHandlers = mutable.ArrayBuffer.empty[TryCatchBlockNode]
+          handlers(i) = insnHandlers
+        }
+        insnHandlers += tcb
+        i += 1
+      }
+    }
 
-        case v: VarInsnNode if isLive =>
-          val longSize = if (isSize2LoadOrStore(v.getOpcode)) 1 else 0
-          maxLocals = math.max(maxLocals, v.`var` + longSize + 1) // + 1 because local numbers are 0-based
+    val visited = mutable.BitSet.empty
 
-        case i: IincInsnNode if isLive =>
-          maxLocals = math.max(maxLocals, i.`var` + 1)
+    def enqInsn(insn: AbstractInsnNode): Unit = {
+      enqInsnIndex(method.instructions.indexOf(insn))
+    }
 
-        case _: LineNumberNode =>
-        case _ =>
-          if (!isLive || insn.getOpcode == NOP) {
-            // Instruction iterators allow removing during iteration.
-            // Removing is O(1): instructions are doubly linked list elements.
-            itr.remove()
-            changed = true
-            insn match {
-              case invocation: MethodInsnNode => callGraph.removeCallsite(invocation, method)
+    def enqInsnIndex(insnIndex: Int): Unit = {
+      if (insnIndex < size && !visited.contains(insnIndex))
+        enq(insnIndex)
+    }
+
+    /* Subroutines are jumps, historically used for `finally` (https://www.artima.com/underthehood/finally.html)
+     *   - JSR pushes the return address (next instruction) on the stack and jumps to a label
+     *   - The subroutine typically saves the address to a local variable (ASTORE x)
+     *   - The subroutine typically jumps back to the return address using `RET x`, where `x` is the local variable
+     *
+     * However, the JVM spec does not require subroutines to `RET x` to their caller, they could return back to an
+     * outer subroutine caller (nested subroutines), or `RETURN`, or use a static jump. Static analysis of subroutines
+     * is therefore complex (http://www21.in.tum.de/~kleing/papers/KleinW-TPHOLS03.pdf).
+     *
+     * The asm.Analyzer however makes the assumption that subroutines only occur in the shape emitted by early
+     * javac, i.e., `RET` always returns to the next enclosing caller. So we do that as well.
+     */
+
+    enq(0)
+    while (top != -1) {
+      val insnIndex = deq()
+      val insn = method.instructions.get(insnIndex)
+      visited.add(insnIndex)
+
+      if (insn.getOpcode == -1) { // frames, labels, line numbers
+        enqInsnIndex(insnIndex + 1)
+      } else {
+        insn match {
+          case j: JumpInsnNode =>
+            enqInsn(j.label)
+            // For conditional jumps the successor is also a possible control flow target.
+            // The successor of a JSR is also enqueued, see subroutine shape assumption above.
+            if (j.getOpcode != GOTO) enqInsnIndex(insnIndex + 1)
+
+          case l: LookupSwitchInsnNode =>
+            var j = 0
+            while (j < l.labels.size) {
+              enqInsn(l.labels.get(j)); j += 1
+            }
+            enqInsn(l.dflt)
+
+          case t: TableSwitchInsnNode =>
+            var j = 0
+            while (j < t.labels.size) {
+              enqInsn(t.labels.get(j)); j += 1
+            }
+            enqInsn(t.dflt)
+
+          case r: VarInsnNode if r.getOpcode == RET =>
+            // the target is already enqueued, see subroutine shape assumption above
+
+          case _ =>
+            if (insn.getOpcode != ATHROW && !isReturn(insn))
+              enqInsnIndex(insnIndex + 1)
+        }
+      }
+
+      val insnHandlers = handlers(insnIndex)
+      if (insnHandlers != null)
+        insnHandlers.foreach(h => enqInsn(h.handler))
+    }
+
+    def dce(): Boolean = {
+      var i = 0
+      var changed = false
+      val itr = method.instructions.iterator()
+      while (itr.hasNext) {
+        val insn = itr.next()
+        val isLive = visited.contains(i)
+
+        insn match {
+          case l: LabelNode =>
+            // label nodes are not removed: they might be referenced for example in a LocalVariableNode
+            if (isLive) BackendUtils.setLabelReachable(l) else BackendUtils.clearLabelReachable(l)
+
+          case _: LineNumberNode =>
+
+          case _ =>
+            if (!isLive || insn.getOpcode == NOP) {
+              // Instruction iterators allow removing during iteration.
+              // Removing is O(1): instructions are doubly linked list elements.
+              itr.remove()
+              changed = true
+              insn match {
+                case invocation: MethodInsnNode => callGraph.removeCallsite(invocation, method)
               case indy: InvokeDynamicInsnNode =>
                 callGraph.removeClosureInstantiation(indy, method)
                 removeIndyLambdaImplMethod(ownerClassName, method, indy)
-              case _ =>
+                case _ =>
+              }
             }
-          }
+        }
+        i += 1
       }
-      i += 1
+      changed
     }
-    method.maxLocals = maxLocals
-    method.maxStack  = maxStack
-    changed
+
+    dce()
   }
 
   /**

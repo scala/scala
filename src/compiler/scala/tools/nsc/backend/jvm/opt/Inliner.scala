@@ -733,7 +733,7 @@ abstract class Inliner {
     var callsiteStackSlot = f.getLocals + f.getStackSize - calleeParamTypes.length - (if (isStatic) 0 else 1)
     // Counter for param slots of the callee (long / double use 2 slots)
     var calleeParamSlot = 0
-    var nextLocalIndex = callsiteMethod.maxLocals
+    var nextLocalIndex = BackendUtils.maxLocals(callsiteMethod)
 
     val numLocals = f.getLocals
 
@@ -758,10 +758,10 @@ abstract class Inliner {
       calleeParamSlot += paramSize
     }
 
-    val numSavedParamSlots = callsiteMethod.maxLocals + calleeFirstNonParamSlot - nextLocalIndex
+    val numSavedParamSlots = BackendUtils.maxLocals(callsiteMethod) + calleeFirstNonParamSlot - nextLocalIndex
 
     // local var indices in the callee are adjusted
-    val localVarShift = callsiteMethod.maxLocals - numSavedParamSlots
+    val localVarShift = BackendUtils.maxLocals(callsiteMethod) - numSavedParamSlots
     clonedInstructions.iterator.asScala foreach {
       case varInstruction: VarInsnNode =>
         if (varInstruction.`var` < calleeParamLocals.length)
@@ -778,7 +778,7 @@ abstract class Inliner {
     // add a STORE instruction for each expected argument, including for THIS instance if any
     val argStores = new InsnList
     val nullOutLocals = new InsnList
-    val numCallsiteLocals = callsiteMethod.maxLocals
+    val numCallsiteLocals = BackendUtils.maxLocals(callsiteMethod)
     calleeParamSlot = 0
     if (!isStatic) {
       def addNullCheck(): Unit = {
@@ -853,7 +853,7 @@ abstract class Inliner {
     val hasReturnValue = returnType.getSort != asm.Type.VOID
     // Use a fresh slot for the return value. We could re-use local variable slot of the inlined
     // code, but this makes some cleanups (in LocalOpt) fail / generate less clean code.
-    val returnValueIndex = callsiteMethod.maxLocals + callee.maxLocals - numSavedParamSlots
+    val returnValueIndex = BackendUtils.maxLocals(callsiteMethod) + BackendUtils.maxLocals(callee) - numSavedParamSlots
 
     def returnValueStore(returnInstruction: AbstractInsnNode) = {
       val opc = returnInstruction.getOpcode match {
@@ -930,11 +930,11 @@ abstract class Inliner {
     // an exception is thrown in the inlined code.
     callsiteMethod.tryCatchBlocks.addAll(0, cloneTryCatchBlockNodes(callee, labelsMap).asJava)
 
-    callsiteMethod.maxLocals += callee.maxLocals - numSavedParamSlots + returnType.getSize
+    callsiteMethod.maxLocals = BackendUtils.maxLocals(callsiteMethod) + BackendUtils.maxLocals(callee) - numSavedParamSlots + returnType.getSize
     val maxStackOfInlinedCode = {
       // One slot per value is correct for long / double, see comment in the `analysis` package object.
       val numStoredArgs = calleeParamTypes.length + (if (isStatic) 0 else 1)
-      callee.maxStack + callsiteStackHeight - numStoredArgs
+      BackendUtils.maxStack(callee) + callsiteStackHeight - numStoredArgs
     }
     val stackHeightAtNullCheck = {
       val stackSlotForNullCheck =
@@ -955,7 +955,7 @@ abstract class Inliner {
       callsiteStackHeight + stackSlotForNullCheck
     }
 
-    callsiteMethod.maxStack = math.max(callsiteMethod.maxStack, math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
+    callsiteMethod.maxStack = math.max(BackendUtils.maxStack(callsiteMethod), math.max(stackHeightAtNullCheck, maxStackOfInlinedCode))
 
     lazy val callsiteLambdaBodyMethods = onIndyLambdaImplMethod(callsiteClass.internalName)(_.getOrElseUpdate(callsiteMethod, mutable.Map.empty))
     onIndyLambdaImplMethodIfPresent(calleeDeclarationClass.internalName)(methods => methods.getOrElse(callee, Nil) foreach {

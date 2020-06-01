@@ -154,7 +154,7 @@ object ArraySeq extends StrictOptimizedClassTagSeqFactory[ArraySeq] { self =>
 
   @SerialVersionUID(3L)
   final class ofRef[T <: AnyRef](val array: Array[T]) extends ArraySeq[T] {
-    lazy val elemTag = ClassTag[T](array.getClass.getComponentType)
+    def elemTag = ClassTag[T](array.getClass.getComponentType)
     def length: Int = array.length
     def apply(index: Int): T = array(index)
     def update(index: Int, elem: T): Unit = { array(index) = elem }

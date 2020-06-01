@@ -438,16 +438,19 @@ trait StdNames {
      *  part of the string after that; but if the string is "$$$" or longer,
      *  be sure to retain the extra dollars.
      */
-    def unexpandedName(name: Name): Name = name lastIndexOf "$$" match {
-      case 0 | -1 => name
-      case idx0   =>
-        // Sketchville - We've found $$ but if it's part of $$$ or $$$$
-        // or something we need to keep the bonus dollars, so e.g. foo$$$outer
-        // has an original name of $outer.
-        var idx = idx0
-        while (idx > 0 && name.charAt(idx - 1) == '$')
-          idx -= 1
-        name drop idx + 2
+    def unexpandedName(name: Name): Name = {
+      if (!name.containsChar('$')) name // lastIndexOf calls Name.toString, add a fast path to avoid that.
+      else name lastIndexOf "$$" match {
+        case 0 | -1 => name
+        case idx0   =>
+          // Sketchville - We've found $$ but if it's part of $$$ or $$$$
+          // or something we need to keep the bonus dollars, so e.g. foo$$$outer
+          // has an original name of $outer.
+          var idx = idx0
+          while (idx > 0 && name.charAt(idx - 1) == '$')
+            idx -= 1
+          name drop idx + 2
+      }
     }
 
     @deprecated("use unexpandedName", "2.11.0") def originalName(name: Name): Name            = unexpandedName(name)
@@ -716,6 +719,7 @@ trait StdNames {
     val drop: NameType                 = nameType("drop")
     val elem: NameType                 = nameType("elem")
     val noSelfType: NameType           = nameType("noSelfType")
+    val empty: NameType                = nameType("empty")
     val ensureAccessible : NameType    = nameType("ensureAccessible")
     val eq: NameType                   = nameType("eq")
     val equalsNumChar : NameType       = nameType("equalsNumChar")

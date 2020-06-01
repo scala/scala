@@ -6,9 +6,11 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.ref.WeakReference
+import scala.tools.testkit.{AllocationTest, CompileTime}
+import scala.collection.Sizes
 
 @RunWith(classOf[JUnit4])
-class ListTest {
+class ListTest extends AllocationTest{
   /**
    * Test that empty iterator does not hold reference
    * to complete List
@@ -98,5 +100,29 @@ class ListTest {
       assertEquals(vector, List.from(vector))
     }
   }
-}
 
+  @Test def emptyNonAllocating(): Unit = {
+    nonAllocating(List.empty)
+    nonAllocating(List())
+  }
+
+
+  @Test def smallListAllocation: Unit = {
+    if (CompileTime.versionNumberString == "2.13.2") return
+    exactAllocates(Sizes.list * 1, "list  size 1")(List("0"))
+    exactAllocates(Sizes.list * 2, "list  size 2")(List("0", "1"))
+    exactAllocates(Sizes.list * 3, "list  size 3")(List("0", "1", ""))
+    exactAllocates(Sizes.list * 4, "list  size 4")(List("0", "1", "2", "3"))
+    exactAllocates(Sizes.list * 5, "list  size 5")(List("0", "1", "2", "3", "4"))
+    exactAllocates(Sizes.list * 6, "list  size 6")(List("0", "1", "2", "3", "4", "5"))
+    exactAllocates(Sizes.list * 7, "list  size 7")(List("0", "1", "2", "3", "4", "5", "6"))
+  }
+
+  @Test def largeListAllocation: Unit = {
+    def expected(n: Int) = Sizes.list * n + Sizes.wrappedRefArray(n) + Sizes.wrappedRefArrayIterator
+    exactAllocates(expected(10), "list  size 10")(
+      List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9"))
+    exactAllocates(expected(20), "list  size 20")(
+      List("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"))
+  }
+}

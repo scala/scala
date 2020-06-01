@@ -4,9 +4,10 @@ import org.junit.Assert.{assertEquals, assertNotEquals}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import scala.tools.testkit.AllocationTest
 
 @RunWith(classOf[JUnit4])
-class SortedMapTest {
+class SortedMapTest extends AllocationTest {
   @Test
   def testWithDefaultValueReturnsSortedMapWithDeaultValue(): Unit = {
     val tree: SortedMap[Int, String] = SortedMap.from(Map(1 -> "One", 2 -> "Two"))
@@ -144,5 +145,22 @@ class SortedMapTest {
     val m2 = m1.updatedWith(2) { case Some(v) => Some(v.toUpperCase) case None => Some("DEFAULT") }
     val m3: SortedMap[Int, String] = m2 // check the type returned by `updatedWith`
     assertEquals(SortedMap(1 -> "a", 2 -> "DEFAULT"), m3)
+  }
+
+  @Test def empty: Unit = {
+    val ord = Ordering[String]
+    exactAllocates(24)(SortedMap.empty[String, String](ord))
+  }
+  @Test def apply0: Unit = {
+    val ord = Ordering[String]
+    exactAllocates(24)(SortedMap()(ord))
+  }
+  @Test def apply1: Unit = {
+    val ord = Ordering[String]
+    onlyAllocates(200)(SortedMap(("a", "a"))(ord))
+  }
+  @Test def apply2: Unit = {
+    val ord = Ordering[String]
+    onlyAllocates(312)(SortedMap(("a", "a"), ("b", "b"))(ord))
   }
 }

@@ -15,6 +15,7 @@ package collection
 
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
+import scala.runtime.AbstractFunction1
 import scala.util.hashing.MurmurHash3
 
 /** Base Map type */
@@ -34,7 +35,12 @@ trait Map[K, +V]
       (that canEqual this) &&
       (this.size == that.size) && {
         try {
-          this forall { case (k, v) => that.getOrElse(k, Map.DefaultSentinel) == v }
+          val checker = new AbstractFunction1[(K, V),Boolean] {
+            override def apply(kv: (K,V)): Boolean = {
+              that.getOrElse(kv._1, Map.DefaultSentinel) == kv._2
+            }
+          }
+          this forall checker
         } catch {
           case _: ClassCastException => false
         }

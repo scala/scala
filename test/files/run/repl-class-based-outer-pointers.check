@@ -1,0 +1,15 @@
+
+scala> sealed abstract class Value; object Value {
+  final case class Num(value: Double) extends Value
+  final case class Str(value: String) extends Value
+  final case class Bool(value: Boolean) extends Value
+}
+class Value
+object Value
+
+scala> class C { final case class Num(value: Double) } // here it should still warn
+                                  ^
+       warning: The outer reference in this type test cannot be checked at run time.
+class C
+
+scala> :quit

@@ -19,7 +19,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
-import util.{Statistics, StatisticsStatics}
+import util.{ReusableInstance, Statistics}
 
 trait Trees extends api.Trees {
   self: SymbolTable =>
@@ -46,9 +46,6 @@ trait Trees extends api.Trees {
   abstract class Tree extends TreeContextApiImpl with Attachable with Product {
     val id = nodeCount // TODO: add to attachment?
     nodeCount += 1
-
-    if (StatisticsStatics.areSomeHotStatsEnabled())
-      statistics.incCounter(statistics.nodeByType, getClass)
 
     final override def pos: Position = rawatt.pos
 
@@ -170,6 +167,35 @@ trait Trees extends api.Trees {
       }
       productIterator foreach subtrees
       if (builder eq null) Nil else builder.result()
+    }
+    /** Equivalent to `{this.children.takeWhile(f); ()}, but more efficient` */
+    final def foreachChild(f: Tree => Boolean): Unit = {
+      def subtrees(x: Any): Boolean = x match {
+        case EmptyTree =>
+          true
+        case t: Tree =>
+          f(t)
+        case xs: List[_] =>
+          var rest = xs
+          while (!rest.isEmpty) {
+            if (!subtrees(rest.head)) return false
+            rest = rest.tail
+          }
+          true
+        case _ =>
+          true
+      }
+      val N = productArity
+      var i = 0
+      while (i < N) {
+        if (!subtrees(productElement(i))) return
+        i += 1
+      }
+    }
+
+    /** Equivalent to `this.children.headOption.getOrElse(EmptyTree)`, but more efficient. */
+    final def onlyChild: Tree = {
+      onlyChildAccumulator.using(accum => { foreachChild(accum); accum.result()})
     }
 
     def freeTerms: List[FreeTermSymbol] = freeSyms(terms = true, types = false).asInstanceOf[List[FreeTermSymbol]]
@@ -2005,6 +2031,27 @@ trait Trees extends api.Trees {
       throw new IllegalStateException("Not a Function: " + t + "/" + t.getClass)
   }
 
+  private final class OnlyChildAccumulator extends (Tree => Boolean) {
+    private[this] var only: Tree = _
+    def apply(t: Tree): Boolean = {
+      if (only == null) {
+        only = t
+        true
+      } else {
+        only = null
+        false // stop traversal
+      }
+    }
+    def result(): Tree = {
+      if (only == null) EmptyTree
+      else {
+        try only
+        finally only = null
+      }
+    }
+  }
+  private val onlyChildAccumulator = ReusableInstance[OnlyChildAccumulator](new OnlyChildAccumulator)
+
 // -------------- Classtags --------------------------------------------------------
 
   implicit val AlternativeTag         = ClassTag[Alternative](classOf[Alternative])
@@ -2066,7 +2113,6 @@ trait TreesStats {
   self: Statistics =>
   val symbolTable: SymbolTable
   val treeNodeCount = newView("#created tree nodes")(symbolTable.nodeCount)
-  val nodeByType = newByClass("#created tree nodes by type")(newCounter(""))
   val retainedCount  = newCounter("#retained tree nodes")
   val retainedByType = newByClass("#retained tree nodes by type")(newCounter(""))
 }

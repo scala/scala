@@ -1,0 +1,9 @@
+Test.scala:5: warning: class DeprecatedClass in package p1 is deprecated
+  def useC = p1.DeprecatedClass.foo
+                ^
+Test.scala:6: warning: method foo in class DeprecatedMethod is deprecated
+  def useM = p1.DeprecatedMethod.foo
+                                 ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

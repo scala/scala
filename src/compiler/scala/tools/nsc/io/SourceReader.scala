@@ -58,8 +58,9 @@ class SourceReader(decoder: CharsetDecoder, reporter: Reporter) {
   def read(file: AbstractFile): Array[Char] = {
     try file match {
       case p: PlainFile        => read(p.file)
-      case z: ZipArchive#Entry => read(Channels.newChannel(z.input))
-      case _                   => read(ByteBuffer.wrap(file.unsafeToByteArray))
+      case z: ZipArchive#Entry => val c = Channels.newChannel(z.input); try read(c) finally c.close()
+      case vf: VirtualFile     => read(ByteBuffer.wrap(vf.unsafeToByteArray))
+      case f                   => val c = Channels.newChannel(f.input); try read(c) finally c.close()
     }
     catch {
       case ex: InterruptedException => throw ex

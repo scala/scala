@@ -99,7 +99,6 @@ trait Implicits {
     // Note that the isInvalidConversionTarget seems to make a lot more sense right here, before all the
     // work is performed, than at the point where it presently exists.
     val shouldPrint     = printTypings && !context.undetparams.isEmpty
-    val rawTypeStart    = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(rawTypeImpl) else null
     val findMemberStart = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(findMemberImpl) else null
     val subtypeStart    = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startCounter(subtypeImpl) else null
     val start           = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(implicitNanos) else null
@@ -123,7 +122,6 @@ trait Implicits {
     context.undetparams = ((context.undetparams ++ result.undetparams) filterNot result.subst.from.contains).distinct
 
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(implicitNanos, start)
-    if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(rawTypeImpl, rawTypeStart)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(findMemberImpl, findMemberStart)
     if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopCounter(subtypeImpl, subtypeStart)
 
@@ -227,9 +225,9 @@ trait Implicits {
    *  @param   sym    The symbol of the implicit
    */
   class ImplicitInfo(val name: Name, val pre: Type, val sym: Symbol) {
-    private var tpeCache: Type = null
-    private var depolyCache: Type = null
-    private var isErroneousCache: TriState = TriState.Unknown
+    private[this] var tpeCache: Type = null
+    private[this] var depolyCache: Type = null
+    private[this] var isErroneousCache: TriState = TriState.Unknown
 
     /** Computes member type of implicit from prefix `pre` (cached). */
     final def tpe: Type = {
@@ -271,25 +269,25 @@ trait Implicits {
       try containsError(tpe)
       catch { case _: CyclicReference => true }
 
-    var useCountArg: Int = 0
-    var useCountView: Int = 0
-    def useCount(isView: Boolean): Int = if (isView) useCountView else useCountArg
+    final var useCountArg: Int = 0
+    final var useCountView: Int = 0
+    final def useCount(isView: Boolean): Int = if (isView) useCountView else useCountArg
 
     /** Does type `tp` contain an Error type as parameter or result?
      */
-    private def containsError(tp: Type): Boolean = tp match {
+    private final def containsError(tp: Type): Boolean = tp match {
       case PolyType(tparams, restpe) =>
         containsError(restpe)
       case NullaryMethodType(restpe) =>
         containsError(restpe)
       case mt @ MethodType(_, restpe) =>
         // OPT avoiding calling `mt.paramTypes` which creates a new list.
-        (mt.params exists symTypeIsError) || containsError(restpe)
+        mt.params.exists(_.tpe.isError) || containsError(restpe)
       case _ =>
         tp.isError
     }
 
-    def isStablePrefix = pre.isStable
+    final def isStablePrefix = pre.isStable
 
     override def equals(other: Any) = other match {
       case that: ImplicitInfo =>
@@ -429,8 +427,8 @@ trait Implicits {
       val dealiased = tp.dealiasWiden
       if (isFunctionTypeDirect(dealiased)) dealiased.typeArgs.length - 1 else -1
     }
-    private val cachedPtFunctionArity: Int = functionArityOf(pt)
-    final def functionArity(tp: Type): Int = if (tp eq pt) cachedPtFunctionArity else functionArityOf(tp)
+    private[this] val cachedPtFunctionArity: Int = functionArityOf(pt)
+    final def functionArity(tp: Type): Int = if ((tp eq pt) || (tp eq wildPt)) cachedPtFunctionArity else functionArityOf(tp)
 
     private val stableRunDefsForImport = currentRun.runDefinitions
     import stableRunDefsForImport._
@@ -1196,7 +1194,7 @@ trait Implicits {
       // which can't be solved for. Rather than attempt to patch things up later we just skip
       // those cases altogether.
       lazy val wildPtNotInstantiable =
-        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp if typeIsNothing(tp) => true; case _ => false }
+        wildPt.exists { case _: BoundedWildcardType | _: TypeVar => true ; case tp => tp.isNothing }
 
       @tailrec private def rankImplicits(pending: Infos, acc: List[(SearchResult, ImplicitInfo)]): List[(SearchResult, ImplicitInfo)] = pending match {
         case Nil                          => acc
@@ -1960,7 +1958,6 @@ trait Implicits {
 trait ImplicitsStats {
   self: TypesStats with Statistics =>
 
-  val rawTypeImpl         = newSubCounter ("  of which in implicits", rawTypeCount)
   val subtypeImpl         = newSubCounter("  of which in implicit", subtypeCount)
   val findMemberImpl      = newSubCounter("  of which in implicit", findMemberCount)
   val subtypeAppInfos     = newSubCounter("  of which in app impl", subtypeCount)

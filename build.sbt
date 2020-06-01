@@ -90,7 +90,7 @@ Global / mimaReferenceVersion := Some("2.13.0")
 
 import com.typesafe.tools.mima.core._
 val mimaFilterSettings = Seq {
-  mimaBinaryIssueFilters ++= Seq(
+  mimaBinaryIssueFilters ++= Seq[ProblemFilter](
     ProblemFilters.exclude[InaccessibleMethodProblem]("java.lang.Object.<clinit>"),
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.JavaMirrors#JavaMirror.typeTag"),
@@ -191,6 +191,16 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.*"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.findLeftMostOrPopOnEmpty"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.popNext"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.lookahead_="),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.goRight"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.stackOfNexts"),
+
 
     ////////////////////////////////////////////////////////////////////////////// Vector backward compatiblity
 
@@ -306,7 +316,17 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorMap$Tombstone$NextOfKin$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.VectorMap$Tombstone$Kinless$"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.VectorMap$Tombstone$"),
-    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap#Tombstone.unapply")
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.VectorMap#Tombstone.unapply"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.scala$reflect$runtime$ReflectSetup$_setter_$phaseWithId_="),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#EmptyMap.concat"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.ordering"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.SortedSet.scala$collection$SortedSet$$super=uals"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.SortedMap.scala$collection$SortedMap$$super=uals"),
   ),
 }
 
@@ -754,7 +774,7 @@ lazy val scaladoc = configureAsSubproject(project)
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
     Compile / unmanagedResources / includeFilter := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
-    libraryDependencies ++= ScaladocSettings.webjarResoources,
+    libraryDependencies ++= ScaladocSettings.webjarResources,
     Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar
   )
   .dependsOn(compiler)
@@ -846,7 +866,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
     name := "test-benchmarks",
     autoScalaLibrary := false,
     crossPaths := true, // needed to enable per-scala-version source directories (https://github.com/sbt/sbt/pull/1799)
-    libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.6",
+    libraryDependencies += "org.openjdk.jol" % "jol-core" % "0.10",
     libraryDependencies ++= {
       if (benchmarkScalaVersion == "") Nil
       else "org.scala-lang" % "scala-compiler" % benchmarkScalaVersion :: Nil

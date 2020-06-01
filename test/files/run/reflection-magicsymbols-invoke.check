@@ -37,8 +37,6 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Object: (): Object
 method !=: (x$1: Any): Boolean
 method ##: Int
-method $asInstanceOf: [T0](): T0
-method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean
 method asInstanceOf: [T0]T0
 method clone: (): Object
@@ -58,10 +56,6 @@ method wait: (x$1: Long): Unit
 method wait: (x$1: Long, x$2: Int): Unit
 testing Object.!=: false
 testing Object.##: 50
-testing Object.$asInstanceOf: class scala.ScalaReflectionException: AnyRef.$asInstanceOf is an internal method, it cannot be invoked with mirrors
-testing Object.$asInstanceOf: class scala.ScalaReflectionException: final def $asInstanceOf[T0](): T0 takes 0 arguments
-testing Object.$isInstanceOf: class scala.ScalaReflectionException: AnyRef.$isInstanceOf is an internal method, it cannot be invoked with mirrors
-testing Object.$isInstanceOf: class scala.ScalaReflectionException: final def $isInstanceOf[T0](): Boolean takes 0 arguments
 testing Object.==: true
 testing Object.clone: class java.lang.CloneNotSupportedException: java.lang.String
 testing Object.eq: true
@@ -82,8 +76,6 @@ if some of them change (possibly, adding and/or removing magic symbols), we must
 constructor Array: (_length: Int): Array[T]
 method !=: (x$1: Any): Boolean
 method ##: Int
-method $asInstanceOf: [T0](): T0
-method $isInstanceOf: [T0](): Boolean
 method ==: (x$1: Any): Boolean
 method apply: (i: Int): T
 method asInstanceOf: [T0]T0

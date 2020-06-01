@@ -54,12 +54,13 @@ trait JavaScanners extends ast.parser.ScannersCommon {
     /** the base of a number */
     var base: Int = 0
 
-    def copyFrom(td: JavaTokenData) = {
+    def copyFrom(td: JavaTokenData): this.type = {
       this.token = td.token
       this.pos = td.pos
       this.lastPos = td.lastPos
       this.name = td.name
       this.base = td.base
+      this
     }
   }
 

@@ -124,6 +124,10 @@ abstract class BytecodeTest {
   }
 
 // loading
+  protected def getField(classNode: ClassNode, name: String): FieldNode =
+    classNode.fields.asScala.find(_.name == name) getOrElse
+      sys.error(s"Didn't find field '$name' in class '${classNode.name}'")
+
   protected def getMethod(classNode: ClassNode, name: String): MethodNode =
     classNode.methods.asScala.find(_.name == name) getOrElse
       sys.error(s"Didn't find method '$name' in class '${classNode.name}'")

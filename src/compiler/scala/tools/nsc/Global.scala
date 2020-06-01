@@ -384,10 +384,6 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   var globalPhase: Phase = NoPhase
 
-  val MaxPhases = 64
-
-  val phaseWithId: Array[Phase] = Array.fill(MaxPhases)(NoPhase)
-
   abstract class GlobalPhase(prev: Phase) extends Phase(prev) {
     phaseWithId(id) = this
 
@@ -1659,7 +1655,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     private val hotCounters =
-      List(statistics.retainedCount, statistics.retainedByType, statistics.nodeByType)
+      List(statistics.retainedCount, statistics.retainedByType)
     private val parserStats = {
       import statistics.treeNodeCount
       if (settings.YhotStatisticsEnabled) treeNodeCount :: hotCounters

@@ -229,6 +229,10 @@ object Map extends MapFactory[Map] {
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
     def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def removed(key: Any): Map[Any, Nothing] = this
+    override def concat[V2 >: Nothing](suffix: IterableOnce[(Any, V2)]): Map[Any, V2] = suffix match {
+      case m: immutable.Map[Any, V2] => m
+      case _ => super.concat(suffix)
+    }
   }
 
   @SerialVersionUID(3L)

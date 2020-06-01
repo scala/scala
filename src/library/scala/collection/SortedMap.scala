@@ -26,6 +26,21 @@ trait SortedMap[K, +V]
   def sortedMapFactory: SortedMapFactory[SortedMap] = SortedMap
 
   override protected[this] def stringPrefix: String = "SortedMap"
+
+  override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case sm: SortedMap[k, v] if sm.ordering == this.ordering =>
+      (sm canEqual this) &&
+        (this.size == sm.size) && {
+        val i1 = this.iterator
+        val i2 = sm.iterator
+        var allEqual = true
+        while (allEqual && i1.hasNext)
+          allEqual = i1.next() == i2.next()
+        allEqual
+      }
+    case _ => super.equals(that)
+  }
 }
 
 trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _], +C <: SortedMapOps[K, V, CC, C]]
@@ -170,8 +185,6 @@ trait SortedMapOps[K, +V, +CC[X, Y] <: Map[X, Y] with SortedMapOps[X, Y, CC, _],
 
   @deprecated("Use ++ with an explicit collection argument instead of + with varargs", "2.13.0")
   override def + [V1 >: V](elem1: (K, V1), elem2: (K, V1), elems: (K, V1)*): CC[K, V1] = sortedMapFactory.from(new View.Concat(new View.Appended(new View.Appended(toIterable, elem1), elem2), elems))(ordering)
-
-  // TODO Also override mapValues
 }
 
 object SortedMapOps {
