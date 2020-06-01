@@ -87,7 +87,7 @@ object ClassPathFactory {
   def newClassPath(file: AbstractFile, settings: Settings, closeableRegistry: CloseableRegistry = new CloseableRegistry): ClassPath = file match {
     case vd: VirtualDirectory => VirtualDirectoryClassPath(vd)
     case _ =>
-      if (file.isJarOrZip)
+      if (file.isJarOrZip && !file.isDirectory)
         ZipAndJarClassPathFactory.create(file, settings, closeableRegistry)
       else if (file.isDirectory)
         DirectoryClassPath(file.file)
