@@ -14,9 +14,11 @@ package scala.tools.nsc.interpreter
 package jline
 
 import java.util.{List => JList}
+
 import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
-import org.jline.reader.impl.DefaultParser
+import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
 import org.jline.terminal.Terminal
+
 import shell.{Accumulator, ShellConfig}
 import Parser.ParseContext
 
@@ -88,6 +90,7 @@ object Reader {
         .option(INSERT_TAB, true)   // At the beginning of the line, insert tab instead of completing
         .variable(HISTORY_FILE, config.historyFile) // Save history to file
         .variable(SECONDARY_PROMPT_PATTERN, config.encolor(config.continueText)) // Continue prompt
+        .variable(WORDCHARS, LineReaderImpl.DEFAULT_WORDCHARS.filterNot("*?.[]~=/&;!#%^(){}<>".toSet))
         .option(Option.DISABLE_EVENT_EXPANSION, true) // Otherwise `scala> println(raw"\n".toList)` gives `List(n)` !!
     }
 
