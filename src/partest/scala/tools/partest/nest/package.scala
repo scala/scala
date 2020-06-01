@@ -13,7 +13,6 @@
 package scala.tools.partest
 
 package object nest {
-  def returning[T](x: T)(f: T => Unit): T = { f(x) ; x }
 
   def runAndExit(body: => Unit): Nothing = {
     body
