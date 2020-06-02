@@ -1196,17 +1196,18 @@ abstract class RefChecks extends Transform {
       try {
         enterSyms(stats)
         var index = -1
-        stats flatMap { stat => index += 1; transformStat(stat, index) }
+        stats.mapConserve(stat => {
+          index += 1;
+          transformStat(stat, index)
+        }).filter(_ ne EmptyTree)
       }
       finally popLevel()
     }
 
-
-
-    def transformStat(tree: Tree, index: Int): List[Tree] = tree match {
+    def transformStat(tree: Tree, index: Int): Tree = tree match {
       case t if treeInfo.isSelfConstrCall(t) =>
         assert(index == 0, index)
-        try transform(tree) :: Nil
+        try transform(tree)
         finally if (currentLevel.maxindex > 0) {
           // An implementation restriction to avoid VerifyErrors and lazyvals mishaps; see scala/bug#4717
           debuglog("refsym = " + currentLevel.refsym)
@@ -1214,18 +1215,18 @@ abstract class RefChecks extends Transform {
         }
       case ValDef(_, _, _, _) =>
         val tree1 = transform(tree) // important to do before forward reference check
-        if (tree1.symbol.isLazy) tree1 :: Nil
+        if (tree1.symbol.isLazy) tree1
         else {
           val sym = tree.symbol
           if (sym.isLocalToBlock && index <= currentLevel.maxindex) {
             debuglog("refsym = " + currentLevel.refsym)
             reporter.error(currentLevel.refpos, "forward reference extends over definition of " + sym)
           }
-          tree1 :: Nil
+          tree1
         }
-      case Import(_, _)                                                                       => Nil
-      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => Nil
-      case _                                                                                  => transform(tree) :: Nil
+      case Import(_, _)                                                                       => EmptyTree
+      case DefDef(mods, _, _, _, _, _) if (mods hasFlag MACRO) || (tree.symbol hasFlag MACRO) => EmptyTree
+      case _                                                                                  => transform(tree)
     }
 
     /* Check whether argument types conform to bounds of type parameters */
@@ -1763,6 +1764,14 @@ abstract class RefChecks extends Transform {
 
           case Template(parents, self, body) =>
             localTyper = localTyper.atOwner(tree, currentOwner)
+            for (stat <- body) {
+              if (treeInfo.isPureExprForWarningPurposes(stat)) {
+                val msg = "a pure expression does nothing in statement position"
+                val clause = if (body.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
+                reporter.warning(stat.pos, s"${msg}${clause}")
+              }
+            }
+
             validateBaseTypes(currentOwner)
             checkOverloadedRestrictions(currentOwner, currentOwner)
             // scala/bug#7870 default getters for constructors live in the companion module
@@ -1848,7 +1857,27 @@ abstract class RefChecks extends Transform {
                            // probably not, until we allow parameterised extractors
             tree
 
-
+          case Block(stats, expr) =>
+            val (count, result0, adapted) =
+              expr match {
+                case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
+                case Literal(Constant(()))                     => (0, EmptyTree, false)
+                case _                                         => (1, EmptyTree, false)
+              }
+            def checkPure(t: Tree, supple: Boolean): Unit =
+              if (treeInfo.isPureExprForWarningPurposes(t)) {
+                val msg = "a pure expression does nothing in statement position"
+                val parens = if (stats.length + count > 1) "multiline expressions might require enclosing parentheses" else ""
+                val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
+                val text =
+                  if (supple) s"${parens}${discard}"
+                  else if (!parens.isEmpty) s"${msg}; ${parens}" else msg
+                reporter.warning(t.pos, text)
+              }
+            // sanity check block for unintended expr placement
+            stats.foreach(checkPure(_, supple = false))
+            if (result0.nonEmpty) checkPure(result0, supple = true)
+            tree
           case _ => tree
         }
 
