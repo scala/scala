@@ -13,6 +13,7 @@
 package scala.tools.partest.nest
 
 import scala.tools.nsc.Properties.envOrElse
+import scala.util.chaining._
 import Spec.Info
 
 /** Machinery for what amounts to a command line specification DSL.
@@ -66,7 +67,7 @@ object Opt {
     def choiceOf[T: FromString](choices: T*)  = { addBinary(opt) ; None }
     def expandTo(args: String*)               = { addExpand(name, args.toList) ; addHelpAlias(() => args mkString " ") }
 
-    def /(descr: String)                = returning(name)(_ => addHelp(() => helpFormatStr.format(opt, descr)))
+    def /(descr: String)                = name.tap(_ => addHelp(() => helpFormatStr.format(opt, descr)))
   }
 
   class Instance(val programInfo: Info, val parsed: CommandLine, val name: String) extends Implicit with Error {

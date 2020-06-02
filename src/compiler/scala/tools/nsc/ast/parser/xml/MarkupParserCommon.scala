@@ -168,9 +168,6 @@ private[scala] trait MarkupParserCommon {
     if (isSpace(ch)) { nextch(); xSpaceOpt() }
     else xHandleError(ch, "whitespace expected")
 
-  /** Apply a function and return the passed value */
-  def returning[T](x: T)(f: T => Unit): T = { f(x); x }
-
   /** Execute body with a variable saved and restored after execution */
   def saving[A, B](getter: A, setter: A => Unit)(body: => B): B = {
     val saved = getter

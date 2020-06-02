@@ -12,7 +12,8 @@
 
 import scala.tools.cmd.toArgs
 import scala.tools.nsc.io._
-import scala.tools.partest.nest.{ Reference, returning, toOpt }
+import scala.tools.partest.nest.{Reference, toOpt}
+import scala.util.chaining._
 import java.util.Properties
 import java.io.FileInputStream
 
@@ -41,7 +42,7 @@ class PropertyMapper(reference: Reference) extends (((String, String)) => List[S
 
     if (isUnaryOption(key) && isTrue(value)) List(opt)
     else if (isBinaryOption(key)) List(opt, value)
-    else returning(Nil)(_ => onError(key, value))
+    else Nil.tap(_ => onError(key, value))
   }
   def isTrue(value: String) = List("yes", "on", "true") contains value.toLowerCase
 
@@ -61,7 +62,7 @@ trait Property extends Reference {
   override def propertyArgs: List[String] = systemPropertiesToOptions
 
   def loadProperties(file: File): Properties  =
-    returning(new Properties)(_ load new FileInputStream(file.path))
+    new Properties().tap(_ load new FileInputStream(file.path))
 
   def systemPropertiesToOptions: List[String] =
     propertiesToOptions(System.getProperties)

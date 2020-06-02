@@ -12,6 +12,8 @@
 
 package scala.tools.partest.nest
 
+import scala.util.chaining._
+
 /** This trait works together with others in scala.tools.cmd to allow
  *  declaratively specifying a command line program, with many attendant
  *  benefits.  See scala.tools.cmd.DemoSpec for an example.
@@ -41,7 +43,7 @@ object Spec {
     private var _buf: List[T] = Nil
 
     def convert(s: String)    = implicitly[FromString[T]] apply s
-    def apply(s: String): T   = returning(convert(s))(_buf +:= _)
+    def apply(s: String): T   = convert(s).tap(_buf +:= _)
 
     lazy val get = _buf
   }

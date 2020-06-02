@@ -32,8 +32,6 @@ trait TreeDSL {
     def nullSafe[T](f: Tree => Tree, ifNull: Tree): Tree => Tree =
       tree => IF (tree MEMBER_== NULL) THEN ifNull ELSE f(tree)
 
-    def returning[T](x: T)(f: T => Unit): T = util.returning(x)(f)
-
     object LIT extends (Any => Literal) {
       def typed(x: Any)   = apply(x) setType ConstantType(Constant(x))
       def apply(x: Any)   = Literal(Constant(x))
