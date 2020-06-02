@@ -64,7 +64,7 @@ private class Runner(
       def document(ignore: Seq[String]): Unit = {
         import compiler._
         val run = new Run
-        val wrappedFiles = sources.toList.map(new VirtualFileWrap(_))
+        val wrappedFiles = sources.toList.map(VirtualFileWrap(_))
         val sortedSourceFiles: List[AbstractFile] =
           wrappedFiles.sortWith(_.underlying.id < _.underlying.id)
         run.compileFiles(sortedSourceFiles)

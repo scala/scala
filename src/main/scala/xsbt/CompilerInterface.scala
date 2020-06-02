@@ -154,7 +154,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       compiler.set(callback, underlyingReporter)
       val run = new compiler.ZincRun(compileProgress)
 
-      val wrappedFiles = sources.map(new VirtualFileWrap(_))
+      val wrappedFiles = sources.map(VirtualFileWrap(_))
       val sortedSourceFiles: List[AbstractFile] =
         wrappedFiles.sortWith(_.underlying.id < _.underlying.id)
       run.compileFiles(sortedSourceFiles)

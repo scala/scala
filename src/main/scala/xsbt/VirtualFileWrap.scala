@@ -11,81 +11,44 @@
 
 package xsbt
 
-import xsbti.VirtualFile
-import scala.reflect.io.AbstractFile
-import java.io.{ File, InputStream, OutputStream }
+import java.io.{ InputStream, OutputStream }
+import xsbti.{ PathBasedFile, VirtualFile }
+import scala.reflect.io.{ AbstractFile, Path, PlainFile }
 
-final class VirtualFileWrap(val underlying: VirtualFile) extends AbstractFile {
-  // scala.tools.nsc.CompilationUnits$CompilationUnit.<init>(CompilationUnits.scala:161)
-  override def name: String = underlying.name
+private trait VirtualFileWrap extends AbstractFile {
+  def underlying: VirtualFile
+}
 
-  // scala.tools.nsc.Global$Run.addUnit(Global.scala:1353)
-  override def path: String = underlying.id
+private final class XsbtPlainFile(val underlying: PathBasedFile)
+    extends PlainFile(Path(underlying.toPath.toFile))
+    with VirtualFileWrap
 
-  // at scala.tools.nsc.io.SourceReader.read(SourceReader.scala:62)
-  override def input: InputStream = underlying.input
+private final class XsbtVirtualFile private[xsbt] (val underlying: VirtualFile)
+    extends reflect.io.VirtualFile(underlying.name, underlying.id)
+    with VirtualFileWrap {
 
-  override def absolute: AbstractFile = {
-    ???
-    // abstractFile.absolute
-  }
+  // fill the in-memory reflect.io.VirtualFile with the content of the underlying xsbti.VirtualFile
+  copyTo(underlying.input(), output)
 
-  // used only by Scala 2.10
-  // https://github.com/scala/scala/blob/v2.10.7/src/compiler/scala/tools/nsc/Global.scala#L1726
-  override def container: AbstractFile = {
-    new AbstractFile {
-      override def name: String = "temp"
-      def absolute: AbstractFile = ???
-      def container: AbstractFile = ???
-      def create(): Unit = ???
-      def delete(): Unit = ???
-      def file: File = ???
-      def input: InputStream = ???
-      def isDirectory: Boolean = true
-      def iterator: Iterator[AbstractFile] = ???
-      def lastModified: Long = ???
-      def lookupName(name: String, directory: Boolean): AbstractFile = ???
-      def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = ???
-      def output: OutputStream = ???
-      def path: String = ???
+  private def copyTo(input: InputStream, output: OutputStream): Unit = {
+    while (input.available > 0) {
+      val content = new Array[Byte](input.available)
+      input.read(content)
+      output.write(content)
     }
+    input.close()
+    output.close()
+  }
+}
+
+private object VirtualFileWrap {
+  def apply(virtualFile: VirtualFile): VirtualFileWrap = virtualFile match {
+    case file: PathBasedFile => new XsbtPlainFile(file)
+    case _                   => new XsbtVirtualFile(virtualFile)
   }
 
-  override def file: File = {
-    null
-  }
-
-  override def create(): Unit = {
-    ???
-    // abstractFile.create()
-  }
-  override def delete(): Unit = {
-    ???
-    /// abstractFile.delete()
-  }
-  override def isDirectory: Boolean = {
-    ???
-    // abstractFile.isDirectory
-  }
-  override def lastModified: Long = {
-    ???
-    // abstractFile.lastModified
-  }
-
-  override def output: OutputStream = {
-    ???
-    // abstractFile.output
-  }
-  override def iterator: Iterator[AbstractFile] = {
-    ???
-    // abstractFile.iterator
-  }
-  override def lookupName(name: String, directory: Boolean): AbstractFile = {
-    ???
-    // abstractFile.lookupName(name, directory)
-  }
-  override def lookupNameUnchecked(name: String, directory: Boolean): AbstractFile = {
-    ???
-    // abstractFile.lookupNameUnchecked(name, directory)
+  def unapply(abstractFile: AbstractFile): Option[VirtualFile] = abstractFile match {
+    case wrapper: VirtualFileWrap => Some(wrapper.underlying)
+    case _                        => None
   }
 }
