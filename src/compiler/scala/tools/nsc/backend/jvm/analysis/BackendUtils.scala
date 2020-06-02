@@ -110,7 +110,10 @@ abstract class BackendUtils extends PerRunInit {
   object AsmAnalyzer {
     // jvm limit is 65535 for both number of instructions and number of locals
 
-    private def size(method: MethodNode) = method.instructions.size.toLong * method.maxLocals * method.maxLocals
+    private def size(method: MethodNode) = {
+      val ml = maxLocals(method)
+      method.instructions.size.toLong * ml * ml
+    }
 
     // with the limits below, analysis should not take more than one second
 
@@ -420,6 +423,16 @@ abstract class BackendUtils extends PerRunInit {
       onIndyLambdaImplMethodIfPresent(hostClass) {
         _ --= handle
       }
+  }
+
+  def maxLocals(method: MethodNode): Int = {
+    computeMaxLocalsMaxStack(method)
+    method.maxLocals
+  }
+
+  def maxStack(method: MethodNode): Int = {
+    computeMaxLocalsMaxStack(method)
+    method.maxStack
   }
 
   /**
