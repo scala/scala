@@ -653,4 +653,16 @@ trait TypeComparers {
     }
     loop(tp.baseClasses)
   }
+
+  /** Test if arg can be applied to expected.
+   */
+  def isApplicableMethod(arg: MethodType, expected: MethodType): Boolean = {
+    val params1 = arg.params
+    val params2 = expected.params
+    val substMap1 = new SubstSymMap(params1, params2)
+    val substMap2 = new SubstSymMap(params2, params1)
+    sameLength(params1, params2) &&
+    ((params1 corresponds params2) { (sym1, sym2) => isSubType(sym2.tpe, substMap1(sym1.tpe)) || isSubType(substMap2(sym2.tpe), sym1.tpe) }) &&
+    isSubType(substMap1(arg.resultType), expected.resultType) || isSubType(arg.resultType, substMap2(expected.resultType))
+  }
 }

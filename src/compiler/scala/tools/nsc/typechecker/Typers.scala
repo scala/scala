@@ -938,9 +938,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         //           (arity > 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
         //   - 3.0: (arity == 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
         def checkCanEtaExpand(): Boolean = {
-          def expectingSamOfArity = {
+          // under -Xsource:3, be more strict about checking the param and return types to avoid
+          // SAM eta-expansion getting incorrectly prioritized over auto application (scala/bug#12006)
+          def expectingSamOfArity(typeCheck: Boolean) = {
             val sam = samOf(ptUnderlying)
-            sam.exists && sam.info.params.lengthCompare(arity) == 0
+            sam.exists &&
+            (if (typeCheck)
+              sam.info match {
+                case mt2: MethodType => isApplicableMethod(mt, mt2)
+                case _               => false
+              }
+            else sam.info.params.lengthCompare(arity) == 0)
           }
 
           val expectingFunctionOfArity = {
@@ -951,7 +959,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val doIt =
             if (arity == 0) {
               val doEtaZero =
-                expectingFunctionOfArity || sourceLevel3 && expectingSamOfArity
+                expectingFunctionOfArity || sourceLevel3 && expectingSamOfArity(sourceLevel3)
 
               if (doEtaZero && settings.warnEtaZero) {
                 val ptHelp =
@@ -964,7 +972,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                   WarningCategory.LintEtaZero)
               }
               doEtaZero
-            } else sourceLevel3 || expectingFunctionOfArity || expectingSamOfArity
+            } else sourceLevel3 || expectingFunctionOfArity || expectingSamOfArity(sourceLevel3)
 
           if (doIt && !expectingFunctionOfArity && (currentRun.isScala3 || settings.warnEtaSam)) warnEtaSam()
 
