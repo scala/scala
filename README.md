@@ -16,10 +16,10 @@ We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribut
 The general workflow is as follows.
 1. Find/file an issue in scala/bug.
 2. Fork the scala/scala repo.
-3. Write your changes in your forked repo. PR guidelines exist at [CONTRIBUTING.md](https://github.com/scala/scala/blob/2.13.x/CONTRIBUTING.md).
+3. Write your changes in your forked repo. For coding guidelines, go [here](https://github.com/scala/scala#coding-guidelines).
 4. Submit a pull request to scala/scala from your forked repo.
 
-For more information on building and developing the core of Scala, make sure to read the rest of this README!
+For more information on building and developing the core of Scala, make sure to read the rest of this README, especially for [setting up your machine](https://github.com/scala/scala#get-ready-to-contribute)!
 
 In order to get in touch with other Scala contributors, join
 [scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
