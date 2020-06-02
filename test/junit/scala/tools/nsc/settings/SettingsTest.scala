@@ -12,7 +12,7 @@ class SettingsTest {
   @Test def booleanSettingColon(): Unit = {
     def check(args: String*): MutableSettings#BooleanSetting = {
       val s = new MutableSettings(msg => throw new IllegalArgumentException(msg))
-      val b1 = new s.BooleanSetting("-Ytest-setting", "")
+      val b1 = new s.BooleanSetting("-Ytest-setting", descr="", default=false)
       s.allSettings(b1.name) = b1
       val (ok, residual) = s.processArguments(args.toList, processAll = true)
       assert(residual.isEmpty)

@@ -44,7 +44,7 @@ class FscSettings(error: String => Unit, pathFactory: PathFactory = DefaultPathF
   /** If a setting (other than a PathSetting) represents a path or paths.
    *  For use in absolutization.
    */
-  private def holdsPath = Set[Settings#Setting](d, dependencyfile, pluginsDir)
+  private def holdsPath = Set[Settings#Setting](outdir, dependencyfile, pluginsDir)
 
   override def processArguments(arguments: List[String], processAll: Boolean): (Boolean, List[String]) = {
     val (r, args) = super.processArguments(arguments, processAll)
@@ -61,7 +61,7 @@ class FscSettings(error: String => Unit, pathFactory: PathFactory = DefaultPathF
   /** All user set settings rewritten with absolute paths based on currentDir */
   def absolutize(): Unit = {
     userSetSettings foreach {
-      case p: OutputSetting => p.outputDirs setSingleOutput AbstractFile.getDirectory(absolutizePath(p.value))
+      case p: OutputSetting => outputDirs.setSingleOutput(AbstractFile.getDirectory(absolutizePath(p.value)))
       case p: PathSetting   => p.value = ClassPath.map(p.value, absolutizePath)
       case p: StringSetting => if (holdsPath(p)) p.value = absolutizePath(p.value)
       case _                => ()
