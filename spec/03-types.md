@@ -685,7 +685,7 @@ An overloaded type consisting of type alternatives $T_1 \commadots T_n (n \geq 2
 
 ###### Example
 ```scala
-def println: Unit
+def println(): Unit
 def println(s: String): Unit = $\ldots$
 def println(x: Float): Unit = $\ldots$
 def println(x: Float, width: Int): Unit = $\ldots$
@@ -694,7 +694,7 @@ def println[A](x: A)(tostring: A => String): Unit = $\ldots$
 define a single function `println` which has an overloaded
 type.
 ```
-println:  => Unit $\overload$
+println:  () Unit $\overload$
           (String) Unit $\overload$
           (Float) Unit $\overload$
           (Float, Int) Unit $\overload$

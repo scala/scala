@@ -16,7 +16,7 @@ object TreeSetTest extends Properties("TreeSet") {
     val it = subject.iterator
     var consistent = true
     subject.foreach { element =>
-      consistent &&= it.hasNext && element == it.next
+      consistent &&= it.hasNext && element == it.next()
     }
     consistent
   }
@@ -34,7 +34,7 @@ object TreeSetTest extends Properties("TreeSet") {
     val values = (1 to highest).reverse
     val subject = TreeSet(values: _*)
     val it = subject.iterator
-    try { while (it.hasNext) it.next; true } catch { case _: Throwable => false }
+    try { while (it.hasNext) it.next(); true } catch { case _: Throwable => false }
   }
 
   property("sorted") = forAll { (subject: TreeSet[Int]) => (subject.size >= 3) ==> {

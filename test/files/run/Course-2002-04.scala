@@ -34,7 +34,7 @@ object M0 {
     Console.println("list4 = " + list4);
     Console.println("list5 = " + list5);
     Console.println("list6 = " + list6);
-    Console.println;
+    Console.println()
   }
 }
 
@@ -116,7 +116,7 @@ object M1 {
     Console.println("list8: " + list8 + " -> " + isort(list8));
     Console.println("list9: " + list9 + " -> " + isort(list9));
     Console.println("listA: " + listA + " -> " + isort(listA));
-    Console.println;
+    Console.println()
   }
 
 }
@@ -139,7 +139,7 @@ object M2 {
     Console.println("f(1) = " + horner(1, poly));
     Console.println("f(2) = " + horner(2, poly));
     Console.println("f(3) = " + horner(3, poly));
-    Console.println;
+    Console.println()
   }
 }
 
@@ -183,38 +183,38 @@ object M3 {
 
     Console.println("v1        = " + v1);
     Console.println("v2        = " + v2);
-    Console.println;
+    Console.println()
 
     Console.println("id        = " + id);
     Console.println("m1        = " + m1);
     Console.println("m2        = " + m2);
-    Console.println;
+    Console.println()
 
     Console.println("v1 * v1   = " + dotproduct(v1,v1));
     Console.println("v1 * v2   = " + dotproduct(v1,v2));
     Console.println("v2 * v1   = " + dotproduct(v2,v1));
     Console.println("v1 * v2   = " + dotproduct(v1,v2));
-    Console.println;
+    Console.println()
 
     Console.println("id * v1   = " + matrixTimesVector(id,v1));
     Console.println("m1 * v1   = " + matrixTimesVector(m1,v1));
     Console.println("m2 * v1   = " + matrixTimesVector(m2,v1));
-    Console.println;
+    Console.println()
 
     Console.println("trn(id)   = " + transpose(id));
     Console.println("trn(m1)   = " + transpose(m1));
     Console.println("trn(m2)   = " + transpose(m2));
-    Console.println;
+    Console.println()
 
     Console.println("List(v1) * id = " + matrixTimesMatrix(List(v1),id));
     Console.println("List(v1) * m1 = " + matrixTimesMatrix(List(v1),m1));
     Console.println("List(v1) * m2 = " + matrixTimesMatrix(List(v1),m2));
-    Console.println;
+    Console.println()
 
     Console.println("id * List(v1) = " + matrixTimesMatrix(id,List(v1)));
     Console.println("m1 * List(v1) = " + matrixTimesMatrix(m1,List(v1)));
     Console.println("m2 * List(v1) = " + matrixTimesMatrix(m2,List(v1)));
-    Console.println;
+    Console.println()
 
     Console.println("id * id   = " + matrixTimesMatrix(id,id));
     Console.println("id * m1   = " + matrixTimesMatrix(id,m1));
@@ -225,7 +225,7 @@ object M3 {
     Console.println("m1 * m2   = " + matrixTimesMatrix(m1,m2));
     Console.println("m2 * m1   = " + matrixTimesMatrix(m2,m1));
     Console.println("m2 * m2   = " + matrixTimesMatrix(m2,m2));
-    Console.println;
+    Console.println()
   }
 }
 

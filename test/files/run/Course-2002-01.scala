@@ -188,19 +188,19 @@ object M4 {
     else pascal(c - 1, l - 1) + pascal(c, l - 1);
 
   Console.print(pascal(0,0));
-  Console.println;
+  Console.println()
 
   Console.print(pascal(0,1));
   Console.print(' ');
   Console.print(pascal(1,1));
-  Console.println;
+  Console.println()
 
   Console.print(pascal(0,2));
   Console.print(' ');
   Console.print(pascal(1,2));
   Console.print(' ');
   Console.print(pascal(2,2));
-  Console.println;
+  Console.println()
 
   Console.print(pascal(0,3));
   Console.print(' ');
@@ -209,7 +209,7 @@ object M4 {
   Console.print(pascal(2,3));
   Console.print(' ');
   Console.print(pascal(3,3));
-  Console.println;
+  Console.println()
 
   Console.print(pascal(0,4));
   Console.print(' ');
@@ -220,7 +220,7 @@ object M4 {
   Console.print(pascal(3,4));
   Console.print(' ');
   Console.print(pascal(4,4));
-  Console.println;
+  Console.println()
 }
 
 //############################################################################

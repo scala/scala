@@ -31,7 +31,7 @@ class VectorIterationBenchmark {
     var i = 0
     val it = value.iterator
     while (i < size) {
-      bh.consume(it.next)
+      bh.consume(it.next())
       i += 1
     }
   }

@@ -27,7 +27,7 @@ class BitSetIteratorBenchmark {
   @Benchmark def iterateAll(): Unit = {
     var sum = 0
     val it = bs.iterator
-    while (it.hasNext) sum += it.next
+    while (it.hasNext) sum += it.next()
   }
 
 }

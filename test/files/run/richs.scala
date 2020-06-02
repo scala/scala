@@ -27,7 +27,7 @@ object RichCharTest1 extends RichTest {
 //     private val it = s.iterator
 //     private var c: Char = _
 //     def ch(): Char = c
-//     def nextch(): Unit = { c = if (it.hasNext) it.next else ';' }
+//     def nextch(): Unit = { c = if (it.hasNext) it.next() else ';' }
 //     def err(msg: String) = println(msg)
 //     nextch()
 //   }

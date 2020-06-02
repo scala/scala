@@ -22,8 +22,8 @@ object exceptions {
         if (value == "\u0000") value = "\\u0000";
         Console.print(": " + what + " = " + value);
         if (!success) Console.print(" != " + expected);
-        Console.println;
-        Console.flush;
+        Console.println()
+        Console.flush()
     }
 
     def test: Unit = {

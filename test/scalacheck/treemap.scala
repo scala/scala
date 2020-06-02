@@ -18,7 +18,7 @@ object TreeMapTest extends Properties("TreeMap") {
     val it = subject.iterator
     var consistent = true
     subject.foreach { element =>
-      consistent &&= it.hasNext && element == it.next
+      consistent &&= it.hasNext && element == it.next()
     }
     consistent
   }
@@ -36,7 +36,7 @@ object TreeMapTest extends Properties("TreeMap") {
     val values = (1 to highest).reverse
     val subject = TreeMap(values zip values: _*)
     val it = subject.iterator
-    try { while (it.hasNext) it.next; true } catch { case _: Throwable => false }
+    try { while (it.hasNext) it.next(); true } catch { case _: Throwable => false }
   }
 
   property("sorted") = forAll { (subject: TreeMap[Int, String]) => (subject.size >= 3) ==> {

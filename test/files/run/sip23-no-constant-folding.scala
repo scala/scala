@@ -5,7 +5,7 @@ object Test extends App {
     x
   }
 
-  def testNoConstantFolding(): 23 = {
+  def testNoConstantFolding: 23 = {
     println("panda")
     23
   }

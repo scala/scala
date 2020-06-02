@@ -51,7 +51,7 @@ class A {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    (new A).run
+    (new A).run()
   }
 }
 

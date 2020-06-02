@@ -8,7 +8,7 @@ object M0 {
 
   Console.println(gcd(14,21))
   Console.println(factorial(5))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -38,7 +38,7 @@ object M1 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -65,7 +65,7 @@ object M2 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -85,7 +85,7 @@ object M3 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -108,7 +108,7 @@ object M4 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -129,7 +129,7 @@ object M5 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -149,7 +149,7 @@ object M6 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -172,7 +172,7 @@ object M7 {
   Console.println(sumReciprocals(1,4))
   Console.println(sumCubes(1, 10) + sumReciprocals(10, 20))
   Console.println("pi = " + sumPi(20))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -188,7 +188,7 @@ object M8 {
 
   Console.println("pi = " + productPi(20))
   Console.println("pi = " + pi)
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -223,7 +223,7 @@ object M9 {
   Console.println("pi = " + sumPi(20))
   Console.println("pi = " + productPi(20))
   Console.println("pi = " + pi)
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -244,7 +244,7 @@ object MA {
   def sqrt(x: Double) = fixedPoint(y => (y + x / y) / 2)(1.0)
 
   Console.println("sqrt(2) = " + sqrt(2))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -266,7 +266,7 @@ object MB {
   def sqrt(x: Double) = fixedPoint(averageDamp(y => x/y))(1.0);
 
   Console.println("sqrt(2) = " + sqrt(2))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -294,13 +294,13 @@ object MC {
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5));
   Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5));
-  Console.println;
+  Console.println()
 
   Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5));
   Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5));
-  Console.println;
+  Console.println()
 
   Console.println(
       "factorial(0) = " + factorial(0))
@@ -314,7 +314,7 @@ object MC {
       "factorial(4) = " + factorial(4))
   Console.println(
       "factorial(5) = " + factorial(5))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -339,13 +339,13 @@ object MD {
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5))
   Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5))
-  Console.println;
+  Console.println()
 
   Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5))
   Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5))
-  Console.println;
+  Console.println()
 
   Console.println(
       "factorial(0) = " + factorial(0))
@@ -359,7 +359,7 @@ object MD {
       "factorial(4) = " + factorial(4))
   Console.println(
       "factorial(5) = " + factorial(5))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -382,13 +382,13 @@ object ME {
       "1 + 2 + .. + 5 = " + sum(x => x)(1, 5))
   Console.println(
       "1 * 2 * .. * 5 = " + product(x => x)(1, 5))
-  Console.println;
+  Console.println()
 
   Console.println(
       "1^2 + 2^2 + .. + 5^2 = " + sum(x => x*x)(1, 5))
   Console.println(
       "1^2 * 2^2 * .. * 5^2 = " + product(x => x*x)(1, 5))
-  Console.println;
+  Console.println()
 
   Console.println(
       "factorial(0) = " + factorial(0))
@@ -402,7 +402,7 @@ object ME {
       "factorial(4) = " + factorial(4))
   Console.println(
       "factorial(5) = " + factorial(5))
-  Console.println
+  Console.println()
 }
 
 //############################################################################
@@ -464,7 +464,7 @@ object MH {
   Console.println("power(0,6) = " + power(0,6))
   Console.println("power(0,7) = " + power(0,7))
   Console.println("power(0,8) = " + power(0,8))
-  Console.println
+  Console.println()
 
   Console.println("power(1,0) = " + power(1,0))
   Console.println("power(1,1) = " + power(1,1))
@@ -475,7 +475,7 @@ object MH {
   Console.println("power(1,6) = " + power(1,6))
   Console.println("power(1,7) = " + power(1,7))
   Console.println("power(1,8) = " + power(1,8))
-  Console.println
+  Console.println()
 
   Console.println("power(2,0) = " + power(2,0))
   Console.println("power(2,1) = " + power(2,1))
@@ -486,7 +486,7 @@ object MH {
   Console.println("power(2,6) = " + power(2,6))
   Console.println("power(2,7) = " + power(2,7))
   Console.println("power(2,8) = " + power(2,8))
-  Console.println
+  Console.println()
 
   Console.println("power(3,0) = " + power(3,0))
   Console.println("power(3,1) = " + power(3,1))
@@ -497,7 +497,7 @@ object MH {
   Console.println("power(3,6) = " + power(3,6))
   Console.println("power(3,7) = " + power(3,7))
   Console.println("power(3,8) = " + power(3,8))
-  Console.println
+  Console.println()
 
   Console.println("power(4,0) = " + power(4,0))
   Console.println("power(4,1) = " + power(4,1))
@@ -508,7 +508,7 @@ object MH {
   Console.println("power(4,6) = " + power(4,6))
   Console.println("power(4,7) = " + power(4,7))
   Console.println("power(4,8) = " + power(4,8))
-  Console.println
+  Console.println()
 
   Console.println("power(5,0) = " + power(5,0))
   Console.println("power(5,1) = " + power(5,1))
@@ -519,7 +519,7 @@ object MH {
   Console.println("power(5,6) = " + power(5,6))
   Console.println("power(5,7) = " + power(5,7))
   Console.println("power(5,8) = " + power(5,8))
-  Console.println
+  Console.println()
 }
 
 //############################################################################

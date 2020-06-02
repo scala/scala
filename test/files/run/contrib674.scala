@@ -15,5 +15,5 @@ object Test extends App {
     1
   }
 
-  bad
+  bad()
 }

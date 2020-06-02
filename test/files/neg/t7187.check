@@ -26,6 +26,11 @@ t7187.scala:12: warning: An unapplied 0-arity method was eta-expanded (due to th
 Write foo() to invoke method foo, or change the expected type.
   val t1b: () => Any = foo   // eta-expansion, but lint warning
                        ^
+t7187.scala:13: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method foo,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  val t1c: () => Any = { val t = foo; t } // `()`-insertion because no expected type
+                                 ^
 t7187.scala:21: warning: Methods without a parameter list and by-name params can no longer be converted to functions as `m _`, write a function literal `() => m` instead
   val t2c: () => Any = bar _ // warning: eta-expanding a nullary method
                        ^
@@ -49,5 +54,5 @@ even though trait AcciSamOne is not annotated with `@FunctionalInterface`;
 to suppress warning, add the annotation or write out the equivalent function literal.
   val t5AcciSam: AcciSamOne = zup // ok, but warning
                               ^
-7 warnings
+8 warnings
 6 errors

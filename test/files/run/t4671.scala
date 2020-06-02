@@ -5,7 +5,7 @@ object Test extends ReplTest {
   def code = """
 object o { val file = sys.props("partest.cwd") + "/t4671.scala" }
 val s = scala.io.Source.fromFile(o.file)
-println(s.getLines.mkString("\n"))
+println(s.getLines().mkString("\n"))
 s.close()
 
 val s = scala.io.Source.fromFile(o.file)

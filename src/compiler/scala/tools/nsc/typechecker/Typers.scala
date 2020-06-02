@@ -972,27 +972,23 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         }
 
         def matchNullaryLoosely: Boolean = {
-          def test(sym: Symbol) =
-            sym.isJavaDefined ||
-            sym.owner == AnyClass ||
-            sym == Object_clone
+          def test(sym: Symbol) = sym.isJavaDefined || sym.owner == AnyClass
           test(meth) || meth.overrides.exists(test)
         }
-        // (4.2) condition for auto-application by -Xsource level
+
+        // (4.2) condition for auto-application
         //
-        // until 3.0: none (assuming condition for (4.3) was not met)
-        // in 3.0: `meth.isJavaDefined`
-        //         (TODO decide -- currently the condition is more involved to give slack to Scala methods overriding Java-defined ones;
-        //          I think we should resolve that by introducing slack in overriding e.g. a Java-defined `def toString()` by a Scala-defined `def toString`.
-        //          This also works better for dealing with accessors overriding Java-defined methods. The current strategy in methodSig is problematic:
-        //          > // Add a () parameter section if this overrides some method with () parameters
-        //          > val vparamSymssOrEmptyParamsFromOverride =
-        //          This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
+        // Currently the condition is more involved to give slack to Scala methods overriding Java-defined ones;
+        // I (moors) think we should resolve that by introducing slack in overriding e.g. a Java-defined `def toString()` by a Scala-defined `def toString`.
+        // This also works better for dealing with accessors overriding Java-defined methods. The current strategy in methodSig is problematic:
+        // > // Add a () parameter section if this overrides some method with () parameters
+        // > val vparamSymssOrEmptyParamsFromOverride =
+        // This means an accessor that overrides a Java-defined method gets a MethodType instead of a NullaryMethodType, which breaks lots of assumptions about accessors)
         def checkCanAutoApply(): Boolean = {
-          if (sourceLevel3 && !isPastTyper && !matchNullaryLoosely) {
+          if (!isPastTyper && !matchNullaryLoosely) {
             context.deprecationWarning(tree.pos, NoSymbol, s"Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method ${meth.decodedName},\n" +
                                                            s"or remove the empty argument list from its definition (Java-defined methods are exempt).\n"+
-                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "3.0.0")
+                                                           s"In Scala 3, an unapplied method like this will be eta-expanded into a function.", "2.13.3")
           }
           true
         }

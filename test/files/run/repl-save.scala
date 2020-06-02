@@ -19,6 +19,6 @@ s"""|
   override def stripMargins: Boolean = true
   override def show() = {
     checkSession()
-    Console print saveto.toFile.slurp
+    Console print saveto.toFile.slurp()
   }
 }

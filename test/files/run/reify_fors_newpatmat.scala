@@ -82,7 +82,7 @@ object Test extends App {
 
     print("Persons over 20:")
     olderThan20(persons) foreach { x => print(" " + x) }
-    println
+    println()
 
     import Numeric._
 
@@ -90,7 +90,7 @@ object Test extends App {
 
     print("findNums(15) =")
     findNums(15) foreach { x => print(" " + x) }
-    println
+    println()
 
     val xs = List(3.5, 5.0, 4.5)
     println("average(" + xs + ") = " + sum(xs) / xs.length)

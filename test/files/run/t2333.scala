@@ -11,6 +11,6 @@ class A {
 object Test {
     def main(a: Array[String]): Unit = {
         val a = new A
-        a.whatever
+        a.whatever()
     }
 }

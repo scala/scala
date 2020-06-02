@@ -51,7 +51,7 @@ checksensible.scala:47: warning: comparing values of types Unit and Unit using `
   () == ()
      ^
 checksensible.scala:48: warning: comparing values of types Unit and Unit using `==` will always yield true
-  () == println
+  () == println()
      ^
 checksensible.scala:49: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
   () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
@@ -60,7 +60,7 @@ checksensible.scala:50: warning: comparing values of types scala.runtime.BoxedUn
   scala.runtime.BoxedUnit.UNIT != ()
                                ^
 checksensible.scala:53: warning: comparing values of types Int and Unit using `!=` will always yield true
-  (1 != println)
+  (1 != println())
      ^
 checksensible.scala:54: warning: comparing values of types Int and Symbol using `!=` will always yield true
   (1 != 'sym)
@@ -169,7 +169,7 @@ checksensible.scala:47: warning: comparing values of types Unit and Unit using `
   () == ()
      ^
 checksensible.scala:48: warning: comparing values of types Unit and Unit using `==` will always yield true
-  () == println
+  () == println()
      ^
 checksensible.scala:49: warning: comparing values of types Unit and scala.runtime.BoxedUnit using `==` will always yield true
   () == scala.runtime.BoxedUnit.UNIT // these should warn for always being true/false
@@ -178,7 +178,7 @@ checksensible.scala:50: warning: comparing values of types scala.runtime.BoxedUn
   scala.runtime.BoxedUnit.UNIT != ()
                                ^
 checksensible.scala:53: warning: comparing values of types Int and Unit using `!=` will always yield true
-  (1 != println)
+  (1 != println())
      ^
 checksensible.scala:54: warning: comparing values of types Int and Symbol using `!=` will always yield true
   (1 != 'sym)

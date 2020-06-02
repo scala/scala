@@ -43,8 +43,8 @@ object Test extends App {
     val Literal(Constant(s_format: String)) = format
     val paramsStack = scala.collection.mutable.Stack(params: _*)
     val parsed = s_format.split("(?<=%[\\w%])|(?=%[\\w%])") map {
-      case "%d" => createTempValDef( paramsStack.pop, typeOf[Int] )
-      case "%s" => createTempValDef( paramsStack.pop, typeOf[String] )
+      case "%d" => createTempValDef( paramsStack.pop(), typeOf[Int] )
+      case "%s" => createTempValDef( paramsStack.pop(), typeOf[String] )
       case "%%" => {
         (None:Option[Tree], Literal(Constant("%")))
       }

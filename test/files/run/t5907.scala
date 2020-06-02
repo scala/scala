@@ -66,8 +66,6 @@ object Test extends App {
 
     {
       implicit val s = "enag"
-      println(c9.copy()(299))
-      println(c9.copy()(299)())
       println(c9.copy()(299)()())
       println(c9.copy(x = -42)(99)()()("flae"))
     }

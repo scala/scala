@@ -344,7 +344,7 @@ object Test {
       case n :: ls => flips((l take n reverse) ::: (l drop n)) + 1
     }
 
-    def run(): Unit = { assertEquals("both", (Var("x"), Var("y")), f) }
+    def run(): Unit = { assertEquals("both", (Var("x"), Var("y")), f()) }
   }
 
   object TestUnbox {

@@ -9,9 +9,9 @@ object Test extends App {
 
 		println(zeroTo1.hasNext)
 		println(zeroTo1.hasNext)
-		println(zeroTo1.next)
+		println(zeroTo1.next())
 		println(zeroTo1.hasNext)
-		println(zeroTo1.next)
+		println(zeroTo1.next())
 		println(zeroTo1.hasNext)
 		println(zeroTo1.hasNext)
 	}
@@ -23,7 +23,7 @@ object Test extends App {
 
 		println(evens.hasNext)
 		println(evens.hasNext)
-		println(evens.next)
+		println(evens.next())
 
 		evens.foreach(println _)
 	}

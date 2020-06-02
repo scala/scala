@@ -3,7 +3,7 @@ abstract class Test {
   def foo(): Sam
   // no parens, instantiateToMethodType would wrap in a `new Sam { def apply = foo }`
   // rather than applying to an empty param list() */
-  val f: Sam = foo
+  val f: Sam = foo()
 }
 
 object Test extends Test {

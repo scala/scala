@@ -7,7 +7,7 @@ object Test extends App {
   println(s0.lengthCompare(-5) > 0)
   println(s0.lengthCompare(0) == 0)
   println(s0.lengthCompare(5) < 0)
-  println
+  println()
 
   val s1 = LazyList.cons(1, LazyList.empty)
   println(s1.toArray.deep)
@@ -21,7 +21,7 @@ object Test extends App {
   println(s1.lengthCompare(0) > 0)
   println(s1.lengthCompare(1) == 0)
   println(s1.lengthCompare(5) < 0)
-  println
+  println()
 
   val s2 = s1.lazyAppendedAll(LazyList.cons(2, LazyList.empty))
   println(s2.toArray.deep)
@@ -34,7 +34,7 @@ object Test extends App {
   println(s2.lengthCompare(1) > 0)
   println(s2.lengthCompare(2) == 0)
   println(s2.lengthCompare(5) < 0)
-  println
+  println()
 
   val s3 = LazyList.range(1, 1000) //100000 (ticket #153: Stackoverflow)
   println(s3.length)
@@ -58,7 +58,7 @@ object Test extends App {
   val arr = new Array[Int](size)
   LazyList.from(1).take(size).copyToArray(arr, 0)
 
-  println
+  println()
 
   // ticket #6415
   lazy val x = { println("evaluated"); 1 }

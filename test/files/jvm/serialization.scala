@@ -531,6 +531,6 @@ object Test10_util {
   {
     val random = new Random(345)
     val random2: Random = read(write(random))
-    rep(5) { assert(random.nextInt == random2.nextInt) }
+    rep(5) { assert(random.nextInt() == random2.nextInt()) }
   }
 }

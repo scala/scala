@@ -16,13 +16,13 @@ object Test {
     for (h <- Array(2,5,1000)) {
       for (i <- 0 to 100) {
         for (j <- 0 to 10) {
-          val xs = (0 to j).map(_ => (rng.nextInt & 0x7FFFFFFF) % h)
+          val xs = (0 to j).map(_ => (rng.nextInt() & 0x7FFFFFFF) % h)
           val xsa = xs.toArray
           val xsv = Vector() ++ xs
           val xsl = xs.toList
           val xss = Vector[Seq[Int]](xs,xsa.toIndexedSeq,xsv,xsl)
           for (k <- 0 to 5) {
-            val ys = (0 to k).map(_ => (rng.nextInt & 0x7FFFFFFF) % h)
+            val ys = (0 to k).map(_ => (rng.nextInt() & 0x7FFFFFFF) % h)
             val ysa = ys.toArray
             val ysv = Vector() ++ ys
             val ysl = ys.toList

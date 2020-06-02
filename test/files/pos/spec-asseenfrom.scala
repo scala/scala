@@ -14,7 +14,7 @@ class Automaton[@specialized(Double) W,State] {
   def finalStateWeights() = {
     val it = allStates.iterator;
     while(it.hasNext) {
-      finalWeight(it.next);
+      finalWeight(it.next());
     }
   }
   */

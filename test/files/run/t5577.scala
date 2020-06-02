@@ -15,7 +15,7 @@ object Test {
 
     iteratorBuilder.sizeHint(10)
     iteratorBuilder ++= (0 until 10)
-    iteratorBuilder.result.foreach(println)
+    iteratorBuilder.result().foreach(println)
   }
 
 }

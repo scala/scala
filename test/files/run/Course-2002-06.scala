@@ -137,7 +137,7 @@ class PostScript (filename: String, _width: Double, _height: Double)
   /** Terminate the PS document and close the file stream. */
   def close : Unit = {
     Console.println("stroke\nshowpage\n%%EOF");
-    Console.flush;
+    Console.flush()
   }
 }
 

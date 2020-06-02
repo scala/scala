@@ -2,13 +2,13 @@
 import scala.language.{ existentials }
 
 object Test {
-  def f() = { case class Bar(x: Int); Bar }
-  def g() = { case class Bar(x: Int); Bar(5) }
-  def h() = { case object Bar ; Bar }
+  def f = { case class Bar(x: Int); Bar }
+  def g = { case class Bar(x: Int); Bar(5) }
+  def h = { case object Bar ; Bar }
 
-  val f1 = f()
-  val g1 = g()
-  val h1 = h()
+  val f1 = f
+  val g1 = g
+  val h1 = h
 
   def m[T: Manifest](x: T) = println(manifest[T])
 

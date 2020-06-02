@@ -5,7 +5,7 @@ package scala.test.scaladoc {
     class Enum {
       abstract class Value
       class Val extends Value
-      def Value(): Value = new Val
+      def Value: Value = new Val
     }
 
     object Constants extends Enum {

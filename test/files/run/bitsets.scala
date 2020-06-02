@@ -38,7 +38,7 @@ object TestMutable {
   Console.println("mi0 = " + ms0.toImmutable)
   Console.println("mi1 = " + ms1.toImmutable)
   Console.println("mi2 = " + ms2.toImmutable)
-  Console.println
+  Console.println()
 
   val N = 257
   val gen = 3
@@ -93,7 +93,7 @@ object TestMutable2 {
   println("m2_r1 = " + (t1.range(43,194) == b1.range(43,194)))
   println("m2_r2 = " + (t2.range(43,194) == b2.range(43,194)))
   println("m2_r3 = " + (t3.range(43,194) == b3.range(43,194)))
-  println
+  println()
 }
 
 object TestMutable3 {
@@ -162,7 +162,7 @@ object TestImmutable {
   Console.println("ia1 = " + is1.toList)
   Console.println("ia2 = " + is2.toList)
   Console.println("ia3 = " + is3.toList)
-  Console.println
+  Console.println()
 }
 
 object TestImmutable2 {
@@ -203,13 +203,13 @@ object TestImmutable2 {
   println("i2_r1 = " + (t1.range(77,194) == b1.range(77,194)))
   println("i2_r2 = " + (t2.range(77,194) == b2.range(77,194)))
   println("i2_r3 = " + (t3.range(77,194) == b3.range(77,194)))
-  println
+  println()
 }
 
 object TestImmutable3 {
   import scala.collection.immutable.BitSet
   BitSet(125).filter{ xi => println(xi); true } // scala/bug#11380
-  println
+  println()
 }
 
 object Test extends App {

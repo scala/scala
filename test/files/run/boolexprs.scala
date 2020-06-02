@@ -46,13 +46,13 @@ object Test {
       case exception: Throwable =>
         Console.print(" raised exception " + exception);
     }
-    Console.println;
+    Console.println()
   }
 
   def main(args: Array[String]): Unit = {
     check_success("Test1", Test1.run, 1);
     check_success("Test2", Test2.run, 0);
-    Console.println;
+    Console.println()
   }
 }
 

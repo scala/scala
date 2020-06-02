@@ -18,7 +18,7 @@ object Test {
     val numFutures = 4000
 
     val rng = new Random()
-    val longStandingPromise = Promise[Nothing]
+    val longStandingPromise = Promise[Nothing]()
 
     val futures = List.tabulate(numFutures) { i =>
       val arr = new Array[Int](arrSz)

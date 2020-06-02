@@ -7,11 +7,11 @@
 object checker {
   def check(location: String, what: String, value: Any): Unit = {
     Console.print("In " + location + ", " + what + ".toString() returns ");
-    Console.flush;
+    Console.flush()
     val string: String = if (value == null) "null" else value.toString();
     val test = if (string == location) "ok" else "KO";
     Console.println(string + " -> " + test);
-    Console.flush;
+    Console.flush()
   }
 }
 
@@ -31,7 +31,7 @@ class C_ico() {
   check("C_ico", "v_ico ", v_ico);
   check("C_ico", "field ", field);
   check("C_ico", "method", method);
-  Console.println;
+  Console.println()
 }
 
 object o_ico {
@@ -58,7 +58,7 @@ class C_ioc() {
   check("C_ioc", "v_ioc ", v_ioc);
   check("C_ioc", "field ", field);
   check("C_ioc", "method", method);
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
@@ -79,7 +79,7 @@ class C_oic() {
   check("C_oic", "v_oic ", v_oic);
   check("C_oic", "field ", field);
   check("C_oic", "method", method);
-  Console.println;
+  Console.println()
 }
 
 //############################################################################
