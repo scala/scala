@@ -31,12 +31,10 @@ class Sizes {
       assertTotalSize(Sizes.refArray(length), JOL.netLayout(new Array[String](length), Nil))
     }
   }
-  @Test
-  def wrappedArray2: Unit = {
-    for (length <- 1 to 10) {
+  @Test @deprecated("Tests deprecated API", since="2.13.3")
+  def wrappedArray2: Unit =
+    for (length <- 1 to 10)
       assertTotalSize(Sizes.wrappedRefArray(length), JOL.netLayout(mutable.WrappedArray.make[String](new Array[String](length)), Nil))
-    }
-  }
 
   @Test
   def wrappedArray: Unit = {

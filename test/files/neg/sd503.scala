@@ -26,12 +26,12 @@ trait T {
 class C {
   private var value: Int = _
   def x: Int = value
-  def x_=(i: Int, j: Int): Unit = value = i + j           // multiarg, warn
+  def x_=(i: Int, j: Int): Unit = value = i + j           // multiarg, but don't warn
 }
 class D {
   private var devalue: Int = _                            // d.value
   def x: Int = devalue
-  def x_=(i: Int, j: Int = 1): Unit = devalue = i + j     // multiarg, warn
+  def x_=(i: Int, j: Int = 1): Unit = devalue = i + j     // multiarg, but don't warn
 }
 
 // If the application is adapted such that what looks like a tuple is taken as a tuple,
@@ -73,4 +73,9 @@ trait Exceptions[A] {
 trait AlsoExceptions[A] {
   def addAll(as: Seq[A]): this.type
   def +=(x: A, y: A, zs: A*): this.type = addAll(x +: y +: zs)                // nowarn!
+}
+
+trait WhyNamingIsHard {
+  def lines_!(x: Int, y: Int): List[String] = ???                             // nowarn, give it a pass
+  def f = this lines_! (42, 27)                                               // warn usage, of course
 }
