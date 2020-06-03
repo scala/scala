@@ -1,28 +1,7 @@
-// scalac: -Werror -Wunused:nowarn
+// scalac: -Werror -Wunused:nowarn -Xsource:3
 //
 class A { def x: Int = 3 }
 class B extends A { override def x(): Int = 4 }
-
-class C extends java.lang.CharSequence {
-  def charAt(x$1: Int): Char = ???
-  def length: Int = ???
-  def subSequence(x$1: Int, x$2: Int): CharSequence = ???
-}
-
-// P has parens
-class P { def x(): Int = 3 }
-// Q is questionable
-class Q extends P { override def x: Int = 4 }
-
-// Welcome to the Happy J
-class J { override def toString = "Happy J" }
-
-import annotation._
-class E { def x(): Int = 3 }
-class F extends E { @nowarn override def x: Int = 4 }
-
-class G { def x: Int = 5 }
-class H extends G { @nowarn override def x(): Int = 6 }
 
 
 trait T1 { def x: String   = "1" }
@@ -33,7 +12,7 @@ trait T2 { def x(): String = "2" }
 //   def x(): String (defined in trait T2)
 //   (note: this can be resolved by declaring an `override` in class X.)
 
-class Mix12a extends T1 with T2 { override def x   = "12a" }
+// Mix12a in nullary-override-3b
 class Mix12b extends T1 with T2 { override def x() = "12b" }
 
 class Mix21a extends T2 with T1 { override def x   = "21a" }

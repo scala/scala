@@ -1,3 +1,9 @@
+t5429.scala:68: warning: method without a parameter list overrides a method with a single empty one
+  def emptyArg = 10   // fail
+      ^
+t5429.scala:75: warning: method without a parameter list overrides a method with a single empty one
+  override def emptyArg = 10  // override
+               ^
 t5429.scala:20: error: `override` modifier required to override concrete member:
 val value: Int (defined in class A)
   object value      // fail
@@ -145,4 +151,5 @@ Note: the super classes of class F0 contain the following, non final members nam
 def oneArg(x: String): Any
   override lazy val oneArg = 15    // fail
                     ^
+2 warnings
 34 errors

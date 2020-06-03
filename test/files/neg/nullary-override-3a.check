@@ -1,0 +1,13 @@
+nullary-override-3a.scala:4: error: method with a single empty parameter list overrides method without any parameter list
+def x: Int (defined in class A)
+class B extends A { override def x(): Int = 4 }
+                                 ^
+nullary-override-3a.scala:16: error: method with a single empty parameter list overrides method without any parameter list
+def x: String (defined in trait T1)
+class Mix12b extends T1 with T2 { override def x() = "12b" }
+                                               ^
+nullary-override-3a.scala:19: error: method with a single empty parameter list overrides method without any parameter list
+def x: String (defined in trait T1)
+class Mix21b extends T2 with T1 { override def x() = "21b" }
+                                               ^
+3 errors
