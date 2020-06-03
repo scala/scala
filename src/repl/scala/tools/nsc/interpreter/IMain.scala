@@ -1170,15 +1170,17 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
   /** Does code start with a package definition? */
   def isPackaged(line: String): Boolean =
-    reporter.suppressOutput {
+    !reporter.hasErrors && reporter.suppressOutput {
       reporter.reset()
       val tree = newUnitParser(line).parse()
-      !reporter.hasErrors && {
+      val res  = !reporter.hasErrors && {
         tree match {
           case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME
           case _ => false
         }
       }
+      if (reporter.hasErrors) reporter.reset()
+      res
     }
 
   def symbolOfLine(code: String): Symbol =

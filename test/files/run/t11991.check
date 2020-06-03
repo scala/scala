@@ -1,0 +1,19 @@
+
+scala> :paste <| EOF
+// Entering paste mode (EOF to finish)
+
+    |// comment 1
+    |val x = 3
+    |// comment 2
+    |val y = 4
+EOF
+
+// Exiting paste mode, now interpreting.
+
+val x: Int = 3
+val y: Int = 4
+
+scala> (x, y)
+val res0: (Int, Int) = (3,4)
+
+scala> :quit
