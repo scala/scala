@@ -1,0 +1,6 @@
+t12026.scala:11: warning: discarded non-Unit value
+  def f(): Unit = v()
+                   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found
