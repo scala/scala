@@ -1,11 +1,11 @@
 //Generate the classes and assertions under test.
-case class TestCase(classType: String, specialized: Boolean, p1: ParamConfig, p2: ParamConfig) {
-  val className = s"${classType.headOption.getOrElse('r')}${specialized.toString().head}${abbr(p1)}${abbr(p2)}".capitalize
-  val tparams = if (specialized) "[@specialized(Int) A, @specialized(Int) B]" else "[A, B]"
+case class TestCase(classType: String, p1: ParamConfig, p2: ParamConfig) {
+  val className = s"${classType.headOption.getOrElse('r')}${abbr(p1)}_${abbr(p2)}".capitalize
+  val tParams = "[@specialized(Int) A, @specialized(Int) B]"
   def abbr(p: ParamConfig): String = p.modifier.split(' ').toSeq.map(_.headOption.getOrElse('n')).mkString + p.accessed.toString().head
   //def access(param: ParamConfig, name: String) = if(param.accessed)
   def decl(param: ParamConfig): String = param.aliasName.map(n => s"val $n = ${param.constructorName}\n").getOrElse("")
-  def renderClass: String = s"""$classType class $className$tparams(${p1.modifier} ${p1.constructorName}: A, ${p2.modifier} a: B){
+  def renderClass: String = s"""$classType class $className$tParams(${p1.modifier} ${p1.constructorName}: A, ${p2.modifier} a: B){
     ${decl(p1)}${decl(p2)}
   }"""
   
@@ -52,11 +52,9 @@ object Generator {
 
   val configurations = for {
     classConfig <- List("case", "")
-    specialized <- List(true, false)
     p1config <- paramConfigurations("`a b`", "p1")
     p2config <- paramConfigurations("a", "p2")
-    if (!(specialized && !(p1config.accessed || p2config.accessed)))
-  } yield TestCase(classConfig, specialized, p1config, p2config)
+  } yield TestCase(classConfig, p1config, p2config)
 
   def main(args: Array[String]): Unit = {
     import java.io.File

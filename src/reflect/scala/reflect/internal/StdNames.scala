@@ -437,6 +437,9 @@ trait StdNames {
      *  Look backward from the end of the string for "$$", and take the
      *  part of the string after that; but if the string is "$$$" or longer,
      *  be sure to retain the extra dollars.
+     *  If the name happens to be a back quoted name containing literal $$
+     *  or $ followed by an operator that gets encoded, go directly to compiler
+     *  crash. Do not pass go and don't even think about collecting any $$
      */
     def unexpandedName(name: Name): Name = name lastIndexOf "$$" match {
       case 0 | -1 => name
