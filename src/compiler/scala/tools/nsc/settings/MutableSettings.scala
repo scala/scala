@@ -22,7 +22,6 @@ import scala.collection.mutable.Clearable
 import scala.io.Source
 import scala.reflect.internal.util.{SomeOfNil, StringOps}
 import scala.reflect.{ClassTag, classTag}
-import scala.util.chaining._
 
 /** A mutable Settings object.
  */
@@ -225,7 +224,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     add(new MultiStringSetting(name, arg, descr, default, helpText, prepend))
   def MultiChoiceSetting[E <: MultiChoiceEnumeration](name: String, helpArg: String, descr: String, domain: E, default: Option[List[String]] = None) =
     add(new MultiChoiceSetting[E](name, helpArg, descr, domain, default))
-  def OutputSetting(outputDirs: OutputDirs, default: String) = add(new OutputSetting(default).tap(_ => outputDirs.setSingleOutput(default)))
+  def OutputSetting(default: String) = add(new OutputSetting(default))
   def PhasesSetting(name: String, descr: String, default: String = "") = add(new PhasesSetting(name, descr, default))
   def StringSetting(name: String, arg: String, descr: String, default: String, helpText: Option[String] = None) = add(new StringSetting(name, arg, descr, default, helpText))
   def ScalaVersionSetting(name: String, arg: String, descr: String, initial: ScalaVersion, default: Option[ScalaVersion] = None) =

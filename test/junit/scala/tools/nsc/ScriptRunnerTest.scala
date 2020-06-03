@@ -12,16 +12,10 @@ class ScriptRunnerTest {
     s.usejavacp.value = true
 
     // scala -e ''
-    ScriptRunner(s).runScriptText("", Nil) match {
-      case Some(e) => throw e
-      case None    => ()
-    }
+    ScriptRunner(s).runScriptText("", Nil).foreach(throw _)
 
     // scala -save -e ''
     s.save.value = true
-    ScriptRunner(s).runScriptText("", Nil) match {
-      case Some(e) => throw e
-      case None    => ()
-    }
+    ScriptRunner(s).runScriptText("", Nil).foreach(throw _)
   }
 }

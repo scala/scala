@@ -25,7 +25,7 @@ import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
 import scala.reflect.internal.util.StringContextStripMarginOps
 import scala.tools.nsc.util.DefaultJarFactory
-
+import scala.util.chaining._
 
 trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
 
@@ -58,7 +58,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   // argfiles is only for the help message
   /*val argfiles = */ BooleanSetting("@<file>", "A text file containing compiler arguments (options and source files)")
   val classpath     = PathSetting   ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp" withAbbreviation "--class-path"
-  val outdir        = OutputSetting (outputDirs, ".").withPostSetHook(s => try outputDirs.setSingleOutput(s.value) catch { case FatalError(msg) => errorFn(msg) })
+  val outdir        = OutputSetting (".").withPostSetHook(s => try outputDirs.setSingleOutput(s.value) catch { case FatalError(msg) => errorFn(msg) }).tap(_.postSetHook())
 
   val nospecialization = BooleanSetting("-no-specialization", "Ignore @specialize annotations.") withAbbreviation "--no-specialization"
 
