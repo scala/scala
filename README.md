@@ -5,22 +5,26 @@ standard library, compiler, and language spec.
 
 # How to contribute
 
+Issues and bug reports for _scala/scala_ are located in [scala/bug](https://github.com/scala/bug). This tracker is also where new contributors may find [good first issues](https://github.com/scala/bug/labels/good%20first%20issue) to work on.
+
 To contribute in this repo, please open a [pull request](https://help.github.com/articles/using-pull-requests/#fork--pull) from your fork of this repository.
+
+For coordinating bigger work items, we use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues).
 
 We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect its open source nature.
 
-For more information on building and developing the core of Scala, make sure to read
-the rest of this README!
+The general workflow is as follows.
+1. Find/file an issue in scala/bug (or submit a well-documented PR right away!).
+2. Fork the scala/scala repo.
+3. Push your changes to a branch in your forked repo. For coding guidelines, go [here](https://github.com/scala/scala#coding-guidelines).
+4. Submit a pull request to scala/scala from your forked repo.
+
+For more information on building and developing the core of Scala, make sure to read the rest of this README, especially for [setting up your machine](https://github.com/scala/scala#get-ready-to-contribute)!
 
 In order to get in touch with other Scala contributors, join
 [scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
 [contributors.scala-lang.org](http://contributors.scala-lang.org) (Discourse).
 
-# Bugs / issues
-
-Please report bugs at the [scala/bug issue tracker](https://github.com/scala/bug/issues). This tracker is also where new contributors may find good first issues to work on.
-
-We use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues) for coordinating bigger work items.
 
 # Get in touch!
 
