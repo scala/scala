@@ -174,22 +174,20 @@ final class VectorMap[K, +V] private (
   override def head: (K, V) = iterator.next()
 
   override def last: (K, V) = {
-    val last = fields
-      .reverseIterator
-      .find(!_.isInstanceOf[Tombstone])
-      .get
-      .asInstanceOf[K]
+    if (isEmpty) throw new UnsupportedOperationException("empty.last")
+    val lastSlot = fields.length - 1
+    val last = fields.last match {
+      case Tombstone(d) if d < 0 => fields(lastSlot + d).asInstanceOf[K]
+      case Tombstone(d) if d == 1 => fields(lastSlot - 1).asInstanceOf[K]
+      case Tombstone(d) => throw new IllegalStateException("tombstone indicate wrong position: " + d)
+      case k => k.asInstanceOf[K]
+    }
     (last, underlying(last)._2)
   }
 
   override def lastOption: Option[(K, V)] = {
-    fields
-      .reverseIterator
-      .find(!_.isInstanceOf[Tombstone])
-      .map { f =>
-        val last = f.asInstanceOf[K]
-        (last, underlying(last)._2)
-      }
+    if (isEmpty) None
+    else Some(last)
   }
 
   override def tail: VectorMap[K, V] = {
@@ -218,6 +216,12 @@ final class VectorMap[K, +V] private (
 }
 
 object VectorMap extends MapFactory[VectorMap] {
+  //Class to mark deleted slots in 'fields'.
+  //When one or more consecutive slots are deleted, the 'distance' of the first 'Tombstone'
+  // represents the distance to the location of the next undeleted slot (or the last slot in 'fields' +1 if it does not exist).
+  //When two or more consecutive slots are deleted, the 'distance' of the trailing 'Tombstone'
+  // represents the distance to the location of the previous undeleted slot ( or -1 if it does not exist) multiplied by -1.
+  //For other deleted slots, it simply indicates that they have been deleted.
   private[VectorMap] final case class Tombstone(distance: Int)
 
   private[this] final val EmptyMap: VectorMap[Nothing, Nothing] =

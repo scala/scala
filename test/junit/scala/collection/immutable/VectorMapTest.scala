@@ -109,4 +109,38 @@ class VectorMapTest {
     val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d", 5 -> "e").removed(1).removed(4).init
     assertEquals(List(2 -> "b", 3 -> "c"), m.toList)
   }
+
+  @Test
+  def hasCorrectHeadTailWithRemove(): Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d", 5 -> "e")
+    assertEquals(2 -> "b", m.removed(1).head)
+    assertEquals(3 -> "c", m.removed(1).removed(2).head)
+    assertEquals(3 -> "c", m.removed(2).removed(1).head)
+    assertEquals(List(3 -> "c", 4 -> "d", 5 -> "e"), m.removed(1).tail.toList)
+    assertEquals(List(3 -> "c", 4 -> "d", 5 -> "e"), m.removed(2).tail.toList)
+    assertEquals(List(4 -> "d", 5 -> "e"), m.removed(1).removed(2).tail.toList)
+    assertEquals(List(4 -> "d", 5 -> "e"), m.removed(2).removed(1).tail.toList)
+    assertEquals(List(4 -> "d", 5 -> "e"), m.removed(3).removed(2).tail.toList)
+    assertEquals(List(4 -> "d", 5 -> "e"), m.removed(2).removed(3).tail.toList)
+  }
+  @Test
+  def hasCorrectLastInitWithRemove(): Unit = {
+    val m = VectorMap(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d", 5 -> "e")
+    assertEquals(4 -> "d", m.removed(5).last)
+    assertEquals(3 -> "c", m.removed(5).removed(4).last)
+    assertEquals(3 -> "c", m.removed(4).removed(5).last)
+    assertEquals(6 -> "f", m.removed(5).updated(6, "f").last)
+    assertEquals(3 -> "c", m.removed(4).removed(5).updated(6, "f").removed(6).last)
+    assertEquals(3 -> "c", m.removed(5).removed(4).updated(6, "f").removed(6).last)
+    assertEquals(List(1 -> "a", 2 -> "b", 3 -> "c"), m.removed(5).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b", 3 -> "c"), m.removed(4).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(5).removed(4).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(4).removed(5).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(3).removed(4).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(4).removed(3).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b", 3 -> "c", 4 -> "d"), m.removed(5).updated(6, "f").init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b", 3 -> "c"), m.removed(5).updated(6, "f").removed(6).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(4).removed(5).updated(6, "f").removed(6).init.toList)
+    assertEquals(List(1 -> "a", 2 -> "b"), m.removed(5).removed(4).updated(6, "f").removed(6).init.toList)
+  }
 }
