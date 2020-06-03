@@ -12,12 +12,10 @@
 
 package scala.tools.nsc
 
-import scala.reflect.io.{Directory, File, Path}
-import scala.tools.nsc.CloseableRegistry
-import scala.tools.nsc.classpath.DirectoryClassPath
-import scala.tools.nsc.classpath.ZipAndJarClassPathFactory
+import scala.reflect.io.{ AbstractFile, Directory, File, Path }
+import scala.tools.nsc.classpath.ClassPathFactory
 import scala.tools.nsc.io.Jar
-import scala.tools.nsc.reporters.{Reporter,ConsoleReporter}
+import scala.tools.nsc.reporters.{ ConsoleReporter, Reporter }
 import scala.util.chaining._
 import scala.util.control.NonFatal
 import java.io.IOException
@@ -106,14 +104,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
     }
 
     def hasClassToRun(location: Path): Boolean = {
-      val cp =
-        if (Jar.isJarOrZip(location)) {
-          import scala.reflect.io.AbstractFile
-          val fil = AbstractFile.getFile(location)
-          val reg = new CloseableRegistry
-          ZipAndJarClassPathFactory.create(fil, settings, reg)
-        }
-        else DirectoryClassPath(location.jfile)
+      val cp = ClassPathFactory.newClassPath(AbstractFile.getDirectory(location), settings)
       cp.findClass(mainClass).isDefined
     }
 
