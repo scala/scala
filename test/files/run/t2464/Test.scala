@@ -1,26 +1,22 @@
-import scala.reflect.io.Streamable
-import scala.tools.asm.{ClassWriter, ClassReader}
 import scala.tools.asm.tree.ClassNode
 import scala.tools.partest._
 import scala.tools.partest.BytecodeTest.modifyClassFile
-import java.io.{FileOutputStream, FileInputStream, File}
+import java.io.File
 
 object Test extends DirectTest {
-  def code = ???
-
-  def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path))(code)
-  }
-
-  def app = """
+  def code = """
     object O {
       new test.Annotated
     }
   """
 
+  override def extraSettings = {
+    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
+    s"-cp $classpath"
+  }
+
   def show(): Unit = {
-    compileCode(app)
+    compile()
     modifyClassFile(new File(testOutput.toFile, "test/Annotated.class")) {
       (cn: ClassNode) =>
         // As investigated https://github.com/scala/bug/issues/2464#issuecomment-292371985
@@ -30,6 +26,6 @@ object Test extends DirectTest {
         cn.innerClasses.clear()
         cn
     }
-    compileCode(app)
+    compile()
   }
 }

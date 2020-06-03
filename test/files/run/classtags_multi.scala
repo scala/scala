@@ -1,4 +1,4 @@
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.classTag
 
 object Test extends App {
   println(classTag[Int])

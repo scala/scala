@@ -85,7 +85,7 @@ object Test5 {
     val Mon, Tue, Wed, Thu, Fri, Sat, Sun = Value
   }
 
-  def run: Unit = {
+  def run(): Unit = {
     val s1 = D1.ValueSet(D1.North, D1.East)
     val s2 = D2.North + D2.East
     println(s1)
@@ -118,7 +118,7 @@ object SerializationTest {
     prime
   }
 
-  def run: Unit = {
+  def run(): Unit = {
     /* This is no longer possible with the proxy-based serialization for collections: */
     //serialize(new B())
     serialize(new A())
@@ -154,9 +154,9 @@ object Test {
     check_success("Test3", Test3.run, 1);
     check_success("Test4", Test4.run, 0);
     Console.println()
-    Test5.run;
+    Test5.run()
     Console.println()
-    SerializationTest.run;
+    SerializationTest.run()
   }
 }
 

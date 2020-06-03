@@ -30,7 +30,7 @@ object Test extends DirectTest {
         |}
       """.stripMargin
 
-    compileString(newCompiler(s"-usejavacp", "-cp", testOutput.path))(aCode)
+    compileString(newCompiler("-usejavacp", "-cp", testOutput.path))(aCode)
 
     addDeadCode()
 

@@ -11,7 +11,7 @@ object Help {
   val max: Int = 4;
   var next: Int = 0;
   var vars: Array[String] = new Array[String](max);
-  def init: Unit = {
+  def init(): Unit = {
     var i = 0;
     while (i < max) { vars(i) = null; i = i + 1; }
     next = 0;
@@ -23,14 +23,18 @@ object Help {
     while (i < max) { if (vars(i) != null) b = false; i = i + 1; }
     b;
   }
-  def print: Unit = {
+  def print(): Unit = {
     var i = 0;
     while (i < max) { if (i > 0) Console.print(", "); Console.print(vars(i)); i = i + 1; }
   }
-  def foo = { vars(next) = "foo"; next = next + 1; }
-  def bar = { vars(next) = "bar"; next = next + 1; }
-  def mix = { vars(next) = "mix"; next = next + 1; }
-  def sub = { vars(next) = "sub"; next = next + 1; }
+  @annotation.nowarn("cat=lint-nullary-unit")
+  def foo: Unit = { vars(next) = "foo"; next = next + 1; () }
+  @annotation.nowarn("cat=lint-nullary-unit")
+  def bar: Unit = { vars(next) = "bar"; next = next + 1; () }
+  @annotation.nowarn("cat=lint-nullary-unit")
+  def mix: Unit = { vars(next) = "mix"; next = next + 1; () }
+  @annotation.nowarn("cat=lint-nullary-unit")
+  def sub: Unit = { vars(next) = "sub"; next = next + 1; () }
 }
 
 import Help.foo;
@@ -3579,11 +3583,11 @@ object Test {
   var errors: Int = 0;
   def test(name: String, test: => Any, count: Int, value: String) = {
     try {
-      Help.init;
+      Help.init()
       test;
       if (!Help.check(count, value)) {
         Console.print(name + " failed: ");
-        Help.print;
+        Help.print()
         Console.println()
         errors = errors + 1;
       }

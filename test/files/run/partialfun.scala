@@ -1,5 +1,4 @@
 import collection._
-import collection.generic._
 
 object Test {
   def collectIDA[A, B, CC[_], Repr, That](_this: IterableOps[A, CC, Repr])(pf: PartialFunction[A, B])(implicit bf: BuildFrom[Repr, B, That]): That = {

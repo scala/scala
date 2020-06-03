@@ -22,7 +22,7 @@ object Test extends App {
   val subsubnonlist = almostmin :: almostmax :: subnonlist
   val subsubsorted = distinctSubsublist.sorted
 
-  def testSize: Unit = {
+  def testSize(): Unit = {
     def check(set : TreeSet[Int], list: List[Int]): Unit = {
       assert(set.size == list.size, s"$set had size ${set.size} while $list had size ${list.size}")
     }
@@ -41,7 +41,7 @@ object Test extends App {
     check(subsubset.clone, distinctSubsublist)
   }
 
-  def testContains: Unit = {
+  def testContains(): Unit = {
     def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]): Unit = {
       assert(list forall set.apply, s"$set did not contain all elements of $list using apply")
       assert(list forall set.contains, s"$set did not contain all elements of $list using contains")
@@ -62,7 +62,7 @@ object Test extends App {
     check(subsubset.clone, subsublist, subsubnonlist)
   }
 
-  def testAdd: Unit = {
+  def testAdd(): Unit = {
     def check(set : TreeSet[Int], list: List[Int], nonlist: List[Int]): Unit = {
       var builtList = List[Int]()
       for (x <- list) {
@@ -92,7 +92,7 @@ object Test extends App {
     check(subsubclone, list, subsubnonlist)
   }
 
-  def testRemove: Unit = {
+  def testRemove(): Unit = {
     def check(set: TreeSet[Int], sorted: List[Int]): Unit = {
       var builtList = sorted
       for (x <- list) {
@@ -119,7 +119,7 @@ object Test extends App {
     check(subsubclone, subsubsorted)
   }
 
-  def testIterator: Unit = {
+  def testIterator(): Unit = {
     def check(set: TreeSet[Int], list: List[Int]): Unit = {
       val it = set.iterator.toList
       assert(it == list, s"$it did not equal $list")
@@ -137,9 +137,9 @@ object Test extends App {
     check(subsubset.clone, subsubsorted)
   }
 
-  testSize
-  testContains
-  testAdd
-  testRemove
-  testIterator
+  testSize()
+  testContains()
+  testAdd()
+  testRemove()
+  testIterator()
 }

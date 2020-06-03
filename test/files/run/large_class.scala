@@ -1,9 +1,8 @@
 import scala.tools.partest._
-import java.io.{Console => _, _}
 
 // a cold run of partest takes about 15s for this test on my laptop
 object Test extends DirectTest {
-  override def extraSettings: String = "-usejavacp -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp"
 
   def s(n: Int) = "\""+n+"\""
 

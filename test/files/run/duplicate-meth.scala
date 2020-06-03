@@ -1,17 +1,18 @@
+import annotation.unused
 
 trait Base {
-  private val secure_# = 10L
+  @unused private val secure_# = 10L
 }
 
 class TestUser extends Base {
   def clsMeth(x: Int) = x
-  private def foo(x: Int) = x
+  @unused private def foo(x: Int) = x
 }
 
 object TestUser extends TestUser {
   def objMeth = "a"
 
-  private def foo(x: Int) = x
+  @unused private def foo(x: Int) = x
 }
 
 object Test {

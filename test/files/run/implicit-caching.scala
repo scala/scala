@@ -5,8 +5,7 @@ trait FooSub[T] extends Foo[T] {
 }
 
 object FooSub {
-  implicit def fooSub[T](implicit ft: Bar[T]): FooSub[T] =
-    new FooSub[T] {}
+  implicit def fooSub[T: Bar]: FooSub[T] = new FooSub[T] {}
 }
 
 trait Bar[T]

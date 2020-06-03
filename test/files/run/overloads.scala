@@ -52,7 +52,7 @@ object overloads {
     def --(c: Char) = c;
     def --(i: Int) = i;
 
-    def test: Unit = {
+    def test(): Unit = {
         check("-('a')", -('a'), -97);
         check("-(97)", -(97), -97);
 
@@ -87,7 +87,7 @@ object overloads {
 object Test {
 
   def main(args: Array[String]): Unit = {
-    overloads.test;
+    overloads.test()
   }
 
 }

@@ -1,5 +1,4 @@
 import scala.tools.partest._
-import scala.tools.nsc._
 
 object Test extends DirectTest {
 
@@ -39,7 +38,7 @@ object Test extends DirectTest {
       override def pluginsTypeSig(tpe: Type, typer: Typer, defTree: Tree, pt: Type): Type = {
         defTree match {
           case impl: Template =>
-            templates += typer.context.owner -> (impl, typer)
+            templates += typer.context.owner -> ((impl, typer))
 
           case dd: DefDef if dd.symbol.isPrimaryConstructor && templates.contains(dd.symbol.owner) =>
             val (impl, templTyper) = templates(dd.symbol.owner)

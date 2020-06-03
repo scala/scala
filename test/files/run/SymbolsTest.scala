@@ -63,21 +63,21 @@ object Test {
   val anotherSymbol = Symbol("mySecondSymbol")
 
   def main(args: Array[String]): Unit = {
-    testLiterals
-    testForLoop
-    testInnerClasses
-    testInnerObjects
-    testWithHashMaps
-    testLists
-    testAnonymous
-    testNestedObject
-    testInheritance
-    testTraits
-    testLazyTraits
-    testLazyObjects
+    testLiterals()
+    testForLoop()
+    testInnerClasses()
+    testInnerObjects()
+    testWithHashMaps()
+    testLists()
+    testAnonymous()
+    testNestedObject()
+    testInheritance()
+    testTraits()
+    testLazyTraits()
+    testLazyObjects()
   }
 
-  def testLiterals: Unit = {
+  def testLiterals(): Unit = {
     val scl = new Slazz
     assert(scl.s1 == aSymbol)
     assert(scl.s2 == anotherSymbol)
@@ -86,22 +86,22 @@ object Test {
     assert(scl.s1 == Symbol("myFirstSymbol"))
   }
 
-  def testForLoop: Unit = {
+  def testForLoop(): Unit = {
     for (i <- 0 until 100) List("Val" + i)
   }
 
-  def testInnerClasses: Unit = {
+  def testInnerClasses(): Unit = {
     val innerPower = new Inner
     assert(innerPower.simba == Symbol("smba"))
     assert(innerPower.mfs == Symbol("mfsa"))
   }
 
-  def testInnerObjects: Unit = {
+  def testInnerObjects(): Unit = {
     assert(InnerObject.o1 == Symbol("aaa"))
     assert(InnerObject.o2 == Symbol("ddd"))
   }
 
-  def testWithHashMaps: Unit = {
+  def testWithHashMaps(): Unit = {
     val map = new collection.mutable.HashMap[Symbol, Symbol]
     map.put(InnerObject.o1, Symbol("smba"))
     map.put(InnerObject.o2, Symbol("mfsa"))
@@ -119,7 +119,7 @@ object Test {
     assert(map(Symbol("symKey91")) == Symbol("symVal91"))
   }
 
-  def testLists: Unit = {
+  def testLists(): Unit = {
     var lst: List[Symbol] = Nil
     for (i <- 0 until 100) lst ::= Symbol("lsym" + (99 - i))
     assert(lst(0) == Symbol("lsym0"))
@@ -130,7 +130,7 @@ object Test {
     assert(lst(90) == Symbol("lsym90"))
   }
 
-  def testAnonymous: Unit = { // TODO complaints classdef can't be found for some reason, runs fine in my case
+  def testAnonymous(): Unit = { // TODO complaints classdef can't be found for some reason, runs fine in my case
     // val anon = () => {
     //   val simba = Symbol("smba")
     //   simba
@@ -157,7 +157,7 @@ object Test {
     // assert(an3() == Symbol("layered" + ""))
   }
 
-  def testNestedObject: Unit = {
+  def testNestedObject(): Unit = {
     object nested {
       def sign = Symbol("sign")
       def insignia = Symbol("insignia")
@@ -167,7 +167,7 @@ object Test {
     assert((Symbol("insignia")).toString == "Symbol(insignia)")
   }
 
-  def testInheritance: Unit = {
+  def testInheritance(): Unit = {
     val base = new Base
     val sub = new Sub
     assert(base.basesymbol == Symbol("symbase"))
@@ -190,7 +190,7 @@ object Test {
     assert((Symbol("symbase")).toString == "Symbol(symbase)")
   }
 
-  def testTraits: Unit = {
+  def testTraits(): Unit = {
     val fromTrait = new AnyRef with Signs {
       def traitsymbol = Symbol("traitSymbol")
     }
@@ -240,7 +240,7 @@ object Test {
     assert((Symbol("s8")).toString == "Symbol(s8)")
   }
 
-  def testLazyTraits: Unit = {
+  def testLazyTraits(): Unit = {
     val l1 = new AnyRef with Lazy1
     val l2 = new AnyRef with Lazy2
     val l3 = new AnyRef with Lazy3
@@ -253,7 +253,7 @@ object Test {
     assert(l3.s3 == Symbol("lazySymbol3"))
   }
 
-  def testLazyObjects: Unit = {
+  def testLazyObjects(): Unit = {
     assert(SingletonOfLazyness.lazysym == Symbol("lazySymbol"))
     assert(SingletonOfLazyness.another == Symbol("ano" + "ther"))
     assert((SingletonOfLazyness.lastone).toString == "Symbol(lastone)")

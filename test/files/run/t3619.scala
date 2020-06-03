@@ -1,9 +1,11 @@
+import annotation.unused
+
 class Dep(x: Int)(implicit val nameClash: String)
 
 object Test extends App {
   implicit val nameClash: String = "meh"
 
-  def meth(implicit w: String) = 1
+  def meth(implicit @unused w: String) = 1
 
   // when typing Meh's default constructor Meh.this.nameClash (inherited from Dep)
   // shadows Test.nameClash, thus, when inferring the argument `w` in the call to meth,

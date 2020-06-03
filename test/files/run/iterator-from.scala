@@ -4,7 +4,6 @@
 
 import scala.util.{Random => R}
 import scala.collection._
-import scala.math.Ordered
 
 object Test extends App {
   val maxLength = 25

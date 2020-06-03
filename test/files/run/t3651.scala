@@ -5,6 +5,7 @@ class LongKlass( override val a: Long ) extends Klass[Long](a)
 object Test {
   def main(args: Array[String]): Unit = {
     val lk = new LongKlass(10)
+    @annotation.unused
     val a = lk.a
   }
 }

@@ -49,7 +49,7 @@ object M0 {
     else sys.error("unknown expression")
   }
 
-  def test = {
+  def test() = {
     Console.println("        0 = " + eval(new Number(0)));
     Console.println("        1 = " + eval(new Number(1)));
     Console.println("    0 + 1 = " +
@@ -77,7 +77,7 @@ object M1 {
     def eval: Int = e1.eval + e2.eval;
   }
 
-  def test = {
+  def test() = {
     Console.println("        0 = " + new Number(0).eval);
     Console.println("        1 = " + new Number(1).eval);
     Console.println("    0 + 1 = " +
@@ -103,7 +103,7 @@ object M2 {
     case Sum(e1, e2) => eval(e1) + eval(e2)
   }
 
-  def test = {
+  def test() = {
     Console.println("        0 = " + eval(Number(0)));
     Console.println("        1 = " + eval(Number(1)));
     Console.println("    0 + 1 = " + eval(Sum(Number(0),Number(1))));
@@ -127,7 +127,7 @@ object M3 {
   case class Number(n: Int) extends Expr;
   case class Sum(e1: Expr, e2: Expr) extends Expr;
 
-  def test = {
+  def test() = {
     Console.println("        0 = " + Number(0).eval);
     Console.println("        1 = " + Number(1).eval);
     Console.println("    0 + 1 = " + Sum(Number(0),Number(1)).eval);
@@ -152,7 +152,7 @@ object M4 {
     Console.println(concat(xss).toString + " = concat(" + xss + ")"); // !!! .toString
   }
 
-  def test = {
+  def test() = {
     test_concat(List());
     test_concat(List(List()));
     test_concat(List(List(),List()));
@@ -191,7 +191,7 @@ object M5 {
     Console.println(zipFun(xs,ys).toString + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString
   }
 
-  def test = {
+  def test() = {
     test_zipFun(List(),List());
     test_zipFun(List(),List('a','b','c'));
     test_zipFun(List(1,2,3),List());
@@ -225,7 +225,7 @@ object M6 {
     Console.println(zipFun(xs,ys).toString + " = zipFun(" + xs + "," + ys + ")"); // !!! .toString
   }
 
-  def test = {
+  def test() = {
     test_zipFun(List(),List());
     test_zipFun(List(),List('a','b','c'));
     test_zipFun(List(1,2,3),List());
@@ -258,7 +258,7 @@ object M7 {
     Console.println(heads(xss).toString + " = heads(" + xss + ")"); // !!! .toString
   }
 
-  def test = {
+  def test() = {
     test_heads(List());
     test_heads(List(List()));
     test_heads(List(List(),List()));
@@ -304,7 +304,7 @@ object M8 {
   }
 
 
-  def test = {
+  def test() = {
     test_heads(List());
     test_heads(List(List()));
     test_heads(List(List(),List()));
@@ -359,7 +359,7 @@ object M9 {
     override def toString = "Prod(" + e1 + ", " + e2 + ")"; // !!! remove !
   }
 
-  def test = {
+  def test() = {
     val x = Var("x");
     val f0 = Prod(x, x);
     val f1 = f0 derive x;
@@ -425,7 +425,7 @@ object MA {
     loop
   }
 
-  def test = {
+  def test() = {
     val x = Var("x");
 
     val f0 = x * x;
@@ -506,7 +506,7 @@ object MB {
       case _        => List()
     }
 
-    private def +<  (that: Expr): Boolean = (this +<? that) <  0;
+    @annotation.unused private def +<  (that: Expr): Boolean = (this +<? that) <  0;
     private def +<= (that: Expr): Boolean = (this +<? that) <= 0;
     private def +<? (that: Expr): Int = (this,that) match {
       case (Add(_,_), _       ) =>  0
@@ -625,11 +625,11 @@ object MB {
     }
   }
 
-  def test = {
+  def test() = {
     val _1 = Lit(1);
     val _2 = Lit(2);
     val _3 = Lit(3);
-    val _4 = Lit(4);
+    @annotation.unused val _4 = Lit(4);
     val _5 = Lit(5);
 
     val x  = Var("x");
@@ -703,18 +703,18 @@ object MB {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
-    M1.test;
-    M2.test;
-    M3.test;
-    M4.test;
-    M5.test;
+    M0.test()
+    M1.test()
+    M2.test()
+    M3.test()
+    M4.test()
+    M5.test()
     // !!! M6.test;
-    M7.test;
-    M8.test;
-    M9.test;
-    MA.test;
-    MB.test;
+    M7.test()
+    M8.test()
+    M9.test()
+    MA.test()
+    MB.test()
     ()
   }
 }

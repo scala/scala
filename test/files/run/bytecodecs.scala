@@ -32,7 +32,7 @@ object Test {
       Array(1, 3, -1, -128, 0, 0, -128, 1, 2, 3))
     val rand = new scala.util.Random()
     for (i <- 1 until 5000) {
-      var xs = new Array[Byte](i)
+      val xs = new Array[Byte](i)
       rand.nextBytes(xs)
       test(xs)
     }

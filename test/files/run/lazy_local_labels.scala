@@ -1,6 +1,6 @@
 // should print HI nine times to indicate the lazy val has been re-initialized on every iteration
 object Test extends App {
-  def fooDo: Unit = {
+  def fooDo(): Unit = {
     var i = 3
     do {
       lazy val x = { println("HI"); 1 }
@@ -8,7 +8,7 @@ object Test extends App {
     } while(i > 0)
   }
 
-  def fooWhile: Unit = {
+  def fooWhile(): Unit = {
     var i = 3
     while(i > 0) {
       lazy val x = { println("HI"); 1 }
@@ -22,7 +22,7 @@ object Test extends App {
   }
 
 
-  fooWhile
-  fooDo
+  fooWhile()
+  fooDo()
   fooTail(3)
 }

@@ -1,7 +1,7 @@
 // scalac: -deprecation
 //
-import scala.collection.IterableOnceExtensionMethods
-
+//
+//
 // collections-strawman issue #467
 object Test {
   def main(args: Array[String]): Unit = {

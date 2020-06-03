@@ -1,3 +1,4 @@
+//AbstractMethodError with missing bridge for path-dependent type
 object Test {
   final def main(args: Array[String]): Unit = {
     val f: A => Any = { a =>
@@ -7,7 +8,7 @@ object Test {
     f(new A(new B))
   }
 
-  def foo[A, B](f: A => B, a: A): B = f(a)
+  def foo[X, Y](f: X => Y, x: X): Y = f(x)
 }
 
 class A(val b: B)

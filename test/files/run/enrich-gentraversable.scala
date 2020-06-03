@@ -1,6 +1,5 @@
 import scala.tools.partest.Util.ArrayDeep
 import scala.language.implicitConversions
-import scala.language.postfixOps
 
 object Test extends App {
   import scala.collection.generic.IsIterable
@@ -8,7 +7,7 @@ object Test extends App {
   import scala.collection.immutable.TreeMap
 
   def typed[T](t : => T): Unit = {}
-  def testIterableOps = {
+  def testIterableOps() = {
     class FilterMapImpl[A, Repr](r: Repr, it: IterableOps[A, Iterable, _]) {
       final def filterMap[B, That](f: A => Option[B])(implicit bf: BuildFrom[Repr, B, That]): That =
         bf.fromSpecific(r)(it.flatMap(f(_)))
@@ -57,5 +56,5 @@ object Test extends App {
 
   }
 
-  testIterableOps
+  testIterableOps()
 }

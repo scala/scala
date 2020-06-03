@@ -12,7 +12,7 @@ object M0 {
   val fib: LazyList[Int] =
     LazyList.cons(0, LazyList.cons(1, addLazyList(this.fib, this.fib.tail)));
 
-  def test = {
+  def test() = {
     var i = 0;
     fib.take(20).foreach(n => {Console.println("fib("+i+") = "+n); i=i+1});
     Console.println()
@@ -63,7 +63,7 @@ object M1 {
     else pad(s + " ", n - 1);
   def str(d: Double) = { val s = d.toString(); pad(s, 18 - s.length()) };
 
-  def test = {
+  def test() = {
     var i = 0;
     while (i < 10) {
       Console.print("pi("+i+") = ");
@@ -100,20 +100,20 @@ object M2 {
   class IntIterator(start: Int) extends Iterator[Int] {
     var current: Int = start;
     def hasNext = true;
-    def next = { current = current + 1; current - 1 };
+    def next() = { current = current + 1; current - 1 };
   }
 
   class PrimeIterator() extends Iterator[Int] {
     var current: Iterator[Int] = new IntIterator(2);
     def hasNext = true;
-    def next = {
+    def next() = {
       val p = current.next();
       current = current filter { x => !((x % p) == 0) };
       p
     }
   }
 
-  def test = {
+  def test() = {
     val i = (new PrimeIterator()).take(30);
     Console.print("prime numbers:");
     while (i.hasNext) { Console.print(" " + i.next()); }
@@ -125,9 +125,9 @@ object M2 {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    M0.test;
-    M1.test;
-    M2.test;
+    M0.test()
+    M1.test()
+    M2.test()
     ()
   }
 }

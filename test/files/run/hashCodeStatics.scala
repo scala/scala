@@ -1,8 +1,6 @@
 // This only tests direct access to the methods in Statics,
 // not the whole scheme.
-object Test
-{
-  import java.{ lang => jl }
+object Test {
   import scala.runtime.Statics.anyHash
 
   def allSame[T](xs: List[T]) = assert(xs.distinct.size == 1, "failed: " + xs)

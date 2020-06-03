@@ -1,12 +1,14 @@
+import annotation.unused
+
 class t3832 {
   def this(un: Int) = {
     this()
-    def bippy = this
+    @unused def bippy = this
     ()
   }
   def this(un: Boolean) = {
     this()
-    def boppy = () => this
+    @unused def boppy = () => this
     ()
   }
 }

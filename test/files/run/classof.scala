@@ -2,7 +2,7 @@ class SomeClass
 
 object Test {
   def main(args: Array[String]): Unit = {
-    val cls: Predef.Class[SomeClass] = classOf[SomeClass]
+    @annotation.unused val cls: Predef.Class[SomeClass] = classOf[SomeClass]
     println("Value types:")
     println(classOf[Unit])
     println(classOf[Boolean])

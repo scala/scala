@@ -199,9 +199,37 @@ class RegexTest {
       assertEquals("2001", c)
     }
     for (Regex.Groups(a, b, c) <- Date.findAllIn("1/1/2001 marks the start of the millennium. 31/12/2000 doesn't.").matchData) {
-      assert(a == "1" || a == "31")
-      assert(b == "1" || b == "12")
-      assert(c == "2001" || c == "2000")
+      assertTrue(a == "1" || a == "31")
+      assertTrue(b == "1" || b == "12")
+      assertTrue(c == "2001" || c == "2000")
     }
+  }
+
+  @Test def `t6406 no longer unapply any`(): Unit = {
+    val r = "(\\d+)".r
+    val q = """(\d)""".r
+    val ns = List("1,2","x","3,4")
+    val u = r.unanchored
+
+    val is = ns collect { case u(x) => x } map { case r(x) => x }
+    assertTrue(List("1", "3").sameElements(is))
+    assertEquals(List("1", "3"), is)
+    // Match from same pattern
+    val js = ns.map(u.findFirstMatchIn(_)).flatten.map { case r(x) => x }
+    assertEquals(List("1", "3"), js)
+    // Match not from same pattern
+    val ks = ns.map(q.findFirstMatchIn(_)).flatten.map { case r(x) => x }
+    assertEquals(List("1", "3"), ks)
+
+    val t = "Last modified 2011-07-15"
+    val p1 = """(\d\d\d\d)-(\d\d)-(\d\d)""".r
+    val y1: Option[String] = for {
+      p1(year, month, day) <- p1.findFirstIn(t)
+    } yield year
+    assertEquals(Some("2011"), y1)
+    val y2: Option[String] = for {
+      p1(year, month, day) <- p1.findFirstMatchIn(t)
+    } yield year
+    assertEquals(Some("2011"), y2)
   }
 }

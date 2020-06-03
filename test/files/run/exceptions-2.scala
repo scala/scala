@@ -20,14 +20,14 @@ object NoExcep {
     case Leaf(_) => b;
   }
 
-  def method2 = try {
+  def method2() = try {
     Console.println("Hello, world");
   } catch {
     case _: Error => Console.println("File error");
     case t: Throwable => Console.println("Unknown error");
   }
 
-  def method3 = try {
+  def method3() = try {
     try {
       Console.println("method3");
     } catch {
@@ -39,7 +39,7 @@ object NoExcep {
     case t: Exception => Console.println("Unknown error");
   }
 
-  def method4 = try {
+  def method4() = try {
     Console.println("..");
   } catch {
     case _: Throwable => sys.error("..");
@@ -47,7 +47,7 @@ object NoExcep {
 }
 
 object Test {
-  def nested1: Unit = try {
+  def nested1(): Unit = try {
     try {
       sys.error("nnnnoooo");
     } finally {
@@ -57,7 +57,7 @@ object Test {
     Console.println("Outermost finally");
   }
 
-  def nested2 =  try {
+  def nested2() =  try {
     try {
       sys.error("nnnnoooo");
     } finally {
@@ -68,7 +68,7 @@ object Test {
     Console.println("Outermost finally");
   }
 
-  def mixed =
+  def mixed() =
     try {
       if (10 > 0)
         throw Leaf(10);
@@ -80,7 +80,7 @@ object Test {
       Console.println("Finally!");
     }
 
-  def method2: Unit = {
+  def method2(): Unit = {
     try {
       if (10 > 0)
         throw Leaf(10);
@@ -99,7 +99,7 @@ object Test {
     }
   }
 
-  def method3: Unit = try {
+  def method3(): Unit = try {
     try {
       val a: Leaf = null;
       println(a.x);
@@ -111,7 +111,7 @@ object Test {
       Console.println("Caught an NPE");
   }
 
-  def withValue1: Unit = {
+  def withValue1(): Unit = {
     val x = try {
       10
     } finally {
@@ -120,7 +120,7 @@ object Test {
     Console.println(x);
   }
 
-  def withValue2: Unit = {
+  def withValue2(): Unit = {
     val x = try {
       null
     } finally {
@@ -129,7 +129,7 @@ object Test {
     Console.println(x);
   }
 
-  def tryFinallyTry: Unit = {
+  def tryFinallyTry(): Unit = {
     try {
       ()
     } finally {
@@ -141,14 +141,14 @@ object Test {
     }
   }
 
-  def valInFinally: Unit =
+  def valInFinally(): Unit =
     try {
     } finally {
       val fin = "Abc";
       Console.println(fin);
     }
 
-  def tryAndValInFinally: Unit =
+  def tryAndValInFinally(): Unit =
     try {
     } finally {
       val fin = "Abc";
@@ -157,7 +157,7 @@ object Test {
       } catch { case _: Throwable => () }
     }
 
-  def returnInBody: Unit = try {
+  def returnInBody(): Unit = try {
     try {
       Console.println("Normal execution...");
       return
@@ -169,7 +169,7 @@ object Test {
     Console.println("Outer finally");
   }
 
-  def returnInBodySynch: Unit = try {
+  def returnInBodySynch(): Unit = try {
     synchronized {
       try {
         Console.println("Synchronized normal execution...");
@@ -184,7 +184,7 @@ object Test {
   }
 
 
-  def returnInBodyAndInFinally: Unit = try {
+  def returnInBodyAndInFinally(): Unit = try {
     try {
       Console.println("Normal execution...");
       return
@@ -198,7 +198,7 @@ object Test {
     return
   }
 
-  def returnInBodyAndInFinally2: Unit = try {
+  def returnInBodyAndInFinally2(): Unit = try {
     try {
       Console.println("Normal execution...");
       return
@@ -217,7 +217,7 @@ object Test {
   }
 
   /** bug #1020, no crash at compile time */
-  def tryCatchInFinally: Unit = {
+  def tryCatchInFinally(): Unit = {
     try {
       Console.println("Try")
     } catch {
@@ -233,7 +233,7 @@ object Test {
     }
   }
 
-  def tryThrowFinally: Unit = {
+  def tryThrowFinally(): Unit = {
     try {
       print("A")
       throw new Exception
@@ -279,7 +279,7 @@ object Test {
   }
 
   /* Tests that class Issue passes verification. */
-  def whileInFinally = {
+  def whileInFinally() = {
     new Issue
   }
 
@@ -287,63 +287,63 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     Console.println("nested1: ");
-    execute(nested1);
+    execute(nested1());
 
     Console.println("nested2: ");
-    execute(nested2);
+    execute(nested2());
 
     Console.println("mixed: ");
-    execute(mixed);
+    execute(mixed());
 
     Console.println("withValue1:");
-    execute(withValue1);
+    execute(withValue1());
 
     Console.println("withValue2:");
-    execute(withValue2);
+    execute(withValue2());
 
     Console.println("method2:");
-    execute(method2);
+    execute(method2());
 
     Console.println("method3:");
-    execute(method3);
+    execute(method3());
 
     Console.println("tryFinallyTry:");
-    execute(tryFinallyTry);
+    execute(tryFinallyTry());
 
     Console.println("valInFinally:");
-    execute(valInFinally);
+    execute(valInFinally());
     Console.println("tryAndValInFinally");
-    execute(tryAndValInFinally);
+    execute(tryAndValInFinally());
 
     Console.println("=================");
 
     Console.println("NoExcep.method2:");
-    execute(NoExcep.method2);
+    execute(NoExcep.method2());
 
     Console.println("NoExcep.method3:");
-    execute(NoExcep.method3);
+    execute(NoExcep.method3());
 
     Console.println("NoExcep.method4:");
-    execute(NoExcep.method4);
+    execute(NoExcep.method4());
 
     Console.println("Return inside body:");
-    execute(returnInBody);
+    execute(returnInBody());
 
     Console.println("Return inside synchronized body:");
-    execute(returnInBodySynch);
+    execute(returnInBodySynch());
 
     Console.println("Return inside body and return in finally:");
-    execute(returnInBodyAndInFinally);
+    execute(returnInBodyAndInFinally());
 
     Console.println("Return inside body and return in finally inside finally:");
-    execute(returnInBodyAndInFinally2);
+    execute(returnInBodyAndInFinally2());
 
     Console.println("Throw in catch and finally:");
-    execute(tryThrowFinally);
+    execute(tryThrowFinally());
 
     Console.println("Return with finally clause that cleans the stack")
-    returnWithFinallyClean
+    returnWithFinallyClean: Unit
 
-    whileInFinally
+    whileInFinally()
   }
 }

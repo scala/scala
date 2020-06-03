@@ -68,7 +68,7 @@ object Test3 {
   }
 
   def test() = {
-    val c = new C();
+    @annotation.unused val c = new C();
   }
 }
 

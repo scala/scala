@@ -10,7 +10,7 @@ object Test extends App {
     implicit def widened[T]: Widened[T] = Widened(true)
   }
 
-  def widened[T](t: T)(implicit w: Widened[T], f: F[T]): Boolean = w.value
+  def widened[T](t: T)(implicit w: Widened[T], @annotation.unused f: F[T]): Boolean = w.value
 
   def boundedWidened[T <: Singleton](t: T)(implicit w: Widened[T]): Boolean = w.value
 

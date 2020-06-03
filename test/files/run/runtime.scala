@@ -85,23 +85,23 @@ object Test1Test {
 package test2 {
 
   class A {
-    def run = Console.println("A");
+    def run() = Console.println("A");
   }
 
   trait M0 extends A {
-    override def run = { super.run; Console.println("M0"); }
+    override def run() = { super.run(); Console.println("M0"); }
   }
 
   class M1 extends M0 {
-    override def run = { super.run; Console.println("M1"); }
+    override def run() = { super.run(); Console.println("M1"); }
   }
 
   trait N0 extends A {
-    override def run = { super.run; Console.println("N0"); }
+    override def run() = { super.run(); Console.println("N0"); }
   }
 
   class N1 extends N0 {
-    override def run = { super.run; Console.println("N1"); }
+    override def run() = { super.run(); Console.println("N1"); }
   }
 
   object M0N0 extends M0 with N0;
@@ -113,10 +113,10 @@ package test2 {
 
 object Test2Test {
   def test(args: Array[String]): Unit = {
-    test2.M0N0.run; Console.println()
-    test2.N0M0.run; Console.println()
-    test2.M1N0.run; Console.println()
-    test2.N1M0.run; Console.println()
+    test2.M0N0.run(); Console.println()
+    test2.N0M0.run(); Console.println()
+    test2.M1N0.run(); Console.println()
+    test2.N1M0.run(); Console.println()
   }
 }
 

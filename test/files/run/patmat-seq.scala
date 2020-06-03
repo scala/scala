@@ -1,5 +1,4 @@
 import scala.tools.partest._
-import java.io.{Console => _, _}
 
 object Test extends DirectTest {
 

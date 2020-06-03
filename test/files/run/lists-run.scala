@@ -85,7 +85,7 @@ object Test1 {
     val xs2 = List('a', 'b')
     val xs3 = List(List(1, 2), List(4, 5))
     val xs4 = List(2, 4, 6, 8)
-    val xs5 = List(List(3, 4), List(3), List(4, 5))
+    @annotation.unused val xs5 = List(List(3, 4), List(3), List(4, 5))
 
   {
     val n1 = xs1 count { e => e % 2 != 0 }
@@ -134,7 +134,7 @@ object Test1 {
 object Test2 {
   def run(): Unit = {
     val xs1 = List(1, 2, 3)
-    val xs2 = List(0)
+    @annotation.unused val xs2 = List(0)
 
     val ys1 = xs1 ::: List(4)
     assert(List(1, 2, 3, 4) == ys1, "check_:::")

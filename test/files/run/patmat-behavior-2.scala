@@ -1,3 +1,5 @@
+//scalac: -Xmaxwarns 0 -Xlint:-stars-align
+//
 case class Foo(x: Int, ys: Int*) {
   // We write our own toString because of scala/bug#7735
   override def toString = (x +: ys).mkString("Foo(", ", ", ")")

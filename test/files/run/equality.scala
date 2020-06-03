@@ -3,12 +3,12 @@ object Test
 {
   def hash(x: Any): Int = x.## // forces upcast to Any
 
-  def makeFromInt(x: Int) = List(
+  def makeFromInt(x: Int) = List[Any](
     x.toByte, x.toShort, x.toInt, x.toLong, x.toFloat, x.toDouble, BigInt(x), BigDecimal(x)
   ) ::: (
     if (x < 0) Nil else List(x.toChar)
   )
-  def makeFromDouble(x: Double) = List(
+  def makeFromDouble(x: Double) = List[Any](
     x.toShort, x.toInt, x.toLong, x.toFloat, x.toDouble, BigInt(x.toInt), BigDecimal(x)
   )
 

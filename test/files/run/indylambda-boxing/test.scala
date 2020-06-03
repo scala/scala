@@ -10,7 +10,7 @@ class Test {
 
   def test7 = {val vc = new Capture; (i: Int) => vc }
   def test8 = {val c = 42; (s: String) => (s, c)} // not adapted
-  def test9 = {val c = 42; (s: String) => ()}
+  def test9 = {@annotation.unused val c = 42; (s: String) => ()}
   def test10 = {(s: List[String]) => ()}
 }
 

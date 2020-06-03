@@ -1,6 +1,6 @@
 import scala.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
 
+@deprecated("Tests deprecated API", since="2.12")
 object Test {
   def main(args: Array[String]): Unit = {
     test()

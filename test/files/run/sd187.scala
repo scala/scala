@@ -1,9 +1,8 @@
 import scala.tools.partest._
-import java.io.{Console => _, _}
 
 object Test extends DirectTest {
 
-  override def extraSettings: String = "-usejavacp -Vprint-pos -Vprint:patmat -Ystop-after:patmat -d " + testOutput.path
+  override def extraSettings: String = "-usejavacp -Vprint-pos -Vprint:patmat -Ystop-after:patmat"
 
   override def code =
     """

@@ -33,6 +33,7 @@ class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
   nowarnings.value  = false
   encoding.value    = "UTF-8"
   classpath.value   = cp
+  //lint.add("_")
 }
 
 class PartestGlobal(settings: Settings, reporter: Reporter) extends Global(settings, reporter) {

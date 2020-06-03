@@ -111,6 +111,11 @@ package object util {
     def stackTracePrefixString(p: StackTraceElement => Boolean): String = stackTracePrefixString(e)(p)
   }
 
+  implicit class `quickie stack dump`(private val sc: StringContext) extends AnyVal {
+    @deprecated("For debug only", since="forever")
+    def trace(args: Any*): Unit = new Throwable(sc.s(args: _*)).printStackTrace()
+  }
+
   lazy val trace = new SimpleTracer(System.out)
 
   // These four deprecated since 2.10.0 are still used in

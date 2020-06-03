@@ -5,7 +5,7 @@
 import scala.collection.immutable.Queue
 
 object iq {
-  def main: Unit = {
+  def main(): Unit = {
     /* Create an empty queue. */
     val q: Queue[Int] = Queue.empty
 
@@ -52,7 +52,7 @@ object iq {
       }
 
     /* Test sequence enqueueing. */
-    val q5: Queue[Any] = q4.enqueue(List(1,2,3,4,5,6,7,8,9))
+    val q5: Queue[Any] = q4.enqueueAll(List(1,2,3,4,5,6,7,8,9))
     /* Test toString.
      * Expected: q5: Queue(0,1,2,3,4,5,6,7,8,9)
      */
@@ -62,11 +62,11 @@ object iq {
      */
     Console.println("q5[5]: " + q5(5))
 
-    val q5alt: Queue[Any] = q4.enqueue(collection.Iterable(1,2,3,4,5,6,7,8,9))
+    val q5alt: Queue[Any] = q4.enqueueAll(collection.Iterable(1,2,3,4,5,6,7,8,9))
     Console.println("q5alt: " + q5alt)
     assert(q5alt.sameElements(q5))
 
-    val q5c: Queue[Int] = Queue.empty.enqueue(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
+    val q5c: Queue[Int] = Queue.empty.enqueueAll(List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9))
 
     /* Testing ==
      *  Expected: q5 == q9: true
@@ -116,6 +116,6 @@ object iq {
 
 object Test {
   def main(args: Array[String]): Unit = {
-    iq.main
+    iq.main()
   }
 }

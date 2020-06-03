@@ -1,4 +1,3 @@
-import runtime.ArrayCharSequence
 
 object Test {
   val arr = Array[Char]('a' to 'i': _*)

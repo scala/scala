@@ -3,16 +3,16 @@ object Test extends App {
 
 
   // test that finally is not covered by any exception handlers.
-  def throwCatchFinally: Unit = {
+  def throwCatchFinally(): Unit = {
     try {
-      bar
+      bar()
     } catch {
       case e: Throwable => println(e)
     }
   }
 
   // test that finally is not covered by any exception handlers.
-  def bar: Unit = {
+  def bar(): Unit = {
     try {
       println("hi")
     }
@@ -26,7 +26,7 @@ object Test extends App {
   }
 
   // return in catch (finally is executed)
-  def retCatch: Unit = {
+  def retCatch(): Unit = {
     try {
       throw new Exception
     } catch {
@@ -37,7 +37,7 @@ object Test extends App {
   }
 
   // throw in catch (finally is executed, exception propagated)
-  def throwCatch: Unit = {
+  def throwCatch(): Unit = {
     try {
       throw new Exception
     } catch {
@@ -48,7 +48,7 @@ object Test extends App {
   }
 
   // return inside body (finally is executed)
-  def retBody: Unit = {
+  def retBody(): Unit = {
     try {
       return
     } catch {
@@ -59,7 +59,7 @@ object Test extends App {
   }
 
   // throw inside body (finally and catch are executed)
-  def throwBody: Unit = {
+  def throwBody(): Unit = {
     try {
       throw new Exception
     } catch {
@@ -69,7 +69,7 @@ object Test extends App {
   }
 
   // return inside finally (each finally is executed once)
-  def retFinally: Unit = {
+  def retFinally(): Unit = {
     try {
       try println("body")
       finally {
@@ -81,7 +81,7 @@ object Test extends App {
 
 
   // throw inside finally (finally is executed once, exception is propagated)
-  def throwFinally: Unit = {
+  def throwFinally(): Unit = {
     try {
       try println("body")
       finally {
@@ -94,7 +94,7 @@ object Test extends App {
   }
 
   // nested finally blocks with return value
-  def nestedFinallyBlocks: Int =
+  def nestedFinallyBlocks(): Int =
     try {
       try {
         return 10
@@ -116,12 +116,12 @@ object Test extends App {
     println("-" * 40)
   }
 
-  test(throwCatchFinally, "throwCatchFinally")
-  test(retCatch, "retCatch")
-  test(throwCatch, "throwCatch")
-  test(retBody, "retBody")
-  test(throwBody, "throwBody")
-  test(retFinally, "retFinally")
-  test(throwFinally, "throwFinally")
-  test(nestedFinallyBlocks, "nestedFinallyBlocks")
+  test(throwCatchFinally(), "throwCatchFinally")
+  test(retCatch(), "retCatch")
+  test(throwCatch(), "throwCatch")
+  test(retBody(), "retBody")
+  test(throwBody(), "throwBody")
+  test(retFinally(), "retFinally")
+  test(throwFinally(), "throwFinally")
+  test(nestedFinallyBlocks(), "nestedFinallyBlocks")
 }

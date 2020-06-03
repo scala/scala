@@ -17,9 +17,9 @@ object Test {
     v
   }
 
-  def id[X](x: X): X = x;
+  def id[T](x: T): T = x;
 
-  def apply[X](f: X => X, x: X): X = f(x);
+  def apply[T](f: T => T, x: T): T = f(x);
 
   def id_obj(x: AnyRef): AnyRef = x;
 

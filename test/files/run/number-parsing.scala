@@ -20,12 +20,13 @@ object Test {
     def unary_- : Foo = Foo(-x)
     def +(other: Foo): Foo = Foo(x + other.x)
   }
-  def objTests = {
+  def objTests() = {
     assert(-Foo(5.0) + Foo(10.0) == Foo(5.0))
     assert(-Foo(5.0).+(Foo(10.0)) == Foo(-15.0))
   }
 
   def main(args: Array[String]): Unit = {
     numTests()
+    objTests()
   }
 }

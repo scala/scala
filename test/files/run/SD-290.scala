@@ -9,10 +9,10 @@ object p1 {
   object D
 }
 package object p2 {
-  class B
+  @annotation.nowarn class B
   object B
 
-  class C extends java.io.Serializable
+  @annotation.nowarn class C extends java.io.Serializable
   object C
 
   type D = DD

@@ -7,14 +7,14 @@ import scala.tools.partest.BytecodeTest.modifyClassFile
 import scala.tools.partest._
 
 object Test extends DirectTest {
-  def code = ???
+  override def code = "class T { def foo = A_1.test }"
 
-  def compileCode(code: String) = {
-    val classpath = List(sys.props("partest.lib"), testOutput.path) mkString sys.props("path.separator")
-    compileString(newCompiler("-cp", classpath, "-d", testOutput.path, "-opt:l:inline", "-opt-inline-from:**", "-Yopt-inline-heuristics:everything", "-opt-warnings:_"))(code)
+  override def extraSettings = {
+    val classpath = List(sys.props("partest.lib"), testOutput.path).mkString(sys.props("path.separator"))
+    s"-cp $classpath -opt:l:inline -opt-inline-from:** -Yopt-inline-heuristics:everything -opt-warnings:_"
   }
 
-  def show(): Unit = {
+  override def show(): Unit = {
     val unknownBootstrapMethod = new Handle(
       Opcodes.H_INVOKESTATIC,
       "not/java/lang/SomeLambdaMetafactory",
@@ -28,6 +28,6 @@ object Test extends DirectTest {
       cn
     })
 
-    compileCode("class T { def foo = A_1.test }")
+    compile()
   }
 }

@@ -110,7 +110,7 @@ class OverflownLazyFields extends Object with A {
 }
 
 trait PrivateLazy {
-  private lazy val str = "z1"
+  @annotation.unused private lazy val str = "z1"
 }
 
 /** Test successful compilation. */

@@ -1,5 +1,4 @@
 import scala.tools.partest.ReplTest
-import scala.tools.nsc.Settings
 
 object Test extends ReplTest {
   override def extraSettings = s"-Yrepl-outdir ${testOutput.path}"

@@ -112,7 +112,7 @@ object Test extends App {
   }
 
   def test8 = {
-    var x = 1
+    val x = 1
     try {
       throw new NullPointerException
     } catch {
