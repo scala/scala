@@ -1,0 +1,6 @@
+t12026.scala:11: warning: discarded non-Unit value
+  def f(): Unit = v()
+                   ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

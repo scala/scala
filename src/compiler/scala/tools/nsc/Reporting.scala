@@ -612,10 +612,9 @@ object Reporting {
     def used: Boolean = _used
     def markUsed(): Unit = { _used = true }
 
-
     def matches(message: Message): Boolean = {
       val pos = message.pos
-      pos.isDefined && start <= pos.start && pos.end <= end && filters.exists(_.matches(message))
+      pos.isDefined && start <= pos.start && pos.end <= end && filters.forall(_.matches(message))
     }
   }
 }
