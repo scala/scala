@@ -157,7 +157,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
    *
    */
   private trait OmittablesHelper {
-    def computeOmittableAccessors(clazz: Symbol, defs: List[Tree], auxConstructors: List[Tree]): Set[Symbol] = {
+    def computeOmittableAccessors(clazz: Symbol, defs: List[Tree], auxConstructors: List[Tree], constructor: List[Tree]): Set[Symbol] = {
       val decls = clazz.info.decls.toSet
       val isEffectivelyFinal = clazz.isEffectivelyFinal
 
@@ -191,10 +191,28 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
             }
           }
       }
+      class DetectAssigns(targets: mutable.Set[Symbol]) extends Traverser {
+        override def traverse(tree: Tree): Unit = if (targets.nonEmpty) {
+          tree match {
+            case Assign(lhs, _) if targets(lhs.symbol) =>
+              targets -= lhs.symbol
+              omittables -= lhs.symbol
+              super.traverse(tree)
+            case _ => super.traverse(tree)
+          }
+        }
+      }
 
       if (omittables.nonEmpty)
         (defs.iterator ++ auxConstructors.iterator) foreach detectUsages.traverse
 
+      if (omittables.nonEmpty) {
+        val omittedVars = omittables.filter(_.isVariable)
+        if (omittedVars.nonEmpty) {
+          val detector = new DetectAssigns(omittedVars)
+          constructor.foreach(detector.traverse)
+        }
+      }
       omittables.toSet
     }
   } // OmittablesHelper
@@ -511,7 +529,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       private def isStationaryParamRef(sym: Symbol) = (
         isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
-        !sym.isSetter
+        !sym.isSetter &&
+        !sym.isVariable
       )
 
       /*
@@ -703,7 +722,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       // omit unused outers
       val omittableAccessor: Set[Symbol] =
         if (isDelayedInitSubclass) Set.empty
-        else computeOmittableAccessors(clazz, defs, auxConstructors)
+        else computeOmittableAccessors(clazz, defs, auxConstructors, constructorStats)
 
       // TODO: this should omit fields for non-memoized (constant-typed, unit-typed vals need no storage --
       // all the action is in the getter)
