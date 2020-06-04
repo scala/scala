@@ -1,5 +1,4 @@
-package scala.tools.nsc
-package async
+package scala.tools.partest.async
 
 import scala.annotation.compileTimeOnly
 import scala.collection.immutable.HashMap
@@ -7,7 +6,6 @@ import scala.collection.mutable
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import scala.tools.nsc.transform.async.StateAssigner
-import scala.tools.partest.async.AsyncStateMachine
 
 object OutputAwait {
   def writing[T](body: T): Output[T] = macro impl
@@ -19,7 +17,7 @@ object OutputAwait {
     def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
     val name = TypeName("stateMachine$$async_" + body.pos.line)
     q"""
-      final class $name extends _root_.scala.tools.nsc.async.OutputStateMachine {
+      final class $name extends _root_.scala.tools.partest.async.OutputStateMachine {
         ${mark(q"""override def apply(tr$$async: _root_.scala.Option[_root_.scala.AnyRef]) = ${body}""")}
       }
       new $name().start().asInstanceOf[${c.macroApplication.tpe}]

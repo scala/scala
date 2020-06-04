@@ -1,15 +1,13 @@
-package scala.tools.nsc
-package async
+package scala.tools.partest.async
 
 import java.util.Objects
 import java.util.concurrent.{CompletableFuture, Executor}
 import java.util.function.BiConsumer
 
-import scala.language.experimental.macros
 import scala.annotation.compileTimeOnly
+import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import scala.tools.nsc.transform.async.StateAssigner
-import scala.tools.partest.async.AsyncStateMachine
 import scala.util.{Failure, Success, Try}
 
 object CompletableFutureAwait {
@@ -22,7 +20,7 @@ object CompletableFutureAwait {
     def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
     val name = TypeName("stateMachine$$async_" + body.pos.line)
     q"""
-      final class $name extends _root_.scala.tools.nsc.async.CompletableFutureStateMachine($executor) {
+      final class $name extends _root_.scala.tools.partest.async.CompletableFutureStateMachine($executor) {
         ${mark(q"""override def apply(tr$$async: _root_.scala.util.Try[_root_.scala.AnyRef]) = ${body}""")}
       }
       new $name().start().asInstanceOf[${c.macroApplication.tpe}]
