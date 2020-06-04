@@ -357,6 +357,22 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
 @SerialVersionUID(3L)
 object Stream extends SeqFactory[Stream] {
 
+  /* !!! #11997 This `object cons` must be defined lexically *before* `class Cons` below.
+   * Otherwise it prevents Scala.js from building on Windows.
+   */
+  /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
+    */
+  object cons {
+    /** A stream consisting of a given first element and remaining elements
+      *  @param hd   The first element of the result stream
+      *  @param tl   The remaining elements of the result stream
+      */
+    def apply[A](hd: A, tl: => Stream[A]): Stream[A] = new Cons(hd, tl)
+
+    /** Maps a stream to its head and tail */
+    def unapply[A](xs: Stream[A]): Option[(A, Stream[A])] = #::.unapply(xs)
+  }
+
   //@SerialVersionUID(3L) //TODO Putting an annotation on Stream.empty causes a cyclic dependency in unpickling
   object Empty extends Stream[Nothing] {
     override def isEmpty: Boolean = true
@@ -417,19 +433,6 @@ object Stream extends SeqFactory[Stream] {
       this
     }
 
-  }
-
-  /** An alternative way of building and matching Streams using Stream.cons(hd, tl).
-    */
-  object cons {
-    /** A stream consisting of a given first element and remaining elements
-      *  @param hd   The first element of the result stream
-      *  @param tl   The remaining elements of the result stream
-      */
-    def apply[A](hd: A, tl: => Stream[A]): Stream[A] = new Cons(hd, tl)
-
-    /** Maps a stream to its head and tail */
-    def unapply[A](xs: Stream[A]): Option[(A, Stream[A])] = #::.unapply(xs)
   }
 
   implicit def toDeferrer[A](l: => Stream[A]): Deferrer[A] = new Deferrer[A](() => l)
