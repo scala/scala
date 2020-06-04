@@ -504,14 +504,13 @@ trait Names extends api.Names {
       }
 
     def decodedName: ThisNameType = newName(decode)
-    def isOperatorName: Boolean = decode != toString  // used by ide
-    def longString: String      = nameKind + " " + decode
-    def debugString = { val s = decode ; if (isTypeName) s + "!" else s }
+    def isOperatorName: Boolean   = decoded != toString
+    def longString: String        = s"$nameKind $decoded"
+    def debugString               = if (isTypeName) s"$decoded!" else decoded
 
     override final def toString: String = if (cachedString == null) new String(_chrs, index, len) else cachedString
-    final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit = {
+    final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit =
       buffer.append(_chrs, this.start + start, length)
-    }
   }
 
   implicit val NameTag = ClassTag[Name](classOf[Name])
