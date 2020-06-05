@@ -76,7 +76,7 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warnUnusedSuppressions(): Unit = {
       // if we stop before typer completes (errors in parser, Ystop), report all suspended messages
       suspendedMessages.foreach(issueWarning)
-      if (settings.warnUnusedNowarn) {
+      if (settings.warnUnusedNowarn && !settings.isScaladoc) { // scaladoc doesn't run all phases, so not all warnings are emitted
         val sources = suppressions.keysIterator.toList
         for (source <- sources; sups <- suppressions.remove(source); sup <- sups.reverse) {
           if (!sup.used)
