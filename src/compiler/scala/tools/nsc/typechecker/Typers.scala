@@ -2420,7 +2420,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               if (mexists(meth.paramss)(p1 => p != p1 && (p1.name == n || p1.deprecatedParamName.contains(n))))
                 DeprecatedParamNameError(p, n)
 
-          if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated))
+          if (settings.multiargInfix && !meth.isConstructor && meth.owner.isClass && !meth.isDeprecated && !meth.hasAnnotation(UnusedClass) && !meth.ownerChain.exists(_.isDeprecated) && !meth.isSynthetic)
             meth.paramss match {
               case (h :: _ :: _) :: Nil if !h.isImplicit && Chars.isOperatorPart(meth.name.decoded.head) =>
                 context.warning(meth.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)

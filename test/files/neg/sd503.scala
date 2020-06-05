@@ -79,3 +79,5 @@ trait WhyNamingIsHard {
   def lines_!(x: Int, y: Int): List[String] = ???                             // nowarn, give it a pass
   def f = this lines_! (42, 27)                                               // warn usage, of course
 }
+
+class A(a: Int, b: Int)(c: Int = 1) // nowarn on <synthetic> def <init>$default$3(a: Int, b: Int): Int = 1
