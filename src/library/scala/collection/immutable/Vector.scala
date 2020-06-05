@@ -191,12 +191,31 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
   override def updated[B >: A](index: Int, elem: B): Vector[B] = super.updated(index, elem)
   override def appended[B >: A](elem: B): Vector[B] = super.appended(elem)
   override def prepended[B >: A](elem: B): Vector[B] = super.prepended(elem)
-  override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): Vector[B] = super.prependedAll(prefix)
+  override def prependedAll[B >: A](prefix: collection.IterableOnce[B]): Vector[B] = {
+    val k = prefix.knownSize
+    if(k == 0) this
+    else prependedAll0(prefix, k)
+  }
 
   override final def appendedAll[B >: A](suffix: collection.IterableOnce[B]): Vector[B] = {
     val k = suffix.knownSize
     if(k == 0) this
     else appendedAll0(suffix, k)
+  }
+
+  protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val tinyAppendLimit = 4 + vectorSliceCount
+    if (k < tinyAppendLimit /*|| k < (this.size >>> Log2ConcatFaster)*/) {
+      var v: Vector[B] = this
+      val it           = IndexedSeq.from(prefix).reverseIterator
+      while (it.hasNext) v = it.next() +: v
+      v
+    } else if (this.size < (k >>> Log2ConcatFaster) && prefix.isInstanceOf[Vector[_]]) {
+      var v  = prefix.asInstanceOf[Vector[B]]
+      val it = this.iterator
+      while (it.hasNext) v = v :+ it.next()
+      v
+    } else super.prependedAll(prefix)
   }
 
   protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
@@ -207,6 +226,11 @@ sealed abstract class Vector[+A] private[immutable] (private[immutable] final va
         case it: Iterable[_] => it.asInstanceOf[Iterable[B]].foreach(x => v = v.appended(x))
         case _ => suffix.iterator.foreach(x => v = v.appended(x))
       }
+      v
+    } else if (this.size < (k >>> Log2ConcatFaster) && suffix.isInstanceOf[Vector[_]]) {
+      var v = suffix.asInstanceOf[Vector[B]]
+      val ri = this.reverseIterator
+      while (ri.hasNext) v = v.prepended(ri.next())
       v
     } else new VectorBuilder[B].initFrom(this).addAll(suffix).result()
   }
@@ -337,6 +361,9 @@ private object Vector0 extends BigVector[Nothing](empty1, empty1, 0) {
     }
   }
 
+  override protected[this]def prependedAll0[B >: Nothing](prefix: collection.IterableOnce[B], k: Int): Vector[B] =
+    Vector.from(prefix)
+
   override protected[this]def appendedAll0[B >: Nothing](suffix: collection.IterableOnce[B], k: Int): Vector[B] =
     Vector.from(suffix)
 
@@ -387,6 +414,12 @@ private final class Vector1[+A](_data1: Arr1) extends VectorImpl[A](_data1) {
   protected[immutable] def vectorSliceCount: Int = 1
   protected[immutable] def vectorSlice(idx: Int): Array[_ <: AnyRef] = prefix1
   protected[immutable] def vectorSlicePrefixLength(idx: Int): Int = prefix1.length
+
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val data1b = prepend1IfSpace(prefix1, prefix)
+    if(data1b ne null) new Vector1(data1b)
+    else super.prependedAll0(prefix, k)
+  }
 
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
     val data1b = append1IfSpace(prefix1, suffix)
@@ -477,6 +510,11 @@ private final class Vector2[+A](_prefix1: Arr1, private[immutable] val len1: Int
     case 2 => length0
   }
 
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val prefix1b = prepend1IfSpace(prefix1, prefix)
+    if(prefix1b ne null) copy(prefix1 = prefix1b, len1 = len1-prefix1.length+prefix1b.length, length0 = length0-prefix1.length+prefix1b.length)
+    else super.prependedAll0(prefix, k)
+  }
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
     val suffix1b = append1IfSpace(suffix1, suffix)
     if(suffix1b ne null) copy(suffix1 = suffix1b, length0 = length0-suffix1.length+suffix1b.length)
@@ -588,6 +626,11 @@ private final class Vector3[+A](_prefix1: Arr1, private[immutable] val len1: Int
     case 4 => length0
   }
 
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val prefix1b = prepend1IfSpace(prefix1, prefix)
+    if(prefix1b ne null) copy(prefix1 = prefix1b, len1 = len1-prefix1.length+prefix1b.length, length0 = length0-prefix1.length+prefix1b.length)
+    else super.prependedAll0(prefix, k)
+  }
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
     val suffix1b = append1IfSpace(suffix1, suffix)
     if(suffix1b ne null) copy(suffix1 = suffix1b, length0 = length0-suffix1.length+suffix1b.length)
@@ -717,6 +760,12 @@ private final class Vector4[+A](_prefix1: Arr1, private[immutable] val len1: Int
     case 4 => len123 + data4.length*WIDTH3 + suffix3.length*WIDTH2
     case 5 => length0 - suffix1.length
     case 6 => length0
+  }
+
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val prefix1b = prepend1IfSpace(prefix1, prefix)
+    if(prefix1b ne null) copy(prefix1 = prefix1b, len1 = len1-prefix1.length+prefix1b.length, length0 = length0-prefix1.length+prefix1b.length)
+    else super.prependedAll0(prefix, k)
   }
 
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
@@ -868,6 +917,12 @@ private final class Vector5[+A](_prefix1: Arr1, private[immutable] val len1: Int
     case 6 => len1234 + data5.length*WIDTH4 + suffix4.length*WIDTH3 + suffix3.length*WIDTH2
     case 7 => length0 - suffix1.length
     case 8 => length0
+  }
+
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val prefix1b = prepend1IfSpace(prefix1, prefix)
+    if(prefix1b ne null) copy(prefix1 = prefix1b, len1 = len1-prefix1.length+prefix1b.length, length0 = length0-prefix1.length+prefix1b.length)
+    else super.prependedAll0(prefix, k)
   }
 
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
@@ -1039,6 +1094,12 @@ private final class Vector6[+A](_prefix1: Arr1, private[immutable] val len1: Int
     case 8 => len12345 + data6.length*WIDTH5 + suffix5.length*WIDTH4 + suffix4.length*WIDTH3 + suffix3.length*WIDTH2
     case 9 => length0 - suffix1.length
     case 10 => length0
+  }
+
+  override protected[this] def prependedAll0[B >: A](prefix: collection.IterableOnce[B], k: Int): Vector[B] = {
+    val prefix1b = prepend1IfSpace(prefix1, prefix)
+    if(prefix1b ne null) copy(prefix1 = prefix1b, len1 = len1-prefix1.length+prefix1b.length, length0 = length0-prefix1.length+prefix1b.length)
+    else super.prependedAll0(prefix, k)
   }
 
   override protected[this] def appendedAll0[B >: A](suffix: collection.IterableOnce[B], k: Int): Vector[B] = {
@@ -1674,6 +1735,7 @@ private[immutable] object VectorInline {
   final val BITS6 = BITS * 6
   final val WIDTH6 = 1 << BITS6
   final val LASTWIDTH = WIDTH << 1 // 1 extra bit in the last level to go up to Int.MaxValue (2^31-1) instead of 2^30:
+  final val Log2ConcatFaster = 5
 
   type Arr1 = Array[AnyRef]
   type Arr2 = Array[Array[AnyRef]]
@@ -1853,6 +1915,29 @@ private object VectorStatics {
       i += 1
     }
     ac.asInstanceOf[Array[T]]
+  }
+
+  final def prepend1IfSpace(prefix1: Arr1, xs: IterableOnce[_]): Arr1 = xs match {
+    case it: Iterable[_] =>
+      if(it.sizeCompare(WIDTH-prefix1.length) <= 0) {
+        it.size match {
+          case 0 => null
+          case 1 => copyPrepend(it.head.asInstanceOf[AnyRef], prefix1)
+          case s =>
+            val prefix1b = new Arr1(prefix1.length + s)
+            System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
+            it.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+            prefix1b
+        }
+      } else null
+    case it =>
+      val s = it.knownSize
+      if(s > 0 && s <= WIDTH-prefix1.length) {
+        val prefix1b = new Arr1(prefix1.length + s)
+        System.arraycopy(prefix1, 0, prefix1b, s, prefix1.length)
+        it.iterator.copyToArray(prefix1b.asInstanceOf[Array[Any]], 0)
+        prefix1b
+      } else null
   }
 
   final def append1IfSpace(suffix1: Arr1, xs: IterableOnce[_]): Arr1 = xs match {
