@@ -26,7 +26,7 @@ abstract class PluginComponent extends SubComponent {
   /** Only plugins are granted a reprieve from specifying whether they follow. */
   val runsRightAfter: Option[String] = None
 
-  /** Useful for -Xshow-phases. */
+  /** Useful for -Vphases. */
   def description: String = ""
 
 }

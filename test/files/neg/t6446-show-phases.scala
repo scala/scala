@@ -1,4 +1,4 @@
-// scalac: -Xshow-phases
+// scalac: -Vphases
 //
 
 // testing compiler flag output only

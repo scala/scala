@@ -226,7 +226,7 @@ class Flags extends ModifierFlags {
   // ------- late flags (set by a transformer phase) ---------------------------------
   //
   // Summary of when these are claimed to be first used.
-  // You can get this output with scalac -Xshow-phases -Ydebug.
+  // You can get this output with scalac -Vphases -Vdebug.
   //
   //     refchecks   7  [START] <latemethod>
   //    specialize  13  [START] <latefinal> <notprivate>

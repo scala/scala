@@ -67,7 +67,7 @@ trait ToolBox[U <: scala.reflect.api.Universe] {
    *
    *  If `silent` is false, `ToolBoxError` will be thrown in case of a typecheck error.
    *  If `silent` is true, the typecheck is silent and will return `EmptyTree` if an error occurs.
-   *  Such errors don't vanish and can be inspected by turning on -Ydebug.
+   *  Such errors don't vanish and can be inspected by turning on -Vdebug.
    *
    *  Typechecking can be steered with the following optional parameters:
    *    `withImplicitViewsDisabled` recursively prohibits implicit views (though, implicit vals will still be looked up and filled in), default value is false
