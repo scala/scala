@@ -685,7 +685,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     phs foreach (addToPhasesSet _).tupled
   }
   // This is slightly inelegant but it avoids adding a new member to SubComponent,
-  // and attractive -Xshow-phases output is unlikely if the descs span 20 files anyway.
+  // and attractive -Vphases output is unlikely if the descs span 20 files anyway.
   private val otherPhaseDescriptions = Map(
     "flatten"  -> "eliminate inner classes",
     "jvm"      -> "generate JVM bytecode"
@@ -729,10 +729,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     phaseDescriptors map (_.phaseName)
   }
 
-  /** A description of the phases that will run in this configuration, or all if -Ydebug. */
+  /** A description of the phases that will run in this configuration, or all if -Vdebug. */
   def phaseDescriptions: String = phaseHelp("description", elliptically = !settings.debug, phasesDescMap)
 
-  /** Summary of the per-phase values of nextFlags and newFlags, shown under -Xshow-phases -Ydebug. */
+  /** Summary of the per-phase values of nextFlags and newFlags, shown under -Vphases -Vdebug. */
   def phaseFlagDescriptions: String = {
     def fmt(ph: SubComponent) = {
       def fstr1 = if (ph.phaseNewFlags == 0L) "" else "[START] " + Flags.flagsToString(ph.phaseNewFlags)

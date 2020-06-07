@@ -10,7 +10,7 @@ object Test {
 
   def main(args: Array[String]): Unit = {
     Console.withErr(Console.out) {
-      Main process (baseargs ++ "-Xpluginsdir /does/not/exist/foo/quux -Xshow-phases".split(' '))
+      Main process (baseargs ++ "-Xpluginsdir /does/not/exist/foo/quux -Vphases".split(' '))
     }
   }
 }

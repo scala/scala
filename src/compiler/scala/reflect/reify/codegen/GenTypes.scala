@@ -88,7 +88,7 @@ trait GenTypes {
 
       val tagFlavor = if (concrete) tpnme.TypeTag.toString else tpnme.WeakTypeTag.toString
       // if this fails, it might produce the dreaded "erroneous or inaccessible type" error
-      // to find out the whereabouts of the error run scalac with -Ydebug
+      // to find out the whereabouts of the error run scalac with -Vdebug
       if (reifyDebug) println("launching implicit search for %s.%s[%s]".format(universe, tagFlavor, tpe))
       val result =
         typer.resolveTypeTag(defaultErrorPosition, universe.tpe, tpe, concrete = concrete, allowMaterialization = false) match {
