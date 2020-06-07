@@ -338,4 +338,21 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       case _ => super.transform(f)
     }
   }
+
+  /**
+   * Expose this 2.13 API as a private[scala] method
+   */
+  private[scala] def minAfter(key: A): Option[(A, B)] = RB.minAfter(tree, key) match {
+    case null => Option.empty
+    case x => Some((x.key, x.value))
+  }
+
+  /**
+   * Expose this 2.13 API as a private[scala] method
+   */
+  private[scala] def maxBefore(key: A): Option[(A, B)] = RB.maxBefore(tree, key) match {
+    case null => Option.empty
+    case x => Some((x.key, x.value))
+  }
+
 }

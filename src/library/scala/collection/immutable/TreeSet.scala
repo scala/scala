@@ -249,4 +249,21 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     case _ => super.equals(obj)
   }
 
+  /**
+   * Expose this 2.13 API as a private[scala] method
+   */
+  private[scala] def minAfter(key: A): Option[A] = {
+    val v = RB.minAfter(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
+  }
+
+  /**
+   * Expose this 2.13 API as a private[scala] method
+   */
+  private[scala] def maxBefore(key: A): Option[A] = {
+    val v = RB.maxBefore(tree, key)
+    if (v eq null) Option.empty else Some(v.key)
+  }
+
+
 }
