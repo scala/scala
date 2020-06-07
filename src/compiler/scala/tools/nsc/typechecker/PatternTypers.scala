@@ -20,14 +20,16 @@ import symtab.Flags
 import Mode._
 
  /**
+ *  A pattern match such as:
  *
- *  A pattern match such as
- *
- *    x match { case Foo(a, b) => ...}
+ * {{{
+ *   x match { case Foo(a, b) => ...}
+ * }}}
  *
  *  Might match an instance of any of the following definitions of Foo.
  *  Note the analogous treatment between case classes and unapplies.
  *
+ * {{{
  *    case class Foo(xs: Int*)
  *    case class Foo(a: Int, xs: Int*)
  *    case class Foo(a: Int, b: Int)
@@ -37,8 +39,8 @@ import Mode._
  *    object Foo { def unapplySeq(x: Any): Option[(Int, Seq[Int])] }
  *    object Foo { def unapply(x: Any): Option[(Int, Int)] }
  *    object Foo { def unapplySeq(x: Any): Option[(Int, Int, Seq[Int])] }
+ * }}}
  */
-
 trait PatternTypers {
   self: Analyzer =>
 

@@ -15,7 +15,7 @@ package typechecker
 
 import scala.reflect.internal.util.StatisticsStatics
 
-/** The main attribution phase.
+/** Defines the sub-components for the namer, packageobjects, and typer phases.
  */
 trait Analyzer extends AnyRef
             with Contexts

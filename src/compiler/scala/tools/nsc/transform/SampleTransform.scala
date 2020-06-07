@@ -36,14 +36,15 @@ abstract class SampleTransform extends Transform {
           expr
         case Block(defs, sup @ Super(qual, mix)) => // A hypothetical transformation, which replaces
                                                     // {super} by {super.sample}
-          treeCopy.Block(                           // `copy` is the usual lazy tree copier
-            tree1, defs,
+          treeCopy.Block(                           // `treeCopy` is a lazy tree copier
+            tree1,
+            defs,
             typed(                              // `typed` assigns types to its tree argument
               atPos(tree1.pos)(                 // `atPos` fills in position of its tree argument
                 Select(                         // The `Select` factory method is defined in class `Trees`
                   sup,
                   currentOwner.newValue(        // creates a new term symbol owned by `currentOwner`
-                    newTermName("sample"),      // The standard term name creator
+                    TermName("sample"),         // The standard term name creator
                     tree1.pos)))))
         case _ =>
           tree1

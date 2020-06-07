@@ -33,7 +33,7 @@ trait PhaseAssembly {
 
     /**
      * Simple node with name and object ref for the phase object,
-     * also sets of in and out going dependencies
+     * also sets of incoming and outgoing dependencies.
      */
     case class Node(name: String) {
       val phasename = name

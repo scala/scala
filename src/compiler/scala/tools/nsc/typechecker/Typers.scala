@@ -10,12 +10,6 @@
  * additional information regarding copyright ownership.
  */
 
-// Added: Sat Oct 7 16:08:21 2006
-//todo: use inherited type info also for vars and values
-
-// Added: Thu Apr 12 18:23:58 2007
-//todo: disallow C#D in superclass
-//todo: treat :::= correctly
 package scala
 package tools.nsc
 package typechecker
@@ -30,9 +24,7 @@ import mutable.ListBuffer
 import symtab.Flags._
 import Mode._
 
-// Suggestion check whether we can do without priming scopes with symbols of outer scopes,
-// like the IDE does.
-/** This trait provides methods to assign types to trees.
+/** A provider of methods to assign types to trees.
  *
  *  @author  Martin Odersky
  */
