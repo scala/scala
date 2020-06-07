@@ -23,22 +23,39 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, newTypeName, newTermName, runReporting, Symbol, DocComment, NoSymbol }
-  import global.definitions.AnyRefClass
+  import global.{ reporter, inform, newTypeName, newTermName, runReporting, DefDef, Symbol, DocComment, MethodSymbol, NoSymbol }
+  import global.definitions.{ AnyRefClass, AnyRefTpe }
   import global.rootMirror.RootClass
 
   private implicit def translateName(name: Global#Name) =
     if (name.isTypeName) newTypeName("" + name) else newTermName("" + name)
 
-  def docSymbol(p: DocParser.Parsed) = p.nameChain.foldLeft(RootClass: Symbol)(_.tpe member _)
+  val WaitNames = List("scala", "AnyRef", "wait")
+
+  def docSymbol(p: DocParser.Parsed) =
+    p.nameChain match {
+      // for scala.AnyRef.wait, pick Object#wait with the same arity
+      case xs if xs.map(_.toString) == WaitNames =>
+        val arity = p.docDef.definition match {
+          case t: DocParser#DefDef => t.vparamss.flatten.size
+          case _ => 0
+        }
+        val wait = AnyRefTpe.members find {
+          case m: MethodSymbol =>
+            m.name == newTermName("wait") && m.paramLists.flatten.size == arity
+        }
+        wait.getOrElse(sys.error(s"Object#wait with $arity parameters was not found"))
+      case xs => xs.foldLeft(RootClass: Symbol)(_.tpe member _)
+    }
   def docDefs(code: String)          = new DocParser(settings, reporter) docDefs code
   def docPairs(code: String)         = docDefs(code) map (p => (docSymbol(p), DocComment(p.raw)))
 
   lazy val pairs = files flatMap { f =>
-    val comments = docPairs(f.slurp())
-    if (settings.verbose)
-      inform("Found %d doc comments in parse-only file %s: %s".format(comments.size, f, comments.map(_._1).mkString(", ")))
-
+    val code = f.slurp()
+    val comments = docPairs(code)
+    if (settings.verbose) {
+      inform(s"Found ${comments.size} doc comments in parse-only file $f: " + comments.map(_._1).mkString(", "))
+    }
     comments
   }
   def files     = settings.uncompilableFiles

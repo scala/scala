@@ -1,0 +1,17 @@
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Wakes up all threads that are waiting on the receiver object's monitor), Text(.)))), Text(
+))))))
+)
+List(scala.AnyRef#wait, scala.AnyRef#wait, scala.AnyRef#wait)
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
+ the notify() or notifyAll() methods), Text(.)))), Text(
+))))))
+)
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
+the notify() or notifyAll() methods, or a specified amount of time has elapsed), Text(.)))), Text(
+))))))
+)
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
+the notify() or notifyAll() methods, or a specified amount of time has elapsed), Text(.)))), Text(
+))))))
+)
+Done.
