@@ -15,7 +15,7 @@ package transform
 
 import symtab._
 import Flags._
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable, mutable.ListBuffer
 
 abstract class Flatten extends InfoTransform {
   import global._
@@ -118,9 +118,16 @@ abstract class Flatten extends InfoTransform {
 
   protected def newTransformer(unit: CompilationUnit): Transformer = new Flattener
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new FlattenPhase(prev)
+  override def ownPhase = super.ownPhase.asInstanceOf[FlattenPhase]
+
+  class FlattenPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    val liftedDefs = mutable.HashMap[Symbol, ListBuffer[Tree]]()
+  }
+
   class Flattener extends Transformer {
     /** Buffers for lifted out classes */
-    private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
+    private val liftedDefs = ownPhase.liftedDefs
 
     override def transform(tree: Tree): Tree = postTransform {
       tree match {

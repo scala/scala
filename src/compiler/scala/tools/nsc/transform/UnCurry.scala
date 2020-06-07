@@ -72,6 +72,14 @@ abstract class UnCurry extends InfoTransform
   val phaseName: String = "uncurry"
 
   def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit)
+
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new UnCurryPhase(prev)
+  override def ownPhase = super.ownPhase.asInstanceOf[UnCurryPhase]
+
+  class UnCurryPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    val nonLocalReturnKeys = mutable.HashMap[Symbol, Symbol]()
+  }
+
   override def changesBaseClasses = false
 
 // ------ Type transformation --------------------------------------------------------
@@ -144,7 +152,7 @@ abstract class UnCurry extends InfoTransform
       appliedType(NonLocalReturnControlClass, argtype :: Nil)
 
     /** A hashmap from method symbols to non-local return keys */
-    private val nonLocalReturnKeys = perRunCaches.newMap[Symbol, Symbol]()
+    private val nonLocalReturnKeys = ownPhase.nonLocalReturnKeys
 
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =

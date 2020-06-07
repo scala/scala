@@ -116,16 +116,18 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
     lazy val storageClass: ClassSymbol = symbol.info.typeSymbol.asClass
   }
 
+  final class FieldsState {
+    val _bitmapInfo  = new mutable.HashMap[Symbol, BitmapInfo]
+    val _slowPathFor = new mutable.HashMap[Symbol, Symbol]
+  }
 
-  // TODO: better way to communicate from info transform to tree transform?
-  private[this] val _bitmapInfo  = perRunCaches.newMap[Symbol, BitmapInfo]
-  private[this] val _slowPathFor = perRunCaches.newMap[Symbol, Symbol]()
-
-  def checkedAccessorSymbolSynth(clz: Symbol): CheckedAccessorSymbolSynth =
-    new CheckedAccessorSymbolSynth(clz)
+  def checkedAccessorSymbolSynth(clz: Symbol, state: FieldsState): CheckedAccessorSymbolSynth =
+    new CheckedAccessorSymbolSynth(clz, state)
 
   // base trait, with enough functionality for generating bitmap symbols for lazy vals and -Xcheckinit fields
-  class CheckedAccessorSymbolSynth(val clazz: Symbol) {
+  class CheckedAccessorSymbolSynth(val clazz: Symbol, state: FieldsState) {
+    import state._
+
     /**
       * Note: fields of classes inheriting DelayedInit are not checked.
       * This is because they are neither initialized in the constructor
@@ -223,10 +225,9 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
   // (which are known to have been run because the tree transform runs afterOwnPhase)
   // since we can't easily share all info via symbols and flags, we have two maps above
   // (they are persisted even between phases because the -Xcheckinit logic runs during constructors)
-  // TODO: can we use attachments instead of _bitmapInfo and _slowPathFor?
   trait CheckedAccessorTreeSynthesis extends AccessorTreeSynthesis {
     // note: we deal in getters here, not field symbols
-    class SynthCheckedAccessorsTreesInClass(clazz: Symbol) extends CheckedAccessorSymbolSynth(clazz) {
+    class SynthCheckedAccessorsTreesInClass(clazz: Symbol, state: FieldsState) extends CheckedAccessorSymbolSynth(clazz, state) {
       def isUnitGetter(sym: Symbol) = sym.tpe.resultType.typeSymbol == UnitClass
       def thisRef = gen.mkAttributedThis(clazz)
 
@@ -252,7 +253,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
           })
     }
 
-    class SynthLazyAccessorsIn(clazz: Symbol) extends SynthCheckedAccessorsTreesInClass(clazz) {
+    class SynthLazyAccessorsIn(clazz: Symbol, state: FieldsState) extends SynthCheckedAccessorsTreesInClass(clazz, state) {
       /**
         * The compute method (slow path) looks like:
         *
@@ -312,7 +313,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
       }
     }
 
-    class SynthInitCheckedAccessorsIn(clazz: Symbol) extends SynthCheckedAccessorsTreesInClass(clazz) {
+    class SynthInitCheckedAccessorsIn(clazz: Symbol, state: FieldsState) extends SynthCheckedAccessorsTreesInClass(clazz, state) {
 
       // Add statements to the body of a constructor to set the 'init' bit for each field initialized in the constructor
       private object addInitBitsTransformer extends Transformer {

@@ -803,7 +803,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       val statsWithInitChecks =
         if (settings.checkInit) {
-          val addChecks = new SynthInitCheckedAccessorsIn(currentOwner)
+          val addChecks = new SynthInitCheckedAccessorsIn(currentOwner, fields.ownPhase.state)
           prunedStats mapConserve {
             case dd: DefDef if addChecks.needsWrapping(dd) => deriveDefDef(dd)(addChecks.wrapRhsWithInitChecks(dd.symbol))
             case stat                                      => stat

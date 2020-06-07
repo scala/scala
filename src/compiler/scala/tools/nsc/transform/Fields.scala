@@ -87,6 +87,14 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   val phaseName: String = "fields"
 
   protected def newTransformer(unit: CompilationUnit): Transformer = new FieldsTransformer(unit)
+
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new FieldsPhase(prev)
+  override def ownPhase = super.ownPhase.asInstanceOf[FieldsPhase]
+
+  class FieldsPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    val state = new FieldsState()
+  }
+
   override def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isJavaDefined || sym.isPackageClass || !sym.isClass) tp
     else synthFieldsAndAccessors(tp)
@@ -406,7 +414,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
         val modulesAndLazyValsNeedingExpansion =
           oldDecls.toList.filter(m => (m.isModule && (!m.isStatic || m.isOverridingSymbol)) || m.isLazy)
 
-        val accessorSymbolSynth = checkedAccessorSymbolSynth(tp.typeSymbol)
+        val accessorSymbolSynth = checkedAccessorSymbolSynth(tp.typeSymbol, ownPhase.state)
 
         // expand module def in class/object (if they need it -- see modulesNeedingExpansion above)
         val expandedModulesAndLazyVals =
@@ -702,7 +710,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
           mkAccessor(module)(moduleInit(module, moduleOrLazyVarOf(module)))
         }
 
-      val synthAccessorInClass = new SynthLazyAccessorsIn(clazz)
+      val synthAccessorInClass = new SynthLazyAccessorsIn(clazz, ownPhase.state)
       def superLazy(getter: Symbol): Tree = {
         assert(!clazz.isTrait, clazz)
         // this contortion was the only way I can get the super select to be type checked correctly..
@@ -767,7 +775,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
             // TODO: make `synthAccessorInClass` a field and update it in atOwner?
             // note that `LazyAccessorTreeSynth` is pretty lightweight
             // (it's just a bunch of methods that all take a `clazz` parameter, which is thus stored as a field)
-            val synthAccessorInClass = new SynthLazyAccessorsIn(currOwner)
+            val synthAccessorInClass = new SynthLazyAccessorsIn(currOwner, ownPhase.state)
             synthAccessorInClass.expandLazyClassMember(lazyVarOf(statSym), statSym, transformedRhs)
           }
 

@@ -61,6 +61,14 @@ abstract class RefChecks extends Transform {
   def newTransformer(unit: CompilationUnit): RefCheckTransformer =
     new RefCheckTransformer(unit)
 
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new RefChecksPhase(prev)
+  override def ownPhase = super.ownPhase.asInstanceOf[RefChecksPhase]
+
+  class RefChecksPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+    val separatelyCompiledScalaSuperclass = mutable.AnyRefMap[Symbol, Unit]()
+    val symIndex                          = mutable.HashMap[Symbol, Int]()
+  }
+
   val toJavaRepeatedParam  = new SubstSymMap(RepeatedParamClass -> JavaRepeatedParamClass)
   val toScalaRepeatedParam = new SubstSymMap(JavaRepeatedParamClass -> RepeatedParamClass)
 
@@ -77,7 +85,7 @@ abstract class RefChecks extends Transform {
     case _                                                   => tp1 <:< tp2
   }
 
-  private val separatelyCompiledScalaSuperclass = perRunCaches.newAnyRefMap[Symbol, Unit]()
+  private def separatelyCompiledScalaSuperclass = ownPhase.separatelyCompiledScalaSuperclass
   final def isSeparatelyCompiledScalaSuperclass(sym: Symbol) = if (globalPhase.refChecked){
     separatelyCompiledScalaSuperclass.contains(sym)
   } else {
@@ -912,7 +920,7 @@ abstract class RefChecks extends Transform {
     }
 
     private var currentLevel: LevelInfo = null
-    private val symIndex = perRunCaches.newMap[Symbol, Int]()
+    private val symIndex = ownPhase.symIndex
 
     private def pushLevel(): Unit = {
       currentLevel = new LevelInfo(currentLevel)
