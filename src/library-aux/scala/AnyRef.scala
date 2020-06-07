@@ -116,15 +116,13 @@ trait AnyRef extends Any {
    */
   final def notifyAll(): Unit
 
-  /** Causes the current Thread to wait until another Thread invokes
-   *  the notify() or notifyAll() methods.
+  /** See [[https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait--]].
    *
    *  @note   not specified by SLS as a member of AnyRef
    */
   final def wait (): Unit
 
-  /** Causes the current Thread to wait until another Thread invokes
-   * the notify() or notifyAll() methods, or a specified amount of time has elapsed.
+  /** See [[https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-int-]]
    *
    * @param timeout the maximum time to wait in milliseconds.
    * @param nanos   additional time, in nanoseconds range 0-999999.
@@ -132,8 +130,7 @@ trait AnyRef extends Any {
    */
   final def wait (timeout: Long, nanos: Int): Unit
 
-  /** Causes the current Thread to wait until another Thread invokes
-   * the notify() or notifyAll() methods, or a specified amount of time has elapsed.
+  /** See [[https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-]].
    *
    * @param timeout the maximum time to wait in milliseconds.
    * @note not specified by SLS as a member of AnyRef

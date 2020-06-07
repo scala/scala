@@ -2,16 +2,13 @@ Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Wakes up all threads
 ))))))
 )
 List(scala.AnyRef#wait, scala.AnyRef#wait, scala.AnyRef#wait)
-Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
- the notify() or notifyAll() methods), Text(.)))), Text(
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Chain(List(Text(See ), Link(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait--,Text(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait--)))), Text(.)))), Text(
 ))))))
 )
-Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
-the notify() or notifyAll() methods, or a specified amount of time has elapsed), Text(.)))), Text(
-))))))
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(See ), Link(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-int-,Text(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-int-)), Text(
+), Text()))))))))
 )
-Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(Causes the current Thread to wait until another Thread invokes
-the notify() or notifyAll() methods, or a specified amount of time has elapsed), Text(.)))), Text(
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Chain(List(Text(See ), Link(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-,Text(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-)))), Text(.)))), Text(
 ))))))
 )
 Done.
