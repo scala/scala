@@ -1481,9 +1481,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private final val GlobalPhaseName = "global (synthetic)"
     protected final val totalCompileTime = statistics.newTimer("#total compile time", GlobalPhaseName)
 
-    def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit =
-      compileUnitsInternal(units, fromPhase)
-    private def compileUnitsInternal(units: List[CompilationUnit], fromPhase: Phase): Unit = {
+    def compileUnits(units: List[CompilationUnit], fromPhase: Phase = firstPhase): Unit = {
       units foreach addUnit
       reporter.reset()
       warnDeprecatedAndConflictingSettings()
@@ -1583,31 +1581,22 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     /** Compile list of abstract files. */
-    def compileFiles(files: List[AbstractFile]): Unit = {
-      try {
-        val snap = profiler.beforePhase(Global.InitPhase)
-        val sources = files map getSourceFile
-        profiler.afterPhase(Global.InitPhase, snap)
-        compileSources(sources)
-      }
-      catch {
-        case ex: InterruptedException => reporter.cancelled = true
-        case ex: IOException => globalError(ex.getMessage())
-      }
-    }
+    def compileFiles(files: List[AbstractFile]): Unit = compileFilesInternal(files.map(getSourceFile))
 
     /** Compile list of files given by their names */
-    def compile(filenames: List[String]): Unit = {
+    def compile(filenames: List[String]): Unit =
+      compileFilesInternal {
+        if (settings.script.isSetByUser && filenames.size > 1) {
+          globalError("can only compile one script at a time")
+          Nil
+        }
+        else filenames.map(getSourceFile)
+      }
+
+    private def compileFilesInternal(getSources: => List[SourceFile]): Unit = {
       try {
         val snap = profiler.beforePhase(Global.InitPhase)
-
-        val sources: List[SourceFile] =
-          if (settings.script.isSetByUser && filenames.size > 1) {
-            globalError("can only compile one script at a time")
-            Nil
-          }
-          else filenames.map(getSourceFile)
-
+        val sources = getSources
         profiler.afterPhase(Global.InitPhase, snap)
         compileSources(sources)
       }
