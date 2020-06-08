@@ -16,7 +16,7 @@ package scala.tools
 package nsc
 package settings
 
-import io.{AbstractFile, Jar, Path, PlainFile, VirtualDirectory}
+import io.{AbstractFile, Path, PlainFile, VirtualDirectory}
 import scala.annotation.tailrec
 import scala.collection.mutable.Clearable
 import scala.io.Source
@@ -255,23 +255,29 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     /** Add a destination directory for sources found under `srcDir`.
      *  Both directories should exist.
      */
-    def add(srcDir: String, outDir: String): Unit = // used in ide?
-      add(checkDir(pathFactory.getDirectory(srcDir), srcDir),
-          checkDir(pathFactory.getDirectory(outDir), outDir))
+    // used in ide?
+    def add(srcDir: String, outDir: String): Unit = {
+      // Check that dir exists and is a directory.
+      def checkDir(name: String): AbstractFile = {
+        val dir = pathFactory.getDirectory(name)
+        if (dir != null && dir.isDirectory) dir
+        else throw new FatalError(s"$name does not exist or is not a directory")
+      }
+      add(checkDir(srcDir), checkDir(outDir))
+    }
 
-    /** Check that dir is exists and is a directory. */
-    private def checkDir(dir: AbstractFile, name: String, allowJar: Boolean = false): AbstractFile =
+    /** Check either existing dir, or if not dir in path, a jar/zip which may not yet exist. */
+    private def checkDirOrJar(name: String): AbstractFile = {
+      val dir = pathFactory.getDirectory(name)
       if (dir != null && dir.isDirectory) dir
-      else if (allowJar && dir == null && Jar.isJarOrZip(name, examineFile = false)) new PlainFile(Path(name))
+      else if (dir == null && Path.isExtensionJarOrZip(name)) new PlainFile(Path(name))
       else throw new FatalError(s"$name does not exist or is not a directory")
+    }
 
     /** Set the single output directory. From now on, all files will
      *  be dumped in there, regardless of previous calls to 'add'.
      */
-    def setSingleOutput(outDir: String): Unit = {
-      val dst = pathFactory.getDirectory(outDir)
-      setSingleOutput(checkDir(dst, outDir, allowJar = true))
-    }
+    def setSingleOutput(outDir: String): Unit = setSingleOutput(checkDirOrJar(outDir))
 
     def getSingleOutput: Option[AbstractFile] = singleOutDir
 

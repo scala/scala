@@ -1,7 +1,6 @@
 
 import scala.jdk.CollectionConverters._
 import scala.tools.partest.nest.FileManager._
-import scala.util.Using
 
 import java.io.File
 import java.nio.file.Files

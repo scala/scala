@@ -169,11 +169,10 @@ object Jar {
   // See https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html
   // for some ideas.
   private val ZipMagicNumber = List[Byte](80, 75, 3, 4)
-  private def magicNumberIsZip(f: Path) = f.isFile && (f.toFile.bytes().take(4).toList == ZipMagicNumber)
+  private def magicNumberIsZip(f: Path) = f.toFile.bytes().take(4).toList == ZipMagicNumber
 
-  def isJarOrZip(f: Path): Boolean = isJarOrZip(f, examineFile = true)
-  def isJarOrZip(f: Path, examineFile: Boolean): Boolean =
-    f.hasExtension("zip", "jar") || (examineFile && magicNumberIsZip(f))
+  // file exists and either has name.jar or magic number
+  def isJarOrZip(f: Path): Boolean = f.isFile && (Path.isExtensionJarOrZip(f.name) || magicNumberIsZip(f))
 
   def create(file: File, sourceDir: Directory, mainClass: String): Unit = {
     val writer = new Jar(file).jarWriter(Name.MAIN_CLASS -> mainClass)

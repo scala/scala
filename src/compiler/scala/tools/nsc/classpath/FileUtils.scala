@@ -28,8 +28,7 @@ object FileUtils {
 
     def isScalaOrJavaSource: Boolean = !file.isDirectory && (file.hasExtension("scala") || file.hasExtension("java"))
 
-    // TODO do we need to check also other files using ZipMagicNumber like in scala.tools.nsc.io.Jar.isJarOrZip?
-    def isJarOrZip: Boolean = file.hasExtension("jar") || file.hasExtension("zip") || file.isInstanceOf[ZipArchive]
+    def isJarOrZip: Boolean = file.isInstanceOf[ZipArchive] || !file.isDirectory && (file.hasExtension("jar") || file.hasExtension("zip"))
 
     /**
      * Safe method returning a sequence containing one URL representing this file, when underlying file exists,

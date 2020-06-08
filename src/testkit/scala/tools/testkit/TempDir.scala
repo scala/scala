@@ -13,9 +13,11 @@
 package scala.tools.testkit
 
 import java.io.{IOException, File}
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, FileVisitor, FileVisitResult, SimpleFileVisitor, Path}, FileVisitResult.{CONTINUE => Continue}
+import java.nio.file.attribute._
 
 import scala.util.Properties
+import scala.util.Using.Releasable
 
 object TempDir {
   final val TEMP_DIR_ATTEMPTS = 10000
@@ -37,18 +39,28 @@ object TempDir {
  */
 case class ForDeletion(path: Path)
 object ForDeletion {
-  import scala.util.Using.Releasable
   implicit val deleteOnRelease: Releasable[ForDeletion] = new Releasable[ForDeletion] {
     override def release(releasee: ForDeletion) = if (!Properties.isWin) Files.delete(releasee.path)
   }
 }
 object ReleasablePath {
-  import scala.util.Using.Releasable
+  // On release of a path, delete the file it represents or recursively remove the directory.
   implicit val deleteOnRelease: Releasable[Path] = new Releasable[Path] {
-    override def release(releasee: Path) = if (!Properties.isWin) Files.delete(releasee)
+    override def release(releasee: Path) = if (!Properties.isWin) remove(releasee)
   }
+  // Delete a File on relese.
   implicit val deleteOnRelease2: Releasable[File] = new Releasable[File] {
     override def release(releasee: File) = if (!Properties.isWin) releasee.delete()
+  }
+
+  private def remove(path: Path): Unit = if (Files.isDirectory(path)) removeRecursively(path) else Files.delete(path)
+
+  private def removeRecursively(path: Path): Unit = Files.walkFileTree(path, new ZappingFileVisitor)
+
+  private class ZappingFileVisitor extends SimpleFileVisitor[Path] {
+    private def zap(path: Path) = { Files.delete(path) ; Continue }
+    override def postVisitDirectory(path: Path, e: IOException): FileVisitResult = if (e != null) throw e else zap(path)
+    override def visitFile(path: Path, attrs: BasicFileAttributes): FileVisitResult = zap(path)
   }
 }
 
@@ -56,7 +68,6 @@ object ReleasablePath {
  */
 object Releasables {
   import scala.reflect.io.ZipArchive
-  import scala.util.Using.Releasable
   implicit val closeZipOnRelease: Releasable[ZipArchive] = new Releasable[ZipArchive] {
     override def release(releasee: ZipArchive) = releasee.close()
   }

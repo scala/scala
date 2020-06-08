@@ -19,7 +19,6 @@ import java.net.URL
 import java.util.regex.PatternSyntaxException
 
 import File.pathSeparator
-import Jar.isJarOrZip
 import scala.tools.nsc.classpath.{ClassPathEntries, PackageEntry, PackageName}
 
 /**
@@ -132,7 +131,7 @@ object ClassPath {
 
     /* Get all subdirectories, jars, zips out of a directory. */
     def lsDir(dir: Directory, filt: String => Boolean = _ => true) =
-      dir.list.filter(x => filt(x.name) && (x.isDirectory || isJarOrZip(x))).map(_.path).toList
+      dir.list.filter(x => filt(x.name) && (x.isDirectory || Jar.isJarOrZip(x))).map(_.path).toList
 
     if (pattern == "*") lsDir(Directory("."))
     else if (pattern endsWith wildSuffix) lsDir(Directory(pattern dropRight 2))
