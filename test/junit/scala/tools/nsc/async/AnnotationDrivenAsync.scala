@@ -494,7 +494,7 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
                 val applyMethod =
                   q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = $rhs"""
                 val applyMethodMarked = global.async.markForAsyncTransform(dd.symbol, applyMethod, awaitSym, Map.empty)
-                val name = TypeName("stateMachine$$async_" + dd.pos.line)
+                val name = TypeName("stateMachine$async")
                 val wrapped =
                   q"""
                     class $name extends _root_.scala.tools.nsc.async.CustomFutureStateMachine {
@@ -542,9 +542,9 @@ final class customAsync extends StaticAnnotation
 
 abstract class CustomFutureStateMachine extends AsyncStateMachine[CustomFuture[AnyRef], scala.util.Either[Throwable, AnyRef]] with Function1[scala.util.Either[Throwable, AnyRef], Unit] {
   private val result$async: CustomPromise[AnyRef] = new CustomPromise[AnyRef](scala.concurrent.Promise.apply[AnyRef]);
-  private[this] var _state = 0
-  protected def state$async: Int = _state
-  protected def state$async_=(i: Int) = _state = i
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
   def apply(tr$async: R[AnyRef]): Unit
 
   type F[A] = CustomFuture[A]

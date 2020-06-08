@@ -18,7 +18,7 @@ object CompletableFutureAwait {
     import c.universe._
     val awaitSym = typeOf[CompletableFutureAwait.type].decl(TermName("await"))
     def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
-    val name = TypeName("stateMachine$$async_" + body.pos.line)
+    val name = TypeName("stateMachine$async")
     q"""
       final class $name extends _root_.scala.tools.partest.async.CompletableFutureStateMachine($executor) {
         ${mark(q"""override def apply(tr$$async: _root_.scala.util.Try[_root_.scala.AnyRef]) = ${body}""")}
@@ -45,7 +45,9 @@ abstract class CompletableFutureStateMachine(executor: Executor) extends AsyncSt
   def apply(tr$async: Try[AnyRef]): Unit
 
   // Required methods
-  protected var state$async: Int = StateAssigner.Initial
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
   protected def completeFailure(t: Throwable): Unit = result$async.completeExceptionally(t)
   protected def completeSuccess(value: AnyRef): Unit = result$async.complete(value)
   protected def onComplete(f: CompletableFuture[AnyRef]): Unit = f.whenCompleteAsync(this)

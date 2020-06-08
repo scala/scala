@@ -13,7 +13,7 @@ object OptionAwait {
     import c.universe._
     val awaitSym = typeOf[OptionAwait.type].decl(TermName("value"))
     def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
-    val name = TypeName("stateMachine$$async_" + body.pos.line)
+    val name = TypeName("stateMachine$async")
     q"""
       final class $name extends _root_.scala.tools.partest.async.OptionStateMachine {
         ${mark(q"""override def apply(tr$$async: _root_.scala.Option[_root_.scala.AnyRef]) = ${body}""")}
@@ -30,7 +30,9 @@ abstract class OptionStateMachine extends AsyncStateMachine[Option[AnyRef], Opti
   def apply(tr$async: Option[AnyRef]): Unit
 
   // Required methods
-  protected var state$async: Int = 0
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
   protected def completeFailure(t: Throwable): Unit = throw t
   protected def completeSuccess(value: AnyRef): Unit = result$async = Some(value)
   protected def onComplete(f: Option[AnyRef]): Unit = ???

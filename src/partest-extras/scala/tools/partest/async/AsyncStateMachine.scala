@@ -15,9 +15,9 @@ package scala.tools.partest.async
 // The async phase expects the state machine class to structurally conform to this interface.
 trait AsyncStateMachine[F, R] {
   /** Assign `i` to the state variable */
-  protected def state$async_=(i: Int): Unit
+  protected def state_=(i: Int): Unit
   /** Retrieve the current value of the state variable */
-  protected def state$async: Int
+  protected def state: Int
   /** Complete the state machine with the given failure. */
   protected def completeFailure(t: Throwable): Unit
   /** Complete the state machine with the given value. */

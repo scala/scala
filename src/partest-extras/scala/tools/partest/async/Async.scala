@@ -32,7 +32,7 @@ object Async {
     def mark(t: DefDef): Tree = {
       c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
     }
-    val name = TypeName("stateMachine$async_" + body.pos.line)
+    val name = TypeName("stateMachine$async")
     q"""
       final class $name extends _root_.scala.tools.partest.async.AsyncAsMacroStateMachine($executionContext) {
         ${mark(q"""override def apply(tr$$async: _root_.scala.util.Try[_root_.scala.AnyRef]) = ${body}""")}
@@ -51,7 +51,9 @@ abstract class AsyncAsMacroStateMachine(execContext: ExecutionContext) extends A
   def apply(tr$async: Try[AnyRef]): Unit
 
   // Required methods
-  protected var state$async: Int = StateAssigner.Initial
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
 
   // scala-async accidentally started catching NonFatal exceptions in:
   //  https://github.com/scala/scala-async/commit/e3ff0382ae4e015fc69da8335450718951714982#diff-136ab0b6ecaee5d240cd109e2b17ccb2R411
