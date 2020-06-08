@@ -15,6 +15,7 @@ package collection
 
 import BitSetLike._
 import mutable.StringBuilder
+import scala.util.hashing.MurmurHash3
 
 /** A template trait for bitsets.
  *  $bitsetinfo
@@ -239,6 +240,23 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
       i += 1
     }
     sb append end
+  }
+  override def hashCode(): Int = {
+    val hashIterator = new AbstractIterator[Any] {
+      private var current = 0
+      private val end = nwords * WordLength
+      def hasNext: Boolean = {
+        while (current != end && !self.contains(current)) current += 1
+        current != end
+      }
+      def next(): Any =
+        if (hasNext) { val r = current; current += 1; nextHash = r.##; this }
+        else Iterator.empty.next()
+      var nextHash: Int = 0
+      override def hashCode(): Int = nextHash
+    }
+
+    scala.util.hashing.MurmurHash3.unorderedHash(hashIterator, MurmurHash3.setSeed)
   }
 
   override def stringPrefix = "BitSet"
