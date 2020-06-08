@@ -23,7 +23,6 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 import PartialFunction.cond
 
-/*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
  *  - for every curried application: f(args_1)...(args_n) ==> f(args_1, ..., args_n)
@@ -59,7 +58,6 @@ import PartialFunction.cond
  *  - remove calls to elidable methods and replace their bodies with NOPs when elide-below
  *    requires it
  */
-/*</export> */
 abstract class UnCurry extends InfoTransform
                           with scala.reflect.internal.transform.UnCurry
                           with TypingTransformers with ast.TreeDSL {

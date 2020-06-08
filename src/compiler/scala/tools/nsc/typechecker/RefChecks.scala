@@ -21,30 +21,22 @@ import scala.tools.nsc.settings.NoScalaVersion
 import symtab.Flags._
 import transform.Transform
 
-/** <p>
- *    Post-attribution checking and transformation.
- *  </p>
- *  <p>
- *    This phase performs the following checks.
- *  </p>
- *  <ul>
- *    <li>All overrides conform to rules.</li>
- *    <li>All type arguments conform to bounds.</li>
- *    <li>All type variable uses conform to variance annotations.</li>
- *    <li>No forward reference to a term symbol extends beyond a value definition.</li>
- *  </ul>
- *  <p>
- *    It performs the following transformations.
- *  </p>
- *  <ul>
- *   <li>Local modules are replaced by variables and classes</li>
- *   <li>Calls to case factory methods are replaced by new's.</li>
- *   <li>Eliminate branches in a conditional if the condition is a constant</li>
- *  </ul>
+/** Post-attribution checking and transformation.
+ *
+ *  This phase checks the following postconditions:
+ *
+ *  - All overrides conform to rules.
+ *  - All type arguments conform to bounds.
+ *  - Every use of a type variable conforms to the variance annotation of that variable.
+ *  - No forward reference to a term symbol extends beyond a value definition.
+ *
+ *  It performs the following transformations:
+ *
+ *  - Local modules are replaced by variables and classes.
+ *  - Calls to case factory methods are replaced by new's.
+ *  - Eliminate branches in a conditional if the condition is a constant.
  *
  *  @author  Martin Odersky
- *
- *  @todo    Check whether we always check type parameter bounds.
  */
 abstract class RefChecks extends Transform {
 

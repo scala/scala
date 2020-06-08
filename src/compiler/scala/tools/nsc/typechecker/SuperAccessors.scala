@@ -24,47 +24,47 @@ import mutable.ListBuffer
 import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
-/** This phase performs the following functions, each of which could be split out in a
- *  mini-phase:
+/** This phase performs the following functions,
+ *  each of which could be split out into its own mini-phase:
  *
- *  (1) Adds super accessors for all super calls that either
+ *  1. Adds super accessors for all super calls that either
  *  appear in a trait or have as a target a member of some outer class.
  *
- *  (2) Converts references to parameter fields that have the same name as a corresponding
+ *  2. Converts references to parameter fields that have the same name as a corresponding
  *  public parameter field in a superclass to a reference to the superclass
  *  field (corresponding = super class field is initialized with subclass field).
  *  This info is pre-computed by the `alias` field in Typer. `dotc` follows a different
  *  route; it computes everything in SuperAccessors and changes the subclass field
  *  to a forwarder instead of manipulating references. This is more modular.
  *
- *  (3) Adds protected accessors if the access to the protected member happens
+ *  3. Adds protected accessors if the access to the protected member happens
  *  in a class which is not a subclass of the member's owner.
  *
- *  (4) Mangles the names of class-members which are
+ *  4. Mangles the names of class-members which are
  *  private up to an enclosing non-package class, in order to avoid overriding conflicts.
  *  This is a dubious, and it would be better to deprecate class-qualified privates.
  *
- *  (5) This phase also sets SPECIALIZED flag on type parameters with
+ *  5. This phase also sets SPECIALIZED flag on type parameters with
  *  `@specialized` annotation. We put this logic here because the
  *  flag must be set before pickling.
  *
  *  It also checks that:
  *
- *  (1) Symbols accessed from super are not abstract, or are overridden by
+ *  1. Symbols accessed from super are not abstract, or are overridden by
  *  an abstract override.
  *
- *  (2) If a symbol accessed accessed from super is defined in a real class (not a trait),
+ *  2. If a symbol accessed accessed from super is defined in a real class (not a trait),
  *  there are no abstract members which override this member in Java's rules
  *  (see scala/bug#4989; such an access would lead to illegal bytecode)
  *
- *  (3) Super calls do not go to some synthetic members of Any (see isDisallowed)
+ *  3. Super calls do not go to some synthetic members of Any (see isDisallowed)
  *
- *  (4) Super calls do not go to synthetic field accessors
+ *  4. Super calls do not go to synthetic field accessors
  *
- *  (5) A class and its companion object do not both define a class or module with the
+ *  5. A class and its companion object do not both define a class or module with the
  *  same name.
  *
- *  TODO: Rename phase to "Accessors" because it handles more than just super accessors
+ *  Should've really been called "Accessors" as it handles more than just super accessors.
  */
 abstract class SuperAccessors extends transform.Transform with transform.TypingTransformers {
   import global._
