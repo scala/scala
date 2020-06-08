@@ -43,6 +43,7 @@ trait Uncompilable {
         val wait = AnyRefTpe.members find {
           case m: MethodSymbol =>
             m.name == newTermName("wait") && m.paramLists.flatten.size == arity
+          case _ => false
         }
         wait.getOrElse(sys.error(s"Object#wait with $arity parameters was not found"))
       case xs => xs.foldLeft(RootClass: Symbol)(_.tpe member _)
