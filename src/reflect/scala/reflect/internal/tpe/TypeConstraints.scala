@@ -17,6 +17,7 @@ package tpe
 
 import scala.collection.mutable.BitSet
 import scala.collection.mutable.Clearable
+import scala.reflect.internal.util.ReusableInstance
 
 private[internal] trait TypeConstraints {
   self: SymbolTable =>
@@ -198,6 +199,14 @@ private[internal] trait TypeConstraints {
     }
   }
 
+  private[this] val containsCollectorInstances: ReusableInstance[ContainsCollector] = ReusableInstance(new ContainsCollector(null))
+
+  private[this] def containsSymbol(tp: Type, sym: Symbol): Boolean =
+    containsCollectorInstances.using { cc =>
+      cc.reset(sym)
+      cc.collect(tp)
+    }
+
   /** Solve constraint collected in types `tvars`.
     *
     *  @param tvars    All type variables to be instantiated.
@@ -237,14 +246,14 @@ private[internal] trait TypeConstraints {
         //   - our current tparam equals the other tparam's bound (we'll add the symmetric bound below)
         foreachWithIndex(tvars) { (tvarOther, ix) =>
           val tparamOther = tvarOther.origin.typeSymbol
-          if ((tparamOther ne tparam) && ((bound contains tparamOther) || tvarIsBoundOf(tparamOther))) {
+          if ((tparamOther ne tparam) && containsSymbol(bound, tparamOther) || tvarIsBoundOf(tparamOther)) {
             if (tvarOther.constr.inst eq null) otherTypeVarBeingSolved = true
             solveOne(tvarOther, areContravariant(ix))
           }
         }
 
 
-        if (!(otherTypeVarBeingSolved || (bound contains tparam))) {
+        if (!(otherTypeVarBeingSolved || containsSymbol(bound, tparam))) {
           val boundSym = bound.typeSymbol
           if (up) {
             if (boundSym != AnyClass)
