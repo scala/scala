@@ -18,7 +18,7 @@ import scala.tools.tasty.TastyName
 
 
 trait TreeOps { self: TastyUniverse =>
-  import self.{symbolTable => u}, u.{internal => ui}
+  import self.{symbolTable => u}
 
   object untpd {
     final val EmptyTypeIdent: Ident = new Ident(u.nme.EMPTY) {
@@ -39,7 +39,7 @@ trait TreeOps { self: TastyUniverse =>
     def Super(qual: Tree, mixId: Ident)(mixTpe: Type): Tree = {
       val owntype = (
         if (!mixId.isEmpty) mixTpe
-        else ui.intersectionType(qual.tpe.parents)
+        else u.intersectionType(qual.tpe.parents)
       )
       u.Super(qual, mixId.name.toTypeName).setType(u.SuperType(qual.tpe, owntype))
     }
@@ -73,7 +73,7 @@ trait TreeOps { self: TastyUniverse =>
 
     def AppliedTypeTree(tpt: Tree, args: List[Tree])(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndType) {
-        u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(ui.intersectionType(args.map(_.tpe)))
+        u.CompoundTypeTree(u.Template(args, u.noSelfType, Nil)).setType(u.intersectionType(args.map(_.tpe)))
       } else {
         u.AppliedTypeTree(tpt, args).setType(defn.AppliedType(tpt.tpe, args.map(_.tpe)))
       }

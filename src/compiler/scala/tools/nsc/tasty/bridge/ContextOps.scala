@@ -20,7 +20,7 @@ import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
 
 trait ContextOps { self: TastyUniverse =>
-  import self.{symbolTable => u}, u.{internal => ui}
+  import self.{symbolTable => u}
 
   private def describeOwner(owner: Symbol): String = {
     val kind =
@@ -159,12 +159,12 @@ trait ContextOps { self: TastyUniverse =>
           flags |= Method | Deferred
           tpe match {
             case u.TypeRef(_, u.definitions.ByNameParamClass, arg :: Nil) => // nullary method
-              ui.nullaryMethodType(arg)
-            case u.PolyType(tparams, res) if res.paramss.isEmpty => ui.polyType(tparams, ui.nullaryMethodType(res))
+              u.NullaryMethodType(arg)
+            case u.PolyType(tparams, res) if res.paramss.isEmpty => u.PolyType(tparams, u.NullaryMethodType(res))
             case _:u.MethodType | _:u.PolyType => tpe
             case _ => // val, which is not stable if structural. Dotty does not support vars
               if (isOverride && overridden.is(Stable)) flags |= Stable
-              ui.nullaryMethodType(tpe)
+              u.NullaryMethodType(tpe)
           }
         }
         else {
@@ -256,7 +256,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = ui.classInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = u.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 
