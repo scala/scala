@@ -22,9 +22,28 @@ trait ExprBuilder extends TransformUtils {
   private def stateAssigner  = currentTransformState.stateAssigner
   private def labelDefStates = currentTransformState.labelDefStates
 
+  private object replaceResidualJumpsWithStateTransitions extends Transformer {
+    override def transform(tree: Tree): Tree = {
+      // TODO: This is only needed for Scala.js compatibility.
+      //       See https://github.com/scala/scala/pull/8816#issuecomment-640725321
+      //       Perhaps make it conditional?
+      // if (global.currentRun.phaseNamed("jscode") != NoPhase) tree else
+
+      super.transform(tree) match {
+        case ap @ Apply(i @ Ident(_), Nil) if isCaseLabel(i.symbol) || isMatchEndLabel(i.symbol) =>
+          currentTransformState.labelDefStates.get(i.symbol) match {
+            case Some(state) =>
+              Block(StateTransitionStyle.UpdateAndContinue.trees(state, new StateSet), typed(literalUnit)).setType(definitions.UnitTpe)
+            case None => ap
+          }
+        case tree => tree
+      }
+    }
+  }
   final class AsyncState(var stats: List[Tree], val state: Int, var nextStates: Array[Int], val isEmpty: Boolean) {
-    def mkHandlerCaseForState: CaseDef =
-      CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))
+    def mkHandlerCaseForState: CaseDef = {
+      replaceResidualJumpsWithStateTransitions.transform(CaseDef(Literal(Constant(state)), EmptyTree, adaptToUnit(stats))).asInstanceOf[CaseDef]
+    }
 
     private def mkToString = s"AsyncState #$state, next = ${nextStates.toList}"
     override def toString: String = mkToString //+ " (was: " + initToString + ")"
@@ -602,6 +621,7 @@ trait ExprBuilder extends TransformUtils {
         }
       }
     }
+
     /** Update the state variable and jump to the the while loop that encloses the state machine. */
     case object UpdateAndContinue extends StateTransitionStyle {
       def trees(nextState: Int, stateSet: StateSet): List[Tree] = {
