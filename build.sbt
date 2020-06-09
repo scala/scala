@@ -1568,7 +1568,6 @@ intellij := {
       moduleDeps(junit).value,
       moduleDeps(library).value,
       moduleDeps(manual).value,
-      moduleDeps(testkit).value,
       moduleDeps(partest).value,
       moduleDeps(partestJavaAgent).value,
       moduleDeps(reflect).value,
@@ -1577,7 +1576,9 @@ intellij := {
       moduleDeps(scalacheck, config = Test).value.copy(_1 = "scalacheck-test"),
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
+      moduleDeps(tastytest).value,
       moduleDeps(testP).value,
+      moduleDeps(testkit).value,
     )
   }
 
