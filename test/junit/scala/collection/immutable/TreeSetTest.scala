@@ -180,7 +180,7 @@ class TreeSetTest extends AllocationTest {
   @Test
   def plusWithContains(): Unit = {
     val data = Array.tabulate(1000)(i => s"${i}Value")
-    val tree = (TreeSet.newBuilder[String] ++= data).result
+    val tree = (TreeSet.newBuilder[String] ++= data).result()
 
     data foreach {
       case (k) =>
@@ -191,7 +191,7 @@ class TreeSetTest extends AllocationTest {
   @Test
   def plusWithContainsFromMap(): Unit = {
     val data = Array.tabulate(1000)(i => s"${i}Key" -> s"${i}Value")
-    val tree = (TreeMap.newBuilder[String, String] ++= data).result.keySet
+    val tree = (TreeMap.newBuilder[String, String] ++= data).result().keySet
 
     data foreach {
       case (k, v) =>
