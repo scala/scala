@@ -896,7 +896,17 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
         def warnTree = original orElse tree
 
-        def warnEtaSam() = {
+        def warnEtaZero(): Boolean = {
+          if (!settings.warnEtaZero) return true
+          context.warning(tree.pos,
+            s"""An unapplied 0-arity method was eta-expanded (due to the expected type $pt), rather than applied to `()`.
+               |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
+            WarningCategory.LintEtaZero)
+          true
+        }
+
+        def warnEtaSam(): Boolean = {
+          if (!settings.warnEtaSam) return true
           val sam = samOf(pt)
           val samClazz = sam.owner
           // TODO: we allow a Java class as a SAM type, whereas Java only allows the @FunctionalInterface on interfaces -- align?
@@ -906,6 +916,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                  |even though $samClazz is not annotated with `@FunctionalInterface`;
                  |to suppress warning, add the annotation or write out the equivalent function literal.""".stripMargin,
               WarningCategory.LintEtaSam)
+          true
         }
 
         // note that isFunctionProto(pt) does not work properly for Function0
@@ -915,24 +926,21 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case pt                       => pt
           }).dealiasWiden
 
-        // (4.3) condition for eta-expansion by -Xsource level
+        // (4.3) condition for eta-expansion by arity & -Xsource level
         //
-        // until 2.13:
-        //   - for arity > 0: function or sam type is expected
-        //   - for arity == 0: Function0 is expected -- SAM types do not eta-expand because it could be an accidental SAM scala/bug#9489
-        // 3.0:
-        //   - for arity > 0: unconditional
-        //   - for arity == 0: a function-ish type of arity 0 is expected (including SAM)
+        // for arity == 0:
+        //   - if Function0 is expected -- SAM types do not eta-expand because it could be an accidental SAM scala/bug#9489
+        // for arity > 0:
+        //   - 2.13: if function or sam type is expected
+        //   - 3.0: unconditionally
         //
         // warnings:
-        //   - 2.12: eta-expansion of zero-arg methods was deprecated (scala/bug#7187)
-        //   - 2.13: deprecation dropped in favor of setting the scene for uniform eta-expansion in 3.0
-        //           (arity > 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
-        //   - 3.0: (arity == 0) expected type is a SAM that is not annotated with `@FunctionalInterface`
+        //   - for arity == 0: eta-expansion of zero-arg methods was deprecated (scala/bug#7187)
+        //   - for arity > 0: expected type is a SAM that is not annotated with `@FunctionalInterface`
         def checkCanEtaExpand(): Boolean = {
           def expectingSamOfArity = {
             val sam = samOf(ptUnderlying)
-            sam.exists && sam.info.params.lengthCompare(arity) == 0
+            sam.exists && sam.info.params.lengthIs == arity
           }
 
           val expectingFunctionOfArity = {
@@ -940,27 +948,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             (ptSym eq FunctionClass(arity)) || (arity > 0 && (ptSym eq FunctionClass(1))) // allowing for tupling conversion
           }
 
-          val doIt =
-            if (arity == 0) {
-              val doEtaZero =
-                expectingFunctionOfArity || sourceLevel3 && expectingSamOfArity
-
-              if (doEtaZero && settings.warnEtaZero) {
-                val ptHelp =
-                  if (expectingFunctionOfArity) pt
-                  else s"$pt, which is SAM-equivalent to ${samToFunctionType(pt)}"
-
-                context.warning(tree.pos,
-                  s"""An unapplied 0-arity method was eta-expanded (due to the expected type $ptHelp), rather than applied to `()`.
-                     |Write ${Apply(warnTree, Nil)} to invoke method ${meth.decodedName}, or change the expected type.""".stripMargin,
-                  WarningCategory.LintEtaZero)
-              }
-              doEtaZero
-            } else sourceLevel3 || expectingFunctionOfArity || expectingSamOfArity
-
-          if (doIt && !expectingFunctionOfArity && (currentRun.isScala3 || settings.warnEtaSam)) warnEtaSam()
-
-          doIt
+          if (arity == 0)
+            expectingFunctionOfArity && warnEtaZero()
+          else
+            expectingFunctionOfArity || expectingSamOfArity && warnEtaSam() || sourceLevel3
         }
 
         def matchNullaryLoosely: Boolean = {

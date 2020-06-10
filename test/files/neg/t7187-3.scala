@@ -12,8 +12,8 @@ class EtaExpand214 {
 
   val t1: () => Any  = m1   // error
   val t2: () => Any  = m2   // eta-expanded with lint warning
-  val t2AcciSam: AcciSamZero = m2   // eta-expanded with lint warning + sam warning
-  val t2Sam: SamZero = m2   // eta-expanded with lint warning
+  val t2AcciSam: AcciSamZero = m2 // error, nilary methods don't eta-expand to SAM types under -Xsource:3
+  val t2Sam: SamZero = m2         // error, nilary methods don't eta-expand to SAM types under -Xsource:3
   val t3: Int => Any = m3   // ok
 
   val t4 = m1 // apply
