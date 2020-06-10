@@ -22,7 +22,7 @@ class SortedSetMapEqualsTest {
       b += 1
       b += 2
       b += 3
-      val m = b.result
+      val m = b.result()
       val res = m.union(Set(4))
       res
     }
@@ -34,7 +34,7 @@ class SortedSetMapEqualsTest {
       b += 2
       b += 3
       b += 4
-      val m = b.result
+      val m = b.result()
       m
     }
     assertEquals(m1, m2)
@@ -51,7 +51,7 @@ class SortedSetMapEqualsTest {
       b += (1 -> "")
       b += (2 -> "")
       b += (3 -> "")
-      val m = b.result
+      val m = b.result()
       val res = m.concat(List(4 -> ""))
       res
     }
@@ -63,7 +63,7 @@ class SortedSetMapEqualsTest {
       b += (2 -> "")
       b += (3 -> "")
       b += (4 -> "")
-      val m = b.result
+      val m = b.result()
       m
     }
     assertEquals(m1, m2)

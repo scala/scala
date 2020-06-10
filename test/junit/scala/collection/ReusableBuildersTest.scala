@@ -26,7 +26,7 @@ class ReusableBuildersTest {
     val three = b.result()
     b.clear()
     b ++= (1 to 16).map(_.toFloat)
-    val sixteen = b.result
+    val sixteen = b.result()
     b.clear()
     b += 0f
     val zero = b.result()

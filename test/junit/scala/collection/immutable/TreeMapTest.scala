@@ -129,7 +129,7 @@ class TreeMapTest extends AllocationTest {
   @Test
   def plusWithContains(): Unit = {
     val data = Array.tabulate(1000)(i => s"${i}Key" -> s"${i}Value")
-    val tree = (TreeMap.newBuilder[String, String] ++= data).result
+    val tree = (TreeMap.newBuilder[String, String] ++= data).result()
 
     data foreach {
       case (k, v) =>

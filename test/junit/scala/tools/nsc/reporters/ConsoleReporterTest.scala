@@ -61,7 +61,7 @@ class ConsoleReporterTest {
   def echoTest(): Unit = {
     val reporter = createConsoleReporter("r", writerOut, echoWriterOut)
     reporter.echo("Hello World!")
-    assertEquals("Hello World!", echoWriterOut.toString.linesIterator.next)
+    assertEquals("Hello World!", echoWriterOut.toString.linesIterator.next())
 
     /** Check with constructor which has the same writer and echoWriter */
     val reporter2 = createConsoleReporter("r", writerOut)
@@ -153,7 +153,7 @@ class ConsoleReporterTest {
     val reporter2 = createConsoleReporter("w", writerOut2)
     reporter2.displayPrompt()
     val it2 = writerOut2.toString.linesIterator
-    assertTrue(it2.next.isEmpty)
+    assertTrue(it2.next().isEmpty)
     assertEquals(output, it2.next())
     assertFalse(it2.hasNext)
 
