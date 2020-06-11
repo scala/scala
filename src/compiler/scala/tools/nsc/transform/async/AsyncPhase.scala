@@ -45,8 +45,9 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     val postAnfTransform = config.getOrElse("postAnfTransform", (x: Block) => x).asInstanceOf[Block => Block]
     val stateDiagram = config.getOrElse("stateDiagram", (sym: Symbol, tree: Tree) => None).asInstanceOf[(Symbol, Tree) => Option[String => Unit]]
     method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram))
+    // Wrap in `{ expr: Any }` to force value class boxing before calling `completeSuccess`, see test/async/run/value-class.scala
     deriveDefDef(method) { rhs =>
-      Block(rhs.updateAttachment(SuppressPureExpressionWarning), Literal(Constant(())))
+      Block(Typed(rhs.updateAttachment(SuppressPureExpressionWarning), TypeTree(definitions.AnyTpe)), Literal(Constant(())))
     }.updateAttachment(ChangeOwnerAttachment(owner))
   }
 
