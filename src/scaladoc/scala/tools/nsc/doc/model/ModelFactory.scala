@@ -70,6 +70,17 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     case _ => false
   }
 
+  // This unsightly hack closes issue scala/bug#4086.
+  private lazy val modifiedSynchronized: Symbol = {
+    val sym = definitions.Object_synchronized
+    val info = (sym.info: @unchecked) match {
+      case PolyType(ts, MethodType(List(bp), mt)) =>
+        val cp = bp.cloneSymbol.setPos(bp.pos).setInfo(definitions.byNameType(bp.info))
+        PolyType(ts, MethodType(List(cp), mt))
+    }
+    sym.cloneSymbol.setPos(sym.pos).setInfo(info)
+  }
+
   def optimize(str: String): String =
     if (str.length < 16) str.intern else str
 
@@ -111,7 +122,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
     // if there is a field symbol, the ValDef will use it, which means docs attached to it will be under the field symbol, not the getter's
     protected[this] def commentCarryingSymbol(sym: Symbol) =
-      if (sym.hasAccessorFlag && sym.accessed.exists) sym.accessed else sym
+      if (sym == modifiedSynchronized) definitions.Object_synchronized
+      else if (sym.hasAccessorFlag && sym.accessed.exists) sym.accessed
+      else sym
 
     lazy val comment = thisFactory.comment(commentCarryingSymbol(sym), linkTarget, inTpl)
 
@@ -758,17 +771,9 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           override def isVar = true
         })
       else if (bSym.isMethod && !bSym.hasAccessorFlag && !bSym.isConstructor && !bSym.isModule) {
-        val cSym = { // This unsightly hack closes issue #4086.
-          if (bSym == definitions.Object_synchronized) {
-            val cSymInfo = (bSym.info: @unchecked) match {
-              case PolyType(ts, MethodType(List(bp), mt)) =>
-                val cp = bp.cloneSymbol.setPos(bp.pos).setInfo(definitions.byNameType(bp.info))
-                PolyType(ts, MethodType(List(cp), mt))
-            }
-            bSym.cloneSymbol.setPos(bSym.pos).setInfo(cSymInfo)
-          }
+        val cSym: Symbol =
+          if (bSym == definitions.Object_synchronized) modifiedSynchronized
           else bSym
-        }
         Some(new NonTemplateParamMemberImpl(cSym, conversion, useCaseOf, inTpl) with HigherKindedImpl with Def {
           override def isDef = true
         })
