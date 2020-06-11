@@ -1023,6 +1023,7 @@ lazy val runnerArgsParser = Def.setting {
 }
 
 lazy val tasty = project.in(file("test") / "tasty")
+  .settings(instanceSettings)
   .dependsOn(tastytest)
   .settings(disableDocs)
   .settings(skip in publish := true)
