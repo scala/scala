@@ -14,7 +14,7 @@ package scala.tools.nsc.backend.jvm
 
 import org.junit.Test
 
-import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{FileSectionEntry, ScalaStratum}
+import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{FileSectionEntry, RawLineMapping, ScalaStratum}
 
 class DebugInfoTest {
 
@@ -62,7 +62,7 @@ class DebugInfoTest {
   def oneToOneMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(42, 142)
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142))
 
     val expectedLines = Seq(
       "*L",
@@ -76,7 +76,7 @@ class DebugInfoTest {
   def oneToManyMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(42, 142, 150)
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 150))
 
     val expectedLines = Seq(
       "*L",
@@ -90,11 +90,11 @@ class DebugInfoTest {
   def zipMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(42, 142)
-    stratum.addLineMapping(43, 143)
-    stratum.addLineMapping(44, 144)
-    stratum.addLineMapping(45, 145)
-    stratum.addLineMapping(46, 146)
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142))
+    stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 143, toEnd = 143))
+    stratum.addRawLineMapping(RawLineMapping(from = 44, toStart = 144, toEnd = 144))
+    stratum.addRawLineMapping(RawLineMapping(from = 45, toStart = 145, toEnd = 145))
+    stratum.addRawLineMapping(RawLineMapping(from = 46, toStart = 146, toEnd = 146))
 
     val expectedLines = Seq(
       "*L",
@@ -108,11 +108,11 @@ class DebugInfoTest {
   def multiZipMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(42, 142, 144)
-    stratum.addLineMapping(43, 145, 147)
-    stratum.addLineMapping(44, 148, 150)
-    stratum.addLineMapping(45, 151, 153)
-    stratum.addLineMapping(46, 154, 156)
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 144))
+    stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 145, toEnd = 147))
+    stratum.addRawLineMapping(RawLineMapping(from = 44, toStart = 148, toEnd = 150))
+    stratum.addRawLineMapping(RawLineMapping(from = 45, toStart = 151, toEnd = 153))
+    stratum.addRawLineMapping(RawLineMapping(from = 46, toStart = 154, toEnd = 156))
 
     val expectedLines = Seq(
       "*L",
@@ -126,14 +126,14 @@ class DebugInfoTest {
   def specExampleMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(123, 207)
-    stratum.addLineMapping(130, 210)
-    stratum.addLineMapping(131, 211)
-    stratum.addLineMapping(132, 212)
-    stratum.addLineMapping(140, 250, 256)
-    stratum.addLineMapping(160, 300, 301)
-    stratum.addLineMapping(161, 302, 303)
-    stratum.addLineMapping(162, 304, 305)
+    stratum.addRawLineMapping(RawLineMapping(from = 123, toStart = 207, toEnd = 207))
+    stratum.addRawLineMapping(RawLineMapping(from = 130, toStart = 210, toEnd = 210))
+    stratum.addRawLineMapping(RawLineMapping(from = 131, toStart = 211, toEnd = 211))
+    stratum.addRawLineMapping(RawLineMapping(from = 132, toStart = 212, toEnd = 212))
+    stratum.addRawLineMapping(RawLineMapping(from = 140, toStart = 250, toEnd = 256))
+    stratum.addRawLineMapping(RawLineMapping(from = 160, toStart = 300, toEnd = 301))
+    stratum.addRawLineMapping(RawLineMapping(from = 161, toStart = 302, toEnd = 303))
+    stratum.addRawLineMapping(RawLineMapping(from = 162, toStart = 304, toEnd = 305))
 
     val expectedLines = Seq(
       "*L",
@@ -150,14 +150,14 @@ class DebugInfoTest {
   def specExampleUnorderedMappingStratumTest(): Unit = {
     val stratum = new ScalaStratum
 
-    stratum.addLineMapping(140, 250, 256)
-    stratum.addLineMapping(130, 210)
-    stratum.addLineMapping(162, 304, 305)
-    stratum.addLineMapping(160, 300, 301)
-    stratum.addLineMapping(131, 211)
-    stratum.addLineMapping(123, 207)
-    stratum.addLineMapping(161, 302, 303)
-    stratum.addLineMapping(132, 212)
+    stratum.addRawLineMapping(RawLineMapping(from = 140, toStart = 250, toEnd = 256))
+    stratum.addRawLineMapping(RawLineMapping(from = 130, toStart = 210, toEnd = 210))
+    stratum.addRawLineMapping(RawLineMapping(from = 162, toStart = 304, toEnd = 305))
+    stratum.addRawLineMapping(RawLineMapping(from = 160, toStart = 300, toEnd = 301))
+    stratum.addRawLineMapping(RawLineMapping(from = 131, toStart = 211, toEnd = 211))
+    stratum.addRawLineMapping(RawLineMapping(from = 123, toStart = 207, toEnd = 207))
+    stratum.addRawLineMapping(RawLineMapping(from = 161, toStart = 302, toEnd = 303))
+    stratum.addRawLineMapping(RawLineMapping(from = 132, toStart = 212, toEnd = 212))
 
     val expectedLines = Seq(
       "*L",

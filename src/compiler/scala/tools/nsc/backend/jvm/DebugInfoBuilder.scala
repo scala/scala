@@ -25,44 +25,51 @@ object DebugInfoBuilder {
   import JSR45Stratum._
 
   sealed abstract class JSR45Stratum(val name: String) extends Serializable {
-    private var fileSection: Seq[FileSectionEntry]  = Seq.empty
-    private var lineMapping: Seq[(Int, (Int, Int))] = Seq.empty
+    private var fileSection: Seq[FileSectionEntry] = Seq.empty
+    private var lineMapping: Seq[RawLineMapping]   = Seq.empty
 
-    def addFileEntry(entry: FileSectionEntry): Unit = {
+    // Add a new FileSectionEntry to the fileSection.
+    // Return the ID of the entry just added.
+    def addFileEntry(entry: FileSectionEntry): Int = {
       fileSection :+= entry
+      fileSection.length - 1
     }
 
-    def addLineMapping(inputStartLine: Int, outputStartLine: Int): Unit = {
-      addLineMapping(inputStartLine, outputStartLine, outputStartLine)
+    // Given a fileName, return the ID corresponding to that file section
+    // entry, or -1 if no such an entry exists.
+    def getFileEntryId(fileName: String): Int = {
+      fileSection.indexWhere(_.fileName == fileName)
     }
 
-    def addLineMapping(inputStartLine: Int,
-                       outputStartLine: Int,
-                       outputEndLine: Int): Unit = {
-      lineMapping :+= ((inputStartLine, (outputStartLine, outputEndLine)))
+    def addRawLineMapping(rawLineMapping: RawLineMapping): Unit = {
+      lineMapping :+= rawLineMapping
     }
 
     // compute the line section from the line mappings
     private def lineSection: Seq[LineSectionEntry] = {
       val sortedLineMapping = lineMapping.sorted
       sortedLineMapping.headOption.map {
-        case (from, (toStart, toEnd)) =>
+        case RawLineMapping(from, toStart, toEnd, sourceFileId) =>
           val start = LineSectionEntry(inputStartLine = from,
+                                       lineFileId = sourceFileId,
                                        outputStartLine = toStart,
                                        outputLineIncrement = if (toStart != toEnd) Some(toEnd - toStart + 1) else None)
           sortedLineMapping.tail.foldLeft(Seq(start)) {
-            case (soFar :+ last, (from, (toStart, toEnd))) if toStart == toEnd =>
+            case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart == toEnd =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
-              if (last.inputStartLine + lastRepeatCount == from && last.outputStartLine + lastRepeatCount == toEnd)
+              if (last.lineFileId == sourceFileId && last.inputStartLine + lastRepeatCount == from && last.outputStartLine + lastRepeatCount == toEnd)
                 soFar :+ last.copy(repeatCount = Some(last.repeatCount.getOrElse(1) + 1))
               else
-                soFar :+ last :+ LineSectionEntry(inputStartLine = from, outputStartLine = toStart)
-            case (soFar :+ last, (from, (toStart, toEnd))) if toStart < toEnd  =>
+                soFar :+ last :+ LineSectionEntry(inputStartLine = from, lineFileId = sourceFileId, outputStartLine = toStart)
+            case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart < toEnd  =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
-              if (last.inputStartLine + lastRepeatCount == from && (toEnd - toStart + 1) == last.outputLineIncrement.getOrElse(0))
+              if (last.lineFileId == sourceFileId && last.inputStartLine + lastRepeatCount == from && (toEnd - toStart + 1) == last.outputLineIncrement.getOrElse(0))
                 soFar :+ last.copy(repeatCount = Some(last.repeatCount.getOrElse(1) + 1))
               else
-                soFar :+ last :+ LineSectionEntry(inputStartLine = from, outputStartLine = toStart, outputLineIncrement = Some(toEnd - toStart + 1))
+                soFar :+ last :+ LineSectionEntry(inputStartLine = from,
+                                                  lineFileId = sourceFileId,
+                                                  outputStartLine = toStart,
+                                                  outputLineIncrement = Some(toEnd - toStart + 1))
           }
       }.getOrElse(Seq.empty)
     }
@@ -71,9 +78,9 @@ object DebugInfoBuilder {
       "*F" +:
         fileSection.zipWithIndex.flatMap {
           case (FileSectionEntry(fileName, Some(absoluteFileName)), id) =>
-            Seq(s"+ ${id+1} $fileName", s"$absoluteFileName")
+            Seq(s"+ ${id + 1} $fileName", s"$absoluteFileName")
           case (FileSectionEntry(fileName, None), id)                   =>
-            Seq(s"${id+1} $fileName")
+            Seq(s"${id + 1} $fileName")
         }
 
     // this method triggers line section computation from the line mappings
@@ -105,6 +112,15 @@ object DebugInfoBuilder {
 
     case class FileSectionEntry(fileName: String,
                                 absoluteFileName: Option[String] = None)
+
+    case class RawLineMapping(from: Int,
+                              toStart: Int,
+                              toEnd: Int,
+                              sourceFileId: Option[Int] = None) extends Ordered[RawLineMapping] {
+      override def compare(that: RawLineMapping): Int =
+        implicitly[Ordering[(Int, Int)]].compare((this.from, this.toStart),
+                                                 (that.from, that.toStart))
+    }
 
     case class LineSectionEntry(inputStartLine: Int,
                                 lineFileId: Option[Int] = None,
