@@ -34,7 +34,7 @@ class VectorTest {
   }
 
   @Test
-  def hasCorrectPrependedAll(): Unit = {
+  def hasCorrectAppenedAndPrependedAll(): Unit = {
     val els = Vector(1 to 1000: _*)
 
     for (i <- 0 until els.size) {
@@ -42,8 +42,10 @@ class VectorTest {
       validateDebug(prefix)
       validateDebug(suffix)
       validateDebug(prefix ++: suffix)
-      assertEquals(els, prefix ++: suffix)
+      assertEquals((prefix, suffix).toString, els, prefix ++: suffix)
+      assertEquals((prefix, suffix).toString, els, prefix :++ suffix)
       assertEquals(els, prefix.toList ++: suffix)
+      assertEquals(els, prefix.toList :++ suffix)
     }
   }
 
@@ -411,6 +413,13 @@ class VectorTest {
       val v3 = v.appendedAll(v2)
       assertEquals(0 until (size + appendSize), v3)
     }
+  }
+
+  // scala/bug#12027
+  // This took forever in 2.13.2
+  @Test def testAppendWithTinyLhs(): Unit = {
+    (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => Vector(i) ++ v }
+    (1 to 1000000).foldLeft(Vector.empty[Int]) { (v, i) => v.prependedAll(Vector(i)) }
   }
 }
 
