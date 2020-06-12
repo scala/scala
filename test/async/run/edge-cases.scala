@@ -23,6 +23,7 @@ object Test {
     testCaseClassLifting()
     testNothingTypedExpr()
     testLambdaLiftClash()
+    testWhileExprInIf()
   }
 
   private def patternTailPosition() = {
@@ -323,5 +324,18 @@ object Test {
      };
      foo
    })
+  }
+
+  def testWhileExprInIf(): Unit = {
+    val t: Any = optionally {
+      if ("".isEmpty) {
+        ()
+      } else {
+        val it = Nil.iterator
+        while (it.hasNext) {
+          value(Some(it.next()))
+        }
+      }
+    }.get
   }
 }

@@ -15,8 +15,4 @@ object Test {
       VC("")
     }.get
   }
-  def normal(): T = {
-
-    VC("")
-  }
 }

@@ -123,7 +123,17 @@ private[async] trait AnfTransform extends TransformUtils {
 
           // However, we let `onTail` add the expr to `currentStats` (that was more efficient than using `ts.dropRight(1).foreach(addToStats)`)
           // Compensate by removing it from the buffer and returning the expr.
-          currentStats.remove(currentStats.size - 1)
+          // If the expr it itself a unit-typed LabelDef, move it to the stats and leave a Unit expression in its place
+          // to make life easier for transformMatchOrIf
+          currentStats.remove(currentStats.size - 1) match {
+            case ld: LabelDef if ld.tpe.typeSymbol == definitions.BoxedUnitClass =>
+              currentStats += ld
+              literalBoxedUnit
+            case ld: LabelDef if ld.tpe.typeSymbol == definitions.UnitClass =>
+              currentStats += ld
+              literalUnit
+            case expr => expr
+          }
 
         case ValDef(mods, name, tpt, rhs) => atOwner(tree.symbol) {
           // Capture current cursor of a non-empty `stats` buffer so we can efficiently restrict the
