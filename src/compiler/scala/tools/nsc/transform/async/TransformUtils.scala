@@ -107,69 +107,6 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     }
   }
 
-  private object ThicketAttachment
-  abstract class ThicketTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
-    private def expandThicket(t: Tree): List[Tree] = t match {
-      case Block(stats, expr) if t.attachments.containsElement(ThicketAttachment) =>
-        stats :+ expr
-      case _ => t :: Nil
-    }
-
-    def apply(tree: Tree): List[Tree] = expandThicket(transform(tree))
-
-    protected def Thicket(stats: List[Tree], expr: Tree): Tree = {
-      Block(stats, expr).updateAttachment(ThicketAttachment)
-    }
-    protected def Thicket(block: Block): Tree = {
-      block.updateAttachment(ThicketAttachment)
-    }
-
-    override def transform(tree: Tree): Tree = tree match {
-      case Block(stats, expr) =>
-        val transformedStats = transformTrees(stats)
-        val transformedExpr = transform(expr)
-        def expandStats(expanded: mutable.ListBuffer[Tree]) = transformedStats.foreach {
-          case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
-            expanded ++= stats
-            expanded += expr
-          case t =>
-            expanded += t
-        }
-        def expandExpr(expanded: mutable.ListBuffer[Tree]): Tree = transformedExpr match {
-          case blk @ Block(stats, expr) if blk.attachments.containsElement(ThicketAttachment) =>
-            expanded ++= stats
-            expr
-          case t =>
-            t
-        }
-
-        if (stats eq transformedStats) {
-          if (expr eq transformedExpr) tree
-          else {
-            val expanded = new mutable.ListBuffer[Tree]
-            expanded ++= transformedStats
-            val expr1 = expandExpr(expanded)
-            if (expanded.isEmpty)
-              treeCopy.Block(tree, transformedStats, expr1)
-            else
-              treeCopy.Block(tree, expanded.toList, expr1)
-          }
-        } else {
-          val expanded = new mutable.ListBuffer[Tree]
-          if (expr eq transformedExpr) {
-            expandStats(expanded)
-            treeCopy.Block(tree, expanded.toList, expr)
-          } else {
-            expandStats(expanded)
-            val expr1 = expandExpr(expanded)
-            treeCopy.Block(tree, expanded.toList, expr1)
-          }
-        }
-      case _ =>
-        super.transform(tree)
-    }
-  }
-
   /** Descends into the regions of the tree that are subject to the
     * translation to a state machine by `async`. When a nested template,
     * function, or by-name argument is encountered, the descent stops,
