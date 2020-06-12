@@ -1328,8 +1328,10 @@ self =>
      */
     def literal(isNegated: Boolean = false, inPattern: Boolean = false, start: Offset = in.offset): Tree = atPos(start) {
       def finish(value: Any): Tree = try newLiteral(value) finally in.nextToken()
-      if (in.token == INTERPOLATIONID)
-        interpolatedString(inPattern = inPattern)
+      if (in.token == INTERPOLATIONID) {
+        if (inPattern) interpolatedString(inPattern)
+        else withPlaceholders(interpolatedString(inPattern), isAny = true) // interpolator params are Any* by definition
+      }
       else if (in.token == SYMBOLLIT) {
         def msg(what: String) =
           s"""symbol literal is $what; use Symbol("${in.strVal}") instead"""
@@ -1382,41 +1384,32 @@ self =>
     }
 
     private def interpolatedString(inPattern: Boolean): Tree = {
-      def errpolation() = syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected",
-                                                     skipIt = true)(EmptyTree)
-      // Like Swiss cheese, with holes
-      def stringCheese: Tree = atPos(in.offset) {
-        val start        = in.offset
-        val interpolator = in.name.encoded // ident() for INTERPOLATIONID
-
-        val partsBuf = new ListBuffer[Tree]
-        val exprsBuf = new ListBuffer[Tree]
-        in.nextToken()
-        while (in.token == STRINGPART) {
-          partsBuf += literal()
-          exprsBuf += (
-            if (inPattern) dropAnyBraces(pattern())
-            else in.token match {
-              case IDENTIFIER => atPos(in.offset)(Ident(ident()))
-              //case USCORE   => freshPlaceholder()  // ifonly etapolation
-              case LBRACE     => expr()              // dropAnyBraces(expr0(Local))
-              case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
-              case _          => errpolation()
-            }
-          )
-        }
-        if (in.token == STRINGLIT) partsBuf += literal()
+      val start        = in.offset
+      val interpolator = in.name.encoded // ident() for INTERPOLATIONID
+      val partsBuf     = ListBuffer.empty[Tree]
+      val exprsBuf     = ListBuffer.empty[Tree]
+      in.nextToken()
+      while (in.token == STRINGPART) {
+        partsBuf += literal()
+        exprsBuf += (
+          if (inPattern) dropAnyBraces(pattern())
+          else in.token match {
+            case IDENTIFIER => atPos(in.offset)(Ident(ident()))
+            case LBRACE     => expr()
+            case THIS       => in.nextToken(); atPos(in.offset)(This(tpnme.EMPTY))
+            case _          => syntaxErrorOrIncompleteAnd("error in interpolated string: identifier or block expected", skipIt = true)(EmptyTree)
+          }
+        )
+      }
+      if (in.token == STRINGLIT) partsBuf += literal()
 
       // Documenting that it is intentional that the ident is not rooted for purposes of virtualization
       //val t1 = atPos(o2p(start)) { Select(Select (Ident(nme.ROOTPKG), nme.scala_), nme.StringContextName) }
-        val t1 = atPos(o2p(start)) { Ident(nme.StringContextName) }
-        val t2 = atPos(start) { Apply(t1, partsBuf.toList) }
-        t2 setPos t2.pos.makeTransparent
-        val t3 = Select(t2, interpolator) setPos t2.pos
-        atPos(start) { Apply(t3, exprsBuf.toList) }
-      }
-      if (inPattern) stringCheese
-      else withPlaceholders(stringCheese, isAny = true) // string interpolator params are Any* by definition
+      val t1 = atPos(o2p(start)) { Ident(nme.StringContextName) }
+      val t2 = atPos(start) { Apply(t1, partsBuf.toList) } updateAttachment InterpolatedString
+      t2 setPos t2.pos.makeTransparent
+      val t3 = Select(t2, interpolator) setPos t2.pos
+      atPos(start) { Apply(t3, exprsBuf.toList) } updateAttachment InterpolatedString
     }
 
 /* ------------- NEW LINES ------------------------------------------------- */

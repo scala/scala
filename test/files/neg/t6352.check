@@ -1,0 +1,23 @@
+t6352.scala:9: error: too many arguments (found 2, expected 1) for method apply: (i: Int): H1.StringContext in object StringContext; signature for interpolation must be `StringContext.apply(String*)`
+  val str = s"a: $x"
+            ^
+t6352.scala:15: error: type mismatch;
+ found   : String("a: ")
+ required: Int; signature for interpolation must be `StringContext.apply(String*)`
+  val str = s"a: $x"
+            ^
+t6352.scala:23: error: Int does not take parameters; incompatible interpolation method s
+  val str = s"a: $x"
+            ^
+t6352.scala:31: error: not found: value y
+  val bad = s"b: $y"
+                  ^
+t6352.scala:38: error: value t is not a member of X2.StringContext
+  val bad = t"a: $x"
+            ^
+t6352.scala:45: error: type mismatch;
+ found   : Int
+ required: String; incompatible interpolation method s
+  val bad = s"a: $x"
+            ^
+6 errors
