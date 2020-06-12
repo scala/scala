@@ -4,6 +4,7 @@ import scala.collection.mutable
 
 import tastytest.Suite.Context
 import scala.util.control.NonFatal
+import scala.reflect.ClassTag
 
 class Suite(val name: String) {
   private[this] val counts = mutable.Map.empty[String, Int]
@@ -19,6 +20,18 @@ class Suite(val name: String) {
   }
 
   def test(code: => Unit): Unit = test("test")(code)
+
+  def testExpect[E <: Throwable: reflect.ClassTag](msg: => String)(code: => Unit): Unit = {
+    test(s"test-expect-${implicitly[ClassTag[E]]}") {
+      try {
+        code
+        throw new IllegalStateException(s"expected ${implicitly[ClassTag[E]]}")
+      } catch {
+        case err: E =>
+          assert(err.getMessage() == msg)
+      }
+    }
+  }
 
   def main(args: Array[String]): Unit = {
     require(reps > 0, s"reps <= 0")

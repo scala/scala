@@ -15,7 +15,7 @@ package scala.tools.tasty
 object TastyFormat {
 
   final val header: Array[Int] = Array(0x5C, 0xA1, 0xAB, 0x1F)
-  val MajorVersion: Int = 22
+  val MajorVersion: Int = 23
   val MinorVersion: Int = 0
 
   /** Tags used to serialize names */
@@ -98,6 +98,7 @@ object TastyFormat {
   final val OPEN = 40
   final val PARAMEND = 41
   final val PARAMalias = 42
+  final val SUPERTRAIT = 43
 
   // Cat. 2:    tag Nat
 
@@ -196,6 +197,7 @@ object TastyFormat {
   final val ANNOTATION = 173
   final val TERMREFin = 174
   final val TYPEREFin = 175
+  final val SELECTin = 176
 
   final val METHODtype = 180
 
@@ -211,7 +213,7 @@ object TastyFormat {
 
   /** Useful for debugging */
   def isLegalTag(tag: Int): Boolean =
-    firstSimpleTreeTag <= tag && tag <= PARAMalias ||
+    firstSimpleTreeTag <= tag && tag <= SUPERTRAIT ||
     firstNatTreeTag <= tag && tag <= RENAMED ||
     firstASTTreeTag <= tag && tag <= BOUNDED ||
     firstNatASTTreeTag <= tag && tag <= NAMEDARG ||
@@ -240,6 +242,7 @@ object TastyFormat {
        | STATIC
        | OBJECT
        | TRAIT
+       | SUPERTRAIT
        | ENUM
        | LOCAL
        | SYNTHETIC
@@ -301,6 +304,7 @@ object TastyFormat {
     case OBJECT => "OBJECT"
     case TRAIT => "TRAIT"
     case ENUM => "ENUM"
+    case SUPERTRAIT => "SUPERTRAIT"
     case LOCAL => "LOCAL"
     case SYNTHETIC => "SYNTHETIC"
     case ARTIFACT => "ARTIFACT"
@@ -390,6 +394,7 @@ object TastyFormat {
     case SUPERtype => "SUPERtype"
     case TERMREFin => "TERMREFin"
     case TYPEREFin => "TYPEREFin"
+    case SELECTin => "SELECTin"
 
     case REFINEDtype => "REFINEDtype"
     case REFINEDtpt => "REFINEDtpt"
@@ -419,7 +424,7 @@ object TastyFormat {
    */
   def numRefs(tag: Int): Int = tag match {
     case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM | NAMEDARG | RETURN | BIND |
-         SELFDEF | REFINEDtype | TERMREFin | TYPEREFin | HOLE => 1
+         SELFDEF | REFINEDtype | TERMREFin | TYPEREFin | SELECTin | HOLE => 1
     case RENAMED | PARAMtype => 2
     case POLYtype | TYPELAMBDAtype | METHODtype => -1
     case _ => 0

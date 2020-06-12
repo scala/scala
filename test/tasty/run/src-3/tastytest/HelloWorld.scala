@@ -24,7 +24,7 @@ object HelloWorld {
   def repeated(s: String*): String = s.mkString(",")
   val func: Int => String = _.toString
   def func1[A]: A => A = x => x
-  def acceptsOnlyMsg3(m: msg3.type): String = m + m
+  def acceptsOnlyMsg4(m: msg4.type): String = m + m
   final lazy val lzy = "lazy"
   // def `<init>`: Int = 157 // broken in https://github.com/lampepfl/dotty/issues/7799
 

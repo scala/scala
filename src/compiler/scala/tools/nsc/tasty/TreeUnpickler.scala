@@ -419,8 +419,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
+        if (flags.is(Inline) || owner.is(Trait)) flags |= FieldAccessor
         if (flags.not(Mutable)) flags |= Stable
-        if (owner.is(Trait)) flags |= FieldAccessor
         if (flags.is(SingletonEnumFlags)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
@@ -571,6 +571,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           case STATIC => addFlag(Static)
           case OBJECT => addFlag(Object)
           case TRAIT => addFlag(Trait)
+          case SUPERTRAIT => addFlag(SuperTrait)
           case ENUM => addFlag(Enum)
           case LOCAL => addFlag(Local)
           case SYNTHETIC => addFlag(Synthetic)
@@ -737,7 +738,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val unsupported = completer.tastyOnlyFlags &~ (Inline | Enum | Extension | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             val tpe = readTpt()(localCtx).tpe
-            if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
+            val isConstant = isConstantType(tpe)
+            if (isInline) unsupportedWhen(!isConstant, s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
               if (completer.originalFlagSet.is(SingletonEnumFlags)) {
                 val enumClass = sym.objectImplementation
@@ -752,11 +754,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
                 prefixedRef(sym.owner.thisPrefix, enumClass)
               }
+              else if (isInline && isConstant) defn.InlineExprType(tpe)
               else if (sym.isMethod) defn.ExprType(tpe)
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            val unsupported = completer.tastyOnlyFlags &~ (Enum | Open | Opaque | Exported)
+            val unsupported = completer.tastyOnlyFlags &~ (Enum | Open | Opaque | Exported | SuperTrait)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             if (sym.isClass) {
               sym.owner.ensureCompleted()
@@ -780,7 +783,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nothingButMods(end) && sym.not(ParamSetter)) tpt.tpe
               else defn.ExprType(tpt.tpe))
         }
-        ctx.log(s"$symAddr typeOf(${showSym(sym)}) =:= ${if (sym.isType) sym.tpe else sym.info}; owned by ${location(sym.owner)}")
+        ctx.log(s"$symAddr @@@ ${showSym(sym)}.tpe =:= '[${if (sym.isType) sym.tpe else sym.info}]; owned by ${location(sym.owner)}")
         goto(end)
         NoCycle(at = symAddr)
       } catch ctx.onCompletionError(sym)
@@ -920,10 +923,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree = completeSelect(name)
 
       def completeSelect(name: TastyName)(implicit ctx: Context): Tree = {
-        val localCtx = ctx.selectionCtx(name)
-        val qual     = readTerm()(localCtx)
-        val qualType = qual.tpe
-        tpd.Select(qual, name)(namedMemberOfPrefix(qualType, name)(localCtx))
+        val qual     = readTerm()
+        val qualType = qual.tpe // TODO [tasty]: qual.tpe.widenIfUnstable
+        tpd.Select(qual, name)(namedMemberOfPrefix(qualType, name))
       }
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
@@ -954,6 +956,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val end = readEnd()
         val result =
           (tag: @switch) match {
+            case SELECTin =>
+              val sname = readTastyName()
+              val qual  = readTerm()
+              if (inParentCtor) {
+                assert(sname.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
+                skipTree()
+                qual
+              }
+              else {
+                val owner   = readType()
+                val qualTpe = qual.tpe // qual.tpe.widenIfUnstable
+                tpd.Select(qual, sname)(namedMemberOfTypeWithPrefix(qualTpe, owner, sname))
+              }
             case SUPER =>
               val qual = readTerm()
               val (mixId, mixTpe) = ifBefore(end)(readQualId(), (TastyName.EmptyTpe, defn.NoType))

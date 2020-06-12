@@ -4,7 +4,11 @@ object TestHello extends Suite("TestHello") {
 
   test(assert(HelloWorld.msg1 === "Hello, World!"))
   test(assert(HelloWorld.msg2 === "Hello, World!"))
-  test(assert((HelloWorld.msg3: "Hello, World!") === "Hello, World!"))
+  test(assert(HelloWorld.msg3 === "Hello, World!")) // TODO [tasty]: it is fine for `inline final val` to be qualifier of selection, but not widened as seen below
+  testExpect[NoSuchMethodError]("tastytest.HelloWorld$.msg3()Ljava/lang/String;") {
+    // TODO [tasty]: either dotty should have field or fix https://github.com/scala/bug/issues/12040
+    assert((HelloWorld.msg3: "Hello, World!") === "Hello, World!")
+  }
   test(assert(HelloWorld.ints.exists(_ > 2)))
   test(assert((HelloWorld.one: 1) === 1))
   test(assert(HelloWorld.inferred(1) === 2))
@@ -21,8 +25,11 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.repeated("a","b","c") === "a,b,c"))
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
-  test(assert((HelloWorld.lzy: "lazy") === "lazy"))
-  test(assert(HelloWorld.acceptsOnlyMsg3(HelloWorld.msg3) === "Hello, World!Hello, World!"))
+  testExpect[NoSuchMethodError]("tastytest.HelloWorld$.lzy()Ljava/lang/String;") {
+    // TODO [tasty]: either dotty should have field or fix https://github.com/scala/bug/issues/12040
+    assert((HelloWorld.lzy: "lazy") === "lazy")
+  }
+  test(assert(HelloWorld.acceptsOnlyMsg4(HelloWorld.msg4) === "Hello, World!Hello, World!"))
   // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
 
   type OrInt[A] = Either[Int, A]

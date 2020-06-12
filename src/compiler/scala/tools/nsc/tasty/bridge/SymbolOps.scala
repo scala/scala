@@ -127,7 +127,7 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[ErasedTypeRef])(implicit ctx: Context): Symbol = {
-    ctx.log(s"""<<< looking for overload member[$space] @@ $qual: ${showSig(sig)}""")
+    ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
     val member = space.member(encodeTermName(qual))
     if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
     val (tyParamCount, argTpeRefs) = {
@@ -139,9 +139,11 @@ trait SymbolOps { self: TastyUniverse =>
     }
     def compareSym(sym: Symbol): Boolean = sym match {
       case sym: u.MethodSymbol =>
-        val params = sym.paramss.flatten
+        val method = sym.tpe.asSeenFrom(space, sym.owner)
+        ctx.log(s">>> trying $sym: $method")
+        val params = method.paramss.flatten
         val isJava = sym.isJavaDefined
-        NameErasure.sigName(sym.returnType, isJava) === sig.result &&
+        NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
         params.length === argTpeRefs.length &&
         (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&

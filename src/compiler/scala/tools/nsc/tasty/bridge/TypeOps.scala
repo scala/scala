@@ -78,6 +78,9 @@ trait TypeOps { self: TastyUniverse =>
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
     def ExprType(res: Type): Type = u.NullaryMethodType(res)
+    def InlineExprType(res: Type): Type = res match {
+      case u.ConstantType(value) => u.NullaryMethodType(u.FoldableConstantType(value))
+    }
     def PolyType(params: List[Symbol], res: Type): Type = u.PolyType(params, res)
     def ClassInfoType(parents: List[Type], clazz: Symbol): Type = u.ClassInfoType(parents, clazz.rawInfo.decls, clazz.asType)
     def ClassInfoType(parents: List[Type], decls: List[Symbol], clazz: Symbol): Type = u.ClassInfoType(parents, u.newScopeWith(decls:_*), clazz.asType)
@@ -331,8 +334,9 @@ trait TypeOps { self: TastyUniverse =>
   def namedMemberOfPrefix(pre: Type, name: TastyName)(implicit ctx: Context): Type =
     namedMemberOfTypeWithPrefix(pre, pre, name)
 
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type =
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type = {
     prefixedRef(pre, namedMemberOfType(space, tname))
+  }
 
   def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
