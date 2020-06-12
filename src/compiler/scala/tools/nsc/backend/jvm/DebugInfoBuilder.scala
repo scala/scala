@@ -118,8 +118,8 @@ object DebugInfoBuilder {
                               toEnd: Int,
                               sourceFileId: Option[Int] = None) extends Ordered[RawLineMapping] {
       override def compare(that: RawLineMapping): Int =
-        implicitly[Ordering[(Int, Int)]].compare((this.from, this.toStart),
-                                                 (that.from, that.toStart))
+        implicitly[Ordering[(Int, Int, Int)]].compare((this.sourceFileId.getOrElse(0), this.from, this.toStart),
+                                                      (that.sourceFileId.getOrElse(0), that.from, that.toStart))
     }
 
     case class LineSectionEntry(inputStartLine: Int,
