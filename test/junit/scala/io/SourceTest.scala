@@ -31,6 +31,10 @@ class SourceTest {
         assertTrue(s"$l\n${ls.mkString("\n")}", false)
     }
   }
+  @Test(expected = classOf[java.io.FileNotFoundException])
+  def loadFromMissingResource(): Unit = {
+    Source.fromResource("missing.txt")
+  }
   @Test def canCustomizeReporting() = {
     class CapitalReporting(is: InputStream) extends BufferedSource(is) {
       override def report(pos: Int, msg: String, out: PrintStream): Unit = {
