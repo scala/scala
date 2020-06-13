@@ -50,9 +50,7 @@ final class Analyzer(val global: CallbackGlobal) extends LocateClassFile {
 
     def apply(unit: CompilationUnit): Unit = {
       if (!unit.isJava) {
-        val sourceFile0: VirtualFileWrap = unit.source.file match {
-          case v: VirtualFileWrap => v
-        }
+        val sourceFile0: AbstractZincFile = unit.source.file match { case v: AbstractZincFile => v }
         val sourceFile: VirtualFile = sourceFile0.underlying
         lazy val outputDir = settings.outputDirs.outputDirFor(sourceFile0).file
         for (iclass <- unit.icode) {
