@@ -69,27 +69,20 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   def processArguments(arguments: List[String], processAll: Boolean): (Boolean, List[String]) = {
     @tailrec
     def loop(args: List[String], residualArgs: List[String]): (Boolean, List[String]) = args match {
-      case Nil        =>
-        (checkDependencies, residualArgs)
-      case "--" :: xs =>
-        (checkDependencies, xs)
+      case Nil                     => (checkDependencies, residualArgs)
+      case "--" :: xs              => (checkDependencies, xs)
       // discard empties, sometimes they appear because of ant or etc.
       // but discard carefully, because an empty string is valid as an argument
       // to an option, e.g. -cp "" .  So we discard them only when they appear
       // where an option should be, not where an argument to an option should be.
-      case "" :: xs =>
-        loop(xs, residualArgs)
-      case x :: xs  =>
-        if (x startsWith "-") {
-          parseParams(args) match {
-            case newArgs if newArgs eq args => errorFn(s"bad option: '$x'") ; (false, args)
-            case newArgs                    => loop(newArgs, residualArgs)
-          }
+      case "" :: xs                => loop(xs, residualArgs)
+      case (x @ Optionlike()) :: _ =>
+        parseParams(args) match {
+          case newArgs if newArgs eq args => errorFn(s"bad option: '$x'") ; (false, args)
+          case newArgs                    => loop(newArgs, residualArgs)
         }
-        else if (processAll)
-          loop(xs, residualArgs :+ x)
-        else
-          (checkDependencies, args)
+      case x :: xs if processAll   => loop(xs, residualArgs :+ x)
+      case _                       => (checkDependencies, args)
     }
     loop(arguments, Nil)
   }
@@ -160,10 +153,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
       tryToSetIfExists(p, args, (s: Setting) => s.tryToSet(_))
 
     args match {
-      case Nil          => Nil
-      case "-" :: rest  => errorFn("'-' is not a valid argument.") ; args
-      case arg :: rest if !arg.startsWith("-") => errorFn(s"Argument '$arg' does not start with '-'.") ; args
-      case arg :: rest  =>
+      case Nil      => Nil
+      case "-" :: _ => errorFn("'-' is not a valid argument.") ; args
+      case (arg @ Optionlike()) :: rest  =>
         // we dispatch differently based on the appearance of p:
         // 1) If it matches a prefix setting it is sent there directly.
         // 2) If it has a : it is presumed to be -Xfoo:bar,baz
@@ -178,6 +170,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
           else parseNormalArg(arg, rest)
         }
         .getOrElse(args)
+      case arg :: _ => errorFn(s"Argument '$arg' does not start with '-'.") ; args
     }
   }
 
@@ -482,13 +475,9 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     withHelpSyntax(name + " <" + arg + ">")
 
     def tryToSet(args: List[String]) = args match {
-      case Nil      => errorAndValue("missing argument", None)
-      case x :: xs  =>
-        if (helpText.nonEmpty && x == "help")
-          sawHelp = true
-        else
-          value = x
-        Some(xs)
+      case Nil | Optionlike() :: _             => errorAndValue(s"missing argument for $name", None)
+      case "help" :: rest if helpText.nonEmpty => sawHelp = true ; Some(rest)
+      case h :: rest                           => value = h ; Some(rest)
     }
     def unparse: List[String] = if (value == default) Nil else List(name, value)
 
@@ -938,4 +927,8 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
   }
   import scala.language.implicitConversions
   protected implicit def installEnableSettings[T <: BooleanSetting](s: T): EnableSettings[T] = new EnableSettings(s)
+}
+
+private object Optionlike {
+  def unapply(s: String): Boolean = s.startsWith("-")
 }
