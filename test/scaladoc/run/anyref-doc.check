@@ -11,4 +11,7 @@ Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(See ), Link(https://
 Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Chain(List(Text(See ), Link(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-,Text(https://docs.oracle.com/javase/8/docs/api/java/lang/Object.html#wait-long-)))), Text(.)))), Text(
 ))))))
 )
+Some(Body(List(Paragraph(Chain(List(Summary(Chain(List(Chain(List(Text(Executes the code in ), Monospace(Text(body)), Text( with an exclusive lock on ), Monospace(Text(this)))), Text(.)))), Text(
+))))))
+@return Body(List(Paragraph(Chain(List(Summary(Chain(List(Text(the result of ), Monospace(Text(body)))))))))))
 Done.

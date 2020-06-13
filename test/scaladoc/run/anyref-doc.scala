@@ -34,5 +34,8 @@ object Test extends ScaladocModelTest {
     println(wait1.comment)
     println(wait2.comment)
     println(wait3.comment)
+
+    val sync = t._method("synchronized")
+    println(sync.comment)
   }
 }
