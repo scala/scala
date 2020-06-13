@@ -491,17 +491,20 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
       def nonRootTemplate(sym: Symbol): Option[DocTemplateImpl] =
         if (sym eq RootPackage) None else findTemplateMaybe(sym)
 
-      /* Variable precedence order for implicitly added members: Take the variable definitions from ...
-       * 1. the target of the implicit conversion
-       * 2. the definition template (owner)
-       * 3. the current template
-       */
-      val inRealTpl = (
-        conversion.flatMap(conv => nonRootTemplate(conv.toType.typeSymbol))
-          orElse nonRootTemplate(sym.owner)
-          orElse Option(inTpl))
+      val inRealTpl = conversion match {
+        case Some(conv) =>
+          /* Variable precedence order for implicitly added members: Take the variable definitions from ...
+           * 1. the target of the implicit conversion
+           * 2. the definition template (owner)
+           * 3. the current template
+           */
+          nonRootTemplate(conv.toType.typeSymbol).orElse(nonRootTemplate(sym.owner)).getOrElse(inTpl)
+        case None =>
+          // This case handles members which were inherited but not implemented or overridden
+          inTpl
+      }
 
-      inRealTpl flatMap (tpl => thisFactory.comment(commentCarryingSymbol(sym), tpl, tpl))
+      thisFactory.comment(commentCarryingSymbol(sym), inRealTpl, inRealTpl)
     }
 
     override def inDefinitionTemplates = useCaseOf.fold(super.inDefinitionTemplates)(_.inDefinitionTemplates)
