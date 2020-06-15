@@ -16,6 +16,7 @@ package mutable
 
 import generic._
 import BitSetLike.{LogWL, MaxSize}
+import scala.annotation.tailrec
 
 /** A class for mutable bitsets.
  *
@@ -58,24 +59,25 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def nwords = elems.length
+  override private[collection] def lastWordSet: Int = {
+    var idx = elems.length -1
+    while (idx >= 0 && elems(idx) == 0L)
+      idx -= 1
+    idx
+  }
 
   @deprecatedOverriding("Internal implementation does not admit sensible overriding of this method.", "2.11.0")
   protected def word(idx: Int): Long =
-    if (idx < nwords) elems(idx) else 0L
-
-  protected final def updateWord(idx: Int, w: Long) {
-    ensureCapacity(idx)
-    elems(idx) = w
-  }
+    if (idx < elems.length) elems(idx) else 0L
 
   protected final def ensureCapacity(idx: Int) {
     require(idx < MaxSize)
-    if (idx >= nwords) {
-      var newlen = nwords
-      while (idx >= newlen) newlen = (newlen * 2) min MaxSize
-      val elems1 = new Array[Long](newlen)
-      Array.copy(elems, 0, elems1, 0, nwords)
-      elems = elems1
+    if (idx >= elems.length) {
+      //if its a factor of 2 it OK, otherwise round up to one
+      val newlen =
+        if (idx >= 2) java.lang.Integer.highestOneBit(idx) << 1
+        else idx + 1
+      elems = java.util.Arrays.copyOf(elems, newlen)
     }
   }
 
@@ -89,38 +91,127 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
 
   override def add(elem: Int): Boolean = {
     require(elem >= 0)
-    if (contains(elem)) false
+    val idx = elem >> LogWL
+    val bit = (1L << elem)
+    ensureCapacity(idx)
+    val currentWord = elems(idx)
+    val updated = currentWord | bit
+    if (currentWord == updated) false
     else {
-      val idx = elem >> LogWL
-      updateWord(idx, word(idx) | (1L << elem))
+      elems(idx) = updated
       true
     }
   }
 
   override def remove(elem: Int): Boolean = {
-    require(elem >= 0)
-    if (contains(elem)) {
+    // we dont need to check for < 0 as it cant be present
+    if (elem < 0) false
+    else {
       val idx = elem >> LogWL
-      updateWord(idx, word(idx) & ~(1L << elem))
-      true
-    } else false
+      val bitMask = ~(1L << elem)
+      if (idx >= nwords) false
+      else {
+        val currentWord = elems(idx)
+        val updated = currentWord & bitMask
+        if (currentWord == updated) false
+        else {
+          elems(idx) = updated
+          true
+        }
+      }
+    }
+  }
+
+  override def ++=(xs: TraversableOnce[Int]): this.type = {
+    xs match {
+      case bs: collection.BitSet               => this unionWith bs
+      case wa: WrappedArray[_]                 =>
+        // we unwrap the array to avoid boxing
+        // and this is a common case for building a bitset via apply(1,2,3) etc
+        wa match {
+          case wa: WrappedArray.ofInt   =>
+            var i = wa.length - 1
+            while (i >= 0) {
+              this += wa(i)
+              i -= 1
+            }
+          case wa: WrappedArray.ofByte  =>
+            var i = wa.length - 1
+            while (i >= 0) {
+              this += wa(i)
+              i -= 1
+            }
+          case wa: WrappedArray.ofShort =>
+            var i = wa.length - 1
+            while (i >= 0) {
+              this += wa(i)
+              i -= 1
+            }
+          //other cases seem unlikely
+          case _ =>
+            wa foreach (i => this += i)
+        }
+      case xs: scala.collection.LinearSeq[Int] =>
+        @tailrec def loop(xs: scala.collection.LinearSeq[Int]) {
+          if (xs.nonEmpty) {
+            this += xs.head
+            loop(xs.tail)
+          }
+        }
+        loop(xs)
+      case xs                                  => xs foreach +=
+    }
+    this
+  }
+
+  override def --=(xs: TraversableOnce[Int]): this.type = xs match {
+    case bs: collection.BitSet => this diffWith bs
+    case _ => super.--=(xs)
+  }
+  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
+  def += (elem: Int): this.type = {
+    require(elem >= 0)
+    val idx = elem >> LogWL
+    val bit = 1L << elem
+    if (idx >= elems.length) {
+      //if its a factor of 2 it OK, otherwise round up to one
+      val newlen =
+        if (idx >= 2) java.lang.Integer.highestOneBit(idx) << 1
+        else idx + 1
+      elems = java.util.Arrays.copyOf(elems, newlen)
+      elems(idx) = bit
+    } else
+      elems(idx) |= bit
+    this
   }
 
   @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
-  def += (elem: Int): this.type = { add(elem); this }
-
-  @deprecatedOverriding("Override add to prevent += and add from exhibiting different behavior.", "2.11.0")
-  def -= (elem: Int): this.type = { remove(elem); this }
+  def -= (elem: Int): this.type = {
+    // we dont need to check for < 0 as it cant be present
+    if (elem >= 0) {
+      val idx     = elem >> LogWL
+      if (idx < nwords)
+        elems(idx) = elems(idx) & ~(1L << elem)
+    }
+    this
+  }
 
   /** Updates this bitset to the union with another bitset by performing a bitwise "or".
    *
    *  @param   other  the bitset to form the union with.
    *  @return  the bitset itself.
    */
-  def |= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- 0 until other.nwords)
-      elems(i) = elems(i) | other.word(i)
+  def |= (other: BitSet): this.type = unionWith(other)
+
+  private def unionWith (other: collection.BitSetLike[_]): this.type = {
+    // if we union with a bitset that had 0s in the upper values we should not
+    // expand any more that we need to
+    var idx = other.lastWordSet
+    ensureCapacity(idx)
+    while (idx >= 0) {
+      elems(idx) |= other._word(idx)
+      idx -= 1
+    }
     this
   }
   /** Updates this bitset to the intersection with another bitset by performing a bitwise "and".
@@ -129,11 +220,19 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def &= (other: BitSet): this.type = {
-    // Different from other operations: no need to ensure capacity because
-    // anything beyond the capacity is 0.  Since we use other.word which is 0
-    // off the end, we also don't need to make sure we stay in bounds there.
-    for (i <- 0 until nwords)
-      elems(i) = elems(i) & other.word(i)
+    // Different from some other operations: no need to ensure capacity because
+    // anything beyond lastWordSet is 0.  Since we use min of other.lastWordSet
+    // we also don't need to make sure we stay in bounds of other
+    val thisTop = lastWordSet
+    if (thisTop >= 0) {
+      val len = Math.min(thisTop, other.lastWordSet)
+      var idx = 0
+      while (idx <= len) {
+        elems(idx) &= other._word(idx)
+        idx += 1
+      }
+      java.util.Arrays.fill(elems, idx, thisTop + 1, 0L)
+    }
     this
   }
   /** Updates this bitset to the symmetric difference with another bitset by performing a bitwise "xor".
@@ -142,9 +241,16 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @return  the bitset itself.
    */
   def ^= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- 0 until other.nwords)
-      elems(i) = elems(i) ^ other.word(i)
+    // No need to ensure capacity because anything beyond lastWordSet is 0.
+    // Since we use min of other.lastWordSet we also don't need to make
+    // sure we stay in bounds of other
+    val len = other.lastWordSet
+    ensureCapacity(len)
+    var idx = 0
+    while (idx <= len) {
+      elems(idx) = elems(idx) ^ other.word(idx)
+      idx += 1
+    }
     this
   }
   /** Updates this bitset to the difference with another bitset by performing a bitwise "and-not".
@@ -152,15 +258,23 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
    *  @param   other  the bitset to form the difference with.
    *  @return  the bitset itself.
    */
-  def &~= (other: BitSet): this.type = {
-    ensureCapacity(other.nwords - 1)
-    for (i <- 0 until other.nwords)
-      elems(i) = elems(i) & ~other.word(i)
+  def &~= (other: BitSet): this.type = diffWith(other)
+
+  private def diffWith (other: collection.BitSet): this.type = {
+    // No need to ensure capacity because anything beyond lastWordSet is 0.
+    // Since we use min of other.lastWordSet we also don't need to make
+    // sure we stay in bounds of other
+    val len = Math.min(lastWordSet, other.lastWordSet)
+    var idx = 0
+    while (idx <= len) {
+      elems(idx) = elems(idx) & ~other._word(idx)
+      idx += 1
+    }
     this
   }
 
   override def clear() {
-    elems = new Array[Long](elems.length)
+    java.util.Arrays.fill(elems, 0L)
   }
 
   /** Wraps this bitset as an immutable bitset backed by the array of bits
@@ -187,34 +301,30 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
  *  @define Coll `BitSet`
  */
 object BitSet extends BitSetFactory[BitSet] {
-  def empty: BitSet = new BitSet
+  private val emptyArray = new Array[Long](0)
+  def empty: BitSet = new BitSet(emptyArray)
 
   /** A growing builder for mutable Sets. */
-  def newBuilder: Builder[Int, BitSet] = new GrowingBuilder[Int, BitSet](empty)
+  def newBuilder: Builder[Int, BitSet] = new GrowingBuilder[Int, BitSet](empty) {
+    override def ++=(xs: TraversableOnce[Int]): this.type = {
+      elems ++= xs
+      this
+    }
+  }
 
   /** $bitsetCanBuildFrom */
   implicit val canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {
-    val len = elems.length
-    if (len == 0) {
-      empty
-    } else {
-      val a = new Array[Long](len)
-      Array.copy(elems, 0, a, 0, len)
-      new BitSet(a)
-    }
+    if (elems.length == 0) fromBitMaskNoCopy(elems)
+    else new BitSet(elems.clone)
   }
 
   /** A bitset containing all the bits in an array, wrapping the existing
    *  array without copying.
    */
   def fromBitMaskNoCopy(elems: Array[Long]): BitSet = {
-    if (elems.length == 0) {
-      empty
-    } else {
-      new BitSet(elems)
-    }
+    new BitSet(elems)
   }
 }
