@@ -119,8 +119,8 @@ trait ExprBuilder extends TransformUtils {
     def build(nextState: Int, style: StateTransitionStyle): AsyncState = {
       assert(!built)
       built = true
-      // Record whether this state was free of meaningful stats (exclkuding unit literals which creep in after
-      // the ANF and state maching transforms and the state transition code added bekow.
+      // Record whether this state was free of meaningful stats (excluding unit literals which creep in after
+      // the ANF and state machine transforms and the state transition code added below.
       //
       // Empty stats that have a single successor state will be eliminated in `filterStates`.
       val isEmpty = !style.isInstanceOf[StateTransitionStyle.UpdateAndAwait] && stats.forall(isLiteralUnit)
@@ -179,8 +179,10 @@ trait ExprBuilder extends TransformUtils {
     private var building = true
 
     def build: List[AsyncState] = {
-      try statesMap.values.toList
-      finally building = false
+      val result =
+        try statesMap.values.toList
+        finally building = false
+      result
     }
 
     def outerIterator: Iterator[AsyncBlockBuilder] = Iterator.iterate(this)(_.outer.orNull).takeWhile(_ ne null)
@@ -439,7 +441,7 @@ trait ExprBuilder extends TransformUtils {
         dotBuilder.toString
       }
 
-      lazy val asyncStates: List[AsyncState] = filterStates(blockBuilder.build)
+      lazy val asyncStates: List[AsyncState] = filterStates(blockBuilder.build) // drop the terminal state which contains no code
 
       /**
        * Builds the definition of the `apply(tr: Try)` method.
@@ -448,9 +450,10 @@ trait ExprBuilder extends TransformUtils {
         val transformState = currentTransformState
         def stateMemberRef = gen.mkApplyIfNeeded(transformState.memberRef(transformState.stateGetter))
         val throww = Throw(Apply(Select(New(Ident(IllegalStateExceptionClass)), IllegalStateExceptionClass_NEW_String), List(gen.mkMethodCall(currentRun.runDefinitions.String_valueOf_Int, stateMemberRef :: Nil))))
+        val asyncStatesInit = asyncStates.init // drop the terminal state which has no code.
         val body =
           typed(Match(stateMemberRef,
-                  asyncStates.map(_.mkHandlerCaseForState) ++
+                 asyncStatesInit.map(_.mkHandlerCaseForState) ++
                  List(CaseDef(Ident(nme.WILDCARD), EmptyTree,
                    throww))))
 
