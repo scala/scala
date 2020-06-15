@@ -1607,6 +1607,7 @@ abstract class RefChecks extends Transform {
              sym.isGetter
           || sym.isDefaultGetter
           || sym.allOverriddenSymbols.exists(over => !(over.tpe.resultType =:= sym.tpe.resultType))
+          || sym.isArtifact
         )
         if (!isOk)
           refchecksWarning(sym.pos, s"side-effecting nullary methods are discouraged: suggest defining as `def ${sym.name.decode}()` instead", WarningCategory.LintNullaryUnit)
