@@ -263,15 +263,19 @@ trait TypeOps { self: TastyUniverse =>
 
   }
 
-  /** A type which accepts two type arguments, representing an intersection type
+  /** A synthetic type `scala.&` which accepts two type arguments, representing an intersection type
    * @see https://github.com/lampepfl/dotty/issues/7688
    */
-  case object AndType extends Type
+  case object AndTpe extends Type
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === u.definitions.ScalaPackage && ( name === tpnme.And || name === tpnme.Or ) ) {
-      if (name === tpnme.And) AndType
+    if (prefix.typeSymbol === u.definitions.ScalaPackage && (
+           name === tpnme.And
+        || name === tpnme.Or
+        || name === tpnme.AnyKind) ) {
+      if (name === tpnme.And) AndTpe
+      else if (name === tpnme.AnyKind) u.definitions.AnyTpe // TODO [tasty]: scala.AnyKind can appear in upper bounds of raw type wildcards, but elsewhere it is unclear if it should be erased or error
       else unionIsUnsupported
     }
     else {
