@@ -115,13 +115,13 @@ To run a single negative test from sbt shell:
 root> partest --verbose test/files/neg/delayed-init-ref.scala
 ```
 
-To specify compiler flags such as `-deprecation -Xlint -Xfatal-warnings`, you can add a comment
-at the top of your source file of the form: `// scalac: -deprecation -Xlint -Xfatal-warnings`.
+To specify compiler flags such as `-Werror -Xlint`, you can add a comment
+at the top of your source file of the form: `// scalac: -Werror -Xlint`.
 
-To test that no warnings are emitted, use `-Xfatal-warnings`. That will fail a `pos` test if there
-are warnings. Note that `pos` tests do not have `.check` files.
+To test that no warnings are emitted while compiling a `pos` test, use `-Werror`.
+That will fail a `pos` test if there are warnings. Note that `pos` tests do not have `.check` files.
 
-To test that warnings are correctly emitted, use `-Xfatal-warnings` with a `neg` test and `.check` file.
+To test that warnings are correctly emitted, use `-Werror` with a `neg` test and `.check` file.
 The usual way to create a `.check` file is `partest --update-check`.
 
 To run all tests in `neg` categories from sbt shell:
@@ -131,7 +131,9 @@ root> partest --neg
 ```
 
 This might take a couple of minutes to complete. But in a few minutes, you could test 1000+ negative examples,
-so it's totally worth your time if you are working on changing error messages for example.
+so it's totally worth your time, especially if you are working on changing error messages.
+If you have made a bunch of tests fail by tweaking a message, you can update them in bulk
+with `partest --update-check --failed`.
 
 Suppose you're interested in ranges. Here's how you can grep the partests and run them:
 
