@@ -40,7 +40,10 @@ trait AsyncAnalysis extends TransformUtils  {
     }
 
     override def nestedMethod(defDef: DefDef): Unit = {
-      reportUnsupportedAwait(defDef, "nested method")
+      if (defDef.symbol.isArtifact && defDef.name.startsWith(nme.LIFTED_TREE))
+        reportUnsupportedAwait(defDef, "try/catch")
+      else
+        reportUnsupportedAwait(defDef, "nested method")
     }
 
     override def byNameArgument(arg: Tree): Unit = {

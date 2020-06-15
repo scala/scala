@@ -408,7 +408,7 @@ abstract class UnCurry extends InfoTransform
       /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
+        val sym = currentOwner.newMethod(unit.freshTermName(nme.LIFTED_TREE), tree.pos, Flag.ARTIFACT)
         sym.setInfo(MethodType(List(), tree.tpe))
         tree.changeOwner(currentOwner, sym)
         localTyper.typedPos(tree.pos)(Block(

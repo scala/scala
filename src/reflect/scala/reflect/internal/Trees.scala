@@ -478,7 +478,14 @@ trait Trees extends api.Trees {
   case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree
 
   case class Function(vparams: List[ValDef], body: Tree)
-       extends SymTree with TermTree with FunctionApi
+       extends SymTree with TermTree with FunctionApi {
+
+    override def tpe_=(tp: Type): Unit = {
+      if (!definitions.isFunctionType(tp))
+        new Throwable().printStackTrace()
+      super.setType(tp)
+    }
+  }
   object Function extends FunctionExtractor
 
   case class Assign(lhs: Tree, rhs: Tree)

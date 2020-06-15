@@ -378,6 +378,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val PredefModule               = requiredModule[scala.Predef.type]
          def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
          def Predef_???                 = getMemberMethod(PredefModule, nme.???)
+         def Predef_locally             = getMemberMethod(PredefModule, nme.locally)
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )

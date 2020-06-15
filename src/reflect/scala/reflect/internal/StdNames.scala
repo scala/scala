@@ -130,6 +130,7 @@ trait StdNames {
     val NESTED_IN_LAMBDA: String               = NESTED_IN + DELAMBDAFY_LAMBDA_CLASS_NAME.toString.replace("$", "")
 
     val NON_LOCAL_RETURN_KEY_STRING: String    = "nonLocalReturnKey"
+    val LIFTED_TREE: String                    = "liftedTree"
 
     /**
      * Ensures that name mangling does not accidentally make a class respond `true` to any of
@@ -745,6 +746,7 @@ trait StdNames {
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
+    val locally: NameType              = "locally"
     val longHash: NameType             = "longHash"
     val macroContext : NameType        = "c"
     val main: NameType                 = "main"
@@ -1126,6 +1128,7 @@ trait StdNames {
     val reflParamsCacheName: NameType = "reflParams$Cache"
     val reflMethodName: NameType      = "reflMethod$Method"
     val argument: NameType            = "<argument>"
+    val liftedTree: String            = "liftedTree"
 
   }
 

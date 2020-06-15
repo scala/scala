@@ -47,7 +47,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     method.updateAttachment(new AsyncAttachment(awaitMethod, postAnfTransform, stateDiagram))
     // Wrap in `{ expr: Any }` to force value class boxing before calling `completeSuccess`, see test/async/run/value-class.scala
     deriveDefDef(method) { rhs =>
-      Block(Typed(rhs.updateAttachment(SuppressPureExpressionWarning), TypeTree(definitions.AnyTpe)), Literal(Constant(())))
+      Block(Apply(gen.mkAttributedRef(definitions.Predef_locally), rhs :: Nil), Literal(Constant(())))
     }.updateAttachment(ChangeOwnerAttachment(owner))
   }
 
@@ -116,7 +116,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
         case dd: DefDef if dd.hasAttachment[AsyncAttachment] =>
           val asyncAttachment = dd.getAndRemoveAttachment[AsyncAttachment].get
           val asyncBody = (dd.rhs: @unchecked) match {
-            case blk@Block(stats, Literal(Constant(()))) => treeCopy.Block(blk, stats.init, stats.last).setType(stats.last.tpe)
+            case blk@Block(Apply(qual, body :: Nil) :: Nil, Literal(Constant(()))) => body
           }
 
           atOwner(dd, dd.symbol) {
