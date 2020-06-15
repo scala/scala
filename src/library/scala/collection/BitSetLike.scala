@@ -15,6 +15,8 @@ package collection
 
 import BitSetLike._
 import mutable.StringBuilder
+import scala.util.hashing.MurmurHash3
+import java.lang.{Long => jLong}
 
 /** A template trait for bitsets.
  *  $bitsetinfo
@@ -39,11 +41,13 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
   /** The number of words (each with 64 bits) making up the set */
   protected def nwords: Int
+  @inline private[collection] final def _nwords = nwords
 
   /** The words at index `idx`, or 0L if outside the range of the set
    *  '''Note:''' requires `idx >= 0`
    */
   protected def word(idx: Int): Long
+  @inline private[collection] final def _word(idx: Int) = word(idx)
 
   /** Creates a new set of this kind from an array of longs
    */
@@ -71,7 +75,15 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     s
   }
 
-  override def isEmpty: Boolean = 0 until nwords forall (i => word(i) == 0)
+  override def isEmpty: Boolean = {
+    var wordIndex = 0
+    val wordCount = this.nwords
+    while (wordIndex < wordCount) {
+      if (word(wordIndex) != 0L) return false
+      wordIndex += 1
+    }
+    true
+  }
 
   implicit def ordering: Ordering[Int] = Ordering.Int
 
@@ -104,35 +116,98 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
 
   def iterator: Iterator[Int] = iteratorFrom(0)
 
-  override def keysIteratorFrom(start: Int) = new AbstractIterator[Int] {
-    private var current = start
-    private val end = nwords * WordLength
-    def hasNext: Boolean = {
-      while (current != end && !self.contains(current)) current += 1
-      current != end
+  override def keysIteratorFrom(start: Int) = {
+    val s = Math.max(0, start)
+
+    new AbstractIterator[Int] {
+      var wordIndex = s >> LogWL
+      val wordCount = nwords
+      var thisWord = if (wordIndex < wordCount)
+                       word(wordIndex) & (-1L << s)
+                     else 0L
+
+      def hasNext: Boolean = {
+        while (thisWord == 0 && wordIndex < wordCount) {
+          wordIndex += 1
+          if (wordIndex < wordCount)
+            thisWord = word(wordIndex)
+        }
+        wordIndex < wordCount
+      }
+      def next(): Int =
+        if (hasNext) {
+          val indexInWord = jLong.numberOfTrailingZeros(thisWord)
+          thisWord ^= (1L << indexInWord)
+          wordIndex * WordLength + indexInWord
+        } else Iterator.empty.next()
     }
-    def next(): Int =
-      if (hasNext) { val r = current; current += 1; r }
-      else Iterator.empty.next()
   }
 
   override def foreach[U](f: Int => U) {
-    /* NOTE: while loops are significantly faster as of 2.11 and
-       one major use case of bitsets is performance. Also, there
-       is nothing to do when all bits are clear, so use that as
-       the inner loop condition. */
-    var i = 0
-    while (i < nwords) {
-      var w = word(i)
-      var j = i * WordLength
-      while (w != 0L) {
-        if ((w&1L) == 1L) f(j)
-        w = w >>> 1
-        j += 1
+    var wordIndex = 0
+    val wordCount = this.nwords
+    while (wordIndex < wordCount) {
+      var thisWord = word(wordIndex)
+      val baseIndex = wordIndex * WordLength
+      while (thisWord != 0L) {
+        val indexInWord = jLong.numberOfTrailingZeros(thisWord)
+        thisWord ^= (1L << indexInWord)
+        f(baseIndex + indexInWord)
       }
-      i += 1
+      wordIndex += 1
     }
   }
+
+
+  /**
+   * find the first index where p(index) == wanted, or -1 if there is no such index
+   */
+  private def findImpl(p: Int => Boolean, wanted: Boolean): Int = p match {
+    case _ =>
+      var wordIndex = 0
+      val wordCount = this.nwords
+      while (wordIndex < wordCount) {
+        var thisWord  = word(wordIndex)
+        val baseIndex = wordIndex * WordLength
+        while (thisWord != 0L) {
+          val indexInWord = jLong.numberOfTrailingZeros(thisWord)
+          thisWord ^= (1L << indexInWord)
+          if (wanted == p(baseIndex + indexInWord))
+            return baseIndex + indexInWord
+        }
+        wordIndex += 1
+      }
+      -1
+  }
+
+  override def find(p: Int => Boolean): Option[Int] = {
+    val index = p match {
+      case that: BitSet =>
+        findFirstIntersect(that)
+      case _ =>
+        findImpl (p, true)
+    }
+    if (index == -1) None
+    else Some(index)
+  }
+
+  override def forall(p: Int => Boolean): Boolean =
+    p match {
+      case that: BitSet =>
+        this subsetOf that
+      case _ =>
+        findImpl(p, false) == -1
+    }
+
+
+  override def exists(p: Int => Boolean): Boolean =
+    p match {
+      case that: BitSet =>
+        findFirstIntersect(that) != -1
+      case _            =>
+        findImpl(p, true) != -1
+    }
+
 
   /** Computes the union between this bitset and another bitset by performing
    *  a bitwise "or".
@@ -142,10 +217,13 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
    *           bitset or in the given bitset `other`.
    */
   def | (other: BitSet): This = {
-    val len = this.nwords max other.nwords
+    val len = Math.max(this.nwords, other.nwords)
     val words = new Array[Long](len)
-    for (idx <- 0 until len)
+    var idx = 0
+    while (idx < len) {
       words(idx) = this.word(idx) | other.word(idx)
+      idx += 1
+    }
     fromBitMaskNoCopy(words)
   }
 
@@ -156,10 +234,13 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
    *  bitset and in the given bitset `other`.
    */
   def & (other: BitSet): This = {
-    val len = this.nwords min other.nwords
+    val len = Math.min(this.nwords, other.nwords)
     val words = new Array[Long](len)
-    for (idx <- 0 until len)
+    var idx = 0
+    while (idx < len) {
       words(idx) = this.word(idx) & other.word(idx)
+      idx += 1
+    }
     fromBitMaskNoCopy(words)
   }
 
@@ -173,8 +254,11 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   def &~ (other: BitSet): This = {
     val len = this.nwords
     val words = new Array[Long](len)
-    for (idx <- 0 until len)
+    var idx = 0
+    while (idx < len) {
       words(idx) = this.word(idx) & ~other.word(idx)
+      idx += 1
+    }
     fromBitMaskNoCopy(words)
   }
 
@@ -186,13 +270,47 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
    *              bitset or the other bitset that are not contained in both bitsets.
    */
   def ^ (other: BitSet): This = {
-    val len = this.nwords max other.nwords
+    val len = Math.max(this.nwords, other.nwords)
     val words = new Array[Long](len)
-    for (idx <- 0 until len)
+    var idx = 0
+    while (idx < len) {
       words(idx) = this.word(idx) ^ other.word(idx)
+      idx += 1
+    }
     fromBitMaskNoCopy(words)
   }
 
+  override def ++(elems: GenTraversableOnce[Int]): This = elems match {
+      case bs: BitSet => this | bs
+      case _ => super.++(elems)
+    }
+
+  override def --(elems: GenTraversableOnce[Int]): This = elems match {
+      case bs: BitSet => this &~ bs
+      case _ => super.--(elems)
+    }
+
+  override def intersect(elems: GenSet[Int]): This = elems match {
+      case bs: BitSet => this & bs
+      case _          => super.intersect(elems)
+    }
+
+  override def union(elems: GenSet[Int]): This = elems match {
+    case bs: BitSet => this | bs
+    case _          => super.union(elems)
+  }
+
+  override def diff(elems: GenSet[Int]): This = elems match {
+    case bs: BitSet => this &~ bs
+    case _          => super.diff(elems)
+  }
+
+  override private[scala] def filterImpl(p: Int => Boolean, isFlipped: Boolean) = {
+    p match {
+      case bs: BitSet => if (isFlipped) this &~ bs else this & bs
+      case _          => super.filterImpl(p, isFlipped)
+    }
+  }
   def contains(elem: Int): Boolean =
     0 <= elem && (word(elem >> LogWL) & (1L << elem)) != 0L
 
@@ -202,8 +320,34 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
    *  @return     `true` if this bitset is a subset of `other`, i.e. if
    *              every bit of this set is also an element in `other`.
    */
-  def subsetOf(other: BitSet): Boolean =
-    (0 until nwords) forall (idx => (this.word(idx) & ~ other.word(idx)) == 0L)
+  def subsetOf(other: BitSet): Boolean = (this eq other) || {
+    val n = nwords
+    var i = 0
+    while (i < n) {
+      val thisWord = this.word(i)
+      val thatWord = other.word(i)
+      if ((thisWord | thatWord) != thatWord) return false
+      i += 1
+    }
+    true
+  }
+  /** Index of the first intersection
+   * or -1 if the is no intersection
+   *
+   */
+  private def findFirstIntersect(other: BitSet): Int = {
+    val n = Math.min(nwords, other.nwords)
+    var i = 0
+    while (i < n) {
+      val thisWord = this.word(i)
+      val thatWord = other.word(i)
+      val wordIntersect = thisWord & thatWord
+      if (wordIntersect != 0)
+        return i * WordLength + java.lang.Long.numberOfTrailingZeros(wordIntersect)
+      i += 1
+    }
+    -1
+  }
 
   override def head: Int = {
     val n = nwords
@@ -229,18 +373,59 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   override def addString(sb: StringBuilder, start: String, sep: String, end: String) = {
     sb append start
     var pre = ""
-    val max = nwords * WordLength
-    var i = 0
-    while (i != max) {
-      if (contains(i)) {
-        sb append pre append i
+    var wordIndex = 0
+    val wordCount = this.nwords
+    while (wordIndex < wordCount) {
+      var thisWord = word(wordIndex)
+      val baseIndex = wordIndex * WordLength
+      while (thisWord != 0L) {
+        val indexInWord = jLong.numberOfTrailingZeros(thisWord)
+        thisWord ^= (1L << indexInWord)
+        sb.append(pre).append(baseIndex + indexInWord)
         pre = sep
       }
-      i += 1
+      wordIndex += 1
     }
     sb append end
   }
+  override def hashCode(): Int = {
+    var i = 0
+    var a, b, n = 0
+    var c       = 1
+    while (i < nwords) {
+      var w = word(i)
+      val j = i * WordLength
+      while (w != 0L) {
+        val bit = java.lang.Long.numberOfTrailingZeros(w)
+        val h = j + bit
+        a += h
+        b ^= h
+        if (h != 0) c *= h
+        n += 1
+        w ^= 1L << bit
+      }
+      i += 1
+    }
+    var h = MurmurHash3.setSeed
+    h = MurmurHash3.mix(h, a)
+    h = MurmurHash3.mix(h, b)
+    h = MurmurHash3.mixLast(h, c)
+    MurmurHash3.finalizeHash(h, n)
+  }
 
+  override def equals(that: Any): Boolean = that match {
+    case that: BitSet      =>
+      (this eq that) ||
+        (that canEqual this) && {
+          // we compare the words, working downwards, as if bitset have different nwords,
+          // they are likely to have differences in the higher indexes as higher word-count
+          // typically only get created if there are some bits to set
+          var idx = Math.max(this.nwords, that.nwords) -1
+          while (idx >= 0 && this.word(idx) == that.word(idx)) idx -= 1
+          idx == -1
+        }
+    case _               => super.equals(that)
+  }
   override def stringPrefix = "BitSet"
 }
 
@@ -256,8 +441,7 @@ object BitSetLike {
     while (len > 0 && (elems(len - 1) == 0L || w == 0L && idx == len - 1)) len -= 1
     var newlen = len
     if (idx >= newlen && w != 0L) newlen = idx + 1
-    val newelems = new Array[Long](newlen)
-    Array.copy(elems, 0, newelems, 0, len)
+    val newelems = java.util.Arrays.copyOf(elems,newlen)
     if (idx < newlen) newelems(idx) = w
     else assert(w == 0L)
     newelems

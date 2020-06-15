@@ -42,23 +42,26 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
 
   /** Adds element to bitset, returning a new set.
    */
-  def + (elem: Int): BitSet = {
+  def +(elem: Int): BitSet = {
     require(elem >= 0, "bitset element must be >= 0")
-    if (contains(elem)) this
-    else {
-      val idx = elem >> LogWL
-      updateWord(idx, word(idx) | (1L << elem))
-    }
+    val idx      = elem >> LogWL
+    val bit      = 1L << elem
+    val thisWord = word(idx)
+    if ((thisWord & bit) != 0L) this
+    else updateWord(idx, thisWord | bit)
   }
 
   /** Removes element from bitset, returning a new set
    */
-  def - (elem: Int): BitSet = {
-    require(elem >= 0, "bitset element must be >= 0")
-    if (contains(elem)) {
-      val idx = elem >> LogWL
-      updateWord(idx, word(idx) & ~(1L << elem))
-    } else this
+  def -(elem: Int): BitSet = {
+    if (elem < 0) this
+    else {
+      val idx      = elem >> LogWL
+      val bit      = 1L << elem
+      val thisWord = word(idx)
+      if ((thisWord & bit) == 0L) this
+      else updateWord(idx, thisWord ^ bit)
+    }
   }
 }
 
@@ -75,6 +78,7 @@ object BitSet extends BitSetFactory[BitSet] {
   /** A builder that takes advantage of mutable BitSets. */
   def newBuilder: Builder[Int, BitSet] = new Builder[Int, BitSet] {
     private[this] val b = new mutable.BitSet
+    override def ++=(xs: TraversableOnce[Int]):this.type = {b ++= xs; this}
     def += (x: Int) = { b += x; this }
     def clear() = b.clear()
     def result() = b.toImmutable
@@ -83,28 +87,27 @@ object BitSet extends BitSetFactory[BitSet] {
   /** $bitsetCanBuildFrom */
   implicit val canBuildFrom: CanBuildFrom[BitSet, Int, BitSet] = bitsetCanBuildFrom
 
-  /** A bitset containing all the bits in an array */
-  def fromBitMask(elems: Array[Long]): BitSet = {
-    val len = elems.length
-    if (len == 0) empty
-    else if (len == 1) new BitSet1(elems(0))
-    else if (len == 2) createSmall(elems(0), elems(1))
-    else {
-      val a = new Array[Long](len)
-      Array.copy(elems, 0, a, 0, len)
-      new BitSetN(a)
-    }
-  }
-
-  /** A bitset containing all the bits in an array, wrapping the existing
-   *  array without copying.
+  /** A bitset containing all the bits in an array
+   * but trimming zeros from the RHS
    */
-  def fromBitMaskNoCopy(elems: Array[Long]): BitSet = {
-    val len = elems.length
+  def fromBitMask(elems: Array[Long]): BitSet =
+    fromBitMaskArray(elems, false)
+
+  /** A bitset containing all the bits in an array,
+   * trimming zeros from the RHS.
+   * sharing the underlyingArray if there are no zores on the RHS.
+   */
+  def fromBitMaskNoCopy(elems: Array[Long]): BitSet =
+    fromBitMaskArray(elems, true)
+
+  def fromBitMaskArray(elems: Array[Long], canShareArray: Boolean): BitSet = {
+    var len = elems.length
+    while (len > 0 && (elems(len - 1) == 0L)) len -= 1
     if (len == 0) empty
     else if (len == 1) new BitSet1(elems(0))
     else if (len == 2) createSmall(elems(0), elems(1))
-    else new BitSetN(elems)
+    else if (canShareArray && len == elems.length) new BitSetN(elems)
+    else new BitSetN(java.util.Arrays.copyOf(elems,len))
   }
 
   @SerialVersionUID(2260107458435649300L)
