@@ -258,4 +258,13 @@ class SettingsTest {
     assert("has the choice", settings.opt.contains(settings.optChoices.inline))
     assertFalse("is not enabled", settings.optInlinerEnabled)
   }
+  @Test def `t12036 don't consume dash option as arg`(): Unit = {
+    import scala.collection.mutable.ListBuffer
+    val errors   = ListBuffer.empty[String]
+    val settings = new Settings(errors.addOne)
+    val (ok, rest) = settings.processArguments("-Vinline" :: "-Xlint" :: Nil, true)
+    assertFalse("processing should fail", ok)
+    assertEquals("processing stops at bad option", 2, rest.length)
+    assertEquals(2, errors.size)  // missing arg and bad option
+  }
 }
