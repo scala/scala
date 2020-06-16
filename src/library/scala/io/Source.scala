@@ -14,8 +14,8 @@ package scala
 package io
 
 import scala.collection.{AbstractIterator, BufferedIterator}
-import java.io.{ FileInputStream, InputStream, PrintStream, File => JFile, Closeable }
-import java.net.{ URI, URL }
+import java.io.{Closeable, FileInputStream, FileNotFoundException, InputStream, PrintStream, File => JFile}
+import java.net.{URI, URL}
 
 /** This object provides convenience methods to create an iterable
  *  representation of a source file.
@@ -176,7 +176,10 @@ object Source {
    *  @return              the buffered source
    */
   def fromResource(resource: String, classLoader: ClassLoader = Thread.currentThread().getContextClassLoader())(implicit codec: Codec): BufferedSource =
-    fromInputStream(classLoader.getResourceAsStream(resource))
+    Option(classLoader.getResourceAsStream(resource)) match {
+      case Some(in) => fromInputStream(in)
+      case None     => throw new FileNotFoundException(s"resource '$resource' was not found in the classpath from the given classloader.")
+    }
 
 }
 
