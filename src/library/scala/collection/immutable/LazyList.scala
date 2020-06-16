@@ -23,16 +23,31 @@ import scala.collection.mutable.{ArrayBuffer, Builder, ReusableBuilder, StringBu
 import scala.language.implicitConversions
 import scala.runtime.Statics
 
-/**  This class implements an immutable linked list that evaluates elements
-  *  in order and only when needed. Here is an example:
+/**  This class implements an immutable linked list. We call it "lazy"
+  *  because it computes its elements only when they are needed.
+  *
+  *  Elements are memoized; that is, the value of each element is computed at most once.
+  *
+  *  Elements are computed in-order and are never skipped. In other words,
+  *  accessing the tail causes the head to be computed first.
+  *
+  *  How lazy is a `LazyList`? When you have a value of type `LazyList`, you
+  *  don't know yet whether the list is empty or not. If you learn that it is non-empty,
+  *  then you also know that the head has been computed. But the tail is itself
+  *  a `LazyList`, whose emptiness-or-not might remain undetermined.
+  *
+  *  A `LazyList` may be infinite. For example, `LazyList.from(0)` contains
+  *  all of the natural numbers 0, 1, 2, and so on. For infinite sequences,
+  *  some methods (such as `count`, `sum`, `max` or `min`) will not terminate.
+  *
+  *  Here is an example:
   *
   *  {{{
   *  import scala.math.BigInt
   *  object Main extends App {
-  *
-  *    val fibs: LazyList[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map { n => n._1 + n._2 }
-  *
-  *    fibs take 5 foreach println
+  *    val fibs: LazyList[BigInt] =
+  *      BigInt(0) #:: BigInt(1) #:: fibs.zip(fibs.tail).map{ n => n._1 + n._2 }
+  *    fibs.take(5).foreach(println)
   *  }
   *
   *  // prints
@@ -43,29 +58,21 @@ import scala.runtime.Statics
   *  // 2
   *  // 3
   *  }}}
-  * 
-  *  A `LazyList`, like the one in the example above, may be infinite in length.
-  *  Aggregate methods, such as `count`, `sum`, `max` or `min` on such infinite length 
-  *  sequences will not terminate. Filtered infinite lazy lists are also effectively
-  *  infinite in length.
   *
-  *  Elements of a `LazyList` are memoized; that is, the value of each element
-  *  is computed only once.
-  *  To illustrate, we will alter body of the `fibs` value above and take some
-  *  more values:
+  *  To illustrate, let's add some output to the definition `fibs`, so we
+  *  see what's going on.
   *
   *  {{{
   *  import scala.math.BigInt
   *  object Main extends App {
-  *
-  *    val fibs: LazyList[BigInt] = BigInt(0) #:: BigInt(1) #:: fibs.zip(
-  *      fibs.tail).map(n => {
-  *        println("Adding %d and %d".format(n._1, n._2))
-  *        n._1 + n._2
-  *      })
-  *
-  *    fibs take 5 foreach println
-  *    fibs take 6 foreach println
+  *    val fibs: LazyList[BigInt] =
+  *      BigInt(0) #:: BigInt(1) #::
+  *        fibs.zip(fibs.tail).map{ n =>
+  *          println(s"Adding ${n._1} and ${n._2}")
+  *          n._1 + n._2
+  *        }
+  *    fibs.take(5).foreach(println)
+  *    fibs.take(6).foreach(println)
   *  }
   *
   *  // prints
@@ -90,37 +97,33 @@ import scala.runtime.Statics
   *  // 5
   *  }}}
   *
-  *  There are a number of subtle points to the above example.
-  *
-  *  - The definition of `fibs` is a `val` not a method.  The memoization of the
+  *  Note that the definition of `fibs` uses `val` not `def`.  The memoization of the
   *  `LazyList` requires us to have somewhere to store the information and a `val`
   *  allows us to do that.
   *
-  *  - While the `LazyList` is actually being modified during access, this does not
-  *  change the notion of its immutability.  Once the values are memoized they do
-  *  not change and values that have yet to be memoized still "exist", they
-  *  simply haven't been realized yet.
+  *  Further remarks about the semantics of `LazyList`:
   *
-  *  - One must be cautious of memoization; you can very quickly eat up large
-  *  amounts of memory if you're not careful.  The reason for this is that the
-  *  memoization of the `LazyList` creates a structure much like
-  *  [[scala.collection.immutable.List]].  So long as something is holding on to
-  *  the head, the head holds on to the tail, and so it continues recursively.
-  *  If, on the other hand, there is nothing holding on to the head (e.g. we used
+  *  - Though the `LazyList` changes as it is accessed, this does not
+  *  contradict its immutability.  Once the values are memoized they do
+  *  not change. Values that have yet to be memoized still "exist", they
+  *  simply haven't been computed yet.
+  *
+  *  - One must be cautious of memoization; it can eat up memory if you're not
+  *  careful.  That's because memoization of the `LazyList` creates a structure much like
+  *  [[scala.collection.immutable.List]].  As long as something is holding on to
+  *  the head, the head holds on to the tail, and so on recursively.
+  *  If, on the other hand, there is nothing holding on to the head (e.g. if we used
   *  `def` to define the `LazyList`) then once it is no longer being used directly,
   *  it disappears.
   *
   *  - Note that some operations, including [[drop]], [[dropWhile]],
   *  [[flatMap]] or [[collect]] may process a large number of intermediate
-  *  elements before returning.  These necessarily hold onto the head, since
-  *  they are methods on `LazyList`, and a lazy list holds its own head. For
-  *  computations of this sort where memoization is not desired, use
-  *  `Iterator` when possible.
+  *  elements before returning.
+  *
+  *  Here's another example.  Let's start with the natural numbers and iterate
+  *  over them.
   *
   *  {{{
-  *  // For example, let's build the natural numbers and do some silly iteration
-  *  // over them.
-  *
   *  // We'll start with a silly iteration
   *  def loop(s: String, i: Int, iter: Iterator[Int]): Unit = {
   *    // Stop after 200,000
@@ -163,13 +166,11 @@ import scala.runtime.Statics
   *  loop("Iterator3: ", it3.next(), it3)
   *  }}}
   *
-  *  - The fact that `tail` works at all is of interest.  In the definition of
-  *  `fibs` we have an initial `(0, 1, LazyList(...))` so `tail` is deterministic.
-  *  If we defined `fibs` such that only `0` were concretely known then the act
-  *  of determining `tail` would require the evaluation of `tail` which would
-  *  cause an infinite recursion and stack overflow.  If we define a definition
-  *  where the tail is not initially computable then we're going to have an
-  *  infinite recursion:
+  *  - In the `fibs` example earlier, the fact that `tail` works at all is of interest.
+  *  `fibs` has an initial `(0, 1, LazyList(...))`, so `tail` is deterministic.
+  *  If we defined `fibs` such that only `0` were concretely known, then the act
+  *  of determining `tail` would require the evaluation of `tail`, so the
+  *  computation would be unable to progress, as in this code:
   *  {{{
   *  // The first time we try to access the tail we're going to need more
   *  // information which will require us to recurse, which will require us to
@@ -187,6 +188,34 @@ import scala.runtime.Statics
   *    def loop(h: Int, n: Int): LazyList[Int] = h #:: loop(n, h + n)
   *    loop(1, 1)
   *  }
+  *  }}}
+  *
+  *  The head, the tail and whether the list is empty or not can be initially unknown.
+  *  Once any of those are evaluated, they are all known, though if the tail is
+  *  built with `#::` or `#:::`, it's content still isn't evaluated. Instead, evaluating
+  *  the tails content is deferred until the tails empty status, head or tail is
+  *  evaluated.
+  *
+  *  Delaying the evaluation of whether a LazyList is empty or not until it's needed
+  *  allows LazyList to not eagerly evaluate any elements on a call to `filter`.
+  *
+  *  Only when it's further evaluated (which may be never!) any of the elements gets
+  *  forced.
+  *
+  *  for example:
+  *
+  *  {{{
+  *  def tailWithSideEffect: LazyList[Nothing] = {
+  *    println("getting empty LazyList")
+  *    LazyList.empty
+  *  }
+  *
+  *  val emptyTail = tailWithSideEffect // prints "getting empty LazyList"
+  *
+  *  val suspended = 1 #:: tailWithSideEffect // doesn't print anything
+  *  val tail = suspended.tail // although the tail is evaluated, *still* nothing is yet printed
+  *  val filtered = tail.filter(_ => false) // still nothing is printed
+  *  filtered.isEmpty // prints "getting empty LazyList"
   *  }}}
   *
   *  @tparam A    the type of the elements contained in this lazy list.
