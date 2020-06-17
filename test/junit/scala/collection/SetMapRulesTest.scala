@@ -47,6 +47,7 @@ class SetMapRulesTest {
     override def toString: String = s"$id.$extra"
     def + (i: Int): Value = Value(id, extra + i)
     def toTuple: (Int, Int) = (id, extra)
+    def incrementExtra = new Value(id, extra + 1)
   }
   object Value {
     private[this] val cache = new mutable.HashMap[(Int, Int), Value]
@@ -154,6 +155,13 @@ class SetMapRulesTest {
     checkPreservesKeyIdentities(gen, "updated (equal value)")(_.updated(Value(1,2), Value(101,2)))
     checkPreservesKeyIdentities(gen, "+ (identical value)")(_.+((Value(1,2), Value(101,1))))
     checkPreservesKeyIdentities(gen, "+ (equal value)")(_.+((Value(1,2), Value(101,2))))
+
+    val values = Seq((Value(1,2), Value(101,2)))
+    val valuesSameCollection = gen().take(0).concat(values)
+    for (vs <- Seq(values, valuesSameCollection)) {
+      checkPreservesKeyIdentities(gen, "concat (identical key)")(_.concat(vs))
+    }
+
     checkAllValuesUpdated(gen, "updated (identical key)")(_.updated(Value(1,1), Value(101,2)).filter(_._1.id == 1))
     checkAllValuesUpdated(gen, "updated (equal key)")(_.updated(Value(1,2), Value(101,2)).filter(_._1.id == 1))
     checkAllValuesUpdated(gen, "+ (identical key)")(_.+((Value(1,1), Value(101,2))).filter(_._1.id == 1))
@@ -188,7 +196,16 @@ class SetMapRulesTest {
   private def checkImmutableSet(gen: () => immutable.Set[Value]): Unit = {
     checkSet(gen)
     checkPreservesIdentities(gen, "incl")(_.incl(Value(1,2)))
-    checkPreservesIdentities(gen, "concat")(_.concat(Seq(Value(1,2))))
+
+    val values = Seq(Value(1,2))
+    val valuesSameCollection = gen().take(0).concat(values)
+    for (vs <- Seq(values, valuesSameCollection)) {
+      checkPreservesIdentities(gen, "concat")(_.concat(vs))
+    }
+
+    for (xs <- Seq(gen().take(0).concat(gen().map(_.incrementExtra)), Set.from(gen().map(_.incrementExtra)))) {
+      checkPreservesIdentities(gen, "intersect")(_.intersect(xs))
+    }
   }
 
   // Immutable maps
