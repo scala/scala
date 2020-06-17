@@ -760,9 +760,9 @@ private[collection] object RedBlackTree {
   // of child nodes from it. Where possible the black height is used directly instead of deriving the rank from it.
   // Our trees are supposed to have a black root so we always blacken as the last step of union/intersect/difference.
 
-  def union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_union(t1, t2))
+  def union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_union(t2, t1))
 
-  def intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_intersect(t1, t2))
+  def intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_intersect(t2, t1))
 
   def difference[A, B](t1: Tree[A, B], t2: Tree[A, _])(implicit ordering: Ordering[A]): Tree[A, B] =
     blacken(_difference(t1, t2.asInstanceOf[Tree[A, B]]))
