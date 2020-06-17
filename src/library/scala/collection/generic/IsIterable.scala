@@ -129,24 +129,27 @@ trait IsIterable[Repr] extends IsIterableOnce[Repr] {
 
 object IsIterable extends IsIterableLowPriority {
 
-  // Straightforward case: IterableOps subclasses
-  implicit def iterableOpsIsIterable[A0, CC0[X] <: IterableOps[X, Iterable, CC0[X]]]: IsIterable[CC0[A0]] { type A = A0; type C = CC0[A0] } =
-    new IsIterable[CC0[A0]] {
+  type FixA[Repr, A0] = IsIterable[Repr] { type A = A0 }
+  type FixC[Repr, C0] = IsIterable[Repr] { type C = C0 }
+  type FixAC[Repr, A0, C0] = FixA[Repr, A0] { type C = C0 }
+  
+  // default case thus a separate type alias
+  type WithA[Repr, A0] = FixAC[Repr, A0, Repr]
+  
+  def instance[Repr, A0, C0](f: Repr =>  IterableOps[A0, Iterable, C0]): IsIterable.FixAC[Repr, A0, C0] = 
+    new IsIterable[Repr] {
       type A = A0
-      type C = CC0[A0]
-      def apply(coll: CC0[A]): IterableOps[A, Iterable, C] = coll
+      type C = C0
+      def apply(coll: Repr): IterableOps[A, Iterable, C] = f(coll)
     }
-
+  
+  // Straightforward case: IterableOps subclasses
+  implicit def iterableOpsIsIterable[A0, CC0[X] <: IterableOps[X, Iterable, CC0[X]]]: IsIterable.WithA[CC0[A0], A0] = instance(identity)
+  
   // The `BitSet` type can not be unified with the `CC0` parameter of
   // the above definition because it does not take a type parameter.
   // Hence the need for a separate case:
-  implicit def bitSetOpsIsIterable[C0 <: BitSet with BitSetOps[C0]]: IsIterable[C0] { type A = Int; type C = C0 } =
-    new IsIterable[C0] {
-      type A = Int
-      type C = C0
-      def apply(coll: C0): IterableOps[Int, Iterable, C0] = coll
-    }
-
+  implicit def bitSetOpsIsIterable[C0 <: BitSet with BitSetOps[C0]]: IsIterable.WithA[C0, Int] = instance(identity)  
 }
 
 trait IsIterableLowPriority {
@@ -154,7 +157,7 @@ trait IsIterableLowPriority {
   // Makes `IsSeq` instances visible in `IsIterable` companion
   implicit def isSeqLikeIsIterable[Repr](implicit
     isSeqLike: IsSeq[Repr]
-  ): IsIterable[Repr] { type A = isSeqLike.A; type C = isSeqLike.C } = isSeqLike
+  ): IsIterable.WithElement[Repr] { type A = isSeqLike.A; type C = isSeqLike.C } = isSeqLike
 
   // Makes `IsMap` instances visible in `IsIterable` companion
   implicit def isMapLikeIsIterable[Repr](implicit
