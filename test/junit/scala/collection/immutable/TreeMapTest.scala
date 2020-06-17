@@ -1,5 +1,7 @@
 package scala.collection.immutable
 
+import java.util.Collections
+
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -180,9 +182,9 @@ class TreeMapTest extends AllocationTest {
     val c0l = C(0)("l")
     val c0r = C(0)("r")
     def assertIdenticalKeys(expected: Map[C, Unit], actual: Map[C, Unit]): Unit = {
-      val expected1, actual1 = new java.util.IdentityHashMap[C, Unit]()
-      expected.keys.foreach(expected1.put(_, ()))
-      actual.keys.foreach(actual1.put(_, ()))
+      val expected1, actual1 = Collections.newSetFromMap[C](new java.util.IdentityHashMap())
+      expected.keys.foreach(expected1.add)
+      actual.keys.foreach(actual1.add)
       assertEquals(expected1, actual1)
     }
 

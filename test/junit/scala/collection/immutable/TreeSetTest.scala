@@ -221,9 +221,9 @@ class TreeSetTest extends AllocationTest{
     val c0l = C(0)("l")
     val c0r = C(0)("r")
     def assertIdenticalElements(expected: Set[C], actual: Set[C]): Unit = {
-      val expected1, actual1 = new java.util.IdentityHashMap[C, Unit]()
-      expected.foreach(expected1.put(_, ()))
-      actual.foreach(actual1.put(_, ()))
+      val expected1, actual1 = Collections.newSetFromMap[C](new java.util.IdentityHashMap())
+      expected.foreach(expected1.add)
+      actual.foreach(actual1.add)
       assertEquals(expected1, actual1)
     }
     assertIdenticalElements(Set(c0l), HashSet(c0l).union(HashSet(c0r)))
