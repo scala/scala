@@ -157,11 +157,11 @@ trait IsIterableLowPriority {
   // Makes `IsSeq` instances visible in `IsIterable` companion
   implicit def isSeqLikeIsIterable[Repr](implicit
     isSeqLike: IsSeq[Repr]
-  ): IsIterable.WithElement[Repr] { type A = isSeqLike.A; type C = isSeqLike.C } = isSeqLike
+  ): IsIterable.FixAC[Repr, isSeqLike.A, isSeqLike.C] = isSeqLike
 
   // Makes `IsMap` instances visible in `IsIterable` companion
   implicit def isMapLikeIsIterable[Repr](implicit
     isMapLike: IsMap[Repr]
-  ): IsIterable[Repr] { type A = isMapLike.A; type C = isMapLike.C } = isMapLike
+  ): IsIterable.FixAC[Repr, isMapLike.A, isMapLike.C] = isMapLike
 
 }
