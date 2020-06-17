@@ -13,7 +13,6 @@
 package scala.tools.nsc.transform.async
 
 import scala.collection.mutable.ListBuffer
-import scala.reflect.NameTransformer
 
 trait AsyncAnalysis extends TransformUtils  {
   import global._

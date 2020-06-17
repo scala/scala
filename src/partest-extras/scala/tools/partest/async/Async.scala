@@ -18,7 +18,6 @@ import scala.language.experimental.macros
 import scala.annotation.compileTimeOnly
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.macros.blackbox
-import scala.tools.nsc.transform.async.StateAssigner
 import scala.util.{Failure, Success, Try}
 
 object Async {

@@ -478,14 +478,7 @@ trait Trees extends api.Trees {
   case class ArrayValue(elemtpt: Tree, elems: List[Tree]) extends TermTree
 
   case class Function(vparams: List[ValDef], body: Tree)
-       extends SymTree with TermTree with FunctionApi {
-
-    override def tpe_=(tp: Type): Unit = {
-      if (!definitions.isFunctionType(tp))
-        new Throwable().printStackTrace()
-      super.setType(tp)
-    }
-  }
+       extends SymTree with TermTree with FunctionApi
   object Function extends FunctionExtractor
 
   case class Assign(lhs: Tree, rhs: Tree)
@@ -1538,7 +1531,6 @@ trait Trees extends api.Trees {
   }
 
   class ChangeOwnerTraverser(val oldowner: Symbol, val newowner: Symbol) extends Traverser {
-    assert(newowner != NoSymbol, oldowner)
     final def change(sym: Symbol) = {
       if (sym != NoSymbol && sym.owner == oldowner) {
         sym.owner = newowner

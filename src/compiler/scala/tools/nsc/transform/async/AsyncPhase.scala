@@ -35,6 +35,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
 
   /**
    * Mark the given method as requiring an async transform.
+   * Refer to documentation in the public API that forwards to this method in src/reflect/scala/reflect/api/Internals.scala
    */
   final def markForAsyncTransform(owner: Symbol, method: DefDef, awaitMethod: Symbol,
                                   config: Map[String, AnyRef]): DefDef = {

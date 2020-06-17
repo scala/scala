@@ -327,10 +327,7 @@ trait Implicits {
    */
   def memberWildcardType(name: Name, tp: Type) = {
     val result = refinedType(List(WildcardType), NoSymbol)
-    val owner = result.typeSymbol orElse { // TODO async (when after erasure?)...
-      val clazz = NoSymbol.newRefinementClass(NoPosition)
-      clazz setInfo RefinedType(Nil, newScope, clazz)
-    }
+    val owner = result.typeSymbol
     (name match {
       case x: TermName => owner.newMethod(x)
       case x: TypeName => owner.newAbstractType(x)

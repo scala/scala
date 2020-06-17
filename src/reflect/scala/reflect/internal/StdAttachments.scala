@@ -122,6 +122,4 @@ trait StdAttachments {
 
   // When typing a Def with this attachment, change the owner of its RHS from origalOwner to the symbol of the Def
   case class ChangeOwnerAttachment(originalOwner: Symbol)
-
-  case object SuppressPureExpressionWarning extends PlainAttachment
 }

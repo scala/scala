@@ -20,7 +20,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 import PartialFunction.cond
-import scala.reflect.NameTransformer
 
 /*<export> */
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
