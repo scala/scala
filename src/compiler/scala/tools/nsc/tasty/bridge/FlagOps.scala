@@ -24,7 +24,7 @@ trait FlagOps { self: TastyUniverse =>
 
   object FlagSets {
     val TastyOnlyFlags: TastyFlagSet = (
-      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | Macro | SuperTrait | Enum
+      Erased | Internal | Inline | InlineProxy | Opaque | Extension | Given | Exported | SuperTrait | Enum
       | Open | ParamAlias
     )
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
@@ -49,6 +49,7 @@ trait FlagOps { self: TastyUniverse =>
     if (tflags.is(Case)) flags |= Flag.CASE
     if (tflags.is(Implicit)) flags |= ModifierFlags.IMPLICIT
     if (tflags.is(Lazy)) flags |= Flag.LAZY
+    if (tflags.is(Macro)) flags |= Flag.MACRO
     if (tflags.is(Override)) flags |= Flag.OVERRIDE
     if (tflags.is(Static)) flags |= ModifierFlags.STATIC
     if (tflags.is(Object)) flags |= Flags.MODULE
@@ -83,7 +84,6 @@ trait FlagOps { self: TastyUniverse =>
         case Extension   => "<extension>"
         case Given       => "given"
         case Exported    => "<exported>"
-        case Macro       => "<tastymacro>"
         case SuperTrait  => "<supertrait>"
         case Enum        => "enum"
         case Open        => "open"

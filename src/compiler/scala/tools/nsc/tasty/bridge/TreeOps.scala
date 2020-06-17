@@ -15,6 +15,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.TastyUniverse
 
 import scala.tools.tasty.TastyName
+import scala.reflect.internal.Flags
 
 /**This layer adds factories that construct typed [[scala.reflect]] Trees in the shapes that TASTy expects
  */
@@ -61,6 +62,28 @@ trait TreeOps { self: TastyUniverse =>
 
     def LambdaTypeTree(tparams: List[Symbol], body: Tree): Tree = {
       u.TypeTree(defn.LambdaFromParams(tparams, body.tpe))
+    }
+
+    def Macro(impl: Tree): Tree = impl match {
+      case tree @ u.TypeApply(qual, args) =>
+        u.TypeApply(Macro(qual), args).setType(tree.tpe)
+      case tree @ u.Select(pre, sel) =>
+        val sym = if (sel.isTermName) tree.tpe.termSymbol else tree.tpe.typeSymbol
+        u.Select(Macro(pre), sym).setType(tree.tpe)
+      case tree: u.TypeTree if tree.tpe.prefix !== u.NoType =>
+        val sym = tree.tpe match {
+          case u.SingleType(_, sym) => sym
+          case u.TypeRef(_, sym, _) => sym
+        }
+        if (tree.tpe.prefix === u.NoPrefix && (sym.hasFlag(Flags.PACKAGE) && !sym.isPackageObjectOrClass || sym.isLocalToBlock)) {
+          if (sym.isLocalToBlock) u.Ident(sym).setType(tree.tpe)
+          else u.This(sym).setType(tree.tpe)
+        }
+        else {
+          u.Select(Macro(u.TypeTree(tree.tpe.prefix)), sym).setType(tree.tpe)
+        }
+      case tree =>
+        tree
     }
 
     def Typed(expr: Tree, tpt: Tree): Tree = u.Typed(expr, tpt).setType(tpt.tpe)

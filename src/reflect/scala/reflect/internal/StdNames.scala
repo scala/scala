@@ -283,6 +283,7 @@ trait StdNames {
     final val TypeName: NameType            = nameType("TypeName")
     final val TypeDef: NameType             = nameType("TypeDef")
     final val Quasiquote: NameType          = nameType("Quasiquote")
+    final val macroImplLocation: NameType   = nameType("macroImplLocation")
 
     // async
     final val stateMachine: NameType        = nameType("stateMachine$async")
@@ -396,6 +397,7 @@ trait StdNames {
 
     val annottees: NameType               = nameType("annottees")       // for macro annotations
     val macroTransform: NameType          = nameType("macroTransform")  // for macro annotations
+    val unpickledMacroImpl: NameType      = nameType("unpickledMacroImpl") // for tasty macro unpickling
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX

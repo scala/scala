@@ -107,7 +107,7 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   private def hasType(member: Symbol)(implicit ctx: Context) = {
-    ctx.mode.is(ReadAnnotation) || (member.rawInfo `ne` u.NoType)
+    ctx.mode.is(ReadAnnotation) || ctx.mode.is(ReadMacro) && (member.info `ne` u.NoType) || (member.rawInfo `ne` u.NoType)
   }
 
   private def errorMissing[T](space: Type, tname: TastyName)(implicit ctx: Context) = {

@@ -15,11 +15,10 @@ package scala.tools.nsc.tasty.bridge
 import scala.annotation.tailrec
 import scala.reflect.io.AbstractFile
 
-import collection.mutable
-
 import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._, TastyName.ObjectName
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
+import scala.collection.mutable
 
 /**This contains the definition for [[Context]], along with standard error throwing capabilities with user friendly
  * formatted errors that can change their output depending on the context mode.
@@ -74,15 +73,26 @@ trait ContextOps { self: TastyUniverse =>
     else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
   }
 
-  /**Perform an operation within a context that has the mode [[IndexStats]] will force any collected annotations
-   * afterwards*/
-  def inIndexingContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  /**Perform an operation within a context that has the mode `IndexStats` will force any collected annotations
+   * afterwards */
+  def inIndexStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
     val statsCtx = ctx.addMode(IndexStats)
     op(statsCtx)
     statsCtx.initialContext.forceAnnotations()
   }
 
+  /** Perform an operation within a context that has the mode `InnerScope` will enter any inline methods afterwards */
+  def inInnerScopeContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+    val innerCtx = ctx.addMode(InnerScope)
+    op(innerCtx)
+    innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
+  }
 
+
+  /** an aggregate of `inInnerScopeContext` within `inIndexStatsContext` */
+  def inIndexScopedStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+    inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
+  }
 
   /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
    * sealed child.
@@ -126,6 +136,12 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
+    def isScala3Macro(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Macro | Inline)
+    def isScala3Inline(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Inline)
+    def isScala2Macro(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Macro | Erased)
+
+    def requiresLatentEntry(decl: Symbol): Boolean = isScala3Macro(decl)
+
     def canEnterOverload(decl: Symbol): Boolean = {
       !(decl.isModule && isSymbol(findObject(thisCtx.owner, decl.name)))
     }
@@ -144,10 +160,11 @@ trait ContextOps { self: TastyUniverse =>
 
     private final def loadingMirror: u.Mirror = u.mirrorThatLoaded(owner)
 
-    final def requiredPackage(fullname: TastyName): Symbol = {
-      if (fullname === TastyName.Root || fullname === TastyName.RootPkg) loadingMirror.RootPackage
-      else if (fullname === TastyName.EmptyPkg) loadingMirror.EmptyPackage
-      symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
+    final def requiredPackage(fullname: TastyName): Symbol = fullname match {
+      case TastyName.Root | TastyName.RootPkg => loadingMirror.RootPackage
+      case TastyName.EmptyPkg                 => loadingMirror.EmptyPackage
+      case fullname                           =>
+        symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
     }
 
     private def symOrDependencyError(isObject: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
@@ -248,8 +265,15 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
-    final def enterIfUnseen(decl: Symbol): Unit = {
-      val decls = owner.rawInfo.decls
+    final def enterIfUnseen(sym: Symbol): Unit = {
+      if (mode.is(IndexScopedStats))
+        initialContext.collectLatentEvidence(owner, sym)
+      val decl = declaringSymbolOf(sym)
+      if (!requiresLatentEntry(decl))
+        enterIfUnseen0(owner.rawInfo.decls, decl)
+    }
+
+    protected final def enterIfUnseen0(decls: u.Scope, decl: Symbol): Unit = {
       if (allowsOverload(decl)) {
         if (canEnterOverload(decl)) {
           decls.enter(decl)
@@ -450,16 +474,67 @@ trait ContextOps { self: TastyUniverse =>
      */
     private[ContextOps] def forceAnnotations(): Unit = {
       if (mySymbolsToForceAnnots != null) {
-        val toForce = mySymbolsToForceAnnots
-        mySymbolsToForceAnnots = null
+        val toForce = mySymbolsToForceAnnots.toList
+        mySymbolsToForceAnnots.clear()
         for (sym <- toForce) {
           log(s"!!! forcing annotations on ${showSym(sym)}")
           analyseAnnotations(sym)
         }
-        assert(mySymbolsToForceAnnots == null, "more symbols added while forcing")
+        assert(mySymbolsToForceAnnots.isEmpty, "more symbols added while forcing")
       }
     }
 
+    private[this] var myInlineDefs: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+    private[this] var myMacros: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+
+    /** Collect evidence from definitions that is required by `enterLatentDefs`. */
+    private[ContextOps] def collectLatentEvidence(owner: Symbol, sym: Symbol): Unit = {
+
+      def macroMap() = {
+        if (myMacros == null) myMacros = mutable.HashMap.empty
+        myMacros
+      }
+
+      def inlineMap() = {
+        if (myInlineDefs == null) myInlineDefs = mutable.HashMap.empty
+        myInlineDefs
+      }
+
+      def register(map: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]], sym: Symbol) =
+        map.getOrElseUpdate(owner, mutable.ArrayBuffer.empty) += sym
+
+      if (isScala2Macro(sym)) register(macroMap(), sym)
+      else if (isScala3Inline(sym)) register(inlineMap(), sym)
+
+    }
+
+    /** Should be called after indexing all symbols in the given owners scope.
+     *
+     *  Enters qualifying definitions into the given owners scope, according to the following rules:
+     *    - an `inline macro` method (Scala 3 macro) without a corresponding `erased macro` method (Scala 2 macro).
+     *
+     *  @param cls should be a symbol associated with a non-empty scope
+     */
+    private[ContextOps] def enterLatentDefs(cls: Symbol): Unit = {
+
+      def macroDefs(owner: Symbol): Option[Iterable[Symbol]] = {
+        if (myMacros != null) myMacros.remove(owner)
+        else None
+      }
+
+      def inlineDefs(owner: Symbol): Option[Iterable[Symbol]] = {
+        if (myInlineDefs != null) myInlineDefs.remove(owner)
+        else None
+      }
+
+      val decls  = cls.rawInfo.decls
+      val macros = macroDefs(cls).getOrElse(Iterable.empty)
+      val defs   = inlineDefs(cls).getOrElse(Iterable.empty)
+
+      for (d <- defs if !macros.exists(_.name == d.name))
+        enterIfUnseen0(decls, d)
+
+    }
   }
 
   final class FreshContext(val owner: Symbol, val outer: Context, val mode: TastyMode) extends Context {

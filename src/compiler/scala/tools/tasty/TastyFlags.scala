@@ -63,6 +63,8 @@ object TastyFlags {
 
   private[TastyFlags] final val maxFlag: Long = ParamAlias.shift
 
+  def optFlag(cond: Boolean)(flag: TastyFlagSet): TastyFlagSet = if (cond) flag else EmptyTastyFlags
+
   case class TastyFlagSet(val toLong: Long) extends AnyVal {
 
     private[TastyFlags] def shift: Long = {

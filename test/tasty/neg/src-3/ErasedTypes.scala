@@ -10,4 +10,8 @@ object ErasedTypes {
   class Bar[F <: Foo { def foo1(erased x: String): 0 }]
   class Baz[F <: Foo { def foo2(using erased x: String): 0 }]
 
+  object ErasedCompileTimeOps {
+    erased def theNothing: Nothing = ???
+  }
+
 }

@@ -342,6 +342,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.BlackboxContextClass
     definitions.WhiteboxContextClass
     definitions.MacroImplAnnotation
+    definitions.MacroImplLocationAnnotation
     definitions.StringContextClass
     definitions.StringContextModule
     definitions.ValueOfClass

@@ -282,6 +282,10 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     macroImplBindingCache.getOrElseUpdate(macroDef,
       macroDef.getAnnotation(MacroImplAnnotation) collect {
         case AnnotationInfo(_, List(pickle), _) => MacroImplBinding.unpickle(pickle)
+      } orElse {
+        macroDef.getAnnotation(MacroImplLocationAnnotation) collect {
+          case AnnotationInfo(_, List(unpickled), _) => MacroImplBinding.unpickle(MacroImplBinding.pickle(unpickled))
+        }
       }
     )
   }

@@ -21,13 +21,20 @@ object TastyModes {
 
   final val EmptyTastyMode: TastyMode = TastyMode(0)
   /** When reading the parents of a class template */
-  final val ReadParents: TastyMode    = TastyMode(1 << 0)
+  final val ReadParents: TastyMode = TastyMode(1 << 0)
   /** When reading trees of an annotation */
   final val ReadAnnotation: TastyMode = TastyMode(1 << 1)
   /** When reading the outermost tree of an term */
-  final val OuterTerm: TastyMode      = TastyMode(1 << 2)
+  final val OuterTerm: TastyMode = TastyMode(1 << 2)
   /** When reading statements in a sequence */
-  final val IndexStats: TastyMode     = TastyMode(1 << 3)
+  final val IndexStats: TastyMode = TastyMode(1 << 3)
+  /** When reading a macro definition body */
+  final val ReadMacro: TastyMode = TastyMode(1 << 4)
+  /** When not at the package scope */
+  final val InnerScope: TastyMode = TastyMode(1 << 5)
+
+  /** The union of [[IndexStats]] and [[InnerScope]] */
+  final val IndexScopedStats: TastyMode = IndexStats | InnerScope
 
   case class TastyMode(val toInt: Int) extends AnyVal { mode =>
 
@@ -46,6 +53,8 @@ object TastyModes {
         if (mode.is(ReadAnnotation)) sb += "ReadAnnotation"
         if (mode.is(OuterTerm))      sb += "OuterTerm"
         if (mode.is(IndexStats))     sb += "IndexStats"
+        if (mode.is(ReadMacro))      sb += "ReadMacro"
+        if (mode.is(InnerScope))     sb += "InnerScope"
         sb.mkString(" | ")
       }
     }

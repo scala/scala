@@ -1,0 +1,4 @@
+TestMacroCompat_fail.scala:7: error: can't find term required by object tastytest.MacroCompat: tastytest.`package`.Macros.posImpl; perhaps it is missing from the classpath.
+    val result = MacroCompat.testCase("foo")(pos)
+                                             ^
+1 error
