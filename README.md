@@ -56,9 +56,19 @@ scala/
 +--lib/                      Pre-compiled libraries for the build
 +--src/                      All sources
    +---/library              Scala Standard Library
+   +---/library-aux          Scala Auxiliary Library, for bootstrapping and documentation purposes
    +---/reflect              Scala Reflection
    +---/compiler             Scala Compiler
+   +---/interactive          Scala Interactive Compiler, for clients such as an IDE (aka Presentation Compiler)
    +---/intellij             IntelliJ project templates
+   +---/manual               Scala's runner scripts "man" (manual) pages
+   +---/partest              Scala's internal parallel testing framework
+   +---/partest-javaagent    Partest's helper java agent
+   +---/repl                 Scala REPL core
+   +---/repl-frontend        Scala REPL frontend
+   +---/scaladoc             Scala's documentation tool
+   +---/scalap               Scala's class file decompiler
+   +---/testkit              Scala's unit-testing kit
 +--spec/                     The Scala language specification
 +--scripts/                  Scripts for the CI jobs (including building releases)
 +--test/                     The Scala test suite
