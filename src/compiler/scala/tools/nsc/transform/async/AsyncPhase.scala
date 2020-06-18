@@ -16,7 +16,7 @@ import scala.collection.mutable
 import scala.tools.nsc.transform.{Transform, TypingTransformers}
 import scala.reflect.internal.util.SourceFile
 
-abstract class AsyncPhase extends Transform with TypingTransformers with AnfTransform with AsyncAnalysis with Lifter with LiveVariables {
+abstract class AsyncPhase extends Transform with TypingTransformers with AnfTransform with Lifter with LiveVariables {
   self =>
   import global._
 
@@ -146,7 +146,6 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
       // We mark whether each sub-tree of `asyncBody` that do or do not contain an await in thus pre-processing pass.
       // The ANF transform can then efficiently query this to selectively transform the tree.
       markContainsAwait(asyncBody)
-      reportUnsupportedAwaits(asyncBody)
 
       // Transform to A-normal form:
       //  - no await calls in qualifiers or arguments,

@@ -15,8 +15,7 @@ package scala.tools.nsc.transform.async
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-trait ExprBuilder extends TransformUtils {
-
+trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   import global._
 
   private def stateAssigner  = currentTransformState.stateAssigner
@@ -347,11 +346,7 @@ trait ExprBuilder extends TransformUtils {
     }
 
     private def checkForUnsupportedAwait(tree: Tree) = if (containsAwait(tree)) {
-      tree.foreach {
-        case tree: RefTree if isAwait(tree) =>
-          global.reporter.error(tree.pos, "await must not be used in this position")
-        case _ =>
-      }
+      reportUnsupportedAwaits(tree)
     }
 
     /** Copy these states into the current block builder's async stats updating the open state builder's
