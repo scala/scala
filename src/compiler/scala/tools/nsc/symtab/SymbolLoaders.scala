@@ -239,7 +239,7 @@ abstract class SymbolLoaders {
           val currentphase = phase
           doComplete(root)
           phase = currentphase
-          informTime("loaded " + description, start)
+          if (settings.verbose) informTime("loaded " + description, start)
           ok = true
           setSource(root)
           setSource(root.companionSymbol) // module -> class, class -> module

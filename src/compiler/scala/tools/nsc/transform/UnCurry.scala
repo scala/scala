@@ -15,12 +15,10 @@ package tools.nsc
 package transform
 
 import scala.annotation.tailrec
-
 import symtab.Flags._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
-
 import PartialFunction.cond
 
 /*<export> */
@@ -149,7 +147,7 @@ abstract class UnCurry extends InfoTransform
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth,
-        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectTpe
+        meth.newValue(unit.freshTermName(nme.NON_LOCAL_RETURN_KEY_STRING), meth.pos, SYNTHETIC) setInfo ObjectTpe
       )
 
     /** Generate a non-local return throw with given return expression from given method.
@@ -409,7 +407,7 @@ abstract class UnCurry extends InfoTransform
       /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
+        val sym = currentOwner.newMethod(unit.freshTermName(nme.LIFTED_TREE), tree.pos, Flag.ARTIFACT)
         sym.setInfo(MethodType(List(), tree.tpe))
         tree.changeOwner(currentOwner, sym)
         localTyper.typedPos(tree.pos)(Block(
@@ -754,7 +752,7 @@ abstract class UnCurry extends InfoTransform
                       tpe
                   }
                 val info = info0.normalize
-                val tempValName = unit freshTermName (p.name + "$")
+                val tempValName = unit freshTermName (p.name.toStringWithSuffix("$"))
                 val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(info)
                 atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), info)))
               }

@@ -134,7 +134,18 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
         val needsExtraCast = isPrimitiveValueType(tree.tpe.typeArgs.head) && !isPrimitiveValueType(pt.typeArgs.head)
         val tree1 = if (needsExtraCast) gen.mkRuntimeCall(nme.toObjectArray, List(tree)) else tree
         gen.mkAttributedCast(tree1, pt)
-      } else gen.mkAttributedCast(tree, pt)
+      } else {
+        tree match {
+          case ld: LabelDef =>
+            // Push the cast into the RHS of matchEnd LabelDefs.
+            ld.symbol.modifyInfo {
+              case MethodType(params, _) => MethodType(params, pt)
+            }
+            deriveLabelDef(ld)(rhs => cast(rhs, pt)).setType(pt)
+          case _ =>
+            gen.mkAttributedCast(tree, pt)
+        }
+      }
     }
 
     /** Adapt `tree` to expected type `pt`.

@@ -74,6 +74,24 @@ abstract class Attachments { self =>
       else new NonemptyAttachments[Pos](this.pos, newAll)
     }
   }
+  /** Creates a copy of this attachment with the given element removed. */
+  final def removeElement[T](attachment: T): Attachments { type Pos = self.Pos } = {
+    val newAll = all - attachment
+    if (newAll eq all) this
+    else if (newAll.isEmpty) pos.asInstanceOf[Attachments { type Pos = self.Pos }]
+    else new NonemptyAttachments[Pos](this.pos, newAll)
+  }
+  /** Creates a copy of this attachment with the given element added. */
+  final def addElement[T](attachment: T): Attachments { type Pos = self.Pos } = {
+    val newAll = all + attachment
+    if (newAll eq all) this
+    else new NonemptyAttachments[Pos](this.pos, newAll)
+  }
+
+  /** Tests if the given element is attached. */
+  final def containsElement(element: Any): Boolean = {
+    all.contains(element)
+  }
 
   def isEmpty: Boolean = true
 }

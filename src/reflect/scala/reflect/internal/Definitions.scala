@@ -378,6 +378,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val PredefModule               = requiredModule[scala.Predef.type]
          def Predef_wrapArray(tp: Type) = getMemberMethod(PredefModule, wrapArrayMethodName(tp))
          def Predef_???                 = getMemberMethod(PredefModule, nme.???)
+         def Predef_locally             = getMemberMethod(PredefModule, nme.locally)
     def isPredefMemberNamed(sym: Symbol, name: Name) = (
       (sym.name == name) && (sym.owner == PredefModule.moduleClass)
     )
@@ -643,6 +644,13 @@ trait Definitions extends api.StandardDefinitions {
     def isTupleSymbol(sym: Symbol) = TupleClass contains unspecializedSymbol(sym)
     def isFunctionSymbol(sym: Symbol) = FunctionClass contains unspecializedSymbol(sym)
     def isProductNSymbol(sym: Symbol) = ProductClass contains unspecializedSymbol(sym)
+
+    lazy val TryClass = requiredClass[scala.util.Try[_]]
+    lazy val FailureClass = requiredClass[scala.util.Failure[_]]
+    lazy val SuccessClass = requiredClass[scala.util.Success[_]]
+    lazy val FutureClass = requiredClass[scala.concurrent.Future[_]]
+    lazy val PromiseClass = requiredClass[scala.concurrent.Promise[_]]
+    lazy val NonFatalClass = requiredClass[scala.util.control.NonFatal.type]
 
     def unspecializedSymbol(sym: Symbol): Symbol = {
       if (sym hasFlag SPECIALIZED) {
@@ -1518,6 +1526,8 @@ trait Definitions extends api.StandardDefinitions {
     /** Efficient access to member symbols which must be looked up each run. Access via `currentRun.runDefinitions` */
     final class RunDefinitions {
       lazy val StringAdd_+ = getMemberMethod(StringAddClass, nme.PLUS)
+      lazy val String_valueOf_Int = getMemberMethod(StringClass.companionModule, nme.valueOf).suchThat(
+        x => x.paramss.head.length == 1 && x.firstParam.info.typeSymbol == IntClass)
 
       // The given symbol represents either String.+ or StringAdd.+
       // TODO: this misses Predef.any2stringadd
@@ -1554,6 +1564,8 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Boolean_not = definitions.Boolean_not
 
       lazy val Option_apply = getMemberMethod(OptionModule, nme.apply)
+      lazy val Option_isDefined: Symbol = getMemberMethod(OptionClass, TermName("isDefined"))
+      lazy val Option_get: Symbol = getMemberMethod(OptionClass, TermName("get"))
       lazy val List_apply = DefinitionsClass.this.List_apply
 
       /**
@@ -1634,6 +1646,11 @@ trait Definitions extends api.StandardDefinitions {
       }
 
       lazy val Scala_Java8_CompatPackage = rootMirror.getPackageIfDefined("scala.runtime.java8")
+
+      lazy val Future_unit: Symbol = getMemberMethod(FutureClass.companionModule, TermName("unit"))
+      lazy val Future_onComplete: Symbol = getMemberMethod(FutureClass, TermName("onComplete"))
+      lazy val Future_value: Symbol = getMemberMethod(FutureClass, TermName("value"))
+      lazy val Promise_complete: Symbol = getMemberMethod(PromiseClass, TermName("complete"))
     }
   }
 }

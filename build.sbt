@@ -450,6 +450,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.getOrElse0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMapCollision1.getOrElse0"),
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
 
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$IterableOrdering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple4Ordering"),
@@ -461,6 +462,14 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple6Ordering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple8Ordering"),
     ProblemFilters.exclude[MissingClassProblem]("scala.math.Ordering$Tuple5Ordering"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.removeElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.addElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.containsElement"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.async"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Internals#InternalApi.markForAsyncTransform"),
   )
 }
 
@@ -516,6 +525,7 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   cleanFiles += (classDirectory in Compile).value,
   cleanFiles += (target in Compile in doc).value,
   fork in run := true,
+  connectInput in run := true,
   scalacOptions in Compile += "-Ywarn-unused:imports",
   scalacOptions in Compile in doc ++= Seq(
     "-doc-footer", "epfl",
@@ -963,7 +973,7 @@ lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-
   .settings(
     name := "scala-partest-extras",
     description := "Scala Compiler Testing Tool (compiler-specific extras)",
-    libraryDependencies += partestDep,
+    libraryDependencies ++= Seq(partestDep, junitDep),
     unmanagedSourceDirectories in Compile := List(baseDirectory.value)
   )
 
@@ -1294,6 +1304,7 @@ lazy val root: Project = (project in file("."))
         (testOnly in IntegrationTest in testP).toTask(" -- res scalap specialized").result map (_ -> "partest res scalap specialized"),
         (testOnly in IntegrationTest in testP).toTask(" -- instrumented presentation").result map (_ -> "partest instrumented presentation"),
         (testOnly in IntegrationTest in testP).toTask(" -- --srcpath scaladoc").result map (_ -> "partest --srcpath scaladoc"),
+        (testOnly in IntegrationTest in testP).toTask(" -- --srcpath async").result map (_ -> "partest --srcpath async"),
         (Keys.test in Test in osgiTestFelix).result map (_ -> "osgiTestFelix/test"),
         (Keys.test in Test in osgiTestEclipse).result map (_ -> "osgiTestEclipse/test"),
         (mimaReportBinaryIssues in library).result map (_ -> "library/mimaReportBinaryIssues"),

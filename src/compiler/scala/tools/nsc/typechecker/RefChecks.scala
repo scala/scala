@@ -1284,12 +1284,16 @@ abstract class RefChecks extends Transform {
           reporter.warning(pos, s"${sym.fullLocationString} has changed semantics in version ${sym.migrationVersion.get}:\n${sym.migrationMessage.get}")
       }
       // See an explanation of compileTimeOnly in its scaladoc at scala.annotation.compileTimeOnly.
+      // async/await is expanded after erasure
       if (sym.isCompileTimeOnly && !currentOwner.ownerChain.exists(x => x.isCompileTimeOnly)) {
-        def defaultMsg =
-          sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
-              |it should have been processed and eliminated during expansion of an enclosing macro."""
-        // The getOrElse part should never happen, it's just here as a backstop.
-        reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+        if (!async.deferCompileTimeOnlyError(sym)) {
+          def defaultMsg =
+            sm"""Reference to ${sym.fullLocationString} should not have survived past type checking,
+                |it should have been processed and eliminated during expansion of an enclosing macro."""
+          // The getOrElse part should never happen, it's just here as a backstop.
+          val msg = sym.compileTimeOnlyMessage getOrElse defaultMsg
+          reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+        }
       }
     }
 

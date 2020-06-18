@@ -1,0 +1,7 @@
+naked_await.scala:8: error: await must not be used under a nested method.
+      def foo = await(Future(3))
+                ^
+naked_await.scala:10: error: `await` must be enclosed in an `async` block
+    await(Future(4))
+    ^
+two errors found
