@@ -252,7 +252,7 @@ class ExtractAPI[GlobalType <: Global](
         add(b)
         add(b.getterIn(b.enclClass))
         add(b.setterIn(b.enclClass))
-        annotations.toArray.distinct
+        annotations.toArray
       } else {
         if (b.annotations.isEmpty) ExtractAPI.emptyAnnotationArray
         else mkAnnotations(in, b.annotations)
