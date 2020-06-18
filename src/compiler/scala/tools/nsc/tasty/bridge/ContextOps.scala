@@ -256,7 +256,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = u.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = u.ClassInfoType(cls.rawInfo.parents, cls.rawInfo.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 

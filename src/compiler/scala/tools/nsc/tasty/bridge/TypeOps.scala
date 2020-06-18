@@ -49,6 +49,21 @@ trait TypeOps { self: TastyUniverse =>
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
   object defn {
+
+    class EnumSupport(implicit ctx: Context) {
+      val DerivingMirrorSingleton: Type = ctx.requiredClass(tpnme.ScalaDerivingMirrorSingleton).tpe
+      val Product: Type = u.definitions.ProductRootClass.tpe
+      val Serializable: Type = u.definitions.SerializableTpe
+    }
+
+    private[this] var _enumsupport: EnumSupport = _
+    def EnumSupport(implicit ctx: Context): EnumSupport = {
+      if (_enumsupport == null) {
+        _enumsupport = new EnumSupport
+      }
+      _enumsupport
+    }
+
     final val NoType: Type = u.NoType
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)

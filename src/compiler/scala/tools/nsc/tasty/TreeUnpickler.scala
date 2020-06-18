@@ -374,21 +374,20 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       currentAddr === end || isModifierTag(nextByte)
 
     private def normalizeFlags(tag: Int, owner: Symbol, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
+      var flags = tastyFlags
       val lacksDefinition =
         rhsIsEmpty &&
-          name.isTermName && !name.isConstructorName && !tastyFlags.isOneOf(TermParamOrAccessor) ||
+          name.isTermName && !name.isConstructorName && !flags.isOneOf(TermParamOrAccessor) ||
         isAbsType ||
-        tastyFlags.is(Opaque) && !isClass
-      var flags = tastyFlags
+        flags.is(Opaque) && !isClass
       if (lacksDefinition && tag != PARAM) flags |= Deferred
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
         if (flags.not(Mutable)) flags |= Stable
         if (owner.is(Trait)) flags |= FieldAccessor
+        if (flags.is(Enum | Case)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
       }
-      if (tastyFlags.is(Object))
-        flags = flags | (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
         else if (tag === PARAM) {
@@ -401,6 +400,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (name.isDefaultName || flags.is(Param) && owner.isMethod && owner.is(DefaultParameterized)) {
         flags |= DefaultParameterized
       }
+      if (flags.is(Object)) flags |= (if (tag === VALDEF) ObjectCreationFlags else ObjectClassCreationFlags)
       flags
     }
 
@@ -472,14 +472,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       def canEnterInClass = !isTypeParameter
       ctx.log {
         val privateFlag = if (isSymbol(privateWithin)) s"private[$privateWithin] " else ""
-        val flags = {
+        val debugFlags = {
           if (privateFlag.nonEmpty) {
-            val given = if (!givenFlags) "" else " " + (givenFlags &~ Private).debug
+            val given = if (!flags) "" else " " + (flags &~ Private).debug
             privateFlag + given
           }
-          else givenFlags.debug
+          else flags.debug
         }
-        s"""$start parsed flags $flags"""
+        s"""$start parsed flags $debugFlags"""
       }
       val sym = {
         if (tag === TYPEPARAM && ctx.owner.isClassConstructor) {
@@ -729,7 +729,20 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val tpe = readTpt()(localCtx).tpe
             if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
-              if (completer.tastyFlagSet.is(Enum)) defn.ConstantType(tpd.Constant((sym, tpe))).tap(_.typeSymbol.set(Final))
+              if (completer.tastyFlagSet.is(Enum)) {
+                val enumClass = sym.objectImplementation
+                val parents = (
+                  tpe.parents :::
+                  defn.EnumSupport.DerivingMirrorSingleton ::
+                  defn.EnumSupport.Product ::
+                  defn.EnumSupport.Serializable ::
+                  Nil
+                )
+                enumClass.info = defn.ClassInfoType(parents, enumClass)
+                val selfTpe = prefixedRef(sym.owner.thisType, enumClass)
+                enumClass.typeOfThis = selfTpe
+                selfTpe
+              }
               else if (sym.isMethod) defn.ExprType(tpe)
               else tpe
             )

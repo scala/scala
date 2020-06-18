@@ -17,6 +17,10 @@ object TestFancyColours extends Suite("TestFancyColours") {
     case Colour.Red => "Yawn..."
   }
 
+  def describeSingleton(c: scala.deriving.Mirror.Singleton) = c match {
+    case Colour.Red => "Singleton"
+  }
+
   test(assert(describe(Colour.Pink) === "Amazing!"))
   test(assert(describe(Colour.Red) === "Yawn..."))
   test(assert(describePretty(Colour.Pink) === "Amazing!"))
