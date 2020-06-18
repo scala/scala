@@ -364,20 +364,18 @@ abstract class LocalOpt {
       (codeChanged, requireEliminateUnusedLocals)
     }
 
-    val (nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = if (AsmAnalyzer.sizeOKForBasicValue(method)) {
-      // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
-      // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
-      val r = removalRound(
-        requestNullness = true,
-        requestDCE = true,
-        requestBoxUnbox = true,
-        requestStaleStores = true,
-        requestPushPop = true,
-        requestStoreLoad = true,
-        firstIteration = true)
-      if (compilerSettings.optUnreachableCode) BackendUtils.setDceDone(method)
-      r
-    } else (false, false)
+    // we run DCE even if the method is already in the `unreachableCodeEliminated` map: the DCE
+    // here is more thorough than `minimalRemoveUnreachableCode` that run before inlining.
+    val (nullnessDceBoxesCastsCopypropPushpopOrJumpsChanged, requireEliminateUnusedLocals) = removalRound(
+      requestNullness = true,
+      requestDCE = true,
+      requestBoxUnbox = true,
+      requestStaleStores = true,
+      requestPushPop = true,
+      requestStoreLoad = true,
+      firstIteration = true)
+
+    if (compilerSettings.optUnreachableCode) BackendUtils.setDceDone(method)
 
     // (*) Removing stale local variable descriptors is required for correctness, see comment in `methodOptimizations`
     val localsRemoved =
