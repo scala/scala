@@ -1032,7 +1032,7 @@ trait Implicits {
            !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
         && !shadower.isShadowed(info.name)          // OPT rare, only check for plausible candidates
-        && matchesPt(info)                          // stable and matches expected type
+        && undoLog.undo(matchesPt(info))            // stable and matches expected type
       )
       /** The implicits that are not valid because they come later in the source and
        *  lack an explicit result type. Used for error diagnostics only.

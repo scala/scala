@@ -210,8 +210,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
 
     val infer = new Inferencer {
       def context = Typer.this.context
-      // See scala/bug#3281 re undoLog
-      override def isCoercible(tp: Type, pt: Type) = undoLog undo viewExists(tp, pt)
+      override def isCoercible(tp: Type, pt: Type) = viewExists(tp, pt)
     }
 
     /** Overridden to false in scaladoc and/or interactive. */
@@ -298,7 +297,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
          !from.isError
       && !to.isError
       && context.implicitsEnabled
-      && (inferView(context.tree, from, to, reportAmbiguous = false) != EmptyTree)
+      && (inferView(context.tree, from, to, reportAmbiguous = false).tpe match {
+        case MethodType(List(param), result) =>
+          from <:< dropByName(param.info) && result.finalResultType <:< to
+        case _ => false
+      })
       // scala/bug#8230 / scala/bug#8463 We'd like to change this to `saveErrors = false`, but can't.
       // For now, we can at least pass in `context.tree` rather then `EmptyTree` so as
       // to avoid unpositioned type errors.
