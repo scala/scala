@@ -372,7 +372,7 @@ object Test extends ScaladocModelTest {
     val blockComparisons = blocks.zipWithIndex.collect {
       case ((expectedBlock, actualBlock), idx) if expectedBlock != actualBlock =>
         s"Block mismatch at index $idx\nExpected block: $expectedBlock\nActual block  : $actualBlock"
-    }.headOption.getOrElse("")
+    }.headOption.fold("")(identity)
 
     assert(expectedBody == actualBody, s"$blockComparisons\n\nExpected: $expectedBody, Actual: $actualBody")
   }
