@@ -1,5 +1,7 @@
 package scala.collection.immutable
 
+import java.util.Collections
+
 import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -201,5 +203,26 @@ class TreeMapTest extends AllocationTest {
       assertEquals(s"$lText $rText", lhs, rhs)
       assertEquals(s"$rText $lText", rhs, lhs)
     }
+  }
+
+  @Test
+  def unionAndIntersectRetainLeft(): Unit = {
+    case class C(a: Int)(override val toString: String)
+    implicit val ordering: Ordering[C] = Ordering.by(_.a)
+    val c0l = C(0)("l")
+    val c0r = C(0)("r")
+    def assertIdenticalKeys(expected: Map[C, Unit], actual: Map[C, Unit]): Unit = {
+      val expected1, actual1 = Collections.newSetFromMap[C](new java.util.IdentityHashMap())
+      expected.keys.foreach(expected1.add)
+      actual.keys.foreach(actual1.add)
+      assertEquals(expected1, actual1)
+    }
+    assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).concat(HashMap((c0r, ()))))
+    assertIdenticalKeys(Map((c0l, ())), TreeMap((c0l, ())).concat(HashMap((c0r, ()))))
+    assertIdenticalKeys(Map((c0l, ())), TreeMap((c0l, ())).concat(TreeMap((c0r, ()))))
+
+    assertIdenticalKeys(Map((c0l, ())), HashMap.newBuilder[C, Unit].++=(HashMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
+    assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
+    assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(TreeMap((c0r, ()))).result())
   }
 }
