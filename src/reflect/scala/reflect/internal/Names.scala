@@ -508,6 +508,13 @@ trait Names extends api.Names {
     def longString: String        = s"$nameKind $decoded"
     def debugString               = if (isTypeName) s"$decoded!" else decoded
 
+    final def toStringWithSuffix(suffix: String): String = {
+      val builder = new java.lang.StringBuilder(length + suffix.length)
+      builder.append(this: CharSequence)
+      builder.append(suffix)
+      builder.toString
+    }
+
     override final def toString: String = if (cachedString == null) new String(_chrs, index, len) else cachedString
     final def appendTo(buffer: java.lang.StringBuffer, start: Int, length: Int): Unit =
       buffer.append(_chrs, this.start + start, length)

@@ -37,6 +37,7 @@ import scala.tools.nsc.reporters.{FilteringReporter, MakeFilteringForwardingRepo
 import scala.tools.nsc.symtab.classfile.Pickler
 import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
 import scala.tools.nsc.transform._
+import scala.tools.nsc.transform.async.AsyncPhase
 import scala.tools.nsc.transform.patmat.PatternMatching
 import scala.tools.nsc.typechecker._
 import scala.tools.nsc.util.ClassPath
@@ -372,6 +373,12 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     getSourceFile(f)
   }
 
+  override lazy val internal: Internal = new SymbolTableInternal {
+    override def markForAsyncTransform(owner: Symbol, method: DefDef, awaitSymbol: Symbol, config: Map[String, AnyRef]): DefDef = {
+      async.markForAsyncTransform(owner, method, awaitSymbol, config)
+    }
+  }
+
   lazy val loaders = new {
     val global: Global.this.type = Global.this
     val platform: Global.this.platform.type = Global.this.platform
@@ -570,11 +577,17 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val runsRightAfter = Some("erasure")
   } with PostErasure
 
+  // phaseName = "async"
+  object async extends {
+    val global: Global.this.type = Global.this
+    val runsAfter = List("posterasure")
+    val runsRightAfter = None
+  } with AsyncPhase
 
   // phaseName = "lambdalift"
   object lambdaLift extends {
     val global: Global.this.type = Global.this
-    val runsAfter = List("erasure")
+    val runsAfter = List("async")
     val runsRightAfter = None
   } with LambdaLift
 
@@ -674,6 +687,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
       explicitOuter           -> "this refs to outer pointers",
       erasure                 -> "erase types, add interfaces for traits",
       postErasure             -> "clean up erased inline classes",
+      async                   -> "transform async/await into a state machine",
       lambdaLift              -> "move nested functions to top level",
       constructors            -> "move field definitions into constructors",
       mixer                   -> "mixin composition",

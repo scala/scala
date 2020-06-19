@@ -108,6 +108,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
    * -X "Advanced" settings
    */
   val Xhelp              = BooleanSetting      ("-X", "Print a synopsis of advanced options.")
+  val async              = BooleanSetting      ("-Xasync", "Enable the async phase for scala.async.Async.{async,await}.")
   val checkInit          = BooleanSetting      ("-Xcheckinit", "Wrap field accessors to throw an exception on uninitialized access.")
   val developer          = BooleanSetting      ("-Xdev", "Issue warnings about anything which seems amiss in compiler internals. Intended for compiler developers")
   val noassertions       = BooleanSetting      ("-Xdisable-assertions", "Generate no assertions or assumptions.") andThen (flag =>

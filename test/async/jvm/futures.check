@@ -1,0 +1,13 @@
+futures.scala:120: warning: match may not be exhaustive.
+It would fail on the following input: Failure(_)
+        f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher receive") }
+                      ^
+futures.scala:127: warning: match may not be exhaustive.
+It would fail on the following input: Failure(_)
+        f2 onComplete { case Success(_) => throw new ThrowableTest("current thread receive") }
+                      ^
+futures.scala:172: warning: match may not be exhaustive.
+It would fail on the following input: Req((x: T forSome x not in (Int, String)))
+        def asyncReq[T](req: Req[T]) = req match {
+                                       ^
+warning: there were 9 deprecation warnings (since 2.12.0); re-run with -deprecation for details

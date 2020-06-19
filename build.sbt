@@ -329,6 +329,17 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.collection.SortedMap.scala$collection$SortedMap$$super=uals"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Vector.prependedAll0"),
+
+    // async
+    ProblemFilters.exclude[ReversedMissingMethodProblem]("scala.reflect.runtime.ReflectSetup.phaseWithId"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.removeElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.addElement"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.containsElement"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.async"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Internals#InternalApi.markForAsyncTransform"),
   ),
 }
 
@@ -817,7 +828,7 @@ lazy val partest = configureAsSubproject(project)
   .settings(
     name := "scala-partest",
     description := "Scala Compiler Testing Tool",
-    libraryDependencies ++= List(testInterfaceDep, diffUtilsDep),
+    libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
     pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
     fixPom(
       "/project/name" -> <name>Scala Partest</name>,
@@ -1171,6 +1182,7 @@ lazy val root: Project = (project in file("."))
         partestDesc("instrumented presentation"),
         partestDesc("--srcpath scaladoc"),
         partestDesc("--srcpath macro-annot"),
+        partestDesc("--srcpath async"),
         (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
         (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
         (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),

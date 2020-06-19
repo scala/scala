@@ -14,14 +14,13 @@ package scala
 package tools.nsc
 package transform
 
+import scala.PartialFunction.cond
 import scala.annotation.tailrec
-import symtab.Flags._
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.util.ListOfNil
 import scala.tools.nsc.Reporting.WarningCategory
-
-import PartialFunction.cond
+import scala.tools.nsc.symtab.Flags._
 
 /** - uncurry all symbol and tree types (@see UnCurryPhase) -- this includes normalizing all proper types.
  *  - for every curried parameter list:  (ps_1) ... (ps_n) ==> (ps_1, ..., ps_n)
@@ -63,9 +62,9 @@ abstract class UnCurry extends InfoTransform
                           with TypingTransformers with ast.TreeDSL {
   val global: Global               // need to repeat here because otherwise last mixin defines global as
                                    // SymbolTable. If we had DOT this would not be an issue
-  import global._                  // the global environment
-  import definitions._             // standard classes and methods
   import CODE._
+  import global._
+  import definitions._
 
   val phaseName: String = "uncurry"
 
@@ -147,7 +146,7 @@ abstract class UnCurry extends InfoTransform
     /** Return non-local return key for given method */
     private def nonLocalReturnKey(meth: Symbol) =
       nonLocalReturnKeys.getOrElseUpdate(meth,
-        meth.newValue(unit.freshTermName("nonLocalReturnKey"), meth.pos, SYNTHETIC) setInfo ObjectTpe
+        meth.newValue(unit.freshTermName(nme.NON_LOCAL_RETURN_KEY_STRING), meth.pos, SYNTHETIC) setInfo ObjectTpe
       )
 
     /** Generate a non-local return throw with given return expression from given method.
@@ -420,7 +419,7 @@ abstract class UnCurry extends InfoTransform
       /* Transform tree `t` to { def f = t; f } where `f` is a fresh name */
       def liftTree(tree: Tree) = {
         debuglog("lifting tree at: " + (tree.pos))
-        val sym = currentOwner.newMethod(unit.freshTermName("liftedTree"), tree.pos)
+        val sym = currentOwner.newMethod(unit.freshTermName(nme.LIFTED_TREE), tree.pos, Flag.ARTIFACT)
         sym.setInfo(MethodType(List(), tree.tpe))
         tree.changeOwner(currentOwner, sym)
         localTyper.typedPos(tree.pos)(Block(
@@ -704,7 +703,7 @@ abstract class UnCurry extends InfoTransform
        * @return (newVparamss, newRhs)
        */
       def erase(dd: DefDef): (List[List[ValDef]], Tree) = {
-        import dd.{ vparamss, rhs }
+        import dd.{rhs, vparamss}
         val (allParams, packedParamsSyms, tempVals): (List[ValDef], List[Symbol], List[ValDef]) = {
 
           val allParamsBuf: ListBuffer[ValDef] = ListBuffer.empty
@@ -773,7 +772,7 @@ abstract class UnCurry extends InfoTransform
                       tpe
                   }
                 val info = info0.normalize
-                val tempValName = unit.freshTermName(s"${p.name}$$")
+                val tempValName = unit.freshTermName(p.name.toStringWithSuffix("$"))
                 val newSym = dd.symbol.newTermSymbol(tempValName, p.pos, SYNTHETIC).setInfo(info)
                 atPos(p.pos)(ValDef(newSym, gen.mkAttributedCast(Ident(p.symbol), info)))
               }

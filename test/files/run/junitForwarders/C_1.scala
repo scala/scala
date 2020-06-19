@@ -9,7 +9,7 @@ object Test extends App {
     val s = c.getDeclaredMethods.sortBy(_.getName).map(m => s"${m.getName} - ${m.getDeclaredAnnotations.mkString(", ")}").mkString(";")
     assert(s == e, s"found: $s\nexpected: $e")
   }
-  check(classOf[C], "foo - @org.junitlike.Test()")
+  check(classOf[C], "foo - @org.junitlike.Test(timeout=0, expected=class org.junit.Test$None)")
   // scala/scala-dev#213, scala/scala#5570: `foo$` should not have the @Test annotation
-  check(classOf[T], "$init$ - ;foo - @org.junitlike.Test();foo$ - ")
+  check(classOf[T], "$init$ - ;foo - @org.junitlike.Test(timeout=0, expected=class org.junit.Test$None);foo$ - ")
 }

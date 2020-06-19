@@ -712,7 +712,7 @@ trait Contexts { self: Analyzer =>
         c(TypeConstructorAllowed) = false
 
       registerContext(c.asInstanceOf[analyzer.Context])
-      debuglog("[context] ++ " + c.unit + " / " + tree.summaryString)
+      debuglog("[context] ++ " + c.unit + " / " + (if (tree == null) "" else tree.summaryString))
       c
     }
 
