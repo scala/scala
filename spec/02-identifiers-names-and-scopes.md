@@ -14,17 +14,17 @@ collectively called _entities_. Names are introduced by local
 [package clauses](09-top-level-definitions.html#packagings)
 which are collectively called _bindings_.
 
-Bindings of different kinds have a precedence defined on them:
+Bindings of different kinds have precedence defined on them:
 
 1. Definitions and declarations that are local, inherited, or made
    available by a package clause and also defined in the same compilation unit
-   as the reference to them, have highest precedence.
-1. Explicit imports have next highest precedence.
-1. Wildcard imports have next highest precedence.
+   as the reference to them, have the highest precedence.
+1. Explicit imports have the next highest precedence.
+1. Wildcard imports have the next highest precedence.
 1. Definitions made available by a package clause, but not also defined in the
    same compilation unit as the reference to them, as well as imports which
    are supplied by the compiler but not explicitly written in source code,
-   have lowest precedence.
+   have the lowest precedence.
 
 There are two different name spaces, one for [types](03-types.html#types)
 and one for [terms](06-expressions.html#expressions). The same name may designate a

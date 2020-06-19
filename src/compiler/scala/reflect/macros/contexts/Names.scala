@@ -45,8 +45,8 @@ trait Names {
     //
     // TODO: hopefully scala/bug#7823 will provide an ultimate answer to this problem.
     // In the meanwhile I will also keep open the original issue: scala/bug#6879 "c.freshName is broken".
-    val prefix = if (name.endsWith("$")) name else name + "$" // scala/bug#8425
-    val sortOfUniqueSuffix = freshNameCreator.newName(nme.FRESH_SUFFIX)
+    val prefix: String = if (name.endsWith("$")) name else name + "$" // scala/bug#8425
+    val sortOfUniqueSuffix: Any = freshNameCreator.newName(nme.FRESH_SUFFIX)
     prefix + sortOfUniqueSuffix
   }
 

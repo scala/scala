@@ -9,7 +9,7 @@ chapter: 1
 Scala programs are written using the Unicode Basic Multilingual Plane
 (_BMP_) character set; Unicode supplementary characters are not
 presently supported.  This chapter defines the two modes of Scala's
-lexical syntax, the Scala mode and the _XML mode_. If not
+lexical syntax, the Scala mode, and the _XML mode_. If not
 otherwise mentioned, the following descriptions of Scala tokens refer
 to _Scala mode_, and literal characters ‘c’ refer to the ASCII fragment
 `\u0000` – `\u007F`.
@@ -19,7 +19,7 @@ classes (Unicode general category given in parentheses):
 
 1. Whitespace characters. `\u0020 | \u0009 | \u000D | \u000A`.
 1. Letters, which include lower case letters (`Ll`), upper case letters (`Lu`),
-   titlecase letters (`Lt`), other letters (`Lo`), modifier letters (`Ml`), 
+   title case letters (`Lt`), other letters (`Lo`), modifier letters (`Ml`), 
    letter numerals (`Nl`) and the two characters `\u0024 ‘$’` and `\u005F ‘_’`.
 1. Digits `‘0’ | … | ‘9’`.
 1. Parentheses `‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’ `.
@@ -47,7 +47,7 @@ hexDigit      ::= ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | 
 ```
 
 There are three ways to form an identifier. First, an identifier can
-start with a letter which can be followed by an arbitrary sequence of
+start with a letter, followed by an arbitrary sequence of
 letters and digits. This may be followed by underscore `‘_‘`
 characters and another string composed of either letters and digits or
 of operator characters.  Second, an identifier can start with an operator
@@ -58,7 +58,7 @@ back-quotes (host systems may impose some restrictions on which
 strings are legal for identifiers).  The identifier then is composed
 of all characters excluding the backquotes themselves.
 
-As usual, a longest match rule applies. For instance, the string
+As usual, the longest match rule applies. For instance, the string
 
 ```scala
 big_bob++=`def`
@@ -71,7 +71,7 @@ The rules for pattern matching further distinguish between
 _variable identifiers_, which start with a lower case letter
 or `_`, and _constant identifiers_, which do not.
 
-For this purpose, lower case letters doesn't only include a-z,
+For this purpose, lower case letters include not only a-z,
 but also all characters in Unicode category Ll (lowercase letter),
 as well as all letters that have contributory property
 Other_Lowercase, except characters in category Nl (letter numerals)
@@ -94,7 +94,7 @@ Some examples of constant identifiers are
 > ```
 
 The ‘\$’ character is reserved for compiler-synthesized identifiers.
-User programs should not define identifiers which contain ‘\$’ characters.
+User programs should not define identifiers that contain ‘\$’ characters.
 
 The following names are reserved words instead of being members of the
 syntactic class `id` of lexical identifiers.
