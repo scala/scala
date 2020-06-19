@@ -1095,11 +1095,6 @@ trait Definitions extends api.StandardDefinitions {
       enteringPhaseNotLaterThan(picklerPhase)(sym.owner.linkedClassOfClass).tpe
     }
 
-    def DottyEnumType(sym: Symbol, unerasedType: Type) = {
-      if (phase.erasedTypes) EnumType(sym)
-      else unerasedType
-    }
-
     /** Given a class symbol C with type parameters T1, T2, ... Tn
      *  which have upper/lower bounds LB1/UB1, LB2/UB2, ..., LBn/UBn,
      *  returns an existential type of the form

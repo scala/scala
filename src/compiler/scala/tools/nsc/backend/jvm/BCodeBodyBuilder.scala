@@ -433,18 +433,6 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      */
     def genConstant(const: Constant): Unit = {
 
-      def handleEnum(sym: Symbol): Unit = {
-        val ownerName = internalName(sym.owner)
-        val fieldName = sym.javaSimpleName.toString
-        val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
-        mnode.visitFieldInsn(
-          asm.Opcodes.GETSTATIC,
-          ownerName,
-          fieldName,
-          fieldDesc
-        )
-      }
-
       (const.tag: @switch) match {
 
         case BooleanTag   => bc.boolconst(const.booleanValue)
@@ -472,8 +460,17 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           assert(!tp.isPrimitive, s"expected class type in classOf[T], found primitive type $tp")
           mnode.visitLdcInsn(tp.toASMType)
 
-        case EnumTag      => handleEnum(const.symbolValue)
-        case DottyEnumTag => handleEnum(const.dottyEnumValue._1)
+        case EnumTag      =>
+          val sym = const.symbolValue
+          val ownerName = internalName(sym.owner)
+          val fieldName = sym.javaSimpleName.toString
+          val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
+          mnode.visitFieldInsn(
+            asm.Opcodes.GETSTATIC,
+            ownerName,
+            fieldName,
+            fieldDesc
+          )
 
         case _ => abort(s"Unknown constant value: $const")
       }
@@ -947,13 +944,25 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       if (claszSymbol == module.moduleClass && jMethodName != "readResolve" && !inStaticMethod) {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
-        val mbt = symInfoTK(module).asClassBType
-        mnode.visitFieldInsn(
-          asm.Opcodes.GETSTATIC,
-          mbt.internalName /* + "$" */ ,
-          strMODULE_INSTANCE_FIELD,
-          mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
-        )
+        module.attachments.get[DottyEnumSingleton] match {
+          case Some(enumAttach) =>
+            val container = symInfoTK(module.originalOwner).asClassBType
+            val enumt = symInfoTK(module).asClassBType
+            mnode.visitFieldInsn(
+              asm.Opcodes.GETSTATIC,
+              container.internalName,
+              enumAttach.name,
+              enumt.descriptor
+            )
+          case _          =>
+            val mbt = symInfoTK(module).asClassBType
+            mnode.visitFieldInsn(
+              asm.Opcodes.GETSTATIC,
+              mbt.internalName /* + "$" */ ,
+              strMODULE_INSTANCE_FIELD,
+              mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
+            )
+        }
       }
     }
 

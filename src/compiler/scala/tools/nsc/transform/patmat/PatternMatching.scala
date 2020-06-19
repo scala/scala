@@ -104,10 +104,11 @@ trait PatternMatching extends Transform
       val selSym = sel.tpe.typeSymbolDirect
       if (!selSym.isSealed || selSym.children.nonEmpty) return
       val ChildAnnotation = mirrorThatLoaded(selSym).getClassIfDefined("scala.annotation.internal.Child")
-      if (ChildAnnotation ne NoSymbol) {
+      if ((ChildAnnotation ne NoSymbol) && !selSym.hasAttachment[KnownDirectSubclassesCalled.type] && selSym.hasAnnotation(ChildAnnotation)) {
         for (childAnnot <- selSym.annotations.filter(_.symbol == ChildAnnotation)) {
           selSym.addChild(childAnnot.tpe.typeArgs.head.typeSymbolDirect)
         }
+        selSym.knownDirectSubclasses
       }
     }
   }

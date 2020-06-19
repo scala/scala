@@ -488,7 +488,6 @@ trait Importers { to: SymbolTable =>
     def importConstant(constant: from.Constant): Constant = new Constant(constant.tag match {
       case ClazzTag => importType(constant.value.asInstanceOf[from.Type])
       case EnumTag => importSymbol(constant.value.asInstanceOf[from.Symbol])
-      case DottyEnumTag => importSymbol(constant.value.asInstanceOf[(from.Symbol, from.Type)]._1)
       case _ => constant.value
     })
   }

@@ -48,12 +48,22 @@ trait TypeOps { self: TastyUniverse =>
 
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
+  def intersectionParts(tpe: Type): List[Type] = tpe match {
+    case tpe: u.TypeRef => tpe :: Nil
+    case tpe: u.RefinedType => tpe.parents
+  }
+
   object defn {
 
-    class EnumSupport(implicit ctx: Context) {
-      val DerivingMirrorSingleton: Type = ctx.requiredClass(tpnme.ScalaDerivingMirrorSingleton).tpe
-      val Product: Type = u.definitions.ProductRootClass.tpe
-      val Serializable: Type = u.definitions.SerializableTpe
+    class EnumSupport private[defn] (implicit ctx: Context) {
+
+      val SingletonEnumValueParents = (
+        ctx.requiredClass(tpnme.ScalaDerivingMirrorSingleton).tpe ::
+        u.definitions.ProductRootClass.tpe ::
+        u.definitions.SerializableTpe ::
+        Nil
+      )
+
     }
 
     private[this] var _enumsupport: EnumSupport = _
@@ -71,6 +81,7 @@ trait TypeOps { self: TastyUniverse =>
     def ExprType(res: Type): Type = u.NullaryMethodType(res)
     def PolyType(params: List[Symbol], res: Type): Type = u.PolyType(params, res)
     def ClassInfoType(parents: List[Type], clazz: Symbol): Type = u.ClassInfoType(parents, clazz.rawInfo.decls, clazz.asType)
+    def ClassInfoType(parents: List[Type], decls: List[Symbol], clazz: Symbol): Type = u.ClassInfoType(parents, u.newScopeWith(decls:_*), clazz.asType)
     def ThisType(sym: Symbol): Type = u.ThisType(sym)
     def ConstantType(c: Constant): Type = u.ConstantType(c)
     def IntersectionType(tps: Type*): Type = u.intersectionType(tps.toList)

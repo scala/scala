@@ -498,6 +498,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
+      if (tag == VALDEF && flags.is(Enum)) {
+        sym.updateAttachment(new symbolTable.DottyEnumSingleton(sym.name.toString))
+      }
       sym.setAnnotations(annotFns.map(_(sym)))
       ctx.owner match {
         case cls if cls.isClass && canEnterInClass =>
@@ -731,16 +734,16 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             ctx.setInfo(sym,
               if (completer.tastyFlagSet.is(Enum)) {
                 val enumClass = sym.objectImplementation
-                val parents = (
-                  tpe.parents :::
-                  defn.EnumSupport.DerivingMirrorSingleton ::
-                  defn.EnumSupport.Product ::
-                  defn.EnumSupport.Serializable ::
-                  Nil
+                val parents   = intersectionParts(tpe) ::: defn.EnumSupport.SingletonEnumValueParents
+                val ctor      = ctx.unsafeNewSymbol(
+                  owner = enumClass,
+                  name  = TastyName.Constructor,
+                  flags = Method,
+                  info  = defn.DefDefType(Nil, Nil :: Nil, enumClass.tpe)
                 )
-                enumClass.info = defn.ClassInfoType(parents, enumClass)
                 val selfTpe = prefixedRef(sym.owner.thisType, enumClass)
                 enumClass.typeOfThis = selfTpe
+                ctx.setInfo(enumClass, defn.ClassInfoType(parents, ctor :: Nil, enumClass))
                 selfTpe
               }
               else if (sym.isMethod) defn.ExprType(tpe)

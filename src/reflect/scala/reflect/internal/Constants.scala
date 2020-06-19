@@ -36,28 +36,26 @@ trait Constants extends api.Constants {
   final val ClazzTag     = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
   final val EnumTag      = 13
-  final val DottyEnumTag = 14 // TODO [tasty]: required to allow enum constants with mixins
 
   case class Constant(value: Any) extends ConstantApi {
     import java.lang.Double.doubleToRawLongBits
     import java.lang.Float.floatToRawIntBits
 
     val tag: Int = value match {
-      case null                   => NullTag
-      case x: Unit                => UnitTag
-      case x: Boolean             => BooleanTag
-      case x: Byte                => ByteTag
-      case x: Short               => ShortTag
-      case x: Int                 => IntTag
-      case x: Long                => LongTag
-      case x: Float               => FloatTag
-      case x: Double              => DoubleTag
-      case x: String              => StringTag
-      case x: Char                => CharTag
-      case x: Type                => ClazzTag
-      case x: Symbol              => EnumTag
-      case (x: Symbol, tpe: Type) => DottyEnumTag
-      case _                      => throw new Error("bad constant value: " + value + " of class " + value.getClass)
+      case null       => NullTag
+      case x: Unit    => UnitTag
+      case x: Boolean => BooleanTag
+      case x: Byte    => ByteTag
+      case x: Short   => ShortTag
+      case x: Int     => IntTag
+      case x: Long    => LongTag
+      case x: Float   => FloatTag
+      case x: Double  => DoubleTag
+      case x: String  => StringTag
+      case x: Char    => CharTag
+      case x: Type    => ClazzTag
+      case x: Symbol  => EnumTag
+      case _          => throw new Error("bad constant value: " + value + " of class " + value.getClass)
     }
 
     def isByteRange: Boolean  = isIntRange && Byte.MinValue <= intValue && intValue <= Byte.MaxValue
@@ -73,22 +71,19 @@ trait Constants extends api.Constants {
     def isAnyVal              = UnitTag <= tag && tag <= DoubleTag
 
     def tpe: Type = tag match {
-      case UnitTag      => UnitTpe
-      case BooleanTag   => BooleanTpe
-      case ByteTag      => ByteTpe
-      case ShortTag     => ShortTpe
-      case CharTag      => CharTpe
-      case IntTag       => IntTpe
-      case LongTag      => LongTpe
-      case FloatTag     => FloatTpe
-      case DoubleTag    => DoubleTpe
-      case StringTag    => StringTpe
-      case NullTag      => NullTpe
-      case ClazzTag     => ClassType(typeValue)
-      case EnumTag      => EnumType(symbolValue)
-      case DottyEnumTag =>
-        val (symbolValue, unerasedType) = dottyEnumValue
-        DottyEnumType(symbolValue, unerasedType)
+      case UnitTag    => UnitTpe
+      case BooleanTag => BooleanTpe
+      case ByteTag    => ByteTpe
+      case ShortTag   => ShortTpe
+      case CharTag    => CharTpe
+      case IntTag     => IntTpe
+      case LongTag    => LongTpe
+      case FloatTag   => FloatTpe
+      case DoubleTag  => DoubleTpe
+      case StringTag  => StringTpe
+      case NullTag    => NullTpe
+      case ClazzTag   => ClassType(typeValue)
+      case EnumTag    => EnumType(symbolValue)
     }
 
     /** We need the equals method to take account of tags as well as values.
@@ -235,7 +230,6 @@ trait Constants extends api.Constants {
     def stringValue: String =
       if (value == null) "null"
       else if (tag == ClazzTag) signature(typeValue)
-      else if (tag == DottyEnumTag) dottyEnumValue._1.toString()
       else value.toString()
 
     def escapedChar(ch: Char): String = (ch: @switch) match {
@@ -269,16 +263,14 @@ trait Constants extends api.Constants {
               show(clazz.tpe_*)
             case _ => show(typeValue)
           }
-        case CharTag      => "'" + escapedChar(charValue) + "'"
-        case LongTag      => longValue.toString() + "L"
-        case EnumTag      => symbolValue.name.toString()
-        case DottyEnumTag => dottyEnumValue._1.name.toString()
-        case _            => String.valueOf(value)
+        case CharTag => "'" + escapedChar(charValue) + "'"
+        case LongTag => longValue.toString() + "L"
+        case EnumTag => symbolValue.name.toString()
+        case _       => String.valueOf(value)
       }
     }
-    def typeValue: Type                = value.asInstanceOf[Type]
-    def symbolValue: Symbol            = value.asInstanceOf[Symbol]
-    def dottyEnumValue: (Symbol, Type) = value.asInstanceOf[(Symbol, Type)]
+    def typeValue: Type     = value.asInstanceOf[Type]
+    def symbolValue: Symbol = value.asInstanceOf[Symbol]
 
     override def hashCode: Int = {
       import scala.util.hashing.MurmurHash3._
