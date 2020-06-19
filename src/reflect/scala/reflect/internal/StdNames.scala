@@ -1128,7 +1128,6 @@ trait StdNames {
     val reflParamsCacheName: NameType = "reflParams$Cache"
     val reflMethodName: NameType      = "reflMethod$Method"
     val argument: NameType            = "<argument>"
-    val liftedTree: String            = "liftedTree"
 
   }
 
