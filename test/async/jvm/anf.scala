@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.anf.AnfTransformSpec])
 
 package scala.async.run.anf {
@@ -5,7 +7,7 @@ package scala.async.run.anf {
   import language.{reflectiveCalls, postfixOps}
   import scala.concurrent.{Future, ExecutionContext, Await}
   import scala.concurrent.duration._
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
   import scala.reflect.{ClassTag, classTag}
   import org.junit.Test
 
@@ -26,7 +28,7 @@ package scala.async.run.anf {
       }
     }
     implicit class objectops(obj: Any) {
-      def mustBe(other: Any) = assert(obj == other, obj + " is not " + other)
+      def mustBe(other: Any) = assert(obj == other, s"$obj is not $other")
 
       def mustEqual(other: Any) = mustBe(other)
     }
@@ -396,7 +398,7 @@ package scala.async.run.anf {
 //      val tree = tb.typeCheck(tb.parse {
 //        """
 //          | import language.implicitConversions
-//          | import _root_.scala.tools.partest.async.Async.{async, await}
+//          | import _root_.scala.tools.testkit.async.Async.{async, await}
 //          | import _root_.scala.concurrent._
 //          | import ExecutionContext.Implicits.global
 //          | implicit def view(a: Int): String = ""

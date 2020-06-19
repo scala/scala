@@ -1,3 +1,5 @@
+// scalac: -Xasync -deprecation
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.futures.FutureSpec])
 
 package scala.async {
@@ -52,7 +54,7 @@ package scala.async.run.futures {
   import scala.reflect.{ClassTag, classTag}
 
   import scala.async.TestLatch
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
 
   import org.junit.Test
 
@@ -72,7 +74,7 @@ package scala.async.run.futures {
 
     //TODO use normal Assert calls in the tests
     implicit class objectops(obj: Any) {
-      def mustBe(other: Any) = assert(obj == other, obj + " is not " + other)
+      def mustBe(other: Any) = assert(obj == other, s"$obj is not $other")
 
       def mustEqual(other: Any) = mustBe(other)
     }
@@ -117,14 +119,14 @@ package scala.async.run.futures {
         }
 
         f2 foreach { _ => throw new ThrowableTest("dispatcher foreach") }
-        f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher receive") }
+        f2 onComplete { case Success(_) => throw new ThrowableTest("dispatcher receive"); case _ => }
 
         latch.open()
 
         Await.result(f2, defaultTimeout) mustBe ("success")
 
         f2 foreach { _ => throw new ThrowableTest("current thread foreach") }
-        f2 onComplete { case Success(_) => throw new ThrowableTest("current thread receive") }
+        f2 onComplete { case Success(_) => throw new ThrowableTest("current thread receive"); case _ => }
 
         Await.result(f3, defaultTimeout) mustBe ("SUCCESS")
 
@@ -150,14 +152,14 @@ package scala.async.run.futures {
           val a = await(future0.mapTo[Int])  // returns 5
           val b = await(asyncInt(a))         // returns "10"
           val c = await(asyncInt(7))         // returns "14"
-          b + "-" + c
+          s"$b-$c"
         }
 
         val future2 = async {
           val a = await(future0.mapTo[Int])
           val b = await((Future { (a * 2).toString }).mapTo[Int])
           val c = await(Future { (7 * 2).toString })
-          b + "-" + c
+          s"$b-$c"
         }
 
         Await.result(future1, defaultTimeout) mustBe ("10-14")
@@ -172,19 +174,20 @@ package scala.async.run.futures {
         def asyncReq[T](req: Req[T]) = req match {
           case Req(s: String) => Future { Res(s.length) }
           case Req(i: Int)    => Future { Res((i * 2).toString) }
+          case _ => ???
         }
 
         val future1 = for {
           Res(a: Int)    <- asyncReq(Req("Hello"))
           Res(b: String) <- asyncReq(Req(a))
           Res(c: String) <- asyncReq(Req(7))
-        } yield b + "-" + c
+        } yield s"$b-$c"
 
         val future2 = for {
           Res(a: Int) <- asyncReq(Req("Hello"))
           Res(b: Int) <- asyncReq(Req(a))
           Res(c: Int) <- asyncReq(Req(7))
-        } yield b + "-" + c
+        } yield s"$b-$c"
 
         Await.result(future1, defaultTimeout) mustBe ("10-14")
         intercept[NoSuchElementException] { Await.result(future2, defaultTimeout) }
@@ -343,14 +346,14 @@ package scala.async.run.futures {
           idx => async(idx, idx * 20)
         }
         // TODO: change to `foldLeft` after support for 2.11 is dropped
-        val folded = Future.fold(futures)(0)(_ + _)
+        val folded = Future.foldLeft(futures)(0)(_ + _)
         Await.result(folded, timeout) mustBe (45)
 
         val futuresit = (0 to 9) map {
           idx => async(idx, idx * 20)
         }
         // TODO: change to `foldLeft` after support for 2.11 is dropped
-        val foldedit = Future.fold(futures)(0)(_ + _)
+        val foldedit = Future.foldLeft(futures)(0)(_ + _)
         Await.result(foldedit, timeout) mustBe (45)
       }
 
@@ -380,7 +383,7 @@ package scala.async.run.futures {
           idx => async(idx, idx * 10)
         }
         // TODO: change to `foldLeft` after support for 2.11 is dropped
-        val folded = Future.fold(futures)(0)(_ + _)
+        val folded = Future.foldLeft(futures)(0)(_ + _)
         intercept[IllegalArgumentException] {
           Await.result(folded, timeout)
         }.getMessage mustBe ("shouldFoldResultsWithException: expected")
@@ -391,7 +394,7 @@ package scala.async.run.futures {
         def test(testNumber: Int): Unit = {
           val fs = (0 to 1000) map (i => Future(i))
           // TODO: change to `foldLeft` after support for 2.11 is dropped
-          val f = Future.fold(fs)(ArrayBuffer.empty[AnyRef]) {
+          val f = Future.foldLeft(fs)(ArrayBuffer.empty[AnyRef]) {
             case (l, i) if i % 2 == 0 => l += i.asInstanceOf[AnyRef]
             case (l, _)               => l
           }
@@ -405,7 +408,7 @@ package scala.async.run.futures {
 
       @Test def `return zero value if folding empty list`(): Unit = {
         // TODO: change to `foldLeft` after support for 2.11 is dropped
-        val zero = Future.fold(List[Future[Int]]())(0)(_ + _)
+        val zero = Future.foldLeft(List[Future[Int]]())(0)(_ + _)
         Await.result(zero, defaultTimeout) mustBe (0)
       }
 
@@ -418,12 +421,12 @@ package scala.async.run.futures {
 
         val futures = (0 to 9) map { async }
         // TODO: change to `reduceLeft` after support for 2.11 is dropped
-        val reduced = Future.reduce(futures)(_ + _)
+        val reduced = Future.reduceLeft(futures)(_ + _)
         Await.result(reduced, timeout) mustBe (45)
 
         val futuresit = (0 to 9) map { async }
         // TODO: change to `reduceLeft` after support for 2.11 is dropped
-        val reducedit = Future.reduce(futuresit)(_ + _)
+        val reducedit = Future.reduceLeft(futuresit)(_ + _)
         Await.result(reducedit, timeout) mustBe (45)
       }
 
@@ -438,7 +441,7 @@ package scala.async.run.futures {
           idx => async(idx, idx * 10)
         }
         // TODO: change to `reduceLeft` after support for 2.11 is dropped
-        val failed = Future.reduce(futures)(_ + _)
+        val failed = Future.reduceLeft(futures)(_ + _)
         intercept[IllegalArgumentException] {
           Await.result(failed, timeout)
         }.getMessage mustBe ("shouldFoldResultsWithException: expected")
@@ -447,7 +450,7 @@ package scala.async.run.futures {
       @Test def `shouldReduceThrowNSEEOnEmptyInput`(): Unit = {
         intercept[java.util.NoSuchElementException] {
           // TODO: change to `reduceLeft` after support for 2.11 is dropped
-          val emptyreduced = Future.reduce(List[Future[Int]]())(_ + _)
+          val emptyreduced = Future.reduceLeft(List[Future[Int]]())(_ + _)
           Await.result(emptyreduced, defaultTimeout)
         }
       }

@@ -1,6 +1,8 @@
+// scalac: -Xasync
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async._
+import scala.tools.testkit.async.Async._
 import scala.concurrent.duration.Duration
 
 sealed trait Subject

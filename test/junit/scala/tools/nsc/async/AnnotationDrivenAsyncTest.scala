@@ -17,16 +17,16 @@ import scala.tools.nsc.backend.jvm.AsmUtils
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 import scala.tools.nsc.reporters.StoreReporter
 import scala.tools.nsc.transform.TypingTransformers
-import scala.tools.partest.async.AsyncStateMachine
+import scala.tools.testkit.async.AsyncStateMachine
 
-class AnnotationDrivenAsync {
+class AnnotationDrivenAsyncTest {
   @Test
   @Ignore // TODO XASYNC
   def testBoxedUnitNotImplemented(): Unit = {
     val code =
       """
         |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
-        |import scala.tools.partest.async.Async.{async, await}
+        |import scala.tools.testkit.async.Async.{async, await}
         |import Future.successful
         |class A {
         |  def f = successful(this)
@@ -65,7 +65,7 @@ class AnnotationDrivenAsync {
     val code =
       """
         |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
-        |import scala.tools.partest.async.Async.{async, await}
+        |import scala.tools.testkit.async.Async.{async, await}
         |
         |object Test {
         |  def test: Future[(String, Int, Int)] = async { var x = "init"; val y = await(f(1)); class C { x = x + "_updated" }; new C; (x, y, await(f(2))) }
@@ -80,7 +80,7 @@ class AnnotationDrivenAsync {
     val code =
       """
         |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
-        |import scala.tools.partest.async.Async.{async, await}
+        |import scala.tools.testkit.async.Async.{async, await}
         |
         |object Test {
         |  def foo[T](a0: Int)(b0: Int*) = s"a0 = $a0, b0 = ${b0.head}"
@@ -118,7 +118,7 @@ class AnnotationDrivenAsync {
   def testMixedAsync(): Unit = {
     val code = """
       |import scala.tools.nsc.async.{autoawait, customAsync}
-      |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global, scala.tools.partest.async.Async._
+      |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global, scala.tools.testkit.async.Async._
       |
       |object Test {
       |  @customAsync

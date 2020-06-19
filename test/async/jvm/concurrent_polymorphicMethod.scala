@@ -1,9 +1,11 @@
+// scalac: -Xasync
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async._
+import scala.tools.testkit.async.Async._
 import scala.concurrent.duration.Duration
 
-object Test extends App { assert(test.toString == "(C,C)")
+object Test extends App { assert(test().toString == "(C,C)")
 
   class C {
     override def toString = "C"

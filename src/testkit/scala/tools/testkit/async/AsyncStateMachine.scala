@@ -10,7 +10,7 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.partest.async
+package scala.tools.testkit.async
 
 // The async phase expects the state machine class to structurally conform to this interface.
 trait AsyncStateMachine[F, R] {

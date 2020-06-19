@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 /*
  * Scala (https://www.scala-lang.org)
  *
@@ -13,7 +15,7 @@
 
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async._
+import scala.tools.testkit.async.Async._
 import scala.concurrent.duration.Duration
 
 object Test extends App { assert(test == "foobar")

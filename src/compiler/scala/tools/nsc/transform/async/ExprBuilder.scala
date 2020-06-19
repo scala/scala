@@ -412,8 +412,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         def stateLabel(s: Int) = {
           if (s == 0) "INITIAL" else if (s == StateAssigner.Terminal) "TERMINAL" else (if (compactStates) switchIdOf(s) else s).toString
         }
-        val length = states.size
-        for ((state, i) <- asyncStates.zipWithIndex) {
+        for (state <- asyncStates) {
           dotBuilder.append(s"""${stateLabel(state.state)} [label=""").append("<")
           def show(t: Tree): String = {
             (t match {
@@ -535,7 +534,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   private def resumeTree(awaitableResult: ValDef): Tree = {
     def tryyReference = gen.mkAttributedIdent(currentTransformState.applyTrParam)
     deriveValDef(awaitableResult) { _ =>
-      val temp = awaitableResult.symbol.newTermSymbol(TermName("tryGetResult$async")).setInfo(definitions.ObjectTpe)
+      val temp = awaitableResult.symbol.newTermSymbol(TermName("tryGetResult$" + "async")).setInfo(definitions.ObjectTpe)
       val tempVd = ValDef(temp, gen.mkMethodCall(currentTransformState.memberRef(currentTransformState.stateTryGet), tryyReference :: Nil))
       typed(Block(
         tempVd :: Nil,

@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.live.LiveVariablesSpec])
 
 package scala.async.run.live {
@@ -6,7 +8,7 @@ package scala.async.run.live {
 
   import scala.concurrent._
   import duration.Duration
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
   import scala.collection.immutable
   object TestUtil {
     import language.implicitConversions
@@ -48,8 +50,8 @@ package scala.async.run.live {
       }
 
       private def reflectivelyExtractStateMachine(runnable: Runnable) = {
-        assert(runnable.getClass == Class.forName("scala.concurrent.impl.CallbackRunnable"), runnable.getClass)
-        val fld = runnable.getClass.getDeclaredField("onComplete")
+        assert(runnable.getClass == Class.forName("scala.concurrent.impl.Promise$Transformation"), runnable.getClass)
+        val fld = runnable.getClass.getDeclaredField("_fun")
         fld.setAccessible(true)
         val stateMachine = fld.get(runnable)
         assert(stateMachine.getClass.getName.contains("stateMachine"), stateMachine.getClass)
@@ -177,7 +179,7 @@ package scala.async.run.live {
         }
       }
       def randomTimesTwo = async {
-        val num = _root_.scala.math.random
+        val num = _root_.scala.math.random()
         if (num < 0 || num > 1) {
           await(errorGenerator(num))
         }

@@ -17,6 +17,7 @@ import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+import scala.tools.testkit.async.AsyncStateMachine
 
 object OutputAwait {
   def writing[T](body: T): Output[T] = macro impl

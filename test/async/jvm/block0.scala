@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.block0.AsyncSpec])
 
 package scala.async.run.block0 {
@@ -5,7 +7,7 @@ package scala.async.run.block0 {
   import language.{reflectiveCalls, postfixOps}
   import scala.concurrent.{Future, ExecutionContext, Await}
   import scala.concurrent.duration._
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
   import org.junit.Test
   import org.junit.Assert._
 

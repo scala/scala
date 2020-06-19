@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.toughtype.ToughTypeSpec])
 
 package scala.async.run.toughtype {
@@ -9,7 +11,7 @@ package scala.async.run.toughtype {
   import scala.concurrent._
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
   object TestUtil {
     import language.implicitConversions
     implicit def lift[T](t: T): Future[T] = Future.successful(t)
@@ -80,7 +82,7 @@ package scala.async.run.toughtype {
     }
 
     @Test def existentialBind2Issue19(): Unit = {
-      import scala.tools.partest.async.Async._, scala.concurrent.ExecutionContext.Implicits.global
+      import scala.tools.testkit.async.Async._, scala.concurrent.ExecutionContext.Implicits.global
       def conjure[T]: T = null.asInstanceOf[T]
 
       def m3 = async {
@@ -151,7 +153,7 @@ package scala.async.run.toughtype {
       import language.{reflectiveCalls, postfixOps}
       import scala.concurrent.{Future, ExecutionContext, Await}
       import scala.concurrent.duration._
-      import scala.tools.partest.async.Async.{async, await}
+      import scala.tools.testkit.async.Async.{async, await}
 
       class Foo[A]
 
@@ -182,7 +184,7 @@ package scala.async.run.toughtype {
 
     @Test
     def ticket63(): Unit = {
-      import scala.tools.partest.async.Async._
+      import scala.tools.testkit.async.Async._
       import scala.concurrent.{ ExecutionContext, Future }
 
       object SomeExecutionContext extends ExecutionContext {
@@ -225,7 +227,7 @@ package scala.async.run.toughtype {
     }
 
     @Test def ticket83ValueClass(): Unit = {
-      import scala.tools.partest.async.Async._
+      import scala.tools.testkit.async.Async._
       import scala.concurrent._, duration._, ExecutionContext.Implicits.global
       val f = async {
         val uid = new IntWrapper("foo")

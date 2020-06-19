@@ -10,13 +10,13 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.partest.async
+package scala.tools.testkit.async
 
 import java.util.Objects
-import scala.language.experimental.macros
 
 import scala.annotation.compileTimeOnly
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 import scala.util.{Failure, Success, Try}
 
@@ -33,7 +33,7 @@ object Async {
     }
     val name = TypeName("stateMachine$async")
     q"""
-      final class $name extends _root_.scala.tools.partest.async.AsyncAsMacroStateMachine($executionContext) {
+      final class $name extends _root_.scala.tools.testkit.async.AsyncAsMacroStateMachine($executionContext) {
         ${mark(q"""override def apply(tr$$async: _root_.scala.util.Try[_root_.scala.AnyRef]) = ${body}""")}
       }
       new $name().start().asInstanceOf[${c.macroApplication.tpe}]
@@ -44,7 +44,7 @@ object Async {
 abstract class AsyncAsMacroStateMachine(execContext: ExecutionContext) extends AsyncStateMachine[Future[AnyRef], Try[AnyRef]] with Function1[Try[AnyRef], Unit] {
   Objects.requireNonNull(execContext)
 
-  private val result$async: Promise[AnyRef] = Promise[AnyRef]();
+  private val result$async: Promise[AnyRef] = Promise[AnyRef]()
 
   // FSM translated method
   def apply(tr$async: Try[AnyRef]): Unit

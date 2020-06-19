@@ -1,6 +1,8 @@
+// scalac: -Xasync
+
 import scala.concurrent.{Await, Future, duration}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async.{async, await}
+import scala.tools.testkit.async.Async.{async, await}
 
 object Test extends App {
   val out = Console.out

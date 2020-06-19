@@ -1,9 +1,11 @@
+// scalac: -Xasync
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async._
+import scala.tools.testkit.async.Async._
 import scala.concurrent.duration.Duration
 
-object Test extends App { test
+object Test extends App { test()
   def foo(foo: Any, bar: Any) = ()
   def getValue = async {4.2}
   def func(f: Any)  = async {

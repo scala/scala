@@ -1,4 +1,6 @@
-import scala.tools.partest.async.Async._
+// scalac: -Xasync
+
+import scala.tools.testkit.async.Async._
 import scala.concurrent._
 import scala.concurrent.duration._
 import ExecutionContext.Implicits._

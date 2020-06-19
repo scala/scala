@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 import scala.tools.partest.async.{OutputAwait, Output}
 import scala.collection.immutable
 import OutputAwait._

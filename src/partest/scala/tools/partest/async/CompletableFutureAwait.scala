@@ -19,6 +19,7 @@ import java.util.function.BiConsumer
 import scala.annotation.compileTimeOnly
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+import scala.tools.testkit.async.AsyncStateMachine
 import scala.util.{Failure, Success, Try}
 
 object CompletableFutureAwait {

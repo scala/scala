@@ -1,14 +1,16 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.exceptions.ExceptionsSpec])
 
 package scala.async.run.exceptions {
 
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
 
   import scala.concurrent.{Future, ExecutionContext, Await}
   import ExecutionContext.Implicits._
   import scala.concurrent.duration._
   import scala.reflect.ClassTag
-  import scala.tools.partest.TestUtil.intercept
+  import scala.tools.testkit.AssertUtil.assertThrows
 
   import org.junit.Test
 
@@ -17,7 +19,7 @@ package scala.async.run.exceptions {
     @Test
     def `uncaught exception within async`(): Unit = {
       val fut = async { throw new Exception("problem") }
-      intercept[Exception] { Await.result(fut, 2.seconds) }
+      assertThrows[Exception] { Await.result(fut, 2.seconds) }
     }
 
     @Test
@@ -27,7 +29,7 @@ package scala.async.run.exceptions {
         val len = await(base)
         throw new Exception(s"illegal length: $len")
       }
-      intercept[Exception] { Await.result(fut, 2.seconds) }
+      assertThrows[Exception] { Await.result(fut, 2.seconds) }
     }
 
     @Test
@@ -37,7 +39,7 @@ package scala.async.run.exceptions {
         val x = await(base)
         x * 2
       }
-      intercept[Exception] { Await.result(fut, 2.seconds) }
+      assertThrows[Exception] { Await.result(fut, 2.seconds) }
     }
 
     @Test
@@ -47,9 +49,9 @@ package scala.async.run.exceptions {
         val a = await(base.mapTo[Int])                          // result: 5
         val b = await((Future { (a * 2).toString }).mapTo[Int]) // result: ClassCastException
         val c = await(Future { (7 * 2).toString })              // result: "14"
-        b + "-" + c
+        s"$b-$c"
       }
-      intercept[ClassCastException] { Await.result(fut, 2.seconds) }
+      assertThrows[ClassCastException] { Await.result(fut, 2.seconds) }
     }
 
   }

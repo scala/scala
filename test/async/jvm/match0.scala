@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.match0.MatchSpec])
 
 package scala.async.run.match0 {
@@ -10,7 +12,7 @@ package scala.async.run.match0 {
   import scala.concurrent._
   import scala.concurrent.duration._
   import ExecutionContext.Implicits.global
-  import scala.tools.partest.async.Async.{async, await}
+  import scala.tools.testkit.async.Async.{async, await}
   object TestUtil {
     import language.implicitConversions
     implicit def lift[T](t: T): Future[T] = Future.successful(t)

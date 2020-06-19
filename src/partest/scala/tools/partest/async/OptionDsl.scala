@@ -16,6 +16,7 @@ package async
 import scala.annotation.compileTimeOnly
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
+import scala.tools.testkit.async.AsyncStateMachine
 
 object OptionAwait {
   def optionally[T](body: T): Option[T] = macro impl

@@ -867,13 +867,13 @@ trait StdNames {
     val zero: NameType                 = nameType("zero")
 
     // async
-    val result           : NameType       = nameType("result$async")
-    val awaitable        : NameType       = nameType("awaitable$async")
-    val completed        : NameType       = nameType("completed$async")
-    val stateMachine     : NameType       = nameType("stateMachine$async")
+    val result           : NameType       = nameType("result$" + "async") // avoid missing interpolator warnings
+    val awaitable        : NameType       = nameType("awaitable$" + "async")
+    val completed        : NameType       = nameType("completed$" + "async")
+    val stateMachine     : NameType       = nameType("stateMachine$" + "async")
     val state            : NameType       = nameType("state")
-    val tr               : NameType       = nameType("tr$async")
-    val t                : NameType       = nameType("throwable$async")
+    val tr               : NameType       = nameType("tr$" + "async")
+    val t                : NameType       = nameType("throwable$" + "async")
 
     // quasiquote interpolators:
     val q: NameType  = nameType("q")

@@ -1,3 +1,5 @@
+// scalac: -Xasync
+
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.hygiene.HygieneSpec])
 
 package scala.async.run.hygiene {
@@ -7,7 +9,7 @@ package scala.async.run.hygiene {
 
   import scala.concurrent._
   import ExecutionContext.Implicits.global
-  import scala.tools.partest.async.Async._
+  import scala.tools.testkit.async.Async._
   import scala.concurrent.duration.Duration
   object TestUtil {
     import language.implicitConversions

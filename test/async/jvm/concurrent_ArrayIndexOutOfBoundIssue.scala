@@ -1,6 +1,8 @@
+// scalac: -Xasync
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
-import scala.tools.partest.async.Async._
+import scala.tools.testkit.async.Async._
 import scala.concurrent.duration.Duration
 
 sealed trait Result
@@ -11,7 +13,7 @@ case object B extends Result
 
 case object C extends Result
 
-object Test extends App { test
+object Test extends App { test()
   protected def doStuff(res: Result) = {
     class C {
       def needCheck = async { false }

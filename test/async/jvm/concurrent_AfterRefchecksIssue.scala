@@ -1,4 +1,6 @@
-import scala.concurrent._, ExecutionContext.Implicits.global, scala.tools.partest.async.Async._
+// scalac: -Xasync
+
+import scala.concurrent._, ExecutionContext.Implicits.global, scala.tools.testkit.async.Async._
 
 trait Factory[T] {
   def create: T
