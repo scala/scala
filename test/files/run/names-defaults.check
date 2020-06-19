@@ -1,9 +1,3 @@
-names-defaults.scala:269: warning: a pure expression does nothing in statement position
-    spawn(b = { val ttt = 1; ttt }, a = 0)
-                             ^
-names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
-    spawn(b = { val ttt = 1; ttt }, a = 0)
-                             ^
 names-defaults.scala:359: warning: the parameter name y is deprecated: use b instead
   deprNam1(y = 10, a = 1)
              ^
@@ -37,6 +31,12 @@ names-defaults.scala:380: warning: local val x$104 in value <local Test> is neve
 names-defaults.scala:385: warning: local val x$112 in value <local Test> is never used
   println(t3697.b(b = 1, a = 2, c = 3))
                                     ^
+names-defaults.scala:269: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+                             ^
+names-defaults.scala:269: warning: a pure expression does nothing in statement position
+    spawn(b = { val ttt = 1; ttt }, a = 0)
+                             ^
 1: @
 get: $
 get: 2

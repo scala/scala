@@ -127,9 +127,6 @@ names-defaults-neg-pu.scala:141: error: parameter 'a' is already specified at pa
 names-defaults-neg-pu.scala:142: error: missing parameter type for expanded function ((<x$4: error>) => b = x$4)
   val taf4: (Int, String) => Unit = testAnnFun(_, b = _)
                                                       ^
-names-defaults-neg-pu.scala:15: warning: a pure expression does nothing in statement position
-  test2(x = 1)
-            ^
 names-defaults-neg-pu.scala:95: warning: the parameter name y is deprecated: use b instead
   deprNam3(y = 10, b = 2)
              ^
@@ -139,8 +136,5 @@ names-defaults-neg-pu.scala:98: warning: naming parameter deprNam4Arg is depreca
 names-defaults-neg-pu.scala:100: warning: naming parameter deprNam5Arg is deprecated.
   deprNam5(deprNam5Arg = null)
                        ^
-names-defaults-neg-pu.scala:137: warning: a pure expression does nothing in statement position
-  delay(var2 = 40)
-               ^
-5 warnings
+3 warnings
 33 errors

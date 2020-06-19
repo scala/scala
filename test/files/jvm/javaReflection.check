@@ -1,10 +1,10 @@
 #partest java8
-Classes_1.scala:16: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-    (() => "-1")
-        ^
 Classes_1.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   (() => "1")
       ^
+Classes_1.scala:16: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    (() => "-1")
+        ^
 Classes_1.scala:31: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     (() => "2")
         ^
@@ -186,12 +186,12 @@ T / T (canon) / T (simple)
 - enclosing   : null (declaring cls) / null (cls) / null (constr) / null (meth)
 - properties  : false (local) / false (member)
 #partest !java8
-Classes_1.scala:16: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-    (() => "-1")
-        ^
 Classes_1.scala:24: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
   (() => "1")
       ^
+Classes_1.scala:16: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
+    (() => "-1")
+        ^
 Classes_1.scala:31: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     (() => "2")
         ^

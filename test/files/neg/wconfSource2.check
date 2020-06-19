@@ -1,6 +1,3 @@
-wconfSource2.scala:6: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-  def u = { 1; 2 }
-            ^
 wconfSource2.scala:7: reflective access of structural type member method f should be enabled
 by making the implicit value scala.language.reflectiveCalls visible.
 This can be achieved by adding the import clause 'import scala.language.reflectiveCalls'
@@ -12,4 +9,7 @@ why the feature should be explicitly enabled.
 wconfSource2.scala:5: error: method dep in class C is deprecated:
   def t = dep
           ^
+wconfSource2.scala:6: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+  def u = { 1; 2 }
+            ^
 1 error

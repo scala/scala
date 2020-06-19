@@ -11,10 +11,6 @@ END
 // Exiting paste mode, now interpreting.
 
 
-  42
-  ^
-<pastie>:3: warning: a pure expression does nothing in statement position
-
   "hello"
   ^
 <pastie>:2: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
@@ -22,6 +18,10 @@ END
   42
   ^
 <pastie>:3: warning: multiline expressions might require enclosing parentheses; a value can be silently discarded when Unit is expected
+
+  42
+  ^
+<pastie>:3: warning: a pure expression does nothing in statement position
 def f(): Unit
 
 scala> :quit
