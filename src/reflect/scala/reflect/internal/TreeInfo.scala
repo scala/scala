@@ -118,9 +118,7 @@ abstract class TreeInfo {
   private def symOk(sym: Symbol) = sym != null && !sym.isError && sym != NoSymbol
   private def typeOk(tp: Type)   =  tp != null && ! tp.isError
 
-  private def isUncheckedStable(sym: Symbol) =
-    // zero-arg annotations (like @uncheckedStable) are created eagerly. avoid forcing all annotations (scala/bug#11870).
-    sym.isTerm && sym.annotations.exists(ann => ann.isInstanceOf[CompleteAnnotationInfo] && ann.symbol == uncheckedStableClass)
+  private def isUncheckedStable(sym: Symbol) = sym.isTerm && sym.hasAnnotation(uncheckedStableClass)
 
   /** Assuming `sym` is a member of `tree`, is it a "stable member"?
    *
