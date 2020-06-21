@@ -230,6 +230,10 @@ class TreeSetTest extends AllocationTest{
     assertIdenticalElements(Set(c0l), TreeSet(c0l).union(HashSet(c0r)))
     assertIdenticalElements(Set(c0l), TreeSet(c0l).union(TreeSet(c0r)))
 
+    assertIdenticalElements(Set(c0l), HashSet(c0l).+(c0r))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).+(c0r))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).+(c0r))
+
     assertIdenticalElements(Set(c0l), HashSet(c0l).++(HashSet(c0r)))
     assertIdenticalElements(Set(c0l), TreeSet(c0l).++(HashSet(c0r)))
     assertIdenticalElements(Set(c0l), TreeSet(c0l).++(TreeSet(c0r)))
