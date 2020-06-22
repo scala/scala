@@ -10,13 +10,34 @@
  * additional information regarding copyright ownership.
  */
 
-package scala.tools.nsc.backend.jvm
+package scala.tools.nsc
+package backend
+package jvm
 
-abstract class DebugInfoBuilder extends BCodeHelpers {
+import scala.collection.mutable
+import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
+import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{ScalaDebugStratum, ScalaStratum}
 
-  import global._
+abstract class DebugInfoBuilder extends PerRunInit {
+  val postProcessor: PostProcessor
 
-  class JSR45Builder(cunit: CompilationUnit) {}
+  import postProcessor.bTypes
+  import bTypes.{LazyVar, perRunLazy}
+
+  private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[GeneratedClass, JSR45Writer]] = perRunLazy(this)(mutable.Map.empty)
+
+  def registerUnitClasses(unit: GeneratedCompilationUnit): Unit = {
+    for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
+      debugInfoWriters.get += (cls -> new JSR45Writer())
+    }
+  }
+
+  def getWriter(cls: GeneratedClass): JSR45Writer = debugInfoWriters.get(cls)
+
+  class JSR45Writer {
+    private val scalaStratum: JSR45Stratum = new ScalaStratum
+    private val scalaDebugStratum: JSR45Stratum = new ScalaDebugStratum
+  }
 
 }
 
@@ -57,13 +78,17 @@ object DebugInfoBuilder {
           sortedLineMapping.tail.foldLeft(Seq(start)) {
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart == toEnd =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
-              if (last.lineFileId == sourceFileId && last.inputStartLine + lastRepeatCount == from && last.outputStartLine + lastRepeatCount == toEnd)
+              if (last.lineFileId == sourceFileId &&
+                  last.inputStartLine + lastRepeatCount == from &&
+                  last.outputStartLine + lastRepeatCount == toEnd)
                 soFar :+ last.copy(repeatCount = Some(last.repeatCount.getOrElse(1) + 1))
               else
                 soFar :+ last :+ LineSectionEntry(inputStartLine = from, lineFileId = sourceFileId, outputStartLine = toStart)
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart < toEnd  =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
-              if (last.lineFileId == sourceFileId && last.inputStartLine + lastRepeatCount == from && (toEnd - toStart + 1) == last.outputLineIncrement.getOrElse(0))
+              if (last.lineFileId == sourceFileId &&
+                  last.inputStartLine + lastRepeatCount == from &&
+                  (toEnd - toStart + 1) == last.outputLineIncrement.getOrElse(0))
                 soFar :+ last.copy(repeatCount = Some(last.repeatCount.getOrElse(1) + 1))
               else
                 soFar :+ last :+ LineSectionEntry(inputStartLine = from,
