@@ -256,7 +256,7 @@ sealed abstract class LongMap[+T] extends AbstractMap[Long, T]
 
   override protected[this] def className = "LongMap"
 
-  override def isEmpty = this == LongMap.Nil
+  override def isEmpty = this eq LongMap.Nil
   override def knownSize: Int = if (isEmpty) 0 else super.knownSize
   override def filter(f: ((Long, T)) => Boolean): LongMap[T] = this match {
     case LongMap.Bin(prefix, mask, left, right) => {
