@@ -851,7 +851,7 @@ private[collection] object RedBlackTree {
 
   private[this] def _union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] =
     if((t1 eq null) || (t1 eq t2)) t2
-    else if(t1 eq null) t2
+    else if(t2 eq null) t1
     else {
       val (l2, _, r2) = split(t2, t1.key)
       val tl = _union(t1.left, l2)
