@@ -213,4 +213,33 @@ class TreeSetTest extends AllocationTest{
       assertEquals(s"$rText $lText", rhs, lhs)
     }
   }
+
+  @Test
+  def unionAndIntersectRetainLeft(): Unit = {
+    case class C(a: Int)(override val toString: String)
+    implicit val ordering: Ordering[C] = Ordering.by(_.a)
+    val c0l = C(0)("l")
+    val c0r = C(0)("r")
+    def assertIdenticalElements(expected: Set[C], actual: Set[C]): Unit = {
+      val expected1, actual1 = Collections.newSetFromMap[C](new java.util.IdentityHashMap())
+      expected.foreach(expected1.add)
+      actual.foreach(actual1.add)
+      assertEquals(expected1, actual1)
+    }
+    assertIdenticalElements(Set(c0l), HashSet(c0l).union(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).union(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).union(TreeSet(c0r)))
+
+    assertIdenticalElements(Set(c0l), HashSet(c0l).++(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).++(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).++(TreeSet(c0r)))
+
+    assertIdenticalElements(Set(c0l), HashSet.newBuilder[C].++=(HashSet(c0l)).++=(HashSet(c0r)).result())
+    assertIdenticalElements(Set(c0l), TreeSet.newBuilder[C].++=(TreeSet(c0l)).++=(HashSet(c0r)).result())
+    assertIdenticalElements(Set(c0l), TreeSet.newBuilder[C].++=(TreeSet(c0l)).++=(TreeSet(c0r)).result())
+
+    assertIdenticalElements(Set(c0l), HashSet(c0l).intersect(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).intersect(HashSet(c0r)))
+    assertIdenticalElements(Set(c0l), TreeSet(c0l).intersect(TreeSet(c0r)))
+  }
 }
