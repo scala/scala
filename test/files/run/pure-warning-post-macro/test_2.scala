@@ -1,4 +1,3 @@
-// scalac: -Xfatal-errors
 object Test {
   def main(args: Array[String]): Unit = {
     // We don't want a "pure expression discarded" warning here as the macro will
