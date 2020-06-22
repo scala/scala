@@ -54,7 +54,7 @@ private[jvm] object GeneratedClassHandler {
     import global._
     import genBCode.postProcessor
 
-    val handler = settings.YaddBackendThreads.value match {
+    val writingHandler = settings.YaddBackendThreads.value match {
       case 1 =>
         new SyncWritingClassHandler(postProcessor)
 
@@ -72,19 +72,41 @@ private[jvm] object GeneratedClassHandler {
         new AsyncWritingClassHandler(postProcessor, javaExecutor)
     }
 
-    if (settings.optInlinerEnabled || settings.optClosureInvocations)
-      new GlobalOptimisingGeneratedClassHandler(postProcessor, handler)
-    else handler
+
+    val optimisingClassHandler =
+      if (settings.optInlinerEnabled || settings.optClosureInvocations)
+        new GlobalOptimisingGeneratedClassHandler(postProcessor, writingHandler)
+      else writingHandler
+
+    if (settings.debuginfo.indexOfChoice >= 1) // emitSource ?
+      new DebugEmittingClassHandler(postProcessor, optimisingClassHandler)
+    else optimisingClassHandler
+  }
+
+  private class DebugEmittingClassHandler(val postProcessor: PostProcessor,
+                                          underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+    override def process(unit: GeneratedCompilationUnit): Unit = {
+      postProcessor.debugInfoBuilder.registerUnitClasses(unit)
+      underlying.process(unit)
+    }
+
+    override def complete(): Unit = {
+      underlying.complete()
+    }
+
+    override def close(): Unit = underlying.close()
   }
 
   private class GlobalOptimisingGeneratedClassHandler(
       val postProcessor: PostProcessor,
-      underlying: WritingClassHandler)
+      underlying: GeneratedClassHandler)
     extends GeneratedClassHandler {
 
     private val generatedUnits = ListBuffer.empty[GeneratedCompilationUnit]
 
-    def process(unit: GeneratedCompilationUnit): Unit = generatedUnits += unit
+    def process(unit: GeneratedCompilationUnit): Unit = {
+      generatedUnits += unit
+    }
 
     def complete(): Unit = {
       val allGeneratedUnits = generatedUnits.result()
