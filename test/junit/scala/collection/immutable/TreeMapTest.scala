@@ -176,7 +176,7 @@ class TreeMapTest extends AllocationTest {
   }
 
   @Test
-  def unionAndIntersectRetainLeft(): Unit = {
+  def retainLeft(): Unit = {
     case class C(a: Int)(override val toString: String)
     implicit val ordering: Ordering[C] = Ordering.by(_.a)
     val c0l = C(0)("l")
@@ -188,14 +188,12 @@ class TreeMapTest extends AllocationTest {
       assertEquals(expected1, actual1)
     }
 
-    // This holds in 2.13.x only
-    //assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(HashMap((c0r, ()))))
+    assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(HashMap((c0r, ()))))
 
     assertIdenticalKeys(Map((c0l, ())), TreeMap((c0l, ())).++(HashMap((c0r, ()))))
     assertIdenticalKeys(Map((c0l, ())), TreeMap((c0l, ())).++(TreeMap((c0r, ()))))
 
-    // This holds in 2.13.x only
-    //assertIdenticalKeys(Map((c0l, ())), HashMap.newBuilder[C, Unit].++=(HashMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
+    assertIdenticalKeys(Map((c0l, ())), HashMap.newBuilder[C, Unit].++=(HashMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
 
     assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
     assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(TreeMap((c0r, ()))).result())
