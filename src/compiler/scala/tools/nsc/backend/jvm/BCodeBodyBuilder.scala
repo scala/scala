@@ -944,24 +944,21 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       if (claszSymbol == module.moduleClass && jMethodName != "readResolve" && !inStaticMethod) {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
+        val mbt = symInfoTK(module).asClassBType
+        def visitAccess(container: ClassBType, name: String): Unit = {
+          mnode.visitFieldInsn(
+            asm.Opcodes.GETSTATIC,
+            container.internalName,
+            name,
+            mbt.descriptor
+          )
+        }
         module.attachments.get[DottyEnumSingleton] match {
           case Some(enumAttach) =>
-            val container = symInfoTK(module.originalOwner).asClassBType
-            val enumt = symInfoTK(module).asClassBType
-            mnode.visitFieldInsn(
-              asm.Opcodes.GETSTATIC,
-              container.internalName,
-              enumAttach.name,
-              enumt.descriptor
-            )
-          case _          =>
-            val mbt = symInfoTK(module).asClassBType
-            mnode.visitFieldInsn(
-              asm.Opcodes.GETSTATIC,
-              mbt.internalName /* + "$" */ ,
-              strMODULE_INSTANCE_FIELD,
-              mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
-            )
+            val enumCompanion = symInfoTK(module.originalOwner).asClassBType
+            visitAccess(enumCompanion, enumAttach.name)
+
+          case _ => visitAccess(mbt, strMODULE_INSTANCE_FIELD)
         }
       }
     }

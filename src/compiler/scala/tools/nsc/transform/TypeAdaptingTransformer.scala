@@ -159,15 +159,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
      */
     @tailrec final def adaptToType(tree: Tree, pt: Type): Tree = {
       val tpe = tree.tpe
-      val isDottySingletonEnumValue = {
-        val cls = tpe.typeSymbolDirect
-        cls.isModuleClass && cls.sourceModule.hasAttachment[DottyEnumSingleton]
-      }
-      if (isDottySingletonEnumValue && !pt.isWildcard && !((tpe eq pt) || tpe.parents.head <:< pt)) {
-        reporter.echo(s"$tree is not $pt")
-        cast(tree, pt)
-      }
-      else if ((tpe eq pt) || tpe <:< pt) tree
+      if ((tpe eq pt) || tpe <:< pt) tree
       else if (tpe.isInstanceOf[ErasedValueType]) adaptToType(box(tree), pt) // what if pt is an erased value type?
       else if (pt.isInstanceOf[ErasedValueType])  adaptToType(unbox(tree, pt), pt)
       // See corresponding case in `Eraser`'s `adaptMember`
@@ -179,9 +171,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
 
         if (gotPrimitiveVC && !expectedPrimitiveVC)      adaptToType(box(tree), pt)
         else if (!gotPrimitiveVC && expectedPrimitiveVC) adaptToType(unbox(tree, pt), pt)
-        else {
-          cast(tree, pt)
-        }
+        else cast(tree, pt)
       }
     }
   }

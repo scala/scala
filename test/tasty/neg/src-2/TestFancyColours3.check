@@ -1,0 +1,21 @@
+TestFancyColours3_fail.scala:8: error: pattern type is incompatible with expected type;
+ found   : tastytest.FancyColours.Colour.Red.type
+ required: deriving.Mirror.Singleton
+    case Colour.Red    => "Colour.Red"
+                ^
+TestFancyColours3_fail.scala:9: error: pattern type is incompatible with expected type;
+ found   : tastytest.FancyColours.Colour.Pink.type
+ required: deriving.Mirror.Singleton
+    case Colour.Pink   => "Colour.Pink"
+                ^
+TestFancyColours3_fail.scala:10: error: pattern type is incompatible with expected type;
+ found   : tastytest.FancyColours.Colour.Violet.type
+ required: deriving.Mirror.Singleton
+    case Colour.Violet => "Colour.Violet"
+                ^
+TestFancyColours3_fail.scala:13: error: type mismatch;
+ found   : tastytest.FancyColours.Colour.Pink.type
+ required: deriving.Mirror.Singleton
+  def test = describeSingleton(Colour.Pink)
+                                      ^
+4 errors

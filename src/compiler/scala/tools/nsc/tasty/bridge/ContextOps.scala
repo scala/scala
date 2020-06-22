@@ -262,7 +262,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = u.ClassInfoType(cls.rawInfo.parents, cls.rawInfo.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = u.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 
@@ -331,6 +331,12 @@ trait ContextOps { self: TastyUniverse =>
       clazz.completer.withDecls(u.newScope)
 
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
+
+    final def markAsEnumSingleton(sym: Symbol): Unit =
+      sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
+
+    final def updateAnnotations(sym: Symbol, annots: List[Annotation]): Unit =
+      sym.setAnnotations(annots)
 
     final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
       case err: u.TypeError =>

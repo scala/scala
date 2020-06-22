@@ -263,17 +263,15 @@ abstract class TreeGen {
     if (wrapInApply) Apply(tapp, Nil) else tapp
   }
   private def typeTestSymbol(any: Boolean) = if (any) Any_isInstanceOf else Object_isInstanceOf
-  private def typeCastSymbol(any: Boolean) =
-    if (any) Any_asInstanceOf else Object_asInstanceOf
+  private def typeCastSymbol(any: Boolean) = if (any) Any_asInstanceOf else Object_asInstanceOf
 
   /** Builds an instance test with given value and type. */
   def mkIsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
     mkSingleTypeApply(value, tpe, typeTestSymbol(any), wrapInApply)
 
   /** Builds a cast with given value and type. */
-  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree = {
+  def mkAsInstanceOf(value: Tree, tpe: Type, any: Boolean = true, wrapInApply: Boolean = true): Tree =
     mkSingleTypeApply(value, tpe, typeCastSymbol(any), wrapInApply)
-  }
 
   /** Cast `tree` to `pt`, unless tpe is a subtype of pt, or pt is Unit.  */
   def maybeMkAsInstanceOf(tree: Tree, pt: Type, tpe: Type, beforeRefChecks: Boolean = false): Tree =

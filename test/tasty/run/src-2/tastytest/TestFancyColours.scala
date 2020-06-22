@@ -1,6 +1,7 @@
 package tastytest
 
 import FancyColours._
+import reflect.classTag
 
 object TestFancyColours extends Suite("TestFancyColours") {
 
@@ -17,13 +18,34 @@ object TestFancyColours extends Suite("TestFancyColours") {
     case Colour.Red => "Yawn..."
   }
 
-  def describeSingleton(c: scala.deriving.Mirror.Singleton) = c match {
-    case Colour.Red => "Singleton"
-  }
-
   test(assert(describe(Colour.Pink) === "Amazing!"))
   test(assert(describe(Colour.Red) === "Yawn..."))
-  test(assert(describePretty(Colour.Pink) === "Amazing!"))
-  test(assert(describeDull(Colour.Red) === "Yawn..."))
+
+  test("casting erasure [Pretty]") {
+    assert(describePretty(Colour.Pink) === "Amazing!")
+  }
+  test("casting erasure [Dull]") {
+    assert(describeDull(Colour.Red) === "Yawn...")
+  }
+
+  test("Singleton type erasure") {
+    assert(Colour.describeRed(Colour.Red) === "Red")
+  }
+
+  test("Array erasure tags") {
+    assert(classTag[Array[Colour.Red.type]].runtimeClass eq classTag[Array[Colour]].runtimeClass)
+  }
+
+  test("enum erasure tags") {
+    assert(classTag[Colour.Red.type].runtimeClass eq classTag[Colour].runtimeClass)
+  }
+
+  test("Array erasure storage") {
+    val reds = new Array[Colour.Red.type](1)
+    reds(0) = Colour.Red
+    assert(reds(0) === Colour.Red)
+  }
+
+  test(assert((Colour.Red: Any).isInstanceOf[scala.deriving.Mirror.Singleton]))
 
 }

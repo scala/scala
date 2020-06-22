@@ -49,30 +49,11 @@ trait TypeOps { self: TastyUniverse =>
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
   def intersectionParts(tpe: Type): List[Type] = tpe match {
-    case tpe: u.TypeRef => tpe :: Nil
     case tpe: u.RefinedType => tpe.parents
+    case tpe                => tpe :: Nil
   }
 
   object defn {
-
-    class EnumSupport private[defn] (implicit ctx: Context) {
-
-      val SingletonEnumValueParents = (
-        ctx.requiredClass(tpnme.ScalaDerivingMirrorSingleton).tpe ::
-        u.definitions.ProductRootClass.tpe ::
-        u.definitions.SerializableTpe ::
-        Nil
-      )
-
-    }
-
-    private[this] var _enumsupport: EnumSupport = _
-    def EnumSupport(implicit ctx: Context): EnumSupport = {
-      if (_enumsupport == null) {
-        _enumsupport = new EnumSupport
-      }
-      _enumsupport
-    }
 
     final val NoType: Type = u.NoType
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
@@ -234,11 +215,6 @@ trait TypeOps { self: TastyUniverse =>
     }
     else if (sym.isConstructor) {
       normaliseConstructorRef(sym)
-    }
-    else if (sym.is(Static)) {
-      // With this constraint, we avoid making singleton types for
-      //  static forwarders to modules (or you get a stack overflow trying to get sealedDescendents in patmat)
-      sym.preciseRef(prefix)
     }
     else {
       u.singleType(prefix, sym)

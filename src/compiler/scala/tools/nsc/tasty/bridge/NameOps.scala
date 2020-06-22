@@ -52,9 +52,6 @@ trait NameOps { self: TastyUniverse =>
     final val ScalaAnnotationInternal_Child: TypeName =
       TastyName.qualifiedClass("scala", "annotation", "internal", "Child")
 
-    final val ScalaDerivingMirrorSingleton: TypeName =
-      TastyName.qualifiedClass("scala", "deriving", "Mirror", "Singleton")
-
   }
 
 }

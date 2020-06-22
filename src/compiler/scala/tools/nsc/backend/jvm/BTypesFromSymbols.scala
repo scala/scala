@@ -87,10 +87,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     // ClassBType is created from the main class (instead of the module class).
     // The two symbols have the same name, so the resulting internalName is the same.
     // Phase travel (exitingPickler) required for scala/bug#6613 - linkedCoC is only reliable in early phases (nesting)
-    val classSym =
-      if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass)
-      else if (sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton]) return typeToBType(sym.tpe).asClassBType
-      else sym
+    val classSym = if (sym.isJavaDefined && sym.isModuleClass) exitingPickler(sym.linkedClassOfClass) else sym
 
     assert(classSym != NoSymbol, "Cannot create ClassBType from NoSymbol")
     assert(classSym.isClass, s"Cannot create ClassBType from non-class symbol $classSym")
@@ -190,10 +187,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
     t.dealiasWiden match {
       case TypeRef(_, ArrayClass, List(arg))  => ArrayBType(typeToBType(arg)) // Array type such as Array[Int] (kept by erasure)
       case TypeRef(_, sym, _) if !sym.isClass => nonClassTypeRefToBType(sym)  // See comment on nonClassTypeRefToBType
-      case TypeRef(_, sym, _)                 =>
-        if (!(sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton])) primitiveOrClassToBType(sym)
-        else typeToBType(sym.info.parents.head)
-        // primitiveOrClassToBType(sym) // Common reference to a type such as scala.Int or java.lang.String
+      case TypeRef(_, sym, _)                 => primitiveOrClassToBType(sym) // Common reference to a type such as scala.Int or java.lang.String
       case ClassInfoType(_, _, sym)           => primitiveOrClassToBType(sym) // We get here, for example, for genLoadModule, which invokes typeToBType(moduleClassSymbol.info)
 
       /* The cases below should probably never occur. They are kept for now to avoid introducing

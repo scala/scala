@@ -498,10 +498,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           }
         }
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
-      if (tag == VALDEF && flags.is(Enum)) {
-        sym.updateAttachment(new symbolTable.DottyEnumSingleton(sym.name.toString))
-      }
-      sym.setAnnotations(annotFns.map(_(sym)))
+      if (tag == VALDEF && flags.is(Enum | Case | Final))
+        ctx.markAsEnumSingleton(sym)
+      ctx.updateAnnotations(sym, annotFns.map(_(sym)))
       ctx.owner match {
         case cls if cls.isClass && canEnterInClass =>
           val decl = if (flags.is(Object) && isClass) sym.sourceObject else sym
@@ -732,19 +731,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val tpe = readTpt()(localCtx).tpe
             if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
-              if (completer.tastyFlagSet.is(Enum)) {
+              if (completer.tastyFlagSet.is(Enum) && sym.is(Case | Final)) {
                 val enumClass = sym.objectImplementation
-                val parents   = intersectionParts(tpe) ::: defn.EnumSupport.SingletonEnumValueParents
-                val ctor      = ctx.unsafeNewSymbol(
+                val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
+                val ctor = ctx.unsafeNewSymbol(
                   owner = enumClass,
                   name  = TastyName.Constructor,
                   flags = Method,
-                  info  = defn.DefDefType(Nil, Nil :: Nil, enumClass.tpe)
+                  info  = defn.DefDefType(Nil, Nil :: Nil, selfTpe)
                 )
-                val selfTpe = prefixedRef(sym.owner.thisType, enumClass)
                 enumClass.typeOfThis = selfTpe
-                ctx.setInfo(enumClass, defn.ClassInfoType(parents, ctor :: Nil, enumClass))
-                selfTpe
+                ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
+                prefixedRef(sym.owner.thisPrefix, enumClass)
               }
               else if (sym.isMethod) defn.ExprType(tpe)
               else tpe
