@@ -24,7 +24,7 @@ class LongMapTest {
 
   @Test
   def `isEmpty O(1)`(): Unit = {
-    val m = LongMap(1l -> (), 2l -> (), 3l -> ())
+    val m = LongMap(1L -> (), 2L -> (), 3L -> ())
     f[LongMap.Bin[_]]("left").set(m, null)
     f[LongMap.Bin[_]]("right").set(m, null)
     assertFalse(m.isEmpty) // no NPE, does not access left or right
