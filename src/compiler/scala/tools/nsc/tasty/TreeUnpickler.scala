@@ -77,7 +77,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       rdr.indexStats(reader.endAddr)
   }
 
-  class Completer(reader: TastyReader, tastyFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType(tastyFlagSet) { self =>
+  class Completer(reader: TastyReader, originalFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType(originalFlagSet) { self =>
     import reader._
 
     override def complete(sym: Symbol): Unit = {
@@ -386,7 +386,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (tag === VALDEF) {
         if (flags.not(Mutable)) flags |= Stable
         if (owner.is(Trait)) flags |= FieldAccessor
-        if (flags.is(Enum | Case)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
+        if (flags.is(SingletonEnumFlags)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
       }
       if (ctx.owner.isClass) {
         if (tag === TYPEPARAM) flags |= Param
@@ -438,12 +438,10 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       var name: TastyName = readTastyName()
       if (nextUnsharedTag === TYPEBOUNDS) name = name.toTypeName
       val typeReader = fork
-      val completer = new TastyLazyType {
+      val completer = new TastyLazyType(Case) {
         override def complete(sym: Symbol): Unit = ctx.setInfo(sym, typeReader.readType())
       }
-      val sym = ctx.delayCompletion(ctx.owner, name, Case, completer)
-      registerSym(start, sym)
-      sym
+      ctx.delayCompletion(ctx.owner, name, completer).tap(registerSym(start, _))
     }
 
     /** Create symbol of member definition or parameter node and enter in symAtAddr map
@@ -465,9 +463,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (givenFlags, annotFns, privateWithin) =
-        readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-      val flags = normalizeFlags(tag, ctx.owner, givenFlags, name, isAbsType, isClass, rhsIsEmpty)
+      val (flags, annotFns, privateWithin) = {
+        val (parsedFlags, annotFns, privateWithin) =
+          readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
+        val flags = normalizeFlags(tag, ctx.owner, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
+        (flags, annotFns, privateWithin)
+      }
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isTypeParameter
       ctx.log {
@@ -486,19 +487,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = new Completer(subReader(start, end), givenFlags & TastyOnlyFlags)
+          val completer = new Completer(subReader(start, end), flags)
           ctx.findRootSymbol(roots, name) match {
             case Some(rootd) =>
               ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
               ctx.log(s"$start replaced info of ${showSym(rootd)}")
               rootd
             case _ =>
-              if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, flags, completer, privateWithin)
-              else ctx.delayCompletion(ctx.owner, name, flags, completer, privateWithin)
+              if (isClass) ctx.delayClassCompletion(ctx.owner, name.toTypeName, completer, privateWithin)
+              else ctx.delayCompletion(ctx.owner, name, completer, privateWithin)
           }
         }
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
-      if (tag == VALDEF && flags.is(Enum | Case | Final))
+      if (tag == VALDEF && flags.is(SingletonEnumFlags))
         ctx.markAsEnumSingleton(sym)
       ctx.updateAnnotations(sym, annotFns.map(_(sym)))
       ctx.owner match {
@@ -704,11 +705,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val localCtx = ctx.withOwner(sym)
         tag match {
           case DEFDEF =>
-            val unsupported = completer.tastyFlagSet &~ (Extension | Inline | Macro | Exported)
+            val tastyOnlyFlags = completer.tastyOnlyFlags
+            val unsupported = tastyOnlyFlags &~ (Extension | Inline | Macro | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
-            if (completer.tastyFlagSet.is(Extension)) ctx.log(s"$tname is a Scala 3 extension method.")
-            unsupportedWhen(completer.tastyFlagSet.is(Inline, butNot = Macro), s"inline $sym")
-            unsupportedWhen(completer.tastyFlagSet.is(Inline | Macro), s"macro $sym")
+            if (tastyOnlyFlags.is(Extension)) ctx.log(s"$tname is a Scala 3 extension method.")
+            unsupportedWhen(tastyOnlyFlags.is(Inline, butNot = Macro), s"inline $sym")
+            unsupportedWhen(tastyOnlyFlags.is(Inline | Macro), s"macro $sym")
             val isCtor = sym.isClassConstructor
             val typeParams = {
               if (isCtor) {
@@ -725,13 +727,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val resType = effectiveResultType(sym, typeParams, tpt.tpe)
             ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
           case VALDEF => // valdef in TASTy is either a singleton object or a method forwarder to a local value.
-            val isInline = completer.tastyFlagSet.is(Inline)
-            val unsupported = completer.tastyFlagSet &~ (Inline | Enum | Extension | Exported)
+            val isInline = completer.tastyOnlyFlags.is(Inline)
+            val unsupported = completer.tastyOnlyFlags &~ (Inline | Enum | Extension | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             val tpe = readTpt()(localCtx).tpe
             if (isInline) unsupportedWhen(!isConstantType(tpe), s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
-              if (completer.tastyFlagSet.is(Enum) && sym.is(Case | Final)) {
+              if (completer.originalFlagSet.is(SingletonEnumFlags)) {
                 val enumClass = sym.objectImplementation
                 val selfTpe = defn.SingleType(sym.owner.thisPrefix, sym)
                 val ctor = ctx.unsafeNewSymbol(
@@ -748,7 +750,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            val unsupported = completer.tastyFlagSet &~ (Enum | Open | Opaque | Exported)
+            val unsupported = completer.tastyOnlyFlags &~ (Enum | Open | Opaque | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             if (sym.isClass) {
               sym.owner.ensureCompleted()
@@ -765,7 +767,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               // sym.resetFlag(Provisional)
             }
           case PARAM =>
-            val unsupported = completer.tastyFlagSet &~ (ParamAlias | Exported)
+            val unsupported = completer.tastyOnlyFlags &~ (ParamAlias | Exported)
             unsupportedWhen(unsupported.hasFlags, s"flags on parameter $sym: ${showTasty(unsupported)}")
             val tpt = readTpt()(localCtx)
             ctx.setInfo(sym,

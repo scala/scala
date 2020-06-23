@@ -178,12 +178,12 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
-    final def delayCompletion(owner: Symbol, name: TastyName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
-      def default() = unsafeNewSymbol(owner, name, flags, completer, privateWithin)
-      if (flags.is(Object)) {
+    final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
+      def default() = unsafeNewSymbol(owner, name, completer.originalFlagSet, completer, privateWithin)
+      if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
         if (isSymbol(sourceObject))
-          adjustSymbol(sourceObject, flags, completer, privateWithin)
+          adjustSymbol(sourceObject, completer.originalFlagSet, completer, privateWithin)
         else
           default()
       }
@@ -194,12 +194,12 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
-    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
-      def default() = unsafeNewClassSymbol(owner, typeName, flags, completer, privateWithin)
-      if (flags.is(Object)) {
+    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
+      def default() = unsafeNewClassSymbol(owner, typeName, completer.originalFlagSet, completer, privateWithin)
+      if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
         if (isSymbol(sourceObject))
-          adjustSymbol(sourceObject.objectImplementation, flags, completer, privateWithin)
+          adjustSymbol(sourceObject.objectImplementation, completer.originalFlagSet, completer, privateWithin)
         else
           default()
       }

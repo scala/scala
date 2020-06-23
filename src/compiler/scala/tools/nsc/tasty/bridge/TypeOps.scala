@@ -198,8 +198,9 @@ trait TypeOps { self: TastyUniverse =>
   /**
    * Ported from dotc
    */
-  abstract class TastyLazyType(val tastyFlagSet: TastyFlagSet = EmptyTastyFlags) extends u.LazyType with u.FlagAgnosticCompleter {
+  abstract class TastyLazyType(val originalFlagSet: TastyFlagSet) extends u.LazyType with u.FlagAgnosticCompleter {
     private[this] var myDecls: u.Scope = u.EmptyScope
+    def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
     override def decls: u.Scope = myDecls
     private[bridge] def withDecls(decls: u.Scope): this.type = { myDecls = decls; this }
     override def load(sym: Symbol): Unit = complete(sym)

@@ -27,6 +27,7 @@ trait FlagOps { self: TastyUniverse =>
     val TermParamOrAccessor: TastyFlagSet = Param | ParamSetter
     val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
     val ObjectClassCreationFlags: TastyFlagSet = Object | Final
+    val SingletonEnumFlags: TastyFlagSet = Case | Static | Enum | Stable
   }
 
   private[bridge] def encodeFlagSet(tflags: TastyFlagSet): u.FlagSet = {
