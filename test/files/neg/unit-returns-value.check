@@ -1,9 +1,9 @@
+unit-returns-value.scala:6: warning: enclosing method f has result type Unit: return value of type Int(5) discarded
+    if (b) return 5
+           ^
 unit-returns-value.scala:6: warning: a pure expression does nothing in statement position
     if (b) return 5
                   ^
-unit-returns-value.scala:6: warning: enclosing method f has result type Unit: return value discarded
-    if (b) return 5
-           ^
 unit-returns-value.scala:24: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
     i1 // warn
     ^

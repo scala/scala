@@ -228,8 +228,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     // requiring both the ACCESSOR and the SYNTHETIC bits to trigger the exemption
     private def isSyntheticAccessor(sym: Symbol) = sym.isAccessor && (!sym.isLazy || isPastTyper)
 
-    private def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
-
     // when type checking during erasure, generate erased types in spots that aren't transformed by erasure
     // (it erases in TypeTrees, but not in, e.g., the type a Function node)
     def phasedAppliedType(sym: Symbol, args: List[Type]) = {
@@ -2366,6 +2364,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         checkNonCyclic(ddef, tpt1)
         ddef.tpt.setType(tpt1.tpe)
         val typedMods = typedModifiers(ddef.mods)
+        val rhsAtOwner = // introduced for async, but could be universally handy
+          ddef.getAndRemoveAttachment[ChangeOwnerAttachment] match {
+            case None => ddef.rhs
+            case Some(ChangeOwnerAttachment(originalOwner)) => ddef.rhs.changeOwner(originalOwner, ddef.symbol)
+          }
         var rhs1 =
           if (ddef.name == nme.CONSTRUCTOR && !ddef.symbol.hasStaticFlag) { // need this to make it possible to generate static ctors
             if (!meth.isPrimaryConstructor &&
@@ -2373,13 +2376,13 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 meth.owner.isModuleClass ||
                 meth.owner.isAnonOrRefinementClass))
               InvalidConstructorDefError(ddef)
-            typed(ddef.rhs)
+            typed(rhsAtOwner)
           } else if (meth.isMacro) {
             // typechecking macro bodies is sort of unconventional
             // that's why we employ our custom typing scheme orchestrated outside of the typer
-            transformedOr(ddef.rhs, typedMacroBody(this, ddef))
+            transformedOr(rhsAtOwner, typedMacroBody(this, ddef))
           } else {
-            transformedOrTyped(ddef.rhs, EXPRmode, tpt1.tpe)
+            transformedOrTyped(rhsAtOwner, EXPRmode, tpt1.tpe)
           }
 
         if (meth.isClassConstructor && !isPastTyper && !meth.owner.isSubClass(AnyValClass) && !meth.isJava) {
@@ -2552,41 +2555,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
           }
         }
-        val statsTyped = typedStats(block.stats, context.owner, warnPure = false)
+        val statsTyped = typedStats(block.stats, context.owner)
         val expr1 = typed(block.expr, mode &~ (FUNmode | QUALmode | APPSELmode), pt)
-
-        // sanity check block for unintended expr placement
-        if (!isPastTyper) {
-          val (count, result0, adapted) =
-            expr1 match {
-              case Block(expr :: Nil, Literal(Constant(()))) => (1, expr, true)
-              case Literal(Constant(()))                     => (0, EmptyTree, false)
-              case _                                         => (1, EmptyTree, false)
-            }
-          val isMultiline = statsTyped.lengthCompare(1 - count) > 0
-          def checkPure(t: Tree, supple: Boolean): Unit =
-            if (!explicitlyUnit(t) && treeInfo.isPureExprForWarningPurposes(t)) {
-              val msg = "a pure expression does nothing in statement position"
-              val parens = if (isMultiline) "multiline expressions might require enclosing parentheses" else ""
-              val discard = if (adapted) "; a value can be silently discarded when Unit is expected" else ""
-              val text =
-                if (supple) s"$parens$discard"
-                else if (!parens.isEmpty) s"$msg; $parens" else msg
-              context.warning(t.pos, text, WarningCategory.OtherPureStatement)
-            }
-          statsTyped.foreach(checkPure(_, supple = false))
-          if (result0.nonEmpty) checkPure(result0, supple = true)
-          def checkImplicitlyAdaptedBlockResult(t: Tree): Unit =
-            expr1 match {
-              case treeInfo.Applied(f, _, _) if f.symbol != null && f.symbol.isImplicit =>
-                f.symbol.paramLists match {
-                  case (p :: Nil) :: _ if p.isByNameParam => context.warning(t.pos, s"Block result was adapted via implicit conversion (${f.symbol}) taking a by-name parameter", WarningCategory.LintBynameImplicit)
-                  case _ =>
-                }
-              case _ =>
-            }
-          if (isMultiline && settings.warnByNameImplicit) checkImplicitlyAdaptedBlockResult(expr1)
-        }
 
         // Remove ValDef for right-associative by-value operator desugaring which has been inlined into expr1
         val statsTyped2 = statsTyped match {
@@ -3257,7 +3227,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       case _                  => log(s"unhandled import: $imp in $unit"); imp
     }
 
-    def typedStats(stats: List[Tree], exprOwner: Symbol, warnPure: Boolean = true): List[Tree] = {
+    def typedStats(stats: List[Tree], exprOwner: Symbol): List[Tree] = {
       val inBlock = exprOwner == context.owner
       def includesTargetPos(tree: Tree) =
         tree.pos.isRange && context.unit.exists && (tree.pos includes context.unit.targetPos)
@@ -3297,11 +3267,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 }
               }
             }
-          }
-          if (warnPure && !isPastTyper && treeInfo.isPureExprForWarningPurposes(result)) {
-            val msg = "a pure expression does nothing in statement position"
-            val clause = if (stats.lengthCompare(1) > 0) "; multiline expressions may require enclosing parentheses" else ""
-            context.warning(stat.pos, s"$msg$clause", WarningCategory.OtherPureStatement)
           }
           result
       }
@@ -4800,8 +4765,9 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // The typing in expr1 says expr is Unit (it has already been coerced if
               // it is non-Unit) so we have to retype it.  Fortunately it won't come up much
               // unless the warning is legitimate.
-              if (typed(expr).tpe.typeSymbol != UnitClass)
-                context.warning(tree.pos, "enclosing method " + name + " has result type Unit: return value discarded", WarningCategory.Other)
+              val typedExpr = typed(expr)
+              if (!isPastTyper && typedExpr.tpe.typeSymbol != UnitClass)
+                context.warning(tree.pos, "enclosing method " + name + s" has result type Unit: return value of type ${typedExpr.tpe} discarded", WarningCategory.Other)
             }
             val res = treeCopy.Return(tree, checkDead(context, expr1)).setSymbol(enclMethod.owner)
             val tp = pluginsTypedReturn(NothingTpe, this, res, restpt.tpe)
@@ -5613,7 +5579,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (pid1.symbol.ne(NoSymbol) && !(pid1.symbol.hasPackageFlag || pid1.symbol.isModule))
           reporter.error(pdef.pos, s"There is name conflict between the ${pid1.symbol.fullName} and the package ${sym.fullName}.")
         val stats1 = newTyper(context.make(tree, sym.moduleClass, sym.info.decls))
-          .typedStats(pdef.stats, NoSymbol)
+                  .typedStats(pdef.stats, NoSymbol)
         treeCopy.PackageDef(tree, pid1, stats1) setType NoType
       }
 

@@ -1,0 +1,4 @@
+stark_naked_await.scala:8: error: `await` must be enclosed in an `async` block
+    await(Future(4))
+    ^
+1 error

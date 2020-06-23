@@ -47,11 +47,4 @@ java.lang.NullPointerException
 Macros_Test_2.scala:34: error: macro implementation is missing
   bar4
   ^
-Macros_Test_2.scala:35: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-  bar5
-  ^
-Macros_Test_2.scala:36: warning: a pure expression does nothing in statement position; multiline expressions may require enclosing parentheses
-  bar6
-  ^
-2 warnings
 10 errors

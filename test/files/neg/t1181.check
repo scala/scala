@@ -3,8 +3,4 @@ t1181.scala:9: error: type mismatch;
  required: Symbol
      _ => buildMap(map.updated(keyList.head, valueList.head), keyList.tail, valueList.tail)
                   ^
-t1181.scala:8: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
-     case (Nil, Nil) => map
-                        ^
-1 warning
 1 error

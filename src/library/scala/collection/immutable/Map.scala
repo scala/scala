@@ -227,6 +227,8 @@ object Map extends MapFactory[Map] {
     def get(key: Any): Option[Nothing] = None
     override def getOrElse [V1](key: Any, default: => V1): V1 = default
     def iterator: Iterator[(Any, Nothing)] = Iterator.empty
+    override def keysIterator: Iterator[Any] = Iterator.empty
+    override def valuesIterator: Iterator[Nothing] = Iterator.empty
     def updated [V1] (key: Any, value: V1): Map[Any, V1] = new Map1(key, value)
     def removed(key: Any): Map[Any, Nothing] = this
     override def concat[V2 >: Nothing](suffix: IterableOnce[(Any, V2)]): Map[Any, V2] = suffix match {
@@ -325,6 +327,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
+      override def drop(n: Int): Iterator[A] = { i += n; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
@@ -428,6 +431,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
+      override def drop(n: Int): Iterator[A] = { i += n; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =
@@ -548,6 +552,7 @@ object Map extends MapFactory[Map] {
         i += 1
         result
       }
+      override def drop(n: Int): Iterator[A] = { i += n; this }
       protected def nextResult(k: K, v: V @uncheckedVariance): A
     }
     def updated[V1 >: V](key: K, value: V1): Map[K, V1] =

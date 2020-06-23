@@ -1,0 +1,3 @@
+concurrent_shadowing.scala:20: warning: a pure expression does nothing in statement position
+          case _ => foo; ()
+                    ^

@@ -124,4 +124,7 @@ trait StdAttachments {
   case object MultiargInfixAttachment extends PlainAttachment
 
   case object NullaryOverrideAdapted extends PlainAttachment
+
+  // When typing a Def with this attachment, change the owner of its RHS from origalOwner to the symbol of the Def
+  case class ChangeOwnerAttachment(originalOwner: Symbol)
 }

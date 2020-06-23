@@ -122,6 +122,9 @@ trait StdNames {
     val NESTED_IN_ANON_FUN: String             = NESTED_IN + ANON_FUN_NAME.toString.replace("$", "")
     val NESTED_IN_LAMBDA: String               = NESTED_IN + DELAMBDAFY_LAMBDA_CLASS_NAME.toString.replace("$", "")
 
+    val NON_LOCAL_RETURN_KEY_STRING: String    = "nonLocalReturnKey"
+    val LIFTED_TREE: String                    = "liftedTree"
+
     /**
      * Ensures that name mangling does not accidentally make a class respond `true` to any of
      * isAnonymousClass, isAnonymousFunction, isDelambdafyFunction, e.g. by introducing "$anon".
@@ -280,6 +283,9 @@ trait StdNames {
     final val TypeName: NameType            = nameType("TypeName")
     final val TypeDef: NameType             = nameType("TypeDef")
     final val Quasiquote: NameType          = nameType("Quasiquote")
+
+    // async
+    final val stateMachine: NameType        = nameType("stateMachine$async")
 
     // quasiquote-specific names
     final val QUASIQUOTE_FUNCTION: NameType     = nameType("$quasiquote$function$")
@@ -701,6 +707,8 @@ trait StdNames {
     val asType: NameType               = nameType("asType")
     val asInstanceOf_ : NameType       = nameType("asInstanceOf")
     val asInstanceOf_Ob : NameType     = nameType("$" + "asInstanceOf") // looks like missing interpolator due to Any member in scope
+    val async : NameType               = nameType("async")
+    val await : NameType               = nameType("await")
     val box: NameType                  = nameType("box")
     val bytes: NameType                = nameType("bytes")
     val c: NameType                    = nameType("c")
@@ -761,6 +769,7 @@ trait StdNames {
     val lang: NameType                 = nameType("lang")
     val length: NameType               = nameType("length")
     val lengthCompare: NameType        = nameType("lengthCompare")
+    val locally: NameType              = nameType("locally")
     val longHash: NameType             = nameType("longHash")
     val macroContext : NameType        = nameType("c")
     val main: NameType                 = nameType("main")
@@ -842,6 +851,7 @@ trait StdNames {
     val unapply: NameType              = nameType("unapply")
     val unapplySeq: NameType           = nameType("unapplySeq")
     val unbox: NameType                = nameType("unbox")
+    val unit: NameType                 = nameType("unit")
     val universe: NameType             = nameType("universe")
     val UnliftListElementwise: NameType =nameType( "UnliftListElementwise")
     val UnliftListOfListsElementwise: NameType = nameType("UnliftListOfListsElementwise")
@@ -855,6 +865,15 @@ trait StdNames {
     val writeReplace: NameType         = nameType("writeReplace")
     val xml: NameType                  = nameType("xml")
     val zero: NameType                 = nameType("zero")
+
+    // async
+    val result           : NameType       = nameType("result$" + "async") // avoid missing interpolator warnings
+    val awaitable        : NameType       = nameType("awaitable$" + "async")
+    val completed        : NameType       = nameType("completed$" + "async")
+    val stateMachine     : NameType       = nameType("stateMachine$" + "async")
+    val state            : NameType       = nameType("state")
+    val tr               : NameType       = nameType("tr$" + "async")
+    val t                : NameType       = nameType("throwable$" + "async")
 
     // quasiquote interpolators:
     val q: NameType  = nameType("q")

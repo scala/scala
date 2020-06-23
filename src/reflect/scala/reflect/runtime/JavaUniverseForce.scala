@@ -66,6 +66,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.ConstructorNeedsFence
     this.MultiargInfixAttachment
     this.NullaryOverrideAdapted
+    this.ChangeOwnerAttachment
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -363,6 +364,12 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TupleClass
     definitions.FunctionClass
     definitions.AbstractFunctionClass
+    definitions.TryClass
+    definitions.FailureClass
+    definitions.SuccessClass
+    definitions.FutureClass
+    definitions.PromiseClass
+    definitions.NonFatalClass
     definitions.MacroContextType
     definitions.ProductRootClass
     definitions.Any_$eq$eq

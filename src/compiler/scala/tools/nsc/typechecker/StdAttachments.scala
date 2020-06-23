@@ -199,6 +199,7 @@ trait StdAttachments {
 
   /** Marks a Typed tree with Unit tpt. */
   case object TypedExpectingUnitAttachment
+  def explicitlyUnit(tree: Tree): Boolean = tree.hasAttachment[TypedExpectingUnitAttachment.type]
 }
 
 

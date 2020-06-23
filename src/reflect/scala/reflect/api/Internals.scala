@@ -373,6 +373,19 @@ trait Internals { self: Universe =>
      */
     def boundedWildcardType(bounds: TypeBounds): BoundedWildcardType
 
+    /** Mark the given `DefDef` for later processing by the `async` phase of the compiler
+     *
+     * @param owner current owner the owner of the call site being transformed into an async state machine
+     * @param method A method of the form `def $name($paramName: $ParamType): $T = $CODE`, where calls to `$CODE`
+     *               `awaitSymbol` in `$CODE` mark continuation points.
+     * @param awaitSymbol The `await` method, of a typically of a type like `[T](Future[T): T`
+     * @param config      Untyped channel for additional configuration parameters. This currently allows
+     *                     - "postAnfTransform" : A function from `Block => Block`
+     *                     - "stateDiagram"     : A function from `(Symbol, Tree) => Option[String => Unit]` that can
+     *                                            opt to receive a .dot diagram of the state machine.
+     */
+    def markForAsyncTransform(owner: Symbol, method: DefDef, awaitSymbol: Symbol, config: Map[String, AnyRef]): DefDef = method
+
     /** Syntactic conveniences for additional internal APIs for trees, symbols and types */
     type Decorators <: DecoratorApi
 

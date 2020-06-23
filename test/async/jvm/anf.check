@@ -1,0 +1,3 @@
+anf.scala:181: warning: unreachable code
+          case "" if false => await(fut(1)) + 1
+                                            ^

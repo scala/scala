@@ -1,0 +1,40 @@
+ill-nested-await.scala:17: error: await must not be used under a nested method.
+    async { foo(0)(await(f(0))) }
+                   ^
+ill-nested-await.scala:22: error: await must not be used under a nested object.
+    async { object Nested { await(f(false)) } }
+                            ^
+ill-nested-await.scala:27: error: await must not be used under a nested trait.
+    async { trait Nested { await(f(false)) } }
+                           ^
+ill-nested-await.scala:32: error: await must not be used under a nested class.
+    async { class Nested { await(f(false)) } }
+                           ^
+ill-nested-await.scala:37: error: await must not be used under a nested method.
+    async { () => { await(f(false)) } }
+                    ^
+ill-nested-await.scala:42: error: await must not be used under a nested function.
+    async { { case 0 => { await(f(false)) } } : PartialFunction[Int, Boolean] }
+                          ^
+ill-nested-await.scala:47: error: await must not be used under a try/catch.
+    async { try { await(f(false)) } catch { case _: Throwable => } }
+                  ^
+ill-nested-await.scala:52: error: await must not be used under a try/catch.
+    async { try { () } catch { case _: Throwable => await(f(false)) } }
+                                                    ^
+ill-nested-await.scala:57: error: await must not be used under a try/catch.
+    async { try { () } finally { await(f(false)) } }
+                                 ^
+ill-nested-await.scala:62: error: await must not be used under a nested method.
+    async { def foo = await(f(false)) }
+                      ^
+ill-nested-await.scala:71: error: await must not be used under a lazy val initializer.
+    def foo(): Any = async { val x = { lazy val y = await(f(0)); y } }
+                                                    ^
+ill-nested-await.scala:77: error: await must not be used under a nested method.
+    async { fooAsByNameLambda(await(f(""))) }
+                              ^
+ill-nested-await.scala:11: error: `await` must be enclosed in an `async` block
+     await[Any](f(null))
+     ^
+13 errors
