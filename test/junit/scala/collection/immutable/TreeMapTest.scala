@@ -225,4 +225,13 @@ class TreeMapTest extends AllocationTest {
     assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(HashMap((c0r, ()))).result())
     assertIdenticalKeys(Map((c0l, ())), TreeMap.newBuilder[C, Unit].++=(TreeMap((c0l, ()))).++=(TreeMap((c0r, ()))).result())
   }
+
+  @Test
+  def overwriteEntryRegression(): Unit = {
+    val x = TreeMap(1 -> "herring", 2 -> "cod", 3 -> "salmon")
+    val y = TreeMap(3 -> "wish")
+    val r1 = x ++ y
+    val r2 = (x.toSeq ++ y.toSeq).toMap
+    assertEquals(r1, r2)
+  }
 }
