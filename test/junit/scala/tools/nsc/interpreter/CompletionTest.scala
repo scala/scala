@@ -2,7 +2,7 @@ package scala.tools.nsc.interpreter
 
 import java.io.{PrintWriter, StringWriter}
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
@@ -40,7 +40,6 @@ class CompletionTest {
     def complete(before: String, after: String = ""): CompletionResult =
       completion.complete(before + after, before.length)
   }
-
 
   @Test
   def t4438_arrayCompletion(): Unit = {
@@ -191,7 +190,7 @@ class CompletionTest {
       """|Array(1, 2, 3)
          |  .map(_ + 1) /* then we do reverse */
          |  .rev""".stripMargin
-    assert(
+    assertTrue(
       completer.complete(withMultilineCommit).candidates.map(_.defString).contains("reverseMap")
     )
 
@@ -199,31 +198,33 @@ class CompletionTest {
       """|Array(1, 2, 3)
          |  .map(_ + 1) // then we do reverse
          |  .rev""".stripMargin
-    assert(
+    assertTrue(
       completer.complete(withInlineCommit).candidates.map(_.defString).contains("reverseMap")
     )
   }
 
   @Test
   def isDeprecated(): Unit = {
-    val completer = setup()
-    // scala.Traversable is deprecated
-    val candidates1 = completer.complete("import scala.Traversab").candidates
-    assert(candidates1.size == 1)
-    assert(candidates1.forall(_.isDeprecated))
-    // StringOps#distinct and distinctBy are both deprecated
-    val candidates2 = completer.complete("\"foo\".distinc").candidates
-    assert(candidates2.size == 2)
-    assert(candidates2.forall(_.isDeprecated))
+    val (completer, _, _) = interpretLines(
+      """object Stale { @deprecated("","") def oldie = ??? }""",
+      """object Stuff { @deprecated("","") def `this` = ??? ; @deprecated("","") def `that` = ??? }"""
+    )
+    val candidates1 = completer.complete("Stale.ol").candidates
+    assertEquals(1, candidates1.size)
+    assertTrue(candidates1.forall(_.isDeprecated))
+    val candidates2 = completer.complete("Stuff.th").candidates
+    assertEquals(2, candidates2.size)
+    assertTrue(candidates2.forall(_.isDeprecated))
   }
 
   @Test
   def isNotDeprecated(): Unit = {
-    val completer = setup()
-    // neither Growable nor GrowableBuilder are deprecated -- scala/bug#12043
-    val candidates = completer.complete("import scala.collection.mutable.Growable").candidates
-    assert(candidates.size == 2)
-    assert(candidates.forall(!_.isDeprecated))
+    val (completer, _, _) = interpretLines(
+      """object Stuff { def `this` = ??? ; def `that` = ??? }"""
+    )
+    val candidates = completer.complete("Stuff.th").candidates
+    assertEquals(2, candidates.size)
+    assert(candidates.forall(!_.isDeprecated), "No deprecations")
   }
 
   @Test
