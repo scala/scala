@@ -63,5 +63,17 @@ class CollectionConversionsTest {
       fail("Not all tests successful")
     }
   }
+
+  @Test
+  def t11976(): Unit = {
+    import scala.jdk.CollectionConverters._
+    val myMap_1 = java.util.Collections.singletonMap("a", 1)
+    var x = 0
+    myMap_1.asScala.partition { case (key, value) =>
+      x += 1
+      true
+    }
+    assertEquals(1, x)
+  }
 }
 
