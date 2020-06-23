@@ -820,17 +820,17 @@ private[collection] object RedBlackTree {
     } else mkTree(isRedTree(tl) || isRedTree(tr), k, v, tl, tr)
   }
 
-  private[this] def split[A, B](t: Tree[A, B], k: A)(implicit ordering: Ordering[A]): (Tree[A, B], Tree[A, B], Tree[A, B]) =
-    if(t eq null) (null, null, null)
+  private[this] def split[A, B](t: Tree[A, B], k2: A)(implicit ordering: Ordering[A]): (Tree[A, B], Tree[A, B], Tree[A, B], A) =
+    if(t eq null) (null, null, null, k2)
     else {
-      val cmp = ordering.compare(k, t.key)
-      if(cmp == 0) (t.left, t, t.right)
+      val cmp = ordering.compare(k2, t.key)
+      if(cmp == 0) (t.left, t, t.right, t.key)
       else if(cmp < 0) {
-        val (ll, b, lr) = split(t.left, k)
-        (ll, b, join(lr, t.key, t.value, t.right))
+        val (ll, b, lr, k1) = split(t.left, k2)
+        (ll, b, join(lr, t.key, t.value, t.right), k1)
       } else {
-        val (rl, b, rr) = split(t.right, k)
-        (join(t.left, t.key, t.value, rl), b, rr)
+        val (rl, b, rr, k1) = split(t.right, k2)
+        (join(t.left, t.key, t.value, rl), b, rr, k1)
       }
     }
 
@@ -853,20 +853,20 @@ private[collection] object RedBlackTree {
     if((t1 eq null) || (t1 eq t2)) t2
     else if(t2 eq null) t1
     else {
-      val (l2, _, r2) = split(t2, t1.key)
-      val tl = _union(t1.left, l2)
-      val tr = _union(t1.right, r2)
-      join(tl, t1.key, t1.value, tr)
+      val (l1, _, r1, k1) = split(t1, t2.key)
+      val tl = _union(l1, t2.left)
+      val tr = _union(r1, t2.right)
+      join(tl, k1, t2.value, tr)
     }
 
   private[this] def _intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] =
     if((t1 eq null) || (t2 eq null)) null
     else if (t1 eq t2) t1
     else {
-      val (l2, b, r2) = split(t2, t1.key)
-      val tl = _intersect(t1.left, l2)
-      val tr = _intersect(t1.right, r2)
-      if(b ne null) join(tl, t1.key, t1.value, tr)
+      val (l1, b, r1, k1) = split(t1, t2.key)
+      val tl = _intersect(l1, t2.left)
+      val tr = _intersect(r1, t2.right)
+      if(b ne null) join(tl, k1, t2.value, tr)
       else join2(tl, tr)
     }
 
@@ -874,7 +874,7 @@ private[collection] object RedBlackTree {
     if((t1 eq null) || (t2 eq null)) t1
     else if (t1 eq t2) null
     else {
-      val (l1, _, r1) = split(t1, t2.key)
+      val (l1, _, r1, k1) = split(t1, t2.key)
       val tl = _difference(l1, t2.left)
       val tr = _difference(r1, t2.right)
       join2(tl, tr)
