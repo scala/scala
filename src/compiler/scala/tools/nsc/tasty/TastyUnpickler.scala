@@ -16,14 +16,32 @@ import scala.collection.mutable
 
 import scala.tools.tasty.{TastyFormat, TastyRefs, TastyReader, TastyName, ErasedTypeRef, Signature, TastyHeaderUnpickler}
 import TastyFormat.NameTags._, TastyRefs.NameRef, TastyName._
+import scala.reflect.io.AbstractFile
 
 object TastyUnpickler {
 
-  abstract class SectionUnpickler[R](val name: String) {
-    def unpickle(reader: TastyReader, nameTable: NameRef => TastyName): R
+  /** Unpickle symbol table information descending from a class and/or singleton object root
+   *  from an array of bytes.
+   *  @param tasty      the interface that translates TASTy operations into symbol table operations
+   *  @param classRoot  the top-level class which is unpickled
+   *  @param objectRoot the top-level singleton object which is unpickled
+   *  @param filename   filename associated with bytearray, only used for error messages
+   */
+  def unpickle[Tasty <: TastyUniverse](tasty: Tasty)(bytes: Array[Byte], classRoot: tasty.Symbol, objectRoot: tasty.Symbol, filename: String): Unit = {
+    import tasty._
+    implicit val ctx: Context = new InitialContext(classRoot, AbstractFile.getFile(filename))
+
+    ctx.log(s"Unpickling $filename")
+
+    val unpickler = new TastyUnpickler[tasty.type](new TastyReader(bytes))(tasty)
+    unpickler.readHeader()
+    unpickler.readNames()
+    val Some(astReader) = unpickler.readSection("ASTs")
+    val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef)(tasty)
+    treeUnpickler.enterTopLevel(classRoot, objectRoot)
   }
 
-  final class Table[T] extends (NameRef => T) {
+  private final class Table[T] extends (NameRef => T) {
     private[this] val names = new mutable.ArrayBuffer[T]
     def add(name: T): mutable.ArrayBuffer[T] = names += name
     def apply(ref: NameRef): T = names(ref.index)
@@ -33,24 +51,22 @@ object TastyUnpickler {
 
 import TastyUnpickler._
 
-class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty: Tasty) { self =>
+private class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty: Tasty) { self =>
   import tasty.{Context, assert}
   import reader._
 
-  def this(bytes: Array[Byte])(implicit tasty: Tasty) = this(new TastyReader(bytes))
+  private[this] val nameTable = new Table[TastyName]
 
-  private val sectionReader = new mutable.HashMap[String, TastyReader]
+  def nameAtRef: NameRef => TastyName = nameTable
 
-  val nameAtRef = new Table[TastyName]
-
-  private def readName(): TastyName = nameAtRef(readNameRef())
+  private def readName(): TastyName = nameTable(readNameRef())
 
   private def readParamSig(): Signature.ParamSig[ErasedTypeRef] = {
     val ref = readInt()
     if (ref < 0)
       Left(ref.abs)
     else {
-      Right(ErasedTypeRef(nameAtRef(NameRef(ref))))
+      Right(ErasedTypeRef(nameTable(NameRef(ref))))
     }
   }
 
@@ -60,7 +76,7 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
     val start = currentAddr
     val end = start + length
     def debugName(name: TastyName): name.type = {
-      ctx.log(s"${nameAtRef.size}: ${name.debug}")
+      ctx.log(s"${nameTable.size}: ${name.debug}")
       name
     }
     val result = tag match {
@@ -98,28 +114,27 @@ class TastyUnpickler[Tasty <: TastyUniverse](reader: TastyReader)(implicit tasty
         debugName(PrefixName(prefix, readName()))
       case _ =>
         val qual = readName()
-        sys.error(s"at NameRef(${nameAtRef.size}): name `${qual.debug}` is qualified by unknown tag $tag")
+        sys.error(s"at NameRef(${nameTable.size}): name `${qual.debug}` is qualified by unknown tag $tag")
     }
     assert(currentAddr == end, s"bad name ${result.debug} $start $currentAddr $end")
     result
   }
 
-  new TastyHeaderUnpickler(reader).readHeader()
+  def readHeader(): Unit = new TastyHeaderUnpickler(reader).readHeader()
 
-  def readSections()(implicit ctx: Context): Unit = {
+  def readNames()(implicit ctx: Context): Unit = {
     ctx.log(s"reading names:")
-    doUntil(readEnd()) { nameAtRef.add(readNameContents()) }
-    while (!isAtEnd) {
-      val secName = readName().asSimpleName.raw
-      val secEnd = readEnd()
-      sectionReader(secName) = new TastyReader(bytes, currentAddr.index, secEnd.index, currentAddr.index)
-      goto(secEnd)
-    }
+    doUntil(readEnd()) { nameTable.add(readNameContents()) }
   }
 
-  def unpickle[R](sec: SectionUnpickler[R]): Option[R] =
-    for (reader <- sectionReader.get(sec.name)) yield
-      sec.unpickle(reader, nameAtRef)
-
-  private[nsc] def bytes: Array[Byte] = reader.bytes
+  def readSection(name: String): Option[TastyReader] = {
+    while (!isAtEnd) {
+      val secName = readName().asSimpleName.raw
+      val secEnd  = readEnd()
+      val curr    = currentAddr
+      goto(secEnd)
+      if (name == secName) return Some(new TastyReader(bytes, curr.index, secEnd.index, curr.index))
+    }
+    None
+  }
 }

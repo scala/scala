@@ -31,8 +31,7 @@ import scala.reflect.io.{NoAbstractFile, PlainFile, ZipArchive}
 import scala.tools.nsc.util.ClassPath
 import scala.tools.nsc.io.AbstractFile
 import scala.tools.tasty.{TastyHeaderUnpickler, TastyReader}
-import scala.tools.nsc.tasty.{TastyUniverse, ScalacUnpickler}
-import ScalacUnpickler._
+import scala.tools.nsc.tasty.{TastyUniverse, TastyUnpickler}
 import scala.util.control.NonFatal
 
 /** This abstract class implements a class file parser.
@@ -1268,7 +1267,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
       AnyRefClass // Force scala.AnyRef, otherwise we get "error: Symbol AnyRef is missing from the classpath"
       val bytes = parseTASTYBytes()
-      Unpickler.tasty.unpickle(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
+      TastyUnpickler.unpickle(TastyUniverse)(bytes, clazz, staticModule, file.path.stripSuffix(".class") + ".tasty")
     } else if (!isScalaRaw && innersStart != -1) {
       in.bp = innersStart
       val entries = u2()

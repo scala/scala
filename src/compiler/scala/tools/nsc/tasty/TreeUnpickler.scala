@@ -20,8 +20,9 @@ import scala.reflect.io.AbstractFile
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
-/** Unpickler for typed trees
- *  @param reader              the reader from which to unpickle
+/** Unpickler for typed trees, reads the ASTs section of a TASTy document
+ *  @param reader    the reader from which to unpickle
+ *  @param nameAtRef an index of names from the tasty file of this unpickler
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
