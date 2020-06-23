@@ -253,6 +253,18 @@ object AssertUtil {
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
 
   def withoutATrace[A](body: => A) = NoTrace(body)
+
+  private lazy val modsField = classOf[Field].getDeclaredField("modifiers").tap(_.setAccessible(true))
+
+  def getFieldAccessible[T: ClassTag](n: String): Field =
+    implicitly[ClassTag[T]]
+      .runtimeClass.getDeclaredField(n)
+      .tap { f =>
+        if ((f.getModifiers & Modifier.FINAL) != 0)
+          modsField.setInt(f, f.getModifiers() & ~Modifier.FINAL)
+        if ((f.getModifiers & Modifier.PUBLIC) == 0)
+          f.setAccessible(true)
+      }
 }
 
 object TestDuration {

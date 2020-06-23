@@ -1890,19 +1890,12 @@ trait Namers extends MethodSynthesis {
     def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
       annotations filterNot (_ eq null) map { ann =>
         val ctx = typer.context
-        // enteringTyper to allow inferView in annotation args, scala/bug#5892
-        def createAnnotationInfo = enteringTyper {
-          val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
-          if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
-        }
-
-        ann match {
-          case Apply(_, Nil)  =>
-            // zero-argument annotations can be computed eagerly, see also TreeInfo.isUncheckedStable
-            createAnnotationInfo
-          case _ =>
-            // need to be lazy, scala/bug#1782
-            AnnotationInfo lazily createAnnotationInfo
+        // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
+        AnnotationInfo lazily {
+          enteringTyper {
+            val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
+            if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
+          }
         }
       }
 
