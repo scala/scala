@@ -73,20 +73,39 @@ private[jvm] object GeneratedClassHandler {
     }
 
 
-    val optimisingClassHandler =
-      if (settings.optInlinerEnabled || settings.optClosureInvocations)
-        new GlobalOptimisingGeneratedClassHandler(postProcessor, writingHandler)
+    val debugInfoEmittingHandler =
+      if (settings.debuginfo.indexOfChoice >= 1) // emitSource ?
+        new DebugInfoEmittingClassHandler(postProcessor, writingHandler)
       else writingHandler
 
+    val optimisingClassHandler =
+      if (settings.optInlinerEnabled || settings.optClosureInvocations)
+        new GlobalOptimisingGeneratedClassHandler(postProcessor, debugInfoEmittingHandler)
+      else debugInfoEmittingHandler
+
     if (settings.debuginfo.indexOfChoice >= 1) // emitSource ?
-      new DebugEmittingClassHandler(postProcessor, optimisingClassHandler)
+      new DebugInfoBootstrappingClassHandler(postProcessor, optimisingClassHandler)
     else optimisingClassHandler
   }
 
-  private class DebugEmittingClassHandler(val postProcessor: PostProcessor,
-                                          underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+  private class DebugInfoBootstrappingClassHandler(val postProcessor: PostProcessor,
+                                                   underlying: GeneratedClassHandler) extends GeneratedClassHandler {
     override def process(unit: GeneratedCompilationUnit): Unit = {
       postProcessor.debugInfoBuilder.registerUnitClasses(unit)
+      underlying.process(unit)
+    }
+
+    override def complete(): Unit = {
+      underlying.complete()
+    }
+
+    override def close(): Unit = underlying.close()
+  }
+
+  private class DebugInfoEmittingClassHandler(val postProcessor: PostProcessor,
+                                              underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+    override def process(unit: GeneratedCompilationUnit): Unit = {
+      postProcessor.debugInfoBuilder.writeDebugInfo(unit)
       underlying.process(unit)
     }
 

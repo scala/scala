@@ -15,8 +15,6 @@ package backend
 package jvm
 
 import scala.collection.mutable
-import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
-import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{ScalaDebugStratum, ScalaStratum}
 
 abstract class DebugInfoBuilder extends PerRunInit {
   val postProcessor: PostProcessor
@@ -24,19 +22,30 @@ abstract class DebugInfoBuilder extends PerRunInit {
   import postProcessor.bTypes
   import bTypes.{LazyVar, perRunLazy}
 
+  import DebugInfoBuilder.JSR45Info
+  import DebugInfoBuilder.JSR45Stratum._
+
   private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[GeneratedClass, JSR45Writer]] = perRunLazy(this)(mutable.Map.empty)
 
   def registerUnitClasses(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
-      debugInfoWriters.get += (cls -> new JSR45Writer())
+      debugInfoWriters.get += (cls -> new JSR45Writer(unit.sourceFile.name))
+    }
+  }
+
+  def writeDebugInfo(unit: GeneratedCompilationUnit): Unit = {
+    for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
+      val writer = debugInfoWriters.get(cls)
+      cls.classNode.visitSource(writer.sourceFile, writer.sourceDebugExtension())
     }
   }
 
   def getWriter(cls: GeneratedClass): JSR45Writer = debugInfoWriters.get(cls)
 
-  class JSR45Writer {
-    private val scalaStratum: JSR45Stratum = new ScalaStratum
-    private val scalaDebugStratum: JSR45Stratum = new ScalaDebugStratum
+  class JSR45Writer(val sourceFile: String) {
+    private val info = JSR45Info(sourceFile, new ScalaStratum, new ScalaDebugStratum)
+
+    def sourceDebugExtension(): String = info.toString
   }
 
 }
