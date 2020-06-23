@@ -205,6 +205,28 @@ class CompletionTest {
   }
 
   @Test
+  def isDeprecated(): Unit = {
+    val completer = setup()
+    // scala.Traversable is deprecated
+    val candidates1 = completer.complete("import scala.Traversab").candidates
+    assert(candidates1.size == 1)
+    assert(candidates1.forall(_.isDeprecated))
+    // StringOps#distinct and distinctBy are both deprecated
+    val candidates2 = completer.complete("\"foo\".distinc").candidates
+    assert(candidates2.size == 2)
+    assert(candidates2.forall(_.isDeprecated))
+  }
+
+  @Test
+  def isNotDeprecated(): Unit = {
+    val completer = setup()
+    // neither Growable nor GrowableBuilder are deprecated -- scala/bug#12043
+    val candidates = completer.complete("import scala.collection.mutable.Growable").candidates
+    assert(candidates.size == 2)
+    assert(candidates.forall(!_.isDeprecated))
+  }
+
+  @Test
   def dependentTypeImplicits_t10353(): Unit = {
     val code =
       """

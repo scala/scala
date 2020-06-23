@@ -143,7 +143,7 @@ trait PresentationCompilation { self: IMain =>
       import CompletionResult.NoResults
 
       def isMemberDeprecated(m: Member) = m match {
-        case tm: TypeMember if tm.viaView.isDeprecated || tm.viaView != NoSymbol && tm.viaView.owner.isDeprecated || !m.sym.exists =>
+        case tm: TypeMember if tm.viaView.isDeprecated || tm.viaView != NoSymbol && tm.viaView.owner.isDeprecated =>
           true
         case _ =>
           m.sym.isDeprecated ||
