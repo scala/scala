@@ -101,10 +101,8 @@ class CompletionTest {
     val completer = setup()
     checkExact(completer, "def foo[@specialize", " A]")("specialized")
     checkExact(completer, "def foo[@specialize")("specialized")
-//    TODO: re-enable once scala/bug#11060 is fixed
-//    checkExact(completer, """@deprecatedN""", """ class Foo""")("deprecatedName")
-//    checkExact(completer, """@deprecateN""")("deprecatedName")
-//    checkExact(completer, """{@deprecateN""")("deprecatedName")
+    checkExact(completer, """@deprecatedN""", """ class Foo""")("deprecatedName")
+    checkExact(completer, """{@deprecatedN""")("deprecatedName")
   }
 
   @Test
