@@ -421,27 +421,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     def createSymbol()(implicit ctx: Context): Symbol = nextByte match {
       case VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM =>
         createMemberSymbol()
-      case BIND =>
-        createBindSymbol()
       case TEMPLATE =>
         val localDummy = ctx.newLocalDummy
         registerSym(currentAddr, localDummy)
         localDummy
       case tag =>
+        assert(tag != BIND, "bind pattern symbol creation from TASTy")
         throw new Error(s"illegal createSymbol at $currentAddr, tag = $tag")
-    }
-
-    private def createBindSymbol()(implicit ctx: Context): Symbol = {
-      val start = currentAddr
-      readByte() // tag
-      readEnd()  // end
-      var name: TastyName = readTastyName()
-      if (nextUnsharedTag === TYPEBOUNDS) name = name.toTypeName
-      val typeReader = fork
-      val completer = new TastyLazyType(Case) {
-        override def complete(sym: Symbol): Unit = ctx.setInfo(sym, typeReader.readType())
-      }
-      ctx.delayCompletion(ctx.owner, name, completer).tap(registerSym(start, _))
     }
 
     /** Create symbol of member definition or parameter node and enter in symAtAddr map
