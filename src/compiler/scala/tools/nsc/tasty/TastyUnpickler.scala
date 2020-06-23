@@ -18,6 +18,10 @@ import scala.tools.tasty.{TastyFormat, TastyRefs, TastyReader, TastyName, Erased
 import TastyFormat.NameTags._, TastyRefs.NameRef, TastyName._
 import scala.reflect.io.AbstractFile
 
+/**The entry point to TASTy unpickling for nsc, initialises a [[TastyUniverse#Context]] with the root symbols of a
+ * top-level class, then parses the header and names from a TASTy file, before entering symbols from the `ASTs` section
+ * with [[TreeUnpickler]]
+ */
 object TastyUnpickler {
 
   /** Unpickle symbol table information descending from a class and/or singleton object root

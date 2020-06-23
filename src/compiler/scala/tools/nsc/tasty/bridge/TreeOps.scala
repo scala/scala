@@ -16,7 +16,8 @@ import scala.tools.nsc.tasty.TastyUniverse
 
 import scala.tools.tasty.TastyName
 
-
+/**This layer adds factories that construct typed [[scala.reflect]] Trees in the shapes that TASTy expects
+ */
 trait TreeOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 

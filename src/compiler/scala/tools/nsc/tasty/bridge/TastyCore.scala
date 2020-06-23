@@ -15,6 +15,9 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc
 import nsc.symtab, nsc.tasty.TastyUniverse
 
+/**The base of the [[TastyUniverse]] cake, providing aliases to types from [[scala.reflect]] at the same import level
+ * as new TASTy specific types.
+ */
 abstract class TastyCore { self: TastyUniverse =>
   import self.{symbolTable => u}
 

@@ -16,6 +16,9 @@ import scala.tools.tasty.TastyName
 
 import scala.tools.nsc.tasty.TastyUniverse
 
+/**This layer handles encoding of [[TastyName]] to [[symbolTable.Name]], escaping any specially handled names.
+ * Also contains definitions of names for handling special compiler internal symbols from TASTy.
+ */
 trait NameOps { self: TastyUniverse =>
   import self.{symbolTable => u}
   import TastyName._

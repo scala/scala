@@ -17,6 +17,9 @@ import scala.tools.nsc.tasty.SafeEq
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags.TastyFlagSet
 
+/**This layer deals with selecting a member symbol from a type using a [[TastyName]],
+ * also contains factories for making type references to symbols.
+ */
 trait SymbolOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 

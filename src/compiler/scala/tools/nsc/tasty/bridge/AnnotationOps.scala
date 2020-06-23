@@ -14,6 +14,7 @@ package scala.tools.nsc.tasty.bridge
 
 import scala.tools.nsc.tasty.{SafeEq, TastyUniverse}
 
+/** Adds support for creating annotations from Trees */
 trait AnnotationOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 

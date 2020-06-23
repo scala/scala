@@ -19,6 +19,9 @@ import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
 
+/**This contains the definition for [[Context]], along with standard error throwing capabilities with user friendly
+ * formatted errors that can change their output depending on the context mode.
+ */
 trait ContextOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
@@ -69,6 +72,11 @@ trait ContextOps { self: TastyUniverse =>
     else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
   }
 
+  /**Maintains state through traversal of a TASTy file, such as the outer scope of the defintion being traversed, the
+   * traversal mode, and the root owners and source path for the TASTy file.
+   * It also provides all operations for manipulation of the symbol table, such as creating/updating symbols and
+   * updating their types.
+   */
   sealed abstract class Context {
     thisCtx =>
 

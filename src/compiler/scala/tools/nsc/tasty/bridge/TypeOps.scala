@@ -22,6 +22,10 @@ import scala.util.chaining._
 import scala.collection.mutable
 import scala.reflect.internal.Flags
 
+/**This layer adds factories that construct [[scala.reflect]] Types in the shapes that TASTy expects.
+ * Additionally provides operations to select a type from a type, or a type from a type with an additional prefix,
+ * using a [[TastyName]].
+ */
 trait TypeOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
