@@ -199,7 +199,7 @@ private[internal] trait TypeConstraints {
     }
   }
 
-  private[this] val containsCollectorInstances: ReusableInstance[ContainsCollector] = ReusableInstance(new ContainsCollector(null))
+  private[this] val containsCollectorInstances: ReusableInstance[ContainsCollector] = ReusableInstance(new ContainsCollector(null), enabled = isCompilerUniverse)
 
   private[this] def containsSymbol(tp: Type, sym: Symbol): Boolean =
     containsCollectorInstances.using { cc =>
