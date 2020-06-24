@@ -18,6 +18,11 @@ object TestFancyColours extends Suite("TestFancyColours") {
     case Colour.Red => "Yawn..."
   }
 
+  def describeAny(x: Any) = x match {
+    case p: Colour.Pink.type => Colour.describePink(p)
+    case r: Colour.Red.type  => Colour.describeRed(r)
+  }
+
   test(assert(describe(Colour.Pink) === "Amazing!"))
   test(assert(describe(Colour.Red) === "Yawn..."))
 
@@ -44,6 +49,14 @@ object TestFancyColours extends Suite("TestFancyColours") {
     val reds = new Array[Colour.Red.type](1)
     reds(0) = Colour.Red
     assert(reds(0) === Colour.Red)
+  }
+
+  test("pat mat erasure [Pink.type]") {
+    assert(describeAny(Colour.Pink) === "Pink")
+  }
+
+  test("pat mat erasure [Red.type]") {
+    assert(describeAny(Colour.Red) === "Red")
   }
 
   test(assert((Colour.Red: Any).isInstanceOf[scala.deriving.Mirror.Singleton]))
