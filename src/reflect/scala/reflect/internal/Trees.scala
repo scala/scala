@@ -2050,7 +2050,7 @@ trait Trees extends api.Trees {
       }
     }
   }
-  private val onlyChildAccumulator = ReusableInstance[OnlyChildAccumulator](new OnlyChildAccumulator)
+  private val onlyChildAccumulator = ReusableInstance[OnlyChildAccumulator](new OnlyChildAccumulator, enabled = isCompilerUniverse)
 
 // -------------- Classtags --------------------------------------------------------
 

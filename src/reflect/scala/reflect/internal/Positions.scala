@@ -298,7 +298,7 @@ trait Positions extends api.Positions { self: SymbolTable =>
       inform("error while set children pos "+pos+" of "+parent.children)
       throw ex
   }
-  private val setChildrenPosAccumulator = ReusableInstance[SetChildrenPosAccumulator](new SetChildrenPosAccumulator)
+  private val setChildrenPosAccumulator = ReusableInstance[SetChildrenPosAccumulator](new SetChildrenPosAccumulator, enabled = isCompilerUniverse)
   private final class SetChildrenPosAccumulator extends (Tree => Boolean) {
     private[this] val wrappingPosAccumulator = new WrappingPosAccumulator
     private[this] var pos: Position = _
