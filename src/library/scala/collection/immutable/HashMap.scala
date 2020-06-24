@@ -46,7 +46,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
                         with CustomParallelizable[(A, B), ParHashMap[A, B]]
                         with HasForeachEntry[A, B]
 {
-  import HashMap.{nullToEmpty, bufferSize}
+  import HashMap.{bufferSize, concatMerger, nullToEmpty}
 
   override def size: Int = 0
 
@@ -159,7 +159,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   override def values: scala.collection.Iterable[B] = new HashMapValues
 
   override final def transform[W, That](f: (A, B) => W)(implicit bf: CanBuildFrom[HashMap[A, B], (A, W), That]): That =
-    if ((bf eq Map.canBuildFrom) || (bf eq HashMap.canBuildFrom)) transformImpl(f).asInstanceOf[That]
+    if ((bf eq Map.canBuildFrom) || (bf eq HashMap.canBuildFrom)) castToThat(transformImpl(f))
     else super.transform(f)(bf)
 
   /* `transform` specialized to return a HashMap */
@@ -179,17 +179,18 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
   override def ++[C >: (A, B), That](that: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
     if (isCompatibleCBF(bf)) {
       //here we know that That =:= HashMap[_, _], or compatible with it
-      if (this eq that.asInstanceOf[AnyRef]) that.asInstanceOf[That]
-      else if (that.isEmpty) this.asInstanceOf[That]
-      else that match {
-        case thatHash: HashMap[A, B] =>
-          //default Merge prefers to keep than replace
-          //so we merge from thatHash
-          (thatHash.merged(this) (null) ).asInstanceOf[That]
-        case that =>
-          var result: HashMap[Any, _] = this.asInstanceOf[HashMap[Any, _]]
-          that foreach { case kv: (_, _) => result = result + kv }
-          result.asInstanceOf[That]
+      if (this eq that.asInstanceOf[AnyRef]) castToThat(that)
+      else if (that.isEmpty) castToThat(this)
+      else {
+        val result: HashMap[A, B] = that match {
+          case thatHash: HashMap[A, B] =>
+            this.merge0(thatHash, 0, concatMerger[A, B])
+          case that =>
+            var result: HashMap[A, B] = this
+            that.asInstanceOf[GenTraversableOnce[(A, B)]] foreach { case kv: (_, _) => result = result + kv }
+            result
+        }
+        castToThat(result)
       }
     } else super.++(that)(bf)
   }
@@ -203,41 +204,44 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
     if (isCompatibleCBF(bf)) addSimple(that)
     else super.++:(that)
   }
-  private def addSimple[C >: (A, B), That](that: TraversableOnce[C]): That = {
+  private def addSimple[C >: (A, B), That](that: TraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
     //here we know that That =:= HashMap[_, _], or compatible with it
-    if (this eq that.asInstanceOf[AnyRef]) that.asInstanceOf[That]
-    else if (that.isEmpty) this.asInstanceOf[That]
-    else that match {
-      case thatHash: HashMap[A, B] =>
-        val merger: Merger[A, B] = HashMap.liftMerger[A, B](null)
-        // merger prefers to keep than replace
-        // so we invert
-        (this.merge0(thatHash, 0, merger.invert)).asInstanceOf[That]
+    if (this eq that.asInstanceOf[AnyRef]) castToThat(that)
+    else if (that.isEmpty) castToThat(this)
+    else {
+      val merger = HashMap.concatMerger[A, B].invert
+      val result: HashMap[A, B] = that match {
+        case thatHash: HashMap[A, B] =>
+          this.merge0(thatHash, 0, HashMap.concatMerger[A, B].invert)
 
-      case that:HasForeachEntry[A, B] =>
-        object adder extends Function2[A, B, Unit] {
-          var result: HashMap[A, B] = this.asInstanceOf[HashMap[A, B]]
-          val merger = HashMap.liftMerger[A, B](null)
-
-          override def apply(key: A, value: B): Unit = {
-            result = result.updated0(key, computeHash(key), 0, value, null, merger)
+        case that:HasForeachEntry[A, B] =>
+          object adder extends Function2[A, B, Unit] {
+            var result: HashMap[A, B] = HashMap.this
+            override def apply(key: A, value: B): Unit = {
+              result = result.updated0(key, computeHash(key), 0, value, null, merger)
+            }
           }
-        }
-        that foreachEntry adder
-        adder.result.asInstanceOf[That]
-      case that =>
-        object adder extends Function1[(A,B), Unit] {
-          var result: HashMap[A, B] = this.asInstanceOf[HashMap[A, B]]
-          val merger = HashMap.liftMerger[A, B](null)
-
-          override def apply(kv: (A, B)): Unit = {
-            val key = kv._1
-            result = result.updated0(key, computeHash(key), 0, kv._2, kv, merger)
+          that foreachEntry adder
+          adder.result
+        case that =>
+          object adder extends Function1[(A,B), Unit] {
+            var result: HashMap[A, B] = HashMap.this
+            override def apply(kv: (A, B)): Unit = {
+              val key = kv._1
+              result = result.updated0(key, computeHash(key), 0, kv._2, kv, merger)
+            }
           }
-        }
-        that.asInstanceOf[scala.Traversable[(A,B)]] foreach adder
-        adder.result.asInstanceOf[That]
+          that.asInstanceOf[scala.Traversable[(A,B)]] foreach adder
+          adder.result
+      }
+      castToThat(result)
     }
+  }
+  private[this] def castToThat[C, That](m: HashMap[A, B])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+    m.asInstanceOf[That]
+  }
+  private[this] def castToThat[C, That](m: GenTraversableOnce[C])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
+    m.asInstanceOf[That]
   }
 }
 
@@ -261,15 +265,33 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   private type MergeFunction[A1, B1] = ((A1, B1), (A1, B1)) => (A1, B1)
 
   private def liftMerger[A1, B1](mergef: MergeFunction[A1, B1]): Merger[A1, B1] =
-    if (mergef == null) defaultMerger.asInstanceOf[Merger[A1, B1]] else liftMerger0(mergef)
+    if (mergef == null) defaultMerger[A1, B1] else liftMerger0(mergef)
 
-  private val defaultMerger : Merger[Any, Any] = new Merger[Any, Any] {
+  private def defaultMerger[A, B]: Merger[A, B] = _defaultMerger.asInstanceOf[Merger[A, B]]
+  private[this] val _defaultMerger : Merger[Any, Any] = new Merger[Any, Any] {
     override def apply(a: (Any, Any), b: (Any, Any)): (Any, Any) = a
     override def retainIdentical: Boolean = true
     override val invert: Merger[Any, Any] = new Merger[Any, Any] {
       override def apply(a: (Any, Any), b: (Any, Any)): (Any, Any) = b
       override def retainIdentical: Boolean = true
       override def invert = defaultMerger
+    }
+  }
+
+  private def concatMerger[A, B]: Merger[A, B] = _concatMerger.asInstanceOf[Merger[A, B]]
+  private[this] val _concatMerger : Merger[Any, Any] = new Merger[Any, Any] {
+    override def apply(a: (Any, Any), b: (Any, Any)): (Any, Any) = {
+      if (a._1.asInstanceOf[AnyRef] eq b._1.asInstanceOf[AnyRef]) b
+      else (a._1, b._2)
+    }
+    override def retainIdentical: Boolean = true
+    override val invert: Merger[Any, Any] = new Merger[Any, Any] {
+      override def apply(a: (Any, Any), b: (Any, Any)): (Any, Any) = {
+        if (b._1.asInstanceOf[AnyRef] eq a._1.asInstanceOf[AnyRef]) a
+        else (b._1, a._2)
+      }
+      override def retainIdentical: Boolean = true
+      override def invert = concatMerger
     }
   }
 
@@ -1049,7 +1071,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     /** The root node of the partially build hashmap */
     private var rootNode: HashMap[A, B] = HashMap.empty
-    private def plusPlusMerger = liftMerger[A, B](null).invert
+
     private def isMutable(hs: HashMap[A, B]) = {
       hs.isInstanceOf[HashTrieMap[A, B]] && hs.size == -1
     }
@@ -1249,11 +1271,11 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
       if (toNode eq toBeAdded) toNode
       else toBeAdded match {
         case bLeaf: HashMap1[A, B] =>
-          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, plusPlusMerger)
+          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, concatMerger[A, B])
           else makeMutableTrie(toNode, bLeaf, level)
 
         case bLeaf: HashMapCollision1[A, B] =>
-          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, plusPlusMerger)
+          if (toNodeHash == bLeaf.hash) toNode.merge0(bLeaf, level, concatMerger[A, B])
           else makeMutableTrie(toNode, bLeaf, level)
 
         case bTrie: HashTrieMap[A, B] =>
