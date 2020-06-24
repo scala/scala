@@ -206,7 +206,7 @@ class TreeMapTest extends AllocationTest {
   }
 
   @Test
-  def unionAndIntersectRetainLeft(): Unit = {
+  def retainLeft(): Unit = {
     case class C(a: Int)(override val toString: String)
     implicit val ordering: Ordering[C] = Ordering.by(_.a)
     val c0l = C(0)("l")

@@ -338,7 +338,7 @@ trait MapOps[K, +V, +CC[_, _] <: IterableOps[_, AnyConstr, _], +C]
       case that: Iterable[(K, V1)] => that
       case that => View.from(that)
     }
-    mapFactory.from(new View.Concat(toIterable, thatIterable))
+    mapFactory.from(new View.Concat(thatIterable, toIterable))
   }
 }
 
