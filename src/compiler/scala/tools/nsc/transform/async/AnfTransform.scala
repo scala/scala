@@ -55,6 +55,8 @@ private[async] trait AnfTransform extends TransformUtils {
           tree
         case _ if !treeContainsAwait                                                                 =>
           tree
+        case Apply(TypeApply(sel@Select(_, _), _), arg :: Nil) if sel.symbol == definitions.Object_synchronized && containsAwait(arg) =>
+          tree // pass through unchanged, this will be reported as an error later
         case Apply(sel@Select(fun, _), arg :: Nil) if isBooleanAnd(sel.symbol) && containsAwait(arg) =>
           transform(treeCopy.If(tree, fun, arg, literalBool(false)))
         case Apply(sel@Select(fun, _), arg :: Nil) if isBooleanOr(sel.symbol) && containsAwait(arg)  =>
