@@ -71,9 +71,17 @@ object Runner {
 
   def capturingRunner(classloader: ScalaClassLoader): Try[Runner] = Try(new Runner(classloader))
 
-  def main(args: Array[String]): Unit = {
-    val Array(classpath, className) = args
+  val commandName: String = "runDotty"
+  val describe: String = s"$commandName <classpath: Paths> <classname: String>"
+
+  def process(args: String*): Int = {
+    if (args.length != 2) {
+      println(red(s"please provide 2 arguments in sub-command: $describe"))
+      return 1
+    }
+    val Seq(classpath, className) = args
     classloadFrom(classpath).map(run(_, className)).get
+    0
   }
 
 }

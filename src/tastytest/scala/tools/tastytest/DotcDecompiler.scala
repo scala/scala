@@ -11,9 +11,17 @@ object DotcDecompiler {
   def decompile(source: String, additionalSettings: Seq[String]): Try[Boolean] =
     dotcProcess(("-usejavacp" +: additionalSettings :+ source).toArray)
 
-  def main(args: Array[String]): Unit = {
-    val Array(src, additionalSettings @ _*) = args
-    val success = decompile(src, additionalSettings).get
-    sys.exit(if (success) 0 else 1)
+  val commandName: String = "dotcd"
+  val describe: String = s"$commandName <tasty: File> <args: String*>"
+
+  def process(args: String*): Int = {
+    if (args.length < 1) {
+      println(red(s"please provide at least 1 argument in sub-command: $describe"))
+      return 1
+    }
+    val Seq(tasty, additionalSettings @ _*) = args
+    val success = decompile(tasty, additionalSettings).get
+    if (success) 0 else 1
   }
+
 }

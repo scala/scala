@@ -39,9 +39,16 @@ object Scalac {
     }
   }
 
-  def main(args: Array[String]): Unit = {
-    val Array(out, src, additionalArgs @ _*) = args
+  val commandName: String = "scalac"
+  val describe: String = s"$commandName <out: Directory> <src: File> <args: String*>"
+
+  def process(args: String*): Int = {
+    if (args.length < 2) {
+      println(red(s"please provide at least 2 arguments in sub-command: $describe"))
+      return 1
+    }
+    val Seq(out, src, additionalArgs @ _*) = args
     val success = scalac(out, additionalArgs, src).get
-    sys.exit(if (success) 0 else 1)
+    if (success) 0 else 1
   }
 }

@@ -995,33 +995,6 @@ lazy val junit = project.in(file("test") / "junit")
     Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
 
-lazy val dotc = inputKey[Unit]("compile with dotty")
-lazy val dotcd = inputKey[Unit]("decompile tasty files")
-lazy val scalac = inputKey[Unit]("compile with scalac")
-lazy val runDotty = inputKey[Unit]("run a classfile with the dotty library available")
-
-lazy val tastycArgsParser = Def.setting {
-  import complete.DefaultParsers._
-  val outDir  = fileParser(baseDirectory.value)
-  val srcFile = fileParser(baseDirectory.value)
-  val args    = spaceDelimited("<arg>")
-  (outDir <~ Space) ~ srcFile ~ args
-}
-
-lazy val decompileArgsParser = Def.setting {
-  import complete.DefaultParsers._
-  val srcFile = fileParser(baseDirectory.value)
-  val args    = spaceDelimited("<arg>")
-  srcFile ~ args
-}
-
-lazy val runnerArgsParser = Def.setting {
-  import complete.DefaultParsers._
-  val outDir = fileParser(baseDirectory.value)
-  val args   = spaceDelimited("<arg>")
-  outDir ~ args
-}
-
 lazy val tasty = project.in(file("test") / "tasty")
   .settings(commonSettings)
   .dependsOn(tastytest)
@@ -1037,34 +1010,6 @@ lazy val tasty = project.in(file("test") / "tasty")
     ),
     Compile / unmanagedSourceDirectories := Nil,
     Test    / unmanagedSourceDirectories := List(baseDirectory.value/"test"),
-    dotc := (Def.inputTaskDyn {
-      import complete.DefaultParsers._
-      var outDir ~ src ~ _ = tastycArgsParser.parsed
-      val dotcClass = "scala.tools.tastytest.Dotc"
-      val args = Array(dotcClass, outDir.getAbsolutePath, src.getAbsolutePath)
-      Def.task((runMain in Test).toTask(args.mkString(" ", " ", "")).value)
-    }).evaluated,
-    scalac := (Def.inputTaskDyn {
-      import complete.DefaultParsers._
-      var outDir ~ src ~ additional = tastycArgsParser.parsed
-      val scalacClass = "scala.tools.tastytest.Scalac"
-      val args = Array(scalacClass, outDir.getAbsolutePath, src.getAbsolutePath) ++ additional
-      Def.task((runMain in Test).toTask(args.mkString(" ", " ", "")).value)
-    }).evaluated,
-    dotcd := (Def.inputTaskDyn {
-      import complete.DefaultParsers._
-      var src ~ additional = decompileArgsParser.parsed
-      val dotcdClass = "scala.tools.tastytest.DotcDecompiler"
-      val args = Array(dotcdClass, src.getAbsolutePath) ++ additional
-      Def.task((runMain in Test).toTask(args.mkString(" ", " ", "")).value)
-    }).evaluated,
-    runDotty := (Def.inputTaskDyn {
-      import complete.DefaultParsers._
-      var out ~ additional = runnerArgsParser.parsed
-      val runDottyClass = "scala.tools.tastytest.Runner"
-      val args = Array(runDottyClass, out.getAbsolutePath, additional.headOption.getOrElse(""))
-      Def.task((runMain in Test).toTask(args.mkString(" ", " ", "")).value)
-    }).evaluated,
   )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
