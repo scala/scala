@@ -5,6 +5,8 @@ import reflect.classTag
 
 object TestFancyColours extends Suite("TestFancyColours") {
 
+  final class PinkWrap(val toPink: Colour.Pink.type) extends AnyVal
+
   def describe(c: Colour) = c match {
     case Colour.Pink => "Amazing!"
     case Colour.Red => "Yawn..."
@@ -22,6 +24,8 @@ object TestFancyColours extends Suite("TestFancyColours") {
     case p: Colour.Pink.type => Colour.describePink(p)
     case r: Colour.Red.type  => Colour.describeRed(r)
   }
+
+  def describePinkWrap(c: PinkWrap) = describePretty(c.toPink)
 
   test(assert(describe(Colour.Pink) === "Amazing!"))
   test(assert(describe(Colour.Red) === "Yawn..."))
@@ -57,6 +61,10 @@ object TestFancyColours extends Suite("TestFancyColours") {
 
   test("pat mat erasure [Red.type]") {
     assert(describeAny(Colour.Red) === "Red")
+  }
+
+  test("AnyVal erasure") {
+    assert(describePinkWrap(new PinkWrap(Colour.Pink)) === "Amazing!")
   }
 
   test(assert((Colour.Red: Any).isInstanceOf[scala.deriving.Mirror.Singleton]))
