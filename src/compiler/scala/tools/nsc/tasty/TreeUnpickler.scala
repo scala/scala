@@ -748,7 +748,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             unsupportedWhen(unsupported.hasFlags, s"flags on $sym: ${showTasty(unsupported)}")
             if (sym.isClass) {
               sym.owner.ensureCompleted()
-              readTemplate(symAddr)(localCtx)
+              readTemplate()(localCtx)
             }
             else {
               // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
@@ -774,14 +774,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       } catch ctx.onCompletionError(sym)
     }
 
-    private def readTemplate(symAddr: Addr)(implicit ctx: Context): Unit = {
+    private def readTemplate()(implicit ctx: Context): Unit = {
       val cls = ctx.enterClassCompletion()
       val localDummy = symbolAtCurrent()
       assert(readByte() === TEMPLATE)
       val end = readEnd()
 
       // ** PARAMETERS **
-      ctx.log(s"$symAddr Template: reading parameters of $cls:")
+      ctx.log(s"$currentAddr Template: reading parameters of $cls:")
       val tparams = readIndexedParams[NoCycle](TYPEPARAM)
       if (tparams.nonEmpty) {
         cls.info = defn.PolyType(tparams.map(symFromNoCycle), cls.info)
@@ -789,13 +789,13 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readIndexedParams[NoCycle](PARAM) // skip value parameters
 
       // ** MEMBERS **
-      ctx.log(s"$symAddr Template: indexing members of $cls:")
+      ctx.log(s"$currentAddr Template: indexing members of $cls:")
       val bodyIndexer = fork
       while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
       bodyIndexer.indexStats(end)
 
       // ** PARENTS **
-      ctx.log(s"$symAddr Template: adding parents of $cls:")
+      ctx.log(s"$currentAddr Template: adding parents of $cls:")
       val parents = {
         val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
         val parentWithOuter = parentCtx.addMode(OuterTerm)
@@ -808,11 +808,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }
 
       if (nextByte === SELFDEF) {
-        ctx.log(s"$symAddr Template: adding self-type of $cls:")
+        ctx.log(s"$currentAddr Template: adding self-type of $cls:")
         readByte() // read SELFDEF tag
         readLongNat() // skip Name
         val selfTpe = readTpt().tpe
-        ctx.log(s"$symAddr Template: self-type is $selfTpe")
+        ctx.log(s"$currentAddr Template: self-type is $selfTpe")
         cls.typeOfThis = selfTpe
       }
 
@@ -827,7 +827,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       ctx.log {
         val addendum = if (parentTypes.isEmpty) "" else parentTypes.mkString(" extends ", " with ", "")
-        s"$symAddr Template: Updated info of $cls$addendum"
+        s"$currentAddr Template: Updated info of $cls$addendum"
       }
     }
 
