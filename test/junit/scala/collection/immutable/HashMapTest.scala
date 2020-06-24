@@ -1,5 +1,7 @@
 package scala.collection.immutable
 
+import java.util.Collections
+
 import org.junit.Assert._
 import org.junit.{Ignore, Test}
 import org.junit.runner.RunWith
@@ -280,7 +282,7 @@ class HashMapTest extends AllocationTest{
       "i" -> 9,
       "j" -> 10
     )
-    assertSame(nonEmpty2, nonAllocating(nonEmpty1 ++ nonEmpty2))
+    assertSame(nonEmpty1, nonAllocating(nonEmpty1 ++ nonEmpty2))
   }
 
   @Test
@@ -309,5 +311,32 @@ class HashMapTest extends AllocationTest{
     val m2 = Map[Int, Int] (2->2)
     val m3 = m2 ++ m1
     assertEquals(1, m3.apply(2))
+  }
+
+  @Test
+  def retainLeft(): Unit = {
+    case class C(a: Int)(override val toString: String)
+    implicit val ordering: Ordering[C] = Ordering.by(_.a)
+    val c0l = C(0)("l")
+    val c0r = C(0)("r")
+    def assertIdenticalKeys(expected: Map[C, Unit], actual: Map[C, Unit]): Unit = {
+      val expected1, actual1 = Collections.newSetFromMap[C](new java.util.IdentityHashMap())
+      expected.keys.foreach(expected1.add)
+      actual.keys.foreach(actual1.add)
+      assertEquals(expected1, actual1)
+    }
+    assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).updated(c0r, ()))
+
+    def check(factory: Seq[(C, Unit)] => Map[C, Unit]): Unit = {
+      val c0LMap = factory(Seq((c0l, ())))
+      val c0RMap = factory(Seq((c0r, ())))
+      assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(c0RMap))
+      assertIdenticalKeys(Map((c0l, ())), HashMap.newBuilder[C, Unit].++=(HashMap((c0l, ()))).++=(c0RMap).result())
+      assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(c0RMap))
+      assertIdenticalKeys(Map((c0l, ())), c0LMap ++: HashMap((c0r, ())))
+    }
+    check(cs => HashMap(cs: _*)) // exercise special case for HashMap/HashMap
+    check(cs => TreeMap(cs: _*)) // exercise special case for HashMap/HasForEachEntry
+    check(cs => HashMap(cs: _*).withDefault(_ => ???)) // default cases
   }
 }

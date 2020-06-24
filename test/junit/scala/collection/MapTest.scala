@@ -42,7 +42,7 @@ class MapTest {
     val m = ListMap(1 -> "one")
     val mm = Map(2 -> "two") ++: m
     assert(mm.isInstanceOf[ListMap[Int,String]])
-    assertEquals(mm.mkString("[", ", ", "]"), "[1 -> one, 2 -> two]")
+    assertEquals(mm.mkString("[", ", ", "]"), "[2 -> two, 1 -> one]")
   }
 
   @deprecated("Tests deprecated API", since="2.13")
