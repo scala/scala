@@ -2815,6 +2815,16 @@ self =>
             }
             expr()
           }
+        if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
+          val tpeStr = if (restype.isEmpty) "" else s" : $restype"
+          def unaryMsg(what: String) = s"empty-paren (nilary) prefix unary operator is $what: instead, remove () to declare as `def ${name.decodedName}$tpeStr`"
+          vparamss match {
+            case List(List()) =>
+              if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
+              else deprecationWarning(nameOffset, unaryMsg("deprecated"), "2.13.4")
+            case _ => // ok
+          }
+        }
         DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
       signalParseProgress(result.pos)

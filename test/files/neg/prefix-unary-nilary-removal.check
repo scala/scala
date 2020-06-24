@@ -1,0 +1,4 @@
+prefix-unary-nilary-removal.scala:4: error: empty-paren (nilary) prefix unary operator is unsupported: instead, remove () to declare as `def unary_~ : Foo`
+  def unary_~() : Foo = this
+      ^
+1 error
