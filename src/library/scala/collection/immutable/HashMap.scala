@@ -187,7 +187,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
             this.merge0(thatHash, 0, concatMerger[A, B])
           case that =>
             var result: HashMap[A, B] = this
-            that.asInstanceOf[GenTraversableOnce[(A, B)]] foreach { case kv: (_, _) => result = result + kv }
+            that.asInstanceOf[GenTraversableOnce[(A, B)]].foreach(result += _)
             result
         }
         castToThat(result)
@@ -212,9 +212,9 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
       val merger = HashMap.concatMerger[A, B].invert
       val result: HashMap[A, B] = that match {
         case thatHash: HashMap[A, B] =>
-          this.merge0(thatHash, 0, HashMap.concatMerger[A, B].invert)
+          this.merge0(thatHash, 0, merger)
 
-        case that:HasForeachEntry[A, B] =>
+        case that: HasForeachEntry[A, B] =>
           object adder extends Function2[A, B, Unit] {
             var result: HashMap[A, B] = HashMap.this
             override def apply(key: A, value: B): Unit = {
@@ -231,7 +231,7 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
               result = result.updated0(key, computeHash(key), 0, kv._2, kv, merger)
             }
           }
-          that.asInstanceOf[scala.Traversable[(A,B)]] foreach adder
+          that.asInstanceOf[GenTraversableOnce[(A,B)]] foreach adder
           adder.result
       }
       castToThat(result)
