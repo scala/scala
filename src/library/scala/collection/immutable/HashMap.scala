@@ -237,6 +237,9 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
       castToThat(result)
     }
   }
+
+  // These methods exist to encapsulate the `.asInstanceOf[That]` in a slightly safer way -- only suitable values can
+  // be cast and the type of the `CanBuildFrom` guides type inference.
   private[this] def castToThat[C, That](m: HashMap[A, B])(implicit bf: CanBuildFrom[HashMap[A, B], C, That]): That = {
     m.asInstanceOf[That]
   }
