@@ -2,6 +2,8 @@
 
 The [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScala2), included in the Scala 2.x Compiler will enable usage in Scala `2.13.x` of dependencies that have been compiled with `dotc`, the reference compiler of Scala `3.0`.
 
+TASTy is an intermediate representation of a Scala program after type checking and term elaboration, such as inference of implicit parameters. When compiling code with Scala 3, a single TASTy document is associated with each pair of root class and companion object. Within a TASTy document, the public API of those roots and any inner classes can be read, in a similar way to pickles in the Scala 2.x series.
+
 ## Working with the code
 
 ### Compiler flags
@@ -12,9 +14,29 @@ The [**TASTy Reader For Scala 2**](https://scala.epfl.ch/projects.html#tastyScal
 
 ### Entry Points
 
-TASTy files are accessed when a classfile has a `TASTY` annotation which is not available through Java reflection.
-This is read in `scala.tools.nsc.symtab.classfile.ClassfileParser` which then validates the header of
-the tasty file before traversing it in `scala.tools.nsc.tasty.TastyUnpickler.unpickle`.
+A classfile is assumed to have an associated TASTy file if it has a `TASTY` annotation (not available through
+Java reflection). This annotation contains a UUID that matches a UUID in the header of a sibling `.tasty` file of the
+same directory as the classfile. This file is then found and the UUIDs are compared in
+`scala.tools.nsc.symtab.classfile.ClassfileParser`.
+After validation of the header, the tasty file is traversed in `scala.tools.nsc.tasty.TastyUnpickler.unpickle`, which
+reads any definitions into the symbol table of the compiler.
+
+### Concepts in TASTy
+
+A TASTy document is composed of a header, which contains a magic number `0x5CA1AB1F`, a version number and a UUID.
+The TASTy document then is composed of a list of names, followed by customisable "sections". The section we are
+interested in for Scala 2 is the "ASTs" section. The ASTs section contains a package definition for the root class and
+companion of the tasty file. In TASTy, both terms and types are made of trees, and sometimes trees can be reused in
+either term or type position, for example path selections. There are five main concepts in TASTy:
+  - Name: has many roles
+    - An identifier associated with a Symbol,
+    - A cursor to lookup terms or types within the scope of a parent type, including resolving a specific overload,
+      or distinguishing between a class and its companion object's implementation class.
+    - To describe the erased signature of an method.
+  - Flags: an enumerated set of properties for a Symbol, e.g. if it is a Method, Object, Param, etc.
+  - Symbol: an aggregate of Flags, a Name and a Type, representing the semantic information about a definition
+  - Type: corresponds to a scala reflect Type, can be lazy
+  - Term: corresponds to a scala reflect Tree and has a Type. Annotations are represented as Terms
 
 ### Workflow
 
