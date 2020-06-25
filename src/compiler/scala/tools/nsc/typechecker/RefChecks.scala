@@ -1292,7 +1292,7 @@ abstract class RefChecks extends Transform {
                 |it should have been processed and eliminated during expansion of an enclosing macro."""
           // The getOrElse part should never happen, it's just here as a backstop.
           val msg = sym.compileTimeOnlyMessage getOrElse defaultMsg
-          reporter.error(pos, sym.compileTimeOnlyMessage getOrElse defaultMsg)
+          reporter.error(pos, msg)
         }
       }
     }
