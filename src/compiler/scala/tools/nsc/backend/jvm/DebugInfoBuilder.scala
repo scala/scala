@@ -29,23 +29,28 @@ abstract class DebugInfoBuilder extends PerRunInit {
 
   def registerUnitClasses(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
-      debugInfoWriters.get += (cls -> new JSR45Writer(unit.sourceFile.name))
+      debugInfoWriters.get += (cls -> new JSR45Writer(unit.sourceFile.name, cls))
     }
   }
 
   def writeDebugInfo(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
       val writer = debugInfoWriters.get(cls)
-      cls.classNode.visitSource(writer.sourceFile, writer.sourceDebugExtension())
+      cls.classNode.visitSource(writer.sourceFileName, writer.sourceDebugExtension())
     }
   }
 
   def getWriter(cls: GeneratedClass): JSR45Writer = debugInfoWriters.get(cls)
 
-  class JSR45Writer(val sourceFile: String) {
-    private val info = JSR45Info(sourceFile, new ScalaStratum, new ScalaDebugStratum)
+  class JSR45Writer(val sourceFileName: String, val cls: GeneratedClass) {
+    private val debugInfo = JSR45Info(sourceFileName, new ScalaStratum, new ScalaDebugStratum)
 
-    def sourceDebugExtension(): String = info.toString
+    debugInfo.scalaStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
+    for (line <- 1 to cls.position.source.lineCount) {
+      debugInfo.scalaStratum.addRawLineMapping(RawLineMapping(line, line, line))
+    }
+
+    def sourceDebugExtension(): String = debugInfo.toString
   }
 
 }
@@ -134,7 +139,10 @@ object DebugInfoBuilder {
         }
 
     def toStringLines: Seq[String] =
-      s"*S $name" +: (fileSectionLines ++ lineSectionLines) :+ "*E"
+      if (lineSection.nonEmpty)
+        s"*S $name" +: (fileSectionLines ++ lineSectionLines) :+ "*E"
+      else
+        Seq.empty
 
   }
 
