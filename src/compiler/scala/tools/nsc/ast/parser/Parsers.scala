@@ -2817,7 +2817,7 @@ self =>
           }
         if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
           val tpeStr = if (restype.isEmpty) "" else s" : $restype"
-          def unaryMsg(what: String) = s"empty-paren (nilary) prefix unary operator is $what: instead, remove () to declare as `def ${name.decodedName}$tpeStr`"
+          def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `def ${name.decodedName}$tpeStr`"
           vparamss match {
             case List(List()) =>
               if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
