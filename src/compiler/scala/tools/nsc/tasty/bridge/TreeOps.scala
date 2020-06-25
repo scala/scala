@@ -22,27 +22,33 @@ trait TreeOps { self: TastyUniverse =>
   import self.{symbolTable => u}
 
   object untpd {
-    final val EmptyTypeIdent: Ident = new Ident(u.nme.EMPTY) {
-      override def isEmpty: Boolean = true
-    }
     final val EmptyTree: Tree = u.EmptyTree
+  }
+
+  private class TastyIdent(val tname: TastyName) extends u.Ident(encodeTastyName(tname))
+
+  implicit class TreeDecorator(val tree: Tree) {
+    def typeIdent: TastyName.TypeName = tree match {
+      case tree: TastyIdent => tree.tname.toTypeName
+      case _                => TastyName.EmptyTpe
+    }
   }
 
   object tpd {
     @inline final def Constant(value: Any): Constant = u.Constant(value)
-    def Ident(name: TastyName)(tpe: Type): Ident = u.Ident(encodeTastyName(name)).setType(tpe)
+    def Ident(name: TastyName)(tpe: Type): Tree = new TastyIdent(name).setType(tpe)
     def Select(qual: Tree, name: TastyName)(tpe: Type): Tree = u.Select(qual, encodeTastyName(name)).setType(tpe)
-    def This(qual: Ident)(tpe: Type): Tree = u.This(qual.name.toTypeName).setType(tpe)
+    def This(qual: TastyName.TypeName)(tpe: Type): Tree = u.This(encodeTypeName(qual)).setType(tpe)
     def New(tpt: Tree): Tree = u.New(tpt).setType(tpt.tpe)
     def SingletonTypeTree(ref: Tree): Tree = u.SingletonTypeTree(ref).setType(ref.tpe)
     def ByNameTypeTree(arg: Tree): Tree = u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
     def NamedArg(name: TastyName, value: Tree): Tree = u.NamedArg(u.Ident(encodeTastyName(name)), value).setType(value.tpe)
-    def Super(qual: Tree, mixId: Ident)(mixTpe: Type): Tree = {
+    def Super(qual: Tree, mixId: TastyName.TypeName)(mixTpe: Type): Tree = {
       val owntype = (
         if (!mixId.isEmpty) mixTpe
         else u.intersectionType(qual.tpe.parents)
       )
-      u.Super(qual, mixId.name.toTypeName).setType(u.SuperType(qual.tpe, owntype))
+      u.Super(qual, encodeTypeName(mixId)).setType(u.SuperType(qual.tpe, owntype))
     }
 
     def PathTree(tpe: Type): Tree = tpe match {

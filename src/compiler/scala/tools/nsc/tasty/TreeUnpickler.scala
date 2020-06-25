@@ -316,7 +316,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               if (nothingButMods(end))
                 typeRef(readVariances(lo))
               else defn.TypeBounds(lo, readVariances(readType()))
-            case ANNOTATEDtype => defn.AnnotatedType(readType(), mkAnnotation(readTerm()(ctx.addMode(ReadAnnotation))))
+            case ANNOTATEDtype => defn.AnnotatedType(readType(), readTerm()(ctx.addMode(ReadAnnotation)))
             case ANDtype => defn.IntersectionType(readType(), readType())
             case ORtype => unionIsUnsupported
             case SUPERtype => defn.SuperType(readType(), readType())
@@ -495,7 +495,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
       if (tag == VALDEF && flags.is(SingletonEnumFlags))
         ctx.markAsEnumSingleton(sym)
-      ctx.updateAnnotations(sym, annotFns.map(_(sym)))
+      ctx.updateAnnotations(sym, annotFns)
       ctx.owner match {
         case cls if cls.isClass && canEnterInClass =>
           val decl = if (flags.is(Object) && isClass) sym.sourceObject else sym
@@ -523,11 +523,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Read modifier list into triplet of flags, annotations and a privateWithin
      *  boundary symbol.
      */
-    def readModifiers[WithinType, AnnotType]
-        (end: Addr, readAnnot: Context => Symbol => AnnotType, readWithin: Context => WithinType, defaultWithin: WithinType)
-        (implicit ctx: Context): (TastyFlagSet, List[Symbol => AnnotType], WithinType) = {
+    def readModifiers[WithinType]
+        (end: Addr, readAnnot: Context => DeferredAnnotation, readWithin: Context => WithinType, defaultWithin: WithinType)
+        (implicit ctx: Context): (TastyFlagSet, List[DeferredAnnotation], WithinType) = {
       var flags = EmptyTastyFlags
-      var annotFns: List[Symbol => AnnotType] = Nil
+      var annotFns: List[DeferredAnnotation] = Nil
       var privateWithin = defaultWithin
       while (currentAddr.index != end.index) {
         def addFlag(flag: TastyFlagSet) = {
@@ -593,7 +593,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
     private val readTypedWithin: Context => Symbol = implicit ctx => readType().typeSymbolDirect
 
-    private val readTypedAnnot: Context => Symbol => Annotation = { implicit ctx =>
+    private val readTypedAnnot: Context => DeferredAnnotation = { implicit ctx =>
       val annotCtx = ctx.addMode(ReadAnnotation)
       val start = currentAddr
       ctx.log(s"<<< $start reading annotation:")
@@ -604,8 +604,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         ctx.log(s"${rdr.reader.currentAddr} reading LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
         rdr.readTerm()(ctx)
       })(annotCtx)
-      ctx.log(s">>> LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
-      owner => mkAnnotationDeferred(owner, annotSym)(lzyAnnot(owner))(annotCtx)
+      ctx.log(s">>> $start LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
+      new DeferredAnnotation(annotSym, lzyAnnot)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -880,9 +880,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         tpd.PathTree(readType())
       }
 
-      def readQualId(): (Ident, Type) = {
-        val qual = readTerm().asInstanceOf[Ident]
-        (qual, defn.ThisType(symOfTypeRef(qual.tpe)))
+      def readQualId(): (TastyName.TypeName, Type) = {
+        val qual = readTerm()
+        (qual.typeIdent, defn.ThisType(symOfTypeRef(qual.tpe)))
       }
 
       def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree = completeSelect(name)
@@ -924,7 +924,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           (tag: @switch) match {
             case SUPER =>
               val qual = readTerm()
-              val (mixId, mixTpe) = ifBefore(end)(readQualId(), (untpd.EmptyTypeIdent, defn.NoType))
+              val (mixId, mixTpe) = ifBefore(end)(readQualId(), (TastyName.EmptyTpe, defn.NoType))
               tpd.Super(qual, mixId)(mixTpe)
             case APPLY =>
               val fn = readTerm()

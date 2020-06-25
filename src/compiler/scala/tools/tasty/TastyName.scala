@@ -61,6 +61,7 @@ object TastyName {
 
   // TypeNames
   final val RepeatedClass: TypeName = SimpleName("<repeated>").toTypeName
+  final val EmptyTpe: TypeName = Empty.toTypeName
 
   object WildcardName {
     def unapply(name: TastyName): Boolean = name match {
@@ -166,6 +167,7 @@ sealed abstract class TastyName extends Product with Serializable { self =>
   final def isDefaultName: Boolean = self.isInstanceOf[DefaultName]
   final def isTypeName: Boolean = self.isInstanceOf[TypeName]
   final def isTermName: Boolean = !isTypeName
+  final def isEmpty: Boolean = toTermName == Empty
   final def isConstructorName = self == TastyName.Constructor || self == TastyName.MixinConstructor
 
   final def asSimpleName: SimpleName = self match {

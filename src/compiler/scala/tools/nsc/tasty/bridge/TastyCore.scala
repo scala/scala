@@ -26,14 +26,10 @@ abstract class TastyCore { self: TastyUniverse =>
   val symbolTable: SymbolTable
 
   // Misc
-  type Constant   = u.Constant
-  type Annotation = u.Annotation
-  type Type       = u.Type
   type Symbol     = u.Symbol
-
-  // Trees
-  type Tree  = u.Tree
-  type Ident = u.Ident // wraps a mangled name
+  type Type       = u.Type
+  type Tree       = u.Tree
+  type Constant   = u.Constant
 
   private val Identity = (x: Any) => x
 

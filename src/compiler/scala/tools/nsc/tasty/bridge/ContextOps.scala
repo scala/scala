@@ -343,8 +343,12 @@ trait ContextOps { self: TastyUniverse =>
     final def markAsEnumSingleton(sym: Symbol): Unit =
       sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
 
-    final def updateAnnotations(sym: Symbol, annots: List[Annotation]): Unit =
-      sym.setAnnotations(annots)
+    final def updateAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
+      def mkAnnot(annotee: Symbol, annot: DeferredAnnotation): u.Annotation = {
+        annot.mkLazyAnnotation(annotee)(this)
+      }
+      sym.setAnnotations(annots.map(mkAnnot(sym, _)))
+    }
 
     final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
       case err: u.TypeError =>
