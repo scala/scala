@@ -10,7 +10,7 @@ object TestExports extends Suite("TestExports") {
   def makePrinter(copier: Exports.Copier)(f: copier.type => copier.PrinterType): copier.PrinterType =
     f(copier)
 
-  test(assert(c.scan === "scanned(foo)"))
-  test(assert(c.print(extract(c.scan)) === "printed(foo)"))
+  test(assert(c.scan() === "scanned(foo)"))
+  test(assert(c.print(extract(c.scan())) === "printed(foo)"))
   test(assert(c.status === "printing" :: "scanning" :: Nil))
 }

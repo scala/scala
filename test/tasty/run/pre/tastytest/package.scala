@@ -24,7 +24,7 @@ package object tastytest {
   }
 
   def getRandomNat: Int = {
-    val r = Random.nextInt
+    val r = Random.nextInt()
     val n = if (r == Int.MinValue) Int.MaxValue else r
     math.abs(n)
   }
