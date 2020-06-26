@@ -1,17 +1,2 @@
-infix.scala:6: warning: multiarg infix syntax looks like a tuple and will be deprecated
-  val xs = new op(null, 0, 0) op (1, 1) op (2, 2)
-                              ^
-infix.scala:6: warning: multiarg infix syntax looks like a tuple and will be deprecated
-  val xs = new op(null, 0, 0) op (1, 1) op (2, 2)
-                                        ^
-infix.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
-    case null op (0, 0) op (1, 1) op (2, 2) => Console.println("OK")
-              ^
-infix.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
-    case null op (0, 0) op (1, 1) op (2, 2) => Console.println("OK")
-                        ^
-infix.scala:9: warning: multiarg infix syntax looks like a tuple and will be deprecated
-    case null op (0, 0) op (1, 1) op (2, 2) => Console.println("OK")
-                                  ^
 op(op(op(null,0,0),1,1),2,2)
 OK
