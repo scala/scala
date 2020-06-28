@@ -3,7 +3,7 @@ reload: Snippet.scala
 askTypeCompletion at Snippet.scala(1,34)
 ================================================================================
 [response] askTypeCompletion at (1,34)
-retrieved 203 members
+retrieved 210 members
 [inaccessible] protected def num: Fractional[Double]
 [inaccessible] protected def ord: Ordering[Double]
 [inaccessible] protected def unifiedPrimitiveEquals(x: Any): Boolean
@@ -100,6 +100,13 @@ def >>(x: Int): Int
 def >>(x: Long): Int
 def >>>(x: Int): Int
 def >>>(x: Long): Int
+def \(x: Byte): Double
+def \(x: Char): Double
+def \(x: Double): Double
+def \(x: Float): Double
+def \(x: Int): Double
+def \(x: Long): Double
+def \(x: Short): Double
 def ^(x: Byte): Int
 def ^(x: Char): Int
 def ^(x: Int): Int

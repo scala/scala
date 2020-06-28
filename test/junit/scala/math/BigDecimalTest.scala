@@ -307,4 +307,7 @@ class BigDecimalTest {
 
     assert(bds.product == prod)
   }
+
+  @Test def exponentiationOperator(): Unit = assert( BigDecimal(2)\3 == BigDecimal(8) )
+
 }

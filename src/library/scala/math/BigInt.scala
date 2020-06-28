@@ -209,6 +209,10 @@ final class BigInt(val bigInteger: BigInteger)
     (new BigInt(dr(0)), new BigInt(dr(1)))
   }
 
+  /** Returns a BigInt whose value is this to the i.
+   */
+  def \ (i: Int): BigInt = new BigInt(this.bigInteger.pow(i))
+
   /** Leftshift of BigInt
    */
   def << (n: Int): BigInt = new BigInt(this.bigInteger.shiftLeft(n))

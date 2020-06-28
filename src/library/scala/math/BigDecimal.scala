@@ -529,6 +529,10 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def pow (n: Int): BigDecimal = new BigDecimal(this.bigDecimal.pow(n, mc), mc)
 
+  /** Returns a BigDecimal whose value is this to the i.
+   */
+  def \ (i: Int): BigDecimal = pow(i)
+
   /** Returns a BigDecimal whose value is the negation of this BigDecimal
    */
   def unary_- : BigDecimal = new BigDecimal(this.bigDecimal.negate(mc), mc)

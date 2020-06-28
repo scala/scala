@@ -64,4 +64,25 @@ final class RichFloat(val self: Float) extends AnyVal with FractionalProxy[Float
    *  @return the measurement of the angle `x` in degrees.
    */
   def toDegrees: Float = math.toDegrees(self.toDouble).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Byte): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Char): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Short): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Int): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Long): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Float): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Double): Double = Math.pow(self, x)
 }

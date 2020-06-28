@@ -63,4 +63,25 @@ final class RichDouble(val self: Double) extends AnyVal with FractionalProxy[Dou
    *  @return the measurement of the angle x in degrees.
    */
   def toDegrees: Double = math.toDegrees(self)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Byte): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Char): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Short): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Int): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Long): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Float): Double = Math.pow(self, x)
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Double): Double = Math.pow(self, x)
 }

@@ -341,7 +341,7 @@ package object math {
   /** Returns the natural logarithm of a `Double` value.
     *
     *  @param  x the number to take the natural logarithm of
-    *  @return the value `logₑ(x)` where `e` is Eulers number
+    *  @return the value `logₑ(x)` where `e` is Euler's number
     *  @group explog
     */
   def log(x: Double): Double = java.lang.Math.log(x)

@@ -67,4 +67,25 @@ final class RichChar(val self: Char) extends AnyVal with IntegralProxy[Char] {
   // public static boolean isDefined(char ch)
   // public static boolean isJavaIdentifierStart(char ch)
   // public static boolean isJavaIdentifierPart(char ch)
+
+  /** Returns an Int whose value is this number raised to the power of x. */
+  def \ (x: Byte): Int = Math.pow(self, x).toInt
+
+  /** Returns an Int whose value is this number raised to the power of x. */
+  def \ (x: Char): Int = Math.pow(self, x).toInt
+
+  /** Returns an Int whose value is this number raised to the power of x. */
+  def \ (x: Short): Int = Math.pow(self, x).toInt
+
+  /** Returns an Int whose value is this number raised to the power of x. */
+  def \ (x: Int): Int = Math.pow(self, x).toInt
+
+  /** Returns a Long whose value is this number raised to the power of x. */
+  def \ (x: Long): Long = Math.pow(self, x).toLong
+
+  /** Returns a Float whose value is this number raised to the power of x. */
+  def \ (x: Float): Float = Math.pow(self, x).toFloat
+
+  /** Returns a Double whose value is this number raised to the power of x. */
+  def \ (x: Double): Double = Math.pow(self, x)
 }

@@ -164,8 +164,8 @@ Any numeric value type $T$ supports the following methods.
     their operation type and performing the given comparison operation of
     that type.
   * Arithmetic methods addition (`+`), subtraction (`-`),
-    multiplication (`*`), division (`/`), and remainder
-    (`%`), which each exist in 7 overloaded alternatives. Each
+    multiplication (`*`), division (`/`), remainder (`%`), and exponentiation (`\ `),
+    which each exist in 7 overloaded alternatives. Each
     alternative takes a parameter of some numeric value type $U$.  Its
     result type is the operation type of $T$ and $U$. The operation is
     evaluated by converting the receiver and its argument to their
@@ -256,7 +256,7 @@ abstract sealed class Int extends AnyVal {
   def + (that: Short): Int        // int addition
   def + (that: Byte): Int         // int addition
   def + (that: Char): Int         // int addition
-  /* analogous for -, *, /, % */
+  /* analogous for -, *, /, %, \ */
 
   def & (that: Long): Long        // long bitwise and
   def & (that: Int): Int          // int bitwise and
