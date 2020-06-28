@@ -487,9 +487,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
   }
 
   def updatedAt(pos: Int, nn: BasicNode, gen: Gen) = {
-    val len = array.length
-    val narr = new Array[BasicNode](len)
-    Array.copy(array, 0, narr, 0, len)
+    val narr = java.util.Arrays.copyOf(array, array.length)
     narr(pos) = nn
     new CNode[K, V](bitmap, narr, gen)
   }

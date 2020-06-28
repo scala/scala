@@ -510,11 +510,8 @@ abstract class LocalOpt {
     var queue = new Array[Int](8)
     var top = -1
     def enq(i: Int): Unit = {
-      if (top == queue.length - 1) {
-        val nq = new Array[Int](queue.length * 2)
-        Array.copy(queue, 0, nq, 0, queue.length)
-        queue = nq
-      }
+      if (top == queue.length - 1)
+        queue = java.util.Arrays.copyOf(queue, queue.length * 2)
       top += 1
       queue(top) = i
     }

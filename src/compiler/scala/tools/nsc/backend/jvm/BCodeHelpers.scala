@@ -385,7 +385,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      * can-multi-thread
      */
     def pickleMarkerForeign = {
-      createJAttribute(tpnme.ScalaATTR.toString, new Array[Byte](0), 0, 0)
+      createJAttribute(tpnme.ScalaATTR.toString, Array.emptyByteArray, 0, 0)
     }
 
     /*  Returns a ScalaSignature annotation if it must be added to this class, none otherwise.

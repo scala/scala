@@ -28,10 +28,8 @@ class PickleBuffer(data: Array[Byte], from: Int, to: Int) {
   var writeIndex = to
 
   /** Double bytes array */
-  private def dble() {
-    val bytes1 = new Array[Byte](bytes.length * 2)
-    Array.copy(bytes, 0, bytes1, 0, writeIndex)
-    bytes = bytes1
+  private def dble(): Unit = {
+    bytes = java.util.Arrays.copyOf(bytes, bytes.length * 2)
   }
 
   def ensureCapacity(capacity: Int) =

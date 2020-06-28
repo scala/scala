@@ -65,11 +65,8 @@ package mutable {
     def internalArray = array
     def setInternalSize(s: Int) = size0 = s
     override def sizeHint(len: Int) = {
-      if (len > size && len >= 1) {
-        val newarray = new Array[AnyRef](len)
-        Array.copy(array, 0, newarray, 0, size0)
-        array = newarray
-      }
+      if (len > size && len >= 1)
+        java.util.Arrays.copyOf(array, len)
     }
   }
 

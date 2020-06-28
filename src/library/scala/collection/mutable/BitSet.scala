@@ -73,9 +73,7 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
     if (idx >= nwords) {
       var newlen = nwords
       while (idx >= newlen) newlen = (newlen * 2) min MaxSize
-      val elems1 = new Array[Long](newlen)
-      Array.copy(elems, 0, elems1, 0, nwords)
-      elems = elems1
+      elems = java.util.Arrays.copyOf(elems, newlen)
     }
   }
 
@@ -175,11 +173,8 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
     "immutability of the result.", "2.12.0")
   def toImmutable = immutable.BitSet.fromBitMaskNoCopy(elems)
 
-  override def clone(): BitSet = {
-    val elems1 = new Array[Long](elems.length)
-    Array.copy(elems, 0, elems1, 0, elems.length)
-    new BitSet(elems1)
-  }
+  override def clone(): BitSet =
+    new BitSet(elems.clone)
 }
 
 /** $factoryInfo
@@ -198,13 +193,8 @@ object BitSet extends BitSetFactory[BitSet] {
   /** A bitset containing all the bits in an array */
   def fromBitMask(elems: Array[Long]): BitSet = {
     val len = elems.length
-    if (len == 0) {
-      empty
-    } else {
-      val a = new Array[Long](len)
-      Array.copy(elems, 0, a, 0, len)
-      new BitSet(a)
-    }
+    if (len == 0) empty
+    else new BitSet(elems.clone)
   }
 
   /** A bitset containing all the bits in an array, wrapping the existing
