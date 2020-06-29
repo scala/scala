@@ -5077,7 +5077,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               // The enclosing context may be case c @ C(_) => or val c @ C(_) = v.
               tree1 modifyType (_.finalResultType)
               tree1
-            case tree1 @ Apply(_, args1) if tree.hasAttachment[MultiargInfixAttachment.type] && args1.lengthCompare(1) > 0 =>
+            case tree1 @ Apply(_, args1) if settings.multiargInfix && tree.hasAttachment[MultiargInfixAttachment.type] && args1.lengthCompare(1) > 0 =>
               context.warning(tree1.pos, "multiarg infix syntax looks like a tuple and will be deprecated", WarningCategory.LintMultiargInfix)
               tree1
             case tree1                                                               => tree1
