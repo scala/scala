@@ -13,7 +13,19 @@
 package scala.tools.partest
 
 abstract class JSR45Test extends BytecodeTest {
-  def loadSourceDebugExtensionAttribute(fqcn: String): String = {
-    loadClassNode(fqcn).sourceDebug
+  // The defined classes in the test (internal names)
+  val definedClasses: Seq[String]
+
+  def loadSourceDebugExtensionAttribute(fqcn: String): (String, String) = {
+    val cn = loadClassNode(fqcn, skipDebugInfo = false)
+    (cn.sourceFile, cn.sourceDebug)
+  }
+
+  override def show(): Unit = {
+    for (cls <- definedClasses) {
+      val (sourceFile, sourceDebug) = loadSourceDebugExtensionAttribute(cls)
+      println(s"""SourceFile: "${sourceFile}"""")
+      println(s"SourceDebugExtension:\n$sourceDebug")
+    }
   }
 }

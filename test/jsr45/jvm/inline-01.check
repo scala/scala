@@ -1,0 +1,35 @@
+SourceFile: "Main_1.scala"
+SourceDebugExtension:
+SMAP
+Main_1.scala
+*S Scala
+*F
++ 1 Main_1.scala
+Main_1
++ 2 Utils_1.scala
+Utils_1$
+*L
+1#1,11:1
+3#2,2:12
+6#2:14
+*E
+*S ScalaDebug
+*F
++ 1 Main_1.scala
+Main_1
+*L
+8#1:12
+8#1:13
+8#1:14
+*E
+SourceFile: "Utils_1.scala"
+SourceDebugExtension:
+SMAP
+Utils_1.scala
+*S Scala
+*F
++ 1 Utils_1.scala
+Utils_1$
+*L
+1#1,9:1
+*E

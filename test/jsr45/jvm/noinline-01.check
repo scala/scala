@@ -1,0 +1,11 @@
+SourceFile: "Main_1.scala"
+SourceDebugExtension:
+SMAP
+Main_1.scala
+*S Scala
+*F
++ 1 Main_1.scala
+Main_1
+*L
+1#1,10:1
+*E
