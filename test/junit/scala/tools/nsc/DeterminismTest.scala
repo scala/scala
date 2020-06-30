@@ -273,6 +273,33 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testSyntheticModuleLocationInDecls(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          | object A {
+          |   class C(val a: Any) extends AnyVal
+          |   implicit class I1(a: String)
+          |   implicit class IV(val a: String) extends AnyVal
+          |   case class CC()
+          | }
+          |
+      """.stripMargin),
+      source("b.scala",
+        """
+          | object B {
+          |   // Order here reversed from definition order in A
+          |   A.CC()
+          |   A.IV("")
+          |   A.I1("")
+          |   new A.C("")
+          | }
+          |
+      """.stripMargin)
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
   private def test(groups: List[List[SourceFile]]): Unit = {
     val referenceOutput = Files.createTempDirectory("reference")
