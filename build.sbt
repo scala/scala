@@ -352,6 +352,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.factory"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.GrowingBuilder.++="),
     //
     // scala-reflect
     //

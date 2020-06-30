@@ -29,7 +29,8 @@ import generic._
  */
 class GrowingBuilder[Elem, To <: Growable[Elem]](empty: To) extends Builder[Elem, To] {
   protected var elems: To = empty
+  override def ++=(xs: TraversableOnce[Elem]): this.type = { elems ++= xs; this }
   def +=(x: Elem): this.type = { elems += x; this }
-  def clear() { empty.clear }
+  def clear() { elems.clear }
   def result: To = elems
 }
