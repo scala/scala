@@ -25,34 +25,70 @@ abstract class DebugInfoBuilder extends PerRunInit {
   import DebugInfoBuilder.JSR45Info
   import DebugInfoBuilder.JSR45Stratum._
 
-  private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[GeneratedClass, JSR45Writer]] = perRunLazy(this)(mutable.Map.empty)
+  import DebugInfoWriter._
 
-  def registerUnitClasses(unit: GeneratedCompilationUnit): Unit = {
+  private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[String, JSR45DebugInfoWriter]] = perRunLazy(this)(mutable.Map.empty)
+
+  def registerCompUnitClasses(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
-      debugInfoWriters.get += (cls -> new JSR45Writer(unit.sourceFile.name, cls))
+      debugInfoWriters.get += (cls.classNode.name -> new JSR45DebugInfoWriter(unit.sourceFile.name, cls))
     }
   }
 
   def writeDebugInfo(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
-      val writer = debugInfoWriters.get(cls)
+      val writer = debugInfoWriters.get(cls.classNode.name)
       cls.classNode.visitSource(writer.sourceFileName, writer.sourceDebugExtension())
     }
   }
 
-  def getWriter(cls: GeneratedClass): JSR45Writer = debugInfoWriters.get(cls)
+  // Get the debug info writer for the specified callsite (class).
+  def getWriter(fqCallsiteClass: String): DebugInfoWriter = debugInfoWriters.get.getOrElse(fqCallsiteClass, noOpDebugInfoWriter)
 
-  class JSR45Writer(val sourceFileName: String, val cls: GeneratedClass) {
-    private val debugInfo = JSR45Info(sourceFileName, new ScalaStratum, new ScalaDebugStratum)
-
-    debugInfo.scalaStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
-    for (line <- 1 to cls.position.source.lineCount) {
-      debugInfo.scalaStratum.addRawLineMapping(RawLineMapping(line, line, line))
-    }
-
-    def sourceDebugExtension(): String = debugInfo.toString
+  sealed trait DebugInfoWriter {
+    def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Unit
   }
 
+  object DebugInfoWriter {
+    private[DebugInfoBuilder] val noOpDebugInfoWriter: DebugInfoWriter = new NoOpDebugInfoWriter
+
+    class JSR45DebugInfoWriter(val sourceFileName: String, val cls: GeneratedClass) extends DebugInfoWriter {
+      private val debugInfo = JSR45Info(sourceFileName,
+                                        new ScalaStratum(sourceFileName, cls.classNode.name, cls.position.source.lineCount),
+                                        new ScalaDebugStratum)
+
+      private def ensureFileEntry(entry: DebugInfoBuilder.JSR45Stratum.FileSectionEntry): Int = {
+        val FileSectionEntry(fileName, _) = entry
+        val foundFileEntryId = debugInfo.scalaStratum.getFileEntryId(fileName)
+        if (foundFileEntryId == -1)
+          debugInfo.scalaStratum.addFileEntry(entry) + 1
+        else
+          foundFileEntryId + 1
+      }
+
+      override def addInlineLineInfo(callsiteLine: Int,
+                                     inlineLine: Int,
+                                     calleeFileName: String,
+                                     calleeInternalName: String): Unit = {
+        println(s"!!!! addInlineLineInfo: $callsiteLine, $inlineLine, $calleeFileName, $calleeInternalName")
+        val calleeFileId = ensureFileEntry(FileSectionEntry(calleeFileName, Some(calleeInternalName)))
+        debugInfo.scalaStratum.registerLineForFile(inlineLine, calleeFileId)
+        debugInfo.scalaDebugStratum.addRawLineMapping(RawLineMapping(from = callsiteLine,
+                                                                     toStart = inlineLine,
+                                                                     toEnd = inlineLine,
+                                                                     sourceFileId = Some(1)))
+      }
+
+      def sourceDebugExtension(): String = debugInfo.toString
+    }
+
+    class NoOpDebugInfoWriter extends DebugInfoWriter {
+      override def addInlineLineInfo(callsiteLine: Int,
+                                     inlineLine: Int,
+                                     calleeFileName: String,
+                                     calleeInternalName: String): Unit = () // noop
+    }
+  }
 }
 
 object DebugInfoBuilder {
@@ -60,8 +96,8 @@ object DebugInfoBuilder {
   import JSR45Stratum._
 
   sealed abstract class JSR45Stratum(val name: String) extends Serializable {
-    private var fileSection: Seq[FileSectionEntry] = Seq.empty
-    private var lineMapping: Seq[RawLineMapping]   = Seq.empty
+    protected var fileSection: Seq[FileSectionEntry] = Seq.empty
+    protected var lineMapping: Seq[RawLineMapping]   = Seq.empty
 
     // Add a new FileSectionEntry to the fileSection.
     // Return the ID of the entry just added.
@@ -82,7 +118,7 @@ object DebugInfoBuilder {
 
     // compute the line section from the line mappings
     private def lineSection: Seq[LineSectionEntry] = {
-      val sortedLineMapping = lineMapping.sorted
+      val sortedLineMapping = lineMapping.distinct.sorted
       sortedLineMapping.headOption.map {
         case RawLineMapping(from, toStart, toEnd, sourceFileId) =>
           val start = LineSectionEntry(inputStartLine = from,
@@ -139,7 +175,7 @@ object DebugInfoBuilder {
         }
 
     def toStringLines: Seq[String] =
-      if (lineSection.nonEmpty)
+      if (lineMapping.nonEmpty)
         s"*S $name" +: (fileSectionLines ++ lineSectionLines) :+ "*E"
       else
         Seq.empty
@@ -148,7 +184,38 @@ object DebugInfoBuilder {
 
   object JSR45Stratum {
 
-    final class ScalaStratum extends JSR45Stratum("Scala")
+    // The "Scala" stratum acts as a catalogue for all the source lines that the corresponding source contains.
+    // The catalogue starts with the lines of the source itself.
+    // Any lines from inline methods are added to the end of the catalogue, as inline requests are served.
+    // These lines are called "artificial" lines, because they don't actually come from the original source.
+    final class ScalaStratum(val sourceFileName: String,
+                             val internalClassName: String,
+                             sourceLineCount: Int) extends JSR45Stratum("Scala") {
+
+      def this(sourceLineCount: Int) = {
+        this(null, null, sourceLineCount)
+      }
+
+      addFileEntry(FileSectionEntry(sourceFileName, Some(internalClassName)))
+      for (line <- 1 to sourceLineCount) {
+        addRawLineMapping(RawLineMapping(line, line, line, sourceFileId = Some(1)))
+      }
+
+      private var lineOffset = sourceLineCount
+
+      // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
+      def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
+        lineMapping.find(m => (m.sourceFileId.get, m.from) == (sourceFileId, line)) match {
+          case None =>
+            addRawLineMapping(RawLineMapping(from = line,
+                                             toStart = lineOffset,
+                                             toEnd = lineOffset,
+                                             sourceFileId = Some(sourceFileId)))
+            lineOffset += 1
+          case _ =>
+        }
+      }
+    }
 
     final class ScalaDebugStratum extends JSR45Stratum("ScalaDebug")
 

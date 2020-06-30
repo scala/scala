@@ -14,13 +14,13 @@ package scala.tools.nsc.backend.jvm
 
 import org.junit.Test
 
-import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{FileSectionEntry, RawLineMapping, ScalaStratum}
+import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum.{FileSectionEntry, RawLineMapping, ScalaDebugStratum}
 
 class DebugInfoTest {
 
   @Test
   def fileSectionWithoutPathTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addFileEntry(FileSectionEntry("MyAwesomeClass.scala"))
 
@@ -34,7 +34,7 @@ class DebugInfoTest {
 
   @Test
   def fileSectionWithPathTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addFileEntry(FileSectionEntry("MyAwesomeClass.scala", Some("/foo/bar/MyAwesomeClass.scala")))
 
@@ -49,7 +49,7 @@ class DebugInfoTest {
 
   @Test
   def emptyLineMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     val expectedLines = Seq(
       "*L"
@@ -60,7 +60,7 @@ class DebugInfoTest {
 
   @Test
   def oneToOneMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142))
 
@@ -74,7 +74,7 @@ class DebugInfoTest {
 
   @Test
   def oneToOneMappingWithFileIdStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142, sourceFileId = Some(1)))
     stratum.addRawLineMapping(RawLineMapping(from = 55, toStart = 155, toEnd = 155, sourceFileId = Some(2)))
@@ -90,7 +90,7 @@ class DebugInfoTest {
 
   @Test
   def oneToManyMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 150))
 
@@ -104,7 +104,7 @@ class DebugInfoTest {
 
   @Test
   def oneToManyMappingWithFileIdStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 150, sourceFileId = Some(1)))
     stratum.addRawLineMapping(RawLineMapping(from = 55, toStart = 155, toEnd = 163, sourceFileId = Some(2)))
@@ -120,7 +120,7 @@ class DebugInfoTest {
 
   @Test
   def zipMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142))
     stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 143, toEnd = 143))
@@ -138,7 +138,7 @@ class DebugInfoTest {
 
   @Test
   def zipMappingWithFileIdStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142, sourceFileId = Some(1)))
     stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 143, toEnd = 143, sourceFileId = Some(1)))
@@ -163,7 +163,7 @@ class DebugInfoTest {
 
   @Test
   def multiZipMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 144))
     stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 145, toEnd = 147))
@@ -181,7 +181,7 @@ class DebugInfoTest {
 
   @Test
   def multiZipMappingWithBreakStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 144))
     stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 145, toEnd = 147))
@@ -202,7 +202,7 @@ class DebugInfoTest {
 
   @Test
   def multiZipMappingWithFileIdStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 144, sourceFileId = Some(1)))
     stratum.addRawLineMapping(RawLineMapping(from = 43, toStart = 145, toEnd = 147, sourceFileId = Some(1)))
@@ -229,7 +229,7 @@ class DebugInfoTest {
 
   @Test
   def specExampleMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 123, toStart = 207, toEnd = 207))
     stratum.addRawLineMapping(RawLineMapping(from = 130, toStart = 210, toEnd = 210))
@@ -253,7 +253,7 @@ class DebugInfoTest {
 
   @Test
   def specExampleUnorderedMappingStratumTest(): Unit = {
-    val stratum = new ScalaStratum
+    val stratum = new ScalaDebugStratum
 
     stratum.addRawLineMapping(RawLineMapping(from = 140, toStart = 250, toEnd = 256))
     stratum.addRawLineMapping(RawLineMapping(from = 130, toStart = 210, toEnd = 210))
