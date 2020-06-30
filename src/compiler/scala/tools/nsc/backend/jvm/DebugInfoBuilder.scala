@@ -196,7 +196,7 @@ object DebugInfoBuilder {
         addRawLineMapping(RawLineMapping(line, line, line, sourceFileId = Some(1)))
       }
 
-      private var lineOffset = sourceLineCount
+      private var lineOffset = sourceLineCount + 1
 
       // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
       def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
