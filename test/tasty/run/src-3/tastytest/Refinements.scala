@@ -137,6 +137,28 @@ object Refinements {
     def valueOf(b: B): b.value.type = b.value
   }
 
+  trait SpecialRefinement {
+    def pickOne(as: String*): Option[Any]
+    def eval(as: => String): Any
+  }
+
+  class EvalSpecialRefinement_1[S <: SpecialRefinement { def eval(as: => String): String }] {
+    def run(s: S, as: => String): String = s.eval(as)
+  }
+
+  class EvalSpecialRefinement_2 {
+    def run[S <: SpecialRefinement { def eval(as: => String): String }](s: S, as: => String): String = s.eval(as)
+  }
+
+  class PickOneRefinement_1[S <: SpecialRefinement { def pickOne(as: String*): Option[String] }] {
+    def run(s: S, as: String*): Option[String] = s.pickOne(as:_*)
+  }
+
+  class PickOneRefinement_2 {
+    def run[S <: SpecialRefinement { def pickOne(as: String*): Option[String] }](s: S, as: String*): Option[String] =
+      s.pickOne(as:_*)
+  }
+
   class Structural1[M <: { val output: Int } ] {
     import reflect.Selectable.reflectiveSelectable
     def get(m: M): Int = m.output

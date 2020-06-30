@@ -111,6 +111,16 @@ object TestRefinements extends Suite("TestRefinements") {
   test(assert(new Refinements.StructuralTypeAliasFlip().get(new TString) === "I am TString"))
   test(assert(new Refinements.StructuralTypeBoundsFlip().get(new TString) === "I am TString"))
 
+  class StringSpecialRefinement extends Refinements.SpecialRefinement {
+    def pickOne(as: String*): Option[String] = as.headOption
+    def eval(as: => String): String          = as
+  }
+
+  test(assert(new Refinements.EvalSpecialRefinement_1[StringSpecialRefinement].run(new StringSpecialRefinement, "hello") === "hello"))
+  test(assert(new Refinements.EvalSpecialRefinement_2().run(new StringSpecialRefinement, "hello") === "hello"))
+  test(assert(new Refinements.PickOneRefinement_1[StringSpecialRefinement].run(new StringSpecialRefinement, "hello", "world") === Option("hello")))
+  test(assert(new Refinements.PickOneRefinement_2().run(new StringSpecialRefinement, "hello") === Option("hello")))
+
   class EncoderIntSel extends Selectable {
 
     def encode(t: Int): String = t.toString
