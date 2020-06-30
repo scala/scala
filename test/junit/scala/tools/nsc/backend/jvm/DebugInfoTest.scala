@@ -154,8 +154,8 @@ class DebugInfoTest {
     val expectedLines = Seq(
       "*L",
       "42#1,4:142",
-      "48#1,2:148",
-      "46#2,2:146"
+      "46#2,2:146",
+      "48#1,2:148"
     )
 
     assert(stratum.lineSectionLines == expectedLines)
@@ -220,9 +220,9 @@ class DebugInfoTest {
     val expectedLines = Seq(
       "*L",
       "42#1,5:142,3",
-      "50#1,2:166,4",
-      "47#2,3:157,3"
-      )
+      "47#2,3:157,3",
+      "50#1,2:166,4"
+    )
 
     assert(stratum.lineSectionLines == expectedLines)
   }
@@ -239,30 +239,6 @@ class DebugInfoTest {
     stratum.addRawLineMapping(RawLineMapping(from = 160, toStart = 300, toEnd = 301))
     stratum.addRawLineMapping(RawLineMapping(from = 161, toStart = 302, toEnd = 303))
     stratum.addRawLineMapping(RawLineMapping(from = 162, toStart = 304, toEnd = 305))
-
-    val expectedLines = Seq(
-      "*L",
-      "123:207",
-      "130,3:210",
-      "140:250,7",
-      "160,3:300,2"
-      )
-
-    assert(stratum.lineSectionLines == expectedLines)
-  }
-
-  @Test
-  def specExampleUnorderedMappingStratumTest(): Unit = {
-    val stratum = new ScalaDebugStratum
-
-    stratum.addRawLineMapping(RawLineMapping(from = 140, toStart = 250, toEnd = 256))
-    stratum.addRawLineMapping(RawLineMapping(from = 130, toStart = 210, toEnd = 210))
-    stratum.addRawLineMapping(RawLineMapping(from = 162, toStart = 304, toEnd = 305))
-    stratum.addRawLineMapping(RawLineMapping(from = 160, toStart = 300, toEnd = 301))
-    stratum.addRawLineMapping(RawLineMapping(from = 131, toStart = 211, toEnd = 211))
-    stratum.addRawLineMapping(RawLineMapping(from = 123, toStart = 207, toEnd = 207))
-    stratum.addRawLineMapping(RawLineMapping(from = 161, toStart = 302, toEnd = 303))
-    stratum.addRawLineMapping(RawLineMapping(from = 132, toStart = 212, toEnd = 212))
 
     val expectedLines = Seq(
       "*L",

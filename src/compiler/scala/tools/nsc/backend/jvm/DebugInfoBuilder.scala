@@ -122,14 +122,14 @@ object DebugInfoBuilder {
 
     // compute the line section from the line mappings
     private def lineSection: Seq[LineSectionEntry] = {
-      val sortedLineMapping = lineMapping.distinct.sorted
-      sortedLineMapping.headOption.map {
+      val distinctLineMapping = lineMapping.distinct
+      distinctLineMapping.headOption.map {
         case RawLineMapping(from, toStart, toEnd, sourceFileId) =>
           val start = LineSectionEntry(inputStartLine = from,
                                        lineFileId = sourceFileId,
                                        outputStartLine = toStart,
                                        outputLineIncrement = if (toStart != toEnd) Some(toEnd - toStart + 1) else None)
-          sortedLineMapping.tail.foldLeft(Seq(start)) {
+          distinctLineMapping.tail.foldLeft(Seq(start)) {
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart == toEnd =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
               if (last.lineFileId == sourceFileId &&
