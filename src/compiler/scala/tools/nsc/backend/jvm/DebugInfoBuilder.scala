@@ -75,9 +75,11 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                      calleeInternalName: String): Unit = {
         val calleeFileId = ensureFileEntry(FileSectionEntry(calleeFileName, Some(calleeInternalName)))
         debugInfo.scalaStratum.registerLineForFile(inlineLine, calleeFileId)
+
+        val inlineLinePos = debugInfo.scalaStratum.lineMappingMap(inlineLine)
         debugInfo.scalaDebugStratum.addRawLineMapping(RawLineMapping(from = callsiteLine,
-                                                                     toStart = inlineLine,
-                                                                     toEnd = inlineLine,
+                                                                     toStart = inlineLinePos,
+                                                                     toEnd = inlineLinePos,
                                                                      sourceFileId = Some(1)))
       }
 
@@ -195,8 +197,9 @@ object DebugInfoBuilder {
       for (line <- 1 to sourceLineCount) {
         addRawLineMapping(RawLineMapping(line, line, line, sourceFileId = Some(1)))
       }
-
       private var lineOffset = sourceLineCount + 1
+
+      val lineMappingMap: mutable.Map[Int, Int] = mutable.Map.empty
 
       // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
       def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
@@ -206,6 +209,7 @@ object DebugInfoBuilder {
                                              toStart = lineOffset,
                                              toEnd = lineOffset,
                                              sourceFileId = Some(sourceFileId)))
+            lineMappingMap.addOne(line -> lineOffset)
             lineOffset += 1
           case _ =>
         }
