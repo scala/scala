@@ -91,7 +91,7 @@ private[jvm] object GeneratedClassHandler {
   private class DebugInfoBootstrappingClassHandler(val postProcessor: PostProcessor,
                                                    underlying: GeneratedClassHandler) extends GeneratedClassHandler {
     override def process(unit: GeneratedCompilationUnit): Unit = {
-      postProcessor.debugInfoBuilder.registerUnitClasses(unit)
+      postProcessor.debugInfoBuilder.registerCompUnitClasses(unit)
       underlying.process(unit)
     }
 

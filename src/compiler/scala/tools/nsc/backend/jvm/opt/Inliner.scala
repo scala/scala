@@ -686,7 +686,7 @@ abstract class Inliner {
   def inlineCallsite(callsite: Callsite, aliasFrame: Option[AliasingFrame[Value]] = None, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
     import callsite._
     val Right(callsiteCallee) = callsite.callee: @unchecked
-    import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
+    import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath => calleeSourceFilePath}
 
     val isStatic = isStaticMethod(callee)
 
@@ -703,14 +703,17 @@ abstract class Inliner {
 
     // New labels for the cloned instructions
     val labelsMap = cloneLabels(callee)
-    val sameSourceFile = sourceFilePath match {
+    val sameSourceFile = calleeSourceFilePath match {
       case Some(calleeSource) => byteCodeRepository.compilingClasses.get(callsiteClass.internalName) match {
         case Some((_, `calleeSource`)) => true
         case _ => false
       }
       case _ => false
     }
-    val (clonedInstructions, instructionMap, writtenLocals) = cloneInstructions(callee, labelsMap, callsitePosition, keepLineNumbers = sameSourceFile)
+    val (clonedInstructions, instructionMap, writtenLocals) = cloneInstructions(callee, labelsMap,
+                                                                                calleeDeclarationClass, calleeSourceFilePath,
+                                                                                callsiteClass, callsitePosition,
+                                                                                keepLineNumbers = sameSourceFile)
 
     val refLocals = mutable.BitSet.empty
 

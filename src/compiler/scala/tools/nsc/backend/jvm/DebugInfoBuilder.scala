@@ -70,7 +70,6 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                      inlineLine: Int,
                                      calleeFileName: String,
                                      calleeInternalName: String): Unit = {
-        println(s"!!!! addInlineLineInfo: $callsiteLine, $inlineLine, $calleeFileName, $calleeInternalName")
         val calleeFileId = ensureFileEntry(FileSectionEntry(calleeFileName, Some(calleeInternalName)))
         debugInfo.scalaStratum.registerLineForFile(inlineLine, calleeFileId)
         debugInfo.scalaDebugStratum.addRawLineMapping(RawLineMapping(from = callsiteLine,
