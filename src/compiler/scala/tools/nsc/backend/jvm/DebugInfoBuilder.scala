@@ -54,8 +54,11 @@ abstract class DebugInfoBuilder extends PerRunInit {
 
     class JSR45DebugInfoWriter(val sourceFileName: String, val cls: GeneratedClass) extends DebugInfoWriter {
       private val debugInfo = JSR45Info(sourceFileName,
-                                        new ScalaStratum(sourceFileName, cls.classNode.name, cls.position.source.lineCount),
+                                        new ScalaStratum(cls.position.source.lineCount),
                                         new ScalaDebugStratum)
+
+      debugInfo.scalaStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
+      debugInfo.scalaDebugStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
 
       private def ensureFileEntry(entry: DebugInfoBuilder.JSR45Stratum.FileSectionEntry): Int = {
         val FileSectionEntry(fileName, _) = entry
@@ -187,15 +190,8 @@ object DebugInfoBuilder {
     // The catalogue starts with the lines of the source itself.
     // Any lines from inline methods are added to the end of the catalogue, as inline requests are served.
     // These lines are called "artificial" lines, because they don't actually come from the original source.
-    final class ScalaStratum(val sourceFileName: String,
-                             val internalClassName: String,
-                             sourceLineCount: Int) extends JSR45Stratum("Scala") {
+    final class ScalaStratum(sourceLineCount: Int) extends JSR45Stratum("Scala") {
 
-      def this(sourceLineCount: Int) = {
-        this(null, null, sourceLineCount)
-      }
-
-      addFileEntry(FileSectionEntry(sourceFileName, Some(internalClassName)))
       for (line <- 1 to sourceLineCount) {
         addRawLineMapping(RawLineMapping(line, line, line, sourceFileId = Some(1)))
       }
