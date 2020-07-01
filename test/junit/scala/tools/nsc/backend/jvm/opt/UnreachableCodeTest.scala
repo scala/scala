@@ -121,7 +121,7 @@ class UnreachableCodeTest extends ClearAfterClass {
     // GenBCode puts the last IRETURN into a new basic block: it emits a label before the second
     // IRETURN. This is an implementation detail, it may change; it affects the outcome of this test.
     //
-    // During classfile writing with COMPUTE_FAMES (-target:jvm-1.6 or larger), the ClassfileWriter
+    // During classfile writing with COMPUTE_FRAMES (-target:jvm-1.6 or larger), the ClassfileWriter
     // puts the ICONST_2 into a new basic block, because the preceding operation (IRETURN) ends
     // the current block. We get something like
     //

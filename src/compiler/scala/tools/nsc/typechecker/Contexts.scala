@@ -1317,7 +1317,7 @@ trait Contexts { self: Analyzer =>
       val preSym = pre.typeSymbol
       if (sym.exists || preSym.isPackageClass || !preSym.isClass) (pre, sym)
       else {
-        // In Java code, static innner classes, which we model as members of the companion object,
+        // In Java code, static inner classes, which we model as members of the companion object,
         // can be referenced from an ident in a subclass or by a selection prefixed by the subclass.
         val toSearch = if (preSym.isModuleClass) companionSymbolOf(pre.typeSymbol.sourceModule, this).baseClasses else preSym.baseClasses
         toSearch.iterator.map { bc =>

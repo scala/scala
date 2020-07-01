@@ -1132,7 +1132,7 @@ class InlinerTest extends BytecodeTesting {
         |    // there is no specialized variant of Function2 for this combination of types, so the IndyLambda has to create a generic Function2.
         |    // IndyLambda: SAM type is JFunction2, SAM is apply(ObjectObject)Object, body method is $anonfun$adapted(ObjectObject)Object
         |    val f = (b: Byte, i: Int) => i + b
-        |    // invocation of apply(ObjectOjbect)Object, matches SAM in IndyLambda. arguments are boxed, result unboxed.
+        |    // invocation of apply(ObjectObject)Object, matches SAM in IndyLambda. arguments are boxed, result unboxed.
         |    f(1, 2)
         |    // opt: re-write to $anonfun$adapted
         |    // inline that call, then we get box-unbox pairs (can be eliminated) and a call to $anonfun(BI)I
@@ -1198,10 +1198,10 @@ class InlinerTest extends BytecodeTesting {
         |
         |  // m9$mVc$sp invokes apply$mcVI$sp
         |  @inline final def m9[@specialized(Unit) U](f: Int => U): Unit = f(1)
-        |  // IndyLambda: JFunction1, SAM is apply(Obj)Obj, body method $anonfun$adapted(Ojb)Obj
+        |  // IndyLambda: JFunction1, SAM is apply(Obj)Obj, body method $anonfun$adapted(Obj)Obj
         |  // invocation of m9$mVc$sp
         |  def t9 = m9(println)
-        |  // opt: after inlining m9, rewrite to $anonfun$adapted(Ojb)Obj, which requires inserting a box operation for the parameter.
+        |  // opt: after inlining m9, rewrite to $anonfun$adapted(Obj)Obj, which requires inserting a box operation for the parameter.
         |  // then we inline $adapted, which has signature (Obj)V. the `BoxedUnit.UNIT` from the body of $anonfun$adapted is eliminated by push-pop
         |
         |  def t9a = (1 to 10) foreach println // similar to t9
@@ -1916,7 +1916,7 @@ class InlinerTest extends BytecodeTesting {
         |  def t2a(a: Array[Int]) = a.foldLeft(0)(_ + _)
         |  def t2b(a: Array[String]) = a.foldLeft(0)(_ + _.length)
         |
-        |  // also covers `scan`, `scanRigth`
+        |  // also covers `scan`, `scanRight`
         |  def t3a(a: Array[Int]) = a.scanLeft(0)(_ + _)
         |  def t3b(a: Array[String]) = a.scanLeft(0)(_ + _.length)
         |  def t3c(a: Array[String]) = a.scanLeft("")((_, s) => s.trim)
@@ -1987,7 +1987,7 @@ class InlinerTest extends BytecodeTesting {
   //
   // questionable
   //  - sorted: looks very bad for primitive arrays, creates an array with boxed values.
-  //    just call Arrays.sort instead... should we deprecate the mehtod? only use is sorting
+  //    just call Arrays.sort instead... should we deprecate the method? only use is sorting
   //    generic arrays.
   //
   //

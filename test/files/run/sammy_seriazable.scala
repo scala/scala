@@ -4,7 +4,7 @@ trait NotSerializableInterface { def apply(a: Any): Any }
 abstract class NotSerializableClass { def apply(a: Any): Any }
 // SAM type that supports lambdas-as-invoke-dynamic
 trait IsSerializableInterface extends java.io.Serializable { def apply(a: Any): Any }
-// SAM type that still requires lambdas-as-anonhmous-classes
+// SAM type that still requires lambdas-as-anonymous-classes
 abstract class IsSerializableClass extends java.io.Serializable { def apply(a: Any): Any }
 
 object Test {

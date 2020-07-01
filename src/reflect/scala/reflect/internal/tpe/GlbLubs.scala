@@ -602,7 +602,7 @@ private[internal] trait GlbLubs {
         if (tp ne tpn) normalizeIter(tpn) else throw new NoCommonType(ptHead :: ptRest)
     }
 
-    // Since ptHead = PolyType(tparamsHead, _), no need to normalize it or unify tpaams
+    // Since ptHead = PolyType(tparamsHead, _), no need to normalize it or unify tparams
     val ntps: List[PolyType]   = ptHead :: ptRest.map(normalizeIter)
 
     val tparams1: List[Symbol] = {

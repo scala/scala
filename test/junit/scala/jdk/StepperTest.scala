@@ -28,14 +28,14 @@ import scala.util.chaining._
 class StepperTest {
   val sizes = List(0, 1, 2, 3, 4, 7, 8, 15, 16, 17, 136, 2123)
 
-  // NOTE: the ORDERED characterstic of a stepper does NOT mean the stepper yields elements in
+  // NOTE: the ORDERED characteristic of a stepper does NOT mean the stepper yields elements in
   // the same order as they are stored in the underlying collection.
   // If a collection is ordered, the stepper is REQUIRED to yield elements in that order, just like
   // the collection's iterator.
   // The ORDERED flag on the stepper is `true` if there's *any* defined order in the stepper, and
   // that `trySplit` splits a prefix. See Javadocs of Spliterator.ORDERED. So an un-ordered
   // collection may have a stepper with the ORDERED flag, it's actually common, as the default
-  // IterablerOnce.stepper method has that flag.
+  // IterableOnce.stepper method has that flag.
   // For some stepper implementations, it makes sense not to be ORDERED, as this can allow more
   // efficient splitting.
   val hasSpecificNonOrderedStepper: Set[AnyRef] = Set(

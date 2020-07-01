@@ -30,17 +30,17 @@ case class DefinesProductElementName(a: String, b: Int) {
 }
 
 trait A {
-  def productElementName(n: Int): String = "overriden"
+  def productElementName(n: Int): String = "overridden"
 }
 case class InheritsProductElementName(a: String, b: Int) extends A
 
 trait B extends Product {
-  override def productElementName(n: Int): String = "overriden"
+  override def productElementName(n: Int): String = "overridden"
 }
 case class InheritsProductElementName_Override(a: String, b: Int) extends B
 
 trait C { self: Product =>
-  override def productElementName(n: Int): String = "overriden"
+  override def productElementName(n: Int): String = "overridden"
 }
 case class InheritsProductElementName_Override_SelfType(a: String, b: Int) extends C
 

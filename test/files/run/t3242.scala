@@ -42,7 +42,7 @@ object Test {
      //createBenchmarkA(23).testRun
 
      comparison(200) // OK
-     comparison(2000) // this will crach
+     comparison(2000) // this will crash
 
    } catch {
      case e: Exception => e.printStackTrace()

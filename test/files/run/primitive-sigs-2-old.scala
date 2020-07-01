@@ -20,7 +20,7 @@ class Arr {
   // instead of the more appealing version from the past
   // public <T> T[] Arr.arr4(T[][],scala.reflect.Manifest<T>)
   //
-  // because java inflict's its reference-only generic-arrays on us.
+  // because Java inflicts its reference-only generic-arrays on us.
   //
   def arr4[T: Manifest](xss: Array[Array[T]]): Array[T] = xss map (_.head)
 }

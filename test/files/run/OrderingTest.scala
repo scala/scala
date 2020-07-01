@@ -20,7 +20,7 @@ object Test extends App {
     test(t2, t2);
   }
 
-  assert(Ordering[String].compare("australopithecus", "brontausaurus") < 0)
+  assert(Ordering[String].compare("australopithecus", "brontosaurus") < 0)
   // assert(Ordering[Unit].compare((), ()) == 0)
 
   testAll("bar", "foo");

@@ -7,7 +7,7 @@ object Test extends DirectTest {
   def code = """
     object Test extends App {
       // manifest lookup also involves type tag lookup
-      // because we support manifest <-> typetag convertability
+      // because we support manifest <-> typetag convertibility
       //
       // however when scala-reflect.jar (the home of type tags) is not on the classpath
       // we need to omit the type tag lookup, because we lack the necessary symbols

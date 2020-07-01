@@ -190,7 +190,7 @@ abstract class CallGraph {
           val argInfos = computeArgInfos(callee, call, paramTps, typeAnalyzer)
 
           // A nullness analysis could be used to prevent emitting unnecessary receiver null checks
-          // when inlining non-static callistes. However, LocalOpt's nullness cleanup will also do
+          // when inlining non-static callsites. However, LocalOpt's nullness cleanup will also do
           // it after the fact, so we can avoid running the nullness analysis when building the call
           // graph (or when inlining).
           val receiverNotNull = call.getOpcode == Opcodes.INVOKESTATIC
@@ -251,9 +251,9 @@ abstract class CallGraph {
         }
         argInfo.map((index, _))
     }
-    val isArrayLoadOrUpdateOnKnonwArray = BackendUtils.isRuntimeArrayLoadOrUpdate(consumerInsn) &&
+    val isArrayLoadOrUpdateOnKnownArray = BackendUtils.isRuntimeArrayLoadOrUpdate(consumerInsn) &&
       consumerFrame.getValue(firstConsumedSlot + 1).getType.getSort == Type.ARRAY
-    if (isArrayLoadOrUpdateOnKnonwArray) samInfos.updated(1, StaticallyKnownArray)
+    if (isArrayLoadOrUpdateOnKnownArray) samInfos.updated(1, StaticallyKnownArray)
     else samInfos
   }
 

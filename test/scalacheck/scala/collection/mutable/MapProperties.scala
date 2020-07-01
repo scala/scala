@@ -25,7 +25,7 @@ object MapProperties extends Properties("mutable.Map") {
 
   /** returns a map that certainly does not override `filterInPlace` implementation */
   def testMap(elems: collection.immutable.Map[K, V]): Map[K, V] = new Map[K, V] {
-    override protected[this] def className: String = "TesMap"
+    override protected[this] def className: String = "TestMap"
     private[this] var _elems = elems
     override def get(key: K): Option[V] = _elems.get(key)
     override def subtractOne(elem: K): this.type = { _elems -= elem; this }
