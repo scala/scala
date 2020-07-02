@@ -55,6 +55,11 @@ object Array {
    */
   def newBuilder[T](implicit t: ClassTag[T]): ArrayBuilder[T] = ArrayBuilder.make[T](t)
 
+  /** Creates an array from a given iterable
+   *
+   * @param it the source iterable
+   *
+   */
   def from[A : ClassTag](it: IterableOnce[A]): Array[A] = it match {
     case it: Iterable[A] => it.toArray[A]
     case _ => it.iterator.toArray[A]
