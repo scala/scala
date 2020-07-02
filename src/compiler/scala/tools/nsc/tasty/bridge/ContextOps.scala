@@ -15,6 +15,8 @@ package scala.tools.nsc.tasty.bridge
 import scala.annotation.tailrec
 import scala.reflect.io.AbstractFile
 
+import collection.mutable
+
 import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
@@ -79,6 +81,64 @@ trait ContextOps { self: TastyUniverse =>
    */
   sealed abstract class Context {
     thisCtx =>
+
+    private[this] implicit final def implyThisCtx: thisCtx.type = thisCtx
+
+    private[this] var mySymbolsToForceAnnots: mutable.LinkedHashSet[Symbol] = _
+
+    private def stageSymbolToForceAnnots(sym: Symbol): Unit = {
+      if (sym.annotations.nonEmpty) {
+        if (mySymbolsToForceAnnots == null) {
+          mySymbolsToForceAnnots = mutable.LinkedHashSet.empty
+        }
+        mySymbolsToForceAnnots += sym
+      }
+    }
+
+    /** Force any lazy annotations collected from declaration statements directly in this scope.
+     *
+     *  It is important to call this *after* indexing statements in a scope, otherwise calling
+     *  [[ownertree.findOwner]] can fail, this is because [[ownertree.findOwner]] cannot traverse a definition tree at
+     *  a given address before a symbol has been registered to that address.
+     */
+    def forceAnnotations(): Unit = {
+      if (mySymbolsToForceAnnots != null) {
+        val toForce = mySymbolsToForceAnnots
+        mySymbolsToForceAnnots = null
+        for (sym <- toForce) {
+          log(s"!!! forcing annotations on ${showSym(sym)}")
+          analyseAnnotations(sym)
+        }
+      }
+    }
+
+    /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
+     * sealed child.
+     */
+    private def analyseAnnotations(sym: Symbol): Unit = {
+      for (annot <- sym.annotations) {
+        annot.completeInfo()
+        if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
+          val child = annot.tpe.typeArgs.head.typeSymbolDirect
+          sym.addChild(child)
+          log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
+        }
+      }
+    }
+
+    /**Associates the annotations with the symbol, and will force their evaluation if not reading statements.*/
+    def adjustAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
+      if (annots.nonEmpty) {
+        if (mode.is(IndexStats)) {
+          log(s"lazily adding annotations to ${showSym(sym)}")
+          stageSymbolToForceAnnots(sym.setAnnotations(annots.map(_.lzy(sym))))
+        }
+        else {
+          log(s"eagerly adding annotations to ${showSym(sym)}")
+          analyseAnnotations(sym.setAnnotations(annots.map(_.eager(sym))))
+        }
+      }
+    }
 
     final def globallyVisibleOwner: Symbol = owner.logicallyEnclosingMember
 
@@ -216,6 +276,18 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
+    final def enterIfUnseen(decl: Symbol): Unit = {
+      val decls = owner.rawInfo.decls
+      if (allowsOverload(decl)) {
+        if (canEnterOverload(decl)) {
+          decls.enter(decl)
+        }
+      }
+      else {
+        decls.enterIfNew(decl)
+      }
+    }
+
     /** Unsafe to call for creation of a object val, prefer [[delayCompletion]] if info is a LazyType
       */
     final def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
@@ -343,23 +415,10 @@ trait ContextOps { self: TastyUniverse =>
     final def markAsEnumSingleton(sym: Symbol): Unit =
       sym.updateAttachment(new u.DottyEnumSingleton(sym.name.toString))
 
-    final def updateAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
-      def mkAnnot(annotee: Symbol, annot: DeferredAnnotation): u.Annotation = {
-        annot.mkLazyAnnotation(annotee)(this)
-      }
-      sym.setAnnotations(annots.map(mkAnnot(sym, _)))
-    }
-
     final def onCompletionError[T](sym: Symbol): PartialFunction[Throwable, T] = {
       case err: u.TypeError =>
         sym.info = u.ErrorType
         throw err
-    }
-
-    final def errorInContext: PartialFunction[Throwable, String] = {
-      case err: u.TypeError =>
-        owner.info = u.ErrorType
-        err.getMessage()
     }
 
     @tailrec
@@ -403,20 +462,8 @@ trait ContextOps { self: TastyUniverse =>
 
     final def withPhaseNoLater[T](phase: String)(op: Context => T): T =
       u.enteringPhaseNotLaterThan[T](u.findPhaseWithName(phase))(op(this))
-
-    /** Enter a phase and apply an error handler if the current phase is after the one specified
-      */
-    final def withSafePhaseNoLater[E, T](phase: String)(pf: Context => PartialFunction[Throwable, E])(op: Context => T): Either[E, T] = {
-      val phase0 = u.findPhaseWithName(phase)
-      if (u.isAtPhaseAfter(phase0)) {
-        try {
-          u.enteringPhaseNotLaterThan(phase0)(Right(op(this)))
-        } catch pf(this) andThen (Left(_))
-      } else {
-        Right(op(this))
-      }
-    }
   }
+
 
   final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {
     def mode: TastyMode = EmptyTastyMode

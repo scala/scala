@@ -26,6 +26,8 @@ object TastyModes {
   final val ReadAnnotation: TastyMode = TastyMode(1 << 1)
   /** When reading the outermost tree of an term */
   final val OuterTerm: TastyMode      = TastyMode(1 << 2)
+  /** When reading statements in a sequence */
+  final val IndexStats: TastyMode     = TastyMode(1 << 3)
 
   case class TastyMode(val toInt: Int) extends AnyVal { mode =>
 
@@ -40,9 +42,10 @@ object TastyModes {
       if (mode == EmptyTastyMode) "EmptyTastyMode"
       else {
         val sb = mutable.ArrayBuffer.empty[String]
-        if (mode.is(ReadParents)) sb    += "ReadParents"
+        if (mode.is(ReadParents))    sb += "ReadParents"
         if (mode.is(ReadAnnotation)) sb += "ReadAnnotation"
-        if (mode.is(OuterTerm)) sb      += "OuterTerm"
+        if (mode.is(OuterTerm))      sb += "OuterTerm"
+        if (mode.is(IndexStats))     sb += "IndexStats"
         sb.mkString(" | ")
       }
     }

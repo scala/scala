@@ -47,8 +47,19 @@ trait TypeOps { self: TastyUniverse =>
     }
   }
 
+  def lzyShow(tpe: Type): String = tpe match {
+    case u.TypeRef(_, sym, args) => s"$sym${if (args.nonEmpty) args.map(lzyShow).mkString("[", ",","]") else ""}"
+    case tpe                     => tpe.typeSymbolDirect.toString
+  }
+
   def fnResult(fn: Type): Type = fn.dealiasWiden.finalResultType
   def tyconResult(tycon: Type, args: List[Type]): Type = tycon.resultType.substituteTypes(tycon.typeParams, args)
+
+  /** return a type that can be used as a class type, e.g. in parents of another class, or as the type of new */
+  def safeClassType(tpe: Type): Type = tpe match {
+    case tpe: LambdaPolyType => tpe.toNested
+    case tpe                 => tpe
+  }
 
   def emptyTypeBounds: Type = u.TypeBounds.empty
 
@@ -58,6 +69,9 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   object defn {
+
+    final val ChildAnnot: Symbol = u.definitions.ChildAnnotationClass
+    final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
 
     final val NoType: Type = u.NoType
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
@@ -251,7 +265,7 @@ trait TypeOps { self: TastyUniverse =>
       factory(params)(registerCallback, paramInfosOp, resultTypeOp).canonical
   }
 
-  final class LambdaPolyType(typeParams: List[Symbol], resType: Type) extends u.PolyType(typeParams, LambdaPolyType.addLower(resType)) {
+  final class LambdaPolyType(typeParams: List[Symbol], val resType: Type) extends u.PolyType(typeParams, LambdaPolyType.addLower(resType)) {
     def toNested: u.PolyType = resType match {
       case _: u.TypeBounds => this
       case _               => u.PolyType(typeParams, resType)

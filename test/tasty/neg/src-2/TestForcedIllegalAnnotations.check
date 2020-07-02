@@ -1,0 +1,7 @@
+TestForcedIllegalAnnotations_fail.scala:4: error: Unsupported Scala 3 match expression in an annotation of method forcedMatchInAnnot; note that complex trees are not yet supported for Annotations; found in method forcedMatchInAnnot in class tastytest.ForcedIllegalAnnotations.Match.
+  def test1 = new ForcedIllegalAnnotations.Match() // error: Unsupported Scala 3 match expression in an annotation of method forcedMatchInAnnot
+              ^
+TestForcedIllegalAnnotations_fail.scala:5: error: Unsupported Scala 3 block expression in an annotation of method forcedBlockInAnnot; note that complex trees are not yet supported for Annotations; found in method forcedBlockInAnnot in class tastytest.ForcedIllegalAnnotations.Block.
+  def test2 = new ForcedIllegalAnnotations.Block() // error: Unsupported Scala 3 block expression in an annotation of method forcedBlockInAnnot
+              ^
+2 errors

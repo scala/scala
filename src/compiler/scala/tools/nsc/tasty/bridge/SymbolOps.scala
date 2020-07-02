@@ -26,13 +26,16 @@ trait SymbolOps { self: TastyUniverse =>
   @inline final def noSymbol: Symbol = u.NoSymbol
   @inline final def isSymbol(sym: Symbol): Boolean = sym ne u.NoSymbol
 
-  def allowsOverload(sym: Symbol) = ( // TODO [tasty]: taken from Namer. Added module symbols
+  final def allowsOverload(sym: Symbol) = ( // TODO [tasty]: taken from Namer. Added module symbols
     (sym.isSourceMethod || sym.isModule) && sym.owner.isClass && !sym.isTopLevel
   )
 
+  final def declaringSymbolOf(sym: Symbol): Symbol =
+    if (sym.isModuleClass) sym.sourceModule else sym
+
   implicit class SymbolDecorator(val sym: Symbol) {
     def completer: TastyLazyType = {
-      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo: Type)} ")
+      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo)} ")
       sym.rawInfo.asInstanceOf[TastyLazyType]
     }
     def ensureCompleted(): Unit = {

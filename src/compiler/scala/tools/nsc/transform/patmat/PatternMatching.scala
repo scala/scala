@@ -65,8 +65,6 @@ trait PatternMatching extends Transform
       case Match(sel, cases) =>
         val origTp = tree.tpe
 
-        tastyAddChildren(sel)
-
         // setType origTp intended for CPS -- TODO: is it necessary?
         val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
@@ -99,18 +97,6 @@ trait PatternMatching extends Transform
       new OptimizingMatchTranslator(localTyper, selectorPos)
     }
 
-    // TODO [tasty]: should we do Child logic here?
-    def tastyAddChildren(sel: Tree) {
-      val selSym = sel.tpe.typeSymbolDirect
-      if (!selSym.isSealed || selSym.children.nonEmpty) return
-      val ChildAnnotation = mirrorThatLoaded(selSym).getClassIfDefined("scala.annotation.internal.Child")
-      if ((ChildAnnotation ne NoSymbol) && !selSym.hasAttachment[KnownDirectSubclassesCalled.type] && selSym.hasAnnotation(ChildAnnotation)) {
-        for (childAnnot <- selSym.annotations.filter(_.symbol == ChildAnnotation)) {
-          selSym.addChild(childAnnot.tpe.typeArgs.head.typeSymbolDirect)
-        }
-        selSym.knownDirectSubclasses
-      }
-    }
   }
 
 

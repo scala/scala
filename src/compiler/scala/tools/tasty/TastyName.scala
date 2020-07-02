@@ -34,15 +34,6 @@ object TastyName {
     }
   }
 
-  final def qualifiedClass(initial: String, parts: String*): TypeName =
-    qualifiedPath(initial, parts:_*).toTypeName
-
-  final def qualifiedModule(initial: String, parts: String*): ObjectName =
-    ObjectName(qualifiedPath(initial, parts:_*))
-
-  private def qualifiedPath(initial: String, parts: String*): TastyName =
-    parts.reverse.foldRight(SimpleName(initial): TastyName)((n, acc) => QualifiedName(acc, PathSep, SimpleName(n)))
-
   // Separators
   final val PathSep: SimpleName = SimpleName(".")
   final val ExpandedSep: SimpleName = SimpleName("$$")

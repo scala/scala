@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{SafeEq, TastyUniverse}
+import scala.tools.nsc.tasty.TastyUniverse
 
 /** Adds support for creating annotations from Trees */
 trait AnnotationOps { self: TastyUniverse =>
@@ -21,24 +21,21 @@ trait AnnotationOps { self: TastyUniverse =>
   private[bridge] final def mkAnnotation(tree: Tree): u.Annotation = tree match {
     case u.Apply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), args) =>
       u.AnnotationInfo(tpt.tpe, args, Nil)
+    case u.Apply(u.TypeApply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), tpargs), args) =>
+      u.AnnotationInfo(u.appliedType(tpt.tpe, tpargs.map(_.tpe)), args, Nil)
     case _ =>
-      throw new Exception("unexpected annotation kind from TASTy")
+      throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
   }
 
-  final class DeferredAnnotation(annotSym: Symbol, tree: Symbol => Context => Either[String, Tree]) {
-    private[bridge] def mkLazyAnnotation(annotee: Symbol)(implicit ctx: Context): u.Annotation = {
-      lazy val tree0 = tree(annotee)(ctx)
+  final class DeferredAnnotation(tree: Symbol => Context => Tree) {
+    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
+      val atree = tree(annotee)(ctx)
+      ctx.log(s"annotation of $annotee = $atree")
+      mkAnnotation(atree)
+    }
+    private[bridge] def lzy(annotee: Symbol)(implicit ctx: Context): u.LazyAnnotationInfo = {
       u.AnnotationInfo.lazily {
-        tree0 match {
-          case Left(err) =>
-            u.reporter.error(u.NoPosition, err)
-            u.UnmappableAnnotation
-          case Right(annotTree) =>
-            val isChild = ctx.optionalClass(tpnme.ScalaAnnotationInternal_Child).exists(annotSym === _)
-            ctx.log(s"annotation of $annotee = $annotTree")
-            if (isChild) u.AnnotationInfo(annotTree.tpe, Nil, Nil)
-            else mkAnnotation(annotTree)
-        }
+        eager(annotee)
       }
     }
   }

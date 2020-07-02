@@ -86,12 +86,14 @@ class TreeUnpickler[Tasty <: TastyUniverse](
   }
 
   class Completer(reader: TastyReader, originalFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType(originalFlagSet) { self =>
-    import reader._
+    val symAddr    = reader.currentAddr
+
+    def fork(reader: TastyReader): TastyReader = reader.subReader(reader.startAddr, reader.endAddr)
 
     override def complete(sym: Symbol): Unit = {
       // implicit assertion that the completion is done by the same mirror that loaded owner
-      cycleAtAddr(currentAddr) = ctx.withPhaseNoLater("pickler") { ctx0 =>
-        new TreeReader(reader).readIndexedMember()(ctx0)
+      cycleAtAddr(symAddr) = ctx.withPhaseNoLater("pickler") { ctx0 =>
+        new TreeReader(fork(reader)).readIndexedMember()(ctx0) // fork here so that cycles start at the same address
       }
     }
   }
@@ -211,7 +213,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         sym
       case None =>
         ctx.log(s"<<< No symbol found at forward reference $addr, ensuring one exists:")
-        val sym = forkAt(addr).createSymbol()(ctx.withOwner(ownerTree.findOwner(addr)))
+        val ctxAtOwner = ctx.withOwner(ownerTree.findOwner(addr))
+        val sym = forkAt(addr).createSymbol()(ctxAtOwner)
         ctx.log(s">>> $addr forward reference to ${showSym(sym)}")
         sym
     }
@@ -457,11 +460,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (flags, annotFns, privateWithin) = {
-        val (parsedFlags, annotFns, privateWithin) =
+      val (flags, annotations, privateWithin) = {
+        val (parsedFlags, annotations, privateWithin) =
           readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
         val flags = normalizeFlags(tag, ctx.owner, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
-        (flags, annotFns, privateWithin)
+        (flags, annotations, privateWithin)
       }
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isTypeParameter
@@ -481,7 +484,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
-          val completer = new Completer(subReader(start, end), flags)
+          val completer = new Completer(subReader(start, end), flags)(ctx.retractMode(IndexStats))
           ctx.findRootSymbol(roots, name) match {
             case Some(rootd) =>
               ctx.adjustSymbol(rootd, flags, completer, privateWithin) // dotty "removes one completion" here from the flags, which is not possible in nsc
@@ -495,28 +498,17 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       }.ensuring(isSymbol(_), s"${ctx.classRoot}: Could not create symbol at $start")
       if (tag == VALDEF && flags.is(SingletonEnumFlags))
         ctx.markAsEnumSingleton(sym)
-      ctx.updateAnnotations(sym, annotFns)
-      ctx.owner match {
-        case cls if cls.isClass && canEnterInClass =>
-          val decl = if (flags.is(Object) && isClass) sym.sourceObject else sym
-          val decls = cls.rawInfo.decls
-          if (allowsOverload(decl)) {
-            if (ctx.canEnterOverload(decl)) {
-              decls.enter(decl)
-            }
-          }
-          else {
-            decls.enterIfNew(decl)
-          }
-        case _ =>
-      }
       registerSym(start, sym)
+      if (canEnterInClass && ctx.owner.isClass) {
+        ctx.enterIfUnseen(declaringSymbolOf(sym))
+      }
       if (isClass) {
         ctx.initialiseClassScope(sym)
         val localCtx = ctx.withOwner(sym)
         forkAt(templateStart).indexTemplateParams()(localCtx)
       }
       goto(start)
+      ctx.adjustAnnotations(sym, annotations)
       sym
     }
 
@@ -600,31 +592,33 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       readByte() // tag
       val end      = readEnd()
       val annotSym = readType()(annotCtx).typeSymbolDirect
-      val lzyAnnot = readLaterWithOwner(end, rdr => ctx => {
+      val deferred = readLaterWithOwner(end, rdr => ctx => {
         ctx.log(s"${rdr.reader.currentAddr} reading LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
         rdr.readTerm()(ctx)
-      })(annotCtx)
+      })(annotCtx.retractMode(IndexStats))
       ctx.log(s">>> $start LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
-      new DeferredAnnotation(annotSym, lzyAnnot)
+      new DeferredAnnotation(deferred)
     }
 
     /** Create symbols for the definitions in the statement sequence between
      *  current address and `end`.
      */
     def indexStats(end: Addr)(implicit ctx: Context): Unit = {
+      val statsCtx = ctx.addMode(IndexStats)
       while (currentAddr.index < end.index) {
         nextByte match {
           case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
-            symbolAtCurrent()
+            symbolAtCurrent()(statsCtx)
             skipTree()
           case IMPORT =>
             skipTree()
           case PACKAGE =>
-            processPackage(end => implicit ctx => indexStats(end))
+            processPackage(end => implicit ctx => indexStats(end))(statsCtx)
           case _ =>
             skipTree()
         }
       }
+      statsCtx.forceAnnotations()
       assert(currentAddr.index === end.index)
     }
 
@@ -642,11 +636,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Create symbols the longest consecutive sequence of parameters with given
      *  `tag` starting at current address.
      */
-    def indexParams(tag: Int)(implicit ctx: Context): Unit =
+    def indexParams(tag: Int)(implicit ctx: Context): Unit = {
       while (nextByte === tag) {
         symbolAtCurrent()
         skipTree()
       }
+    }
 
     /** Create symbols for all type and value parameters of template starting
      *  at current address.
@@ -672,20 +667,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     }
 
     private def readNewMember()(implicit ctx: Context): NoCycle = {
-      val symAddr = currentAddr
-      val sym     = symAtAddr(symAddr)
-      val tag     = readByte()
-      val end     = readEnd()
-      val tname   = readTastyName()
+      val symAddr   = currentAddr
+      val tag       = readByte()
+      val end       = readEnd()
+      val tname     = readTastyName()
+      val sym       = symAtAddr(symAddr)
+      val completer = sym.completer
 
       ctx.log {
         val addendum =
           if (ctx.verboseDebug) Thread.currentThread().getStackTrace().drop(3).mkString("\n  > ", "\n  > ", "")
           else ""
-        s"$symAddr completing ${showSym(sym)}:$addendum"
+        s"$symAddr completing ${showSym(sym)} in scope ${showSym(ctx.owner)}:$addendum"
       }
-
-      val completer = sym.completer
 
       def readParamss(implicit ctx: Context): List[List[NoCycle/*ValDef*/]] = nextByte match {
         case PARAM | PARAMEND =>
@@ -826,7 +820,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       })
 
       ctx.log {
-        val addendum = if (parentTypes.isEmpty) "" else parentTypes.mkString(" extends ", " with ", "")
+        val addendum =
+          if (parentTypes.isEmpty) ""
+          else parentTypes.map(lzyShow).mkString(" extends ", " with ", "") // don't force types
         s"$currentAddr Template: Updated info of $cls$addendum"
       }
     }
@@ -1020,7 +1016,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def metaprogrammingIsUnsupported[T](implicit ctx: Context): T =
       unsupportedError("Scala 3 metaprogramming features")
 
-    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Context => Either[String, T] = {
+    def readLaterWithOwner[T <: AnyRef](end: Addr, op: TreeReader => Context => T)(implicit ctx: Context): Symbol => Context => T = {
       val localReader = fork
       goto(end)
       owner => ctx0 => readWith(localReader, owner, ctx.mode, ctx.source, op)(ctx0)
@@ -1035,8 +1031,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     source: AbstractFile,
     op: TreeReader => Context => T)(
     implicit ctx: Context
-  ): Either[String, T] =
-    ctx.withSafePhaseNoLater("pickler")(_.errorInContext){ ctx0 =>
+  ): T =
+    ctx.withPhaseNoLater("pickler") { ctx0 =>
       ctx0.log(s"${reader.reader.currentAddr} starting to read with owner ${location(owner)}:")
       op(reader)(ctx0
         .withOwner(owner)

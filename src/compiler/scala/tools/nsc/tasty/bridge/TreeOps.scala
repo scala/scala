@@ -39,7 +39,7 @@ trait TreeOps { self: TastyUniverse =>
     def Ident(name: TastyName)(tpe: Type): Tree = new TastyIdent(name).setType(tpe)
     def Select(qual: Tree, name: TastyName)(tpe: Type): Tree = u.Select(qual, encodeTastyName(name)).setType(tpe)
     def This(qual: TastyName.TypeName)(tpe: Type): Tree = u.This(encodeTypeName(qual)).setType(tpe)
-    def New(tpt: Tree): Tree = u.New(tpt).setType(tpt.tpe)
+    def New(tpt: Tree): Tree = u.New(tpt).setType(safeClassType(tpt.tpe))
     def SingletonTypeTree(ref: Tree): Tree = u.SingletonTypeTree(ref).setType(ref.tpe)
     def ByNameTypeTree(arg: Tree): Tree = u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
     def NamedArg(name: TastyName, value: Tree): Tree = u.NamedArg(u.Ident(encodeTastyName(name)), value).setType(value.tpe)
@@ -86,15 +86,14 @@ trait TreeOps { self: TastyUniverse =>
       }
     }
 
-    def Annotated(tpt: Tree, annot: Tree)(implicit ctx: Context): Tree = {
-      ctx.optionalClass(tpnme.ScalaAnnotationInternal_Repeated) match {
-        case Some(repeated)
-        if annot.tpe.typeSymbol === repeated
-        && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
-        && tpt.tpe.typeArgs.length == 1 =>
-          tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
-        case _ =>
-          u.Annotated(annot, tpt).setType(u.AnnotatedType(mkAnnotation(annot) :: Nil, tpt.tpe))
+    def Annotated(tpt: Tree, annot: Tree): Tree = {
+      if (annot.tpe.typeSymbol === defn.RepeatedAnnot
+          && tpt.tpe.typeSymbol.isSubClass(u.definitions.SeqClass)
+          && tpt.tpe.typeArgs.length == 1) {
+        tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
+      }
+      else {
+        u.Annotated(annot, tpt).setType(u.AnnotatedType(mkAnnotation(annot) :: Nil, tpt.tpe))
       }
     }
 
