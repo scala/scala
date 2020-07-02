@@ -58,6 +58,7 @@ object Array {
   /** Creates an array from a given iterable
    *
    * @param it the source iterable
+   * @return an array containing all the elements from it
    *
    */
   def from[A : ClassTag](it: IterableOnce[A]): Array[A] = it match {
