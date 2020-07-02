@@ -693,6 +693,20 @@ class LazyListLazinessTest {
     assertLazyAllSkipping(op, 4)
   }
 
+  private def genericCons_unapply_properlyLazy(unapply: LazyList[Int] => Option[(Int, LazyList[Int])]): Unit = {
+    assertLazyAllSkipping(unapply, 1)
+  }
+
+  @Test
+  def cons_unapply_properlyLazy(): Unit = {
+    genericCons_unapply_properlyLazy(LazyList.cons.unapply)
+  }
+
+  @Test
+  def `#::_unapply_properlyLazy`(): Unit = {
+    genericCons_unapply_properlyLazy(LazyList.#::.unapply)
+  }
+
   /* factory laziness tests */
 
   @Test
@@ -746,13 +760,12 @@ class LazyListLazinessTest {
     assertRepeatedlyLazy(factory)
   }
 
-  @Test
-  def `#:: properlyLazy`(): Unit = {
+  private def genericCons_properlyLazy(cons: (=> Int, => LazyList[Int]) => LazyList[Int]): Unit = {
     val headInitFactory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
         def elem(): Int = { init.evaluate(index); index }
         if (index >= LazinessChecker.count) LazyList.empty
-        else elem() #:: gen(index + 1)
+        else cons(elem(), gen(index + 1))
       }
 
       gen(0)
@@ -764,7 +777,7 @@ class LazyListLazinessTest {
         if (index >= LazinessChecker.count) LazyList.empty
         else {
           init.evaluate(index)
-          index #:: gen(index + 1)
+          cons(index, gen(index + 1))
         }
       }
 
@@ -774,7 +787,17 @@ class LazyListLazinessTest {
   }
 
   @Test
-  def `#::: properlyLazy`(): Unit = {
+  def cons_properlyLazy(): Unit = {
+    genericCons_properlyLazy(LazyList.cons(_, _))
+  }
+
+  @Test
+  def `#::_properlyLazy`(): Unit = {
+    genericCons_properlyLazy(_ #:: _)
+  }
+
+  @Test
+  def `#:::_properlyLazy`(): Unit = {
     val headInitFactory = lazyListFactory { init =>
       def gen(index: Int): LazyList[Int] = {
         def elem(): LazyList[Int] = LazyList.fill(1) { init.evaluate(index); index }

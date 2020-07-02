@@ -1134,7 +1134,7 @@ object LazyList extends SeqFactory[LazyList] {
       *  @param hd   The first element of the result lazy list
       *  @param tl   The remaining elements of the result lazy list
       */
-    def apply[A](hd: => A, tl: => LazyList[A]): LazyList[A] = newLL(sCons(hd, tl))
+    def apply[A](hd: => A, tl: => LazyList[A]): LazyList[A] = newLL(sCons(hd, newLL(tl.state)))
 
     /** Maps a lazy list to its head and tail */
     def unapply[A](xs: LazyList[A]): Option[(A, LazyList[A])] = #::.unapply(xs)
