@@ -238,8 +238,10 @@ trait LinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with LinearSeq
     if (found) Some(last) else None
   }
 
-  override def tails: Iterator[C] =
-    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ Iterator.single(newSpecificBuilder.result())
+  override def tails: Iterator[C] = {
+    val end = Iterator.single(empty)
+    Iterator.iterate(coll)(_.tail).takeWhile(_.nonEmpty) ++ end
+  }
 }
 
 trait StrictOptimizedLinearSeqOps[+A, +CC[X] <: LinearSeq[X], +C <: LinearSeq[A] with StrictOptimizedLinearSeqOps[A, CC, C]] extends Any with LinearSeqOps[A, CC, C] with StrictOptimizedSeqOps[A, CC, C] {

@@ -110,4 +110,10 @@ class LazyListGCTest {
   def tapEach_takeRight_headOption_allowsGC(): Unit = {
     assertLazyListOpAllowsGC(_.tapEach(_).takeRight(2).headOption, _ => ())
   }
+
+  // scala/bug#10131
+  @Test
+  def tails_zipWithIndex_foreach_allowsGC(): Unit = {
+    assertLazyListOpAllowsGC((ll, check) => ll.tails.zipWithIndex.foreach { case (_, i) => check(i) }, _ => ())
+  }
 }
