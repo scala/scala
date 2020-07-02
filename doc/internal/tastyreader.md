@@ -14,8 +14,8 @@ TASTy is an intermediate representation of a Scala program after type checking a
 
 ### Entry Points
 
-A classfile is assumed to have an associated TASTy file if it has a `TASTY` annotation (not available through
-Java reflection). This annotation contains a UUID that matches a UUID in the header of a sibling `.tasty` file of the
+A classfile is assumed to have an associated TASTy file if it has a `TASTY` classfile attribute (not available through
+Java reflection). This attribute contains a UUID that matches a UUID in the header of a sibling `.tasty` file of the
 same directory as the classfile. This file is then found and the UUIDs are compared in
 `scala.tools.nsc.symtab.classfile.ClassfileParser`.
 After validation of the header, the tasty file is traversed in `scala.tools.nsc.tasty.TastyUnpickler.unpickle`, which

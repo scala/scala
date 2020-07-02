@@ -110,7 +110,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
     val symbolTable: ClassfileParser.this.symbolTable.type = ClassfileParser.this.symbolTable
   }
 
-  implicit object TastyUniverse extends TastyUniverse {
+  object TastyUniverse extends TastyUniverse {
     type SymbolTable = ClassfileParser.this.symbolTable.type
     val symbolTable: SymbolTable = ClassfileParser.this.symbolTable
   }
@@ -1099,8 +1099,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
 
     var innersStart = -1
     var runtimeAnnotStart = -1
-    var TASTYAnnotStart = -1
-    var TASTYAnnotLen = -1
+    var TASTYAttrStart = -1
+    var TASTYAttrLen = -1
 
     val numAttrs = u2()
     var i = 0
@@ -1116,8 +1116,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           i = numAttrs
         case tpnme.TASTYATTR =>
           isTASTY = true
-          TASTYAnnotLen = attrLen
-          TASTYAnnotStart = in.bp
+          TASTYAttrLen = attrLen
+          TASTYAttrStart = in.bp
           i = numAttrs
         case tpnme.InnerClassesATTR =>
           innersStart = in.bp
@@ -1248,9 +1248,9 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
       }
 
       def parseTASTYBytes(): Array[Byte] = {
-        assert(TASTYAnnotLen == TASTYUUIDLength, "TASTY Attribute is not a UUID")
-        assert(TASTYAnnotStart != -1, "no TASTY Annotation position")
-        in.bp = TASTYAnnotStart
+        assert(TASTYAttrLen == TASTYUUIDLength, "TASTY Attribute is not a UUID")
+        assert(TASTYAttrStart != -1, "no TASTY Annotation position")
+        in.bp = TASTYAttrStart
         val TASTY = in.nextBytes(TASTYUUIDLength)
         val TASTYBytes = parseTASTYFile()
         if (TASTYBytes.isEmpty) {
