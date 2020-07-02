@@ -554,7 +554,7 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
   private[ArrayDeque] final val StableSize = 128
 
   /**
-    * Allocates an array whose size is next power of 2 > $len
+    * Allocates an array whose size is next power of 2 > `len`
     * Largest possible len is 1<<30 - 1
     *
     * @param len
