@@ -1020,6 +1020,7 @@ lazy val partests = List(
   partestDesc("--srcpath scaladoc"),
   partestDesc("--srcpath macro-annot"),
   partestDesc("--srcpath async"),
+  partestDesc("--srcpath jsr45"),
   (tasty / Test / Keys.test).result.map(_ -> "tasty/test"),
 )
 
