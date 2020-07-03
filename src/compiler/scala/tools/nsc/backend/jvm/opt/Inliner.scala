@@ -14,6 +14,8 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import java.nio.file.Paths
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -710,8 +712,28 @@ abstract class Inliner {
       }
       case _ => false
     }
+
+    // This method is a (not so dirty) hack.
+    // For collections, we need the source file name, in order to write debug information for inline methods.
+    // However, collections are loaded from the classpath (JARs), rather than being compiled in each run.
+    // Therefore, source information is not available.
+    // The hack consists of figuring out the file name from the internal class name.
+    // Assumes that the suffix of the internal class name, minus the $ (for modules), plus the .scala ending
+    // will correspond to the source file that produced the corresponding collection class.
+    def sourceFileName(s: String): String = {
+      val droppedDollarSign =
+        if (s.endsWith("$")) s.dropRight(1)
+        else s
+      val withSuffix =
+        if (!droppedDollarSign.endsWith(".scala")) droppedDollarSign + ".scala"
+        else droppedDollarSign
+      Paths.get(withSuffix).getFileName.toString
+    }
+
+    val calleeSource = sourceFileName(calleeSourceFilePath.getOrElse(calleeDeclarationClass.internalName))
+
     val (clonedInstructions, instructionMap, writtenLocals) = cloneInstructions(callee, labelsMap,
-                                                                                calleeDeclarationClass, calleeSourceFilePath,
+                                                                                calleeDeclarationClass, calleeSource,
                                                                                 callsiteClass, callsitePosition,
                                                                                 keepLineNumbers = sameSourceFile)
 

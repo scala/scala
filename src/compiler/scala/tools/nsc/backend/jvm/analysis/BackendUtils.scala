@@ -169,7 +169,7 @@ abstract class BackendUtils extends PerRunInit {
    *   - a bit set containing local variable indices that are stored into
    */
   def cloneInstructions(methodNode: MethodNode, labelMap: Map[LabelNode, LabelNode],
-                        calleeClass: ClassBType, calleeSourceFilePath: Option[String],
+                        calleeClass: ClassBType, calleeSource: String,
                         callsiteClass: ClassBType, callsitePos: Position,
                         keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], mutable.BitSet) = {
     val javaLabelMap = labelMap.asJava
@@ -177,18 +177,6 @@ abstract class BackendUtils extends PerRunInit {
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
     val writtenLocals = mutable.BitSet.empty
     for (ins <- methodNode.instructions.iterator.asScala) {
-      if (!keepLineNumbers && ins.getType == AbstractInsnNode.LINE) {
-        // if keepLineNumbers == false, it means that we are not inlining from the same source
-        // that's when we are interested in writing JSR-45 debug information for inline methods
-        calleeSourceFilePath match {
-          case Some(calleeFilePath) =>
-            val instruction = ins.asInstanceOf[LineNumberNode]
-            val debugInfoWriter = postProcessor.debugInfoBuilder.getWriter(callsiteClass.internalName)
-            val calleeFileName = Paths.get(calleeFilePath).getFileName.toString
-            debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeFileName, calleeClass.internalName)
-          case None =>
-        }
-      }
       if (keepLineNumbers || ins.getType != AbstractInsnNode.LINE) {
         val cloned = ins.clone(javaLabelMap)
         if (ins.getType == AbstractInsnNode.METHOD_INSN) {
@@ -207,6 +195,13 @@ abstract class BackendUtils extends PerRunInit {
         }
         result add cloned
         map += ((ins, cloned))
+      } else if (callsitePos.line > 0) {
+        // if keepLineNumbers is false, it means that we are not inlining from the same source
+        // that's when we are interested in writing JSR-45 debug information for inline methods
+        // but, only if the callsite line number is valid (that is > 0)
+        val instruction = ins.asInstanceOf[LineNumberNode]
+        val debugInfoWriter = postProcessor.debugInfoBuilder.getWriter(callsiteClass.internalName)
+        debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
       }
     }
     (result, map, writtenLocals)

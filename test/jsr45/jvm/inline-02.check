@@ -10,12 +10,15 @@ Main_1
 Utils_1$
 + 3 Tools_1.scala
 Tools_1$
++ 4 List.scala
+scala/collection/immutable/List$
 *L
 1#1,26:1
 5#2:27
 3#3,2:28
 6#3:30
-6#2:31
+648#4:31
+6#2:32
 *E
 *S ScalaDebug
 *F
@@ -27,8 +30,10 @@ Main_1
 23#1:28
 23#1:29
 23#1:30
-9#1:31
-16#1:31
+8#1:31
+15#1:31
+9#1:32
+16#1:32
 9#1:28
 9#1:29
 16#1:28
@@ -42,12 +47,16 @@ Utils_1.scala
 *F
 + 1 Utils_1.scala
 Utils_1$
-+ 2 Tools_1.scala
++ 2 List.scala
+scala/collection/immutable/List
++ 3 Tools_1.scala
 Tools_1$
 *L
 1#1,10:1
-3#2,2:11
-6#2:13
+245#2,9:11
+255#2,2:20
+3#3,2:22
+6#3:24
 *E
 *S ScalaDebug
 *F
@@ -57,6 +66,17 @@ Utils_1$
 5#1:11
 5#1:12
 5#1:13
+5#1:14
+5#1:15
+5#1:16
+5#1:17
+5#1:18
+5#1:19
+5#1:20
+5#1:21
+5#1:22
+5#1:23
+5#1:24
 *E
 SourceFile: "Tools_1.scala"
 SourceDebugExtension:
