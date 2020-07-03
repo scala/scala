@@ -1714,6 +1714,14 @@ abstract class RefChecks extends Transform {
           checkImplicitViewOptionApply(tree.pos, fn, args)
           checkSensible(tree.pos, fn, args) // TODO: this should move to preEraseApply, as reasoning about runtime semantics makes more sense in the JVM type system
         }
+        val sym = fn.symbol
+        if (settings.lintNamedBooleans && sym.ne(null) && sym.ne(NoSymbol) && !sym.isJavaDefined)
+          foreach2(args, sym.paramss.head)((arg, param) => arg match {
+            case t @ Literal(Constant(_: Boolean)) if
+              t.hasAttachment[UnnamedArg.type] && param.tpe.typeSymbol == BooleanClass && !param.deprecatedParamName.contains(nme.NO_NAME) =>
+              runReporting.warning(t.pos, s"Boolean literals should be passed using named argument syntax for parameter ${param.name}.", WarningCategory.LintNamedBooleans, sym)
+            case _ =>
+          })
         currentApplication = tree
         tree
     }

@@ -628,7 +628,8 @@ object Reporting {
         LintPerformance,
         LintIntDivToFloat,
         LintUniversalMethods,
-        LintNumericMethods
+        LintNumericMethods,
+        LintNamedBooleans
       = lint()
 
     sealed class Feature extends WarningCategory {

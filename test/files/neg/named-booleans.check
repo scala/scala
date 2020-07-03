@@ -1,0 +1,6 @@
+named-booleans.scala:17: warning: Boolean literals should be passed using named argument syntax for parameter x.
+  val x0 = c.f(17, true, b) // warn
+                   ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
