@@ -64,7 +64,7 @@ import scala.collection.mutable
  *    8.     val bmList = myList.map(blackMagic)
  *    9.   }
  *   10. }
- *   11.
+ *   11. [empty line]
  *
  *   Utils.scala:
  *
@@ -76,20 +76,20 @@ import scala.collection.mutable
  *    6.          n
  *    7.  }
  *    8. }
- *    9.
+ *    9. [empty line]
  *
  *   Then the debug information that will be generated for the Main class is the following:
  *
  *   SMAP
- *   Main_1.scala
+ *   Main.scala
  *   *S Scala
  *   *F
- *   + 1 Main_1.scala
- *   Main_1
+ *   + 1 Main.scala
+ *   Main
  *   + 2 List.scala
  *   scala/collection/immutable/List$
- *   + 3 Utils_1.scala
- *   Utils_1$
+ *   + 3 Utils.scala
+ *   Utils$
  *   *L
  *   1#1,11:1
  *   648#2:12
@@ -101,8 +101,8 @@ import scala.collection.mutable
  *   *E
  *   *S ScalaDebug
  *   *F
- *   + 1 Main_1.scala
- *   Main_1
+ *   + 1 Main.scala
+ *   Main
  *   *L
  *   7#1:12
  *   8#1:13,12
@@ -139,9 +139,9 @@ import scala.collection.mutable
  *
  *   This creates the following mapping for the inline lines from the Utils module:
  *
- *    3 ->  25
- *    4 ->  26
- *    6 ->  27
+ *    3 -> 25
+ *    4 -> 26
+ *    6 -> 27
  *
  *   Notice how line 5 (containing only the "if" keyword did not make it to the catalogue).
  *
@@ -153,11 +153,32 @@ import scala.collection.mutable
  *
  *   What those mappings indicate is that:
  *   * line 12 on the catalogue is inline from line 7 of the original source file
+ *     (that is the List.apply method)
  *   * lines [13-24] on the catalogue are inline to line 8 of the original source file
+ *     (those are some of the List.map method lines)
  *   * lines [25-27] on the catalogue are inline to line 8 of the original source file
+ *     (those are the Utils.blackMagic function lines)
  *
  *   Notice that the two last lines of the ScalaDebug stratum could be compressed into one,
  *   however since their mappings belong to different external files, we keep them separated.
+ *
+ *   The debugger can exploit that information in order to more accurately trace through the code
+ *   in the presence of inline methods. In order to further help with that, the Scala stratum keeps
+ *   inline requests separate.
+ *
+ *   For instance, in the above example, mapping:
+ *
+ *   245#2,9:13
+ *
+ *   also contains line 249, however we still need the following mapping as well:
+ *
+ *   249#2:22
+ *
+ *   because line 249 was inline anew with a separate inline request.
+ *
+ *   Please note that, an inline line from an external file may be in turn inline from another
+ *   external file. In this case, the debugger needs to figure that out and trace to the origin
+ *   of that line.
  */
 abstract class DebugInfoBuilder extends PerRunInit {
   val postProcessor: PostProcessor
