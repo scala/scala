@@ -37,17 +37,17 @@ trait Seq[+A] extends Iterable[A]
   override def toSeq: Seq[A] = this
   override def seq: Seq[A] = this
   protected[this] override def parCombiner = ParSeq.newCombiner[A] // if `immutable.SeqLike` gets introduced, please move this there!
-  override def sorted[B >: A](implicit ord: Ordering[B]): this.type = {
+  override def sorted[B >: A](implicit ord: Ordering[B]) = {
     val len = this.length
     if (len < 2 || (len == 2 && ord.compare(apply(0), apply(1)) <= 0)) this
     else if (len == 2) {
       //we know the order should be reversed
       //and some implementations have optimised methods for this
-      reverse.asInstanceOf[this.type]
+      reverse
     } else {
       val arr = toArray[Any].asInstanceOf[Array[AnyRef]]
       java.util.Arrays.sort(arr, ord.asInstanceOf[Ordering[Object]])
-      fromAnyRefArray(arr).asInstanceOf[this.type]
+      fromAnyRefArray(arr)
     }
   }
 
