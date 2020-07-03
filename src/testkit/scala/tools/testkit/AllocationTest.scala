@@ -26,9 +26,9 @@ object AllocationTest {
   allocationCounter.setThreadAllocatedMemoryEnabled(true)
 
   private object coster extends AllocationTest {
-    def byte = 1.toByte
+    def byte = 99.toByte
 
-    def short = 1.toShort
+    def short = 9999.toShort
 
     def int = 100000000
 
@@ -38,9 +38,9 @@ object AllocationTest {
 
     def char = 's'
 
-    def float = 1F
+    def float = 123456F
 
-    def double = 1D
+    def double = 123456D
 
     @nowarn("cat=lint-nullary-unit")
     def unit = ()
