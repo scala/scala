@@ -59,17 +59,17 @@ class StreamTest {
   }
 
   @Test // scala/bug#8990
-  def withFilter_after_first_foreach_allows_GC: Unit = {
+  def withFilter_after_first_foreach_allows_GC(): Unit = {
     assertStreamOpAllowsGC(_.withFilter(_ > 1).foreach(_), _ => ())
   }
 
   @Test // scala/bug#8990
-  def withFilter_after_first_withFilter_foreach_allows_GC: Unit = {
+  def withFilter_after_first_withFilter_foreach_allows_GC(): Unit = {
     assertStreamOpAllowsGC(_.withFilter(_ > 1).withFilter(_ < 100).foreach(_), _ => ())
   }
 
   @Test // scala/bug#8990
-  def withFilter_can_retry_after_exception_thrown_in_filter: Unit = {
+  def withFilter_can_retry_after_exception_thrown_in_filter(): Unit = {
     // use mutable state to control an intermittent failure in filtering the Stream
     var shouldThrow = true
 
@@ -82,6 +82,12 @@ class StreamTest {
     shouldThrow = false                              // won't throw next time
 
     assertTrue( wf.map(identity).length == 5 )       // success instead of NPE
+  }
+
+  // scala/bug#10131
+  @Test
+  def tails_zipWithIndex_foreach_allowsGC(): Unit = {
+    assertStreamOpAllowsGC((stream, check) => stream.tails.zipWithIndex.foreach { case (_, i) => check(i) }, _ => ())
   }
 
   /** Test helper to verify that the given Stream operation is properly lazy in the tail */
