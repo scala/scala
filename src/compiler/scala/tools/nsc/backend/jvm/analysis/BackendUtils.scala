@@ -171,6 +171,7 @@ abstract class BackendUtils extends PerRunInit {
                         calleeClass: ClassBType, calleeSource: String,
                         callsiteClass: ClassBType, callsitePos: Position,
                         keepLineNumbers: Boolean): (InsnList, Map[AbstractInsnNode, AbstractInsnNode], mutable.BitSet) = {
+    val debugInfoWriter = postProcessor.debugInfoBuilder.getWriter(callsiteClass.internalName)
     val javaLabelMap = labelMap.asJava
     val result = new InsnList
     var map = Map.empty[AbstractInsnNode, AbstractInsnNode]
@@ -199,10 +200,10 @@ abstract class BackendUtils extends PerRunInit {
         // that's when we are interested in writing JSR-45 debug information for inline methods
         // but, only if the callsite line number is valid (that is > 0)
         val instruction = ins.asInstanceOf[LineNumberNode]
-        val debugInfoWriter = postProcessor.debugInfoBuilder.getWriter(callsiteClass.internalName)
         debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
       }
     }
+    debugInfoWriter.addSeparator()
     (result, map, writtenLocals)
   }
 

@@ -16,6 +16,149 @@ package jvm
 
 import scala.collection.mutable
 
+/**
+ * Constructs and writes the JSR-45 debug information for the generated class files.
+ *   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
+ *   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
+ *
+ * Here is an overview of the constructed information.
+ *
+ * For each class file, we generate two JSR-45 strata, namely "Scala" and "ScalaDebug".
+ *
+ * - The "Scala" stratum:
+ *   The Scala stratum acts as a linear catalogue, containing references to the lines
+ *   of code that the class contains.
+ *
+ *   It provides the following information:
+ *   * From which source files does this class file contain code?
+ *   * To which lines from each source file may this class refer to?
+ *
+ *   The format is the following:
+ *   * For a source file containing N lines, the first N lines of the stratum will be those.
+ *   * With every inline request satisfied, the lines that were inline will be placed at the
+ *     end of the catalogue.
+ *
+ *   Ultimately, the result is a linear catalogue with all the lines from the various source
+ *   files that the class will need to refer to when debugging.
+ *
+ * - The "ScalaDebug" stratum:
+ *   The ScalaDebug stratum acts as an index, providing the following information:
+ *   * For each line of code in the original file, which are the external lines
+ *     that are inline due to that line?
+ *
+ *   Essentially, the ScalaDebug stratum provides a trace of the inlining requests to the original
+ *   source code. This allows the debuggers to trace to the potentially external files, from which
+ *   code was inline.
+ *
+ *   Here is an example. Assume that we have the following two files.
+ *
+ *   Main.scala:
+ *
+ *    1. // Main.scala
+ *    2. // some comment here...
+ *    3. import Utils._
+ *    4.
+ *    5. class Main {
+ *    6.   def foo(): Unit = {
+ *    7.     val myList = List(1, 2, 3, 4, 50, 60, 70, 80)
+ *    8.     val bmList = myList.map(blackMagic)
+ *    9.   }
+ *   10. }
+ *   11.
+ *
+ *   Utils.scala:
+ *
+ *    1. object Utils {
+ *    2.  @inline def blackMagic(n: Int): Int = {
+ *    3.    if (n < 10)
+ *    4.      2 * n
+ *    5.    else
+ *    6.          n
+ *    7.  }
+ *    8. }
+ *    9.
+ *
+ *   Then the debug information that will be generated for the Main class is the following:
+ *
+ *   SMAP
+ *   Main_1.scala
+ *   *S Scala
+ *   *F
+ *   + 1 Main_1.scala
+ *   Main_1
+ *   + 2 List.scala
+ *   scala/collection/immutable/List$
+ *   + 3 Utils_1.scala
+ *   Utils_1$
+ *   *L
+ *   1#1,11:1
+ *   648#2:12
+ *   245#2,9:13
+ *   249#2:22
+ *   255#2,2:23
+ *   3#3,2:25
+ *   6#3:27
+ *   *E
+ *   *S ScalaDebug
+ *   *F
+ *   + 1 Main_1.scala
+ *   Main_1
+ *   *L
+ *   7#1:12
+ *   8#1:13,12
+ *   8#1:25,3
+ *   *E
+ *
+ *   The SMAP starts with the source file name (in our case Main.scala) and then defines two strata,
+ *   indicated by the *S prefix. As discussed earlier, those are Scala and ScalaDebug.
+ *
+ *   Each stratum first indicates the source files from where it contains code references.
+ *   Those are defined in the file section (*F). The first file of each file section entry
+ *   contains the file ID, the source file name and the internal class name in the classpath.
+ *
+ *   Then the line section follows. Because the Main.scala file contains 11 lines, the first
+ *   11 lines in the catalogue are filled by those lines. This is achieved via the mapping:
+ *
+ *   1#1,11:1
+ *
+ *   which says: "starting from line 1 of file ID 1, map 11 lines starting from line 1 of the catalogue"
+ *
+ *   This creates the mapping:
+ *
+ *    1 ->  1
+ *    2 ->  2
+ *    3 ->  3
+ *     ...
+ *   11 -> 11
+ *
+ *   Then it creates the mapping for some calls to the List collection and then the mapping for the inline
+ *   method from the Utils module, which has file ID = 3.
+ *
+ *   3#3,2:24
+ *   6#3:26
+ *
+ *   This creates the following mapping for the inline lines from the Utils module:
+ *
+ *    3 ->  25
+ *    4 ->  26
+ *    6 ->  27
+ *
+ *   Notice how line 5 (containing only the "if" keyword did not make it to the catalogue).
+ *
+ *   The ScalaDebug stratum contains three line mappings:
+ *
+ *   7#1:12
+ *   8#1:13,12
+ *   8#1:25,3
+ *
+ *   What those mappings indicate is that:
+ *   * line 12 on the catalogue is inline from line 7 of the original source file
+ *   * lines [13-24] on the catalogue are inline to line 8 of the original source file
+ *   * lines [25-27] on the catalogue are inline to line 8 of the original source file
+ *
+ *   Notice that the two last lines of the ScalaDebug stratum could be compressed into one,
+ *   however since their mappings belong to different external files, we keep them separated.
+ */
 abstract class DebugInfoBuilder extends PerRunInit {
   val postProcessor: PostProcessor
 
@@ -27,7 +170,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
 
   import DebugInfoWriter._
 
-  private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[String, JSR45DebugInfoWriter]] = perRunLazy(this)(mutable.Map.empty)
+  private[this] lazy val debugInfoWriters: LazyVar[mutable.Map[String, DebugInfoWriter]] = perRunLazy(this)(mutable.Map.empty)
 
   def registerCompUnitClasses(unit: GeneratedCompilationUnit): Unit = {
     for (cls <- unit.classes.filter(!_.isArtifact)) { // don't generate debug info for artifacts (e.g. mirror classes)
@@ -46,13 +189,17 @@ abstract class DebugInfoBuilder extends PerRunInit {
   def getWriter(fqCallsiteClass: String): DebugInfoWriter = debugInfoWriters.get.getOrElse(fqCallsiteClass, noOpDebugInfoWriter)
 
   sealed trait DebugInfoWriter {
+    val sourceFileName: String = null
+
     def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Unit
+    def addSeparator(): Unit
+    def sourceDebugExtension(): String
   }
 
   object DebugInfoWriter {
     private[DebugInfoBuilder] val noOpDebugInfoWriter: DebugInfoWriter = new NoOpDebugInfoWriter
 
-    class JSR45DebugInfoWriter(val sourceFileName: String, val cls: GeneratedClass) extends DebugInfoWriter {
+    class JSR45DebugInfoWriter(override val sourceFileName: String, val cls: GeneratedClass) extends DebugInfoWriter {
       private val debugInfo = JSR45Info(sourceFileName,
                                         new ScalaStratum(cls.position.source.lineCount),
                                         new ScalaDebugStratum)
@@ -83,7 +230,11 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                                                      sourceFileId = Some(1)))
       }
 
-      def sourceDebugExtension(): String = debugInfo.toString
+      override def addSeparator(): Unit = {
+        debugInfo.scalaDebugStratum.addRawLineMapping(RawLineMapping(-1, -1, -1, Some(-1)))
+      }
+
+      override def sourceDebugExtension(): String = debugInfo.toString
     }
 
     class NoOpDebugInfoWriter extends DebugInfoWriter {
@@ -91,6 +242,10 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                      inlineLine: Int,
                                      calleeFileName: String,
                                      calleeInternalName: String): Unit = () // noop
+
+      override def addSeparator(): Unit = () // noop
+
+      override def sourceDebugExtension(): String = null
     }
   }
 }
@@ -122,14 +277,15 @@ object DebugInfoBuilder {
 
     // compute the line section from the line mappings
     private def lineSection: Seq[LineSectionEntry] = {
-      val distinctLineMapping = lineMapping.distinct
-      distinctLineMapping.headOption.map {
+      lineMapping.headOption.map {
         case RawLineMapping(from, toStart, toEnd, sourceFileId) =>
           val start = LineSectionEntry(inputStartLine = from,
                                        lineFileId = sourceFileId,
                                        outputStartLine = toStart,
                                        outputLineIncrement = if (toStart != toEnd) Some(toEnd - toStart + 1) else None)
-          distinctLineMapping.tail.foldLeft(Seq(start)) {
+          lineMapping.tail.foldLeft(Seq(start)) {
+            case (soFar, RawLineMapping(-1, -1, -1, Some(-1))) => // transfer separator
+              soFar :+ LineSectionEntry(-1, Some(-1), Some(-1), outputStartLine = -1, Some(-1))
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart == toEnd =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
               val lastOutputLineIncrement = last.outputLineIncrement.getOrElse(1)
@@ -155,7 +311,11 @@ object DebugInfoBuilder {
                                                   outputStartLine = toStart,
                                                   outputLineIncrement = Some(toEnd - toStart + 1))
           }
-      }.getOrElse(Seq.empty)
+      }.getOrElse(Seq.empty).distinctBy {
+        // drop duplicate mappings, i.e. identical mappings on different output lines
+        case LineSectionEntry(inputStartLine, lineFileId, repeatCount, _, outputLineIncrement) =>
+          (lineFileId, inputStartLine, repeatCount, outputLineIncrement)
+      }
     }
 
     def fileSectionLines: Seq[String] =
@@ -170,18 +330,24 @@ object DebugInfoBuilder {
     // this method triggers line section computation from the line mappings
     def lineSectionLines: Seq[String] =
       "*L" +:
-        lineSection.map { lineSection =>
-          val LineSectionEntry(inputStartLine, lineFileId, repeatCount, outputStartLine, outputLineIncrement) = lineSection
+        lineSection
+          .filter {
+            // skip separators
+            case LineSectionEntry(-1, Some(-1), Some(-1), -1, Some(-1)) => false
+            case _ => true
+          }
+          .map { lineSection =>
+            val LineSectionEntry(inputStartLine, lineFileId, repeatCount, outputStartLine, outputLineIncrement) = lineSection
 
-          val builder = new StringBuilder
-          builder.append(inputStartLine)
-          lineFileId.map(id => builder.append(s"#$id"))
-          repeatCount.map(cnt => builder.append(s",$cnt"))
-          builder.append(s":$outputStartLine")
-          outputLineIncrement.map(inc => builder.append(s",$inc"))
+            val builder = new StringBuilder
+            builder.append(inputStartLine)
+            lineFileId.map(id => builder.append(s"#$id"))
+            repeatCount.map(cnt => builder.append(s",$cnt"))
+            builder.append(s":$outputStartLine")
+            outputLineIncrement.map(inc => builder.append(s",$inc"))
 
-          builder.toString
-        }
+            builder.toString
+          }
 
     def toStringLines: Seq[String] =
       if (lineMapping.nonEmpty)
@@ -208,16 +374,16 @@ object DebugInfoBuilder {
 
       // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
       def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
-        lineMapping.find(m => (m.sourceFileId.get, m.from) == (sourceFileId, line)) match {
-          case None =>
+        //lineMapping.find(m => (m.sourceFileId.get, m.from) == (sourceFileId, line)) match {
+        //  case None =>
             addRawLineMapping(RawLineMapping(from = line,
                                              toStart = lineOffset,
                                              toEnd = lineOffset,
                                              sourceFileId = Some(sourceFileId)))
             lineMappingMap.addOne(line -> lineOffset)
             lineOffset += 1
-          case _ =>
-        }
+          //case _ =>
+        //}
       }
     }
 
