@@ -14,7 +14,6 @@ package scala.tools.nsc
 package backend.jvm
 package analysis
 
-import java.nio.file.Paths
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.{ switch, tailrec }
