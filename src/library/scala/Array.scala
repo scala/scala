@@ -521,7 +521,13 @@ object Array {
       empty[T]
     }
   }
-
+  
+  /** Returns a Boolean indicating equality between two arrays.
+   *
+   *  @param xs an array with elements belonging to any reference type
+   *  @param ys an array with elements belonging to any reference type
+   *  @return   true if the two arrays are equal and false otherwise
+   */
   def equals(xs: Array[AnyRef], ys: Array[AnyRef]): Boolean = {
     if (xs eq ys)
       return true
