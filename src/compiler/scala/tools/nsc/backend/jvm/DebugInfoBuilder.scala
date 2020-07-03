@@ -132,10 +132,15 @@ object DebugInfoBuilder {
           distinctLineMapping.tail.foldLeft(Seq(start)) {
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart == toEnd =>
               val lastRepeatCount = last.repeatCount.getOrElse(1)
+              val lastOutputLineIncrement = last.outputLineIncrement.getOrElse(1)
               if (last.lineFileId == sourceFileId &&
                   last.inputStartLine + lastRepeatCount == from &&
                   last.outputStartLine + lastRepeatCount == toEnd)
                 soFar :+ last.copy(repeatCount = Some(last.repeatCount.getOrElse(1) + 1))
+              else if (last.lineFileId == sourceFileId &&
+                       last.inputStartLine == from &&
+                       (last.outputStartLine + lastOutputLineIncrement) == toStart)
+                 soFar :+ last.copy(outputLineIncrement = Some(lastOutputLineIncrement + 1))
               else
                 soFar :+ last :+ LineSectionEntry(inputStartLine = from, lineFileId = sourceFileId, outputStartLine = toStart)
             case (soFar :+ last, RawLineMapping(from, toStart, toEnd, sourceFileId)) if toStart < toEnd  =>

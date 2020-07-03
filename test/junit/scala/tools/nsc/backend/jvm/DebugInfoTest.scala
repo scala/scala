@@ -36,12 +36,12 @@ class DebugInfoTest {
   def fileSectionWithPathTest(): Unit = {
     val stratum = new ScalaDebugStratum
 
-    stratum.addFileEntry(FileSectionEntry("MyAwesomeClass.scala", Some("/foo/bar/MyAwesomeClass.scala")))
+    stratum.addFileEntry(FileSectionEntry("MyAwesomeClass.scala", Some("/foo/bar/MyAwesomeClass")))
 
     val expectedLines = Seq(
       "*F",
       "+ 1 MyAwesomeClass.scala",
-      "/foo/bar/MyAwesomeClass.scala"
+      "/foo/bar/MyAwesomeClass"
       )
 
     assert(stratum.fileSectionLines == expectedLines)
@@ -113,6 +113,43 @@ class DebugInfoTest {
       "*L",
       "42#1:142,9",
       "55#2:155,9"
+      )
+
+    assert(stratum.lineSectionLines == expectedLines)
+  }
+
+  @Test
+  def multiOutputMappingStratumTest(): Unit = {
+    val stratum = new ScalaDebugStratum
+
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 143, toEnd = 143))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 144, toEnd = 144))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 145, toEnd = 145))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 146, toEnd = 146))
+
+    val expectedLines = Seq(
+      "*L",
+      "42:142,5"
+      )
+
+    assert(stratum.lineSectionLines == expectedLines)
+  }
+
+  @Test
+  def multiOutputMappingWithFileIdStratumTest(): Unit = {
+    val stratum = new ScalaDebugStratum
+
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 142, toEnd = 142, sourceFileId = Some(1)))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 143, toEnd = 143, sourceFileId = Some(1)))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 144, toEnd = 144, sourceFileId = Some(1)))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 145, toEnd = 145, sourceFileId = Some(2)))
+    stratum.addRawLineMapping(RawLineMapping(from = 42, toStart = 146, toEnd = 146, sourceFileId = Some(2)))
+
+    val expectedLines = Seq(
+      "*L",
+      "42#1:142,3",
+      "42#2:145,2"
       )
 
     assert(stratum.lineSectionLines == expectedLines)
