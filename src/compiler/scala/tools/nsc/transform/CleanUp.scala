@@ -501,6 +501,67 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         reducingTransformListApply(rest.elems.length) {
           super.transform(localTyper.typedPos(tree.pos)(consed))
         }
+      //methods on Double
+      //new Predef.doubleToDouble(x).isNaN() -> java.lang.Double.isNaN(x)
+      //new Predef.doubleToDouble(x).isInfinite() -> java.lang.Double.isInfinity(x)
+      //methods on Float
+      //new Predef.float2Float(x).isNaN() -> java.lang.Double.isNaN(x)
+      //new Predef.float2Float(x).isInfinite() -> java.lang.Double.isInfinity(x)
+
+      //methods on Number
+      //new Predef.<convert>(x).byteValue() -> x.toByte()
+      //new Predef.<convert>(x).shortValue() -> x.toShort()
+      //new Predef.<convert>(x).intValue() -> x.toInt()
+      //new Predef.<convert>(x).longValue() -> x.toLong()
+      //new Predef.<convert>(x).floatValue() -> x.toFloat()
+      //new Predef.<convert>(x).doubleValue() -> x.toDouble()
+      //
+      // for each of the conversions
+      // double2Double
+      // float2Float
+      // byte2Byte
+      // short2Short
+      // char2Character
+      // int2Integer
+      // long2Long
+      // boolean2Boolean
+      //
+      case Apply(Select(Apply(boxing @ Select(qual, _), params), methodName), Nil)
+        if currentRun.runDefinitions.PreDef_primitives2Primitives.contains(boxing.symbol) &&
+          params.size == 1 &&
+          allPrimitiveMethodsToRewrite.contains(methodName) &&
+          treeInfo.isExprSafeToInline(qual) =>
+        val newTree =
+          if (doubleAndFloatRedirectMethods.contains(methodName)) {
+            val cls =
+              if (boxing.symbol == currentRun.runDefinitions.Predef_double2Double)
+                definitions.BoxedDoubleClass
+              else definitions.BoxedFloatClass
+
+            val targetMethod = cls.companionModule.info.decl(doubleAndFloatRedirectMethods(methodName))
+            gen.mkMethodCall(targetMethod, params)
+          } else {
+            gen.mkMethodCall(Select(params.head, javaNumberConversions(methodName)), Nil)
+          }
+        super.transform(localTyper.typedPos(tree.pos)(newTree))
+
+      //(x:Int).hashCode is transformed to scala.Int.box(x).hashCode()
+      //(x:Int).toString is transformed to scala.Int.box(x).toString()
+      //
+      //rewrite
+      // scala.Int.box(x).hashCode() ->  java.lang.Integer.hashCode(x)
+      // scala.Int.box(x).toString() ->  java.lang.Integer.toString(x)
+      // similarly for all primitive types
+      case Apply(Select(Apply(box @ Select(boxer, _), params), methodName), Nil)
+        if objectMethods.contains(methodName) &&
+          params.size == 1 &&
+          currentRun.runDefinitions.isBox(box.symbol) &&
+          treeInfo.isExprSafeToInline(boxer)
+      =>
+        val target = boxedClass(boxer.symbol.companion)
+        val targetMethod = target.companionModule.info.decl(methodName)
+        val newTree      = gen.mkMethodCall(targetMethod, params)
+        super.transform(localTyper.typedPos(tree.pos)(newTree))
 
       // Seq() ~> Nil (note: List() ~> Nil is rewritten in the Typer)
       case Apply(Select(appQual, nme.apply), List(nil))
@@ -523,5 +584,24 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
     }
 
   } // CleanUpTransformer
+
+
+  private val objectMethods = Map[Name, TermName](
+    nme.hashCode_ -> nme.hashCode_,
+    nme.toString_ -> nme.toString_
+    )
+  private val doubleAndFloatRedirectMethods = Map[Name, TermName](
+    nme.isNaN -> nme.isNaN,
+    nme.isInfinite -> nme.isInfinite
+    )
+  private val javaNumberConversions         = Map[Name, TermName](
+    nme.byteValue -> nme.toByte,
+    nme.shortValue -> nme.toShort,
+    nme.intValue -> nme.toInt,
+    nme.longValue -> nme.toLong,
+    nme.floatValue -> nme.toFloat,
+    nme.doubleValue -> nme.toDouble
+    )
+  private val allPrimitiveMethodsToRewrite  = doubleAndFloatRedirectMethods.keySet ++ javaNumberConversions.keySet
 
 }
