@@ -88,6 +88,9 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
 
   override def slice(from: Int, until: Int): C = fromSpecific(new IndexedSeqView.Slice(this, from, until))
 
+  override def sliding(size: Int, step: Int): Iterator[C] =
+    new IndexedSeqSlidingIterator[A, CC, C](this, size, step)
+
   override def head: A = apply(0)
 
   override def headOption: Option[A] = if (isEmpty) None else Some(head)
@@ -126,5 +129,24 @@ trait IndexedSeqOps[+A, +CC[_], +C] extends Any with SeqOps[A, CC, C] { self =>
         case  _ => Found(idx)
       }
     }
+  }
+}
+
+/** A fast sliding iterator for IndexedSeqs which uses the underlying `slice` operation. */
+private final class IndexedSeqSlidingIterator[A, CC[_], C](s: IndexedSeqOps[A, CC, C], size: Int, step: Int)
+  extends Iterator[C] {
+
+  private[this] val len = s.length
+  private[this] var pos = 0
+
+  def hasNext: Boolean = pos < len
+
+  def next(): C = {
+    if(!hasNext) Iterator.empty.next()
+    val end = ((pos.toLong + size) min len).toInt
+    val slice = s.slice(pos, end)
+    if(end >= len) pos = len
+    else pos = ((pos.toLong + step) min len).toInt
+    slice
   }
 }

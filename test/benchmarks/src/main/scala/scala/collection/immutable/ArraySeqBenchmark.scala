@@ -17,7 +17,7 @@ import scala.reflect.ClassTag
 @State(Scope.Benchmark)
 class ArraySeqBenchmark {
 
-  @Param(Array("0", "1", "10", "1000", "10000"))
+  @Param(Array("0", "1", "10", "100", "1000", "10000"))
   var size: Int = _
   var integersS: ArraySeq[Int] = _
   var stringsS: ArraySeq[String] = _
@@ -67,5 +67,10 @@ class ArraySeqBenchmark {
       }
     }
     b.result()
+  }
+
+  @Benchmark def sliding(bh: Blackhole): Any = {
+    var coll = stringsS
+    coll.sliding(2).foreach(bh.consume)
   }
 }

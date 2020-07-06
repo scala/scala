@@ -191,6 +191,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn$"),
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.IndexedSeqSlidingIterator"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.*"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
