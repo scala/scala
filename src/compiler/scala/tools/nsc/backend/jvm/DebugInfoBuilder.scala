@@ -395,16 +395,12 @@ object DebugInfoBuilder {
 
       // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
       def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
-        //lineMapping.find(m => (m.sourceFileId.get, m.from) == (sourceFileId, line)) match {
-        //  case None =>
-            addRawLineMapping(RawLineMapping(from = line,
-                                             toStart = lineOffset,
-                                             toEnd = lineOffset,
-                                             sourceFileId = Some(sourceFileId)))
-            lineMappingMap.addOne(line -> lineOffset)
-            lineOffset += 1
-          //case _ =>
-        //}
+        addRawLineMapping(RawLineMapping(from = line,
+                                         toStart = lineOffset,
+                                         toEnd = lineOffset,
+                                         sourceFileId = Some(sourceFileId)))
+        lineMappingMap.addOne(line -> lineOffset)
+        lineOffset += 1
       }
     }
 
@@ -440,6 +436,6 @@ object DebugInfoBuilder {
     }
   }
 
-  case class JSR45MalformedDebugInfo() extends Exception("")
+  case class JSR45MalformedDebugInfo() extends Exception("Malformed JSR-45 debug info (SourceDebugExtension)")
 
 }
