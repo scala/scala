@@ -19,6 +19,14 @@ scala/collection/immutable/List$
 6#3:31
 648#4:32,2
 6#2:34,4
+3#3,2:38
+6#3:40
+3#3,2:41
+6#3:43
+3#3,2:44
+6#3:46
+3#3,2:47
+6#3:49
 *E
 *S ScalaDebug
 *F
@@ -30,8 +38,14 @@ Main_1
 23#1:29,3
 8#1:32
 15#1:33
+9#1:34
+9#1:35
+16#1:36
+16#1:37
 9#1:38,3
+9#1:41,3
 16#1:44,3
+16#1:47,3
 *E
 SourceFile: "Utils_1.scala"
 SourceDebugExtension:
@@ -52,6 +66,8 @@ Tools_1$
 255#2,2:21
 3#3,2:23
 6#3:25
+3#3,2:26
+6#3:28
 *E
 *S ScalaDebug
 *F
@@ -60,6 +76,7 @@ Utils_1$
 *L
 5#1:11,12
 5#1:23,3
+5#1:26,3
 *E
 SourceFile: "Tools_1.scala"
 SourceDebugExtension:

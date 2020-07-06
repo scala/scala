@@ -98,6 +98,8 @@ import scala.collection.mutable
  *   255#2,2:23
  *   3#3,2:25
  *   6#3:27
+ *   3#3,2:28
+ *   6#3:30
  *   *E
  *   *S ScalaDebug
  *   *F
@@ -107,6 +109,7 @@ import scala.collection.mutable
  *   7#1:12
  *   8#1:13,12
  *   8#1:25,3
+ *   8#1:28,3
  *   *E
  *
  *   The SMAP starts with the source file name (in our case Main.scala) and then defines two strata,
@@ -332,11 +335,7 @@ object DebugInfoBuilder {
                                                   outputStartLine = toStart,
                                                   outputLineIncrement = Some(toEnd - toStart + 1))
           }
-      }.getOrElse(Seq.empty).distinctBy {
-        // drop duplicate mappings, i.e. identical mappings on different output lines
-        case LineSectionEntry(inputStartLine, lineFileId, repeatCount, _, outputLineIncrement) =>
-          (lineFileId, inputStartLine, repeatCount, outputLineIncrement)
-      }
+      }.getOrElse(Seq.empty)
     }
 
     def fileSectionLines: Seq[String] =
@@ -393,7 +392,6 @@ object DebugInfoBuilder {
 
       val lineMappingMap: mutable.Map[Int, Int] = mutable.Map.empty
 
-      // In the "Scala" stratum, a line from a given source cannot be mapped to more than 1 locations.
       def registerLineForFile(line: Int, sourceFileId: Int): Unit = {
         addRawLineMapping(RawLineMapping(from = line,
                                          toStart = lineOffset,

@@ -18,6 +18,8 @@ Utils_1$
 255#2,2:23
 3#3,2:25
 6#3:27
+3#3,2:28
+6#3:30
 *E
 *S ScalaDebug
 *F
@@ -27,6 +29,7 @@ Main_1
 7#1:12
 8#1:13,12
 8#1:25,3
+8#1:28,3
 *E
 SourceFile: "Utils_1.scala"
 SourceDebugExtension:
