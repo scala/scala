@@ -74,6 +74,30 @@ trait ContextOps { self: TastyUniverse =>
     else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
   }
 
+  /**Perform an operation within a context that has the mode [[IndexStats]] will force any collected annotations
+   * afterwards*/
+  def inIndexingContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+    val statsCtx = ctx.addMode(IndexStats)
+    op(statsCtx)
+    statsCtx.initialContext.forceAnnotations()
+  }
+
+
+
+  /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
+   * sealed child.
+   */
+  private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
+    for (annot <- sym.annotations) {
+      annot.completeInfo()
+      if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
+        val child = annot.tpe.typeArgs.head.typeSymbolDirect
+        sym.addChild(child)
+        ctx.log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
+      }
+    }
+  }
+
   /**Maintains state through traversal of a TASTy file, such as the outer scope of the defintion being traversed, the
    * traversal mode, and the root owners and source path for the TASTy file.
    * It also provides all operations for manipulation of the symbol table, such as creating/updating symbols and
@@ -82,56 +106,14 @@ trait ContextOps { self: TastyUniverse =>
   sealed abstract class Context {
     thisCtx =>
 
-    private[this] implicit final def implyThisCtx: thisCtx.type = thisCtx
-
-    private[this] var mySymbolsToForceAnnots: mutable.LinkedHashSet[Symbol] = _
-
-    private def stageSymbolToForceAnnots(sym: Symbol): Unit = {
-      if (sym.annotations.nonEmpty) {
-        if (mySymbolsToForceAnnots == null) {
-          mySymbolsToForceAnnots = mutable.LinkedHashSet.empty
-        }
-        mySymbolsToForceAnnots += sym
-      }
-    }
-
-    /** Force any lazy annotations collected from declaration statements directly in this scope.
-     *
-     *  It is important to call this *after* indexing statements in a scope, otherwise calling
-     *  [[ownertree.findOwner]] can fail, this is because [[ownertree.findOwner]] cannot traverse a definition tree at
-     *  a given address before a symbol has been registered to that address.
-     */
-    def forceAnnotations(): Unit = {
-      if (mySymbolsToForceAnnots != null) {
-        val toForce = mySymbolsToForceAnnots
-        mySymbolsToForceAnnots = null
-        for (sym <- toForce) {
-          log(s"!!! forcing annotations on ${showSym(sym)}")
-          analyseAnnotations(sym)
-        }
-      }
-    }
-
-    /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
-     * sealed child.
-     */
-    private def analyseAnnotations(sym: Symbol): Unit = {
-      for (annot <- sym.annotations) {
-        annot.completeInfo()
-        if (annot.tpe.typeSymbolDirect === defn.ChildAnnot) {
-          val child = annot.tpe.typeArgs.head.typeSymbolDirect
-          sym.addChild(child)
-          log(s"adding sealed child ${showSym(child)} to ${showSym(sym)}")
-        }
-      }
-    }
+    protected implicit final def implyThisCtx: thisCtx.type = thisCtx
 
     /**Associates the annotations with the symbol, and will force their evaluation if not reading statements.*/
     def adjustAnnotations(sym: Symbol, annots: List[DeferredAnnotation]): Unit = {
       if (annots.nonEmpty) {
         if (mode.is(IndexStats)) {
           log(s"lazily adding annotations to ${showSym(sym)}")
-          stageSymbolToForceAnnots(sym.setAnnotations(annots.map(_.lzy(sym))))
+          initialContext.stageSymbolToForceAnnots(sym.setAnnotations(annots.map(_.lzy(sym))))
         }
         else {
           log(s"eagerly adding annotations to ${showSym(sym)}")
@@ -428,36 +410,30 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def withOwner(owner: Symbol): Context =
-      if (owner `ne` this.owner) fresh(owner) else this
+      if (owner `ne` this.owner) freshSymbol(owner) else this
 
     final def withNewScope: Context =
-      fresh(newLocalDummy)
+      freshSymbol(newLocalDummy)
 
     final def selectionCtx(name: TastyName): Context = this // if (name.isConstructorName) this.addMode(Mode.InSuperCall) else this
-    final def fresh(owner: Symbol): FreshContext = new FreshContext(owner, this, this.mode)
-
-    private def sibling(mode: TastyMode): FreshContext = new FreshContext(this.owner, outerOrThis, mode)
-    private def sibling: FreshContext = sibling(mode)
-
-    private def outerOrThis: Context = this match {
-      case ctx: FreshContext => ctx.outer
-      case ctx               => ctx
-    }
+    final def freshSymbol(owner: Symbol): FreshContext = new FreshContext(owner, this, this.mode)
+    final def freshMode(mode: TastyMode): FreshContext = new FreshContext(this.owner, this, mode)
+    final def fresh: FreshContext                      = new FreshContext(this.owner, this, this.mode)
 
     final def addMode(mode: TastyMode): Context =
-      if (!this.mode.is(mode)) sibling(this.mode | mode)
+      if (!this.mode.is(mode)) freshMode(this.mode | mode)
       else this
 
     final def retractMode(mode: TastyMode): Context =
-      if (this.mode.isOneOf(mode)) sibling(this.mode &~ mode)
+      if (this.mode.isOneOf(mode)) freshMode(this.mode &~ mode)
       else this
 
     final def withMode(mode: TastyMode): Context =
-      if (mode != this.mode) sibling(mode)
+      if (mode != this.mode) freshMode(mode)
       else this
 
     final def withSource(source: AbstractFile): Context =
-      if (source `ne` this.source) sibling.atSource(source)
+      if (source `ne` this.source) fresh.atSource(source)
       else this
 
     final def withPhaseNoLater[T](phase: String)(op: Context => T): T =
@@ -468,6 +444,36 @@ trait ContextOps { self: TastyUniverse =>
   final class InitialContext(val topLevelClass: Symbol, val source: AbstractFile) extends Context {
     def mode: TastyMode = EmptyTastyMode
     def owner: Symbol = topLevelClass.owner
+
+    private[this] var mySymbolsToForceAnnots: mutable.LinkedHashSet[Symbol] = _
+
+    private[ContextOps] def stageSymbolToForceAnnots(sym: Symbol): Unit = {
+      if (sym.annotations.nonEmpty) {
+        if (mySymbolsToForceAnnots == null) {
+          mySymbolsToForceAnnots = mutable.LinkedHashSet.empty
+        }
+        mySymbolsToForceAnnots += sym
+      }
+    }
+
+    /** Force any lazy annotations collected from declaration statements directly in this scope.
+     *
+     *  It is important to call this *after* indexing statements in a scope, otherwise calling
+     *  [[ownertree.findOwner]] can fail, this is because [[ownertree.findOwner]] cannot traverse a definition tree at
+     *  a given address before a symbol has been registered to that address.
+     */
+    private[ContextOps] def forceAnnotations(): Unit = {
+      if (mySymbolsToForceAnnots != null) {
+        val toForce = mySymbolsToForceAnnots
+        mySymbolsToForceAnnots = null
+        for (sym <- toForce) {
+          log(s"!!! forcing annotations on ${showSym(sym)}")
+          analyseAnnotations(sym)
+        }
+        assert(mySymbolsToForceAnnots == null, "more symbols added while forcing")
+      }
+    }
+
   }
 
   final class FreshContext(val owner: Symbol, val outer: Context, val mode: TastyMode) extends Context {
