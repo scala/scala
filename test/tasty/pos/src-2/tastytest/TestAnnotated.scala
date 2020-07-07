@@ -8,4 +8,8 @@ object TestAnnotated {
     o.foo
   }
   def test4 = new ParameterizedAnnotated(23).foo
+  def test5 = {
+    val o = new OuterAnnotated {}
+    o.foo
+  }
 }

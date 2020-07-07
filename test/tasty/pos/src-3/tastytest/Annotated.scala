@@ -17,3 +17,8 @@ class ParameterizedAnnotated(@basicAnnot(ParameterizedAnnotated.value) x: Int) {
 object ParameterizedAnnotated {
   final val value = 23
 }
+
+trait OuterAnnotated extends OuterTrait {
+  @innerAnnot(new Inner)
+  def foo = 1
+}

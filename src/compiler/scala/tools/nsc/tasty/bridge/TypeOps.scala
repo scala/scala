@@ -175,15 +175,92 @@ trait TypeOps { self: TastyUniverse =>
       bounds
   }
 
-  private[bridge] def resolveErasedTypeRef(ref: ErasedTypeRef)(implicit ctx: Context): Type = {
-    import TastyName._
+  /** This is a port from Dotty of transforming a Method type to an ErasedTypeRef
+   */
+  private[bridge] object NameErasure {
 
-    val sym = ref.qualifiedName match {
-      case TypeName(obj: ObjectName) => ctx.requiredObject(obj)
-      case clazz                     => ctx.requiredClass(clazz)
+    def isRepeatedParam(self: Type): Boolean =
+      self.typeSymbol eq u.definitions.RepeatedParamClass
+
+    /** Translate a type of the form From[T] to either To[T] or To[? <: T] (if `wildcardArg` is set). Keep other types as they are.
+     *  `from` and `to` must be static classes, both with one type parameter, and the same variance.
+     *  Do the same for by name types => From[T] and => To[T]
+     */
+    def translateParameterized(self: Type)(from: u.ClassSymbol, to: u.ClassSymbol, wildcardArg: Boolean = false)(implicit ctx: Context): Type = self match {
+      case self @ u.NullaryMethodType(tp) =>
+        u.NullaryMethodType(translateParameterized(tp)(from, to, wildcardArg=false))
+      case _ =>
+        if (self.typeSymbol.isSubClass(from)) {
+          def elemType(tp: Type): Type = tp.dealiasWiden match {
+            // case tp: AndOrType => tp.derivedAndOrType(elemType(tp.tp1), elemType(tp.tp2))
+            case tp: u.RefinedType => u.intersectionType(tp.parents.map(elemType))
+            case _ => tp.baseType(from).typeArgs.head
+          }
+          val arg = elemType(self)
+          val arg1 = if (wildcardArg) u.TypeBounds.upper(arg) else arg
+          to.ref(arg1 :: Nil)
+        }
+        else self
     }
 
-    (0 until ref.arrayDims).foldLeft(sym.tpe.erasure)((acc, _) => u.definitions.arrayType(acc))
+    def translateFromRepeated(self: Type)(toArray: Boolean, translateWildcard: Boolean = false)(implicit ctx: Context): Type = {
+      val seqClass = if (toArray) u.definitions.ArrayClass else u.definitions.SeqClass
+      if (translateWildcard && self === u.WildcardType)
+        seqClass.ref(u.WildcardType :: Nil)
+      else if (isRepeatedParam(self))
+        // We want `Array[? <: T]` because arrays aren't covariant until after
+        // erasure. See `tests/pos/i5140`.
+        translateParameterized(self)(u.definitions.RepeatedParamClass, seqClass, wildcardArg = toArray)
+      else self
+    }
+
+    def sigName(tp: Type, isJava: Boolean)(implicit ctx: Context): ErasedTypeRef = {
+      val normTp = translateFromRepeated(tp)(toArray = isJava)
+      erasedSigName(normTp.erasure)
+    }
+
+    private def erasedSigName(erased: Type)(implicit ctx: Context): ErasedTypeRef = erased match {
+      case erased: u.ExistentialType => erasedSigName(erased.underlying)
+      case erased: u.TypeRef =>
+        import TastyName._
+        if (!isSymbol(erased.sym))
+          typeError(s"missing: ${erased.prefix}, ${erased.sym.name}")
+        var dims = 0
+        var clazzRef: Type = erased
+        while (clazzRef.typeArgs.nonEmpty && clazzRef.typeSymbol.isSubClass(u.definitions.ArrayClass)) {
+          dims += 1
+          clazzRef = clazzRef.typeArgs.head
+        }
+        def unpeelName(acc: List[TastyName], tpe: Type): List[TastyName] = {
+          def mkRef(sym: Symbol) = {
+            val name = SimpleName(sym.name.toString)
+            if (sym.isModuleClass && !sym.isPackageClass) ObjectName(name)
+            else name
+          }
+          def rec(pre: Type) =
+            (pre ne u.NoPrefix) && (pre ne u.NoType) && (pre.typeSymbol != u.rootMirror.RootClass)
+          tpe match {
+            case u.TypeRef(pre, sym, _) =>
+              val ref = mkRef(sym)
+              if (rec(pre)) unpeelName(ref :: acc, pre)
+              else ref :: acc
+            case tpe @ u.ThisType(sym) =>
+              val ref = mkRef(sym)
+              val pre = tpe.prefix
+              if (rec(pre)) unpeelName(ref :: acc, pre)
+              else ref :: acc
+          }
+        }
+        val name = (unpeelName(Nil, clazzRef): @unchecked) match {
+          case single :: Nil => single
+          case base :: rest  => rest.foldLeft(base)((acc, n) => n match {
+            case ObjectName(base) => ObjectName(QualifiedName(acc, PathSep, base.asSimpleName))
+            case name => QualifiedName(acc, PathSep, name.asSimpleName)
+          })
+        }
+        ErasedTypeRef(name.toTypeName, dims)
+    }
+
   }
 
   /** A type which accepts two type arguments, representing an intersection type

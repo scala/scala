@@ -17,7 +17,7 @@ import scala.reflect.io.AbstractFile
 
 import collection.mutable
 
-import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._
+import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._, TastyName.ObjectName
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
 
@@ -29,7 +29,7 @@ trait ContextOps { self: TastyUniverse =>
 
   private def describeOwner(owner: Symbol): String = {
     val kind =
-      if (owner.is(Param)) {
+      if (owner.isOneOf(Param | ParamSetter)) {
         if (owner.isType) "type parameter"
         else "parameter"
       }
@@ -103,8 +103,7 @@ trait ContextOps { self: TastyUniverse =>
    * It also provides all operations for manipulation of the symbol table, such as creating/updating symbols and
    * updating their types.
    */
-  sealed abstract class Context {
-    thisCtx =>
+  sealed abstract class Context { thisCtx =>
 
     protected implicit final def implyThisCtx: thisCtx.type = thisCtx
 
@@ -151,15 +150,6 @@ trait ContextOps { self: TastyUniverse =>
       symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
     }
 
-    final def requiredClass(fullname: TastyName.TypeName): Symbol =
-      symOrDependencyError(false, false, fullname)(loadingMirror.getRequiredClass(encodeTypeName(fullname).toString))
-
-    final def optionalClass(fullname: TastyName.TypeName): Option[Symbol] =
-      loadingMirror.getClassIfDefined(encodeTypeName(fullname).toString).toOption
-
-    final def requiredObject(fullname: TastyName.ObjectName): Symbol =
-      symOrDependencyError(true, false, fullname)(loadingMirror.getRequiredModule(encodeTermName(fullname).toString))
-
     private def symOrDependencyError(isObject: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
       try sym
       catch {
@@ -180,7 +170,7 @@ trait ContextOps { self: TastyUniverse =>
       owner.newTypeParameter(u.nme.WILDCARD.toTypeName, u.NoPosition, u.NoFlags).setInfo(info)
 
     final def findRootSymbol(roots: Set[Symbol], name: TastyName): Option[Symbol] = {
-      import TastyName._
+      import TastyName.TypeName
 
       def isSameRoot(root: Symbol, selector: u.Name): Boolean =
         (root.owner `eq` this.owner) && selector === root.name
