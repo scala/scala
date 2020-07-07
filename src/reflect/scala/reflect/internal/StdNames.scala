@@ -418,10 +418,11 @@ trait StdNames {
       )
     }
 
-    def isOpAssignmentName(name: Name) = name match {
+    def isOpAssignmentName(name: Name): Boolean = name match {
       case raw.NE | raw.LE | raw.GE | EMPTY => false
-      case _                                =>
-      name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar)
+      case _ =>
+        name.endChar == '=' && name.startChar != '=' && isOperatorPart(name.startChar) &&
+          !(name.startsWith(raw.NE) || name.startsWith(raw.GE) || name.startsWith(raw.LE))
     }
 
     /** Is name a left-associative operator? */
