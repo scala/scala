@@ -81,8 +81,9 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     this.roots = Set(objectRoot, classRoot)
     val rdr = new TreeReader(reader).fork
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
+    def indexTopLevel(implicit ctx: Context): Unit = rdr.indexStats(reader.endAddr)
     if (rdr.isTopLevel)
-      rdr.indexStats(reader.endAddr)
+      inIndexingContext(indexTopLevel(_))
   }
 
   class Completer(reader: TastyReader, originalFlagSet: TastyFlagSet)(implicit ctx: Context) extends TastyLazyType(originalFlagSet) { self =>
@@ -604,21 +605,19 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *  current address and `end`.
      */
     def indexStats(end: Addr)(implicit ctx: Context): Unit = {
-      val statsCtx = ctx.addMode(IndexStats)
       while (currentAddr.index < end.index) {
         nextByte match {
           case tag @ (VALDEF | DEFDEF | TYPEDEF | TYPEPARAM | PARAM) =>
-            symbolAtCurrent()(statsCtx)
+            symbolAtCurrent()
             skipTree()
           case IMPORT =>
             skipTree()
           case PACKAGE =>
-            processPackage(end => implicit ctx => indexStats(end))(statsCtx)
+            processPackage(end => implicit ctx => indexStats(end))
           case _ =>
             skipTree()
         }
       }
-      statsCtx.forceAnnotations()
       assert(currentAddr.index === end.index)
     }
 
@@ -774,23 +773,25 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       assert(readByte() === TEMPLATE)
       val end = readEnd()
 
-      // ** PARAMETERS **
-      ctx.log(s"$currentAddr Template: reading parameters of $cls:")
-      val tparams = readIndexedParams[NoCycle](TYPEPARAM)
-      if (tparams.nonEmpty) {
-        cls.info = defn.PolyType(tparams.map(symFromNoCycle), cls.info)
+      def completeTypeParameters()(implicit ctx: Context): List[Symbol] = {
+        ctx.log(s"$currentAddr Template: reading parameters of $cls:")
+        val tparams = readIndexedParams[NoCycle](TYPEPARAM).map(symFromNoCycle)
+        if (tparams.nonEmpty) {
+          cls.info = defn.PolyType(tparams, cls.info)
+        }
+        readIndexedParams[NoCycle](PARAM) // skip value parameters
+        tparams
       }
-      readIndexedParams[NoCycle](PARAM) // skip value parameters
 
-      // ** MEMBERS **
-      ctx.log(s"$currentAddr Template: indexing members of $cls:")
-      val bodyIndexer = fork
-      while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
-      bodyIndexer.indexStats(end)
+      def indexMembers()(implicit ctx: Context): Unit = {
+        ctx.log(s"$currentAddr Template: indexing members of $cls:")
+        val bodyIndexer = fork
+        while (bodyIndexer.reader.nextByte != DEFDEF) bodyIndexer.skipTree() // skip until primary ctor
+        bodyIndexer.indexStats(end)
+      }
 
-      // ** PARENTS **
-      ctx.log(s"$currentAddr Template: adding parents of $cls:")
-      val parents = {
+      def traverseParents()(implicit ctx: Context): List[Type] = {
+        ctx.log(s"$currentAddr Template: adding parents of $cls:")
         val parentCtx = ctx.withOwner(localDummy).addMode(ReadParents)
         val parentWithOuter = parentCtx.addMode(OuterTerm)
         collectWhile(nextByte != SELFDEF && nextByte != DEFDEF) {
@@ -801,7 +802,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         }
       }
 
-      if (nextByte === SELFDEF) {
+      def addSelfDef()(implicit ctx: Context): Unit = {
         ctx.log(s"$currentAddr Template: adding self-type of $cls:")
         readByte() // read SELFDEF tag
         readLongNat() // skip Name
@@ -810,21 +811,36 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         cls.typeOfThis = selfTpe
       }
 
-      val parentTypes = ctx.adjustParents(cls, parents)
-
-      ctx.setInfo(cls, {
-        val classInfo = defn.ClassInfoType(parentTypes, cls)
-        // TODO [tasty]: if support opaque types, refine the self type with any opaque members here
-        if (tparams.isEmpty) classInfo
-        else defn.PolyType(tparams.map(symFromNoCycle), classInfo)
-      })
-
-      ctx.log {
-        val addendum =
-          if (parentTypes.isEmpty) ""
-          else parentTypes.map(lzyShow).mkString(" extends ", " with ", "") // don't force types
-        s"$currentAddr Template: Updated info of $cls$addendum"
+      def setInfoWithParents(tparams: List[Symbol], parentTypes: List[Type])(implicit ctx: Context): Unit = {
+        def debugMsg = {
+          val addendum =
+            if (parentTypes.isEmpty) ""
+            else parentTypes.map(lzyShow).mkString(" extends ", " with ", "") // don't force types
+          s"$currentAddr Template: Updated info of $cls$addendum"
+        }
+        val info = {
+          val classInfo = defn.ClassInfoType(parentTypes, cls)
+          // TODO [tasty]: if support opaque types, refine the self type with any opaque members here
+          if (tparams.isEmpty) classInfo
+          else defn.PolyType(tparams, classInfo)
+        }
+        ctx.setInfo(cls, info)
+        ctx.log(debugMsg)
       }
+
+      def traverseTemplate()(implicit ctx: Context): Unit = {
+        val tparams = completeTypeParameters()
+        indexMembers()
+        val parents = traverseParents()
+        if (nextByte === SELFDEF) {
+          addSelfDef()
+        }
+        val parentTypes = ctx.adjustParents(cls, parents)
+        setInfoWithParents(tparams, parentTypes)
+      }
+
+      inIndexingContext(traverseTemplate()(_))
+
     }
 
     def isTopLevel: Boolean = nextByte === IMPORT || nextByte === PACKAGE
@@ -845,7 +861,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       until(end)(readIndexedStatAsSym(exprOwner))
 
     def readStatsAsSyms(exprOwner: Symbol, end: Addr)(implicit ctx: Context): List[NoCycle] = {
-      fork.indexStats(end)
+      def forkAndIndexStats(implicit ctx: Context): Unit = fork.indexStats(end)
+      inIndexingContext(forkAndIndexStats(_))
       readIndexedStatsAsSyms(exprOwner, end)
     }
 

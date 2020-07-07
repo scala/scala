@@ -16,6 +16,7 @@ import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags.TastyFlagSet
+import scala.tools.tasty.ErasedTypeRef
 
 /**This layer deals with selecting a member symbol from a type using a [[TastyName]],
  * also contains factories for making type references to symbols.
@@ -73,7 +74,7 @@ trait SymbolOps { self: TastyUniverse =>
       termParamss
 
   def namedMemberOfType(space: Type, tname: TastyName)(implicit ctx: Context): Symbol = tname match {
-    case SignedName(qual, sig) => signedMemberOfSpace(space, qual, sig.map(resolveErasedTypeRef))
+    case SignedName(qual, sig) => signedMemberOfSpace(space, qual, sig.map(_.encode))
     case _                     => memberOfSpace(space, tname)
   }
 
@@ -94,40 +95,57 @@ trait SymbolOps { self: TastyUniverse =>
       }
       else space.member(encodeTermName(tname))
     }
-    if (isSymbol(member)) member
-    else {
-      val kind = if (tname.isTypeName) "type" else "term"
-      def addendum(name: String) =
-        if (ctx.mode.is(ReadParents)) s"$kind in parents of ${if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner}: $name"
-        else if (ctx.owner.isClass) s"$kind required by a member of ${ctx.owner}: $name"
-        else s"$kind $name while unpickling ${ctx.owner}"
-      val msg =
-        if (tname.isTypeName && space.typeSymbol.hasPackageFlag)
-          s"can't find ${addendum(s"${space.typeSymbol.fullNameString}.$tname")}; perhaps it is missing from the classpath."
-        else
-          s"can't find ${addendum("" + tname)}, in $space"
-      typeError(msg)
-    }
+    if (isSymbol(member) && hasType(member)) member
+    else errorMissing(space, tname)
   }
 
-  private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[Type])(implicit ctx: Context): Symbol = {
-    ctx.log(s"""<<< looking for overload member[$space] @@ $qual: ${sig.show}""")
+  private def hasType(member: Symbol)(implicit ctx: Context) = {
+    ctx.mode.is(ReadAnnotation) || (member.rawInfo `ne` u.NoType)
+  }
+
+  private def errorMissing[T](space: Type, tname: TastyName)(implicit ctx: Context) = {
+    val kind = if (tname.isTypeName) "type" else "term"
+    def typeToString(tpe: Type) = {
+      def inner(sb: StringBuilder, tpe: Type): StringBuilder = tpe match {
+        case u.SingleType(pre, sym) => inner(sb, pre) append '.' append (
+          if (sym.isPackageObjectOrClass) s"`${sym.name}`"
+          else String valueOf sym.name
+        )
+        case u.TypeRef(pre, sym, _) if sym.isTerm =>
+          if ((pre eq u.NoPrefix) || (pre eq u.NoType)) sb append sym.name
+          else inner(sb, pre) append '.' append sym.name
+        case tpe => sb append tpe
+      }
+      inner(new StringBuilder(), tpe).toString
+    }
+    def addendum(name: String) = {
+      if (ctx.mode.is(ReadParents)) s"$kind in parents of ${location(if (ctx.owner.isLocalDummy) ctx.owner.owner else ctx.owner)}: $name"
+      else s"$kind required by ${location(ctx.owner)}: $name"
+    }
+    val missing = addendum(s"${typeToString(space)}.$tname")
+    typeError(s"can't find $missing; perhaps it is missing from the classpath.")
+  }
+
+  private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[ErasedTypeRef])(implicit ctx: Context): Symbol = {
+    ctx.log(s"""<<< looking for overload member[$space] @@ $qual: ${showSig(sig)}""")
     val member = space.member(encodeTermName(qual))
-    val (tyParamCount, argTpes) = {
+    if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
+    val (tyParamCount, argTpeRefs) = {
       val (tyParamCounts, params) = sig.params.partitionMap(identity)
       if (tyParamCounts.length > 1) {
-        unsupportedError(s"multiple type parameter lists on erased method signature ${sig.show}")
+        unsupportedError(s"multiple type parameter lists on erased method signature ${showSig(sig)}")
       }
       (tyParamCounts.headOption.getOrElse(0), params)
     }
     def compareSym(sym: Symbol): Boolean = sym match {
       case sym: u.MethodSymbol =>
         val params = sym.paramss.flatten
-        sym.returnType.erasure =:= sig.result &&
-        params.length === argTpes.length &&
+        val isJava = sym.isJavaDefined
+        NameErasure.sigName(sym.returnType, isJava) === sig.result &&
+        params.length === argTpeRefs.length &&
         (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&
-        params.zip(argTpes).forall { case (param, tpe) => param.tpe.erasure =:= tpe } && {
+        params.zip(argTpeRefs).forall { case (param, tpe) => NameErasure.sigName(param.tpe, isJava) === tpe } && {
           ctx.log(s">>> selected ${showSym(sym)}: ${sym.tpe}")
           true
         }
@@ -136,8 +154,9 @@ trait SymbolOps { self: TastyUniverse =>
         false
     }
     member.asTerm.alternatives.find(compareSym).getOrElse(
-      typeError(s"No matching overload of $space.$qual with signature ${sig.show}"))
+      typeError(s"No matching overload of $space.$qual with signature ${showSig(sig)}"))
   }
 
+  def showSig(sig: MethodSignature[ErasedTypeRef]): String = sig.map(_.signature).show
   def showSym(sym: Symbol): String = s"Symbol($sym, #${sym.id})"
 }

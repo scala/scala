@@ -25,6 +25,7 @@ case class ErasedTypeRef(qualifiedName: TypeName, arrayDims: Int) {
     val qualified = qualifiedName.source
     "[" * arrayDims + (if (qualifiedName.toTermName.isObjectName) s"object $qualified" else qualified)
   }
+  def encode: ErasedTypeRef = ErasedTypeRef(TastyName.deepEncode(qualifiedName).toTypeName, arrayDims)
 }
 
 object ErasedTypeRef {

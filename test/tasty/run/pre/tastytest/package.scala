@@ -10,7 +10,7 @@ package object tastytest {
 
   object Macros {
 
-    def hasStaticAnnotImpl[T, A](c: Context)(implicit T: c.WeakTypeTag[T], A: c.WeakTypeTag[A]) : c.Expr[Boolean] = {
+    def hasStaticAnnotImpl[T, A](c: Context)(implicit T: c.WeakTypeTag[T], A: c.WeakTypeTag[A]): c.Expr[Boolean] = {
       import c.universe._
       if (weakTypeOf[T].members.filter(_.isMethod).exists(_.annotations.exists(_.tree.tpe =:= weakTypeOf[A]))) {
         c.Expr[Boolean](q"true")
