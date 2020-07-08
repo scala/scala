@@ -660,16 +660,18 @@ class IteratorTest {
       case _ => ???
     }
 
-    def check() = assertNotReachable(seq1.get, it)(())
+    def noop = ()
 
-    def checkHasElement() = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(())
+    def check() = assertNotReachable(seq1.get, it)(noop)
+
+    def checkHasElement() = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(noop)
 
     assert(it.hasNext)
     assertEquals("first", it.next())
 
     // verify that we're in the middle of seq1
-    assertThrows[AssertionError](checkHasElement())
-    assertThrows[AssertionError](check())
+    checkHasElement()
+    assertThrows[AssertionError](check(), _.contains("held reference"))
     assert(it.hasNext)
     assertEquals("second", it.next())
 

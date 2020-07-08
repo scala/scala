@@ -21,7 +21,7 @@ import scala.concurrent.{Await, Awaitable}
 import scala.util.chaining._
 import scala.util.{Failure, Success, Try}
 import scala.util.Properties.isJavaAtLeast
-import scala.util.control.NonFatal
+import scala.util.control.{ControlThrowable, NonFatal}
 import java.time.Duration
 import java.util.concurrent.{CountDownLatch, TimeUnit}
 import java.util.concurrent.atomic.AtomicReference
@@ -93,11 +93,14 @@ object AssertUtil {
     assertThrown[T](t => checkMessage(t.getMessage))(body)
   }
 
+  private val Unthrown = new ControlThrowable {}
+
   def assertThrown[T <: Throwable: ClassTag](checker: T => Boolean)(body: => Any): Unit =
     try {
       body
-      fail("Expression did not throw!")
+      throw Unthrown
     } catch {
+      case _: Unthrown.type   => fail("Expression did not throw!")
       case e: T if checker(e) => ()
       case failed: T =>
         val ae = new AssertionError(s"Exception failed check: $failed")
