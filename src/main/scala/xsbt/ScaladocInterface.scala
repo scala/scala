@@ -15,7 +15,7 @@ import xsbti.{ Logger, VirtualFile }
 import scala.reflect.io.AbstractFile
 import Log.debug
 
-class ScaladocInterface {
+class ScaladocInterface extends xsbti.compile.ScaladocInterface2 {
   def run(sources: Array[VirtualFile], args: Array[String], log: Logger, delegate: xsbti.Reporter) =
     (new Runner(sources, args, log, delegate)).run
 }

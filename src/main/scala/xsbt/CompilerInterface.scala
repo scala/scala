@@ -19,16 +19,16 @@ import scala.reflect.io.AbstractFile
 import Log.debug
 import java.io.File
 
-final class CompilerInterface {
-  def newCompiler(
+final class CompilerInterface extends CompilerInterface2 {
+  override def newCompiler(
       options: Array[String],
       output: Output,
       initialLog: Logger,
       initialDelegate: Reporter
-  ): CachedCompiler =
+  ): CachedCompiler2 =
     new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
 
-  def run(
+  override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,
@@ -63,7 +63,7 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 }
 
 private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
-    extends CachedCompiler
+    extends CachedCompiler2
     with CachedCompilerCompat
     with java.io.Closeable {
 
@@ -77,11 +77,11 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       for (out <- multi.getOutputGroups)
         settings.outputDirs
           .add(
-            out.getSourceDirectory.toAbsolutePath.toString,
-            out.getOutputDirectory.toAbsolutePath.toString
+            out.getSourceDirectoryAsPath.toAbsolutePath.toString,
+            out.getOutputDirectoryAsPath.toAbsolutePath.toString
           )
     case single: SingleOutput =>
-      val outputFilepath = single.getOutputDirectory.toAbsolutePath
+      val outputFilepath = single.getOutputDirectoryAsPath.toAbsolutePath
       settings.outputDirs.setSingleOutput(outputFilepath.toString)
   }
 
@@ -115,7 +115,17 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   def infoOnCachedCompiler(compilerId: String): String =
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
-  def run(
+  // This is kept for compatibility purpose only.
+  override def run(
+      sources: Array[File],
+      changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      delegate: Reporter,
+      progress: CompileProgress
+  ): Unit = ???
+
+  override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,

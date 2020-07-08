@@ -39,9 +39,9 @@ sealed abstract class CallbackGlobal(
 
   lazy val outputDirs: Iterable[Path] = {
     output match {
-      case single: SingleOutput => List(single.getOutputDirectory)
+      case single: SingleOutput => List(single.getOutputDirectoryAsPath)
       // Use Stream instead of List because Analyzer maps intensively over the directories
-      case multi: MultipleOutput => multi.getOutputGroups.toStream map (_.getOutputDirectory)
+      case multi: MultipleOutput => multi.getOutputGroups.toStream map (_.getOutputDirectoryAsPath)
     }
   }
 
