@@ -1280,8 +1280,8 @@ trait Definitions extends api.StandardDefinitions {
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
 
     // Tasty Unpickling Helpers - only access when Scala 3 library is expected to be available
-    lazy val ChildAnnotationClass       = getRequiredClass("scala.annotation.internal.Child")
-    lazy val RepeatedAnnotationClass    = getRequiredClass("scala.annotation.internal.Repeated")
+    lazy val ChildAnnotationClass       = getClassIfDefined("scala.annotation.internal.Child")
+    lazy val RepeatedAnnotationClass    = getClassIfDefined("scala.annotation.internal.Repeated")
 
     lazy val BeanPropertyAttr           = requiredClass[scala.beans.BeanProperty]
     lazy val BooleanBeanPropertyAttr    = requiredClass[scala.beans.BooleanBeanProperty]
