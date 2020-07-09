@@ -358,30 +358,48 @@ class IteratorTest {
     assertTrue(hi.hasNext)
   }
   @Test def `flatMap is memory efficient in previous element`(): Unit = {
+    import java.lang.ref._
     // Array.iterator holds onto array reference; by contrast, iterating over List walks tail.
-    // Avoid reaching seq1 through test class.
-    var seq1 = Array("first", "second") // captured, need to set to null
-    var seq11: String = null
+    // Avoid reaching seq1 through test class. Avoid testing Array.iterator.
+    class C extends Iterable[String] {
+      val ss = Array("first", "second")
+
+      def iterator = new Iterator[String] {
+        var i = 0
+
+        def hasNext = i < ss.length
+
+        def next() = if (hasNext) { i += 1; ss(i-1) } else Iterator.empty.next()
+      }
+
+      def apply(i: Int) = ss(i)
+    }
+    val seq1 = new WeakReference(new C)
     val seq2 = List("third")
     val it0: Iterator[Int] = Iterator(1, 2)
     lazy val it: Iterator[String] = it0.flatMap {
-      case 1 => val r = seq1; seq1 = null; seq11 = r(1); r
-      case _ => check() ; seq2
+      case 1 => Option(seq1.get).getOrElse(Nil)
+      case 2 => check(); seq2
+      case _ => ???
     }
-    def check() = assertNotReachable(seq1, it)(())
-    def checkHasElement() = assertNotReachable(seq11, it)(())
+
+    def noop = ()
+
+    def check() = assertNotReachable(seq1.get, it)(noop)
+
+    def checkHasElement() = assertNotReachable(Option(seq1.get).map(_.apply(1)).orNull, it)(noop)
+
     assert(it.hasNext)
     assertEquals("first", it.next())
 
     // verify that we're in the middle of seq1
-    assertThrows[AssertionError](checkHasElement())
-    seq11 = null
-    assertThrows[AssertionError](check())
+    assertThrows[AssertionError](checkHasElement(), _.contains("held reference"))
+    assertThrows[AssertionError](check(), _.contains("held reference"))
     assert(it.hasNext)
     assertEquals("second", it.next())
 
     assert(it.hasNext)
-    assertNotReachable(seq1, it) {
+    assertNotReachable(seq1.get, it) {
       assertEquals("third", it.next())
     }
     assert(!it.hasNext)
