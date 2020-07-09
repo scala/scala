@@ -89,7 +89,7 @@ object AssertUtil {
    *  Any other exception is propagated.
    */
   def assertThrows[T <: Throwable: ClassTag](body: => Any,
-      checkMessage: String => Boolean = s => true): Unit = {
+      checkMessage: String => Boolean = _ => true): Unit = {
     assertThrown[T](t => checkMessage(t.getMessage))(body)
   }
 
@@ -100,7 +100,7 @@ object AssertUtil {
       body
       throw Unthrown
     } catch {
-      case _: Unthrown.type   => fail("Expression did not throw!")
+      case Unthrown => fail("Expression did not throw!")
       case e: T if checker(e) => ()
       case failed: T =>
         val ae = new AssertionError(s"Exception failed check: $failed")
@@ -136,12 +136,17 @@ object AssertUtil {
         if (wkref.nonEmpty && o != null && !seen.containsKey(o)) {
           seen.put(o, ())
           assertTrue(s"Root $root held reference $o", o ne wkref.get)
-          for {
-            f <- o.getClass.allFields
-            if !Modifier.isStatic(f.getModifiers)
-            if !f.getType.isPrimitive
-            if !classOf[Reference[_]].isAssignableFrom(f.getType)
-          } loop(f.follow(o))
+          o match {
+            case a: Array[AnyRef] =>
+              a.foreach(e => if (!e.isInstanceOf[Reference[_]]) loop(e))
+            case _ =>
+              for {
+                f <- o.getClass.allFields
+                if !Modifier.isStatic(f.getModifiers)
+                if !f.getType.isPrimitive
+                if !classOf[Reference[_]].isAssignableFrom(f.getType)
+              } loop(f.follow(o))
+          }
         }
       loop(root)
     }

@@ -670,7 +670,7 @@ class IteratorTest {
     assertEquals("first", it.next())
 
     // verify that we're in the middle of seq1
-    checkHasElement()
+    assertThrows[AssertionError](checkHasElement(), _.contains("held reference"))
     assertThrows[AssertionError](check(), _.contains("held reference"))
     assert(it.hasNext)
     assertEquals("second", it.next())
