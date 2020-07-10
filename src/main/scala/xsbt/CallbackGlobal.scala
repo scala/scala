@@ -180,7 +180,7 @@ sealed class ZincCompiler(settings: Settings, dreporter: DelegatingReporter, out
             outputDirs
               .map(_.resolve(classFilePath))
               .find(Files.exists(_))
-              .map(Compat.plainNioFile(_))
+              .map(ZincCompat.plainNioFile(_))
       }
     }
 
