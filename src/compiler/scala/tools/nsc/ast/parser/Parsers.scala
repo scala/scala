@@ -951,11 +951,11 @@ self =>
     }
 
     def finishBinaryOp(isExpr: Boolean, opinfo: OpInfo, rhs: Tree): Tree = {
-      import opinfo._
-      val operatorPos: Position = Position.range(rhs.pos.source, offset, offset, offset + operator.length)
-      val pos                   = lhs.pos union rhs.pos union operatorPos withPoint offset
+      import opinfo.{lhs, operator, targs, offset}
+      val operatorPos = r2p(offset, offset, offset + operator.length)
+      val pos         = operatorPos.union(lhs.pos).union(rhs.pos)
 
-      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, opinfo.targs))
+      atPos(pos)(makeBinop(isExpr, lhs, operator, rhs, operatorPos, targs))
     }
 
     def reduceExprStack(base: List[OpInfo], top: Tree): Tree    = reduceStack(isExpr = true, base, top)
