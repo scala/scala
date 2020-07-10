@@ -158,11 +158,12 @@ private[util] trait InternalPositionImpl {
   def |^(that: Position): Position                  = (this | that) ^ that.point
   def ^|(that: Position): Position                  = (this | that) ^ this.point
 
-  def union(pos: Position): Position = (
-    if (!pos.isRange) this
+  def union(pos: Position): Position = {
+    def copyOtherRange = Position.range(pos.source, start min pos.start, point, end max pos.end)
+    if (!pos.isRange) this  // todo if this.isRange, should adjust bounds to include other.offset
     else if (this.isRange) copyRange(start = start min pos.start, end = end max pos.end)
-    else pos
-  )
+    else copyOtherRange
+  }
 
   def includes(pos: Position): Boolean         = isRange && pos.isDefined && start <= pos.start && pos.end <= end
   def properlyIncludes(pos: Position): Boolean = includes(pos) && (start < pos.start || pos.end < end)
