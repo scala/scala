@@ -33,7 +33,9 @@ object Dotc {
         "-deprecation",
         "-Yerased-terms",
         "-Xfatal-warnings",
-        "-usejavacp"
+        "-usejavacp",
+        "-verbose",
+        "-Ylog-classpath"
       ) ++ sources
       dotcProcess(args)
     }
