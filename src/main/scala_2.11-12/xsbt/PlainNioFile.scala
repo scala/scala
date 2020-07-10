@@ -3,7 +3,7 @@ package xsbt
 import java.nio.file.Path
 import scala.reflect.io.{ AbstractFile, Directory }
 
-class PlainNioFile(nioPath: Path) extends AbstractFile {
+class PlainNioFile(val nioPath: Path) extends AbstractFile {
   import java.nio.file._
 
   assert(nioPath ne null)

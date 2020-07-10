@@ -139,7 +139,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
             }
           case pf: xsbt.Compat.PlainNioFile =>
             // The dependency comes from a class file
-            binaryDependency(Paths.get(pf.path), binaryClassName)
+            binaryDependency(pf.nioPath, binaryClassName)
           case pf: PlainFile =>
             // The dependency comes from a class file
             binaryDependency(pf.file.toPath, binaryClassName)
