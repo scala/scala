@@ -9,28 +9,6 @@ stages:
 
 jobs:
     include:
-
-      # full bootstrap and publish
-      - stage: build
-        if: type != pull_request
-        script:
-          # see comment in `bootstrap_fun` for details on the procedure
-          # env available in each stage
-          #  - by travis config (see below): secret env vars
-          #  - by `common` script: WORKSPACE, IVY2_DIR, SBT_CMD, integrationRepoUrl
-          #  - by `bootstrap_fun`: publishPrivateTask, ...
-          - set -e
-          - (cd admin && ./init.sh)
-          - source scripts/common
-          - source scripts/bootstrap_fun
-          - determineScalaVersion
-          - removeExistingBuilds $integrationRepoUrl
-          - if [ ! -z "$STARR_REF" ]; then buildStarr; fi
-          - buildLocker
-          - buildQuick
-          - triggerScalaDist
-          - sbt -Dscala.build.compileWithDotty=true library/compile
-
       # pull request validation (w/ mini-bootstrap)
       # "mini" in these senses:
       # - it doesn't use the complicated legacy scripts.
@@ -39,7 +17,6 @@ jobs:
       # it is still a true bootstrap.
       - stage: build
         name: "JDK 8 pr validation"
-        if: type = pull_request
         script:
           - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal

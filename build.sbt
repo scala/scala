@@ -1260,29 +1260,29 @@ lazy val root: Project = (project in file("."))
     testAll := {
       val results = ScriptCommands.sequence[(Result[Unit], String)](List(
         SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
-        (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
-        (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
-        partestDesc("run"),
-        partestDesc("pos neg jvm"),
-        partestDesc("res scalap specialized"),
-        partestDesc("instrumented presentation"),
-        partestDesc("--srcpath scaladoc"),
-        partestDesc("--srcpath macro-annot"),
-        partestDesc("--srcpath async"),
+//        (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
+//        (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
+//        partestDesc("run"),
+//        partestDesc("pos neg jvm"),
+//        partestDesc("res scalap specialized"),
+//        partestDesc("instrumented presentation"),
+//        partestDesc("--srcpath scaladoc"),
+//        partestDesc("--srcpath macro-annot"),
+//        partestDesc("--srcpath async"),
         (tasty / Test / Keys.test).result map (_ -> "tasty/test"),
-        (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
-        (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
-        (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
-        (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
-        testJDeps.result map (_ -> "testJDeps"),
-        testJarSize.result map (_ -> "testJarSize"),
-        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
-        Def.task(()).dependsOn( // Run these in parallel:
-          library / Compile / doc,
-          reflect / Compile / doc,
-          compiler / Compile / doc,
-          scalap / Compile / doc,
-        ).result map (_ -> "doc")
+//        (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
+//        (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
+//        (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
+//        (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
+//        testJDeps.result map (_ -> "testJDeps"),
+//        testJarSize.result map (_ -> "testJarSize"),
+//        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
+//        Def.task(()).dependsOn( // Run these in parallel:
+//          library / Compile / doc,
+//          reflect / Compile / doc,
+//          compiler / Compile / doc,
+//          scalap / Compile / doc,
+//        ).result map (_ -> "doc")
       )).value
       val log = streams.value.log
       val failed = results.collect { case (Inc(i), d) => (i, d) }
