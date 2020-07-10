@@ -59,9 +59,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
     }
 
     private def processScalaUnit(unit: CompilationUnit): Unit = {
-      val sourceFile: VirtualFile = unit.source.file match {
-        case v: VirtualFileWrap => v.underlying
-      }
+      val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf }
       debuglog("Traversing " + sourceFile)
       callback.startSource(sourceFile)
       val extractApi = new ExtractAPI[global.type](global, sourceFile)
@@ -133,9 +131,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       val sourceJavaFile0 =
         if (sourceFile == null) symbol.enclosingTopLevelClass.sourceFile
         else sourceFile
-      val sourceJavaFile: VirtualFile = sourceJavaFile0 match {
-        case v: VirtualFileWrap => v.underlying
-      }
+      val sourceJavaFile: VirtualFile = sourceJavaFile0 match { case AbstractZincFile(vf) => vf }
 
       def registerProductNames(names: FlattenedNames): Unit = {
         // Guard against a local class in case it surreptitiously leaks here

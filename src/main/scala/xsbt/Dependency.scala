@@ -81,9 +81,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       None
     }
 
-    private val sourceFile: VirtualFile = unit.source.file match {
-      case v: VirtualFileWrap => v.underlying
-    }
+    private val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf }
     private val responsibleOfImports = firstClassOrModuleClass(unit.body)
     private var orphanImportsReported = false
 
@@ -158,8 +156,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
       val targetSymbol = dep.to
       val onSource = targetSymbol.sourceFile
       onSource match {
-        case v: VirtualFileWrap =>
-          val onSourceFile: VirtualFile = v.underlying
+        case AbstractZincFile(onSourceFile) =>
           if (onSourceFile != sourceFile || allowLocal) {
             // We cannot ignore dependencies coming from the same source file because
             // the dependency info needs to propagate. See source-dependencies/trait-trait-211.
