@@ -2,12 +2,12 @@ package scala.tools
 package testing
 
 import java.lang.ref._
-import java.lang.reflect.{Array => _, _}
+import java.lang.reflect.{Field, Modifier}
 import java.util.IdentityHashMap
 
-import org.junit.Assert.assertTrue
+import org.junit.Assert._
 
-import scala.collection.{GenIterable, IterableLike}
+import scala.collection.{GenIterable, IterableLike, mutable}
 import scala.reflect.ClassTag
 import scala.runtime.ScalaRunTime.stringOf
 import scala.util.control.{ControlThrowable, NonFatal}
@@ -88,31 +88,29 @@ object AssertUtil {
    */
   def assertNotReachable[A <: AnyRef](a: => A, roots: AnyRef*)(body: => Unit): Unit = {
     val wkref = new WeakReference(a)
-
     // fail if following strong references from root discovers referent. Quit if ref is empty.
     def assertNoRef(root: AnyRef): Unit = {
-      val seen = new IdentityHashMap[AnyRef, Unit]
-
-      def loop(o: AnyRef): Unit =
-        if (wkref.nonEmpty && o != null && !seen.containsKey(o)) {
+      val seen  = new IdentityHashMap[AnyRef, Unit]
+      val stack = new mutable.Stack[AnyRef]()
+      def loop(): Unit = if (wkref.nonEmpty && stack.nonEmpty) {
+        val o: AnyRef = stack.pop()
+        if (o != null && !seen.containsKey(o)) {
           seen.put(o, ())
-          assertTrue(s"Root $root held reference $o", o ne wkref.get)
+          assertFalse(s"Root $root held reference $o", o eq wkref.get)
           o match {
             case a: Array[AnyRef] =>
-              a.foreach(e => if (!e.isInstanceOf[Reference[_]]) loop(e))
-            case _                =>
-              for {
-                f <- o.getClass.allFields
-                if !Modifier.isStatic(f.getModifiers)
-                if !f.getType.isPrimitive
-                if !classOf[Reference[_]].isAssignableFrom(f.getType)
-              } loop(f.follow(o))
+              a.foreach(e => if (!e.isInstanceOf[Reference[_]]) stack.push(e))
+            case _ =>
+              for (f <- o.getClass.allFields)
+                if (!Modifier.isStatic(f.getModifiers) && !f.getType.isPrimitive && !classOf[Reference[_]].isAssignableFrom(f.getType))
+                  stack.push(f.follow(o))
           }
         }
-
-      loop(root)
+        loop()
+      }
+      stack.push(root)
+      loop()
     }
-
     body
     roots.foreach(assertNoRef)
   }
