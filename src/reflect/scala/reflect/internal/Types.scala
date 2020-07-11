@@ -4274,7 +4274,7 @@ trait Types
      */
     def transitiveReferredFrom(tpe: Type): List[Symbol] = tparams match {
       case tparam :: Nil =>
-        // This is for optimisationa: should be equivalent to general one.
+        // This is for optimisation: should be equivalent to general one.
         if (tpe contains tparam) tparams else Nil
       case _ =>
         /* Algorithm to compute transitive closure, using several temporary lists (mutable ListBuffer)

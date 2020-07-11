@@ -6,7 +6,7 @@ object Test {
   }
   def main(args: Array[String]): Unit = {
     //List.apply is subject to an optimisation in cleanup
-    //ensure that the arguments are evaluated in the currect order
+    //ensure that the arguments are evaluated in the correct order
     // Rewritten to:
     //      val myList: List = new collection.immutable.::(Test.this.next(), new collection.immutable.::(Test.this.next(), new collection.immutable.::(Test.this.next(), scala.collection.immutable.Nil)));
     val myList = List(next, next, next)

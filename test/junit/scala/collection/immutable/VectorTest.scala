@@ -458,7 +458,7 @@ object VectorUtils {
     val sb = new StringBuilder()
     val level = (v.vectorSliceCount+1)/2
     val len = (0 until v.vectorSliceCount).map(v.vectorSlicePrefixLength)
-    sb.append(s"Vector$level(lenghts=[${len.mkString(", ")}])\n")
+    sb.append(s"Vector$level(lengths=[${len.mkString(", ")}])\n")
     for(i <- 0 until v.vectorSliceCount)
       logArray(sb, v.vectorSlice(i), prefix = s"${sliceName(v, i)}: ")
     sb.result()

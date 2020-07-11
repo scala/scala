@@ -29,13 +29,13 @@ object DefinitionConstructionProps
 
 trait ClassConstruction { self: QuasiquoteProperties =>
   val anyRef = ScalaDot(TypeName("AnyRef"))
-  val emtpyConstructor =
+  val emptyConstructor =
     DefDef(Modifiers(), termNames.CONSTRUCTOR, List(),
       List(List()), TypeTree(), Block(List(pendingSuperCall), Literal(Constant(()))))
   def classWith(name: TypeName, parents: List[Tree] = List(anyRef), body: List[DefDef] = Nil) =
     ClassDef(
       Modifiers(), name, List(),
-      Template(parents, emptyValDef, emtpyConstructor :: body))
+      Template(parents, emptyValDef, emptyConstructor :: body))
 
   property("construct case class") = test {
     val params = q"val x: Int" :: q"val y: Int" :: Nil

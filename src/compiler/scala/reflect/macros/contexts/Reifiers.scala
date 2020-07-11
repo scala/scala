@@ -41,7 +41,7 @@ trait Reifiers {
     scala.reflect.reify.`package`.reifyEnclosingRuntimeClass(universe)(callsiteTyper)
 
   def unreifyTree(tree: Tree): Tree = {
-    assert(ExprSplice != NoSymbol, "Missing ExprSlice")
+    assert(ExprSplice != NoSymbol, "Missing ExprSplice")
     Select(tree, ExprSplice)
   }
 

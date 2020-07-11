@@ -10,7 +10,7 @@ in finally
 Running throwCatch
 java.lang.Exception
 in finally
-COUGHT: java.lang.Exception
+CAUGHT: java.lang.Exception
 ----------------------------------------
 Running retBody
 in finally

@@ -504,7 +504,7 @@ object HtmlFactoryTest extends Properties("HtmlFactory") {
 
   property("Indentation normalization for code blocks") = {
     checkTemplate("code-indent.scala", "C.html") { (_, s) =>
-      s.contains("<pre>a typicial indented\ncomment on multiple\ncomment lines</pre>") &&
+      s.contains("<pre>a typical indented\ncomment on multiple\ncomment lines</pre>") &&
       s.contains("<pre>one liner</pre>") &&
       s.contains("<pre>two lines, one useful</pre>") &&
       s.contains("<pre>line1\nline2\nline3\nline4</pre>") &&

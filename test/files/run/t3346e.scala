@@ -4,7 +4,7 @@ import collection.{BuildFrom, Iterable, IterableOps, SeqOps}
 import collection.immutable.BitSet
 
 class QuickSort[Coll](a: Coll) {
-  //should be able to sort only something with defined order (someting like a Seq)
+  //should be able to sort only something with defined order (something like a Seq)
   def quickSort[T](implicit ev0: Coll => SeqOps[T, Any, Iterable[T]],
                    bf: BuildFrom[Coll, T, Coll],
                    n: Ordering[T]): Coll = {

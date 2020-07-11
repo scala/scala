@@ -588,7 +588,7 @@ object Reporting {
         case "info-summary" | "is" => Right(InfoSummary)
         case "info-verbose" | "iv" => Right(InfoVerbose)
         case "silent" | "s" => Right(Silent)
-        case _ => Left(List(s"unknonw action: `$s`"))
+        case _ => Left(List(s"unknown action: `$s`"))
       }
 
       if (setting.isEmpty) Right(WConf(Nil))

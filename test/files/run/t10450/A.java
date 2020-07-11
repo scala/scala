@@ -12,8 +12,8 @@ class B<T extends B<T>> {
         return (T) this;
     }
 
-    public T setFailedAttempts(int slaveFailedAttempts) {
-        this.failedAttempts = slaveFailedAttempts;
+    public T setFailedAttempts(int failedAttempts) {
+        this.failedAttempts = failedAttempts;
         return (T) this;
     }
 }

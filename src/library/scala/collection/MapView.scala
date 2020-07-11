@@ -21,6 +21,20 @@ trait MapView[K, +V]
 
   override def view: MapView[K, V] = this
 
+  // Ideally this returns a `View`, but bincompat
+  /** Creates a view over all keys of this map.
+   *
+   *  @return the keys of this map as a view.
+   */
+  override def keys: Iterable[K] = new MapView.Keys(this)
+
+  // Ideally this returns a `View`, but bincompat
+  /** Creates a view over all values of this map.
+   *
+   *  @return the values of this map as a view.
+   */
+  override def values: Iterable[V] = new MapView.Values(this)
+
   /** Filters this map by retaining only keys satisfying a predicate.
     *  @param  p   the predicate used to test keys
     *  @return an immutable map consisting only of those key value pairs of this map where the key satisfies
@@ -78,6 +92,22 @@ object MapView extends MapViewFactory {
   class Id[K, +V](underlying: SomeMapOps[K, V]) extends AbstractMapView[K, V] {
     def get(key: K): Option[V] = underlying.get(key)
     def iterator: Iterator[(K, V)] = underlying.iterator
+    override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
+  }
+
+  // Ideally this is public, but bincompat
+  @SerialVersionUID(3L)
+  private class Keys[K](underlying: SomeMapOps[K, _]) extends AbstractView[K] {
+    def iterator: Iterator[K] = underlying.keysIterator
+    override def knownSize: Int = underlying.knownSize
+    override def isEmpty: Boolean = underlying.isEmpty
+  }
+
+  // Ideally this is public, but bincompat
+  @SerialVersionUID(3L)
+  private class Values[+V](underlying: SomeMapOps[_, V]) extends AbstractView[V] {
+    def iterator: Iterator[V] = underlying.valuesIterator
     override def knownSize: Int = underlying.knownSize
     override def isEmpty: Boolean = underlying.isEmpty
   }

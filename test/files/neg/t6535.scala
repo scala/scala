@@ -3,7 +3,7 @@ object As {
 
   object A
   extends scala.AnyRef // needed for the cycle;
-                       // replacing with a locally defined closs doesn't
+                       // replacing with a locally defined class doesn't
                        // hit the locked import and hence doesn't cycle.
 }
 

@@ -40,7 +40,7 @@ class PipelineMainTest {
 
   @Test def pipelineMainBuildsJavaAccessor(): Unit = {
     // Tests the special case in Typer:::canSkipRhs to make outline typing descend into method bodies might
-    // give rise to super accssors
+    // give rise to super accessors
     check(List(b5SuperAccessor.projects), altStrategies = List(OutlineTypePipeline))
   }
 

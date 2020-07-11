@@ -111,7 +111,7 @@ object Test extends App {
     try {
       m
     } catch {
-      case e: Throwable => println("COUGHT: " + e)
+      case e: Throwable => println("CAUGHT: " + e)
     }
     println("-" * 40)
   }

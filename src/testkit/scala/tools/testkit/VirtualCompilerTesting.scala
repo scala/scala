@@ -26,7 +26,7 @@ import scala.tools.nsc.classpath.{AggregateClassPath, VirtualDirectoryClassPath}
 import scala.tools.nsc.{Global, Settings}
 
 /** Utilities for testing with javac/scalac without using the actual filesystem,
-  * presumably because one doesn't wish to deal with platform idiosyncracies.
+  * presumably because one doesn't wish to deal with platform idiosyncrasies.
   */
 class VirtualCompiler {
   /** A java compiler instance that we can use. */

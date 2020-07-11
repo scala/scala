@@ -33,7 +33,7 @@ trait ReplCore {
     * and evaluation results, are printed via the supplied compiler's
     *  reporter. Values defined are available for future interpreted strings.
     *
-    * The return value is whether the line was interpreter successfully,
+    * The return value is whether the line was interpreted successfully,
     *  e.g. that there were no parse errors.
     */
   def interpret(line: String): Result
