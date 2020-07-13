@@ -19,6 +19,9 @@ import scala.reflect.io.AbstractFile
 import Log.debug
 import java.io.File
 
+/**
+ * This is the entry point for the compiler bridge (implementation of CompilerInterface)
+ */
 final class CompilerInterface extends CompilerInterface2 {
   override def newCompiler(
       options: Array[String],
@@ -35,7 +38,7 @@ final class CompilerInterface extends CompilerInterface2 {
       log: Logger,
       delegate: Reporter,
       progress: CompileProgress,
-      cached: CachedCompiler
+      cached: CachedCompiler2
   ): Unit =
     cached.run(sources, changes, callback, log, delegate, progress)
 }
@@ -114,16 +117,6 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   import scala.tools.nsc.Properties.versionString
   def infoOnCachedCompiler(compilerId: String): String =
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
-
-  // This is kept for compatibility purpose only.
-  override def run(
-      sources: Array[File],
-      changes: DependencyChanges,
-      callback: AnalysisCallback,
-      log: Logger,
-      delegate: Reporter,
-      progress: CompileProgress
-  ): Unit = ???
 
   override def run(
       sources: Array[VirtualFile],
