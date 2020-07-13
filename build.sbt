@@ -396,7 +396,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.mutable.WeakHashMap"),
 
     // Fix for scala/bug#12059
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$Keys"),
+    ProblemFilters.exclude[MissingClassProblem](s"scala.collection.MapView$$Keys"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$Values"),
   ),
 }

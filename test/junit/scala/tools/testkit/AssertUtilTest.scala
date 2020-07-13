@@ -20,6 +20,8 @@ import AssertUtil._
 
 import java.lang.ref._
 
+import scala.annotation.unused
+
 @RunWith(classOf[JUnit4])
 class AssertUtilTest {
   @Test def assertThrowsAssertion(): Unit = {
@@ -46,7 +48,7 @@ class AssertUtilTest {
     assertNotReachable(o, Array(new Holder(r))) { }
     assertNotReachable(o, Array(Array(r))) { }
     assertThrows[AssertionError](assertNotReachable(o, Array(Array(o))) { })
-    assertThrows[AssertionError](assertNotReachable(o, new Object { val f = Array(o) }) { })
+    assertThrows[AssertionError](assertNotReachable(o, new Object { @unused val f = Array(o) }) { })
   }
 
   @Test def `asserts on child threads are suppressed`(): Unit = {
