@@ -31,10 +31,10 @@ import scala.tools.nsc.Reporting.WarningCategory
  *
  *      class C extends B {
  *        def bar = 2
- *        class implicit
+ *        class D
  *      }
  *
- *      D def conv(a: A) = new C
+ *      implicit def conv(a: A) = new C
  *    }
  * }}}
  *
@@ -103,10 +103,10 @@ trait ModelFactoryImplicitSupport {
       // also keep empty conversions, so they appear in diagrams
       // conversions = conversions.filter(!_.members.isEmpty)
 
-      val hiddenConversions: Seq[String] = thisFactory
+      val hiddenConversions: Set[String] = thisFactory
         .comment(sym, inTpl.linkTarget, inTpl)
-        .map(_.hideImplicitConversions)
-        .getOrElse(Nil)
+        .map(_.hideImplicitConversions.toSet)
+        .getOrElse(Set.empty)
 
       conversions = conversions filterNot { conv: ImplicitConversionImpl =>
         hiddenConversions.contains(conv.conversionShortName) ||
