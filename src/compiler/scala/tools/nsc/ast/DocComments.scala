@@ -58,8 +58,10 @@ trait DocComments { self: Global =>
    *  since r23926.
    */
   private def allInheritedOverriddenSymbols(sym: Symbol): List[Symbol] = {
-    if (!sym.owner.isClass) Nil
-    else sym.owner.ancestors map (sym overriddenSymbol _) filter (_ != NoSymbol)
+    val getter: Symbol = sym.getter
+    val symOrGetter = getter.orElse(sym)
+    if (!symOrGetter.owner.isClass) Nil
+    else symOrGetter.owner.ancestors map (symOrGetter overriddenSymbol _) filter (_ != NoSymbol)
   }
 
   def fillDocComment(sym: Symbol, comment: DocComment): Unit = {
@@ -143,8 +145,7 @@ trait DocComments { self: Global =>
 
   /** The cooked doc comment of an overridden symbol */
   protected def superComment(sym: Symbol): Option[String] = {
-    val getter: Symbol = sym.getter
-    allInheritedOverriddenSymbols(getter.orElse(sym)).iterator
+    allInheritedOverriddenSymbols(sym).iterator
       .map(cookedDocComment(_))
       .find(_ != "")
   }
