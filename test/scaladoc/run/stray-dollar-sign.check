@@ -1,0 +1,4 @@
+newSource:5: warning: Variable a undefined in comment for value foo in object O
+  /** $a */
+       ^
+Done.
