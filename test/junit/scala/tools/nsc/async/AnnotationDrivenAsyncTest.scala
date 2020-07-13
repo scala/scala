@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture
 import org.junit.Assert.assertEquals
 import org.junit.{Assert, Ignore, Test}
 
-import scala.annotation.StaticAnnotation
+import scala.annotation.{StaticAnnotation, nowarn, unused}
 import scala.concurrent.duration.Duration
 import scala.reflect.internal.util.Position
 import scala.reflect.internal.util.ScalaClassLoader.URLClassLoader
@@ -77,6 +77,7 @@ class AnnotationDrivenAsyncTest {
 
   @Test
   def testScalaConcurrentAsyncNested(): Unit = {
+    @nowarn("cat=lint-missing-interpolator")
     val code =
       """
         |import scala.concurrent._, duration.Duration, ExecutionContext.Implicits.global
@@ -243,6 +244,7 @@ class AnnotationDrivenAsyncTest {
   }
 
   @Test def testByNameOwner(): Unit = {
+    @unused
     val result = run(
       """
       import scala.tools.nsc.async.{autoawait, customAsync}
@@ -270,6 +272,7 @@ class AnnotationDrivenAsyncTest {
   }
 
   @Test def testByNameOwner2(): Unit = {
+    @unused
     val result = run(
       """
       import scala.tools.nsc.async.{autoawait, customAsync}
@@ -368,7 +371,7 @@ class AnnotationDrivenAsyncTest {
   @Test
   @Ignore
   def testManualRunPartestUnderJUnit(): Unit = {
-    import scala.collection.JavaConverters._
+    import scala.jdk.CollectionConverters._
     for (path <- List(Paths.get("../async/run"), Paths.get("../async/neg"))) {
       for (file <- Files.list(path).iterator.asScala) {
         if (file.getFileName.toString.endsWith(".scala")) {
@@ -389,11 +392,10 @@ class AnnotationDrivenAsyncTest {
   def run(code: String, compileOnly: Boolean = false): Any = {
     val out = createTempDir()
     try {
-      val reporter = new StoreReporter {
-        override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
+      val reporter = new StoreReporter(new Settings) {
+        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
           if (severity == INFO) println(msg)
-          else super.info0(pos, msg, severity, force)
-        }
+          else super.doReport(pos, msg, severity)
       }
       val settings = new Settings(println(_))
       settings.async.value = true
@@ -412,6 +414,7 @@ class AnnotationDrivenAsyncTest {
       val global = new Global(settings, reporter) {
         self =>
 
+        @nowarn("cat=deprecation&msg=early initializers")
         object late extends {
           val global: self.type = self
         } with AnnotationDrivenAsyncPlugin
@@ -494,6 +497,7 @@ abstract class AnnotationDrivenAsyncPlugin extends Plugin {
                 val applyMethod =
                   q"""def apply(tr: _root_.scala.util.Either[_root_.scala.Throwable, _root_.scala.AnyRef]): _root_.scala.Unit = $rhs"""
                 val applyMethodMarked = global.async.markForAsyncTransform(dd.symbol, applyMethod, awaitSym, Map.empty)
+                @nowarn("cat=lint-missing-interpolator")
                 val name = TypeName("stateMachine$async")
                 val wrapped =
                   q"""
@@ -541,7 +545,7 @@ final class autoawait extends StaticAnnotation
 final class customAsync extends StaticAnnotation
 
 abstract class CustomFutureStateMachine extends AsyncStateMachine[CustomFuture[AnyRef], scala.util.Either[Throwable, AnyRef]] with Function1[scala.util.Either[Throwable, AnyRef], Unit] {
-  private val result$async: CustomPromise[AnyRef] = new CustomPromise[AnyRef](scala.concurrent.Promise.apply[AnyRef]);
+  private val result$async: CustomPromise[AnyRef] = new CustomPromise[AnyRef](scala.concurrent.Promise.apply[AnyRef]());
   private[this] var state$async: Int = 0
   protected def state: Int = state$async
   protected def state_=(s: Int): Unit = state$async = s
