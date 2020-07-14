@@ -4,7 +4,7 @@ object AnythingIsPossible {
 
   class Box[A](val a: A)
 
-  class Class extends Box({ class X { final val x = Map("" -> 3) } ; val foo = new X(); foo.x: foo.x.type })
+  class Class extends Box({ class X { final val x = Map(("", 3)) } ; val foo = new X(); foo.x: foo.x.type })
 
   class Lambda extends Box((x: Int) => (y: String) => y.length == x)
 

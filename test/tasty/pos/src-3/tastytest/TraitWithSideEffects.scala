@@ -5,8 +5,8 @@ import collection.mutable
 trait TraitWithSideEffects {
   val map: mutable.AnyRefMap[String, Boolean] = mutable.AnyRefMap.empty
 
-  map += "True"  -> true
-  map += "False" -> false
+  map.addOne("True", true)
+  map.addOne("False", false)
 }
 
 object TraitWithSideEffects {
