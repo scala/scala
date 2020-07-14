@@ -119,8 +119,31 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
   override def run(
+      sources: Array[File],
+      changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      delegate: Reporter,
+      progress: CompileProgress
+  ): Unit = {
+    val srcs = sources.toList.map(AbstractFile.getFile(_)).sortBy(_.path)
+    doRun(srcs, callback, log, delegate, progress)
+  }
+
+  override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
+      callback: AnalysisCallback,
+      log: Logger,
+      delegate: Reporter,
+      progress: CompileProgress
+  ): Unit = {
+    val srcs = sources.toList.map(AbstractZincFile(_)).sortBy(_.underlying.id)
+    doRun(srcs, callback, log, delegate, progress)
+  }
+
+  private[this] def doRun(
+      sources: List[AbstractFile],
       callback: AnalysisCallback,
       log: Logger,
       delegate: Reporter,
@@ -129,7 +152,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     debug(log, infoOnCachedCompiler(hashCode().toLong.toHexString))
     val dreporter = DelegatingReporter(settings, delegate)
     try {
-      run(sources.toList, changes, callback, log, dreporter, progress)
+      run(sources, callback, log, dreporter, progress)
     } finally {
       dreporter.dropDelegate()
     }
@@ -137,10 +160,11 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
 
   private def prettyPrintCompilationArguments(args: Array[String]) =
     args.mkString("[zinc] The Scala compiler is invoked with:\n\t", "\n\t", "")
+
   private val StopInfoError = "Compiler option supplied that disabled Zinc compilation."
+
   private[this] def run(
-      sources: List[VirtualFile],
-      changes: DependencyChanges,
+      sources: List[AbstractFile],
       callback: AnalysisCallback,
       log: Logger,
       underlyingReporter: DelegatingReporter,
@@ -157,10 +181,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       compiler.set(callback, underlyingReporter)
       val run = new compiler.ZincRun(compileProgress)
 
-      val wrappedFiles = sources.map(AbstractZincFile(_))
-      val sortedSourceFiles: List[AbstractFile] =
-        wrappedFiles.sortWith(_.underlying.id < _.underlying.id)
-      run.compileFiles(sortedSourceFiles)
+      run.compileFiles(sources)
       processUnreportedWarnings(run)
       underlyingReporter.problems.foreach(
         p => callback.problem(p.category, p.position, p.message, p.severity, true)
