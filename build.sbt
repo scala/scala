@@ -893,18 +893,12 @@ lazy val partest = configureAsSubproject(project)
 
 lazy val tastytest = configureAsSubproject(project)
   .dependsOn(library, reflect, compiler)
-  .settings(Osgi.settings)
-  .settings(AutomaticModuleName.settings("scala.tastytest"))
+  .settings(disableDocs)
+  .settings(publish / skip := true)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
-    libraryDependencies ++= List(/*testInterfaceDep,*/ diffUtilsDep, TastySupport.dottyCompiler),
-    pomDependencyExclusions ++= List((organization.value, "scala-repl-frontend"), (organization.value, "scala-compiler-doc")),
-    fixPom(
-      "/project/name" -> <name>Scala TASTyTest</name>,
-      "/project/description" -> <description>Scala TASTy Integration Testing Tool</description>,
-      "/project/packaging" -> <packaging>jar</packaging>
-    )
+    libraryDependencies ++= List(diffUtilsDep, TastySupport.dottyCompiler),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
@@ -999,9 +993,9 @@ lazy val tasty = project.in(file("test") / "tasty")
   .settings(commonSettings)
   .dependsOn(tastytest)
   .settings(disableDocs)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(
-    fork in Test := true,
+    Test / fork := true,
     libraryDependencies += junitInterfaceDep,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
     testOptions in Test += Tests.Argument(
