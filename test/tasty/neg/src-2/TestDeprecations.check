@@ -1,0 +1,9 @@
+TestDeprecations_fail.scala:5: warning: method unused in class Old is deprecated
+  def test1 = new Deprecations.Old().unused() // error: unused is deprecated
+                                     ^
+TestDeprecations_fail.scala:6: warning: method completelyUseless in class Old is deprecated: this is useless
+  def test2 = new Deprecations.Old().completelyUseless() // error: completelyUseless is deprecated: this is useless
+                                     ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

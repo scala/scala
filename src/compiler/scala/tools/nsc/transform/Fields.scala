@@ -354,7 +354,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
               if ((member hasFlag STABLE) && !(member hasFlag LAZY))
                 newDecls += newTraitSetter(member, clazz)
             }
-          } else if (member hasFlag MODULE) {
+          } else if (member.hasFlag(MODULE)) {
             nonStaticModuleToMethod(member)
 
             member setFlag NEEDS_TREES

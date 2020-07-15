@@ -116,6 +116,8 @@ trait StdAttachments {
     */
   case object KnownDirectSubclassesCalled extends PlainAttachment
 
+  class DottyEnumSingleton(val name: String) extends PlainAttachment
+
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment

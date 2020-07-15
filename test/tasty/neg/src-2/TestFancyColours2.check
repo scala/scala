@@ -1,0 +1,11 @@
+TestFancyColours2_fail.scala:10: error: pattern type is incompatible with expected type;
+ found   : tastytest.FancyColours.Colour.Red.type
+ required: tastytest.FancyColours.Pretty
+    case Colour.Red    => "Pretty!" // error: Red not instance of Pretty
+                ^
+TestFancyColours2_fail.scala:14: error: pattern type is incompatible with expected type;
+ found   : tastytest.FancyColours.Colour.Pink.type
+ required: tastytest.FancyColours.Dull
+    case Colour.Pink => "Dull!" // error: Pink not instance of Dull
+                ^
+2 errors

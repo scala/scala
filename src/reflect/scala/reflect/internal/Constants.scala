@@ -21,41 +21,41 @@ trait Constants extends api.Constants {
 
   import definitions._
 
-  final val NoTag      = 0
-  final val UnitTag    = 1
-  final val BooleanTag = 2
-  final val ByteTag    = 3
-  final val ShortTag   = 4
-  final val CharTag    = 5
-  final val IntTag     = 6
-  final val LongTag    = 7
-  final val FloatTag   = 8
-  final val DoubleTag  = 9
-  final val StringTag  = 10
-  final val NullTag    = 11
-  final val ClazzTag   = 12
+  final val NoTag        = 0
+  final val UnitTag      = 1
+  final val BooleanTag   = 2
+  final val ByteTag      = 3
+  final val ShortTag     = 4
+  final val CharTag      = 5
+  final val IntTag       = 6
+  final val LongTag      = 7
+  final val FloatTag     = 8
+  final val DoubleTag    = 9
+  final val StringTag    = 10
+  final val NullTag      = 11
+  final val ClazzTag     = 12
   // For supporting java enumerations inside java annotations (see ClassfileParser)
-  final val EnumTag    = 13
+  final val EnumTag      = 13
 
   case class Constant(value: Any) extends ConstantApi {
     import java.lang.Double.doubleToRawLongBits
     import java.lang.Float.floatToRawIntBits
 
     val tag: Int = value match {
-      case null         => NullTag
-      case x: Unit      => UnitTag
-      case x: Boolean   => BooleanTag
-      case x: Byte      => ByteTag
-      case x: Short     => ShortTag
-      case x: Int       => IntTag
-      case x: Long      => LongTag
-      case x: Float     => FloatTag
-      case x: Double    => DoubleTag
-      case x: String    => StringTag
-      case x: Char      => CharTag
-      case x: Type      => ClazzTag
-      case x: Symbol    => EnumTag
-      case _            => throw new Error("bad constant value: " + value + " of class " + value.getClass)
+      case null       => NullTag
+      case x: Unit    => UnitTag
+      case x: Boolean => BooleanTag
+      case x: Byte    => ByteTag
+      case x: Short   => ShortTag
+      case x: Int     => IntTag
+      case x: Long    => LongTag
+      case x: Float   => FloatTag
+      case x: Double  => DoubleTag
+      case x: String  => StringTag
+      case x: Char    => CharTag
+      case x: Type    => ClazzTag
+      case x: Symbol  => EnumTag
+      case _          => throw new Error("bad constant value: " + value + " of class " + value.getClass)
     }
 
     def isByteRange: Boolean  = isIntRange && Byte.MinValue <= intValue && intValue <= Byte.MaxValue
@@ -263,10 +263,10 @@ trait Constants extends api.Constants {
               show(clazz.tpe_*)
             case _ => show(typeValue)
           }
-        case CharTag   => "'" + escapedChar(charValue) + "'"
-        case LongTag   => longValue.toString() + "L"
-        case EnumTag   => symbolValue.name.toString()
-        case _         => String.valueOf(value)
+        case CharTag => "'" + escapedChar(charValue) + "'"
+        case LongTag => longValue.toString() + "L"
+        case EnumTag => symbolValue.name.toString()
+        case _       => String.valueOf(value)
       }
     }
     def typeValue: Type     = value.asInstanceOf[Type]

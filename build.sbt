@@ -895,6 +895,16 @@ lazy val partest = configureAsSubproject(project)
     )
   )
 
+lazy val tastytest = configureAsSubproject(project)
+  .dependsOn(library, reflect, compiler)
+  .settings(disableDocs)
+  .settings(publish / skip := true)
+  .settings(
+    name := "scala-tastytest",
+    description := "Scala TASTy Integration Testing Tool",
+    libraryDependencies ++= List(diffUtilsDep, TastySupport.dottyCompiler),
+  )
+
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
 lazy val specLib = project.in(file("test") / "instrumented")
   .dependsOn(library, reflect, compiler)
@@ -983,6 +993,22 @@ lazy val junit = project.in(file("test") / "junit")
     Test / unmanagedSourceDirectories := List(baseDirectory.value)
   )
 
+lazy val tasty = project.in(file("test") / "tasty")
+  .settings(commonSettings)
+  .dependsOn(tastytest)
+  .settings(disableDocs)
+  .settings(publish / skip := true)
+  .settings(
+    Test / fork := true,
+    libraryDependencies += junitInterfaceDep,
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
+    testOptions in Test += Tests.Argument(
+      s"-Dtastytest.src=${baseDirectory.value}",
+      s"-Dtastytest.packageName=tastytest"
+    ),
+    Compile / unmanagedSourceDirectories := Nil,
+    Test    / unmanagedSourceDirectories := List(baseDirectory.value/"test"),
+  )
 
 lazy val scalacheck = project.in(file("test") / "scalacheck")
   .dependsOn(library, reflect, compiler, scaladoc)
@@ -1241,6 +1267,7 @@ lazy val root: Project = (project in file("."))
         partestDesc("--srcpath scaladoc"),
         partestDesc("--srcpath macro-annot"),
         partestDesc("--srcpath async"),
+        (tasty / Test / Keys.test).result map (_ -> "tasty/test"),
         (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
         (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
         (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
@@ -1486,7 +1513,6 @@ intellij := {
       moduleDeps(junit).value,
       moduleDeps(library).value,
       moduleDeps(manual).value,
-      moduleDeps(testkit).value,
       moduleDeps(partest).value,
       moduleDeps(partestJavaAgent).value,
       moduleDeps(reflect).value,
@@ -1495,7 +1521,9 @@ intellij := {
       moduleDeps(scalacheck, config = Test).value.copy(_1 = "scalacheck-test"),
       moduleDeps(scaladoc).value,
       moduleDeps(scalap).value,
+      moduleDeps(tastytest).value,
       moduleDeps(testP).value,
+      moduleDeps(testkit).value,
     )
   }
 

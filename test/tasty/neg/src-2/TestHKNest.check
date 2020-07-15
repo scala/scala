@@ -1,0 +1,4 @@
+TestHKNest_fail.scala:6: error: Unsupported Scala 3 diverging higher kinded bounds: type F >: [X]tastytest.HKNest.Arg1[X] <: [Y, Z]tastytest.HKNest.QuxArg[Y]; found in method foo in class tastytest.HKNest.HKClass_14.
+  def test14 = new HKClass_14[Quuux].foo(new Quuux[QuxArg]) // error: diverging lamdba type bounds
+                                     ^
+1 error

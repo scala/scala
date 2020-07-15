@@ -307,6 +307,7 @@ trait StdNames {
     final val MethodParametersATTR: NameType       = nameType("MethodParameters")
     final val RuntimeAnnotationATTR: NameType      = nameType("RuntimeVisibleAnnotations") // RetentionPolicy.RUNTIME
     final val ScalaATTR: NameType                  = nameType("Scala")
+    final val TASTYATTR: NameType                  = nameType("TASTY")
     final val ScalaSignatureATTR: NameType         = nameType("ScalaSig")
     final val SignatureATTR: NameType              = nameType("Signature")
     final val SourceFileATTR: NameType             = nameType("SourceFile")

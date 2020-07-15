@@ -1,0 +1,4 @@
+TestCompiletimeQuoteType_fail.scala:4: error: can't find type required by type parameter T in class scala.quoted.Type: scala.AnyKind; perhaps it is missing from the classpath.
+  def test = CompiletimeQuoteType.f[Int]
+                                   ^
+1 error

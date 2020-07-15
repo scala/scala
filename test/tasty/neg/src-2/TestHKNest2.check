@@ -1,0 +1,7 @@
+TestHKNest2_fail.scala:6: error: Unsupported Scala 3 union in bounds of type F; found in method foo in class tastytest.HKNest.HKClass_15.
+  def test16 = new HKClass_15().foo(List(1,2,3)) // error: Union type not supported
+                                ^
+TestHKNest2_fail.scala:7: error: Unsupported Scala 3 union in bounds of type F; found in class tastytest.HKNest.HKClass_17.
+  def test17 = new HKClass_17[Option]().foo(Option(1)) // error: Union type not supported
+                   ^
+2 errors

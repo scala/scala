@@ -64,6 +64,7 @@ trait PatternMatching extends Transform
     override def transform(tree: Tree): Tree = tree match {
       case Match(sel, cases) =>
         val origTp = tree.tpe
+
         // setType origTp intended for CPS -- TODO: is it necessary?
         val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
         try {
@@ -95,6 +96,7 @@ trait PatternMatching extends Transform
     def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
       new OptimizingMatchTranslator(localTyper, selectorPos)
     }
+
   }
 
 

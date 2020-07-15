@@ -135,6 +135,8 @@ trait Erasure {
       case st: SubType =>
         apply(st.supertype)
       case tref @ TypeRef(pre, sym, args) =>
+        def isDottyEnumSingleton(sym: Symbol): Boolean =
+          sym.isModuleClass && sym.sourceModule.hasAttachment[DottyEnumSingleton]
         if (sym eq ArrayClass)
           if (unboundedGenericArrayLevel(tp) == 1) ObjectTpe
           else if (args.head.typeSymbol.isBottomClass)  arrayType(ObjectTpe)
@@ -143,6 +145,7 @@ trait Erasure {
         else if (sym eq UnitClass) BoxedUnitTpe
         else if (sym.isRefinementClass) apply(mergeParents(tp.parents))
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
+        else if (isDottyEnumSingleton(sym)) apply(intersectionType(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
         else apply(sym.info.asSeenFrom(pre, sym.owner)) // alias type or abstract type
       case PolyType(tparams, restpe) =>

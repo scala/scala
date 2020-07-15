@@ -1,0 +1,7 @@
+BadRefinements_fail.scala:11: error: type arguments [Long,Boolean,tastytest.BadRefinements.FooIntString] do not conform to class Baz's type parameter bounds [A,B,F <: tastytest.Refinements.Foo{type T = A; type U = B}]
+  val b1 = new Refinements.Baz[Long, Boolean, FooIntString]
+      ^
+BadRefinements_fail.scala:11: error: type arguments [Long,Boolean,tastytest.BadRefinements.FooIntString] do not conform to class Baz's type parameter bounds [A,B,F <: tastytest.Refinements.Foo{type T = A; type U = B}]
+  val b1 = new Refinements.Baz[Long, Boolean, FooIntString]
+                           ^
+2 errors

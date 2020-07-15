@@ -1,0 +1,4 @@
+TestMethodDeps_fail.scala:5: error: can't find type required by method parent in object tastytest.MethodDeps: tastytest.Parent; perhaps it is missing from the classpath.
+  def test = MethodDeps.parent
+                        ^
+1 error

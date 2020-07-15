@@ -1,0 +1,11 @@
+SColourOps_fail.scala:6: warning: match may not be exhaustive.
+It would fail on the following inputs: Blue, CMYK(_, _, _, _), Green, RGB(_, _, _)
+    def red: Int = c match { // error: non-exhaustive
+                   ^
+SColourOps_fail.scala:9: warning: match may not be exhaustive.
+It would fail on the following inputs: CMYK(_, _, _, _), Green, RGB(_, _, _), Red
+    def blue: Int = c match { // error: non-exhaustive
+                    ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

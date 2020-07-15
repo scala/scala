@@ -1,0 +1,16 @@
+TestDefAnnots_fail.scala:5: error: Unsupported Scala 3 throw clause in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotThrow in object tastytest.DefAnnots.
+  def test1 = DefAnnots.withArgAnnotThrow(1) == 1
+                        ^
+TestDefAnnots_fail.scala:6: error: Unsupported Scala 3 loop statement in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotLoop in object tastytest.DefAnnots.
+  def test2 = DefAnnots.withArgAnnotLoop(1) == 1
+                        ^
+TestDefAnnots_fail.scala:7: error: Unsupported Scala 3 assignment expression in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotAssign in object tastytest.DefAnnots.
+  def test3 = DefAnnots.withArgAnnotAssign(1) == 1
+                        ^
+TestDefAnnots_fail.scala:8: error: Unsupported Scala 3 block expression in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotLambda in object tastytest.DefAnnots.
+  def test4 = DefAnnots.withArgAnnotLambda(1) == 1
+                        ^
+TestDefAnnots_fail.scala:9: error: Unsupported Scala 3 inlined expression in an annotation of parameter arg; note that complex trees are not yet supported for Annotations; found in method withArgAnnotInlined in object tastytest.DefAnnots.
+  def test5 = DefAnnots.withArgAnnotInlined(1) == 1
+                        ^
+5 errors

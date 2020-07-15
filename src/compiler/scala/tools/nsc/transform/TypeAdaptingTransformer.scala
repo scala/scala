@@ -159,7 +159,6 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
      */
     @tailrec final def adaptToType(tree: Tree, pt: Type): Tree = {
       val tpe = tree.tpe
-
       if ((tpe eq pt) || tpe <:< pt) tree
       else if (tpe.isInstanceOf[ErasedValueType]) adaptToType(box(tree), pt) // what if pt is an erased value type?
       else if (pt.isInstanceOf[ErasedValueType])  adaptToType(unbox(tree, pt), pt)

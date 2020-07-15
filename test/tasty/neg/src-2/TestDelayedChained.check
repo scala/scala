@@ -1,0 +1,7 @@
+TestDelayedChained_fail.scala:4: warning: match may not be exhaustive.
+It would fail on the following inputs: LeafB(), LeafC()
+  def foo(r: DelayedChained.Root): Unit = r match { case _: DelayedChained.LeafA => ()  }
+                                          ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -1,0 +1,7 @@
+TestHKNest3_fail.scala:6: error: Unsupported Scala 3 curried type application F[T][U]; found in method foo in class tastytest.HKNest.HKClass_13.
+  def test13 = new HKClass_13[HKLam].foo[Int,String](("",0)) // error: unsupported curried type application
+                                     ^
+TestHKNest3_fail.scala:7: error: Unsupported Scala 3 curried type application F[T][U]; found in method foo in class tastytest.HKNest.HKClass_16.
+  def test16 = new HKClass_16[List].foo[HKLam,Int,String](("",0) :: Nil)
+                                    ^
+2 errors

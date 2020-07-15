@@ -1,0 +1,7 @@
+TestMatchTypes_fail.scala:5: error: Unsupported Scala 3 match type in bounds of type Elem; found in object tastytest.MatchTypes.
+  def test1: MatchTypes.Elem[List[String]] = "hello"
+                        ^
+TestMatchTypes_fail.scala:6: error: Unsupported Scala 3 match type in bounds of type X; found in class tastytest.MatchTypes.Foo.
+  def test2: String = new MatchTypes.Foo[List[String], "hello"].foo("hello")
+                                     ^
+2 errors

@@ -432,35 +432,36 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
      * Otherwise it's safe to call from multiple threads.
      */
     def genConstant(const: Constant): Unit = {
+
       (const.tag: @switch) match {
 
-        case BooleanTag => bc.boolconst(const.booleanValue)
+        case BooleanTag   => bc.boolconst(const.booleanValue)
 
-        case ByteTag    => bc.iconst(const.byteValue)
-        case ShortTag   => bc.iconst(const.shortValue)
-        case CharTag    => bc.iconst(const.charValue)
-        case IntTag     => bc.iconst(const.intValue)
+        case ByteTag      => bc.iconst(const.byteValue)
+        case ShortTag     => bc.iconst(const.shortValue)
+        case CharTag      => bc.iconst(const.charValue)
+        case IntTag       => bc.iconst(const.intValue)
 
-        case LongTag    => bc.lconst(const.longValue)
-        case FloatTag   => bc.fconst(const.floatValue)
-        case DoubleTag  => bc.dconst(const.doubleValue)
+        case LongTag      => bc.lconst(const.longValue)
+        case FloatTag     => bc.fconst(const.floatValue)
+        case DoubleTag    => bc.dconst(const.doubleValue)
 
-        case UnitTag    => ()
+        case UnitTag      => ()
 
-        case StringTag  =>
+        case StringTag    =>
           assert(const.value != null, const) // TODO this invariant isn't documented in `case class Constant`
           mnode.visitLdcInsn(const.stringValue) // `stringValue` special-cases null, but not for a const with StringTag
 
-        case NullTag    => emit(asm.Opcodes.ACONST_NULL)
+        case NullTag      => emit(asm.Opcodes.ACONST_NULL)
 
-        case ClazzTag   =>
+        case ClazzTag     =>
           val tp = typeToBType(const.typeValue)
           // classOf[Int] is transformed to Integer.TYPE by CleanUp
           assert(!tp.isPrimitive, s"expected class type in classOf[T], found primitive type $tp")
           mnode.visitLdcInsn(tp.toASMType)
 
-        case EnumTag   =>
-          val sym       = const.symbolValue
+        case EnumTag      =>
+          val sym = const.symbolValue
           val ownerName = internalName(sym.owner)
           val fieldName = sym.javaSimpleName.toString
           val fieldDesc = typeToBType(sym.tpe.underlying).descriptor
@@ -944,12 +945,21 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         mnode.visitVarInsn(asm.Opcodes.ALOAD, 0)
       } else {
         val mbt = symInfoTK(module).asClassBType
-        mnode.visitFieldInsn(
-          asm.Opcodes.GETSTATIC,
-          mbt.internalName /* + "$" */ ,
-          strMODULE_INSTANCE_FIELD,
-          mbt.descriptor // for nostalgics: typeToBType(module.tpe).descriptor
-        )
+        def visitAccess(container: ClassBType, name: String): Unit = {
+          mnode.visitFieldInsn(
+            asm.Opcodes.GETSTATIC,
+            container.internalName,
+            name,
+            mbt.descriptor
+          )
+        }
+        module.attachments.get[DottyEnumSingleton] match { // TODO [tasty]: dotty enum singletons are not modules.
+          case Some(enumAttach) =>
+            val enumCompanion = symInfoTK(module.originalOwner).asClassBType
+            visitAccess(enumCompanion, enumAttach.name)
+
+          case _ => visitAccess(mbt, strMODULE_INSTANCE_FIELD)
+        }
       }
     }
 

@@ -1,0 +1,7 @@
+TestDelayedFancyColours_fail.scala:4: warning: match may not be exhaustive.
+It would fail on the following input: Pink
+  def foo(p: DelayedFancyColours.Pretty) = p match {
+                                           ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error
