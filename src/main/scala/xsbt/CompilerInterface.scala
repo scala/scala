@@ -23,24 +23,23 @@ import java.io.File
  * This is the entry point for the compiler bridge (implementation of CompilerInterface)
  */
 final class CompilerInterface extends CompilerInterface2 {
-  override def newCompiler(
-      options: Array[String],
-      output: Output,
-      initialLog: Logger,
-      initialDelegate: Reporter
-  ): CachedCompiler2 =
-    new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
-
   override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
+      options: Array[String],
+      output: Output,
       callback: AnalysisCallback,
-      log: Logger,
       delegate: Reporter,
       progress: CompileProgress,
-      cached: CachedCompiler2
-  ): Unit =
-    cached.run(sources, changes, callback, log, delegate, progress)
+      log: Logger
+  ): Unit = {
+    val cached = new CachedCompiler0(options, output, new WeakLog(log, delegate))
+    try {
+      cached.run(sources, changes, callback, log, delegate, progress)
+    } finally {
+      cached.close()
+    }
+  }
 }
 
 class InterfaceCompileFailed(
@@ -66,8 +65,7 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 }
 
 private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
-    extends CachedCompiler2
-    with CachedCompilerCompat
+    extends CachedCompilerCompat
     with java.io.Closeable {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,7 +116,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   def infoOnCachedCompiler(compilerId: String): String =
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
-  override def run(
+  def run(
       sources: Array[File],
       changes: DependencyChanges,
       callback: AnalysisCallback,
@@ -130,7 +128,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     doRun(srcs, callback, log, delegate, progress)
   }
 
-  override def run(
+  def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
       callback: AnalysisCallback,
