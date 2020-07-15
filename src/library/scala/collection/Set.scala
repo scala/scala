@@ -27,14 +27,12 @@ trait Set[A]
   def canEqual(that: Any) = true
 
   override def equals(that: Any): Boolean =
-    that match {
-      case set: Set[A] =>
-        (this eq set) ||
-          (set canEqual this) &&
-            (toIterable.size == set.size) &&
-            (this subsetOf set)
-      case _ => false
-    }
+    (this eq that.asInstanceOf[AnyRef]) || (that match {
+      case set: Set[A] if set.canEqual(this) =>
+        (this.size == set.size) && this.subsetOf(set)
+      case _ =>
+        false
+    })
 
   override def hashCode(): Int = MurmurHash3.setHash(toIterable)
 

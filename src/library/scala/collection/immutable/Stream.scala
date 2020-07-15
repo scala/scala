@@ -121,9 +121,6 @@ sealed abstract class Stream[+A] extends AbstractSeq[A]
   def lazyAppendedAll[B >: A](suffix: => collection.IterableOnce[B]): Stream[B] =
     if (isEmpty) iterableFactory.from(suffix) else cons[B](head, tail.lazyAppendedAll(suffix))
 
-  override def equals(that: Any): Boolean =
-    if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
-
   override def scanLeft[B](z: B)(op: (B, A) => B): Stream[B] =
     if (isEmpty) z +: iterableFactory.empty
     else cons(z, tail.scanLeft(op(z, head))(op))

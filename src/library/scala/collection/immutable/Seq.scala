@@ -53,7 +53,7 @@ trait IndexedSeq[+A] extends Seq[A]
 
   override def canEqual(that: Any): Boolean = that match {
     case otherIndexedSeq: IndexedSeq[_] => length == otherIndexedSeq.length && super.canEqual(that)
-    case _ => super.canEqual (that)
+    case _ => super.canEqual(that)
   }
 
 
