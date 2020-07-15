@@ -35,7 +35,7 @@ final class CompilerInterface extends CompilerInterface2 {
   ): Unit = {
     val cached = new CachedCompiler0(options, output, new WeakLog(log, delegate))
     try {
-      cached.run(sources, changes, callback, log, delegate, progress)
+      cached.run(sources.toList, changes, callback, log, delegate, progress)
     } finally {
       cached.close()
     }
@@ -117,31 +117,8 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
   def run(
-      sources: Array[File],
+      sources: List[VirtualFile],
       changes: DependencyChanges,
-      callback: AnalysisCallback,
-      log: Logger,
-      delegate: Reporter,
-      progress: CompileProgress
-  ): Unit = {
-    val srcs = sources.toList.map(AbstractFile.getFile(_)).sortBy(_.path)
-    doRun(srcs, callback, log, delegate, progress)
-  }
-
-  def run(
-      sources: Array[VirtualFile],
-      changes: DependencyChanges,
-      callback: AnalysisCallback,
-      log: Logger,
-      delegate: Reporter,
-      progress: CompileProgress
-  ): Unit = {
-    val srcs = sources.toList.map(AbstractZincFile(_)).sortBy(_.underlying.id)
-    doRun(srcs, callback, log, delegate, progress)
-  }
-
-  private[this] def doRun(
-      sources: List[AbstractFile],
       callback: AnalysisCallback,
       log: Logger,
       delegate: Reporter,
@@ -150,7 +127,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     debug(log, infoOnCachedCompiler(hashCode().toLong.toHexString))
     val dreporter = DelegatingReporter(settings, delegate)
     try {
-      run(sources, callback, log, dreporter, progress)
+      run(sources.sortBy(_.id).map(AbstractZincFile(_)), callback, log, dreporter, progress)
     } finally {
       dreporter.dropDelegate()
     }
