@@ -14,16 +14,14 @@ package xsbt
 import java.io.PrintWriter
 import xsbti.compile.Output
 import scala.tools.nsc.Settings
-import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
 abstract class Compat
 object Compat {
   // IR is renamed to Results
-  val Results = scala.tools.nsc.interpreter.Results
+  val Results = scala.tools.nsc.interpreter.IR
 
   // IMain in 2.13 accepts ReplReporter
-  def replReporter(settings: Settings, writer: PrintWriter) =
-    new ReplReporterImpl(settings, writer)
+  def replReporter(settings: Settings, writer: PrintWriter) = writer
 }
 
 /** Defines compatibility utils for [[ZincCompiler]]. */

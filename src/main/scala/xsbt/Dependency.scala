@@ -137,9 +137,9 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
               if (!ignore)
                 binaryDependency(zip.file.toPath, binaryClassName)
             }
-          case pf: xsbt.Compat.PlainNioFile =>
+          case pf: ZincCompat.PlainNioFile =>
             // The dependency comes from a class file
-            binaryDependency(pf.nioPath, binaryClassName)
+            binaryDependency(ZincCompat.unwrapPlainNioFile(pf), binaryClassName)
           case pf: PlainFile =>
             // The dependency comes from a class file
             binaryDependency(pf.file.toPath, binaryClassName)
