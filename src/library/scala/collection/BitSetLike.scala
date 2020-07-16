@@ -512,7 +512,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     if (res == -1) throw new NoSuchElementException("Empty BitSet")
     else res
   }
-  def lastOr(ifEmpty: Int): Int = {
+  private def lastOr(ifEmpty: Int): Int = {
     var i = nwords - 1
     while (i >= 0) {
       val wi = word(i)

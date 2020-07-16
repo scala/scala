@@ -34,6 +34,8 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
   with Serializable {
   override def empty = BitSet.empty
 
+  override protected def copyOrSelf: BitSet = this
+
   protected def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
   /** Update word at index `idx`; enlarge set if `idx` outside range of set.
@@ -133,7 +135,7 @@ object BitSet extends BitSetFactory[BitSet] {
   def fromBitMaskNoCopy(elems: Array[Long]): BitSet =
     fromBitMaskArray(elems, true)
 
-  def fromBitMaskArray(elems: Array[Long], canShareArray: Boolean): BitSet = {
+  private def fromBitMaskArray(elems: Array[Long], canShareArray: Boolean): BitSet = {
     var len = elems.length
     while (len > 0 && (elems(len - 1) == 0L)) len -= 1
     if (len == 0) empty
