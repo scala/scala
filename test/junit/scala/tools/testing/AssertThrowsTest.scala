@@ -20,14 +20,15 @@ class AssertThrowsTest {
   def catchSubclass = assertThrows[Foo] { throw new SubFoo }
 
   @Test
-  def rethrowBar =
-    assertTrue("exception wasn't rethrown", {
+  def wrongThrow =
+    assertTrue("Wrong exception thrown", {
       try {
         assertThrows[Foo] { throw new Bar }
         false
       } catch {
-        case bar: Bar => true
-        case e: Throwable => fail(s"expected Bar but got $e"); false
+        case _: Bar => fail("Bar shouldn't have been rethrown"); false
+        case _: AssertionError => true
+        case t: Throwable => fail(s"expected AssertionError but got $t"); false
       }
     })
 
