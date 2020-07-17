@@ -304,7 +304,7 @@ trait EntityPage extends HtmlPage {
              memsDiv("package members", "Package Members", packageMembers, "packages")
           ++ memsDiv("members", "Instance Constructors", constructors, "constructors")
           ++ memsDiv("types members", "Type Members", typeMembers, "types")
-          ++ memsDiv("types members", "Deprecated Type Members", deprTypeMembers)
+          ++ memsDiv("types members", "Deprecated Type Members", deprTypeMembers, "deprecatedTypes")
           ++ memsDiv("values members", "Abstract Value Members", absValueMembers)
           ++ memsDiv("values members", if (absValueMembers.isEmpty) "Value Members" else "Concrete Value Members", concValueMembers)
           ++ memsDiv("values members", "Shadowed Implicit Value Members", shadowedImplicitMembers)
@@ -329,11 +329,7 @@ trait EntityPage extends HtmlPage {
           // linearization
           for (group <- orderedGroups) yield
             Div(`class` = "group", name = group, elems =
-              H(3, Txt(tpl.groupName(group))) :: (
-              tpl.groupDescription(group) match {
-                case Some(body) => Div(`class`="comment cmt", elems= bodyToHtml(body)) :: NoElems
-                case _          => NoElems
-              })
+              H(3, Txt(tpl.groupName(group))) :: NoElems
             )
         }))
       ))
