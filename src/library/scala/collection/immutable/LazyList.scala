@@ -405,13 +405,6 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
 
   /** @inheritdoc
     *
-    * $evaluatesAllElements
-    */
-  override def equals(that: Any): Boolean =
-    if (this eq that.asInstanceOf[AnyRef]) true else super.equals(that)
-
-  /** @inheritdoc
-    *
     * $preservesLaziness
     */
   override def scanLeft[B](z: B)(op: (B, A) => B): LazyList[B] =

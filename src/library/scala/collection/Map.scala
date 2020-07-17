@@ -29,25 +29,14 @@ trait Map[K, +V]
 
   def canEqual(that: Any): Boolean = true
 
-  override def equals(o: Any): Boolean = o match {
-    case that: Map[K, _] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) && {
-        try {
-          val checker = new AbstractFunction1[(K, V),Boolean] {
-            override def apply(kv: (K,V)): Boolean = {
-              that.getOrElse(kv._1, Map.DefaultSentinel) == kv._2
-            }
-          }
-          this forall checker
-        } catch {
-          case _: ClassCastException => false
-        }
-      }
-    case _ =>
-      false
-  }
+  override def equals(o: Any): Boolean =
+    (this eq o.asInstanceOf[AnyRef]) || (o match {
+      case map: Map[K, _] if map.canEqual(this) =>
+        (this.size == map.size) &&
+          this.forall(kv => map.getOrElse(kv._1, Map.DefaultSentinelFn()) == kv._2)
+      case _ =>
+        false
+    })
 
   override def hashCode(): Int = MurmurHash3.mapHash(toIterable)
 
@@ -375,6 +364,7 @@ object MapOps {
 @SerialVersionUID(3L)
 object Map extends MapFactory.Delegate[Map](immutable.Map) {
   private val DefaultSentinel: AnyRef = new AnyRef
+  private val DefaultSentinelFn: () => AnyRef = () => DefaultSentinel
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
