@@ -274,7 +274,7 @@ $(document).ready(function() {
 
     // highlight and jump to selected member if an anchor is provided
     if (window.location.hash) {
-        var jqElem = findElementByHash(window.location.hash);
+        var jqElem = findElementByHash(decodeURIComponent(window.location.hash));
         if (jqElem.length > 0) {
             if (jqElem.hasClass("toggleContainer")) toggleShowContentFct(jqElem);
             else exposeMember(jqElem);
