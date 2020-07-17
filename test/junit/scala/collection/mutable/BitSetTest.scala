@@ -4,6 +4,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.collection.BitSetLikeTest
+
 @RunWith(classOf[JUnit4])
 class BitSetTest {
   // Test for scala/bug#8910
@@ -48,4 +50,9 @@ class BitSetTest {
     val bsFromEmptyBitMaskNoCopy = BitSet.fromBitMaskNoCopy(Array.empty[Long])
     assert(bsFromEmptyBitMaskNoCopy.add(0))
   }
+}
+class BitSetTest2 extends BitSetLikeTest[BitSet] {
+    override def companion = BitSet
+    override def fromBitMask(elems: Array[Long]): BitSet = BitSet.fromBitMask(elems)
+
 }

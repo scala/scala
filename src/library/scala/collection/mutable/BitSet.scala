@@ -70,6 +70,12 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
   protected def word(idx: Int): Long =
     if (idx < elems.length) elems(idx) else 0L
 
+  @deprecated("for bincompat in 2.12.x series", "2.12.13")  // TODO remove from 2.14.x
+  protected final def updateWord(idx: Int, w: Long) {
+    ensureCapacity(idx)
+    elems(idx) = w
+  }
+
   protected final def ensureCapacity(idx: Int) {
     require(idx < MaxSize)
     if (idx >= elems.length) {

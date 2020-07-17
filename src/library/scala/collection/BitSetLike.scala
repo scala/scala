@@ -41,11 +41,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   self =>
 
   def empty: This
-  protected def copyOrSelf: This = fromBitMaskNoCopy(toBitMask)
+  protected[this] def copyOrSelf: This = fromBitMaskNoCopy(toBitMask)
 
   /** The number of words (each with 64 bits) making up the set */
   protected def nwords: Int
-  @inline private[collection] final def _nwords = nwords
   /** the index of highest word that has any bits set, or -1 if empty */
   private[collection] def lastWordSet: Int = {
     var idx = nwords - 1

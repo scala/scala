@@ -34,7 +34,7 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
   with Serializable {
   override def empty = BitSet.empty
 
-  override protected def copyOrSelf: BitSet = this
+  override protected[this] def copyOrSelf: BitSet = this
 
   protected def fromBitMaskNoCopy(elems: Array[Long]): BitSet = BitSet.fromBitMaskNoCopy(elems)
 
