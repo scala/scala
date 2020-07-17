@@ -315,6 +315,21 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testReferenceToInnerClassMadeNonPrivate(): Unit = {
+    def code = List[SourceFile](
+      source("t.scala",
+             """
+               | trait T {
+               |   private class Inner
+               |   class OtherInner { new Inner } // triggers makeNotPrivate of Inner
+               |   private val v: Option[Inner] = None
+               | }
+        """.stripMargin),
+      source("c.scala","""class C extends T""")
+      )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
 

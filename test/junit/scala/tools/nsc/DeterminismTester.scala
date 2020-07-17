@@ -42,6 +42,7 @@ class DeterminismTester {
     val referenceOutput = Files.createTempDirectory("reference")
 
     def compile(output: Path, files: List[SourceFile]): Unit = {
+      // println("compile: " + files)
       val g = new Global(new Settings)
       g.settings.usejavacp.value = true
       g.settings.classpath.value = output.toAbsolutePath.toString

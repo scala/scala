@@ -680,15 +680,17 @@ abstract class BTypes {
     }
 
     def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo.force map {
-      case NestedInfo(_, outerName, innerName, isStaticNestedClass) =>
+      case NestedInfo(_, outerName, innerName, isStaticNestedClass, exitingTyperPrivate) =>
+        // the static flag in the InnerClass table has a special meaning, see InnerClass comment
+        def adjustStatic(flags: Int): Int = ( flags & ~Opcodes.ACC_STATIC |
+          (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
+          ) & BCodeHelpers.INNER_CLASSES_FLAGS
         InnerClassEntry(
           internalName,
           outerName.orNull,
           innerName.orNull,
-          // the static flag in the InnerClass table has a special meaning, see InnerClass comment
-          ( i.flags & ~Opcodes.ACC_STATIC |
-              (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
-          ) & BCodeHelpers.INNER_CLASSES_FLAGS
+          flags = adjustStatic(i.flags),
+          refereeFlags = adjustStatic(if (exitingTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
         )
     })
 
@@ -874,7 +876,8 @@ abstract class BTypes {
   final case class NestedInfo(enclosingClass: ClassBType,
                               outerName: Option[String],
                               innerName: Option[String],
-                              isStaticNestedClass: Boolean)
+                              isStaticNestedClass: Boolean,
+                              exitingTyperPrivate: Boolean)
 
   /**
    * This class holds the data for an entry in the InnerClass table. See the InnerClass summary
@@ -887,7 +890,7 @@ abstract class BTypes {
    * @param innerName The simple name of the inner class, may be null.
    * @param flags     The flags for this class in the InnerClass entry.
    */
-  final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
+  final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int, refereeFlags: Int)
 
   final case class ArrayBType(componentType: BType) extends RefBType {
     def dimension: Int = componentType match {
