@@ -215,8 +215,30 @@ abstract class DebugInfoBuilder extends PerRunInit {
   sealed trait DebugInfoWriter {
     val sourceFileName: String = null
 
+    /**
+     * Add a mapping for an inline line from an external source to this class source.
+     *
+     * @param callsiteLine the line in the class source that made the inline request.
+     * @param inlineLine the external source line that will be inline.
+     * @param calleeFileName the file name of the external source.
+     * @param calleeInternalName the internal name of the external source.
+     */
     def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Unit
+
+
+    /**
+     * Separators are used so that different inline requests which overlap in the line numbers are
+     * kept separate in the final SMAP. This information must be preserved, as it will help the
+     * debugger trace through the inline code easier.
+     */
     def addSeparator(): Unit
+
+    /**
+     * Computes the final SMAP string from the collected information.
+     * Triggers compression of the information.
+     *
+     * @return the String that should be written to the SourceDebugExtension class attribute.
+     */
     def sourceDebugExtension(): String
   }
 
@@ -260,6 +282,12 @@ abstract class DebugInfoBuilder extends PerRunInit {
       override def sourceDebugExtension(): String = debugInfo.toString
     }
 
+    /**
+     * The NoOpDebugInfoWriter is needed in case debug info output is turned off.
+     *
+     * All calls in this class are considered to be no-ops.
+     * The sourceDebugExtension() method returns null.
+     */
     class NoOpDebugInfoWriter extends DebugInfoWriter {
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
