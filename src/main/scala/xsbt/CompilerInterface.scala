@@ -23,24 +23,23 @@ import java.io.File
  * This is the entry point for the compiler bridge (implementation of CompilerInterface)
  */
 final class CompilerInterface extends CompilerInterface2 {
-  override def newCompiler(
-      options: Array[String],
-      output: Output,
-      initialLog: Logger,
-      initialDelegate: Reporter
-  ): CachedCompiler2 =
-    new CachedCompiler0(options, output, new WeakLog(initialLog, initialDelegate))
-
   override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
+      options: Array[String],
+      output: Output,
       callback: AnalysisCallback,
-      log: Logger,
       delegate: Reporter,
       progress: CompileProgress,
-      cached: CachedCompiler2
-  ): Unit =
-    cached.run(sources, changes, callback, log, delegate, progress)
+      log: Logger
+  ): Unit = {
+    val cached = new CachedCompiler0(options, output, new WeakLog(log, delegate))
+    try {
+      cached.run(sources.toList, changes, callback, log, delegate, progress)
+    } finally {
+      cached.close()
+    }
+  }
 }
 
 class InterfaceCompileFailed(
@@ -66,8 +65,7 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
 }
 
 private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
-    extends CachedCompiler2
-    with CachedCompilerCompat
+    extends CachedCompilerCompat
     with java.io.Closeable {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -118,32 +116,9 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
   def infoOnCachedCompiler(compilerId: String): String =
     s"[zinc] Running cached compiler $compilerId for Scala compiler $versionString"
 
-  override def run(
-      sources: Array[File],
+  def run(
+      sources: List[VirtualFile],
       changes: DependencyChanges,
-      callback: AnalysisCallback,
-      log: Logger,
-      delegate: Reporter,
-      progress: CompileProgress
-  ): Unit = {
-    val srcs = sources.toList.map(AbstractFile.getFile(_)).sortBy(_.path)
-    doRun(srcs, callback, log, delegate, progress)
-  }
-
-  override def run(
-      sources: Array[VirtualFile],
-      changes: DependencyChanges,
-      callback: AnalysisCallback,
-      log: Logger,
-      delegate: Reporter,
-      progress: CompileProgress
-  ): Unit = {
-    val srcs = sources.toList.map(AbstractZincFile(_)).sortBy(_.underlying.id)
-    doRun(srcs, callback, log, delegate, progress)
-  }
-
-  private[this] def doRun(
-      sources: List[AbstractFile],
       callback: AnalysisCallback,
       log: Logger,
       delegate: Reporter,
@@ -152,7 +127,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
     debug(log, infoOnCachedCompiler(hashCode().toLong.toHexString))
     val dreporter = DelegatingReporter(settings, delegate)
     try {
-      run(sources, callback, log, dreporter, progress)
+      run(sources.sortBy(_.id).map(AbstractZincFile(_)), callback, log, dreporter, progress)
     } finally {
       dreporter.dropDelegate()
     }
