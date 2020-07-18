@@ -72,10 +72,14 @@ sealed class NumericRange[T](
   import num._
 
   // See comment in Range for why this must be lazy.
-  override lazy val length: Int = NumericRange.count(start, end, step, isInclusive)
-  override def isEmpty = length == 0
+  override lazy val length: Int     = NumericRange.count(start, end, step, isInclusive)
+  override lazy val isEmpty: Boolean = (
+    (num.gt(start, end) && num.gt(step, num.zero))
+      || (num.lt(start, end) && num.lt(step, num.zero))
+      || (num.equiv(start, end) && !isInclusive)
+    )
   override def last: T =
-    if (length == 0) Nil.head
+    if (isEmpty) Nil.head
     else locationAfterN(length - 1)
   override def init: NumericRange[T] =
     if (isEmpty) Nil.init
@@ -135,13 +139,13 @@ sealed class NumericRange[T](
   private def newEmptyRange(value: T) = NumericRange(value, value, step)
 
   override def take(n: Int): NumericRange[T] = {
-    if (n <= 0 || length == 0) newEmptyRange(start)
+    if (n <= 0 || isEmpty) newEmptyRange(start)
     else if (n >= length) this
     else new NumericRange.Inclusive(start, locationAfterN(n - 1), step)
   }
 
   override def drop(n: Int): NumericRange[T] = {
-    if (n <= 0 || length == 0) this
+    if (n <= 0 || isEmpty) this
     else if (n >= length) newEmptyRange(end)
     else copy(locationAfterN(n), end, step)
   }
@@ -239,7 +243,7 @@ sealed class NumericRange[T](
   override def equals(other: Any): Boolean = other match {
     case x: NumericRange[_] =>
       (x canEqual this) && (length == x.length) && (
-        (length == 0) ||                      // all empty sequences are equal
+        (isEmpty) ||                            // all empty sequences are equal
           (start == x.start && last == x.last)  // same length and same endpoints implies equality
         )
     case _ =>
