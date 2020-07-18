@@ -625,10 +625,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam  B    the result type of the binary operator.
     *  @return  the result of inserting `op` between consecutive elements of this $coll,
     *           going left to right with the start value `z` on the left:
-    *           {{{
-    *             op(...op(z, x_1), x_2, ..., x_n)
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *           `op(...op(z, x,,1,,), x,,2,,, ..., x,,n,,)` where `x,,1,,, ..., x,,n,,`
+   *            are the elements of this $coll.
     *           Returns `z` if this $coll is empty.
     */
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
@@ -650,10 +648,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam  B    the result type of the binary operator.
     *  @return  the result of inserting `op` between consecutive elements of this $coll,
     *           going right to left with the start value `z` on the right:
-    *           {{{
-    *             op(x_1, op(x_2, ... op(x_n, z)...))
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *           `op(x,,1,,, op(x,,2,,, ... op(x,,n,,, z)...))` where `x,,1,,, ..., x,,n,,`
+    *           are the elements of this $coll.
     *           Returns `z` if this $coll is empty.
     */
   def foldRight[B](z: B)(op: (A, B) => B): B = reversed.foldLeft(z)((b, a) => op(a, b))
@@ -712,10 +708,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam  B    the result type of the binary operator.
     *  @return  the result of inserting `op` between consecutive elements of this $coll,
     *           going left to right:
-    *           {{{
-    *             op( op( ... op(x_1, x_2) ..., x_{n-1}), x_n)
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *           `op( op( ... op(x,,1,,, x,,2,,) ..., x,,n-1,,), x,,n,,)` where `x,,1,,, ..., x,,n,,`
+    *           are the elements of this $coll.
     *  @throws UnsupportedOperationException if this $coll is empty.   */
   def reduceLeft[B >: A](op: (B, A) => B): B = {
     val it = iterator
@@ -744,10 +738,8 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam  B    the result type of the binary operator.
     *  @return  the result of inserting `op` between consecutive elements of this $coll,
     *           going right to left:
-    *           {{{
-    *             op(x_1, op(x_2, ..., op(x_{n-1}, x_n)...))
-    *           }}}
-    *           where `x,,1,,, ..., x,,n,,` are the elements of this $coll.
+    *           `op(x,,1,,, op(x,,2,,, ..., op(x,,n-1,,, x,,n,,)...))` where `x,,1,,, ..., x,,n,,`
+    *           are the elements of this $coll.
     *  @throws UnsupportedOperationException if this $coll is empty.
     */
   def reduceRight[B >: A](op: (A, B) => B): B = {
