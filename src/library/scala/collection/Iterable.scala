@@ -602,7 +602,7 @@ trait IterableOps[+A, +CC[_], +C] extends Any with IterableOnce[A] with Iterable
 
   /**
     * Partitions this $coll into a map according to a discriminator function `key`. All the values that
-    * have the same discriminator are then transformed by the `value` function and then reduced into a
+    * have the same discriminator are then transformed by the `f` function and then reduced into a
     * single value with the `reduce` function.
     *
     * It is equivalent to `groupBy(key).mapValues(_.map(f).reduce(reduce))`, but more efficient.
