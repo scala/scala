@@ -359,6 +359,8 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
   }
 
   private[this] def growTable(newlen: Int) = {
+    if (newlen < 0)
+      throw new RuntimeException(s"new HashMap table size $newlen exceeds maximum")
     var oldlen = table.length
     threshold = newThreshold(newlen)
     if(size == 0) table = new Array(newlen)
