@@ -375,7 +375,9 @@ object DebugInfoBuilder {
         }
 
     // this method triggers line section computation from the line mappings
-    def lineSectionLines: Seq[String] =
+    def lineSectionLines: Seq[String] = {
+      val builder = new StringBuilder(new java.lang.StringBuilder(512))
+
       "*L" +:
         lineSection
           .filter {
@@ -386,7 +388,7 @@ object DebugInfoBuilder {
           .map { lineSection =>
             val LineSectionEntry(inputStartLine, lineFileId, repeatCount, outputStartLine, outputLineIncrement) = lineSection
 
-            val builder = new StringBuilder(new java.lang.StringBuilder(512))
+            builder.clear()
             builder.append(inputStartLine)
             lineFileId.foreach(id => builder.append(s"#$id"))
             repeatCount.foreach(cnt => builder.append(s",$cnt"))
@@ -395,6 +397,7 @@ object DebugInfoBuilder {
 
             builder.toString
           }
+    }
 
     def toStringLines: Seq[String] =
       if (lineMapping.nonEmpty)
