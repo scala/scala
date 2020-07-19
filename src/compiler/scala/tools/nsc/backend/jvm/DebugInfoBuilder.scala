@@ -386,12 +386,12 @@ object DebugInfoBuilder {
           .map { lineSection =>
             val LineSectionEntry(inputStartLine, lineFileId, repeatCount, outputStartLine, outputLineIncrement) = lineSection
 
-            val builder = new StringBuilder
+            val builder = new StringBuilder(new java.lang.StringBuilder(512))
             builder.append(inputStartLine)
-            lineFileId.map(id => builder.append(s"#$id"))
-            repeatCount.map(cnt => builder.append(s",$cnt"))
+            lineFileId.foreach(id => builder.append(s"#$id"))
+            repeatCount.foreach(cnt => builder.append(s",$cnt"))
             builder.append(s":$outputStartLine")
-            outputLineIncrement.map(inc => builder.append(s",$inc"))
+            outputLineIncrement.foreach(inc => builder.append(s",$inc"))
 
             builder.toString
           }
