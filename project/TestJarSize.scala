@@ -5,8 +5,8 @@ import sbt._, Keys._
 object TestJarSize {
   final private case class JarSize(currentBytes: Long, errorThreshold: Double, warnThreshold: Double)
 
-  private val libraryJarSize = JarSize(5926587L, 1.03, 1.015)
-  private val reflectJarSize = JarSize(3702957L, 1.03, 1.015)
+  private val libraryJarSize = JarSize(6164668L, 1.03, 1.015)
+  private val reflectJarSize = JarSize(3828346L, 1.03, 1.015)
 
   val testJarSizeImpl: Def.Initialize[Task[Unit]] = Def.task {
     Def.unit(testJarSize1("library", libraryJarSize).value)
