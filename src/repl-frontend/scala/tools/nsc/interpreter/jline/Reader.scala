@@ -13,11 +13,13 @@
 package scala.tools.nsc.interpreter
 package jline
 
+import java.io.{EOFException, IOError}
 import java.util.{List => JList}
 
 import org.jline.reader.{Candidate, Completer, CompletingParsedLine, EOFError, EndOfFileException, History, LineReader, ParsedLine, Parser, UserInterruptException}
 import org.jline.reader.impl.{DefaultParser, LineReaderImpl}
 import org.jline.terminal.Terminal
+import scala.util.control.NonFatal
 
 import shell.{Accumulator, ShellConfig}
 import Parser.ParseContext
@@ -37,6 +39,11 @@ class Reader private (
       reader.readLine(prompt)
     } catch {
       case _: EndOfFileException | _: UserInterruptException => reader.getBuffer.delete() ; null
+      case e: IOError =>
+        e.getCause match {
+          case _: EOFException => reader.getBuffer.delete() ; null
+          case _ => throw e
+        }
     }
   }
   def redrawLine(): Unit = ???
@@ -69,7 +76,25 @@ object Reader {
 
     System.setProperty(LineReader.PROP_SUPPORT_PARSEDLINE, java.lang.Boolean.TRUE.toString())
 
-    val jlineTerminal = TerminalBuilder.builder().jna(true).build()
+    val jlineTerminal = {
+      /*
+       * sbt needs to override the default jline terminal both to prevent the creation
+       * of two jline3 system terminals, which interferses with sbt's jline3 reader, and
+       * to handle the case where a remote client is running the console and sbt needs to
+       * relay io between the client and the server process. More broadly, this allows the
+       * repl to be embedded in any application that is also using jline3.
+       */
+      System.getProperty("scala.jline.terminal.provider") match {
+        case null => TerminalBuilder.builder().jna(true).build()
+        case c =>
+          try {
+            val clazz = Thread.currentThread.getContextClassLoader.loadClass(c)
+            val method = clazz.getDeclaredMethod("getJLine3Terminal")
+            val instance = clazz.getDeclaredField("MODULE$").get(null)
+            method.invoke(instance).asInstanceOf[Terminal]
+          } catch { case NonFatal(e) => TerminalBuilder.builder().jna(true).build() }
+      }
+    }
     val completer = new Completion(completion)
     val parser    = new ReplParser(repl)
     val history   = new DefaultHistory
