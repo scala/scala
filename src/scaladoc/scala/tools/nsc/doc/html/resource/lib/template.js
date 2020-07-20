@@ -355,7 +355,7 @@ function initInherit() {
         groupParents[$(this).attr("name")] = $(this);
     });
 
-    $("#types > ol > li").each(function(){
+    $("#types > ol > li").add("#deprecatedTypes > ol > li").each(function(){
         var mbr = $(this);
         this.mbrText = mbr.find("> .fullcomment .cmt").text();
         var qualName = mbr.attr("name");
