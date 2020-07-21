@@ -46,6 +46,12 @@ private[impl] final class CompletionLatch[T] extends AbstractQueuedSynchronizer 
 }
 
 private[concurrent] object Promise {
+
+  final val successUnit = Success(())
+
+  final def fork[T](body: => T)(implicit executor: ExecutionContext): Future[T] =
+    (new Transformation[Unit, T](Xform_fork, (_: Unit) => body, executor)).submitWithValue(successUnit)
+
   /**
    * Link represents a completion dependency between 2 DefaultPromises.
    * As the DefaultPromise referred to by a Link can itself be linked to another promise
@@ -355,6 +361,7 @@ private[concurrent] object Promise {
   final val Xform_recoverWith   = 8
   final val Xform_filter        = 9
   final val Xform_collect       = 10
+  final val Xform_fork          = 11
 
     /* Marker trait
    */
@@ -380,7 +387,22 @@ private[concurrent] object Promise {
   ) extends DefaultPromise[T]() with Callbacks[F] with Runnable with Batchable with OnCompleteRunnable {
     final def this(xform: Int, f: _ => _, ec: ExecutionContext) = this(f.asInstanceOf[Any => Any], ec.prepare(), null, xform)
 
-    final def benefitsFromBatching: Boolean = _xform != Xform_onComplete && _xform != Xform_foreach
+    final def benefitsFromBatching: Boolean =
+      (_xform: @switch) match {
+        case Xform_noop          => false
+        case Xform_map           => true
+        case Xform_flatMap       => true
+        case Xform_transform     => true
+        case Xform_transformWith => true
+        case Xform_foreach       => false
+        case Xform_onComplete    => false
+        case Xform_recover       => true
+        case Xform_recoverWith   => true
+        case Xform_filter        => true
+        case Xform_collect       => true
+        case Xform_fork          => false
+        case _                   => true
+      }
 
     // Gets invoked when a value is available, schedules it to be run():ed by the ExecutionContext
     // submitWithValue *happens-before* run(), through ExecutionContext.execute.
@@ -460,6 +482,8 @@ private[concurrent] object Promise {
               if (v.isInstanceOf[Failure[F]] || fun.asInstanceOf[F => Boolean](v.get)) v else Future.filterFailure
             case Xform_collect       =>
               if (v.isInstanceOf[Success[F]]) Success(fun.asInstanceOf[PartialFunction[F, T]].applyOrElse(v.get, Future.collectFailed)) else v
+            case Xform_fork          =>
+              Success(fun(()))
             case _                   =>
               Failure(new IllegalStateException("BUG: encountered transformation promise with illegal type: " + _xform)) // Safe not to `resolve`
           }

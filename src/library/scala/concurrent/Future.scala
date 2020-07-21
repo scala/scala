@@ -652,14 +652,6 @@ object Future {
 
   /** Starts an asynchronous computation and returns a `Future` instance with the result of that computation.
   *
-  *  The following expressions are equivalent:
-  *
-  *  {{{
-  *  val f1 = Future(expr)
-  *  val f2 = Future.unit.map(_ => expr)
-  *  val f3 = Future.unit.transform(_ => Success(expr))
-  *  }}}
-  *
   *  The result becomes available once the asynchronous computation is completed.
   *
   *  @tparam T        the type of the result
@@ -668,17 +660,9 @@ object Future {
   *  @return          the `Future` holding the result of the computation
   */
   final def apply[T](body: => T)(implicit executor: ExecutionContext): Future[T] =
-    unit.map(_ => body)
+    impl.Promise.fork(body)
 
   /** Starts an asynchronous computation and returns a `Future` instance with the result of that computation once it completes.
-  *
-  *  The following expressions are semantically equivalent:
-  *
-  *  {{{
-  *  val f1 = Future(expr).flatten
-  *  val f2 = Future.delegate(expr)
-  *  val f3 = Future.unit.flatMap(_ => expr)
-  *  }}}
   *
   *  The result becomes available once the resulting Future of the asynchronous computation is completed.
   *
@@ -688,7 +672,7 @@ object Future {
   *  @return          the `Future` holding the result of the computation
   */
   final def delegate[T](body: => Future[T])(implicit executor: ExecutionContext): Future[T] =
-    unit.flatMap(_ => body)
+    impl.Promise.fork(body).flatten
 
   /** Simple version of `Future.traverse`. Asynchronously and non-blockingly transforms, in essence, a `IterableOnce[Future[A]]`
    *  into a `Future[IterableOnce[A]]`. Useful for reducing many `Future`s into a single `Future`.
