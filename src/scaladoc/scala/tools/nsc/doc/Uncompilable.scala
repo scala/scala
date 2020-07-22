@@ -23,7 +23,7 @@ trait Uncompilable {
   val global: Global
   val settings: Settings
 
-  import global.{ reporter, inform, newTypeName, newTermName, runReporting, DefDef, Symbol, DocComment, MethodSymbol, NoSymbol }
+  import global.{ reporter, inform, newTypeName, newTermName, runReporting, Symbol, DocComment, MethodSymbol, NoSymbol }
   import global.definitions.{ AnyRefClass, AnyRefTpe }
   import global.rootMirror.RootClass
 

@@ -128,7 +128,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
      *  Template node, but need to be listed separately in the OwnerTree of the enclosing class
      *  in order not to confuse owner chains.
      */
-    def scanTree(buf: mutable.ListBuffer[OwnerTree], mode: MemberDefMode = AllDefs): Unit = {
+    def scanTree(buf: mutable.ListBuffer[OwnerTree], mode: MemberDefMode): Unit = {
       val start = currentAddr
       val tag = readByte()
       tag match {
@@ -151,7 +151,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val end = readEnd()
             val nrefs = numRefs(tag)
             if (nrefs < 0) {
-              for (i <- nrefs until 0) scanTree(buf)
+              for (i <- nrefs until 0) scanTree(buf, AllDefs)
               goto(end)
             }
             else {
@@ -161,11 +161,11 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 buf += new OwnerTree(start, tag, fork, end = start)
               }
 
-              scanTrees(buf, end)
+              scanTrees(buf, end, AllDefs)
             }
           }
-          else if (tag >= firstNatASTTreeTag) { readNat(); scanTree(buf) }
-          else if (tag >= firstASTTreeTag) scanTree(buf)
+          else if (tag >= firstNatASTTreeTag) { readNat(); scanTree(buf, AllDefs) }
+          else if (tag >= firstASTTreeTag) scanTree(buf, AllDefs)
           else if (tag >= firstNatTreeTag) readNat()
       }
     }
@@ -173,7 +173,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     /** Record all directly nested definitions and templates between current address and `end`
      *  as `OwnerTree`s in `buf`
      */
-    def scanTrees(buf: mutable.ListBuffer[OwnerTree], end: Addr, mode: MemberDefMode = AllDefs): Unit = {
+    def scanTrees(buf: mutable.ListBuffer[OwnerTree], end: Addr, mode: MemberDefMode): Unit = {
       while (currentAddr.index < end.index) scanTree(buf, mode)
       assert(currentAddr.index === end.index)
     }
