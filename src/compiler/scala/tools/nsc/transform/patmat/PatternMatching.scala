@@ -130,64 +130,9 @@ trait Interface extends ast.TreeDSL {
   protected final def mkFALSE                  = CODE.FALSE
   protected final def hasStableSymbol(p: Tree) = p.hasSymbolField && p.symbol.isStable
 
-  object vpmName {
-    val one       = newTermName("one")
-    val flatMap   = newTermName("flatMap")
-    val get       = newTermName("get")
-    val guard     = newTermName("guard")
-    val isEmpty   = newTermName("isEmpty")
-    val orElse    = newTermName("orElse")
-    val outer     = newTermName("<outer>")
-    val runOrElse = newTermName("runOrElse")
-    val zero      = newTermName("zero")
-    val _match    = newTermName("__match") // don't call the val __match, since that will trigger virtual pattern matching...
-
-    def counted(str: String, i: Int) = newTermName(str + i)
-  }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// talking to userland
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  /** Interface with user-defined match monad?
-   * if there's a <code>__match</code> in scope, we use this as the match strategy, assuming it conforms to MatchStrategy as defined below:
-
-       {{{
-       type Matcher[P[_], M[+_], A] = {
-         def flatMap[B](f: P[A] => M[B]): M[B]
-         def orElse[B >: A](alternative: => M[B]): M[B]
-       }
-
-       abstract class MatchStrategy[P[_], M[+_]] {
-         // runs the matcher on the given input
-         def runOrElse[T, U](in: P[T])(matcher: P[T] => M[U]): P[U]
-
-         def zero: M[Nothing]
-         def one[T](x: P[T]): M[T]
-         def guard[T](cond: P[Boolean], then: => P[T]): M[T]
-       }
-       }}}
-
-   * P and M are derived from one's signature (`def one[T](x: P[T]): M[T]`)
-
-
-   * if no <code>__match</code> is found, we assume the following implementation (and generate optimized code accordingly)
-
-       {{{
-       object __match extends MatchStrategy[({type Id[x] = x})#Id, Option] {
-         def zero = None
-         def one[T](x: T) = Some(x)
-         // NOTE: guard's return type must be of the shape M[T], where M is the monad in which the pattern match should be interpreted
-         def guard[T](cond: Boolean, then: => T): Option[T] = if(cond) Some(then) else None
-         def runOrElse[T, U](x: T)(f: T => Option[U]): U = f(x) getOrElse (throw new MatchError(x))
-       }
-       }}}
-
-   */
   trait MatchMonadInterface {
     val typer: Typer
     val matchOwner = typer.context.owner
-    def pureType(tp: Type): Type = tp
 
     def reportUnreachable(pos: Position) = typer.context.warning(pos, "unreachable code", WarningCategory.OtherMatchAnalysis)
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {

@@ -160,7 +160,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
       }
 
       // TODO: finer-grained duplication
-      def chainBefore(next: Tree)(casegen: Casegen): Tree = // assert(codegen eq optimizedCodegen)
+      def chainBefore(next: Tree)(casegen: Casegen): Tree =
         atPos(pos)(casegen.flatMapCondStored(cond, storedCond, res, nextBinder, substitution(next).duplicate))
 
       override def toString = "Memo"+((nextBinder.name, storedCond.name, cond, res, substitution))

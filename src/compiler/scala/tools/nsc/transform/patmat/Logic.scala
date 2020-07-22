@@ -858,7 +858,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
                 else ConstantType(c)
               case Ident(_) if p.symbol.isStable =>
                 // for Idents, can encode uniqueness of symbol as uniqueness of the corresponding singleton type
-                // for Selects, which are handled by the next case, the prefix of the select varies independently of the symbol (see pos/virtpatmat_unreach_select.scala)
+                // for Selects, which are handled by the next case, the prefix of the select varies independently of the symbol (see neg/virtpatmat_unreach_select.scala)
                 singleType(tp.prefix, p.symbol)
               case _ =>
                 Const.uniqueTpForTree(p)

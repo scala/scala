@@ -391,7 +391,7 @@ trait StdNames {
     val OUTER: NameType                    = nameType("$outer")
     val OUTER_LOCAL: NameType              = OUTER.localName
     val OUTER_ARG: NameType                = nameType("arg" + OUTER)
-    val OUTER_SYNTH: NameType              = nameType("<outer>") // emitted by virtual pattern matcher, replaced by outer accessor in explicitouter
+    val OUTER_SYNTH: NameType              = nameType("<outer>") // emitted by pattern matcher, replaced by outer accessor in explicitouter
     val ROOTPKG: NameType                  = nameType("_root_")
     val SELECTOR_DUMMY: NameType           = nameType("<unapply-selector>")
     val SELF: NameType                     = nameType(s"$$this")

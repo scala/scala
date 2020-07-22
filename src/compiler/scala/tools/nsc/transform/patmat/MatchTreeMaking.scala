@@ -19,8 +19,7 @@ import scala.tools.nsc.Reporting.WarningCategory
 
 /** Translate our IR (TreeMakers) into actual Scala Trees using the factory methods in MatchCodeGen.
  *
- * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions,
- * mostly agnostic to whether we're in optimized/pure (virtualized) mode.
+ * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions.
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
   import global._
@@ -375,7 +374,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
               // by `Select(q, outerAccessor(outerSym.owner)) OBJ_EQ expectedPrefix`
               // if there's an outer accessor, otherwise the condition becomes `true`
               // TODO: centralize logic whether there's an outer accessor and use here?
-              val synthOuterGetter = expectedTp.typeSymbol.newMethod(vpmName.outer, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
+              val synthOuterGetter = expectedTp.typeSymbol.newMethod(nme.OUTER_SYNTH, newFlags = SYNTHETIC | ARTIFACT) setInfo expectedPrefix
               val outerTest = (Select(codegen._asInstanceOf(testedBinder, expectedTp), synthOuterGetter)) OBJ_EQ expectedOuterRef
               and(orig, outerTest)
           }

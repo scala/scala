@@ -113,10 +113,8 @@ private[tests] trait CoreTestDefs
           reporter.println("\naskHyperlinkPos for `" + tree.symbol.name + "` at " + format(pos) + " " + pos.source.file.name)
           val r = new Response[Position]
           val sourceFile = tree.symbol.sourceFile
-          // `tree.symbol.sourceFile` was discovered to be null when testing using virtpatmat on the akka presentation test, where a position had shifted to point to `Int`
-          // askHyperlinkPos for `Int` at (73,19) pi.scala --> class Int in package scala has null sourceFile!
-          val treePath = if (sourceFile ne null) sourceFile.path else null
-          val treeName = if (sourceFile ne null) sourceFile.name else null
+          val treePath = sourceFile.path
+          val treeName = sourceFile.name
 
           sourceFiles.find(_.path == treePath) match {
             case Some(source) =>
