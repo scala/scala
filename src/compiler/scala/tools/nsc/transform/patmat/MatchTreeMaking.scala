@@ -22,8 +22,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  * The IR is mostly concerned with sequencing, substitution, and rendering all necessary conditions.
  */
 trait MatchTreeMaking extends MatchCodeGen with Debugging {
-  import global._
-  import definitions._
+  import global._, definitions._, CODE._
 
   final case class Suppression(suppressExhaustive: Boolean, suppressUnreachable: Boolean)
   object Suppression {
@@ -209,7 +208,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
        prevBinder: Symbol,
        expectedTp: Type,
        override val pos: Position) extends FunTreeMaker {
-      import CODE._
       override lazy val nextBinder = prevBinder.asTerm // just passing through
       val nextBinderTp = nextBinder.info.widen
 
@@ -268,7 +266,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             bindSubPats(substitution(next))
         }
         atPos(extractor.pos)(
-          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, CODE.UNIT, nextBinder, condAndNext)
+          if (extractorReturnsBoolean) casegen.flatMapCond(extractor, UNIT, nextBinder, condAndNext)
           else casegen.flatMap(extractor, nextBinder, condAndNext)
         )
       }
@@ -338,11 +336,11 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
         def tru: Result
       }
 
-      object treeCondStrategy extends TypeTestCondStrategy { import CODE._
+      object treeCondStrategy extends TypeTestCondStrategy {
         type Result = Tree
 
         def and(a: Result, b: Result): Result                = a AND b
-        def tru                                              = mkTRUE
+        def tru                                              = TRUE
         def typeTest(testedBinder: Symbol, expectedTp: Type) = codegen._isInstanceOf(testedBinder, expectedTp)
         def nonNullTest(testedBinder: Symbol)                = REF(testedBinder) OBJ_NE NULL
         def equalsTest(pat: Tree, testedBinder: Symbol)      = codegen._equals(pat, testedBinder)
@@ -485,8 +483,8 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             else mkEqualsTest(expected)
           // Should revisit if we end up lifting `eq`'s definition to `Any`, as discussed here:
           // https://groups.google.com/d/msg/scala-internals/jsVlJI4H5OQ/8emZWRmgzcoJ
-          case ThisType(sym) if sym.isModule            => and(mkEqualsTest(CODE.REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
-          case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(CODE.NULL))
+          case ThisType(sym) if sym.isModule            => and(mkEqualsTest(REF(sym)), mkTypeTest) // must use == to support e.g. List() == Nil
+          case ConstantType(Constant(null)) if isAnyRef => mkEqTest(expTp(NULL))
           case ConstantType(const)                      => mkEqualsTest(expTp(Literal(const)))
           case ThisType(sym)                            => mkEqTest(expTp(This(sym)))
           case _                                        => mkDefault
@@ -528,10 +526,10 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
           // one alternative may still generate multiple trees (e.g., an extractor call + equality test)
           // (for now,) alternatives may not bind variables (except wildcards), so we don't care about the final substitution built internally by makeTreeMakers
           val combinedAlts = altss map (altTreeMakers =>
-            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(mkTRUE)))(casegen))
+            ((casegen: Casegen) => combineExtractors(altTreeMakers :+ TrivialTreeMaker(casegen.one(TRUE)))(casegen))
           )
 
-          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => mkFALSE))
+          val findAltMatcher = codegenAlt.matcher(EmptyTree, NoSymbol, BooleanTpe)(combinedAlts, Some(x => FALSE))
           codegenAlt.ifThenElseZero(findAltMatcher, substitution(next))
         }
       }

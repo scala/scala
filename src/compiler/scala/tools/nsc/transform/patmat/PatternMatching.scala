@@ -124,12 +124,6 @@ trait Interface extends ast.TreeDSL {
   import global._
   import analyzer.Typer
 
-  // 2.10/2.11 compatibility
-  protected final def dealiasWiden(tp: Type)   = tp.dealiasWiden
-  protected final def mkTRUE                   = CODE.TRUE
-  protected final def mkFALSE                  = CODE.FALSE
-  protected final def hasStableSymbol(p: Tree) = p.hasSymbolField && p.symbol.isStable
-
   trait MatchMonadInterface {
     val typer: Typer
     val matchOwner = typer.context.owner

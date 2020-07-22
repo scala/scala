@@ -527,7 +527,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
         case _ => None
       }}
 
-      def scrutRef(scrut: Symbol): Tree = dealiasWiden(scrut.tpe) match {
+      def scrutRef(scrut: Symbol): Tree = scrut.tpe.dealiasWiden match {
         case subInt if subInt =:= IntTpe =>
           REF(scrut)
         case subInt if definitions.isNumericSubClass(subInt.typeSymbol, IntClass) =>
@@ -557,7 +557,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     override def emitSwitch(scrut: Tree, scrutSym: Symbol, cases: List[List[TreeMaker]], pt: Type, matchFailGenOverride: Option[Tree => Tree], unchecked: Boolean): Option[Tree] = { import CODE._
       val regularSwitchMaker = new RegularSwitchMaker(scrutSym, matchFailGenOverride, unchecked)
       // TODO: if patterns allow switch but the type of the scrutinee doesn't, cast (type-test) the scrutinee to the corresponding switchable type and switch on the result
-      if (regularSwitchMaker.switchableTpe(dealiasWiden(scrutSym.tpe))) {
+      if (regularSwitchMaker.switchableTpe(scrutSym.tpe.dealiasWiden)) {
         val caseDefsWithDefault = regularSwitchMaker(cases map {c => (scrutSym, c)}, pt)
         if (caseDefsWithDefault.isEmpty) None // not worth emitting a switch.
         else {

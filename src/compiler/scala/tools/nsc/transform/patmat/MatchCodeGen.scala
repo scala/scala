@@ -189,7 +189,7 @@ trait MatchCodeGen extends Interface {
 
         def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree =
           ifThenElseZero(cond, BLOCK(
-            condSym    === mkTRUE,
+            condSym    === TRUE,
             nextBinder === res,
             next
           ))
