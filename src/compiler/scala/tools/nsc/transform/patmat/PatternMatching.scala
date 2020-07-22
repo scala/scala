@@ -90,9 +90,6 @@ trait PatternMatching extends Transform
       case _ => super.transform(tree)
     }
 
-    // TODO: only instantiate new match translator when localTyper has changed
-    // override def atOwner[A](tree: Tree, owner: Symbol)(trans: => A): A
-    // as this is the only time TypingTransformer changes it
     def translator(selectorPos: Position): MatchTranslator with CodegenCore = {
       new OptimizingMatchTranslator(localTyper, selectorPos)
     }

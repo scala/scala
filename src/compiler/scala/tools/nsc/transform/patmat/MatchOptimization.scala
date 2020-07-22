@@ -22,8 +22,7 @@ import scala.tools.nsc.Reporting.WarningCategory
  * The patmat translation doesn't rely on this, so it could be disabled in principle.
  *  - well, not quite: the backend crashes if we emit duplicates in switches (e.g. scala/bug#7290)
  */
-// TODO: split out match analysis
-trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
+trait MatchOptimization extends MatchTreeMaking with MatchApproximation {
   import global._
   import global.definitions._
 
@@ -206,20 +205,7 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
     }
   }
 
-
-  //// DCE
-//  trait DeadCodeElimination extends TreeMakers {
-//    // TODO: non-trivial dead-code elimination
-//    // e.g., the following match should compile to a simple instanceof:
-//    //   case class Ident(name: String)
-//    //   for (Ident(name) <- ts) println(name)
-//    def doDCE(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type): List[List[TreeMaker]] = {
-//      // do minimal DCE
-//      cases
-//    }
-//  }
-
-  //// SWITCHES -- TODO: operate on Tests rather than TreeMakers
+  //// SWITCHES
   trait SwitchEmission extends TreeMakers with MatchMonadInterface {
     import treeInfo.isGuardedCase
 
@@ -615,13 +601,8 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
                           with SwitchEmission
                           with CommonSubconditionElimination {
     override def optimizeCases(prevBinder: Symbol, cases: List[List[TreeMaker]], pt: Type, selectorPos: Position): (List[List[TreeMaker]], List[Tree]) = {
-      // TODO: do CSE on result of doDCE(prevBinder, cases, pt)
       val optCases = doCSE(prevBinder, cases, pt, selectorPos)
-      val toHoist = (
-        for (treeMakers <- optCases)
-          yield treeMakers.collect{case tm: ReusedCondTreeMaker => tm.treesToHoist}
-        ).flatten.flatten.toList
-      (optCases, toHoist)
+      (optCases, optCases.flatMap(flatCollect(_) { case tm: ReusedCondTreeMaker => tm.treesToHoist }))
     }
   }
 }
