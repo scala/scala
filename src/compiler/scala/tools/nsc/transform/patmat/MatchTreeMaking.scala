@@ -583,53 +583,60 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       removeSubstOnly(treeMakers)
     }
 
+    def getSuppression(scrut: Tree): Suppression = scrut match {
+      case _ if settings.XnoPatmatAnalysis => Suppression.FullSuppression
+      case Typed(tree, tpt)                =>
+        val suppressExhaustive  = tpt.tpe.hasAnnotation(UncheckedClass)
+        val suppressUnreachable = tree match {
+          case Ident(name) => name.startsWith(nme.CHECK_IF_REFUTABLE_STRING) // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
+          case _           => false
+        }
+        Suppression(suppressExhaustive, suppressUnreachable)
+      case _                               => Suppression.NoSuppression
+    }
+
     // calls propagateSubstitution on the treemakers
     def combineCases(scrut: Tree, scrutSym: Symbol, casesRaw: List[List[TreeMaker]], pt: Type, selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree = {
       // drops SubstOnlyTreeMakers, since their effect is now contained in the TreeMakers that follow them
       val casesNoSubstOnly = casesRaw map (propagateSubstitution(_, EmptySubstitution))
-      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, selectorPos, owner, matchFailGenOverride)
+      combineCasesNoSubstOnly(scrut, scrutSym, casesNoSubstOnly, pt, selectorPos, owner, matchFailGenOverride, getSuppression(scrut))
     }
 
     // pt is the fully defined type of the cases (either pt or the lub of the types of the cases)
     def combineCasesNoSubstOnly(scrut: Tree, scrutSym: Symbol, casesNoSubstOnly: List[List[TreeMaker]], pt: Type,
-                                selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree]): Tree =
+                                selectorPos: Position, owner: Symbol, matchFailGenOverride: Option[Tree => Tree],
+                                suppression: Suppression,
+    ): Tree =
       fixerUpper(owner, scrut.pos) {
         def matchFailGen = matchFailGenOverride orElse Some(Throw(MatchErrorClass.tpe, _: Tree))
 
         debug.patmat("combining cases: "+ (casesNoSubstOnly.map(_.mkString(" >> ")).mkString("{", "\n", "}")))
 
-        val (suppression, requireSwitch): (Suppression, Boolean) =
-          if (settings.XnoPatmatAnalysis) (Suppression.FullSuppression, false)
+        val requireSwitch: Boolean =
+          if (settings.XnoPatmatAnalysis) false
           else scrut match {
             case Typed(tree, tpt) =>
-              val suppressExhaustive = tpt.tpe hasAnnotation UncheckedClass
-              val suppressUnreachable = tree match {
-                case Ident(name) if name startsWith nme.CHECK_IF_REFUTABLE_STRING => true // scala/bug#7183 don't warn for withFilter's that turn out to be irrefutable.
-                case _ => false
-              }
-              val suppression = Suppression(suppressExhaustive, suppressUnreachable)
               val hasSwitchAnnotation = treeInfo.isSwitchAnnotation(tpt.tpe)
               // matches with two or fewer cases need not apply for switchiness (if-then-else will do)
               // `case 1 | 2` is considered as two cases.
               def exceedsTwoCasesOrAlts = {
                 // avoids traversing the entire list if there are more than 3 elements
-                def lengthMax3[T](l: List[T]): Int = l match {
+                def lengthMax3(l: List[List[TreeMaker]]): Int = l match {
                   case a :: b :: c :: _ => 3
-                  case cases =>
-                    cases.map({
+                  case cases            =>
+                    cases.map {
                       case AlternativesTreeMaker(_, alts, _) :: _ => lengthMax3(alts)
                       case c => 1
-                    }).sum
+                    }.sum
                 }
                 lengthMax3(casesNoSubstOnly) > 2
               }
-              val requireSwitch = hasSwitchAnnotation && exceedsTwoCasesOrAlts
-              (suppression, requireSwitch)
+              hasSwitchAnnotation && exceedsTwoCasesOrAlts
             case _ =>
-              (Suppression.NoSuppression, false)
+              false
           }
 
-        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse{
+        emitSwitch(scrut, scrutSym, casesNoSubstOnly, pt, matchFailGenOverride, unchecked = suppression.suppressExhaustive).getOrElse {
           if (requireSwitch) typer.context.warning(scrut.pos, "could not emit switch for @switch annotated match", WarningCategory.OtherMatchAnalysis)
 
           if (!casesNoSubstOnly.isEmpty) {

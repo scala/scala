@@ -269,13 +269,16 @@ trait MatchTranslation {
           val casesNoSubstOnly = caseDefs map { caseDef => (propagateSubstitution(translateCase(scrutSym, pt)(caseDef), EmptySubstitution))}
 
           val exSym = freshSym(pos, pureType(ThrowableTpe), "ex")
+          val suppression =
+            if (settings.XnoPatmatAnalysis) Suppression.FullSuppression
+            else Suppression.NoSuppression.copy(suppressExhaustive = true) // try/catches needn't be exhaustive
 
           List(
               atPos(pos) {
                 CaseDef(
                   Bind(exSym, Ident(nme.WILDCARD)), // TODO: does this need fixing upping?
                   EmptyTree,
-                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))))
+                  combineCasesNoSubstOnly(REF(exSym), scrutSym, casesNoSubstOnly, pt, selectorPos, matchOwner, Some(scrut => Throw(REF(exSym))), suppression)
                 )
               })
         }
