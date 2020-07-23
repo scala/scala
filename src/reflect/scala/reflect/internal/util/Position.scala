@@ -34,7 +34,7 @@ class Position extends scala.reflect.api.Position with InternalPositionImpl with
 }
 
 object Position {
-  val tabInc = 8
+  final val tabInc = 8
 
   private def validate[T <: Position](pos: T): T = {
     if (pos.isRange)
@@ -174,12 +174,22 @@ private[util] trait InternalPositionImpl {
   // necessary condition to establish that there is overlap.
   def overlaps(pos: Position): Boolean         = bothRanges(pos) && start < pos.end && pos.start < end
 
-  def line: Int           = if (hasSource) source.offsetToLine(point) + 1 else 0
-  def column: Int         = if (hasSource) calculateColumn() else 0
-  def lineContent: String = if (hasSource) source.lineToString(line - 1) else ""
+  private def line0       = source.offsetToLine(point)
+  private def lineOffset  = source.lineToOffset(line0)
+  def line: Int           = if (hasSource) line0 + 1 else 0
+  def column: Int         = if (!hasSource) 0 else {
+    var idx = lineOffset
+    var col = 0
+    while (idx != point) {
+      col += (if (source.content(idx) == '\t') Position.tabInc - col % Position.tabInc else 1)
+      idx += 1
+    }
+    col + 1
+  }
+  def lineContent: String = if (hasSource) source.lineToString(line0) else ""
   def lineCaret: String   = if (!hasSource) "" else {
     val buf = new StringBuilder
-    var idx = source.lineToOffset(source.offsetToLine(point))
+    var idx = lineOffset
     while (idx < point) {
       buf.append(if (source.content(idx) == '\t') '\t' else ' ')
       idx += 1
@@ -200,16 +210,11 @@ private[util] trait InternalPositionImpl {
         sb.toString
       } else s
     }
-    def errorAt(p: Pos) = {
-      def where     = p.line
-      def content   = escaped(p.lineContent)
-      def indicator = p.lineCaret
-      f"$where: $msg%n$content%n$indicator"
-    }
+    import java.lang.System.{lineSeparator => NL}
     finalPosition match {
       case FakePos(fmsg) => s"$fmsg $msg"
       case NoPosition    => msg
-      case pos           => errorAt(pos)
+      case pos           => s"${pos.line}: ${msg}${NL}${escaped(pos.lineContent)}${NL}${pos.lineCaret}"
     }
   }
   def showDebug: String = toString
@@ -227,16 +232,6 @@ private[util] trait InternalPositionImpl {
   private def asOffset(point: Int): Position = Position.offset(source, point)
   private def copyRange(source: SourceFile = source, start: Int = start, point: Int = point, end: Int = end): Position =
     Position.range(source, start, point, end)
-
-  private def calculateColumn(): Int = {
-    var idx = source.lineToOffset(source.offsetToLine(point))
-    var col = 0
-    while (idx != point) {
-      col += (if (source.content(idx) == '\t') Position.tabInc - col % Position.tabInc else 1)
-      idx += 1
-    }
-    col + 1
-  }
   private def hasSource                      = source ne NoSourceFile
   private def bothRanges(that: Position)     = isRange && that.isRange
   private def bothDefined(that: Position)    = isDefined && that.isDefined
