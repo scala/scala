@@ -6,5 +6,5 @@ t6558.scala:7: error: not found: type typeparam
            ^
 t6558.scala:10: error: not found: type valueparam
   	@valueparam x: Any
-         ^
+  	 ^
 3 errors
