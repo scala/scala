@@ -14,7 +14,7 @@ package scala.concurrent.impl
 
 import java.util.concurrent.{ Semaphore, ForkJoinPool, ForkJoinWorkerThread, Callable, Executor, ExecutorService, ThreadFactory, TimeUnit }
 import java.util.Collection
-import scala.concurrent.{ Batchable, BatchingExecutor, BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
+import scala.concurrent.{ BlockContext, ExecutionContext, CanAwait, ExecutionContextExecutor, ExecutionContextExecutorService }
 
 private[scala] class ExecutionContextImpl private[impl] (final val executor: Executor, final val reporter: Throwable => Unit) extends ExecutionContextExecutor {
   require(executor ne null, "Executor must not be null")
@@ -98,15 +98,7 @@ private[concurrent] object ExecutionContextImpl {
                                                  prefix = "scala-execution-context-global",
                                                  uncaught = (thread: Thread, cause: Throwable) => reporter(cause))
 
-    new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService with BatchingExecutor {
-      final override def submitForExecution(runnable: Runnable): Unit = super[ForkJoinPool].execute(runnable)
-
-      final override def execute(runnable: Runnable): Unit =
-        if ((!runnable.isInstanceOf[Promise.Transformation[_,_]] || runnable.asInstanceOf[Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
-          submitAsyncBatched(runnable)
-        else
-          submitForExecution(runnable)
-
+    new ForkJoinPool(desiredParallelism, threadFactory, threadFactory.uncaught, true) with ExecutionContextExecutorService {
       final override def reportFailure(cause: Throwable): Unit =
         getUncaughtExceptionHandler() match {
           case null =>
