@@ -1,0 +1,11 @@
+t9438.scala:3: error: type mismatch;
+ found   : Double(3.14)
+ required: Int
+	val i: Int = 3.14
+	             ^
+t9438.scala:5: error: type mismatch;
+ found   : Double(3.14)
+ required: Int
+		3.14
+		^
+2 errors
