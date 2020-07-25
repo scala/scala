@@ -44,6 +44,12 @@ object AssertUtil {
   // junit fail is Unit
   def fail(message: String): Nothing = throw new AssertionError(message)
 
+  // use an asserting body in a boolean test, true if not failure by throwing
+  def truly[U](body: => U): true = { body: Unit ; true }
+
+  // run a side-effecting body in a boolean test
+  def falsely[U](body: => U): false = { body: Unit ; false }
+
   private final val timeout = 60 * 1000L                 // wait a minute
 
   private implicit class `ref helper`[A](val r: Reference[A]) extends AnyVal {

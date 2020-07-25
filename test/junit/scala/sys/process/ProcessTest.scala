@@ -126,4 +126,11 @@ class ProcessTest {
       case (_, other)                        => fail(s"Expected one IOException, got $other")
     }
   }
+
+  @Test def `12093 avoid aliasing env keys`(): Unit = if (isWin) sys.env.keys.headOption.foreach { key =>
+    val i = key.indexWhere(c => c.toUpper != c.toLower)
+    val c = key.charAt(i) match { case x if x.isUpper => x.toLower case x => x.toUpper }
+    val s = key.patch(i, c.toString, 1)
+    assertThrows[IllegalArgumentException](Process("dummy", None, s -> "DUMMY"), msg => truly(assertEquals(s"Environment key '$s' differs only in case from existing key '$key'", msg)))
+  }
 }

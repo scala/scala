@@ -16,8 +16,9 @@ package process
 
 import processInternal._
 import ProcessBuilder._
+import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions
-
+import scala.util.Properties.isWin
 
 /** Represents a process that is running or has finished running.
  *  It may be a compound process with several underlying native processes (such as `a #&& b`).
@@ -101,8 +102,13 @@ trait ProcessCreation {
     */
   def apply(command: scala.collection.Seq[String], cwd: Option[File], extraEnv: (String, String)*): ProcessBuilder = {
     val jpb = new JProcessBuilder(command.toArray: _*)
-    cwd foreach (jpb directory _)
-    extraEnv foreach { case (k, v) => jpb.environment.put(k, v) }
+    cwd.foreach(jpb.directory(_))
+    extraEnv.foreach {
+      case (k, v) =>
+        if (isWin && !jpb.environment.keySet.contains(k))
+          jpb.environment.keySet.asScala.find(k.equalsIgnoreCase(_)).foreach(k1 => throw new IllegalArgumentException(s"Environment key '$k' differs only in case from existing key '$k1'"))
+        jpb.environment.put(k, v)
+    }
     apply(jpb)
   }
 
