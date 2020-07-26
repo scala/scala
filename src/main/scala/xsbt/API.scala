@@ -128,10 +128,14 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
   def registerGeneratedClasses(classSymbols: Iterator[Symbol]): Unit = {
     classSymbols.foreach { symbol =>
       val sourceFile = symbol.sourceFile
-      val sourceJavaFile0 =
+      val sourceVF0 =
         if (sourceFile == null) symbol.enclosingTopLevelClass.sourceFile
         else sourceFile
-      val sourceJavaFile: VirtualFile = sourceJavaFile0 match { case AbstractZincFile(vf) => vf }
+      val sourceVF: Option[VirtualFile] = sourceVF0 match {
+        case AbstractZincFile(vf) => Some(vf)
+        // This could be scala.reflect.io.FileZipArchive$LeakyEntry
+        case _ => None
+      }
 
       def registerProductNames(names: FlattenedNames): Unit = {
         // Guard against a local class in case it surreptitiously leaks here
@@ -148,12 +152,14 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
           }
           val zincClassName = names.className
           val srcClassName = classNameAsString(symbol)
-          callback.generatedNonLocalClass(
-            sourceJavaFile,
-            classFile.toPath,
-            zincClassName,
-            srcClassName
-          )
+          sourceVF foreach { source =>
+            callback.generatedNonLocalClass(
+              source,
+              classFile.toPath,
+              zincClassName,
+              srcClassName
+            )
+          }
         } else ()
       }
 
