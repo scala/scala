@@ -571,6 +571,8 @@ abstract class Erasure extends InfoTransform
       // when implementing later phases.
       if (member.isModule) newFlags = (newFlags | METHOD) & ~(MODULE | STABLE)
       val bridge = other.cloneSymbolImpl(root, newFlags).setPos(root.pos).setAnnotations(member.annotations)
+      if (member.hasAnnotation(definitions.inheritSignatureClass))
+        member.updateAttachment(InheritedSignature(bridge))
 
       debuglog("generating bridge from %s (%s): %s%s to %s: %s%s".format(
         other, flagsToString(newFlags),
@@ -771,6 +773,14 @@ abstract class Erasure extends InfoTransform
           var qual1 = typedQualifier(qual)
           if (!(qual1.tpe <:< erasure)) qual1 = cast(qual1, erasure)
           Select(qual1, name) copyAttrs tree
+
+        case Apply(fun @ Select(qual, _), args) if fun.symbol.hasAnnotation(definitions.inheritSignatureClass) =>
+          if (!context.enclMethod.owner.isBridge) {
+            val os = enteringTyper(fun.symbol.nextOverriddenSymbol)
+            adaptMember(atPos(tree.pos)(Apply(Select(qual, os), args)))
+          } else
+            tree
+
         case _ =>
           tree
       }

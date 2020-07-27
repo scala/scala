@@ -33,6 +33,8 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitAmbiguous"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.implicitNotFound"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.migration"),
+
+    ProblemFilters.exclude[MissingClassProblem]("scala.annotation.inheritSignature"),
   )
 
   override val buildSettings = Seq(

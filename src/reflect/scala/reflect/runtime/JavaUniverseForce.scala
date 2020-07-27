@@ -72,6 +72,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     this.NullaryOverrideAdapted
     this.ChangeOwnerAttachment
     this.InterpolatedString
+    this.InheritedSignature
     this.noPrint
     this.typeDebug
     // inaccessible: this.posAssigner
@@ -433,6 +434,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.NowarnClass
     definitions.uncheckedStableClass
     definitions.uncheckedVarianceClass
+    definitions.inheritSignatureClass
     definitions.ChildAnnotationClass
     definitions.RepeatedAnnotationClass
     definitions.TargetNameAnnotationClass

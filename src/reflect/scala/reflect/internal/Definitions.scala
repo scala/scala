@@ -1308,6 +1308,7 @@ trait Definitions extends api.StandardDefinitions {
     lazy val NowarnClass                = getClassIfDefined("scala.annotation.nowarn")
     lazy val uncheckedStableClass       = requiredClass[scala.annotation.unchecked.uncheckedStable]
     lazy val uncheckedVarianceClass     = requiredClass[scala.annotation.unchecked.uncheckedVariance]
+    lazy val inheritSignatureClass      = getClassIfDefined("scala.annotation.inheritSignature")
 
     // Tasty Unpickling Helpers - only access when Scala 3 library is expected to be available
     lazy val ChildAnnotationClass        = getClassIfDefined("scala.annotation.internal.Child")
