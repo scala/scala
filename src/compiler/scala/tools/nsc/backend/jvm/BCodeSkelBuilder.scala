@@ -553,6 +553,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
     def genDefDef(dd: DefDef) {
       // the only method whose implementation is not emitted: getClass()
       if (definitions.isGetClass(dd.symbol)) { return }
+      if (dd.symbol.hasAttachment[JustMethodReference]) { return }
       assert(mnode == null, "GenBCode detected nested method.")
 
       methSymbol  = dd.symbol

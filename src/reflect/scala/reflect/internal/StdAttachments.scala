@@ -71,6 +71,8 @@ trait StdAttachments {
 
   case object DelambdafyTarget extends PlainAttachment
 
+  case class JustMethodReference(lambdaTarget: Symbol) extends PlainAttachment
+
   /** When present, indicates that the host `Ident` has been created from a backquoted identifier.
    */
   case object BackquotedIdentifierAttachment extends PlainAttachment

@@ -15,7 +15,6 @@ package backend.jvm
 
 import scala.annotation.switch
 import scala.collection.mutable.ListBuffer
-import scala.reflect.internal.Flags
 import scala.tools.asm
 import scala.tools.asm.Opcodes
 import scala.tools.asm.tree.{MethodInsnNode, MethodNode}
@@ -1362,21 +1361,27 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     def genLoadTry(tree: Try): BType
 
     def genInvokeDynamicLambda(canLMF: delambdafy.LambdaMetaFactoryCapable) = {
-      import canLMF._
+      import canLMF.{ lambdaTarget => originalTarget, _ }
 
-      val isStaticMethod = lambdaTarget.hasFlag(Flags.STATIC)
+      val lambdaTarget = originalTarget.attachments.get[JustMethodReference].map(_.lambdaTarget).getOrElse(originalTarget)
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
       val isInterface = lambdaTarget.owner.isTrait
+      val tag =
+        if (lambdaTarget.isStaticMember) Opcodes.H_INVOKESTATIC
+        else if (lambdaTarget.isPrivate) Opcodes.H_INVOKESPECIAL
+        //else if (lambdaTarget.isClassConstructor) Opcodes.H_NEWINVOKESPECIAL // to invoke Foo::new directly
+        else if (isInterface) Opcodes.H_INVOKEINTERFACE
+        else Opcodes.H_INVOKEVIRTUAL
       val implMethodHandle =
-        new asm.Handle(if (lambdaTarget.hasFlag(Flags.STATIC)) asm.Opcodes.H_INVOKESTATIC else if (isInterface) asm.Opcodes.H_INVOKEINTERFACE else asm.Opcodes.H_INVOKEVIRTUAL,
+        new asm.Handle(
+          tag,
           classBTypeFromSymbol(lambdaTarget.owner).internalName,
           lambdaTarget.name.toString,
           methodBTypeFromSymbol(lambdaTarget).descriptor,
           /* itf = */ isInterface)
-      val receiver = if (isStaticMethod) Nil else lambdaTarget.owner :: Nil
-      val (capturedParams, lambdaParams) = lambdaTarget.paramss.head.splitAt(lambdaTarget.paramss.head.length - arity)
-      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), (receiver ::: capturedParams).map(sym => typeToBType(sym.info).toASMType): _*)
+      val (capturedParams, lambdaParams) = originalTarget.paramss.head.splitAt(originalTarget.paramss.head.length - arity)
+      val invokedType = asm.Type.getMethodDescriptor(asmType(functionalInterface), capturedParams.map(sym => typeToBType(sym.info).toASMType): _*)
       val constrainedType = MethodBType(lambdaParams.map(p => typeToBType(p.tpe)), typeToBType(lambdaTarget.tpe.resultType)).toASMType
       val samMethodType = methodBTypeFromSymbol(sam).toASMType
       val markers = if (addScalaSerializableMarker) classBTypeFromSymbol(definitions.SerializableClass).toASMType :: Nil else Nil

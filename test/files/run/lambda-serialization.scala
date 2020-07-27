@@ -39,8 +39,18 @@ object Test {
   }
 
   def fakeLambdaFailsToDeserialize(): Unit = {
-    val fake = new SerializedLambda(classOf[C], classOf[FakeSam].getName, "apply", "()V",
-      MethodHandleInfo.REF_invokeVirtual, classOf[C].getName, "foo", "()V", "()V", Array(new C))
+    val fake = new SerializedLambda(
+      /*           capturingClass           = */ classOf[C],
+      /* functionalInterfaceClass           = */ classOf[FakeSam].getName,
+      /* functionalInterfaceMethodName      = */ "apply",
+      /* functionalInterfaceMethodSignature = */ "()V",
+      /*                implMethodKind      = */ MethodHandleInfo.REF_invokeVirtual,
+      /*                implClass           = */ classOf[C].getName,
+      /*                implMethodName      = */ "foo",
+      /*                implMethodSignature = */ "()V",
+      /*        instantiatedMethodType      = */ "()V",
+      /*            capturedArgs            = */ Array(new C),
+    )
     try {
       serializeDeserialize(fake).asInstanceOf[FakeSam].apply()
       assert(false)

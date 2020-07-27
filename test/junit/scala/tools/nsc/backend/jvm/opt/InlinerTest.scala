@@ -932,11 +932,19 @@ class InlinerTest extends BytecodeTesting {
     val t1 = getMethod(c, "t1")
     assertNoIndy(t1)
     // the indy call is inlined into t, and the closure elimination rewrites the closure invocation to the body method
-    assertInvoke(t1, "C", "$anonfun$m$2")
+    try assertInvoke(t1, "C", "$anonfun$m$2")
+    catch { case e: AssertionError =>
+      try assertInvoke(t1, "java/lang/String", "trim")  // this is the new behaviour, after restarr'ing
+      catch { case _: AssertionError => throw e }
+    }
 
     val t2 = getMethod(c, "t2")
     assertNoIndy(t2)
-    assertInvoke(t2, "M$", "$anonfun$m$1")
+    try assertInvoke(t2, "M$", "$anonfun$m$1")
+    catch { case e: AssertionError =>
+      try assertInvoke(t2, "java/lang/String", "trim")  // this is the new behaviour, after restarr'ing
+      catch { case _: AssertionError => throw e }
+    }
   }
 
   @Test
@@ -1435,10 +1443,17 @@ class InlinerTest extends BytecodeTesting {
     val c = compileClass(code)
 
     // box-unbox will clean it up
-    assertSameSummary(getMethod(c, "t"), List(
+    try assertSameSummary(getMethod(c, "t"), List(
       ALOAD, "$anonfun$t$1", IFEQ /*A*/,
       "$anonfun$t$2", IRETURN,
       -1 /*A*/, "$anonfun$t$3", IRETURN))
+    catch { case e: AssertionError =>
+      try assertSameSummary(getMethod(c, "t"), List( // this is the new behaviour, after restarr'ing
+        ALOAD, "debug", IFEQ /*A*/,
+        "$anonfun$t$2", IRETURN,
+        -1 /*A*/, "$anonfun$t$3", IRETURN))
+      catch { case _: AssertionError => throw e }
+    }
   }
 
   @Test
