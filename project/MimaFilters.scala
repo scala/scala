@@ -35,6 +35,9 @@ object MimaFilters extends AutoPlugin {
     ProblemFilters.exclude[MissingTypesProblem]("scala.annotation.migration"),
 
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.inheritSignature"),
+
+    // This method could be removed with `@inheritSignature`
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashMap.mapValuesInPlaceImpl"),
   )
 
   override val buildSettings = Seq(
