@@ -764,21 +764,19 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
 
     withHelpSyntax(name + ":<" + arg + ">")
 
-    // try to set. halting means halt at first non-arg
+    // try to set. halting means halt at first non-arg i.e. at next option
     protected def tryToSetArgs(args: List[String], halting: Boolean) = {
       @tailrec
-      def loop(args: List[String]): List[String] = args match {
-        case arg :: rest =>
-          if (halting && (arg startsWith "-")) args
-          else {
-            if (helpText.isDefined && arg == "help") sawHelp = true
-            else if (prepend) value ::= arg
-            else value ++= List(arg)
-            loop(rest)
-          }
-        case Nil         => Nil
+      def loop(seen: List[String], args: List[String]): (List[String], List[String]) = args match {
+        case Optionlike() :: _ if halting         => (seen, args)
+        case "help" :: rest if helpText.isDefined => sawHelp = true ; loop(seen, rest)
+        case arg :: rest                          => loop(arg :: seen, rest)
+        case Nil                                  => (seen, Nil)
       }
-      Some(loop(if (prepend) args.reverse else args))
+      val (seen, rest) = loop(Nil, args)
+      if (prepend) value = value.prependedAll(seen.reverse)
+      else value = value.appendedAll(seen.reverse)
+      Some(rest)
     }
     def tryToSet(args: List[String])                  = tryToSetArgs(args, halting = true)
     override def tryToSetColon(args: List[String])    = tryToSetArgs(args, halting = false)

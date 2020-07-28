@@ -267,4 +267,24 @@ class SettingsTest {
     assertEquals("processing stops at bad option", 2, rest.length)
     assertEquals(2, errors.size)  // missing arg and bad option
   }
+  @Test def `t12098 MultiStringSetting with prepend handles non-colon args`(): Unit = {
+    import scala.collection.mutable.ListBuffer
+    val errors   = ListBuffer.empty[String]
+    val settings = new Settings(errors.addOne)
+    val (ok, rest) = settings.processArguments("-Wconf" :: "help" :: "-Vdebug" :: "x.scala" :: Nil, true)
+    assert("processing should succeed", ok)
+    assertEquals("processing stops at argument", 1, rest.length)
+    assertEquals("processing stops at the correct argument", "x.scala", rest.head)
+    assertEquals(0, errors.size)
+    assert(settings.debug)
+    assert(settings.Wconf.isHelping)
+  }
+  @Test def `t12098 MultiStringSetting prepends`(): Unit = {
+    val settings = new Settings(msg => fail(s"Unexpected error: $msg"))
+    val (ok, rest) = settings.processArguments("-Wconf:cat=lint-missing-interpolator:ws" :: "-Xlint" :: "x.scala" :: Nil, true)
+    assert("processing should succeed", ok)
+    assert(settings.warnMissingInterpolator)
+    assert(settings.lintDeprecation)
+    // test/files/neg/t12098.scala shows that cat=deprecation:w due to xlint supersedes default cat=deprecation:ws
+  }
 }

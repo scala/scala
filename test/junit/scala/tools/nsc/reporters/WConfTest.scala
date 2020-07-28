@@ -43,7 +43,7 @@ class WConfTest extends BytecodeTesting {
 
   def reports(code: String, extraWconf: String = "", lint: Boolean = false): List[Info] = {
     // lint has a postSetHook to enable `deprecated`, which in turn adds to `Wconf`,
-    // but since we override Wconf after, that effect is cancelled
+    // but since we clear and initialize Wconf after enabling lint, that effect is cancelled.
     if (lint) {
       global.settings.warnUnused.clear()
       global.settings.lint.tryToSet(List("_"))
@@ -212,6 +212,7 @@ class WConfTest extends BytecodeTesting {
   def lint(): Unit = {
     check(infos(code, "cat=lint:i"), Nil)
     check(infos(code, "cat=lint:i", lint = true), List(l2, l23))
+    check(reports(code, "any:s,cat=lint:ws", lint = true), Nil)
     check(reports(code, "cat=lint:ws,any:s", lint = true), List((-1, "2 lint warnings")))
     check(infos(code, "cat=lint-deprecation:i", lint = true), List(l2))
     check(infos(code, "cat=lint-adapted-args:i", lint = true), List(l23))
