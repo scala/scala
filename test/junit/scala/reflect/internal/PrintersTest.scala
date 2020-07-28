@@ -137,6 +137,10 @@ class BasePrintTest {
 
   @Test def testName21 = assertPrintedCode("""class `test.name`""")
 
+  @Test def testName22 = assertEquals("val `some-val`: Int = 1", showCode(q"""val ${TermName("some-val")}: Int = 1"""))
+
+  @Test def testName23 = assertEquals("val `some+`: String = \"foo\"", showCode(q"""val ${TermName("some+")}: String = "foo""""))
+
   @Test def testIfExpr1 = assertResultCode(code = sm"""
     |val a = 1
     |if (a > 1)
