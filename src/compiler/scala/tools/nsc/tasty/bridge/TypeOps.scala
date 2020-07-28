@@ -74,6 +74,15 @@ trait TypeOps { self: TastyUniverse =>
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
 
     final val NoType: Type = u.NoType
+
+    /** Represents a symbol that has been initialised by TastyUnpickler, but can not be in a state of completion
+     *  because its definition has not yet been seen.
+     */
+    object DefaultInfo extends TastyRepr {
+      override def isTrivial: Boolean = true
+      def originalFlagSet: TastyFlagSet = EmptyTastyFlags
+    }
+
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
@@ -297,15 +306,27 @@ trait TypeOps { self: TastyUniverse =>
 
   private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol
 
-  /**
-   * Ported from dotc
-   */
-  abstract class TastyLazyType(val originalFlagSet: TastyFlagSet) extends u.LazyType with u.FlagAgnosticCompleter {
-    private[this] var myDecls: u.Scope = u.EmptyScope
-    def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
-    override def decls: u.Scope = myDecls
-    private[bridge] def withDecls(decls: u.Scope): this.type = { myDecls = decls; this }
-    override def load(sym: Symbol): Unit = complete(sym)
+  sealed abstract trait TastyRepr extends u.Type {
+    def originalFlagSet: TastyFlagSet
+    final def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
+  }
+
+  abstract class TastyCompleter(isClass: Boolean, final val originalFlagSet: TastyFlagSet)(implicit
+      capturedCtx: Context) extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
+
+    override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope
+
+    override final def load(sym: Symbol): Unit =
+      complete(sym)
+
+    override final def complete(sym: Symbol): Unit =
+      // we do have to capture Context here as complete is triggered outside of our control
+      // TODO [tasty]: perhaps Context can be redesigned so it can be reconstructed from a lightweight representation.
+      computeInfo(sym)(capturedCtx)
+
+    /**Compute and set the info for the symbol in the given Context
+     */
+    def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
   def prefixedRef(prefix: Type, sym: Symbol): Type = {

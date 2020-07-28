@@ -1,5 +1,7 @@
 package tastytest
 
 object TestDelayedInternal {
-  def test: DelayedInternal[Nothing] = ??? // error
+
+  compiletimeHasChild[DelayedInternal[_]]("tastytest.DelayedInternal.Internal.Instance")
+
 }

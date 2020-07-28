@@ -218,7 +218,7 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
-    final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
+    final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyCompleter, privateWithin: Symbol = noSymbol): Symbol = {
       def default() = unsafeNewSymbol(owner, name, completer.originalFlagSet, completer, privateWithin)
       if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
@@ -234,7 +234,7 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
-    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
+    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyCompleter, privateWithin: Symbol): Symbol = {
       def default() = unsafeNewClassSymbol(owner, typeName, completer.originalFlagSet, completer, privateWithin)
       if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
@@ -286,7 +286,7 @@ trait ContextOps { self: TastyUniverse =>
         log(s"!!! visited module value $name first")
         assert(!owner.rawInfo.decls.lookupAll(encodeTermName(name)).exists(_.isModule))
         val module = owner.newModule(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
-        module.moduleClass.info = u.NoType
+        module.moduleClass.info = defn.DefaultInfo
         module
       }
       else if (name.isTypeName) {
@@ -300,7 +300,7 @@ trait ContextOps { self: TastyUniverse =>
       if (flags.is(FlagSets.ObjectClassCreationFlags)) {
         log(s"!!! visited module class $typeName first")
         val module = owner.newModule(encodeTermName(typeName), u.NoPosition, encodeFlagSet(FlagSets.ObjectCreationFlags))
-        module.info = u.NoType
+        module.info = defn.DefaultInfo
         module.moduleClass.flags = encodeFlagSet(flags)
         module.moduleClass
       }
@@ -314,7 +314,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = u.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = u.ClassInfoType(cls.repr.parents, cls.repr.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 
@@ -378,9 +378,6 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
-
-    final def initialiseClassScope(clazz: Symbol): Unit =
-      clazz.completer.withDecls(u.newScope)
 
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 

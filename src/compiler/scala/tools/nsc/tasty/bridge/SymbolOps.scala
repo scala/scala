@@ -35,10 +35,17 @@ trait SymbolOps { self: TastyUniverse =>
     if (sym.isModuleClass) sym.sourceModule else sym
 
   implicit class SymbolDecorator(val sym: Symbol) {
-    def completer: TastyLazyType = {
-      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo)} ")
-      sym.rawInfo.asInstanceOf[TastyLazyType]
+
+    /** A computed property that should only be called on a symbol which is known to have been initialised by the
+     *  Tasty Unpickler and is not yet completed.
+     *
+     *  @todo adapt callsites and type so that this property is more safe to call (barring mutation from uncontrolled code)
+     */
+    def repr: TastyRepr = {
+      require(sym.rawInfo.isInstanceOf[TastyRepr], s"Expected ${u.typeOf[TastyRepr]}, is ${u.showRaw(sym.rawInfo)} ")
+      sym.rawInfo.asInstanceOf[TastyRepr]
     }
+
     def ensureCompleted(): Unit = {
       sym.info
       sym.annotations.foreach(_.completeInfo())
