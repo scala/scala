@@ -41,7 +41,8 @@ sealed abstract class CallbackGlobal(
     output match {
       case single: SingleOutput => List(single.getOutputDirectoryAsPath)
       // Use Stream instead of List because Analyzer maps intensively over the directories
-      case multi: MultipleOutput => multi.getOutputGroups.toStream map (_.getOutputDirectoryAsPath)
+      case multi: MultipleOutput =>
+        multi.getOutputGroups.toIterator.map(_.getOutputDirectoryAsPath).toSeq
     }
   }
 
