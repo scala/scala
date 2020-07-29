@@ -9,11 +9,11 @@ object TestSymbollicEnums extends Suite("TestSymbollicEnums") {
     val zero = 0L.lit
     val one  = 1L.lit
 
-    def interpret(e: Expr[Long]): Long = e match {
+    def extension_interpret(e: Expr[Long]): Long = e match {
       case Expr.Literal(x)      => x
       case Expr.Infix(op, l, r) => op match {
-        case Ops.+ => interpret(l) + interpret(r)
-        case Ops.* => interpret(l) * interpret(r)
+        case Ops.+ => extension_interpret(l) + extension_interpret(r)
+        case Ops.* => extension_interpret(l) * extension_interpret(r)
       }
     }
   }

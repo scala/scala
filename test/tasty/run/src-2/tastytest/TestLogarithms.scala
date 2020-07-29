@@ -9,6 +9,6 @@ object TestLogarithms extends Suite("TestLogarithms") {
 
   val l3: Double = l1 - l2 // currently opaque type aliases are transparent to Scala 2
 
-  test(assert(logarithmOps.toDouble(logarithmOps.+(l1)(l2)) === 4.999999999999999))
+  test(assert(logarithmOps.extension_toDouble(logarithmOps.extension_+(l1)(l2)) === 4.999999999999999))
 
 }

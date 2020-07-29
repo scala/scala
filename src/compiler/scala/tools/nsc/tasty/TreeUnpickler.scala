@@ -743,11 +743,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
             val resType = effectiveResultType(sym, typeParams, tpt.tpe)
             ctx.setInfo(sym, defn.DefDefType(if (isCtor) Nil else typeParams, valueParamss, resType))
           case VALDEF => // valdef in TASTy is either a singleton object or a method forwarder to a local value.
-            val isInline = repr.tastyOnlyFlags.is(Inline)
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Inline | Enum | Extension | Exported))
+            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Extension | Exported))
             val tpe = readTpt()(localCtx).tpe
-            val isConstant = isConstantType(tpe)
-            if (isInline) unsupportedWhen(!isConstant, s"inline val ${sym.nameString} with non-constant type $tpe")
             ctx.setInfo(sym,
               if (repr.originalFlagSet.is(SingletonEnumFlags)) {
                 val enumClass = sym.objectImplementation
@@ -762,7 +759,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
                 ctx.setInfo(enumClass, defn.ClassInfoType(intersectionParts(tpe), ctor :: Nil, enumClass))
                 prefixedRef(sym.owner.thisPrefix, enumClass)
               }
-              else if (isInline && isConstant) defn.InlineExprType(tpe)
+              else if (sym.isFinal && isConstantType(tpe)) defn.InlineExprType(tpe)
               else if (sym.isMethod) defn.ExprType(tpe)
               else tpe
             )
