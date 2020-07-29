@@ -24,8 +24,7 @@ object TastyFlags {
   final val AbsOverride           = Protected.next
   final val Abstract              = AbsOverride.next
   final val Final                 = Abstract.next
-  final val Interface             = Final.next
-  final val Sealed                = Interface.next
+  final val Sealed                = Final.next
   final val Case                  = Sealed.next
   final val Implicit              = Case.next
   final val Lazy                  = Implicit.next
@@ -104,7 +103,6 @@ object TastyFlags {
             case AbsOverride => "AbsOverride"
             case Abstract => "Abstract"
             case Final => "Final"
-            case Interface => "Interface"
             case Sealed => "Sealed"
             case Case => "Case"
             case Implicit => "Implicit"

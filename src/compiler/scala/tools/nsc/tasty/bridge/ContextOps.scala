@@ -136,11 +136,8 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
-    def isScala3Macro(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Macro | Inline)
-    def isScala3Inline(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Inline)
-    def isScala2Macro(sym: Symbol): Boolean = sym.repr.originalFlagSet.is(Macro | Erased)
-
-    def requiresLatentEntry(decl: Symbol): Boolean = isScala3Macro(decl)
+    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro || decl.isTraitParamAccessor
+    def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
 
     def canEnterOverload(decl: Symbol): Boolean = {
       !(decl.isModule && isSymbol(findObject(thisCtx.owner, decl.name)))
@@ -269,7 +266,7 @@ trait ContextOps { self: TastyUniverse =>
       if (mode.is(IndexScopedStats))
         initialContext.collectLatentEvidence(owner, sym)
       val decl = declaringSymbolOf(sym)
-      if (!requiresLatentEntry(decl))
+      if (!(requiresLatentEntry(decl) || neverEntered(decl)))
         enterIfUnseen0(owner.rawInfo.decls, decl)
     }
 
@@ -305,6 +302,9 @@ trait ContextOps { self: TastyUniverse =>
       }
       else if (name === TastyName.Constructor) {
         owner.newConstructor(u.NoPosition, encodeFlagSet(flags &~ Stable))
+      }
+      else if (name === TastyName.MixinConstructor) {
+        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, encodeFlagSet(flags &~ Stable))
       }
       else if (flags.is(FlagSets.ObjectCreationFlags)) {
         log(s"!!! visited module value $name first")
@@ -486,6 +486,7 @@ trait ContextOps { self: TastyUniverse =>
 
     private[this] var myInlineDefs: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
     private[this] var myMacros: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+    private[this] var myTraitParamAccessors: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
 
     /** Collect evidence from definitions that is required by `enterLatentDefs`. */
     private[ContextOps] def collectLatentEvidence(owner: Symbol, sym: Symbol): Unit = {
@@ -500,39 +501,67 @@ trait ContextOps { self: TastyUniverse =>
         myInlineDefs
       }
 
-      def register(map: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]], sym: Symbol) =
+      def traitParamAccessors() = {
+        if (myTraitParamAccessors == null) myTraitParamAccessors = mutable.HashMap.empty
+        myTraitParamAccessors
+      }
+
+      def append(map: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]])(owner: Symbol, sym: Symbol) =
         map.getOrElseUpdate(owner, mutable.ArrayBuffer.empty) += sym
 
-      if (isScala2Macro(sym)) register(macroMap(), sym)
-      else if (isScala3Inline(sym)) register(inlineMap(), sym)
+      if (sym.isScala2Macro) append(macroMap())(owner, sym)
+      else if (sym.isScala3Inline) append(inlineMap())(owner, sym)
+      else if (sym.isTraitParamAccessor) append(traitParamAccessors())(owner, sym)
 
     }
 
-    /** Should be called after indexing all symbols in the given owners scope.
+    /**Should be called after indexing all symbols in the given owners scope.
      *
-     *  Enters qualifying definitions into the given owners scope, according to the following rules:
-     *    - an `inline macro` method (Scala 3 macro) without a corresponding `erased macro` method (Scala 2 macro).
+     * Enters qualifying definitions into the given owners scope, according to the following rules:
+     *   - an `inline macro` method (Scala 3 macro) without a corresponding `erased macro` method (Scala 2 macro).
+     *
+     * Reports illegal definitions:
+     *   - trait constructors with parameters
      *
      *  @param cls should be a symbol associated with a non-empty scope
      */
     private[ContextOps] def enterLatentDefs(cls: Symbol): Unit = {
 
-      def macroDefs(owner: Symbol): Option[Iterable[Symbol]] = {
-        if (myMacros != null) myMacros.remove(owner)
+      def macroDefs(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myMacros != null) myMacros.remove(cls)
         else None
       }
 
-      def inlineDefs(owner: Symbol): Option[Iterable[Symbol]] = {
-        if (myInlineDefs != null) myInlineDefs.remove(owner)
+      def inlineDefs(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myInlineDefs != null) myInlineDefs.remove(cls)
         else None
       }
 
-      val decls  = cls.rawInfo.decls
-      val macros = macroDefs(cls).getOrElse(Iterable.empty)
-      val defs   = inlineDefs(cls).getOrElse(Iterable.empty)
+      def traitParamAccessors(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myTraitParamAccessors != null) myTraitParamAccessors.remove(cls)
+        else None
+      }
 
-      for (d <- defs if !macros.exists(_.name == d.name))
-        enterIfUnseen0(decls, d)
+      def enterInlineDefs(cls: Symbol, decls: u.Scope): Unit = {
+        val macros = macroDefs(cls).getOrElse(Iterable.empty)
+        val defs   = inlineDefs(cls).getOrElse(Iterable.empty)
+
+        for (d <- defs if !macros.exists(_.name == d.name))
+          enterIfUnseen0(decls, d)
+      }
+
+      def reportParameterizedTrait(cls: Symbol, decls: u.Scope): Unit = {
+        val traitParams = traitParamAccessors(cls).getOrElse(Iterable.empty)
+        if (traitParams.nonEmpty) {
+          val parameters = traitParams.map(_.nameString)
+          val msg = s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
+          unsupportedError(msg)(this.withOwner(cls.owner))
+        }
+      }
+
+      val decls = cls.rawInfo.decls
+      enterInlineDefs(cls, decls)
+      reportParameterizedTrait(cls, decls)
 
     }
   }

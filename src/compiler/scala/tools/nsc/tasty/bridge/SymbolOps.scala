@@ -15,7 +15,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
-import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags.TastyFlagSet
+import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
 
 /**This layer deals with selecting a member symbol from a type using a [[TastyName]],
@@ -35,6 +35,15 @@ trait SymbolOps { self: TastyUniverse =>
     if (sym.isModuleClass) sym.sourceModule else sym
 
   implicit class SymbolDecorator(val sym: Symbol) {
+
+    def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
+    def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
+    def isScala2Macro: Boolean = repr.originalFlagSet.is(Erased | Macro)
+
+    def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
+    def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
+
+    def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.

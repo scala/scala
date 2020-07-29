@@ -44,7 +44,6 @@ trait FlagOps { self: TastyUniverse =>
     if (tflags.is(AbsOverride)) flags |= Flag.ABSOVERRIDE
     if (tflags.is(Abstract)) flags |= Flag.ABSTRACT
     if (tflags.is(Final)) flags |= Flag.FINAL
-    if (tflags.is(Interface)) flags |= Flag.INTERFACE
     if (tflags.is(Sealed)) flags |= Flag.SEALED
     if (tflags.is(Case)) flags |= Flag.CASE
     if (tflags.is(Implicit)) flags |= ModifierFlags.IMPLICIT

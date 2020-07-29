@@ -415,7 +415,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     private def nothingButMods(end: Addr): Boolean =
       currentAddr === end || isModifierTag(nextByte)
 
-    private def normalizeFlags(tag: Int, owner: Symbol, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
+    private def normalizeName(isType: Boolean, name: TastyName)(implicit ctx: Context): TastyName = {
+      val prior = if (ctx.owner.isTrait && name === TastyName.Constructor) TastyName.MixinConstructor else name
+      if (isType) prior.toTypeName else prior
+    }
+
+    private def normalizeFlags(tag: Int, tastyFlags: TastyFlagSet, name: TastyName, isAbsType: Boolean, isClass: Boolean, rhsIsEmpty: Boolean)(implicit ctx: Context): TastyFlagSet = {
       var flags = tastyFlags
       val lacksDefinition =
         rhsIsEmpty &&
@@ -426,7 +431,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       if (isClass && flags.is(Trait)) flags |= Abstract
       if (tag === DEFDEF) flags |= Method
       if (tag === VALDEF) {
-        if (flags.is(Inline) || owner.is(Trait)) flags |= FieldAccessor
+        if (flags.is(Inline) || ctx.owner.is(Trait)) flags |= FieldAccessor
         if (flags.not(Mutable)) flags |= Stable
         if (flags.is(SingletonEnumFlags)) flags |= Object // we will encode dotty enum constants as objects (this needs to be corrected in bytecode)
       }
@@ -477,9 +482,8 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       val tag = readByte()
       def isTypeTag = tag === TYPEDEF || tag === TYPEPARAM
       val end = readEnd()
-      var name: TastyName = readTastyName()
-      if (isTypeTag) name = name.toTypeName
-      ctx.log(s"$start ::: => create ${astTagToString(tag)} ${name.debug}")
+      val parsedName: TastyName = readTastyName()
+      ctx.log(s"$start ::: => create ${astTagToString(tag)} ${parsedName.debug}")
       skipParams()
       val ttag = nextUnsharedTag
       val isAbsType = isAbstractType(ttag)
@@ -488,11 +492,12 @@ class TreeUnpickler[Tasty <: TastyUniverse](
       skipTree() // tpt
       val rhsIsEmpty = nothingButMods(end)
       if (!rhsIsEmpty) skipTree()
-      val (flags, annotations, privateWithin) = {
+      val (name, flags, annotations, privateWithin) = {
         val (parsedFlags, annotations, privateWithin) =
           readModifiers(end, readTypedAnnot, readTypedWithin, noSymbol)
-        val flags = normalizeFlags(tag, ctx.owner, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
-        (flags, annotations, privateWithin)
+        val name = normalizeName(isTypeTag, parsedName)
+        val flags = normalizeFlags(tag, parsedFlags, name, isAbsType, isClass, rhsIsEmpty)
+        (name, flags, annotations, privateWithin)
       }
       def isTypeParameter = flags.is(Param) && isTypeTag
       def canEnterInClass = !isTypeParameter
@@ -508,7 +513,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         s"""$start parsed flags $debugFlags"""
       }
       val sym = {
-        if (tag === TYPEPARAM && ctx.owner.isClassConstructor) {
+        if (tag === TYPEPARAM && ctx.owner.isConstructor) {
           ctx.findOuterClassTypeParameter(name.toTypeName)
         }
         else {
