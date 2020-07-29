@@ -488,7 +488,17 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     }
 
     def primaryConstrParams  = _primaryConstrParams
-    def usesSpecializedField = intoConstructor.usesSpecializedField
+
+    /*
+    * `usesSpecializedField` makes a difference in deciding whether constructor-statements
+    * should be guarded in a `guardSpecializedFieldInit` class, ie in a class that's the generic super-class of
+    * one or more specialized sub-classes.
+    *
+    * Given that `usesSpecializedField` isn't read for any other purpose than the one described above,
+    * we skip setting `usesSpecializedField` in case the current class isn't `guardSpecializedFieldInit` to start with.
+    * That way, trips to a map in `specializeTypes` are saved.
+    */
+    var usesSpecializedField: Boolean = false
 
     // The constructor parameter corresponding to an accessor
     def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
@@ -505,27 +515,16 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     }
 
     // A transformer for expressions that go into the constructor
-    object intoConstructor extends Transformer {
-      /*
-      * `usesSpecializedField` makes a difference in deciding whether constructor-statements
-      * should be guarded in a `guardSpecializedFieldInit` class, ie in a class that's the generic super-class of
-      * one or more specialized sub-classes.
-      *
-      * Given that `usesSpecializedField` isn't read for any other purpose than the one described above,
-      * we skip setting `usesSpecializedField` in case the current class isn't `guardSpecializedFieldInit` to start with.
-      * That way, trips to a map in `specializeTypes` are saved.
-      */
-      var usesSpecializedField: Boolean = false
-
+    class IntoConstructor(omittable: Set[Symbol]) extends Transformer {
       private def isParamRef(sym: Symbol) = sym.isParamAccessor && sym.owner == clazz
 
       // Terminology: a stationary location is never written after being read.
-      private def isStationaryParamRef(sym: Symbol) = (
+      private def isStationaryParamRef(sym: Symbol) = {
         isParamRef(sym) &&
         !(sym.isGetter && sym.accessed.isVariable) &&
         !sym.isSetter &&
-        !sym.isVariable
-      )
+        (!sym.isVariable || omittable(sym))
+      }
 
       /*
        * whether `sym` denotes a param-accessor (ie in a class a PARAMACCESSOR field, or in a trait a method with same flag)
@@ -612,8 +611,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
       val defs              = defBuf.toList
       val auxConstructors   = auxConstructorBuf.toList
-      val constructorPrefix = constrPrefixBuf.toList
-      val constructorStats  = constrStatBuf.toList
+      var constructorPrefix = constrPrefixBuf.toList
+      var constructorStats  = constrStatBuf.toList
       val classInitStats    = classInitStatBuf.toList
 
       private def triage() = {
@@ -651,8 +650,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
           def moveEffectToCtor(mods: Modifiers, rhs: Tree, assignSym: Symbol): Unit = {
             val initializingRhs =
               if ((assignSym eq NoSymbol) || statSym.isLazy) EmptyTree // not memoized, or effect delayed (for lazy val)
-              else if (!mods.hasStaticFlag) intoConstructor(statSym, primaryConstrSym)(rhs)
-              else rhs
+              else rhs.updateAttachment(SymAtt(statSym))
 
             if (initializingRhs ne EmptyTree) {
               val initPhase =
@@ -704,9 +702,23 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
             // all other statements go into the constructor
             case _ =>
-              constrStatBuf += intoConstructor(impl.symbol, primaryConstrSym)(stat)
+              constrStatBuf += stat.updateAttachment(SymAtt(impl.symbol))
           }
         }
+      }
+
+      case class SymAtt(sym: Symbol)
+
+      def rewriteFieldAccesses(omittable: Set[Symbol]): Unit = {
+        val trans = new IntoConstructor(omittable)
+        val into = (tree: Tree) => tree.getAndRemoveAttachment[SymAtt] match {
+          case Some(statSym) =>
+            trans(statSym.sym, primaryConstr.symbol)(tree)
+          case _ =>
+            tree
+        }
+        constructorPrefix = constructorPrefix.mapConserve(into)
+        constructorStats = constructorStats.mapConserve(into)
       }
     }
 
@@ -717,6 +729,8 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       val omittableAccessor: Set[Symbol] =
         if (isDelayedInitSubclass) Set.empty
         else computeOmittableAccessors(clazz, defs, auxConstructors, constructorStats)
+
+      triage.rewriteFieldAccesses(omittableAccessor)
 
       // TODO: this should omit fields for non-memoized (constant-typed, unit-typed vals need no storage --
       // all the action is in the getter)

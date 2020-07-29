@@ -6,9 +6,14 @@ class C(private[this] var c: String) {
   override def toString = x
 }
 
+class D(private[this] var a: Int) {
+  println(a)
+}
+
 object Test {
-  def main(args: Array[String]) = println {
-    new C("bad")
+  def main(args: Array[String]): Unit = {
+    println(new C("bad"))
+    new D(27)
   }
 }
 
