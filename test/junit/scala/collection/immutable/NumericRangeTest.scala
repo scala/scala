@@ -68,4 +68,24 @@ class NumericRangeTest {
       nr.zip(upscale).forall { case (x, x100) => x*100 == x100 }
     }
   }
+
+  @Test
+  def numericRangeIsEmpty: Unit = {
+    //Test Positive Step
+    assertFalse((1 to 9).isEmpty)
+    assertTrue((9 to 1).isEmpty)
+
+    //Test Negative step
+    assertFalse(Range.inclusive(9, 1, -1).isEmpty)
+    assertTrue(Range.inclusive(1, 9, -1).isEmpty)
+
+    //Test for WideNumericRanges Positive Step
+    assertFalse((0L to Int.MaxValue.toLong).isEmpty)
+    assertFalse((0L to Long.MaxValue).isEmpty)
+    assertTrue((Long.MaxValue to Int.MaxValue.toLong).isEmpty)
+
+    //Test for WideNumericRanges Negative Steps
+    assertFalse(NumericRange.inclusive(Long.MaxValue, Int.MaxValue.toLong, -1).isEmpty)
+    assertTrue(NumericRange(Long.MaxValue, Long.MaxValue, -1).isEmpty)
+  }
 }
