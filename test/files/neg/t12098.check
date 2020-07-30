@@ -1,0 +1,7 @@
+t12098.scala:9: warning: method f in class C is deprecated (since 1.0): don't
+  def g() = f()
+            ^
+warning: 1 lint warning; change -Wconf for cat=lint to display individual messages
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
