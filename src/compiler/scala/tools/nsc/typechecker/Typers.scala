@@ -3848,6 +3848,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
     }
 
+    def qualifierTypedAnnotation(ann: Tree, lazyAnnotationInfo:LazyAnnotationInfo):AnnotationInfo = context.withinAnnotation {
+      def extract(t: Tree): Tree = t match {
+        case Apply(Select(New(tpt), nme.CONSTRUCTOR), _) => tpt
+        case Block(_, expr) => extract(expr)
+        case Apply(fun, _) => extract(fun)
+        case _ => EmptyTree
+      }
+
+      val qualifier = extract(ann).duplicate
+      val emptyReporter = new ContextReporter { override def error(pos: Position, msg: String): Unit = () }
+      val localTyper = newTyper(context.make(qualifier, context.owner.newLocalDummy(qualifier.pos),reporter = emptyReporter))
+      val _typedQualifier = localTyper.typedQualifier(qualifier,BYVALmode)
+
+      AnnotationInfo.qualifierTyped(_typedQualifier, lazyAnnotationInfo)
+    }
+
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */

@@ -1894,17 +1894,21 @@ trait Namers extends MethodSynthesis {
      * they were added only in typer, depending on the compilation order, they may
      * or may not be visible.
      */
-    def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] =
+    def annotSig(annotations: List[Tree], annotee: Tree, pred: AnnotationInfo => Boolean): List[AnnotationInfo] = {
       annotations filterNot (_ eq null) map { ann =>
         val ctx = typer.context
+        val annotyper = newTyper(ctx.makeNonSilent(ann))
         // need to be lazy, #1782. enteringTyper to allow inferView in annotation args, scala/bug#5892.
-        AnnotationInfo lazily {
+        val lazyInfo = AnnotationInfo lazily {
           enteringTyper {
-            val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
+            val annotSig = annotyper.typedAnnotation(ann, Some(annotee))
             if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
           }
         }
+        // sometimes, we want a QualifierTypedAnnotationInfo, so that we can matches(Symbol) without AnnotationInfo computed
+        annotyper.qualifierTypedAnnotation(ann, lazyInfo)
       }
+    }
 
     private def annotate(sym: Symbol, annotSigs: List[AnnotationInfo]): Unit = {
       sym setAnnotations annotSigs

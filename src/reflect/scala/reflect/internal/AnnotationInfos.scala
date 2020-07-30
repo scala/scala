@@ -109,6 +109,10 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def lazily(lazyInfo: => AnnotationInfo) =
       new LazyAnnotationInfo(lazyInfo)
 
+    def qualifierTyped(qualifier:Tree, lazyInfo:LazyAnnotationInfo):AnnotationInfo = {
+      new QualifierTypedAnnotationInfo(qualifier,lazyInfo)
+    }
+
     def apply(atp: Type, args: List[Tree], assocs: List[(Name, ClassfileAnnotArg)]): AnnotationInfo =
       new CompleteAnnotationInfo(atp, args, assocs)
 
@@ -121,6 +125,33 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
         case (Nil, defaults) => defaults contains category
         case (metas, _)      => metas exists (_ matches category)
       }
+  }
+
+  /**
+   * Represents qualifier typed annotation but not fully type checked
+   * @param qualifier typed qualifier
+   * @param lazyInfo a LazyAnnotationInfo that can compute a fully type checked AnnotationInfo
+   */
+  class QualifierTypedAnnotationInfo(qualifier: Tree, lazyInfo: LazyAnnotationInfo) extends AnnotationInfo {
+
+    override def atp: Type = lazyInfo.atp
+    override def original: Tree = lazyInfo.original
+    override def args: List[Tree] = lazyInfo.args
+    override def assocs: List[(Name, ClassfileAnnotArg)] = lazyInfo.assocs
+    override def pos: Position = lazyInfo.pos
+    override def completeInfo(): Unit = lazyInfo.completeInfo()
+    override def toString = lazyInfo.toString
+
+    override def matches(clazz: Symbol): Boolean = if(lazyInfo.isForced || qualifier.isErrorTyped) {
+      lazyInfo.matches(clazz)
+    } else {
+      !qualifier.symbol.isInstanceOf[StubSymbol] && (qualifier.symbol isNonBottomSubClass clazz)
+    }
+
+    override def setOriginal(t: Tree): this.type = {
+      lazyInfo.setOriginal(t)
+      this
+    }
   }
 
   class CompleteAnnotationInfo(
@@ -169,6 +200,8 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
 
     override def completeInfo(): Unit = forcedInfo
+
+    def isForced:Boolean = forced
   }
 
   /** Typed information about an annotation. It can be attached to either
