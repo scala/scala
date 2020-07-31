@@ -1,0 +1,12 @@
+t5159.scala:20: error: ambiguous reference to overloaded definition,
+both method bar in class B of type (foo: C.this.Foo): Unit
+and  method bar in class A of type (foo: C.this.Foo): Unit
+match argument types (C.this.Foo)
+    super.bar(foo)
+          ^
+t5159.scala:18: error: incompatible type in overriding
+type Foo = BFoo (defined in class B)
+   (Equivalent type required when overriding a type alias.)
+  override type Foo = CFoo
+                ^
+2 errors

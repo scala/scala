@@ -1505,8 +1505,10 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
       val timePhases = statistics.areStatisticsLocallyEnabled
       val startTotal = if (timePhases) statistics.startTimer(totalCompileTime) else null
+      val until      = if (settings.until.isDefault) NoPhase else phaseNamed(settings.until.value.head)
+      def terminate  = ((until eq NoPhase) || globalPhase.id > until.id) && reporter.hasErrors
 
-      while (globalPhase.hasNext && !reporter.hasErrors) {
+      while (globalPhase.hasNext && !terminate) {
         phase = globalPhase
         val phaseTimer = if (timePhases) statistics.newSubTimer(s"  ${phase.name}", totalCompileTime) else null
         val startPhase = if (timePhases) statistics.startTimer(phaseTimer) else null
@@ -1553,7 +1555,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         if (settings.YstatisticsEnabled && settings.Ystatistics.contains(phase.name))
           printStatisticsFor(phase)
 
-        if (!globalPhase.hasNext || reporter.hasErrors)
+        if (!globalPhase.hasNext || terminate)
           runReporting.warnUnusedSuppressions()
 
         advancePhase()
