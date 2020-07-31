@@ -59,4 +59,9 @@ object TestDefaults extends Suite("TestDefaults") {
     assert(bar === (12L,"abc",true))
   }
 
+  test("""new Defaults.OutOfOrder().bar() = (12L,"abc",true)""") {
+    val bar = new Defaults.OutOfOrder().bar()
+    assert(bar === (12L,"abc",true))
+  }
+
 }
