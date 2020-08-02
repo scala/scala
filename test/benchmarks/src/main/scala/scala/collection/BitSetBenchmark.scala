@@ -1,5 +1,6 @@
 package scala.collection
 
+import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeUnit
 
 import org.openjdk.jmh.annotations._
@@ -22,22 +23,22 @@ class BitSetBenchmark {
   @Param(Array("true", "false"))
   var mutable: Boolean = _
 
-  @Param(Array("empty", "half", "full", "spare-low", "spare-high"))
+  @Param(Array("empty", "half", "full", "sparse-low", "sparse-high"))
   var fill: String = _
 
-  var bitset: BitSet = _
-  var bitsetCopy: BitSet = _
-  var high: BitSet = _
+  var bitset         : BitSet     = _
+  var bitsetCopy     : BitSet     = _
+  var high           : BitSet     = _
   var sameValuesArray: Array[Int] = _
-  var sameValuesList: List[Int] = _
+  var sameValuesList : List[Int]  = _
 
-  var differentBitset: BitSet = _
-  var differentArray: Array[Int] = _
-  var differentList: List[Int] = _
+  var differentBitset: BitSet     = _
+  var differentArray : Array[Int] = _
+  var differentList  : List[Int]  = _
 
-  var overlapBitset: BitSet = _
-  var overlapArray: Array[Int] = _
-  var overlapList: List[Int] = _
+  var overlapBitset: BitSet     = _
+  var overlapArray : Array[Int] = _
+  var overlapList  : List[Int]  = _
 
   var bitsetCompanion: BitSetFactory[_ <: BitSet] = _
 
@@ -49,13 +50,13 @@ class BitSetBenchmark {
     }
 
     fill match {
-      case "empty" =>
-      case "half" => b1 ++= Range(0, bitsetSize, 2)
-      case "full" => b1 ++= Range(0, bitsetSize)
-      case "spare-low" =>
+      case "empty"       =>
+      case "half"        => b1 ++= Range(0, bitsetSize, 2)
+      case "full"        => b1 ++= Range(0, bitsetSize)
+      case "sparse-low"  =>
         assert(bitsetSize > 0) //i.e. abort that specific combination
         b1 += 0
-      case "spare-high" =>
+      case "sparse-high" =>
         assert(bitsetSize > 0) //i.e. abort that specific combination
         b1 += bitsetSize - 1
     }
@@ -71,11 +72,11 @@ class BitSetBenchmark {
     overlapList = overlapBitset.toList
 
     //add half
-    b1.iterator.grouped(2).foreach{ half =>
+    b1.iterator.grouped(2).foreach { half =>
       val head = half.head
       overlapBitset += half.head
       overlapArray :+= half.head
-      overlapList  :+= half.head
+      overlapList :+= half.head
     }
 
     if (mutable) {
@@ -253,23 +254,29 @@ class BitSetBenchmark {
 }
 
 //useful for testing
-//object Test_BitSetBenchmark extends App {
-//  val bm = new BitSetBenchmark
-//  bm.bitsetSize = 1000
-//  bm.fill = "half"
-//  bm.mutable = false
-//  bm.init()
-//  var i = 0
-//  var start = System.currentTimeMillis()
-//  while (true) {
-//    bm.hash
-//    i += 1
-//    if (i == 1000000) {
-//      val now = System.currentTimeMillis()
-//      println(s"${now - start}")
-//      i = 0
-//      start = now
-//    }
-//  }
-//
-//}
+object Test_BitSetBenchmark extends App {
+  val bean = ManagementFactory.getThreadMXBean.asInstanceOf[com.sun.management.ThreadMXBean]
+  bean.setThreadAllocatedMemoryEnabled(true)
+  val bm = new BitSetBenchmark
+  bm.bitsetSize = 10000
+  bm.fill = "empty"
+  bm.mutable = false
+  bm.init()
+  var i          = 0
+  var startNs    = System.nanoTime()
+  var startBytes = bean.getThreadAllocatedBytes(Thread.currentThread().getId)
+  val OPS        = 10000
+  while (true) {
+    bm.plusPlusDifferentList
+    i += 1
+    if (i == OPS) {
+      val nowNs    = System.nanoTime()
+      var nowBytes = bean.getThreadAllocatedBytes(Thread.currentThread().getId)
+      println(s"${(nowNs - startNs) / OPS} ns/op\t ${(nowBytes - startBytes) / OPS} bytes/op")
+      i = 0
+      startNs = nowNs
+      startBytes = nowBytes
+    }
+  }
+
+}

@@ -92,36 +92,39 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   def rangeImpl(from: Option[Int], until: Option[Int]): This = {
     // if the result is empty (because from > last or until < head) return empty
     // if the result is the same because from <= head && until > last return copyOrSelf
-    // lazyly generate the bitmask no larger that needed in other paths
-    var result = toBitMask
-    if (until.isDefined) {
-      val u = until.get
-      if (u <= lastOr(u + 1)) {
-        if (u <= headOr(u)) return empty
-        val untilWord = u >> LogWL
-        val untilBit  = u & (WordLength - 1)
-        if (untilBit == 0) result = newArray(untilWord, 0)
-        else {
-          result = newArray(untilWord + 1, 0, untilWord)
-          result(untilWord) = word(untilWord) & ((1L << untilBit) - 1)
+    // lazily generate the bitmask no larger that needed in other paths
+
+    if (isEmpty) empty
+    else {
+      var result: Array[Long] = null
+      if (until.isDefined) {
+        val u = Math.max(until.get, 0)
+        if (u <= last) {
+          val untilWord = u >> LogWL
+          val untilBit  = u & (WordLength - 1)
+          if (untilBit == 0) result = newArray(untilWord, 0)
+          else {
+            result = newArray(untilWord + 1, 0, untilWord)
+            result(untilWord) = word(untilWord) & ((1L << untilBit) - 1)
+          }
         }
       }
-    }
-    if (from.isDefined) {
-      val f = from.get
-      if (f > headOr(f)) {
-        // we know here that we are nonEmpty
-        if (f > last) return empty
-        val fromWord = f >> LogWL
-        val fromBit  = f & (WordLength - 1)
+      if (from.isDefined) {
+        val f = Math.max(from.get, 0)
+        if (f > headOr(f)) {
+          // we know here that we are nonEmpty
+          if (f > last) return empty
+          val fromWord = f >> LogWL
+          val fromBit  = f & (WordLength - 1)
 
-        if (result eq null)
-          result = newArray(lastWordSet + 1, fromWord)
-        else util.Arrays.fill(result, 0, fromWord, 0L)
-        if (fromBit > 0) result(fromWord) &= ~((1L << fromBit) - 1)
+          if (result eq null)
+            result = newArray(lastWordSet + 1, fromWord)
+          else util.Arrays.fill(result, 0, fromWord, 0L)
+          if (fromBit > 0) result(fromWord) &= ~((1L << fromBit) - 1)
+        }
       }
+      if (result eq null) copyOrSelf else fromBitMaskNoCopy(result)
     }
-    if (result eq null) copyOrSelf else fromBitMaskNoCopy(result)
   }
 
   def iterator: Iterator[Int] = iteratorFrom(0)
@@ -309,67 +312,188 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
       if (words eq null) empty else fromBitMaskNoCopy(words)
     }
   }
+  private def fromWordOrBitMask(wordIndex: Int, wordValue: Long, bitMask: Array[Long]): This = {
+    if (wordIndex == -1) copyOrSelf
+    else if (wordIndex >= 0) withUpdateWord(wordIndex, wordValue)
+         else fromBitMaskNoCopy(bitMask)
+  }
+
+  protected[scala] def withUpdateWord(wordIndex: Int, wordValue: Long): This = {
+    val array = newArray(Math.max(wordIndex, lastWordSet) + 1, 0)
+    array(wordIndex) = wordValue
+    fromBitMaskNoCopy(array)
+  }
+  protected[scala] def addAllLinearSeq(toAdd: LinearSeq[Int]): This = {
+    var remaining              = toAdd
+    var wordIndex: Int         = -1
+    var wordValue: Long        = 0L
+    var bitMask  : Array[Long] = null
+
+    while (!remaining.isEmpty) {
+      val elem = remaining.head
+      require(elem >= 0, "bitset element must be >= 0")
+      val elemWordIndex = elem >> LogWL
+      val elemBit       = 1L << elem
+      val elemWord      = word(elemWordIndex)
+      if ((elemWord & elemBit) == 0L)
+        if (wordIndex == -1) {
+          wordIndex = elemWordIndex
+          wordValue = elemWord | elemBit
+        } else if (wordIndex == elemWordIndex) {
+          wordValue = wordValue | elemBit
+        } else {
+          if (bitMask eq null) {
+            val lws = lastWordSet
+            bitMask = newArray(1 + (wordIndex max elemWordIndex max lws), 0, lws + 1)
+            bitMask(wordIndex) = wordValue
+            wordIndex = -2
+          } else if (bitMask.length <= elemWordIndex) {
+            //copy and round up size to next order
+            bitMask = util.Arrays.copyOf(bitMask, Integer.highestOneBit(elemWordIndex) << 1)
+          }
+          bitMask(elemWordIndex) |= elemBit
+        }
+      remaining = remaining.tail
+    }
+    fromWordOrBitMask(wordIndex, wordValue, bitMask)
+  }
+  protected[scala] def addAllTraversable(elems: Traversable[Int]): This =
+    addAll(elems)
+  protected[scala] def addAll(elems: TraversableOnce[Int]): This =
+    (new Adder).addAll(elems)
+
+  protected[scala] class Adder extends AbstractFunction1[Int, Unit] {
+
+    def addAll(elems: TraversableOnce[Int]): This = {
+      elems.foreach(this)
+      fromWordOrBitMask(wordIndex, wordValue, bitMask)
+    }
+
+    var wordIndex: Int         = -1
+    var wordValue: Long        = _
+    var bitMask  : Array[Long] = _
+    override def apply(elem: Int): Unit = {
+      require(elem >= 0, "bitset element must be >= 0")
+      val elemWordIndex = elem >> LogWL
+      val elemBit       = 1L << elem
+      val elemWord      = word(elemWordIndex)
+      if ((elemWord & elemBit) == 0L)
+        if (wordIndex == -1) {
+          wordIndex = elemWordIndex
+          wordValue = elemWord | elemBit
+        } else if (wordIndex == elemWordIndex) {
+          wordValue = wordValue | elemBit
+        } else {
+          if (bitMask eq null) {
+            val lws = lastWordSet
+            bitMask = newArray(1 + (wordIndex max elemWordIndex max lws), 0, lws + 1)
+            bitMask(wordIndex) = wordValue
+            wordIndex = -2
+          } else if (bitMask.length <= elemWordIndex) {
+            //copy and round up size to next order
+            bitMask = util.Arrays.copyOf(bitMask, Integer.highestOneBit(elemWordIndex) << 1)
+          }
+          bitMask(elemWordIndex) |= elemBit
+        }
+    }
+  }
 
   override def ++(elems: GenTraversableOnce[Int]): This = elems match {
-    case bs: BitSet => this | bs
-    case _          =>
-      // optimise to reduce allocation,
-      // for the case where we add nothing so v1 == -1,
-      // or where there is a single value added so v1 holds that value
-      // for larger cases accumulate the change is a bitset and use the fast |
-      object acc extends AbstractFunction1[Int, Unit] {
-        var v1   : Int            = -1
-        var toAdd: mutable.BitSet = null
-        override def apply(elem: Int): Unit =
-          if (!contains(elem)) {
-            if (v1 == -1) {
-              require(elem >= 0, "bitset element must be >= 0")
-              v1 = elem
+    case bs: BitSet                     => this | bs
+    case l: collection.LinearSeq[Int]   =>
+      if (l.isEmpty) copyOrSelf
+      else addAllLinearSeq(l)
+    case l: collection.Traversable[Int] =>
+      if (l.isEmpty) copyOrSelf
+      else addAllTraversable(l)
+    case _                              =>
+      addAll(elems.seq)
+  }
+
+  protected[scala] def removeAll(seq: TraversableOnce[Int]): This = {
+    // optimise to reduce allocation,
+    // for the case where we remove nothing so wordIndex == -1,
+    // or where there is a single word changed removed so wordIndex/wordValue holds that index/value
+    object subtract extends AbstractFunction1[Int, Unit] {
+      def removeAll = {
+        seq.foreach(subtract)
+        fromWordOrBitMask(wordIndex, wordValue, bitMask)
+      }
+      val lws                    = lastWordSet
+      var wordIndex: Int         = -1
+      var wordValue: Long        = _
+      var bitMask  : Array[Long] = _
+      override def apply(elem: Int): Unit = if (elem >= 0) {
+        val elemWordIndex = elem >> LogWL
+        if (elemWordIndex <= lws && elemWordIndex >= 0) {
+          val elemBit  = 1L << elem
+          val elemWord = word(elemWordIndex)
+          if ((elemWord & elemBit) != 0L) {
+            if (wordIndex == -1) {
+              wordIndex = elemWordIndex
+              wordValue = elemWord & ~elemBit
+            } else if (wordIndex == elemWordIndex) {
+              wordValue = wordValue & ~elemBit
             } else {
-              if (toAdd eq null) {
-                //may as well start with a few words
-                toAdd = new mutable.BitSet(Math.max(v1, Math.max(256, elem)))
-                toAdd += v1
+              if (bitMask eq null) {
+                bitMask = newArray(1 + lws, 0, lws + 1)
+                bitMask(wordIndex) = wordValue
+                wordIndex = -2
               }
-              toAdd += elem
+              bitMask(elemWordIndex) = bitMask(elemWordIndex) & ~elemBit
             }
           }
+        }
       }
-      elems.seq.foreach(acc)
-      if (acc.v1 == -1) copyOrSelf
-      else if (acc.toAdd eq null) this.+(acc.v1)
-           else this | acc.toAdd
+    }
+    subtract.removeAll
+  }
+
+  protected[scala] def removeAllLinearSeq(toRemove: LinearSeq[Int]): This = {
+    val lws                    = lastWordSet
+    var remaining              = toRemove
+    var wordIndex: Int         = -1
+    var wordValue: Long        = 0L
+    var bitMask  : Array[Long] = null
+
+    while (!remaining.isEmpty) {
+      val elem          = remaining.head
+      val elemWordIndex = elem >> LogWL
+      if (elemWordIndex <= lws && elemWordIndex >= 0) {
+        val elemBit  = 1L << elem
+        val elemWord = word(elemWordIndex)
+        if ((elemWord & elemBit) != 0L) {
+          if (wordIndex == -1) {
+            wordIndex = elemWordIndex
+            wordValue = elemWord & ~elemBit
+          } else if (wordIndex == elemWordIndex) {
+            wordValue = wordValue & ~elemBit
+          } else {
+            if (bitMask eq null) {
+              bitMask = newArray(1 + lws, 0, lws + 1)
+              bitMask(wordIndex) = wordValue
+              wordIndex = -2
+            }
+            bitMask(elemWordIndex) = bitMask(elemWordIndex) & ~elemBit
+          }
+        }
+      }
+      remaining = remaining.tail
+    }
+    fromWordOrBitMask(wordIndex, wordValue, bitMask)
   }
 
   override def --(elems: GenTraversableOnce[Int]): This = elems match {
-    case bs: BitSet => this &~ bs
-    case _          =>
-      // optimise to reduce allocation,
-      // for the case where we remove nothing so v1 == -1,
-      // or where there is a single value removed so v1 holds that value
-      // for larger cases accumulate the change is a bitset and use the fast &~
-      object acc extends AbstractFunction1[Int, Unit] {
-        var v1      : Int            = -1
-        var toRemove: mutable.BitSet = null
-        override def apply(elem: Int): Unit =
-          if (contains(elem)) {
-            if (v1 == -1) {
-              v1 = elem
-            } else {
-              if (toRemove eq null) {
-                toRemove = new mutable.BitSet(last)
-                toRemove += v1
-              }
-              toRemove += elem
-            }
-          }
-      }
-      elems.seq.foreach(acc)
-      if (acc.v1 == -1) copyOrSelf
-      else if (acc.toRemove eq null) this.-(acc.v1)
-           else this &~ acc.toRemove
+    case bs: BitSet                   => this &~ bs
+    case l: collection.LinearSeq[Int] =>
+      if (l.isEmpty) copyOrSelf
+      else removeAllLinearSeq(l)
+    case _                            =>
+      if (elems.isEmpty) copyOrSelf
+      else removeAll(elems.seq)
   }
-  private def newArray(newSize: Int, minIndexToCopy: Int, maxIndexToCopy: Int = Int.MaxValue): Array[Long] = {
+
+  private[scala] def newArray(newSize: Int, minIndexToCopy: Int, maxIndexToCopy: Int = Int.MaxValue): Array[Long] = {
     val res = new Array[Long](newSize)
     var i   = Math.min(newSize, maxIndexToCopy) - 1
     while (i >= minIndexToCopy) {
@@ -428,9 +552,9 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
     }
   }
   override def intersect(elems: GenSet[Int]): This = elems match {
-      case bs: BitSet => this & bs
-      case _          => super.intersect(elems)
-    }
+    case bs: BitSet => this & bs
+    case _          => super.intersect(elems)
+  }
 
   override def union(elems: GenSet[Int]): This = elems match {
     case bs: BitSet => this | bs

@@ -10,7 +10,7 @@ import scala.collection.generic.BitSetFactory
 import scala.collection.immutable.{List, TreeSet}
 import scala.tools.testing.AllocationTest
 
-abstract class BitSetLikeTest[Coll <: BitSet with BitSetLike[Coll]] extends AllocationTest{
+abstract class BitSetLikeTest[Coll <: BitSet with BitSetLike[Coll]] extends AllocationTest {
   def companion: BitSetFactory[Coll]
   def fromBitMask(elems: Array[Long]): Coll
   private def BitSet = fail("dont refer to BitSet (the test may be mutable or immutable)- use the companion")
@@ -264,8 +264,8 @@ abstract class BitSetLikeTest[Coll <: BitSet with BitSetLike[Coll]] extends Allo
       testBuilder2 ++= ds2
       val bs2 = testBuilder2.result()
 
-      assertEquals(expected, (underTest -- ds2).mkString("[", " : ", "]"))
-      assertEquals(expected, (underTest -- bs2).mkString("[", " : ", "]"))
+      assertEquals(s" underTest = $underTest. ds2= $ds2", expected, (underTest -- ds2).mkString("[", " : ", "]"))
+      assertEquals(s" underTest = $underTest. bs2= $bs2", expected, (underTest -- bs2).mkString("[", " : ", "]"))
 
       var control = (TreeSet.newBuilder[Int] ++= ds1).result
       assertEquals(s"$control ... $underTest",
@@ -332,6 +332,7 @@ abstract class BitSetLikeTest[Coll <: BitSet with BitSetLike[Coll]] extends Allo
       val testBuilder2 = companion.newBuilder
       testBuilder2 ++= ds2
       val bs2 = testBuilder2.result()
+      assert(1 == 1)
 
       assertEquals(expected, (underTest diff ds2.toSet).mkString("[", " : ", "]"))
       assertEquals(expected, (underTest diff bs2).mkString("[", " : ", "]"))
@@ -355,4 +356,11 @@ abstract class BitSetLikeTest[Coll <: BitSet with BitSetLike[Coll]] extends Allo
       assertEquals(control.hashCode, underTest.hashCode)
     }
   }
+}
+
+class CollectionBitSetTest extends BitSetLikeTest[collection.BitSet] {
+  override def companion: BitSetFactory[BitSet] = collection.BitSet
+  override def fromBitMask(elems: Array[Long]): BitSet = immutable.BitSet.fromBitMask(elems)
+
+  //  @Test def
 }
