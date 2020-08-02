@@ -129,7 +129,7 @@ private [mutable] object WrappedArrayBuilder {
           case java.lang.Boolean.TYPE   => new WrappedArray.ofBoolean(Array.emptyBooleanArray)
           case java.lang.Void.TYPE      => new WrappedArray.ofUnit(Array.emptyUnitArray)
         }
-      else new WrappedArray.ofRef(Array.empty.asInstanceOf[Array[_ <: AnyRef]])
+      else new WrappedArray.ofRef(Array.empty[AnyRef])
     }
   }
 }
