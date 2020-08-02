@@ -219,6 +219,14 @@ trait Implicits {
     override def isAmbiguousFailure = true
   }
 
+  private def depolyTpe(tpe: Type): Type = {
+    val res = tpe match {
+      case PolyType(tparams, restpe) => deriveTypeWithWildcards(tparams)(ApproximateDependentMap(restpe))
+      case _                         => ApproximateDependentMap(tpe)
+    }
+    res
+  }
+
   /** A class that records an available implicit
    *  @param   name   The name of the implicit
    *  @param   pre    The prefix type of the implicit
@@ -242,10 +250,7 @@ trait Implicits {
      */
     final def depoly: Type = {
       if (depolyCache eq null) {
-        depolyCache = tpe match {
-          case PolyType(tparams, restpe) => deriveTypeWithWildcards(tparams)(ApproximateDependentMap(restpe))
-          case _                         => ApproximateDependentMap(tpe)
-        }
+        depolyCache = depolyTpe(tpe)
       }
       depolyCache
     }
@@ -805,10 +810,17 @@ trait Implicits {
         typingLog("match", s"$word$info")
         true
       }
-      if (ok) typedImplicit1(info, isLocalToCallsite) else SearchFailure
+      if (ok) typedImplicit10(info, isLocalToCallsite) else SearchFailure
     }
 
-    private def typedImplicit1(info: ImplicitInfo, isLocalToCallsite: Boolean): SearchResult = {
+    private def typedImplicit10(info: ImplicitInfo, isLocalToCallsite: Boolean): SearchResult = {
+      val res = typedImplicit1(info, isLocalToCallsite, useFallbackFirstly = false)
+      if (res.isFailure && isView) {
+        typedImplicit1(info, isLocalToCallsite, useFallbackFirstly = true)
+      } else res
+    }
+
+    private def typedImplicit1(info: ImplicitInfo, isLocalToCallsite: Boolean, useFallbackFirstly: Boolean): SearchResult = {
       if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(matchingImplicits)
 
       // workaround for deficient context provided by ModelFactoryImplicitSupport#makeImplicitConstraints
@@ -832,7 +844,7 @@ trait Implicits {
       @inline def fail(reason: => String): SearchResult = failure(itree0, reason)
       def fallback = typed1(itree1, EXPRmode, wildPt)
       try {
-        val itree2 = if (!isView) fallback else pt match {
+        val itree2 = if (useFallbackFirstly || !isView) fallback else pt match {
           case Function1(arg1, arg2) =>
             typed1(
               atPos(itree0.pos)(Apply(itree1, Ident(nme.argument).setType(approximate(arg1)) :: Nil)),
@@ -892,7 +904,7 @@ trait Implicits {
           val tvars = undetParams map freshVar
           val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
-          if (matchesPt(itree3.tpe, ptInstantiated, undetParams)) {
+          if (matchesPt(depolyTpe(itree3.tpe), ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
               typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
