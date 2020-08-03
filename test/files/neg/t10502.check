@@ -1,0 +1,7 @@
+t10502.scala:6: warning: match may not be exhaustive.
+It would fail on the following input: None
+  def single(opt: Option[String]) = opt match {
+                                    ^
+error: No warnings can be incurred under -Xfatal-warnings.
+one warning found
+one error found

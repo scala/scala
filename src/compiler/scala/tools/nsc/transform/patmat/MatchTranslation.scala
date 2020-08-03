@@ -545,7 +545,12 @@ trait MatchTranslation {
         // can't simplify this when subPatBinders.isEmpty, since UnitTpe is definitely
         // wrong when isSeq, and resultInMonad should always be correct since it comes
         // directly from the extractor's result type
-        val binder         = freshSym(pos, pureType(resultInMonad(patBinderOrCasted)))
+        val binder =
+          // special case for extractors, like in `subPatRefs`
+          // or "just passing through" in ProductExtractorTreeMaker
+          if (isSingle) patBinderOrCasted
+          else freshSym(pos, pureType(resultInMonad(patBinderOrCasted)))
+
         val potentiallyMutableBinders: Set[Symbol] =
           if (extractorApply.tpe.typeSymbol.isNonBottomSubClass(OptionClass) && !isSeq)
             Set.empty
