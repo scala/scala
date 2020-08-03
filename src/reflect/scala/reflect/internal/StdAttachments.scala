@@ -35,7 +35,7 @@ trait StdAttachments {
 
     // cannot be final due to SynchronizedSymbols
     def pos: Position = rawatt.pos
-    def pos_=(pos: Position): Unit = rawatt = (rawatt withPos pos)
+    def pos_=(pos: Position): Unit = rawatt = rawatt.withPos(pos)
     def setPos(newpos: Position): this.type = { pos = newpos; this }
   }
 
@@ -108,7 +108,7 @@ trait StdAttachments {
   case object UseInvokeSpecial extends PlainAttachment
 
   /** An attachment carrying information between uncurry and erasure */
-  case class TypeParamVarargsAttachment(val typeParamRef: Type)
+  case class TypeParamVarargsAttachment(typeParamRef: Type)
 
   /** Attached to a class symbol to indicate that its children have been observed
     * via knownDirectSubclasses. Children added subsequently will trigger an

@@ -1,6 +1,6 @@
 [[syntax trees at end of                   uncurry]] // newSource1.scala
 package <empty> {
-  class Foo extends Object {
+  class Foo extends AnyRef {
     def <init>(): Foo = {
       Foo.super.<init>();
       ()
