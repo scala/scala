@@ -796,7 +796,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
     // (At least conceptually: `true` is an instance of class `Boolean`)
     private def widenToClass(tp: Type): Type =
       if (tp.typeSymbol.isClass) tp
-      else if (tp.baseClasses.isEmpty) throw new IllegalArgumentException("Bad type: " + tp)
+      else if (tp.baseClasses.isEmpty) AnyTpe
       else tp.baseType(tp.baseClasses.head)
 
     object TypeConst extends TypeConstExtractor {
