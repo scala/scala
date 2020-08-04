@@ -767,7 +767,13 @@ object LocalOptImpls {
       val index = local.index
       // parameters and `this` (the lowest indices, starting at 0) are never removed or renumbered
       if (index >= firstLocalIndex) {
-        if (!variableIsUsed(local.start, local.end, index)) localsIter.remove()
+        def previousOrSelf(insn: AbstractInsnNode) = insn.getPrevious match {
+          case null => insn
+          case i => i
+        }
+        val storeInsn = previousOrSelf(local.start) // the start index is after the store, see scala/scala#8897
+        val used = variableIsUsed(storeInsn, local.end, index)
+        if (!used) localsIter.remove()
         else if (renumber(index) != index) local.index = renumber(index)
       }
     }
