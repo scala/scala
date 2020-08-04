@@ -2,6 +2,7 @@ SourceFile: "Main_1.scala"
 SourceDebugExtension:
 SMAP
 Main_1.scala
+Scala
 *S Scala
 *F
 + 1 Main_1.scala
@@ -51,6 +52,7 @@ SourceFile: "Utils_1.scala"
 SourceDebugExtension:
 SMAP
 Utils_1.scala
+Scala
 *S Scala
 *F
 + 1 Utils_1.scala
@@ -82,6 +84,7 @@ SourceFile: "Tools_1.scala"
 SourceDebugExtension:
 SMAP
 Tools_1.scala
+Scala
 *S Scala
 *F
 + 1 Tools_1.scala

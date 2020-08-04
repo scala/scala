@@ -2,6 +2,7 @@ SourceFile: "Main_1.scala"
 SourceDebugExtension:
 SMAP
 Main_1.scala
+Scala
 *S Scala
 *F
 + 1 Main_1.scala

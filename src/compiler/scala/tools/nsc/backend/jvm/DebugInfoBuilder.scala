@@ -459,7 +459,12 @@ object DebugInfoBuilder {
     def strata: Seq[JSR45Stratum] = Seq(scalaStratum, scalaDebugStratum)
 
     override def toString: String = {
-      (Seq("SMAP", source) ++ strata.flatMap(_.toStringLines)).mkString("\n")
+      def header = Seq(
+        "SMAP",  // this is an SMAP
+        source,  // source file name for which this SMAP was generated
+        "Scala"  // default stratum
+      )
+      (header ++ strata.flatMap(_.toStringLines)).mkString("\n")
     }
   }
 
