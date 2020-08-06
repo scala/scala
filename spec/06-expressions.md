@@ -305,7 +305,7 @@ Assume the following method which computes the sum of a
 variable number of arguments:
 
 ```scala
-def sum(xs: Int*) = (0 /: xs) ((x, y) => x + y)
+def sum(xs: Int*) = xs.foldLeft(0)((x, y) => x + y)
 ```
 
 Then

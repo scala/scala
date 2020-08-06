@@ -330,7 +330,7 @@ directly for functions of arities greater than one. Previously, only
 unary functions could be defined that way. Example:
 
     def scalarProduct(xs: Array[Double], ys: Array[Double]) =
-      (0.0 /: (xs zip ys)) {
+      (xs zip ys).foldLeft(0.0) {
         case (a, (b, c)) => a + b * c
       }
 
