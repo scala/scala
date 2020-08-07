@@ -28,7 +28,6 @@ scala/collection/immutable/List$
 6#3:46
 3#3,2:47
 6#3:49
-*E
 *S ScalaDebug
 *F
 + 1 Main_1.scala
@@ -70,7 +69,6 @@ Tools_1$
 6#3:25
 3#3,2:26
 6#3:28
-*E
 *S ScalaDebug
 *F
 + 1 Utils_1.scala

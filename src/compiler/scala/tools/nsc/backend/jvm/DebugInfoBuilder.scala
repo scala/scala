@@ -82,6 +82,7 @@ import scala.collection.mutable
  *
  *   SMAP
  *   Main.scala
+ *   Scala
  *   *S Scala
  *   *F
  *   + 1 Main.scala
@@ -100,7 +101,6 @@ import scala.collection.mutable
  *   6#3:27
  *   3#3,2:28
  *   6#3:30
- *   *E
  *   *S ScalaDebug
  *   *F
  *   + 1 Main.scala
@@ -401,7 +401,7 @@ object DebugInfoBuilder {
 
     def toStringLines: Seq[String] =
       if (lineMapping.nonEmpty)
-        s"*S $name" +: (fileSectionLines ++ lineSectionLines) :+ "*E"
+        s"*S $name" +: (fileSectionLines ++ lineSectionLines)
       else
         Seq.empty
 
@@ -459,12 +459,13 @@ object DebugInfoBuilder {
     def strata: Seq[JSR45Stratum] = Seq(scalaStratum, scalaDebugStratum)
 
     override def toString: String = {
-      def header = Seq(
+      val header = Seq(
         "SMAP",  // this is an SMAP
         source,  // source file name for which this SMAP was generated
         "Scala"  // default stratum
       )
-      (header ++ strata.flatMap(_.toStringLines)).mkString("\n")
+      val footer = Seq("*E")
+      (header ++ strata.flatMap(_.toStringLines) ++ footer).mkString("\n")
     }
   }
 
