@@ -67,6 +67,8 @@ abstract class BitSet extends scala.collection.AbstractSet[Int]
  *  @define coll immutable bitset
  */
 object BitSet extends BitSetFactory[BitSet] {
+  import java.lang.Long.{bitCount, lowestOneBit, numberOfTrailingZeros}
+
   /** The empty bitset */
   val empty: BitSet = new BitSet1(0L)
 
@@ -117,12 +119,15 @@ object BitSet extends BitSetFactory[BitSet] {
       else fromBitMaskNoCopy(updateArray(Array(elems), idx, w))
     override def head: Int =
       if (elems == 0L) throw new NoSuchElementException("Empty BitSet")
-      else java.lang.Long.numberOfTrailingZeros(elems)
+      else numberOfTrailingZeros(elems)
     override def tail: BitSet =
       if (elems == 0L) throw new NoSuchElementException("Empty BitSet")
-      else new BitSet1(elems - java.lang.Long.lowestOneBit(elems))
+      else new BitSet1(elems - lowestOneBit(elems))
+    override def size: Int = bitCount(elems)
+    override def isEmpty: Boolean = elems == 0
   }
 
+  @SerialVersionUID(-860417644893387539L)
   class BitSet2(val elems0: Long, elems1: Long) extends BitSet {
     protected def nwords = 2
     protected def word(idx: Int) = if (idx == 0) elems0 else if (idx == 1) elems1 else 0L
@@ -133,15 +138,17 @@ object BitSet extends BitSetFactory[BitSet] {
     override def head: Int =
       if (elems0 == 0L) {
         if (elems1 == 0) throw new NoSuchElementException("Empty BitSet")
-        64 + java.lang.Long.numberOfTrailingZeros(elems1)
+        64 + numberOfTrailingZeros(elems1)
       }
-      else java.lang.Long.numberOfTrailingZeros(elems0)
+      else numberOfTrailingZeros(elems0)
     override def tail: BitSet =
       if (elems0 == 0L) {
         if (elems1 == 0L) throw new NoSuchElementException("Empty BitSet")
-        createSmall(elems0, elems1 - java.lang.Long.lowestOneBit(elems1))
+        createSmall(elems0, elems1 - lowestOneBit(elems1))
       }
-      else new BitSet2(elems0 - java.lang.Long.lowestOneBit(elems0), elems1)
+      else new BitSet2(elems0 - lowestOneBit(elems0), elems1)
+    override def size: Int = bitCount(elems0) + bitCount(elems1)
+    override def isEmpty: Boolean = elems0 == 0 && elems1 == 0
   }
 
   /** The implementing class for bit sets with elements >= 128 (exceeding
@@ -150,6 +157,7 @@ object BitSet extends BitSetFactory[BitSet] {
    *  implementation. Care needs to be taken not to modify the exposed
    *  array.
    */
+  @SerialVersionUID(807040099560956194L)
   class BitSetN(val elems: Array[Long]) extends BitSet {
     protected def nwords = elems.length
     protected def word(idx: Int) = if (idx < nwords) elems(idx) else 0L
@@ -159,7 +167,7 @@ object BitSet extends BitSetFactory[BitSet] {
       var i = 0
       while (i < n) {
         val wi = word(i)
-        if (wi != 0L) return fromBitMaskNoCopy(updateArray(elems, i, wi - java.lang.Long.lowestOneBit(wi)))
+        if (wi != 0L) return fromBitMaskNoCopy(updateArray(elems, i, wi - lowestOneBit(wi)))
         i += 1
       }
       throw new NoSuchElementException("Empty BitSet")
