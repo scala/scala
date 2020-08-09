@@ -813,9 +813,9 @@ trait Implicits {
 
     private def typedImplicit10(info: ImplicitInfo, isLocalToCallsite: Boolean): SearchResult = {
       val res = typedImplicit1(info, isLocalToCallsite, useFallbackFirstly = false)
-      /*if (res.isFailure && isView) {
+      if (res.isFailure && isView) {
         typedImplicit1(info, isLocalToCallsite, useFallbackFirstly = true)
-      } else*/ res
+      } else res
     }
 
     private def typedImplicit1(info: ImplicitInfo, isLocalToCallsite: Boolean, useFallbackFirstly: Boolean): SearchResult = {
@@ -902,7 +902,7 @@ trait Implicits {
           val tvars = undetParams map freshVar
           val ptInstantiated = pt.instantiateTypeParams(undetParams, tvars)
 
-          if (matchesPt(/*depolyTpe*/(itree3.tpe), ptInstantiated, undetParams)) {
+          if (matchesPt(depolyTpe(itree3.tpe), ptInstantiated, undetParams)) {
             if (tvars.nonEmpty)
               typingLog("solve", ptLine("tvars" -> tvars, "tvars.constr" -> tvars.map(_.constr)))
 
