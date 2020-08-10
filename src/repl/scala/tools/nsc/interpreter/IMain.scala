@@ -923,7 +923,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
            |object ${lineRep.evalName} {
            |  ${if (resValSym != NoSymbol) s"lazy val ${lineRep.resultName} = ${originalPath(resValSym)}" else ""}
            |  lazy val ${lineRep.printName}: _root_.java.lang.String = $executionWrapper {
-           |    $fullAccessPath
+           |    val _ = $fullAccessPath
            |""".stripMargin)
         if (contributors.lengthCompare(1) > 0) {
           code.println("val sb = new _root_.scala.StringBuilder")
