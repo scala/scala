@@ -141,7 +141,13 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
       case bs: collection.BitSet               => this unionWith bs
       case xs: scala.collection.LinearSeq[Int] =>
         ensureCapacity(BitMask.wordCapacity(xs))
-        BitMask.setBits(elems, xs)
+        BitMask.setBitsNoCheck(elems, xs)
+      case wa: WrappedArray.ofInt =>
+        ensureCapacity(BitMask.wordCapacity(wa))
+        BitMask.setBitsNoCheck(elems, wa.array)
+      case r: Range =>
+        ensureCapacity(BitMask.wordCapacity(r))
+        BitMask.setBitsNoCheck(elems, r)
 
       case xs => xs foreach +=
     }
@@ -154,13 +160,17 @@ class BitSet(protected final var elems: Array[Long]) extends AbstractSet[Int]
       case xs: scala.collection.LinearSeq[Int] =>
         @tailrec def loop(xs: scala.collection.LinearSeq[Int]) {
           if (xs.nonEmpty) {
-            this += xs.head
+            this -= xs.head
             loop(xs.tail)
           }
         }
 
         loop(xs)
-      case _                                   => xs foreach +=
+      case wa: WrappedArray.ofInt =>
+        BitMask.clearBits(elems, wa.array)
+      case r: Range =>
+        BitMask.clearBits(elems, r)
+      case _                                   => xs foreach -=
     }
     this
   }

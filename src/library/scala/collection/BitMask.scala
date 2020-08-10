@@ -13,6 +13,11 @@ private[collection] object BitMask {
   def wordCapacity(t: collection.Traversable[Int]): Int = t match {
     case ls: LinearSeq[Int] =>
       (highestElementValue(-1, ls) >> LogWL) + 1
+    case wa: mutable.WrappedArray.ofInt =>
+      (highestArrayValue(wa.array) >> LogWL) + 1
+    case r: Range =>
+      if (r.isEmpty)  0
+      else (checkRange(0, Math.min(r.head, r.last)) >> LogWL) + 1
     case _                  =>
       object getMax extends AbstractFunction1[Int, Unit] {
         var max = -1
@@ -22,6 +27,16 @@ private[collection] object BitMask {
       (getMax.max >> LogWL) + 1
   }
 
+  private[collection]
+  def highestArrayValue(array: Array[Int]): Int = {
+    var highestValue = -1
+    var i            = 0
+    while (i < array.length) {
+      highestValue = checkRange(highestValue, array(i))
+      i += 1
+    }
+    highestValue
+  }
   @tailrec private[collection]
   def highestElementValue(maxSoFar: Int, rest: LinearSeq[Int]): Int = {
     if (rest.isEmpty) maxSoFar
@@ -32,30 +47,66 @@ private[collection] object BitMask {
     if (wordCount == 0) emptyArray
     else new Array[Long](wordCount)
 
-  def arrayforElement(highestElementValue: Int): Array[Long] =
-    arrayOfWords((highestElementValue >> LogWL) + 1)
+  @inline def addToBitMaskNoCheck(bitMask: Array[Long], valueToAdd: Int) =
+    bitMask(valueToAdd >> LogWL) |= 1L << valueToAdd
 
-  @inline def addToBitMask(array: Array[Long], valueToAdd: Int) =
-    array(valueToAdd >> LogWL) |= 1L << valueToAdd
+  @inline def removeFromBitMask(bitMask: Array[Long], valueToRemove: Int) = {
+    val index = valueToRemove >> LogWL
+    if (index <= 0 && index < bitMask.length)
+    bitMask(index) &= ~(1L << valueToRemove)
+  }
 
   @inline def checkRange(maxSoFar: Int, value: Int): Int = {
     require(value >= 0, "")
     Math.max(maxSoFar, value)
   }
 
-  def setBits(bitMask: Array[Long], xs: Traversable[Int]): Unit = {
-    if (bitMask.length > 0)
-      xs match {
-        case ls: LinearSeq[Int] =>
-          setBits(bitMask, ls)
-        case _                  =>
-          xs foreach (e => addToBitMask(bitMask, e))
-      }
+  def setBitsNoCheck(bitMask: Array[Long], xs: Traversable[Int]): Unit = {
+    xs match {
+      case ls: LinearSeq[Int] =>
+        setBitsNoCheck(bitMask, ls)
+      case r: Range =>
+        setBitsNoCheck(bitMask, r)
+      case _                  =>
+        xs foreach (e => addToBitMaskNoCheck(bitMask, e))
+    }
   }
-  def setBits(array: Array[Long], rest: LinearSeq[Int]): Unit = {
+  @tailrec
+  def setBitsNoCheck(bitMask: Array[Long], rest: LinearSeq[Int]): Unit = {
     if (!rest.isEmpty) {
-      addToBitMask(array, rest.head)
-      setBits(array, rest.tail)
+      addToBitMaskNoCheck(bitMask, rest.head)
+      setBitsNoCheck(bitMask, rest.tail)
+    }
+  }
+  def setBitsNoCheck(bitMask: Array[Long], range: Range): Unit = {
+    var i = range.length -1
+    while (i >= 0) {
+      addToBitMaskNoCheck(bitMask, range(i))
+      i -= 1
+    }
+  }
+  def clearBits(bitMask: Array[Long], xs: Traversable[Int]): Unit = {
+    xs match {
+      case ls: LinearSeq[Int] =>
+        clearBits(bitMask, ls)
+      case r: Range =>
+        clearBits(bitMask, r)
+      case _                  =>
+        xs foreach (e => removeFromBitMask(bitMask, e))
+    }
+  }
+  @tailrec
+  def clearBits(bitMask: Array[Long], rest: LinearSeq[Int]): Unit = {
+    if (!rest.isEmpty) {
+      removeFromBitMask(bitMask, rest.head)
+      clearBits(bitMask, rest.tail)
+    }
+  }
+  def clearBits(bitMask: Array[Long], range: Range): Unit = {
+    var i = range.length -1
+    while (i >= 0) {
+      removeFromBitMask(bitMask, range(i))
+      i -= 1
     }
   }
 }

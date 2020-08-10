@@ -63,7 +63,7 @@ class BitSetTest extends BitSetLikeTest[BitSet] with AllocationTest {
     for (ds <- datasets) {
       val bs = (companion.newBuilder ++= ds).result
       assertSame(bs, nonAllocating(bs -- BitSet.empty))
-      val outside = companion(bs.headOption.getOrElse(0) + 1)
+      val outside = companion(bs.lastOption.getOrElse(0) + 1)
       assertSame(bs, nonAllocating(bs - outside.head))
 
       assertSame(bs, nonAllocating(bs -- outside))

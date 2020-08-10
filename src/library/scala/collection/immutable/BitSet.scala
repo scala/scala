@@ -238,15 +238,9 @@ object BitSet extends BitSetFactory[BitSet] {
         // we traverse the array twice, once to find the highest value and check for < 0,
         // and the second time to populate the bitmask, which is minimally sized
         //
-        var highestValue = -1
-        var i            = 0
+        val capacity = wordCapacity(wa)
         val array        = wa.array
-        while (i < array.length) {
-          highestValue = checkRange(highestValue, array(i))
-          i += 1
-        }
-        val capacity = (highestValue >> LogWL) + 1
-        i = 0
+        var i            = 0
         if (capacity <= 2) {
           var w0 = 0L
           var w1 = 0L
@@ -262,11 +256,31 @@ object BitSet extends BitSetFactory[BitSet] {
         } else {
           val bitMask = arrayOfWords(capacity)
           while (i < array.length) {
-            addToBitMask(bitMask, array(i))
+            addToBitMaskNoCheck(bitMask, array(i))
             i += 1
           }
           fromBitMaskNoCopy(bitMask)
-
+        }
+      case range: Range  =>
+        val capacity = wordCapacity(range)
+        if (capacity <= 2) {
+          var w0   = 0L
+          var w1   = 0L
+          var i = range.length -1
+          while (i >= 0) {
+            val elem = range(i)
+            // already validated > 0 in wordCapacity
+            val bit   = 1L << elem
+            val index = elem >> LogWL
+            if (index == 0) w0 |= bit
+            else w1 |= bit
+            i -= 1
+          }
+          createSmall(w0, w1)
+        } else {
+          val bitMask = arrayOfWords(capacity)
+          setBitsNoCheck(bitMask, range)
+          fromBitMaskNoCopy(bitMask)
         }
       case ls: collection.LinearSeq[Int]  =>
         val capacity = wordCapacity(ls)
@@ -287,7 +301,7 @@ object BitSet extends BitSetFactory[BitSet] {
           createSmall(w0, w1)
         } else {
           val bitMask = arrayOfWords(capacity)
-          setBits(bitMask, elems)
+          setBitsNoCheck(bitMask, ls)
           fromBitMaskNoCopy(bitMask)
         }
       case _                              =>
@@ -506,7 +520,7 @@ object BitSet extends BitSetFactory[BitSet] {
       var idx       = other.lastWordSet
       var canBeThis = idx < elems.length
       while (idx >= 0 && canBeThis) {
-        canBeThis = (other._word(idx) | elems(idx)) == elems(idx)
+        canBeThis = (elems(idx) | other._word(idx)) == elems(idx)
         idx -= 1
       }
       if (canBeThis) this
@@ -516,17 +530,17 @@ object BitSet extends BitSetFactory[BitSet] {
       var idx       = lastWordSet
       var canBeThis = true
       while (idx >= 0 && canBeThis) {
-        canBeThis = (other._word(idx) & elems(idx)) == elems(idx)
+        canBeThis = (elems(idx) & other._word(idx)) == elems(idx)
         idx -= 1
       }
       if (canBeThis) this
       else super.&(other)
     }
-    override def &~(other: collection.BitSet): BitSet = if (other eq this) this else {
-      var idx       = lastWordSet
+    override def &~(other: collection.BitSet): BitSet = if (other eq this) empty else {
+      var idx       = lastWordSet//Math.min(lastWordSet, other.lastWordSet)
       var canBeThis = true
       while (idx >= 0 && canBeThis) {
-        canBeThis = (other._word(idx) & ~elems(idx)) == elems(idx)
+        canBeThis = (elems(idx) & ~other._word(idx)) == elems(idx)
         idx -= 1
       }
       if (canBeThis) this
