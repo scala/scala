@@ -210,7 +210,7 @@ final class API(val global: CallbackGlobal) extends Compat with GlobalHelpers wi
       !ignoredSymbol(sym) &&
       sym.isStatic &&
       !sym.isImplClass &&
-      !sym.hasFlag(Flags.JAVA) &&
+      (!sym.hasFlag(Flags.JAVA) || global.callback.isPickleJava) &&
       !sym.isNestedClass
     }
   }
