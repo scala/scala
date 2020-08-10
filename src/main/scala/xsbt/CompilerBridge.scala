@@ -16,6 +16,7 @@ import xsbti.compile._
 import scala.tools.nsc.Settings
 import scala.collection.mutable
 import scala.reflect.io.AbstractFile
+import scala.tools.nsc.CompilerCommand
 import Log.debug
 import java.io.File
 
@@ -64,8 +65,11 @@ private final class WeakLog(private[this] var log: Logger, private[this] var del
   }
 }
 
-private final class CachedCompiler0(args: Array[String], output: Output, initialLog: WeakLog)
-    extends CachedCompilerCompat
+private final class CachedCompiler0(
+    args: Array[String],
+    output: Output,
+    initialLog: WeakLog
+) extends CachedCompilerCompat
     with java.io.Closeable {
 
   /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +90,7 @@ private final class CachedCompiler0(args: Array[String], output: Output, initial
       settings.outputDirs.setSingleOutput(outputFilepath.toString)
   }
 
-  val command = Command(args.toList, settings)
+  val command = new CompilerCommand(args.toList, settings)
   private[this] val dreporter = DelegatingReporter(settings, initialLog.reporter)
   try {
     if (!noErrors(dreporter)) {

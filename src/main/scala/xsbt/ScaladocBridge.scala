@@ -14,6 +14,7 @@ package xsbt
 import xsbti.{ Logger, VirtualFile }
 import scala.reflect.io.AbstractFile
 import Log.debug
+import scala.tools.nsc.CompilerCommand
 
 class ScaladocBridge extends xsbti.compile.ScaladocInterface2 {
   def run(sources: Array[VirtualFile], args: Array[String], log: Logger, delegate: xsbti.Reporter) =
@@ -29,7 +30,7 @@ private class Runner(
   import scala.tools.nsc.{ doc, Global, reporters }
   import reporters.Reporter
   val docSettings: doc.Settings = new doc.Settings(Log.settingsError(log))
-  val command = Command(args.toList, docSettings)
+  val command = new CompilerCommand(args.toList, docSettings)
   val reporter = DelegatingReporter(docSettings, delegate)
   def noErrors = !reporter.hasErrors && command.ok
 

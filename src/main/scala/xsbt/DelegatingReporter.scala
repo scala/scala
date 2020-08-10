@@ -20,7 +20,7 @@ import Compat._
 
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
-    new DelegatingReporter(Command.getWarnFatal(settings), Command.getNoWarn(settings), delegate)
+    new DelegatingReporter(settings.fatalWarnings.value, settings.nowarn.value, delegate)
 
   class PositionImpl(
       sourcePath0: Option[String],
