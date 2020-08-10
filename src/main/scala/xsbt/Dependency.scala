@@ -95,7 +95,7 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
           case Some(classOrModuleDef) =>
             memberRef(ClassDependency(classOrModuleDef, dep))
           case None =>
-            reporter.warning(unit.position(0), Feedback.OrphanTopLevelImports)
+            reporter.echo(unit.position(0), Feedback.OrphanTopLevelImports) // package-info.java & empty scala files
             orphanImportsReported = true
         }
       }

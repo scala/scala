@@ -118,7 +118,7 @@ class ExtractUsedNames[GlobalType <: CallbackGlobal](val global: GlobalType)
           }
 
         case None =>
-          reporter.warning(unit.position(0), Feedback.OrphanNames)
+          reporter.echo(unit.position(0), Feedback.OrphanNames)
       }
     }
 
