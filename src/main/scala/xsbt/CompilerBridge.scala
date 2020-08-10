@@ -22,7 +22,7 @@ import java.io.File
 /**
  * This is the entry point for the compiler bridge (implementation of CompilerInterface)
  */
-final class CompilerInterface extends CompilerInterface2 {
+final class CompilerBridge extends xsbti.compile.CompilerInterface2 {
   override def run(
       sources: Array[VirtualFile],
       changes: DependencyChanges,
