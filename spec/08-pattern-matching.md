@@ -752,13 +752,13 @@ method is omitted if one of the patterns $p_1 , \ldots , p_n$ is
 already a variable or wildcard pattern.
 
 ###### Example
-Here is a method which uses a fold-left operation
-`/:` to compute the scalar product of
+Here's an example which uses 
+`foldLeft` to compute the scalar product of
 two vectors:
 
 ```scala
 def scalarProduct(xs: Array[Double], ys: Array[Double]) =
-  (0.0 /: (xs zip ys)) {
+  (xs zip ys).foldLeft(0.0) {
     case (a, (b, c)) => a + b * c
   }
 ```
