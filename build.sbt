@@ -398,6 +398,8 @@ val mimaFilterSettings = Seq {
     // Fix for scala/bug#12059
     ProblemFilters.exclude[MissingClassProblem](s"scala.collection.MapView$$Keys"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.MapView$Values"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Predef.unit"),
   ),
 }
 

@@ -346,6 +346,14 @@ object Predef extends LowPriorityImplicits {
    */
   def ??? : Nothing = throw new NotImplementedError
 
+  /** `unit` is used to force the evaluation of a side-effecting non-Unit expression
+   * while avoiding "a pure expression does nothing in statement position" warning.
+   *
+   *  @param value the expression to evaluate.
+   *  @group utilities
+   */
+  @inline final def unit(value: Any): Unit = ()
+
   // implicit classes -----------------------------------------------------
 
   /** @group implicit-classes-any */
