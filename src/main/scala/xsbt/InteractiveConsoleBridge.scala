@@ -48,7 +48,7 @@ class InteractiveConsoleBridge(
   val interpreter: IMain =
     new IMain(compilerSettings, replReporter(compilerSettings, new PrintWriter(outWriter)))
 
-  def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
+  override def interpret(line: String, synthetic: Boolean): InteractiveConsoleResponse = {
     clearBuffer()
     val r = interpreter.interpret(line, synthetic)
     InteractiveConsoleResponse(r, outWriter.toString)
@@ -59,9 +59,16 @@ class InteractiveConsoleBridge(
     outWriter.getBuffer.setLength(0)
   }
 
-  def reset(): Unit = {
+  override def reset(): Unit = {
     clearBuffer()
     interpreter.reset()
+  }
+
+  override def close(): Unit = {
+    interpreter match {
+      case c: java.io.Closeable => c.close()
+      case _                    => ()
+    }
   }
 
   private def onError(str: String) = log error Message(str)
