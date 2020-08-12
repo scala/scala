@@ -15,7 +15,6 @@ package collection
 package immutable
 
 import generic._
-import scala.collection.immutable.Map.MapBuilderImpl
 import scala.util.hashing.MurmurHash3
 
 /**
