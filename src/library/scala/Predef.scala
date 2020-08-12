@@ -13,6 +13,7 @@
 package scala
 
 import scala.language.implicitConversions
+import scala.language.experimental.macros
 
 import scala.collection.{mutable, immutable, ArrayOps, StringOps}, immutable.WrappedString
 import scala.annotation.{elidable, implicitNotFound}, elidable.ASSERTION
@@ -352,7 +353,7 @@ object Predef extends LowPriorityImplicits {
    *  @param value the expression to evaluate.
    *  @group utilities
    */
-  @inline final def unit(value: Any): Unit = ()
+  @inline final def unit(value: Any): Unit = macro ???
 
   // implicit classes -----------------------------------------------------
 

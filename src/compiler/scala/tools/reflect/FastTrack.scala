@@ -39,6 +39,8 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
     new { val c: c0.type = c0 } with FastStringInterpolator
   private implicit def context2quasiquote(c0: MacroContext): QuasiquoteImpls { val c: c0.type } =
     new { val c: c0.type = c0 } with QuasiquoteImpls
+  private implicit def context2fastpredefunit(c0: MacroContext): FastPredefUnit { val c: c0.type } =
+    new { val c: c0.type = c0 } with FastPredefUnit
   private def makeBlackbox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
     sym -> new FastTrackEntry(pf, isBlackbox = true)
   private def makeWhitebox(sym: Symbol)(pf: PartialFunction[Applied, MacroContext => Tree]) =
@@ -65,6 +67,7 @@ class FastTrack[MacrosAndAnalyzer <: Macros with Analyzer](val macros: MacrosAnd
       makeBlackbox(            StringContext_f) { case _                                          => _.interpolateF },
       makeBlackbox(            StringContext_s) { case _                                          => _.interpolateS },
       makeBlackbox(            StringContext_raw) { case _                                        => _.interpolateRaw },
+      makeBlackbox(                Predef_unit) { case _                                          => _.expandPredefUnit },
       makeBlackbox(ReflectRuntimeCurrentMirror) { case _                                          => c => currentMirror(c).tree },
       makeWhitebox(  QuasiquoteClass_api_apply) { case _                                          => _.expandQuasiquote },
       makeWhitebox(QuasiquoteClass_api_unapply) { case _                                          => _.expandQuasiquote }

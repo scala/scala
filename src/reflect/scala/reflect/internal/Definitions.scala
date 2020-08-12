@@ -1728,6 +1728,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Predef_implicitly   = getMemberMethod(PredefModule, nme.implicitly)
       lazy val Predef_???          = DefinitionsClass.this.Predef_???
       lazy val Predef_any2stringaddMethod = getMemberMethod(PredefModule, nme.any2stringadd).suchThat(_.isMethod)
+      lazy val Predef_unit         = getMemberMethod(PredefModule, TermName("unit"))
 
       lazy val arrayApplyMethod       = getMemberMethod(ScalaRunTimeModule, nme.array_apply)
       lazy val arrayUpdateMethod      = getMemberMethod(ScalaRunTimeModule, nme.array_update)
