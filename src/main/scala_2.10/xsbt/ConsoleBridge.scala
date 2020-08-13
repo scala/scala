@@ -12,12 +12,12 @@
 package xsbt
 
 import xsbti.Logger
-import scala.tools.nsc.interpreter.IMain
-import scala.tools.nsc.interpreter.shell.{ ILoop, ShellConfig, ReplReporterImpl }
+import scala.tools.nsc.interpreter.{ ILoop, IMain, InteractiveReader, NamedParam }
+import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
-class ConsoleInterface {
-  def commandArguments(
+class ConsoleBridge extends xsbti.compile.ConsoleInterface1 {
+  override def commandArguments(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
@@ -25,7 +25,7 @@ class ConsoleInterface {
   ): Array[String] =
     MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
 
-  def run(
+  override def run(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
@@ -33,7 +33,7 @@ class ConsoleInterface {
       cleanupCommands: String,
       loader: ClassLoader,
       bindNames: Array[String],
-      bindValues: Array[Any],
+      bindValues: Array[AnyRef],
       log: Logger
   ): Unit = {
     lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
@@ -42,25 +42,23 @@ class ConsoleInterface {
     log.info(Message("Starting scala interpreter..."))
     log.info(Message(""))
 
-    val loop = new ILoop(ShellConfig(interpreterSettings)) {
-      override def createInterpreter(interpreterSettings: Settings) = {
+    val loop = new ILoop {
+      override def createInterpreter() = {
         if (loader ne null) {
-          val reporter = new ReplReporterImpl(interpreterSettings)
-          intp = new IMain(interpreterSettings, reporter) {
+          in = InteractiveReader.apply()
+          intp = new IMain(settings) {
             override protected def parentClassLoader =
-              if (loader eq null) super.parentClassLoader
-              else loader
+              if (loader eq null) super.parentClassLoader else loader
+
+            override protected def newCompiler(settings: Settings, reporter: Reporter) =
+              super.newCompiler(compilerSettings, reporter)
           }
           intp.setContextClassLoader()
         } else
-          super.createInterpreter(interpreterSettings)
+          super.createInterpreter()
 
-        for ((id, value) <- bindNames zip bindValues) {
-          intp.beQuietDuring {
-            intp.bind(id, value.asInstanceOf[AnyRef].getClass.getName, value)
-            ()
-          }
-        }
+        for ((id, value) <- bindNames zip bindValues)
+          intp.quietBind(NamedParam.clazz(id, value))
 
         if (!initialCommands.isEmpty)
           intp.interpret(initialCommands)
@@ -75,7 +73,8 @@ class ConsoleInterface {
       }
     }
 
-    loop.run(compilerSettings)
+    loop.process(if (loader eq null) compilerSettings else interpreterSettings)
+
     ()
   }
 }

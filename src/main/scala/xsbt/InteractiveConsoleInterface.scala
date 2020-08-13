@@ -12,6 +12,7 @@
 package xsbt
 
 import java.io.{ PrintWriter, StringWriter }
+import java.util.Optional
 
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
@@ -21,13 +22,14 @@ import xsbti.Logger
 import Compat._
 import InteractiveConsoleHelper._
 
-class InteractiveConsoleInterface(
+// See InteractiveConsoleBridgeFactory
+class InteractiveConsoleBridge(
     args: Array[String],
     bootClasspathString: String,
     classpathString: String,
     initialCommands: String,
     cleanupCommands: String,
-    loader: ClassLoader,
+    loader: Optional[ClassLoader],
     bindNames: Array[String],
     bindValues: Array[AnyRef],
     log: Logger

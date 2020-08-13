@@ -16,8 +16,8 @@ import scala.tools.nsc.interpreter.{ ILoop, IMain, InteractiveReader, NamedParam
 import scala.tools.nsc.reporters.Reporter
 import scala.tools.nsc.{ GenericRunnerCommand, Settings }
 
-class ConsoleInterface {
-  def commandArguments(
+class ConsoleBridge extends xsbti.compile.ConsoleInterface1 {
+  override def commandArguments(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
@@ -25,7 +25,7 @@ class ConsoleInterface {
   ): Array[String] =
     MakeSettings.sync(args, bootClasspathString, classpathString, log).recreateArgs.toArray[String]
 
-  def run(
+  override def run(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
@@ -33,7 +33,7 @@ class ConsoleInterface {
       cleanupCommands: String,
       loader: ClassLoader,
       bindNames: Array[String],
-      bindValues: Array[Any],
+      bindValues: Array[AnyRef],
       log: Logger
   ): Unit = {
     lazy val interpreterSettings = MakeSettings.sync(args.toList, log)
@@ -53,7 +53,6 @@ class ConsoleInterface {
             override protected def newCompiler(settings: Settings, reporter: Reporter) =
               super.newCompiler(compilerSettings, reporter)
           }
-          intp.setContextClassLoader()
         } else
           super.createInterpreter()
 

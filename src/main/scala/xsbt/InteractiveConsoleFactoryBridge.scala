@@ -11,21 +11,22 @@
 
 package xsbt
 
+import java.util.Optional
 import xsbti.Logger
 
-class InteractiveConsoleFactory extends xsbti.InteractiveConsoleFactory {
+class InteractiveConsoleBridgeFactory extends xsbti.InteractiveConsoleFactory {
   def createConsole(
       args: Array[String],
       bootClasspathString: String,
       classpathString: String,
       initialCommands: String,
       cleanupCommands: String,
-      loader: ClassLoader,
+      loader: Optional[ClassLoader],
       bindNames: Array[String],
       bindValues: Array[AnyRef],
       log: Logger
   ): xsbti.InteractiveConsoleInterface =
-    new InteractiveConsoleInterface(
+    new InteractiveConsoleBridge(
       args,
       bootClasspathString,
       classpathString,
