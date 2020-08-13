@@ -200,7 +200,13 @@ abstract class BackendUtils extends PerRunInit {
         // that's when we are interested in writing JSR-45 debug information for inline methods
         // but, only if the callsite line number is valid (that is > 0)
         val instruction = ins.asInstanceOf[LineNumberNode]
-        debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
+        val mapping = debugInfoWriter.addInlineLineInfo(callsitePos.line, instruction.line, calleeSource, calleeClass.internalName)
+        // transfer the line number nodes, but with a patched line
+        // the new line value corresponds to the artificial line where the inline line was mapped to
+        val cloned = ins.clone(javaLabelMap).asInstanceOf[LineNumberNode]
+        cloned.line = mapping
+        result add cloned
+        map += ((ins, cloned))
       }
     }
     debugInfoWriter.addSeparator()

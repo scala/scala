@@ -21,15 +21,6 @@ Utils_1$
 6#3:27
 3#3,2:28
 6#3:30
-*S ScalaDebug
-*F
-+ 1 Main_1.scala
-Main_1
-*L
-7#1:12
-8#1:13,12
-8#1:25,3
-8#1:28,3
 *E
 SourceFile: "Utils_1.scala"
 SourceDebugExtension:

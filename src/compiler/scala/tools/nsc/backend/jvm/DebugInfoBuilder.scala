@@ -223,7 +223,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
      * @param calleeFileName the file name of the external source.
      * @param calleeInternalName the internal name of the external source.
      */
-    def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Unit
+    def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Int
 
 
     /**
@@ -265,7 +265,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
                                      calleeFileName: String,
-                                     calleeInternalName: String): Unit = {
+                                     calleeInternalName: String): Int = {
         val calleeFileId = ensureFileEntry(FileSectionEntry(calleeFileName, Some(calleeInternalName)))
         val inlineLinePos = debugInfo.scalaStratum.registerLineForFile(inlineLine, calleeFileId)
 
@@ -273,6 +273,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                                                      toStart = inlineLinePos,
                                                                      toEnd = inlineLinePos,
                                                                      sourceFileId = Some(1)))
+        inlineLinePos
       }
 
       override def addSeparator(): Unit = {
@@ -292,7 +293,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
                                      calleeFileName: String,
-                                     calleeInternalName: String): Unit = () // noop
+                                     calleeInternalName: String): Int = -1 // noop
 
       override def addSeparator(): Unit = () // noop
 
@@ -457,6 +458,7 @@ object DebugInfoBuilder {
                        scalaStratum: JSR45Stratum.ScalaStratum,
                        scalaDebugStratum: JSR45Stratum.ScalaDebugStratum) {
     def strata: Seq[JSR45Stratum] = Seq(scalaStratum, scalaDebugStratum)
+    def outputStrata: Seq[JSR45Stratum] = Seq(scalaStratum)
 
     override def toString: String = {
       val header = Seq(
@@ -465,7 +467,7 @@ object DebugInfoBuilder {
         "Scala"  // default stratum
       )
       val footer = Seq("*E")
-      (header ++ strata.flatMap(_.toStringLines) ++ footer).mkString("\n")
+      (header ++ outputStrata.flatMap(_.toStringLines) ++ footer).mkString("\n")
     }
   }
 

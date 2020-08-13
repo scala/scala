@@ -24,7 +24,7 @@ abstract class JSR45Test extends BytecodeTest {
   override def show(): Unit = {
     for (cls <- definedClasses) {
       val (sourceFile, sourceDebug) = loadSourceDebugExtensionAttribute(cls)
-      println(s"""SourceFile: "${sourceFile}"""")
+      println(s"""SourceFile: "$sourceFile"""")
       println(s"SourceDebugExtension:\n$sourceDebug")
     }
   }

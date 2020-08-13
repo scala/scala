@@ -17,9 +17,12 @@ import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent._
 
+import jdk.internal.org.objectweb.asm.tree.AbstractInsnNode
+
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.tools.asm.tree.LineNumberNode
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.BufferingBackendReporting
 import scala.tools.nsc.io.AbstractFile
@@ -102,20 +105,6 @@ private[jvm] object GeneratedClassHandler {
     override def close(): Unit = underlying.close()
   }
 
-  private class DebugInfoEmittingClassHandler(val postProcessor: PostProcessor,
-                                              underlying: GeneratedClassHandler) extends GeneratedClassHandler {
-    override def process(unit: GeneratedCompilationUnit): Unit = {
-      postProcessor.debugInfoBuilder.writeDebugInfo(unit)
-      underlying.process(unit)
-    }
-
-    override def complete(): Unit = {
-      underlying.complete()
-    }
-
-    override def close(): Unit = underlying.close()
-  }
-
   private class GlobalOptimisingGeneratedClassHandler(
       val postProcessor: PostProcessor,
       underlying: GeneratedClassHandler)
@@ -138,6 +127,20 @@ private[jvm] object GeneratedClassHandler {
     override def close(): Unit = underlying.close()
 
     override def toString: String = s"GloballyOptimising[$underlying]"
+  }
+
+  private class DebugInfoEmittingClassHandler(val postProcessor: PostProcessor,
+                                              underlying: GeneratedClassHandler) extends GeneratedClassHandler {
+    override def process(unit: GeneratedCompilationUnit): Unit = {
+      postProcessor.debugInfoBuilder.writeDebugInfo(unit)
+      underlying.process(unit)
+    }
+
+    override def complete(): Unit = {
+      underlying.complete()
+    }
+
+    override def close(): Unit = underlying.close()
   }
 
   sealed abstract class WritingClassHandler(val javaExecutor: Executor) extends GeneratedClassHandler {
