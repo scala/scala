@@ -1,5 +1,5 @@
 
-// scalac: -Werror -Wunused:params
+// scalac: -Xfatal-warnings -Ywarn-unused:params
 
 trait T {
   def f(implicit i: Int) = i

@@ -34,9 +34,10 @@ object PartestUtil {
   def partestParser(globalBase: File, testBase: File): Parser[String] = {
     val knownUnaryOptions = List(
       "--pos", "--neg", "--run", "--jvm", "--res", "--ant", "--scalap", "--specialized",
-      "--instrumented", "--presentation", "--failed", "--update-check",
-      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--self-test", "--help")
+      "--instrumented", "--presentation", "--failed", "--update-check", "--no-exec",
+      "--show-diff", "--show-log", "--verbose", "--terse", "--debug", "--version", "--help")
     val srcPathOption = "--srcpath"
+    val compilerPathOption = "--compilerpath"
     val grepOption = "--grep"
 
     // HACK: if we parse `--srcpath scaladoc`, we overwrite this var. The parser for test file paths
@@ -57,13 +58,23 @@ object PartestUtil {
     val Grep = {
       def expandGrep(x: String): Seq[String] = {
         val matchingFileContent = try {
-          val Pattern = ("(?i)" + x).r
+          import scala.util.matching.Regex
+          val re = raw"(?i)${Regex.quote(x)}".r
           testFiles.allTestCases.filter {
             case (testFile, testPath) =>
-              val assocFiles = List(".check", ".flags").map(testFile.getParentFile / _)
+              def sibling(suffix: String) = {
+                val name = testFile.name
+                val prefix = name.lastIndexOf('.') match {
+                  case -1 => name
+                  case i  => name.substring(0, i)
+                }
+                val next = prefix + suffix
+                testFile.getParentFile / next
+              }
+              val assocFiles = List(".check", ".flags").map(sibling)
               val sourceFiles = if (testFile.isFile) List(testFile) else testFile.**(AllPassFilter).get.toList
               val allFiles = testFile :: assocFiles ::: sourceFiles
-              allFiles.exists { f => f.exists && f.isFile && Pattern.findFirstIn(IO.read(f)).isDefined }
+              allFiles.exists(f => f.isFile && re.findFirstIn(IO.read(f)).isDefined)
           }
         } catch {
           case _: Throwable => Nil
@@ -93,9 +104,14 @@ object PartestUtil {
         opt + " " + path
     }
 
+   val CompilerPath = ((token(compilerPathOption) <~ Space) ~ token(NotSpace)) map {
+     case opt ~ path =>
+       opt + " " + path
+   }
+
     val ScalacOptsParser = (token("-Dpartest.scalac_opts=") ~ token(NotSpace)) map { case opt ~ v => opt + v }
 
-    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | TestPathParser | Grep | ScalacOptsParser
+    val P = oneOf(knownUnaryOptions.map(x => token(x))) | SrcPath | CompilerPath | TestPathParser | Grep | ScalacOptsParser
     (Space ~> repsep(P, oneOrMore(Space))).map(_.mkString(" ")).?.map(_.getOrElse(""))
   }
 }

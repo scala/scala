@@ -41,17 +41,18 @@ import VersionUtil._
 val scalaSwingDep                = scalaDep("org.scala-lang.modules", "scala-swing")
 val scalaXmlDep                  = scalaDep("org.scala-lang.modules", "scala-xml")
 val scalaParserCombinatorsDep    = scalaDep("org.scala-lang.modules", "scala-parser-combinators")
-val partestDep                   = scalaDep("org.scala-lang.modules", "scala-partest",              versionProp = "partest")
 
 // Non-Scala dependencies:
-val junitDep          = "junit"                  % "junit"           % "4.12"
-val junitInterfaceDep = "com.novocode"           % "junit-interface" % "0.11"                            % "test"
-val scalacheckDep     = "org.scalacheck"         % "scalacheck_2.12" % "1.14.3"                          % "test"
-val jolDep            = "org.openjdk.jol"        % "jol-core"        % "0.9"
-val asmDep            = "org.scala-lang.modules" % "scala-asm"       % versionProps("scala-asm.version")
-val jlineDep          = "jline"                  % "jline"           % versionProps("jline.version")
-val jansiDep          = "org.fusesource.jansi"   % "jansi"           % "1.12"
-val antDep            = "org.apache.ant"         % "ant"             % "1.9.4"
+val junitDep          = "junit"                          % "junit"           % "4.12"
+val junitInterfaceDep = "com.novocode"                   % "junit-interface" % "0.11"                            % Test
+val scalacheckDep     = "org.scalacheck"                %% "scalacheck"      % "1.14.3"                          % Test
+val jolDep            = "org.openjdk.jol"                % "jol-core"        % "0.9"
+val asmDep            = "org.scala-lang.modules"         % "scala-asm"       % versionProps("scala-asm.version")
+val jlineDep          = "jline"                          % "jline"           % versionProps("jline.version")
+val jansiDep          = "org.fusesource.jansi"           % "jansi"           % "1.12"
+val antDep            = "org.apache.ant"                 % "ant"             % "1.9.4"
+val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"  % "1.0"
+val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"       % "1.3.0"
 
 /** Publish to ./dists/maven-sbt, similar to the Ant build which publishes to ./dists/maven. This
   * can be used to compare the output of the sbt and Ant builds during the transition period. Any
@@ -975,18 +976,20 @@ lazy val scalap = configureAsSubproject(project)
   )
   .dependsOn(compiler)
 
-lazy val partestExtras = Project("partest-extras", file(".") / "src" / "partest-extras")
-  .dependsOn(replJlineEmbedded, scaladoc)
-  .settings(commonSettings)
-  .settings(generatePropertiesFileSettings)
-  .settings(clearSourceAndResourceDirectories)
+lazy val partest = configureAsSubproject(project)
+  .dependsOn(library, reflect, compiler, scalap, replJlineEmbedded, scaladoc)
   .settings(disableDocs)
-  .settings(disablePublishing)
+  .settings(Osgi.settings)
+  .settings(AutomaticModuleName.settings("scala.partest"))
   .settings(
-    name := "scala-partest-extras",
-    description := "Scala Compiler Testing Tool (compiler-specific extras)",
-    libraryDependencies ++= Seq(partestDep, junitDep),
-    unmanagedSourceDirectories in Compile := List(baseDirectory.value)
+    name := "scala-partest",
+    description := "Scala Compiler Testing Tool",
+    libraryDependencies ++= List(testInterfaceDep, diffUtilsDep, junitDep),
+    fixPom(
+      "/project/name" -> <name>Scala Partest</name>,
+      "/project/description" -> <description>Scala Compiler Testing Tool</description>,
+      "/project/packaging" -> <packaging>jar</packaging>
+    ),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category
@@ -1043,7 +1046,7 @@ lazy val bench = project.in(file("test") / "benchmarks")
   )
 
 lazy val junit = project.in(file("test") / "junit")
-  .dependsOn(library, reflect, compiler, partestExtras, scaladoc)
+  .dependsOn(library, reflect, compiler, partest, scaladoc)
   .settings(clearSourceAndResourceDirectories)
   .settings(commonSettings)
   .settings(disableDocs)
@@ -1153,7 +1156,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
   )
 
 lazy val test = project
-  .dependsOn(compiler, interactive, replJlineEmbedded, scalap, partestExtras, partestJavaAgent, scaladoc)
+  .dependsOn(compiler, interactive, replJlineEmbedded, scalap, partest, partestJavaAgent, scaladoc)
   .disablePlugins(plugins.JUnitXmlReportPlugin)
   .configs(IntegrationTest)
   .settings(commonSettings)
@@ -1161,7 +1164,7 @@ lazy val test = project
   .settings(disablePublishing)
   .settings(Defaults.itSettings)
   .settings(
-    libraryDependencies ++= Seq(asmDep, partestDep, scalaXmlDep),
+    libraryDependencies ++= Seq(asmDep, scalaXmlDep),
     // no main sources
     sources in Compile := Seq.empty,
     // test sources are compiled in partest run, not here
@@ -1372,7 +1375,7 @@ lazy val root: Project = (project in file("."))
     setIncOptions
   )
   .aggregate(library, reflect, compiler, compilerOptionsExporter, interactive, repl, replJline, replJlineEmbedded,
-    scaladoc, scalap, partestExtras, junit, libraryAll, scalaDist).settings(
+    scaladoc, scalap, partest, junit, libraryAll, scalaDist).settings(
     sources in Compile := Seq.empty,
     onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
       |version=${(Global / version).value} scalaVersion=${(Global / scalaVersion).value}
@@ -1559,7 +1562,7 @@ intellij := {
       moduleDeps(library).value,
       // moduleDeps(libraryAll).value,          // No sources
       moduleDeps(manual).value,
-      moduleDeps(partestExtras).value,
+      moduleDeps(partest).value,
       moduleDeps(partestJavaAgent).value,
       moduleDeps(reflect).value,
       moduleDeps(repl).value,

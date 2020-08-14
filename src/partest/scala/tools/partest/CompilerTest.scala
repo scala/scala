@@ -1,12 +1,27 @@
 /*
- * filter: inliner warning; re-run with
+ * Scala (https://www.scala-lang.org)
+ *
+ * Copyright EPFL and Lightbend, Inc.
+ *
+ * Licensed under Apache License 2.0
+ * (http://www.apache.org/licenses/LICENSE-2.0).
+ *
+ * See the NOTICE file distributed with this work for
+ * additional information regarding copyright ownership.
  */
-import scala.tools.partest._
-import scala.tools.nsc._
-import scala.reflect.runtime.{universe => ru}
-import scala.language.implicitConversions
 
-// necessary to avoid bincompat with scala-partest compiled against the old compiler
+package scala.tools.partest
+
+import scala.reflect.runtime.{universe => ru}
+import scala.tools.nsc._
+
+/** For testing compiler internals directly.
+ *  Each source code string in "sources" will be compiled, and
+ *  the check function will be called with the source code and the
+ *  resulting CompilationUnit.  The check implementation should
+ *  test for what it wants to test and fail (via assert or other
+ *  exception) if it is not happy.
+ */
 abstract class CompilerTest extends DirectTest {
   def check(source: String, unit: global.CompilationUnit): Unit
 
@@ -17,7 +32,7 @@ abstract class CompilerTest extends DirectTest {
 
   override def extraSettings = "-usejavacp -d " + testOutput.path
 
-  def show() = (sources, units).zipped foreach check
+  def show() = (sources, units).zipped.foreach(check)
 
   // Override at least one of these...
   def code = ""
@@ -48,39 +63,5 @@ abstract class CompilerTest extends DirectTest {
     def terms   = allMembers(pkg) filter (s => s.isTerm && !s.isConstructor)
     def tparams = classes flatMap (_.info.typeParams)
     def tpes    = symbols.map(_.tpe).distinct
-  }
-}
-
-object Test extends CompilerTest {
-  import global._
-  import definitions._
-
-  override def code = """
-package ano
-
-class ann(x: Any) extends annotation.TypeConstraint
-
-abstract class Base {
-  def foo(x: String): String @ann(x.trim())
-}
-
-class Sub extends Base {
-  def foo(x: String): String @ann(x.trim()) = x
-}
-  """
-
-  object syms extends SymsInPackage("ano")
-  import syms._
-
-  def check(source: String, unit: global.CompilationUnit) {
-    exitingTyper {
-      terms.filter(_.name.toString == "foo").foreach(sym => {
-        val xParam = sym.tpe.paramss.flatten.head
-        val annot = sym.tpe.finalResultType.annotations.head
-        val xRefs = annot.args.head.filter(t => t.symbol == xParam)
-        println(s"testing symbol ${sym.ownerChain}, param $xParam, xRefs $xRefs")
-        assert(xRefs.length == 1, xRefs)
-      })
-    }
   }
 }
