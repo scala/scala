@@ -35,7 +35,7 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends ReusableBuilder[A, Wrappe
   private var size: Int = 0
 
   private def mkArray(size: Int): WrappedArray[A] = {
-    if (size == 0) WrappedArrayBuilder.emptyWrappedArray(tag)
+    if (size == 0) tag.emptyWrappedArray
     else {
       import java.util.Arrays.copyOf
       val runtimeClass = tag.runtimeClass
@@ -111,25 +111,4 @@ class WrappedArrayBuilder[A](tag: ClassTag[A]) extends ReusableBuilder[A, Wrappe
   }
 
   // todo: add ++=
-}
-private [mutable] object WrappedArrayBuilder {
-  private def emptyWrappedArray[T](tag: ClassTag[T]): mutable.WrappedArray[T] =
-    emptyClass.get(tag.runtimeClass).asInstanceOf[WrappedArray[T]]
-  private[this] val emptyClass = new ClassValue[WrappedArray[_]] {
-    override def computeValue(cls: Class[_]): WrappedArray[_] = {
-      if (cls.isPrimitive)
-        cls match {
-          case java.lang.Integer.TYPE   => new WrappedArray.ofInt(Array.emptyIntArray)
-          case java.lang.Double.TYPE    => new WrappedArray.ofDouble(Array.emptyDoubleArray)
-          case java.lang.Long.TYPE      => new WrappedArray.ofLong(Array.emptyLongArray)
-          case java.lang.Float.TYPE     => new WrappedArray.ofFloat(Array.emptyFloatArray)
-          case java.lang.Character.TYPE => new WrappedArray.ofChar(Array.emptyCharArray)
-          case java.lang.Byte.TYPE      => new WrappedArray.ofByte(Array.emptyByteArray)
-          case java.lang.Short.TYPE     => new WrappedArray.ofShort(Array.emptyShortArray)
-          case java.lang.Boolean.TYPE   => new WrappedArray.ofBoolean(Array.emptyBooleanArray)
-          case java.lang.Void.TYPE      => new WrappedArray.ofUnit(Array.emptyUnitArray)
-        }
-      else new WrappedArray.ofRef(Array.empty[AnyRef])
-    }
-  }
 }

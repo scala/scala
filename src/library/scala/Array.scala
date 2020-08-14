@@ -51,10 +51,6 @@ class FallbackArrayBuilding {
  *  @since  1.0
  */
 object Array extends FallbackArrayBuilding {
-  private val emptyArrays = new ClassValue[AnyRef] {
-    override def computeValue(cls: Class[_]): AnyRef =
-      java.lang.reflect.Array.newInstance(cls, 0)
-  }
 
   val emptyBooleanArray = empty[Boolean]
   val emptyByteArray    = empty[Byte]
@@ -188,8 +184,7 @@ object Array extends FallbackArrayBuilding {
 
   /** Returns an array of length 0 */
   def empty[T: ClassTag]: Array[T] =  {
-    val cls = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
-    emptyArrays.get(cls).asInstanceOf[Array[T]]
+    implicitly[ClassTag[T]].emptyArray
   }
   /** Creates an array with given elements.
    *

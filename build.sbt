@@ -355,6 +355,27 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Array.emptyUnitArray"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.WrappedArrayBuilder$"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTag#GenericClassTag.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTag#GenericClassTag.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#IntersectionTypeManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#IntersectionTypeManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#ClassTypeManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#ClassTypeManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.AnyValManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.AnyValManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTag.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTag.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#WildcardManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#WildcardManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#SingletonTypeManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#SingletonTypeManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassManifestFactory#AbstractTypeClassManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassManifestFactory#AbstractTypeClassManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#AbstractTypeManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ManifestFactory#AbstractTypeManifest.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTypeManifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.ClassTypeManifest.emptyWrappedArray"),
+
   //
     // scala-reflect
     //
