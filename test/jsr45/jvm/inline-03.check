@@ -6,23 +6,20 @@ Scala
 *S Scala
 *F
 + 1 Main_1.scala
-Main_1
-+ 2 List.scala
-scala/collection/immutable/List$
-+ 3 List.scala
-scala/collection/immutable/List
-+ 4 Utils_1.scala
+Main_1$
++ 2 Utils_1.scala
 Utils_1$
++ 3 BoxesRunTime.scala
+scala/runtime/BoxesRunTime
++ 4 Predef.scala
+scala/Predef$
 *L
 1#1,11:1
-648#2:12
-245#3,9:13
-249#3:22
-255#3,2:23
-3#4,2:25
-6#4:27
-3#4,2:28
-6#4:30
+9#2:12
+63#3:13
+422#4:14
+3#2,2:15
+6#2:17
 *E
 SourceFile: "Utils_1.scala"
 SourceDebugExtension:
@@ -34,5 +31,5 @@ Scala
 + 1 Utils_1.scala
 Utils_1$
 *L
-1#1,9:1
+1#1,11:1
 *E

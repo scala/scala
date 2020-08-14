@@ -254,8 +254,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
       debugInfo.scalaDebugStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
 
       private def ensureFileEntry(entry: DebugInfoBuilder.JSR45Stratum.FileSectionEntry): Int = {
-        val FileSectionEntry(fileName, _) = entry
-        val foundFileEntryId = debugInfo.scalaStratum.getFileEntryId(fileName)
+        val foundFileEntryId = debugInfo.scalaStratum.getFileEntryId(entry)
         if (foundFileEntryId == -1)
           debugInfo.scalaStratum.addFileEntry(entry) + 1
         else
@@ -319,8 +318,8 @@ object DebugInfoBuilder {
 
     // Given a fileName, return the ID corresponding to that file section
     // entry, or -1 if no such an entry exists.
-    def getFileEntryId(fileName: String): Int = {
-      fileSection.indexWhere(_.fileName == fileName)
+    def getFileEntryId(entry: FileSectionEntry): Int = {
+      fileSection.indexOf(entry)
     }
 
     def addRawLineMapping(rawLineMapping: RawLineMapping): Unit = {
