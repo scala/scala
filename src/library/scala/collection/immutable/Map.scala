@@ -117,7 +117,7 @@ object Map extends ImmutableMapFactory[Map] {
       if (isMapCBF(bf))
         that match {
           case hm: HashMap[a, b] if hm.size > 4 => hm.asInstanceOf[That]
-          case EmptyMap => this.asInstanceOf[That]
+          case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
           case m: Map1[_, _] => m.asInstanceOf[That]
           case m: Map2[_, _] => m.asInstanceOf[That]
           case m: Map3[_, _] => m.asInstanceOf[That]
@@ -172,6 +172,20 @@ object Map extends ImmutableMapFactory[Map] {
       if (key == key1) new Map1(key1, value)
       else new Map2(key1, value1, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
+    override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+      if (isMapCBF(bf)) that match {
+        case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
+        case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map2[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map3[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map4[K, V] => m.addTo(this).asInstanceOf[That]
+        case _             => super.++(that)(bf)
+      } else super.++(that)(bf)
+    }
+    private[Map] def addTo[V1 >: V](m : Map[K,V1]): Map[K, V1] = {
+      m.updated(key1, value1)
+    }
     def - (key: K): Map[K, V] =
       if (key == key1) Map.empty else this
     override def foreach[U](f: ((K, V)) => U): Unit = {
@@ -235,6 +249,21 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key2) new Map2(key1, value1, key2, value)
       else new Map3(key1, value1, key2, value2, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
+    override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+      if (isMapCBF(bf)) that match {
+        case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
+        case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map2[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map3[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map4[K, V] => m.addTo(this).asInstanceOf[That]
+        case _             => super.++(that)(bf)
+      } else super.++(that)(bf)
+    }
+    private[Map] def addTo[V1 >: V](m : Map[K,V1]): Map[K, V1] = {
+      m.updated(key1, value1).
+       updated(key2, value2)
+    }
     def - (key: K): Map[K, V] =
       if (key == key1) new Map1(key2, value2)
       else if (key == key2) new Map1(key1, value1)
@@ -321,6 +350,22 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key3) new Map3(key1, value1, key2, value2, key3, value)
       else new Map4(key1, value1, key2, value2, key3, value3, key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
+    override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+      if (isMapCBF(bf)) that match {
+        case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
+        case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map2[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map3[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map4[K, V] => m.addTo(this).asInstanceOf[That]
+        case _             => super.++(that)(bf)
+      } else super.++(that)(bf)
+    }
+    private[Map] def addTo[V1 >: V](m : Map[K,V1]): Map[K, V1] = {
+      m.updated(key1, value1).
+       updated(key2, value2).
+       updated(key3, value3)
+    }
     def - (key: K): Map[K, V] =
       if (key == key1)      new Map2(key2, value2, key3, value3)
       else if (key == key2) new Map2(key1, value1, key3, value3)
@@ -420,6 +465,23 @@ object Map extends ImmutableMapFactory[Map] {
       else if (key == key4) new Map4(key1, value1, key2, value2, key3, value3, key4, value)
       else (new HashMap).updated(key1,value1).updated(key2, value2).updated(key3, value3).updated(key4, value4).updated(key, value)
     def + [V1 >: V](kv: (K, V1)): Map[K, V1] = updated(kv._1, kv._2)
+    override def ++[V1 >: V](xs: GenTraversableOnce[(K, V1)]): Map[K, V1] = ++[(K, V1), Map[K, V1]](xs)(Map.canBuildFrom[K, V1])
+    override def ++[B >: (K, V), That](that: GenTraversableOnce[B])(implicit bf: CanBuildFrom[Map[K, V], B, That]): That = {
+      if (isMapCBF(bf)) that match {
+        case m: AnyRef if m eq EmptyMap => this.asInstanceOf[That]
+        case m: Map1[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map2[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map3[K, V] => m.addTo(this).asInstanceOf[That]
+        case m: Map4[K, V] => m.addTo(this).asInstanceOf[That]
+        case _             => super.++(that)(bf)
+      } else super.++(that)(bf)
+    }
+    private[Map] def addTo[V1 >: V](m : Map[K,V1]): Map[K, V1] = {
+      m.updated(key1, value1).
+       updated(key2, value2).
+       updated(key3, value3).
+       updated(key4, value4)
+    }
     def - (key: K): Map[K, V] =
       if (key == key1)      new Map3(key2, value2, key3, value3, key4, value4)
       else if (key == key2) new Map3(key1, value1, key3, value3, key4, value4)

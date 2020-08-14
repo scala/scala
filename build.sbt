@@ -323,6 +323,11 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$Map4"),
     ProblemFilters.exclude[MissingTypesProblem]("scala.collection.immutable.Map$EmptyMap$"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map1.addTo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map2.addTo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map3.addTo"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.Map#Map4.addTo"),
+
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetBuilder"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeSet.this"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$TreeSetBuilder$adder$"),
