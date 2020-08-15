@@ -11,7 +11,8 @@
  */
 
 package scala
-package collection.concurrent
+package collection
+package concurrent
 
 import scala.annotation.tailrec
 
@@ -132,3 +133,5 @@ trait Map[K, V] extends scala.collection.mutable.Map[K, V] {
     }
   }
 }
+
+object Map extends MapFactory.Delegate[Map](TrieMap)
