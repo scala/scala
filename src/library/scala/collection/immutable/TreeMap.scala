@@ -19,7 +19,8 @@ import java.io.IOException
 import generic._
 import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
-import scala.runtime.AbstractFunction2
+import scala.annotation.tailrec
+import scala.runtime.{AbstractFunction1, AbstractFunction2}
 import scala.util.hashing.MurmurHash3
 
 /** $factoryInfo
@@ -268,17 +269,35 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     xs match {
       case tm: TreeMap[A, B] if ordering == tm.ordering =>
         newMapOrSelf(RB.union(tree, tm.tree0))
+      case ls: LinearSeq[(A,B1)] =>
+        if (ls.isEmpty) this //to avoid the creation of the adder
+        else {
+          val adder = new Adder[B1]
+          adder addAll ls
+          newMapOrSelf(adder.finalTree)
+        }
       case _ =>
-        // probably should be something like
-        //        val builder = TreeMap.newBuilder[A, B1]
-        //        builder ++= this
-        //        builder ++= xs
-        //        builder.result()
-        //but for compat and simplicity
-
-        ((repr: TreeMap[A, B1]) /: xs.seq) (_ + _)
+        val adder = new Adder[B1]
+        xs foreach adder
+        newMapOrSelf(adder.finalTree)
     }
   }
+  private final class Adder[B1 >: B]
+    extends RB.MapHelper[A, B1] with Function1[(A, B1), Unit] {
+    private var currentMutableTree: RB.Tree[A,B1] = tree0
+    def finalTree = beforePublish(currentMutableTree)
+    override def apply(kv: (A, B1)): Unit = {
+      currentMutableTree= mutableUpd(currentMutableTree, kv._1, kv._2)
+    }
+    @tailrec def addAll(ls: LinearSeq[(A, B1)]): Unit = {
+      if (!ls.isEmpty) {
+        val kv = ls.head
+        currentMutableTree = mutableUpd(currentMutableTree, kv._1, kv._2)
+        addAll(ls.tail)
+      }
+    }
+  }
+
 
   /** A new TreeMap with the entry added is returned,
    *  assuming that key is <em>not</em> in the TreeMap.
@@ -296,10 +315,22 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
   def - (key:A): TreeMap[A, B] =
    newMapOrSelf(RB.delete(tree, key))
 
-  private[collection] def removeAllImpl(ts: TreeSet[A]): TreeMap[A, B] =  {
-    assert(ordering == ts.ordering)
-    newMapOrSelf(RB.difference(tree, ts.tree))
+  private[collection] def removeAllImpl(xs: GenTraversableOnce[A]): TreeMap[A, B] =  xs match {
+    case ts: TreeSet[A] if ordering == ts.ordering =>
+      newMapOrSelf(RB.difference(tree, ts.tree))
+    case _ =>
+      //TODO add an implementation of a mutable subtractor similar to ++
+      //but at least this doesnt create a TreeMap for each iteration
+      object sub extends AbstractFunction1[A, Unit] {
+        var currentTree = tree0
+        override def apply(k: A): Unit = {
+          currentTree=RB.delete(currentTree, k)
+        }
+      }
+      xs.foreach(sub)
+      newMapOrSelf(sub.currentTree)
   }
+
 
   /** Check if this map maps `key` to a value and return the
    *  value if it exists.

@@ -406,6 +406,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingFieldProblem]("scala.collection.immutable.RedBlackTree#RedTree.serialVersionUID"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.TreeMap.tree0"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeMap$Adder"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Array.emptyUnitArray"),
 
