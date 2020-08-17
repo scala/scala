@@ -4615,7 +4615,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             // since body1 is not necessarily equal to body, we must return a copied tree,
             // but we must still mutate the original bind
             tree setSymbol sym
-            treeCopy.Bind(tree, name, body1) setSymbol sym setType body1.tpe
+            treeCopy.Bind(tree, name, body1) setSymbol sym setType impliedType
         }
 
       def typedArrayValue(tree: ArrayValue) = {

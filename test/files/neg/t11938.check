@@ -1,0 +1,11 @@
+t11938.scala:4: error: type mismatch;
+ found   : n.type (with underlying type Any)
+ required: scala.collection.immutable.Nil.type
+  val a: Nil.type = (Vector(): Any) match { case n @ Nil       => n } // error
+                                                                  ^
+t11938.scala:5: error: type mismatch;
+ found   : n.type (with underlying type Any)
+ required: scala.collection.immutable.Nil.type
+  val b: Nil.type = (Vector(): Any) match { case n @ (m @ Nil) => n } // error was: CCE
+                                                                  ^
+2 errors
