@@ -1134,14 +1134,13 @@ abstract class Erasure extends InfoTransform
                 }
 
                 qual.tpe.typeSymbol match {
-                  case UnitClass | NullClass                    => LIT(0)
-                  case IntClass                                 => qual
-                  case s @ (ShortClass | ByteClass | CharClass) => numericConversion(qual, s)
-                  case BooleanClass                             => If(qual, LIT(true.##), LIT(false.##))
-                  case LongClass                                => staticsCall(nme.longHash)
-                  case FloatClass                               => staticsCall(nme.floatHash)
-                  case DoubleClass                              => staticsCall(nme.doubleHash)
-                  case _                                        => staticsCall(nme.anyHash)
+                  case UnitClass | NullClass                         => LIT(0)
+                  case IntClass | ShortClass | ByteClass | CharClass => qual
+                  case BooleanClass                                  => If(qual, LIT(true.##), LIT(false.##))
+                  case LongClass                                     => staticsCall(nme.longHash)
+                  case FloatClass                                    => staticsCall(nme.floatHash)
+                  case DoubleClass                                   => staticsCall(nme.doubleHash)
+                  case _                                             => staticsCall(nme.anyHash)
                 }
               } else if (isPrimitiveValueClass(qual.tpe.typeSymbol)) {
                 // Rewrite 5.getClass to ScalaRunTime.anyValClass(5)
