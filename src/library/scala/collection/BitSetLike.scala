@@ -41,7 +41,7 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
   self =>
 
   def empty: This
-  protected[this] def copyOrSelf: This = fromBitMaskNoCopy(toBitMask)
+  private[scala] def copyOrSelf: This = fromBitMaskNoCopy(toBitMask)
 
   /** The number of words (each with 64 bits) making up the set */
   protected def nwords: Int
