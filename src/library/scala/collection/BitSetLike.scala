@@ -456,10 +456,10 @@ trait BitSetLike[+This <: BitSetLike[This] with SortedSet[Int]] extends SortedSe
         } else {
           if (bitMask eq null) {
             val lws = lastWordSet
-            val highestIndex = elems match {
+            val highestIndex = Math.max(lws, elems match {
               case t: Traversable[Int] => BitMask.wordCapacity(t)
-              case _ => wordIndex max elemWordIndex max lws
-            }
+              case _ => wordIndex max elemWordIndex
+            })
             bitMask = newArray(1 + highestIndex, 0, lws + 1)
             bitMask(wordIndex) = wordValue
             wordIndex = -2
