@@ -960,6 +960,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Is this symbol a synthetic apply or unapply method in a companion object of a case class? */
     // xeno-by: why this obscure use of the CASE flag? why not simply compare name with nme.apply and nme.unapply?
+    // dnw: "fixed in Dotty"?  In Scala 3 unapply methods don't use the CASE flag.
     final def isCaseApplyOrUnapply =
       isMethod && isCase && isSynthetic
 
