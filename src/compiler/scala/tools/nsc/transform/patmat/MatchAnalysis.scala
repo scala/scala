@@ -511,6 +511,7 @@ trait MatchAnalysis extends MatchApproximation {
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
           case ExtractorTreeMaker(_, _, _)
+             | ProductExtractorTreeMaker(_, _)
              | GuardTreeMaker(_) =>
             if (strict) False else True
           case _ => // debug.patmat("backing off due to "+ tm)

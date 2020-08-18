@@ -1,0 +1,23 @@
+t8178.scala:6: warning: match may not be exhaustive.
+It would fail on the following inputs: FailsChild2(_), VarArgs1(_)
+  def t1(f: Fails) = f match { // inexhaustive on both, was: no warning
+                     ^
+t8178.scala:10: warning: match may not be exhaustive.
+It would fail on the following input: VarArgs1(_)
+  def t2(f: Fails) = f match { // inexhaustive on VarArgs1
+                     ^
+t8178.scala:14: warning: match may not be exhaustive.
+It would fail on the following input: VarArgs1(_)
+  def t12(f: Fails) = f match { // inexhaustive on VarArgs1, was: no warning
+                      ^
+t8178.scala:19: warning: match may not be exhaustive.
+It would fail on the following input: VarArgs1(_)
+  def t21(f: Fails) = f match { // inexhaustive on VarArgs1, was: no warning
+                      ^
+t8178.scala:35: warning: match may not be exhaustive.
+It would fail on the following input: SeqArgs2(_)
+  def t1(f: Works) = f match { // inexhaustive on SeqArgs2
+                     ^
+error: No warnings can be incurred under -Werror.
+5 warnings
+1 error
