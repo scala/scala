@@ -4,13 +4,13 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$/../../project">
       <sourceFolder url="file://$MODULE_DIR$/../../project" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/sbt-0.13/src_managed/main" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/../../project/target/scala-2.12/sbt-1.0/src_managed/main" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/../../project/project/project/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../project/project/target" />
       <excludeFolder url="file://$MODULE_DIR$/../../project/target/config-classes" />
       <excludeFolder url="file://$MODULE_DIR$/../../project/target/resolution-cache" />
-      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/classes" />
-      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.10/sbt-0.13/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.12/classes" />
+      <excludeFolder url="file://$MODULE_DIR$/../../project/target/scala-2.12/sbt-1.0/classes" />
       <excludeFolder url="file://$MODULE_DIR$/../../project/target/streams" />
     </content>
     <orderEntry type="inheritedJdk" />
