@@ -4738,11 +4738,15 @@ trait Types
         invalidateCaches(tp, updatedSyms)
       }
 
-  def invalidateCaches(t: Type, updatedSyms: List[Symbol]) =
+  def invalidateCaches(t: Type, updatedSyms: List[Symbol]): Unit =
     t match {
-      case st: SingleType   if updatedSyms.contains(st.sym) => st.invalidateSingleTypeCaches()
       case tr: TypeRef      if updatedSyms.contains(tr.sym) => tr.invalidateTypeRefCaches()
       case ct: CompoundType if ct.baseClasses.exists(updatedSyms.contains) => ct.invalidatedCompoundTypeCaches()
+      case st: SingleType =>
+        if (updatedSyms.contains(st.sym)) st.invalidateSingleTypeCaches()
+        val underlying = st.underlying
+        if (underlying ne st)
+          invalidateCaches(underlying, updatedSyms)
       case _ =>
     }
 
