@@ -8,6 +8,7 @@ object Test {
 
       def c: Any = this.c // warn
       def d: Any = C.this.d // warn
+      def e(): Any = e //warn
     }
 
     def method: Unit = {
