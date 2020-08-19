@@ -11,7 +11,7 @@
 
 package xsbt
 
-import java.nio.file.{ Path, Paths }
+import java.nio.file.Path
 import xsbti.VirtualFile
 import xsbti.api.DependencyContext
 import DependencyContext._
@@ -72,13 +72,14 @@ final class Dependency(val global: CallbackGlobal) extends LocateClassFile with 
 
   private class DependencyProcessor(unit: CompilationUnit) {
     private def firstClassOrModuleClass(tree: Tree): Option[Symbol] = {
-      tree foreach {
-        case classOrModule @ ((_: ClassDef) | (_: ModuleDef)) =>
-          val sym = classOrModule.symbol
-          return Some(if (sym.isModule) sym.moduleClass else sym)
-        case _ => ()
+      val maybeClassOrModule = tree find {
+        case ((_: ClassDef) | (_: ModuleDef)) => true
+        case _                                => false
       }
-      None
+      maybeClassOrModule.map { classOrModule =>
+        val sym = classOrModule.symbol
+        if (sym.isModule) sym.moduleClass else sym
+      }
     }
 
     private val sourceFile: VirtualFile = unit.source.file match { case AbstractZincFile(vf) => vf }
