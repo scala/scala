@@ -1,0 +1,9 @@
+t12122.scala:4: error: type mismatch;
+ found   : String
+ required: Int
+  def g = (i: String, s) => f(i, s)
+                              ^
+t12122.scala:9: error: not found: type Junk
+  def g = (i: Junk, s) => f(i, s)
+              ^
+2 errors
