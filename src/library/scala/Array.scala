@@ -51,15 +51,19 @@ class FallbackArrayBuilding {
  *  @since  1.0
  */
 object Array extends FallbackArrayBuilding {
-  val emptyBooleanArray = new Array[Boolean](0)
-  val emptyByteArray    = new Array[Byte](0)
-  val emptyCharArray    = new Array[Char](0)
-  val emptyDoubleArray  = new Array[Double](0)
-  val emptyFloatArray   = new Array[Float](0)
-  val emptyIntArray     = new Array[Int](0)
-  val emptyLongArray    = new Array[Long](0)
-  val emptyShortArray   = new Array[Short](0)
-  val emptyObjectArray  = new Array[Object](0)
+
+  val emptyBooleanArray = empty[Boolean]
+  val emptyByteArray    = empty[Byte]
+  val emptyCharArray    = empty[Char]
+  val emptyDoubleArray  = empty[Double]
+  val emptyFloatArray   = empty[Float]
+  val emptyIntArray     = empty[Int]
+  val emptyLongArray    = empty[Long]
+  val emptyShortArray   = empty[Short]
+
+  private[scala] //this is only private because of binary compatability
+  val emptyUnitArray    = empty[scala.runtime.BoxedUnit].asInstanceOf[Array[Unit]]
+  val emptyObjectArray  = empty[Object]
 
   implicit def canBuildFrom[T](implicit tag: ClassTag[T]): CanBuildFrom[Array[_], T, Array[T]] = {
     val cls = tag.runtimeClass
@@ -179,8 +183,9 @@ object Array extends FallbackArrayBuilding {
   }
 
   /** Returns an array of length 0 */
-  def empty[T: ClassTag]: Array[T] = new Array[T](0)
-
+  def empty[T: ClassTag]: Array[T] =  {
+    implicitly[ClassTag[T]].emptyArray
+  }
   /** Creates an array with given elements.
    *
    *  @param xs the elements to put in the array

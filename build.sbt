@@ -357,6 +357,13 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.factory"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.generic.SortedSetFactory#SortedSetCanBuildFrom.ordering"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.Array.emptyUnitArray"),
+
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Tag.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Tag.emptyWrappedArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyWrappedArray"),
+
     //
     // scala-reflect
     //

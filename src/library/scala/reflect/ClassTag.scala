@@ -15,6 +15,9 @@ package reflect
 
 import java.lang.{ Class => jClass }
 
+import scala.collection.mutable
+import scala.runtime.BoxedUnit
+
 /**
  *
  * A `ClassTag[T]` stores the erased class of a given type `T`, accessible via the `runtimeClass`
@@ -46,6 +49,15 @@ import java.lang.{ Class => jClass }
  */
 @scala.annotation.implicitNotFound(msg = "No ClassTag available for ${T}")
 trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serializable {
+
+  @transient private[scala] lazy val emptyArray       : Array[T]                = {
+    val componentType =
+      if (runtimeClass eq classOf[Void]) classOf[BoxedUnit] else runtimeClass
+    java.lang.reflect.Array.newInstance(componentType, 0).asInstanceOf[Array[T]]
+  }
+  @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =
+    mutable.WrappedArray.make[T](emptyArray)
+
   // please, don't add any APIs here, like it was with `newWrappedArray` and `newArrayBuilder`
   // class tags, and all tags in general, should be as minimalistic as possible
 
@@ -151,7 +163,8 @@ object ClassTag {
   @SerialVersionUID(1L)
   private class GenericClassTag[T](val runtimeClass: jClass[_]) extends ClassTag[T] {
     override def newArray(len: Int): Array[T] = {
-      java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
+      if (len == 0) emptyArray
+      else java.lang.reflect.Array.newInstance(runtimeClass, len).asInstanceOf[Array[T]]
     }
   }
 

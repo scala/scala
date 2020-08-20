@@ -133,9 +133,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Byte] = {
-      val newelems = new Array[Byte](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyByteArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -198,9 +198,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Short] = {
-      val newelems = new Array[Short](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyShortArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -263,9 +263,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Char] = {
-      val newelems = new Array[Char](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyCharArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -328,9 +328,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Int] = {
-      val newelems = new Array[Int](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyIntArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -393,9 +393,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Long] = {
-      val newelems = new Array[Long](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyLongArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -458,9 +458,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Float] = {
-      val newelems = new Array[Float](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyFloatArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -523,9 +523,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Double] = {
-      val newelems = new Array[Double](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyDoubleArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -588,9 +588,9 @@ object ArrayBuilder {
     private var size: Int = 0
 
     private def mkArray(size: Int): Array[Boolean] = {
-      val newelems = new Array[Boolean](size)
-      if (this.size > 0) Array.copy(elems, 0, newelems, 0, this.size)
-      newelems
+      if (size == 0) Array.emptyBooleanArray
+      else if (elems eq null) new Array(size)
+      else java.util.Arrays.copyOf(elems, size)
     }
 
     private def resize(size: Int) {
@@ -663,10 +663,12 @@ object ArrayBuilder {
     def clear() { size = 0 }
 
     def result() = {
-      val ans = new Array[Unit](size)
-      var i = 0
-      while (i < size) { ans(i) = (); i += 1 }
-      ans
+      if (size == 0) Array.emptyUnitArray
+      else {
+        val ans = new Array[Unit](size)
+        java.util.Arrays.fill(ans.asInstanceOf[Array[AnyRef]], ())
+        ans
+      }
     }
 
     override def equals(other: Any): Boolean = other match {
