@@ -42,7 +42,8 @@ trait TreeAndTypeAnalysis extends Debugging {
    */
   def binderTypeImpliedByPattern(pat: Tree, pt: Type): Type =
     pat match {
-      case _ if pat.tpe <:< BooleanTpe || pat.tpe <:< UnitTpe => pat.tpe
+      case _ if pat.tpe <:< BooleanTpe || pat.tpe <:< UnitTpe || pat.tpe <:< StringTpe
+                                                              => pat.tpe
       case Ident(_) | Select(_, _) | Literal(_)               => pt
       case Typed(_, _) if pat.tpe.isInstanceOf[ConstantType]  => pt
       case _                                                  => pat.tpe
