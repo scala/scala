@@ -1,4 +1,4 @@
-// scalac: -Xlint -Werror
+// scalac: -Xlint -Werror -Wvalue-discard
 //
 object Whatever {
   override def equals(x: Any) = true
@@ -11,9 +11,20 @@ class Test {
 
   val b: Nil.type = (Vector(): Any) match { case n @ (m @ Nil) => n } // error was: CCE
 
-  //val c = List(42) match { case xs @ (ys @ _*) => xs }              // syntax error
+  //val c = List(42) match { case xs @ (ys @ _*) => xs }              // syntax error in parser
+
+  // numeric value classes compare equals betwixt themselves
 
   val d: Int = (1.0: Any) match { case x @ 1 => x }                   // error
 
-  val e: Int = (1.0: Any) match { case x @ (_: 1) => x }              // error CCE
-} 
+  val e: Int = (1.0: Any) match { case x @ (_: 1) => x }              // error was: CCE
+
+  // edge case, Boolean and Unit only equal themselves
+
+  val f: Boolean  = (true: Any) match { case b @ true => b }
+  val f2: Boolean = (true: Any) match { case b @ (_: true) => b }
+  val f3: true    = (true: Any) match { case b @ (_: true) => b }
+
+  def g(): Unit  = ((): Any) match { case u @ () => u }
+  def g2(): Unit = ((): Any) match { case u @ (_: Unit) => u }        // no value discard
+}

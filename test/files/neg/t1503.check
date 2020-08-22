@@ -8,9 +8,14 @@ t1503.scala:12: error: type mismatch;
  required: scala.collection.immutable.Nil.type
   val b: Nil.type = (Vector(): Any) match { case n @ (m @ Nil) => n } // error was: CCE
                                                                   ^
-t1503.scala:16: error: type mismatch;
+t1503.scala:18: error: type mismatch;
  found   : Any
  required: Int
   val d: Int = (1.0: Any) match { case x @ 1 => x }                   // error
                                                 ^
-3 errors
+t1503.scala:20: error: type mismatch;
+ found   : Any
+ required: Int
+  val e: Int = (1.0: Any) match { case x @ (_: 1) => x }              // error was: CCE
+                                                     ^
+4 errors
