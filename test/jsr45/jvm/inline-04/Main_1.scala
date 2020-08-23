@@ -3,6 +3,7 @@
 import Utils1._
 import Utils2._
 
+// inline-04
 object Main_1 {
   def main(args: Array[String]): Unit = {
     val result1 = applyToInt(1, blackMagic1(_, 5))

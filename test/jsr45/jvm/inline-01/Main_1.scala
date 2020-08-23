@@ -2,6 +2,7 @@
 // to enable the inliner log, add: -Yopt-log-inline _
 import Utils_1._
 
+// inline-01
 class Main_1 {
   def foo(): Unit = {
     val myList = List(1, 2, 3, 4, 50, 60, 70, 80)

@@ -3,6 +3,7 @@
 import Utils_1._
 import Tools_1._
 
+// inline-02
 class Main_1 {
   def foo(): Unit = {
     val myList = List(1, 2, 3, 4, 50, 60, 70, 80)

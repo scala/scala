@@ -53,7 +53,7 @@ import scala.collection.mutable
  *   Here is an example. Assume that we have the following two files.
  *
  *   Main.scala:
- *
+ * {{{
  *    1. // Main.scala
  *    2. // some comment here...
  *    3. import Utils._
@@ -65,9 +65,9 @@ import scala.collection.mutable
  *    9.   }
  *   10. }
  *   11. [empty line]
- *
+ *}}}
  *   Utils.scala:
- *
+ *{{{
  *    1. object Utils {
  *    2.  @inline def blackMagic(n: Int): Int = {
  *    3.    if (n < 10)
@@ -77,9 +77,9 @@ import scala.collection.mutable
  *    7.  }
  *    8. }
  *    9. [empty line]
- *
+ *}}}
  *   Then the debug information that will be generated for the Main class is the following:
- *
+ *{{{
  *   SMAP
  *   Main.scala
  *   Scala
@@ -111,7 +111,7 @@ import scala.collection.mutable
  *   8#1:25,3
  *   8#1:28,3
  *   *E
- *
+ *}}}
  *   The SMAP starts with the source file name (in our case Main.scala) and then defines two strata,
  *   indicated by the *S prefix. As discussed earlier, those are Scala and ScalaDebug.
  *
@@ -121,39 +121,39 @@ import scala.collection.mutable
  *
  *   Then the line section follows. Because the Main.scala file contains 11 lines, the first
  *   11 lines in the catalogue are filled by those lines. This is achieved via the mapping:
- *
+ *{{{
  *   1#1,11:1
- *
+ *}}}
  *   which says: "starting from line 1 of file ID 1, map 11 lines starting from line 1 of the catalogue"
  *
  *   This creates the mapping:
- *
+ *{{{
  *    1 ->  1
  *    2 ->  2
  *    3 ->  3
  *     ...
  *   11 -> 11
- *
+ *}}}
  *   Then it creates the mapping for some calls to the List collection and then the mapping for the inline
  *   method from the Utils module, which has file ID = 3.
- *
+ *{{{
  *   3#3,2:24
  *   6#3:26
- *
+ *}}}
  *   This creates the following mapping for the inline lines from the Utils module:
- *
+ *{{{
  *    3 -> 25
  *    4 -> 26
  *    6 -> 27
- *
+ *}}}
  *   Notice how line 5 (containing only the "if" keyword did not make it to the catalogue).
  *
  *   The ScalaDebug stratum contains three line mappings:
- *
+ *{{{
  *   7#1:12
  *   8#1:13,12
  *   8#1:25,3
- *
+ *}}}
  *   What those mappings indicate is that:
  *   * line 12 on the catalogue is inline from line 7 of the original source file
  *     (that is the List.apply method)
@@ -170,13 +170,13 @@ import scala.collection.mutable
  *   inline requests separate.
  *
  *   For instance, in the above example, mapping:
- *
+ *{{{
  *   245#2,9:13
- *
+ *}}}
  *   also contains line 249, however we still need the following mapping as well:
- *
+ *{{{
  *   249#2:22
- *
+ *}}}
  *   because line 249 was inline anew with a separate inline request.
  *
  *   Please note that, an inline line from an external file may be in turn inline from another
@@ -306,13 +306,13 @@ object DebugInfoBuilder {
   import JSR45Stratum._
 
   sealed abstract class JSR45Stratum(val name: String) extends Serializable {
-    protected var fileSection: Seq[FileSectionEntry] = Seq.empty
-    protected var lineMapping: Seq[RawLineMapping]   = Seq.empty
+    protected val fileSection: mutable.ArrayBuffer[FileSectionEntry] = mutable.ArrayBuffer.empty
+    protected val lineMapping: mutable.ArrayBuffer[RawLineMapping]   = mutable.ArrayBuffer.empty
 
     // Add a new FileSectionEntry to the fileSection.
     // Return the ID of the entry just added.
     def addFileEntry(entry: FileSectionEntry): Int = {
-      fileSection :+= entry
+      fileSection.append(entry)
       fileSection.length - 1
     }
 
@@ -323,7 +323,7 @@ object DebugInfoBuilder {
     }
 
     def addRawLineMapping(rawLineMapping: RawLineMapping): Unit = {
-      lineMapping :+= rawLineMapping
+      lineMapping.append(rawLineMapping)
     }
 
     // compute the line section from the line mappings
@@ -372,7 +372,7 @@ object DebugInfoBuilder {
             Seq(s"+ ${id + 1} $fileName", s"$absoluteFileName")
           case (FileSectionEntry(fileName, None), id)                   =>
             Seq(s"${id + 1} $fileName")
-        }
+        }.toSeq
 
     // this method triggers line section computation from the line mappings
     def lineSectionLines: Seq[String] = {
