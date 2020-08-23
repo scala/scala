@@ -1,0 +1,63 @@
+SourceFile: "Main_1.scala"
+SourceDebugExtension:
+SMAP
+Main_1.scala
+Scala
+*S Scala
+*F
++ 1 Main_1.scala
+Main_1$
++ 2 Utils1_1.scala
+Utils1_1$
++ 3 BoxesRunTime
+scala/runtime/BoxesRunTime
++ 4 Predef$
+scala/Predef$
++ 5 Integer
+java/lang/Integer
+*L
+1#1,11:1
+2#2,3:12
+8#2,3:15
+63#3:18
+422#4:19
+615#5:20
+*E
+SourceFile: "Utils1_1.scala"
+SourceDebugExtension:
+SMAP
+Utils1_1.scala
+Scala
+*S Scala
+*F
++ 1 Utils1_1.scala
+Utils1_1$
++ 2 Utils2_1.scala
+Utils2_1$
++ 3 Integer
+java/lang/Integer
+*L
+1#1,7:1
+3#2:8
+7#2:9
+6#2:10
+615#3:11
+*E
+SourceFile: "Utils2_1.scala"
+SourceDebugExtension:
+SMAP
+Utils2_1.scala
+Scala
+*S Scala
+*F
++ 1 Utils2_1.scala
+Utils2_1$
++ 2 Predef$
+scala/Predef$
++ 3 BoxesRunTime
+scala/runtime/BoxesRunTime
+*L
+1#1,5:1
+401#2:6
+63#3:7
+*E
