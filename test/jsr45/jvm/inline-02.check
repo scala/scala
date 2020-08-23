@@ -11,7 +11,7 @@ Main_1
 Utils_1$
 + 3 Tools_1.scala
 Tools_1$
-+ 4 List.scala
++ 4 List$
 scala/collection/immutable/List$
 *L
 1#1,27:1
@@ -41,7 +41,7 @@ Scala
 *F
 + 1 Utils_1.scala
 Utils_1$
-+ 2 List.scala
++ 2 List
 scala/collection/immutable/List
 + 3 Tools_1.scala
 Tools_1$

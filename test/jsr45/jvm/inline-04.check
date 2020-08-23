@@ -9,9 +9,9 @@ Scala
 Main_1$
 + 2 Utils_1.scala
 Utils2$
-+ 3 BoxesRunTime.scala
++ 3 BoxesRunTime
 scala/runtime/BoxesRunTime
-+ 4 Predef.scala
++ 4 Predef$
 scala/Predef$
 + 5 Utils_1.scala
 Utils1$

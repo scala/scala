@@ -7,9 +7,9 @@ Scala
 *F
 + 1 Main_1.scala
 Main_1
-+ 2 List.scala
++ 2 List$
 scala/collection/immutable/List$
-+ 3 List.scala
++ 3 List
 scala/collection/immutable/List
 + 4 Utils_1.scala
 Utils_1$
