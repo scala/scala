@@ -17,7 +17,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.testkit.AssertUtil.{getFieldAccessible => f}
+import scala.tools.testkit.ReflectUtil.{getFieldAccessible => f}
 
 @RunWith(classOf[JUnit4])
 class LongMapTest {
