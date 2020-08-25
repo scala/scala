@@ -689,8 +689,7 @@ abstract class BTypes {
           internalName,
           outerName.orNull,
           innerName.orNull,
-          flags = adjustStatic(i.flags),
-          refereeFlags = adjustStatic(if (exitingTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
+          flags = adjustStatic(if (exitingTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
         )
     })
 
@@ -890,7 +889,7 @@ abstract class BTypes {
    * @param innerName The simple name of the inner class, may be null.
    * @param flags     The flags for this class in the InnerClass entry.
    */
-  final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int, refereeFlags: Int)
+  final case class InnerClassEntry(name: String, outerName: String, innerName: String, flags: Int)
 
   final case class ArrayBType(componentType: BType) extends RefBType {
     def dimension: Int = componentType match {

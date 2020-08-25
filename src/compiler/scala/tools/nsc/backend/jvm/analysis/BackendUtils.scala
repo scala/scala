@@ -373,26 +373,15 @@ abstract class BackendUtils extends PerRunInit {
    * can-multi-thread
    */
   final def addInnerClasses(jclass: asm.tree.ClassNode, declaredInnerClasses: List[ClassBType], refedInnerClasses: List[ClassBType]) {
-    val allReferredNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
-
-    case class Entry(cls: ClassBType, isDeclared: Boolean)
-
     // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
-    val allNestedClasses = new mutable.TreeSet[Entry]()(Ordering.by(_.cls.internalName))
-    declaredInnerClasses.foreach(cls => allNestedClasses += Entry(cls, isDeclared = true))
-    allReferredNestedClasses.foreach(cls => allNestedClasses += Entry(cls, isDeclared = false))
+    val allNestedClasses = new mutable.TreeSet[ClassBType]()(Ordering.by(_.internalName))
+    allNestedClasses ++= declaredInnerClasses
+    refedInnerClasses.foreach(_.enclosingNestedClassesChain.get.foreach(allNestedClasses += _))
 
     for (nestedClass <- allNestedClasses) {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
-      val Some(e) = nestedClass.cls.innerClassAttributeEntry.get
-      // Although arguably a bug, we retain backwards compatibility with prior versions of scalac by
-      // emitting declared private inner classes that have been publicised with `makeNonPrivate` as ACC_PUBLIC.
-      // Java clients can see these classes, as shown in test/files/run/java-not-private-inners
-      //
-      // Inner class entries of referred classes now use the `exitingTyper(sym.isPrivate)` so that the value
-      // is stable between joint and separate compilation (see `DeterminismTest.testReferenceToInnerClassMadeNonPrivate`
-      val flags = if (nestedClass.isDeclared) e.flags else e.refereeFlags
-      jclass.visitInnerClass(e.name, e.outerName, e.innerName, flags)
+      val Some(e) = nestedClass.innerClassAttributeEntry.get
+      jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
     }
   }
 
