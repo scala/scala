@@ -536,10 +536,8 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   }
 
   def runPosTest(): TestState =
-    // TODO: Deferred until cleanup has happened
-    //if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
-    //else runTestCommon()
-    runTestCommon()
+    if (checkFile.exists) genFail("unexpected check file for pos test (use -Xfatal-warnings with neg test to verify warnings)")
+    else runTestCommon()
 
   def runNegTest(): TestState = runInContext {
     // pass if it checks and didn't crash the compiler
