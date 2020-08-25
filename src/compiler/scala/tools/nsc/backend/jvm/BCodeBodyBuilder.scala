@@ -1366,7 +1366,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       val lambdaTarget = originalTarget.attachments.get[JustMethodReference].map(_.lambdaTarget).getOrElse(originalTarget)
       def asmType(sym: Symbol) = classBTypeFromSymbol(sym).toASMType
 
-      val isInterface = lambdaTarget.owner.isTrait
+      val isInterface = lambdaTarget.owner.isTrait || lambdaTarget.owner.hasJavaAnnotationFlag
       val tag =
         if (lambdaTarget.isStaticMember) Opcodes.H_INVOKESTATIC
         else if (lambdaTarget.isPrivate) Opcodes.H_INVOKESPECIAL
