@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 package test
 
 // Cats Xor, Scalaz \/, scala.util.Either

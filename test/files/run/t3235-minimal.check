@@ -1,12 +1,12 @@
-t3235-minimal.scala:3: warning: method round in class RichInt is deprecated (since 2.11.0): this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?
+t3235-minimal.scala:4: warning: method round in class RichInt is deprecated (since 2.11.0): this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?
     assert(123456789.round == 123456789)
                      ^
-t3235-minimal.scala:4: warning: method round in package math is deprecated (since 2.11.0): This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?
+t3235-minimal.scala:5: warning: method round in package math is deprecated (since 2.11.0): This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?
     assert(math.round(123456789) == 123456789)
                 ^
-t3235-minimal.scala:5: warning: method round in class RichLong is deprecated (since 2.11.0): this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?
+t3235-minimal.scala:6: warning: method round in class RichLong is deprecated (since 2.11.0): this is an integer type; there is no reason to round it.  Perhaps you meant to call this on a floating-point value?
     assert(1234567890123456789L.round == 1234567890123456789L)
                                 ^
-t3235-minimal.scala:6: warning: method round in package math is deprecated (since 2.11.0): This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?
+t3235-minimal.scala:7: warning: method round in package math is deprecated (since 2.11.0): This is an integer type; there is no reason to round it. Perhaps you meant to call this with a floating-point value?
     assert(math.round(1234567890123456789L) == 1234567890123456789L)
                 ^

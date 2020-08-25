@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 package scala.collection.slick
 
 object QueryableMacros{

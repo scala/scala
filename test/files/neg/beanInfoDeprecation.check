@@ -1,4 +1,4 @@
-beanInfoDeprecation.scala:2: warning: class BeanInfo in package beans is deprecated (since 2.12.0): the generation of BeanInfo classes is no longer supported
+beanInfoDeprecation.scala:3: warning: class BeanInfo in package beans is deprecated (since 2.12.0): the generation of BeanInfo classes is no longer supported
 class C
       ^
 error: No warnings can be incurred under -Xfatal-warnings.

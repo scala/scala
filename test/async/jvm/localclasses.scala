@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.neg.LocalClasses0Spec])
 
 package scala.async.neg {

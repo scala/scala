@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 case class C(val s: Int*)
 
 object Test {

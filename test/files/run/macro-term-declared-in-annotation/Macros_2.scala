@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 class foo(val bar: String) extends annotation.StaticAnnotation
 
 object Api {

@@ -1,3 +1,4 @@
+// scalac: -Xlint:missing-interpolator -Xfatal-warnings
 class A {
   val bippy = 123
 

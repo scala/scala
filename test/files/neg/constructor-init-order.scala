@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 trait Foo0 {
   val quux1: String
   val quux2 = quux1  // warning here is "future work"

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 final class Bip { def <=(other: Bop) = true }
 final class Bop { }
 object Bep { }

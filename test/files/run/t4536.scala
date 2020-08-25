@@ -1,3 +1,4 @@
+// scalac: -language:dynamics
 
 
 

@@ -1,3 +1,4 @@
+// scalac: -opt:l:method
 import scala.tools.partest.BytecodeTest
 import scala.tools.asm
 import asm.ClassReader

@@ -1,3 +1,4 @@
+// scalac: -nowarn
 // not a peep out of the pattern matcher's unreachability analysis
 // its budget should suffice for these simple matches (they do have a large search space)
 class Test {

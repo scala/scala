@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.12
 import Implicits._
 
 class Baz

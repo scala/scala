@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 trait Contravariant[-X]
 trait Invariant[X]
 trait Covariant[+X]

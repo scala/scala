@@ -1,6 +1,6 @@
-t7171.scala:2: warning: The outer reference in this type test cannot be checked at run time.
+t7171.scala:3: warning: The outer reference in this type test cannot be checked at run time.
   final case class A()
                    ^
-t7171.scala:9: warning: The outer reference in this type test cannot be checked at run time.
+t7171.scala:10: warning: The outer reference in this type test cannot be checked at run time.
     case _: A => true; case _ => false
           ^

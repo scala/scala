@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 trait Foo[F[_]]
 trait Bar[F[_], A]
 

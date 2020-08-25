@@ -1,3 +1,4 @@
+// scalac: -Yrangepos
 class Test {
   trait PropTraverser {
     def apply(x: Int): Unit = {}

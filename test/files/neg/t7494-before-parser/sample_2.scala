@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xplugin-require:beforeparser
 
 package sample
 

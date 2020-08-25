@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 package p
 
 @A(subInterface = classOf[T.S])

@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xfatal-warnings
 class EtaExpandZeroArg {
   def foo(): () => String = () => ""
   val t1a: () => Any = foo() // ok (obviously)

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 sealed abstract class Base
 
 

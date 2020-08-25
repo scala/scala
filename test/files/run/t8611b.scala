@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 sealed trait KrafsDescription
 
 abstract class NotWorkingEnum extends Enumeration {

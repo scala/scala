@@ -1,3 +1,4 @@
+// scalac: -deprecation
 object Test {
   val r1 = 1.0 to 10.0 by 0.5
   val r2 = 1.0 to 1.0 by 1.0

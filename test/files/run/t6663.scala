@@ -1,3 +1,4 @@
+// scalac: -Yrangepos:false
 import language.dynamics
 
 class C(v: Any) extends Dynamic {

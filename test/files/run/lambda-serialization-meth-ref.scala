@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream}
 import java.io.{ObjectInputStream, ObjectOutputStream}
 

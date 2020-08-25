@@ -1,15 +1,15 @@
-pat_unreachable.scala:22: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+pat_unreachable.scala:23: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
 If you intended to match against parameter b of method contrivedExample, you must use backticks, like: case `b` =>
     case b => println("matched b")
          ^
-pat_unreachable.scala:23: warning: unreachable code due to variable pattern 'b' on line 22
+pat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 23
 If you intended to match against parameter c of method contrivedExample, you must use backticks, like: case `c` =>
     case c => println("matched c")
                      ^
-pat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 22
+pat_unreachable.scala:25: warning: unreachable code due to variable pattern 'b' on line 23
     case _ => println("matched neither")
                      ^
-pat_unreachable.scala:23: warning: unreachable code
+pat_unreachable.scala:24: warning: unreachable code
     case c => println("matched c")
                      ^
 error: No warnings can be incurred under -Xfatal-warnings.

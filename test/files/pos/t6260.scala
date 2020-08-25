@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:inline
 class Box[X](val x: X) extends AnyVal {
   def map[Y](f: X => Y): Box[Y] =
     ((bx: Box[X]) => new Box(f(bx.x)))(this)

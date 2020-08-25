@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.13
 
 case class C(implicit val c: Int)
 

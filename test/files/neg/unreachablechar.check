@@ -1,10 +1,10 @@
-unreachablechar.scala:4: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+unreachablechar.scala:5: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
     case _ => println("stuff");
          ^
-unreachablechar.scala:5: warning: unreachable code due to variable pattern on line 4
+unreachablechar.scala:6: warning: unreachable code due to variable pattern on line 5
     case 'f' => println("not stuff?");
                        ^
-unreachablechar.scala:5: warning: unreachable code
+unreachablechar.scala:6: warning: unreachable code
     case 'f' => println("not stuff?");
                        ^
 error: No warnings can be incurred under -Xfatal-warnings.

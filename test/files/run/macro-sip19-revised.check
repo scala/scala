@@ -1,5 +1,5 @@
-hey, i've been called from SourceLocation1(null,Test_2.scala,11,251)
-hey, i've been called from SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222)
-hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222),Test_2.scala,8,222)
-hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,11,251),Test_2.scala,8,222),Test_2.scala,8,222),Test_2.scala,6,180)
+hey, i've been called from SourceLocation1(null,Test_2.scala,12,292)
+hey, i've been called from SourceLocation1(SourceLocation1(null,Test_2.scala,12,292),Test_2.scala,9,263)
+hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,12,292),Test_2.scala,9,263),Test_2.scala,9,263)
+hey, i've been called from SourceLocation1(SourceLocation1(SourceLocation1(SourceLocation1(null,Test_2.scala,12,292),Test_2.scala,9,263),Test_2.scala,9,263),Test_2.scala,7,221)
 2

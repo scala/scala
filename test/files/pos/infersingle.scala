@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test1 {
   def one[T](x: T): Option[T] = Some(x)
   val x = "one"

@@ -1,4 +1,4 @@
-sealed-java-enums.scala:5: warning: match may not be exhaustive.
+sealed-java-enums.scala:6: warning: match may not be exhaustive.
 It would fail on the following inputs: BLOCKED, TERMINATED, TIMED_WAITING
   def f(state: State) = state match {
                         ^

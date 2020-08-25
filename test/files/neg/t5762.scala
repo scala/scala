@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class D[-A]
 
 object Test {

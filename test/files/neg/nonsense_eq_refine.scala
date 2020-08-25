@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 class E
 class SE extends Serializable
 

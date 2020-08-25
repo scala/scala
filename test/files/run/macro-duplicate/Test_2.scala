@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 

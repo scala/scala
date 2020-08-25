@@ -1,24 +1,24 @@
-main1.scala:3: warning: Foo has a main method with parameter type Array[String], but foo1.Foo will not be a runnable program.
+main1.scala:4: warning: Foo has a main method with parameter type Array[String], but foo1.Foo will not be a runnable program.
   Reason: companion is a trait, which means no static forwarder can be generated.
 
   object Foo {  // companion is trait
          ^
-main1.scala:10: warning: Foo has a main method with parameter type Array[String], but foo2.Foo will not be a runnable program.
+main1.scala:11: warning: Foo has a main method with parameter type Array[String], but foo2.Foo will not be a runnable program.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo {  // companion has its own main
          ^
-main1.scala:22: warning: Foo has a main method with parameter type Array[String], but foo3.Foo will not be a runnable program.
+main1.scala:23: warning: Foo has a main method with parameter type Array[String], but foo3.Foo will not be a runnable program.
   Reason: companion contains its own main method (implementation restriction: no main is allowed, regardless of signature), which means no static forwarder can be generated.
 
   object Foo {  // Companion contains main, but not an interfering main.
          ^
-main1.scala:31: warning: Foo has a main method with parameter type Array[String], but foo4.Foo will not be a runnable program.
+main1.scala:32: warning: Foo has a main method with parameter type Array[String], but foo4.Foo will not be a runnable program.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Inherits main from the class
          ^
-main1.scala:39: warning: Foo has a main method with parameter type Array[String], but foo5.Foo will not be a runnable program.
+main1.scala:40: warning: Foo has a main method with parameter type Array[String], but foo5.Foo will not be a runnable program.
   Reason: companion contains its own main method, which means no static forwarder can be generated.
 
   object Foo extends Foo {  // Overrides main from the class

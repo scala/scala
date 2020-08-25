@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
   println(List(1,2,3) match {
     case Nil => List(0)

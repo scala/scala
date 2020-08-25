@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import scala.language.experimental.macros
 
 object Macros {

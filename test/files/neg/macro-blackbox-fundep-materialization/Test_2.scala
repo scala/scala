@@ -1,3 +1,4 @@
+// scalac: -Xlog-implicits
 // see the comments for macroExpand.onDelayed for an explanation of what's tested here
 object Test extends App {
   case class Foo(i: Int, s: String, b: Boolean)

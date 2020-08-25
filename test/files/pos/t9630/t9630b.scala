@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 
 class Test {
   def test(b: Base): Unit = b match {

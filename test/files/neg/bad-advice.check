@@ -1,4 +1,4 @@
-bad-advice.scala:4: error: pattern type is incompatible with expected type;
+bad-advice.scala:5: error: pattern type is incompatible with expected type;
  found   : Bip.type
  required: Int
     case Bip => true

@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
  ("foo": Any) match {
    case x: Int => println("FAILED")

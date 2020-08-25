@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import collection.mutable.ListBuffer

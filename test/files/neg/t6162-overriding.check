@@ -1,7 +1,7 @@
-t6162-overriding.scala:14: warning: overriding method bar in class Bar is deprecated (since 2.10.0): `bar` will be made private in a future version.
+t6162-overriding.scala:15: warning: overriding method bar in class Bar is deprecated (since 2.10.0): `bar` will be made private in a future version.
   override def bar = 43
                ^
-t6162-overriding.scala:15: warning: overriding method baz in class Bar is deprecated
+t6162-overriding.scala:16: warning: overriding method baz in class Bar is deprecated
   override def baz = 43
                ^
 error: No warnings can be incurred under -Xfatal-warnings.

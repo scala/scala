@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
   case class A(val x: String) extends Throwable
   class B extends Exception { override def toString = "B" }

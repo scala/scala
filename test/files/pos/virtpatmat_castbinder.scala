@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 class IntMap[+V]
 case class Bin[+T](m: IntMap[T]) extends IntMap[T]
 case class Tip[+T](x: T) extends IntMap[T]

@@ -1,3 +1,4 @@
+// scalac: -Xasync
 import scala.tools.partest.async.Async._
 import scala.concurrent._
 import scala.concurrent.duration._

@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
   def intSwitch(x: Int) = x match {
     case 0 => "zero"

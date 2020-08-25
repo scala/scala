@@ -1,3 +1,4 @@
+// scalac: -Xmigration:2.9 -Xfatal-warnings
 object Test {
   def f1(x: Any) = x.isInstanceOf[Seq[_]]
   def f2(x: Any) = x match {

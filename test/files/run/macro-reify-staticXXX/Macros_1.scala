@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import scala.reflect.macros.blackbox.Context
 
 object B { override def toString = "object" }

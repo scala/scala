@@ -1,3 +1,4 @@
+// scalac: -nowarn
 object Types {
 
   abstract sealed class Type

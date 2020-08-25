@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 import scala.collection.mutable._
 object Test {
   def genericArrayOps[T](xs: Array[T]): ArrayOps[T] = xs match {

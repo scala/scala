@@ -1,3 +1,4 @@
+// scalac: -Xasync
 import scala.concurrent._, ExecutionContext.Implicits.global, scala.tools.partest.async.Async._
 
 trait Factory[T] {

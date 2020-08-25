@@ -1,3 +1,4 @@
+// scalac: -opt:l:none
 // scala/bug#7407
 object Test {
 

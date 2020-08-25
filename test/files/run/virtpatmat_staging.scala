@@ -1,3 +1,4 @@
+// scalac: -Yrangepos:false -Yvirtpatmat
 
 import scala.language.{ higherKinds, implicitConversions }
 

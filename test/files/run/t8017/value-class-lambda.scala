@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method
 object Test {
   def testC {
     val f1 = (c: C) => c.value

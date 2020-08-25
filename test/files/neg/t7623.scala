@@ -1,3 +1,4 @@
+// scalac: -Xlint:stars-align -Xfatal-warnings
 
 
 case class C(s: String, xs: Int*)

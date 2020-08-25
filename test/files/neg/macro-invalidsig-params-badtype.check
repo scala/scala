@@ -1,4 +1,4 @@
-Impls_Macros_1.scala:8: error: macro implementation has incompatible shape:
+Impls_Macros_1.scala:9: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(x: Int): Nothing

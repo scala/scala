@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   val X, Y = true
   (null: Tuple1[Boolean]) match {

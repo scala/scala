@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:inline
 class C(a: Any)
 class D extends C({def x = 0; object X { x }})
 

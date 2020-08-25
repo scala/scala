@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.13
 class A
 class B
 trait TC[F[_ <: A]]

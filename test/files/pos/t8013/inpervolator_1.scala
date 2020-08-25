@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Xlint:missing-interpolator
 
 package t8013
 

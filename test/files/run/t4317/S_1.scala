@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 import language.existentials
 
 object S_1 {

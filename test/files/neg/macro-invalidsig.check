@@ -1,85 +1,85 @@
-Macros_Test_2.scala:2: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
+Macros_Test_2.scala:3: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
   def foo[U]: Int = macro Impls1.foo[U]
                                  ^
-Macros_Test_2.scala:6: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:7: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : : Nothing
 number of parameter sections differ
   def foo = macro Impls2.foo
                          ^
-Macros_Test_2.scala:10: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:11: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.api.Universe): Nothing
 type mismatch for parameter c: scala.reflect.macros.blackbox.Context does not conform to scala.reflect.api.Universe
   def foo = macro Impls3.foo
                          ^
-Macros_Test_2.scala:14: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:15: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (cs: scala.reflect.macros.blackbox.Context*): Nothing
 types incompatible for parameter cs: corresponding is not a vararg parameter
   def foo = macro Impls4.foo
                          ^
-Macros_Test_2.scala:18: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:19: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): Nothing
 number of parameter sections differ
   def foo(x: Any) = macro Impls5.foo
                                  ^
-Macros_Test_2.scala:22: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
+Macros_Test_2.scala:23: error: macro implementations cannot have implicit parameters other than WeakTypeTag evidences
   def foo[U](x: Int) = macro Impls6.foo[T, U]
                                     ^
-Macros_Test_2.scala:26: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:27: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int], y: c.Expr[Int]): Nothing
 parameter lists have different length, found extra parameter y: c.Expr[Int]
   def foo(x: Int) = macro Impls7.foo
                                  ^
-Macros_Test_2.scala:30: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:31: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(x: c.universe.Symbol): Nothing
 type mismatch for parameter x: c.Expr[Int] does not conform to c.universe.Symbol
   def foo(x: Int) = macro Impls8.foo
                                  ^
-Macros_Test_2.scala:34: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:35: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int], y: c.Expr[Int]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree, y: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(xs: c.Expr[Int]*): Nothing
 parameter lists have different length, required extra parameter y: c.Expr[Int]
   def foo(x: Int, y: Int) = macro Impls9.foo
                                          ^
-Macros_Test_2.scala:38: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:39: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Int], y: c.Expr[Int]): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context)(x: c.Tree, y: c.Tree): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(y: c.Expr[Int], x: c.Expr[Int]): Nothing
 parameter names differ: x != y
   def foo(x: Int, y: Int) = macro Impls10.foo
                                           ^
-Macros_Test_2.scala:42: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:43: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Nothing]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(U: c.universe.Type): Nothing
 number of parameter sections differ
   def foo[U] = macro Impls11.foo[U]
                              ^
-Macros_Test_2.scala:46: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
+Macros_Test_2.scala:47: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
   def foo[U] = macro Impls12.foo[U]
                                 ^
-Macros_Test_2.scala:50: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
+Macros_Test_2.scala:51: error: type arguments [U] do not conform to method foo's type parameter bounds [U <: String]
   def foo[U <: Int] = macro Impls13.foo[U]
                                        ^
-Macros_Test_2.scala:54: error: macro implementation reference has too few type arguments for method foo: [U](c: scala.reflect.macros.blackbox.Context)(implicit evidence$4: c.WeakTypeTag[U])Nothing
+Macros_Test_2.scala:55: error: macro implementation reference has too few type arguments for method foo: [U](c: scala.reflect.macros.blackbox.Context)(implicit evidence$4: c.WeakTypeTag[U])Nothing
   def foo = macro Impls14.foo
                           ^
-Macros_Test_2.scala:59: error: macro implementation reference has too few type arguments for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$5: c.WeakTypeTag[T], implicit evidence$6: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
+Macros_Test_2.scala:60: error: macro implementation reference has too few type arguments for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$5: c.WeakTypeTag[T], implicit evidence$6: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
     def foo15[V]: Unit = macro Impls15.foo
                                        ^
-Macros_Test_2.scala:60: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$7: c.WeakTypeTag[T], implicit evidence$8: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
+Macros_Test_2.scala:61: error: wrong number of type parameters for method foo: [T, U, V](c: scala.reflect.macros.blackbox.Context)(implicit evidence$7: c.WeakTypeTag[T], implicit evidence$8: c.WeakTypeTag[U], implicit V: c.WeakTypeTag[V])c.Expr[Unit]
     def foo16[V]: Unit = macro Impls16.foo[V]
                                           ^
 16 errors found

@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 package test
 
 // See: https://github.com/milessabin/si2712fix-demo/issues/3

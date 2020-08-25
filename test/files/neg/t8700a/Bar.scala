@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Bar {
   def bar1(foo: Foo) = foo match {
     case Foo.A => 1

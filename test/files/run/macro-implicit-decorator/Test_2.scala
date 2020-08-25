@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 // https://github.com/scala/bug/issues/10398
 
 class CustomClass

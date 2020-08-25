@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.live.LiveVariablesSpec])
 
 package scala.async.run.live {

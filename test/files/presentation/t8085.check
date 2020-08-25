@@ -1,2 +1,3 @@
 reload: NodeScalaSuite.scala
-Test OK
+value rich is not a member of String
+not found: type Foo

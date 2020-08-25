@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import Macros._
 
 object Test extends App {

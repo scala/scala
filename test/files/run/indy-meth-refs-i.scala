@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 class C {
   def foo = 0
 }

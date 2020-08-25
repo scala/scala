@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 case class Foo(s: String) {
   def appliedType(tycon: Any) =
     tycon match {

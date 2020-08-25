@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
  val a = 1
  1 match {

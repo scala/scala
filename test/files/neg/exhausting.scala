@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   sealed abstract class Foo[T]
   case object Bar1 extends Foo[Int]

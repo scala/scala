@@ -1,10 +1,10 @@
-t6011.scala:4: warning: unreachable code
+t6011.scala:5: warning: unreachable code
     case 'a' | 'c' => 1 // unreachable
                       ^
-t6011.scala:10: warning: unreachable code
+t6011.scala:11: warning: unreachable code
     case 'b' | 'a'  => 1 // unreachable
                        ^
-t6011.scala:8: warning: could not emit switch for @switch annotated match
+t6011.scala:9: warning: could not emit switch for @switch annotated match
   def f2(ch: Char): Any = (ch: @annotation.switch) match {
                                 ^
 error: No warnings can be incurred under -Xfatal-warnings.

@@ -1,4 +1,4 @@
-t1224.scala:4: error: lower bound C[A.this.T] does not conform to upper bound C[C[A.this.T]]
+t1224.scala:5: error: lower bound C[A.this.T] does not conform to upper bound C[C[A.this.T]]
  type T >: C[T] <: C[C[T]]
       ^
 one error found

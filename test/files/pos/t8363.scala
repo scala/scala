@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method
 class C(a: Any)
 class Test {  
   def foo: Any = {

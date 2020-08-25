@@ -1,4 +1,4 @@
-// scalac: -Werror -Wself-implicit
+// scalac: -Xfatal-warnings -Ywarn-self-implicit
 //
 package warner
 

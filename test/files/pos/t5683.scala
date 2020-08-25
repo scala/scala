@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 object Test {
   trait NT[X]
   trait W[W, A] extends NT[Int]

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation -stop:refchecks
 package t11538
 
 @deprecated("not for you", since = "just now")

@@ -1,3 +1,4 @@
+// scalac: -deprecation
 import scala.tools.partest.BytecodeTest
 import scala.collection.JavaConverters._
 

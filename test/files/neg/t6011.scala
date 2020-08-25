@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   def f(ch: Char): Any = ch match {
     case 'a'  => 1

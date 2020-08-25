@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 package p {
   trait TCon[+CC[X]] {
     def fPublic: CC[Int]                        = ???

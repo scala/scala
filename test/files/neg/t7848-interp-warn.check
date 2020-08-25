@@ -1,25 +1,25 @@
-t7848-interp-warn.scala:18: warning: possible missing interpolator: detected interpolated identifier `$foo`
+t7848-interp-warn.scala:19: warning: possible missing interpolator: detected interpolated identifier `$foo`
     "An important $foo message!"                              // warn on ident in scope
     ^
-t7848-interp-warn.scala:22: warning: possible missing interpolator: detected an interpolated expression
+t7848-interp-warn.scala:23: warning: possible missing interpolator: detected an interpolated expression
     "A doubly important ${foo * 2} message!"                  // warn on some expr, see below
     ^
-t7848-interp-warn.scala:25: warning: possible missing interpolator: detected interpolated identifier `$bar`
+t7848-interp-warn.scala:26: warning: possible missing interpolator: detected interpolated identifier `$bar`
   def i = s"Try using '${ "$bar" }' instead."                 // was: no warn on space test
                           ^
-t7848-interp-warn.scala:26: warning: possible missing interpolator: detected interpolated identifier `$bar`
+t7848-interp-warn.scala:27: warning: possible missing interpolator: detected interpolated identifier `$bar`
   def j = s"Try using '${ "something like $bar" }' instead."  // warn
                           ^
-t7848-interp-warn.scala:32: warning: possible missing interpolator: detected an interpolated expression
+t7848-interp-warn.scala:33: warning: possible missing interpolator: detected an interpolated expression
   def v = "${baz}${bar}"                                      // warn on second expr
           ^
-t7848-interp-warn.scala:33: warning: possible missing interpolator: detected an interpolated expression
+t7848-interp-warn.scala:34: warning: possible missing interpolator: detected an interpolated expression
   def w = "${ op_* }"                                         // warn, only cheap ident parsing
           ^
-t7848-interp-warn.scala:34: warning: possible missing interpolator: detected an interpolated expression
+t7848-interp-warn.scala:35: warning: possible missing interpolator: detected an interpolated expression
   def x = "${ bar }"                                          // warn, a cheap ident in scope
           ^
-t7848-interp-warn.scala:36: warning: possible missing interpolator: detected an interpolated expression
+t7848-interp-warn.scala:37: warning: possible missing interpolator: detected an interpolated expression
   def z = "${ baz * 3}"                                       // warn, no expr parsing
           ^
 error: No warnings can be incurred under -Xfatal-warnings.

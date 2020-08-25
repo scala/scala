@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 // As per http://meta.plasm.us/posts/2013/08/31/feeding-our-vampires/
 
 import scala.annotation.StaticAnnotation

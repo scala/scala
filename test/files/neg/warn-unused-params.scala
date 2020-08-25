@@ -1,3 +1,4 @@
+// scalac: -Ywarn-unused:params -Xfatal-warnings
 
 trait InterFace {
   /** Call something. */

@@ -1,8 +1,8 @@
-t2462b.scala:6: warning: Invalid implicitNotFound message for trait Meh in package test:
+t2462b.scala:7: warning: Invalid implicitNotFound message for trait Meh in package test:
 The type parameters Too, Elem referenced in the message of the @implicitNotFound annotation are not defined by trait Meh.
 trait Meh[-From, +To]
       ^
-t2462b.scala:9: warning: Invalid implicitNotFound message for trait Meh2 in package test:
+t2462b.scala:10: warning: Invalid implicitNotFound message for trait Meh2 in package test:
 The type parameter Elem referenced in the message of the @implicitNotFound annotation is not defined by trait Meh2.
 trait Meh2[-From, +To]
       ^

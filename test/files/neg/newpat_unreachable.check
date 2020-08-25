@@ -1,33 +1,33 @@
-newpat_unreachable.scala:6: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+newpat_unreachable.scala:7: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
 If you intended to match against parameter b of method contrivedExample, you must use backticks, like: case `b` =>
       case b => println("matched b")
            ^
-newpat_unreachable.scala:7: warning: unreachable code due to variable pattern 'b' on line 6
+newpat_unreachable.scala:8: warning: unreachable code due to variable pattern 'b' on line 7
 If you intended to match against parameter c of method contrivedExample, you must use backticks, like: case `c` =>
       case c => println("matched c")
                        ^
-newpat_unreachable.scala:8: warning: unreachable code due to variable pattern 'b' on line 6
+newpat_unreachable.scala:9: warning: unreachable code due to variable pattern 'b' on line 7
 If you intended to match against value d in class A, you must use backticks, like: case `d` =>
       case d => println("matched d")
                        ^
-newpat_unreachable.scala:9: warning: unreachable code due to variable pattern 'b' on line 6
+newpat_unreachable.scala:10: warning: unreachable code due to variable pattern 'b' on line 7
       case _ => println("matched neither")
                        ^
-newpat_unreachable.scala:7: warning: unreachable code
+newpat_unreachable.scala:8: warning: unreachable code
       case c => println("matched c")
                        ^
-newpat_unreachable.scala:22: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
+newpat_unreachable.scala:23: warning: patterns after a variable pattern cannot match (SLS 8.1.1)
 If you intended to match against parameter b of method g, you must use backticks, like: case `b` =>
           case b => 1
                ^
-newpat_unreachable.scala:23: warning: unreachable code due to variable pattern 'b' on line 22
+newpat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 23
 If you intended to match against parameter c of method h, you must use backticks, like: case `c` =>
           case c => 2
                     ^
-newpat_unreachable.scala:24: warning: unreachable code due to variable pattern 'b' on line 22
+newpat_unreachable.scala:25: warning: unreachable code due to variable pattern 'b' on line 23
           case _ => 3
                     ^
-newpat_unreachable.scala:23: warning: unreachable code
+newpat_unreachable.scala:24: warning: unreachable code
           case c => 2
                     ^
 error: No warnings can be incurred under -Xfatal-warnings.

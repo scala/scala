@@ -1,4 +1,4 @@
-virtpatmat_unreach_select.scala:10: warning: unreachable code
+virtpatmat_unreach_select.scala:11: warning: unreachable code
     case WARNING.id => // unreachable
                     ^
 error: No warnings can be incurred under -Xfatal-warnings.

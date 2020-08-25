@@ -1,15 +1,15 @@
-t6323a.scala:10: materializing requested scala.reflect.type.ClassTag[Test] using scala.reflect.`package`.materializeClassTag[Test]()
+t6323a.scala:11: materializing requested scala.reflect.type.ClassTag[Test] using scala.reflect.`package`.materializeClassTag[Test]()
       val lookAtMe = m.reflect(Test("a",List(5)))
                               ^
-t6323a.scala:11: materializing requested reflect.runtime.universe.type.TypeTag[Test] using scala.reflect.api.`package`.materializeTypeTag[Test](scala.reflect.runtime.`package`.universe)
+t6323a.scala:12: materializing requested reflect.runtime.universe.type.TypeTag[Test] using scala.reflect.api.`package`.materializeTypeTag[Test](scala.reflect.runtime.`package`.universe)
       val value = u.typeOf[Test]
                           ^
-t6323a.scala:11: scala.reflect.api.`package`.materializeTypeTag[Test](scala.reflect.runtime.`package`.universe) is not a valid implicit value for reflect.runtime.universe.TypeTag[Test] because:
+t6323a.scala:12: scala.reflect.api.`package`.materializeTypeTag[Test](scala.reflect.runtime.`package`.universe) is not a valid implicit value for reflect.runtime.universe.TypeTag[Test] because:
 failed to typecheck the materialized tag:
 cannot create a TypeTag referring to class Test.Test local to the reifee: use WeakTypeTag instead
       val value = u.typeOf[Test]
                           ^
-t6323a.scala:11: error: No TypeTag available for Test
+t6323a.scala:12: error: No TypeTag available for Test
       val value = u.typeOf[Test]
                           ^
 one error found

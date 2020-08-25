@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.toughtype.ToughTypeSpec])
 
 package scala.async.run.toughtype {

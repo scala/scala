@@ -1,3 +1,4 @@
+// scalac: -Xlint
 trait Foo extends Any { override def equals(x: Any) = false }
 trait Ding extends Any { override def hashCode = -1 }
 

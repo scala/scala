@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:inline
 class One {
   private val messages = new collection.mutable.MutableList[String]
   List("a") foreach { messages += _ }

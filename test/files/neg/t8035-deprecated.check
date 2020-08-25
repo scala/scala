@@ -1,16 +1,16 @@
-t8035-deprecated.scala:2: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+t8035-deprecated.scala:3: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
         signature: GenSetLike.apply(elem: A): Boolean
   given arguments: <none>
  after adaptation: GenSetLike((): Unit)
   List(1,2,3).toSet()
                    ^
-t8035-deprecated.scala:5: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
+t8035-deprecated.scala:6: warning: Adaptation of argument list by inserting () is deprecated: this is unlikely to be what you want.
         signature: A(x: T): Foo.A[T]
   given arguments: <none>
  after adaptation: new A((): Unit)
   new A
   ^
-t8035-deprecated.scala:9: warning: Adaptation of argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous.
+t8035-deprecated.scala:10: warning: Adaptation of argument list by inserting () is deprecated: leaky (Object-receiving) target makes this especially dangerous.
         signature: Format.format(x$1: Any): String
   given arguments: <none>
  after adaptation: Format.format((): Unit)

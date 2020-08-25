@@ -1,3 +1,4 @@
+// scalac: -Ywarn-unused:locals -Xfatal-warnings
 class Outer {
   class Inner
 }

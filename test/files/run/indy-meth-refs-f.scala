@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 object Test {
   def anyA(f: Any => Any)     = ()
   def anyB(f: Any => Boolean) = ()

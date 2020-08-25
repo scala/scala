@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 package test
 
 class X1

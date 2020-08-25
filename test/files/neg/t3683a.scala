@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 sealed trait Foo
 sealed trait Bar extends Foo
 sealed trait W[T >: Bar <: Foo]

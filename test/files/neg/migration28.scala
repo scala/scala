@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Xmigration
 object Test {
   import scala.collection.mutable._
 

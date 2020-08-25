@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   // @annotation.tailrec
   def lazyFilter[E](s: Stream[E], p: E => Boolean): Stream[E] = s match {

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 // Traits.scala
 sealed trait T
 

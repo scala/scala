@@ -1,3 +1,4 @@
+// scalac: -Xlint:by-name-right-associative -Xfatal-warnings
 object Test {
   def op1_:(x: => Any) = ()                 // warn
   def op2_:(x: Any, y: => Any) = ()         // warn

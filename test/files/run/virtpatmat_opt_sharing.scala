@@ -1,3 +1,4 @@
+// scalac: -Ypatmat-exhaust-depth off
 /*
  * filter: It would fail on the following input
  */

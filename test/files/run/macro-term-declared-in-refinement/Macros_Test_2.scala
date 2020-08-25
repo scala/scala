@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import scala.language.reflectiveCalls
 
 class Base

@@ -1,3 +1,4 @@
+// scalac: -Xcheckinit
 class A {
     val a1 = 1
     val a2 = 2

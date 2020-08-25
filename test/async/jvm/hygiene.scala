@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.hygiene.HygieneSpec])
 
 package scala.async.run.hygiene {

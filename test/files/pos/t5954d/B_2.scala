@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Xdev
 package p {
   trait T {
     class B

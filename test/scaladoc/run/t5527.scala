@@ -150,6 +150,4 @@ object Test extends DirectTest {
     val command = new ScalaDoc.Command((CommandLineParser tokenize extraSettings) ++ args.toList, settings)
     new DocFactory(new ConsoleReporter(settings), settings).compiler
   }
-
-  override def isDebug = false // so we don't get the newSettings warning
 }

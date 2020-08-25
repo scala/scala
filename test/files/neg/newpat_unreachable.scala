@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   class A {
     val d = 55

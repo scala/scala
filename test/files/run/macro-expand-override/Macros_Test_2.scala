@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 class B {
   def foo(x: String): Unit = macro Impls.fooBString
   def foo(x: Int): Unit = macro Impls.fooBInt

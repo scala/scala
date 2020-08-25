@@ -1,3 +1,4 @@
+// scalac: -Xasync
 import Test.test
 
 import scala.concurrent._

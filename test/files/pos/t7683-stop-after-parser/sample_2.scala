@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xplugin-require:timebomb -Ystop-after:parser
 
 package sample
 

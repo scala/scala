@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 object Macros {
   def foo1: Unit = macro Impls.fooNullary
   def foo2(): Unit = macro Impls.fooEmpty

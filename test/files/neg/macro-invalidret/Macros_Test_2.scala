@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros -Xfatal-warnings -deprecation
 object Macros {
   def foo1 = macro Impls.foo1
   def foo2 = macro Impls.foo2

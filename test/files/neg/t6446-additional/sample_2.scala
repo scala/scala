@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xshow-phases
 
 package sample
 

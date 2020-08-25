@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import StaticReflect._
 
 object Test extends App {

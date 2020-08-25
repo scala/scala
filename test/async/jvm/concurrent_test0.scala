@@ -1,3 +1,4 @@
+// scalac: -Xasync
 /*
  * Scala (https://www.scala-lang.org)
  *
