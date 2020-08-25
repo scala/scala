@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Xlint:inaccessible
 package foo {
   private[foo] trait Bippy { }
 

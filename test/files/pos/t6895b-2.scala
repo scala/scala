@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.13
 trait Foo[F[_]]
 trait Bar[F[_], A]
 

@@ -1,7 +1,3 @@
-t8430.scala:15: warning: match may not be exhaustive.
-It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit), LetL(UnitLit), LetP
-  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
-                  ^
 t8430.scala:16: warning: match may not be exhaustive.
 It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit), LetL(UnitLit), LetP
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
@@ -19,6 +15,10 @@ It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
                   ^
 t8430.scala:20: warning: match may not be exhaustive.
+It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit), LetL(UnitLit), LetP
+  (tree: Tree) => tree match {case LetL(CharLit) => ??? }
+                  ^
+t8430.scala:21: warning: match may not be exhaustive.
 It would fail on the following inputs: LetC, LetF, LetL(BooleanLit), LetL(IntLit), LetL(UnitLit), LetP
   (tree: Tree) => tree match {case LetL(CharLit) => ??? }
                   ^

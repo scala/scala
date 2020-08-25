@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test extends App {
   def m1a: scala.reflect.Manifest[Int] = scala.reflect.Manifest.Int
   def m2a: scala.reflect.OptManifest[Int] = ???

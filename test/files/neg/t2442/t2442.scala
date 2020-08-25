@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class Test {
   import MyEnum._
 

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   def foo(a: Int, b: Int, c: Int) {
     class C {

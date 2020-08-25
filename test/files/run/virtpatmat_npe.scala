@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 class C {
   class D
   val values = new Array[AnyRef](10)

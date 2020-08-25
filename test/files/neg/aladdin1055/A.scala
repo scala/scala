@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object A {
   sealed trait T { def f: Int }
   class TT extends T { def f = 0 }

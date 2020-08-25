@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 case class TypeBounds(a: Type, b: Type)
 class Type {
   def bounds: TypeBounds = bounds match {

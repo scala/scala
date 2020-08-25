@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 
 sealed trait Base
 final case class Base_1(sameName: Some[Any]) extends Base

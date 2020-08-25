@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xlint -Xfatal-warnings
 trait T {
   val traitVal = ""
 }

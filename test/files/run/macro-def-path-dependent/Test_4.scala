@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 package test4
 
 import scala.reflect.runtime.universe._

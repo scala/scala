@@ -1,4 +1,4 @@
-t7984.scala:4: warning: non-variable type argument Int in type pattern List[Int] (the underlying of Test.this.ListInt) is unchecked since it is eliminated by erasure
+t7984.scala:5: warning: non-variable type argument Int in type pattern List[Int] (the underlying of Test.this.ListInt) is unchecked since it is eliminated by erasure
     case is: ListInt => is.head
              ^
 error: No warnings can be incurred under -Xfatal-warnings.

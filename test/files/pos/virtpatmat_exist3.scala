@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 class ReferenceQueue[T] {
   def wrapper(jref: ReferenceQueue[_]): ReferenceQueue[T] =
     jref match {

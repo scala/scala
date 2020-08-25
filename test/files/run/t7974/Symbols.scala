@@ -1,3 +1,4 @@
+// scalac: -Xcheckinit:false
 class Symbols {
   def someSymbol1 = 'Symbolic1
   def someSymbol2 = 'Symbolic2

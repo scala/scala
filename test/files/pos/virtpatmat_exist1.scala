@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 import annotation.unchecked.{ uncheckedVariance=> uV }
 import scala.collection.immutable.{ListMap, ListSet}
 import scala.collection.mutable.{HashMap, HashSet}

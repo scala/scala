@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.block1.Block1Spec])
 
 package scala.async.run.block1 {

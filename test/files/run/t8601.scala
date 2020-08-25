@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 object Test {
   def idiv(x: Int): Unit = x / 0
   def ldiv(x: Long): Unit = x / 0

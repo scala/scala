@@ -1,10 +1,10 @@
-t6534.scala:6: error: redefinition of equals method. See SIP-15, criterion 4. is not allowed in value class
+t6534.scala:7: error: redefinition of equals method. See SIP-15, criterion 4. is not allowed in value class
 class Bippy3(val x: Int) extends AnyVal { override def equals(x: Any) = false } // error
                                                        ^
-t6534.scala:7: error: redefinition of hashCode method. See SIP-15, criterion 4. is not allowed in value class
+t6534.scala:8: error: redefinition of hashCode method. See SIP-15, criterion 4. is not allowed in value class
 class Bippy4(val x: Int) extends AnyVal { override def hashCode = -1 }          // error
                                                        ^
-t6534.scala:9: error: redefinition of equals method. See SIP-15, criterion 4. is not allowed in value class
+t6534.scala:10: error: redefinition of equals method. See SIP-15, criterion 4. is not allowed in value class
 case class Bippy6(val x: Int) extends AnyVal { override def productPrefix = "Dingo" ; override def equals(x: Any) = false } // error
                                                                                                    ^
 three errors found

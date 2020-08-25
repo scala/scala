@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 package m
 
 import language.experimental.macros

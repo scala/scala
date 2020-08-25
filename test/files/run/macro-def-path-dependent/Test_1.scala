@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 // NOTE: blocked by scala/bug#8049
 
 // package test1

@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
   case class Foo(x: Int, y: String)
 

@@ -1,3 +1,4 @@
+// scalac: -Xplugin:.
 package macroArgs
 
 import scala.tools.nsc.Global

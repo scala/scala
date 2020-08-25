@@ -40,7 +40,7 @@ object PartestDefaults {
   def waitTime    = Duration(prop("partest.timeout") getOrElse "4 hours")
   def printDurationThreshold = java.lang.Integer.getInteger("partest.print.duration.threshold.ms", 5000)
 
-  //def timeout     = "1200000"   // per-test timeout
+  def migrateFlagsFiles = false
 
   // probe for the named executable
   private def jdkexec(name: String): Option[String] = {

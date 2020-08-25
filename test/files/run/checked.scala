@@ -1,3 +1,4 @@
+// scalac: -Xcheckinit -nowarn
 /* Test checked initializers. Needs to be run with -Xexperimental and -checkinit
  */
 

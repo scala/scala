@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 trait Sam { def apply(): Unit }
 abstract class Test {
   def foo(): Sam

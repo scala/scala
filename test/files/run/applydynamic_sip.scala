@@ -1,3 +1,4 @@
+// scalac: -Yrangepos:false -language:dynamics
 object Test extends App {
   object stubUpdate {
     def update(as: Any*) = println(".update"+as.toList.mkString("(",", ", ")"))

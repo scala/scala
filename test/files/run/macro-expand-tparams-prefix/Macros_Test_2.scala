@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 object Macros1 {
   class C[T] {
     def foo[U](x: U): Unit = macro Impls1.foo[U]

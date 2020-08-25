@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 object Test extends App {
   val a = Map("a" -> Some(1), "b" -> None)
   println(a)

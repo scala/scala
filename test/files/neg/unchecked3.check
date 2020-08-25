@@ -1,40 +1,40 @@
-unchecked3.scala:24: warning: non-variable type argument Double in type pattern E1[Double] is unchecked since it is eliminated by erasure
+unchecked3.scala:25: warning: non-variable type argument Double in type pattern E1[Double] is unchecked since it is eliminated by erasure
   /*   warn */ def peerTypes2(x: B1[Int]) = x match { case _: E1[Double] => true }
                                                               ^
-unchecked3.scala:25: warning: non-variable type argument Double in type pattern F1[Double] is unchecked since it is eliminated by erasure
+unchecked3.scala:26: warning: non-variable type argument Double in type pattern F1[Double] is unchecked since it is eliminated by erasure
   /*   warn */ def peerTypes3(x: B1[_]) = x match { case _: F1[Double] => true }
                                                             ^
-unchecked3.scala:28: warning: non-variable type argument Int in type pattern A2[Int] is unchecked since it is eliminated by erasure
+unchecked3.scala:29: warning: non-variable type argument Int in type pattern A2[Int] is unchecked since it is eliminated by erasure
   /*   warn */ def twotypes1[T](x: B2[T, Int]) = x match { case _: A2[Int] => true }
                                                                    ^
-unchecked3.scala:32: warning: non-variable type argument Int in type pattern B2[_,Int] is unchecked since it is eliminated by erasure
+unchecked3.scala:33: warning: non-variable type argument Int in type pattern B2[_,Int] is unchecked since it is eliminated by erasure
   /*   warn */ def twotypes5[T](x: A2[T]) = x match { case _: B2[_, Int] => true }
                                                               ^
-unchecked3.scala:40: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+unchecked3.scala:41: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[List[String]]         => ()
                          ^
-unchecked3.scala:43: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+unchecked3.scala:44: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[Array[List[String]]]  => ()
                          ^
-unchecked3.scala:50: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+unchecked3.scala:51: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[List[String]]         => ()
                          ^
-unchecked3.scala:53: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+unchecked3.scala:54: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[Array[List[String]]]  => ()
                          ^
-unchecked3.scala:60: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
+unchecked3.scala:61: warning: non-variable type argument String in type pattern Array[List[String]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[List[String]]        => ()
                          ^
-unchecked3.scala:62: warning: non-variable type argument Array[String] in type pattern Array[List[Array[String]]] is unchecked since it is eliminated by erasure
+unchecked3.scala:63: warning: non-variable type argument Array[String] in type pattern Array[List[Array[String]]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[List[Array[String]]] => ()
                          ^
-unchecked3.scala:63: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
+unchecked3.scala:64: warning: non-variable type argument String in type pattern Array[Array[List[String]]] is unchecked since it is eliminated by erasure
     /*   warn */ case _: Array[Array[List[String]]] => ()
                          ^
-unchecked3.scala:75: warning: abstract type A in type pattern scala.collection.immutable.Set[Q.this.A] (the underlying of Set[Q.this.A]) is unchecked since it is eliminated by erasure
+unchecked3.scala:76: warning: abstract type A in type pattern scala.collection.immutable.Set[Q.this.A] (the underlying of Set[Q.this.A]) is unchecked since it is eliminated by erasure
       /*   warn */ case xs: Set[A]  => xs.head
                             ^
-unchecked3.scala:62: warning: unreachable code
+unchecked3.scala:63: warning: unreachable code
     /*   warn */ case _: Array[List[Array[String]]] => ()
                                                        ^
 error: No warnings can be incurred under -Xfatal-warnings.

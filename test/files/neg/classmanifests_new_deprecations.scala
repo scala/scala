@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xfatal-warnings
 object Test extends App {
   def cm1[T: ClassManifest] = ???
   def cm2[T](implicit evidence$1: ClassManifest[T]) = ???

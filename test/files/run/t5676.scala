@@ -1,3 +1,4 @@
+// scalac: -Yoverride-objects
 import java.lang.reflect.Modifier
 
 class Bar[T]

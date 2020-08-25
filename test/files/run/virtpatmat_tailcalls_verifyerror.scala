@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 // shouldn't result in a verify error when run...
 object Test extends App {
   @annotation.tailrec

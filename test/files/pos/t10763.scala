@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Ywarn-unused
 class Test {
   def xsUnused = {
     val xs: List[Int] = List(0)

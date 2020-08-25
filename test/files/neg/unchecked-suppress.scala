@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class A {
   def f(x: Any) = x match {
     case xs: List[String @unchecked]               => xs.head   // okay

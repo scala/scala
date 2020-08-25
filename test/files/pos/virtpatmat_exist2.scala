@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 class ParseResult[+T]
 case class MemoEntry[+T](var r: Either[Nothing,ParseResult[_]])
 

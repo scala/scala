@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class Test {
   (null: Any) match {
     case x: AnyRef if false =>

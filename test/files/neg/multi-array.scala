@@ -1,3 +1,4 @@
+// scalac: -deprecation
 /** Multi-dimensional array creation with `new` was removed in 2.10.
  *  The replacement Array.ofDim[Int](10,10) makes the original mistake
  *  which was tested here impossible.

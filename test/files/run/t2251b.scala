@@ -1,3 +1,4 @@
+// scalac: -Xstrict-inference
 class A
 trait B[T <: B[T]] extends A
 class B1[T <: B1[T]] extends B[T]

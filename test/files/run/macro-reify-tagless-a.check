@@ -1,3 +1,3 @@
 reflective compilation has failed:
 
-Macro expansion contains free type variable T defined by foo in Impls_Macros_1.scala:7:13. Have you forgotten to use c.WeakTypeTag annotation for this type parameter? If you have troubles tracking free type variables, consider using -Xlog-free-types
+Macro expansion contains free type variable T defined by foo in Impls_Macros_1.scala:8:13. Have you forgotten to use c.WeakTypeTag annotation for this type parameter? If you have troubles tracking free type variables, consider using -Xlog-free-types

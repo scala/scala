@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 class Test {
   def combine = this match {
     case that if that eq this => this // just return this

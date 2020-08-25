@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method
 class C {
   final def resume: Unit = (this: Any) match {
     case x : C => (x: Any) match {

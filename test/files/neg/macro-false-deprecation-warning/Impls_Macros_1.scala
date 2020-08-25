@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros -deprecation
 import scala.reflect.macros.blackbox.Context
 
 object Helper {

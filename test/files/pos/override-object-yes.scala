@@ -1,3 +1,4 @@
+// scalac: -Yoverride-objects
 package case1 {
   class Bippy {
     def f = 1

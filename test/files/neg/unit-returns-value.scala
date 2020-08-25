@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   def f {
     var b = false

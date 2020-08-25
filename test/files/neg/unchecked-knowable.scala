@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 /** Knowable - only final leaves */
 sealed abstract class A1
 sealed abstract class A2 extends A1

@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 object Test {
   def min0[A](less: (A, A) => Boolean, xs: List[A]): Option[A] = None
 

@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.13
 sealed trait Foo[A, F[_ <: A]]
 case class Bar[A, F[_ <: A]]() extends Foo[A, F]
 

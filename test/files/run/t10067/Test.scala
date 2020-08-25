@@ -1,3 +1,4 @@
+// scalac: -unchecked
 object Test {
   def main(args: Array[String]): Unit = {
     //get inner class as some instance of super type

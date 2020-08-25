@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 sealed abstract class Const {
   final def excludes(other: Const) =
     (this, other) match {

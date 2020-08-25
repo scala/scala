@@ -1,3 +1,4 @@
+// scalac: -Xcheckinit
 class C extends A{
 
   val a = 10

@@ -1,3 +1,4 @@
+// scalac: -Xfuture
 object Whatever {
   override def equals(x: Any) = true
 }

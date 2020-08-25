@@ -1,3 +1,4 @@
+// scalac: -Xsource:2.10
 import language._
 trait A1 {
   def f[T[_]] = ()

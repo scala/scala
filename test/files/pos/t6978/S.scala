@@ -1,3 +1,4 @@
+// scalac: -Xlint -Xfatal-warnings
 
 trait X { def f: Int }
 

@@ -1,4 +1,4 @@
-Macros_Test_2.scala:7: error: not found: value x
+Macros_Test_2.scala:8: error: not found: value x
   foo(x)
       ^
 one error found

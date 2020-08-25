@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 trait Entity {
   def name: String
   def announce = {

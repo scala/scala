@@ -1,3 +1,4 @@
+// scalac: -Xstrict-inference
 // A copy of run/gadts.scala, which must fail under -Xstrict-inference.
 abstract class Term[T]
 case class Lit(x: Int) extends Term[Int]

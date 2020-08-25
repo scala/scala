@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 
 object Test extends App {
   val r = "(\\d+)".r

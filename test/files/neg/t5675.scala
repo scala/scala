@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class PostFix {
   val list = List(1, 2, 3)
   def main(args: Array[String]) {

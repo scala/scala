@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 // Test.scala
 object Test {
   def f = (null: T) match {

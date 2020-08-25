@@ -1,4 +1,4 @@
-virtpatmat_opt_sharing.scala:7: warning: match may not be exhaustive.
+virtpatmat_opt_sharing.scala:8: warning: match may not be exhaustive.
     List(1, 3, 4, 7) match {
         ^
 1

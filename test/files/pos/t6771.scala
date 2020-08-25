@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   type Id[X] = X
   val a: Id[Option[Int]] = None

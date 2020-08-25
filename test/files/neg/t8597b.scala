@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Unchecked {
   (null: Any) match {
     case _: Some[t] =>

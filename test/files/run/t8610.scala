@@ -1,3 +1,4 @@
+// scalac: -Xlint:adapted-args
 
 // flags don't warn on u
 case class X(name: String) {

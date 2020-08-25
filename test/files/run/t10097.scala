@@ -1,3 +1,4 @@
+// scalac: -deprecation
 
 case class C(implicit c: Int)
 

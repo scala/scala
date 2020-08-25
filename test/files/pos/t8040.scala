@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Ywarn-unused:params
 
 object Test {
   implicit class C(val sc: StringContext) {                 // no warn unused sc

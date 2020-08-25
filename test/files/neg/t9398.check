@@ -1,4 +1,4 @@
-match.scala:3: warning: match may not be exhaustive.
+match.scala:4: warning: match may not be exhaustive.
 It would fail on the following input: CC(B2)
   def test(c: CC): Unit = c match {
                           ^

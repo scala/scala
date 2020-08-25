@@ -1,3 +1,4 @@
+// scalac: -Xexperimental
 
 import scala.language.{ implicitConversions }
 

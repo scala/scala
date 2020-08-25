@@ -1,4 +1,4 @@
-nullary-override.scala:2: warning: non-nullary method overrides nullary method
+nullary-override.scala:3: warning: non-nullary method overrides nullary method
 class B extends A { override def x(): Int = 4 }
                                  ^
 error: No warnings can be incurred under -Xfatal-warnings.

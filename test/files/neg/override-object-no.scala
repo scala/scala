@@ -1,3 +1,4 @@
+// scalac: -Yoverride-objects
 // See also pos/override-object-yes.scala
 
 package case1 {

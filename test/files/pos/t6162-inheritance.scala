@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xfatal-warnings
 package scala.t6126
 
 // Don't warn about inheritance in the same file.

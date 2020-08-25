@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 import reflect.{ClassTag, classTag}
 
 trait Extractors {

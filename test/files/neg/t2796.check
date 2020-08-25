@@ -1,7 +1,7 @@
-t2796.scala:11: warning: early type members are deprecated. Move them to the regular body: the semantics are the same.
+t2796.scala:12: warning: early type members are deprecated. Move them to the regular body: the semantics are the same.
   type X = Int                       // warn
        ^
-t2796.scala:7: warning: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
+t2796.scala:8: warning: Implementation restriction: early definitions in traits are not initialized before the super class is initialized.
   val abstractVal = "T1.abstractVal" // warn
       ^
 error: No warnings can be incurred under -Xfatal-warnings.

@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xfatal-warnings
 
 import scala.collection.JavaConversions._
 import scala.collection.mutable.Buffer

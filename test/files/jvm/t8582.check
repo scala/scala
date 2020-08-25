@@ -1,4 +1,4 @@
-t8582.scala:17: warning: class BeanInfo in package beans is deprecated (since 2.12.0): the generation of BeanInfo classes is no longer supported
+t8582.scala:18: warning: class BeanInfo in package beans is deprecated (since 2.12.0): the generation of BeanInfo classes is no longer supported
     class C1
           ^
 getClass on module gives module class

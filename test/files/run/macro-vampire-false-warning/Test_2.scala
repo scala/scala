@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test extends App {
   val foo = mkObject("x" -> "2", "y" -> 3)
   println(foo.x)

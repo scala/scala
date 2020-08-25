@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 
 /** The System Under Test.
  *  We bail on the earlier round that generates the first error.

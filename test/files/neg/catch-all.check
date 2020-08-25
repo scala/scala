@@ -1,10 +1,10 @@
-catch-all.scala:2: warning: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
+catch-all.scala:3: warning: This catches all Throwables. If this is really intended, use `case _ : Throwable` to clear this warning.
   try { "warn" } catch { case _ => }
                               ^
-catch-all.scala:4: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
+catch-all.scala:5: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
   try { "warn" } catch { case x => }
                               ^
-catch-all.scala:6: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
+catch-all.scala:7: warning: This catches all Throwables. If this is really intended, use `case x : Throwable` to clear this warning.
   try { "warn" } catch { case _: RuntimeException => ; case x => }
                                                             ^
 error: No warnings can be incurred under -Xfatal-warnings.

@@ -1,3 +1,4 @@
+// scalac: -Ycheck:extmethods -Xfatal-warnings
 object O {
   implicit class Foo[A](val value: String) extends AnyVal {
     def bippy() = {

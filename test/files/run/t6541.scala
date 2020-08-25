@@ -1,3 +1,4 @@
+// scalac: -feature -Xfatal-warnings -Xsource:2.12
 class A
 class B[T](x: T)
 case class C(a: A, b: B[_])

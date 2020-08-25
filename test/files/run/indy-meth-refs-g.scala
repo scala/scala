@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method-ref
 import java.io.File
 
 import scala.collection.mutable

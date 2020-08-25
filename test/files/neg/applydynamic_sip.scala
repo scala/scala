@@ -1,3 +1,4 @@
+// scalac: -language:dynamics
 object Test extends App {
   val qual: Dynamic = ???
   val expr = "expr"

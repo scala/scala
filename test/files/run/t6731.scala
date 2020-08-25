@@ -1,3 +1,4 @@
+// scalac: -Yrangepos:false
 import scala.language.dynamics
 import scala.reflect.{ ClassTag, classTag }
 

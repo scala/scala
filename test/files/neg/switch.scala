@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 import scala.annotation.switch
 
 // this is testing not so much how things ought to be but how they are;

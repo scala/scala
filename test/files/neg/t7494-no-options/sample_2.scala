@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xshow-phases -P:ploogin:inploog
 
 package sample
 

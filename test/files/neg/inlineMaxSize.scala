@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:method -opt:l:inline -opt-inline-from:** -opt-warnings -Xfatal-warnings
 // not a JUnit test because of https://github.com/scala-opt/scala/issues/23
 class C {
   @inline final def f = 0

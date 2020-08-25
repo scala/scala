@@ -1,3 +1,4 @@
+// scalac: -Xlog-implicits
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 

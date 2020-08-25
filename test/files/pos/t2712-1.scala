@@ -1,3 +1,4 @@
+// scalac: -Ypartial-unification
 package test
 
 // Original test case from,

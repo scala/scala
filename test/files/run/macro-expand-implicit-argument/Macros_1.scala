@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 import annotation.tailrec
 import scala.math.{min, max}
 import scala.{specialized => spec}

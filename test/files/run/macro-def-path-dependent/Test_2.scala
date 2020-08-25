@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros
 package test2
 
 import scala.reflect.macros.blackbox.Context

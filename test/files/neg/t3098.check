@@ -1,4 +1,4 @@
-b.scala:3: warning: match may not be exhaustive.
+b.scala:4: warning: match may not be exhaustive.
 It would fail on the following input: (_ : C)
   def f = (null: T) match {
                ^

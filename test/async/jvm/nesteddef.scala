@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.nesteddef.NestedDef])
 
 package scala.async.run.nesteddef {

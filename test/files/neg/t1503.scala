@@ -1,3 +1,4 @@
+// scalac: -Xlint -Xfatal-warnings
 object Whatever {
   override def equals(x: Any) = true
 }

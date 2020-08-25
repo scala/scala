@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 object OctalEscapes {
   val chr1 = '\0'
   val str1 = "abc\123456"

@@ -1,4 +1,4 @@
-t2106.scala:7: warning: A::foo()Ljava/lang/Object; is annotated @inline but could not be inlined:
+t2106.scala:8: warning: A::foo()Ljava/lang/Object; is annotated @inline but could not be inlined:
 The callee A::foo()Ljava/lang/Object; contains the instruction INVOKEVIRTUAL A.clone ()Ljava/lang/Object;
 that would cause an IllegalAccessError when inlined into class Test$.
   def main(args: Array[String]): Unit = x.foo

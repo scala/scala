@@ -1,37 +1,37 @@
-unchecked-abstract.scala:16: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:17: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Contravariant[H]])
                                        ^
-unchecked-abstract.scala:21: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:22: warning: abstract type H in type Contravariant[M.this.H] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Contravariant[H]])
                                        ^
-unchecked-abstract.scala:22: warning: abstract type T in type Contravariant[M.this.T] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:23: warning: abstract type T in type Contravariant[M.this.T] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Contravariant[T]])
                                        ^
-unchecked-abstract.scala:27: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:28: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[T]])
                                        ^
-unchecked-abstract.scala:28: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:29: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[L]])
                                        ^
-unchecked-abstract.scala:31: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:32: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[H]])
                                        ^
-unchecked-abstract.scala:33: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:34: warning: abstract type L in type Invariant[M.this.L] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[L]])
                                        ^
-unchecked-abstract.scala:36: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:37: warning: abstract type H in type Invariant[M.this.H] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[H]])
                                        ^
-unchecked-abstract.scala:37: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:38: warning: abstract type T in type Invariant[M.this.T] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Invariant[T]])
                                        ^
-unchecked-abstract.scala:42: warning: abstract type T in type Covariant[M.this.T] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:43: warning: abstract type T in type Covariant[M.this.T] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Covariant[T]])
                                        ^
-unchecked-abstract.scala:43: warning: abstract type L in type Covariant[M.this.L] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:44: warning: abstract type L in type Covariant[M.this.L] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Covariant[L]])
                                        ^
-unchecked-abstract.scala:48: warning: abstract type L in type Covariant[M.this.L] is unchecked since it is eliminated by erasure
+unchecked-abstract.scala:49: warning: abstract type L in type Covariant[M.this.L] is unchecked since it is eliminated by erasure
     /*   warn */ println(x.isInstanceOf[Covariant[L]])
                                        ^
 error: No warnings can be incurred under -Xfatal-warnings.

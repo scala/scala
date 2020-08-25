@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object Test {
   // Should not result in the spurious warning:
   //   comparing non-null values of types Product with Serializable

@@ -1,3 +1,4 @@
+// scalac: -Yoverride-vars -opt:l:inline -opt-inline-from:**
 object Final {
   class X(final var x: Int)  { }
   def f = new X(0).x += 1

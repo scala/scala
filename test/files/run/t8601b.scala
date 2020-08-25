@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 object Test {
   def len(x: Array[String]): Unit = x.length
   def load(x: Array[String]): Unit = x(0)

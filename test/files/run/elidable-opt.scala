@@ -1,3 +1,4 @@
+// scalac: -Xelide-below 900
 import annotation._
 import elidable._
 

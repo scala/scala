@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Xlint:unused -Ywarn-macros:before
 
 import scala.language.experimental.macros
 

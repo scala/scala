@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xplugin-require:rafter-before-1
 
 package sample
 

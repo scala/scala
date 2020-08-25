@@ -1,7 +1,7 @@
-t5830.scala:6: warning: unreachable code
+t5830.scala:7: warning: unreachable code
     case 'a' => println("b") // unreachable
                        ^
-t5830.scala:4: warning: could not emit switch for @switch annotated match
+t5830.scala:5: warning: could not emit switch for @switch annotated match
   def unreachable(ch: Char) = (ch: @switch) match {
                                     ^
 error: No warnings can be incurred under -Xfatal-warnings.

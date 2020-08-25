@@ -1,7 +1,7 @@
-t5956.scala:1: error: C is already defined as case class C
+t5956.scala:2: error: C is already defined as case class C
 object O { case class C[T](); class C() }
                                     ^
-t5956.scala:2: error: C is already defined as case class C
+t5956.scala:3: error: C is already defined as case class C
 object T { case class C[T](); case class C() }
                                          ^
 two errors found

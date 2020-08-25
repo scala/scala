@@ -1,4 +1,4 @@
-two.scala:1: warning: Generated class hotDog differs only in case from HotDog (defined in one.scala).
+two.scala:2: warning: Generated class hotDog differs only in case from HotDog (defined in one.scala).
   Such classes will overwrite one another on case-insensitive filesystems.
 class hotDog
       ^

@@ -1,3 +1,4 @@
+// scalac: -deprecation
 
 trait X {
   def f = Seq(

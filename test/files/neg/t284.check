@@ -1,4 +1,4 @@
-t284.scala:2: warning: Detected apparent refinement of Unit; are you missing an '=' sign?
+t284.scala:3: warning: Detected apparent refinement of Unit; are you missing an '=' sign?
   def f1(a: T): Unit { }
                      ^
 error: No warnings can be incurred under -Xfatal-warnings.

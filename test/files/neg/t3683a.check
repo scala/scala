@@ -1,4 +1,4 @@
-t3683a.scala:14: warning: match may not be exhaustive.
+t3683a.scala:15: warning: match may not be exhaustive.
 It would fail on the following input: XX()
     w match {
     ^

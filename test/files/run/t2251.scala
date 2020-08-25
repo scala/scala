@@ -1,3 +1,4 @@
+// scalac: -Xstrict-inference
 class A
 trait B[T <: B[T]] extends A
 class C extends B[C] { override def toString = "C" }

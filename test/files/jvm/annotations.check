@@ -1,4 +1,4 @@
-Test_2.scala:7: warning: class remote in package scala is deprecated (since 2.12.0): extend java.rmi.Remote instead and add @throws[java.rmi.RemoteException] to public methods
+Test_2.scala:8: warning: class remote in package scala is deprecated (since 2.12.0): extend java.rmi.Remote instead and add @throws[java.rmi.RemoteException] to public methods
     def foo: Unit = ()
         ^
 class java.rmi.RemoteException

@@ -1,3 +1,4 @@
+// scalac: -Ydelambdafy:inline
 /** Tests for compatible InnerClasses attribute between trait and
  *  impl classes, as well as anonymous classes.
  */

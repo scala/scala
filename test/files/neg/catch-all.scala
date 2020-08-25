@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 object CatchAll {
   try { "warn" } catch { case _ => }
 

@@ -1,14 +1,14 @@
-virtpatmat_reach_sealed_unsealed.scala:16: warning: match may not be exhaustive.
+virtpatmat_reach_sealed_unsealed.scala:17: warning: match may not be exhaustive.
 It would fail on the following input: false
   (true: Boolean) match { case true => } // not exhaustive, but reachable
        ^
-virtpatmat_reach_sealed_unsealed.scala:18: warning: unreachable code
+virtpatmat_reach_sealed_unsealed.scala:19: warning: unreachable code
   (true: Boolean) match { case true => case false =>  case _ => } // exhaustive, last case is unreachable
                                                              ^
-virtpatmat_reach_sealed_unsealed.scala:19: warning: unreachable code
+virtpatmat_reach_sealed_unsealed.scala:20: warning: unreachable code
   (true: Boolean) match { case true => case false =>  case _: Boolean => } // exhaustive, last case is unreachable
                                                                       ^
-virtpatmat_reach_sealed_unsealed.scala:20: warning: unreachable code
+virtpatmat_reach_sealed_unsealed.scala:21: warning: unreachable code
   (true: Boolean) match { case true => case false =>  case _: Any => } // exhaustive, last case is unreachable
                                                                   ^
 error: No warnings can be incurred under -Xfatal-warnings.

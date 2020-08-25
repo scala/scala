@@ -1,4 +1,4 @@
-t8736-c.scala:4: warning: higher-kinded type should be enabled
+t8736-c.scala:5: warning: higher-kinded type should be enabled
 by making the implicit value scala.language.higherKinds visible.
 This can be achieved by adding the import clause 'import scala.language.higherKinds'
 or by setting the compiler option -language:higherKinds.

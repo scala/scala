@@ -1,3 +1,4 @@
+// scalac: -Xasync
 object Test extends scala.tools.partest.JUnitTest(classOf[scala.async.run.ifelse2.IfElse2Spec])
 
 package scala.async.run.ifelse2 {

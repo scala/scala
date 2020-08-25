@@ -1,3 +1,4 @@
+// scalac: -opt:l:inline -opt-inline-from:**
 object Test {
 
   class Foo(final var i:Int)

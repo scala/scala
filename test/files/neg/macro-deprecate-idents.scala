@@ -1,3 +1,4 @@
+// scalac: -deprecation -Xfatal-warnings
 object Test1 {
   val macro = ???
 }

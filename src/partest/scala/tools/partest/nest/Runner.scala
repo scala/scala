@@ -66,7 +66,7 @@ case class TestInfo(testFile: File) {
 }
 
 /** Run a single test. */
-class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
+class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) { runner =>
   private val stopwatch = new Stopwatch()
 
   import testInfo._
@@ -453,16 +453,17 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
   def newCompiler = new DirectCompiler(this)
 
   def attemptCompile(sources: List[File]): TestState = {
-    // TODO: Deferred until 2.12.x is ready to lose its flags files, & possibly flags file support entirely
-    //val badflags = (testFile :: (if (testFile.isDirectory) sources else Nil)).map(_.changeExtension("flags")).find(_.exists)
-    //if (badflags.isDefined) genFail(s"unexpected flags file ${badflags.get} (use source comment // scalac: -Wfatal-warnings)")
-    //else {
-      val state = newCompiler.compile(flagsForCompilation(sources), sources)
-      if (!state.isOk)
-        _transcript.append("\n" + logFile.fileContents)
+    (testFile :: (if (testFile.isDirectory) sources else Nil)).map(_.changeExtension("flags")).find(_.exists()) match {
+      // TODO: Deferred until the remaining 2.12 tests work without their flags files
+      //case Some(flagsFile) =>
+      //genFail(s"unexpected flags file $flagsFile (use source comment // scalac: -Xfatal-warnings)")
+      case _ =>
+        val state = newCompiler.compile(flagsForCompilation(sources), sources)
+        if (!state.isOk)
+          pushTranscript(s"$EOL${logFile.fileContents}")
 
-      state
-    //}
+        state
+    }
   }
 
   // all sources in a round may contribute flags via .flags files or // scalac: -flags
@@ -525,8 +526,27 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
     lazy val result = { pushTranscript(description) ; attemptCompile(fs) }
   }
 
-  def compilationRounds(file: File): List[CompileRound] =
-    groupedFiles(sources(file)).map(mixedCompileGroup).flatten
+  def compilationRounds(file: File): List[CompileRound] = {
+    val sources = runner.sources(file)
+
+    if (PartestDefaults.migrateFlagsFiles) {
+      def writeFlags(f: File, flags: List[String]) =
+        if (flags.nonEmpty) f.writeAll((s"// scalac: ${ojoin(flags: _*)}" +: f.fileLines).map(_ + EOL): _*)
+      val flags = readOptionsFile(flagsFile)
+      sources.filter(_.isScala).foreach {
+        case `testFile` =>
+          writeFlags(testFile, flags)
+          flagsFile.delete()
+        case f =>
+          val more = f.changeExtension("flags")
+          writeFlags(f, flags ::: readOptionsFile(more))
+          more.delete()
+      }
+    }
+
+    groupedFiles(sources).flatMap(mixedCompileGroup)
+  }
+
   def mixedCompileGroup(allFiles: List[File]): List[CompileRound] = {
     val (scalaFiles, javaFiles) = allFiles partition (_.isScala)
     val round1                  = if (scalaFiles.isEmpty) None else Some(ScalaAndJava(allFiles))

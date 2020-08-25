@@ -1,3 +1,4 @@
+// scalac: -Xasync
 import scala.tools.partest.async.OptionAwait._
 import org.junit.Assert._
 

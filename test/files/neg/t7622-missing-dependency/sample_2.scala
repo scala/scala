@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Xplugin-require:myplugin
 
 package sample
 

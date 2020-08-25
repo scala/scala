@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -Ywarn-unused:imports
 
 import language._
 

@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings -deprecation
 package scala.t6126
 
 class SubFoo extends Foo

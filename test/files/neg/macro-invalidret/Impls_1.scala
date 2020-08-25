@@ -1,3 +1,4 @@
+// scalac: -language:experimental.macros -Xfatal-warnings -deprecation
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.runtime.{universe => ru}
 

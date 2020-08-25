@@ -1,3 +1,4 @@
+// scalac: -Ywarn-extra-implicit
 
 
 class C(i: Int)(implicit j: Int)(implicit k: Int)(n: Int) {

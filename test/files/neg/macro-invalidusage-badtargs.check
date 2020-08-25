@@ -1,16 +1,16 @@
-Macros_Test_2.scala:13: error: macro method foo1: (x: Int)Int does not take type parameters.
+Macros_Test_2.scala:14: error: macro method foo1: (x: Int)Int does not take type parameters.
   foo1[String](42)
       ^
-Macros_Test_2.scala:14: error: wrong number of type parameters for macro method foo2: [T](x: Int)Int
+Macros_Test_2.scala:15: error: wrong number of type parameters for macro method foo2: [T](x: Int)Int
   foo2[String, String](42)
       ^
-Macros_Test_2.scala:15: error: wrong number of type parameters for macro method foo3: [T, U](x: Int)Int
+Macros_Test_2.scala:16: error: wrong number of type parameters for macro method foo3: [T, U](x: Int)Int
   foo3[String](42)
       ^
-Macros_Test_2.scala:16: error: String takes no type parameters, expected: one
+Macros_Test_2.scala:17: error: String takes no type parameters, expected: one
   foo4[String](42)
        ^
-Macros_Test_2.scala:17: error: kinds of the type arguments (List) do not conform to the expected kinds of the type parameters (type T).
+Macros_Test_2.scala:18: error: kinds of the type arguments (List) do not conform to the expected kinds of the type parameters (type T).
 List's type parameters do not match type T's expected parameters:
 type A has no type parameters, but type U has one
   foo5[List](42)

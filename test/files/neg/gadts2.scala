@@ -1,3 +1,4 @@
+// scalac: -Xstrict-inference
 trait Super[+A]
 case class Sub[B](f: B => B) extends Super[B]
 

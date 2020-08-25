@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 // No unreachable or exhaustiveness warnings, please.
 
 //

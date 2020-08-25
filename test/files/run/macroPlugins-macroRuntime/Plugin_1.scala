@@ -1,3 +1,4 @@
+// scalac: -Xplugin:.
 package macroRuntime
 
 import scala.tools.nsc.Global

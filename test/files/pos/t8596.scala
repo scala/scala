@@ -1,3 +1,4 @@
+// scalac: -Yrangepos
 class TypeTreeObjects {
   class Container {
     def typeParamAndDefaultArg[C](name: String = ""): String = ""

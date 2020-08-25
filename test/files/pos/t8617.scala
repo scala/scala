@@ -1,3 +1,4 @@
+// scalac: -Yrangepos
 object Test {
   def foo[A] = implicitly[OptManifest[A]] // was "unpositioned tree" under -Yrangepos
 

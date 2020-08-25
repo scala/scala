@@ -1,3 +1,4 @@
+// scalac: -Xplugin:. -Yrangepos:false
 package macroExpand
 
 import scala.tools.nsc.Global

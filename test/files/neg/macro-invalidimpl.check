@@ -1,53 +1,53 @@
-Macros_Test_2.scala:5: error: macro implementation reference has wrong shape. required:
+Macros_Test_2.scala:6: error: macro implementation reference has wrong shape. required:
 macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo(x: Any) = macro impls.foo
                                 ^
-Macros_Test_2.scala:10: error: macro implementation reference has wrong shape. required:
+Macros_Test_2.scala:11: error: macro implementation reference has wrong shape. required:
 macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo(x: Any) = macro impls.foo
                                 ^
-Macros_Test_2.scala:18: error: macro implementation reference has wrong shape. required:
+Macros_Test_2.scala:19: error: macro implementation reference has wrong shape. required:
 macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo(x: Any) = macro Impls3.foo
                                  ^
-Macros_Test_2.scala:22: error: macro implementation reference has wrong shape. required:
+Macros_Test_2.scala:23: error: macro implementation reference has wrong shape. required:
 macro [<static object>].<method name>[[<type args>]] or
 macro [<macro bundle>].<method name>[[<type args>]]
   def foo(x: Any) = macro Impls4.foo
-                                 ^
-Macros_Test_2.scala:26: error: ambiguous reference to overloaded definition,
-both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
-and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any])Nothing
-match expected type ?
-  def foo(x: Any) = macro Impls5.foo
                                  ^
 Macros_Test_2.scala:27: error: ambiguous reference to overloaded definition,
 both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
 and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any])Nothing
 match expected type ?
+  def foo(x: Any) = macro Impls5.foo
+                                 ^
+Macros_Test_2.scala:28: error: ambiguous reference to overloaded definition,
+both method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any], y: c.Expr[Any])Nothing
+and  method foo in object Impls5 of type (c: scala.reflect.macros.blackbox.Context)(x: c.Expr[Any])Nothing
+match expected type ?
   def foo(x: Any, y: Any) = macro Impls5.foo
                                          ^
-Macros_Test_2.scala:31: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:32: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context): c.Expr[Unit]
  or      : (c: scala.reflect.macros.blackbox.Context): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context)(): c.Expr[Unit]
 number of parameter sections differ
   def foo1 = macro Impls6.fooEmpty
                           ^
-Macros_Test_2.scala:32: error: macro implementation has incompatible shape:
+Macros_Test_2.scala:33: error: macro implementation has incompatible shape:
  required: (c: scala.reflect.macros.blackbox.Context)(): c.Expr[Unit]
  or      : (c: scala.reflect.macros.blackbox.Context)(): c.Tree
  found   : (c: scala.reflect.macros.blackbox.Context): c.Expr[Unit]
 number of parameter sections differ
   def bar1() = macro Impls6.fooNullary
                             ^
-Macros_Test_2.scala:36: error: type arguments [String] do not conform to method foo's type parameter bounds [U <: Int]
+Macros_Test_2.scala:37: error: type arguments [String] do not conform to method foo's type parameter bounds [U <: Int]
   def foo = macro Impls7.foo[String]
                             ^
-Macros_Test_2.scala:53: error: macro implementation must be public
+Macros_Test_2.scala:54: error: macro implementation must be public
     def foo = macro Impls8.impl
                            ^
 10 errors found

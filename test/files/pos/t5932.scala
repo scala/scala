@@ -1,3 +1,4 @@
+// scalac: -Xfatal-warnings
 class A
 
 case object B extends A

@@ -1,3 +1,4 @@
+// scalac: -Xstrict-inference
 case class Cell[A](var x: A)
 object Test {
   def f1(x: Any)        = x match { case y @ Cell(_) => y } // Inferred type is Cell[Any]
