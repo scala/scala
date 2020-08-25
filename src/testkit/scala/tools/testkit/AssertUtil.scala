@@ -31,6 +31,12 @@ import java.util.IdentityHashMap
 
 /** This module contains additional higher-level assert statements
  *  that are ultimately based on junit.Assert primitives.
+ *
+ *  Avoid adding methods, and above all *fields* (including `lazy val`s), that
+ *  require JVM-specific features such as run-time reflection. Otherwise, all
+ *  tests using this object stop working in Scala.js. Put such methods in
+ *  `ReflectUtil` instead. (`ClassTag`s are fine; they are supported in
+ *  Scala.js and Scala Native.)
  */
 object AssertUtil {
 
@@ -263,18 +269,6 @@ object AssertUtil {
   def readyOrNot(awaitable: Awaitable[_]): Boolean = Try(Await.ready(awaitable, TestDuration.Standard)).isSuccess
 
   def withoutATrace[A](body: => A) = NoTrace(body)
-
-  private lazy val modsField = classOf[Field].getDeclaredField("modifiers").tap(_.setAccessible(true))
-
-  def getFieldAccessible[T: ClassTag](n: String): Field =
-    implicitly[ClassTag[T]]
-      .runtimeClass.getDeclaredField(n)
-      .tap { f =>
-        if ((f.getModifiers & Modifier.FINAL) != 0)
-          modsField.setInt(f, f.getModifiers() & ~Modifier.FINAL)
-        if ((f.getModifiers & Modifier.PUBLIC) == 0)
-          f.setAccessible(true)
-      }
 }
 
 object TestDuration {
@@ -309,7 +303,7 @@ class NoTrace[A](body: => A) extends Runnable {
 
   private final val noError = None: Option[Throwable]
 
-  def asserted: Option[Throwable] = 
+  def asserted: Option[Throwable] =
     errors.collect { case (_, e: AssertionError) => e }
       .foldLeft(noError)((res, e) => res.map(suppress(_, e)).orElse(Some(e)))
 
