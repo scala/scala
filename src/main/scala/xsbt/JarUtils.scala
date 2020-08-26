@@ -18,7 +18,7 @@ import java.nio.file.Path
  * This is a utility class that provides a set of functions that
  * are used to implement straight to jar compilation.
  *
- * [[sbt.internal.inc.JarUtils]] is an object that has similar purpose and
+ * `sbt.internal.inc.JarUtils` is an object that has similar purpose and
  * duplicates some of the code, as it is difficult to share it. Any change
  * in the logic of this file must be applied to the other `JarUtils` too!
  */
