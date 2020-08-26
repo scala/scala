@@ -1263,7 +1263,9 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
 
   def toIndexedSeq: immutable.IndexedSeq[A] = immutable.IndexedSeq.from(this)
 
-  @deprecated("Use .to(LazyList) instead of .toStream", "2.13.0")
+  def toLazyList: immutable.LazyList[A] = immutable.LazyList.from(this)
+
+  @deprecated("Use .toLazyList instead of .toStream", "2.13.0")
   @`inline` final def toStream: immutable.Stream[A] = to(immutable.Stream)
 
   @`inline` final def toBuffer[B >: A]: mutable.Buffer[B] = mutable.Buffer.from(this)
