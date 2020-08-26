@@ -492,6 +492,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.async"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Internals#InternalApi.markForAsyncTransform"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.mutable.HashMap.entriesIterator0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.RootEntry"),
   )
 }
