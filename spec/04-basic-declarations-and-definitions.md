@@ -205,8 +205,8 @@ A variable declaration `var $x$: $T$` is equivalent to the declarations
 of both a _getter function_ $x$ *and* a _setter function_ `$x$_=`:
 
 ```scala
-def $x$: $T$
-def $x$_= ($y$: $T$): Unit
+var $x$: $T$
+var $x$_= ($y$: $T$): Unit
 ```
 
 An implementation of a class may _define_ a declared variable
