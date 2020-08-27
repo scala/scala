@@ -300,6 +300,27 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Test def testAsync(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          | object A {
+          |   import scala.tools.nsc.OptionAwait.{optionally, value}
+          |   def test = optionally {
+          |      if (value(Some(true))) {
+          |        var x = ""
+          |        if (value(Some(false))) {
+          |          value(Some(x)) + value(Some(2))
+          |        }
+          |      }
+          |   }
+          | }
+          |
+      """.stripMargin)
+    )
+    test(List(code))
+  }
+
   def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
   private def test(groups: List[List[SourceFile]]): Unit = {
     val referenceOutput = Files.createTempDirectory("reference")
@@ -309,6 +330,7 @@ class DeterminismTest {
       g.settings.usejavacp.value = true
       g.settings.classpath.value = output.toAbsolutePath.toString
       g.settings.outputDirs.setSingleOutput(output.toString)
+      g.settings.async.value = true
       val storeReporter = new StoreReporter
       g.reporter = storeReporter
       import g._
@@ -362,3 +384,79 @@ class DeterminismTest {
   def permutationsWithSubsets[A](as: List[A]): List[List[A]] =
     as.permutations.toList.flatMap(_.inits.filter(_.nonEmpty)).distinct
 }
+
+
+
+import scala.annotation.compileTimeOnly
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
+
+object OptionAwait {
+  def optionally[T](body: T): Option[T] = macro impl
+  @compileTimeOnly("[async] `value` must be enclosed in `optionally`")
+  def value[T](option: Option[T]): T = ???
+  def impl(c: blackbox.Context)(body: c.Tree): c.Tree = {
+    import c.universe._
+    val awaitSym = typeOf[OptionAwait.type].decl(TermName("value"))
+    def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
+    val name = TypeName("stateMachine$async")
+    q"""
+      final class $name extends _root_.scala.tools.nsc.OptionStateMachine {
+        ${mark(q"""override def apply(tr$$async: _root_.scala.Option[_root_.scala.AnyRef]) = ${body}""")}
+      }
+      new $name().start().asInstanceOf[${c.macroApplication.tpe}]
+    """
+  }
+}
+
+trait AsyncStateMachine[F, R] {
+  /** Assign `i` to the state variable */
+  protected def state_=(i: Int): Unit
+  /** Retrieve the current value of the state variable */
+  protected def state: Int
+  /** Complete the state machine with the given failure. */
+  protected def completeFailure(t: Throwable): Unit
+  /** Complete the state machine with the given value. */
+  protected def completeSuccess(value: AnyRef): Unit
+  /** Register the state machine as a completion callback of the given future. */
+  protected def onComplete(f: F): Unit
+  /** Extract the result of the given future if it is complete, or `null` if it is incomplete. */
+  protected def getCompleted(f: F): R
+  /**
+   * Extract the success value of the given future. If the state machine detects a failure it may
+   * complete the async block and return `this` as a sentinel value to indicate that the caller
+   * (the state machine dispatch loop) should immediately exit.
+   */
+  protected def tryGet(tr: R): AnyRef
+}
+
+
+abstract class OptionStateMachine extends AsyncStateMachine[Option[AnyRef], Option[AnyRef]] {
+  var result$async: Option[AnyRef] = _
+
+  // FSM translated method
+  def apply(tr$async: Option[AnyRef]): Unit
+
+  // Required methods
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
+  protected def completeFailure(t: Throwable): Unit = throw t
+  protected def completeSuccess(value: AnyRef): Unit = result$async = Some(value)
+  protected def onComplete(f: Option[AnyRef]): Unit = ???
+  protected def getCompleted(f: Option[AnyRef]): Option[AnyRef] = {
+    f
+  }
+  protected def tryGet(tr: Option[AnyRef]): AnyRef = tr match {
+    case Some(value) =>
+      value.asInstanceOf[AnyRef]
+    case None =>
+      result$async = None
+      this // sentinel value to indicate the dispatch loop should exit.
+  }
+  def start(): Option[AnyRef] = {
+    apply(None)
+    result$async
+  }
+}
+

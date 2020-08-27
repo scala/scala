@@ -30,7 +30,7 @@ trait LiveVariables extends ExprBuilder {
   def fieldsToNullOut(asyncStates: List[AsyncState], finalState: AsyncState,
                       liftables: List[Tree]): mutable.LinkedHashMap[Int, (mutable.LinkedHashSet[Symbol], mutable.LinkedHashSet[Symbol])] = {
 
-    val liftedSyms = mutable.HashSet[Symbol]()
+    val liftedSyms = mutable.LinkedHashSet[Symbol]()
 
     // include only vars
     liftedSyms ++= liftables.iterator.collect {
@@ -54,8 +54,8 @@ trait LiveVariables extends ExprBuilder {
      */
     def fieldsUsedIn(as: AsyncState): (collection.Set[Symbol], collection.Set[Symbol]) = {
       class FindUseTraverser extends AsyncTraverser {
-        val usedBeforeAssignment = new mutable.HashSet[Symbol]()
-        val assignedFields = new mutable.HashSet[Symbol]()
+        val usedBeforeAssignment = new mutable.LinkedHashSet[Symbol]()
+        val assignedFields = new mutable.LinkedHashSet[Symbol]()
         private def capturing[A](body: => A): A = {
           val saved = capturing
           try {
