@@ -505,7 +505,6 @@ trait MatchAnalysis extends MatchApproximation {
       // - back off (to avoid crying exhaustive too often) in unhandled cases
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
-      val strict = settings.XstrictPatmatAnalysis.value
 
       val approx = new TreeMakersToProps(prevBinder)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
@@ -514,8 +513,9 @@ trait MatchAnalysis extends MatchApproximation {
           case ExtractorTreeMaker(_, _, _)
              | ProductExtractorTreeMaker(_, _)
              | GuardTreeMaker(_) =>
-            if (strict) False else True
-          case _ => // debug.patmat("backing off due to "+ tm)
+            False
+          case _ =>
+            debug.patmat("backing off due to "+ tm)
             backoff = true
             False
         })
@@ -879,7 +879,7 @@ trait MatchAnalysis extends MatchApproximation {
               // then we can safely ignore these counter examples since we will eventually encounter
               // both counter examples separately
               case _ if inSameDomain =>
-                if (settings.XstrictPatmatAnalysis.value) Some(WildcardExample) else None
+                Some(WildcardExample)
 
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive

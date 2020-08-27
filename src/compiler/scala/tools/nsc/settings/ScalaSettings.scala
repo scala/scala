@@ -168,8 +168,6 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
     def isAtLeastJunit = isTruthy || XmixinForceForwarders.value == "junit"
   }
 
-  val XstrictPatmatAnalysis = BooleanSetting ("-Xstrict-patmat-analysis", "Assume pattern guards are false for the purposes of exhaustivity analysis")
-
   // XML parsing options
   object XxmlSettings extends MultiChoiceEnumeration {
     val coalescing   = Choice("coalescing", "Convert PCData to Text and coalesce sibling nodes")

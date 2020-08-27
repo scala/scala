@@ -99,7 +99,7 @@ class Power[ReplValsImpl <: ReplVals : ru.TypeTag: ClassTag](val intp: IMain, re
     /** Looking for dwindling returns */
     def droppedEnough() = unseenHistory.size >= 4 && {
       unseenHistory takeRight 4 sliding 2 forall { it =>
-        val List(a, b) = it.toList
+        val List(a, b) = (it.toList: @unchecked)
         a > b
       }
     }

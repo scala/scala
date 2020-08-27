@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xstrict-patmat-analysis
+// scalac: -Xfatal-warnings
 
 final class Foo(val value: Int)
 object Foo {

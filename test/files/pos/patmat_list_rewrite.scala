@@ -1,4 +1,4 @@
-// scalac: -Werror -Xstrict-patmat-analysis
+// scalac: -Werror
 //
 class C {
   def m(xs: List[String]) = xs match {

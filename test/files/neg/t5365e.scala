@@ -10,11 +10,5 @@ class Main {
   def f2(x: Exh) = x match { case Foo(x, y)    => x + y                      } // don't back off
   def fX(x: Exh) = x match { case Foo(xs @ _*) => xs                         } // don't back off
   def b1(x: Exh) = x match {                                case Bar(x) => x } // inexhaustive
-  def fb(x: Exh) = x match { case Foo(x)       => x         case Bar(x) => x } // optimistically exhaustive
-  // ^ under -Xstrict-patmat-analysis pessimistically approximates case Foo(x) as inexhaustive:
-  //     test/files/neg/t5365e.scala:12: warning: match may not be exhaustive.
-  //     It would fail on the following input: Foo(_)
-  //       def fb(x: Exh) = x match { case Foo(x)       => x         case Bar(x) => x } // optimistically exhaustive
-  //                        ^
-  // ... and the counter-example needs work -.- ...
+  def fb(x: Exh) = x match { case Foo(x)       => x         case Bar(x) => x } // pessimistically inexhaustive
 }

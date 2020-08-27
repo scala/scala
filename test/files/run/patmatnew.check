@@ -16,6 +16,22 @@ patmatnew.scala:356: warning: multiline expressions might require enclosing pare
 patmatnew.scala:356: warning: a pure expression does nothing in statement position
         case 3 => assert(false); "KO"
                                  ^
+patmatnew.scala:175: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+    def doMatch(xs: List[String]): String = xs match {
+                                            ^
+patmatnew.scala:178: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+    def doMatch2(xs: List[String]): List[String] = xs match {
+                                                   ^
+patmatnew.scala:280: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+    def doMatch1(xs: List[Char]) = xs match {
+                                   ^
+patmatnew.scala:283: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+    def doMatch2(xs: List[Char]) = xs match {
+                                   ^
 patmatnew.scala:492: warning: unreachable code
         case _ if false =>
                         ^

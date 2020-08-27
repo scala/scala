@@ -400,7 +400,7 @@ class Javap9(intp0: Repl) extends Javap(intp0) {
 /** Loaded reflectively under JDK9 to locate ToolProvider. */
 class JavapProvider(intp0: Repl) extends Javap(intp0) {
   import JavapTool.Input
-  import Javap.{filterLines, HashSplit}
+  import Javap.filterLines
   import java.util.Optional
   //import java.util.spi.ToolProvider
 
@@ -410,7 +410,7 @@ class JavapProvider(intp0: Repl) extends Javap(intp0) {
 
   private def tool(provider: ToolProvider) = new JavapTool {
     override def apply(options: Seq[String], filter: Boolean)(inputs: Seq[Input]): List[JpResult] = inputs.map {
-      case Input(target @ HashSplit(klass, _), actual, Success(_)) =>
+      case Input(target, actual, Success(_)) =>
         val more = List("-cp", intp.outputDir.file.getAbsoluteFile.toString, actual)
         val s = stringFromWriter(w => provider.run(w, w, (options ++ more).toArray))
         JpResult(filterLines(target, s))

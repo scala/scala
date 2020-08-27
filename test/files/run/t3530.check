@@ -1,3 +1,7 @@
+t3530.scala:9: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+  def f2[T](x: List[T]) = println(x match {
+                                  ^
 two
 three
 list: 4

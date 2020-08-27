@@ -10,7 +10,11 @@ unchecked-refinement.scala:25: warning: a pattern match on a refinement type is 
 unchecked-refinement.scala:26: warning: a pattern match on a refinement type is unchecked
     /* nowarn - todo */ case x: AnyRef { def size: Int } if b  => x.size   // this could/should do a static conformance test and not warn
                                 ^
+unchecked-refinement.scala:24: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+  def f4(xs: List[Int]) = xs match {
+                          ^
 warning: 1 feature warning; re-run with -feature for details
 error: No warnings can be incurred under -Werror.
-5 warnings
+6 warnings
 1 error

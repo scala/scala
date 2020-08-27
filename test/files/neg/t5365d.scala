@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xstrict-patmat-analysis
+// scalac: -Xfatal-warnings
 object D {
   sealed trait T
   final case class C(i: Int) extends T

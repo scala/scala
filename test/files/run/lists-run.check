@@ -1,0 +1,4 @@
+lists-run.scala:177: warning: match may not be exhaustive.
+It would fail on the following input: List((x: String forSome x not in "foo"))
+  def show(xs: List[String]) = xs match {
+                               ^

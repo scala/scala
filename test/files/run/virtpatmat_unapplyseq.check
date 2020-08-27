@@ -1,1 +1,5 @@
+virtpatmat_unapplyseq.scala:2: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+  List(1,2,3) match {
+      ^
 6

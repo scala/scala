@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings -Xstrict-patmat-analysis
+// scalac: -Xfatal-warnings
 class C {
   def nonExhautiveIfWeAssumeGuardsTrueOrFalse(x: Option[Int]): Int = x match {
     case Some(n) if n % 2 == 0 => n
