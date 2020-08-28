@@ -3832,6 +3832,10 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
        * an error message is reported and None is returned.
        */
       def tree2ConstArg(tree: Tree, pt: Type): Option[ClassfileAnnotArg] = tree match {
+        case Apply(Select(New(_), nme.CONSTRUCTOR), _) if pt.typeSymbol == ArrayClass && unit.isJava =>
+          // In Java, a single value may be passed for array annotation parameters
+          tree2ConstArg(Apply(Select(gen.mkAttributedRef(ArrayModule), nme.apply), List(tree)), pt)
+
         case Apply(Select(New(tpt), nme.CONSTRUCTOR), args) if (pt.typeSymbol == ArrayClass) =>
           reportAnnotationError(ArrayConstantsError(tree)); None
 
@@ -3840,7 +3844,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           val annType = annInfo.tpe
 
           if (!annType.typeSymbol.isSubClass(pt.typeSymbol))
-            reportAnnotationError(AnnotationTypeMismatchError(tpt, annType, annType))
+            reportAnnotationError(AnnotationTypeMismatchError(tpt, pt, annType))
           else if (!annType.typeSymbol.isSubClass(ClassfileAnnotationClass))
             reportAnnotationError(NestedAnnotationError(ann, annType))
 
