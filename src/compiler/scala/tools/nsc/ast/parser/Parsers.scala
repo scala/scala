@@ -1004,12 +1004,16 @@ self =>
       def argType(): Tree
       def functionArgType(): Tree
 
-      // () must be () => R, otherwise (types) could be tuple or (types) => R
+      // () must be () => R; (types) could be tuple or (types) => R
       private def tupleInfixType(start: Offset) = {
         require(in.token == LPAREN)
-        val ts = inParens{ if (in.token == RPAREN) Nil else functionTypes() }
+        val ts = inParens { if (in.token == RPAREN) Nil else functionTypes() }
         if (in.token == ARROW)
           atPos(start, in.skipToken()) { makeSafeFunctionType(ts, typ()) }
+        else if (ts.isEmpty) {
+          syntaxError(start, "Illegal literal type (), use Unit instead")
+          EmptyTree
+        }
         else {
           ts foreach checkNotByNameOrVarargs
           val tuple = atPos(start) { makeSafeTupleType(ts) }
@@ -1078,17 +1082,25 @@ self =>
        */
       def simpleType(): Tree = {
         if (isLiteralToken(in.token) && in.token != NULL)
-          atPos(in.offset){SingletonTypeTree(literal())}
+          atPos(in.offset)(SingletonTypeTree(literal()))
         else if (in.name == raw.MINUS && lookingAhead(isNumericLit)) {
           val start = in.offset
           in.nextToken()
-          atPos(start){ SingletonTypeTree(literal(isNegated = true, start = start)) }
+          atPos(start)(SingletonTypeTree(literal(isNegated = true, start = start)))
         } else {
           val start = in.offset
           simpleTypeRest(in.token match {
-            case LPAREN   => atPos(start)(makeSafeTupleType(inParens(types())))
-            case USCORE   => wildcardType(in.skipToken())
-            case _        =>
+            case LPAREN =>
+              if (lookingAhead(in.token == RPAREN)) {
+                in.nextToken()
+                in.nextToken()
+                syntaxError(start, "Illegal literal type (), use Unit instead")
+                EmptyTree
+              }
+              else
+                atPos(start)(makeSafeTupleType(inParens(types())))
+            case USCORE => wildcardType(in.skipToken())
+            case _      =>
               path(thisOK = false, typeOK = true) match {
                 case r @ SingletonTypeTree(_) => r
                 case r => convertToTypeId(r)
