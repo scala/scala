@@ -213,7 +213,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
   def getWriter(fqCallsiteClass: String): DebugInfoWriter = debugInfoWriters.get.getOrElse(fqCallsiteClass, noOpDebugInfoWriter)
 
   sealed trait DebugInfoWriter {
-    val sourceFileName: String = null
+    val sourceFileName: String
 
     /**
      * Add a mapping for an inline line from an external source to this class source.
@@ -289,6 +289,8 @@ abstract class DebugInfoBuilder extends PerRunInit {
      * The sourceDebugExtension() method returns null.
      */
     class NoOpDebugInfoWriter extends DebugInfoWriter {
+      override val sourceFileName: String = null
+
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
                                      calleeFileName: String,
