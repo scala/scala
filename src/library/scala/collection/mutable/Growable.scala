@@ -14,7 +14,7 @@ package scala
 package collection
 package mutable
 
-import scala.collection.IterableOnce
+import scala.annotation.nowarn
 
 /** This trait forms part of collections that can be augmented
   * using a `+=` operator and that can be cleared of all elements using
@@ -56,10 +56,14 @@ trait Growable[-A] extends Clearable {
    *  @param xs   the IterableOnce producing the elements to $add.
    *  @return  the $coll itself.
    */
+  @nowarn("msg=will most likely never compare equal")
   def addAll(xs: IterableOnce[A]): this.type = {
-    val it = xs.iterator
-    while (it.hasNext) {
-      addOne(it.next())
+    if (xs.asInstanceOf[AnyRef] eq this) addAll(Buffer.from(xs)) // avoid mutating under our own iterator
+    else {
+      val it = xs.iterator
+      while (it.hasNext) {
+        addOne(it.next())
+      }
     }
     this
   }

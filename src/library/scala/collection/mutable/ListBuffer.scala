@@ -114,18 +114,28 @@ class ListBuffer[A]
 
   // Overridden for performance
   override final def addAll(xs: IterableOnce[A]): this.type = {
-    val it = xs.iterator
-    if (it.hasNext) {
-      ensureUnaliased()
-      val last1 = new ::[A](it.next(), Nil)
-      if (len == 0) first = last1 else last0.next = last1
-      last0 = last1
-      len += 1
-      while (it.hasNext) {
+    if (xs.asInstanceOf[AnyRef] eq this) { // avoid mutating under our own iterator
+      if (len > 0) {
+        ensureUnaliased()
+        val copy = ListBuffer.from(this)
+        last0.next = copy.first
+        last0 = copy.last0
+        len *= 2
+      }
+    } else {
+      val it = xs.iterator
+      if (it.hasNext) {
+        ensureUnaliased()
         val last1 = new ::[A](it.next(), Nil)
-        last0.next = last1
+        if (len == 0) first = last1 else last0.next = last1
         last0 = last1
         len += 1
+        while (it.hasNext) {
+          val last1 = new ::[A](it.next(), Nil)
+          last0.next = last1
+          last0 = last1
+          len += 1
+        }
       }
     }
     this
@@ -230,13 +240,29 @@ class ListBuffer[A]
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    ensureUnaliased()
-    val it = elems.iterator
-    if (it.hasNext) {
-      ensureUnaliased()
-      if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
-      if (idx == len) ++=(elems)
-      else insertAfter(locate(idx), it)
+    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    elems match {
+      case elems: AnyRef if elems eq this => // avoid mutating under our own iterator
+        if (len > 0) {
+          val copy = ListBuffer.from(this)
+          if (idx == 0 || idx == len) { // prepend/append
+            last0.next = copy.first
+            last0 = copy.last0
+          } else {
+            val prev = locate(idx) // cannot be `null` because other condition catches that
+            val follow = prev.next
+            prev.next = copy.first
+            copy.last0.next = follow
+          }
+          len *= 2
+        }
+      case elems =>
+        val it = elems.iterator
+        if (it.hasNext) {
+          ensureUnaliased()
+          if (idx == len) ++=(elems)
+          else insertAfter(locate(idx), it)
+        }
     }
   }
 
