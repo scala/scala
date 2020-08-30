@@ -906,7 +906,7 @@ abstract class BTypes {
 
   final case class MethodBType(argumentTypes: Array[BType], returnType: BType) extends BType
 
-  object BTypeExporter {
+  object BTypeExporter extends AutoCloseable {
     private[this] val builderTL: ThreadLocal[StringBuilder] = new ThreadLocal[StringBuilder](){
       override protected def initialValue: StringBuilder = new StringBuilder(64)
     }
