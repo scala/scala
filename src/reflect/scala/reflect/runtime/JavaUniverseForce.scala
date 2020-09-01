@@ -423,6 +423,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.TailrecClass
     definitions.VarargsClass
     definitions.NowarnClass
+    definitions.NolinkClass
     definitions.uncheckedStableClass
     definitions.uncheckedVarianceClass
     definitions.ChildAnnotationClass

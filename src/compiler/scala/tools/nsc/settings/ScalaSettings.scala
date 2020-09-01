@@ -116,6 +116,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val elidebelow         = IntSetting          ("-Xelide-below", "Calls to @elidable methods are omitted if method priority is lower than argument",
                                                 elidable.MINIMUM, None, elidable.byName get _)
   val noForwarders       = BooleanSetting      ("-Xno-forwarders", "Do not generate static forwarders in mirror classes.")
+  val useNolink          = BooleanSetting      ("-Xuse-nolink", "Allow generated classes to refer to methods annotated @nolink")
   val genPhaseGraph      = StringSetting       ("-Xgenerate-phase-graph", "file", "Generate the phase graphs (outputs .dot files) to fileX.dot.", "")
   val maxerrs            = IntSetting          ("-Xmaxerrs", "Maximum errors to print", 100, None, _ => None)
   val maxwarns           = IntSetting          ("-Xmaxwarns", "Maximum warnings to print", 100, None, _ => None)

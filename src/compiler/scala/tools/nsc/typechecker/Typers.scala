@@ -5210,7 +5210,24 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             wrapErrors(t, _.typed1(t, mode, pt))
           }
 
-          val sym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.symbol, name)
+          val sym = {
+            val selSym = tree.symbol orElse member(qual.tpe, name) orElse inCompanionForJavaStatic(qual.symbol, name)
+            if (settings.useNolink || context.enclMethod.owner.isBridge) selSym
+            else {
+              if (selSym == NoSymbol) selSym
+              else if (qual.isInstanceOf[Super]) {
+                if (!isPastTyper && selSym.hasAnnotation(NolinkClass) && !context.nextEnclosing(c => c.owner.isMethod && !c.owner.isLocalToBlock).owner.hasAnnotation(NolinkClass))
+                  context.warning(tree.pos, s"$selSym is annotated @nolink but the current method is not. This can lead to a binary incompatibilty.", WarningCategory.Other)
+                selSym
+              }
+              else {
+                def skipNoLink(s: Symbol): Symbol =
+                  if (s.hasAnnotation(NolinkClass)) skipNoLink(enteringTyper(s.nextOverriddenSymbol))
+                  else s
+                skipNoLink(selSym)
+              }
+            }
+          }
           if ((sym eq NoSymbol) && name != nme.CONSTRUCTOR && mode.inAny(EXPRmode | PATTERNmode)) {
             // symbol not found? --> try to convert implicitly to a type that does have the required
             // member.  Added `| PATTERNmode` to allow enrichment in patterns (so we can add e.g., an

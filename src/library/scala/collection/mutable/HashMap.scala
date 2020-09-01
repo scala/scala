@@ -13,7 +13,7 @@
 package scala.collection
 package mutable
 
-import scala.annotation.tailrec
+import scala.annotation.{nolink, tailrec}
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
 import scala.util.hashing.MurmurHash3
@@ -527,8 +527,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
     this
   }
 
-  // TODO: rename to `mapValuesInPlace` and override the base version (not binary compatible)
-  private[mutable] def mapValuesInPlaceImpl(f: (K, V) => V): this.type = {
+  @nolink override def mapValuesInPlace(f: (K, V) => V): this.type = {
     val len = table.length
     var i = 0
     while (i < len) {

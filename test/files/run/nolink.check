@@ -1,0 +1,25 @@
+nolink.scala:25: warning: method f is annotated @nolink but the current method is not. This can lead to a binary incompatibilty.
+  override def f: Int = super.f + 22
+                              ^
+nolink.scala:27: warning: method g is annotated @nolink but the current method is not. This can lead to a binary incompatibilty.
+  override def g(i: Int): Int = super.g(i + 22) + 33
+                                      ^
+nolink.scala:31: warning: method f is annotated @nolink but the current method is not. This can lead to a binary incompatibilty.
+  override def f: String = super.f.trim()
+                                 ^
+nolink.scala:33: warning: method g is annotated @nolink but the current method is not. This can lead to a binary incompatibilty.
+  override def g(s: String): Int = super.g(s.trim) + 33
+                                         ^
+22
+22
+hai
+3
+44
+77
+hai
+36
+44
+77
+hai
+36
+T1
