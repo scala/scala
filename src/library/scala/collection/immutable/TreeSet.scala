@@ -284,7 +284,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
       object sub extends AbstractFunction1[A, Unit] {
         var currentTree = tree
         override def apply(k: A): Unit = {
-          currentTree = RB.delete(tree, k)
+          currentTree = RB.delete(currentTree, k)
         }
       }
       xs.foreach(sub)

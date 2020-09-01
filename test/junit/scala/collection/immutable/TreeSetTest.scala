@@ -254,4 +254,38 @@ class TreeSetTest extends AllocationTest{
     assertEquals("TreeSet(1, 10, 100, 11, 12, 13, 14, 15, 16, 17, 18, 19, 2, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 3, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 4, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 5, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 6, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 7, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 8, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 9, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99)", s.toString)
     assertEquals("BlackTree(43, (), BlackTree(25, (), BlackTree(16, (), BlackTree(12, (), BlackTree(10, (), BlackTree(1, (), null, null), BlackTree(11, (), RedTree(100, (), null, null), null)), BlackTree(14, (), BlackTree(13, (), null, null), BlackTree(15, (), null, null))), BlackTree(21, (), BlackTree(2, (), RedTree(18, (), BlackTree(17, (), null, null), BlackTree(19, (), null, null)), BlackTree(20, (), null, null)), BlackTree(23, (), BlackTree(22, (), null, null), BlackTree(24, (), null, null)))), BlackTree(32, (), BlackTree(29, (), BlackTree(27, (), BlackTree(26, (), null, null), BlackTree(28, (), null, null)), BlackTree(30, (), BlackTree(3, (), null, null), BlackTree(31, (), null, null))), BlackTree(4, (), RedTree(36, (), BlackTree(34, (), BlackTree(33, (), null, null), BlackTree(35, (), null, null)), BlackTree(38, (), BlackTree(37, (), null, null), BlackTree(39, (), null, null))), BlackTree(41, (), BlackTree(40, (), null, null), BlackTree(42, (), null, null))))), BlackTree(58, (), BlackTree(50, (), BlackTree(47, (), BlackTree(45, (), BlackTree(44, (), null, null), BlackTree(46, (), null, null)), BlackTree(49, (), BlackTree(48, (), null, null), BlackTree(5, (), null, null))), BlackTree(54, (), BlackTree(52, (), BlackTree(51, (), null, null), BlackTree(53, (), null, null)), BlackTree(56, (), BlackTree(55, (), null, null), BlackTree(57, (), null, null)))), RedTree(72, (), BlackTree(65, (), BlackTree(61, (), BlackTree(6, (), BlackTree(59, (), null, null), BlackTree(60, (), null, null)), BlackTree(63, (), BlackTree(62, (), null, null), BlackTree(64, (), null, null))), BlackTree(69, (), BlackTree(67, (), BlackTree(66, (), null, null), BlackTree(68, (), null, null)), BlackTree(70, (), BlackTree(7, (), null, null), BlackTree(71, (), null, null)))), BlackTree(81, (), BlackTree(76, (), BlackTree(74, (), BlackTree(73, (), null, null), BlackTree(75, (), null, null)), BlackTree(8, (), RedTree(78, (), BlackTree(77, (), null, null), BlackTree(79, (), null, null)), BlackTree(80, (), null, null))), RedTree(89, (), BlackTree(85, (), BlackTree(83, (), BlackTree(82, (), null, null), BlackTree(84, (), null, null)), BlackTree(87, (), BlackTree(86, (), null, null), BlackTree(88, (), null, null))), BlackTree(92, (), BlackTree(90, (), BlackTree(9, (), null, null), BlackTree(91, (), null, null)), RedTree(96, (), BlackTree(94, (), BlackTree(93, (), null, null), BlackTree(95, (), null, null)), BlackTree(98, (), BlackTree(97, (), null, null), BlackTree(99, (), null, null)))))))))", s.tree.toString)
   }
+
+  @Test def diff(): Unit = {
+    val src        = TreeSet(1, 2, 4, 5)
+    val removeList = List(1, 2, 7)
+    val removeVec  = Vector(1, 2, 7)
+    val removeISS  = TreeSet(1, 2, 7)
+    val removeMSS  = scala.collection.mutable.TreeSet(1, 2, 7)
+    val removeIBS  = BitSet(1, 2, 7)
+    val removeMBS  = scala.collection.mutable.BitSet(1, 2, 7)
+
+    val expected = SortedSet(4, 5)
+    for (set <- List(removeISS, removeMSS, removeIBS, removeMBS)) {
+      assertEquals(expected, src diff set)
+      assertEquals(expected, src &~ set)
+      assertEquals(expected, src filterNot set)
+    }
+
+    for (set <- List(removeList, removeVec, removeVec.iterator, removeISS, removeMSS, removeIBS, removeMBS)) {
+      assertEquals(expected, src -- set)
+    }
+  }
+  @Test def intersect(): Unit = {
+    val src        = TreeSet(1, 2, 4, 5)
+    val keepISS  = TreeSet(1, 2, 7)
+    val keepMSS  = scala.collection.mutable.TreeSet(1, 2, 7)
+    val keepIBS  = BitSet(1, 2, 7)
+    val keepMBS  = scala.collection.mutable.BitSet(1, 2, 7)
+
+    val expected = SortedSet(1, 2)
+    for (set <- List(keepISS, keepMSS, keepIBS, keepMBS)) {
+      assertEquals(expected, src intersect set)
+      assertEquals(expected, src filter set)
+    }
+  }
 }

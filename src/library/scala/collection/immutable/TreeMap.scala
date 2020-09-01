@@ -324,7 +324,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       object sub extends AbstractFunction1[A, Unit] {
         var currentTree = tree0
         override def apply(k: A): Unit = {
-          currentTree=RB.delete(currentTree, k)
+          currentTree = RB.delete(currentTree, k)
         }
       }
       xs.foreach(sub)
