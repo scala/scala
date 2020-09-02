@@ -451,6 +451,11 @@ val mimaFilterSettings = Seq {
     // this is safe because the default cannot be used; instead the single-param overload in
     // `IterableOnceOps` is chosen (https://github.com/scala/scala/pull/9232#discussion_r501554458)
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ArraySeq.copyToArray$default$2"),
+
+    // Fix for scala/bug#12009
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.MutationTracker"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.MutationTracker$"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.MutationTracker$CheckedIterator"),
   ),
 }
 
