@@ -145,14 +145,14 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
               .changeOwner(origMeth, extensionMeth)
             new SubstututeRecursion(origMeth, extensionMeth, unit).transform(tree)
           }
-          val castBody =
-            if (extensionBody.tpe <:< extensionMono.finalResultType)
-              extensionBody
-            else
-              gen.mkCastPreservingAnnotations(extensionBody, extensionMono.finalResultType) // scala/bug#7818 e.g. mismatched existential skolems
+
+          val resultType = extensionMono.finalResultType
+          val castBody = // scala/bug#7818 e.g. mismatched existential skolems
+            if (extensionBody.tpe <:< resultType) extensionBody
+            else gen.mkCastPreservingAnnotations(extensionBody, resultType)
 
           // Record the extension method. Later, in `Extender#transformStats`, these will be added to the companion object.
-          extensionDefs(companion) += DefDef(extensionMeth, castBody)
+          extensionDefs(companion) += newDefDef(extensionMeth, castBody)(tpt = TypeTree(resultType))
 
           // These three lines are assembling Foo.bar$extension[T1, T2, ...]($this)
           // which leaves the actual argument application for extensionCall.
