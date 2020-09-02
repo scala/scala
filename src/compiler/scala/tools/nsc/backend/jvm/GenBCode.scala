@@ -102,11 +102,12 @@ abstract class GenBCode extends SubComponent {
       }
     }
 
-    private def close(): Unit = {
-      postProcessor.classfileWriter.close()
-      generatedClassHandler.close()
-      bTypes.BTypeExporter.close()
-    }
+    private def close(): Unit =
+      List[AutoCloseable](
+        postProcessor.classfileWriter,
+        generatedClassHandler,
+        bTypes.BTypeExporter,
+      ).filter(_ ne null).foreach(_.close())
   }
 }
 

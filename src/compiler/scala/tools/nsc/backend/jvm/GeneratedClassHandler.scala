@@ -30,7 +30,7 @@ import scala.util.control.NonFatal
  * Interface to handle post-processing and classfile writing (see [[PostProcessor]]) of generated
  * classes, potentially in parallel.
  */
-private[jvm] sealed trait GeneratedClassHandler {
+private[jvm] sealed trait GeneratedClassHandler extends AutoCloseable {
   val postProcessor: PostProcessor
 
   /**

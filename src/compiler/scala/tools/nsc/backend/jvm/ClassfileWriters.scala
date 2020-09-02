@@ -43,7 +43,7 @@ abstract class ClassfileWriters {
    *
    * Operations are threadsafe.
    */
-  sealed trait ClassfileWriter extends OutputFileWriter {
+  sealed trait ClassfileWriter extends OutputFileWriter with AutoCloseable {
     /**
      * Write a classfile
      */
