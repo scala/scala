@@ -3109,7 +3109,14 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
           // (based on where the function's parameter is applied to `meth`)
           val formalsFromApply =
             vparams.map { vd =>
-              if (!vd.tpt.isEmpty) Right(vd.tpt.tpe)
+              if (!vd.tpt.isEmpty) {
+                if (!vd.tpt.isTyped) {
+                  val vd1 = typedValDef(vd)
+                  if (vd1.isErroneous) Left(-1)
+                  else Right(vd1.tpt.tpe)
+                }
+                else Right(vd.tpt.tpe)
+              }
               else Left(args.indexWhere {
                 case Ident(name) => name == vd.name
                 case _           => false // TODO: this does not catch eta-expansion of an overloaded method that involves numeric widening scala/bug#9738 (and maybe similar patterns?)
