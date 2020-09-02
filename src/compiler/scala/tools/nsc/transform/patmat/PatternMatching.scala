@@ -191,11 +191,14 @@ trait Interface extends ast.TreeDSL {
 
     def reportUnreachable(pos: Position) = typer.context.warning(pos, "unreachable code", WarningCategory.OtherMatchAnalysis)
     def reportMissingCases(pos: Position, counterExamples: List[String]) = {
-      val ceString =
-        if (counterExamples.tail.isEmpty) "input: " + counterExamples.head
-        else "inputs: " + counterExamples.mkString(", ")
+      val ceString = counterExamples match {
+        case Nil        => "" // never occurs, but not carried in the type
+        case "_" :: Nil => ""
+        case ex :: Nil  => s"\nIt would fail on the following input: $ex"
+        case exs        => s"\nIt would fail on the following inputs: ${exs.mkString(", ")}"
+      }
 
-      typer.context.warning(pos, "match may not be exhaustive.\nIt would fail on the following "+ ceString, WarningCategory.OtherMatchAnalysis)
+      typer.context.warning(pos, s"match may not be exhaustive.$ceString", WarningCategory.OtherMatchAnalysis)
     }
   }
 
