@@ -111,18 +111,6 @@ buildXML() {
   fi
 }
 
-buildPartest() {
-  if [ "$PARTEST_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scala-lang.modules"  "scala-partest" $PARTEST_VER )
-  then echo "Found scala-partest $PARTEST_VER; not building."
-  else
-    update scala scala-partest "$PARTEST_REF" && gfxd
-    doc="$(docTask $1)"
-    # disable -Xfatal-warnings until https://github.com/scala/scala-partest/pull/101 is released
-    sbtBuild 'set version :="'$PARTEST_VER'"' 'set VersionKeys.scalaXmlVersion := "'$XML_VER'"' $clean "$doc" 'set scalacOptions := scalacOptions.value.filterNot(_.contains("fatal-warn"))' test "${buildTasks[@]}"
-    PARTEST_BUILT="yes"
-  fi
-}
-
 # should only be called with publishTasks publishing to artifactory
 buildScalaCheck(){
   if [ "$SCALACHECK_BUILT" != "yes" ] && [ "$forceBuildModules" != "yes" ] && ( sbtResolve "org.scalacheck"  "scalacheck" $SCALACHECK_VER )
@@ -162,7 +150,6 @@ buildModules() {
 
   buildXML $1
   # buildScalaCheck $1
-  buildPartest $1
 
   constructUpdatedModuleVersions $1
 
@@ -232,14 +219,11 @@ determineScalaVersion() {
 # determineScalaVersion must have been called (versions.properties is parsed to env vars)
 deriveModuleVersions() {
          XML_VER=${XML_VER-$scala_xml_version_number}
-     PARTEST_VER=${PARTEST_VER-$partest_version_number}
   SCALACHECK_VER=${SCALACHECK_VER-$scalacheck_version_number}
 
          XML_REF="v$XML_VER"
-     PARTEST_REF="v$PARTEST_VER"
   SCALACHECK_REF="$SCALACHECK_VER" # no `v` in their tags
 
-  echo "PARTEST          = $PARTEST_VER at $PARTEST_REF"
   # echo "SCALACHECK       = $SCALACHECK_VER at $SCALACHECK_REF"
   echo "XML              = $XML_VER at $XML_REF"
 
@@ -285,7 +269,6 @@ constructUpdatedModuleVersions() {
   # force the new module versions for building the core. these may be different from the values in versions.properties
   # if the variables (XML_VER) were provided. in the common case, the values are the same as in versions.properties.
   updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscala-xml.version.number=$XML_VER")
-  updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dpartest.version.number=$PARTEST_VER")
   # updatedModuleVersions=("${updatedModuleVersions[@]}" "-Dscalacheck.version.number=$SCALACHECK_VER")
 
   # allow overriding the jline version using a jenkins build parameter
