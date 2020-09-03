@@ -17,7 +17,7 @@ import java.util.Optional
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 // Left for compatibility
 import Compat._
-import scala.reflect.io.PlainFile
+import scala.reflect.io.AbstractFile
 
 private object DelegatingReporter {
   def apply(settings: scala.tools.nsc.Settings, delegate: xsbti.Reporter): DelegatingReporter =
@@ -92,7 +92,7 @@ private object DelegatingReporter {
       val src = pos.source
       val sourcePath = src.file match {
         case AbstractZincFile(virtualFile) => virtualFile.id
-        case f: PlainFile                  => f.file.toString
+        case af: AbstractFile              => af.path
       }
       val sourceFile = new File(src.file.path)
       val line = pos.line
