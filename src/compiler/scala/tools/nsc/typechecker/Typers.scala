@@ -3998,35 +3998,20 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       // begin typedAnnotation
-      val treeInfo.Applied(fun0, targs, argss) = ann
+      val treeInfo.Applied(fun0, _, argss) = ann
       if (fun0.isErroneous) return finish(ErroneousAnnotation)
-      val typedFun0 = typed(fun0, mode.forFunMode)
-      val typedFunPart =
-        // If there are dummy type arguments in typeFun part, it suggests we
-        // must type the actual constructor call, not only the select. The value
-        // arguments are how the type arguments will be inferred.
-        if (targs.isEmpty && typedFun0.exists(t => t.tpe != null && isDummyAppliedType(t.tpe)))
-          logResult(s"Retyped $typedFun0 to find type args")(typed(argss.foldLeft(fun0)(Apply(_, _))))
-        else
-          typedFun0
+      val typedFun = typed(fun0, mode.forFunMode)
+      if (typedFun.isErroneous) return finish(ErroneousAnnotation)
 
-      if (typedFunPart.isErroneous) return finish(ErroneousAnnotation)
-
-      val treeInfo.Applied(typedFun @ Select(New(annTpt), _), _, _) = typedFunPart
+      val Select(New(annTpt), _) = typedFun
       val annType = annTpt.tpe // for a polymorphic annotation class, this type will have unbound type params (see context.undetparams)
       val annTypeSym = annType.typeSymbol
-      val isJava = annType != null && annTypeSym.isJavaDefined
+      val isJava = annTypeSym.isJavaDefined
 
-      typedFun0 match {
-        case Select(New(a), _) =>
-
-          val typedFun0ExtendsAnn = a.tpe.dealiasWiden.typeSymbol.isJavaAnnotation || a.tpe <:< AnnotationClass.tpe
-
-          if (!typedFun0ExtendsAnn){
-            reportAnnotationError(DoesNotExtendAnnotation(typedFun0, a.tpe.typeSymbol.initialize))
-            return finish(ErroneousAnnotation)
-          }
-        case _ =>
+      val isAnnotation = annTypeSym.isJavaAnnotation || annType <:< AnnotationClass.tpe
+      if (!isAnnotation) {
+        reportAnnotationError(DoesNotExtendAnnotation(typedFun, annTypeSym))
+        return finish(ErroneousAnnotation)
       }
 
       @inline def constantly = {
@@ -4035,7 +4020,8 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         if (argss.lengthIs > 1) {
           reportAnnotationError(MultipleArgumentListForAnnotationError(ann))
         } else {
-          // TODO: annType may have undetermined type params -- can we infer them?
+          // TODO: annType may have undetermined type params for Scala ConstantAnnotations, see scala/bug#11724.
+          // Can we infer them, e.g., `typed(argss.foldLeft(fun0)(Apply(_, _)))`?
           val annScopeJava =
             if (isJava) annType.decls.filter(sym => sym.isMethod && !sym.isConstructor && sym.isJavaDefined)
             else EmptyScope // annScopeJava is only used if isJava
@@ -4086,7 +4072,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
         val typedAnn: Tree = {
           // local dummy fixes scala/bug#5544
           val localTyper = newTyper(context.make(ann, context.owner.newLocalDummy(ann.pos)))
-          localTyper.typed(ann, mode, deriveTypeWithWildcards(context.undetparams)(annType))
+          localTyper.typed(ann, mode)
         }
         @tailrec
         def annInfo(t: Tree): AnnotationInfo = t match {
@@ -4134,9 +4120,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
       finish(
-        if (typedFun.isErroneous || annType == null)
-          ErroneousAnnotation
-        else if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass))
+        if (isJava || annTypeSym.isNonBottomSubClass(ConstantAnnotationClass))
           constantly
         else
           statically
