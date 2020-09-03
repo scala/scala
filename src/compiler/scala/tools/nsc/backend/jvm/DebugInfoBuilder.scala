@@ -15,6 +15,7 @@ package backend
 package jvm
 
 import scala.collection.mutable
+import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
 
 /**
  * Constructs and writes the JSR-45 debug information for the generated class files.
@@ -215,7 +216,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
   sealed trait DebugInfoWriter {
     val sourceFileName: String
 
-    val scalaStratum: ScalaStratum
+    def getStratum(id: String): JSR45Stratum
 
     /**
      * Add a mapping for an inline line from an external source to this class source.
@@ -258,8 +259,6 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                         new ScalaStratum(cls.position.source.lineCount),
                                         new ScalaDebugStratum)
 
-      override val scalaStratum: ScalaStratum = debugInfo.scalaStratum
-
       debugInfo.scalaStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
       debugInfo.scalaDebugStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
 
@@ -269,6 +268,14 @@ abstract class DebugInfoBuilder extends PerRunInit {
           debugInfo.scalaStratum.addFileEntry(entry) + 1
         else
           foundFileEntryId + 1
+      }
+
+      override def getStratum(id: String): JSR45Stratum = {
+        id.toLowerCase match {
+          case "scala" => debugInfo.scalaStratum
+          case "scaladebug" => debugInfo.scalaDebugStratum
+          case _ => null
+        }
       }
 
       override def addInlineLineInfo(callsiteLine: Int,
@@ -292,7 +299,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
 
       override def getRecursiveInlineInfo(calleeInternalName: String, line: Int): Option[(FileSectionEntry, Int)] = {
         debugInfoWriters.get.get(calleeInternalName).flatMap { writer =>
-          writer.scalaStratum.findReverseLineMapping(line).flatMap {
+          writer.getStratum("scala").findReverseLineMapping(line).flatMap {
             case (lineMapping, fileEntry) if lineMapping.from != lineMapping.toStart =>
               fileEntry.absoluteFileName.flatMap(getRecursiveInlineInfo(_, lineMapping.from))
             case (lineMapping, fileEntry) =>
@@ -317,7 +324,7 @@ abstract class DebugInfoBuilder extends PerRunInit {
     class NoOpDebugInfoWriter extends DebugInfoWriter {
       override val sourceFileName: String = null
 
-      override val scalaStratum: ScalaStratum = null
+      override def getStratum(id: String): JSR45Stratum = null
 
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
