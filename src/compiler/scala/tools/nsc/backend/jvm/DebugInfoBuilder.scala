@@ -215,6 +215,8 @@ abstract class DebugInfoBuilder extends PerRunInit {
   sealed trait DebugInfoWriter {
     val sourceFileName: String
 
+    val scalaStratum: ScalaStratum
+
     /**
      * Add a mapping for an inline line from an external source to this class source.
      *
@@ -225,6 +227,12 @@ abstract class DebugInfoBuilder extends PerRunInit {
      */
     def addInlineLineInfo(callsiteLine: Int, inlineLine: Int, calleeFileName: String, calleeInternalName: String): Int
 
+    /**
+     *
+     * @param line
+     * @return
+     */
+    def getRecursiveInlineInfo(calleeInternalName: String, line: Int): Option[(FileSectionEntry, Int)]
 
     /**
      * Separators are used so that different inline requests which overlap in the line numbers are
@@ -250,6 +258,8 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                         new ScalaStratum(cls.position.source.lineCount),
                                         new ScalaDebugStratum)
 
+      override val scalaStratum: ScalaStratum = debugInfo.scalaStratum
+
       debugInfo.scalaStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
       debugInfo.scalaDebugStratum.addFileEntry(FileSectionEntry(sourceFileName, Some(cls.classNode.name)))
 
@@ -265,14 +275,30 @@ abstract class DebugInfoBuilder extends PerRunInit {
                                      inlineLine: Int,
                                      calleeFileName: String,
                                      calleeInternalName: String): Int = {
-        val calleeFileId = ensureFileEntry(FileSectionEntry(calleeFileName, Some(calleeInternalName)))
-        val inlineLinePos = debugInfo.scalaStratum.registerLineForFile(inlineLine, calleeFileId)
+        val (fileEntry, line) = getRecursiveInlineInfo(calleeInternalName, inlineLine) match {
+          case Some(info) => info
+          case None => (FileSectionEntry(calleeFileName, Some(calleeInternalName)), inlineLine)
+        }
+
+        val calleeFileId = ensureFileEntry(fileEntry)
+        val inlineLinePos = debugInfo.scalaStratum.registerLineForFile(line, calleeFileId)
 
         debugInfo.scalaDebugStratum.addRawLineMapping(RawLineMapping(from = callsiteLine,
                                                                      toStart = inlineLinePos,
                                                                      toEnd = inlineLinePos,
                                                                      sourceFileId = Some(1)))
         inlineLinePos
+      }
+
+      override def getRecursiveInlineInfo(calleeInternalName: String, line: Int): Option[(FileSectionEntry, Int)] = {
+        debugInfoWriters.get.get(calleeInternalName).flatMap { writer =>
+          writer.scalaStratum.findReverseLineMapping(line).flatMap {
+            case (lineMapping, fileEntry) if lineMapping.from != lineMapping.toStart =>
+              fileEntry.absoluteFileName.flatMap(getRecursiveInlineInfo(_, lineMapping.from))
+            case (lineMapping, fileEntry) =>
+              Some((fileEntry, lineMapping.from))
+          }
+        }
       }
 
       override def addSeparator(): Unit = {
@@ -291,10 +317,14 @@ abstract class DebugInfoBuilder extends PerRunInit {
     class NoOpDebugInfoWriter extends DebugInfoWriter {
       override val sourceFileName: String = null
 
+      override val scalaStratum: ScalaStratum = null
+
       override def addInlineLineInfo(callsiteLine: Int,
                                      inlineLine: Int,
                                      calleeFileName: String,
                                      calleeInternalName: String): Int = -1 // noop
+
+      override def getRecursiveInlineInfo(calleeInternalName: String, line: Int): Option[(FileSectionEntry, Int)] = None // noop
 
       override def addSeparator(): Unit = () // noop
 
@@ -326,6 +356,15 @@ object DebugInfoBuilder {
 
     def addRawLineMapping(rawLineMapping: RawLineMapping): Unit = {
       lineMapping.append(rawLineMapping)
+    }
+
+    def findReverseLineMapping(line: Int): Option[(RawLineMapping, FileSectionEntry)] = {
+      val maybeMapping = lineMapping.find(_.toStart == line)
+      maybeMapping.flatMap { mapping =>
+        mapping.sourceFileId.map { fileId =>
+          (mapping, fileSection(fileId - 1))
+        }
+      }
     }
 
     // compute the line section from the line mappings
