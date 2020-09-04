@@ -14,6 +14,7 @@ package scala.tools.nsc
 
 import scala.tools.nsc.doc.DocFactory
 import scala.tools.nsc.reporters.ConsoleReporter
+import scala.tools.nsc.settings.DefaultPathFactory
 import scala.reflect.internal.Reporter
 import scala.reflect.internal.util.{ FakePos, NoPosition, Position }
 
@@ -26,7 +27,8 @@ class ScalaDoc {
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
     val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
-                                       msg => reporter.printMessage(msg))
+                                       msg => reporter.printMessage(msg),
+                                       DefaultPathFactory)
     reporter = new ScalaDocReporter(docSettings)
     val command = new ScalaDoc.Command(args.toList, docSettings)
     def hasFiles = command.files.nonEmpty || docSettings.uncompilableFiles.nonEmpty
