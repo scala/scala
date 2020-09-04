@@ -287,7 +287,7 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
     private var currentMutableTree: RB.Tree[A,B1] = tree0
     def finalTree = beforePublish(currentMutableTree)
     override def apply(kv: (A, B1)): Unit = {
-      currentMutableTree= mutableUpd(currentMutableTree, kv._1, kv._2)
+      currentMutableTree = mutableUpd(currentMutableTree, kv._1, kv._2)
     }
     @tailrec def addAll(ls: LinearSeq[(A, B1)]): Unit = {
       if (!ls.isEmpty) {

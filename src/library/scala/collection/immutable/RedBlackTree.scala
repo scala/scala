@@ -584,14 +584,14 @@ private[collection] object NewRedBlackTree {
       else if (mutable) {
         _key = newKey
         this
-      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, _count)
+      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, initialCount)
     }
     def mutableWithV[B1 >: B](newValue: B1): Tree[A, B1] = {
       if (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef]) this
       else if (mutable) {
         _value = newValue.asInstanceOf[AnyRef]
         this
-      } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, _count)
+      } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, initialCount)
     }
     //Note - in 2.13 remove his method
     //due to the handling of keys in 2.13 we never replace a key
@@ -600,9 +600,9 @@ private[collection] object NewRedBlackTree {
         (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef])) this
       else if (mutable) {
         _key = newKey
-        _value = value.asInstanceOf[AnyRef]
+        _value = newValue.asInstanceOf[AnyRef]
         this
-      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, _count)
+      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, initialCount)
     }
     def mutableWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
       if (_left eq newLeft) this
