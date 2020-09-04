@@ -208,9 +208,20 @@ class TreeMapTest extends AllocationTest {
     assertEquals(r1, r2)
   }
 
-  @Test def caseIndependent: Unit = {
+  @Test def caseIndependent1: Unit = {
     val m = scala.collection.immutable.TreeMap[String, String]()(_ compareToIgnoreCase _)
     val r = m ++ Seq("a" -> "1", "A" -> "2")
+    // Note - in 2.13 this should be
+    // assertEquals(Map("a" -> "2"), r)
+    // as keys are retained
+    assertEquals(Map("A" -> "2"), r)
+
+  }
+  @Test def caseIndependent2: Unit = {
+    val m = scala.collection.immutable.TreeMap[String, String]()(_ compareToIgnoreCase _)
+    val r = Seq("a" -> "1", "A" -> "2").foldLeft (m) {
+      case (acc, t) => acc + t
+    }
     // Note - in 2.13 this should be
     // assertEquals(Map("a" -> "2"), r)
     // as keys are retained
