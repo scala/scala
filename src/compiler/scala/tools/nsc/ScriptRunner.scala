@@ -76,7 +76,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
   /** Do compile the given script file, returning true for success. */
   protected def doCompile(scriptFile: String): Boolean
 
-  protected final def mainClass = ScriptRunner.scriptMain(settings)
+  protected final def mainClass: String = settings.script.value
 
   /** Compile a script and then run the specified closure with
    *  a classpath for the compiled script.
@@ -192,12 +192,6 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
 
 object ScriptRunner {
   import scala.reflect.internal.util.ScalaClassLoader
-
-  /** Default name to use for the wrapped script */
-  val defaultScriptMain = "Main"
-
-  /** Pick a main object name from the specified settings */
-  def scriptMain(settings: Settings): String = settings.script.valueSetByUser.getOrElse(defaultScriptMain)
 
   def apply(settings: GenericRunnerSettings): ScriptRunner =
     settings.Yscriptrunner.value match {

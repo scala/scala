@@ -388,6 +388,12 @@ self =>
      */
     def scriptBody(): Tree = {
 
+      // remain backwards-compatible if -Xscript was set but not reasonably
+      settings.script.value match {
+        case null | "" => settings.script.value = "Main"
+        case _ =>
+      }
+
       val stmts = parseStats()
 
       /* If there is only a single object template in the file and it has a
@@ -411,7 +417,7 @@ self =>
           case Template(parents, _, _) => parents.exists(cond(_) { case Ident(tpnme.App) => true })
           case _ => false
         }
-        /* We allow only one main module. */
+        // We allow only one main module.
         var seenModule = false
         var disallowed = EmptyTree: Tree
         val newStmts = stmts.map {
@@ -436,7 +442,7 @@ self =>
         }
       }
 
-      // usually `-Xscript` is why we're here, so expect to search for main
+      // pick up object specified by `-Xscript Main`
       def mainModule: Tree = settings.script.valueSetByUser.map(name => searchForMain(TermName(name))).getOrElse(EmptyTree)
 
       /*  Here we are building an AST representing the following source fiction,
