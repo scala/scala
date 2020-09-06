@@ -208,6 +208,8 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashMapBuilder"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#Merger.retainIdentical"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashTrieMap.size0"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.kv"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashMap#HashMap1.kv_="),
 
     ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.collection.immutable.HashSet#HashSetCollision1.union0"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#HashSetCollision1.union0"),

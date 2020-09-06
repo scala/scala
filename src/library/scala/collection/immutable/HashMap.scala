@@ -342,7 +342,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
   }
 
   @deprecatedInheritance("This class will be made final in a future release.", "2.12.2")
-  class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[collection] var kv: (A,B @uV)) extends HashMap[A,B] {
+  class HashMap1[A,+B](private[collection] val key: A, private[collection] val hash: Int, private[collection] val value: (B @uV), private[this] var kvOrNull: (A,B @uV)) extends HashMap[A,B] {
     override def size = 1
 
     private[collection] def getKey = key
@@ -394,8 +394,8 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     override def foreach[U](f: ((A, B)) => U): Unit = f(ensurePair)
     override private[immutable] def foreachEntry[U](f: (A, B) => U): Unit = f(key, value)
     // this method may be called multiple times in a multi-threaded environment, but that's ok
-    private[HashMap] def ensurePair: (A, B) = if (kv ne null) kv else {
-      kv = (key, value); kv
+    private[HashMap] def ensurePair: (A, B) = if (kvOrNull ne null) kvOrNull else {
+      kvOrNull = (key, value); kvOrNull
     }
 
     protected[HashMap] override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = {
@@ -405,10 +405,10 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           else if (this.hash == hm1.hash && this.key == hm1.key)
             if (merger eq HashMap.defaultMerger) this
             else if (merger eq HashMap.defaultMerger.invert) hm1
-            else this.updated0(hm1.key, hm1.hash, level, hm1.value, hm1.kv, merger)
-          else this.updated0(hm1.key, hm1.hash, level, hm1.value, hm1.kv, merger)
+            else this.updated0(hm1.key, hm1.hash, level, hm1.value, hm1.ensurePair, merger)
+          else this.updated0(hm1.key, hm1.hash, level, hm1.value, hm1.ensurePair, merger)
         case _ =>
-          that.updated0(key, hash, level, value, kv, merger.invert)
+          that.updated0(key, hash, level, value, ensurePair, merger.invert)
       }
     }
 
@@ -504,7 +504,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
           hm.merge0(this, level, merger.invert)
         case h1: HashMap1[A, B1] =>
           if (h1.hash != hash) makeHashTrieMap(hash, this, h1.hash, h1, level, size + 1)
-          else updated0(h1.key, h1.hash, level, h1.value, h1.kv, merger)
+          else updated0(h1.key, h1.hash, level, h1.value, h1.ensurePair, merger)
         case c: HashMapCollision1[A, B1] =>
           if (c.hash != hash) makeHashTrieMap(hash, this, c.hash, c, level, c.size + size)
           else if (merger.retainIdentical && (c eq this)) this
@@ -760,7 +760,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
 
     protected[HashMap] override def merge0[B1 >: B](that: HashMap[A, B1], level: Int, merger: Merger[A, B1]): HashMap[A, B1] = that match {
       case hm: HashMap1[A, B1] =>
-        this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.kv, merger)
+        this.updated0(hm.key, hm.hash, level, hm.value.asInstanceOf[B1], hm.ensurePair, merger)
       case that: HashTrieMap[A, B1] =>
         def mergeMaybeSubset(larger: HashTrieMap[A, B1], smaller: HashTrieMap[A, B1], merger: Merger[A, B1]):HashTrieMap[A, B1] = {
           var resultElems: Array[HashMap[A, B1]] = null
