@@ -195,7 +195,7 @@ trait SyntheticMethods extends ast.TreeDSL {
             if (isPrimitiveValueType(resultType))
               prims += fn(thisAcc, op, otherAcc)
             else
-              refs  += fn(thisAcc, op, otherAcc)   //gen.mkCast(otherAcc, AnyTpe)
+              refs  += fn(thisAcc, op, gen.mkCast(otherAcc, AnyTpe))
           }
         }
         prims.prependToList(refs.toList)      // (prims ++ refs).toList
