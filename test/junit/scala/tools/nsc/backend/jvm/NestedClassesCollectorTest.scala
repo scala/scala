@@ -20,7 +20,7 @@ class NestedClassesCollectorTest {
   val c = new Collector
   def inners: List[String] = {
     val res = c.innerClasses.toList.sorted
-    c.innerClasses.clear()
+    c.clear()
     res
   }
 
