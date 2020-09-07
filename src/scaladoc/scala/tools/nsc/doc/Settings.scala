@@ -22,6 +22,8 @@ import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
   * @param error A function that prints a string to the appropriate error stream
   * @param printMsg A function that prints the string, without any extra boilerplate of error */
 class Settings(error: String => Unit, val printMsg: String => Unit = println(_), pathFactory: PathFactory = DefaultPathFactory) extends scala.tools.nsc.Settings(error, pathFactory) {
+  // https://github.com/tkawachi/sbt-doctest depends on this constructor being available
+  def this(error: String => Unit, printMsg: String => Unit) = this(error, printMsg, DefaultPathFactory)
 
   // TODO 2.13 Remove
   private def removalIn213 = "This flag is scheduled for removal in 2.13. If you have a case where you need this flag then please report a bug."
