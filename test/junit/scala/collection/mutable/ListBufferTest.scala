@@ -2,10 +2,9 @@ package scala.collection.mutable
 
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 
-@RunWith(classOf[JUnit4])
+import scala.annotation.nowarn
+
 class ListBufferTest {
 
   @Test
@@ -152,6 +151,7 @@ class ListBufferTest {
     ListBuffer(0).remove(idx = 0, count = 100)
   }
 
+  @nowarn("cat=deprecation")
   @Test
   def testTrimStart: Unit = {
     val b1 = ListBuffer()
@@ -171,6 +171,7 @@ class ListBufferTest {
     assertEquals(ListBuffer.range(10, 100), b4)
   }
 
+  @nowarn("cat=deprecation")
   @Test
   def testTrimEnd: Unit = {
     val b1 = ListBuffer()

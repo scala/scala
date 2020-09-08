@@ -1,15 +1,14 @@
 package scala.collection.mutable
 
 import scala.collection.immutable.List
-
 import org.junit.Test
 import org.junit.Assert._
 
+import scala.annotation.nowarn
 import scala.collection.SeqFactory
 
 class ArrayDequeTest {
 
-  @deprecated("Tests deprecated API", since="2.13")
   @Test
   def apply() = {
     val buffer = ArrayDeque.empty[Int]
@@ -22,10 +21,10 @@ class ArrayDequeTest {
       assertEquals(buffer.reverse, buffer2.reverse)
     }
 
-    apply(_.+=(1, 2, 3, 4, 5))
+    apply(_.+=(1, 2, 3, 4, 5)): @nowarn("cat=deprecation")
     apply(_.prepend(6).prepend(7).prepend(8))
-    apply(_.trimStart(2))
-    apply(_.trimEnd(3))
+    apply(_.dropInPlace(2))
+    apply(_.dropRightInPlace(3))
     apply(_.insert(2, -3))
     apply(_.insertAll(0, collection.Seq(9, 10, 11)))
     apply(_.insertAll(1, collection.Seq(12, 13)))

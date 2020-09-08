@@ -752,6 +752,6 @@ final class TestTranscript {
   private[this] val buf = ListBuffer[String]()
 
   def add(action: String): this.type = { buf += action ; this }
-  def append(text: String): Unit = { val s = buf.last ; buf.trimEnd(1) ; buf += (s + text) }
+  def append(text: String): Unit = { val s = buf.last ; buf.dropRightInPlace(1) ; buf += (s + text) }
   def toList = buf.toList
 }
