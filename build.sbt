@@ -224,6 +224,7 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.hash"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet#LeafHashSet.this"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.mutable.EfficientMapBuilder"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.elemHashCode"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.HashSet.computeHash"),
