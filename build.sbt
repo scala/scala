@@ -192,6 +192,27 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
 
+    // in  other  version, classes mixing scala.collection.IndexedSeqOps need be recompiled to wire to the new static mixin forwarder method all super calls to method foldRight(java.lang.Object,scala.Function2)java.lang.Object
+    // in  other  version, classes mixing scala.collection.IndexedSeqOps .. head()java.lang.Object
+    // in  other  version, classes mixing scala.collection.IndexedSeqOps .. headOption()scala.Option
+    // in current version, classes mixing scala.collection.MapView       .. className()java.lang.String       // i.e. backwards bincompat, the others are forwards compatibility
+    // in  other  version, classes mixing scala.collection.MapView       .. keys()scala.collection.Iterable
+    // in  other  version, classes mixing scala.collection.MapView       .. stringPrefix()java.lang.String
+    // in  other  version, classes mixing scala.collection.MapView       .. values()scala.collection.Iterable
+    // in  other  version, classes mixing scala.collection.SeqMap        .. stringPrefix()java.lang.String
+    // in  other  version, classes mixing scala.collection.SortedMap     .. equals(java.lang.Object)Boolean
+    // in  other  version, classes mixing scala.collection.SortedSet     .. equals(java.lang.Object)Boolean
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.IndexedSeqOps.foldRight"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.IndexedSeqOps.head"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.IndexedSeqOps.headOption"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.MapView.className"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.MapView.keys"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.MapView.stringPrefix"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.MapView.values"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.SeqMap.stringPrefix"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.SortedMap.equals"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.SortedSet.equals"),
+
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree.*"),
     ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.RedBlackTree$EqualsIterator"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#TreeIterator.findLeftMostOrPopOnEmpty"),
