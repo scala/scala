@@ -76,23 +76,20 @@ trait Reporting extends internal.Reporting { self: ast.Positions with Compilatio
     def warnUnusedSuppressions(): Unit = {
       // if we stop before typer completes (errors in parser, Ystop), report all suspended messages
       suspendedMessages.foreach(issueWarning)
-      if (settings.warnUnusedNowarn && !settings.isScaladoc) { // scaladoc doesn't run all phases, so not all warnings are emitted
-        val sources = suppressions.keysIterator.toList
-        for (source <- sources; sups <- suppressions.remove(source); sup <- sups.reverse) {
-          if (!sup.used)
-            issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
-        }
-      }
+      // scaladoc doesn't run all phases, so not all warnings are emitted
+      if (settings.warnUnusedNowarn && !settings.isScaladoc)
+        for {
+          source <- suppressions.keysIterator.toList
+          sups   <- suppressions.remove(source)
+          sup    <- sups.reverse
+        } if (!sup.used) issueWarning(Message.Plain(sup.annotPos, "@nowarn annotation does not suppress any warnings", WarningCategory.UnusedNowarn, ""))
     }
 
     def reportSuspendedMessages(): Unit = {
       suppressionsComplete = true
       // sort suppressions. they are not added in any particular order because of lazy type completion
       suppressions.mapValuesInPlace((_, sups) => sups.sortBy(sup => 0 - sup.start))
-      suspendedMessages.foreach { m =>
-        if (!isSuppressed(m))
-          issueWarning(m)
-      }
+      suspendedMessages.foreach(m => if (!isSuppressed(m)) issueWarning(m))
       suspendedMessages.clear()
     }
 
