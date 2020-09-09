@@ -4,12 +4,12 @@ package t12134
 import scala.tools.nsc.{Global, Phase}
 import scala.tools.nsc.plugins.{Plugin, PluginComponent}
 
-import java.nio.file.Files.createFile
-import java.nio.file.Files.deleteIfExists
+//import java.nio.file.Files.createFile
+//import java.nio.file.Files.deleteIfExists
 import java.nio.file.Paths
-import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
-import java.nio.file.attribute.PosixFilePermission.OWNER_READ
-import java.util.EnumSet
+//import java.nio.file.attribute.PosixFilePermissions.asFileAttribute
+//import java.nio.file.attribute.PosixFilePermission.OWNER_READ
+//import java.util.EnumSet
 
 /** A test plugin.  */
 class Unplugged(val global: Global) extends Plugin {
@@ -29,11 +29,15 @@ class Unplugged(val global: Global) extends Plugin {
     class TestPhase(prev: Phase) extends StdPhase(prev) {
       override def description = TestComponent.this.description
       def apply(unit: CompilationUnit): Unit = {
-        import scala.util.Try
         global.settings.outdir.value = s"${global.settings.plugin.value.head}/${global.settings.outdir.value}"
         val path = Paths.get(global.settings.outdir.value)
-        val perms = asFileAttribute(EnumSet.of(OWNER_READ))
-        Try(createFile(path, perms))
+        val file = path.toFile()
+        //import scala.util.Try
+        //val perms = asFileAttribute(EnumSet.of(OWNER_READ))
+        //val res = Try(createFile(path, perms))
+        //assert(res.isSuccess)
+        file.delete()
+        assert(file.createNewFile() && file.setReadOnly())
       }
     }
   }
