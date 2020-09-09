@@ -119,7 +119,7 @@ function generateRepositoriesConfig(){
   jcenter-cache: $jcenterCacheUrl
   typesafe-ivy-releases: https://dl.bintray.com/typesafe/ivy-releases/, [organisation]/[module]/[revision]/[type]s/[artifact](-[classifier]).[ext], bootOnly
   sbt-plugin-releases: https://dl.bintray.com/sbt/sbt-plugin-releases/, [organisation]/[module]/(scala_[scalaVersion]/)(sbt_[sbtVersion]/)[revision]/[type]s/[artifact](-[classifier]).[ext]
-  maven-central
+  maven-central: https://repo1.maven.org/maven2
   local
 EOF
 }
