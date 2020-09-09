@@ -1,109 +1,109 @@
 [[syntax trees at end of                    patmat]] // newSource1.scala
-[7]package [7]<empty> {
-  [7]object Case3 extends [13][106]scala.AnyRef {
+[0:417]package [0:0]<empty> {
+  [0:105]object Case3 extends [13:105][106]scala.AnyRef {
     [106]def <init>(): [13]Case3.type = [106]{
       [106][106][106]Case3.super.<init>();
       [13]()
     };
-    [21]def unapply([29]z: [32]<type: [32]scala.Any>): [21]Option[Int] = [56][52][52]new [52]Some[Int]([57]-1);
-    [64]{
-      [64]case <synthetic> val x1: [64]String = [64]"";
-      [64]case5(){
-        [89]if ([89][89]x1.ne([89]null))
-          [84]{
-            [84]<synthetic> val o7: [84]Option[Int] = [84][84]Case3.unapply([84]x1);
-            [84]if ([84]o7.isEmpty.unary_!)
-              [97][97]matchEnd4([97]())
+    [17:60]def unapply([29:35]z: [32:35]<type: [32:35]scala.Any>): [21]Option[Int] = [52:60][52:56][52:56]new [52:56]Some[Int]([57:59]-1);
+    [64:66]{
+      [64:66]case <synthetic> val x1: [64]String = [64:66]"";
+      [64:66]case5(){
+        [84:93]if ([89][89]x1.ne([89]null))
+          [84:89]{
+            [84:89]<synthetic> val o7: [84]Option[Int] = [84:89][84:89]Case3.unapply([84]x1);
+            [97:99]if ([84]o7.isEmpty.unary_!)
+              [97:99][97]matchEnd4([97:99]())
             else
               [84][84]case6()
           }
         else
           [89][89]case6()
       };
-      [64]case6(){
-        [64][64]matchEnd4([64]throw [64][64][64]new [64]MatchError([64]x1))
+      [64:66]case6(){
+        [64:66][64:66]matchEnd4([64:66]throw [64:66][64:66][64:66]new [64:66]MatchError([64:66]x1))
       };
-      [64]matchEnd4(x: [NoPosition]Unit){
-        [64]x
+      [64:66]matchEnd4(x: [NoPosition]Unit){
+        [64:66]x
       }
     }
   };
-  [113]object Case4 extends [119][217]scala.AnyRef {
+  [106:216]object Case4 extends [119:216][217]scala.AnyRef {
     [217]def <init>(): [119]Case4.type = [217]{
       [217][217][217]Case4.super.<init>();
       [119]()
     };
-    [127]def unapplySeq([138]z: [141]<type: [141]scala.Any>): [127]Option[List[Int]] = [167]scala.None;
-    [175]{
-      [175]case <synthetic> val x1: [175]String = [175]"";
-      [175]case5(){
-        [200]if ([200][200]x1.ne([200]null))
-          [195]{
-            [195]<synthetic> val o7: [195]Option[List[Int]] = [195][195]Case4.unapplySeq([195]x1);
-            [195]if ([195][195]o7.isEmpty.unary_!.&&([195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0))))
-              [208][208]matchEnd4([208]())
+    [123:171]def unapplySeq([138:144]z: [141:144]<type: [141:144]scala.Any>): [127]Option[List[Int]] = [167:171]scala.None;
+    [175:177]{
+      [175:177]case <synthetic> val x1: [175]String = [175:177]"";
+      [175:177]case5(){
+        [195:204]if ([200][200]x1.ne([200]null))
+          [195:200]{
+            [195:200]<synthetic> val o7: [195]Option[List[Int]] = [195:200][195:200]Case4.unapplySeq([195]x1);
+            [208:210]if ([195][195]o7.isEmpty.unary_!.&&([195][195][195][195]o7.get.!=([195]null).&&([195][195][195][195]o7.get.lengthCompare([195]1).==([195]0))))
+              [208:210][208]matchEnd4([208:210]())
             else
               [195][195]case6()
           }
         else
           [200][200]case6()
       };
-      [175]case6(){
-        [175][175]matchEnd4([175]throw [175][175][175]new [175]MatchError([175]x1))
+      [175:177]case6(){
+        [175:177][175:177]matchEnd4([175:177]throw [175:177][175:177][175:177]new [175:177]MatchError([175:177]x1))
       };
-      [175]matchEnd4(x: [NoPosition]Unit){
-        [175]x
+      [175:177]matchEnd4(x: [NoPosition]Unit){
+        [175:177]x
       }
     }
   };
-  [224]object Case5 extends [230][313]scala.AnyRef {
+  [217:312]object Case5 extends [230:312][313]scala.AnyRef {
     [313]def <init>(): [230]Case5.type = [313]{
       [313][313][313]Case5.super.<init>();
       [230]()
     };
-    [238]def unapply([246]z: [249]<type: [249]scala.Any>): [238]Boolean = [265]true;
-    [273]{
-      [273]case <synthetic> val x1: [273]String = [273]"";
-      [273]case5(){
-        [298]if ([298][298]x1.ne([298]null))
-          [293]{
-            [293]<synthetic> val o7: [293]Option[List[Int]] = [293][293]Case4.unapplySeq([293]x1);
-            [293]if ([293][293]o7.isEmpty.unary_!.&&([293][293][293][293]o7.get.!=([293]null).&&([293][293][293][293]o7.get.lengthCompare([293]0).==([293]0))))
-              [304][304]matchEnd4([304]())
+    [234:269]def unapply([246:252]z: [249:252]<type: [249:252]scala.Any>): [238]Boolean = [265:269]true;
+    [273:275]{
+      [273:275]case <synthetic> val x1: [273]String = [273:275]"";
+      [273:275]case5(){
+        [293:300]if ([298][298]x1.ne([298]null))
+          [293:298]{
+            [293:298]<synthetic> val o7: [293]Option[List[Int]] = [293:298][293:298]Case4.unapplySeq([293]x1);
+            [304:306]if ([293][293]o7.isEmpty.unary_!.&&([293][293][293][293]o7.get.!=([293]null).&&([293][293][293][293]o7.get.lengthCompare([293]0).==([293]0))))
+              [304:306][304]matchEnd4([304:306]())
             else
               [293][293]case6()
           }
         else
           [298][298]case6()
       };
-      [273]case6(){
-        [273][273]matchEnd4([273]throw [273][273][273]new [273]MatchError([273]x1))
+      [273:275]case6(){
+        [273:275][273:275]matchEnd4([273:275]throw [273:275][273:275][273:275]new [273:275]MatchError([273:275]x1))
       };
-      [273]matchEnd4(x: [NoPosition]Unit){
-        [273]x
+      [273:275]matchEnd4(x: [NoPosition]Unit){
+        [273:275]x
       }
     }
   };
-  [320]object Case6 extends [326][417]scala.AnyRef {
+  [313:417]object Case6 extends [326:417][417]scala.AnyRef {
     [417]def <init>(): [326]Case6.type = [417]{
       [417][417][417]Case6.super.<init>();
       [326]()
     };
-    [334]def unapply([342]z: [345]<type: [345]scala.Int>): [334]Option[Int] = [369][365][365]new [365]Some[Int]([370]-1);
-    [377]{
-      [377]case <synthetic> val x1: [377]Int = [377]0;
-      [377]case5()[396]{
-        [396]<synthetic> val o7: [396]Option[Int] = [396][396]Case6.unapply([396]x1);
-        [396]if ([396]o7.isEmpty.unary_!)
-          [409][409]matchEnd4([409]())
+    [330:373]def unapply([342:348]z: [345:348]<type: [345:348]scala.Int>): [334]Option[Int] = [365:373][365:369][365:369]new [365:369]Some[Int]([370:372]-1);
+    [377:378]{
+      [377:378]case <synthetic> val x1: [377]Int = [377:378]0;
+      [377:378]case5()[396:401]{
+        [396:401]<synthetic> val o7: [396]Option[Int] = [396:401][396:401]Case6.unapply([396]x1);
+        [409:411]if ([396]o7.isEmpty.unary_!)
+          [409:411][409]matchEnd4([409:411]())
         else
           [396][396]case6()
       };
-      [377]case6(){
-        [377][377]matchEnd4([377]throw [377][377][377]new [377]MatchError([377]x1))
+      [377:378]case6(){
+        [377:378][377:378]matchEnd4([377:378]throw [377:378][377:378][377:378]new [377:378]MatchError([377:378]x1))
       };
-      [377]matchEnd4(x: [NoPosition]Unit){
-        [377]x
+      [377:378]matchEnd4(x: [NoPosition]Unit){
+        [377:378]x
       }
     }
   }
