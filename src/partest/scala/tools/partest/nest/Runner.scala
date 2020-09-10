@@ -293,7 +293,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
    *  A missing flag evaluates the same as true.
    */
   def filteredCheck: Seq[String] = {
-    import scala.util.Properties.{javaSpecVersion, isAvian}
+    import scala.util.Properties.{javaSpecVersion, isAvian, isWin}
     import scala.tools.nsc.settings.ScalaVersion
     // use lines in block with this label?
     def retainOn(expr0: String) = {
@@ -310,6 +310,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
           val current  = ScalaVersion(javaSpecVersion)
           if (up != null) current >= required else current == required
         case "avian"  => isAvian
+        case "isWin"  => isWin
         case "true"   => true
         case "-optimise" | "-optimize"
                       => flagWasSet("-optimise") || flagWasSet("-optimize")
