@@ -298,4 +298,17 @@ class HashMapTest extends AllocationTest {
     check(cs => TreeMap(cs: _*)) // exercise special case for HashMap/HasForEachEntry
     check(cs => HashMap(cs: _*).withDefault(_ => ???)) // default cases
   }
+
+  @Test
+  def t12140(): Unit = {
+    trait DataType              extends Product with Serializable
+    case class Foo(arg: String) extends DataType
+    case class Bar(arg: String) extends DataType
+
+    // Create a HashMap consisting of a single HashMapCollision1.
+    val collision = HashMap(Foo("toxic") -> 0, Bar("toxic") -> 0)
+    val singleton = (new HashMap[DataType, Int]).updated(Foo("toxic"), 0)
+
+    collision ++ singleton // was NullPointerExeption
+  }
 }
