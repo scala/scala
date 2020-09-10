@@ -834,8 +834,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    // TODO remove `-unit-special` once we re-STARR on 2.13.3, because scala/bug#11965
-    scalacOptions in Compile ++= Seq("-Xlint:-unit-special,_", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"),
+    scalacOptions in Compile ++= Seq("-Xlint", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"),
   )
   .dependsOn(compiler)
 

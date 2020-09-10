@@ -333,7 +333,7 @@ class HashMapTest extends AllocationTest{
       assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(c0RMap))
       assertIdenticalKeys(Map((c0l, ())), HashMap.newBuilder[C, Unit].++=(HashMap((c0l, ()))).++=(c0RMap).result())
       assertIdenticalKeys(Map((c0l, ())), HashMap((c0l, ())).++(c0RMap))
-      assertIdenticalKeys(Map((c0l, ())), c0LMap ++: HashMap((c0r, ())))
+      assertIdenticalKeys(Map((c0l, ())), c0LMap ++ HashMap((c0r, ())))
     }
     check(cs => HashMap(cs: _*)) // exercise special case for HashMap/HashMap
     check(cs => TreeMap(cs: _*)) // exercise special case for HashMap/HasForEachEntry

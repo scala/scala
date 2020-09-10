@@ -41,14 +41,15 @@
 /.idea
 /.settings
 
+# vscode
+/.vscode
+
 # Standard symbolic link to build/quick/bin
 /qbin
 
 # sbt's target directories
 /target/
-/project/target/
-/project/project/target/
-/project/project/project/target/
+/project/**/target/
 /test/macro-annot/target/
 /test/files/target/
 /test/target/
@@ -59,4 +60,4 @@ jitwatch.out
 # metals
 .metals
 .bloop
-project/metals.sbt
+project/**/metals.sbt
