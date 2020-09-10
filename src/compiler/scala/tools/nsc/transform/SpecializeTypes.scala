@@ -1718,12 +1718,15 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           val vparamss = ddef.vparamss
           if (symbol.isConstructor) {
             val t = atOwner(symbol)(forwardCtorCall(tree.pos, gen.mkSuperInitCall, vparamss, symbol.owner))
-            def check(fwd: Tree) = if (settings.unitSpecialization) {
+            def check(fwd: Tree): Unit = if (settings.unitSpecialization) {
               val Apply(_, args) = fwd
-              args.find(arg => (arg.tpe =:= UnitTpe) && arg.symbol.name.endsWith(nme.SPECIALIZED_SUFFIX)).foreach { arg =>
-                val msg = "Class parameter is specialized for type Unit. Consider using `@specialized(Specializable.Arg)` instead."
-                runReporting.warning(arg.pos, msg, WarningCategory.LintUnitSpecialization, symbol.owner)
-              }
+              args.zip(vparamss.flatten).find {
+                case (arg, param) if (arg.tpe =:= UnitTpe) && param.symbol.name.endsWith(nme.SPECIALIZED_SUFFIX) =>
+                  val msg = "Class parameter is specialized for type Unit. Consider using `@specialized(Specializable.Arg)` instead."
+                  runReporting.warning(arg.pos, msg, WarningCategory.LintUnitSpecialization, param.symbol.owner)
+                  true
+                case _ => false
+              }: Unit
             }
             if (symbol.isPrimaryConstructor)
               localTyper.typedPos(symbol.pos)(deriveDefDef(tree)(_ => Block(List(t), Literal(Constant(()))))).tap(_ => check(t))
