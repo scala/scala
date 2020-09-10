@@ -16,7 +16,7 @@ object Scalac {
     }
 
     def newCompiler(args: String*): Global =
-      fromSettings(new Settings().tap(_ processArguments(args.toList, true)))
+      fromSettings(new Settings().tap(_.processArguments(args.toList, true)))
 
     def fromSettings(settings: Settings): Global =
       Global(settings, new ConsoleReporter(settings).tap(_.shortname = true))

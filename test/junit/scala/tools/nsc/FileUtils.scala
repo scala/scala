@@ -57,6 +57,8 @@ object FileUtils {
   final case class Missing(relativePath: Path, foundPath: Path) extends Diff(relativePath)
 
   def diff(dir1: Path, dir2: Path): List[Diff] = {
+    import Ordering.Implicits._
+
     val diffs = collection.mutable.ListBuffer[Diff]()
     def allFiles(dir: Path): Map[Path, Map[String, Path]] = {
       val classFiles: List[(Path, Path)] = Files.walk(dir).iterator().asScala.map(x => (dir.relativize(x), x)).toList.filter(_._2.getFileName.toString.endsWith(".class")).toList
@@ -65,7 +67,7 @@ object FileUtils {
     val dir1Files = allFiles(dir1)
     val dir2Files = allFiles(dir2)
     val allSubDirs = dir1Files.keySet ++ dir2Files.keySet
-    for (subDir <- allSubDirs.toList.sortBy(_.iterator().asScala.map(_.toString).iterator.to(Iterable))) {
+    for (subDir <- allSubDirs.toList.sortBy(_.iterator().asScala.map(_.toString).to(Seq))) {
       val files1 = dir1Files.getOrElse(subDir, Map.empty)
       val files2 = dir2Files.getOrElse(subDir, Map.empty)
       val allFileNames = files1.keySet ++ files2.keySet
