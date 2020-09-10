@@ -159,7 +159,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         case Literal(Constant(i: Int)) => Fingerprint(i)
       }
 
-    def pickle(macroImplRef: Tree): Tree = {
+    def extractMacroBindingImpl(macroImplRef: Tree): MacroImplBinding = {
       val runDefinitions = currentRun.runDefinitions
       import runDefinitions._
       val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = macroImplRef
@@ -190,12 +190,20 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         mmap(transformed)(p => if (p.isTerm) fingerprint(p.info) else Tagged(p.paramPos))
       }
 
+      MacroImplBinding(isBundle, isBlackbox, className, macroImpl.name.toString, signature, targs map (_.duplicate))
+    }
+
+    def pickle(macroImplRef: Tree): Tree = {
+
+      val MacroImplBinding(isBundle, isBlackbox, className, methodName, signature, targs) =
+        extractMacroBindingImpl(macroImplRef)
+
       val payload = List[(String, Any)](
         "macroEngine" -> macroEngine,
         "isBundle"    -> isBundle,
         "isBlackbox"  -> isBlackbox,
         "className"   -> className,
-        "methodName"  -> macroImpl.name.toString,
+        "methodName"  -> methodName,
         "signature"   -> signature
       )
 
@@ -205,7 +213,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       // I just named it "macro", because it's macro-related, but I could as well name it "foobar"
       val nucleus = Ident(newTermName("macro"))
       val wrapped = Apply(nucleus, payload map { case (k, v) => Assign(pickleAtom(k), pickleAtom(v)) })
-      val pickle = gen.mkTypeApply(wrapped, targs map (_.duplicate))
+      val pickle = gen.mkTypeApply(wrapped, targs)
 
       // assign NoType to all freshly created AST nodes
       // otherwise pickler will choke on tree.tpe being null
@@ -284,7 +292,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
         case AnnotationInfo(_, List(pickle), _) => MacroImplBinding.unpickle(pickle)
       } orElse {
         macroDef.getAnnotation(MacroImplLocationAnnotation) collect {
-          case AnnotationInfo(_, List(unpickled), _) => MacroImplBinding.unpickle(MacroImplBinding.pickle(unpickled))
+          case AnnotationInfo(_, List(macroImplRef), _) => MacroImplBinding.extractMacroBindingImpl(macroImplRef)
         }
       }
     )
