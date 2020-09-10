@@ -1,15 +1,14 @@
 package scala.collection.mutable
 
-import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
 import org.junit.Test
 import org.junit.Assert.assertEquals
 
+import scala.annotation.nowarn
 import scala.tools.testkit.AssertUtil.assertThrows
 
-/* Test for scala/bug#9043 */
-@RunWith(classOf[JUnit4])
 class ArrayBufferTest {
+
+  /* Test for scala/bug#9043 */
   @Test
   def testInsertAll(): Unit = {
     val traver = ArrayBuffer(2, 4, 5, 7)
@@ -185,6 +184,7 @@ class ArrayBufferTest {
   def testRemoveManyWithTooLargeCount(): Unit =
     assertThrows[IndexOutOfBoundsException](ArrayBuffer(0).remove(index = 0, count = 100))
 
+  @nowarn("cat=deprecation")
   @Test
   def testTrimStart(): Unit = {
     val b1 = ArrayBuffer()
@@ -204,6 +204,7 @@ class ArrayBufferTest {
     assertEquals(ArrayBuffer.range(10, 100), b4)
   }
 
+  @nowarn("cat=deprecation")
   @Test
   def testTrimEnd(): Unit = {
     val b1 = ArrayBuffer()
@@ -344,7 +345,7 @@ class ArrayBufferTest {
 
   @Test def t11417_sortInPlace(): Unit = {
     val a = ArrayBuffer(5,4,3,2,1)
-    a.trimEnd(2)
+    a.dropRightInPlace(2)
     a.sortInPlace()
     assertEquals(List(3,4,5), a)
   }

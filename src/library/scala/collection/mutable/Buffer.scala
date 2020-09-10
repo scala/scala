@@ -119,17 +119,16 @@ trait Buffer[A]
     *  @param n  the number of elements to remove from the beginning
     *            of this buffer.
     */
-  def trimStart(n: Int): Unit = remove(0, normalized(n))
+  @deprecated("use dropInPlace instead", since = "2.13.4")
+  def trimStart(n: Int): Unit = dropInPlace(n)
 
   /** Removes the last ''n'' elements of this buffer.
     *
     *  @param n  the number of elements to remove from the end
     *            of this buffer.
     */
-  def trimEnd(n: Int): Unit = {
-    val norm = normalized(n)
-    remove(length - norm, norm)
-  }
+  @deprecated("use dropRightInPlace instead", since = "2.13.4")
+  def trimEnd(n: Int): Unit = dropRightInPlace(n)
 
   def patchInPlace(from: Int, patch: scala.collection.IterableOnce[A], replaced: Int): this.type
 

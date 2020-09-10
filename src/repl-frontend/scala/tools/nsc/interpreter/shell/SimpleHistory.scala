@@ -36,7 +36,7 @@ class SimpleHistory extends History {
   def get(idx: Int): CharSequence = buf(idx)
   def add(item: CharSequence): Unit = buf += item.toString
   def replace(item: CharSequence): Unit = {
-    buf trimEnd 1
+    buf dropRightInPlace 1
     add(item)
   }
 
