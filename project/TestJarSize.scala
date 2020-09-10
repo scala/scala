@@ -9,8 +9,8 @@ object TestJarSize {
   private val reflectJarSize = JarSize(3608830L, 1.03, 1.015)
 
   val testJarSizeImpl: Def.Initialize[Task[Unit]] = Def.task {
-    testJarSize1("library", libraryJarSize).value
-    testJarSize1("reflect", reflectJarSize).value
+    (testJarSize1("library", libraryJarSize).value,
+     testJarSize1("reflect", reflectJarSize).value)
   }
 
   private def testJarSize1(projectId: String, jarSize: JarSize): Def.Initialize[Task[Unit]] = Def.task {

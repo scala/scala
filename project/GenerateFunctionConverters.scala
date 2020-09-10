@@ -170,7 +170,7 @@ object GenerateFunctionConverters {
 
   private def buildWrappersViaReflection: Seq[SamConversionCode] = {
 
-    val pack: Symbol = rootMirror.getPackageIfDefined(TermName("java.util.function"))
+    val pack: Symbol = rootMirror.getPackageIfDefined("java.util.function")
 
     case class Jfn(iface: Symbol, sam: Symbol) {
       lazy val genericCount = iface.typeParams.length

@@ -1,5 +1,10 @@
 package scala.build
 
+// The Log4J-based API used here is deprecated in sbt 1.4, as per sbt/sbt#5731.  For now, we
+// continue to use the API, and we sneakily suppress the deprecation warnings.  Moving to the new
+// API would be a welcome contribution, especially given that the old API was deprecated because it
+// was memory-leak-prone.  (Whether our use of the API is resulting in memory leaks, I don't know.)
+
 import java.io.StringWriter
 
 import scala.collection.mutable
@@ -10,7 +15,15 @@ import org.apache.logging.log4j.core.appender.{AbstractAppender, WriterAppender}
 import sbt.internal.util.StringEvent
 
 /** Save MiMa logs so they don't get lost in lots of debug output */
+
 object SavedLogs {
+
+  // rigmarole to access deprecated key without incurring a deprecation warning
+  val deprecatedExtraLoggersKey = {
+    @deprecated("", "") class Sneaky { def key = extraLoggers }; object Sneaky extends Sneaky
+    Sneaky.key
+  }
+
   val savedLogs = new mutable.HashMap[String, mutable.ArrayBuffer[StringEvent]]
 
   val showSavedLogs = TaskKey[Unit]("showSavedLogs", "Print all saved logs to the console")
@@ -39,8 +52,8 @@ object SavedLogs {
   }
 
   lazy val settings = Seq[Setting[_]](
-    (Global / extraLoggers) := {
-      val previous = (Global / extraLoggers).value
+    (Global / deprecatedExtraLoggersKey) := {
+      val previous = (Global / deprecatedExtraLoggersKey).value
       (key: ScopedKey[_]) => {
         key.scope match {
           case Scope(Select(ProjectRef(_, p)), _, Select(t), _) if t.label == "mimaReportBinaryIssues" =>
