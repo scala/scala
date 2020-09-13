@@ -60,7 +60,7 @@ package object collection {
 
   /** An extractor used to head/tail deconstruct sequences. */
   object +: {
-    /** Splits a sequence into head :+ tail.
+    /** Splits a sequence into head +: tail.
       * @return Some((head, tail)) if sequence is non-empty. None otherwise.
       */
     def unapply[A, CC[_] <: Seq[_], C <: SeqOps[A, CC, C]](t: C with SeqOps[A, CC, C]): Option[(A, C)] =
