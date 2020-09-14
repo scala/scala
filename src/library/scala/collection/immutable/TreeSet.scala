@@ -277,7 +277,7 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
 
   private [collection] def removeAll(xs : GenTraversableOnce[A]): TreeSet[A] = xs match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
-    newSetOrSelf(RB.difference(tree, ts.tree))
+      newSetOrSelf(RB.difference(tree, ts.tree))
     case _ =>
       //TODO add an implementation of a mutable subtractor similar to TreeMap
       //but at least this doesn't create a TreeSet for each iteration

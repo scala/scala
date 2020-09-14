@@ -48,13 +48,12 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
       // we cache tree to avoid the outer access to tree
       // in the hot path (apply)
       private[this] var accumulator :Tree = null
-      def addForEach(aTree:Tree, hasForEach: HasForeachEntry[A, B]): Tree = {
+      def addForEach(hasForEach: HasForeachEntry[A, B]): Unit = {
         accumulator = tree
         hasForEach.foreachEntry(this)
-        val result = accumulator
+        tree = accumulator
         // be friendly to GC
         accumulator = null
-        result
       }
 
       override def apply(key: A, value: B): Unit = {
@@ -73,7 +72,7 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
           else tree = RB.union(beforePublish(tree), ts.tree0)
         case that: HasForeachEntry[A, B] =>
           //add avoiding creation of tuples
-          tree = adder.addForEach(tree, that)
+          adder.addForEach(that)
         case _ =>
           super.++=(xs)
       }
