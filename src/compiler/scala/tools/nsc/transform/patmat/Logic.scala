@@ -411,10 +411,9 @@ trait Logic extends Debugging  {
 
       object gatherEqualities extends PropTraverser {
         override def apply(p: Prop) = p match {
-          case Eq(v, c) =>
-            vars += v
-            v.registerEquality(c)
-          case _ => super.apply(p)
+          case Eq(v, NullConst) if !modelNull => vars += v // not modeling equality to null
+          case Eq(v, c)                       => vars += v; v.registerEquality(c)
+          case _                              => super.apply(p)
         }
       }
 

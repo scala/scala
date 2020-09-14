@@ -221,10 +221,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       override def toString = s"T${id}C($prop)"
     }
 
-    class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
-      override def uniqueNonNullProp(p: Tree): Prop = True
-    }
-
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     class TreeMakersToProps(val root: Symbol) {
       prepareNewAnalysis() // reset hash consing for Var and Const
@@ -236,7 +232,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
         uniqueEqualityProps.getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
 
-      // overridden in TreeMakersToPropsIgnoreNullChecks
       def uniqueNonNullProp (testedPath: Tree): Prop =
         uniqueNonNullProps.getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
 
@@ -513,7 +508,7 @@ trait MatchAnalysis extends MatchApproximation {
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
 
-      val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
+      val approx = new TreeMakersToProps(prevBinder)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later

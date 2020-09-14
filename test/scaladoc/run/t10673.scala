@@ -32,6 +32,8 @@ object Test extends ScaladocModelTest {
     import access._
     def showParents(e: MemberTemplateEntity): Unit = {
       e.parentTypes.foreach(_._2.refEntity.foreach {
+        case (_, (LinkToMember(mbr, tpl), _))          => println(s"found link for member $mbr to $tpl")
+        case (_, (LinkToTpl(tpl), _))                  => println(s"found link $tpl")
         case (_, (LinkToExternalTpl(name, _, tpl), _)) => println(s"'$name' links to $tpl")
         case (_, (Tooltip(name), _))                   => println(s"'$name' no link!")
       })
