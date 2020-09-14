@@ -188,9 +188,10 @@ trait TreeAndTypeAnalysis extends Debugging {
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type
     def uncheckableType(tp: Type): Boolean = {
-      val checkable = (
-           (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
-        || enumerateSubtypes(tp, grouped = false).nonEmpty)
+      val checkable = {
+        if (isTupleType(tp)) tupleComponents(tp).exists(tp => !uncheckableType(tp))
+        else enumerateSubtypes(tp, grouped = false).nonEmpty
+      }
       // if (!checkable) debug.patmat("deemed uncheckable: "+ tp)
       !checkable
     }

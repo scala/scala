@@ -413,11 +413,12 @@ abstract class BackendUtils extends PerRunInit {
   }
   /**
    * Visit the class node and collect all referenced nested classes.
+   * @return (declaredInnerClasses, referredInnerClasses)
    */
-  def collectNestedClasses(classNode: ClassNode): List[ClassBType] = {
+  def collectNestedClasses(classNode: ClassNode): (List[ClassBType], List[ClassBType]) = {
     val c = new Collector
     c.visit(classNode)
-    c.innerClasses.toList
+    (c.declaredInnerClasses.toList, c.referredInnerClasses.toList)
   }
 
   /*
@@ -432,11 +433,13 @@ abstract class BackendUtils extends PerRunInit {
    *
    * can-multi-thread
    */
-  final def addInnerClasses(jclass: asm.ClassVisitor, refedInnerClasses: List[ClassBType]): Unit = {
-    val allNestedClasses = refedInnerClasses.flatMap(_.enclosingNestedClassesChain.get).distinct
-
+  final def addInnerClasses(jclass: asm.tree.ClassNode, declaredInnerClasses: List[ClassBType], refedInnerClasses: List[ClassBType]): Unit = {
     // sorting ensures nested classes are listed after their enclosing class thus satisfying the Eclipse Java compiler
-    for (nestedClass <- allNestedClasses.sortBy(_.internalName.toString)) {
+    val allNestedClasses = new mutable.TreeSet[ClassBType]()(Ordering.by(_.internalName))
+    allNestedClasses ++= declaredInnerClasses
+    refedInnerClasses.foreach(_.enclosingNestedClassesChain.get.foreach(allNestedClasses += _))
+
+    for (nestedClass <- allNestedClasses) {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
       val Some(e) = nestedClass.innerClassAttributeEntry.get
       jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
@@ -783,7 +786,15 @@ object BackendUtils {
   }
 
   abstract class NestedClassesCollector[T](nestedOnly: Boolean) extends GenericSignatureVisitor(nestedOnly) {
-    val innerClasses = mutable.Set.empty[T]
+
+    val declaredInnerClasses = mutable.Set.empty[T]
+    val referredInnerClasses = mutable.Set.empty[T]
+
+    def innerClasses: collection.Set[T] = declaredInnerClasses ++ referredInnerClasses
+    def clear(): Unit = {
+      declaredInnerClasses.clear()
+      referredInnerClasses.clear()
+    }
 
     def declaredNestedClasses(internalName: InternalName): List[T]
 
@@ -791,7 +802,7 @@ object BackendUtils {
 
     def visit(classNode: ClassNode): Unit = {
       visitInternalName(classNode.name)
-      innerClasses ++= declaredNestedClasses(classNode.name)
+      declaredInnerClasses ++= declaredNestedClasses(classNode.name)
 
       visitInternalName(classNode.superName)
       classNode.interfaces.asScala foreach visitInternalName
@@ -850,7 +861,8 @@ object BackendUtils {
 
     def visitInternalName(internalName: String, offset: Int, length: Int): Unit = if (internalName != null && containsChar(internalName, offset, length, '$')) {
       for (c <- getClassIfNested(internalName.substring(offset, length)))
-        innerClasses += c
+        if (!declaredInnerClasses.contains(c))
+          referredInnerClasses += c
     }
 
     // either an internal/Name or [[Linternal/Name; -- there are certain references in classfiles

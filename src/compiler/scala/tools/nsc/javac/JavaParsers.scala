@@ -383,100 +383,61 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
      * ElementValueList             ::= ElementValue {`,` ElementValue}
      */
     def annotation(): Tree = {
-      def annArg(): Tree = {
-        def elementValue(): Tree = {
-          tryLiteral() match {
-            case Some(lit) => atPos(in.currentPos)(Literal(lit))
-            case _ if in.token == AT =>
-              in.nextToken()
-              annotation()
-            case _ if in.token == LBRACE =>
-              atPos(in.pos) {
-                in.nextToken()
-                val ts = new ListBuffer[Tree]
-                if (in.token == RBRACE)
-                  Apply(ArrayModule_overloadedApply)
-                else {
-                  var bailout = false
-                  elementValue() match {
-                    case EmptyTree => bailout = true
-                    case t => ts += t
-                  }
-                  while (in.token == COMMA && !bailout) {
-                    in.nextToken()
-                    if (in.token == RBRACE) {
-                      // trailing comma
-                    } else {
-                      elementValue() match {
-                        case EmptyTree => bailout = true
-                        case t => ts += t
-                      }
-                    }
-                  }
-                  if (!bailout && in.token != RBRACE) {
-                    bailout = true
-                  }
-                  if (bailout) {
-                    var braceDepth = 1
-                    while (braceDepth > 0) {
-                      in.nextToken()
-                      in.token match {
-                        case LBRACE => braceDepth += 1
-                        case RBRACE => braceDepth -= 1
-                        case _ =>
-                      }
-                    }
-                    EmptyTree
-                  } else {
-                    accept(RBRACE)
-                    Apply(ArrayModule_overloadedApply, ts.toList: _*)
-                  }
-                }
-              }
-            case _ if in.token == IDENTIFIER =>
-              qualId(orClassLiteral = true)
-            case _ =>
-              in.nextToken()
-              EmptyTree
-          }
-        }
+      object LiteralK { def unapply(token: Token) = tryLiteral() }
 
-        if (in.token == IDENTIFIER) {
-          qualId(orClassLiteral = true) match {
-            case name: Ident if in.token == EQUALS =>
-              in.nextToken()
-              /* name = value */
-              val value = elementValue()
-              if (value.isEmpty) EmptyTree else gen.mkNamedArg(name, value)
-            case rhs =>
-              /* implicit `value` arg with constant value */
-              gen.mkNamedArg(nme.value, rhs)
+      def elementValue(): Tree = in.token match {
+        case LiteralK(k) => in.nextToken(); atPos(in.currentPos)(Literal(k))
+        case IDENTIFIER  => qualId(orClassLiteral = true)
+        case LBRACE      => accept(LBRACE); elementArray()
+        case AT          => accept(AT); annotation()
+        case _           => in.nextToken(); EmptyTree
+      }
+
+      def elementArray(): Tree = atPos(in.pos) {
+        val ts = new ListBuffer[Tree]
+        while (in.token != RBRACE) {
+          ts += elementValue()
+          if (in.token == COMMA) in.nextToken() // done this way trailing commas are supported
+        }
+        val ok = !ts.contains(EmptyTree)
+        in.token match {
+          case RBRACE if ok => accept(RBRACE); Apply(ArrayModule_overloadedApply, ts.toList: _*)
+          case _            => skipTo(RBRACE); EmptyTree
+        }
+      }
+
+      // 1) name = value
+      // 2) implicit `value` arg with constant value
+      // 3) implicit `value` arg
+      def annArg(): Tree = {
+        def mkNamedArg(name: Ident, value: Tree) = if (value.isEmpty) EmptyTree else gen.mkNamedArg(name, value)
+        in.token match {
+          case IDENTIFIER => qualId(orClassLiteral = true) match {
+            case name: Ident if in.token == EQUALS => accept(EQUALS); mkNamedArg(name, elementValue())
+            case rhs                               =>                 mkNamedArg(Ident(nme.value), rhs)
           }
-        } else {
-          /* implicit `value` arg */
-          val value = elementValue()
-          if (value.isEmpty) EmptyTree else gen.mkNamedArg(nme.value, value)
+          case _ => mkNamedArg(Ident(nme.value), elementValue())
         }
       }
 
       atPos(in.pos) {
         val id = convertToTypeId(qualId())
-        if (in.token == LPAREN) {
-          val saved = new JavaTokenData {}.copyFrom(in) // prep to bail if non-literals/identifiers
-          accept(LPAREN)
-          val args =
-            if (in.token == RPAREN) Nil
-            else commaSeparated(atPos(in.pos)(annArg()))
-          if (in.token == RPAREN) {
-            accept(RPAREN)
-            New(id, args :: Nil)
-          } else {
-            in.copyFrom(saved)
-            skipAhead()
-            accept(RPAREN)
-            EmptyTree
-          }
-        } else New(id, ListOfNil)
+        in.token match {
+          case LPAREN =>
+            // TODO: fix copyFrom+skipAhead; CharArrayReaderData missing
+            val saved = new JavaTokenData {}.copyFrom(in) // prep to bail if non-literals/identifiers
+            accept(LPAREN)
+            val args = in.token match {
+              case RPAREN => Nil
+              case _      => commaSeparated(atPos(in.pos)(annArg()))
+            }
+            val ok = !args.contains(EmptyTree)
+            in.token match {
+              case RPAREN if ok => accept(RPAREN); New(id, List(args))
+              case _            => in.copyFrom(saved); skipAhead(); accept(RPAREN); EmptyTree
+            }
+          case _ => New(id, ListOfNil)
+        }
       }
     }
 
@@ -720,6 +681,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
 
         def forConst(const: Constant): Tree = {
+          in.nextToken()
           if (in.token != SEMI) tpt1
           else {
             def isStringTyped = tpt1 match {
@@ -1015,10 +977,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
         case _         => null
       }
       if (l == null) None
-      else {
-        in.nextToken()
-        Some(Constant(l))
-      }
+      else Some(Constant(l))
     }
 
     /** CompilationUnit ::= [package QualId semi] TopStatSeq
