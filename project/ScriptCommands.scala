@@ -4,8 +4,10 @@ import java.nio.file.Paths
 
 import sbt._
 import Keys._
+import sbt.complete.Parsers._
 
 import BuildSettings.autoImport._
+import VersionUtil._
 
 /** Custom commands for use by the Jenkins scripts. This keeps the surface area and call syntax small. */
 object ScriptCommands {
@@ -16,7 +18,8 @@ object ScriptCommands {
     setupPublishCore,
     setupValidateTest,
     setupBootstrapStarr, setupBootstrapLocker, setupBootstrapQuick, setupBootstrapPublish,
-    enableOptimizerCommand
+    enableOptimizerCommand,
+    restarr, restarrFull,
   )
 
   /** Set up the environment for `validate/publish-core`.
@@ -109,6 +112,34 @@ object ScriptCommands {
   }
 
   def enableOptimizerCommand = setup("enableOptimizer")(_ => enableOptimizer)
+
+  /** For local dev: sets `scalaVersion` to the version in `/buildcharacter.properties` or the given arg.
+   * Running `reload` will re-read the build files, resetting `scalaVersion`. */
+  def restarr = Command("restarr")(_ => (Space ~> StringBasic).?) { (state, s) =>
+    val newVersion = s.getOrElse(readVersionFromPropsFile(state))
+    val x = Project.extract(state)
+    val sv = x.get(Global / scalaVersion)
+    state.log.info(s"Re-STARR'ing: setting scalaVersion from $sv to $newVersion (`reload` to undo)")
+    x.appendWithSession(Global / scalaVersion := newVersion, state) // don't use version.value or it'll be a wrong, new value
+  }
+
+  /** For local dev: publishes locally (without optimizing) & then sets the new `scalaVersion`.
+   * Also it generates `/buildcharacter.properties` which is the default used by `restarr`. */
+  def restarrFull = Command.command("restarrFull") { state =>
+    setupPublishCoreNonOpt.nameOption.get ::
+        generateBuildCharacterPropertiesFile.key.label ::
+        publishLocal.key.label ::
+        restarr.nameOption.get ::
+        state
+  }
+
+  private def readVersionFromPropsFile(state: State): String = {
+    val props = readProps(file("buildcharacter.properties"))
+    val newVersion = props("maven.version.number")
+    val fullVersion = props("version.number")
+    state.log.info(s"Read STARR version from buildcharacter.properties: $newVersion (full version: $fullVersion)")
+    newVersion
+  }
 
   private[this] def setup(name: String)(f: Seq[String] => Seq[Setting[_]]) = Command.args(name, name) { case (state, seq) =>
     Project.extract(state).appendWithSession(f(seq), state)

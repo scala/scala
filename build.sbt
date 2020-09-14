@@ -1349,7 +1349,8 @@ lazy val root: Project = (project in file("."))
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
     scaladoc, scalap, testkit, partest, junit, scalaDist).settings(
     Compile / sources := Seq.empty,
-    onLoadMessage := """|*** Welcome to the sbt build definition for Scala! ***
+    onLoadMessage := s"""|*** Welcome to the sbt build definition for Scala! ***
+      |version=${(Global / version).value} scalaVersion=${(Global / scalaVersion).value}
       |Check README.md for more information.""".stripMargin
   )
 
