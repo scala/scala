@@ -1,3 +1,4 @@
+// scalac: -Xdev -Werror
 // Was: "warning: !!! base trait Serializable not found in basetypes of object Person. This might indicate incorrect caching of TypeRef#parents."
 // under -Xdev
 class Test {
