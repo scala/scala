@@ -12,6 +12,7 @@
 
 package scala.tools
 package partest
+
 import nest.PathSettings
 
 class TestKinds(pathSettings: PathSettings) {
@@ -22,6 +23,18 @@ class TestKinds(pathSettings: PathSettings) {
     case "res"  => false
     case _      => p.isDirectory && p.extension == ""
   }
+
+  // 1. neg/t7623.scala                   ->  test/files/neg/t7623.scala
+  // 2. test/files/neg/t7623.check        ->  test/files/neg/t7623.scala
+  // 3. test/files/jvm/future-spec.scala  ->  test/files/jvm/future-spec
+  // 4. test/files/neg/t7623              ->  test/files/neg/t7623.scala
+  val testIdentToTestPath = when(p => p.segments.length == 2)(pathSettings.srcDir.resolve(_))(_)
+  val checkFileToTestFile = when(p => p.hasExtension("check"))(_.changeExtension("scala"))(_)
+  val testFileToTestDir   = when(p => p.hasExtension("scala") && !p.isFile)(p => Path(p.path.stripSuffix(s".${p.extension}")))(_)
+  val testDirToTestFile   = when(p => p.hasExtension("") && !p.isDirectory)(_.addExtension("scala"))(_)
+
+  private def when(pred: Path => Boolean)(thenp: Path => Path)(p: Path) = if (pred(p)) thenp(p) else p
+
   def denotesTestPath(p: Path) = denotesTestDir(p) || denotesTestFile(p)
 
   def kindOf(p: Path) = p.toAbsolute.segments.takeRight(2).head
