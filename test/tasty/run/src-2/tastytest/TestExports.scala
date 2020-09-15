@@ -5,6 +5,7 @@ object TestExports extends Suite("TestExports") {
 
   def extract(scanned: String): String = scanned match {
     case s"scanned($inner)" => inner
+    case x                  => throw new MatchError(x)
   }
 
   def makePrinter(copier: Exports.Copier)(f: copier.type => copier.PrinterType): copier.PrinterType =

@@ -11,7 +11,7 @@ class FutureTests extends MinimalScalaTest {
 
   /* some utils */
 
-  def testAsync(s: String)(implicit ec: ExecutionContext): Future[String] = s match {
+  def testAsync(s: String)(implicit ec: ExecutionContext): Future[String] = (s: @unchecked) match {
     case "Hello"   => Future { "World" }
     case "Failure" => Future.failed(new RuntimeException("Expected exception; to test fault-tolerance"))
     case "NoReply" => Promise[String]().future

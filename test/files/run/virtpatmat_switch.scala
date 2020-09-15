@@ -25,7 +25,7 @@ object Test extends App {
   println(byteSwitch('b'))
   println(charSwitch('z'))
 
-  def implicitDefault(x: Int) = x match {
+  def implicitDefault(x: Int) = (x: @unchecked) match {
     case 0 => 0
   }
 

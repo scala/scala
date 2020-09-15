@@ -26,6 +26,7 @@ object Test {
 
         case SubclassMatch(p) => p
         case StandardMatch(p) => p
+        case x                => throw new MatchError(x)
     }
   }
 }

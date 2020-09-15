@@ -8,10 +8,10 @@ t6048.scala:15: warning: patterns after a variable pattern cannot match (SLS 8.1
     case _ => x
          ^
 t6048.scala:16: warning: unreachable code due to variable pattern on line 15
-    case 5 if true  => x // unreachable
+    case _ if true  => x // unreachable
                        ^
 t6048.scala:16: warning: unreachable code
-    case 5 if true  => x // unreachable
+    case _ if true  => x // unreachable
                        ^
 error: No warnings can be incurred under -Werror.
 5 warnings

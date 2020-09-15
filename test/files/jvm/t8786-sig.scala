@@ -25,7 +25,7 @@ object Test extends App {
   def genSig(method: String, tp: Class[_]) = a.getDeclaredMethod(method, tp).toGenericString
   def bound (method: String, tp: Class[_]) = {
     val m = a.getDeclaredMethod(method, tp)
-    m.getGenericParameterTypes.apply(0) match {
+    (m.getGenericParameterTypes.apply(0): @unchecked) match {
       case _: Class[_] => ""
       case gat: java.lang.reflect.GenericArrayType =>
         val compTp = gat.getGenericComponentType.asInstanceOf[java.lang.reflect.TypeVariable[_]]

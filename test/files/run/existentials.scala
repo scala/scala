@@ -4,7 +4,7 @@ import scala.language.reflectiveCalls
 class Foo {
   class Line {
     case class Cell[T](var x: T)
-    def f[T](x: Any): Cell[t1] forSome { type t1 } = x match { case y: Cell[t] => y }
+    def f[T](x: Any): Cell[t1] forSome { type t1 } = (x: @unchecked) match { case y: Cell[t] => y }
 
     var x: Cell[T] forSome { type T } = new Cell(1)
     println({ x = new Cell("abc"); x })
@@ -14,7 +14,7 @@ class Foo {
 class FooW {
   class Line {
     case class Cell[T](var x: T)
-    def f[T](x: Any): Cell[ _ ] = x match { case y: Cell[t] => y }
+    def f[T](x: Any): Cell[ _ ] = (x: @unchecked) match { case y: Cell[t] => y }
 
     var x: Cell[_] = new Cell(1)
     println({ x = new Cell("abc"); x })
@@ -41,7 +41,7 @@ object LUB {
 object Bug1189 {
   case class Cell[T](x: T)
   type U = Cell[T1] forSome { type T1 }
-  def f(x: Any): U = x match { case y: Cell[_] => y }
+  def f(x: Any): U = (x: @unchecked) match { case y: Cell[_] => y }
 
   var x: U = Cell(1)
   println(x)

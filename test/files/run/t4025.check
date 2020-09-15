@@ -9,7 +9,7 @@ class Red
 
 scala> 
 
-scala> def f(c: Any) = c match { case Red(_) => () }
+scala> def f(c: Any) = (c: @unchecked) match { case Red(_) => () }
 def f(c: Any): Unit
 
 scala> :quit

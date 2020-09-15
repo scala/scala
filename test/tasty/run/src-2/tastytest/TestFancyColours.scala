@@ -10,19 +10,23 @@ object TestFancyColours extends Suite("TestFancyColours") {
   def describe(c: Colour) = c match {
     case Colour.Pink => "Amazing!"
     case Colour.Red => "Yawn..."
+    case x          => throw new MatchError(x)
   }
 
   def describePretty(c: Pretty) = c match {
     case Colour.Pink => "Amazing!"
+    case x           => throw new MatchError(x)
   }
 
   def describeDull(c: Dull) = c match {
     case Colour.Red => "Yawn..."
+    case x          => throw new MatchError(x)
   }
 
   def describeAny(x: Any) = x match {
     case p: Colour.Pink.type => Colour.describePink(p)
     case r: Colour.Red.type  => Colour.describeRed(r)
+    case x                   => throw new MatchError(x)
   }
 
   def describePinkWrap(c: PinkWrap) = describePretty(c.toPink)

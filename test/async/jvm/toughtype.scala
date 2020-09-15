@@ -76,6 +76,7 @@ package scala.async.run.toughtype {
             var ss = s
             ss = s
             await(x)
+          case x => throw new MatchError(x)
         }
       })
       assertEquals(0, m7(Nil))
@@ -114,6 +115,7 @@ package scala.async.run.toughtype {
             val foo = await(5)
             val e0 = buf(0)
             ContainerImpl(e0)
+          case x => throw new MatchError(x)
         }
       })
       foo

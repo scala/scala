@@ -37,6 +37,7 @@ object Test
         case CO     => showsCovariance && !showsContravariance && !showsInvariance
         case IN     => showsInvariance && !showsCovariance && !showsContravariance
         case CONTRA => showsContravariance && !showsCovariance && !showsInvariance
+        case x      => throw new MatchError(x)
       }
   }
 

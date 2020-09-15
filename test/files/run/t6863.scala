@@ -82,6 +82,7 @@ object Test {
   def labelDef() = {
     var x = 100 match {
       case 100 => try "42" finally ()
+      case x   => throw new MatchError(x)
     }
     assert({ () => x }.apply() == "42")
   }

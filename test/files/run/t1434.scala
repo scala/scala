@@ -7,6 +7,7 @@ object Test {
     case a: A[_] if(a.op != null) => "with op"
     case c: C => "C"
     case b: B => "B"
+    case x    => throw new MatchError(x)
   }
 
   def main(args: Array[String]) = {

@@ -7,6 +7,6 @@ class Color(val red: Int)
 
 case class Red(r:Int) extends Color(r)
 
-def f(c: Any) = c match { case Red(_) => () }
+def f(c: Any) = (c: @unchecked) match { case Red(_) => () }
 """
 }

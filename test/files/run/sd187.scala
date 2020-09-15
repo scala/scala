@@ -8,7 +8,7 @@ object Test extends DirectTest {
     """
     |class C {                                                                                        //
     |  def commonSubPattern(x: Any) = {                                                               //
-    |    x match {                                                                                    //
+    |    (x:  @unchecked) match {                                                                     //
     |      case _: Option[_] =>                                                                       //
     |      case s: String if s == "4" =>                                                              //
     |         s.hashCode                                                                              //
@@ -16,7 +16,7 @@ object Test extends DirectTest {
     |         s.hashCode                                                                              //
     |    }                                                                                            //
     |  }                                                                                              //
-    |  def extractor(x: Any) = x match {                                                              //
+    |  def extractor(x: Any) = (x: @unchecked) match {                                                //
     |      case Product2(a, b) =>                                                                     //
     |         a                                                                                       //
     |    }                                                                                            //

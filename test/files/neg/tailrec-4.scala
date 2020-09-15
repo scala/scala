@@ -1,3 +1,4 @@
+// scalac: -Xno-unsealed-patmat-analysis
 import annotation._
 
 object Tail {

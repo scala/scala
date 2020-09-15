@@ -1,4 +1,4 @@
-abstract class Term[T]
+sealed abstract class Term[T]
 case class Lit(x: Int) extends Term[Int]
 case class Succ(t: Term[Int]) extends Term[Int]
 case class IsZero(t: Term[Int]) extends Term[Boolean]

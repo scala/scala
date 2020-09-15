@@ -18,6 +18,7 @@ object Test extends App {
       case B if "".isEmpty => ???
       case A =>
       case B => ???
+      case x => throw new MatchError(x)
     }
   }
 }

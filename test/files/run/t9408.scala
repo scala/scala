@@ -32,6 +32,7 @@ class Outer {
     (new outer1.Member: Any) match {
       case _: outer2.Member => sys.error("wrong match!")
       case _: outer1.Member => // okay
+      case x                => throw new MatchError(x)
     }
 
     // ... continuing on that theme, note that `Member` isn't considered as a local class, it is owned by a the class
@@ -48,6 +49,7 @@ class Outer {
     (new localOuter1.Member: Any) match {
       case _: localOuter2.Member => sys.error("wrong match!")
       case _: localOuter1.Member => // okay
+      case x                     => throw new MatchError(x)
     }
     // Final member classes still lose the outer reference.
     assertNoFields(classOf[LocalOuter#FinalMember])

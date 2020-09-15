@@ -1,6 +1,12 @@
 virtpatmat_literal.scala:6: warning: unreachable code
    case `a` => println("FAILED")
                       ^
+virtpatmat_literal.scala:15: warning: unreachable code
+   case x   => throw new MatchError(x)
+               ^
+virtpatmat_literal.scala:22: warning: unreachable code
+   case x   => throw new MatchError(x)
+               ^
 OK
 OK
 OK

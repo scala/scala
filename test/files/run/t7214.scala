@@ -18,6 +18,7 @@ class Crash {
   // Crash via a Typed Pattern...
   (t: Any) match {
     case e: Alias =>
+    case x        => throw new MatchError(x)
   }
 
   // ... or via a Typed Extractor Pattern.

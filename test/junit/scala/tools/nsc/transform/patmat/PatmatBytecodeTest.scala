@@ -98,6 +98,7 @@ class PatmatBytecodeTest extends BytecodeTesting {
         |class C {
         |  def a = (Foo(1): Any) match {
         |    case Foo(_: String) =>
+        |    case x              => throw new MatchError(x)
         |  }
         |}
       """.stripMargin

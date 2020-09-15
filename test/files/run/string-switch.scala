@@ -28,6 +28,7 @@ object Test extends App {
 
   def unitary(in: String) = (in : @switch) match {
     case "A" =>
+    case x   => throw new MatchError(x)
   }
   List("A","X").foreach { s =>
     println(s"$s ${Try(unitary(s))}")

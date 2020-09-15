@@ -225,7 +225,7 @@ def testTransformFailure(): Unit = once {
       val e = new Exception("expected")
       val transformed = new Exception("transformed")
       val f = Future[Unit] { throw e }
-      val g = f.transform(identity, { case `e` => transformed })
+      val g = f.transform(identity, (_: Throwable @unchecked) match { case `e` => transformed })
       g onComplete {
         case Success(_) => done(false)
         case Failure(e) => done(e eq transformed)

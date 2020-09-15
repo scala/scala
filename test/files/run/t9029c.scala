@@ -11,11 +11,13 @@ object Test {
     "" match {
       case Extractor(p) =>
         val pp: Product2[Int, String] = p
+      case x => throw new MatchError(x)
     }
     "" match {
       case Extractor(x, y) =>
         val xx: Int = x
         val yy: String = y
+      case x => throw new MatchError(x)
     }
   }
 }

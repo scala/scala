@@ -176,7 +176,6 @@ trait Warnings {
     val DelayedInitSelect      = LintWarning("delayedinit-select",        "Selecting member of DelayedInit.")
     val PackageObjectClasses   = LintWarning("package-object-classes",    "Class or object defined in package object.")
     val StarsAlign             = LintWarning("stars-align",               "In a pattern, a sequence wildcard `_*` should match all of a repeated parameter.")
-    val StrictUnsealedPatMat   = LintWarning("strict-unsealed-patmat",    "Pattern match on an unsealed class without a catch-all.")
     val Constant               = LintWarning("constant",                  "Evaluation of a constant arithmetic expression resulted in an error.")
     val Unused                 = LintWarning("unused",                    "Enable -Wunused:imports,privates,locals,implicits,nowarn.")
     val NonlocalReturn         = LintWarning("nonlocal-return",           "A return statement used an exception for flow control.")
@@ -208,7 +207,6 @@ trait Warnings {
   def warnOptionImplicit         = lint contains OptionImplicit
   def warnDelayedInit            = lint contains DelayedInitSelect
   def warnPackageObjectClasses   = lint contains PackageObjectClasses
-  def warnStrictUnsealedPatMat   = lint contains StrictUnsealedPatMat
   def warnStarsAlign             = lint contains StarsAlign
   def warnConstant               = lint contains Constant
   def lintUnused                 = lint contains Unused

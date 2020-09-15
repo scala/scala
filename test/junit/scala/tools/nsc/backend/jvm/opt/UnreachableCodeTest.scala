@@ -251,7 +251,7 @@ class UnreachableCodeTest extends ClearAfterClass {
   def patmatDefaultLineNumber(): Unit = {
     val code =
       """class Test {
-        |  def test = (this: AnyRef) match {
+        |  def test = (this: AnyRef @unchecked) match {
         |    case _: String =>
         |      "line4" // the synthetic `throw new MatchError` used to be positioned, here, despite the fact that patmat positions it at line 3.
         |  }

@@ -1,6 +1,10 @@
 virtpatmat_unreach_select.scala:12: warning: unreachable code
     case WARNING.id => // unreachable
                     ^
+virtpatmat_unreach_select.scala:9: warning: match may not be exhaustive.
+It would fail on the following input: (x: Int forSome x not in (id, id))
+  (0: Int) match {
+    ^
 error: No warnings can be incurred under -Werror.
-1 warning
+2 warnings
 1 error

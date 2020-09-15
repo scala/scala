@@ -1,5 +1,5 @@
 // scalac: -Werror
-abstract class Foo {
+sealed abstract class Foo {
     def bar(): Unit = this match {
         case Foo_1() => //do something
         case Foo_2() => //do something

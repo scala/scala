@@ -9,7 +9,7 @@ object Y {
 }
 
 object Test {
-  "" match { case X(b) => b } // should warn under -Xlint. Not an error because of scala/bug#6111
+  "" match { case X(b) => b case x => throw new MatchError(x) } // should warn under -Xlint. Not an error because of scala/bug#6111
 
-  "" match { case Y(b) => b } // no warning
+  "" match { case Y(b) => b case x => throw new MatchError(x) } // no warning
 }

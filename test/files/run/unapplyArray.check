@@ -1,0 +1,3 @@
+unapplyArray.scala:26: warning: match may not be exhaustive.
+    val zl = zs match {
+             ^

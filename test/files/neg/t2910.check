@@ -1,6 +1,6 @@
 t2910.scala:3: error: forward reference extends over definition of value ret
-    val ret = l.map({ case MyMatch(id) => id })
-                           ^
+    val ret = l.collect({ case MyMatch(id) => id })
+                               ^
 t2910.scala:9: error: forward reference extends over definition of value z
     println(s.length)
             ^

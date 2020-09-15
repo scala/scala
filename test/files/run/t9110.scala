@@ -19,6 +19,7 @@ object Test {
         case DomainB.Created(_) => throw null
         case DomainC.Created(_) => throw null
         case DomainA.Created(_) => // okay
+        case x                  => throw new MatchError(x)
       }
    }
 

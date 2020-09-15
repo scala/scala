@@ -3,5 +3,6 @@ object Test extends App {
    case x: Int => println("FAILED")
    case x: String => println("OK "+ x)
    case x: String => println("FAILED")
+   case x         => throw new MatchError(x)
  }
 }

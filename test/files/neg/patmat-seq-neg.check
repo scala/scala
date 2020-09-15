@@ -1,3 +1,9 @@
+patmat-seq-neg.scala:12: warning: match may not be exhaustive.
+  def t2: Any = 2 match {
+                ^
+patmat-seq-neg.scala:15: warning: match may not be exhaustive.
+  def t3: Any = 2 match {
+                ^
 patmat-seq-neg.scala:15: error: error during expansion of this match (this is a scalac bug).
 The underlying error was: type mismatch;
  found   : scala.collection.mutable.ArrayBuffer[Int]
@@ -8,8 +14,15 @@ patmat-seq-neg.scala:18: error: error during expansion of this match (this is a 
 The underlying error was: value toSeq is not a member of Array[Int]
   def t4: Any = 2 match {
                   ^
+patmat-seq-neg.scala:21: warning: match may not be exhaustive.
+  def t5: Any = 2 match {
+                ^
+patmat-seq-neg.scala:24: warning: match may not be exhaustive.
+  def t6: Any = 2 match {
+                ^
 patmat-seq-neg.scala:24: error: error during expansion of this match (this is a scalac bug).
 The underlying error was: value drop is not a member of Array[Int]
   def t6: Any = 2 match {
                   ^
+4 warnings
 3 errors

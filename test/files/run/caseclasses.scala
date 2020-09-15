@@ -27,6 +27,7 @@ object Test extends App {
   (f(2): AnyRef) match {
     case Foo(1) => Console.println("OK")
     case Bar() => Console.println("NO")
+    case x     => throw new MatchError(x)
   }
   try {
     Bar() productElement 3

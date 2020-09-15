@@ -85,6 +85,7 @@ package scala.async.run.futures {
       case "Hello"   => Future { "World" }
       case "Failure" => Future.failed(new RuntimeException("Expected exception; to test fault-tolerance"))
       case "NoReply" => Promise[String]().future
+      case x         => throw new MatchError(x)
     }
 
     val defaultTimeout = 5 seconds

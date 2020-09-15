@@ -56,6 +56,7 @@ object Test extends ScaladocModelTest {
         case "" => Cell(Nil)
         case x: String => c(x)
         case None => Cell(Nil)
+        case x    => throw new MatchError(x)
       }
       Row(cells)
     }

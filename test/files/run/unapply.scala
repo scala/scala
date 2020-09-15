@@ -38,18 +38,23 @@ object Foo {
   }
   def doMatch1(b:Bar) = b match {
       case Foo(s:Int, n:String) => (s,n)
+      case x                    => throw new MatchError(x)
   }
   def doMatch2(b:Bar) = b match {
       case Fii() => null
+      case x     => throw new MatchError(x)
   }
   def doMatch3(b:Bar) = b match {
       case Faa(n:String) => n
+      case x             => throw new MatchError(x)
   }
   def doMatch4(b:Bar) = (b:Any) match {
     case FaaPrecise(n:String) => n
+    case x                    => throw new MatchError(x)
   }
   def doMatch5(b:Bar) = (b:Any) match {
     case FaaPreciseSome(n:String) => n
+    case x                        => throw new MatchError(x)
   }
   def run(): Unit = {
     val b = new Bar
@@ -61,6 +66,7 @@ object Foo {
     implicit val bc: Int = 3
     assert(7 == (4 match {
       case VarFoo(x) => x
+      case x         => throw new MatchError(x)
     }))
   }
 }
@@ -81,14 +87,15 @@ object Mas {
     val b = new Baz
     assert((60,"too large") == (b match {
       case Gaz(s:Int, n:String) => (s,n)
+      case x                    => throw new MatchError(x)
     }))
   }
 }
 
 object LisSeqArr {
   def run(): Unit = {
-    assert((1,2) == ((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)}))
-    assert((1,2) == ((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)}))
+    assert((1,2) == ((List(1,2,3): Any) match { case   List(x,y,_*) => (x,y)   case x => throw new MatchError(x) }))
+    assert((1,2) == ((List(1,2,3): Any) match { case    Seq(x,y,_*) => (x,y)   case x => throw new MatchError(x) }))
   }
 }
 

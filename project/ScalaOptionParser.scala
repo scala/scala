@@ -83,7 +83,7 @@ object ScalaOptionParser {
 
   // TODO retrieve these data programmatically, ala https://github.com/scala/scala-tool-support/blob/master/bash-completion/src/main/scala/BashCompletion.scala
   private def booleanSettingNames = List("-X", "-Xasync", "-Xcheckinit", "-Xdev", "-Xdisable-assertions", "-Xexperimental", "-Xfatal-warnings", "-Xlog-free-terms", "-Xlog-free-types", "-Xlog-implicit-conversions", "-Xlog-implicits", "-Xlog-reflective-calls",
-    "-Xno-forwarders", "-Xno-patmat-analysis", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xverify", "-Y",
+    "-Xno-forwarders", "-Xno-patmat-analysis", "-Xno-unsealed-patmat-analysis", "-Xprint-pos", "-Xprint-types", "-Xprompt", "-Xresident", "-Xshow-phases", "-Xverify", "-Y",
     "-Ybreak-cycles", "-Ydebug", "-Ycompact-trees", "-YdisableFlatCpCaching", "-Ydoc-debug",
     "-Yide-debug",
     "-Yissue-debug", "-Ylog-classpath", "-Ymacro-debug-lite", "-Ymacro-debug-verbose", "-Ymacro-no-expand",
@@ -108,7 +108,7 @@ object ScalaOptionParser {
     "-g" -> List("line", "none", "notailcails", "source", "vars"),
     "-target" -> targetSettingNames)
   private def multiChoiceSettingNames = Map[String, List[String]](
-    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "package-object-classes", "stars-align", "strict-unsealed-patmat", "constant", "unused", "eta-zero"),
+    "-Xlint" -> List("adapted-args", "nullary-unit", "inaccessible", "nullary-override", "infer-any", "missing-interpolator", "doc-detached", "private-shadow", "type-parameter-shadow", "poly-implicit-overload", "option-implicit", "delayedinit-select", "package-object-classes", "stars-align", "constant", "unused", "eta-zero"),
     "-language" -> List("help", "_", "dynamics", "postfixOps", "reflectiveCalls", "implicitConversions", "higherKinds", "existentials", "experimental.macros"),
     "-opt" -> List("unreachable-code", "simplify-jumps", "compact-locals", "copy-propagation", "redundant-casts", "box-unbox", "nullness-tracking", "closure-invocations" , "allow-skip-core-module-init", "assume-modules-non-null", "allow-skip-class-loading", "inline", "l:none", "l:default", "l:method", "l:inline", "l:project", "l:classpath"),
     "-Ywarn-unused" -> List("imports", "patvars", "privates", "locals", "explicits", "implicits", "params"),

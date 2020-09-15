@@ -94,7 +94,7 @@ object M1 {
 
 object M2 {
 
-  trait Expr;
+  sealed trait Expr;
   case class Number(n: Int) extends Expr;
   case class Sum(e1: Expr, e2: Expr) extends Expr;
 
@@ -118,7 +118,7 @@ object M2 {
 
 object M3 {
 
-  trait Expr {
+  sealed trait Expr {
     def eval: Int = this match {
       case Number(n) => n
       case Sum(e1, e2) => e1.eval + e2.eval
@@ -338,7 +338,7 @@ object M8 {
 
 object M9 {
 
-  trait Expr {
+  sealed trait Expr {
     def derive(v: Var): Expr = this match {
       case Number(_) => Number(0)
       case Var(name) => if (name == v.name) Number(1) else Number(0)
@@ -379,7 +379,7 @@ object MA {
     case (k1,v1) :: xs1 => if (k1 == k) v1 else lookup(xs1, k)
   }
 
-  trait Expr {
+  sealed trait Expr {
     def + (that: Expr) = Sum(this, that);
     def * (that: Expr) = Prod(this, that);
     def derive(v: Var): Expr = this match {
