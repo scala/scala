@@ -546,12 +546,15 @@ private[collection] object NewRedBlackTree {
                            @(inline @getter @setter)     private var _right: Tree[A, _],
                            @(inline @getter @setter)     private var _count: Int)
   {
-    private[NewRedBlackTree] def isMutable: Boolean = (_count & 0x7FFFFFFF) == 0
+    @`inline` private[NewRedBlackTree] def isMutable: Boolean = (_count & colourMask) == 0
     // read only APIs
     @`inline` private[NewRedBlackTree] final def count = {
       //devTimeAssert((_count & 0x7FFFFFFF) != 0)
-      _count & 0x7FFFFFFF
+      _count & colourMask
     }
+    //retain the colour, and mark as mutable
+    @`inline` private def mutableRetainingColour = _count & colourBit
+
     //inlined here to avoid outer object null checks
     @`inline` private[NewRedBlackTree] final def sizeOf(tree:Tree[_,_]) = if (tree eq null) 0 else tree.count
     @`inline` private[immutable] final def key = _key
@@ -566,11 +569,6 @@ private[collection] object NewRedBlackTree {
     @`inline` private[immutable] final def isRed = _count >= 0
 
     override def toString: String = s"${if(isRed) "RedTree" else "BlackTree"}($key, $value, $left, $right)"
-
-    @`inline` private def initialCount = _count & 0x80000000
-    @`inline` private[NewRedBlackTree] def colourBit = 0x80000000
-    @`inline` private[NewRedBlackTree] def initialBlackCount = 0x80000000
-    @`inline` private[NewRedBlackTree] def initialRedCount = 0
 
     //mutable APIs
     private[NewRedBlackTree] def makeImmutable: Tree[A, B] = {
@@ -616,14 +614,14 @@ private[collection] object NewRedBlackTree {
       else if (isMutable) {
         _key = newKey
         this
-      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, initialCount)
+      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
     }
     private[NewRedBlackTree] def mutableWithV[B1 >: B](newValue: B1): Tree[A, B1] = {
       if (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef]) this
       else if (isMutable) {
         _value = newValue.asInstanceOf[AnyRef]
         this
-      } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, initialCount)
+      } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
     }
     //Note - in 2.13 remove his method
     //due to the handling of keys in 2.13 we never replace a key
@@ -634,21 +632,21 @@ private[collection] object NewRedBlackTree {
         _key = newKey
         _value = newValue.asInstanceOf[AnyRef]
         this
-      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, initialCount)
+      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
     }
     private[NewRedBlackTree] def mutableWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
       if (_left eq newLeft) this
       else if (isMutable) {
         _left = newLeft
         this
-      } else new Tree(_key, _value, newLeft, _right, initialCount)
+      } else new Tree(_key, _value, newLeft, _right, mutableRetainingColour)
     }
     private[NewRedBlackTree] def mutableWithRight[B1 >: B](newRight: Tree[A, B1]): Tree[A, B1] = {
       if (_right eq newRight) this
       else if (isMutable) {
         _right = newRight
         this
-      } else new Tree(_key, _value, _left, newRight, initialCount)
+      } else new Tree(_key, _value, _left, newRight, mutableRetainingColour)
     }
     private[NewRedBlackTree] def mutableWithLeftRight[B1 >: B](newLeft: Tree[A, B1], newRight: Tree[A, B1]): Tree[A, B1] = {
       if ((_left eq newLeft) && (_right eq newRight)) this
@@ -656,7 +654,7 @@ private[collection] object NewRedBlackTree {
         _left = newLeft
         _right = newRight
         this
-      } else new Tree(_key, _value, newLeft, newRight, initialCount)
+      } else new Tree(_key, _value, newLeft, newRight, mutableRetainingColour)
     }
     private[NewRedBlackTree] def mutableBlackWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
       if ((_left eq newLeft) && isBlack) this
@@ -744,8 +742,13 @@ private[collection] object NewRedBlackTree {
       }
     }
   }
-  @`inline` private[NewRedBlackTree] def initialBlackCount = 0x80000000
-  @`inline` private[NewRedBlackTree] def initialRedCount = 0
+  //see #Tree docs "Colour, mutablity and size encoding"
+  //we make these final vals because the optimiser inlines them, without reference to the enclosing module
+  private[NewRedBlackTree] final val colourBit = 0x80000000
+  //really its ~colourBit but that doesnt get inlined
+  private[NewRedBlackTree] final val colourMask = colourBit - 1
+  private[NewRedBlackTree] final val initialBlackCount = colourBit
+  private[NewRedBlackTree] final val initialRedCount = 0
 
   @`inline` private[NewRedBlackTree] def mutableRedTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new Tree[A,B](key, value.asInstanceOf[AnyRef], left, right, initialRedCount)
   @`inline` private[NewRedBlackTree] def mutableBlackTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]) = new Tree[A,B](key, value.asInstanceOf[AnyRef], left, right, initialBlackCount)
