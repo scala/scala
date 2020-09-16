@@ -6,6 +6,6 @@ scala> def foo[T: TypeTag] = reify{List[T]()}
 def foo[T](implicit evidence$1: reflect.runtime.universe.TypeTag[T]): reflect.runtime.universe.Expr[List[T]]
 
 scala> println(foo)
-Expr[List[Nothing]](Nil)
+Expr[List[Nothing]](`package`.List.apply[Nothing]())
 
 scala> :quit
