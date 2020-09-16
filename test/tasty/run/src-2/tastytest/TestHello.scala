@@ -4,6 +4,7 @@ object TestHello extends Suite("TestHello") {
 
   test(assert(HelloWorld.msg1 === "Hello, World!"))
   test(assert(HelloWorld.msg2 === "Hello, World!"))
+  test(assert(HelloWorld.msg3 === "Hello, World!"))
   test(assert((HelloWorld.msg3: "Hello, World!") === "Hello, World!"))
   test(assert(HelloWorld.ints.exists(_ > 2)))
   test(assert((HelloWorld.one: 1) === 1))
@@ -22,7 +23,8 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.func(101) === "101"))
   test(assert(HelloWorld.func1(33) === 33))
   test(assert((HelloWorld.lzy: "lazy") === "lazy"))
-  test(assert(HelloWorld.acceptsOnlyMsg3(HelloWorld.msg3) === "Hello, World!Hello, World!"))
+  test(assert(HelloWorld.acceptsOnlyMsg4(HelloWorld.msg4) === "Hello, World!Hello, World!"))
+  test(assert(HelloWorld.`1) my long test assertion that 1^3 == 2` === 2))
   // test(assert(HelloWorld.`<init>` === 157)) // wait until https://github.com/lampepfl/dotty/issues/7799
 
   type OrInt[A] = Either[Int, A]

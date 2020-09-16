@@ -1,5 +1,7 @@
 package tastytest
 
 object TestDelayed {
-  def test: Delayed = ??? // error
+
+  compiletimeHasChild[Delayed]("tastytest.Delayed.Instance")
+
 }

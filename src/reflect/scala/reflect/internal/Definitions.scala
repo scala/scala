@@ -570,6 +570,36 @@ trait Definitions extends api.StandardDefinitions {
          def MacroContextTreeType         = BlackboxContextClass.map(sym => getTypeMember(sym, tpnme.Tree))
     lazy val MacroImplAnnotation          = requiredClass[scala.reflect.macros.internal.macroImpl]
 
+    /**Implementation of a class that is identical to `scala.reflect.macros.internal.macroImpl`,
+     * but only exists at compile time
+     */
+    lazy val MacroImplLocationAnnotation = {
+      val internalPkg       = MacroImplAnnotation.owner.suchThat(_.isPackageClass)
+      val MacroImplLocation = internalPkg.newClassSymbol(tpnme.macroImplLocation, NoPosition)
+      MacroImplLocation.setPrivateWithin(ScalaPackage)
+      MacroImplLocation.setInfoAndEnter(ClassInfoType(AnnotationClass.tpe :: Nil, newScope, MacroImplLocation))
+      // getter
+      MacroImplLocation.newMethod(
+        name     = nme.unpickledMacroImpl,
+        newFlags = STABLE | ACCESSOR | PARAMACCESSOR
+      ).setInfoAndEnter(internal.nullaryMethodType(AnyTpe)).markAllCompleted()
+      // field
+      MacroImplLocation.newValue(
+        name     = nme.unpickledMacroImpl,
+        newFlags = PRIVATE | LOCAL | PARAMACCESSOR
+      ).setInfoAndEnter(AnyTpe).markAllCompleted()
+      // ctor
+      val ctor  = MacroImplLocation.newConstructor(NoPosition)
+      val param = ctor.newValueParameter(nme.unpickledMacroImpl).setInfo(AnyTpe)
+      ctor.setInfoAndEnter(MethodType(param :: Nil, MacroImplLocation.tpe)).markAllCompleted()
+      MacroImplLocation.addAnnotation(
+        sym = CompileTimeOnlyAttr,
+        arg = Literal(Constant(
+          s"illegal reference to $MacroImplLocation, it is an implementation detail of unpickling TASTy"))
+      )
+      MacroImplLocation.markAllCompleted()
+    }
+
     lazy val StringContextClass           = requiredClass[scala.StringContext]
     lazy val StringContextModule          = requiredModule[scala.StringContext.type]
 

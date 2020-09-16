@@ -121,18 +121,20 @@ object TestRefinements extends Suite("TestRefinements") {
   test(assert(new Refinements.PickOneRefinement_1[StringSpecialRefinement].run(new StringSpecialRefinement, "hello", "world") === Option("hello")))
   test(assert(new Refinements.PickOneRefinement_2().run(new StringSpecialRefinement, "hello") === Option("hello")))
 
-  class EncoderIntSel extends Selectable {
+  type EncoderIntSel = Refinements.MethodSelectable {
+    def encode(t: Int): String
+  }
+  object EncoderIntSel {
+    import Refinements.MethodSelectable._
 
-    def encode(t: Int): String = t.toString
-
-    def selectDynamic(name: String): Any = ???
-    override def applyDynamic(name: String, paramClasses: ClassTag[_]*)(args: Any*): Any = (name, paramClasses, args) match {
-      case ("encode", Seq(ClassTag.Int), Seq(i: Int)) => encode(i)
+    def create: EncoderIntSel = {
+      new Refinements.MethodSelectable(
+        method("encode", ClassTag.Int) { xs => xs.head.toString }
+      ).asInstanceOf[EncoderIntSel]
     }
-
   }
 
-  test(assert(new Refinements.StructuralSelectable[EncoderIntSel].encodeWith(new EncoderIntSel, 23) === "23"))
-  test(assert(new Refinements.StructuralSelectableFlip().encodeWith(new EncoderIntSel, 23) === "23"))
+  test(assert(new Refinements.StructuralSelectable[EncoderIntSel].encodeWith(EncoderIntSel.create, 23) === "23"))
+  test(assert(new Refinements.StructuralSelectableFlip().encodeWith(EncoderIntSel.create, 23) === "23"))
 
 }

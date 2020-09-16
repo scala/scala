@@ -15,7 +15,7 @@ package scala.tools.nsc.tasty.bridge
 import scala.tools.nsc.tasty.SafeEq
 
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
-import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags.TastyFlagSet
+import scala.tools.tasty.{TastyName, Signature, TastyFlags}, TastyName.SignedName, Signature.MethodSignature, TastyFlags._
 import scala.tools.tasty.ErasedTypeRef
 
 /**This layer deals with selecting a member symbol from a type using a [[TastyName]],
@@ -35,10 +35,26 @@ trait SymbolOps { self: TastyUniverse =>
     if (sym.isModuleClass) sym.sourceModule else sym
 
   implicit class SymbolDecorator(val sym: Symbol) {
-    def completer: TastyLazyType = {
-      assert(sym.rawInfo.isInstanceOf[TastyLazyType], s"Expected TastyLazyType, is ${u.showRaw(sym.rawInfo)} ")
-      sym.rawInfo.asInstanceOf[TastyLazyType]
+
+    def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
+    def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
+    def isScala2Macro: Boolean = repr.originalFlagSet.is(Erased | Macro)
+
+    def isPureMixinCtor: Boolean = isMixinCtor && repr.originalFlagSet.is(Stable)
+    def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
+
+    def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
+
+    /** A computed property that should only be called on a symbol which is known to have been initialised by the
+     *  Tasty Unpickler and is not yet completed.
+     *
+     *  @todo adapt callsites and type so that this property is more safe to call (barring mutation from uncontrolled code)
+     */
+    def repr: TastyRepr = {
+      require(sym.rawInfo.isInstanceOf[TastyRepr], s"Expected ${u.typeOf[TastyRepr]}, is ${u.showRaw(sym.rawInfo)} ")
+      sym.rawInfo.asInstanceOf[TastyRepr]
     }
+
     def ensureCompleted(): Unit = {
       sym.info
       sym.annotations.foreach(_.completeInfo())
@@ -100,7 +116,7 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   private def hasType(member: Symbol)(implicit ctx: Context) = {
-    ctx.mode.is(ReadAnnotation) || (member.rawInfo `ne` u.NoType)
+    ctx.mode.is(ReadAnnotation) || ctx.mode.is(ReadMacro) && (member.info `ne` u.NoType) || (member.rawInfo `ne` u.NoType)
   }
 
   private def errorMissing[T](space: Type, tname: TastyName)(implicit ctx: Context) = {
@@ -127,7 +143,7 @@ trait SymbolOps { self: TastyUniverse =>
   }
 
   private def signedMemberOfSpace(space: Type, qual: TastyName, sig: MethodSignature[ErasedTypeRef])(implicit ctx: Context): Symbol = {
-    ctx.log(s"""<<< looking for overload member[$space] @@ $qual: ${showSig(sig)}""")
+    ctx.log(s"""<<< looking for overload in symbolOf[$space] @@ $qual: ${showSig(sig)}""")
     val member = space.member(encodeTermName(qual))
     if (!(isSymbol(member) && hasType(member))) errorMissing(space, qual)
     val (tyParamCount, argTpeRefs) = {
@@ -139,9 +155,11 @@ trait SymbolOps { self: TastyUniverse =>
     }
     def compareSym(sym: Symbol): Boolean = sym match {
       case sym: u.MethodSymbol =>
-        val params = sym.paramss.flatten
+        val method = sym.tpe.asSeenFrom(space, sym.owner)
+        ctx.log(s">>> trying $sym: $method")
+        val params = method.paramss.flatten
         val isJava = sym.isJavaDefined
-        NameErasure.sigName(sym.returnType, isJava) === sig.result &&
+        NameErasure.sigName(method.finalResultType, isJava) === sig.result &&
         params.length === argTpeRefs.length &&
         (qual === TastyName.Constructor && tyParamCount === member.owner.typeParams.length
           || tyParamCount === sym.typeParams.length) &&

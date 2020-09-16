@@ -174,52 +174,84 @@ object Refinements {
     def encodeWith(m: M, t: Int): String = m.encode(t)
   }
 
-  class StructuralSelectable[M <: Selectable { def encode(t: Int): String } ] {
+  final class MethodSelectable(methods: MethodSelectable.Method*)
+  extends scala.Selectable {
+    private val map = methods.toMap
+
+    def applyDynamic(name: String, paramClasses: ClassTag[_]*)(args: Any*): Any =
+      map.get(name, paramClasses) match
+        case Some(f) => f(args)
+        case None    => throw NoSuchMethodException(s"$name(${paramClasses.mkString(",")})")
+
+  }
+  object MethodSelectable {
+    type Method = ((String, Seq[ClassTag[_]]), Seq[Any] => Any)
+    def method(name: String, paramClasses: ClassTag[_]*)(impl: Seq[Any] => Any): Method =
+      ((name, paramClasses), impl)
+  }
+
+  class StructuralSelectable[M <: MethodSelectable { def encode(t: Int): String } ] {
     def encodeWith(m: M, t: Int): String = m.encode(t)
   }
 
   class StructuralFlip1 {
-    import reflect.Selectable.reflectiveSelectable
-    def get[M <: { val output: Int } ](m: M): Int = m.output
+    def get[M <: { val output: Int } ](m: M): Int = {
+      import reflect.Selectable.reflectiveSelectable
+      m.output
+    }
   }
 
   class StructuralFlip2 {
-    import reflect.Selectable.reflectiveSelectable
-    def get[M <: { def output: Int } ](m: M): Int = m.output
+    def get[M <: { def output: Int } ](m: M): Int = {
+      import reflect.Selectable.reflectiveSelectable
+      m.output
+    }
   }
 
   class StructuralFlip3 {
-    import reflect.Selectable.reflectiveSelectable
-    def encodeWith[M <: { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
+    def encodeWith[M <: { def encode(t: Int): String } ](m: M, t: Int): String = {
+      import reflect.Selectable.reflectiveSelectable
+      m.encode(t)
+    }
   }
 
   class StructuralFlip4 {
-    import reflect.Selectable.reflectiveSelectable
-    def get(m: { val output: Int }): Int = m.output
+    def get(m: { val output: Int }): Int = {
+      import reflect.Selectable.reflectiveSelectable
+      m.output
+    }
   }
 
   class StructuralFlip5 {
-    import reflect.Selectable.reflectiveSelectable
-    def get(m: { def output: Int }): Int = m.output
+    def get(m: { def output: Int }): Int = {
+      import reflect.Selectable.reflectiveSelectable
+      m.output
+    }
   }
 
   class StructuralFlip6 {
-    import reflect.Selectable.reflectiveSelectable
-    def encodeWith(m: { def encode(t: Int): String }, t: Int): String = m.encode(t)
+    def encodeWith(m: { def encode(t: Int): String }, t: Int): String = {
+      import reflect.Selectable.reflectiveSelectable
+      m.encode(t)
+    }
   }
 
   class StructuralTypeAliasFlip {
-    import reflect.Selectable.reflectiveSelectable
-    def get(ref: { type T = String; val t: T }): ref.T = ref.t
+    def get(ref: { type T = String; val t: T }): ref.T = {
+      import reflect.Selectable.reflectiveSelectable
+      ref.t
+    }
   }
 
   class StructuralTypeBoundsFlip {
-    import reflect.Selectable.reflectiveSelectable
-    def get(ref: { type T <: String; val t: T }): ref.T = ref.t
+    def get(ref: { type T <: String; val t: T }): ref.T = {
+      import reflect.Selectable.reflectiveSelectable
+      ref.t
+    }
   }
 
   class StructuralSelectableFlip {
-    def encodeWith[M <: Selectable { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
+    def encodeWith[M <: MethodSelectable { def encode(t: Int): String } ](m: M, t: Int): String = m.encode(t)
   }
 
 }

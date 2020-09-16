@@ -1,5 +1,9 @@
 package tastytest
 
 object TestDelayedChained {
-  def test: DelayedChained.Root = ??? // logs should assert that just accessing Root forces all sealed children up to LeafA/LeafB
+  compiletimeHasNestedChildren[DelayedChained.Root](
+    "tastytest.DelayedChained.Internal.Branch",
+    "tastytest.DelayedChained.Internal.Deeper.LeafA",
+    "tastytest.DelayedChained.Internal.Deeper.LeafB",
+  )
 }

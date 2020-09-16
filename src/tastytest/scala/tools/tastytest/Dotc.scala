@@ -22,7 +22,7 @@ object Dotc {
     }
   }
 
-  def dotc(out: String, classpath: String, sources: String*): Try[Boolean] = {
+  def dotc(out: String, classpath: String, additionalSettings: Seq[String], sources: String*): Try[Boolean] = {
     if (sources.isEmpty) {
       Success(true)
     }
@@ -34,7 +34,7 @@ object Dotc {
         "-Yerased-terms",
         "-Xfatal-warnings",
         "-usejavacp"
-      ) ++ sources
+      ) ++ additionalSettings ++ sources
       dotcProcess(args)
     }
   }
@@ -48,7 +48,7 @@ object Dotc {
       return 1
     }
     val Seq(out, src) = args
-    val success = dotc(out, out, src).get
+    val success = dotc(out, out, Nil, src).get
     if (success) 0 else 1
   }
 

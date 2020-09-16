@@ -4,4 +4,13 @@ TestErasedTypes_fail.scala:6: error: Unsupported Scala 3 erased modifier in refi
 TestErasedTypes_fail.scala:7: error: Unsupported Scala 3 erased modifier in refinement of type F; found in class tastytest.ErasedTypes.Baz.
   def test2 = new Baz[Foo]
                   ^
-2 errors
+TestErasedTypes_fail.scala:9: error: Unsupported Scala 3 erased value x; found in method foo1 in trait tastytest.ErasedTypes.Foo.
+  def test3(f: Foo) = f.foo1("foo")
+                        ^
+TestErasedTypes_fail.scala:10: error: Unsupported Scala 3 erased value x; found in method foo2 in trait tastytest.ErasedTypes.Foo.
+  def test4(f: Foo) = f.foo2("foo")
+                        ^
+TestErasedTypes_fail.scala:12: error: Unsupported Scala 3 erased method theNothing; found in object tastytest.ErasedTypes.ErasedCompileTimeOps.
+  def test5 = ErasedCompileTimeOps.theNothing
+                                   ^
+5 errors

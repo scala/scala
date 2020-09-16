@@ -74,10 +74,22 @@ trait TypeOps { self: TastyUniverse =>
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
 
     final val NoType: Type = u.NoType
+
+    /** Represents a symbol that has been initialised by TastyUnpickler, but can not be in a state of completion
+     *  because its definition has not yet been seen.
+     */
+    object DefaultInfo extends TastyRepr {
+      override def isTrivial: Boolean = true
+      def originalFlagSet: TastyFlagSet = EmptyTastyFlags
+    }
+
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
     def ExprType(res: Type): Type = u.NullaryMethodType(res)
+    def InlineExprType(res: Type): Type = res match {
+      case u.ConstantType(value) => u.NullaryMethodType(u.FoldableConstantType(value))
+    }
     def PolyType(params: List[Symbol], res: Type): Type = u.PolyType(params, res)
     def ClassInfoType(parents: List[Type], clazz: Symbol): Type = u.ClassInfoType(parents, clazz.rawInfo.decls, clazz.asType)
     def ClassInfoType(parents: List[Type], decls: List[Symbol], clazz: Symbol): Type = u.ClassInfoType(parents, u.newScopeWith(decls:_*), clazz.asType)
@@ -263,15 +275,19 @@ trait TypeOps { self: TastyUniverse =>
 
   }
 
-  /** A type which accepts two type arguments, representing an intersection type
+  /** A synthetic type `scala.&` which accepts two type arguments, representing an intersection type
    * @see https://github.com/lampepfl/dotty/issues/7688
    */
-  case object AndType extends Type
+  case object AndTpe extends Type
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === u.definitions.ScalaPackage && ( name === tpnme.And || name === tpnme.Or ) ) {
-      if (name === tpnme.And) AndType
+    if (prefix.typeSymbol === u.definitions.ScalaPackage && (
+           name === tpnme.And
+        || name === tpnme.Or
+        || name === tpnme.AnyKind) ) {
+      if (name === tpnme.And) AndTpe
+      else if (name === tpnme.AnyKind) u.definitions.AnyTpe // TODO [tasty]: scala.AnyKind can appear in upper bounds of raw type wildcards, but elsewhere it is unclear if it should be erased or error
       else unionIsUnsupported
     }
     else {
@@ -290,15 +306,27 @@ trait TypeOps { self: TastyUniverse =>
 
   private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol
 
-  /**
-   * Ported from dotc
-   */
-  abstract class TastyLazyType(val originalFlagSet: TastyFlagSet) extends u.LazyType with u.FlagAgnosticCompleter {
-    private[this] var myDecls: u.Scope = u.EmptyScope
-    def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
-    override def decls: u.Scope = myDecls
-    private[bridge] def withDecls(decls: u.Scope): this.type = { myDecls = decls; this }
-    override def load(sym: Symbol): Unit = complete(sym)
+  sealed abstract trait TastyRepr extends u.Type {
+    def originalFlagSet: TastyFlagSet
+    final def tastyOnlyFlags: TastyFlagSet = originalFlagSet & FlagSets.TastyOnlyFlags
+  }
+
+  abstract class TastyCompleter(isClass: Boolean, final val originalFlagSet: TastyFlagSet)(implicit
+      capturedCtx: Context) extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
+
+    override final val decls: u.Scope = if (isClass) u.newScope else u.EmptyScope
+
+    override final def load(sym: Symbol): Unit =
+      complete(sym)
+
+    override final def complete(sym: Symbol): Unit =
+      // we do have to capture Context here as complete is triggered outside of our control
+      // TODO [tasty]: perhaps Context can be redesigned so it can be reconstructed from a lightweight representation.
+      computeInfo(sym)(capturedCtx)
+
+    /**Compute and set the info for the symbol in the given Context
+     */
+    def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
   }
 
   def prefixedRef(prefix: Type, sym: Symbol): Type = {
@@ -327,8 +355,9 @@ trait TypeOps { self: TastyUniverse =>
   def namedMemberOfPrefix(pre: Type, name: TastyName)(implicit ctx: Context): Type =
     namedMemberOfTypeWithPrefix(pre, pre, name)
 
-  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type =
+  def namedMemberOfTypeWithPrefix(pre: Type, space: Type, tname: TastyName)(implicit ctx: Context): Type = {
     prefixedRef(pre, namedMemberOfType(space, tname))
+  }
 
   def lambdaResultType(resType: Type): Type = resType match {
     case res: LambdaPolyType => res.toNested
@@ -439,7 +468,7 @@ trait TypeOps { self: TastyUniverse =>
       new PolyTypeLambda(params)(registerCallback, paramInfosOp, resultTypeOp)
   }
 
-  abstract class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
+  final class MethodTypeCompanion(defaultFlags: TastyFlagSet) extends TermLambdaCompanion { self =>
     def factory(params: List[TastyName])(registerCallback: Type => Unit,
         paramInfosOp: () => List[Type], resultTypeOp: () => Type)(implicit ctx: Context): LambdaType =
       new MethodTermLambda(params, defaultFlags)(registerCallback, paramInfosOp, resultTypeOp)
@@ -469,8 +498,7 @@ trait TypeOps { self: TastyUniverse =>
 
   }
 
-  object MethodType extends MethodTypeCompanion(EmptyTastyFlags)
-  object ImplicitMethodType extends MethodTypeCompanion(Implicit)
+  def methodTypeCompanion(initialFlags: TastyFlagSet): MethodTypeCompanion = new MethodTypeCompanion(initialFlags)
 
   abstract class TermLambdaCompanion
     extends LambdaTypeCompanion[TastyName]

@@ -12,4 +12,6 @@ object TestAnnotated {
     val o = new OuterAnnotated {}
     o.foo
   }
+  def test6 = new SelectInAnnotated.AmbiguousAnnotated {}
+  def test7 = new SelectInAnnotatedinParent.AmbiguousAnnotated {}
 }

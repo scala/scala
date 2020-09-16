@@ -15,11 +15,10 @@ package scala.tools.nsc.tasty.bridge
 import scala.annotation.tailrec
 import scala.reflect.io.AbstractFile
 
-import collection.mutable
-
 import scala.tools.tasty.{TastyName, TastyFlags}, TastyFlags._, TastyName.ObjectName
 import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
+import scala.collection.mutable
 
 /**This contains the definition for [[Context]], along with standard error throwing capabilities with user friendly
  * formatted errors that can change their output depending on the context mode.
@@ -74,15 +73,26 @@ trait ContextOps { self: TastyUniverse =>
     else u.NoSymbol //throw new AssertionError(s"no module $name in ${location(owner)}")
   }
 
-  /**Perform an operation within a context that has the mode [[IndexStats]] will force any collected annotations
-   * afterwards*/
-  def inIndexingContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+  /**Perform an operation within a context that has the mode `IndexStats` will force any collected annotations
+   * afterwards */
+  def inIndexStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
     val statsCtx = ctx.addMode(IndexStats)
     op(statsCtx)
     statsCtx.initialContext.forceAnnotations()
   }
 
+  /** Perform an operation within a context that has the mode `InnerScope` will enter any inline methods afterwards */
+  def inInnerScopeContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+    val innerCtx = ctx.addMode(InnerScope)
+    op(innerCtx)
+    innerCtx.initialContext.enterLatentDefs(innerCtx.owner)
+  }
 
+
+  /** an aggregate of `inInnerScopeContext` within `inIndexStatsContext` */
+  def inIndexScopedStatsContext(op: Context => Unit)(implicit ctx: Context): Unit = {
+    inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
+  }
 
   /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
    * sealed child.
@@ -126,6 +136,9 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
+    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro || decl.isTraitParamAccessor
+    def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
+
     def canEnterOverload(decl: Symbol): Boolean = {
       !(decl.isModule && isSymbol(findObject(thisCtx.owner, decl.name)))
     }
@@ -144,10 +157,11 @@ trait ContextOps { self: TastyUniverse =>
 
     private final def loadingMirror: u.Mirror = u.mirrorThatLoaded(owner)
 
-    final def requiredPackage(fullname: TastyName): Symbol = {
-      if (fullname === TastyName.Root || fullname === TastyName.RootPkg) loadingMirror.RootPackage
-      else if (fullname === TastyName.EmptyPkg) loadingMirror.EmptyPackage
-      symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
+    final def requiredPackage(fullname: TastyName): Symbol = fullname match {
+      case TastyName.Root | TastyName.RootPkg => loadingMirror.RootPackage
+      case TastyName.EmptyPkg                 => loadingMirror.EmptyPackage
+      case fullname                           =>
+        symOrDependencyError(false, true, fullname)(loadingMirror.getPackage(encodeTermName(fullname).toString))
     }
 
     private def symOrDependencyError(isObject: Boolean, isPackage: Boolean, fullname: TastyName)(sym: => Symbol): Symbol = {
@@ -218,7 +232,7 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object val by checking for an existing definition in the owner's scope
       */
-    final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyLazyType, privateWithin: Symbol = noSymbol): Symbol = {
+    final def delayCompletion(owner: Symbol, name: TastyName, completer: TastyCompleter, privateWithin: Symbol = noSymbol): Symbol = {
       def default() = unsafeNewSymbol(owner, name, completer.originalFlagSet, completer, privateWithin)
       if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(name))
@@ -234,7 +248,7 @@ trait ContextOps { self: TastyUniverse =>
 
     /** Guards the creation of an object class by checking for an existing definition in the owner's scope
       */
-    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyLazyType, privateWithin: Symbol): Symbol = {
+    final def delayClassCompletion(owner: Symbol, typeName: TastyName.TypeName, completer: TastyCompleter, privateWithin: Symbol): Symbol = {
       def default() = unsafeNewClassSymbol(owner, typeName, completer.originalFlagSet, completer, privateWithin)
       if (completer.originalFlagSet.is(Object)) {
         val sourceObject = findObject(owner, encodeTermName(typeName.toTermName))
@@ -248,8 +262,15 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
-    final def enterIfUnseen(decl: Symbol): Unit = {
-      val decls = owner.rawInfo.decls
+    final def enterIfUnseen(sym: Symbol): Unit = {
+      if (mode.is(IndexScopedStats))
+        initialContext.collectLatentEvidence(owner, sym)
+      val decl = declaringSymbolOf(sym)
+      if (!(requiresLatentEntry(decl) || neverEntered(decl)))
+        enterIfUnseen0(owner.rawInfo.decls, decl)
+    }
+
+    protected final def enterIfUnseen0(decls: u.Scope, decl: Symbol): Unit = {
       if (allowsOverload(decl)) {
         if (canEnterOverload(decl)) {
           decls.enter(decl)
@@ -282,11 +303,14 @@ trait ContextOps { self: TastyUniverse =>
       else if (name === TastyName.Constructor) {
         owner.newConstructor(u.NoPosition, encodeFlagSet(flags &~ Stable))
       }
+      else if (name === TastyName.MixinConstructor) {
+        owner.newMethodSymbol(u.nme.MIXIN_CONSTRUCTOR, u.NoPosition, encodeFlagSet(flags &~ Stable))
+      }
       else if (flags.is(FlagSets.ObjectCreationFlags)) {
         log(s"!!! visited module value $name first")
         assert(!owner.rawInfo.decls.lookupAll(encodeTermName(name)).exists(_.isModule))
         val module = owner.newModule(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
-        module.moduleClass.info = u.NoType
+        module.moduleClass.info = defn.DefaultInfo
         module
       }
       else if (name.isTypeName) {
@@ -300,7 +324,7 @@ trait ContextOps { self: TastyUniverse =>
       if (flags.is(FlagSets.ObjectClassCreationFlags)) {
         log(s"!!! visited module class $typeName first")
         val module = owner.newModule(encodeTermName(typeName), u.NoPosition, encodeFlagSet(FlagSets.ObjectCreationFlags))
-        module.info = u.NoType
+        module.info = defn.DefaultInfo
         module.moduleClass.flags = encodeFlagSet(flags)
         module.moduleClass
       }
@@ -314,7 +338,7 @@ trait ContextOps { self: TastyUniverse =>
       val assumedSelfType =
         if (cls.is(Object) && cls.owner.isClass) defn.SingleType(cls.owner.thisType, cls.sourceModule)
         else u.NoType
-      cls.info = u.ClassInfoType(cls.completer.parents, cls.completer.decls, assumedSelfType.typeSymbolDirect)
+      cls.info = u.ClassInfoType(cls.repr.parents, cls.repr.decls, assumedSelfType.typeSymbolDirect)
       cls
     }
 
@@ -379,9 +403,6 @@ trait ContextOps { self: TastyUniverse =>
 
     final def newRefinementClassSymbol: Symbol = owner.newRefinementClass(u.NoPosition)
 
-    final def initialiseClassScope(clazz: Symbol): Unit =
-      clazz.completer.withDecls(u.newScope)
-
     final def setInfo(sym: Symbol, info: Type): Unit = sym.info = info
 
     final def markAsEnumSingleton(sym: Symbol): Unit =
@@ -405,7 +426,6 @@ trait ContextOps { self: TastyUniverse =>
     final def withNewScope: Context =
       freshSymbol(newLocalDummy)
 
-    final def selectionCtx(name: TastyName): Context = this // if (name.isConstructorName) this.addMode(Mode.InSuperCall) else this
     final def freshSymbol(owner: Symbol): FreshContext = new FreshContext(owner, this, this.mode)
     final def freshMode(mode: TastyMode): FreshContext = new FreshContext(this.owner, this, mode)
     final def fresh: FreshContext                      = new FreshContext(this.owner, this, this.mode)
@@ -454,16 +474,96 @@ trait ContextOps { self: TastyUniverse =>
      */
     private[ContextOps] def forceAnnotations(): Unit = {
       if (mySymbolsToForceAnnots != null) {
-        val toForce = mySymbolsToForceAnnots
-        mySymbolsToForceAnnots = null
+        val toForce = mySymbolsToForceAnnots.toList
+        mySymbolsToForceAnnots.clear()
         for (sym <- toForce) {
           log(s"!!! forcing annotations on ${showSym(sym)}")
           analyseAnnotations(sym)
         }
-        assert(mySymbolsToForceAnnots == null, "more symbols added while forcing")
+        assert(mySymbolsToForceAnnots.isEmpty, "more symbols added while forcing")
       }
     }
 
+    private[this] var myInlineDefs: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+    private[this] var myMacros: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+    private[this] var myTraitParamAccessors: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]] = null
+
+    /** Collect evidence from definitions that is required by `enterLatentDefs`. */
+    private[ContextOps] def collectLatentEvidence(owner: Symbol, sym: Symbol): Unit = {
+
+      def macroMap() = {
+        if (myMacros == null) myMacros = mutable.HashMap.empty
+        myMacros
+      }
+
+      def inlineMap() = {
+        if (myInlineDefs == null) myInlineDefs = mutable.HashMap.empty
+        myInlineDefs
+      }
+
+      def traitParamAccessors() = {
+        if (myTraitParamAccessors == null) myTraitParamAccessors = mutable.HashMap.empty
+        myTraitParamAccessors
+      }
+
+      def append(map: mutable.Map[Symbol, mutable.ArrayBuffer[Symbol]])(owner: Symbol, sym: Symbol) =
+        map.getOrElseUpdate(owner, mutable.ArrayBuffer.empty) += sym
+
+      if (sym.isScala2Macro) append(macroMap())(owner, sym)
+      else if (sym.isScala3Inline) append(inlineMap())(owner, sym)
+      else if (sym.isTraitParamAccessor) append(traitParamAccessors())(owner, sym)
+
+    }
+
+    /**Should be called after indexing all symbols in the given owners scope.
+     *
+     * Enters qualifying definitions into the given owners scope, according to the following rules:
+     *   - an `inline macro` method (Scala 3 macro) without a corresponding `erased macro` method (Scala 2 macro).
+     *
+     * Reports illegal definitions:
+     *   - trait constructors with parameters
+     *
+     *  @param cls should be a symbol associated with a non-empty scope
+     */
+    private[ContextOps] def enterLatentDefs(cls: Symbol): Unit = {
+
+      def macroDefs(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myMacros != null) myMacros.remove(cls)
+        else None
+      }
+
+      def inlineDefs(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myInlineDefs != null) myInlineDefs.remove(cls)
+        else None
+      }
+
+      def traitParamAccessors(cls: Symbol): Option[Iterable[Symbol]] = {
+        if (myTraitParamAccessors != null) myTraitParamAccessors.remove(cls)
+        else None
+      }
+
+      def enterInlineDefs(cls: Symbol, decls: u.Scope): Unit = {
+        val macros = macroDefs(cls).getOrElse(Iterable.empty)
+        val defs   = inlineDefs(cls).getOrElse(Iterable.empty)
+
+        for (d <- defs if !macros.exists(_.name == d.name))
+          enterIfUnseen0(decls, d)
+      }
+
+      def reportParameterizedTrait(cls: Symbol, decls: u.Scope): Unit = {
+        val traitParams = traitParamAccessors(cls).getOrElse(Iterable.empty)
+        if (traitParams.nonEmpty) {
+          val parameters = traitParams.map(_.nameString)
+          val msg = s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
+          unsupportedError(msg)(this.withOwner(cls.owner))
+        }
+      }
+
+      val decls = cls.rawInfo.decls
+      enterInlineDefs(cls, decls)
+      reportParameterizedTrait(cls, decls)
+
+    }
   }
 
   final class FreshContext(val owner: Symbol, val outer: Context, val mode: TastyMode) extends Context {

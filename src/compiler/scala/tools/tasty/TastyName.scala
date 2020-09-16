@@ -25,6 +25,7 @@ object TastyName {
   final case class UniqueName(qual: TastyName, sep: SimpleName, num: Int)                     extends TastyName
   final case class DefaultName(qual: TastyName, num: Int)                                     extends TastyName
   final case class PrefixName(prefix: SimpleName, qual: TastyName)                            extends TastyName
+  final case class SuffixName(qual: TastyName, suffix: SimpleName)                            extends TastyName
   final case class TypeName private (base: TastyName)                                         extends TastyName
 
   object TypeName {
@@ -41,6 +42,7 @@ object TastyName {
   final val WildcardSep: SimpleName = SimpleName("_$")
   final val InlinePrefix: SimpleName = SimpleName("inline$")
   final val SuperPrefix: SimpleName = SimpleName("super$")
+  final val BodyRetainerSuffix: SimpleName = SimpleName("$retainedBody")
 
   // TermNames
   final val Empty: SimpleName = SimpleName("")
@@ -87,6 +89,7 @@ object TastyName {
       case name: UniqueName    => traverse(sb, name.qual) append (name.sep.raw) append (name.num)
       case name: QualifiedName => traverse(traverse(sb, name.qual) append (name.sep.raw), name.selector)
       case name: PrefixName    => traverse(sb append (name.prefix.raw), name.qual)
+      case name: SuffixName    => traverse(sb, name.qual) append (name.suffix.raw)
 
       case name: DefaultName if name.qual == Constructor  =>
         sb append DefaultGetterInitStr append (name.num + 1)
@@ -98,14 +101,14 @@ object TastyName {
   /** Displays formatted information about the structure of the name
    */
   object DebugEncoder extends StringBuilderEncoder {
-
-    def merge[T](sb: StringBuilder, sig: Signature[T]) = sig.mergeShow(sb)
+    import Signature.merge
 
     def traverse(sb: StringBuilder, name: TastyName): StringBuilder = name match {
 
       case SimpleName(raw)          => sb append raw
       case DefaultName(qual, num)   => traverse(sb, qual) append "[Default " append (num + 1) append ']'
       case PrefixName(prefix, qual) => traverse(sb, qual) append "[Prefix " append (prefix.raw) append ']'
+      case SuffixName(qual, suffix) => traverse(sb, qual) append "[Suffix " append (suffix.raw) append ']'
       case ObjectName(name)         => traverse(sb, name) append "[ModuleClass]"
       case TypeName(name)           => traverse(sb, name) append "[Type]"
       case SignedName(name,sig)     => merge(traverse(sb, name) append "[Signed ", sig.map(_.signature)) append ']'
@@ -139,6 +142,7 @@ object TastyName {
       case name: UniqueName    => traverse(sb, name.qual) append (name.sep.raw) append (name.num)
       case name: QualifiedName => traverse(traverse(sb, name.qual) append (name.sep.raw), name.selector)
       case name: PrefixName    => traverse(sb append (name.prefix.raw), name.qual)
+      case name: SuffixName    => traverse(sb, name.qual) append (name.suffix.raw)
 
       case name: DefaultName if name.qual == Constructor => sb append DefaultGetterInitStr append (name.num + 1)
 
@@ -154,6 +158,7 @@ object TastyName {
     case UniqueName(qual, sep, num) => UniqueName(deepEncode(qual), sep, num)
     case DefaultName(qual, num) => DefaultName(deepEncode(qual), num)
     case PrefixName(prefix, qual) => PrefixName(prefix, deepEncode(qual))
+    case SuffixName(qual, suffix) => SuffixName(deepEncode(qual), suffix)
     case TypeName(base) => TypeName(deepEncode(base))
     case SignedName(qual, sig) => SignedName(deepEncode(qual), sig.map(_.encode))
   }

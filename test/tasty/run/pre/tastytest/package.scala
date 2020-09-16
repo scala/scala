@@ -8,6 +8,12 @@ package object tastytest {
     final def ===[U](u: U)(implicit ev: T =:= U): Boolean = t == u
   }
 
+  class MacroImpl(val c: Context) {
+    import c.universe._
+    def mono: Literal = q"1"
+    def poly[T: c.WeakTypeTag]: Tree = q"${c.weakTypeOf[T].toString}"
+  }
+
   object Macros {
 
     def hasStaticAnnotImpl[T, A](c: Context)(implicit T: c.WeakTypeTag[T], A: c.WeakTypeTag[A]): c.Expr[Boolean] = {
@@ -19,6 +25,11 @@ package object tastytest {
         c.error(c.enclosingPosition, s"${weakTypeOf[T]} does not have a member with annotation ${weakTypeOf[A]}")
         c.Expr[Boolean](q"false")
       }
+    }
+
+    def constIntImpl[T](c: Context)(x: c.Expr[T])(implicit T: c.WeakTypeTag[T]): c.Expr[Int] = {
+      import c.universe._
+      c.Expr[Int](q"1")
     }
 
   }

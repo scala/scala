@@ -24,8 +24,7 @@ object TastyFlags {
   final val AbsOverride           = Protected.next
   final val Abstract              = AbsOverride.next
   final val Final                 = Abstract.next
-  final val Interface             = Final.next
-  final val Sealed                = Interface.next
+  final val Sealed                = Final.next
   final val Case                  = Sealed.next
   final val Implicit              = Case.next
   final val Lazy                  = Implicit.next
@@ -41,8 +40,8 @@ object TastyFlags {
   final val CaseAccessor          = FieldAccessor.next
   final val Covariant             = CaseAccessor.next
   final val Contravariant         = Covariant.next
-  final val DefaultParameterized  = Contravariant.next
-  final val Stable                = DefaultParameterized.next
+  final val HasDefault            = Contravariant.next
+  final val Stable                = HasDefault.next
   final val ParamSetter           = Stable.next
   final val Param                 = ParamSetter.next
   final val Deferred              = Param.next
@@ -52,16 +51,18 @@ object TastyFlags {
   final val Inline                = Internal.next
   final val InlineProxy           = Inline.next
   final val Opaque                = InlineProxy.next
-  final val Scala2x               = Opaque.next
-  final val Extension             = Scala2x.next
+  final val Extension             = Opaque.next
   final val Given                 = Extension.next
   final val Exported              = Given.next
   final val Macro                 = Exported.next
-  final val Enum                  = Macro.next
+  final val SuperTrait            = Macro.next
+  final val Enum                  = SuperTrait.next
   final val Open                  = Enum.next
   final val ParamAlias            = Open.next
 
   private[TastyFlags] final val maxFlag: Long = ParamAlias.shift
+
+  def optFlag(cond: Boolean)(flag: TastyFlagSet): TastyFlagSet = if (cond) flag else EmptyTastyFlags
 
   case class TastyFlagSet(val toLong: Long) extends AnyVal {
 
@@ -102,7 +103,6 @@ object TastyFlags {
             case AbsOverride => "AbsOverride"
             case Abstract => "Abstract"
             case Final => "Final"
-            case Interface => "Interface"
             case Sealed => "Sealed"
             case Case => "Case"
             case Implicit => "Implicit"
@@ -119,7 +119,7 @@ object TastyFlags {
             case CaseAccessor => "CaseAccessor"
             case Covariant => "Covariant"
             case Contravariant => "Contravariant"
-            case DefaultParameterized => "DefaultParameterized"
+            case HasDefault => "HasDefault"
             case Stable => "Stable"
             case ParamSetter => "ParamSetter"
             case Param => "Param"
@@ -130,11 +130,11 @@ object TastyFlags {
             case Inline => "Inline"
             case InlineProxy => "InlineProxy"
             case Opaque => "Opaque"
-            case Scala2x => "Scala2x"
             case Extension => "Extension"
             case Given => "Given"
             case Exported => "Exported"
             case Macro => "Macro"
+            case SuperTrait => "SuperTrait"
             case Enum => "Enum"
             case Open => "Open"
             case ParamAlias => "ParamAlias"
