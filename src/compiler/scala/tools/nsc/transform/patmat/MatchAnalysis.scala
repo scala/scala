@@ -101,6 +101,13 @@ trait TreeAndTypeAnalysis extends Debugging {
           val tpApprox = analyzer.approximateAbstracts(tp)
           val pre = tpApprox.prefix
 
+          def enumerateSealed(syms: Set[Symbol]) = {
+            // filter out the original sym, if it's abstract (and not a primitive)
+            syms.toList
+              .filterNot(x => x == sym && x.isAbstractClass && !isPrimitiveValueClass(x))
+              .sortBy(_.sealedSortName)
+          }
+
           def filterChildren(children: List[Symbol]): List[Type] = {
             children flatMap { sym =>
               // have to filter out children which cannot match: see ticket #3683 for an example
@@ -117,13 +124,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             }
           }
 
-          if(grouped) {
-            def enumerateChildren(sym: Symbol) = {
-              sym.sealedChildren.toList
-                .sortBy(_.sealedSortName)
-                .filterNot(x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
-            }
-
+          if (grouped) {
             // enumerate only direct subclasses,
             // subclasses of subclasses are enumerated in the next iteration
             // and added to a new group
@@ -131,7 +132,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             def groupChildren(wl: List[Symbol],
                               acc: List[List[Type]]): List[List[Type]] = wl match {
               case hd :: tl =>
-                val children = enumerateChildren(hd)
+                val children = enumerateSealed(hd.sealedChildren)
                 // put each trait in a new group, since traits could belong to the same
                 // group as a derived class
                 val (traits, nonTraits) = children.partition(_.isTrait)
@@ -143,11 +144,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             groupChildren(sym :: Nil, Nil)
           } else {
             val subclasses = debug.patmatResult(s"enum $sym sealed, subclasses")(
-              // symbols which are both sealed and abstract need not be covered themselves, because
-              // all of their children must be and they cannot otherwise be created.
-              sym.sealedDescendants.toList
-                sortBy (_.sealedSortName)
-                filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
+              enumerateSealed(sym.sealedDescendants)
             )
 
             List(debug.patmatResult(s"enum sealed tp=$tp, tpApprox=$tpApprox as") {
