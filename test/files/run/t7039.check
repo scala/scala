@@ -1,1 +1,4 @@
+t7039.scala:8: warning: unreachable code
+    case UnapplySeqTest(5, 1) => println("Matched!") // compiles
+                                        ^
 null matched

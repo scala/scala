@@ -67,7 +67,7 @@ trait MatchTranslation {
       private lazy val extractor = ExtractorCall(tree)
 
       def pos     = tree.pos
-      def tpe     = binder.info.dealiasWiden  // the type of the variable bound to the pattern
+      def tpe     = binder.info.dealias // the type of the variable bound to the pattern
       def pt      = unbound match {
         case Star(tpt)      => this glbWith seqType(tpt.tpe)
         case TypeBound(tpe) => tpe
@@ -217,7 +217,7 @@ trait MatchTranslation {
 
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatNanos) else null
 
-      val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.widen.withoutAnnotations))
+      val selectorTp = repeatedToSeq(elimAnonymousClass(selector.tpe.withoutAnnotations))
 
       // when one of the internal cps-type-state annotations is present, strip all CPS annotations
       val origPt  = removeCPSFromPt(match_.tpe)

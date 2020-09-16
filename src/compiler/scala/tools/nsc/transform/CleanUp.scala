@@ -398,12 +398,15 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
 
     // transform scrutinee of all matches to ints
     def transformSwitch(sw: Match): Tree = { import CODE._
-      sw.selector.tpe match {
+      sw.selector.tpe.widen match {
         case IntTpe => sw // can switch directly on ints
         case StringTpe =>
           // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
-          val Match(Typed(selTree: Ident, _), cases) = sw
-          val sel = selTree.symbol
+          val Match(Typed(selTree, _), cases) = sw
+          def selArg = selTree match {
+            case x: Ident   => REF(x.symbol)
+            case x: Literal => x
+          }
           val restpe = sw.tpe
           val swPos = sw.pos.focus
 
@@ -429,7 +432,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
            */
 
           val stats = mutable.ListBuffer.empty[Tree]
-          var failureBody = Throw(New(definitions.MatchErrorClass.tpe_*, REF(sel))) : Tree
+          var failureBody = Throw(New(definitions.MatchErrorClass.tpe_*, selArg)) : Tree
 
           // genbcode isn't thrilled about seeing labels with Unit arguments, so `success`'s type is one of
           // `${sw.tpe} => ${sw.tpe}` or `() => Unit` depending.
@@ -447,7 +450,13 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           val failure = currentOwner.newLabel(unit.freshTermName("matchEnd"), swPos).setInfo(MethodType(Nil, restpe))
           def fail(): Tree = atPos(swPos) { Apply(REF(failure), Nil) }
 
-          val newSel = atPos(sel.pos) { IF (sel OBJ_EQ NULL) THEN LIT(0) ELSE (Apply(REF(sel) DOT Object_hashCode, Nil)) }
+          val ifNull = LIT(0)
+          val noNull = Apply(selArg DOT Object_hashCode, Nil)
+
+          val newSel = selTree match {
+            case _: Ident   => atPos(selTree.symbol.pos) { IF(selTree.symbol OBJ_EQ NULL) THEN ifNull ELSE noNull }
+            case x: Literal => atPos(selTree.pos) { if (x.value.value == null) ifNull else noNull }
+          }
           val casesByHash =
             cases.flatMap {
               case cd@CaseDef(StringsPattern(strs), _, body) =>
@@ -465,7 +474,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
                 case (next, (pat, jump, pos)) =>
                   val comparison = if (pat == null) Object_eq else Object_equals
                   atPos(pos) {
-                    IF(LIT(pat) DOT comparison APPLY REF(sel)) THEN (REF(jump) APPLY Nil) ELSE next
+                    IF(LIT(pat) DOT comparison APPLY selArg) THEN (REF(jump) APPLY Nil) ELSE next
                   }
               }
               CaseDef(LIT(hash), EmptyTree, newBody)

@@ -1,3 +1,6 @@
+virtpatmat_literal.scala:6: warning: unreachable code
+   case `a` => println("FAILED")
+                      ^
 OK
 OK
 OK
