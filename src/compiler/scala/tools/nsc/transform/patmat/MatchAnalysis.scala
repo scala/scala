@@ -121,7 +121,7 @@ trait TreeAndTypeAnalysis extends Debugging {
             def enumerateChildren(sym: Symbol) = {
               sym.sealedChildren.toList
                 .sortBy(_.sealedSortName)
-                .filterNot(x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
+                .filterNot(x => (x.isSealed || x.isPrivate) && x.isAbstractClass && !isPrimitiveValueClass(x))
             }
 
             // enumerate only direct subclasses,
@@ -147,7 +147,7 @@ trait TreeAndTypeAnalysis extends Debugging {
               // all of their children must be and they cannot otherwise be created.
               sym.sealedDescendants.toList
                 sortBy (_.sealedSortName)
-                filterNot (x => x.isSealed && x.isAbstractClass && !isPrimitiveValueClass(x))
+                filterNot (x => (x.isSealed || x.isPrivate) && x.isAbstractClass && !isPrimitiveValueClass(x))
             )
 
             List(debug.patmatResult(s"enum sealed tp=$tp, tpApprox=$tpApprox as") {
