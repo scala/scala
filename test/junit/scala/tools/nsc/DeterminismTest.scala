@@ -1,6 +1,6 @@
 package scala.tools.nsc
 
-import org.junit.Test
+import org.junit.{ Ignore, Test }
 
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 
@@ -315,6 +315,7 @@ class DeterminismTest {
     test(List(code))
   }
 
+  @Ignore // TODO un-@Ignore and fix, scala/bug#12156
   @Test def testReferenceToInnerClassMadeNonPrivate(): Unit = {
     def code = List[SourceFile](
       source("t.scala",
