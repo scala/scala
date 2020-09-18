@@ -87,7 +87,11 @@ trait IndexedSeqLike[+A, +Repr] extends Any with SeqLike[A, Repr] {
   }
 
   override /*IterableLike*/
-  def iterator: Iterator[A] = new Elements(0, length)
+  def iterator: Iterator[A] = {
+    val len = length
+    if (len == 0) Iterator.empty
+    else new Elements(0, length)
+  }
 
   /* Overridden for efficiency */
   override def toBuffer[A1 >: A]: mutable.Buffer[A1] = {
