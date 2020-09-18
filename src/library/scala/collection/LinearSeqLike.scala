@@ -41,7 +41,7 @@ trait LinearSeqLike[+A, +Repr <: LinearSeqLike[A, Repr]] extends SeqLike[A, Repr
   override def hashCode()= scala.util.hashing.MurmurHash3.seqHash(seq) // TODO - can we get faster via "linearSeqHash" ?
 
   override /*IterableLike*/
-  def iterator: Iterator[A] = new AbstractIterator[A] {
+  def iterator: Iterator[A] = if (self.isEmpty) Iterator.empty else new AbstractIterator[A] {
     var these = self
     def hasNext: Boolean = !these.isEmpty
     def next(): A =

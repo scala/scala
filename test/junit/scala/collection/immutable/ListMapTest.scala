@@ -5,8 +5,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
+import scala.tools.testing.AllocationTest
+
 @RunWith(classOf[JUnit4])
-class ListMapTest {
+class ListMapTest extends AllocationTest {
 
   @Test
   def t7445(): Unit = {
@@ -45,4 +47,28 @@ class ListMapTest {
     val m = ListMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
     assertEquals(List(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4), m.iterator.toList)
   }
+
+  @Test
+  def lastNonAllocating(): Unit = {
+    var m = ListMap(1 -> 1, 2 -> 2, 3 -> 3, 5 -> 5, 4 -> 4)
+    assertEquals((4-> 4), exactAllocates(tuples(1))(m.last))
+    assertEquals(Some((4-> 4)), exactAllocates(someTuples(1))(m.lastOption))
+
+    m = ListMap.empty
+    assertEquals(None, nonAllocating(m.lastOption))
+
+  }
+  @Test
+  def iteratorAllocations(): Unit = {
+    var m = ListMap()
+    assertSame(Iterator.empty, nonAllocating(m.iterator))
+  }
+  /** we base the result on tuples of strings as ListMap is not specialised */
+  private def tuples(n: Int) = ListMapTest.tupleStringCost * n
+  private def someTuples(n: Int) = ListMapTest.someTupleStringCost * n
+}
+object ListMapTest {
+  val tupleStringCost = AllocationTest.sizeOf(("1","1"), "a tuple of Strings")
+  val someTupleStringCost = AllocationTest.sizeOf(Some("1","1"), "a option of tuple of Strings")
+
 }
