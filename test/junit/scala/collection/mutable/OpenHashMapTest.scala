@@ -56,40 +56,27 @@ class OpenHashMapTest {
       override def hashCode() = 42
     }
 
-    val counter = new GraphVisitor() {
-      private[this] var instanceCount: Int = _
-
-      def countInstances(obj: AnyRef) = {
-        instanceCount = 0
-        val walker = new GraphWalker(obj)
-        walker.addVisitor(this)
-        walker.walk
-        instanceCount
-      }
-
-      override def visit(record: GraphPathRecord) {
-        if (record.klass() == classOf[MyClass])  instanceCount += 1
-      }
-    }
+    val walker = new GraphWalker()
+    def countInstances(obj: AnyRef) = walker.walk(obj).getClassCounts().count(classOf[MyClass]: Class[_])
 
     val m = OpenHashMap.empty[MyClass, Int]
     val obj = new MyClass
-    assertEquals("Found a key instance in the map before adding one!?", 0, counter.countInstances(m))
+    assertEquals("Found a key instance in the map before adding one!?", 0, countInstances(m))
     m.put(obj, 0)
-    assertEquals("There should be only one key instance in the map.", 1, counter.countInstances(m))
+    assertEquals("There should be only one key instance in the map.", 1, countInstances(m))
     m.put(obj, 1)
-    assertEquals("There should still be only one key instance in the map.", 1, counter.countInstances(m))
+    assertEquals("There should still be only one key instance in the map.", 1, countInstances(m))
     m.remove(obj)
-    assertEquals("There should be no key instance in the map.", 0, counter.countInstances(m))
+    assertEquals("There should be no key instance in the map.", 0, countInstances(m))
 
     val obj2 = new MyClass
     assertEquals("The hash codes of the test objects need to match.", obj.##, obj2.##)
     m.put(obj, 0)
     m.put(obj2, 0)
-    assertEquals("There should be two key instances in the map.", 2, counter.countInstances(m))
+    assertEquals("There should be two key instances in the map.", 2, countInstances(m))
     m.remove(obj)
-    assertEquals("There should be one key instance in the map.", 1, counter.countInstances(m))
+    assertEquals("There should be one key instance in the map.", 1, countInstances(m))
     m.remove(obj2)
-    assertEquals("There should be no key instance in the map.", 0, counter.countInstances(m))
+    assertEquals("There should be no key instance in the map.", 0, countInstances(m))
   }
 }
