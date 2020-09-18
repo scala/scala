@@ -503,7 +503,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       else Some(s"${innerClassSym.rawname}${innerClassSym.moduleSuffix}") // moduleSuffix for module classes
     }
 
-    Some(NestedInfo(enclosingClass, outerName, innerName, isStaticNestedClass, exitingTyper(innerClassSym.isPrivate)))
+    Some(NestedInfo(enclosingClass, outerName, innerName, isStaticNestedClass, enteringTyper(innerClassSym.isPrivate)))
   }
 
   /**

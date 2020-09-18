@@ -676,7 +676,7 @@ abstract class BTypes {
     }
 
     def innerClassAttributeEntry: Either[NoClassBTypeInfo, Option[InnerClassEntry]] = info.map(i => i.nestedInfo.force map {
-      case NestedInfo(_, outerName, innerName, isStaticNestedClass, exitingTyperPrivate) =>
+      case NestedInfo(_, outerName, innerName, isStaticNestedClass, enteringTyperPrivate) =>
         // the static flag in the InnerClass table has a special meaning, see InnerClass comment
         def adjustStatic(flags: Int): Int = ( flags & ~Opcodes.ACC_STATIC |
           (if (isStaticNestedClass) Opcodes.ACC_STATIC else 0)
@@ -685,7 +685,7 @@ abstract class BTypes {
           internalName,
           outerName.orNull,
           innerName.orNull,
-          flags = adjustStatic(if (exitingTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
+          flags = adjustStatic(if (enteringTyperPrivate) (i.flags & ~Opcodes.ACC_PUBLIC) | Opcodes.ACC_PRIVATE else i.flags)
         )
     })
 
@@ -878,7 +878,7 @@ abstract class BTypes {
                               outerName: Option[String],
                               innerName: Option[String],
                               isStaticNestedClass: Boolean,
-                              exitingTyperPrivate: Boolean)
+                              enteringTyperPrivate: Boolean)
 
   /**
    * This class holds the data for an entry in the InnerClass table. See the InnerClass summary

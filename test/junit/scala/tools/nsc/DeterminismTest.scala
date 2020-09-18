@@ -315,7 +315,6 @@ class DeterminismTest {
     test(List(code))
   }
 
-  @Ignore // TODO un-@Ignore and fix, scala/bug#12156
   @Test def testReferenceToInnerClassMadeNonPrivate(): Unit = {
     def code = List[SourceFile](
       source("t.scala",
