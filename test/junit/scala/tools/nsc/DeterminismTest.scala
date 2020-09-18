@@ -1,19 +1,13 @@
 package scala.tools.nsc
 
-import java.io.OutputStreamWriter
-import java.nio.charset.Charset
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, SimpleFileVisitor}
+import org.junit.{ Ignore, Test }
 
-import javax.tools.ToolProvider
-import org.junit.Test
-
-import scala.jdk.CollectionConverters._
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
-import scala.tools.nsc.reporters.StoreReporter
-import FileUtils._
 
 class DeterminismTest {
+  private val tester = new DeterminismTester
+  import tester.test
+
   @Test def testLambdaLift(): Unit = {
     def code = List[SourceFile](
       source("a.scala",
@@ -300,66 +294,117 @@ class DeterminismTest {
     test(List(code))
   }
 
-  def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
-  private def test(groups: List[List[SourceFile]]): Unit = {
-    val referenceOutput = Files.createTempDirectory("reference")
-
-    def compile(output: Path, files: List[SourceFile]): Unit = {
-      val g = new Global(new Settings)
-      g.settings.usejavacp.value = true
-      g.settings.classpath.value = output.toAbsolutePath.toString
-      g.settings.outputDirs.setSingleOutput(output.toString)
-      val storeReporter = new StoreReporter(g.settings)
-      g.reporter = storeReporter
-      import g._
-      val r = new Run
-      // println("scalac " + files.mkString(" "))
-      r.compileSources(files)
-      Predef.assert(!storeReporter.hasErrors, storeReporter.infos.mkString("\n"))
-      files.filter(_.file.name.endsWith(".java")) match {
-        case Nil =>
-        case javaSources =>
-          def tempFileFor(s: SourceFile): Path = {
-            val f = output.resolve(s.file.name)
-            Files.write(f, new String(s.content).getBytes(Charset.defaultCharset()))
-          }
-          val options = List("-d", output.toString)
-          val javac = ToolProvider.getSystemJavaCompiler
-          assert(javac != null, "No javac from getSystemJavaCompiler. If the java on your path isn't a JDK version, but $JAVA_HOME is, launch sbt with --java-home \"$JAVA_HOME\"")
-          val fileMan = javac.getStandardFileManager(null, null, null)
-          val javaFileObjects = fileMan.getJavaFileObjects(javaSources.map(s => tempFileFor(s).toAbsolutePath.toString): _*)
-          val task = javac.getTask(new OutputStreamWriter(System.out), fileMan, null, options.asJava, Nil.asJava, javaFileObjects)
-          val result = task.call()
-          Predef.assert(result)
-      }
-    }
-
-    for (group <- groups.init) {
-      compile(referenceOutput, group)
-    }
-    compile(referenceOutput, groups.last)
-
-    @annotation.unused
-    class CopyVisitor(src: Path, dest: Path) extends SimpleFileVisitor[Path] {
-      override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
-        Files.createDirectories(dest.resolve(src.relativize(dir)))
-        super.preVisitDirectory(dir, attrs)
-      }
-      override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-        Files.copy(file, dest.resolve(src.relativize(file)))
-        super.visitFile(file, attrs)
-      }
-    }
-    for (permutation <- permutationsWithSubsets(groups.last)) {
-      val recompileOutput = Files.createTempDirectory("recompileOutput")
-      copyRecursive(referenceOutput, recompileOutput)
-      compile(recompileOutput, permutation)
-      assertDirectorySame(referenceOutput, recompileOutput, permutation.toString)
-      deleteRecursive(recompileOutput)
-    }
-    deleteRecursive(referenceOutput)
-
+  @Test def testAsync(): Unit = {
+    def code = List[SourceFile](
+      source("a.scala",
+        """
+          | object A {
+          |   import scala.tools.nsc.OptionAwait.{optionally, value}
+          |   def test = optionally {
+          |      if (value(Some(true))) {
+          |        var x = ""
+          |        if (value(Some(false))) {
+          |          value(Some(x)) + value(Some(2))
+          |        }
+          |      }
+          |   }
+          | }
+          |
+      """.stripMargin)
+    )
+    test(List(code))
   }
-  def permutationsWithSubsets[A](as: List[A]): List[List[A]] =
-    as.permutations.toList.flatMap(_.inits.filter(_.nonEmpty)).distinct
+
+  @Test def testReferenceToInnerClassMadeNonPrivate(): Unit = {
+    def code = List[SourceFile](
+      source("t.scala",
+             """
+               | trait T {
+               |   private class Inner
+               |   class OtherInner { new Inner } // triggers makeNotPrivate of Inner
+               |   private val v: Option[Inner] = None
+               | }
+        """.stripMargin),
+      source("c.scala","""class C extends T""")
+      )
+    test(List(code))
+  }
+
+  def source(name: String, code: String): SourceFile = new BatchSourceFile(name, code)
 }
+
+
+
+import scala.annotation.compileTimeOnly
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox
+
+object OptionAwait {
+  def optionally[T](body: T): Option[T] = macro impl
+  @compileTimeOnly("[async] `value` must be enclosed in `optionally`")
+  def value[T](option: Option[T]): T = ???
+  def impl(c: blackbox.Context)(body: c.Tree): c.Tree = {
+    import c.universe._
+    val awaitSym = typeOf[OptionAwait.type].decl(TermName("value"))
+    def mark(t: DefDef): Tree = c.internal.markForAsyncTransform(c.internal.enclosingOwner, t, awaitSym, Map.empty)
+    val name = TypeName("stateMachine$async")
+    q"""
+      final class $name extends _root_.scala.tools.nsc.OptionStateMachine {
+        ${mark(q"""override def apply(tr$$async: _root_.scala.Option[_root_.scala.AnyRef]) = ${body}""")}
+      }
+      new $name().start().asInstanceOf[${c.macroApplication.tpe}]
+    """
+  }
+}
+
+trait AsyncStateMachine[F, R] {
+  /** Assign `i` to the state variable */
+  protected def state_=(i: Int): Unit
+  /** Retrieve the current value of the state variable */
+  protected def state: Int
+  /** Complete the state machine with the given failure. */
+  protected def completeFailure(t: Throwable): Unit
+  /** Complete the state machine with the given value. */
+  protected def completeSuccess(value: AnyRef): Unit
+  /** Register the state machine as a completion callback of the given future. */
+  protected def onComplete(f: F): Unit
+  /** Extract the result of the given future if it is complete, or `null` if it is incomplete. */
+  protected def getCompleted(f: F): R
+  /**
+   * Extract the success value of the given future. If the state machine detects a failure it may
+   * complete the async block and return `this` as a sentinel value to indicate that the caller
+   * (the state machine dispatch loop) should immediately exit.
+   */
+  protected def tryGet(tr: R): AnyRef
+}
+
+
+abstract class OptionStateMachine extends AsyncStateMachine[Option[AnyRef], Option[AnyRef]] {
+  var result$async: Option[AnyRef] = _
+
+  // FSM translated method
+  def apply(tr$async: Option[AnyRef]): Unit
+
+  // Required methods
+  private[this] var state$async: Int = 0
+  protected def state: Int = state$async
+  protected def state_=(s: Int): Unit = state$async = s
+  protected def completeFailure(t: Throwable): Unit = throw t
+  protected def completeSuccess(value: AnyRef): Unit = result$async = Some(value)
+  protected def onComplete(f: Option[AnyRef]): Unit = ???
+  protected def getCompleted(f: Option[AnyRef]): Option[AnyRef] = {
+    f
+  }
+  protected def tryGet(tr: Option[AnyRef]): AnyRef = tr match {
+    case Some(value) =>
+      value.asInstanceOf[AnyRef]
+    case None =>
+      result$async = None
+      this // sentinel value to indicate the dispatch loop should exit.
+  }
+  def start(): Option[AnyRef] = {
+    apply(None)
+    result$async
+  }
+}
+

@@ -183,14 +183,17 @@ object VersionUtil {
     propFile
   }
 
-  /** The global versions.properties data */
-  lazy val versionProps: Map[String, String] = {
+  private[build] def readProps(f: File): Map[String, String] = {
     val props = new Properties()
-    val in = new FileInputStream(file("versions.properties"))
+    val in = new FileInputStream(f)
     try props.load(in)
     finally in.close()
-    props.asScala.toMap.map {
-      case (k, v) => (k, sys.props.getOrElse(k, v)) // allow system properties to override versions.properties
-    }
+    props.asScala.toMap
+  }
+
+  /** The global versions.properties data */
+  lazy val versionProps: Map[String, String] = {
+    val versionProps = readProps(file("versions.properties"))
+    versionProps.map { case (k, v) => (k, sys.props.getOrElse(k, v)) } // allow sys props to override versions.properties
   }
 }

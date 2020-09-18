@@ -422,7 +422,7 @@ class Runner(val testInfo: TestInfo, val suiteRunner: AbstractRunner) {
         val bestDiff =
           if (!checkFile.canRead) diff
           else
-            gitRunner.flatMap(_ => withTempFile(outFile, fileBase, filteredCheck)(f =>
+            gitRunner.flatMap(_ => withTempFile(outDir, fileBase, filteredCheck)(f =>
                 gitDiff(f, logFile))).getOrElse(diff)
         _transcript append bestDiff
         genFail("output differs")

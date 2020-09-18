@@ -19,12 +19,15 @@ class Collector extends NestedClassesCollector[String](nestedOnly = false) {
 @RunWith(classOf[JUnit4])
 class NestedClassesCollectorTest {
   val c = new Collector {
-    override def visitInternalName(internalName: String, offset: Int, length: Int): Unit =
-      innerClasses += internalName.substring(offset, length)
+    override def visitInternalName(internalName: String, offset: Int, length: Int): Unit = {
+      val c = internalName.substring(offset, length)
+      if (!declaredInnerClasses.contains(c))
+        referredInnerClasses += c
+    }
   }
   def inners: List[String] = {
     val res = c.innerClasses.toList.sorted
-    c.innerClasses.clear()
+    c.clear()
     res
   }
 

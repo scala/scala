@@ -188,9 +188,10 @@ trait TreeAndTypeAnalysis extends Debugging {
     // a type is "uncheckable" (for exhaustivity) if we don't statically know its subtypes (i.e., it's unsealed)
     // we consider tuple types with at least one component of a checkable type as a checkable type
     def uncheckableType(tp: Type): Boolean = {
-      val checkable = (
-           (isTupleType(tp) && tupleComponents(tp).exists(tp => !uncheckableType(tp)))
-        || enumerateSubtypes(tp, grouped = false).nonEmpty)
+      val checkable = {
+        if (isTupleType(tp)) tupleComponents(tp).exists(tp => !uncheckableType(tp))
+        else enumerateSubtypes(tp, grouped = false).nonEmpty
+      }
       // if (!checkable) debug.patmat("deemed uncheckable: "+ tp)
       !checkable
     }
@@ -221,10 +222,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       override def toString = s"T${id}C($prop)"
     }
 
-    class TreeMakersToPropsIgnoreNullChecks(root: Symbol) extends TreeMakersToProps(root) {
-      override def uniqueNonNullProp(p: Tree): Prop = True
-    }
-
     // returns (tree, tests), where `tree` will be used to refer to `root` in `tests`
     class TreeMakersToProps(val root: Symbol) {
       prepareNewAnalysis() // reset hash consing for Var and Const
@@ -236,7 +233,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       def uniqueEqualityProp(testedPath: Tree, rhs: Tree): Prop =
         uniqueEqualityProps.getOrElseUpdate((testedPath, rhs), Eq(Var(testedPath), ValueConst(rhs)))
 
-      // overridden in TreeMakersToPropsIgnoreNullChecks
       def uniqueNonNullProp (testedPath: Tree): Prop =
         uniqueNonNullProps.getOrElseUpdate(testedPath, Not(Eq(Var(testedPath), NullConst)))
 
@@ -513,7 +509,7 @@ trait MatchAnalysis extends MatchApproximation {
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
 
-      val approx = new TreeMakersToPropsIgnoreNullChecks(prevBinder)
+      val approx = new TreeMakersToProps(prevBinder)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
         approx.fullRewrite.applyOrElse[TreeMaker, Prop](tm, {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later

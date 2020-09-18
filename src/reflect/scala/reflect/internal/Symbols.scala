@@ -1867,6 +1867,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       info match {
         case ci @ ClassInfoType(_, _, _) =>
           setInfo(ci.copy(parents = ci.parents :+ SerializableTpe))
+          invalidateCaches(ci.typeSymbol.typeOfThis, ci.typeSymbol :: Nil)
         case i =>
           abort("Only ClassInfoTypes can be made serializable: "+ i)
       }

@@ -133,7 +133,8 @@ abstract class PostProcessor extends PerRunInit {
 
   def setInnerClasses(classNode: ClassNode): Unit = {
     classNode.innerClasses.clear()
-    backendUtils.addInnerClasses(classNode, backendUtils.collectNestedClasses(classNode))
+    val (declared, referred) = backendUtils.collectNestedClasses(classNode)
+    backendUtils.addInnerClasses(classNode, declared, referred)
   }
 
   def serializeClass(classNode: ClassNode): Array[Byte] = {

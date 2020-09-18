@@ -1,0 +1,11 @@
+t10019.scala:5: warning: match may not be exhaustive.
+It would fail on the following input: Foo(None)
+  def single(t: Foo): Nothing = t match {
+                                ^
+t10019.scala:9: warning: match may not be exhaustive.
+It would fail on the following input: (Foo(None), _)
+  def tuple(s: Foo, t: Foo): Nothing = (s, t) match {
+                                       ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error
