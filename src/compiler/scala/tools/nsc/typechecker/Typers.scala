@@ -5093,6 +5093,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             }
 
             result match {
+              case _ if accessibleError != null =>
+                // don't adapt constructor, scala/bug#6074
+                val qual1 = if (name == nme.CONSTRUCTOR) qual
+                            else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
+                if (!qual1.isErrorTyped && (qual1 ne qual))
+                  typed(Select(qual1, name) setPos tree.pos, mode, pt)
+                else
+                // before failing due to access, try a dynamic call.
+                  asDynamicCall getOrElse {
+                    context.issue(accessibleError)
+                    setError(tree)
+                  }
               // could checkAccessible (called by makeAccessible) potentially have skipped checking a type application in qual?
               case SelectFromTypeTree(qual@TypeTree(), name) if qual.tpe.typeArgs.nonEmpty => // TODO: somehow the new qual is not checked in refchecks
                 treeCopy.SelectFromTypeTree(
@@ -5103,18 +5115,6 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                     qual // you only get to see the wrapped tree after running this check :-p
                   }) setType qual.tpe setPos qual.pos,
                   name)
-              case _ if accessibleError != null =>
-                // don't adapt constructor, scala/bug#6074
-                val qual1 = if (name == nme.CONSTRUCTOR) qual
-                            else adaptToMemberWithArgs(tree, qual, name, mode, reportAmbiguous = false, saveErrors = false)
-                if (!qual1.isErrorTyped && (qual1 ne qual))
-                  typed(Select(qual1, name) setPos tree.pos, mode, pt)
-                else
-                  // before failing due to access, try a dynamic call.
-                  asDynamicCall getOrElse {
-                    context.issue(accessibleError)
-                    setError(tree)
-                  }
               case _ =>
                 result
             }
