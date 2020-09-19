@@ -109,6 +109,63 @@ class ListMapTest extends AllocationTest {
 
   }
 
+  @Test
+  def dropRightNonAllocating(): Unit = {
+    var m = ListMap.empty[Int, Int]
+    assertSame(ListMap(), nonAllocating(m.dropRight(-1)))
+    assertSame(ListMap(), nonAllocating(m.dropRight(0)))
+    assertSame(ListMap(), nonAllocating(m.dropRight(1)))
+    assertSame(ListMap(), nonAllocating(m.dropRight(10)))
+
+    m = ListMap(1 -> 1)
+    assertSame(m, nonAllocating(m.dropRight(-1)))
+    assertSame(m, nonAllocating(m.dropRight(0)))
+    assertSame(ListMap.empty, nonAllocating(m.dropRight(1)))
+    assertSame(ListMap.empty, nonAllocating(m.dropRight(10)))
+
+    m = ListMap(1 -> 1, 2 -> 2)
+    assertSame(m, nonAllocating(m.dropRight(-1)))
+    assertSame(m, nonAllocating(m.dropRight(0)))
+    assertEquals(ListMap(1 -> 1), nonAllocating(m.dropRight(1)))
+    assertEquals(ListMap.empty, nonAllocating(m.dropRight(2)))
+    assertSame(ListMap.empty, nonAllocating(m.dropRight(10)))
+
+    m = ListMap(1 -> 1, 2 -> 2, 3 -> 3)
+    assertSame(m, nonAllocating(m.dropRight(-1)))
+    assertSame(m, nonAllocating(m.dropRight(0)))
+    assertEquals(ListMap(1 -> 1, 2 -> 2), nonAllocating(m.dropRight(1)))
+    assertEquals(ListMap(1 -> 1), nonAllocating(m.dropRight(2)))
+    assertSame(ListMap.empty, nonAllocating(m.dropRight(10)))
+  }
+  @Test
+  def takeNonAllocating(): Unit = {
+    var m = ListMap.empty[Int, Int]
+    assertSame(ListMap(), nonAllocating(m.take(-1)))
+    assertSame(ListMap(), nonAllocating(m.take(0)))
+    assertSame(ListMap(), nonAllocating(m.take(1)))
+    assertSame(ListMap(), nonAllocating(m.take(10)))
+
+    m = ListMap(1 -> 1)
+    assertSame(ListMap.empty, nonAllocating(m.take(-1)))
+    assertSame(ListMap.empty, nonAllocating(m.take(0)))
+    assertSame(m, nonAllocating(m.take(1)))
+    assertSame(m, nonAllocating(m.take(10)))
+
+    m = ListMap(1 -> 1, 2 -> 2)
+    assertSame(ListMap.empty, nonAllocating(m.take(-1)))
+    assertSame(ListMap.empty, nonAllocating(m.take(0)))
+    assertEquals(ListMap(1 -> 1), nonAllocating(m.take(1)))
+    assertSame(m, nonAllocating(m.take(2)))
+    assertSame(m, nonAllocating(m.take(10)))
+
+    m = ListMap(1 -> 1, 2 -> 2, 3 -> 3)
+    assertSame(ListMap.empty, nonAllocating(m.take(-1)))
+    assertSame(ListMap.empty, nonAllocating(m.take(0)))
+    assertEquals(ListMap(1 -> 1), nonAllocating(m.take(1)))
+    assertEquals(ListMap(1 -> 1, 2 -> 2), nonAllocating(m.take(2)))
+    assertSame(m, nonAllocating(m.take(10)))
+  }
+
   /** we base the result on tuples of strings as ListMap is not specialised */
   private def tuples(n: Int) = ListMapTest.tupleStringCost * n
   private def someTuples(n: Int) = ListMapTest.someTupleStringCost * n

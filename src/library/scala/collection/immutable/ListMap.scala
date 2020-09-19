@@ -45,6 +45,11 @@ object ListMap extends ImmutableMapFactory[ListMap] {
   @SerialVersionUID(-8256686706655863282L)
   private object EmptyListMap extends ListMap[Any, Nothing]
 
+  @tailrec private def dropRightInternal[A, B](map: ListMap[A, B], n: Int): ListMap[A, B] = {
+    if (n <= 0 || map.isEmpty) map
+    else dropRightInternal(map.init, n - 1)
+  }
+
   @tailrec private def foldRightInternal[A, B, Z](map: ListMap[A, B], prevValue: Z, op: ((A, B), Z) => Z): Z = {
     if (map.isEmpty) prevValue
     else foldRightInternal(map.init, op(map.last, prevValue), op)
@@ -132,6 +137,8 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   protected def value: B = throw new NoSuchElementException("value of empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("next of empty map")
 
+  override def dropRight(n: Int): ListMap[A, B] = ListMap.dropRightInternal(this, n)
+  override def take(n: Int): ListMap[A, B] = ListMap.dropRightInternal(this, size - n)
   override def foldRight[Z](z: Z)(op: ((A, B), Z) => Z): Z = ListMap.foldRightInternal(this, z, op)
   override def stringPrefix = "ListMap"
 
