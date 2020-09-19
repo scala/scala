@@ -13,11 +13,12 @@
 package scala
 package collection
 
-import mutable.{ Buffer, Builder, ArrayBuffer }
+import mutable.{ArrayBuffer, Buffer, Builder}
 import generic.CanBuildFrom
-import scala.annotation.unchecked.{ uncheckedVariance => uV }
-import scala.language.{implicitConversions, higherKinds}
+import scala.annotation.unchecked.{uncheckedVariance => uV}
+import scala.language.{higherKinds, implicitConversions}
 import scala.reflect.ClassTag
+import scala.runtime.AbstractFunction1
 
 /** A template trait for collections which can be traversed either once only
  *  or one or more times.
@@ -115,10 +116,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   // for internal use
   protected[this] def reversed = {
-    object reverser extends Function1[A, Unit] {
+    //avoid the LazyRef as we don't have an @eager object
+    class reverser extends AbstractFunction1[A, Unit] {
       var elems: List[A] = Nil
       override def apply(v1: A): Unit = elems ::= v1
     }
+    val reverser = new reverser
     self foreach reverser
     reverser.elems
   }
@@ -126,10 +129,13 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def size: Int = {
     //we can't guard with isEmpty as some implementation have
     // def isEmpty = size == 0
-    object counter extends Function1[A, Unit] {
+
+    //avoid the LazyRef as we don't have an @eager object
+    class counter extends AbstractFunction1[A, Unit] {
       var result = 0
       override def apply(v1: A): Unit = result += 1
     }
+    val counter = new counter
     self foreach counter
     counter.result
   }
@@ -137,10 +143,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def nonEmpty: Boolean = !isEmpty
 
   def count(p: A => Boolean): Int = {
-    object counter extends Function1[A, Unit] {
+    //avoid the LazyRef as we don't have an @eager object
+    class counter extends AbstractFunction1[A, Unit] {
       var result = 0
       override def apply(v1: A): Unit = if (p(v1)) result += 1
     }
+    val counter = new counter
     this foreach counter
     counter.result
   }
@@ -182,10 +190,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def :\[B](z: B)(op: (A, B) => B): B = foldRight(z)(op)
 
   def foldLeft[B](z: B)(op: (B, A) => B): B = {
-    object folder extends Function1[A, Unit] {
+    //avoid the LazyRef as we don't have an @eager object
+    class folder extends AbstractFunction1[A, Unit] {
       var result = z
       override def apply(v1: A): Unit = result = op(result,v1)
     }
+    val folder = new folder
     this foreach folder
     folder.result
   }
@@ -211,7 +221,8 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.reduceLeft")
 
-    object reducer extends Function1[A, Unit] {
+    //avoid the LazyRef as we don't have an @eager object
+    class reducer extends AbstractFunction1[A, Unit] {
       var first = true
       var acc: B = 0.asInstanceOf[B]
 
@@ -222,6 +233,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
         }
         else acc = op(acc, x)
     }
+    val reducer = new reducer
     self foreach reducer
     reducer.acc
   }
@@ -268,11 +280,12 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.maxBy")
-    object maxer extends Function1[A, Unit] {
+
+    //avoid the LazyRef as we don't have an @eager object
+    class maxer extends AbstractFunction1[A, Unit] {
       var maxF: B = null.asInstanceOf[B]
       var maxElem: A = null.asInstanceOf[A]
       var first = true
-
       override def apply(elem: A): Unit = {
         val fx = f(elem)
         if (first || cmp.gt(fx, maxF)) {
@@ -281,18 +294,21 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
           first = false
         }
       }
+
     }
+    val maxer = new maxer
     self foreach maxer
     maxer.maxElem
   }
   def minBy[B](f: A => B)(implicit cmp: Ordering[B]): A = {
     if (isEmpty)
       throw new UnsupportedOperationException("empty.minBy")
-    object miner extends Function1[A, Unit] {
+
+    //avoid the LazyRef as we don't have an @eager object
+    class miner extends AbstractFunction1[A, Unit] {
       var minF: B = null.asInstanceOf[B]
       var minElem: A = null.asInstanceOf[A]
       var first = true
-
       override def apply(elem: A): Unit = {
         val fx = f(elem)
         if (first || cmp.lt(fx, minF)) {
@@ -301,7 +317,9 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
           first = false
         }
       }
+
     }
+    val miner = new miner
     self foreach miner
     miner.minElem
   }
@@ -388,7 +406,8 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
    */
   def addString(b: StringBuilder, start: String, sep: String, end: String): StringBuilder = {
     b append start
-    object appender extends Function1[A, Unit] {
+
+    class appender extends AbstractFunction1[A, Unit] {
       var first = true
       override def apply(x: A): Unit = {
         if (first) {
@@ -401,6 +420,7 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
         }
       }
     }
+    val appender = new appender
     self foreach appender
     b append end
     b

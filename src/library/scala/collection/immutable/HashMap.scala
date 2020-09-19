@@ -19,6 +19,7 @@ import java.{util => ju}
 import generic._
 import scala.annotation.unchecked.{uncheckedVariance => uV}
 import parallel.immutable.ParHashMap
+import scala.runtime.{AbstractFunction1, AbstractFunction2}
 import scala.util.hashing.MurmurHash3
 
 /** This class implements immutable maps using a hash trie.
@@ -215,22 +216,26 @@ sealed class HashMap[A, +B] extends AbstractMap[A, B]
           this.merge0(thatHash, 0, merger)
 
         case that: HasForeachEntry[A, B] =>
-          object adder extends Function2[A, B, Unit] {
+          //avoid the LazyRef as we don't have an @eager object
+          class adder extends AbstractFunction2[A, B, Unit] {
             var result: HashMap[A, B] = HashMap.this
             override def apply(key: A, value: B): Unit = {
               result = result.updated0(key, computeHash(key), 0, value, null, merger)
             }
           }
+          val adder = new adder
           that foreachEntry adder
           adder.result
         case that =>
-          object adder extends Function1[(A,B), Unit] {
+          //avoid the LazyRef as we don't have an @eager object
+          class adder extends AbstractFunction1[(A,B), Unit] {
             var result: HashMap[A, B] = HashMap.this
             override def apply(kv: (A, B)): Unit = {
               val key = kv._1
               result = result.updated0(key, computeHash(key), 0, kv._2, kv, merger)
             }
           }
+          val adder = new adder
           that.asInstanceOf[GenTraversableOnce[(A,B)]] foreach adder
           adder.result
       }
