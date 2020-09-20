@@ -107,6 +107,7 @@ sealed class ListMap[K, +V]
   private[immutable] def value: V = throw new NoSuchElementException("value of empty map")
   private[immutable] def next: ListMap[K, V] = throw new NoSuchElementException("next of empty map")
 
+  override def foldRight[Z](z: Z)(op: ((K, V), Z) => Z): Z = ListMap.foldRightInternal(this, z, op)
   override protected[this] def className = "ListMap"
 
 }
@@ -272,6 +273,11 @@ object ListMap extends MapFactory[ListMap] {
     * @tparam V the map value type
     */
   def newBuilder[K, V]: ReusableBuilder[(K, V), ListMap[K, V]] = new ListMapBuilder[K, V]
+
+  @tailrec private def foldRightInternal[K, V, Z](map: ListMap[K, V], prevValue: Z, op: ((K, V), Z) => Z): Z = {
+    if (map.isEmpty) prevValue
+    else foldRightInternal(map.init, op(map.last, prevValue), op)
+  }
 }
 
 /** Builder for ListMap.
