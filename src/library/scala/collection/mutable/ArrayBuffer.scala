@@ -167,6 +167,10 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
         size0 = size0 + elemsLength
         elems match {
           case elems: ArrayBuffer[_] =>
+            // if `elems eq this`, this works because `elems.array eq this.array`,
+            // we didn't overwrite the values being inserted after moving them in
+            // the previous copy a few lines up, and `System.arraycopy` will
+            // effectively "read" all the values before overwriting any of them.
             Array.copy(elems.array, 0, array, index, elemsLength)
           case _ =>
             var i = 0
