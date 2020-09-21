@@ -66,7 +66,7 @@ trait PatternMatching extends Transform
         val origTp = tree.tpe
 
         // setType origTp intended for CPS -- TODO: is it necessary?
-        val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformTrees(cases).asInstanceOf[List[CaseDef]]))
+        val translated = translator(sel.pos).translateMatch(treeCopy.Match(tree, transform(sel), transformCaseDefs(cases)))
         try {
           // Keep 2.12 behaviour of using wildcard expected type, recomputing the LUB, then throwing it away for the continuations plugins
           // but for the rest of us pass in top as the expected type to avoid waste.
@@ -86,7 +86,7 @@ trait PatternMatching extends Transform
         }
       case Try(block, catches, finalizer) =>
         val selectorPos = catches.headOption.getOrElse(EmptyTree).orElse(finalizer).pos.focusEnd
-        treeCopy.Try(tree, transform(block), translator(selectorPos).translateTry(transformTrees(catches).asInstanceOf[List[CaseDef]], tree.tpe, tree.pos), transform(finalizer))
+        treeCopy.Try(tree, transform(block), translator(selectorPos).translateTry(transformCaseDefs(catches), tree.tpe, tree.pos), transform(finalizer))
       case _ => super.transform(tree)
     }
 

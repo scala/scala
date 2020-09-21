@@ -57,6 +57,7 @@ trait MatchCodeGen extends Interface {
       def flatMap(prev: Tree, b: Symbol, next: Tree): Tree
       def flatMapCond(cond: Tree, res: Tree, nextBinder: Symbol, next: Tree): Tree
       def flatMapGuard(cond: Tree, next: Tree): Tree
+      def flatMapCondStored(cond: Tree, condSym: Symbol, res: Tree, nextBinder: Symbol, next: Tree): Tree
       def ifThenElseZero(c: Tree, thenp: Tree): Tree = {
         val z = zero
         thenp match {

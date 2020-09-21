@@ -211,13 +211,6 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       var currId = 0
     }
     case class Test(prop: Prop, treeMaker: TreeMaker) {
-      // private val reusedBy = new mutable.HashSet[Test]
-      var reuses: Option[Test] = None
-      def registerReuseBy(later: Test): Unit = {
-        assert(later.reuses.isEmpty, later.reuses)
-        // reusedBy += later
-        later.reuses = Some(this)
-      }
       val id = { Test.currId += 1; Test.currId}
       override def toString = s"T${id}C($prop)"
     }

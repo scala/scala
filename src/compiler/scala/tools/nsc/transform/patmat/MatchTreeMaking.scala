@@ -682,7 +682,7 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
             d.symbol.moduleClass andAlso (_.owner = currentOwner)
             d.symbol.owner = currentOwner
           // case _ if (t.symbol != NoSymbol) && (t.symbol ne null) =>
-          debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))
+          //   debug.patmat("untouched "+ ((t, t.getClass, t.symbol.ownerChain, currentOwner.ownerChain)))
           case _ =>
         }
         t.traverse(this)
