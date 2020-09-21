@@ -23,10 +23,8 @@ import scala.annotation.meta.{ companionClass, companionMethod }
  *
  *  === Commonly Used Types ===
  *  Predef provides type aliases for types which are commonly used, such as
- *  the immutable collection types [[scala.collection.immutable.Map]],
- *  [[scala.collection.immutable.Set]], and the [[scala.collection.immutable.List]]
- *  constructors ([[scala.collection.immutable.::]] and
- *  [[scala.collection.immutable.Nil]]).
+ *  the immutable collection types [[scala.collection.immutable.Map]] and
+ *  [[scala.collection.immutable.Set]].
  *
  *  === Console Output ===
  *  For basic console output, `Predef` provides convenience methods [[print(x:Any* print]] and [[println(x:Any* println]],
