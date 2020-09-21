@@ -19,6 +19,7 @@ import java.util
 import generic._
 import scala.collection.parallel.immutable.ParHashSet
 import scala.annotation.tailrec
+import scala.runtime.AbstractFunction1
 
 /** This class implements immutable sets using a hash trie.
  *
@@ -93,10 +94,12 @@ sealed class HashSet[A] extends AbstractSet[A]
       else nullToEmpty(union0(that, 0))
     case _ =>
       if (that.isEmpty) this else {
-        object acc extends Function1[A, Unit] {
+        //avoid the LazyRef as we don't have an @eager object
+        class acc extends AbstractFunction1[A, Unit] {
           var res = HashSet.this
           override def apply(v1: A): Unit = res += v1
         }
+        val acc = new acc
         if (that.isInstanceOf[Set[A]])
           that foreach acc
         else

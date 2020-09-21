@@ -13,7 +13,9 @@
 package scala
 package util.hashing
 
-import java.lang.Integer.{ rotateLeft => rotl }
+import java.lang.Integer.{rotateLeft => rotl}
+
+import scala.runtime.AbstractFunction1
 
 private[hashing] class MurmurHash3 {
   /** Mix in a block of data into an intermediate hash value. */
@@ -104,7 +106,8 @@ private[hashing] class MurmurHash3 {
       finalizeHash(h, 0)
     }
     else {
-      object hasher extends Function1[Any, Unit] {
+      //avoid the LazyRef as we don't have an @eager object
+      class hasher extends AbstractFunction1[Any, Unit] {
         var a, b, n = 0
         var c = 1
         override def apply(x: Any): Unit = {
@@ -115,6 +118,7 @@ private[hashing] class MurmurHash3 {
           n += 1
         }
       }
+      val hasher = new hasher
       xs foreach hasher
       var h = seed
       h = mix(h, hasher.a)
@@ -128,7 +132,8 @@ private[hashing] class MurmurHash3 {
   final def orderedHash(xs: TraversableOnce[Any], seed: Int): Int = {
     if  (xs.isEmpty) finalizeHash(seed, 0)
     else {
-      object hasher extends Function1[Any, Unit] {
+      //avoid the LazyRef as we don't have an @eager object
+      class hasher extends AbstractFunction1[Any, Unit] {
         var n = 0
         var h = seed
         override def apply(x: Any): Unit = {
@@ -136,6 +141,7 @@ private[hashing] class MurmurHash3 {
           n += 1
         }
       }
+      val hasher = new hasher
       xs foreach hasher
       finalizeHash(hasher.h, hasher.n)
     }
