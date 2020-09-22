@@ -25,7 +25,7 @@ x=(abc,xyz), t=TypeTag[(String, String)], k=TypeRef, s=class Tuple2
 x=(Symbol(abc),Symbol(xyz)), t=TypeTag[(Symbol, Symbol)], k=TypeRef, s=class Tuple2
 
 x=Test$, t=TypeTag[Test.type], k=SingleType, s=object Test
-x=scala.collection.immutable.List$, t=TypeTag[scala.collection.immutable.List.type], k=SingleType, s=object List
+x=scala.collection.immutable.List$, t=TypeTag[collection.immutable.List.type], k=SingleType, s=object List
 
 x=Foo, t=TypeTag[Foo[Int]], k=TypeRef, s=class Foo
 x=Foo, t=TypeTag[Foo[List[Int]]], k=TypeRef, s=class Foo

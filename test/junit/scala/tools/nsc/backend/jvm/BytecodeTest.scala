@@ -86,7 +86,7 @@ class BytecodeTest extends BytecodeTesting {
         |  def t5(a: AnyRef) = (a eq null) || (null ne a)
         |  def t6(a: Int, b: Boolean) = if ((a == 10) && b || a != 1) 1 else 2
         |  def t7(a: AnyRef, b: AnyRef) = a == b
-        |  def t8(a: AnyRef) = Nil == a || "" != a
+        |  def t8(a: AnyRef) = scala.collection.immutable.Nil == a || "" != a
         |}
       """.stripMargin
 

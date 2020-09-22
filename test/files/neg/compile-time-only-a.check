@@ -64,6 +64,9 @@ compile-time-only-a.scala:60: error: C7
 compile-time-only-a.scala:61: error: C7
   val c707a: List[C7] = ???
              ^
+compile-time-only-a.scala:62: error: C7
+  val c707b = List[C7]()
+                   ^
 compile-time-only-a.scala:63: error: C7
   val c708a: T forSome { type T <: C7 } = ???
                ^
@@ -83,4 +86,4 @@ compile-time-only-a.scala:75: error: placebo
   @placebo def x = (2: @placebo)
                         ^
 1 warning
-27 errors
+28 errors

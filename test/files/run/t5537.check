@@ -6,7 +6,7 @@ scala> List[scala.`package`.type]()
 val res1: List[scala.type] = List()
 
 scala> List[List.type]()
-val res2: List[scala.collection.immutable.List.type] = List()
+val res2: List[List.type] = List()
 
 scala> List[Set.type]()
 val res3: List[Set.type] = List()
