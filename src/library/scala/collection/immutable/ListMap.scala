@@ -49,6 +49,34 @@ object ListMap extends ImmutableMapFactory[ListMap] {
     if (map.isEmpty) prevValue
     else foldRightInternal(map.init, op(map.last, prevValue), op)
   }
+
+  /**
+   * return the last len nodes in an array, with the array in natural order (first inserted)
+   * so
+   * {{{
+   *   val x = ListMap( 1 -> a, 2 -> b, 3 -> c)
+   *   // so x is Node(key=3, value=c)
+   *   nodesInNaturalOrder(x, 2) === Array( Node(key=2, value=b),  Node(key=1, value=a))
+   * }}}
+   *
+   * @param nodes the nodes to be returned
+   * @param len the length of the array. Note must be >= nodes.size, must be >= 1
+   * @return
+   */
+  private def nodesInNaturalOrder[A, B, B1 >: B](nodes: ListMap[A, B]#Node[B1], len: Int): Array[ListMap[A, B]#Node[B1]] = {
+    val result = new Array[ListMap[A, B]#Node[B1]](len)
+    result(len - 1) = nodes
+    var current = nodes
+    var index = len - 2
+    while(index >= 0) {
+      current = current.next0.asInstanceOf[ListMap[A, B]#Node[B1]]
+      result(index) = current
+      index -= 1
+    }
+
+    result
+  }
+
 }
 
 /**
@@ -115,18 +143,7 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
     if (xs.isEmpty) this
     else ((repr: ListMap[A, B1]) /: xs) (_ + _)
 
-  def iterator: Iterator[(A, B)] = {
-    def reverseList = {
-      var curr: ListMap[A, B] = this
-      var res: List[(A, B)] = Nil
-      while (!curr.isEmpty) {
-        res = (curr.key, curr.value) :: res
-        curr = curr.next
-      }
-      res
-    }
-    reverseList.iterator
-  }
+  def iterator: Iterator[(A, B)] = Iterator.empty
 
   protected def key: A = throw new NoSuchElementException("key of empty map")
   protected def value: B = throw new NoSuchElementException("value of empty map")
@@ -142,11 +159,22 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   protected class Node[B1 >: B](override protected val key: A,
                                 override protected val value: B1) extends ListMap[A, B1] with Serializable {
 
-    override def size: Int = sizeInternal(this, 0)
+    override def size: Int =
+      sizeInternal(this, 0)
 
     @tailrec private[this] def sizeInternal(cur: ListMap[A, B1], acc: Int): Int =
       if (cur.isEmpty) acc
       else sizeInternal(cur.next, acc + 1)
+
+    private[this] def sizeInternal1: Int = {
+      var cur: ListMap[_, _] = this
+      var len = 0
+      while (!cur.isEmpty) {
+        len += 1
+        cur = cur.next
+      }
+      len
+    }
 
     override def isEmpty: Boolean = false
 
@@ -189,8 +217,55 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
       else removeInternal(k, cur.next, cur :: acc)
 
     override protected def next: ListMap[A, B1] = ListMap.this
+    @inline private[ListMap] def next0 = next
 
     override def last: (A, B1) = (key, value)
     override def init: ListMap[A, B1] = next
+    override def iterator: Iterator[(A, B1)] = {
+      this.size match {
+        case 1 => Iterator.single((key, value))
+        case len if len < 8 =>
+          new AbstractIterator[(A, B1)] {
+            private var remaining = len
+
+            override def hasDefiniteSize: Boolean = true
+            override def size: Int = remaining
+
+            override def hasNext: Boolean = remaining > 0
+            override def next(): (A, B1) = {
+              if (!hasNext) Iterator.empty.next()
+              else {
+                def nodeAt(cur: ListMap[A, B1], index: Int): ListMap[A, B1] = {
+                  if (index == 0) cur
+                  else nodeAt(cur.next, index -1)
+                }
+                remaining -= 1
+                val node = nodeAt(Node.this, remaining)
+                (node.key, node.value)
+              }
+            }
+          }
+        case len =>
+          new AbstractIterator[(A, B1)] {
+            val nodes: Array[ListMap[A, B]#Node[B1]] = ListMap.nodesInNaturalOrder[A, B, B1](Node.this, len)
+            var index = 0
+
+            override def hasDefiniteSize: Boolean = true
+            override def size: Int = nodes.length - index
+
+            override def hasNext: Boolean = index < nodes.length
+            override def next(): (A, B1) = {
+              if (!hasNext) Iterator.empty.next()
+              else {
+                val node = nodes(index)
+                index += 1
+                (node.key, node.value)
+              }
+            }
+          }
+      }
+
+    }
+
   }
 }
