@@ -49,6 +49,77 @@ object ListMap extends ImmutableMapFactory[ListMap] {
     if (map.isEmpty) prevValue
     else foldRightInternal(map.init, op(map.last, prevValue), op)
   }
+  /** return the index of the specified key, or -1 if it is not present
+   * the index returned in in the nodes internal next based structure so
+   * {{{
+   *   val x = ListMap( 1 -> a, 2 -> b, 3 -> c)
+   *   // so x is Node(key=3, value=c)
+   *   indexOf(x, 1) == 2
+   *   indexOf(x, 2) == 1
+   *   indexOf(x, 3) == 0
+   *   indexOf(x, 99) == -1
+   * }}}
+   *
+   */
+  @tailrec private def indexOfInternal[A](nodes: ListMap[A, _], key: A, index: Int = 0): Int = {
+    if (nodes.isEmpty) -1
+    else if (key == nodes.key) index
+    else indexOfInternal(nodes.next, key, index + 1)
+  }
+
+  /**
+   * finds the node with the specified key, or null if it doesnt exist
+   */
+  @tailrec private def findNodeWithKey[A, B](nodes: ListMap[A, B], key: A): ListMap[A, B] = {
+    if (nodes.isEmpty) null
+    else if (key == nodes.key) nodes
+    else findNodeWithKey(nodes.next, key)
+  }
+  /**
+   * rebuilds a ListMap from nodes. Nodes may contain `null`s which are skipped. Will reuse
+   * existing nodes where it can
+   */
+  private def fromArrayInApiOrder[A, B](nodes: Array[ListMap[A, B]#Node[B]], _tail: ListMap[A, B]): ListMap[A, B] = {
+    var tail = _tail
+    var index = nodes.length -1
+    while (index >= 0) {
+      val node = nodes(index)
+      if (node ne null)
+        if (node.next0 eq tail) tail = node
+        else tail = tail.newNode(node.key, node.value)
+      index -= 1
+    }
+    tail
+  }
+
+  private def nodesInApiOrder[A, B, B1 >: B](nodes: ListMap[A, B]#Node[B1], len: Int): Array[ListMap[A, B]#Node[B1]] = {
+    val result = new Array[ListMap[A, B]#Node[B1]](len)
+    result(0) = nodes
+    var current = nodes
+    var index   = 1
+    while (index < len) {
+      current = current.next0.asInstanceOf[ListMap[A, B]#Node[B1]]
+      result(index) = current
+      index += 1
+    }
+
+    result
+  }
+  def removeAtIndex[A, B](map: ListMap[A, B]#Node[B], index: Int): ListMap[A, B] = {
+    index match {
+      case -1 => map
+      case i if i < 8 =>
+        def removeAt(node: ListMap[A, B], index: Int): ListMap[A, B] =
+          if (index == 0) node.next
+          else removeAt(node.next0, index - 1).newNode(node.key, node.value)
+
+        removeAt(map, index)
+      case i =>
+        val nodes = nodesInApiOrder(map, index)
+        val tail = nodes(index-1).next0.next
+        fromArrayInApiOrder(nodes, tail)
+    }
+  }
 }
 
 /**
@@ -106,10 +177,11 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
     }
   }
 
-  override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
+  override def updated[B1 >: B](key: A, value: B1): ListMap[A, B1] = newNode[B1](key, value)
 
-  def +[B1 >: B](kv: (A, B1)): ListMap[A, B1] = new Node[B1](kv._1, kv._2)
+  def +[B1 >: B](kv: (A, B1)): ListMap[A, B1] = newNode[B1](kv._1, kv._2)
   def -(key: A): ListMap[A, B] = this
+  private def newNode[B1 >: B](key: A, value: B1): ListMap[A, B1] = new Node[B1](key, value)
 
   override def ++[B1 >: B](xs: GenTraversableOnce[(A, B1)]): ListMap[A, B1] =
     if (xs.isEmpty) this
@@ -131,6 +203,7 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
   protected def key: A = throw new NoSuchElementException("key of empty map")
   protected def value: B = throw new NoSuchElementException("value of empty map")
   protected def next: ListMap[A, B] = throw new NoSuchElementException("next of empty map")
+  @inline private[ListMap] def next0 = next
 
   override def foldRight[Z](z: Z)(op: ((A, B), Z) => Z): Z = ListMap.foldRightInternal(this, z, op)
   override def stringPrefix = "ListMap"
@@ -139,8 +212,8 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
     * Represents an entry in the `ListMap`.
     */
   @SerialVersionUID(-6453056603889598734L)
-  protected class Node[B1 >: B](override protected val key: A,
-                                override protected val value: B1) extends ListMap[A, B1] with Serializable {
+  protected class Node[B1 >: B](override protected[ListMap] val key: A,
+                                override protected[ListMap] val value: B1) extends ListMap[A, B1] with Serializable {
 
     override def size: Int = sizeInternal(this, 0)
 
@@ -150,43 +223,38 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
 
     override def isEmpty: Boolean = false
 
-    override def apply(k: A): B1 = applyInternal(this, k)
-
-    @tailrec private[this] def applyInternal(cur: ListMap[A, B1], k: A): B1 =
-      if (cur.isEmpty) throw new NoSuchElementException("key not found: " + k)
-      else if (k == cur.key) cur.value
-      else applyInternal(cur.next, k)
-
-    override def get(k: A): Option[B1] = getInternal(this, k)
-
-    @tailrec private[this] def getInternal(cur: ListMap[A, B1], k: A): Option[B1] =
-      if (cur.isEmpty) None
-      else if (k == cur.key) Some(cur.value)
-      else getInternal(cur.next, k)
-
-    override def contains(k: A): Boolean = containsInternal(this, k)
-
-    @tailrec private[this] def containsInternal(cur: ListMap[A, B1], k: A): Boolean =
-      if(cur.isEmpty) false
-      else if (k == cur.key) true
-      else containsInternal(cur.next, k)
-
-    override def updated[B2 >: B1](k: A, v: B2): ListMap[A, B2] = {
-      val m = this - k
-      new m.Node[B2](k, v)
+    override def apply(k: A): B1 = {
+      val node = ListMap.findNodeWithKey(this, k)
+      if (node eq null) throw new NoSuchElementException("key not found: " + k)
+      else node.value
     }
 
-    override def +[B2 >: B1](kv: (A, B2)): ListMap[A, B2] = {
-      val m = this - kv._1
-      new m.Node[B2](kv._1, kv._2)
+    override def get(k: A): Option[B1] = {
+      val node = ListMap.findNodeWithKey(this, k)
+      if (node eq null) None
+      else Some(node.value)
     }
 
-    override def -(k: A): ListMap[A, B1] = removeInternal(k, this, Nil)
+    override def contains(k: A): Boolean = ListMap.findNodeWithKey(this, k) ne null
 
-    @tailrec private[this] def removeInternal(k: A, cur: ListMap[A, B1], acc: List[ListMap[A, B1]]): ListMap[A, B1] =
-      if (cur.isEmpty) acc.last
-      else if (k == cur.key) (cur.next /: acc) { case (t, h) => new t.Node(h.key, h.value) }
-      else removeInternal(k, cur.next, cur :: acc)
+    override def updated[B2 >: B1](k: A, v: B2): ListMap[A, B2] =
+      // this is incorrect for 2.13 as we need to preserve the keys
+      // IN 2.13 - if ((v.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) && (key == k)) this
+      if ((v.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) &&
+        (k.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef])) this
+      else {
+        // this is incorrect for 2.13 as we need to preserve the keys
+        // in 2.13 we lookup k and the map contains oldNode.key -> v
+        // in 2.12 we lookup k and the map contains k -> v
+        val m = this - k
+        new m.Node[B2](k, v)
+      }
+
+    override def +[B2 >: B1](kv: (A, B2)): ListMap[A, B2] =
+      updated(kv._1, kv._2)
+
+    override def -(k: A): ListMap[A, B1] =
+      ListMap.removeAtIndex(this, ListMap.indexOfInternal(this, k))
 
     override protected def next: ListMap[A, B1] = ListMap.this
 
