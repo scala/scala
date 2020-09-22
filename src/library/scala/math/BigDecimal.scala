@@ -344,7 +344,7 @@ object BigDecimal {
   implicit def double2bigDecimal(d: Double): BigDecimal = decimal(d)
 
   /** Implicit conversion from `java.math.BigDecimal` to `scala.BigDecimal`. */
-  implicit def javaBigDecimal2bigDecimal(x: BigDec): BigDecimal = apply(x)
+  implicit def javaBigDecimal2bigDecimal(x: BigDec): BigDecimal = if (x == null) null else apply(x)
 }
 
 /**
