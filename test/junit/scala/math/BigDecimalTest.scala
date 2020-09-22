@@ -307,4 +307,13 @@ class BigDecimalTest {
 
     assert(bds.product == prod)
   }
+
+  @Test
+  def testImplicitBigDecimalConversionJavaToScalaHandlesNull(): Unit = {
+    val bdNull: BigDecimal = (null: java.math.BigDecimal): BigDecimal
+    assert(bdNull == null)
+
+    val bdValue: BigDecimal = (BD.ONE: java.math.BigDecimal): BigDecimal
+    assert(bdValue.bigDecimal == BD.ONE)
+  }
 }
