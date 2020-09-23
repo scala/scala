@@ -129,6 +129,24 @@ trait IsIterable[Repr] extends IsIterableOnce[Repr] {
 
 object IsIterable extends IsIterableLowPriority {
 
+  /**
+   * Auxiliary type alias for specifying the type of `A` required for
+   * an `IsIterable` instance.
+   */
+  type AuxA[Repr, A0] = IsIterable[Repr] { type A = A0 }
+
+  /**
+   * Auxiliary type alias for specifying the type of `C` required for
+   * an `IsIterable` instance.
+   */
+  type AuxC[Repr, C0] = IsIterable[Repr] { type C = C0 }
+
+  /**
+   * Auxiliary type alias for specifying the types of `A` and `C` required
+   * for an `IsIterable` instance.
+   */
+  type AuxAC[Repr, A0, C0] = IsIterable[Repr] { type A = A0; type C = C0 }
+
   // Straightforward case: IterableOps subclasses
   implicit def iterableOpsIsIterable[A0, CC0[X] <: IterableOps[X, Iterable, CC0[X]]]: IsIterable[CC0[A0]] { type A = A0; type C = CC0[A0] } =
     new IsIterable[CC0[A0]] {

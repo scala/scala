@@ -34,6 +34,7 @@ trait IsMap[Repr] extends IsIterable[Repr] {
   /** The type of values */
   type V
 
+  @deprecatedOverriding("this type should always be defined as `(K, V)`", since = "2.13.4")
   type A = (K, V)
 
   /** A conversion from the type `Repr` to `MapOps[K, V, Iterable, C]`
@@ -47,6 +48,36 @@ trait IsMap[Repr] extends IsIterable[Repr] {
 }
 
 object IsMap {
+
+  /**
+   * Auxiliary type alias for specifying the type of `K` required for
+   * an `IsMap` instance.
+   */
+  type AuxK[Repr, K0] = IsMap[Repr] { type K = K0 }
+
+  /**
+   * Auxiliary type alias for specifying the type of `K` required for
+   * an `IsMap` instance.
+   */
+  type AuxV[Repr, V0] = IsMap[Repr] { type V = V0 }
+
+  /**
+   * Auxiliary type alias for specifying the type of `C` required for
+   * an `IsMap` instance.
+   */
+  type AuxC[Repr, C0] = IsMap[Repr] { type C = C0 }
+
+  /**
+   * Auxiliary type alias for specifying the types of `K` and `V` required
+   * for an `IsMap` instance.
+   */
+  type AuxKV[Repr, K0, V0] = IsMap[Repr] { type K = K0; type V = V0 }
+
+  /**
+   * Auxiliary type alias for specifying the types of `K`, `V` and `C`
+   * required for an `IsMap` instance.
+   */
+  type AuxKVC[Repr, K0, V0, C0] = IsMap[Repr] { type K = K0; type V = V0; type C = C0 }
 
   /** Convenient type level function that takes a unary type constructor `F[_]`
     * and returns a binary type constructor that tuples its parameters and passes

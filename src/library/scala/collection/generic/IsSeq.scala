@@ -41,6 +41,24 @@ trait IsSeq[Repr] extends IsIterable[Repr] {
 
 object IsSeq {
 
+  /**
+   * Auxiliary type alias for specifying the type of `A` required for
+   * an `IsSeq` instance.
+   */
+  type AuxA[Repr, A0] = IsSeq[Repr] { type A = A0 }
+
+  /**
+   * Auxiliary type alias for specifying the type of `C` required for
+   * an `IsSeq` instance.
+   */
+  type AuxC[Repr, C0] = IsSeq[Repr] { type C = C0 }
+
+  /**
+   * Auxiliary type alias for specifying the types of `A` and `C` required
+   * for an `IsSeq` instance.
+   */
+  type AuxAC[Repr, A0, C0] = IsSeq[Repr] { type A = A0; type C = C0 }
+
   private val seqOpsIsSeqVal: IsSeq[Seq[Any]] =
     new IsSeq[Seq[Any]] {
       type A = Any
