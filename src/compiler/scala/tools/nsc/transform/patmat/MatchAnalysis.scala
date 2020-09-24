@@ -24,24 +24,29 @@ trait TreeAndTypeAnalysis extends Debugging {
 
   /** Compute the type T implied for a value `v` matched by a pattern `pat` (with expected type `pt`).
    *
-   * Usually, this is the pattern's type because pattern matching implies instance-of checks.
+   *  Usually, this is the pattern's type because pattern matching implies instance-of checks.
    *
-   * However, Stable Identifier and Literal patterns are matched using `==`,
-   * which does not imply a type for the binder that binds the matched value.
+   *  However, Stable Identifier and Literal patterns are matched using `==`,
+   *  which does not imply a type for the binder that binds the matched value.
+   *  E.g., in `case x@Nil => x `, all we know about `x` is that it satisfies `Nil == x`, which could be anything.
+   *  A type pattern with a literal type works the same as the corresponding literal pattern.
+   *  A literal pattern with a Boolean or Unit pattern does enforce that the respective value (`true`, `false`, `()`)
+   *  was matched, so in those cases, the pattern type is assumed.
    *
-   * See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
+   *  The other patterns imply type tests, so we can safely deduce that the binder has
+   *  the pattern's type when the pattern matches.
+   *  Concretely, a literal, type pattern, a case class (the constructor's result type)
+   *  or extractor (the unapply's argument type) all imply type tests.
+   *
+   *  See scala/bug#1503, scala/bug#5024: don't cast binders to types we're not sure they have
    */
-  def binderTypeImpliedByPattern(pat: Tree, pt: Type, binder: Symbol): Type =
+  def binderTypeImpliedByPattern(pat: Tree, pt: Type): Type =
     pat match {
-      // because `==` decides whether these patterns match, stable identifier patterns (ident or selection)
-      // do not contribute any type information (beyond the pattern's expected type)
-      // e.g., in case x@Nil => x --> all we know about `x` is that it satisfies Nil == x, which could be anything
-      case Ident(_) | Select(_, _) => pt
-
-      // the other patterns imply type tests, so we can safely assume the binder has the pattern's type when the pattern matches
-      // concretely, a literal, type pattern, a case class (the constructor's result type) or extractor (the unapply's argument type) all imply type tests
-      // (and, inductively, an alternative)
-      case _                       => pat.tpe
+      case _ if pat.tpe <:< BooleanTpe || pat.tpe <:< UnitTpe || pat.tpe <:< StringTpe
+                                                              => pat.tpe
+      case Ident(_) | Select(_, _) | Literal(_)               => pt
+      case Typed(_, _) if pat.tpe.isInstanceOf[ConstantType]  => pt
+      case _                                                  => pat.tpe
     }
 
   // we use subtyping as a model for implication between instanceof tests
