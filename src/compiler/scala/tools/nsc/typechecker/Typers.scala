@@ -4918,11 +4918,11 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             loop(tree)
           }
           val retry = typeErrors.forall(_.errPos != null) && (errorInResult(fun) || errorInResult(tree) || args.exists(errorInResult))
-          typingStack.printTyping({
-            val funStr = ptTree(fun) + " and " + (args map ptTree mkString ", ")
-            if (retry) "second try: " + funStr
-            else "no second try: " + funStr + " because error not in result: " + typeErrors.head.errPos+"!="+tree.pos
-          })
+          typingStack.printTyping {
+            val funStr = s"${ptTree(fun)} and ${args.map(ptTree).mkString(", ")}"
+            if (retry) s"second try: $funStr"
+            else s"no second try: $funStr because error not in result: ${typeErrors.head.errPos}!=${tree.pos}"
+          }
           if (retry) {
             val Select(qual, name) = fun
             tryTypedArgs(args, forArgMode(fun, mode)) match {
@@ -4937,7 +4937,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               case _ => ()
             }
           }
-          typeErrors foreach context.issue
+          def adjust(err: AbsTypeError) =
+            if (tree.hasAttachment[InterpolatedString.type])
+              tree match {
+                case Apply(sc @ Ident(nme.StringContextName), _) =>
+                  if (sc.isErroneous) err
+                  else NormalTypeError(tree, s"${err.errMsg}; signature for interpolation must be `StringContext.apply(String*)`")
+                case Apply(Select(_, nm), badargs) =>
+                  if (badargs.exists(_.isErroneous)) err
+                  else NormalTypeError(tree, s"${err.errMsg}; incompatible interpolation method $nm")
+              }
+            else err
+          typeErrors.foreach(err => context.issue(adjust(err)))
           warnings foreach { case (p, m, c, s) => context.warning(p, m, c, s) }
           setError(treeCopy.Apply(tree, fun, args))
         }
