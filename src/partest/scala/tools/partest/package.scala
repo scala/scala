@@ -65,7 +65,7 @@ package object partest {
   implicit class FileOps(val f: File) {
     private def sf = SFile(f)
 
-    // e.g. pos/t1234
+    // e.g. pos/t1234.scala
     def withEnclosing: String = f.toPath.iterator.asScala.toList.takeRight(2).mkString("/")
     def testIdent = withEnclosing
 
