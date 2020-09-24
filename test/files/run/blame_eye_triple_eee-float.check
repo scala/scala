@@ -1,3 +1,6 @@
+blame_eye_triple_eee-float.scala:49: warning: unreachable code
+    case _ => println("NaN matching was good")
+                     ^
 if (NaN == NaN) is good
 if (x == x) is good
 if (x == NaN) is good
