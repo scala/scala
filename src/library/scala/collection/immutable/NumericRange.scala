@@ -340,10 +340,18 @@ object NumericRange {
           // Jump in three pieces:
           //   * start to -1 or 1, whichever is closer (waypointA)
           //   * one step, which will take us at least to 0 (ends at waypointB)
+          //   * (except with really small numbers)
           //   * there to the end
           val negone = num.fromInt(-1)
           val startlim  = if (posStep) negone else one
-          val startdiff = num.minus(startlim, start)
+          //Use start value if the start value is closer to zero than startlim
+          //   * e.g. .5 is closer to zero than 1 and -.5 is closer to zero than -1
+          val startdiff = {
+            if ((posStep && num.lt(startlim, start)) || (!posStep && num.gt(startlim, start)))
+              start
+            else
+              num.minus(startlim, start)
+          }
           val startq    = check(num.quot(startdiff, step))
           val waypointA = if (startq == zero) start else num.plus(start, num.times(startq, step))
           val waypointB = num.plus(waypointA, step)

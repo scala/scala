@@ -88,4 +88,47 @@ class NumericRangeTest {
     assertFalse(NumericRange.inclusive(Long.MaxValue, Int.MaxValue.toLong, -1).isEmpty)
     assertTrue(NumericRange(Long.MaxValue, Long.MaxValue, -1).isEmpty)
   }
+
+  @Test
+  def smallIncrementCount: Unit = {
+    case class TestRange(start: BigDecimal, end: BigDecimal, step: BigDecimal, inclusive: Boolean = false)
+    def foldListIncrement(rangeTest: TestRange): List[BigDecimal] = {
+      List.unfold(rangeTest. start) { prec =>
+        Option.when(
+          if (rangeTest.step > 0)
+            prec < rangeTest.end
+          else
+            prec > rangeTest.end
+          )(prec -> (prec + rangeTest.step))
+      } ::: (if (rangeTest.inclusive) List(rangeTest.end) else List.empty[BigDecimal])
+    }
+
+    def createRangeFromRangeTest(rangeTest: TestRange) =
+      if (rangeTest.inclusive)
+        Range.BigDecimal.inclusive(rangeTest.start, rangeTest.end, rangeTest.step)
+      else
+        Range.BigDecimal(rangeTest.start, rangeTest.end, rangeTest.step)
+
+    def negate(v: BigDecimal) = v.*(BigDecimal(-1))
+    def double(v: BigDecimal) = v.*(BigDecimal(2))
+    def negateDouble(v: BigDecimal) = negate(double(v))
+
+    val inclusiveValue = BigDecimal(1E-34)
+
+    List[TestRange](
+      TestRange(BigDecimal(-2E-34), BigDecimal(1E-64), BigDecimal(1E-34)), //Negative to positive Range, positive step, exclusive
+      TestRange(negateDouble(inclusiveValue), inclusiveValue, inclusiveValue, inclusive = true), //Negative to positive Range, positive step, inclusive
+      TestRange(BigDecimal(1E-64), BigDecimal(-2E-34), BigDecimal(-1E-34)), //Positive to negative range, negative step, exclusive
+      TestRange(inclusiveValue, negateDouble(inclusiveValue), negate(inclusiveValue), inclusive = true), //Positive to negative range, negative step, inclusive
+      TestRange(BigDecimal(1E-64), BigDecimal(2E-34), BigDecimal(1E-34)), //Positive to positive, positive step, exclusive
+      TestRange(inclusiveValue, double(inclusiveValue), inclusiveValue, inclusive = true), //Positive to positive, positive step, inclusive
+      TestRange(BigDecimal(2E-34), BigDecimal(1E-64), BigDecimal(-1E-34)), //Positive to positive, negative step, exclusive
+      TestRange(double(inclusiveValue), inclusiveValue, negate(inclusiveValue), inclusive = true), //Positive to positive, negative step, inclusive
+      TestRange(BigDecimal(-1E-64), BigDecimal(-2E-34), BigDecimal(-1E-34)), //Negative to negative, negative step, exclusive
+      TestRange(negate(inclusiveValue), negateDouble(inclusiveValue), negate(inclusiveValue), inclusive = true), //Negative to negative, negative step, inclusive
+      TestRange(BigDecimal(-2E-34), BigDecimal(-1E-64), BigDecimal(1E-34)), //Negative to negative, positive step, exclusive
+      TestRange(negateDouble(inclusiveValue), negate(inclusiveValue), inclusiveValue), //Negative to negative, positive step, inclusive
+      TestRange(BigDecimal(9.474), BigDecimal(49.474), BigDecimal(1)) //BigDecimal in "large" increments
+      ).foreach(tr => assertEquals(foldListIncrement(tr).length, createRangeFromRangeTest(tr).length))
+  }
 }
