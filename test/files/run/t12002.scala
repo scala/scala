@@ -7,7 +7,7 @@ class C0(private[this] var c: String) {
 
 class A(x: Int) { assert(x == 1) } // elided
 class B(private[this] val x: Int) { assert(x == 1) } // elided
-class C(private[this] var x: Int) { } // elided
+class C(private[this] var x: Int) { } // kept
 class D(private[this] var x: Int) { assert(x == 1) } // kept
 class E(private[this] var x: Int) { x = 2 } // kept
 class F(private[this] var x: Int) { x = 2; assert(x == 2) } // kept
