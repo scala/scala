@@ -192,15 +192,19 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
             }
           }
       }
-      class DetectAssigns(targets: mutable.Set[Symbol]) extends InternalTraverser {
+
+      class DetectVarUses(targets: mutable.Set[Symbol]) extends InternalTraverser {
         override def traverse(tree: Tree): Unit = if (targets.nonEmpty) {
-          tree match {
-            case Assign(lhs, _) if targets(lhs.symbol) =>
-              targets -= lhs.symbol
-              omittables -= lhs.symbol
-              tree.traverse(this)
-            case _ => tree.traverse(this)
+          def mark(sym: Symbol): Unit = {
+            targets -= sym
+            omittables -= sym
           }
+          tree match {
+            case _: Select if targets(tree.symbol) => mark(tree.symbol)
+            case Assign(lhs, _) if targets(lhs.symbol) => mark(lhs.symbol)
+            case _ =>
+          }
+          tree.traverse(this)
         }
       }
 
@@ -210,7 +214,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       if (omittables.nonEmpty) {
         val omittedVars = omittables.filter(_.isVariable)
         if (omittedVars.nonEmpty) {
-          val detector = new DetectAssigns(omittedVars)
+          val detector = new DetectVarUses(omittedVars)
           constructor.foreach(detector.traverse)
         }
       }
