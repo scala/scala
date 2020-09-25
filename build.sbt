@@ -367,6 +367,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyArray"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.*Manifest.emptyWrappedArray"),
 
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.removeAtIndex"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.scala$collection$immutable$ListMap$$indexOfInternal$default$3"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ListMap.removeAtIndex"),
+
     //
     // scala-reflect
     //
