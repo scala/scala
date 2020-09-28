@@ -172,7 +172,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
       //   class Outer { def test = {class LocalParent; class LocalChild extends LocalParent } }
       //
       // See run/t9408.scala for related test cases.
-      def omittableParamAcc(sym: Symbol) = sym.isParamAccessor && sym.isPrivateLocal
+      def omittableParamAcc(sym: Symbol) = sym.isParamAccessor && sym.isPrivateLocal && !sym.isVariable
       def omittableOuterAcc(sym: Symbol) = isEffectivelyFinal && sym.isOuterAccessor && !sym.isOverridingSymbol
       val omittables = mutable.Set.empty[Symbol] ++ (decls filter (sym => omittableParamAcc(sym) || omittableOuterAcc(sym))) // the closure only captures isEffectivelyFinal
 
@@ -192,28 +192,10 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
             }
           }
       }
-      class DetectAssigns(targets: mutable.Set[Symbol]) extends InternalTraverser {
-        override def traverse(tree: Tree): Unit = if (targets.nonEmpty) {
-          tree match {
-            case Assign(lhs, _) if targets(lhs.symbol) =>
-              targets -= lhs.symbol
-              omittables -= lhs.symbol
-              tree.traverse(this)
-            case _ => tree.traverse(this)
-          }
-        }
-      }
 
       if (omittables.nonEmpty)
         (defs.iterator ++ auxConstructors.iterator) foreach detectUsages.traverse
 
-      if (omittables.nonEmpty) {
-        val omittedVars = omittables.filter(_.isVariable)
-        if (omittedVars.nonEmpty) {
-          val detector = new DetectAssigns(omittedVars)
-          constructor.foreach(detector.traverse)
-        }
-      }
       omittables.toSet
     }
   } // OmittablesHelper
