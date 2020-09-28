@@ -88,7 +88,7 @@ import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
  *   *F
  *   + 1 Main.scala
  *   Main
- *   + 2 List.scala
+ *   + 2 List$
  *   scala/collection/immutable/List$
  *   + 3 Utils.scala
  *   Utils$
@@ -119,6 +119,9 @@ import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
  *   Each stratum first indicates the source files from where it contains code references.
  *   Those are defined in the file section (*F). The first file of each file section entry
  *   contains the file ID, the source file name and the internal class name in the classpath.
+ *   If the source file name cannot be determined (e.g. for internal classes like java.lang.Integer),
+ *   then the non-fully-qualified class name is used instead.
+ *   This is what is happening to the file ID 2 (List$) in the example above.
  *
  *   Then the line section follows. Because the Main.scala file contains 11 lines, the first
  *   11 lines in the catalogue are filled by those lines. This is achieved via the mapping:
@@ -179,6 +182,9 @@ import scala.tools.nsc.backend.jvm.DebugInfoBuilder.JSR45Stratum
  *   249#2:22
  *}}}
  *   because line 249 was inline anew with a separate inline request.
+ *
+ *   The ScalaDebug stratum is not emitted by default. You can enable it by including it in
+ *   the outputStrata in the JSR45Info case class in this file.
  *
  *   Please note that, an inline line from an external file may be in turn inline from another
  *   external file. In this case, the debugger needs to figure that out and trace to the origin
