@@ -17,12 +17,9 @@ import java.nio.channels.ClosedByInterruptException
 import java.util.concurrent.ThreadPoolExecutor.CallerRunsPolicy
 import java.util.concurrent._
 
-import jdk.internal.org.objectweb.asm.tree.AbstractInsnNode
-
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
-import scala.tools.asm.tree.LineNumberNode
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.backend.jvm.PostProcessorFrontendAccess.BufferingBackendReporting
 import scala.tools.nsc.io.AbstractFile
