@@ -366,7 +366,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         if (key == this.key) {
           if (merger eq null) {
             if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
-            else new HashMap1(key, hash, value, kv)
+            else new HashMap1(this.key, hash, value, null)
           } else if (
             (key.asInstanceOf[AnyRef] eq this.key.asInstanceOf[AnyRef]) &&
               (value.asInstanceOf[AnyRef] eq this.value.asInstanceOf[AnyRef]) &&
@@ -556,7 +556,6 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
     private[HashMap] var elems0: Array[HashMap[A, B @uV]],
     private[HashMap] var size0: Int
   ) extends HashMap[A, B @uV] {
-
     @inline private[collection] final def bitmap: Int = bitmap0
     @inline private[collection] final def elems: Array[HashMap[A, B @uV]] = elems0
 

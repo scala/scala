@@ -124,7 +124,6 @@ class SetMapRulesTest {
     case _: mutable.AnyRefMap[_, _] => true
     case _: immutable.TreeMap[_, _] => true
     case _: concurrent.TrieMap[_, _] => true
-    case _: immutable.HashMap[_, _] => true
     case _ => false
   }
 
@@ -243,7 +242,6 @@ class SetMapRulesTest {
 
   // Immutable maps
 
-  @Ignore // TODO
   @Test def testImmutableMap: Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.Map(d: _*)))
 
@@ -255,7 +253,6 @@ class SetMapRulesTest {
     mapdata.foreach(d => checkSortedMap(d, (ordering) => immutable.TreeMap.newBuilder[String, Value](ordering)))
   }
 
-  @Ignore // TODO
   @Test def testImmutableHashMap: Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.HashMap(d: _*)))
 

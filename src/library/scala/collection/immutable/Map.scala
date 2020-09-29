@@ -621,12 +621,15 @@ object Map extends ImmutableMapFactory[Map] {
       } else if (elems.size < 4) {
         elems = elems + elem
       } else {
-        // assert(elems.size == 4)
-        elems.get(elem._1) match {
-          case Some(x) if x == elem._2 => ()
-          case _ =>
-          convertToHashMapBuilder()
-          hashMapBuilder += elem
+        val key = elem._1
+        val newValue = elem._2
+        elems.getOrElse(key, Sentinel) match {
+          case Sentinel =>
+            convertToHashMapBuilder()
+            hashMapBuilder += elem
+          case existingValue =>
+            if (existingValue.asInstanceOf[AnyRef] ne newValue.asInstanceOf[AnyRef])
+              elems = elems + elem
         }
       }
       this
@@ -646,6 +649,7 @@ object Map extends ImmutableMapFactory[Map] {
       this
     }
   }
+  private val Sentinel = new Object
 }
 
 /** Explicit instantiation of the `Map` trait to reduce class file size in subclasses. */
