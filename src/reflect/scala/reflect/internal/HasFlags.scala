@@ -133,6 +133,7 @@ trait HasFlags {
   def isSynthetic           = hasFlag(SYNTHETIC)
   def isTrait               = hasFlag(TRAIT) && !hasFlag(PARAM)
   def isTraitOrInterface    = isTrait || isInterface
+  def isJavaSealed          = hasFlag(JAVA_SEALED)
 
   def flagBitsToString(bits: Long): String = {
     // Fast path for common case

@@ -313,6 +313,7 @@ trait StdNames {
     final val SignatureATTR: NameType              = nameType("Signature")
     final val SourceFileATTR: NameType             = nameType("SourceFile")
     final val SyntheticATTR: NameType              = nameType("Synthetic")
+    final val PermittedSubclassesATTR: NameType    = nameType("PermittedSubclasses")
 
     final val scala_ : NameType = nameType("scala")
 

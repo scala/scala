@@ -129,6 +129,7 @@ class ModifierFlags {
   final val JAVA_DEFAULTMETHOD = 1L << 47     // symbol is a java default method
   final val JAVA_ENUM          = 1L << 48     // symbol is a java enum
   final val JAVA_ANNOTATION    = 1L << 49     // symbol is a java annotation
+  final val JAVA_SEALED        = 1L << 50     // symbol is a java sealed
 
   // Overridden.
   def flagToString(flag: Long): String = ""

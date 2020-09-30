@@ -1182,6 +1182,12 @@ trait Namers extends MethodSynthesis {
               psym addChild context.owner
             else
               pending += ParentSealedInheritanceError(tpt, psym)
+
+          if (psym.isJavaSealed) {
+            // TODO Don't report error if this is a permitted subclass
+            pending += ParentSealedInheritanceError(tpt, psym)
+          }
+
           if (psym.isLocalToBlock && psym.isClass && !phase.erasedTypes)
             psym addChild context.owner
         }

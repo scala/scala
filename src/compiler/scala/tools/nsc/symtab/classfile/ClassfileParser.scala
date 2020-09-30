@@ -912,6 +912,13 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
           }
           in.skip(attrLen)
 
+        case tpnme.PermittedSubclassesATTR =>
+          // https://openjdk.java.net/jeps/360
+          log(s"$sym is java sealed.")
+          sym setFlag JAVA_SEALED
+          // TODO read permitted sub classes?
+          in.skip(attrLen)
+
         case _ =>
           in.skip(attrLen)
       }
