@@ -17,9 +17,7 @@ import org.junit.runners.JUnit4
 import org.junit.{Ignore, Test}
 import org.junit.Assert._
 
-import scala.collection.{concurrent, immutable, mutable}
 import scala.collection.JavaConverters._
-import scala.collection.immutable.ListMap
 
 /**
   * Test that various set and map implementation conform to the following rules:
@@ -224,6 +222,25 @@ class SetMapRulesTest {
     }
   }
 
+  private def checkSortedMap[T](entries1: Seq[(Value, Value)],
+                                 newBuilder: (Ordering[String]) => mutable.Builder[(String, Value), Map[String, Value]]): Unit = {
+    object CaseInsensitive extends Ordering[String] {
+      override def compare(x: String, y: String): Int = x.compareToIgnoreCase(y)
+    }
+    val m1 = newBuilder(CaseInsensitive).++=(entries1.map(pair => ("k" + pair._1.toString, pair._2))).result()
+    val values1 = m1.values.iterator.map(_.toTuple).toSet
+    val tuples = m1.toList.map { case (k, v) => (k.toUpperCase, v.incrementExtra)}
+    val m2 = tuples.foldLeft(m1) {
+      case (z, (k, v)) => z.updated(k, v.incrementExtra)
+    }
+    val values2 = m2.values.iterator.map(_.toTuple).toSet
+    assertTrue(s"updated should update values (none of ${values1} should be in $values2)", values1.forall(k => !values2.contains(k)))
+
+    val m3 = newBuilder(CaseInsensitive).++=(m1).++=(tuples).result()
+    val values3 = m3.values.iterator.map(_.toTuple).toSet
+    assertTrue(s"updated should update values (none of ${values1} should be in $values3)", values1.forall(k => !values3.contains(k)))
+  }
+
   // Immutable maps
 
   @Ignore // TODO
@@ -233,8 +250,10 @@ class SetMapRulesTest {
   @Test def testImmutableListMap: Unit =
     mapdata.foreach(d => checkImmutableMap(() => immutable.ListMap(d: _*)))
 
-  @Test def testImmutableTreeMap: Unit =
+  @Test def testImmutableTreeMap: Unit = {
     mapdata.foreach(d => checkImmutableMap(() => immutable.TreeMap(d: _*)))
+    mapdata.foreach(d => checkSortedMap(d, (ordering) => immutable.TreeMap.newBuilder[String, Value](ordering)))
+  }
 
   @Ignore // TODO
   @Test def testImmutableHashMap: Unit =
@@ -254,8 +273,10 @@ class SetMapRulesTest {
   @Test def testMutableAnyRefMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.AnyRefMap(d: _*)))
 
-  @Test def testMutableTreeMap: Unit =
+  @Test def testMutableTreeMap: Unit = {
     mapdata.foreach(d => checkMutableMap(() => mutable.TreeMap(d: _*)))
+    mapdata.foreach(d => checkSortedMap(d, (ordering) => mutable.TreeMap.newBuilder[String, Value](ordering)))
+  }
 
   @Test def testMutableLinkedHashMap: Unit =
     mapdata.foreach(d => checkMutableMap(() => mutable.LinkedHashMap(d: _*)))
