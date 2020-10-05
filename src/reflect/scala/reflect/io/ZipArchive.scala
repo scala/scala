@@ -38,6 +38,8 @@ import scala.reflect.internal.JDK9Reflectors
 object ZipArchive {
   private[io] val closeZipFile = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
 
+  private[io] final val RootEntry = "/"
+
   /**
    * @param   file  a File
    * @return  A ZipArchive if `file` is a readable zip file, otherwise null.
@@ -249,7 +251,7 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   def iterator: Iterator[Entry] = {
     val root     = new DirEntry("/")
     val dirs     = new java.util.HashMap[String, DirEntry]()
-    dirs.put("", root)
+    dirs.put(RootEntry, root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
     closeables ::= in
 
@@ -323,7 +325,7 @@ final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def iterator = {
     val root     = new DirEntry("/")
     val dirs     = new java.util.HashMap[String, DirEntry]
-    dirs.put("", root)
+    dirs.put(RootEntry, root)
     val manifest = new Manifest(input)
     closeables ::= input
 
