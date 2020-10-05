@@ -1,0 +1,4 @@
+t1565.scala:1: error: self-type annotation may not be in parentheses
+trait HasSelf { (this: Forbidden) =>
+                ^
+1 error
