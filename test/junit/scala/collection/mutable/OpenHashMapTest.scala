@@ -4,7 +4,7 @@ import org.junit.Assert._
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.openjdk.jol.info.{GraphPathRecord, GraphVisitor, GraphWalker}
+import org.openjdk.jol.info.GraphWalker
 
 /** Tests for [[OpenHashMap]]. */
 @RunWith(classOf[JUnit4])
@@ -50,7 +50,6 @@ class OpenHashMapTest {
   /** Test that an [[OpenHashMap]] frees references to a deleted key (scala/bug#9522). */
   @Test
   def freesDeletedKey {
-    import scala.language.reflectiveCalls
 
     class MyClass {
       override def hashCode() = 42
