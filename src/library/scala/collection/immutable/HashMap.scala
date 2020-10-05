@@ -366,7 +366,7 @@ object HashMap extends ImmutableMapFactory[HashMap] with BitOperations.Int {
         if (key == this.key) {
           if (merger eq null) {
             if (this.value.asInstanceOf[AnyRef] eq value.asInstanceOf[AnyRef]) this
-            else new HashMap1(this.key, hash, value, null)
+            else new HashMap1(this.key, hash, value, if (this.key.asInstanceOf[AnyRef] eq key.asInstanceOf[AnyRef]) kv else null)
           } else if (
             (key.asInstanceOf[AnyRef] eq this.key.asInstanceOf[AnyRef]) &&
               (value.asInstanceOf[AnyRef] eq this.value.asInstanceOf[AnyRef]) &&
