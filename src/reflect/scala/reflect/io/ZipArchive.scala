@@ -25,6 +25,8 @@ import scala.collection.JavaConverters._
 import scala.annotation.tailrec
 import scala.reflect.internal.JDK9Reflectors
 
+import ZipArchive._
+
 /** An abstraction for zip files and streams.  Everything is written the way
  *  it is for performance: we come through here a lot on every run.  Be careful
  *  about changing it.
@@ -37,6 +39,8 @@ import scala.reflect.internal.JDK9Reflectors
  */
 object ZipArchive {
   private[io] val closeZipFile = sys.props.get("scala.classpath.closeZip").map(_.toBoolean).getOrElse(false)
+
+  private[io] final val RootEntry = "/"
 
   /**
    * @param   file  a File
@@ -63,14 +67,13 @@ object ZipArchive {
     val idx   = path.lastIndexOf('/')
 
     if (idx < 0)
-      if (front) "/"
+      if (front) RootEntry
       else path
     else
       if (front) path.substring(0, idx + 1)
       else path.substring(idx + 1)
   }
 }
-import ZipArchive._
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 abstract class ZipArchive(override val file: JFile, release: Option[String]) extends AbstractFile with Equals {
   self =>
@@ -188,8 +191,8 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
 
   private[this] val dirs = new java.util.HashMap[String, DirEntry]()
   lazy val root: DirEntry = {
-    val root = new DirEntry("/")
-    dirs.put("/", root)
+    val root = new DirEntry(RootEntry)
+    dirs.put(RootEntry, root)
     val zipFile = openZipFile()
     val enum    = zipFile.entries()
 
@@ -247,9 +250,9 @@ final class FileZipArchive(file: JFile, release: Option[String]) extends ZipArch
 /** ''Note:  This library is considered experimental and should not be used unless you know what you are doing.'' */
 final class URLZipArchive(val url: URL) extends ZipArchive(null) {
   def iterator: Iterator[Entry] = {
-    val root     = new DirEntry("/")
+    val root     = new DirEntry(RootEntry)
     val dirs     = new java.util.HashMap[String, DirEntry]()
-    dirs.put("", root)
+    dirs.put(RootEntry, root)
     val in       = new ZipInputStream(new ByteArrayInputStream(Streamable.bytes(input)))
     closeables ::= in
 
@@ -321,9 +324,9 @@ final class URLZipArchive(val url: URL) extends ZipArchive(null) {
 
 final class ManifestResources(val url: URL) extends ZipArchive(null) {
   def iterator = {
-    val root     = new DirEntry("/")
+    val root     = new DirEntry(RootEntry)
     val dirs     = new java.util.HashMap[String, DirEntry]
-    dirs.put("", root)
+    dirs.put(RootEntry, root)
     val manifest = new Manifest(input)
     closeables ::= input
 

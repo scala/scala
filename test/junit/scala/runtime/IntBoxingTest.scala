@@ -3,7 +3,7 @@ package scala.runtime
 import org.junit.Assert._
 import org.junit.Test
 
-import scala.tools.testing.{AllocationTest, BytecodeTesting}
+import scala.tools.testing.AllocationTest
 
 class IntBoxingTest extends SideEffectTest with AllocationTest {
   val value = 999999999

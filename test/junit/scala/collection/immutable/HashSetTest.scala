@@ -11,7 +11,6 @@ import scala.util.Random
 @RunWith(classOf[JUnit4])
 class HashSetTest extends AllocationTest {
 
-
   def generate(): HashSet[String] = {
     (1 to 1000).map { i => s"key $i" }(scala.collection.breakOut)
   }
@@ -226,7 +225,7 @@ class HashSetTest extends AllocationTest {
     for (i <- 1 to 16) {
       val builder1 = collection.immutable.HashSet.newBuilder[C];
       for (i <- 1 to 8)
-        builder1 += C(scala.util.Random.nextInt());
+        builder1 += C(Random.nextInt());
       val s1 = builder1.result()
       builder0 ++= s1
       setReference ++= s1

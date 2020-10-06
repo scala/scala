@@ -1,12 +1,10 @@
 package scala.collection
 
-import org.junit.Assert.assertEquals
-import org.junit.{Assert, Test}
+import org.junit.{Assert, Test}, Assert.assertEquals
 
 class SortedSetMapEqualsTest {
   @Test
   def noOptimizedSetEqualityWhenOrderingsDiffer(): Unit = {
-    import scala.collection.immutable.SortedSet
     checkSet(ord => mutable.SortedSet.newBuilder[Int](ord))
     checkSet(ord => immutable.SortedSet.newBuilder[Int](ord))
     checkMap(ord => mutable.SortedMap.newBuilder[Int, Any](ord))
