@@ -264,4 +264,15 @@ class ListBufferTest {
     b --= b
     assertSameElements(Nil, b)
   }
+
+  @Test
+  def self_patchInPlace(): Unit = {
+    val b1 = ListBuffer(1, 2, 3)
+    b1.patchInPlace(1, b1, 1)
+    assertSameElements(List(1, 1, 2, 3, 3), b1)
+
+    val b2 = ListBuffer(1, 2, 3)
+    b2.patchInPlace(3, b2, 1)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+  }
 }
