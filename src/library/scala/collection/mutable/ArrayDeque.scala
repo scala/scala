@@ -527,14 +527,9 @@ object ArrayDeque extends StrictOptimizedSeqFactory[ArrayDeque] {
     val s = coll.knownSize
     if (s >= 0) {
       val array = alloc(s)
-      val it = coll.iterator
-      var i = 0
-      while (it.hasNext) {
-        array(i) = it.next().asInstanceOf[AnyRef]
-        i += 1
-      }
+      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
       new ArrayDeque[B](array, start = 0, end = s)
-    } else empty[B] ++= coll
+    } else new ArrayDeque[B]() ++= coll
   }
 
   def newBuilder[A]: Builder[A, ArrayDeque[A]] =

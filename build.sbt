@@ -426,6 +426,15 @@ val mimaFilterSettings = Seq {
 
     // Private constructor for SeqView.Sorted
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SeqView#Sorted.this"),
+
+    // private convenience method for copying collections to Arrays (scala/scala#9232)
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnce.copyElemsToArray"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnce.copyElemsToArray$default$3"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.IterableOnce.copyElemsToArray$default$4"),
+
+    // this is safe because the default cannot be used; instead the single-param overload in
+    // `IterableOnceOps` is chosen (https://github.com/scala/scala/pull/9232#discussion_r501554458)
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.ArraySeq.copyToArray$default$2"),
   ),
 }
 
