@@ -6,11 +6,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
-import scala.tools.asm.Opcodes._
-import scala.tools.partest.ASMConverters._
-import scala.tools.testing.AssertUtil._
-import scala.tools.testing.BytecodeTesting
-import scala.tools.testing.BytecodeTesting._
+import scala.tools.testkit.BytecodeTesting
+import scala.tools.testkit.BytecodeTesting._
 
 @RunWith(classOf[JUnit4])
 class LineNumberTest extends BytecodeTesting {
@@ -24,7 +21,7 @@ class LineNumberTest extends BytecodeTesting {
     val code                    =
       """
         |class Test {
-        |  def main() {
+        |  def main(): Unit = {
         |    for {
         |      a <- Seq(1)
         |      a1 = a + 1
