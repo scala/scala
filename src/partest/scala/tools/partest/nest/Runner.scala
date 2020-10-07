@@ -37,7 +37,7 @@ import scala.util.control.ControlThrowable
 
 /** pos/t1234.scala or pos/t1234 if dir */
 case class TestInfo(testFile: File) {
-  /** pos/t1234 */
+  /** pos/t1234.scala */
   val testIdent: String = testFile.testIdent
 
   /** pos */
