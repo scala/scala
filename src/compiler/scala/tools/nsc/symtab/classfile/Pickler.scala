@@ -54,6 +54,7 @@ abstract class Pickler extends SubComponent {
       syms.foreach { sym =>
         pickle.putDecl(sym)
       }
+      pickle.writeArray()
     }
   }
 
@@ -171,7 +172,7 @@ abstract class Pickler extends SubComponent {
     private lazy val nonClassRoot = findSymbol(root.ownersIterator)(!_.isClass)
     def include(sym: Symbol) = !noPrivates || !sym.isPrivate || (sym.owner.isTrait && sym.isAccessor)
 
-    def close(): Unit = { writeArray(); index = null; entries = null }
+    def close(): Unit = { index = null; entries = null }
 
     private def isRootSym(sym: Symbol) =
       sym.name.toTermName == rootName && sym.owner == rootOwner
@@ -629,7 +630,7 @@ abstract class Pickler extends SubComponent {
     }
 
     /** Write byte array */
-    private def writeArray(): Unit = {
+    final def writeArray(): Unit = {
       assert(writeIndex == 0, "Index must be zero")
       assert(index ne null, this)
       writeNat(MajorVersion)

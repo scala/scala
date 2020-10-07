@@ -36,6 +36,8 @@ class PathSettings(testSourcePath: String) {
 
     candidates find isPartestDir getOrElse sys.error("Directory 'test' not found.")
   }
+
+  // Directory <root> (aka the repo root)
   val testParent = testRoot.parent
 
   // Directory <root>/test/files or .../scaladoc
