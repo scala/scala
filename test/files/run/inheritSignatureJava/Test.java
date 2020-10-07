@@ -1,13 +1,13 @@
 class A extends Sub {
   @Override
   public String foo(String a) {
-    return "Test-" + a /*+ super.foo(a)*/; // super call doesn't compile
+    return "(A)" + super.foo(a);
   }
 }
 class B extends Buk {
   @Override
   public String foo(String a) {
-    return "Test-" + a + superFoo(a) /*+ super.foo(a)*/; // super call doesn't compile
+    return "(B)" + superFoo(a) + super.foo(a);
   }
 }
 

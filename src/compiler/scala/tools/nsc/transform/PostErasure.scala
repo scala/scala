@@ -47,7 +47,9 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
         case ValueClass.BoxAndUnbox(v)             => finish(v)          // (new B(v)).unbox        ==> v
         case ValueClass.BoxAndCompare(v1, op, v2)  => binop(v1, op, v2)  // new B(v1) == new B(v2)  ==> v1 == v2
         case dd: DefDef if dd.symbol.hasAttachment[InheritedSignature] =>
-          dd.symbol.setFlag(Flags.PRIVATE).resetFlag(Flags.OVERRIDE)
+          // the ARTIFACT and BRIDGE flags have no effect on scalac or the jvm, but they matter to javac when
+          // compiling Java code against inheritSignature methods. The selection here seem to work best.
+          dd.symbol.setFlag(Flags.PRIVATE | Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
           dd.symbol.getAndRemoveAttachment[InheritedSignature].get.bridge.resetFlag(Flags.ARTIFACT).setFlag(Flags.OVERRIDE)
           tree
         case tree                                  => tree
