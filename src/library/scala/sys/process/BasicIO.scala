@@ -48,7 +48,7 @@ object BasicIO {
     def apply[T](nonzeroException: Boolean, capacity: Integer): LazilyListed[T] = {
       val queue = new LinkedBlockingQueue[Either[Int, T]](capacity)
       val ll = LazyList.unfold(queue) { q =>
-        q.take match {
+        q.take() match {
           case Left(0)    => None
           case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else None
           case Right(s)   => Some((s, q))
@@ -58,16 +58,18 @@ object BasicIO {
     }
   }
 
+  @deprecated("internal", since = "2.13.4")
   private[process] final class Streamed[T](
     val process:   T => Unit,
     val    done: Int => Unit,
     val  stream:  () => Stream[T]
   )
 
+  @deprecated("internal", since = "2.13.4")
   private[process] object Streamed {
     def apply[T](nonzeroException: Boolean, capacity: Integer): Streamed[T] = {
       val q = new LinkedBlockingQueue[Either[Int, T]](capacity)
-      def next(): Stream[T] = q.take match {
+      def next(): Stream[T] = q.take() match {
         case Left(0)    => Stream.empty
         case Left(code) => if (nonzeroException) scala.sys.error("Nonzero exit code: " + code) else Stream.empty
         case Right(s)   => Stream.cons(s, next())
@@ -193,7 +195,7 @@ object BasicIO {
    *  `null` or the current thread is interrupted.
    */
   def processLinesFully(processLine: String => Unit)(readLine: () => String): Unit = {
-    def working = (Thread.currentThread.isInterrupted == false)
+    def working = !Thread.currentThread.isInterrupted
     def halting = { Thread.currentThread.interrupt(); null }
     @tailrec
     def readFully(): Unit =
@@ -202,7 +204,7 @@ object BasicIO {
           try readLine()
           catch {
             case _: InterruptedException    => halting
-            case e: IOException if !working => halting
+            case _: IOException if !working => halting
           }
         if (line != null) {
           processLine(line)

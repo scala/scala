@@ -15,6 +15,7 @@ package collection
 
 import java.io.{ObjectInputStream, ObjectOutputStream}
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.mutable.Builder
 
@@ -35,6 +36,7 @@ trait BitSet extends SortedSet[Int] with BitSetOps[BitSet] {
   override protected def fromSpecific(coll: IterableOnce[Int]): BitSet = bitSetFactory.fromSpecific(coll)
   override protected def newSpecificBuilder: Builder[Int, BitSet] = bitSetFactory.newBuilder
   override def empty: BitSet = bitSetFactory.empty
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "BitSet"
   override def unsorted: Set[Int] = this
 }

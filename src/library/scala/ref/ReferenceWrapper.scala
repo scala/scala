@@ -12,6 +12,9 @@
 
 package scala.ref
 
+import scala.annotation.nowarn
+
+@nowarn("cat=deprecation")
 trait ReferenceWrapper[+T <: AnyRef] extends Reference[T] with Proxy {
   val underlying: java.lang.ref.Reference[_ <: T]
   override def get = Option(underlying.get)

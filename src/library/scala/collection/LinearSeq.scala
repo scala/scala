@@ -13,7 +13,7 @@
 package scala
 package collection
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /** Base trait for linearly accessed sequences that have efficient `head` and
   *  `tail` operations.
@@ -22,6 +22,7 @@ import scala.annotation.tailrec
 trait LinearSeq[+A] extends Seq[A]
   with LinearSeqOps[A, LinearSeq, LinearSeq[A]]
   with IterableFactoryDefaults[A, LinearSeq] {
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "LinearSeq"
 
   override def iterableFactory: SeqFactory[LinearSeq] = LinearSeq

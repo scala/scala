@@ -16,6 +16,8 @@ package collection
 import scala.util.hashing.MurmurHash3
 import java.lang.String
 
+import scala.annotation.nowarn
+
 /** Base trait for set collections.
   */
 trait Set[A]
@@ -38,6 +40,7 @@ trait Set[A]
 
   override def iterableFactory: IterableFactory[Set] = Set
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "Set"
 
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too

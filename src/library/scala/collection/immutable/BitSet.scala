@@ -16,7 +16,7 @@ package immutable
 
 import BitSetOps.{LogWL, updateArray}
 import mutable.Builder
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, nowarn}
 
 /** A class for immutable bitsets.
   *  $bitsetinfo
@@ -90,6 +90,7 @@ sealed abstract class BitSet
   * @define Coll `immutable.BitSet`
   * @define coll immutable bitset
   */
+@nowarn("cat=deprecation&msg=Implementation classes of BitSet should not be accessed directly")
 @SerialVersionUID(3L)
 object BitSet extends SpecificIterableFactory[Int, BitSet] {
 

@@ -13,6 +13,7 @@
 package scala
 package reflect
 
+import scala.annotation.{implicitNotFound, nowarn}
 import scala.collection.mutable.{ArrayBuilder, ArraySeq}
 
 /** A `Manifest[T]` is an opaque descriptor for type T.  Its supported use
@@ -42,7 +43,8 @@ import scala.collection.mutable.{ArrayBuilder, ArraySeq}
  *    retType[Map[_, _]]("values")  // Some(scala.collection.Iterable<B>)
  *  }}}
  */
-@scala.annotation.implicitNotFound(msg = "No Manifest available for ${T}.")
+@nowarn("""cat=deprecation&origin=scala\.reflect\.ClassManifest(DeprecatedApis.*)?""")
+@implicitNotFound(msg = "No Manifest available for ${T}.")
 // TODO undeprecated until Scala reflection becomes non-experimental
 // @deprecated("use scala.reflect.ClassTag (to capture erasures) or scala.reflect.runtime.universe.TypeTag (to capture types) or both instead", "2.10.0")
 trait Manifest[T] extends ClassManifest[T] with Equals {
@@ -143,6 +145,7 @@ object Manifest {
 
 // TODO undeprecated until Scala reflection becomes non-experimental
 // @deprecated("use type tags and manually check the corresponding class or type instead", "2.10.0")
+@nowarn("""cat=deprecation&origin=scala\.reflect\.ClassManifest(DeprecatedApis.*)?""")
 @SerialVersionUID(1L)
 abstract class AnyValManifest[T <: AnyVal](override val toString: String) extends Manifest[T] with Equals {
   override def <:<(that: ClassManifest[_]): Boolean =
@@ -163,6 +166,7 @@ abstract class AnyValManifest[T <: AnyVal](override val toString: String) extend
  *  This is done to prevent avalanches of deprecation warnings in the code that calls methods with manifests.
  *  Why so complicated? Read up the comments for `ClassManifestFactory`.
  */
+@nowarn("""cat=deprecation&origin=scala\.reflect\.ClassManifest(DeprecatedApis.*)?""")
 object ManifestFactory {
   def valueManifests: List[AnyValManifest[_]] =
     List(Byte, Short, Char, Int, Long, Float, Double, Boolean, Unit)

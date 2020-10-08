@@ -13,7 +13,7 @@
 package scala.collection
 package mutable
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializationProxy
 import scala.util.hashing.MurmurHash3
@@ -544,6 +544,7 @@ class HashMap[K, V](initialCapacity: Int, loadFactor: Double)
 
   override def mapFactory: MapFactory[HashMap] = HashMap
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "HashMap"
 
   override def hashCode: Int = {

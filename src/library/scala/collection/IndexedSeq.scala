@@ -13,7 +13,7 @@
 package scala
 package collection
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.Searching.{Found, InsertionPoint, SearchResult}
 import scala.collection.Stepper.EfficientSplit
 import scala.math.Ordering
@@ -22,6 +22,7 @@ import scala.math.Ordering
 trait IndexedSeq[+A] extends Seq[A]
   with IndexedSeqOps[A, IndexedSeq, IndexedSeq[A]]
   with IterableFactoryDefaults[A, IndexedSeq] {
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "IndexedSeq"
 
   override def iterableFactory: SeqFactory[IndexedSeq] = IndexedSeq

@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializable
 
 /** $factoryInfo
@@ -257,6 +258,7 @@ class LinkedHashMap[K, V]
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[K], in.readObject().asInstanceOf[V]))
   }
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "LinkedHashMap"
 }
 

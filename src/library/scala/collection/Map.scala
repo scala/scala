@@ -13,6 +13,7 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializable
 import scala.collection.mutable.StringBuilder
 import scala.util.hashing.MurmurHash3
@@ -45,6 +46,7 @@ trait Map[K, +V]
   @deprecated("Use -- or removedAll on an immutable Map", "2.13.0")
   def - (key1: K, key2: K, keys: K*): Map[K, V]
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "Map"
 
   override def toString(): String = super[Iterable].toString() // Because `Function1` overrides `toString` too

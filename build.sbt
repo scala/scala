@@ -424,6 +424,14 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.jdk.package"),
     ProblemFilters.exclude[MissingClassProblem]("scala.jdk.package$"),
 
+    // Artifacts of fixing deprecation warnings
+    ProblemFilters.exclude[IncompatibleMethTypeProblem]("scala.sys.process.ProcessImpl#ThreadProcess.this"),  // private[process]
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.sys.process.ProcessImpl#PipeSink.sink"),     // private[process]
+    ProblemFilters.exclude[IncompatibleResultTypeProblem]("scala.sys.process.ProcessImpl#PipeSource.source"), // private[process]
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$KeySet"),                 // private
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.HashMap$HashKeySet"),             // private
+    ProblemFilters.exclude[MissingTypesProblem]("scala.concurrent.impl.Promise$Transformation"),              // private[concurrent]
+
     // Private constructor for SeqView.Sorted
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SeqView#Sorted.this"),
 
@@ -698,7 +706,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq[String]("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / scalacOptions += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(

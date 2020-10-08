@@ -16,6 +16,7 @@ package mutable
 
 import java.util.Arrays
 
+import scala.annotation.nowarn
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
 
@@ -217,6 +218,7 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
   @deprecatedOverriding("ArrayBuffer[A] no longer extends Builder[A, ArrayBuffer[A]]", "2.13.0")
   @inline def mapResult[NewTo](f: (ArrayBuffer[A]) => NewTo): Builder[A, NewTo] = new GrowableBuilder[A, ArrayBuffer[A]](this).mapResult(f)
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "ArrayBuffer"
 
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {

@@ -55,9 +55,9 @@ final class HashMap[K, +V] private[immutable] (private[immutable] val rootNode: 
 
   override def isEmpty: Boolean = rootNode.size == 0
 
-  override def keySet: Set[K] = if (size == 0) Set.empty else new KeySet
+  override def keySet: Set[K] = if (size == 0) Set.empty else new HashKeySet
 
-  private final class KeySet extends ImmutableKeySet {
+  private final class HashKeySet extends ImmutableKeySet {
 
     private[this] def newKeySetOrThis(newHashMap: HashMap[K, _]): Set[K] =
       if (newHashMap eq HashMap.this) this else newHashMap.keySet

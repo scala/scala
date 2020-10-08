@@ -15,6 +15,7 @@ package scala.collection
 import scala.collection.immutable.Range
 import scala.util.hashing.MurmurHash3
 import Searching.{Found, InsertionPoint, SearchResult}
+import scala.annotation.nowarn
 
 /** Base trait for sequence collections
   *
@@ -41,6 +42,7 @@ trait Seq[+A]
 
   override def toString(): String = super[Iterable].toString()
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "Seq"
 }
 

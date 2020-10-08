@@ -14,6 +14,7 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializable
 
 /** This class implements mutable sets using a hashtable.
@@ -145,6 +146,7 @@ class LinkedHashSet[A]
     table.init(in, table.createNewEntry(in.readObject().asInstanceOf[A], null))
   }
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "LinkedHashSet"
 }
 
