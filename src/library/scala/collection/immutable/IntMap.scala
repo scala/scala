@@ -17,6 +17,7 @@ import scala.collection.generic.{BitOperations, DefaultSerializationProxy}
 import scala.collection.mutable.{Builder, ImmutableBuilder}
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
+import scala.language.implicitConversions
 
 /** Utility class for integer maps.
   */

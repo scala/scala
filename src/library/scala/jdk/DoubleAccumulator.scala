@@ -19,6 +19,7 @@ import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{AnyStepper, DoubleStepper, Factory, SeqFactory, Stepper, StepperShape, mutable}
+import scala.language.implicitConversions
 
 /** A specialized Accumulator that holds `Double`s without boxing, see [[Accumulator]]. */
 final class DoubleAccumulator

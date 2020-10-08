@@ -16,6 +16,7 @@ package mutable
 
 import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializationProxy
+import scala.language.implicitConversions
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
  *

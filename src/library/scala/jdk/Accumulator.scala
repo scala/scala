@@ -16,7 +16,7 @@ import java.{lang => jl}
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.{Stepper, StepperShape, mutable}
-
+import scala.language.implicitConversions
 
 /** Accumulators are mutable sequences with two distinct features:
   *   - An accumulator can be appended efficiently to another
