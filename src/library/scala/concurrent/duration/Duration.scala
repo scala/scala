@@ -12,7 +12,8 @@
 
 package scala.concurrent.duration
 
-import java.lang.{ Double => JDouble, Long => JLong }
+import java.lang.{ Double => JDouble }
+import scala.collection.StringParsers
 
 object Duration {
 
@@ -44,7 +45,7 @@ object Duration {
   def apply(length: Long, unit: String): FiniteDuration   = new FiniteDuration(length,  Duration.timeUnit(unit))
 
   // Double stores 52 bits mantissa, but there is an implied '1' in front, making the limit 2^53
-  private[this] final val maxPreciseDouble = 9007199254740992d
+  // private[this] final val maxPreciseDouble = 9007199254740992d // not used after https://github.com/scala/scala/pull/9233
 
   /**
    * Parse String into Duration.  Format is `"<length><unit>"`, where
@@ -65,9 +66,8 @@ object Duration {
         timeUnit get unitName match {
           case Some(unit) =>
             val valueStr = s1 dropRight unitName.length
-            val valueD = JDouble.parseDouble(valueStr)
-            if (valueD >= -maxPreciseDouble && valueD <= maxPreciseDouble) Duration(valueD, unit)
-            else Duration(JLong.parseLong(valueStr), unit)
+            StringParsers.parseLong(valueStr).map(Duration(_, unit))
+              .getOrElse(Duration(JDouble.parseDouble(valueStr), unit))
           case _          => throw new NumberFormatException("format error " + s)
         }
     }
