@@ -372,10 +372,11 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
       }
 
       // special-case: interpret pattern `List()` as `Nil`
+      // as of 2.13, List.unapply returns an UnapplySeqWrapper (rather than a List)
       // TODO: make it more general List(1, 2) => 1 :: 2 :: Nil  -- not sure this is a good idea...
       private val rewriteListPattern: PartialFunction[TreeMaker, Prop] = {
         case p @ ExtractorTreeMaker(_, _, testedBinder)
-          if testedBinder.tpe.typeSymbol == ListClass && p.checkedLength == Some(0) =>
+          if testedBinder.tpe.typeSymbol == UnapplySeqWrapperClass && p.checkedLength == Some(0) =>
             uniqueEqualityProp(binderToUniqueTree(p.prevBinder), unique(Ident(NilModule) setType NilModule.tpe))
       }
       val fullRewrite      = (irrefutableExtractor orElse rewriteListPattern)

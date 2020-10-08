@@ -284,6 +284,7 @@ trait StdNames {
     final val TypeDef: NameType             = nameType("TypeDef")
     final val Quasiquote: NameType          = nameType("Quasiquote")
     final val macroImplLocation: NameType   = nameType("macroImplLocation")
+    final val UnapplySeqWrapper: NameType   = nameType("UnapplySeqWrapper")
 
     // async
     final val stateMachine: NameType        = nameType("stateMachine$async")
