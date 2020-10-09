@@ -51,6 +51,14 @@ val jlineDeps         = Seq(jlineDep, jnaDep)
 val testInterfaceDep  = "org.scala-sbt"                  % "test-interface"                   % "1.0"
 val diffUtilsDep      = "com.googlecode.java-diff-utils" % "diffutils"                        % "1.3.0"
 
+// `set Global / fatalWarnings := true` to enable -Werror for the certain modules
+// currently, many modules cannot support -Werror; ideally this setting will eventually
+//   enable -Werror for all modules
+val fatalWarnings = settingKey[Boolean]("whether or not warnings should be fatal in the build")
+
+// enable fatal warnings automatically on CI
+Global / fatalWarnings := insideCI.value
+
 lazy val publishSettings : Seq[Setting[_]] = Seq(
   credentials ++= {
     val file = Path.userHome / ".credentials"
@@ -581,6 +589,14 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
     Seq()
 )
 
+lazy val fatalWarningsSettings = Seq(
+  Compile / scalacOptions ++= {
+    if (fatalWarnings.value) Seq("-Werror", "-Wconf:cat=unused-nowarn:is")
+    else Nil
+  },
+  Compile / doc / scalacOptions -= "-Werror", // there are too many doc errors to enable this right now
+)
+
 /** Extra post-processing for the published POM files. These are needed to create POMs that
   * are equivalent to the ones from the old Ant build. In the long term this should be removed and
   * POMs, scaladocs, OSGi manifests, etc. should all use the same metadata. */
@@ -702,14 +718,12 @@ lazy val library = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.library"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions ++= Seq(
-      "-Xlint",
-      "-feature",
-    ),
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -857,27 +871,30 @@ lazy val compiler = configureAsSubproject(project)
 
 lazy val interactive = configureAsSubproject(project)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    scalacOptions in Compile ++= Seq("-Xlint", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"),
+    scalacOptions in Compile ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"),
   )
   .dependsOn(compiler)
 
 lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Werror", "-Wconf:cat=deprecation:msg=early.initializers:s"))
+  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     libraryDependencies ++= jlineDeps,
     name := "scala-repl-frontend",
-    Compile / scalacOptions ++= Seq("-Xlint", "-Werror"),
+    Compile / scalacOptions ++= Seq("-Xlint"),
   )
   .settings(
     run := (Compile / run).partialInput(" -usejavacp").evaluated, // so `repl-frontend/run` works
