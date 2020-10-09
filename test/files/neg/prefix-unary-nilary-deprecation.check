@@ -1,0 +1,14 @@
+prefix-unary-nilary-deprecation.scala:4: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_~ : Foo = this`
+  def unary_~() : Foo = this
+      ^
+prefix-unary-nilary-deprecation.scala:5: warning: unary prefix operator definition with empty parameter list is deprecated: instead, remove () to declare as `def unary_-(implicit pos: Long) = this`
+  def unary_-()(implicit pos: Long) = this
+      ^
+prefix-unary-nilary-deprecation.scala:12: warning: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method unary_~,
+or remove the empty argument list from its definition (Java-defined methods are exempt).
+In Scala 3, an unapplied method like this will be eta-expanded into a function.
+  val f2 = ~f
+           ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

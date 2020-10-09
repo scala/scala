@@ -991,6 +991,8 @@ trait StdNames {
     val UNARY_- = encode("unary_-")
     val UNARY_! = encode("unary_!")
 
+    val isEncodedUnary = Set[Name](UNARY_~, UNARY_+, UNARY_-, UNARY_!)
+
     // Grouped here so Cleanup knows what tests to perform.
     val CommonOpNames   = Set[Name](OR, XOR, AND, EQ, NE)
     val BooleanOpNames  = Set[Name](ZOR, ZAND, UNARY_!) ++ CommonOpNames

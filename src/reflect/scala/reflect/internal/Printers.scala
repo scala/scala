@@ -81,6 +81,10 @@ trait Printers extends api.Printers { self: SymbolTable =>
     def indent() = indentMargin += indentStep
     def undent() = indentMargin -= indentStep
 
+    protected def checkForBlank(cond: Boolean) = if (cond) " " else ""
+    protected def blankForOperatorName(name: Name) = checkForBlank(name.isOperatorName)
+    protected def blankForName(name: Name) = checkForBlank(name.isOperatorName || name.endsWith("_"))
+
     def printPosition(tree: Tree) =
       if (printPositions) comment(print(tree.pos.show))
 
@@ -356,7 +360,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
           }
 
         case dd @ DefDef(mods, name, tparams, vparamss, tp, rhs) =>
-          printDefDef(dd, symName(tree, name))(printOpt(": ", tp))(printOpt(" = ", rhs))
+          printDefDef(dd, symName(tree, name)) {
+            // place space after symbolic def name (def !: Unit does not compile)
+            if (tparams.isEmpty && vparamss.isEmpty) printOpt(blankForName(name.encodedName) + ": ", tp)
+            else printOpt(": ", tp)
+          } (printOpt(" = ", rhs))
 
         case td @ TypeDef(mods, name, tparams, rhs) =>
           printTypeDef(td, symName(tree, name))
@@ -592,10 +600,6 @@ trait Printers extends api.Printers { self: SymbolTable =>
         case _ => false
       }
     }
-
-    protected def checkForBlank(cond: Boolean) = if (cond) " " else ""
-    protected def blankForOperatorName(name: Name) = checkForBlank(name.isOperatorName)
-    protected def blankForName(name: Name) = checkForBlank(name.isOperatorName || name.endsWith("_"))
 
     protected def resolveSelect(t: Tree): String = {
       t match {

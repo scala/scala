@@ -1,0 +1,7 @@
+prefix-unary-nilary-removal.scala:4: error: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_~ : Foo = this`
+  def unary_~() : Foo = this
+      ^
+prefix-unary-nilary-removal.scala:5: error: unary prefix operator definition with empty parameter list is unsupported: instead, remove () to declare as `def unary_-(implicit pos: Long) = this`
+  def unary_-()(implicit pos: Long) = this
+      ^
+2 errors

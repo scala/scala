@@ -2830,6 +2830,18 @@ self =>
             }
             expr()
           }
+        if (nme.isEncodedUnary(name) && vparamss.nonEmpty) {
+          def instead = DefDef(newmods, name.toTermName.decodedName, tparams, vparamss.drop(1), restype, rhs)
+          def unaryMsg(what: String) = s"unary prefix operator definition with empty parameter list is $what: instead, remove () to declare as `$instead`"
+          def warnNilary(): Unit =
+            if (currentRun.isScala3) syntaxError(nameOffset, unaryMsg("unsupported"))
+            else deprecationWarning(nameOffset, unaryMsg("deprecated"), "2.13.4")
+          vparamss match {
+            case List(List())                               => warnNilary()
+            case List(List(), x :: xs) if x.mods.isImplicit => warnNilary()
+            case _ => // ok
+          }
+        }
         DefDef(newmods, name.toTermName, tparams, vparamss, restype, rhs)
       }
       signalParseProgress(result.pos)
