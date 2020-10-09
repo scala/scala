@@ -1008,7 +1008,7 @@ trait Definitions extends api.StandardDefinitions {
       if (doSam && isNonRefinementClassType(unwrapToClass(tp))) { // TODO: is this really faster than computing tpSym below? how about just `tp.typeSymbol.isClass` (and !tpSym.isRefinementClass)?
         // look at erased type because we (only) care about what ends up in bytecode
         // (e.g., an alias type is fine as long as is compiles to a single-abstract-method)
-        val tpSym = erasure.javaErasure(tp).typeSymbol
+        val tpSym: Symbol = erasure.javaErasure(tp).typeSymbol
 
         def compute: Symbol = {
           if (tpSym.exists && tpSym.isClass && !(tpSym hasFlag (FINAL | SEALED))
