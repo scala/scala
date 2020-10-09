@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.reflect.internal.util.ScalaClassLoader
+import scala.util.Properties
 
 @RunWith(classOf[JUnit4])
 class ZipArchiveTest {
@@ -41,7 +42,6 @@ class ZipArchiveTest {
     }
   }
 
-
   private def manifestAt(location: URI): URL = ScalaClassLoader.fromURLs(List(location.toURL), null).getResource("META-INF/MANIFEST.MF");
 
   // ZipArchive.fromManifestURL(URL)
@@ -60,7 +60,7 @@ class ZipArchiveTest {
       assertEquals("foo.class", f.name)
     } finally {
       archive.close()
-      Files.delete(jar)
+      advisedly(Files.delete(jar))
     }
   }
 
@@ -91,7 +91,7 @@ class ZipArchiveTest {
       assertFalse(zit.hasNext)
       assertEquals("foo.class", f.name)
     } finally {
-      Files.delete(z)
+      advisedly(Files.delete(z))
     }
   }
 
@@ -119,4 +119,6 @@ class ZipArchiveTest {
     }
     f
   }
+
+  private def advisedly(body: => Unit): Unit = if (!Properties.isWin) body
 }
