@@ -12,6 +12,8 @@
 
 package scala
 
+import scala.annotation.nowarn
+
 
 /** A partial function of type `PartialFunction[A, B]` is a unary function
  *  where the domain does not necessarily include all values of type `A`.
@@ -221,6 +223,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
 object PartialFunction {
 
   final class ElementWiseExtractor[-A, +B] private[PartialFunction] (private val pf: PartialFunction[A, B]) extends AnyVal {
+    @nowarn("cat=lint-nonlocal-return")
     def unapplySeq(seq: Seq[A]): Option[Seq[B]] = {
       Some(seq.map {
         case pf(b) => b

@@ -127,7 +127,7 @@ class OpenHashMap[Key, Value](initialSize : Int)
     var index = hash & mask
     var j = 0
 
-    /** Index of the first slot containing a deleted entry, or -1 if none found yet. */
+    // Index of the first slot containing a deleted entry, or -1 if none found yet
     var firstDeletedIndex = -1
 
     var entry = table(index)

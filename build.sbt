@@ -707,7 +707,7 @@ lazy val library = configureAsSubproject(project)
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
     Compile / scalacOptions ++= Seq(
-      "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+      "-Xlint",
       "-feature",
     ),
     Compile / doc / scalacOptions ++= {

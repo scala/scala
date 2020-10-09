@@ -137,9 +137,10 @@ private[process] trait ProcessImpl {
       source.start()
       sink.start()
 
-      /** Release PipeSource, PipeSink and Process in the correct order.
-      * If once connect Process with Source or Sink, then the order of releasing them
-      * must be Source -> Sink -> Process, otherwise IOException will be thrown. */
+      /* Release PipeSource, PipeSink and Process in the correct order.
+       * If once connect Process with Source or Sink, then the order of releasing them
+       * must be Source -> Sink -> Process, otherwise IOException will be thrown.
+       */
       def releaseResources(so: PipeSource, sk: PipeSink, ps: Process*) = {
         so.release()
         sk.release()
