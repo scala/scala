@@ -127,46 +127,42 @@ trait Kinds {
     explainErrors: Boolean
   ): List[(Type, Symbol, KindErrors)] = {
 
-    // instantiate type params that come from outside the abstract type we're currently checking
-    def transform(tp: Type, clazz: Symbol): Type = tp.asSeenFrom(pre, clazz)
-
     // check that the type parameters hkargs to a higher-kinded type conform to the
     // expected params hkparams
     def checkKindBoundsHK(
       hkargs:        List[Symbol],
       arg:           Symbol,
+      argPre:        Type,
+      argOwner:      Symbol,
       param:         Symbol,
-      paramowner:    Symbol,
+      paramOwner:    Symbol,
       underHKParams: List[Symbol],
       withHKArgs:    List[Symbol]
     ): KindErrors = {
 
       var kindErrors: KindErrors = NoKindErrors
-      def bindHKParams(tp: Type) = tp.substSym(underHKParams, withHKArgs)
       // @M sometimes hkargs != arg.typeParams, the symbol and the type may
       // have very different type parameters
       val hkparams = param.typeParams
 
-      def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit = {
-        if (!cond)
-          kindErrors = f(kindErrors)
-      }
+      def kindCheck(cond: Boolean, f: KindErrors => KindErrors): Unit =
+        if (!cond) kindErrors = f(kindErrors)
 
       if (settings.debug) {
-        log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramowner)
-        log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ owner)
+        log("checkKindBoundsHK expected: "+ param +" with params "+ hkparams +" by definition in "+ paramOwner)
+        log("checkKindBoundsHK supplied: "+ arg +" with params "+ hkargs +" from "+ argOwner)
         log("checkKindBoundsHK under params: "+ underHKParams +" with args "+ withHKArgs)
       }
 
-      if (!sameLength(hkargs, hkparams)) {
+      if (!sameLength(hkargs, hkparams)) return {
         // Any and Nothing are kind-overloaded
         if (arg == AnyClass || arg == NothingClass) NoKindErrors
         // shortcut: always set error, whether explainTypesOrNot
-        else return kindErrors.arityError(arg -> param)
+        else kindErrors.arityError(arg -> param)
       }
       else foreach2(hkargs, hkparams) { (hkarg, hkparam) =>
         if (hkparam.typeParams.isEmpty && hkarg.typeParams.isEmpty) { // base-case: kind *
-          kindCheck(variancesMatch(hkarg, hkparam), _ varianceError (hkarg -> hkparam))
+          kindCheck(variancesMatch(hkarg, hkparam), _.varianceError(hkarg -> hkparam))
           // instantiateTypeParams(tparams, targs)
           //   higher-order bounds, may contain references to type arguments
           // substSym(hkparams, hkargs)
@@ -176,11 +172,11 @@ trait Kinds {
           // conceptually the same. Could also replace the types by
           // polytypes, but can't just strip the symbols, as ordering
           // is lost then.
-          val declaredBounds     = transform(hkparam.info.instantiateTypeParams(tparams, targs).bounds, paramowner)
-          val declaredBoundsInst = transform(bindHKParams(declaredBounds), owner)
-          val argumentBounds     = transform(hkarg.info.bounds, owner)
+          val declaredBounds     = hkparam.info.instantiateTypeParams(tparams, targs).bounds.asSeenFrom(pre, paramOwner)
+          val declaredBoundsInst = declaredBounds.substSym(underHKParams, withHKArgs).asSeenFrom(pre, owner)
+          val argumentBounds     = hkarg.info.bounds.asSeenFrom(argPre, argOwner).asSeenFrom(pre, owner)
 
-          kindCheck(declaredBoundsInst <:< argumentBounds, _ strictnessError (hkarg -> hkparam))
+          kindCheck(declaredBoundsInst <:< argumentBounds, _.strictnessError(hkarg -> hkparam))
 
           debuglog(
             "checkKindBoundsHK base case: " + hkparam +
@@ -196,8 +192,10 @@ trait Kinds {
           kindErrors ++= checkKindBoundsHK(
             hkarg.typeParams,
             hkarg,
+            argPre,
+            argOwner,
             hkparam,
-            paramowner,
+            paramOwner,
             underHKParams ++ hkparam.typeParams,
             withHKArgs ++ hkarg.typeParams
           )
@@ -217,15 +215,16 @@ trait Kinds {
     flatMap2(tparams, targs) { (tparam, targ) =>
       // Prevent WildcardType from causing kind errors, as typevars may be higher-order
       if (targ == WildcardType) Nil else {
+        // NOTE: *not* targ.typeSymbol, which normalizes
+        val targSym = targ.typeSymbolDirect
         // force symbol load for #4205
-        targ.typeSymbolDirect.info
+        targSym.info
         // @M must use the typeParams of the *type* targ, not of the *symbol* of targ!!
         val tparamsHO = targ.typeParams
         if (targ.isHigherKinded || tparam.typeParams.nonEmpty) {
-          // NOTE: *not* targ.typeSymbol, which normalizes
           val kindErrors = checkKindBoundsHK(
-            tparamsHO, targ.typeSymbolDirect, tparam,
-            tparam.owner, tparam.typeParams, tparamsHO
+            tparamsHO, targSym, targ.prefix, targSym.owner,
+            tparam, tparam.owner, tparam.typeParams, tparamsHO
           )
           if (kindErrors.isEmpty) Nil else {
             if (explainErrors) List((targ, tparam, kindErrors))
