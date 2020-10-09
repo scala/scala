@@ -348,8 +348,6 @@ sealed class PriorityQueue[A](implicit val ord: Ordering[A])
     pq
   }
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray(xs, start, length)
-
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
     if (copied > 0) {

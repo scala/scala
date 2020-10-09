@@ -59,14 +59,11 @@ sealed abstract class ArrayBuilder[T]
 
   override def addAll(xs: IterableOnce[T]): this.type = {
     val k = xs.knownSize
-    if(k > 0) {
+    if (k > 0) {
       ensureSize(this.size + k)
-      xs match {
-        case xs: Iterable[T] => xs.copyToArray(elems, this.size)
-        case _ => xs.iterator.copyToArray(elems, this.size)
-      }
+      IterableOnce.copyElemsToArray(xs, elems, this.size)
       size += k
-    } else if(k < 0) super.addAll(xs)
+    } else if (k < 0) super.addAll(xs)
     this
   }
 }

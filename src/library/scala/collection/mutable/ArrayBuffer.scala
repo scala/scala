@@ -219,8 +219,6 @@ class ArrayBuffer[A] private (initialElements: Array[AnyRef], initialSize: Int)
 
   override protected[this] def stringPrefix = "ArrayBuffer"
 
-  override def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray[B](xs, start, length)
-
   override def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val copied = IterableOnce.elemsToCopyToArray(length, xs.length, start, len)
     if(copied > 0) {
@@ -258,8 +256,7 @@ object ArrayBuffer extends StrictOptimizedSeqFactory[ArrayBuffer] {
     val k = coll.knownSize
     if (k >= 0) {
       val array = new Array[AnyRef](k max DefaultInitialSize)
-      val it = coll.iterator
-      for (i <- 0 until k) array(i) = it.next().asInstanceOf[AnyRef]
+      IterableOnce.copyElemsToArray(coll, array.asInstanceOf[Array[Any]])
       new ArrayBuffer[B](array, k)
     }
     else new ArrayBuffer[B] ++= coll

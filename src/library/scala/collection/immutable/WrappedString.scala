@@ -88,9 +88,6 @@ final class WrappedString(private val self: String) extends AbstractSeq[Char] wi
       case _       => super.lastIndexOf(elem, end)
     }
 
-  override def copyToArray[B >: Char](xs: Array[B], start: Int): Int =
-    copyToArray(xs, start, length)
-
   override def copyToArray[B >: Char](xs: Array[B], start: Int, len: Int): Int =
     (xs: Any) match {
       case chs: Array[Char] =>

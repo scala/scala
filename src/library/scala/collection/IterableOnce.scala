@@ -265,6 +265,16 @@ object IterableOnce {
     */
   @inline private[collection] def elemsToCopyToArray(srcLen: Int, destLen: Int, start: Int, len: Int): Int =
     math.max(math.min(math.min(len, srcLen), destLen - start), 0)
+
+  /** Calls `copyToArray` on the given collection, regardless of whether or not it is an `Iterable`. */
+  @inline private[collection] def copyElemsToArray[A, B >: A](elems: IterableOnce[A],
+                                                              xs: Array[B],
+                                                              start: Int = 0,
+                                                              len: Int = Int.MaxValue): Int =
+    elems match {
+      case src: Iterable[A] => src.copyToArray[B](xs, start, len)
+      case src              => src.iterator.copyToArray[B](xs, start, len)
+    }
 }
 
 /** This implementation trait can be mixed into an `IterableOnce` to get the basic methods that are shared between
@@ -819,9 +829,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
    *  @tparam B      the type of the elements of the array.
    *  @return        the number of elements written to the array
    *
-   *  $willNotTerminateInf
+   *  @note    Reuse: $consumesIterator
    */
-  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0)
+  @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
+  def copyToArray[B >: A](xs: Array[B]): Int = copyToArray(xs, 0, Int.MaxValue)
 
   /** Copy elements to an array, returning the number of elements written.
     *
@@ -835,18 +846,10 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @tparam B      the type of the elements of the array.
     *  @return        the number of elements written to the array
     *
-    *  $willNotTerminateInf
+    *  @note    Reuse: $consumesIterator
     */
-  def copyToArray[B >: A](xs: Array[B], start: Int): Int = {
-    val xsLen = xs.length
-    val it = iterator
-    var i = start
-    while (i < xsLen && it.hasNext) {
-      xs(i) = it.next()
-      i += 1
-    }
-    i - start
-  }
+  @deprecatedOverriding("This should always forward to the 3-arg version of this method", since = "2.13.4")
+  def copyToArray[B >: A](xs: Array[B], start: Int): Int = copyToArray(xs, start, Int.MaxValue)
 
   /** Copy elements to an array, returning the number of elements written.
     *
@@ -862,8 +865,6 @@ trait IterableOnceOps[+A, +CC[_], +C] extends Any { this: IterableOnce[A] =>
     *  @return        the number of elements written to the array
     *
     *  @note    Reuse: $consumesIterator
-    *
-    *  $willNotTerminateInf
     */
   def copyToArray[B >: A](xs: Array[B], start: Int, len: Int): Int = {
     val it = iterator
