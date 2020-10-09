@@ -560,7 +560,8 @@ trait MatchAnalysis extends MatchApproximation {
           // sorting before pruning is important here in order to
           // keep neg/t7020.scala stable
           // since e.g. List(_, _) would cover List(1, _)
-          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString)
+          // and make sure the strings are distinct, see Shmeez & TestSequence06 in run/patmatnew.scala
+          val pruned = CounterExample.prune(counterExamples.sortBy(_.toString)).map(_.toString).distinct
 
           if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(statistics.patmatAnaExhaust, start)
           pruned
