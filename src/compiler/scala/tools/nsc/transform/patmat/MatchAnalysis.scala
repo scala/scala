@@ -521,6 +521,7 @@ trait MatchAnalysis extends MatchApproximation {
       // - back off (to avoid crying exhaustive too often) in unhandled cases
       val start = if (StatisticsStatics.areSomeColdStatsEnabled) statistics.startTimer(statistics.patmatAnaExhaust) else null
       var backoff = false
+      val strict = !settings.nonStrictPatmatAnalysis.value
 
       val approx = new TreeMakersToProps(prevBinder)
       val symbolicCases = approx.approximateMatch(cases, approx.onUnknown { tm =>
@@ -528,7 +529,7 @@ trait MatchAnalysis extends MatchApproximation {
           case BodyTreeMaker(_, _) => True // irrelevant -- will be discarded by symbolCase later
           case ExtractorTreeMaker(_, _, _)
              | ProductExtractorTreeMaker(_, _)
-             | GuardTreeMaker(_) =>
+             | GuardTreeMaker(_) if strict =>
             False
           case _ =>
             debug.patmat("backing off due to "+ tm)
@@ -767,6 +768,8 @@ trait MatchAnalysis extends MatchApproximation {
     //  so, naively, you might try to construct a counter example like _ :: Nil(_ :: _, _ :: _),
     //  since we didn't realize the tail of the outer cons was a Nil)
     def modelToCounterExample(scrutVar: Var)(varAssignment: Map[Var, (Seq[Const], Seq[Const])]): Option[CounterExample] = {
+      val strict = !settings.nonStrictPatmatAnalysis.value
+
       // chop a path into a list of symbols
       def chop(path: Tree): List[Symbol] = path match {
         case Ident(_) => List(path.symbol)
@@ -895,8 +898,8 @@ trait MatchAnalysis extends MatchApproximation {
               // if uniqueEqualTo contains more than one symbol of the same domain
               // then we can safely ignore these counter examples since we will eventually encounter
               // both counter examples separately
-              case _ if inSameDomain =>
-                Some(WildcardExample)
+              // ... in strict mode, consider variable assignment as a wild counter-example
+              case _ if inSameDomain => if (strict) Some(WildcardExample) else None
 
               // not a valid counter-example, possibly since we have a definite type but there was a field mismatch
               // TODO: improve reasoning -- in the mean time, a false negative is better than an annoying false positive
