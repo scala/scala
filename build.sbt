@@ -423,6 +423,9 @@ val mimaFilterSettings = Seq {
     // Documentation for scala.jdk package
     ProblemFilters.exclude[MissingClassProblem]("scala.jdk.package"),
     ProblemFilters.exclude[MissingClassProblem]("scala.jdk.package$"),
+
+    // Private constructor for SeqView.Sorted
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.SeqView#Sorted.this"),
   ),
 }
 

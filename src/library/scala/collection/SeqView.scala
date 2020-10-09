@@ -122,18 +122,25 @@ object SeqView {
   }
 
   @SerialVersionUID(3L)
-  class Sorted[A, B >: A](private[this] var underlying: SomeSeqOps[A], ord: Ordering[B]) extends SeqView[A] {
+  class Sorted[A, B >: A] private (private[this] var underlying: SomeSeqOps[A],
+                                   private[this] val len: Int,
+                                   ord: Ordering[B])
+    extends SeqView[A] {
     outer =>
+
+    // force evaluation immediately by calling `length` so infinite collections
+    // hang on `sorted`/`sortWith`/`sortBy` rather than on arbitrary method calls
+    def this(underlying: SomeSeqOps[A], ord: Ordering[B]) = this(underlying, underlying.length, ord)
 
     @SerialVersionUID(3L)
     private[this] class ReverseSorted extends SeqView[A] {
       private[this] lazy val _reversed = new SeqView.Reverse(_sorted)
 
       def apply(i: Int): A = _reversed.apply(i)
-      def length: Int = elems.length
+      def length: Int = len
       def iterator: Iterator[A] = Iterator.empty ++ _reversed.iterator // very lazy
-      override def knownSize: Int = elems.knownSize
-      override def isEmpty: Boolean = elems.isEmpty
+      override def knownSize: Int = len
+      override def isEmpty: Boolean = len == 0
       override def to[C1](factory: Factory[A, C1]): C1 = _reversed.to(factory)
       override def reverse: SeqView[A] = outer
       override protected def reversed: Iterable[A] = outer
@@ -141,14 +148,14 @@ object SeqView {
       override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
         if (ord1 == Sorted.this.ord) outer
         else if (ord1.isReverseOf(Sorted.this.ord)) this
-        else new Sorted(elems, ord1)
+        else new Sorted(elems, len, ord1)
     }
 
     @volatile private[this] var evaluated = false
 
     private[this] lazy val _sorted: Seq[A] = {
       val res = {
-        val len = underlying.length
+        val len = this.len
         if (len == 0) Nil
         else if (len == 1) List(underlying.head)
         else {
@@ -177,10 +184,10 @@ object SeqView {
     }
 
     def apply(i: Int): A = _sorted.apply(i)
-    def length: Int = elems.length
+    def length: Int = len
     def iterator: Iterator[A] = Iterator.empty ++ _sorted.iterator // very lazy
-    override def knownSize: Int = elems.knownSize
-    override def isEmpty: Boolean = elems.isEmpty
+    override def knownSize: Int = len
+    override def isEmpty: Boolean = len == 0
     override def to[C1](factory: Factory[A, C1]): C1 = _sorted.to(factory)
     override def reverse: SeqView[A] = new ReverseSorted
     // we know `_sorted` is either tiny or has efficient random access,
@@ -190,7 +197,7 @@ object SeqView {
     override def sorted[B1 >: A](implicit ord1: Ordering[B1]): SeqView[A] =
       if (ord1 == this.ord) this
       else if (ord1.isReverseOf(this.ord)) reverse
-      else new Sorted(elems, ord1)
+      else new Sorted(elems, len, ord1)
   }
 }
 
