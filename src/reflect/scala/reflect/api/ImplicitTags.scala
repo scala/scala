@@ -14,8 +14,11 @@ package scala
 package reflect
 package api
 
+import scala.annotation.nowarn
+
 /** Tags which preserve the identity of abstract types in the face of erasure.
  *  Can be used for pattern matching, instance tests, serialization and the like.
+ *
  *  @group Tags
  */
 trait ImplicitTags {
@@ -51,6 +54,7 @@ trait ImplicitTags {
 
   // Tags for Annotations.
   implicit val AnnotationTag: ClassTag[Annotation]
+  @nowarn("""cat=deprecation&origin=scala\.reflect\.api\.Annotations\.JavaArgument""")
   implicit val JavaArgumentTag: ClassTag[JavaArgument]
 
   // Tags for Symbols.

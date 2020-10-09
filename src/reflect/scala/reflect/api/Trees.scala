@@ -14,7 +14,7 @@ package scala
 package reflect
 package api
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /**
  * <span class="badge badge-red" style="float: right;">EXPERIMENTAL</span>
@@ -2494,7 +2494,7 @@ trait Trees { self: Universe =>
     def traverseModifiers(mods: Modifiers): Unit          = traverseAnnotations(mods.annotations)
 
     /** Traverses a single tree. */
-    def traverse(tree: Tree): Unit              = itraverse(this, tree)
+    def traverse(tree: Tree): Unit              = itraverse(this, tree): @nowarn("cat=deprecation")
     def traversePattern(pat: Tree): Unit        = traverse(pat)
     def traverseGuard(guard: Tree): Unit        = traverse(guard)
     def traverseTypeAscription(tpt: Tree): Unit = traverse(tpt)
@@ -2539,6 +2539,10 @@ trait Trees { self: Universe =>
    *  because pattern matching on abstract types we have here degrades performance.
    *  @group Traversal
    */
+  // FIXME: `Tree`/`TreeApi` does not contain a `traverse` method, so methods
+  //        calling this (and not its override) are unable to follow the deprecation
+  //        message. Once this is fixed, please fix callers of this method and remove
+  //        the `@nowarn` annotation from them
   @deprecated("Use Tree#traverse instead", "2.12.3")
   protected def itraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
@@ -2546,6 +2550,10 @@ trait Trees { self: Universe =>
    *  Future-proofs against new node types.
    *  @group Traversal
    */
+  // FIXME: `Tree`/`TreeApi` does not contain a `traverse` method, so methods
+  //        calling this (and not its override) are unable to follow the deprecation
+  //        message. Once this is fixed, please fix callers of this method and remove
+  //        the `@nowarn` annotation from them
   @deprecated("Use Tree#traverse instead", "2.12.3")
   protected def xtraverse(traverser: Traverser, tree: Tree): Unit = throw new MatchError(tree)
 
@@ -2576,7 +2584,7 @@ trait Trees { self: Universe =>
 //    protected def currentPackage = currentOwner.enclosingTopLevelClass.owner
 
     /** Transforms a single tree. */
-    def transform(tree: Tree): Tree = itransform(this, tree)
+    def transform(tree: Tree): Tree = itransform(this, tree): @nowarn("cat=deprecation")
 
     /** Transforms a list of trees. */
     def transformTrees(trees: List[Tree]): List[Tree] =
@@ -2632,6 +2640,11 @@ trait Trees { self: Universe =>
    *  because pattern matching on abstract types we have here degrades performance.
    *  @group Traversal
    */
+  // FIXME: `Tree`/`TreeApi` does not contain a `transform` method, so methods
+  //        calling this (and not its override) are unable to follow the deprecation
+  //        message. Once this is fixed, please fix callers of this method and remove
+  //        the `@nowarn` annotation from them
+  @deprecated("Use Tree#transform instead", since = "2.13.4")
   protected def itransform(transformer: Transformer, tree: Tree): Tree = throw new MatchError(tree)
 
   /** Provides an extension hook for the transformation strategy.

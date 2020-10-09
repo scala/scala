@@ -561,7 +561,7 @@ trait ReificationSupport { self: SymbolTable =>
           if (name != nme.CONSTRUCTOR) rhs
           else rhs match {
             case Block(_, _) => rhs
-            case _ => Block(List(rhs), gen.mkSyntheticUnit)
+            case _ => Block(List(rhs), gen.mkSyntheticUnit())
           }
         }
         DefDef(mods, name, tparams0, vparamss0, tpt, rhs0)

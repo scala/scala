@@ -2765,7 +2765,7 @@ trait Types
   }
 
   protected def defineNormalized(tr: TypeRef): Unit = {
-    tr.defineNormalized
+    tr.defineNormalized()
   }
 
   protected def defineParentsOfTypeRef(tpe: TypeRef) = {
@@ -4292,7 +4292,7 @@ trait Types
         val closed    = mutable.ListBuffer.empty[Symbol]
         var nextBorder = mutable.ListBuffer.empty[Symbol]
         while (!border.isEmpty) {
-          nextBorder.clear
+          nextBorder.clear()
           pending.filterInPlace { paramTodo =>
             !border.exists(_.info contains paramTodo) || {
               nextBorder += paramTodo;

@@ -290,7 +290,7 @@ trait TypeTags { self: Universe =>
 
     def apply[T](mirror1: scala.reflect.api.Mirror[self.type], tpec1: TypeCreator): TypeTag[T] = {
       (mirror1: AnyRef) match {
-        case m: scala.reflect.runtime.JavaMirrors#JavaMirror
+        case m: scala.reflect.runtime.JavaMirrors#MirrorImpl
           if cacheMaterializedTypeTags && tpec1.getClass.getName.contains("$typecreator")
             && tpec1.getClass.getDeclaredFields.length == 0 => // excludes type creators that splice in bound types.
 

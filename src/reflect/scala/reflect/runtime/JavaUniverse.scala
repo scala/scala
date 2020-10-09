@@ -14,7 +14,8 @@ package scala
 package reflect
 package runtime
 
-import scala.reflect.internal.{TreeInfo, SomePhase}
+import scala.annotation.nowarn
+import scala.reflect.internal.{SomePhase, TreeInfo}
 import scala.reflect.internal.{SymbolTable => InternalSymbolTable}
 import scala.reflect.runtime.{SymbolTable => RuntimeSymbolTable}
 import scala.reflect.api.{TypeCreator, Universe}
@@ -85,6 +86,7 @@ class JavaUniverse extends InternalSymbolTable with JavaUniverseForce with Refle
   }
 
   // can't put this in runtime.Trees since that's mixed with Global in ReflectGlobal, which has the definition from internal.Trees
+  @nowarn("cat=deprecation&msg=early initializers")
   object treeInfo extends {
     val global: JavaUniverse.this.type = JavaUniverse.this
   } with TreeInfo

@@ -16,7 +16,7 @@ package internal
 
 import java.net.URLClassLoader
 
-import scala.annotation.{elidable, tailrec}
+import scala.annotation.{elidable, nowarn, tailrec}
 import scala.collection.mutable
 import util._
 import java.util.concurrent.TimeUnit
@@ -191,6 +191,7 @@ abstract class SymbolTable extends macros.Universe
   /** Dump each symbol to stdout after shutdown.
    */
   final val traceSymbolActivity = System.getProperty("scalac.debug.syms") != null
+  @nowarn("cat=deprecation&msg=early initializers")
   object traceSymbols extends {
     val global: SymbolTable.this.type = SymbolTable.this
   } with util.TraceSymbolActivity
@@ -448,10 +449,10 @@ abstract class SymbolTable extends macros.Universe
 
     def clearAll() = {
       debuglog("Clearing " + (caches.size + javaCaches.size) + " caches.")
-      caches foreach (ref => Option(ref.get).foreach(_.clear))
+      caches foreach (ref => Option(ref.get).foreach(_.clear()))
       caches = caches.filterNot(_.get == null)
 
-      javaCaches foreach (_.clear)
+      javaCaches foreach (_.clear())
       javaCaches = javaCaches.filter(_.isValid)
     }
 

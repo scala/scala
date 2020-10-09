@@ -17,9 +17,11 @@ package reflect
 package internal
 
 import java.io.{OutputStream, PrintWriter, Writer}
+
 import Flags._
 import java.lang.System.{lineSeparator => EOL}
-import scala.annotation.tailrec
+
+import scala.annotation.{nowarn, tailrec}
 
 trait Printers extends api.Printers { self: SymbolTable =>
 
@@ -66,6 +68,11 @@ trait Printers extends api.Printers { self: SymbolTable =>
     }
   }
 
+  @nowarn("""cat=deprecation&origin=scala\.reflect\.internal\.Printers\.TreePrinter""")
+  final type InternalTreePrinter = TreePrinter
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use InternalTreePrinter instead", since = "2.13.4")
   class TreePrinter(out: PrintWriter) extends super.TreePrinter {
     protected var indentMargin = 0
     protected val indentStep = 2
@@ -554,7 +561,7 @@ trait Printers extends api.Printers { self: SymbolTable =>
   }
 
   // it's the printer for AST-based code generation
-  class CodePrinter(out: PrintWriter, printRootPkg: Boolean) extends TreePrinter(out) {
+  class CodePrinter(out: PrintWriter, printRootPkg: Boolean) extends InternalTreePrinter(out) {
     protected val parentsStack = scala.collection.mutable.Stack[Tree]()
 
     protected def currentTree = if (parentsStack.nonEmpty) Some(parentsStack.top) else None
@@ -1125,15 +1132,15 @@ trait Printers extends api.Printers { self: SymbolTable =>
   }
 
   /** Hook for extensions */
-  def xprintTree(treePrinter: TreePrinter, tree: Tree) =
+  def xprintTree(treePrinter: InternalTreePrinter, tree: Tree) =
     treePrinter.print(tree.productPrefix+tree.productIterator.mkString("(", ", ", ")"))
 
-  def newCodePrinter(writer: PrintWriter, tree: Tree, printRootPkg: Boolean): TreePrinter =
+  def newCodePrinter(writer: PrintWriter, tree: Tree, printRootPkg: Boolean): InternalTreePrinter =
     new CodePrinter(writer, printRootPkg)
 
-  def newTreePrinter(writer: PrintWriter): TreePrinter = new TreePrinter(writer)
-  def newTreePrinter(stream: OutputStream): TreePrinter = newTreePrinter(new PrintWriter(stream))
-  def newTreePrinter(): TreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))
+  def newTreePrinter(writer: PrintWriter): InternalTreePrinter = new InternalTreePrinter(writer)
+  def newTreePrinter(stream: OutputStream): InternalTreePrinter = newTreePrinter(new PrintWriter(stream))
+  def newTreePrinter(): InternalTreePrinter = newTreePrinter(new PrintWriter(ConsoleWriter))
 
   /** A writer that writes to the current Console and
    * is sensitive to replacement of the Console's

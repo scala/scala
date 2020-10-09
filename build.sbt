@@ -771,7 +771,7 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / scalacOptions += "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
