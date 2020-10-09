@@ -14,7 +14,7 @@ package scala.collection
 
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
-import org.junit.{Ignore, Test}
+import org.junit.Test
 import org.junit.Assert._
 
 import scala.collection.JavaConverters._
