@@ -767,6 +767,7 @@ lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.reflect"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
