@@ -301,7 +301,7 @@ abstract class UnPickler {
       def pflags            = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
-        /**
+        /*
          * member symbols (symbols owned by a class) are added to the class's scope, with a number
          * of exceptions:
          *
@@ -554,8 +554,8 @@ abstract class UnPickler {
       }
       def selectorsRef() = all(ImportSelector(nameRef(), -1, nameRef(), -1))
 
-      /** A few of the most popular trees have been pulled to the top for
-       *  switch efficiency purposes.
+      /* A few of the most popular trees have been pulled to the top for
+       * switch efficiency purposes.
        */
       def readTree(tpe: Type): Tree = (tag: @switch) match {
         case IDENTtree           => Ident(nameRef())

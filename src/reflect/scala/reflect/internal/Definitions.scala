@@ -938,7 +938,7 @@ trait Definitions extends api.StandardDefinitions {
         volatileRecursions += 1
         try safeIsVolatile finally volatileRecursions -= 1
       }
-      /** A refined type P1 with ... with Pn { decls } is volatile if
+      /*  A refined type P1 with ... with Pn { decls } is volatile if
        *  one of the parent types Pi is an abstract type, and
        *  either i > 1, or decls or a following parent Pj, j > 1, contributes
        *  an abstract member.

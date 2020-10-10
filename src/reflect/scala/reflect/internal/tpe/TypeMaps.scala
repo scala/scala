@@ -17,7 +17,7 @@ package tpe
 
 import scala.collection.{immutable, mutable}
 import Flags._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import Variance._
 import scala.collection.mutable.ListBuffer
 
@@ -169,6 +169,7 @@ private[internal] trait TypeMaps {
       else args1
     }
 
+    @nowarn("cat=lint-nonlocal-return")
     def mapOver(tree: Tree): Tree =
       mapOver(tree, () => return UnmappableTree)
 

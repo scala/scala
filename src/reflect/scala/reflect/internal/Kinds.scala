@@ -14,7 +14,8 @@ package scala
 package reflect
 package internal
 
-import scala.reflect.internal.util.StringOps.{ countAsString, countElementsAsString }
+import scala.annotation.nowarn
+import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 
 trait Kinds {
   self: SymbolTable =>
@@ -119,6 +120,7 @@ trait Kinds {
    *  e.g. class Iterable[t, m[+x <: t]] --> the application Iterable[Int, List] is okay, since
    *       List's type parameter is also covariant and its bounds are weaker than <: Int
    */
+  @nowarn("cat=lint-nonlocal-return")
   def checkKindBounds0(
     tparams: List[Symbol],
     targs: List[Type],
@@ -129,6 +131,7 @@ trait Kinds {
 
     // check that the type parameters hkargs to a higher-kinded type conform to the
     // expected params hkparams
+    @nowarn("cat=lint-nonlocal-return")
     def checkKindBoundsHK(
       hkargs:        List[Symbol],
       arg:           Symbol,

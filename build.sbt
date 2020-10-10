@@ -772,7 +772,7 @@ lazy val reflect = configureAsSubproject(project)
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
     Compile / scalacOptions ++= Seq(
-      "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+      "-Xlint",
       "-feature",
     ),
     Compile / doc / scalacOptions ++= Seq(
