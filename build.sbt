@@ -802,6 +802,7 @@ lazy val compiler = configureAsSubproject(project)
   .settings(generateBuildCharacterFileSettings)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.tools.nsc"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-compiler",
     description := "Scala Compiler",
@@ -848,6 +849,8 @@ lazy val compiler = configureAsSubproject(project)
       "-Xlint",
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+      "-Wconf:msg=match may not be exhaustive:i",
+      "-Ypatmat-exhaust-depth", "80",
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"

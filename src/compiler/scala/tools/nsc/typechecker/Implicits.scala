@@ -483,7 +483,7 @@ trait Implicits {
     private def dominates(dtor: Type, dted: Type): Boolean = {
       @annotation.tailrec def sumComplexity(acc: Int, xs: List[Type]): Int = xs match {
         case h :: t => sumComplexity(acc + complexity(h), t)
-        case _: Nil.type => acc
+        case _      => acc
       }
 
       def complexity(tp: Type): Int = tp.dealias match {
