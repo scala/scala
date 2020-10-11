@@ -552,6 +552,7 @@ lazy val scaladoc = configureAsSubproject(project)
   .dependsOn(compiler)
 
 lazy val scalap = configureAsSubproject(project)
+  .settings(fatalWarningsSettings)
   .settings(
     description := "Scala Bytecode Parser",
     // Include decoder.properties
@@ -576,7 +577,8 @@ lazy val scalap = configureAsSubproject(project)
       val excluded = Set("Memoisable.scala", "Result.scala", "Rule.scala", "Rules.scala", "SeqRule.scala")
       xs filter { x => !excluded(x.getName) }
     },
-    Compile / headerResources := Nil
+    Compile / headerResources := Nil,
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
   )
   .dependsOn(compiler)
 
