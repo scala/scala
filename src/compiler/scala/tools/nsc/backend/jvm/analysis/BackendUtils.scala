@@ -16,7 +16,7 @@ package analysis
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
@@ -441,7 +441,7 @@ abstract class BackendUtils extends PerRunInit {
 
     for (nestedClass <- allNestedClasses) {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
-      val Some(e) = nestedClass.innerClassAttributeEntry.get
+      val Some(e) = nestedClass.innerClassAttributeEntry.get: @nowarn("msg=match may not be exhaustive")
       jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
     }
   }

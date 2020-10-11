@@ -15,6 +15,7 @@ package transform
 
 import symtab._
 import Flags._
+import scala.annotation.nowarn
 import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -402,7 +403,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         case IntTpe => sw // can switch directly on ints
         case StringTpe =>
           // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
-          val Match(Typed(selTree, _), cases) = sw
+          val Match(Typed(selTree, _), cases) = sw: @nowarn("msg=match may not be exhaustive")
           def selArg = selTree match {
             case x: Ident   => REF(x.symbol)
             case x: Literal => x

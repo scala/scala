@@ -13,9 +13,10 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.reflect.internal.util.StringOps.{ countElementsAsString, countAsString }
+import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
-import scala.annotation.tailrec
+
+import scala.annotation.{nowarn, tailrec}
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.{ControlThrowable, NonFatal}
@@ -1406,7 +1407,7 @@ trait ContextErrors {
                 | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
                 | $trailer"""
         def viewMsg = {
-          val found :: req :: _ = pt.typeArgs
+          val found :: req :: _ = pt.typeArgs: @nowarn("msg=match may not be exhaustive")
           def explanation = {
             val sym = found.typeSymbol
             // Explain some common situations a bit more clearly. Some other

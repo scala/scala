@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -328,7 +329,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     private def buildNestedStatesFirstForInlining(nestedTree: Tree, endState: Int): (AsyncState, List[AsyncState]) = {
       val (nestedStats, nestedExpr) = statsAndExpr(nestedTree)
       val nestedBuilder = new AsyncBlockBuilder(nestedStats, nestedExpr, currState, endState, StateTransitionStyle.None, Some(this))
-      val ((inlinedState :: Nil), nestedStates) = nestedBuilder.build.partition(_.state == currState)
+      val (inlinedState :: Nil, nestedStates) = nestedBuilder.build.partition(_.state == currState): @nowarn("msg=match may not be exhaustive")
       inlinedState.nextStates.foreach(stateBuilder.nextStates += _)
       (inlinedState, nestedStates)
     }
@@ -475,7 +476,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
 
       // Filter out dead or trivial states.
       private def filterStates(all: List[AsyncState]): List[AsyncState] = if (compactStates) {
-        val ((initial :: Nil), rest) = all.partition(_.state == blockBuilder.startState)
+        val (initial :: Nil, rest) = all.partition(_.state == blockBuilder.startState): @nowarn("msg=match may not be exhaustive")
         val map = all.iterator.map(x => (x.state, x)).toMap
         val seen = mutable.HashSet[Int]()
         seen.add(all.last.state)

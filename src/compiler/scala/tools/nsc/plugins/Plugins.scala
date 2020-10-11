@@ -16,6 +16,7 @@ package plugins
 import java.net.URL
 import java.util
 
+import scala.annotation.nowarn
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
 import scala.tools.nsc.Reporting.WarningCategory
@@ -121,7 +122,7 @@ trait Plugins { global: Global =>
     {
       if (plugins.isEmpty) return Nil // early return
 
-      val plug :: tail      = plugins
+      val plug :: tail      = plugins: @nowarn("msg=match may not be exhaustive") // just checked if it's empty
       val plugPhaseNames    = Set(plug.components map (_.phaseName): _*)
       def withoutPlug       = pick(tail, plugNames, plugPhaseNames)
       def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)

@@ -13,7 +13,7 @@
 package scala.reflect
 package quasiquotes
 
-import java.lang.UnsupportedOperationException
+import scala.annotation.nowarn
 import scala.reflect.reify.{Reifier => ReflectReifier}
 import scala.reflect.internal.Flags._
 
@@ -86,7 +86,7 @@ trait Reifiers { self: Quasiquotes =>
         val isVarPattern = tree match { case Bind(name, Ident(nme.WILDCARD)) => true case _ => false }
         val cases =
           if(isVarPattern) {
-            val Ident(name) :: Nil = freevars
+            val Ident(name) :: Nil = freevars: @nowarn("msg=match may not be exhaustive")
             // cq"$name: $treeType => $SomeModule($name)" :: Nil
             CaseDef(Bind(name, Typed(Ident(nme.WILDCARD), TypeTree(treeType))),
               EmptyTree, Apply(Ident(SomeModule), List(Ident(name)))) :: Nil
@@ -422,7 +422,7 @@ trait Reifiers { self: Quasiquotes =>
           case List(elem) if fill.isDefinedAt(elem) => fill(elem)
           case elems => mkList(elems.map(fallback))
         }
-        val head :: tail = group(xs) { (a, b) => !fill.isDefinedAt(a) && !fill.isDefinedAt(b) }
+        val head :: tail = group(xs) { (a, b) => !fill.isDefinedAt(a) && !fill.isDefinedAt(b) }: @nowarn("msg=match may not be exhaustive")
         tail.foldLeft[Tree](reifyGroup(head)) { (tree, lst) => Apply(Select(tree, nme.PLUSPLUS), List(reifyGroup(lst))) }
       }
 
