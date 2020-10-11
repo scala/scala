@@ -528,7 +528,7 @@ abstract class Inliner {
     val elided = mutable.Set.empty[InlineRequest]
     def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
 
-    /**
+    /*
      * Break cycles in the inline request graph by removing callsites.
      *
      * The list `requests` is traversed left-to-right, removing those callsites that are part of a
@@ -1173,7 +1173,7 @@ abstract class Inliner {
    *     error occurred
    */
   def findIllegalAccess(instructions: InsnList, calleeDeclarationClass: ClassBType, destinationClass: ClassBType): Either[(AbstractInsnNode, OptimizerWarning), List[AbstractInsnNode]] = {
-    /**
+    /*
      * Check if `instruction` can be transplanted to `destinationClass`.
      *
      * If the instruction references a class, method or field that cannot be found in the

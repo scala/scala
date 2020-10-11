@@ -1608,11 +1608,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
         }
       }
 
-      /** Computes residual type parameters after rewiring, like "String" in the following example:
-       *  {{{
-       *    def specMe[@specialized T, U](t: T, u: U) = ???
-       *    specMe[Int, String](1, "2") => specMe\$mIc\$sp[String](1, "2")
-       *  }}}
+      /* Computes residual type parameters after rewiring, like "String" in the following example:
+       * {{{
+       *   def specMe[@specialized T, U](t: T, u: U) = ???
+       *   specMe[Int, String](1, "2") => specMe\$mIc\$sp[String](1, "2")
+       * }}}
        */
       def computeResidualTypeVars(baseTree: Tree, specMember: Symbol, specTree: Tree, baseTargs: List[Tree], env: TypeEnv): Tree = {
         val residualTargs = symbol.info.typeParams zip baseTargs collect {

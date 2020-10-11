@@ -133,7 +133,7 @@ class StandardCompileServer(fixPort: Int = 0) extends SocketServer(fixPort) {
       }
       unequal.isEmpty
     }
-    /** Create a new compiler instance */
+    /* Create a new compiler instance */
     def newGlobal(settings: Settings, reporter: Reporter) = Global(settings, reporter)
 
     if (command.shouldStopWithInfo)

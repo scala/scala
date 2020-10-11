@@ -845,7 +845,7 @@ lazy val compiler = configureAsSubproject(project)
       ).get
     },
     Compile / scalacOptions ++= Seq(
-      "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+      "-Xlint:-inaccessible,-nonlocal-return,-valpattern,_",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
     ),
     Compile / doc / scalacOptions ++= Seq(

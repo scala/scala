@@ -47,7 +47,7 @@ trait LiveVariables extends ExprBuilder {
         liftedSyms -= sym
     }
 
-    /**
+    /*
      *  Traverse statements of an `AsyncState`, collect `Ident`-s referring to lifted fields.
      *
      *  @param  as  a state of an `async` expression

@@ -609,7 +609,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // else  debug.patmat("NOT implies: "+(lower, upper))
 
 
-        /** Does V=A preclude V=B?
+        /* Does V=A preclude V=B?
          *
          * (0) A or B must be in the domain to draw any conclusions.
          *

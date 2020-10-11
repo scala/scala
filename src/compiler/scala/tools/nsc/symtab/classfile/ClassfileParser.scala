@@ -1046,10 +1046,10 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         cls.associatedFile = file
         mod.moduleClass.associatedFile = file
 
-        /**
-          * need to set privateWithin here because the classfile of a nested protected class is public in bytecode,
-          * so propagatePackageBoundary will not set it when the symbols are completed
-          */
+        /*
+         * need to set privateWithin here because the classfile of a nested protected class is public in bytecode,
+         * so propagatePackageBoundary will not set it when the symbols are completed
+         */
         if (jflags.isProtected) {
           cls.privateWithin = cls.enclosingPackage
           mod.privateWithin = cls.enclosingPackage

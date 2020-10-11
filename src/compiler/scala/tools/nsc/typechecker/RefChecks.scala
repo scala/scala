@@ -284,10 +284,10 @@ abstract class RefChecks extends Transform {
         macroStr + member.defStringSeenAs(self.memberInfo(member)) + location
       }
 
-      /** Check that all conditions for overriding `other` by `member` of class `clazz` are met.
-        *
-        * TODO: error messages could really be improved, including how they are composed
-        */
+      /* Check that all conditions for overriding `other` by `member` of class `clazz` are met.
+       *
+       * TODO: error messages could really be improved, including how they are composed
+       */
       def checkOverride(pair: SymbolPair): Unit = {
         import pair.{highType, lowType, highInfo, rootType}
 

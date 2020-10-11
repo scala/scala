@@ -711,7 +711,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   // sequences the phase assembly
   protected def computePhaseDescriptors: List[SubComponent] = {
-    /** Allow phases to opt out of the phase assembly. */
+    /* Allow phases to opt out of the phase assembly. */
     def cullPhases(phases: List[SubComponent]) = {
       val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
       def isEnabled(q: String) = enabled exists (_.phaseName == q)

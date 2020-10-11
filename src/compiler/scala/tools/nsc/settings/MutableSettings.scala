@@ -636,7 +636,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
         case _ => true
       }
 
-      /**
+      /*
        * Expand an expanding option, if necessary recursively. Expanding options are not included in
        * the result (consistent with "_", which is not in `value` either).
        *

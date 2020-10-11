@@ -292,7 +292,7 @@ abstract class CopyProp {
 
       lazy val prodCons = new ProdConsAnalyzer(method, owner)
 
-      /**
+      /*
        * Returns the producers for the stack value `inputSlot` consumed by `cons`, if the consumer
        * instruction is the only consumer for all of these producers.
        *
@@ -300,7 +300,7 @@ abstract class CopyProp {
        * block, this method returns Set.empty.
        */
       def producersIfSingleConsumer(cons: AbstractInsnNode, inputSlot: Int): Set[AbstractInsnNode] = {
-        /**
+        /*
          * True if the values produced by `prod` are all the same. Most instructions produce a single
          * value. DUP and DUP2 (with a size-2 input) produce two equivalent values. However, there
          * are some exotic instructions that produce multiple non-equal values (DUP_X1, SWAP, ...).
@@ -338,7 +338,7 @@ abstract class CopyProp {
         if (singleConsumer) prods else Set.empty
       }
 
-      /**
+      /*
        * For a POP instruction that is the single consumer of its producers, remove the POP and
        * enqueue the producers.
        */
@@ -351,7 +351,7 @@ abstract class CopyProp {
         }
       }
 
-      /**
+      /*
        * Traverse the method in its initial state and collect all POP instructions and side-effect
        * free constructor invocations that can be eliminated.
        */
@@ -372,7 +372,7 @@ abstract class CopyProp {
         }
       }
 
-      /**
+      /*
        * Eliminate the `numArgs` inputs of the instruction `prod` (which was eliminated). For
        * each input value
        *   - if the `prod` instruction is the single consumer, enqueue the producers of the input
@@ -394,9 +394,7 @@ abstract class CopyProp {
         if (pops.nonEmpty) toInsertBefore(prod) = pops.toList
       }
 
-      /**
-       * Eliminate LMF `indy` and its inputs.
-       */
+      /* Eliminate LMF `indy` and its inputs. */
       def handleClosureInst(indy: InvokeDynamicInsnNode): Unit = {
         toRemove += indy
         callGraph.removeClosureInstantiation(indy, method)
@@ -647,7 +645,7 @@ abstract class CopyProp {
       }
     }
 
-    /**
+    /*
      * Try to pair `insn` with its correspondent on the stack
      *   - if the stack top is a store and `insn` is a corresponding load, create a pair
      *   - otherwise, check the two top stack values for `null; store`. if it matches, create

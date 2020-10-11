@@ -198,9 +198,9 @@ abstract class BoxUnbox {
 
       var maxStackGrowth = 0
 
-      /** Method M1 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
+      /* Method M1 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
       def replaceBoxOperationsSingleCreation(creation: BoxCreation, finalCons: Set[BoxConsumer], boxKind: BoxKind, keepBox: Boolean): Unit = {
-        /**
+        /*
          * If the box is eliminated, all copy operations (loads, stores, others) of the box need to
          * be removed. This method returns all copy operations that should be removed.
          *
@@ -275,9 +275,9 @@ abstract class BoxUnbox {
         }
       }
 
-      /** Method M2 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
+      /* Method M2 for eliminating box-unbox pairs (see doc comment in the beginning of this file) */
       def replaceBoxOperationsMultipleCreations(allCreations: Set[BoxCreation], allConsumers: Set[BoxConsumer], boxKind: BoxKind): Unit = {
-        /**
+        /*
          * If a single-value size-1 box is eliminated, local variables slots holding the box are
          * reused to hold the unboxed value. In case there's an entry for that local variable in the
          * method's local variables table (debug info), adapt the type.
@@ -305,7 +305,7 @@ abstract class BoxUnbox {
           }
         }
 
-        /** Remove box creations - leave the boxed value(s) on the stack instead. */
+        /* Remove box creations - leave the boxed value(s) on the stack instead. */
         def replaceCreationOps(): Unit = {
           for (creation <- allCreations) creation.loadInitialValues match {
             case None =>
@@ -317,7 +317,7 @@ abstract class BoxUnbox {
           }
         }
 
-        /**
+        /*
          * Replace a value extraction operation. For a single-value box, the extraction operation can
          * just be removed. An extraction from a multi-value box is replaced by POP operations for the
          * non-used values, and an xSTORE / xLOAD for the extracted value. Example: tuple3._2 becomes

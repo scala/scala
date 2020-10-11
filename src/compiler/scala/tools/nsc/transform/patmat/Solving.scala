@@ -240,7 +240,7 @@ trait Solving extends Logic {
         // no need for auxiliary variable
         def not(a: Lit): Lit = -a
 
-        /**
+        /*
          * This encoding adds 3n-4 variables auxiliary variables
          * to encode that at most 1 symbol can be set.
          * See also "Towards an Optimal CNF Encoding of Boolean Cardinality Constraints"
