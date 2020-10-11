@@ -170,8 +170,11 @@ private[process] trait ProcessBuilderImpl {
       val lazilyListed = LazilyListed[String](nonZeroException, capacity)
       val process      = run(BasicIO(withInput, lazilyListed.process, log))
 
+      // extract done from lazilyListed so that the anonymous function below closes over just the done and not the whole lazilyListed (see https://github.com/scala/bug/issues/12185)
+      val done = lazilyListed.done
+
       Spawn("LazyLines") {
-        lazilyListed.done {
+        done {
           try process.exitValue()
           catch {
             case NonFatal(_) => -2
