@@ -208,9 +208,9 @@ trait Names extends api.Names {
     def next: Name with ThisNameType
 
     /** The length of this name. */
-    final def length: Int = len
-    final def isEmpty = length == 0
-    final def nonEmpty = !isEmpty
+    override final def length: Int = len
+    override final def isEmpty: Boolean = length == 0
+    override final def nonEmpty: Boolean = !isEmpty
 
     def nameKind: String
     def isTermName: Boolean

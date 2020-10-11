@@ -115,6 +115,15 @@ trait Names {
     /** The encoded name, still represented as a name.
      */
     def encodedName: Name
+
+    /** The length of this name. */
+    def length: Int
+
+    /** Tests whether this name is empty. */
+    def isEmpty: Boolean
+
+    /** Tests whether this name is not empty. */
+    def nonEmpty: Boolean
   }
 
   /** Create a new term name.
