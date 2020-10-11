@@ -541,13 +541,19 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
     Compile / unmanagedResources / includeFilter := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
     libraryDependencies ++= ScaladocSettings.webjarResources,
-    Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar
+    Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
+    Compile / scalacOptions ++= Seq(
+      "-Xlint",
+      "-feature",
+      "-Wconf:cat=deprecation&msg=early initializers:s",
+    ),
   )
   .dependsOn(compiler)
 

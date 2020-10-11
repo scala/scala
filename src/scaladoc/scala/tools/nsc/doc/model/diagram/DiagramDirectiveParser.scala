@@ -17,6 +17,7 @@ package diagram
 import model._
 import java.util.regex.Pattern
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 import scala.util.matching.Regex
 
@@ -135,6 +136,7 @@ trait DiagramDirectiveParser {
       else
         n.name
 
+    @nowarn("cat=lint-nonlocal-return")
     def hideNode(clazz: Node): Boolean = {
       val qualifiedName = getName(clazz)
       for (hideFilter <- hideNodesFilter)
@@ -145,6 +147,7 @@ trait DiagramDirectiveParser {
       false
     }
 
+    @nowarn("cat=lint-nonlocal-return")
     def hideEdge(clazz1: Node, clazz2: Node): Boolean = {
       val clazz1Name = getName(clazz1)
       val clazz2Name = getName(clazz2)

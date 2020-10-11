@@ -15,6 +15,7 @@ package doc
 
 import java.io.File
 
+import scala.annotation.nowarn
 import scala.tools.nsc.settings.{DefaultPathFactory, PathFactory}
 
 /** An extended version of compiler settings, with additional Scaladoc-specific options.
@@ -349,6 +350,7 @@ class Settings(error: String => Unit, val printMsg: String => Unit = println(_),
     /** Dirty, dirty, dirty hack: the value params conversions can all kick in -- and they are disambiguated by priority
      *  but showing priority in scaladoc would make no sense -- so we have to manually remove the conversions that we
      *  know will never get a chance to kick in. Anyway, DIRTY DIRTY DIRTY! */
+    @nowarn("cat=lint-nonlocal-return")
     def valueClassFilter(value: String, conversionName: String): Boolean = {
       val valueName = value.toLowerCase
       val otherValues = valueClassList.filterNot(_ == valueName)

@@ -528,7 +528,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
     }
     def isUseCase = useCaseOf.isDefined
     override def byConversion: Option[ImplicitConversionImpl] = conversion
-    override def isImplicitlyInherited = { assert(modelFinished); conversion.isDefined }
+    override def isImplicitlyInherited = { assert(modelFinished, "cannot check if implicitly inherited before model is finished"); conversion.isDefined }
     override def isShadowedImplicit    = isImplicitlyInherited && inTpl.implicitsShadowing.get(this).map(_.isShadowed).getOrElse(false)
     override def isAmbiguousImplicit   = isImplicitlyInherited && inTpl.implicitsShadowing.get(this).map(_.isAmbiguous).getOrElse(false)
     override def isShadowedOrAmbiguousImplicit = isShadowedImplicit || isAmbiguousImplicit
@@ -731,7 +731,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
 
       // Code is duplicate because the anonymous classes are created statically
       def createNoDocMemberTemplate(bSym: Symbol, inTpl: DocTemplateImpl): MemberTemplateImpl = {
-        assert(modelFinished) // only created AFTER the model is finished
+        assert(modelFinished, "cannot create NoDocMember template before model is finished") // only created AFTER the model is finished
         if (bSym.isModule || (bSym.isAliasType && bSym.tpe.typeSymbol.isModule))
           new MemberTemplateImpl(bSym, inTpl) with Object {}
         else if (bSym.isTrait || (bSym.isAliasType && bSym.tpe.typeSymbol.isTrait))
@@ -742,7 +742,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
           throw new IllegalArgumentException(s"'$bSym' isn't a class, trait or object thus cannot be built as a member template.")
       }
 
-      assert(modelFinished)
+      assert(modelFinished, "cannot create lazy template member before model is finished")
       val bSym = normalizeTemplate(aSym)
 
       if (docTemplatesCache isDefinedAt bSym)
@@ -751,7 +751,7 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
         docTemplatesCache.get(bSym.owner) match {
           case Some(inTpl) =>
             val mbrs = inTpl.members.collect({ case mbr: MemberImpl if mbr.sym == bSym => mbr })
-            assert(mbrs.length == 1)
+            assert(mbrs.length == 1, "must have exactly one member with bSym")
             mbrs.head
           case _ =>
             // move the class completely to the new location
@@ -831,14 +831,14 @@ class ModelFactory(val global: Global, val settings: doc.Settings) {
   }
 
   def findTemplateMaybe(aSym: Symbol): Option[DocTemplateImpl] = {
-    assert(modelFinished)
+    assert(modelFinished, "cannot try to find template before model is finished")
     docTemplatesCache.get(normalizeTemplate(aSym)).filterNot(packageDropped(_))
   }
 
   def makeTemplate(aSym: Symbol): TemplateImpl = makeTemplate(aSym, None)
 
   def makeTemplate(aSym: Symbol, inTpl: Option[TemplateImpl]): TemplateImpl = {
-    assert(modelFinished)
+    assert(modelFinished, "cannot make template before model is finished")
 
     def makeNoDocTemplate(aSym: Symbol, inTpl: TemplateImpl): NoDocTemplateImpl =
       noDocTemplatesCache.getOrElse(aSym, new NoDocTemplateImpl(aSym, inTpl))

@@ -14,6 +14,7 @@ package scala.tools.nsc
 package doc
 package model
 
+import scala.annotation.nowarn
 import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -437,7 +438,7 @@ trait ModelFactoryImplicitSupport {
   def makeShadowingTable(members: List[MemberImpl],
                          convs: List[ImplicitConversionImpl],
                          inTpl: DocTemplateImpl): Map[MemberEntity, ImplicitMemberShadowing] = {
-    assert(modelFinished)
+    assert(modelFinished, "cannot make shadowing table before model is finished")
 
     val shadowingTable = mutable.Map[MemberEntity, ImplicitMemberShadowing]()
     val membersByName: Map[Name, List[MemberImpl]] = members.groupBy(_.sym.name)
@@ -586,6 +587,7 @@ trait ModelFactoryImplicitSupport {
    * The trick here is that the resultType does not matter - the condition for removal it that paramss have the same
    * structure (A => B => C may not override (A, B) => C) and that all the types involved are
    * of the implicit conversion's member are subtypes of the parent members' parameters */
+  @nowarn("cat=lint-nonlocal-return")
   def isDistinguishableFrom(t1: Type, t2: Type): Boolean = {
     // Vlad: I tried using matches but it's not exactly what we need:
     // (p: AnyRef)AnyRef matches ((t: String)AnyRef returns false -- but we want that to be true
