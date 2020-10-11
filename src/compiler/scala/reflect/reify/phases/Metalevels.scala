@@ -113,7 +113,7 @@ trait Metalevels {
    *  The reasoning from Example 2 still holds here - we do need to inline the freevar that refers to x.
    *  However, we must not touch anything inside the splice'd block, because it's not getting reified.
    */
-  val metalevels = new Transformer {
+  val metalevels = new AstTransformer {
     var insideSplice = false
     val inlineableBindings = mutable.Map[TermName, Tree]()
 

@@ -30,7 +30,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "extmethods"
 
-  def newTransformer(unit: CompilationUnit): Transformer =
+  def newTransformer(unit: CompilationUnit): AstTransformer =
     new Extender(unit)
 
   private def companionModuleForce(sym: Symbol) = {

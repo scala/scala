@@ -16,6 +16,8 @@ package ast
 import scala.reflect.ClassTag
 import java.lang.System.lineSeparator
 
+import scala.annotation.nowarn
+
 trait Trees extends scala.reflect.internal.Trees { self: Global =>
   // --- additional cases --------------------------------------------------------
   /** Only used during parsing */
@@ -111,7 +113,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   // --- additional cases in operations ----------------------------------
 
-  trait TreeCopier extends super.InternalTreeCopierOps {
+  trait TreeCopier extends InternalTreeCopierOps {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree): DocDef
     def SelectFromArray(tree: Tree, qualifier: Tree, selector: Name, erasure: Type): SelectFromArray
     def InjectDerivedValue(tree: Tree, arg: Tree): InjectDerivedValue
@@ -119,9 +121,14 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   }
   implicit val TreeCopierTag: ClassTag[TreeCopier] = ClassTag[TreeCopier](classOf[TreeCopier])
 
-  def newStrictTreeCopier: TreeCopier = new StrictTreeCopier
-  def newLazyTreeCopier: TreeCopier = new LazyTreeCopier
+  def newStrictTreeCopier: TreeCopier = new StrictAstTreeCopier
+  def newLazyTreeCopier: TreeCopier = new LazyAstTreeCopier
 
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.StrictTreeCopier""")
+  final type StrictAstTreeCopier = StrictTreeCopier
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use StrictAstTreeCopier instead", since = "2.13.4")
   class StrictTreeCopier extends super.StrictTreeCopier with TreeCopier {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree) =
       new DocDef(comment, definition).copyAttrs(tree)
@@ -134,6 +141,11 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
     }
   }
 
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.LazyTreeCopier""")
+  final type LazyAstTreeCopier = LazyTreeCopier
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use LazyAstTreeCopier instead", since = "2.13.4")
   class LazyTreeCopier extends super.LazyTreeCopier with TreeCopier {
     def DocDef(tree: Tree, comment: DocComment, definition: Tree) = tree match {
       case t @ DocDef(comment0, definition0)
@@ -157,6 +169,12 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   }
 
   type ApiTransformer = super.Transformer
+
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.Transformer""")
+  final type AstTransformer = Transformer
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use AstTransformer instead", since = "2.13.4")
   class Transformer extends InternalTransformer {
     def transformUnit(unit: CompilationUnit): Unit = {
       try unit.body = transform(unit.body)
@@ -169,7 +187,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   }
 
   // used when a phase is disabled
-  object noopTransformer extends Transformer {
+  object noopTransformer extends AstTransformer {
     override def transformUnit(unit: CompilationUnit): Unit = {}
   }
 
@@ -268,7 +286,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       }
     }
 
-    class Transformer extends self.Transformer {
+    class ResetTransformer extends AstTransformer {
       override def transform(tree: Tree): Tree = {
         if (leaveAlone != null && leaveAlone(tree))
           tree
@@ -345,7 +363,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         trace("locals (%d total): %n".format(orderedLocals.size))(msg)
       }
 
-      new Transformer().transform(x)
+      new ResetTransformer().transform(x)
     }
   }
 

@@ -24,7 +24,7 @@ trait PostErasure extends InfoTransform with TypingTransformers with scala.refle
 
   val phaseName: String = "posterasure"
 
-  def newTransformer(unit: CompilationUnit): Transformer = new PostErasureTransformer(unit)
+  def newTransformer(unit: CompilationUnit): AstTransformer = new PostErasureTransformer(unit)
   override def changesBaseClasses = false
 
   class PostErasureTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {

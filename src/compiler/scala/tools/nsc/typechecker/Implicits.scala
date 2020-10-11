@@ -696,7 +696,7 @@ trait Implicits {
               } else {
                 // we can't usefully prune views any further because we would need to type an application
                 // of the view to the term as is done in the computation of itree2 in typedImplicit1.
-                tvars.foreach(_.constr.stopWideningIfPrecluded)
+                tvars.foreach(_.constr.stopWideningIfPrecluded())
                 val targs = solvedTypes(tvars, allUndetparams, varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
                 val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
@@ -1183,7 +1183,7 @@ trait Implicits {
       }
 
       if (eligible.nonEmpty)
-        printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -1425,7 +1425,7 @@ trait Implicits {
       }
       emptyInfos.foreach(infoMap.remove)
       if (infoMap.nonEmpty)
-        printTyping(tree, infoMap.size + " implicits in companion scope")
+        printTyping(tree, "" + infoMap.size + " implicits in companion scope")
 
       infoMap
     }
@@ -1453,7 +1453,7 @@ trait Implicits {
           if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(subtypeETNanos, start)
           implicitsCache(pt) = implicitInfoss1
           if (implicitsCache.size >= sizeLimit)
-            implicitsCache -= implicitsCache.keysIterator.next
+            implicitsCache -= implicitsCache.keysIterator.next()
           implicitInfoss1
       }
     }

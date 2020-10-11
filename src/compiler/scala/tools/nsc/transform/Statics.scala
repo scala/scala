@@ -16,7 +16,7 @@ package transform
 abstract class Statics extends Transform with ast.TreeDSL {
   import global._
 
-  trait StaticsTransformer extends Transformer {
+  trait StaticsTransformer extends AstTransformer {
     /** generate a static constructor with symbol fields inits, or an augmented existing static ctor
       */
     def staticConstructor(body: List[Tree], localTyper: analyzer.Typer, pos: Position)(newStaticInits: List[Tree]): Tree =

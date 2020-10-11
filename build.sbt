@@ -844,7 +844,10 @@ lazy val compiler = configureAsSubproject(project)
         --- (base ** "Scaladoc*ModelTest.scala") // exclude test classes that depend on partest
       ).get
     },
-    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    Compile / scalacOptions ++= Seq(
+      "-Xlint:-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+      "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
+    ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
     ),

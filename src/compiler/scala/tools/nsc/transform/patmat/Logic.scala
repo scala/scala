@@ -204,14 +204,14 @@ trait Logic extends Debugging  {
         else if (size == 2) { // Specialized versions for size 2+3
           val it = ops0.iterator
           val result = checkPair(it.next(), it.next())
-          assert(!it.hasNext)
+          assert(!it.hasNext, "iterator must be empty")
           result
         } else if (size == 3) {
           val it = ops0.iterator
           val a = it.next()
           val b = it.next()
           val c = it.next()
-          assert(!it.hasNext)
+          assert(!it.hasNext, "iterator must be empty")
           checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
         } else {
           val ops = new Array[Prop](size)

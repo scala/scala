@@ -593,7 +593,7 @@ trait MatchTranslation {
 
       protected def spliceApply(pos: Position, binder: Symbol): (Tree, Boolean) = {
         var needsSubst = false
-        object splice extends Transformer {
+        object splice extends AstTransformer {
           def binderRef(pos: Position): Tree =
             REF(binder) setPos pos
           override def transform(t: Tree) = t match {

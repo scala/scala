@@ -16,7 +16,7 @@ package transform
 
 import symtab._
 import Flags.{CASE => _, _}
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable.ListBuffer
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -41,7 +41,7 @@ abstract class ExplicitOuter extends InfoTransform
   /** This class does not change linearization */
   override def changesBaseClasses = false
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new ExplicitOuterTransformer(unit)
 
   /** Is given clazz an inner class? */
@@ -75,7 +75,7 @@ abstract class ExplicitOuter extends InfoTransform
     result
   }
 
-  class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends Transformer {
+  class RemoveBindingsTransformer(toRemove: Set[Symbol]) extends AstTransformer {
     override def transform(tree: Tree) = tree match {
       case Bind(_, body) if toRemove(tree.symbol) => super.transform(body)
       case _                                      => super.transform(tree)
@@ -211,7 +211,7 @@ abstract class ExplicitOuter extends InfoTransform
    *  The class provides methods for referencing via outer.
    */
   abstract class OuterPathTransformer(initLocalTyper: analyzer.Typer) extends TypingTransformer(initLocalTyper) {
-    def this(unit: CompilationUnit) { this(newRootLocalTyper(unit)) }
+    def this(unit: CompilationUnit) = this(newRootLocalTyper(unit))
     /** The directly enclosing outer parameter, if we are in a constructor */
     protected var outerParam: Symbol = NoSymbol
 
@@ -501,10 +501,14 @@ abstract class ExplicitOuter extends InfoTransform
     }
   }
 
-  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase =
-    new Phase(prev)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new OuterPhase(prev)
 
-  class Phase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.ExplicitOuter\.Phase""")
+  final type OuterPhase = Phase
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use OuterPhase instead", since = "2.13.4")
+  class Phase(prev: scala.tools.nsc.Phase) extends InfoPhase(prev) {
     override val checkable = false
   }
 }

@@ -95,7 +95,8 @@ trait Solving extends Logic {
 
     final case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping) {
       def ++(other: Solvable) = {
-        require(this.symbolMapping eq other.symbolMapping)
+        require(this.symbolMapping eq other.symbolMapping,
+          "this and other must have the same symbol mapping (same reference)")
         Solvable(cnf ++ other.cnf, symbolMapping)
       }
 

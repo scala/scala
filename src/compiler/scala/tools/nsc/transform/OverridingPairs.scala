@@ -13,6 +13,7 @@
 package scala.tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.reflect.internal.SymbolPairs
 
 /** A class that yields a kind of iterator (`Cursor`),
@@ -24,6 +25,11 @@ import scala.reflect.internal.SymbolPairs
 abstract class OverridingPairs extends SymbolPairs {
   import global._
 
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.OverridingPairs\.Cursor""")
+  final type PairsCursor = Cursor
+
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use PairsCursor instead", since = "2.13.4")
   class Cursor(base: Symbol) extends super.Cursor(base) {
     /** Symbols to exclude: Here these are constructors and private/artifact symbols,
      *  including bridges. But it may be refined in subclasses.
@@ -55,7 +61,7 @@ abstract class OverridingPairs extends SymbolPairs {
       (low.isField || high.isField)
   }
 
-  final class BridgesCursor(base: Symbol) extends Cursor(base) {
+  final class BridgesCursor(base: Symbol) extends PairsCursor(base) {
     // Varargs bridges may need generic bridges due to the non-repeated part of the signature of the involved methods.
     // The vararg bridge is generated during refchecks (probably to simplify override checking),
     // but then the resulting varargs "bridge" method may itself need an actual erasure bridge.

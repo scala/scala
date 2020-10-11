@@ -163,7 +163,7 @@ trait PatternExpansion {
       val res = resultOfGetInMonad()
       // Can't only check for _1 thanks to pos/t796.
       if (res.hasNonPrivateMember(nme._1) && res.hasNonPrivateMember(nme._2))
-        Some(Stream.from(1).map(n => res.nonPrivateMember(newTermName("_" + n))).
+        Some(LazyList.from(1).map(n => res.nonPrivateMember(newTermName("_" + n))).
              takeWhile(m => m.isMethod && m.paramLists.isEmpty).toList.map(m => res.memberType(m).resultType))
       else None
     }

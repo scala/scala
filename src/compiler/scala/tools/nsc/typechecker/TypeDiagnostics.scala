@@ -652,12 +652,12 @@ trait TypeDiagnostics {
     }
     object skipMacroExpansion extends UnusedPrivates {
       override def traverse(t: Tree): Unit =
-        if (!hasMacroExpansionAttachment(t) && !(t.hasSymbol && isExpanded(t.symbol)))
+        if (!hasMacroExpansionAttachment(t) && !(t.hasSymbolField && isExpanded(t.symbol)))
           super.traverse(t)
     }
     object checkMacroExpandee extends UnusedPrivates {
       override def traverse(t: Tree): Unit =
-        if (!(t.hasSymbol && isExpanded(t.symbol)))
+        if (!(t.hasSymbolField && isExpanded(t.symbol)))
           super.traverse(if (hasMacroExpansionAttachment(t)) macroExpandee(t) else t)
     }
 
@@ -730,7 +730,7 @@ trait TypeDiagnostics {
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
           def classOf(s: Symbol): Symbol = if (s.isClass || s == NoSymbol) s else classOf(s.owner)
-          val opc = new overridingPairs.Cursor(classOf(m))
+          val opc = new overridingPairs.PairsCursor(classOf(m))
           opc.iterator.exists(pair => pair.low == m)
         }
         import PartialFunction._

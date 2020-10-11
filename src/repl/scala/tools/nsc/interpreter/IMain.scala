@@ -834,7 +834,7 @@ class IMain(val settings: Settings, parentClassLoaderOverride: Option[ClassLoade
 
 
     private val USER_CODE_PLACEHOLDER = newTermName("$user_code_placeholder$")
-    private object spliceUserCode extends Transformer {
+    private object spliceUserCode extends AstTransformer {
       var parents: List[Tree] = Nil
       override def transform(tree: Tree): Tree = {
         parents ::= tree

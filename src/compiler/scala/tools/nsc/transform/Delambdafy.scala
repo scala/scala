@@ -62,7 +62,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
     def apply(unit: global.CompilationUnit): Unit = ()
   }
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new DelambdafyTransformer(unit)
 
   class DelambdafyTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {

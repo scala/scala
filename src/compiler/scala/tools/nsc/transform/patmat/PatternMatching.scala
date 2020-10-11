@@ -58,7 +58,7 @@ trait PatternMatching extends Transform
 
   val phaseName: String = "patmat"
 
-  def newTransformer(unit: CompilationUnit): Transformer = new MatchTransformer(unit)
+  def newTransformer(unit: CompilationUnit): AstTransformer = new MatchTransformer(unit)
 
   class MatchTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {
     override def transform(tree: Tree): Tree = tree match {
@@ -215,7 +215,7 @@ trait Interface extends ast.TreeDSL {
     }
 
     class Substitution(val from: List[Symbol], val to: List[Tree]) {
-      import global.{Transformer, Ident, NoType, TypeTree, SingleType}
+      import global.{AstTransformer, Ident, NoType, TypeTree, SingleType}
 
       private def typedStable(t: Tree) = typer.typed(t.shallowDuplicate, Mode.MonoQualifierModes | Mode.TYPEPATmode)
       lazy val toTypes: List[Type] = to map (tree => typedStable(tree).tpe)
@@ -248,7 +248,7 @@ trait Interface extends ast.TreeDSL {
           case _          => false
         }
 
-        object substIdentsForTrees extends Transformer {
+        object substIdentsForTrees extends AstTransformer {
           private def typedIfOrigTyped(to: Tree, origTp: Type): Tree =
             if (origTp == null || origTp == NoType) to
             // important: only type when actually substituting and when original tree was typed

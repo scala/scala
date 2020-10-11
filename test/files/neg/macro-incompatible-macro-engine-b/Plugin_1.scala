@@ -13,7 +13,7 @@ class Plugin(val global: Global) extends NscPlugin {
   addMacroPlugin(MacroPlugin)
 
   object MacroPlugin extends MacroPlugin {
-    def fixupBinding(tree: Tree) = new Transformer {
+    def fixupBinding(tree: Tree) = new AstTransformer {
       override def transform(tree: Tree) = {
         tree match {
           case Literal(const @ Constant(x)) if tree.tpe == null => tree setType ConstantType(const)

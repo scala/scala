@@ -32,7 +32,7 @@ trait Namers extends MethodSynthesis {
   /** Replaces any Idents for which cond is true with fresh TypeTrees().
    *  Does the same for any trees containing EmptyTrees.
    */
-  private class TypeTreeSubstituter(cond: Name => Boolean) extends Transformer {
+  private class TypeTreeSubstituter(cond: Name => Boolean) extends AstTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case Ident(name) if cond(name) => TypeTree()
       case _                         => super.transform(tree)
@@ -686,7 +686,7 @@ trait Namers extends MethodSynthesis {
             val userDefined = ownerInfo.memberBasedOnName(sym.name, BridgeFlags | SYNTHETIC)
 
             (userDefined != NoSymbol) && {
-              assert(userDefined != sym)
+              assert(userDefined != sym, "userDefined symbol cannot be the same as symbol of which it is a member")
               val alts = userDefined.alternatives // could be just the one, if this member isn't overloaded
               // don't compute any further `memberInfo`s if there's an error somewhere
               alts.exists(_.isErroneous) || {

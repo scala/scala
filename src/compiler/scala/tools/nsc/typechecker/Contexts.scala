@@ -108,14 +108,14 @@ trait Contexts { self: Analyzer =>
 
   var lastAccessCheckDetails: String = ""
 
-  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+  val rootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]()
 
-  val excludedRootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]
+  val excludedRootImportsCached = perRunCaches.newMap[CompilationUnit, List[Symbol]]()
 
   // register an import for the narrow purpose of excluding root imports of predef modules
   def registerImport(ctx: Context, imp: Import): Unit = {
     val sym = imp.expr.symbol
-    if (sym != null && !sym.isPackage && ctx.enclosingNonImportContext.owner.isPackage && rootImports(ctx.unit).contains(sym)) {
+    if (sym != null && !sym.hasPackageFlag && ctx.enclosingNonImportContext.owner.hasPackageFlag && rootImports(ctx.unit).contains(sym)) {
       var current = excludedRootImportsCached.get(ctx.unit).getOrElse(Nil)
       current = sym :: current
       excludedRootImportsCached += ctx.unit -> current
@@ -853,7 +853,7 @@ trait Contexts { self: Analyzer =>
       case x: Import => "" + x
       case Template(parents, `noSelfType`, body) =>
         val pstr = if ((parents eq null) || parents.isEmpty) "Nil" else parents mkString " "
-        val bstr = if (body eq null) "" else body.length + " stats"
+        val bstr = if (body eq null) "" else "" + body.length + " stats"
         s"""Template($pstr, _, $bstr)"""
       case x => s"${tree.shortClass}${treeIdString}:${treeTruncated}"
     }
@@ -1547,7 +1547,7 @@ trait Contexts { self: Analyzer =>
       })
 
       // If the defSym is at 4, and there is a def at 1 in scope due to packaging, then the reference is ambiguous.
-      if (foreignDefined && !defSym.isPackage && !thisContext.unit.isJava) {
+      if (foreignDefined && !defSym.hasPackageFlag && !thisContext.unit.isJava) {
         val defSym0 = defSym
         val pre0    = pre
         val cx0     = cx

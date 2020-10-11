@@ -198,7 +198,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
       t.setAttachments(t.attachments.addElement(NoAwait))
     }
 
-    val stack = mutable.ArrayStack[Tree]()
+    val stack = mutable.Stack[Tree]()
 
     override def traverse(tree: Tree): Unit = {
       stack.push(tree)

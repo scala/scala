@@ -394,7 +394,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
               } else None
             } else None
 
-          annZippers.iterator.flatMap(annz => maybeExpand(annz.annotation, annz.annottee, annz.owner)).nextOption match {
+          annZippers.iterator.flatMap(annz => maybeExpand(annz.annotation, annz.annottee, annz.owner)).nextOption() match {
             case Some(expanded) =>
               // TODO: The workaround employed in https://github.com/scalamacros/paradise/issues/19
               // no longer works because of the REPL refactoring in 2.13.0-M2.

@@ -28,7 +28,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
   /** the following two members override abstract members in Transform */
   val phaseName: String = "constructors"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new ConstructorTransformer(unit)
 
   private val guardedCtorStats: mutable.Map[Symbol, List[Tree]] = perRunCaches.newMap[Symbol, List[Tree]]()
@@ -353,7 +353,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
        */
       def rewriteArrayUpdate(tree: Tree): Tree = {
         val arrayUpdateMethod = currentRun.runDefinitions.arrayUpdateMethod
-        val adapter = new Transformer {
+        val adapter = new AstTransformer {
           override def transform(t: Tree): Tree = t match {
             case Apply(fun @ Select(receiver, method), List(xs, idx, v)) if fun.symbol == arrayUpdateMethod =>
               localTyper.typed(Apply(gen.mkAttributedSelect(xs, arrayUpdateMethod), List(idx, v)))
@@ -487,7 +487,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     }
 
     // A transformer for expressions that go into the constructor
-    object intoConstructor extends Transformer {
+    object intoConstructor extends AstTransformer {
       /*
       * `usesSpecializedField` makes a difference in deciding whether constructor-statements
       * should be guarded in a `guardSpecializedFieldInit` class, ie in a class that's the generic super-class of

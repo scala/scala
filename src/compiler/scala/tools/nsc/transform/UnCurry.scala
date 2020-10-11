@@ -68,7 +68,7 @@ abstract class UnCurry extends InfoTransform
 
   val phaseName: String = "uncurry"
 
-  def newTransformer(unit: CompilationUnit): Transformer = new UnCurryTransformer(unit)
+  def newTransformer(unit: CompilationUnit): AstTransformer = new UnCurryTransformer(unit)
   override def changesBaseClasses = false
 
 // ------ Type transformation --------------------------------------------------------
@@ -287,15 +287,15 @@ abstract class UnCurry extends InfoTransform
             else if (tp.upperBound ne tp) getClassTag(tp.upperBound)
             else localTyper.TyperErrorGen.MissingClassTagError(tree, tp)
           }
-          def traversableClassTag(tpe: Type): Tree = {
-            (tpe baseType TraversableClass).typeArgs match {
+          def iterableClassTag(tpe: Type): Tree = {
+            (tpe baseType IterableClass).typeArgs match {
               case targ :: _  => getClassTag(targ)
               case _          => EmptyTree
             }
           }
           exitingUncurry {
             localTyper.typedPos(pos) {
-              gen.mkMethodCall(tree, toArraySym, Nil, List(traversableClassTag(tree.tpe)))
+              gen.mkMethodCall(tree, toArraySym, Nil, List(iterableClassTag(tree.tpe)))
             }
           }
         }
@@ -783,7 +783,7 @@ abstract class UnCurry extends InfoTransform
           val viter = vparamss.iterator.flatten
           val piter = dd.symbol.info.paramss.iterator.flatten
           while (viter.hasNext && piter.hasNext)
-            addParamTransform(viter.next, piter.next)
+            addParamTransform(viter.next(), piter.next())
 
           (allParamsBuf.toList, packedParamsSymsBuf.toList, tempValsBuf.toList)
         }

@@ -412,7 +412,7 @@ trait ContextErrors {
             }
             val semicolon = orEmpty(linePrecedes(qual, sel))(s"possible cause: maybe a semicolon is missing before `$nameString`?")
             val notAnyRef = orEmpty(ObjectClass.info.member(name).exists)(notAnyRefMessage(target))
-            val javaRules = orEmpty(owner.isJavaDefined && owner.isClass && !owner.isPackage) {
+            val javaRules = orEmpty(owner.isJavaDefined && owner.isClass && !owner.hasPackageFlag) {
               val (jtype, jmember) = cx.javaFindMember(target, name, _.isStaticMember)
               orEmpty(jmember != NoSymbol) {
                 val more = sm"""Static Java members belong to companion objects in Scala;

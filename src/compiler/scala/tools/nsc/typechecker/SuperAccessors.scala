@@ -77,7 +77,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
   /** The following flags may be set by this phase: */
   override def phaseNewFlags: Long = notPRIVATE
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new SuperAccTransformer(unit)
 
   class SuperAccTransformer(unit: CompilationUnit) extends TypingTransformer(unit) {

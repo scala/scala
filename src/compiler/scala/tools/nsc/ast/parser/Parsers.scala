@@ -820,7 +820,7 @@ self =>
 
     /** {{{ { `sep` part } }}}. */
     override final def separatedToken[T](separator: Token, part: => T): List[T] = {
-      require(separator != COMMA)
+      require(separator != COMMA, "separator cannot be a comma")
       val ts = ListBuffer.empty[T]
       while (in.token == separator) {
         in.nextToken()
@@ -1012,7 +1012,7 @@ self =>
 
       // () must be () => R; (types) could be tuple or (types) => R
       private def tupleInfixType(start: Offset) = {
-        require(in.token == LPAREN)
+        require(in.token == LPAREN, "first token must be a left parenthesis")
         val ts = inParens { if (in.token == RPAREN) Nil else functionTypes() }
         if (in.token == ARROW)
           atPos(start, in.skipToken()) { makeSafeFunctionType(ts, typ()) }
@@ -1673,7 +1673,7 @@ self =>
             case _                               => false
           }
 
-          if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList)) {
+          if (in.token == ARROW && (location != InTemplate || lhsIsTypedParamList())) {
             t = atPos(t.pos.start, in.skipToken()) {
               Function(convertToParams(t), if (location != InBlock) expr() else block())
             }
@@ -3023,7 +3023,7 @@ self =>
     def packageOrPackageObject(start: Offset): Tree =
       if (in.token == OBJECT) joinComment(packageObjectDef(start) :: Nil).head
       else {
-        in.flushDoc
+        in.flushDoc()
         makePackaging(start, pkgQualId(), inBracesOrNil(topStatSeq()))
       }
 
@@ -3135,7 +3135,7 @@ self =>
       atPos(tstart1) {
         // Exclude only the 9 primitives plus AnyVal.
         if (inScalaRootPackage && ScalaValueClassNames.contains(name))
-          Template(parents, self, anyvalConstructor :: body)
+          Template(parents, self, anyvalConstructor() :: body)
         else
           gen.mkTemplate(gen.mkParents(mods, parents, parentPos),
                          self, constrMods, vparamss, body, o2p(tstart))
@@ -3209,7 +3209,7 @@ self =>
       case PACKAGE  =>
         packageOrPackageObject(in.skipToken()) :: Nil
       case IMPORT =>
-        in.flushDoc
+        in.flushDoc()
         importClause()
       case _ if isAnnotation || isTemplateIntro || isModifier =>
         joinComment(topLevelTmplDef :: Nil)
@@ -3224,7 +3224,7 @@ self =>
       var self: ValDef = noSelfType
       var firstOpt: Option[Tree] = None
       if (isExprIntro) checkNoEscapingPlaceholders {
-        in.flushDoc
+        in.flushDoc()
         val first = expr(InTemplate) // @S: first statement is potentially converted so cannot be stubbed.
         if (in.token == ARROW) {
           first match {
@@ -3259,12 +3259,12 @@ self =>
     def templateStats(): List[Tree] = checkNoEscapingPlaceholders { statSeq(templateStat) }
     def templateStat: PartialFunction[Token, List[Tree]] = {
       case IMPORT =>
-        in.flushDoc
+        in.flushDoc()
         importClause()
       case _ if isDefIntro || isModifier || isAnnotation =>
         joinComment(nonLocalDefOrDcl)
       case _ if isExprIntro =>
-        in.flushDoc
+        in.flushDoc()
         statement(InTemplate) :: Nil
     }
 
@@ -3386,7 +3386,7 @@ self =>
               ts ++= topStatSeq()
             }
           } else {
-            in.flushDoc
+            in.flushDoc()
             val pkg = pkgQualId()
 
             if (in.token == EOF) {

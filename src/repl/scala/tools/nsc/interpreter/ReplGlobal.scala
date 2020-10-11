@@ -59,8 +59,8 @@ trait ReplGlobal extends Global {
     override val runsBefore: List[String] = List("uncurry")
     /** Name of the phase that this phase must follow immediately. */
     override val runsRightAfter: Option[String] = None
-    override protected def newTransformer(unit: CompilationUnit): Transformer = new WrapperCleanupTransformer
-    class WrapperCleanupTransformer extends Transformer {
+    override protected def newTransformer(unit: CompilationUnit): AstTransformer = new WrapperCleanupTransformer
+    class WrapperCleanupTransformer extends AstTransformer {
       override def transformUnit(unit: CompilationUnit): Unit = {
         if (settings.Yreplclassbased.value) super.transformUnit(unit)
       }

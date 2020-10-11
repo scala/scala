@@ -14,6 +14,7 @@ package scala
 package tools.nsc
 package transform
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.Reporting.WarningCategory
@@ -83,7 +84,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
    */
 
   /** For a given class and concrete type arguments, give its specialized class */
-  val specializedClass = perRunCaches.newAnyRefMap[Symbol, mutable.AnyRefMap[TypeEnv, Symbol]]
+  val specializedClass = perRunCaches.newAnyRefMap[Symbol, mutable.AnyRefMap[TypeEnv, Symbol]]()
 
   /** Map a method symbol to a list of its specialized overloads in the same class. */
   private val overloads = perRunCaches.newMap[Symbol, List[Overload]]() withDefaultValue Nil
@@ -200,7 +201,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
 
   /** Just to mark uncheckable */
   override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new SpecializationPhase(prev)
-  class SpecializationPhase(prev: scala.tools.nsc.Phase) extends super.Phase(prev) {
+  class SpecializationPhase(prev: scala.tools.nsc.Phase) extends InfoPhase(prev) {
     override def checkable = false
     override def run(): Unit = {
       super.run()
@@ -227,7 +228,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     }
   }
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new SpecializationTransformer(unit)
 
   abstract class SpecializedInfo {
@@ -1371,6 +1372,11 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     private val (castfrom, castto) = casts.unzip
     private object CastMap extends SubstTypeMap(castfrom.toList, castto.toList)
 
+    @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.SpecializeTypes\.Duplicator\.BodyDuplicator""")
+    final type SpecializeBodyDuplicator = BodyDuplicator
+
+    @nowarn("msg=shadowing a nested class of a parent is deprecated")
+    @deprecated("use SpecializeBodyDuplicator instead", since = "2.13.4")
     class BodyDuplicator(_context: Context) extends super.BodyDuplicator(_context) {
       override def castType(tree: Tree, pt: Type): Tree = {
         tree modifyType fixType
@@ -1386,7 +1392,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
       }
     }
 
-    protected override def newBodyDuplicator(context: Context) = new BodyDuplicator(context)
+    protected override def newBodyDuplicator(context: Context): SpecializeBodyDuplicator = new SpecializeBodyDuplicator(context)
   }
 
   /** Introduced to fix scala/bug#7343: Phase ordering problem between Duplicators and Specialization.

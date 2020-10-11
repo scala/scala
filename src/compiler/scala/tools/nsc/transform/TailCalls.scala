@@ -16,7 +16,7 @@ package transform
 
 import symtab.Flags
 import Flags.SYNTHETIC
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /** Perform tail recursive call elimination.
  *
@@ -29,13 +29,18 @@ abstract class TailCalls extends Transform {
 
   val phaseName: String = "tailcalls"
 
-  def newTransformer(unit: CompilationUnit): Transformer =
+  def newTransformer(unit: CompilationUnit): AstTransformer =
     new TailCallElimination(unit)
 
   /** Create a new phase which applies transformer */
-  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new Phase(prev)
+  override def newPhase(prev: scala.tools.nsc.Phase): StdPhase = new TailCallsPhase(prev)
+
+  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.TailCalls\.Phase""")
+  final type TailCallsPhase = Phase
 
   /** The phase defined by this transform */
+  @nowarn("msg=shadowing a nested class of a parent is deprecated")
+  @deprecated("use TailCallsPhase instead", since = "2.13.4")
   class Phase(prev: scala.tools.nsc.Phase) extends StdPhase(prev) {
     def apply(unit: global.CompilationUnit): Unit = {
       if (!(settings.debuginfo.value == "notailcalls")) {
@@ -94,7 +99,7 @@ abstract class TailCalls extends Transform {
    *            parameter lists exist.
    * </p>
    */
-  class TailCallElimination(unit: CompilationUnit) extends Transformer {
+  class TailCallElimination(unit: CompilationUnit) extends AstTransformer {
     private def defaultReason = "it contains a recursive call not in tail position"
     private val failPositions = perRunCaches.newMap[TailContext, Position]() withDefault (_.methodPos)
     private val failReasons   = perRunCaches.newMap[TailContext, String]() withDefaultValue defaultReason

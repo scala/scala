@@ -21,7 +21,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
   private def stateAssigner  = currentTransformState.stateAssigner
   private def labelDefStates = currentTransformState.labelDefStates
 
-  private object replaceResidualJumpsWithStateTransitions extends Transformer {
+  private object replaceResidualJumpsWithStateTransitions extends AstTransformer {
     override def transform(tree: Tree): Tree = {
       // TODO: This is only needed for Scala.js compatibility.
       //       See https://github.com/scala/scala/pull/8816#issuecomment-640725321
@@ -61,7 +61,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         stat =>
           stats1 += stat
           if (stat.attachments.containsElement(StateTransitionTree)) {
-            assert(!foundStateTransition)
+            assert(!foundStateTransition, "cannot find more than one state transition")
             foundStateTransition = true
             // Insert post-state null assignments immediately after the state transition
             addNullAssigments(postNulls)
@@ -116,7 +116,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     private[this] var built: Boolean = false
     /** Build the state using the accumulated `stats` followed by a state transition. */
     def build(nextState: Int, style: StateTransitionStyle): AsyncState = {
-      assert(!built)
+      assert(!built, "cannot build after already built")
       built = true
       // Record whether this state was free of meaningful stats (excluding unit literals which creep in after
       // the ANF and state machine transforms and the state transition code added below.
@@ -190,7 +190,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
     addStats()
 
     private def addState(state: AsyncState): AsyncState = {
-      assert(building)
+      assert(building, "must be building to add state")
       assert(!statesMap.contains(state.state), "Duplicate state: " + state)
       statesMap(state.state) = state
       state
@@ -402,7 +402,13 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
             (line: String) =>
               builder.append(br)
               // TODO Wrap with CDATA instead?
-              builder.append(line.replaceAllLiterally("&", "&amp;").replaceAllLiterally("\"", "&quot;").replaceAllLiterally("<", "&lt;").replaceAllLiterally(">", "&gt;").replaceAllLiterally(" ", "&nbsp;"))
+              builder.append(
+                line.replace("&", "&amp;")
+                    .replace("\"", "&quot;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace(" ", "&nbsp;")
+              )
           }
           builder.append(br)
           builder.append("</font>")
@@ -504,7 +510,7 @@ trait ExprBuilder extends TransformUtils with AsyncAnalysis {
         live
       } else all
 
-      private val compactStateTransform = new Transformer {
+      private val compactStateTransform = new AstTransformer {
         val transformState = currentTransformState
         override def transform(tree: Tree): Tree = tree match {
           case as @ Apply(qual: Select, (lit @ Literal(Constant(i: Integer))) :: Nil) if qual.symbol == transformState.stateSetter && compactStates =>

@@ -139,7 +139,7 @@ abstract class AbstractScriptRunner(settings: GenericRunnerSettings) extends Scr
         }
       }
 
-      val err = if (!jarOK) recompile else None
+      val err = if (!jarOK) recompile() else None
       err orElse handler(jarFile.toAbsolute.path) filterNot { case NoScriptError => true case _ => false }
     }
 
