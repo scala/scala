@@ -13,7 +13,6 @@
 package scala
 package tools.nsc.transform.patmat
 
-import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.Collections._
@@ -487,7 +486,7 @@ trait Logic extends Debugging  {
     type Solvable
 
     def propToSolvable(p: Prop): Solvable = {
-      val (eqAxiom, pure :: Nil) = removeVarEq(List(p), modelNull = false): @nowarn("msg=match may not be exhaustive")
+      val (eqAxiom, pure :: Nil) = removeVarEq(List(p), modelNull = false): @unchecked
       eqFreePropToSolvable(And(eqAxiom, pure))
     }
 

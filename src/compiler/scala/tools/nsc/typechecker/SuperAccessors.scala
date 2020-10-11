@@ -21,7 +21,6 @@ package typechecker
 
 import scala.collection.{immutable, mutable}
 import mutable.ListBuffer
-import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 import symtab.Flags._
 
@@ -144,7 +143,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
       }
 
     private def transformSuperSelect(sel: Select): Tree = {
-      val Select(sup @ Super(_, mix), name) = sel: @nowarn("msg=match may not be exhaustive")
+      val Select(sup @ Super(_, mix), name) = sel: @unchecked
       val sym   = sel.symbol
       val clazz = sup.symbol
 
@@ -485,7 +484,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         newAcc setInfoAndEnter accType(newAcc)
 
         val code = DefDef(newAcc, {
-          val (receiver :: _) :: tail = newAcc.paramss: @nowarn("msg=match may not be exhaustive")
+          val (receiver :: _) :: tail = newAcc.paramss: @unchecked
           val base: Tree              = Select(Ident(receiver), sym)
           foldLeft2(tail, sym.info.paramss)(base){ (acc, params, pps) =>
             val y = map2(params, pps)( (param, pp) =>  makeArg(param, receiver, pp.tpe))
@@ -550,7 +549,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
         val accessorType = MethodType(params, UnitTpe)
 
         protAcc setInfoAndEnter accessorType
-        val obj :: value :: Nil = params: @nowarn("msg=match may not be exhaustive")
+        val obj :: value :: Nil = params: @unchecked
         storeAccessorDefinition(clazz, DefDef(protAcc, Assign(Select(Ident(obj), field.name), Ident(value))))
 
         protAcc

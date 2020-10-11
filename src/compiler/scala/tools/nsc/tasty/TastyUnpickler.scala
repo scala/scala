@@ -17,7 +17,6 @@ import scala.tools.tasty.{ErasedTypeRef, Signature, TastyFormat, TastyHeaderUnpi
 import TastyFormat.NameTags._
 import TastyRefs.NameRef
 import TastyName._
-import scala.annotation.nowarn
 import scala.reflect.io.AbstractFile
 
 /**The entry point to TASTy unpickling for nsc, initialises a `TastyUniverse#Context` with the root symbols of a
@@ -42,7 +41,7 @@ object TastyUnpickler {
     val unpickler = new TastyUnpickler[tasty.type](new TastyReader(bytes))(tasty)
     unpickler.readHeader()
     unpickler.readNames()
-    val Some(astReader) = unpickler.readSection("ASTs"): @nowarn("msg=match may not be exhaustive")
+    val Some(astReader) = unpickler.readSection("ASTs"): @unchecked
     val treeUnpickler = new TreeUnpickler[tasty.type](astReader, unpickler.nameAtRef)(tasty)
     treeUnpickler.enterTopLevel(classRoot, objectRoot)
   }

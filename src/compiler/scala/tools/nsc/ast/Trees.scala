@@ -171,7 +171,8 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
 
   type ApiTransformer = super.Transformer
 
-  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.Transformer""")
+  // TODO: uncomment when deprecating the below
+  // @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.Transformer""")
   final type AstTransformer = Transformer
 
   // TODO: deprecate when we can cleanly cross-compile without warnings

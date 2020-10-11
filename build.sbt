@@ -513,7 +513,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"),
   )
   .dependsOn(compiler)
 
@@ -521,7 +521,7 @@ lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"))
+  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))

@@ -14,7 +14,7 @@ package scala.tools.nsc.transform.patmat
 
 import java.util
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.util.StatisticsStatics
@@ -249,7 +249,7 @@ trait Solving extends Logic {
                 @inline
                 def /\(a: Lit, b: Lit) = addClauseProcessed(clause(a, b))
 
-                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1): @nowarn("msg=match may not be exhaustive")
+                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1): @unchecked
 
                 // 1 <= x1,...,xn <==>
                 //

@@ -1695,7 +1695,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def normalizeFirstParent(parents: List[Tree]): List[Tree] = {
       @annotation.tailrec
       def explode0(parents: List[Tree]): List[Tree] = {
-        val supertpt :: rest = parents: @nowarn("msg=match may not be exhaustive") // parents is always non-empty here - it only grows
+        val supertpt :: rest = parents: @unchecked // parents is always non-empty here - it only grows
         if (supertpt.tpe.typeSymbol == AnyClass) {
           supertpt setType AnyRefTpe
           parents

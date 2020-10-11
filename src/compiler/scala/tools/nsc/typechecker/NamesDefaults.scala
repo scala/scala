@@ -17,7 +17,6 @@ import symtab.Flags._
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import PartialFunction.{cond => when}
-import scala.annotation.nowarn
 
 /**
  *  @author Lukas Rytz
@@ -529,7 +528,7 @@ trait NamesDefaults { self: Analyzer =>
     val namelessArgs = {
       var positionalAllowed = true
       def stripNamedArg(arg: NamedArg, argIndex: Int): Tree = {
-        val NamedArg(Ident(name), rhs) = arg: @nowarn("msg=match may not be exhaustive")
+        val NamedArg(Ident(name), rhs) = arg: @unchecked
         params indexWhere (p => matchesName(p, name, argIndex)) match {
           case -1 =>
             val warnVariableInScope = !currentRun.isScala3 && context0.lookupSymbol(name, _.isVariable).isSuccess
