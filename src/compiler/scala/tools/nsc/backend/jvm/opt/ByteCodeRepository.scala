@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
+import scala.annotation.nowarn
 import scala.collection.{concurrent, mutable}
 import scala.jdk.CollectionConverters._
 import scala.tools.asm
@@ -181,6 +182,7 @@ abstract class ByteCodeRepository extends PerRunInit {
       val visited = mutable.Set.empty[InternalName]
       val found = mutable.ListBuffer.empty[(MethodNode, ClassNode)]
 
+      @nowarn("cat=lint-nonlocal-return")
       def findIn(owner: ClassNode): Option[ClassNotFound] = {
         for (i <- owner.interfaces.asScala if !visited(i)) classNode(i) match {
           case Left(e) => return Some(e)

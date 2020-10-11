@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
@@ -3843,6 +3843,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */
+    @nowarn("cat=lint-nonlocal-return")
     def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = context.withinAnnotation {
       var hasError: Boolean = false
       var unmappable: Boolean = false

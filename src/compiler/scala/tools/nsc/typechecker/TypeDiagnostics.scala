@@ -19,7 +19,7 @@ import scala.util.chaining._
 import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction.{cond, condOpt}
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** An interface to enable higher configurability of diagnostic messages
@@ -219,6 +219,7 @@ trait TypeDiagnostics {
    *
    *  TODO: handle type aliases better.
    */
+  @nowarn("cat=lint-nonlocal-return")
   def explainVariance(found: Type, req: Type): String = {
     found.baseTypeSeq.toList foreach { tp =>
       if (tp.typeSymbol isSubClass req.typeSymbol) {

@@ -1044,6 +1044,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
      *   * m overrides a method whose type contains specialized type variables
      *   * there is a valid specialization environment that maps the overridden method type to m's type.
      */
+    @nowarn("cat=lint-nonlocal-return")
     def needsSpecialOverride(overriding: Symbol): (Symbol, TypeEnv) = {
       def checkOverriddenTParams(overridden: Symbol): Unit = {
         foreach2(overridden.info.typeParams, overriding.info.typeParams) { (baseTvar, derivedTvar) =>

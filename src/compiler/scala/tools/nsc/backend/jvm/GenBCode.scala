@@ -14,6 +14,7 @@ package scala.tools.nsc
 package backend
 package jvm
 
+import scala.annotation.nowarn
 import scala.tools.asm.Opcodes
 
 /**
@@ -60,6 +61,7 @@ abstract class GenBCode extends SubComponent {
 
   val postProcessor: PostProcessor { val bTypes: self.bTypes.type } = new { val bTypes: self.bTypes.type = self.bTypes } with PostProcessor
 
+  @nowarn("cat=lint-inaccessible")
   var generatedClassHandler: GeneratedClassHandler = _
 
   val phaseName = "jvm"

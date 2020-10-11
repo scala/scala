@@ -19,7 +19,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import mutable.{LinkedHashMap, ListBuffer}
 import scala.util.matching.Regex
@@ -1030,6 +1030,7 @@ trait Implicits {
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
+      @nowarn("cat=lint-inaccessible")
       def survives(info: ImplicitInfo, shadower: Shadower) = (
            !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt

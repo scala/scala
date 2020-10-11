@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import symtab.Flags._
 import scala.reflect.internal.util.ListOfNil
@@ -425,6 +425,7 @@ trait Namers extends MethodSynthesis {
     /** Given a ClassDef or ModuleDef, verifies there isn't a companion which
      *  has been defined in a separate file.
      */
+    @nowarn("cat=lint-nonlocal-return")
     def validateCompanionDefs(tree: ImplDef): Unit = {
       val sym    = tree.symbol orElse { return }
       val ctx    = if (context.owner.isPackageObjectClass) context.outer else context
@@ -847,6 +848,7 @@ trait Namers extends MethodSynthesis {
 
 // --- Lazy Type Assignment --------------------------------------------------
 
+    @nowarn("cat=lint-nonlocal-return")
     def findCyclicalLowerBound(tp: Type): Symbol = {
       tp match {
         case TypeBounds(lo, _) =>

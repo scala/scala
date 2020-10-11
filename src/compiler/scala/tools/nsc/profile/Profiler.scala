@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.management.openmbean.CompositeData
 import javax.management.{Notification, NotificationEmitter, NotificationListener}
 
+import scala.annotation.nowarn
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.internal.util.ChromeTrace
 import scala.reflect.io.AbstractFile
@@ -352,12 +353,16 @@ object EventType extends Enumeration {
 }
 
 sealed trait ProfileReporter {
+  @nowarn("cat=lint-inaccessible")
   def reportBackground(profiler: RealProfiler, threadRange: ProfileRange): Unit
+  @nowarn("cat=lint-inaccessible")
   def reportForeground(profiler: RealProfiler, threadRange: ProfileRange): Unit
 
   def reportGc(data: GcEventData): Unit
 
+  @nowarn("cat=lint-inaccessible")
   def header(profiler: RealProfiler) :Unit
+  @nowarn("cat=lint-inaccessible")
   def close(profiler: RealProfiler) :Unit
 }
 
@@ -382,15 +387,18 @@ object NoOpProfileReporter extends ProfileReporter {
 }
 
 class StreamProfileReporter(out:PrintWriter) extends ProfileReporter {
+  @nowarn("cat=lint-inaccessible")
   override def header(profiler: RealProfiler): Unit = {
     out.println(s"info, ${profiler.id}, version, 2, output, ${profiler.outDir}")
     out.println(s"header(main/background),startNs,endNs,runId,phaseId,phaseName,purpose,task-count,threadId,threadName,runNs,idleNs,cpuTimeNs,userTimeNs,allocatedByte,heapSize")
     out.println(s"header(GC),startNs,endNs,startMs,endMs,name,action,cause,threads")
   }
 
+  @nowarn("cat=lint-inaccessible")
   override def reportBackground(profiler: RealProfiler, threadRange: ProfileRange): Unit = {
     reportCommon(EventType.BACKGROUND, profiler, threadRange)
   }
+  @nowarn("cat=lint-inaccessible")
   override def reportForeground(profiler: RealProfiler, threadRange: ProfileRange): Unit = {
     reportCommon(EventType.MAIN, profiler, threadRange)
   }
@@ -404,6 +412,7 @@ class StreamProfileReporter(out:PrintWriter) extends ProfileReporter {
     out.println(s"${EventType.GC},$start,${data.reportTimeNs},${data.gcStartMillis}, ${data.gcEndMillis},${data.name},${data.action},${data.cause},${data.threads}")
   }
 
+  @nowarn("cat=lint-inaccessible")
   override def close(profiler: RealProfiler): Unit = {
     out.flush()
     out.close()
