@@ -139,7 +139,7 @@ object ExecutionContext {
    *
    * @return the global `ExecutionContext`
    */
-  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.fromExecutor(null: Executor)
+  final lazy val global: ExecutionContextExecutor = impl.ExecutionContextImpl.createDefaultExecutorService()
 
   /**
    * WARNING: Only ever execute logic which will quickly return control to the caller.

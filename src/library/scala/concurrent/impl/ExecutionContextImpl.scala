@@ -77,7 +77,7 @@ private[concurrent] object ExecutionContextImpl {
       })
   }
 
-  def createDefaultExecutorService(reporter: Throwable => Unit): ExecutionContextExecutorService = {
+  def createDefaultExecutorService(reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextExecutorService = {
     def getInt(name: String, default: String) = (try System.getProperty(name, default) catch {
       case e: SecurityException => default
     }) match {
@@ -116,29 +116,24 @@ private[concurrent] object ExecutionContextImpl {
   }
 
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextExecutor =
-    e match {
-      case null => createDefaultExecutorService(reporter)
-      case some => new ExecutionContextImpl(some, reporter)
-    }
+    new ExecutionContextImpl(e, reporter)
+
 
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter):
-    ExecutionContextExecutorService = es match {
-      case null => createDefaultExecutorService(reporter)
-      case some =>
-        new ExecutionContextImpl(some, reporter) with ExecutionContextExecutorService {
-            private[this] final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
-            final override def shutdown() = asExecutorService.shutdown()
-            final override def shutdownNow() = asExecutorService.shutdownNow()
-            final override def isShutdown = asExecutorService.isShutdown
-            final override def isTerminated = asExecutorService.isTerminated
-            final override def awaitTermination(l: Long, timeUnit: TimeUnit) = asExecutorService.awaitTermination(l, timeUnit)
-            final override def submit[T](callable: Callable[T]) = asExecutorService.submit(callable)
-            final override def submit[T](runnable: Runnable, t: T) = asExecutorService.submit(runnable, t)
-            final override def submit(runnable: Runnable) = asExecutorService.submit(runnable)
-            final override def invokeAll[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAll(callables)
-            final override def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAll(callables, l, timeUnit)
-            final override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
-            final override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
-          }
-        }
+    ExecutionContextExecutorService =
+      new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {
+        private[this] final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
+        final override def shutdown() = asExecutorService.shutdown()
+        final override def shutdownNow() = asExecutorService.shutdownNow()
+        final override def isShutdown = asExecutorService.isShutdown
+        final override def isTerminated = asExecutorService.isTerminated
+        final override def awaitTermination(l: Long, timeUnit: TimeUnit) = asExecutorService.awaitTermination(l, timeUnit)
+        final override def submit[T](callable: Callable[T]) = asExecutorService.submit(callable)
+        final override def submit[T](runnable: Runnable, t: T) = asExecutorService.submit(runnable, t)
+        final override def submit(runnable: Runnable) = asExecutorService.submit(runnable)
+        final override def invokeAll[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAll(callables)
+        final override def invokeAll[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAll(callables, l, timeUnit)
+        final override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
+        final override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
+      }
 }
