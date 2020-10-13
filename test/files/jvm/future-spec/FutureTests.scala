@@ -230,7 +230,7 @@ class FutureTests extends MinimalScalaTest {
     import ExecutionContext.Implicits._
     "report uncaught exceptions" in {
       val p = Promise[Throwable]()
-      val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(null, p.trySuccess(_))
+      val ec: ExecutionContextExecutorService = ExecutionContext.global
       val t = new Exception()
       try {
         ec.execute(() => throw t)
