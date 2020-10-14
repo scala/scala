@@ -778,8 +778,6 @@ private[internal] trait TypeMaps {
 
     override def apply(tpe: Type): Type =
       if (from.isEmpty) tpe else tpe match {
-        case TypeRef(_, sym, _) if sym.isAliasType && sym.owner.isRefinementClass =>
-          apply(tpe.dealias)
         case TypeRef(pre, sym, args) if pre ne NoPrefix =>
           val newSym = substFor(sym)
           // mapOver takes care of substituting in args
