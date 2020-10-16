@@ -13,6 +13,8 @@
 package scala
 
 import java.lang.System.{currentTimeMillis => currentTime}
+
+import scala.annotation.nowarn
 import scala.collection.mutable.ListBuffer
 
 /** The `App` trait can be used to quickly turn objects
@@ -36,6 +38,7 @@ import scala.collection.mutable.ListBuffer
  *
  *  Future versions of this trait will no longer extend `DelayedInit`.
  */
+@nowarn("""cat=deprecation&origin=scala\.DelayedInit""")
 trait App extends DelayedInit {
 
   /** The time when the execution of this program started, in milliseconds since 1

@@ -13,9 +13,10 @@
 package scala.collection
 package mutable
 
-import scala.annotation.tailrec
-import scala.collection.immutable.{List, Nil, ::}
+import scala.annotation.{nowarn, tailrec}
+import scala.collection.immutable.{::, List, Nil}
 import java.lang.{IllegalArgumentException, IndexOutOfBoundsException}
+
 import scala.collection.generic.DefaultSerializable
 import scala.runtime.Statics.releaseFence
 
@@ -349,6 +350,7 @@ class ListBuffer[A]
    */
   override def lastOption: Option[A] = if (last0 eq null) None else Some(last0.head)
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "ListBuffer"
 
 }

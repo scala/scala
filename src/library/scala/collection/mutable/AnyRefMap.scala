@@ -14,7 +14,9 @@ package scala
 package collection
 package mutable
 
+import scala.annotation.nowarn
 import scala.collection.generic.DefaultSerializationProxy
+import scala.language.implicitConversions
 
 /** This class implements mutable maps with `AnyRef` keys based on a hash table with open addressing.
  *
@@ -492,6 +494,7 @@ class AnyRefMap[K <: AnyRef, V] private[collection] (defaultEntry: K => V, initi
 
   protected[this] def writeReplace(): AnyRef = new DefaultSerializationProxy(AnyRefMap.toFactory[K, V](AnyRefMap), this)
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "AnyRefMap"
 }
 

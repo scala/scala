@@ -12,6 +12,8 @@
 
 package scala.collection
 
+import scala.annotation.nowarn
+
 /**
   * A generic trait for ordered maps. Concrete classes have to provide
   * functionality for the abstract methods in `SeqMap`.
@@ -28,6 +30,7 @@ package scala.collection
 trait SeqMap[K, +V] extends Map[K, V]
   with MapOps[K, V, SeqMap, SeqMap[K, V]]
   with MapFactoryDefaults[K, V, SeqMap, Iterable] {
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "SeqMap"
 
   override def mapFactory: MapFactory[SeqMap] = SeqMap

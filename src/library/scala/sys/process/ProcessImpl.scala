@@ -13,7 +13,10 @@
 package scala.sys.process
 
 import processInternal._
+
+import java.util.concurrent.LinkedBlockingQueue
 import java.io.{PipedInputStream, PipedOutputStream}
+
 import scala.annotation.tailrec
 
 private[process] trait ProcessImpl {
@@ -31,14 +34,15 @@ private[process] trait ProcessImpl {
   }
   private[process] object Future {
     def apply[T](f: => T): (Thread, () => T) = {
-      val result = new SyncVar[Either[Throwable, T]]
-      def run(): Unit =
-        try result.put(Right(f))
-        catch { case e: Exception => result.put(Left(e)) }
+      val result = new LinkedBlockingQueue[Either[Throwable, T]](1)
+      def run(): Unit = {
+        val value = try Right(f) catch { case e: Exception => Left(e) }
+        result.put(value)
+      }
 
       val t = Spawn("Future")(run())
 
-      (t, () => result.get match {
+      (t, () => result.take() match {
         case Right(value)    => value
         case Left(exception) => throw exception
       })
@@ -93,7 +97,7 @@ private[process] trait ProcessImpl {
     def start()     = { futureThread ;() }
 
     protected lazy val (processThread, (futureThread, futureValue), destroyer) = {
-      val code = new SyncVar[Option[Int]]()
+      val code = new LinkedBlockingQueue[Option[Int]](1)
       val thread = Spawn("CompoundProcess") {
         var value: Option[Int] = None
         try value = runAndExitValue()
@@ -110,7 +114,7 @@ private[process] trait ProcessImpl {
 
       (
         thread,
-        Future(code.get),          // thread.join()
+        Future(code.take()),          // thread.join()
         () => thread.interrupt()
       )
     }
@@ -133,9 +137,10 @@ private[process] trait ProcessImpl {
       source.start()
       sink.start()
 
-      /** Release PipeSource, PipeSink and Process in the correct order.
-      * If once connect Process with Source or Sink, then the order of releasing them
-      * must be Source -> Sink -> Process, otherwise IOException will be thrown. */
+      /* Release PipeSource, PipeSink and Process in the correct order.
+       * If once connect Process with Source or Sink, then the order of releasing them
+       * must be Source -> Sink -> Process, otherwise IOException will be thrown.
+       */
       def releaseResources(so: PipeSource, sk: PipeSink, ps: Process*) = {
         so.release()
         sk.release()
@@ -190,7 +195,7 @@ private[process] trait ProcessImpl {
   private[process] class PipeSource(label: => String) extends PipeThread(false, () => label) {
     setName(s"PipeSource($label)-$getName")
     protected[this] val pipe = new PipedOutputStream
-    protected[this] val source = new SyncVar[Option[InputStream]]
+    protected[this] val source = new LinkedBlockingQueue[Option[InputStream]](1)
     override final def run(): Unit = {
       @tailrec def go(): Unit =
         source.take() match {
@@ -213,7 +218,7 @@ private[process] trait ProcessImpl {
   private[process] class PipeSink(label: => String) extends PipeThread(true, () => label) {
     setName(s"PipeSink($label)-$getName")
     protected[this] val pipe = new PipedInputStream
-    protected[this] val sink = new SyncVar[Option[OutputStream]]
+    protected[this] val sink = new LinkedBlockingQueue[Option[OutputStream]](1)
     override def run(): Unit = {
       @tailrec def go(): Unit =
         sink.take() match {
@@ -274,9 +279,9 @@ private[process] trait ProcessImpl {
     // we interrupt the input thread to notify it that it can terminate
     private[this] def interrupt(): Unit = if (inputThread != null) inputThread.interrupt()
   }
-  private[process] final class ThreadProcess(thread: Thread, success: SyncVar[Boolean]) extends Process {
+  private[process] final class ThreadProcess(thread: Thread, success: LinkedBlockingQueue[Boolean]) extends Process {
     override def isAlive()   = thread.isAlive()
-    override def exitValue() = if (success.get) 0 else 1   // thread.join()
+    override def exitValue() = if (success.take()) 0 else 1   // thread.join()
     override def destroy()   = thread.interrupt()
   }
 }

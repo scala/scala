@@ -232,8 +232,10 @@ package scala.sys {
       type JProcess               = java.lang.Process
       type JProcessBuilder        = java.lang.ProcessBuilder
       type OutputStream           = java.io.OutputStream
-      type SyncVar[T]             = scala.concurrent.SyncVar[T]
       type URL                    = java.net.URL
+
+      @deprecated("Use `java.util.concurrent.LinkedBlockingQueue with capacity 1` instead.", since = "2.13.4")
+      type SyncVar[T] = scala.concurrent.SyncVar[T]
 
       def onError[T](handler: Throwable => T): Throwable =?> T = {
         case e @ _ => handler(e)

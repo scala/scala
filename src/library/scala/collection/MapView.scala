@@ -12,6 +12,7 @@
 
 package scala.collection
 
+import scala.annotation.nowarn
 import scala.collection.MapView.SomeMapOps
 import scala.collection.mutable.Builder
 
@@ -65,6 +66,7 @@ trait MapView[K, +V]
 
   override def toString: String = super[View].toString
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "MapView"
 }
 

@@ -409,20 +409,18 @@ object MurmurHash3 extends MurmurHash3 {
     def hash(xs: IterableOnce[Any]) = unorderedHash(xs)
   }
 
-  /** All this trouble and foreach still appears faster.
-   *  Leaving in place in case someone would like to investigate further.
-   */
-  /**
-  def linearSeqHash(xs: scala.collection.LinearSeq[_], seed: Int): Int = {
-    var n = 0
-    var h = seed
-    var elems = xs
-    while (elems.nonEmpty) {
-      h = mix(h, elems.head.##)
-      n += 1
-      elems = elems.tail
-    }
-    finalizeHash(h, n)
-  }
-  */
+//  /** All this trouble and foreach still appears faster.
+//   *  Leaving in place in case someone would like to investigate further.
+//   */
+//  def linearSeqHash(xs: scala.collection.LinearSeq[_], seed: Int): Int = {
+//    var n = 0
+//    var h = seed
+//    var elems = xs
+//    while (elems.nonEmpty) {
+//      h = mix(h, elems.head.##)
+//      n += 1
+//      elems = elems.tail
+//    }
+//    finalizeHash(h, n)
+//  }
 }

@@ -144,7 +144,7 @@ class PipeSourceSinkTest {
   }
 
   class PipeSink extends Process.PipeSink("TestPipeSink") {
-    def ensureRunloopStarted() = while (sink.isSet) Thread.sleep(10L)
+    def ensureRunloopStarted() = while (sink.peek() != null) Thread.sleep(10L)
     def isReleased = {
       val field = classOf[Process.PipeSink].getDeclaredField("pipe")
       field.setAccessible(true)
@@ -154,7 +154,7 @@ class PipeSourceSinkTest {
   }
 
   class PipeSource extends Process.PipeSource("TestPipeSource") {
-    def ensureRunloopStarted() = while (source.isSet) Thread.sleep(10L)
+    def ensureRunloopStarted() = while (source.peek() != null) Thread.sleep(10L)
     def isReleased = {
       val field = classOf[Process.PipeSource].getDeclaredField("pipe")
       field.setAccessible(true)

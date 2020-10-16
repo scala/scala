@@ -13,6 +13,8 @@
 package scala.collection
 package mutable
 
+import scala.annotation.nowarn
+
 
 /** A `Buffer` is a growable and shrinkable `Seq`. */
 trait Buffer[A]
@@ -167,6 +169,7 @@ trait Buffer[A]
     this
   }
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix = "Buffer"
 }
 

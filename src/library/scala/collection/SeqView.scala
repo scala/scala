@@ -13,6 +13,8 @@
 package scala
 package collection
 
+import scala.annotation.nowarn
+
 
 trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
   override def view: SeqView[A] = this
@@ -33,6 +35,7 @@ trait SeqView[+A] extends SeqOps[A, View, View[A]] with View[A] {
 
   override def sorted[B >: A](implicit ord: Ordering[B]): SeqView[A] = new SeqView.Sorted(this, ord)
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "SeqView"
 }
 

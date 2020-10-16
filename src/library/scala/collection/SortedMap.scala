@@ -13,7 +13,7 @@
 package scala
 package collection
 
-import scala.annotation.implicitNotFound
+import scala.annotation.{implicitNotFound, nowarn}
 
 /** A Map whose keys are sorted according to a [[scala.math.Ordering]]*/
 trait SortedMap[K, +V]
@@ -25,6 +25,7 @@ trait SortedMap[K, +V]
 
   def sortedMapFactory: SortedMapFactory[SortedMap] = SortedMap
 
+  @nowarn("""cat=deprecation&origin=scala\.collection\.Iterable\.stringPrefix""")
   override protected[this] def stringPrefix: String = "SortedMap"
 
   override def equals(that: Any): Boolean = that match {
