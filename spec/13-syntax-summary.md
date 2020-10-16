@@ -21,7 +21,7 @@ digit            ::=  ‘0’ | … | ‘9’
 paren            ::=  ‘(’ | ‘)’ | ‘[’ | ‘]’ | ‘{’ | ‘}’
 delim            ::=  ‘`’ | ‘'’ | ‘"’ | ‘.’ | ‘;’ | ‘,’
 opchar           ::=  // printableChar not matched by (whiteSpace | upper | lower |
-                      // letter | digit | paren | delim | opchar | Unicode_Sm | Unicode_So)
+                      // letter | digit | paren | delim | Unicode_Sm | Unicode_So)
 printableChar    ::=  // all characters in [\u0020, \u007F] inclusive
 UnicodeEscape    ::=  ‘\’ ‘u’ {‘u’} hexDigit hexDigit hexDigit hexDigit
 hexDigit         ::=  ‘0’ | … | ‘9’ | ‘A’ | … | ‘F’ | ‘a’ | … | ‘f’
