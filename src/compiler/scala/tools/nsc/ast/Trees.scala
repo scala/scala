@@ -173,8 +173,9 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
   @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.ast\.Trees\.Transformer""")
   final type AstTransformer = Transformer
 
+  // TODO: deprecate when we can cleanly cross-compile without warnings
+  // @deprecated("use AstTransformer instead", since = "2.13.4")
   @nowarn("msg=shadowing a nested class of a parent is deprecated")
-  @deprecated("use AstTransformer instead", since = "2.13.4")
   class Transformer extends InternalTransformer {
     def transformUnit(unit: CompilationUnit): Unit = {
       try unit.body = transform(unit.body)

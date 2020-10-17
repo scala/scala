@@ -28,8 +28,9 @@ abstract class OverridingPairs extends SymbolPairs {
   @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.OverridingPairs\.Cursor""")
   final type PairsCursor = Cursor
 
+  // TODO: deprecate when we can cleanly cross-compile without warnings
+  // @deprecated("use PairsCursor instead", since = "2.13.4")
   @nowarn("msg=shadowing a nested class of a parent is deprecated")
-  @deprecated("use PairsCursor instead", since = "2.13.4")
   class Cursor(base: Symbol) extends super.Cursor(base) {
     /** Symbols to exclude: Here these are constructors and private/artifact symbols,
      *  including bridges. But it may be refined in subclasses.
