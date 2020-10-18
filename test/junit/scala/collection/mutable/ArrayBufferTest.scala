@@ -4,7 +4,7 @@ import org.junit.Test
 import org.junit.Assert.assertEquals
 
 import scala.annotation.nowarn
-import scala.tools.testkit.AssertUtil.assertThrows
+import scala.tools.testkit.AssertUtil.{assertThrows, fail}
 
 class ArrayBufferTest {
 
@@ -362,4 +362,22 @@ class ArrayBufferTest {
 
   @Test def t11482_allowNegativeInitialSize(): Unit =
     new ArrayBuffer(-1)
+
+  @Test def t12176_indexOutOfBoundsExceptionMessage(): Unit = {
+    def newAB = ArrayBuffer('a', 'b', 'c')
+    def iiobe[A](f: => A, msg: String) =
+      try {
+        f; fail("Did not throw IndexOutOfBoundsException")
+      } catch {
+        case ex: IndexOutOfBoundsException => assertEquals(ex.getMessage, msg)
+      }
+
+    iiobe( newAB.insert(-1, 'x'), "-1 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.insertAll(-2, Array('x', 'y', 'z')), "-2 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.update(-3, 'u'), "-3 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.update(-1, 'u'), "-1 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.update(3, 'u'), "3 is out of bounds (min 0, max 2)" )
+    iiobe( newAB(3), "3 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.remove(2, 2), "3 is out of bounds (min 0, max 2)" )
+  }
 }
