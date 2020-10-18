@@ -361,10 +361,14 @@ trait EntityPage extends HtmlPage {
     indentation: Int = 0
   ): Elems = {
     // Sometimes it's same, do we need signatureCompat still?
-    val sig = if (mbr.signature == mbr.signatureCompat) {
-      A(id= mbr.signature) :: NoElems
-    } else {
-      A(id= mbr.signature) :: A(id= mbr.signatureCompat) :: NoElems
+    val sig = {
+      val anchorToMember = "anchorToMember"
+
+      if (mbr.signature == mbr.signatureCompat) {
+        A(id= mbr.signature, `class` = anchorToMember) :: NoElems
+      } else {
+        A(id= mbr.signature, `class` = anchorToMember) :: A(id= mbr.signatureCompat, `class` = anchorToMember) :: NoElems
+      }
     }
 
     val memberComment = memberToCommentHtml(mbr, inTpl, isSelf = false)
