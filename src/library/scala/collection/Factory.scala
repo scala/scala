@@ -383,14 +383,29 @@ trait SpecificIterableFactory[-A, +C] extends Factory[A, C] {
   */
 trait MapFactory[+CC[_, _]] extends Serializable {
 
+  /**
+   * An empty Map
+   */
   def empty[K, V]: CC[K, V]
 
+  /**
+   * A collection of type Map generated from given iterable object.
+   */
   def from[K, V](it: IterableOnce[(K, V)]): CC[K, V]
 
+  /**
+   * A collection of type Map that contains given key/value bindings.
+   */
   def apply[K, V](elems: (K, V)*): CC[K, V] = from(elems)
 
+  /**
+   * The default builder for Map objects.
+   */
   def newBuilder[K, V]: Builder[(K, V), CC[K, V]]
 
+  /**
+   * Converts this to a Factory.
+   */
   implicit def mapFactory[K, V]: Factory[(K, V), CC[K, V]] = MapFactory.toFactory(this)
 }
 
