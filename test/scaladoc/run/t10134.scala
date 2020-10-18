@@ -1,19 +1,14 @@
 import scala.tools.nsc.doc.model._
-import scala.tools.partest.ScaladocJavaModelTest
+import scala.tools.partest.{ScaladocJavaModelTest, ScaladocModelTest}
 
-object Test extends ScaladocJavaModelTest {
+object Test extends ScaladocModelTest {
 
-  override def resourceFile = "t10134.java"
+  override def resourceFile = "t10134_foo.scala"
   override def scaladocSettings = ""
-  override def code = """
-import example.T10134_Row
-@T10134_Row
-object foo {}
-  """
 
   def testModel(root: Package) = {
     import access._
-    // just testing that it doesn't error out.
+    // Just testing that we haven't hit a compiler error.
   }
 }
 

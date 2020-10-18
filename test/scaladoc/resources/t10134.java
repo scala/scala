@@ -1,4 +1,4 @@
-package example;
+package foo;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
