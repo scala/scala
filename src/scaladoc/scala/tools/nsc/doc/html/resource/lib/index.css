@@ -479,7 +479,7 @@ div#content-container > div#content {
   margin: 4em auto 0;
 }
 
-div#content-container > div#content > div#template > div#allMembers > div.members > ol > li > a.anchorToMember {
+a.anchorToMember {
   display: inline-block;
   position: relative;
   top: -5em;
