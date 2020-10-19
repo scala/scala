@@ -120,8 +120,14 @@ trait TreeOps { self: TastyUniverse =>
       }
     }
 
-    def RefinedTypeTree(parent: Tree, decls: List[Tree], refinedCls: Symbol): Tree = {
-      u.CompoundTypeTree(u.Template(parent :: Nil, u.noSelfType, decls)).setType(refinedCls.info)
+    def RefinedTypeTree(parent: Tree, decls: List[Tree], refinedCls: Symbol)(implicit ctx: Context): Tree = {
+      refinedCls.info.parents.head match {
+        case defn.PolyFunctionType() =>
+          val polyType = refinedCls.info.decls.map(_.tpe).headOption.fold(defn.NoType)(x => x)
+          polyFuncIsUnsupported(polyType)
+        case _ =>
+          u.CompoundTypeTree(u.Template(parent :: Nil, u.noSelfType, decls)).setType(refinedCls.info)
+      }
     }
 
     def TypeBoundsTree(lo: Tree, hi: Tree): Tree = {

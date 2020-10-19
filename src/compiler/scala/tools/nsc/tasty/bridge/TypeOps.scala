@@ -32,9 +32,11 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
-  @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
-  @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in bounds of ${ctx.owner}")
+  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type: $tpeStr in ${boundsString(ctx.owner)}")
+  @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
+  @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in ${boundsString(ctx.owner)}")
   @inline final def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
+  @inline final def polyFuncIsUnsupported[T](tpe: Type)(implicit ctx: Context): T = unsupportedError(s"polymorphic function type: $tpe in ${boundsString(ctx.owner)}")
 
   @inline final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[u.ConstantType]
 
@@ -72,6 +74,17 @@ trait TypeOps { self: TastyUniverse =>
 
     final val ChildAnnot: Symbol = u.definitions.ChildAnnotationClass
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
+
+    object PolyFunctionType {
+
+      val PolyFunctionClass: Symbol = u.definitions.PolyFunctionClass
+
+      def unapply(tpe: Type): Boolean = tpe match {
+        case polyfnRef: u.TypeRef => polyfnRef.sym eq PolyFunctionClass
+        case _                    => false
+      }
+
+    }
 
     final val NoType: Type = u.NoType
 
@@ -113,6 +126,8 @@ trait TypeOps { self: TastyUniverse =>
     def RefinedType(parent: Type, name: TastyName, refinedCls: Symbol, tpe: Type)(implicit ctx: Context): Type = {
       val decl = ctx.newRefinementSymbol(parent, refinedCls, name, tpe)
       parent match {
+        case defn.PolyFunctionType() =>
+          polyFuncIsUnsupported(tpe)
         case nested: u.RefinedType =>
           mkRefinedTypeWith(nested.parents, refinedCls, nested.decls.cloneScope.tap(_.enter(decl)))
         case _ =>
@@ -132,6 +147,14 @@ trait TypeOps { self: TastyUniverse =>
       def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
         case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
           unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
+        case ContextFunctionType(n) =>
+          val len = args.length
+          assert(len == n + 1) // tasty should be type checked already
+          val res = args.last
+          val params = args.init
+          val paramsBody = params.mkString(",")
+          val argList = if (len == 2) paramsBody else s"($paramsBody)"
+          ctxFnIsUnsupported(s"$argList ?=> $res")
         case _ =>
           u.appliedType(tycon, args)
       }
@@ -280,18 +303,39 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndTpe extends Type
 
+  case class ContextFunctionType(arity: Int) extends Type {
+    assert(arity > 0)
+  }
+
+  private val SyntheticScala3Type =
+    raw"^(?:&|\||AnyKind|ContextFunction\d+)$$".r
+
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === u.definitions.ScalaPackage && (
-           name === tpnme.And
-        || name === tpnme.Or
-        || name === tpnme.AnyKind) ) {
-      if (name === tpnme.And) AndTpe
-      else if (name === tpnme.AnyKind) u.definitions.AnyTpe // TODO [tasty]: scala.AnyKind can appear in upper bounds of raw type wildcards, but elsewhere it is unclear if it should be erased or error
-      else unionIsUnsupported
+
+    def isSyntheticScala3Type(prefix: Type, name: TastyName.TypeName): Boolean = {
+      import TastyName._
+      prefix.typeSymbol === u.definitions.ScalaPackage && (name match {
+        case TypeName(SimpleName(SyntheticScala3Type())) => true
+        case _                                           => false
+      })
+    }
+
+    def defaultCase = namedMemberOfTypeWithPrefix(prefix, space, name)
+
+    if (isSyntheticScala3Type(prefix, name)) {
+      name match {
+        case tpnme.And                            => AndTpe
+        case tpnme.AnyKind                        => u.definitions.AnyTpe
+        case tpnme.Or                             => unionIsUnsupported
+        case tpnme.ContextFunctionN(n) if (n > 0) => ContextFunctionType(n) // known dotty context function type
+
+        case _ =>
+          defaultCase
+      }
     }
     else {
-      namedMemberOfTypeWithPrefix(prefix, space, name)
+      defaultCase
     }
   }
 

@@ -38,6 +38,12 @@ trait ContextOps { self: TastyUniverse =>
     s"$kind ${owner.nameString}"
   }
 
+  def boundsString(owner: Symbol): String = {
+    if (owner.isType) s"bounds of $owner"
+    else if (owner.isOneOf(Param | ParamSetter)) s"parameter $owner"
+    else "result"
+  }
+
   @inline final def unsupportedTermTreeError[T](noun: String)(implicit ctx: Context): T =
     unsupportedError(
       if (ctx.mode.is(ReadAnnotation)) s"$noun in an annotation of ${describeOwner(ctx.owner)}; note that complex trees are not yet supported for Annotations"
