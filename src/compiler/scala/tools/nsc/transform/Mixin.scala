@@ -17,6 +17,7 @@ import symtab._
 import Flags._
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.reflect.internal.util.ListOfNil
 
 
 abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthesis {
@@ -276,7 +277,11 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
                   JUnitAnnotations.exists(annot => annot.exists && member.hasAnnotation(annot))
               }
 
-              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder)
+              def generateSerializationForwarder: Boolean = {
+                (member.name == nme.readResolve || member.name == nme.writeReplace) && member.info.paramss == ListOfNil
+              }
+
+              if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder || generateSerializationForwarder)
                 genForwarder(required = true)
               else if (settings.mixinForwarderChoices.isTruthy)
                 genForwarder(required = false)
