@@ -334,6 +334,12 @@ trait Implicits {
     override def hashCode = 1
   }
 
+  val termArrayCharSequence = TermName("ArrayCharSequence")
+
+  val termCharArrayOps = TermName("charArrayOps")
+
+  val termIsEmpty = TermName("isEmpty")
+
   def SearchedPrefixImplicitInfo(pre: Type) = new ImplicitInfo(null, pre, NoSymbol)
 
   /** A constructor for types ?{ def/type name: tp }, used in infer view to member
@@ -447,6 +453,22 @@ trait Implicits {
         reporter.echo(pos, s"$what is not a valid implicit value for $pt because:\n$reason")
       SearchFailure
     }
+
+    /** Check a case when `info1` is `ArrayCharSequence` and `info2` is `charArrayOps` from `scala.Predef`
+     *
+     * It can be true only when both this methods are imlicit the same type
+     * and it is a case when both are implemented `isEmpty`
+     * because `java.lang.CharSequence` has `isEmpty` since JDK 15
+     *
+     * Force to select scala implementation of `isEmpty` from `charArrayOps`
+     * because it produces bytecode that can be run on JDK before 15
+     */
+    def resolveJDK15CharSequenceConflict(info1: ImplicitInfo, info2: ImplicitInfo) =
+      info1.pre =:= info2.pre &&
+        info1.name == termArrayCharSequence && info2.name == termCharArrayOps &&
+        pt.typeArgs.size == 2 && pt.typeArgs.last.decls.containsName(termIsEmpty) &&
+        info1.pre.termSymbol.fullName == "scala.Predef"
+
     /** Is implicit info `info1` better than implicit info `info2`?
      */
     def improves(info1: ImplicitInfo, info2: ImplicitInfo) = {
@@ -457,7 +479,7 @@ trait Implicits {
           improvesCache get ((info1, info2)) match {
             case Some(b) => if (StatisticsStatics.areSomeColdStatsEnabled) statistics.incCounter(improvesCachedCount); b
             case None =>
-              val result = isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
+              val result = resolveJDK15CharSequenceConflict(info1, info2) || isStrictlyMoreSpecific(info1.tpe, info2.tpe, info1.sym, info2.sym)
               improvesCache((info1, info2)) = result
               result
           }

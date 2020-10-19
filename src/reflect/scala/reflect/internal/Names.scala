@@ -187,12 +187,17 @@ trait Names extends api.Names {
 
 // Classes ----------------------------------------------------------------------
 
+  // Dummy trait to make Name#isEmpty with override keyword at JDK before 15
+  sealed trait CharSequenceIsName {
+    def isEmpty: Boolean
+  }
+
   /** The name class.
    *  TODO - resolve schizophrenia regarding whether to treat Names as Strings
    *  or Strings as Names.  Give names the key functions the absence of which
    *  make people want Strings all the time.
    */
-  sealed abstract class Name(protected val index: Int, protected val len: Int, protected val cachedString: String) extends NameApi with CharSequence {
+  sealed abstract class Name(protected val index: Int, protected val len: Int, protected val cachedString: String) extends NameApi with CharSequenceIsName with CharSequence {
     type ThisNameType >: Null <: Name
     protected[this] def thisName: ThisNameType
 
@@ -208,8 +213,9 @@ trait Names extends api.Names {
 
     /** The length of this name. */
     final def length: Int = len
-    final def isEmpty = length == 0
     final def nonEmpty = !isEmpty
+    // This method is override from CharSequenceIsName or CharSequenceIsName at JDK15+
+    override final def isEmpty = length == 0
 
     def nameKind: String
     def isTermName: Boolean
