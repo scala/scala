@@ -479,6 +479,13 @@ div#content-container > div#content {
   margin: 4em auto 0;
 }
 
+a.anchorToMember {
+  display: inline-block;
+  position: relative;
+  top: -5em;
+  width: 0;
+}
+
 div#content-container > div#subpackage-spacer {
   float: right;
   height: 100%;
