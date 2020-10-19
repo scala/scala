@@ -116,11 +116,16 @@ private[concurrent] object ExecutionContextImpl {
   }
 
   def fromExecutor(e: Executor, reporter: Throwable => Unit = ExecutionContext.defaultReporter): ExecutionContextExecutor =
-    new ExecutionContextImpl(e, reporter)
+    e match {
+      case null =>  throw new IllegalArgumentException("Executor is null")
+      case _ => new ExecutionContextImpl (e, reporter)
+    }
 
 
   def fromExecutorService(es: ExecutorService, reporter: Throwable => Unit = ExecutionContext.defaultReporter):
-    ExecutionContextExecutorService =
+    ExecutionContextExecutorService = es match {
+    case null =>  throw new IllegalArgumentException("ExecutorService is null")
+    case _ => {
       new ExecutionContextImpl(es, reporter) with ExecutionContextExecutorService {
         private[this] final def asExecutorService: ExecutorService = executor.asInstanceOf[ExecutorService]
         final override def shutdown() = asExecutorService.shutdown()
@@ -136,4 +141,6 @@ private[concurrent] object ExecutionContextImpl {
         final override def invokeAny[T](callables: Collection[_ <: Callable[T]]) = asExecutorService.invokeAny(callables)
         final override def invokeAny[T](callables: Collection[_ <: Callable[T]], l: Long, timeUnit: TimeUnit) = asExecutorService.invokeAny(callables, l, timeUnit)
       }
+    }
+  }
 }
