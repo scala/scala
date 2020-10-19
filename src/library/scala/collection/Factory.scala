@@ -404,7 +404,7 @@ trait MapFactory[+CC[_, _]] extends Serializable {
   def newBuilder[K, V]: Builder[(K, V), CC[K, V]]
 
   /**
-   * Converts this to a Factory.
+   * The default Factory instance for maps.
    */
   implicit def mapFactory[K, V]: Factory[(K, V), CC[K, V]] = MapFactory.toFactory(this)
 }
