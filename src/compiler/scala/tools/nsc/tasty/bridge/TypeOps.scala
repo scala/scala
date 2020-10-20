@@ -104,6 +104,14 @@ trait TypeOps { self: TastyUniverse =>
     private[bridge] def CopyInfo(underlying: u.TermSymbol, originalFlagSet: TastyFlagSet): TastyRepr =
       new CopyCompleter(underlying, originalFlagSet)
 
+    def OpaqueTypeToBounds(tpe: Type): (Type, Type) = tpe match {
+      case tpe: OpaqueTypeBounds => (tpe, tpe.alias)
+
+      case _ =>
+        // An alias opaque type is defined as IDENTtpt with a simple type, so has no bounds
+        (u.TypeBounds.empty, tpe)
+
+    }
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
@@ -472,6 +480,8 @@ trait TypeOps { self: TastyUniverse =>
       case tpe               => u.TypeBounds.upper(tpe)
     }
   }
+
+  private[bridge] final class OpaqueTypeBounds(lo: Type, hi: Type, val alias: Type) extends u.TypeBounds(lo, hi)
 
   def typeRef(tpe: Type): Type = u.appliedType(tpe, Nil)
 

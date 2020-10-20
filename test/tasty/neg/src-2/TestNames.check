@@ -1,0 +1,6 @@
+TestNames_fail.scala:10: error: type mismatch;
+ found   : String("Tom")
+ required: tastytest.Names.Name
+  def initialOfString = initial("Tom") // error, ("Tom": String)
+                                ^
+1 error

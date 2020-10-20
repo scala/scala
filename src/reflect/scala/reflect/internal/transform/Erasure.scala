@@ -151,7 +151,10 @@ trait Erasure {
         else if (sym.isDerivedValueClass) eraseDerivedValueClassRef(tref)
         else if (isDottyEnumSingleton(sym)) apply(intersectionType(tp.parents)) // TODO [tasty]: dotty enum singletons are not modules.
         else if (sym.isClass) eraseNormalClassRef(tref)
-        else apply(sym.info.asSeenFrom(pre, sym.owner)) // alias type or abstract type
+        else sym.attachments.get[DottyOpaqueTypeAlias] match {
+          case Some(alias: DottyOpaqueTypeAlias) => apply(alias.tpe) // TODO [tasty]: refactor if we build-in opaque types
+          case _                                 => apply(sym.info.asSeenFrom(pre, sym.owner)) // alias type or abstract type
+        }
       case PolyType(tparams, restpe) =>
         apply(restpe)
       case ExistentialType(tparams, restpe) =>

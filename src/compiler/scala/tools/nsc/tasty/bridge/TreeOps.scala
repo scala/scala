@@ -181,8 +181,11 @@ trait TreeOps { self: TastyUniverse =>
     }
 
     def TypeBoundsTree(lo: Tree, hi: Tree, alias: Tree): Tree = {
-      val _ = alias // ignore until we enable opaque types
-      u.TypeBoundsTree(lo, hi).setType(u.TypeBounds(lo.tpe, hi.tpe))
+      val tpe = alias match {
+        case untpd.EmptyTree => u.TypeBounds(lo.tpe, hi.tpe)
+        case alias           => new OpaqueTypeBounds(lo.tpe, hi.tpe, alias.tpe)
+      }
+      u.TypeBoundsTree(lo, hi).setType(tpe)
     }
   }
 
