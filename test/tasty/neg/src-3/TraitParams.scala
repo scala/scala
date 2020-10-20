@@ -5,3 +5,4 @@ object TraitParams:
   trait Bar(x: Int, y: String)
   trait Baz(val baz: String)
   trait Qux(val qux: String)
+  val foo: Foo = ???

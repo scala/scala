@@ -1,0 +1,4 @@
+ConsumeTraitParams_fail.scala:4: error: Unsupported Scala 3 parameterized trait Foo(a); found in object tastytest.TraitParams.
+  def test = TraitParams.foo // TODO: we should support this
+      ^
+1 error

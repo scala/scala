@@ -769,19 +769,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Open | Opaque | Exported | SuperTrait))
+            val allowedTypeFlags = Enum | Open | Exported | SuperTrait
+            val allowedClassFlags = allowedTypeFlags | Opaque
             if (sym.isClass) {
+              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
               sym.owner.ensureCompleted()
               readTemplate()(localCtx)
             }
             else {
-              // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
+              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedTypeFlags)
               val rhs = readTpt()(localCtx)
-              // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
-              //               refine self type of the owner to be aware of the alias.
               ctx.setInfo(sym, defn.NormalisedBounds(rhs.tpe, sym))
               if (sym.is(Param)) sym.reset(Private | Protected)
-              // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
               // sym.resetFlag(Provisional)
             }
           case PARAM =>
@@ -1018,8 +1017,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val lo    = readTpt()
               val hi    = if (currentAddr == end) lo else readTpt()
               val alias = if (currentAddr == end) untpd.EmptyTree else readTpt()
-              if (alias != untpd.EmptyTree) alias // only for opaque type alias
-              else tpd.TypeBoundsTree(lo, hi)
+              tpd.TypeBoundsTree(lo, hi, alias)
             case BLOCK =>
               if (inParentCtor | ctx.mode.is(ReadMacro)) {
                 val exprReader = fork
