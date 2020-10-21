@@ -378,6 +378,7 @@ class ArrayBufferTest {
     iiobe( newAB.update(-1, 'u'), "-1 is out of bounds (min 0, max 2)" )
     iiobe( newAB.update(3, 'u'), "3 is out of bounds (min 0, max 2)" )
     iiobe( newAB(3), "3 is out of bounds (min 0, max 2)" )
+    iiobe( newAB.remove(3), "3 is out of bounds (min 0, max 2)" )
     iiobe( newAB.remove(2, 2), "3 is out of bounds (min 0, max 2)" )
   }
 }
