@@ -628,7 +628,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         rdr.readTerm()(ctx)
       })(annotCtx.retractMode(IndexScopedStats))
       ctx.log(s">>> $start LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
-      new DeferredAnnotation(deferred)
+      DeferredAnnotation.fromTree(deferred)
     }
 
     /** Create symbols for the definitions in the statement sequence between

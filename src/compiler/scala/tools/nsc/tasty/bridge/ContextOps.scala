@@ -51,7 +51,11 @@ trait ContextOps { self: TastyUniverse =>
     )
 
   @inline final def unsupportedError[T](noun: String)(implicit ctx: Context): T = {
-    typeError(s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}.")
+    typeError(unsupportedMessage(noun))
+  }
+
+  @inline final def unsupportedMessage(noun: String)(implicit ctx: Context): String = {
+    s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}."
   }
 
   final def location(owner: Symbol): String = {

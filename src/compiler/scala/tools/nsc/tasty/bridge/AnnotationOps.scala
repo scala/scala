@@ -27,17 +27,34 @@ trait AnnotationOps { self: TastyUniverse =>
       throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
   }
 
-  final class DeferredAnnotation(tree: Symbol => Context => Tree) {
-    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
-      val atree = tree(annotee)(ctx)
-      ctx.log(s"annotation of $annotee = $atree")
-      mkAnnotation(atree)
-    }
+  abstract class DeferredAnnotation {
+    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo
     private[bridge] def lzy(annotee: Symbol)(implicit ctx: Context): u.LazyAnnotationInfo = {
       u.AnnotationInfo.lazily {
         eager(annotee)
       }
     }
+  }
+
+  object DeferredAnnotation {
+
+    def fromTree(tree: Symbol => Context => Tree) =
+      new FromTree(tree)
+
+    class FromTree(tree: Symbol => Context => Tree) extends DeferredAnnotation {
+      private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
+        val atree = tree(annotee)(ctx)
+        ctx.log(s"annotation of $annotee = $atree")
+        val annot = mkAnnotation(atree)
+        if (annot.tpe.typeSymbol eq defn.AlphaAnnotationClass) {
+          annotee.addAnnotation(
+            u.definitions.CompileTimeOnlyAttr,
+            u.Literal(u.Constant(unsupportedMessage(s"annotation on $annotee: @$annot"))))
+        }
+        annot
+      }
+    }
+
   }
 
 }
