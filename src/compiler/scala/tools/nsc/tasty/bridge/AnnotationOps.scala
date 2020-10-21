@@ -46,7 +46,8 @@ trait AnnotationOps { self: TastyUniverse =>
         val atree = tree(annotee)(ctx)
         ctx.log(s"annotation of $annotee = $atree")
         val annot = mkAnnotation(atree)
-        if (annot.tpe.typeSymbol eq defn.AlphaAnnotationClass) {
+        val annotSym = annot.tpe.typeSymbol
+        if ((annotSym eq defn.AlphaAnnotationClass) || (annotSym eq defn.StaticMethodAnnotationClass)) {
           annotee.addAnnotation(
             u.definitions.CompileTimeOnlyAttr,
             u.Literal(u.Constant(unsupportedMessage(s"annotation on $annotee: @$annot"))))

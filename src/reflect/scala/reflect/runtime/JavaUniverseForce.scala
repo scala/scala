@@ -436,6 +436,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.ChildAnnotationClass
     definitions.RepeatedAnnotationClass
     definitions.AlphaAnnotationClass
+    definitions.StaticMethodAnnotationClass
     definitions.PolyFunctionClass
     definitions.BeanPropertyAttr
     definitions.BooleanBeanPropertyAttr
