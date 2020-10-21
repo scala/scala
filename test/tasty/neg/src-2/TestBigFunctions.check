@@ -1,0 +1,7 @@
+TestBigFunctions_fail.scala:4: error: Unsupported Scala 3 function type with more than 22 parameters in result: (Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int) => String; found in method bigfun in object tastytest.BigFunctions.
+  val test1 = BigFunctions.bigfun
+                           ^
+TestBigFunctions_fail.scala:5: error: Unsupported Scala 3 function type with more than 22 parameters in bounds of type F: (Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int,Int) => String; found in class tastytest.BigFunctions.BigFunBox.
+  val test2 = new BigFunctions.BigFunBox[BigFunctions.bigfun.type]
+                               ^
+2 errors

@@ -51,15 +51,8 @@ trait NameOps { self: TastyUniverse =>
     final val And: TypeName = TastyName.SimpleName("&").toTypeName
     final val AnyKind: TypeName = TastyName.SimpleName("AnyKind").toTypeName
 
-    object ContextFunctionN {
-
-      private val Pattern = raw"ContextFunction(\d+)".r
-
-      def unapply(name: TypeName): Option[Int] = name.toTermName match {
-        case SimpleName(Pattern(n)) => Some(n.toInt)
-        case _                      => None
-      }
-    }
+    val ContextFunctionN = raw"ContextFunction(\d+)".r
+    val FunctionN        = raw"Function(\d+)".r
   }
 
 }

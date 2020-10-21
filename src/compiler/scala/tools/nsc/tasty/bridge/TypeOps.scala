@@ -32,11 +32,12 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
-  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type: $tpeStr in ${boundsString(ctx.owner)}")
+  @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"function type with more than 22 parameters in ${boundsString(ctx.owner)}: $tpeStr")
+  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type in ${boundsString(ctx.owner)}: $tpeStr")
   @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
   @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in ${boundsString(ctx.owner)}")
   @inline final def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
-  @inline final def polyFuncIsUnsupported[T](tpe: Type)(implicit ctx: Context): T = unsupportedError(s"polymorphic function type: $tpe in ${boundsString(ctx.owner)}")
+  @inline final def polyFuncIsUnsupported[T](tpe: Type)(implicit ctx: Context): T = unsupportedError(s"polymorphic function type in ${boundsString(ctx.owner)}: $tpe")
 
   @inline final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[u.ConstantType]
 
@@ -144,17 +145,21 @@ trait TypeOps { self: TastyUniverse =>
 
     def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
 
+      def formatFnType(arrow: String, arity: Int, args: List[Type]): String = {
+        val len = args.length
+        assert(len == arity + 1) // tasty should be type checked already
+        val res = args.last
+        val params = args.init
+        val paramsBody = params.mkString(",")
+        val argList = if (len == 2) paramsBody else s"($paramsBody)"
+        s"$argList $arrow $res"
+      }
+
       def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
         case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
           unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
-        case ContextFunctionType(n) =>
-          val len = args.length
-          assert(len == n + 1) // tasty should be type checked already
-          val res = args.last
-          val params = args.init
-          val paramsBody = params.mkString(",")
-          val argList = if (len == 2) paramsBody else s"($paramsBody)"
-          ctxFnIsUnsupported(s"$argList ?=> $res")
+        case ContextFunctionType(n) => ctxFnIsUnsupported(formatFnType("?=>", n, args))
+        case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", n, args))
         case _ =>
           u.appliedType(tycon, args)
       }
@@ -307,8 +312,12 @@ trait TypeOps { self: TastyUniverse =>
     assert(arity > 0)
   }
 
+  case class FunctionXXLType(arity: Int) extends Type {
+    assert(arity > 22)
+  }
+
   private val SyntheticScala3Type =
-    raw"^(?:&|\||AnyKind|ContextFunction\d+)$$".r
+    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+)$$".r
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
@@ -321,21 +330,26 @@ trait TypeOps { self: TastyUniverse =>
       })
     }
 
-    def defaultCase = namedMemberOfTypeWithPrefix(prefix, space, name)
+    def lookupType = namedMemberOfTypeWithPrefix(prefix, space, name)
 
     if (isSyntheticScala3Type(prefix, name)) {
+      import scala.tools.tasty.TastyName._
       name match {
         case tpnme.And                            => AndTpe
         case tpnme.AnyKind                        => u.definitions.AnyTpe
         case tpnme.Or                             => unionIsUnsupported
-        case tpnme.ContextFunctionN(n) if (n > 0) => ContextFunctionType(n) // known dotty context function type
 
-        case _ =>
-          defaultCase
+        case TypeName(SimpleName(raw)) => raw match {
+          case tpnme.ContextFunctionN(n) if (n.toInt > 0)  => ContextFunctionType(n.toInt)
+          case tpnme.FunctionN(n)        if (n.toInt > 22) => FunctionXXLType(n.toInt)
+          case _                                           => lookupType
+        }
+
+        case _ => lookupType
       }
     }
     else {
-      defaultCase
+      lookupType
     }
   }
 
