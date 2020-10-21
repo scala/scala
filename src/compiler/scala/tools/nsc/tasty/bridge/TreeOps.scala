@@ -90,8 +90,15 @@ trait TreeOps { self: TastyUniverse =>
 
     def Apply(fun: Tree, args: List[Tree]): Tree = u.Apply(fun, args).setType(fnResult(fun.tpe))
 
-    def TypeApply(fun: Tree, args: List[Tree]): Tree =
-      u.TypeApply(fun, args).setType(tyconResult(fun.tpe, args.map(_.tpe)))
+    def TypeApply(fun: Tree, args: List[Tree]): Tree = {
+      if (u.definitions.isPredefMemberNamed(fun.tpe.termSymbol, u.TermName("classOf"))) {
+        assert(args.length == 1 && !fun.tpe.termSymbol.isOverloaded)
+        u.Literal(Constant(args.head.tpe))
+      }
+      else {
+        u.TypeApply(fun, args).setType(tyconResult(fun.tpe, args.map(_.tpe)))
+      }
+    }
 
     def If(cond: Tree, thenp: Tree, elsep: Tree): Tree =
       u.If(cond, thenp, elsep).setType(

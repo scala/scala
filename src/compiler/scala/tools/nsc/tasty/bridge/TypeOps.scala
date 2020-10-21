@@ -32,6 +32,8 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
+  /** `*:` erases to either TupleXXL or Product */
+  @inline final def tupleConsIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"generic tuple type *: in ${boundsString(ctx.owner)}")
   @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"function type with more than 22 parameters in ${boundsString(ctx.owner)}: $tpeStr")
   @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type in ${boundsString(ctx.owner)}: $tpeStr")
   @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
@@ -317,31 +319,24 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private val SyntheticScala3Type =
-    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+)$$".r
+    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:)$$".r
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-
-    def isSyntheticScala3Type(prefix: Type, name: TastyName.TypeName): Boolean = {
-      import TastyName._
-      prefix.typeSymbol === u.definitions.ScalaPackage && (name match {
-        case TypeName(SimpleName(SyntheticScala3Type())) => true
-        case _                                           => false
-      })
-    }
+    import scala.tools.tasty.TastyName._
 
     def lookupType = namedMemberOfTypeWithPrefix(prefix, space, name)
 
-    if (isSyntheticScala3Type(prefix, name)) {
-      import scala.tools.tasty.TastyName._
+    // we escape some types in the scala package especially
+    if (prefix.typeSymbol === u.definitions.ScalaPackage) {
       name match {
-        case tpnme.And                            => AndTpe
-        case tpnme.AnyKind                        => u.definitions.AnyTpe
-        case tpnme.Or                             => unionIsUnsupported
-
-        case TypeName(SimpleName(raw)) => raw match {
+        case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
+          case tpnme.And                                   => AndTpe
+          case tpnme.Or                                    => unionIsUnsupported
           case tpnme.ContextFunctionN(n) if (n.toInt > 0)  => ContextFunctionType(n.toInt)
           case tpnme.FunctionN(n)        if (n.toInt > 22) => FunctionXXLType(n.toInt)
+          case tpnme.TupleCons                             => tupleConsIsUnsupported
+          case tpnme.AnyKind                               => u.definitions.AnyTpe
           case _                                           => lookupType
         }
 
