@@ -311,7 +311,7 @@ trait PatternTypers {
               }
 
               val GenPolyType(freeVars, unappFormal) = freshArgType(unapplyType.skolemizeExistential(context.owner, tree))
-              val unapplyContext = context.makeNewScope(context.tree, context.owner)
+              val unapplyContext = context.makeNewScope(tree, context.owner)
               freeVars foreach unapplyContext.scope.enter
               val pattp = newTyper(unapplyContext).infer.inferTypedPattern(tree, unappFormal, pt, canRemedy)
               // turn any unresolved type variables in freevars into existential skolems
