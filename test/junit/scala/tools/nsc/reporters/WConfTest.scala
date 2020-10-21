@@ -126,20 +126,19 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def default(): Unit = {
-    check(reports(code), List(s1a, s1b, s2, s3, s1c, l2, l9, l11, l13, l16)) // FIXME l2
-    check(reports(code, "cat=unchecked:ws"), List(s1a, s1b, s2, s3, s1c, s4, l2, l9, l11)) // FIXME l2
+    check(reports(code), List(s1a, s1b, s2, s3, s1c, l9, l11, l13, l16))
+    check(reports(code, "cat=unchecked:ws"), List(s1a, s1b, s2, s3, s1c, s4, l9, l11))
   }
 
   @Test
   def noSummarizing(): Unit = {
-    check(reports(code, "any:w"), List(l2, l5a, l5b, l7, l9, l11, l13, l16, l20)) // FIXME l2
+    check(reports(code, "any:w"), List(l5a, l5b, l7, l9, l11, l13, l16, l20))
     check(reports(code, "any:w", lint = true), List(l2, l5a, l5b, l7, l9, l11, l13, l16, l20, l23, l25))
   }
 
   @Test
   def warnVerbose(): Unit = {
     check(reports(code, "any:wv"), List(
-      l2.copy(_2 = "[lint-deprecation @ A] " + l2._2), // FIXME
       l5a.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.f | version=] " + l5a._2),
       l5b.copy(_2 = "[deprecation @ A.invokeDeprecated | origin=A.g | version=1.2.3] " + l5b._2),
       l7.copy(_2 = "[feature-reflective-calls @ A.featureReflectiveCalls] " + l7._2),
@@ -210,10 +209,11 @@ class WConfTest extends BytecodeTesting {
 
   @Test
   def lint(): Unit = {
-    check(infos(code, "cat=lint:i"), List(l2)) // FIXME
+    check(infos(code, "cat=lint:i"), Nil)
     check(infos(code, "cat=lint:i", lint = true), List(l2, l23))
+    check(reports(code, "any:s,cat=lint:ws", lint = true), Nil)
     check(reports(code, "cat=lint:ws,any:s", lint = true), List((-1, "two lint warnings")))
-    //check(infos(code, "cat=lint-deprecation:i", lint = true), List(l2))
+    check(infos(code, "cat=lint-deprecation:i", lint = true), List(l2))
     check(infos(code, "cat=lint-adapted-args:i", lint = true), List(l23))
   }
 

@@ -4035,7 +4035,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _ =>
               reportAnnotationError(UnexpectedTreeAnnotationError(t, typedAnn))
           }
-          if (annType.typeSymbol == DeprecatedAttr && sumSize(argss, 0) < 2)
+          if (annType.typeSymbol == DeprecatedAttr && settings.lintDeprecation && sumSize(argss, 0) < 2)
             context.warning(ann.pos, """Specify both message and version: @deprecated("message", since = "1.0")""", WarningCategory.LintDeprecation)
 
           if ((typedAnn.tpe == null) || typedAnn.tpe.isErroneous) ErroneousAnnotation
