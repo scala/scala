@@ -146,7 +146,7 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
-    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro || decl.isTraitParamAccessor
+    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro
     def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
 
     def canEnterOverload(decl: Symbol): Boolean = {
@@ -563,9 +563,11 @@ trait ContextOps { self: TastyUniverse =>
       def reportParameterizedTrait(cls: Symbol, decls: u.Scope): Unit = {
         val traitParams = traitParamAccessors(cls).getOrElse(Iterable.empty)
         if (traitParams.nonEmpty) {
-          val parameters = traitParams.map(_.nameString)
-          val msg = s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
-          unsupportedError(msg)(this.withOwner(cls.owner))
+          log {
+            val parameters = traitParams.map(_.nameString)
+            s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
+          }
+          cls.updateAttachment(new u.DottyParameterisedTrait(traitParams.toList))
         }
       }
 

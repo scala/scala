@@ -83,7 +83,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     def indexTopLevel(implicit ctx: Context): Unit = rdr.indexStats(reader.endAddr)
     if (rdr.isTopLevel)
-      inIndexStatsContext(indexTopLevel(_))
+      inIndexScopedStatsContext(indexTopLevel(_))
   }
 
   /** A completer that captures the current position and context, which then uses the position to discover the symbol

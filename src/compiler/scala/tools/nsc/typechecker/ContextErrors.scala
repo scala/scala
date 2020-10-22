@@ -258,9 +258,23 @@ trait ContextErrors {
       def ConstantAnnotationNeedsSingleArgumentList(constr: Tree, clazz: Symbol) =
         issueNormalTypeError(constr, s"$clazz needs to have exactly one argument list because it extends ConstantAnnotation")
 
+
+      private def formatTraitWithParams(parent: Symbol, paramSyms: List[Symbol]): String = {
+        val params = paramSyms.map(param => s"${param.name}: ${param.info}").mkString("(", ", ", ")")
+        s"$parent$params"
+      }
+
       // additional parentTypes errors
-      def ConstrArgsInParentWhichIsTraitError(arg: Tree, parent: Symbol) =
-        issueNormalTypeError(arg, s"$parent is a trait; does not take constructor arguments")
+      def ConstrArgsInParentWhichIsTraitError(arg: Tree, parent: Symbol) = {
+        val msg = parent.attachments.get[DottyParameterisedTrait] match {
+          case Some(holder) =>
+            val prettyParent = formatTraitWithParams(parent, holder.params)
+            s"$prettyParent is an illegal Scala 3 parameterized trait; so can not take constructor arguments"
+          case none => s"$parent is a trait; does not take constructor arguments"
+
+        }
+        issueNormalTypeError(arg, msg)
+      }
 
       def ConstrArgsInParentOfTraitError(arg: Tree, parent: Symbol) =
         issueNormalTypeError(arg, "parents of traits may not have parameters")
@@ -705,6 +719,17 @@ trait ContextErrors {
         NormalTypeError(parent, "illegal inheritance; super"+superclazz+
                    "\n is not a subclass of the super"+parentSym+
                    "\n of the mixin " + mixin)
+
+      def ParentIsScala3TraitError(parent: Tree,
+                 parentSym: Symbol, params: List[Symbol], mixin: Symbol) = {
+        val parentWithCtor = formatTraitWithParams(parentSym, params)
+        val mixinMsg = {
+          if (mixin eq parentSym) " parameterized mixin "+mixin
+          else " parameterized super"+parentSym+"\n of the mixin "+mixin
+        }
+        NormalTypeError(parent, "illegal inheritance;"+mixinMsg+
+                  "\n is defined in Scala 3 as " + parentWithCtor)
+        }
 
       def ParentNotATraitMixinError(parent: Tree, mixin: Symbol) =
         NormalTypeError(parent, s"$mixin needs to be a trait to be mixed in")
