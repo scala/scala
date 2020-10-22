@@ -96,6 +96,15 @@ sealed class ListMap[A, +B] extends AbstractMap[A, B]
     }
   }
 
+  override def head: (A, B) = {
+    @tailrec def headImpl(curr: ListMap[A, B]): (A, B) = {
+      val n = curr.next
+      if (n.isEmpty) (curr.key, curr.value)
+      else headImpl(n)
+    }
+    headImpl(this)
+  }
+
   override def hashCode(): Int = {
     if (isEmpty) {
       MurmurHash3.emptyMapHash
