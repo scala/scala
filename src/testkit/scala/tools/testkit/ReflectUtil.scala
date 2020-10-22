@@ -33,4 +33,32 @@ object ReflectUtil {
         if ((f.getModifiers & Modifier.PUBLIC) == 0)
           f.setAccessible(true)
       }
+
+  // finds method with exact name or name$suffix but not name$default$suffix
+  def getMethodAccessible[A: ClassTag](name: String): Method =
+    implicitly[ClassTag[A]]
+      .runtimeClass.getDeclaredMethods
+      .find(nameMatches(_, name)) match {
+        case Some(m) => m.tap(_.setAccessible(true))
+        case None    => AssertUtil.fail(s"Missing method $name")
+      }
+
+  private def nameMatches(m: Method, name: String): Boolean =
+    m.getName.startsWith(name) &&
+    (m.getName.length == name.length ||
+     m.getName.charAt(name.length) == '$' && !m.getName.substring(name.length).startsWith("$default$"))
+
+  implicit class MethodOps(val m: Method) extends AnyVal {
+    def invokeAs[A](receiver: AnyRef, args: AnyRef*): A =
+      try m.invoke(receiver, args: _*).asInstanceOf[A]
+      catch {
+        case e: IllegalArgumentException if e.getMessage == "wrong number of arguments" =>
+          def required =
+            m.getParameterCount match {
+              case 0 => "0"
+              case n => s"${m.getParameterCount}: (${m.getGenericParameterTypes.mkString(", ")})"
+            }
+          throw new IllegalArgumentException(s"wrong number of arguments: ${args.length}; required: $required")
+      }
+  }
 }
