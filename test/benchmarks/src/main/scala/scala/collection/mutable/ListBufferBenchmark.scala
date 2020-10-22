@@ -98,4 +98,18 @@ class ListBufferBenchmark {
     b.flatMapInPlace { _ => seq }
     bh.consume(b)
   }
+
+  @Benchmark def iteratorA(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    var n = 0
+    for (x <- b.iterator) n += x
+    bh.consume(n)
+    bh.consume(b)
+  }
+
+  @Benchmark def iteratorB(bh: Blackhole): Unit = {
+    val b = ref.clone()
+    bh.consume(b.iterator.toVector)
+    bh.consume(b)
+  }
 }

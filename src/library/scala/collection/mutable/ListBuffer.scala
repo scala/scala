@@ -35,6 +35,7 @@ import scala.runtime.Statics.releaseFence
   *  @define mayNotTerminateInf
   *  @define willNotTerminateInf
   */
+@SerialVersionUID(-8428291952499836345L)
 class ListBuffer[A]
   extends AbstractBuffer[A]
      with SeqOps[A, ListBuffer, ListBuffer[A]]
@@ -42,6 +43,7 @@ class ListBuffer[A]
      with ReusableBuilder[A, immutable.List[A]]
      with IterableFactoryDefaults[A, ListBuffer]
      with DefaultSerializable {
+  @transient private[this] var mutationCount: Int = 0
 
   private var first: List[A] = Nil
   private var last0: ::[A] = null
@@ -50,7 +52,7 @@ class ListBuffer[A]
 
   private type Predecessor[A0] = ::[A0] /*| Null*/
 
-  def iterator = first.iterator
+  def iterator: Iterator[A] = new MutationTracker.CheckedIterator(first.iterator, mutationCount)
 
   override def iterableFactory: SeqFactory[ListBuffer] = ListBuffer
 
@@ -69,7 +71,12 @@ class ListBuffer[A]
     aliased = false
   }
 
-  private def ensureUnaliased() = if (aliased) copyElems()
+  // we only call this before mutating things, so it's
+  // a good place to track mutations for the iterator
+  private def ensureUnaliased(): Unit = {
+    mutationCount += 1
+    if (aliased) copyElems()
+  }
 
   // Avoids copying where possible.
   override def toList: List[A] = {
@@ -97,6 +104,7 @@ class ListBuffer[A]
   }
 
   def clear(): Unit = {
+    mutationCount += 1
     first = Nil
     len = 0
     last0 = null
@@ -114,18 +122,28 @@ class ListBuffer[A]
 
   // Overridden for performance
   override final def addAll(xs: IterableOnce[A]): this.type = {
-    val it = xs.iterator
-    if (it.hasNext) {
-      ensureUnaliased()
-      val last1 = new ::[A](it.next(), Nil)
-      if (len == 0) first = last1 else last0.next = last1
-      last0 = last1
-      len += 1
-      while (it.hasNext) {
+    if (xs.asInstanceOf[AnyRef] eq this) { // avoid mutating under our own iterator
+      if (len > 0) {
+        ensureUnaliased()
+        val copy = ListBuffer.from(this)
+        last0.next = copy.first
+        last0 = copy.last0
+        len *= 2
+      }
+    } else {
+      val it = xs.iterator
+      if (it.hasNext) {
+        ensureUnaliased()
         val last1 = new ::[A](it.next(), Nil)
-        last0.next = last1
+        if (len == 0) first = last1 else last0.next = last1
         last0 = last1
         len += 1
+        while (it.hasNext) {
+          val last1 = new ::[A](it.next(), Nil)
+          last0.next = last1
+          last0 = last1
+          len += 1
+        }
       }
     }
     this
@@ -230,13 +248,29 @@ class ListBuffer[A]
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
-    ensureUnaliased()
-    val it = elems.iterator
-    if (it.hasNext) {
-      ensureUnaliased()
-      if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
-      if (idx == len) ++=(elems)
-      else insertAfter(locate(idx), it)
+    if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
+    elems match {
+      case elems: AnyRef if elems eq this => // avoid mutating under our own iterator
+        if (len > 0) {
+          val copy = ListBuffer.from(this)
+          if (idx == 0 || idx == len) { // prepend/append
+            last0.next = copy.first
+            last0 = copy.last0
+          } else {
+            val prev = locate(idx) // cannot be `null` because other condition catches that
+            val follow = prev.next
+            prev.next = copy.first
+            copy.last0.next = follow
+          }
+          len *= 2
+        }
+      case elems =>
+        val it = elems.iterator
+        if (it.hasNext) {
+          ensureUnaliased()
+          if (idx == len) ++=(elems)
+          else insertAfter(locate(idx), it)
+        }
     }
   }
 
@@ -275,15 +309,17 @@ class ListBuffer[A]
   }
 
   def mapInPlace(f: A => A): this.type = {
-    ensureUnaliased()
+    mutationCount += 1
     val buf = new ListBuffer[A]
     for (elem <- this) buf += f(elem)
     first = buf.first
     last0 = buf.last0
+    aliased = false // we just assigned from a new instance
     this
   }
 
   def flatMapInPlace(f: A => IterableOnce[A]): this.type = {
+    mutationCount += 1
     var src = first
     var dst: List[A] = null
     last0 = null
@@ -299,6 +335,7 @@ class ListBuffer[A]
       src = src.tail
     }
     first = if(dst eq null) Nil else dst
+    aliased = false // we just rebuilt a fresh, unaliased instance
     this
   }
 
@@ -322,12 +359,24 @@ class ListBuffer[A]
   }
 
   def patchInPlace(from: Int, patch: collection.IterableOnce[A], replaced: Int): this.type = {
-    val i = math.min(math.max(from, 0), length)
-    val n = math.min(math.max(replaced, 0), length)
-    ensureUnaliased()
-    val p = locate(i)
-    removeAfter(p, math.min(n, len - i))
-    insertAfter(p, patch.iterator)
+    val _len = len
+    val _from = math.max(from, 0)         // normalized
+    val _replaced = math.max(replaced, 0) // normalized
+    val it = patch.iterator
+
+    val nonEmptyPatch = it.hasNext
+    val nonEmptyReplace = (_from < _len) && (_replaced > 0)
+
+    // don't want to add a mutation or check aliasing (potentially expensive)
+    // if there's no patching to do
+    if (nonEmptyPatch || nonEmptyReplace) {
+      ensureUnaliased()
+      val i = math.min(_from, _len)
+      val n = math.min(_replaced, _len)
+      val p = locate(i)
+      removeAfter(p, math.min(n, _len - i))
+      insertAfter(p, it)
+    }
     this
   }
 

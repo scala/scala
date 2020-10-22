@@ -136,19 +136,15 @@ private[async] trait AnfTransform extends TransformUtils {
           }
 
         case ValDef(mods, name, tpt, rhs) => atOwner(tree.symbol) {
-          // Capture current cursor of a non-empty `stats` buffer so we can efficiently restrict the
+          // Capture size of `stats` buffer so we can efficiently restrict the
           // `changeOwner` to the newly added items...
-          var statsIterator = if (currentStats.isEmpty) null else currentStats.iterator
+          val oldItemsCount = currentStats.length
 
           val expr = atOwner(currentOwner.owner)(transform(rhs))
 
-          // But, ListBuffer.empty.iterator doesn't reflect later mutation. Luckily we can just start
-          // from the beginning of the buffer
-          if (statsIterator == null) statsIterator = currentStats.iterator
-
           // Definitions within stats lifted out of the `ValDef` rhs should no longer be owned by the
           // the ValDef.
-          statsIterator.foreach(_.changeOwner((currentOwner, currentOwner.owner)))
+          currentStats.iterator.drop(oldItemsCount).foreach(_.changeOwner((currentOwner, currentOwner.owner)))
           val expr1 = if (isUnitType(expr.tpe)) {
             currentStats += expr
             literalBoxedUnit

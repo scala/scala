@@ -3,6 +3,8 @@ package scala.collection.mutable
 import org.junit.Assert.{assertEquals, assertTrue}
 import org.junit.Test
 
+import scala.tools.testkit.AssertUtil.assertSameElements
+
 import scala.annotation.nowarn
 
 class ListBufferTest {
@@ -227,5 +229,39 @@ class ListBufferTest {
     assertEquals(Seq("a1"), b)
     b += "b"
     assertEquals(Seq("a1", "b"), b)
+  }
+
+  /* tests for scala/bug#12121 */
+
+  @Test
+  def self_addAll(): Unit = {
+    val b = ListBuffer(1, 2, 3)
+    b ++= b
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b)
+  }
+
+  @Test
+  def self_prependAll(): Unit = {
+    val b = ListBuffer(1, 2, 3)
+    b prependAll b
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b)
+  }
+
+  @Test
+  def self_insertAll(): Unit = {
+    val b1 = ListBuffer(1, 2, 3)
+    b1.insertAll(1, b1)
+    assertSameElements(List(1, 1, 2, 3, 2, 3), b1)
+
+    val b2 = ListBuffer(1, 2, 3)
+    b2.insertAll(3, b2)
+    assertSameElements(List(1, 2, 3, 1, 2, 3), b2)
+  }
+
+  @Test
+  def self_subtractAll(): Unit = {
+    val b = ListBuffer(1, 2, 3)
+    b --= b
+    assertSameElements(Nil, b)
   }
 }
