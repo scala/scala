@@ -227,7 +227,7 @@ class ReplReporterImpl(val config: ShellConfig, val settings: Settings = new Set
     }
 
   override def rerunWithDetails(setting: reflect.internal.settings.MutableSettings#Setting, name: String): String =
-    s"; for details, enable `:setting $name' or `:replay $name'"
+    s"; for details, enable `:setting $name` or `:replay $name`"
 
   override def finish() = {
     if (hasWarnings) printMessage(s"${StringOps.countElementsAsString(warningCount, label(WARNING))} found")

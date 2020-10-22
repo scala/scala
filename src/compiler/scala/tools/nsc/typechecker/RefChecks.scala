@@ -403,7 +403,7 @@ abstract class RefChecks extends Transform {
             if (!(memberOverrides || other.isDeferred) && !member.isSynthetic) {
               overrideErrorConcreteMissingOverride()
             } else if (other.isAbstractOverride && other.isIncompleteIn(clazz) && !member.isAbstractOverride) {
-              overrideErrorWithMemberInfo("`abstract override' modifiers required to override:")
+              overrideErrorWithMemberInfo("`abstract override` modifiers required to override:")
             }
             else if (memberOverrides && (other hasFlag ACCESSOR) && !(other hasFlag STABLE | DEFERRED)) {
               // TODO: this is not covered by the spec.
@@ -414,7 +414,7 @@ abstract class RefChecks extends Transform {
                      !member.isDeferred && !other.isDeferred &&
                      intersectionIsEmpty(member.extendedOverriddenSymbols, other.extendedOverriddenSymbols)) {
               overrideErrorWithMemberInfo("cannot override a concrete member without a third member that's overridden by both " +
-                                          "(this rule is designed to prevent ``accidental overrides'')")
+                                          "(this rule is designed to prevent accidental overrides)")
             } else if (other.isStable && !member.isStable) { // (1.4)
               overrideErrorWithMemberInfo("stable, immutable value required to override:")
             } else if (member.isValue && member.isLazy &&
@@ -1775,7 +1775,7 @@ abstract class RefChecks extends Transform {
             tree
 
           case treeInfo.WildcardStarArg(_) if !isRepeatedParamArg(tree) =>
-            reporter.error(tree.pos, "no `: _*' annotation allowed here\n"+
+            reporter.error(tree.pos, "no `: _*` annotation allowed here\n"+
               "(such annotations are only allowed in arguments to *-parameters)")
             tree
 

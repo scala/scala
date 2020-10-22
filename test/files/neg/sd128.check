@@ -4,7 +4,7 @@ Test.scala:4: error: class C1 inherits conflicting members:
   (note: this can be resolved by declaring an `override` in class C1.)
 class C1 extends A with T // error
       ^
-Test.scala:5: error: cannot override a concrete member without a third member that's overridden by both (this rule is designed to prevent ``accidental overrides'')
+Test.scala:5: error: cannot override a concrete member without a third member that's overridden by both (this rule is designed to prevent accidental overrides)
 def f: Int (defined in trait T)
   with <defaultmethod> def f(): Int (defined in trait A)
 class C2 extends T with A // error

@@ -271,7 +271,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YcacheMacroClassLoader   = CachePolicy.setting("macro", "macros")
   val YmacroClasspath = PathSetting       ("-Ymacro-classpath", "The classpath used to reflectively load macro implementations, default is the compilation classpath.", "")
 
-  val Youtline        = BooleanSetting    ("-Youtline", "Don't compile method bodies. Use together with `-Ystop-after:pickler to generate the pickled signatures for all source files.").internalOnly()
+  val Youtline        = BooleanSetting    ("-Youtline", "Don't compile method bodies. Use together with `-Ystop-after:pickler` to generate the pickled signatures for all source files.").internalOnly()
 
   val exposeEmptyPackage = BooleanSetting ("-Yexpose-empty-package", "Internal only: expose the empty package.").internalOnly()
   val Ydelambdafy        = ChoiceSetting  ("-Ydelambdafy", "strategy", "Strategy used for translating lambdas into JVM code.", List("inline", "method"), "method")
