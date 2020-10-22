@@ -1,5 +1,5 @@
 /*
- * filter: inliner warning
+ * filter: optimizer warning
  */
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer

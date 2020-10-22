@@ -149,7 +149,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |}
       """.stripMargin
 
-    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there were two deprecation warnings"))
+    val c = compileClass(code, allowMessage = (info: StoreReporter.Info) => info.msg.contains("there were two deprecation warnings"))
 
     assertNoInvoke(getMethod(c, "t1"))
     assertNoInvoke(getMethod(c, "t2"))
@@ -311,7 +311,7 @@ class BoxUnboxTest extends BytecodeTesting {
         |  }
         |}
       """.stripMargin
-    val c = compileClass(code, allowMessage = (info: StoreReporter#Info) => info.msg.contains("there was one deprecation warning"))
+    val c = compileClass(code, allowMessage = (info: StoreReporter.Info) => info.msg.contains("there was one deprecation warning"))
     assertNoInvoke(getMethod(c, "t1"))
     assertSameSummary(getMethod(c, "t2"), List(ICONST_1, ICONST_3, IADD, IRETURN))
     assertSameSummary(getMethod(c, "t3"), List(ICONST_3, ICONST_4, IADD, IRETURN))

@@ -1,4 +1,7 @@
 // scalac: -unchecked -Xfatal-warnings -language:higherKinds
+
+import language.higherKinds
+
 // no unchecked warnings
 class View[C[A]] { }
 

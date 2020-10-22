@@ -22,9 +22,12 @@ import scala.tools.nsc.reporters.{ConsoleReporter, Reporter}
 import scala.tools.nsc.{CompilerCommand, Global, Settings}
 import scala.sys.process._
 
-class ExtConsoleReporter(settings: Settings, val writer: PrintWriter) extends ConsoleReporter(settings, Console.in, writer) {
-  shortname = true
-  // override def error(pos: Position, msg: String): Unit
+object ExtConsoleReporter {
+  def apply(settings: Settings, writer: PrintWriter) = {
+    val r = new ConsoleReporter(settings, Console.in, writer, writer)
+    r.shortname = true
+    r
+  }
 }
 
 class TestSettings(cp: String, error: String => Unit) extends Settings(error) {
@@ -46,8 +49,7 @@ class DirectCompiler(val runner: Runner) {
     new PartestGlobal(settings, reporter)
 
   def newGlobal(settings: Settings, logWriter: FileWriter): Global =
-    newGlobal(settings, new ExtConsoleReporter(settings, new PrintWriter(logWriter)))
-
+    newGlobal(settings, ExtConsoleReporter(settings, new PrintWriter(logWriter, true)))
 
   /** Massage args to merge plugins and fix paths.
     *  Plugin path can be relative to test root, or cwd is out.
@@ -106,7 +108,7 @@ class DirectCompiler(val runner: Runner) {
     val srcDir       = if (testFile.isDirectory) testFile else Path(testFile).parent.jfile
     val opts         = updatePluginPath(opts0, AbstractFile getDirectory outDir, AbstractFile getDirectory srcDir)
     val command      = new CompilerCommand(opts.toList, testSettings)
-    val reporter     = new ExtConsoleReporter(testSettings, new PrintWriter(logWriter))
+    val reporter     = ExtConsoleReporter(testSettings, new PrintWriter(logWriter, true))
     val global       = newGlobal(testSettings, reporter)
     def errorCount   = reporter.errorCount
 
@@ -132,8 +134,8 @@ class DirectCompiler(val runner: Runner) {
         new global.Run compile sources.map(_.getPath)
         if (!reporter.hasErrors) runner.genPass()
         else {
-          reporter.printSummary()
-          reporter.writer.close()
+          reporter.finish()
+          reporter.close()
           runner.genFail(s"compilation failed with $errorCount errors")
         }
       }

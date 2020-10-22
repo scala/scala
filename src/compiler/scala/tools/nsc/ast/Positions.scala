@@ -13,6 +13,8 @@
 package scala.tools.nsc
 package ast
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 trait Positions extends scala.reflect.internal.Positions {
   self: Global =>
 
@@ -27,7 +29,7 @@ trait Positions extends scala.reflect.internal.Positions {
         t.children foreach { c =>
           if (!c.canHaveAttrs) ()
           else if (c.pos == NoPosition) {
-            reporter.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase)
+            runReporting.warning(t.pos, " Positioned tree has unpositioned child in phase " + globalPhase, WarningCategory.OtherDebug, currentOwner)
             inform("parent: " + treeSymStatus(t))
             inform(" child: " + treeSymStatus(c) + "\n")
           }

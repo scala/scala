@@ -142,15 +142,6 @@ stringinterpolation_macro-neg.scala:58: error: Argument index out of range
 stringinterpolation_macro-neg.scala:59: error: Argument index out of range
   f"${8}%d ${9}%d%0$$d"
                   ^
-stringinterpolation_macro-neg.scala:62: warning: Index is not this arg
-  f"${8}%d ${9}%1$$d"
-                ^
-stringinterpolation_macro-neg.scala:63: warning: Argument index ignored if '<' flag is present
-  f"$s%s $s%s %1$$<s"
-               ^
-stringinterpolation_macro-neg.scala:64: warning: Index is not this arg
-  f"$s%s $s%1$$s"
-            ^
 stringinterpolation_macro-neg.scala:67: error: type mismatch;
  found   : String
  required: java.util.Formattable
@@ -168,5 +159,14 @@ stringinterpolation_macro-neg.scala:72: error: Missing conversion operator in '%
 stringinterpolation_macro-neg.scala:75: error: conversions must follow a splice; use %% for literal %, %n for newline
   f"${d}random-leading-junk%d"
                            ^
+stringinterpolation_macro-neg.scala:62: warning: Index is not this arg
+  f"${8}%d ${9}%1$$d"
+                ^
+stringinterpolation_macro-neg.scala:63: warning: Argument index ignored if '<' flag is present
+  f"$s%s $s%s %1$$<s"
+               ^
+stringinterpolation_macro-neg.scala:64: warning: Index is not this arg
+  f"$s%s $s%1$$s"
+            ^
 three warnings found
 45 errors found

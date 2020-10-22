@@ -14,33 +14,32 @@ package scala
 package tools
 package nsc
 
-import java.io.{FileNotFoundException, IOException}
+import java.io.{Closeable, FileNotFoundException, IOException}
 import java.net.URL
-import java.nio.charset.{Charset, CharsetDecoder, IllegalCharsetNameException, UnsupportedCharsetException}
+import java.nio.charset._
 
 import scala.collection.{immutable, mutable}
-import io.{AbstractFile, SourceReader}
-import reporters.Reporter
-import util.{ClassPath, returning}
 import scala.reflect.ClassTag
-import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
 import scala.reflect.internal.pickling.PickleBuffer
-import symtab.{Flags, SymbolTable, SymbolTrackers}
-import symtab.classfile.Pickler
-import plugins.Plugins
-import ast._
-import ast.parser._
-import typechecker._
-import transform.patmat.PatternMatching
-import transform._
-import backend.{JavaPlatform, ScalaPrimitives}
-import backend.jvm.{BackendStats, GenBCode}
-import scala.language.postfixOps
-import scala.tools.nsc.ast.{TreeGen => AstTreeGen}
+import scala.reflect.internal.util.{BatchSourceFile, FreshNameCreator, NoSourceFile, ScalaClassLoader, ScriptSourceFile, SourceFile}
+import scala.reflect.internal.{Reporter => InternalReporter}
+import scala.tools.nsc.Reporting.WarningCategory
+import scala.tools.nsc.ast.parser._
+import scala.tools.nsc.ast.{TreeGen => AstTreeGen, _}
+import scala.tools.nsc.backend.jvm.{BackendStats, GenBCode}
+import scala.tools.nsc.backend.{JavaPlatform, ScalaPrimitives}
 import scala.tools.nsc.classpath._
+import scala.tools.nsc.io.{AbstractFile, SourceReader}
+import scala.tools.nsc.plugins.Plugins
 import scala.tools.nsc.profile.Profiler
+import scala.tools.nsc.reporters.{FilteringReporter, MakeFilteringForwardingReporter, Reporter}
+import scala.tools.nsc.symtab.classfile.Pickler
+import scala.tools.nsc.symtab.{Flags, SymbolTable, SymbolTrackers}
+import scala.tools.nsc.transform._
 import scala.tools.nsc.transform.async.AsyncPhase
-import java.io.Closeable
+import scala.tools.nsc.transform.patmat.PatternMatching
+import scala.tools.nsc.typechecker._
+import scala.tools.nsc.util.{ClassPath, returning}
 
 class Global(var currentSettings: Settings, reporter0: Reporter)
     extends SymbolTable
@@ -85,15 +84,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   override def settings = currentSettings
 
-  private[this] var currentReporter: Reporter = { reporter = reporter0 ; currentReporter }
+  private[this] var currentReporter: FilteringReporter = null
+  locally { reporter = reporter0 }
 
-  def reporter: Reporter = currentReporter
+  def reporter: FilteringReporter = currentReporter
   def reporter_=(newReporter: Reporter): Unit =
     currentReporter = newReporter match {
-      case _: reporters.ConsoleReporter | _: reporters.LimitingReporter => newReporter
-      case _ if settings.maxerrs.isSetByUser && settings.maxerrs.value < settings.maxerrs.default =>
-        new reporters.LimitingReporter(settings, newReporter)
-      case _ => newReporter
+      case f: FilteringReporter => f
+      case r                    => new MakeFilteringForwardingReporter(r, settings) // for sbt
     }
 
   /** Switch to turn on detailed type logs */
@@ -297,7 +295,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   @inline final def devWarning(pos: Position, msg: => String) {
     def pos_s = if (pos eq NoPosition) "" else s" [@ $pos]"
     if (isDeveloper)
-      warning(pos, "!!! " + msg)
+      runReporting.warning(pos, "!!! " + msg, WarningCategory.OtherDebug, site = "")
     else
       log(s"!!!$pos_s $msg") // such warnings always at least logged
   }
@@ -345,7 +343,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     def loadReader(name: String): Option[SourceReader] = {
-      def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[Reporter])
+      def ccon = Class.forName(name).getConstructor(classOf[CharsetDecoder], classOf[InternalReporter])
 
       try Some(ccon.newInstance(charset.newDecoder(), reporter).asInstanceOf[SourceReader])
       catch { case ex: Throwable =>
@@ -411,7 +409,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     /** Is current phase cancelled on this unit? */
     def cancelled(unit: CompilationUnit) = {
       if (Thread.interrupted()) reporter.cancelled = true
-      reporter.cancelled || unit.isJava && shouldSkipThisPhaseForJava
+      val isCanceled = reporter.cancelled
+      isCanceled || unit.isJava && shouldSkipThisPhaseForJava
     }
 
     private def beforeUnit(unit: CompilationUnit): Unit = {
@@ -470,7 +469,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     override val initial = true
   }
 
-  import syntaxAnalyzer.{ UnitScanner, UnitParser, JavaUnitParser }
+  import syntaxAnalyzer.{JavaUnitParser, UnitParser, UnitScanner}
 
   // !!! I think we're overdue for all these phase objects being lazy vals.
   // There's no way for a Global subclass to provide a custom typer
@@ -778,7 +777,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     val line2 = fmt.format("----------", "--", "-" * title.length)
 
     // built-in string precision merely truncates
-    import java.util.{ Formattable, FormattableFlags, Formatter }
+    import java.util.{Formattable, FormattableFlags, Formatter}
     def dotfmt(s: String) = new Formattable {
       def foreshortened(s: String, max: Int) = (
         if (max < 0 || s.length <= max) s
@@ -894,7 +893,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         case Some(oldEntry) =>
           Some(oldEntry -> ClassPathFactory.newClassPath(dir, settings, closeableRegistry))
         case None =>
-          error(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
+          globalError(s"Error adding entry to classpath. During invalidation, no entry named $path in classpath $classPath")
           None
       }
     }
@@ -1002,10 +1001,11 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   /** The currently active run
    */
-  def currentRun: Run              = curRun
-  def currentUnit: CompilationUnit = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
-  def currentSource: SourceFile    = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
-  def currentFreshNameCreator      = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
+  def currentRun: Run               = curRun
+  def currentUnit: CompilationUnit  = if (currentRun eq null) NoCompilationUnit else currentRun.currentUnit
+  def currentSource: SourceFile     = if (currentUnit.exists) currentUnit.source else lastSeenSourceFile
+  def runReporting: PerRunReporting = currentRun.reporting
+  def currentFreshNameCreator       = if (curFreshNameCreator == null) currentUnit.fresh else curFreshNameCreator
   private[this] var curFreshNameCreator: FreshNameCreator = null
   private[scala] def currentFreshNameCreator_=(fresh: FreshNameCreator): Unit = curFreshNameCreator = fresh
 
@@ -1143,9 +1143,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     keepPhaseStack = settings.log.isSetByUser
 
     // used in sbt
-    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def uncheckedWarnings: List[(Position, String)]   = reporting.uncheckedWarnings
     // used in sbt
-    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings.map{case (pos, (msg, since)) => (pos, msg)}
+    def deprecationWarnings: List[(Position, String)] = reporting.deprecationWarnings
 
     private class SyncedCompilationBuffer { self =>
       private val underlying = new mutable.ArrayBuffer[CompilationUnit]
@@ -1252,8 +1252,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
             if (including) first.iterator count (setting containsPhase _)
             else phaseDescriptors count (setting contains _.phaseName)
           )
-          if (count == 0) warning(s"'$p' specifies no phase")
-          if (count > 1 && !isSpecial(p)) warning(s"'$p' selects $count phases")
+          if (count == 0) runReporting.warning(NoPosition, s"'$p' specifies no phase", WarningCategory.Other, site = "")
+          if (count > 1 && !isSpecial(p)) runReporting.warning(NoPosition, s"'$p' selects $count phases", WarningCategory.Other, site = "")
           if (!including && isSpecial(p)) globalError(s"-Yskip and -Ystop values must name phases: '$p'")
           setting.clear()
         }
@@ -1310,7 +1310,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     }
 
     // for sbt
-    def cancel() { reporter.cancelled = true }
+    def cancel(): Unit = reporter.cancelled = true
 
     private def currentProgress   = (phasec * size) + unitc
     private def totalProgress     = (phaseDescriptors.size - 1) * size // -1: drops terminal phase
@@ -1363,14 +1363,14 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
     private def warnDeprecatedAndConflictingSettings() {
       // issue warnings for any usage of deprecated settings
       settings.userSetSettings filter (_.isDeprecated) foreach { s =>
-        currentRun.reporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "")
+        runReporting.deprecationWarning(NoPosition, s.name + " is deprecated: " + s.deprecationMessage.get, "", "", "")
       }
       val supportedTarget = "jvm-1.8"
       if (settings.target.value != supportedTarget) {
-        currentRun.reporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget, "2.12.0")
+        runReporting.deprecationWarning(NoPosition, settings.target.name + ":" + settings.target.value + " is deprecated and has no effect, setting to " + supportedTarget, "2.12.0", site = "", origin = "")
         settings.target.value = supportedTarget
       }
-      settings.conflictWarning.foreach(reporter.warning(NoPosition, _))
+      settings.conflictWarning.foreach(runReporting.warning(NoPosition, _, WarningCategory.Other, site = ""))
     }
 
     /* An iterator returning all the units being compiled in this run */
@@ -1509,7 +1509,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
         val profileBefore=profiler.beforePhase(phase)
         try globalPhase.run()
-        catch { case _: InterruptedException => reporter.cancelled = true }
+        catch { case _: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => } }
         finally if (timePhases) statistics.stopTimer(phaseTimer, startPhase) else ()
         profiler.afterPhase(phase, profileBefore)
 
@@ -1548,6 +1548,9 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         // output collected statistics
         if (settings.YstatisticsEnabled && settings.Ystatistics.contains(phase.name))
           printStatisticsFor(phase)
+
+        if (!globalPhase.hasNext || reporter.hasErrors)
+          runReporting.warnUnusedSuppressions()
 
         advancePhase()
       }
@@ -1596,7 +1599,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case ex: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => }
         case ex: IOException => globalError(ex.getMessage())
       }
     }
@@ -1614,7 +1617,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
         compileSources(sources)
       }
       catch {
-        case ex: InterruptedException => reporter.cancelled = true
+        case ex: InterruptedException => reporter match { case cancelable: reporters.Reporter => cancelable.cancelled = true case _ => }
         case ex: IOException => globalError(ex.getMessage())
       }
     }
@@ -1739,11 +1742,12 @@ object Global {
 
   def apply(settings: Settings): Global = new Global(settings, reporter(settings))
 
-  private def reporter(settings: Settings): Reporter = {
+  private def reporter(settings: Settings): FilteringReporter = {
     //val loader = ScalaClassLoader(getClass.getClassLoader)  // apply does not make delegate
     val loader = new ClassLoader(getClass.getClassLoader) with ScalaClassLoader
-    loader.create[Reporter](settings.reporter.value, settings.errorFn)(settings)
+    loader.create[FilteringReporter](settings.reporter.value, settings.errorFn)(settings)
   }
+
   private object InitPhase extends Phase(null) {
     def name = "<init phase>"
     override def keepsTypeParams = false

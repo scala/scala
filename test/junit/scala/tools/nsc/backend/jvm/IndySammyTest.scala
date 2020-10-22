@@ -38,7 +38,7 @@ class IndySammyTest extends BytecodeTesting {
    */
   def test(from: String, to: String, arg: String, body: String => String = x => x)
           (expectedSig: String, lamBody: List[Instruction], appArgs: List[Instruction], ret: Instruction)
-          (allowMessage: StoreReporter#Info => Boolean = _ => false) = {
+          (allowMessage: StoreReporter.Info => Boolean = _ => false) = {
     val List(funClass, vcClass, vcCompanion) = compileClasses(s"${classPrologue(from, to)}")
     val c = compileClass(s"class C { ${lamDef(from, to, body)}; ${appDef(arg)} }", allowMessage = allowMessage)
 

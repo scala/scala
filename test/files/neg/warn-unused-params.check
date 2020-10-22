@@ -13,10 +13,10 @@ case class CaseyAtTheBat(k: Int)(s: String)        // warn
 warn-unused-params.scala:63: warning: parameter value readResolve in method f is never used
   def f(readResolve: Int) = 42           // warn
         ^
-warn-unused-params.scala:77: warning: parameter value i in value $anonfun is never used
+warn-unused-params.scala:77: warning: parameter value i in anonymous function is never used
   def f = (i: Int) => 42      // warn
             ^
-warn-unused-params.scala:83: warning: parameter value i in value $anonfun is never used
+warn-unused-params.scala:83: warning: parameter value i in anonymous function is never used
   def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
                ^
 error: No warnings can be incurred under -Xfatal-warnings.

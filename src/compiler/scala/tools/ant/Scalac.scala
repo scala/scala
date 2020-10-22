@@ -22,7 +22,7 @@ import org.apache.tools.ant.util.facade.{FacadeTaskHelper, ImplementationSpecifi
 
 import scala.tools.nsc.{Global, Settings, CompilerCommand}
 import scala.tools.nsc.io.{Path => SPath}
-import scala.tools.nsc.reporters.{Reporter, ConsoleReporter}
+import scala.tools.nsc.reporters.{ ConsoleReporter, Reporter }
 
 /** An Ant task to compile with the new Scala compiler (NSC).
  *
@@ -691,14 +691,14 @@ class Scalac extends ScalaMatchingTask with ScalacShared {
         buildError("Compile failed because of an internal compiler error (" + msg + "); see the error output for details.")
     }
 
-    reporter.printSummary()
+    reporter.finish()
     if (reporter.hasErrors) {
       val msg = "Compile failed with %d error%s; see the compiler error output for details.".format(
-        reporter.ERROR.count, plural(reporter.ERROR.count))
+        reporter.errorCount, plural(reporter.errorCount))
       if (failonerror) buildError(msg) else log(msg)
     }
-    else if (reporter.WARNING.count > 0)
+    else if (reporter.warningCount > 0)
       log("Compile succeeded with %d warning%s; see the compiler output for details.".format(
-        reporter.WARNING.count, plural(reporter.WARNING.count)))
+        reporter.warningCount, plural(reporter.warningCount)))
   }
 }

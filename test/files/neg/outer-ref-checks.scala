@@ -1,4 +1,5 @@
 // scalac: -Xfatal-warnings -unchecked
+//
 import scala.annotation.unchecked.uncheckedVariance
 
 class Outer {

@@ -1,22 +1,13 @@
-patmat-type-check.scala:11: warning: fruitless type test: a value of type Test.Bop4[T] cannot also be a Seq[A]
-  def s3[T](x: Bop4[T]) = x match { case Seq('b', 'o', 'b') => true }
-                                            ^
 patmat-type-check.scala:11: error: pattern type is incompatible with expected type;
  found   : Seq[A]
  required: Test.Bop4[T]
   def s3[T](x: Bop4[T]) = x match { case Seq('b', 'o', 'b') => true }
                                             ^
-patmat-type-check.scala:15: warning: fruitless type test: a value of type Test.Bop5[_$1,T1,T2] cannot also be a Seq[A]
-  def s4[T1, T2](x: Bop5[_, T1, T2]) = x match { case Seq('b', 'o', 'b') => true }
-                                                         ^
 patmat-type-check.scala:15: error: pattern type is incompatible with expected type;
  found   : Seq[A]
  required: Test.Bop5[_$1,T1,T2] where type _$1
   def s4[T1, T2](x: Bop5[_, T1, T2]) = x match { case Seq('b', 'o', 'b') => true }
                                                          ^
-patmat-type-check.scala:19: warning: fruitless type test: a value of type Test.Bop3[T] cannot also be a Seq[A]
-  def f4[T](x: Bop3[T]) = x match { case Seq('b', 'o', 'b') => true }
-                                            ^
 patmat-type-check.scala:19: error: pattern type is incompatible with expected type;
  found   : Seq[A]
  required: Test.Bop3[T]
@@ -42,5 +33,4 @@ patmat-type-check.scala:30: error: scrutinee is incompatible with pattern type;
  required: Test.Bop3[Char]
   def f4[T](x: Bop3[Char]) = x match { case Seq('b', 'o', 'b') => true } // fail
                                                ^
-three warnings found
 7 errors found

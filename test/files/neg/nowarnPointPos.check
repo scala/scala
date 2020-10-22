@@ -1,0 +1,47 @@
+nowarnPointPos.scala:11: warning: method dep in class C is deprecated (since 1.2.3): message
+  @nowarn @ann(dep) def t2 = 0          // deprecation warning, @nowarn unused
+               ^
+nowarnPointPos.scala:31: warning: a pure expression does nothing in statement position; multiline expressions might require enclosing parentheses
+  val t7b = { 0; 1 }
+              ^
+nowarnPointPos.scala:37: warning: a pure expression does nothing in statement position
+    def f: Unit = 1
+                  ^
+nowarnPointPos.scala:56: warning: a pure expression does nothing in statement position
+      123
+      ^
+nowarnPointPos.scala:67: warning: a pure expression does nothing in statement position
+    123
+    ^
+nowarnPointPos.scala:75: warning: a pure expression does nothing in statement position
+    123
+    ^
+nowarnPointPos.scala:80: warning: method dep in class C is deprecated (since 1.2.3): message
+    a + dep
+        ^
+nowarnPointPos.scala:45: warning: I3b has a main method with parameter type Array[String], but C.I3b will not be a runnable program.
+  Reason: companion is a trait, which means no static forwarder can be generated.
+
+  object I3b {
+         ^
+nowarnPointPos.scala:9: warning: @nowarn annotation does not suppress any warnings
+  @nowarn def t0 = { 0: @nowarn; 1 }     // outer @nowarn unused
+   ^
+nowarnPointPos.scala:10: warning: @nowarn annotation does not suppress any warnings
+  @nowarn def t1 = { 0: Int @nowarn; 1 } // inner @nowarn unused, it covers the type, not the expression
+                             ^
+nowarnPointPos.scala:11: warning: @nowarn annotation does not suppress any warnings
+  @nowarn @ann(dep) def t2 = 0          // deprecation warning, @nowarn unused
+   ^
+nowarnPointPos.scala:19: warning: @nowarn annotation does not suppress any warnings
+  @nowarn class I1a { // unused @nowarn
+   ^
+nowarnPointPos.scala:24: warning: @nowarn annotation does not suppress any warnings
+  @nowarn class I1b { // unused @nowarn
+   ^
+nowarnPointPos.scala:65: warning: @nowarn annotation does not suppress any warnings
+  @nowarn("msg=something else")
+   ^
+error: No warnings can be incurred under -Xfatal-warnings.
+14 warnings found
+one error found

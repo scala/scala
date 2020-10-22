@@ -13,23 +13,23 @@
 package scala.tools.nsc
 package interactive
 
-import java.io.{ FileReader, FileWriter }
-import scala.collection.mutable
-import mutable.{LinkedHashMap, HashSet, SynchronizedSet}
-import scala.util.control.ControlThrowable
-import scala.tools.nsc.io.AbstractFile
-import scala.reflect.internal.util.SourceFile
-import scala.tools.nsc.reporters._
-import scala.tools.nsc.symtab._
-import scala.tools.nsc.typechecker.Analyzer
-import symtab.Flags.{ACCESSOR, PARAMACCESSOR}
-import scala.annotation.{ elidable, tailrec }
-import scala.language.implicitConversions
-import scala.tools.nsc.typechecker.Typers
-import scala.util.control.Breaks._
+import java.io.{FileReader, FileWriter}
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.JavaConverters.mapAsScalaMapConverter
+
+import scala.annotation.{elidable, tailrec}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.{HashSet, LinkedHashMap}
+import scala.language.implicitConversions
 import scala.reflect.internal.Chars.isIdentifierStart
+import scala.reflect.internal.util.SourceFile
+import scala.tools.nsc.io.AbstractFile
+import scala.tools.nsc.reporters.Reporter
+import scala.tools.nsc.symtab.Flags.{ACCESSOR, PARAMACCESSOR}
+import scala.tools.nsc.symtab._
+import scala.tools.nsc.typechecker.{Analyzer, Typers}
+import scala.util.control.Breaks._
+import scala.util.control.ControlThrowable
 
 /**
  * This trait allows the IDE to have an instance of the PC that
@@ -169,7 +169,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
 
   /** A map of all loaded files to the rich compilation units that correspond to them.
    */
-  val unitOfFile = mapAsScalaMapConverter(new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
+  val unitOfFile = (new ConcurrentHashMap[AbstractFile, RichCompilationUnit] {
     override def put(key: AbstractFile, value: RichCompilationUnit) = {
       val r = super.put(key, value)
       if (r == null) debugLog("added unit for "+key)
@@ -186,12 +186,12 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
    *  Units are removed by getUnit, typically once a unit is finished compiled.
    */
   protected val toBeRemoved: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+    new HashSet[AbstractFile] with mutable.SynchronizedSet[AbstractFile]
 
   /** A set containing all those files that need to be removed after a full background compiler run
    */
   protected val toBeRemovedAfterRun: mutable.Set[AbstractFile] =
-    new HashSet[AbstractFile] with SynchronizedSet[AbstractFile]
+    new HashSet[AbstractFile] with mutable.SynchronizedSet[AbstractFile]
 
   class ResponseMap extends mutable.HashMap[SourceFile, Set[Response[Tree]]] {
     override def default(key: SourceFile): Set[Response[Tree]] = Set()
@@ -973,7 +973,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     case _ => tree.tpe
   }
 
-  import analyzer.{SearchResult, ImplicitSearch}
+  import analyzer.{ImplicitSearch, SearchResult}
 
   private[interactive] def getScopeCompletion(pos: Position, response: Response[List[Member]]) {
     informIDE("getScopeCompletion" + pos)

@@ -12,6 +12,8 @@
 
 package scala.tools.nsc.transform.patmat
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 trait MatchWarnings {
   self: PatternMatching =>
 
@@ -69,7 +71,7 @@ trait MatchWarnings {
         val cdef = it.next()
         // If a default case has been seen, then every succeeding case is unreachable.
         if (vpat != null)
-          reporter.warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat)) // TODO: make configurable whether this is an error
+          typer.context.warning(cdef.body.pos, "unreachable code due to " + vpat + addendum(cdef.pat), WarningCategory.OtherMatchAnalysis) // TODO: make configurable whether this is an error
         // If this is a default case and more cases follow, warn about this one so
         // we have a reason to mention its pattern variable name and any corresponding
         // symbol in scope.  Errors will follow from the remaining cases, at least
@@ -80,7 +82,7 @@ trait MatchWarnings {
             case _               => ""
           }
           vpat = s"variable pattern$vpatName on line ${cdef.pat.pos.line}"
-          reporter.warning(cdef.pos, s"patterns after a variable pattern cannot match (SLS 8.1.1)" + addendum(cdef.pat))
+          typer.context.warning(cdef.pos, s"patterns after a variable pattern cannot match (SLS 8.1.1)" + addendum(cdef.pat), WarningCategory.OtherMatchAnalysis)
         }
       }
     }

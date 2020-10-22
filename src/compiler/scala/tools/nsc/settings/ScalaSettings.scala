@@ -25,10 +25,7 @@ import scala.tools.util.PathResolver.Defaults
 import scala.collection.mutable
 import scala.tools.nsc.util.DefaultJarFactory
 
-trait ScalaSettings extends AbsScalaSettings
-                       with StandardScalaSettings
-                       with Warnings {
-  self: MutableSettings =>
+trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSettings =>
 
   /** Set of settings */
   protected[scala] lazy val allSettings = mutable.LinkedHashMap[String, Setting]()
@@ -63,10 +60,11 @@ trait ScalaSettings extends AbsScalaSettings
    *  Standard settings
    */
   // argfiles is only for the help message
-  /*val argfiles = */ BooleanSetting    ("@<file>", "A text file containing compiler arguments (options and source files)")
-  val classpath     = PathSetting       ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
-  val d             = OutputSetting     (outputDirs, ".")
-  val nospecialization = BooleanSetting ("-no-specialization", "Ignore @specialize annotations.")
+  /*val argfiles = */ BooleanSetting("@<file>", "A text file containing compiler arguments (options and source files)")
+  val classpath     = PathSetting   ("-classpath", "Specify where to find user class files.", defaultClasspath) withAbbreviation "-cp"
+  val d             = OutputSetting (outputDirs, ".").withPostSetHook(s => try outputDirs.setSingleOutput(s.value) catch { case FatalError(msg) => errorFn(msg) })
+
+  val nospecialization = BooleanSetting("-no-specialization", "Ignore @specialize annotations.")
 
   // Would be nice to build this dynamically from scala.languageFeature.
   // The two requirements: delay error checking until you have symbols, and let compiler command build option-specific help.
@@ -151,7 +149,7 @@ trait ScalaSettings extends AbsScalaSettings
   val Xshowobj           = StringSetting       ("-Xshow-object", "object", "Show internal representation of object.", "")
   val showPhases         = BooleanSetting      ("-Xshow-phases", "Print a synopsis of compiler phases.")
   val sourceReader       = StringSetting       ("-Xsource-reader", "classname", "Specify a custom method for reading source files.", "")
-  val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom reporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
+  val reporter           = StringSetting       ("-Xreporter", "classname", "Specify a custom subclass of FilteringReporter for compiler messages.", "scala.tools.nsc.reporters.ConsoleReporter")
   val strictInference    = BooleanSetting      ("-Xstrict-inference", "Don't infer known-unsound types")
   val source             = ScalaVersionSetting ("-Xsource", "version", "Treat compiler input as Scala source for the specified version, see scala/bug#8126.", initial = ScalaVersion("2.12"))
 
@@ -263,7 +261,7 @@ trait ScalaSettings extends AbsScalaSettings
   val YpickleJava = BooleanSetting("-Ypickle-java", "Pickler phase should compute pickles for .java defined symbols for use by build tools").internalOnly()
   val YpickleWrite = StringSetting("-Ypickle-write", "directory|jar", "destination for generated .sig files containing type signatures.", "", None).internalOnly()
   val YpickleWriteApiOnly = BooleanSetting("-Ypickle-write-api-only", "Exclude private members (other than those material to subclass compilation, such as private trait vals) from generated .sig files containing type signatures.").internalOnly()
-  val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.").withDefault(true)
+  val YtrackDependencies = BooleanSetting("-Ytrack-dependencies", "Record references to in unit.depends. Deprecated feature that supports SBT 0.13 with incOptions.withNameHashing(false) only.", default = true)
 
   sealed abstract class CachePolicy(val name: String, val help: String)
   object CachePolicy {
@@ -403,9 +401,13 @@ trait ScalaSettings extends AbsScalaSettings
     helpArg = "warning",
     descr = "Enable optimizer warnings",
     domain = optWarningsChoices,
-    default = Some(List(optWarningsChoices.atInlineFailed.name)))
+    default = Some(List(optWarningsChoices.atInlineFailed.name))) withPostSetHook { _ =>
+    // no need to set `Wconf` to `silent` if optWarnings is none, since no warnings are reported
+    if (optWarningsSummaryOnly) Wconf.tryToSet(List(s"cat=optimizer:ws"))
+    else Wconf.tryToSet(List(s"cat=optimizer:w"))
+  }
 
-  def optWarningsSummaryOnly = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
+  def optWarningsSummaryOnly: Boolean = optWarnings.value subsetOf Set(optWarningsChoices.none, optWarningsChoices.atInlineFailedSummary)
 
   def optWarningEmitAtInlineFailed =
     !optWarnings.isSetByUser ||

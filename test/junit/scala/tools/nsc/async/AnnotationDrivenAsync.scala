@@ -389,12 +389,11 @@ class AnnotationDrivenAsync {
   def run(code: String, compileOnly: Boolean = false): Any = {
     val out = createTempDir()
     try {
-      val reporter = new StoreReporter {
-        override protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = {
+      val reporter = new StoreReporter(new Settings) {
+        override def doReport(pos: Position, msg: String, severity: Severity): Unit =
           if (severity == INFO) println(msg)
-          else super.info0(pos, msg, severity, force)
+          else super.doReport(pos, msg, severity)
         }
-      }
       val settings = new Settings(println(_))
       settings.async.value = true
       settings.outdir.value = out.getAbsolutePath
@@ -424,7 +423,7 @@ class AnnotationDrivenAsync {
       val source = newSourceFile(code)
       run.compileSources(source :: Nil)
       if (compileOnly) return null
-      def showInfo(info: StoreReporter#Info): String = {
+      def showInfo(info: StoreReporter.Info): String = {
         Position.formatMessage(info.pos, info.severity.toString.toLowerCase + " : " + info.msg, false)
       }
       Assert.assertTrue(reporter.infos.map(showInfo).mkString("\n"), !reporter.hasErrors)

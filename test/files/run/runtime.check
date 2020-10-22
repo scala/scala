@@ -1,7 +1,7 @@
-runtime.scala:141: warning: comparing values of types Null and Null using `eq' will always yield true
+runtime.scala:141: warning: comparing values of types Null and Null using `eq` will always yield true
     check(true , null eq null, null ne null);
                       ^
-runtime.scala:141: warning: comparing values of types Null and Null using `ne' will always yield false
+runtime.scala:141: warning: comparing values of types Null and Null using `ne` will always yield false
     check(true , null eq null, null ne null);
                                     ^
 <<< Test0

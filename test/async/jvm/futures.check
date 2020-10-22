@@ -10,4 +10,4 @@ futures.scala:173: warning: match may not be exhaustive.
 It would fail on the following input: Req((x: T forSome x not in (Int, String)))
         def asyncReq[T](req: Req[T]) = req match {
                                        ^
-warning: there were 9 deprecation warnings (since 2.12.0); re-run with -deprecation for details
+warning: 9 deprecations (since 2.12.0); re-run with -deprecation for details

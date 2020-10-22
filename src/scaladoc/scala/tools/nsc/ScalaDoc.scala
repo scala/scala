@@ -27,7 +27,7 @@ class ScalaDoc {
   def process(args: Array[String]): Boolean = {
     var reporter: ScalaDocReporter = null
     val docSettings = new doc.Settings(msg => reporter.error(FakePos("scaladoc"), msg + "\n  scaladoc -help  gives more information"),
-                                       msg => reporter.printMessage(msg),
+                                       msg => reporter.echo(msg),
                                        DefaultPathFactory)
     reporter = new ScalaDocReporter(docSettings)
     val command = new ScalaDoc.Command(args.toList, docSettings)
@@ -52,7 +52,7 @@ class ScalaDoc {
           if (docSettings.debug.value) ex.printStackTrace()
           reporter.error(null, "fatal error: " + msg)
       }
-      finally reporter.printSummary()
+      finally reporter.finish()
 
     !reporter.reallyHasErrors
   }
@@ -80,9 +80,11 @@ class ScalaDocReporter(settings: Settings) extends ConsoleReporter(settings) {
 
   def printDelayedMessages(): Unit = delayedMessages.values.foreach(_.apply())
 
-  override def printSummary(): Unit = {
+  override def printMessage(msg: String): Unit = display(NoPosition, msg, INFO)
+
+  override def finish(): Unit = {
     printDelayedMessages()
-    super.printSummary()
+    super.finish()
   }
 }
 
@@ -98,21 +100,5 @@ object ScalaDoc extends ScalaDoc {
 
   def main(args: Array[String]): Unit = sys exit {
     if (process(args)) 0 else 1
-  }
-
-  implicit class SummaryReporter(val rep: Reporter) extends AnyVal {
-    /** Adds print lambda to ScalaDocReporter, executes it on other reporter */
-    private[this] def summaryMessage(pos: Position, msg: String, print: () => Unit): Unit = rep match {
-      case r: ScalaDocReporter => r.addDelayedMessage(pos, msg, print)
-      case _ => print()
-    }
-
-    def summaryEcho(pos: Position, msg: String): Unit    = summaryMessage(pos, msg, () => rep.echo(pos, msg))
-    def summaryError(pos: Position, msg: String): Unit   = summaryMessage(pos, msg, () => rep.error(pos, msg))
-    def summaryWarning(pos: Position, msg: String): Unit = summaryMessage(pos, msg, () => rep.warning(pos, msg))
-
-    def summaryEcho(msg: String): Unit    = summaryEcho(NoPosition, msg)
-    def summaryError(msg: String): Unit   = summaryError(NoPosition, msg)
-    def summaryWarning(msg: String): Unit = summaryWarning(NoPosition, msg)
   }
 }

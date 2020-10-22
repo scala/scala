@@ -19,6 +19,8 @@ import GenBCode._
 import BackendReporting._
 import scala.tools.asm.ClassWriter
 import scala.tools.nsc.reporters.NoReporter
+import PartialFunction.cond
+import scala.tools.nsc.Reporting.WarningCategory
 
 /*
  *  Traits encapsulating functionality to convert Scala AST Trees into ASM ClassNodes.
@@ -240,9 +242,10 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
       sym.isErroneous
     }
 
+  private lazy val noReporter = new NoReporter(settings)
   @inline private def withoutReporting[T](fn : => T) = {
     val currentReporter = reporter
-    reporter = NoReporter
+    reporter = noReporter
     try fn finally reporter = currentReporter
   }
 
@@ -256,31 +259,27 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
      */
     def apply(sym: Symbol, csymCompUnit: CompilationUnit): Boolean = {
       def fail(msg: String, pos: Position = sym.pos) = {
-        reporter.warning(sym.pos,
-          sym.name +
-          s" has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.\n  Reason: $msg"
+        runReporting.warning(pos,
+          s"""${sym.name} has a main method with parameter type Array[String], but ${sym.fullName('.')} will not be a runnable program.
+             |  Reason: $msg""".stripMargin,
           // TODO: make this next claim true, if possible
           //   by generating valid main methods as static in module classes
           //   not sure what the jvm allows here
           // + "  You can still run the program by calling it as " + sym.javaSimpleName + " instead."
-        )
+          WarningCategory.Other,
+          sym)
         false
       }
       def failNoForwarder(msg: String) = {
         fail(s"$msg, which means no static forwarder can be generated.\n")
       }
       val possibles = if (sym.hasModuleFlag) (sym.tpe nonPrivateMember nme.main).alternatives else Nil
-      val hasApproximate = possibles exists { m =>
-        m.info match {
-          case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass
-          case _                       => false
-        }
-      }
+      val hasApproximate = possibles.exists(m => cond(m.info) { case MethodType(p :: Nil, _) => p.tpe.typeSymbol == definitions.ArrayClass })
       // At this point it's a module with a main-looking method, so either succeed or warn that it isn't.
       hasApproximate && {
         // Before erasure so we can identify generic mains.
         enteringErasure {
-          val companion     = sym.linkedClassOfClass
+          val companion = sym.linkedClassOfClass
 
           if (definitions.hasJavaMainMethod(companion))
             failNoForwarder("companion contains its own main method")
@@ -291,7 +290,7 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
             failNoForwarder("companion is a trait")
           // Now either succeed, or issue some additional warnings for things which look like
           // attempts to be java main methods.
-        else (possibles exists definitions.isJavaMainMethod) || {
+          else (possibles exists definitions.isJavaMainMethod) || {
             possibles exists { m =>
               m.info match {
                 case PolyType(_, _) =>
@@ -741,11 +740,13 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         }
 
         if(!isValidSignature) {
-          reporter.warning(sym.pos,
+          runReporting.warning(sym.pos,
             sm"""|compiler bug: created invalid generic signature for $sym in ${sym.owner.skipPackageObject.fullName}
                  |signature: $sig
                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+              """.trim,
+            WarningCategory.Other,
+            sym)
           return null
         }
       }
@@ -754,14 +755,16 @@ abstract class BCodeHelpers extends BCodeIdiomatic {
         val normalizedTpe = enteringErasure(erasure.prepareSigMap(memberTpe))
         val bytecodeTpe = owner.thisType.memberInfo(sym)
         if (!sym.isType && !sym.isConstructor && !(erasure.erasure(sym)(normalizedTpe) =:= bytecodeTpe)) {
-          reporter.warning(sym.pos,
+          runReporting.warning(sym.pos,
             sm"""|compiler bug: created generic signature for $sym in ${sym.owner.skipPackageObject.fullName} that does not conform to its erasure
                  |signature: $sig
                  |original type: $memberTpe
                  |normalized type: $normalizedTpe
                  |erasure type: $bytecodeTpe
                  |if this is reproducible, please report bug at https://github.com/scala/bug/issues
-              """.trim)
+              """.trim,
+            WarningCategory.Other,
+            sym)
            return null
         }
       }

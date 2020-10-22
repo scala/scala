@@ -14,19 +14,22 @@ package scala.reflect.macros
 package contexts
 
 import scala.reflect.macros.runtime.AbortMacroException
+import scala.tools.nsc.Reporting.WarningCategory
 
 trait FrontEnds {
   self: Context =>
 
   def echo(pos: Position, msg: String): Unit = universe.reporter.echo(pos, msg)
 
-  def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.info(pos, msg, force)
+  @deprecated("Use echo, info messages are always forced", since="2.13.0")
+  def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.echo(pos, msg)
 
   def hasWarnings: Boolean = universe.reporter.hasErrors
 
   def hasErrors: Boolean = universe.reporter.hasErrors
 
-  def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg)
+  // TODO: add WarningCategory parameter in 2.14 (not binary compatible)
+  def warning(pos: Position, msg: String): Unit = callsiteTyper.context.warning(pos, msg, WarningCategory.Other)
 
   def error(pos: Position, msg: String): Unit = callsiteTyper.context.error(pos, msg)
 

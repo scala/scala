@@ -75,7 +75,7 @@ object TestSolver extends Logic with Solving {
 
     def prepareNewAnalysis() = {}
 
-    def uncheckedWarning(pos: Position, msg: String) = sys.error(msg)
+    def uncheckedWarning(pos: Position, msg: String, site: global.Symbol): Unit = sys.error(msg)
 
     def reportWarning(msg: String) = sys.error(msg)
 

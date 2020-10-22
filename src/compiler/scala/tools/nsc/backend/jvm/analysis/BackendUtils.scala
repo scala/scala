@@ -584,6 +584,10 @@ abstract class BackendUtils extends PerRunInit {
       setMaxsComputed(method)
     }
   }
+
+  // not in `backendReporting` since there we don't have access to the `Callsite` class
+  def optimizerWarningSiteString(cs: callGraph.Callsite): String =
+    frontendAccess.backendReporting.siteString(cs.callsiteClass.internalName, cs.callsiteMethod.name)
 }
 
 object BackendUtils {

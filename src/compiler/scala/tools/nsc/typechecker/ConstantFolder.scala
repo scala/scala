@@ -16,6 +16,8 @@ package typechecker
 
 import java.lang.ArithmeticException
 
+import scala.tools.nsc.Reporting.WarningCategory
+
 /** This class ...
  *
  *  @author Martin Odersky
@@ -27,21 +29,21 @@ abstract class ConstantFolder {
   import global._
 
   /** If tree is a constant operation, replace with result. */
-  def apply(tree: Tree): Tree = fold(tree, tree match {
+  def apply(tree: Tree, site: Symbol): Tree = fold(tree, tree match {
     case Apply(Select(Literal(x), op), List(Literal(y))) => foldBinop(op, x, y)
     case Select(Literal(x), op) => foldUnop(op, x)
     case _ => null
-  })
+  }, site)
 
   /** If tree is a constant value that can be converted to type `pt`, perform
    *  the conversion.
    */
-  def apply(tree: Tree, pt: Type): Tree = fold(apply(tree), tree.tpe match {
+  def apply(tree: Tree, pt: Type, site: Symbol): Tree = fold(apply(tree, site), tree.tpe match {
     case ConstantType(x) => x convertTo pt
     case _ => null
-  })
+  }, site)
 
-  private def fold(tree: Tree, compX: => Constant): Tree =
+  private def fold(tree: Tree, compX: => Constant, site: Symbol): Tree =
     try {
       val x = compX
       if ((x ne null) && x.tag != UnitTag) tree setType ConstantType(x)
@@ -49,7 +51,7 @@ abstract class ConstantFolder {
     } catch {
       case e: ArithmeticException =>
         if (settings.warnConstant)
-          warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}")
+          runReporting.warning(tree.pos, s"Evaluation of a constant expression results in an arithmetic error: ${e.getMessage}", WarningCategory.LintConstant, site)
         tree
     }
 

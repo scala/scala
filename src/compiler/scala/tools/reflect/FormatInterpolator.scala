@@ -128,7 +128,7 @@ abstract class FormatInterpolator {
               c.error(errPoint, msg("unsupported"))
               s0
             } else {
-              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"), "2.11.0")
+              currentRun.reporting.deprecationWarning(errPoint, msg("deprecated"), "2.11.0", site = "", origin = "")
               try StringContext.treatEscapes(s0) catch escapeHatch
             }
           }

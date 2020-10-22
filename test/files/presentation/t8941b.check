@@ -1,0 +1,3 @@
+IdempotencyTest.scala:7: warning: imported `Reporter` is permanently hidden by definition of trait Reporter in package core
+import reporters.Reporter
+                 ^

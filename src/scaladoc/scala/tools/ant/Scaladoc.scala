@@ -674,19 +674,19 @@ class Scaladoc extends ScalaMatchingTask {
     try {
       val docProcessor = new scala.tools.nsc.doc.DocFactory(reporter, docSettings)
       docProcessor.document(sourceFiles.map (_.toString))
-      if (reporter.ERROR.count > 0)
+      if (reporter.errorCount > 0)
         safeBuildError(
           "Document failed with " +
-          reporter.ERROR.count + " error" +
-          (if (reporter.ERROR.count > 1) "s" else "") +
+          reporter.errorCount + " error" +
+          (if (reporter.errorCount > 1) "s" else "") +
           "; see the documenter error output for details.")
-      else if (reporter.WARNING.count > 0)
+      else if (reporter.warningCount > 0)
         log(
           "Document succeeded with " +
-          reporter.WARNING.count + " warning" +
-          (if (reporter.WARNING.count > 1) "s" else "") +
+          reporter.warningCount + " warning" +
+          (if (reporter.warningCount > 1) "s" else "") +
           "; see the documenter output for details.")
-      reporter.printSummary()
+      reporter.finish()
     } catch {
       case exception: Throwable =>
         exception.printStackTrace()

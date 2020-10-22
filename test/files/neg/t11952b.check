@@ -1,0 +1,16 @@
+[running phase parser on t11952b.scala]
+[running phase namer on t11952b.scala]
+[running phase packageobjects on t11952b.scala]
+[running phase typer on t11952b.scala]
+[running phase patmat on t11952b.scala]
+[running phase superaccessors on t11952b.scala]
+[running phase extmethods on t11952b.scala]
+[running phase pickler on t11952b.scala]
+[running phase refchecks on t11952b.scala]
+t11952b.scala:9: error: overriding method f in class C of type => String;
+ method f cannot override final member;
+ found   : => scala.this.Int
+ required: => String
+  override def f: Int = 42
+               ^
+one error found

@@ -19,6 +19,7 @@ import scala.util.control.Exception.ultimately
 import symtab.Flags._
 import PartialFunction.condOpt
 import scala.annotation.tailrec
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** An interface to enable higher configurability of diagnostic messages
  *  regarding type errors.  This is barely a beginning as error messages are
@@ -48,8 +49,8 @@ trait TypeDiagnostics {
   /** For errors which are artifacts of the implementation: such messages
    *  indicate that the restriction may be lifted in the future.
    */
-  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String): Unit =
-    reporter.warning(pos, "Implementation restriction: " + msg)
+  def restrictionWarning(pos: Position, unit: CompilationUnit, msg: String, category: WarningCategory, site: Symbol): Unit =
+    runReporting.warning(pos, "Implementation restriction: " + msg, category, site)
   def restrictionError(pos: Position, unit: CompilationUnit, msg: String): Unit =
     reporter.error(pos, "Implementation restriction: " + msg)
 
@@ -481,7 +482,7 @@ trait TypeDiagnostics {
 
     def apply(context: Context, tree: Tree): Tree = {
       if (settings.warnDeadCode && context.unit.exists && treeOK(tree) && !context.contextMode.inAny(ContextMode.SuppressDeadArgWarning))
-        context.warning(tree.pos, "dead code following this construct")
+        context.warning(tree.pos, "dead code following this construct", WarningCategory.WFlagDeadCode)
       tree
     }
 
@@ -655,12 +656,17 @@ trait TypeDiagnostics {
       warnUnusedPatVars || warnUnusedPrivates || warnUnusedLocals || warnUnusedParams
     }
 
+    // `checkUnused` is invoked after type checking. we have to avoid using `typer.context.warning`, which uses
+    // `context.owner` as the `site` of the warning, but that's the root symbol at this point.
+    def emitUnusedWarning(pos: Position, msg: String, category: WarningCategory, site: Symbol): Unit = runReporting.warning(pos, msg, category, site)
+
     def run(unusedPrivates: UnusedPrivates)(body: Tree): Unit = {
       unusedPrivates.traverse(body)
 
       if (settings.warnUnusedLocals || settings.warnUnusedPrivates) {
         def shouldWarnOn(sym: Symbol) = if (sym.isPrivate) settings.warnUnusedPrivates else settings.warnUnusedLocals
         val valAdvice = "is never updated: consider using immutable val"
+        def wcat(sym: Symbol) = if (sym.isPrivate) WarningCategory.UnusedPrivates else WarningCategory.UnusedLocals
         def termWarning(defn: SymTree): Unit = {
           val sym = defn.symbol
           val pos = (
@@ -690,23 +696,23 @@ trait TypeDiagnostics {
             else if (sym.isModule) s"object ${sym.name.decoded}"
             else "term"
           )
-          typer.context.warning(pos, s"$why $what in ${sym.owner} $cond")
+          emitUnusedWarning(pos, s"$why $what in ${sym.owner} $cond", wcat(sym), sym)
         }
         def typeWarning(defn: SymTree): Unit = {
           val why = if (defn.symbol.isPrivate) "private" else "local"
-          typer.context.warning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used")
+          emitUnusedWarning(defn.pos, s"$why ${defn.symbol.fullLocationString} is never used", wcat(defn.symbol), defn.symbol)
         }
 
         for (defn <- unusedPrivates.unusedTerms if shouldWarnOn(defn.symbol)) { termWarning(defn) }
         for (defn <- unusedPrivates.unusedTypes if shouldWarnOn(defn.symbol)) { typeWarning(defn) }
 
         for (v <- unusedPrivates.unsetVars) {
-          typer.context.warning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}")
+          emitUnusedWarning(v.pos, s"local var ${v.name} in ${v.owner} ${valAdvice}", WarningCategory.UnusedPrivates, v)
         }
       }
       if (settings.warnUnusedPatVars) {
         for (v <- unusedPrivates.unusedPatVars)
-          typer.context.warning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used; `${v.name}@_' suppresses this warning")
+          emitUnusedWarning(v.pos, s"pattern var ${v.name} in ${v.owner} is never used: use a wildcard `_` or suppress this warning with `${v.name}@_`", WarningCategory.UnusedPatVars, v)
       }
       if (settings.warnUnusedParams) {
         def isImplementation(m: Symbol): Boolean = {
@@ -725,7 +731,7 @@ trait TypeDiagnostics {
             && !isConvention(s)
           )
         for (s <- unusedPrivates.unusedParams if warnable(s))
-          typer.context.warning(s.pos, s"parameter $s in ${s.owner} is never used")
+          emitUnusedWarning(s.pos, s"parameter $s in ${if (s.owner.isAnonymousFunction) "anonymous function" else s.owner} is never used", WarningCategory.UnusedParams, s)
       }
     }
     def apply(unit: CompilationUnit): Unit = if (warningsEnabled && !unit.isJava && !typer.context.reporter.hasErrors) {
@@ -744,7 +750,7 @@ trait TypeDiagnostics {
     self: Typer =>
 
     def permanentlyHiddenWarning(pos: Position, hidden: Name, defn: Symbol) =
-      context.warning(pos, "imported `%s' is permanently hidden by definition of %s".format(hidden, defn.fullLocationString))
+      context.warning(pos, "imported `%s` is permanently hidden by definition of %s".format(hidden, defn.fullLocationString), WarningCategory.OtherShadowing)
 
     private def symWasOverloaded(sym: Symbol) = sym.owner.isClass && sym.owner.info.member(sym.name).isOverloaded
     private def cyclicAdjective(sym: Symbol)  = if (symWasOverloaded(sym)) "overloaded" else "recursive"
@@ -772,7 +778,8 @@ trait TypeDiagnostics {
         // we don't care about type params shadowing other type params in the same declaration
         enclClassOrMethodOrTypeMember(context).outer.lookupSymbol(tp.name, s => s != tp.symbol && s.hasRawInfo && reallyExists(s)) match {
           case LookupSucceeded(_, sym2) => context.warning(tp.pos,
-            s"type parameter ${tp.name} defined in $sym shadows $sym2 defined in ${sym2.owner}. You may want to rename your type parameter, or possibly remove it.")
+            s"type parameter ${tp.name} defined in $sym shadows $sym2 defined in ${sym2.owner}. You may want to rename your type parameter, or possibly remove it.",
+            WarningCategory.LintTypeParameterShadow)
           case _ =>
         }
       }

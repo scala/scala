@@ -1,6 +1,6 @@
 // scalac: -opt:l:inline -opt-inline-from:**
 /*
- * filter: inliner warnings;
+ * filter: optimizer warnings;
  */
 import java.lang.Thread.holdsLock
 import scala.collection.mutable.StringBuilder

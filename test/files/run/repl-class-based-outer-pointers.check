@@ -8,7 +8,6 @@ defined class Value
 defined object Value
 
 scala> class C { final case class Num(value: Double) } // here it should still warn
-warning: there was one unchecked warning; for details, enable `:setting -unchecked' or `:replay -unchecked'
 defined class C
 
 scala> :quit

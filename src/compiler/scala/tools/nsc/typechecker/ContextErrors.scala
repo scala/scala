@@ -18,6 +18,7 @@ import scala.compat.Platform.EOL
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.NonFatal
+import scala.tools.nsc.Reporting.WarningCategory
 import scala.tools.nsc.util.stackTraceString
 import scala.reflect.io.NoAbstractFile
 import scala.reflect.internal.util.NoSourceFile
@@ -1345,7 +1346,7 @@ trait ContextErrors {
     def WarnAfterNonSilentRecursiveInference(param: Symbol, arg: Tree)(implicit context: Context) = {
       val note = "failed to determine if '"+ param.name + " = ...' is a named argument or an assignment expression.\n"+
                  "an explicit type is required for the definition mentioned in the error message above."
-      context.warning(arg.pos, note)
+      context.warning(arg.pos, note, WarningCategory.Other)
     }
 
     def UnknownParameterNameNamesDefaultError(arg: Tree, name: Name, isVariableInScope: Boolean)(implicit context: Context) = {

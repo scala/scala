@@ -19,8 +19,7 @@ import scala.annotation.tailrec
 import scala.collection._
 import scala.util.matching.Regex
 import scala.reflect.internal.util.Position
-import scala.language.postfixOps
-
+import scala.tools.nsc.Reporting.WarningCategory
 
 /** The comment parser transforms raw comment strings into `Comment` objects.
   * Call `parse` to run the parser. Note that the parser is stateless and
@@ -31,7 +30,7 @@ import scala.language.postfixOps
 trait CommentFactoryBase { this: MemberLookupBase =>
 
   val global: Global
-  import global.{ reporter, Symbol, NoSymbol }
+  import global.{ runReporting, Symbol, NoSymbol }
 
   /* Creates comments with necessary arguments */
   def createComment (
@@ -340,7 +339,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         def oneTag(key: SimpleTagKey, filterEmpty: Boolean = true): Option[Body] =
           bodyTags remove key match {
             case Some(r :: rs) if !(filterEmpty && r.blocks.isEmpty) =>
-              if (rs.nonEmpty) reporter.warning(pos, s"Only one '@${key.name}' tag is allowed")
+              if (rs.nonEmpty) runReporting.warning(pos, s"Only one '@${key.name}' tag is allowed", WarningCategory.Scaladoc, site)
               Some(r)
             case _ => None
           }
@@ -353,7 +352,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             bodyTags.keys.toSeq flatMap {
               case stk: SymbolTagKey if stk.name == key.name => Some(stk)
               case stk: SimpleTagKey if stk.name == key.name =>
-                reporter.warning(pos, s"Tag '@${stk.name}' must be followed by a symbol name")
+                runReporting.warning(pos, s"Tag '@${stk.name}' must be followed by a symbol name", WarningCategory.Scaladoc, site)
                 None
               case _ => None
             }
@@ -361,7 +360,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
             for (key <- keys) yield {
               val bs = (bodyTags remove key).get
               if (bs.length > 1)
-                reporter.warning(pos, s"Only one '@${key.name}' tag for symbol ${key.symbol} is allowed")
+                runReporting.warning(pos, s"Only one '@${key.name}' tag for symbol ${key.symbol} is allowed", WarningCategory.Scaladoc, site)
               (key.symbol, bs.head)
             }
           Map.empty[String, Body] ++ (if (filterEmpty) pairs.filterNot(_._2.blocks.isEmpty) else pairs)
@@ -410,7 +409,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         )
 
         for ((key, _) <- bodyTags)
-          reporter.warning(pos, s"Tag '@${key.name}' is not recognised")
+          runReporting.warning(pos, s"Tag '@${key.name}' is not recognised", WarningCategory.Scaladoc, site)
 
         com
     }
@@ -524,7 +523,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       jump("{{{")
       val str = readUntil("}}}")
       if (char == endOfText)
-        reportError(pos, "unclosed code block")
+        reportError(pos, "unclosed code block", site)
       else
         jump("}}}")
       blockEnded("code block")
@@ -538,7 +537,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val text = inline(check("=" * inLevel))
       val outLevel = repeatJump('=', inLevel)
       if (inLevel != outLevel)
-        reportError(pos, "unbalanced or unclosed heading")
+        reportError(pos, "unbalanced or unclosed heading", site)
       blockEnded("heading")
       Title(text, inLevel)
     }
@@ -602,7 +601,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       def finalizeHeaderCells(): Unit = {
         if (cells.nonEmpty) {
           if (header.isDefined) {
-            reportError(pos, "more than one table header")
+            reportError(pos, "more than one table header", site)
           } else {
             header = Some(Row(cells.toList))
           }
@@ -698,7 +697,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           // Case 1
           storeContents()
           finalizeRow()
-          reportError(pos, "unclosed table row")
+          reportError(pos, "unclosed table row", site)
         } else if (isStartMarkNewline) {
           // peek("2: start-mark-new-line/before")
           // Case 2
@@ -718,7 +717,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         } else {
           // Case π√ⅈ
           // When the impossible happens leave some clues.
-          reportError(pos, "unexpected table row markdown")
+          reportError(pos, "unexpected table row markdown", site)
           peek("parseCell0")
           storeContents()
           finalizeRow()
@@ -753,7 +752,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       // TODO: Do not return a table when: The header row must match the delimiter row in the number of cells. If not, a table will not be recognized
 
       if (cells.nonEmpty) {
-        reportError(pos, s"Parsed and unused content: $cells")
+        reportError(pos, s"Parsed and unused content: $cells", site)
       }
       assert(header.isDefined, "table header was not parsed")
       val enforcedCellCount = header.get.cells.size
@@ -763,7 +762,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
           row
         else if (row.cells.size > enforcedCellCount) {
           val excess = row.cells.size - enforcedCellCount
-          reportError(pos, s"Dropping $excess excess table $rowType cells from row.")
+          reportError(pos, s"Dropping $excess excess table $rowType cells from row.", site)
           Row(row.cells.take(enforcedCellCount))
         } else {
           val missing = enforcedCellCount - row.cells.size
@@ -775,7 +774,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val delimiterRow :: dataRows = if (rows.nonEmpty)
         rows.toList
       else {
-        reportError(pos, "Fixing missing delimiter row")
+        reportError(pos, "Fixing missing delimiter row", site)
         Row(Cell(Paragraph(Text("-")) :: Nil) :: Nil) :: Nil
       }
 
@@ -805,11 +804,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
                 case centerAlignmentPattern(_*) => ColumnOptionCenter
                 case rightAlignmentPattern(_*) => ColumnOptionRight
                 case x =>
-                  reportError(pos, s"Fixing invalid column alignment: $x")
+                  reportError(pos, s"Fixing invalid column alignment: $x", site)
                   defaultColumnOption
               }
             case x =>
-              reportError(pos, s"Fixing invalid column alignment: $x")
+              reportError(pos, s"Fixing invalid column alignment: $x", site)
               defaultColumnOption
           }
       }
@@ -1019,7 +1018,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
     /** {{{ eol ::= { whitespace } '\n' }}} */
     def blockEnded(blockType: String): Unit = {
       if (char != endOfLine && char != endOfText) {
-        reportError(pos, "no additional content on same line after " + blockType)
+        reportError(pos, "no additional content on same line after " + blockType, site)
         jumpUntil(endOfLine)
       }
       while (char == endOfLine)
@@ -1078,8 +1077,8 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
     }
 
-    def reportError(pos: Position, message: String) {
-      reporter.warning(pos, message)
+    def reportError(pos: Position, message: String, site: Symbol): Unit = {
+      runReporting.warning(pos, message, WarningCategory.Scaladoc, site)
     }
   }
 
