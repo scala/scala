@@ -14,9 +14,12 @@ package scala
 package collection
 package immutable
 
+import java.io.IOException
+
 import generic._
-import immutable.{RedBlackTree => RB}
+import immutable.{NewRedBlackTree => RB}
 import mutable.Builder
+import scala.runtime.AbstractFunction1
 
 /** $factoryInfo
  *  @define Coll `immutable.TreeSet`
@@ -30,18 +33,29 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
   /** The empty set of this type
    */
   def empty[A](implicit ordering: Ordering[A]) = new TreeSet[A]
-  private class TreeSetBuilder[A](implicit val ordering: Ordering[A]) extends Builder[A, TreeSet[A]] {
+  private class TreeSetBuilder[A](implicit ordering: Ordering[A])
+    extends RB.SetHelper[A]
+      with Builder[A, TreeSet[A]] {
     type Tree = RB.Tree[A, Any]
-    private [this] var tree:Tree = null
-    override def +=(elem: A): TreeSetBuilder.this.type = {
-      tree = RB.update(tree, elem, (), overwrite = false)
+    private [this] var tree:RB.Tree[A, Any] = null
+
+    override def +=(elem: A): this.type = {
+      tree = mutableUpd(tree, elem)
       this
     }
 
     override def ++=(xs: TraversableOnce[A]): this.type = {
       xs match {
+          // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
+          // for the moment we have to force immutability before the union
+          // which will waste some time and space
+          // calling `beforePublish` makes `tree` immutable
         case ts: TreeSet[A] if ts.ordering == ordering =>
-          tree = RB.union(tree, ts.tree)
+          if (tree eq null) tree = ts.tree
+          else tree = RB.union(beforePublish(tree), ts.tree)(ordering)
+        case ts: TreeMap[A, _] if ts.ordering == ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = RB.union(beforePublish(tree), ts.tree0)(ordering)
         case _ =>
           super.++=(xs)
       }
@@ -52,7 +66,34 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
       tree = null
     }
 
-    override def result(): TreeSet[A] = new TreeSet(tree)(ordering)
+    override def result(): TreeSet[A] = new TreeSet[A](beforePublish(tree))(ordering)
+  }
+  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") == "false"
+
+  @SerialVersionUID(-8462554036344260506L)
+  private class TreeSetProxy[A](
+    @transient private[this] var tree: RB.Tree[A, Any],
+    @transient private[this] var ordering: Ordering[A]) extends Serializable {
+
+    @throws[IOException]
+    private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+      out.writeInt(RB.count(tree))
+      out.writeObject(ordering)
+      RB.foreachKey(tree, out.writeObject)
+    }
+    @throws[IOException]
+    private[this] def readObject(in: java.io.ObjectInputStream) = {
+      val size = in.readInt()
+      ordering = in.readObject().asInstanceOf[Ordering[A]]
+      val data = Iterable.newBuilder[A]
+      data.sizeHint(size)
+      for (i <- 0 until size)
+        data += in.readObject().asInstanceOf[A]
+      tree = RB.fromOrderedKeys(data.result.iterator, size)
+    }
+    @throws[IOException]
+    private[this] def readResolve(): AnyRef =
+      new TreeSet(tree)(ordering)
   }
 }
 
@@ -234,9 +275,20 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     }
   }
 
-  private [collection] def removeAll(ts: TreeSet[A]): TreeSet[A] = {
-    assert (ordering == ts.ordering)
-    newSetOrSelf(RB.difference(tree, ts.tree))
+  private [collection] def removeAll(xs : GenTraversableOnce[A]): TreeSet[A] = xs match {
+    case ts: TreeSet[A] if ordering == ts.ordering =>
+      newSetOrSelf(RB.difference(tree, ts.tree))
+    case _ =>
+      //TODO add an implementation of a mutable subtractor similar to TreeMap
+      //but at least this doesn't create a TreeSet for each iteration
+      object sub extends AbstractFunction1[A, Unit] {
+        var currentTree = tree
+        override def apply(k: A): Unit = {
+          currentTree = RB.delete(currentTree, k)
+        }
+      }
+      xs.foreach(sub)
+      newSetOrSelf(sub.currentTree)
   }
 
   override private[scala] def filterImpl(f: A => Boolean, isFlipped: Boolean) =
@@ -252,4 +304,13 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
     case _ => super.equals(obj)
   }
 
+  @throws[IOException]
+  private[this] def writeReplace(): AnyRef =
+    if (TreeSet.legacySerialisation) this else new TreeSet.TreeSetProxy(tree, ordering)
+
+  @throws[IOException]
+  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
+    out.writeObject(ordering)
+    out.writeObject(immutable.RedBlackTree.from(tree))
+  }
 }
