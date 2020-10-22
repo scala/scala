@@ -6,22 +6,29 @@ chapter: 15
 
 # Changelog
 
-Changes in Version 2.13.1
+This changelog was no longer maintained after version 2.8.0.
 
-#### Unicode normalization
+A pull request updating this chapter to list the most significant
+changes made in more recent Scala versions would be highly welcome.
 
-Unicode escapes are no longer pre-processed, but are processed as regular escapes.
+Many language changes, especially larger ones, are documented in SIP
+(Scala Improvement Process) proposals.  Most proposals that were
+accepted and implemented have not merged into the main spec.  Pull
+requests that merge SIPs into the main spec are also highly welcome.
 
-Changes in Version 2.8.0
-------------------------
+To find out what has changed in Scala 2 since 2.8.0, you can consult
+the following sources:
 
-#### Trailing commas
+* Scala release notes (recent versions): https://github.com/scala/scala/releases
+* Scala release notes (older versions): https://scala-lang.org/blog/announcements/
+* Scala release notes (even older versions): presumably findable via search engine
+* Spec changelog in version control: https://github.com/scala/scala/commits/2.13.x/spec
+* SIPs: https://docs.scala-lang.org/sips/all.html
+
+## Changes in Version 2.8.0
 
 Trailing commas in expression, argument, type or pattern sequences are
 no longer supported.
-
-Changes in Version 2.8
-----------------------
 
 Changed visibility rules for nested packages (where done?)
 
@@ -47,8 +54,7 @@ Clarified differences between [`isInstanceOf` and pattern matches](12-the-scala-
 
 Allowed [`implicit` modifier on function literals](06-expressions.html#anonymous-functions) with a single parameter.
 
-Changes in Version 2.7.2
-------------------------
+## Changes in Version 2.7.2
 
 _(10-Nov-2008)_
 
@@ -70,8 +76,7 @@ A formal parameter to an anonymous function may now be a
 The Unicode glyph ‘\\(\leftarrow\\)’ \\(`\u2190`\\) is now treated as a reserved
 identifier, equivalent to the ASCII symbol ‘`<-`’.
 
-Changes in Version 2.7.1
-------------------------
+## Changes in Version 2.7.1
 
 _(09-April-2008)_
 
@@ -98,8 +103,7 @@ has been dropped. Instead, it is checked for each implicit expansion individuall
 that the expansion does not result in a cycle or a tree of infinitely
 growing types.
 
-Changes in Version 2.7.0
-------------------------
+## Changes in Version 2.7.0
 
 _(07-Feb-2008)_
 
@@ -151,8 +155,7 @@ Three restrictions on case classes have been removed.
 
 3.  Case classes may now come with companion objects.
 
-Changes in Version 2.6.1
-------------------------
+## Changes in Version 2.6.1
 
 _(30-Nov-2007)_
 
@@ -175,8 +178,7 @@ Self types can now be introduced without defining an alias name for
         trait Trait { this: T => ... }
       }
 
-Changes in Version 2.6
-----------------------
+## Changes in Version 2.6
 
 _(27-July-2007)_
 
@@ -233,8 +235,7 @@ is a shorthand for
 
     new AnyRef{ def getName() = "aaron" }
 
-Changes in Version 2.5
-----------------------
+## Changes in Version 2.5
 
 _(02-May-2007)_
 
@@ -334,8 +335,7 @@ unary functions could be defined that way. Example:
         case (a, (b, c)) => a + b * c
       }
 
-Changes in Version 2.4
-----------------------
+## Changes in Version 2.4
 
 _(09-Mar-2007)_
 
@@ -423,8 +423,7 @@ It is now possible to [combine operators with assignments]
     var x: int = 0
     x += 1
 
-Changes in Version 2.3.2
-------------------------
+## Changes in Version 2.3.2
 
 _(23-Jan-2007)_
 
@@ -488,8 +487,7 @@ A new standard attribute [`deprecated`](11-annotations.html#deprecation-annotati
 is available. If a member definition is marked with this attribute, any
 reference to the member will cause a “deprecated” warning message to be emitted.
 
-Changes in Version 2.3
-----------------------
+## Changes in Version 2.3
 
 _(23-Nov-2006)_
 
@@ -523,8 +521,7 @@ hierarchy have changed as follows:
 
 The old names are still available as type aliases.
 
-Changes in Version 2.1.8
-------------------------
+## Changes in Version 2.1.8
 
 _(23-Aug-2006)_
 
@@ -580,8 +577,7 @@ This will match the second case and hence will print “q”. Before, the
 singleton types were erased to `List`, and therefore the first case would have
 matched, which is non-sensical.
 
-Changes in Version 2.1.7
-------------------------
+## Changes in Version 2.1.7
 
 _(19-Jul-2006)_
 
@@ -615,8 +611,7 @@ Legal alternatives are:
       val f = { x: T => E }
       val f = (x: T) => E
 
-Changes in Version 2.1.5
-------------------------
+## Changes in Version 2.1.5
 
 _(24-May-2006)_
 
@@ -626,8 +621,7 @@ There is a new syntax for [class literals](06-expressions.html#literals):
 For any class type \\(C\\), `classOf[$C$]` designates the run-time
 representation of \\(C\\).
 
-Changes in Version 2.0
-----------------------
+## Changes in Version 2.0
 
 _(12-Mar-2006)_
 
