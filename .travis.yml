@@ -5,14 +5,14 @@ import: scala/scala-dev:travis/default.yml
 language: scala
 
 stages:
-  - name: build
+  - build
+  - testAll
 
 jobs:
     include:
-
-      # full bootstrap and publish
       - stage: build
-        if: type != pull_request
+        if: type != pull_request AND repo = scala/scala
+        name: bootstrap and publish
         script:
           # see comment in `bootstrap_fun` for details on the procedure
           # env available in each stage
@@ -31,24 +31,44 @@ jobs:
           - triggerScalaDist
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
-      # pull request validation (w/ mini-bootstrap)
-      # "mini" in these senses:
-      # - it doesn't use the complicated legacy scripts.
-      # - it doesn't publish to scala-pr-validation-snapshots
-      #   (because we need secrets for that and Travis-CI doesn't give PR jobs access to secrets)
-      # it is still a true bootstrap.
+      # pull request validation (w/ bootstrap)
+      # differs from the bootstrap above by:
+      # - not using bash script setup, but just the underlying sbt calls
+      # - publishing locally rather than to Artifactory
       - stage: build
-        name: "JDK 8 pr validation"
-        if: type = pull_request
+        name: bootstrap and publishLocal
+        if: type = pull_request OR repo != scala/scala
         script:
-          - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
-          - STARR=`cat buildcharacter.properties | grep ^maven.version.number | cut -d= -f2` && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll
+          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testOsgi
+        workspaces:
+          create:
+            name: published-local
+            paths:
+              - "$PWD/buildcharacter.properties"
+              - "$HOME/.ivy2/local/org.scala-lang"
+
+      - stage: testAll
+        name: testAll1
+        if: type = pull_request OR repo != scala/scala
+        workspaces:
+          use: published-local
+        script:
+          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll1
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
-      # build the spec using jekyll
+      - name: testAll2
+        if: type = pull_request OR repo != scala/scala
+        workspaces:
+          use: published-local
+        script:
+          - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll2
+
       - stage: build
+        name: build the spec using jekyll
         language: ruby
         install:
           - ruby -v
@@ -57,10 +77,10 @@ jobs:
           - bundle install
         script:
           - set -e
-          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then (cd admin && ./init.sh); fi'
+          - (cd admin && ./init.sh)
           - bundle exec jekyll build -s spec/ -d build/spec
         after_success:
-          - 'if [ "$TRAVIS_PULL_REQUEST" = "false" ]; then ./scripts/travis-publish-spec.sh; fi'
+          - ./scripts/travis-publish-spec.sh
 
 env:
   global:

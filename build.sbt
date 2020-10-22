@@ -1324,75 +1324,12 @@ lazy val root: Project = (project in file("."))
     testJDeps := TestJDeps.testJDepsImpl.value,
     testJarSize := TestJarSize.testJarSizeImpl.value,
 
-    testAll := {
-      val results = ScriptCommands.sequence[(Result[Unit], String)](List(
-        SavedLogs.clearSavedLogs.result map (_ -> "clearSavedLogs"),
-        (junit / Test / testOnly).toTask(" -- +v").result map (_ -> "junit/test"),
-        (scalacheck / Test / Keys.test).result map (_ -> "scalacheck/test"),
-        partestDesc("run"),
-        partestDesc("pos neg jvm"),
-        partestDesc("res scalap specialized"),
-        partestDesc("instrumented presentation"),
-        partestDesc("--srcpath scaladoc"),
-        partestDesc("--srcpath macro-annot"),
-        partestDesc("--srcpath async"),
-        (tasty / Test / Keys.test).result map (_ -> "tasty/test"),
-        (osgiTestFelix / Test / Keys.test).result map (_ -> "osgiTestFelix/test"),
-        (osgiTestEclipse / Test / Keys.test).result map (_ -> "osgiTestEclipse/test"),
-        (library / mimaReportBinaryIssues).result map (_ -> "library/mimaReportBinaryIssues"),
-        (reflect / mimaReportBinaryIssues).result map (_ -> "reflect/mimaReportBinaryIssues"),
-        testJDeps.result map (_ -> "testJDeps"),
-        testJarSize.result map (_ -> "testJarSize"),
-        (bench / Compile / compile).map(_ => ()).result map (_ -> "bench/compile"),
-        Def.task(()).dependsOn( // Run these in parallel:
-          library / Compile / doc,
-          reflect / Compile / doc,
-          compiler / Compile / doc,
-          scalap / Compile / doc,
-        ).result map (_ -> "doc")
-      )).value
-      val log = streams.value.log
-      val failed = results.collect { case (Inc(i), d) => (i, d) }
-      if (failed.nonEmpty) {
-        def showScopedKey(k: Def.ScopedKey[_]): String =
-          Vector(
-            k.scope.project.toOption.map {
-              case p: ProjectRef => p.project
-              case p => p
-            }.map(_ + "/"),
-            k.scope.config.toOption.map(_.name + ":"),
-            k.scope.task.toOption.map(_.label + "::")
-          ).flatten.mkString + k.key
-        val loggedThis, loggedAny = new scala.collection.mutable.HashSet[String]
-        def findRootCauses(i: Incomplete, currentTask: String): Vector[(String, Option[Throwable])] = {
-          val sk = i.node match {
-            case Some(t: Task[_]) =>
-              t.info.attributes.entries.collect { case e if e.key == Keys.taskDefinitionKey => e.value.asInstanceOf[Def.ScopedKey[_]] }
-                .headOption.map(showScopedKey)
-            case _ => None
-          }
-          val task = sk.getOrElse(currentTask)
-          val dup = sk.map(s => !loggedAny.add(s)).getOrElse(false)
-          if(sk.map(s => !loggedThis.add(s)).getOrElse(false)) Vector.empty
-          else i.directCause match {
-            case Some(e) => Vector((task, if(dup) None else Some(e)))
-            case None => i.causes.toVector.flatMap(ch => findRootCauses(ch, task))
-          }
-        }
-        log.error(" ")
-        log.error(s"${failed.size} of ${results.length} test tasks failed:")
-        failed.foreach { case (i, d) =>
-          log.error(s"- $d")
-          loggedThis.clear
-          findRootCauses(i, "<unkown task>").foreach {
-            case (task, Some(ex)) => log.error(s"  - $task failed: $ex")
-            case (task, None)     => log.error(s"  - ($task failed)")
-          }
-        }
-        SavedLogs.showSavedLogsImpl(s => log.error(s))
-        throw new MessageOnlyException("testAll failed due to previous errors")
-      }
-    },
+    // Wasn't sure if findRootCauses would work if I just aggregated testAll1/etc, so a little duplication..
+    testAll  := runTests(unitTests ::: partests ::: osgiTests ::: remainingTests).value,
+    testOsgi := runTests(osgiTests).value,
+    testAll1 := runTests(unitTests ::: remainingTests).value,
+    testAll2 := runTests(partests).value,
+
     setIncOptions
   )
   .aggregate(library, reflect, compiler, interactive, repl, replFrontend,
@@ -1402,6 +1339,85 @@ lazy val root: Project = (project in file("."))
       |version=${(Global / version).value} scalaVersion=${(Global / scalaVersion).value}
       |Check README.md for more information.""".stripMargin
   )
+
+lazy val clearSavedLogs = SavedLogs.clearSavedLogs.result.map(_ -> "clearSavedLogs")
+
+lazy val unitTests = List(
+  (     junit / Test / testOnly).toTask(" -- +v").result.map(_ -> "junit/testOnly -- +v"),
+  (scalacheck / Test / Keys.test                ).result.map(_ -> "scalacheck/test"),
+)
+
+lazy val partests = List(
+  partestDesc("run"),
+  partestDesc("pos neg jvm"),
+  partestDesc("res scalap specialized"),
+  partestDesc("instrumented presentation"),
+  partestDesc("--srcpath scaladoc"),
+  partestDesc("--srcpath macro-annot"),
+  partestDesc("--srcpath async"),
+  (tasty / Test / Keys.test).result.map(_ -> "tasty/test"),
+)
+
+// failed in CI? :( https://travis-ci.com/github/dwijnand/scala/jobs/403646205
+lazy val osgiTests = List(
+  (osgiTestFelix   / Test / Keys.test).result.map(_ -> "osgiTestFelix/test"),
+  (osgiTestEclipse / Test / Keys.test).result.map(_ -> "osgiTestEclipse/test"),
+)
+
+lazy val remainingTests = List(
+  (library / mimaReportBinaryIssues      ).result.map(_ -> "library/mimaReportBinaryIssues"),
+  (reflect / mimaReportBinaryIssues      ).result.map(_ -> "reflect/mimaReportBinaryIssues"),
+  (testJDeps                             ).result.map(_ -> "testJDeps"),
+  (testJarSize                           ).result.map(_ -> "testJarSize"),
+  (bench / Compile / compile).map(_ => ()).result.map(_ -> "bench/compile"),
+  Def.task(()).dependsOn( // Run these in parallel:
+     library / Compile / doc,
+     reflect / Compile / doc,
+    compiler / Compile / doc,
+      scalap / Compile / doc,
+  ).result.map(_ -> "doc")
+)
+
+def runTests(tests: List[Def.Initialize[Task[(Result[Unit], String)]]]) = Def.task {
+  val results = ScriptCommands.sequence[(Result[Unit], String)](clearSavedLogs :: tests).value
+  val log     = streams.value.log
+  val failed  = results.collect { case (Inc(i), d) => (i, d) }
+  if (failed.nonEmpty) {
+    def showScopedKey(k: Def.ScopedKey[_]): String =
+      Vector(
+        k.scope.project.toOption.map { case p: ProjectRef => p.project case p => p }.map(_ + "/"),
+        k.scope.config.toOption.map(_.name + ":"),
+        k.scope.task.toOption.map(_.label + "::")
+      ).flatten.mkString + k.key
+
+    val loggedThis, loggedAny = new scala.collection.mutable.HashSet[String]
+
+    def findRootCauses(i: Incomplete, currentTask: String): Vector[(String, Option[Throwable])] = {
+      val skey = i.node.collect { case t: Task[_] => t.info.attributes.get(taskDefinitionKey) }.flatten
+      val sk = skey.map(showScopedKey)
+      val task = sk.getOrElse(currentTask)
+      val dup = sk.exists(!loggedAny.add(_))
+      if (sk.exists(!loggedThis.add(_))) Vector.empty
+      else i.directCause match {
+        case Some(e) => Vector((task, if (dup) None else Some(e)))
+        case None    => i.causes.toVector.flatMap(findRootCauses(_, task))
+      }
+    }
+
+    log.error("")
+    log.error(s"${failed.size} of ${results.length} test tasks failed:")
+    failed.foreach { case (i, d) =>
+      log.error(s"- $d")
+      loggedThis.clear()
+      findRootCauses(i, "<unknown task>").foreach {
+        case (task, Some(ex)) => log.error(s"  - $task failed: $ex")
+        case (task, None)     => log.error(s"  - ($task failed)")
+      }
+    }
+    SavedLogs.showSavedLogsImpl(log.error(_))
+    throw new MessageOnlyException("Failure due to previous errors")
+  }
+}
 
 def setIncOptions = incOptions := {
   incOptions.value
@@ -1469,6 +1485,9 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
+lazy val testOsgi = taskKey[Unit]("Run OSGI test tasks sequentially")
+lazy val testAll1 = taskKey[Unit]("Run 1/2 test tasks sequentially")
+lazy val testAll2 = taskKey[Unit]("Run 2/2 test tasks sequentially")
 
 val testJDeps = taskKey[Unit]("Run jdeps to check dependencies")
 val testJarSize = taskKey[Unit]("Test that jars have the expected size")

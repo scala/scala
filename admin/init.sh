@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+if [ -z "$GPG_SUBKEY_SECRET" ]; then
+  echo "GPG_SUBKEY_SECRET is missing/empty, so skipping credentials & gpg setup"
+  exit
+fi
+
 sensitive() {
   perl -p -e 's/\$\{([^}]+)\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' < files/credentials-private-repo > ~/.credentials-private-repo
   perl -p -e 's/\$\{([^}]+)\}/defined $ENV{$1} ? $ENV{$1} : $&/eg' < files/credentials-sonatype     > ~/.credentials-sonatype
