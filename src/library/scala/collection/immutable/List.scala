@@ -485,6 +485,51 @@ case object Nil extends List[Nothing] {
  */
 @SerialVersionUID(509929039250432923L) // value computed by serialver for 2.11.2, annotation added in 2.11.4
 final case class ::[B](override val head: B, private[scala] var tl: List[B]) extends List[B] {
+  /** value of 0 means unknown.
+   * Because of the structure of :: and the way the JVM lays out the object
+   * _sizeIfKnown doesn't add to the footprint of the :: object
+   * Its @transient to preserve serialisation format */
+  @transient private var _sizeIfKnown = 0
+
+  /** calculate the length if not known, remembering the result */
+  override def length: Int = {
+    if (_sizeIfKnown == 0) {
+      //arbitrary choice of max size to iterate recursively
+      def smallListMaxIteration = 16
+      def smallLength(curr: List[B], left: Int): Int = {
+        if (curr.isEmpty) 0
+        else {
+          val cons = curr.asInstanceOf[::[B]]
+          if (cons._sizeIfKnown > 0) cons._sizeIfKnown
+          else if (left > 0) {
+            val result = smallLength(cons.tl, left -1) + 1
+            cons._sizeIfKnown = result
+            result
+          } else {
+            val result = largeLength(cons.tl, smallListMaxIteration) + 1
+            cons._sizeIfKnown = result
+            result
+          }
+        }
+      }
+      @tailrec def largeLength(curr: List[B], soFar: Int): Int = {
+        if (curr.isEmpty) soFar
+        else largeLength(curr.tail, soFar + 1)
+      }
+      smallLength(this, smallListMaxIteration)
+    }
+    _sizeIfKnown
+  }
+  override protected[collection] def sizeHintIfCheap: Int =
+    if (_sizeIfKnown > 0) _sizeIfKnown else super.sizeHintIfCheap
+
+  override def lengthCompare(len: Int): Int =
+    if (_sizeIfKnown > 0) {
+      val size = _sizeIfKnown
+      if (size > len) 1
+      else if (size == len) 0
+      else -1
+    } else super.lengthCompare(len)
   override def tail : List[B] = tl
   override def isEmpty: Boolean = false
 }
