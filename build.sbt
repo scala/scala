@@ -495,6 +495,28 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[MissingClassProblem]("scala.annotation.nowarn"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings#*.clearSetByUser"),
 
+    // in current version, classes mixing scala.math.Ordering$FloatOrdering need be recompiled to wire to the new static mixin forwarder method all super calls to method reverse()scala.math.Ordering
+    // in current version, classes mixing scala.math.Ordering$DoubleOrdering               .. reverse()scala.math.Ordering
+    // in  other  version, classes mixing scala.math.Ordering$IntOrdering                  .. reverse()scala.math.Ordering
+    // in  other  version, classes mixing scala.collection.IndexedSeqOptimized             .. toList()scala.collection.immutable.List
+    // in  other  version, classes mixing scala.collection.LinearSeqOptimized              .. tails()scala.collection.Iterator
+    // in  other  version, classes mixing scala.collection.TraversableViewLike$Transformed .. last()java.lang.Object
+    // in  other  version, classes mixing scala.collection.immutable.SortedSet             .. equals(java.lang.Object)Boolean
+    // in  other  version, classes mixing scala.collection.immutable.SortedMap             .. equals(java.lang.Object)Boolean
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.math.Ordering#FloatOrdering.reverse"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.math.Ordering#DoubleOrdering.reverse"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.math.Ordering#IntOrdering.reverse"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.IndexedSeqOptimized.toList"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.LinearSeqOptimized.tails"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.TraversableViewLike#Transformed.last"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.immutable.SortedSet.equals"),
+    ProblemFilters.exclude[NewMixinForwarderProblem]("scala.collection.immutable.SortedMap.equals"),
+
+    // method equals(java.lang.Object)Boolean in interface scala.math.Ordering#OptionOrdering does not have a correspondent in other version
+    // method hashCode()Int                   in interface scala.math.Ordering#OptionOrdering does not have a correspondent in other version
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.math.Ordering#OptionOrdering.equals"),
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.math.Ordering#OptionOrdering.hashCode"),
+
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.seq"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.NoAbstractFile.view"),
