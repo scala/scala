@@ -1,1 +1,10 @@
 good boy!
+List()
+List()
+List(private int C.x)
+List(private int D.x)
+List(private int E.x)
+List(private int F.x)
+List(private int G.x)
+List(private final int H.x)
+List(private int I.x)
