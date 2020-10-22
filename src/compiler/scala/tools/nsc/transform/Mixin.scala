@@ -29,6 +29,32 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
   /** The name of the phase: */
   val phaseName: String = "mixin"
 
+  // See https://github.com/scala/bug/issues/12137#issuecomment-695944076
+  lazy val binaryIncompatibleTraitOverrides: Set[Symbol] = {
+    def meth(path: List[String], cls: Symbol): Symbol = path match {
+      case m :: Nil => cls.map(_.info.member(TermName(m)))
+      case i :: xs  => meth(xs, cls.map(_.info.member(TypeName(i))))
+    }
+    // Trait overrides that were added, list from https://github.com/scala/scala/pull/9260/files
+    // `FloatOrdering.reverse` and `DoubleOrdering.reverse` are trait overrides that were removed (not added)
+    // in 44318c8959, so there's nothing we can do. Compiling with 2.12.0 and running on 2.12.12 is not binary
+    // compatible for super calls to these two methods.
+    enteringTyper{
+      Set(
+        List("scala.math.Ordering.IntOrdering", "reverse"),
+        List("scala.collection.IndexedSeqOptimized", "toList"),
+        List("scala.collection.LinearSeqOptimized", "tails"),
+        List("scala.collection.TraversableViewLike", "Transformed", "last"),
+        List("scala.collection.immutable.SortedSet", "equals"),
+        List("scala.collection.immutable.SortedMap", "equals"),
+        List("scala.math.Ordering.OptionOrdering", "equals"),
+        List("scala.math.Ordering.OptionOrdering", "hashCode"),
+        ).map({
+          case c :: xs => meth(xs, rootMirror.getClassIfDefined(c))
+        }).filterNot(_ == NoSymbol)
+    }
+  }
+
   /** Some trait methods need to be implemented in subclasses, so they cannot be private.
     *
     * We used to publicize during explicitouter (for some reason), so the condition is a bit more involved now it's done here
@@ -283,7 +309,7 @@ abstract class Mixin extends InfoTransform with ast.TreeDSL with AccessorSynthes
 
               if (existsCompetingMethod(clazz.baseClasses) || generateJUnitForwarder || generateSerializationForwarder)
                 genForwarder(required = true)
-              else if (settings.mixinForwarderChoices.isTruthy)
+              else if (settings.mixinForwarderChoices.isTruthy && !binaryIncompatibleTraitOverrides(member))
                 genForwarder(required = false)
             }
 
