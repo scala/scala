@@ -101,6 +101,7 @@ class OptimizedBytecodeTest extends BytecodeTesting {
         |  def fillArray(arr: Array[V], v: V) = (arr: Any) match {
         |    case x: Array[Int]  => null
         |    case x: Array[Long] => v.asInstanceOf[Long]
+        |    case x              => throw new MatchError(x)
         |  }
         |}
       """.stripMargin

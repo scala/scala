@@ -12,6 +12,7 @@ object Test extends DirectTest {
       |
       |  "" match {
       |    case Case3(nr) => ()
+      |    case x         => throw new MatchError(x)
       |  }
       |}
       |object Case4 {
@@ -19,6 +20,7 @@ object Test extends DirectTest {
       |
       |  "" match {
       |    case Case4(nr) => ()
+      |    case x         => throw new MatchError(x)
       |  }
       |}
       |object Case5 {
@@ -26,6 +28,7 @@ object Test extends DirectTest {
       |
       |  "" match {
       |    case Case4() => ()
+      |    case x       => throw new MatchError(x)
       |  }
       |}
       |object Case6 {

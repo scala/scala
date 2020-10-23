@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xfatal-warnings -Xno-unsealed-patmat-analysis
 //
 object Unchecked {
   (null: Any) match {

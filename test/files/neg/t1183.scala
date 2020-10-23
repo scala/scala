@@ -14,7 +14,7 @@ object Test {
     val foo1 = new Foo(1)
 
     def runTest() = {
-      val res = (foo1.Bar(2):Any) match {
+      val res = (foo1.Bar(2):Any @unchecked) match {
         case foo1.Bar(2) => true   // (1)
       }
       require(res)

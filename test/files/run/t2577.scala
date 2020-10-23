@@ -11,6 +11,7 @@ object Test {
   def main(args: Array[String]): Unit = {
     val targ = typeOf[x.type].widen match {
       case TypeRef(_, _, arg :: _) => arg
+      case x                       => throw new MatchError(x)
     }
     println(targ)
   }

@@ -1,5 +1,5 @@
 object Test extends App {
-  trait T
+  sealed trait T
 
   trait TA
   trait TB

@@ -1,4 +1,4 @@
-// scalac: -Xfatal-warnings
+// scalac: -Xfatal-warnings -Xno-unsealed-patmat-analysis
 //
 class C {
   // not a compile-time constant due to return type

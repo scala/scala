@@ -3,7 +3,7 @@
 import scala.annotation.switch
 
 object Test extends App {
-  def noSwitch(ch: Char, eof: Boolean) = ch match {
+  def noSwitch(ch: Char, eof: Boolean) = (ch: @unchecked) match {
     case 'a' if eof => println("a with oef") // then branch
   }
 

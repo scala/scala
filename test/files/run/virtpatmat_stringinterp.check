@@ -1,1 +1,5 @@
+virtpatmat_stringinterp.scala:15: warning: match may not be exhaustive.
+It would fail on the following input: Node(_)
+  x match { case xml"""<foo arg=$a/>""" => println(a) }
+  ^
 Node(1)

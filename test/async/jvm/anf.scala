@@ -387,6 +387,7 @@ package scala.async.run.anf {
         await(fut(1)) match {
           case Up   => 1.0
           case Down => -1.0
+          case x    => throw new MatchError(x)
         }
       }
       sign.block mustBe 1.0

@@ -1,2 +1,10 @@
+Test_2.scala:4: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+  List(1, 2) match { case UnapplyMacro(x, y) => println((x, y)) }
+      ^
+Test_2.scala:5: warning: match may not be exhaustive.
+It would fail on the following inputs: List(_), Nil
+  List(1, 2, 3) match { case UnapplyMacro(x, y, z) => println((x, y, z)) }
+      ^
 (1,2)
 (1,2,3)

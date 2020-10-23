@@ -34,6 +34,7 @@ object Test {
         value(Some(1))
         "foo" match {
           case x if "".isEmpty => x
+          case x               => throw new MatchError(x)
         }
       }: AnyRef
     })

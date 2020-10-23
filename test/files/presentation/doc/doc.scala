@@ -130,6 +130,7 @@ object Test extends InteractiveTest {
       case s: Seq[_] => s exists (existsText(_, text))
       case p: Product => p.productIterator exists (existsText(_, text))
       case c: Comment => existsText(c.body, text)
+      case x          => throw new MatchError(x)
     }
     val (derived, base) = compiler.ask { () =>
       val derived = compiler.rootMirror.RootPackage.info.decl(newTermName("p")).info.decl(newTypeName("Derived"))

@@ -2,7 +2,7 @@ object Test extends App {
   var cond = true
 
   // should not generate a switch
-  def f(ch: Char): Int = ch match {
+  def f(ch: Char): Int = (ch: @unchecked) match {
     case 'a' if cond => 1
     case 'z' | 'a' => 2
   }

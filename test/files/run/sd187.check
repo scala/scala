@@ -5,18 +5,18 @@
       [2302][2302][2302]C.super.<init>();
       [9]()
     };
-    [103:904]def commonSubPattern([124:130]x: [127:130]<type: [127:130]scala.Any>): [107]AnyVal = [205:206]{
-      [205:206]<synthetic> var rc6: [205]Boolean = [205]false;
-      [205:206]<synthetic> <stable> var x3: [205]String = [205][205][205]null.asInstanceOf[[205]String];
-      [205:206]{
-        [205:206]case <synthetic> val x1: [205]Any = [205:206]x;
-        [205:206]case8(){
+    [103:904]def commonSubPattern([124:130]x: [127:130]<type: [127:130]scala.Any>): [107]AnyVal = [206:220]{
+      [206:220]<synthetic> var rc6: [211]Boolean = [211]false;
+      [206:220]<synthetic> <stable> var x3: [211]String = [211][211][211]null.asInstanceOf[[211]String];
+      [206:220]{
+        [206:220]case <synthetic> val x1: [211]Any = [206:220]([206:207]x: [211]<type: [NoPosition][206:207]x: @[211:220]unchecked>);
+        [206:220]case8(){
           [312:324]if ([313][313]x1.isInstanceOf[[313]Option[_]])
             [325:327][325]matchEnd7([325:327]())
           else
             [313][313]case9()
         };
-        [205:206]case9(){
+        [206:220]case9(){
           [412:421]if ([412][412]x1.isInstanceOf[[412]String])
             [412]{
               [412][412]rc6 = [412]true;
@@ -29,23 +29,23 @@
           else
             [412][412]case10()
         };
-        [205:206]case10(){
+        [206:220]case10(){
           [612:621]if ([612][612]rc6.&&([627][627]x3.==([630]"6")))
             [712][712]matchEnd7([712][712]x3.hashCode())
           else
             [612][612]case11()
         };
-        [205:206]case11(){
-          [205:206][205:206]matchEnd7([205:206]throw [205:206][205:206][205:206]new [205:206]MatchError([205:206]x1))
+        [206:220]case11(){
+          [206:220][206:220]matchEnd7([206:220]throw [206:220][206:220][206:220]new [206:220]MatchError([206:220]x1))
         };
-        [205:206]matchEnd7(x: [NoPosition]AnyVal){
-          [205:206]x
+        [206:220]matchEnd7(x: [NoPosition]AnyVal){
+          [206:220]x
         }
       }
     };
-    [1003:1306]def extractor([1017:1023]x: [1020:1023]<type: [1020:1023]scala.Any>): [1007]Any = [1027:1028]{
-      [1027:1028]case <synthetic> val x1: [1027]Any = [1027:1028]x;
-      [1027:1028]case6(){
+    [1003:1306]def extractor([1017:1023]x: [1020:1023]<type: [1020:1023]scala.Any>): [1007]Any = [1028:1041]{
+      [1028:1041]case <synthetic> val x1: [1032]Any = [1028:1041]([1028:1029]x: [1032]<type: [NoPosition][1028:1029]x: @[1032:1041]unchecked>);
+      [1028:1041]case6(){
         [1112:1126]if ([1120][1120]x1.isInstanceOf[[1120]Product2[T1,T2]])
           [1112:1126]{
             [1112:1126]<synthetic> val x2: [1120]Product2[T1,T2] = [1120]([1120][1120]x1.asInstanceOf[[1120]Product2[T1,T2]]: [1120]Product2[T1,T2]);
@@ -63,11 +63,11 @@
         else
           [1120][1120]case7()
       };
-      [1027:1028]case7(){
-        [1027:1028][1027:1028]matchEnd5([1027:1028]throw [1027:1028][1027:1028][1027:1028]new [1027:1028]MatchError([1027:1028]x1))
+      [1028:1041]case7(){
+        [1028:1041][1028:1041]matchEnd5([1028:1041]throw [1028:1041][1028:1041][1028:1041]new [1028:1041]MatchError([1028:1041]x1))
       };
-      [1027:1028]matchEnd5(x: [NoPosition]Any){
-        [1027:1028]x
+      [1028:1041]matchEnd5(x: [NoPosition]Any){
+        [1028:1041]x
       }
     };
     [1403:2204]def swatch: [1407]String = [1505:2106]try {

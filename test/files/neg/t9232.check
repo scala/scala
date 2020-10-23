@@ -1,0 +1,7 @@
+t9232.scala:14: warning: match may not be exhaustive.
+It would fail on the following inputs: Node1(_), Node2()
+  def transformTree(tree: Tree): Any = tree match {
+                                       ^
+error: No warnings can be incurred under -Werror.
+1 warning
+1 error

@@ -14,15 +14,10 @@ package scala.tools.nsc.interpreter
 
 import scala.reflect.internal.MissingRequirementError
 
-class AbstractOrMissingHandler[T](onError: String => Unit, value: T) extends PartialFunction[Throwable, T] {
-  def isDefinedAt(t: Throwable) = t match {
-    case _: AbstractMethodError     => true
-    case _: NoSuchMethodError       => true
-    case _: MissingRequirementError => true
-    case _: NoClassDefFoundError    => true
-    case _                          => false
-  }
-  def apply(t: Throwable) = t match {
+object AbstractOrMissingHandler {
+  def apply[T]() = create[T](Console println _, null.asInstanceOf[T])
+
+  private def create[T](onError: String => Unit, value: T): PartialFunction[Throwable, T] = {
     case e @ (_: AbstractMethodError | _: NoSuchMethodError | _: NoClassDefFoundError) =>
       onError(s"""
         |Failed to initialize compiler: ${e.getClass.getName.split('.').last}.
@@ -42,8 +37,4 @@ class AbstractOrMissingHandler[T](onError: String => Unit, value: T) extends Par
       )
       value
   }
-}
-
-object AbstractOrMissingHandler {
-  def apply[T]() = new AbstractOrMissingHandler[T](Console println _, null.asInstanceOf[T])
 }

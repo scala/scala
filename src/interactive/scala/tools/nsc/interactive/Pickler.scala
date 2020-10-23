@@ -99,7 +99,7 @@ object Pickler {
    *  where a value of the given type `T` could not be unpickled from input.
    *  @tparam  T the type of unpickled values in case of success.
    */
-  abstract class Unpickled[+T] {
+  sealed abstract class Unpickled[+T] {
     /** Transforms success values to success values using given function,
      *  leaves failures alone
      *  @param   f the function to apply.
@@ -145,7 +145,7 @@ object Pickler {
    *  @param rd       the lexer unpickled values were read from (can be used to get
    *                  error position, for instance).
    */
-  class UnpickleFailure(msg: => String, val rd: Lexer) extends Unpickled[Nothing] {
+  final class UnpickleFailure(msg: => String, val rd: Lexer) extends Unpickled[Nothing] {
     def errMsg = msg
     override def toString = "Failure at "+rd.tokenPos+":\n"+msg
   }

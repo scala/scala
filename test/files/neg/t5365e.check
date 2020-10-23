@@ -1,0 +1,27 @@
+t5365e.scala:8: warning: match may not be exhaustive.
+It would fail on the following inputs: Bar(_), Foo(_)
+  def f0(x: Exh) = x match { case Foo()        => ()                         } // don't back off
+                   ^
+t5365e.scala:9: warning: match may not be exhaustive.
+It would fail on the following inputs: Bar(_), Foo(_)
+  def f1(x: Exh) = x match { case Foo(x)       => x                          } // don't back off
+                   ^
+t5365e.scala:10: warning: match may not be exhaustive.
+It would fail on the following inputs: Bar(_), Foo(_)
+  def f2(x: Exh) = x match { case Foo(x, y)    => x + y                      } // don't back off
+                   ^
+t5365e.scala:11: warning: match may not be exhaustive.
+It would fail on the following input: Bar(_)
+  def fX(x: Exh) = x match { case Foo(xs @ _*) => xs                         } // don't back off
+                   ^
+t5365e.scala:12: warning: match may not be exhaustive.
+It would fail on the following input: Foo(_)
+  def b1(x: Exh) = x match {                                case Bar(x) => x } // inexhaustive
+                   ^
+t5365e.scala:13: warning: match may not be exhaustive.
+It would fail on the following input: Foo(_)
+  def fb(x: Exh) = x match { case Foo(x)       => x         case Bar(x) => x } // pessimistically inexhaustive
+                   ^
+error: No warnings can be incurred under -Werror.
+6 warnings
+1 error

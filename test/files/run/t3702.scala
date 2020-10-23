@@ -2,6 +2,7 @@ object Test {
   def foo(h: Any, t: List[Any]) = h match {
     case 5 :: _     => ()
     case List(from) => from
+    case x          => throw new MatchError(x)
   }
 
   def main(args: Array[String]): Unit = {

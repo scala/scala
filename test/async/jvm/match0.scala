@@ -119,6 +119,7 @@ package scala.async.run.match0 {
             await(0)
           case buf: Double =>
             await(2)
+          case x => throw new MatchError(x)
         }
       })
 

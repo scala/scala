@@ -1,0 +1,31 @@
+t5365.scala:3: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def nonExhautiveIfWeAssumeGuardsTrueOrFalse(x: Option[Int]): Int = x match {
+                                                                     ^
+t5365.scala:7: warning: match may not be exhaustive.
+It would fail on the following input: Some(_)
+  def nonExhautiveIfWeAssumeGuardsFalse(x: Option[Int]): Int = x match {
+                                                               ^
+t5365.scala:12: warning: match may not be exhaustive.
+It would fail on the following input: Some(_)
+  def inverseGuards(x: Option[Int]): Int = x match {
+                                           ^
+t5365.scala:18: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def extractor(x: Option[Int]) = x match {
+                                  ^
+t5365.scala:21: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def repeatedExtractor(x: Option[Int]) = x match {
+                                          ^
+t5365.scala:24: warning: match may not be exhaustive.
+It would fail on the following input: Some(_)
+  def extractorStrict(x: Option[Int]) = x match {
+                                        ^
+t5365.scala:28: warning: match may not be exhaustive.
+It would fail on the following input: Some(_)
+  def repeatedExtractorStrict(x: Option[Int]) = x match {
+                                                ^
+error: No warnings can be incurred under -Werror.
+7 warnings
+1 error

@@ -12,6 +12,7 @@ trait Trees {
     tree match {
       case TypeTree(_) => println("lolwut")
       case null => println("correct")
+      case x    => throw new MatchError(x)
     }
 }
 

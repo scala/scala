@@ -56,6 +56,7 @@ trait InteractiveAnalyzer extends Analyzer {
     override def missingSelectErrorTree(tree: Tree, qual: Tree, name: Name): Tree = tree match {
       case Select(_, _)             => treeCopy.Select(tree, qual, name)
       case SelectFromTypeTree(_, _) => treeCopy.SelectFromTypeTree(tree, qual, name)
+      case _                        => tree
     }
   }
 

@@ -235,6 +235,7 @@ class AnnotationDrivenAsyncTest {
       |        "" match {
       |          case Extractor(a, b) => a == b
       |        }
+      |      case x               => throw new MatchError(x)
       |    }
       |  }
       |}

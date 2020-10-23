@@ -14,6 +14,7 @@ object Test {
     //this will fail with java.lang.NoSuchMethodError
     icObj match {
       case ic: ocStable.InnerClass => ;
+      case x                       => throw new MatchError(x)
     }
   }
 }

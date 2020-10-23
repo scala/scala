@@ -1,1 +1,4 @@
+matchonstream.scala:2: warning: match may not be exhaustive.
+  LazyList.from(1) match { case LazyList(1, 2, x @_*) => println(s"It worked! (class: ${x.getClass.getSimpleName})") }
+               ^
 It worked! (class: LazyList)

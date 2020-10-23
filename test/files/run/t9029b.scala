@@ -23,6 +23,7 @@ object Test {
     val x: AnyRef = new Foo(new Bar(Some(1), Some(2)))
     x match {
       case Foo(Bar(x1, x2)) => println(x1)
+      case x                => throw new MatchError(x)
     }
   }
   def main(args: Array[String]): Unit = {

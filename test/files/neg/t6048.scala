@@ -3,17 +3,17 @@
 class A {
   def f1(x: Int) = x match {
     case _ if false => x // unreachable
-    case 5          => x
+    case _          => x
   }
 
   def f2(x: Int) = x match {
     case _ if false => x // unreachable
-    case 5 if true  => x
+    case _ if true  => x
   }
 
   def f3(x: Int) = x match {
     case _ => x
-    case 5 if true  => x // unreachable
+    case _ if true  => x // unreachable
   }
 
   def test1(x: Int) = x match {

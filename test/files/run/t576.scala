@@ -30,6 +30,7 @@ object Test {
       case _: x3.type     => 3
       case _: self.type   => 4
       case x: Dingus.type => x.IamDingus
+      case x              => throw new MatchError(x)
     }
   }
 

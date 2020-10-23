@@ -1,7 +1,11 @@
+t11746.scala:16: warning: match may not be exhaustive.
+It would fail on the following input: (x: Try forSome x not in Failure)
+  private def get(a: String): Unit = Try(a) match {
+                                        ^
 t11746.scala:18: warning: failed to determine if e should be inlined:
 The method e()Ljava/lang/Throwable; could not be found in the class java/lang/Object or any of its parents.
     case Failure(e) => println(e.toString)
                  ^
 error: No warnings can be incurred under -Werror.
-1 warning
+2 warnings
 1 error

@@ -251,6 +251,7 @@ class FancyTailCalls {
           def loop(n: Int): Int = if (n == 0) v else loop(n - 1)
           loop(x) == v
         } => true
+      case _ => throw new MatchError(x)
     }
 
   import FancyTailCalls._

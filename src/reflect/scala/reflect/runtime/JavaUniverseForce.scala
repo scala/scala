@@ -301,6 +301,8 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.IterableClass
     definitions.ListClass
     definitions.SeqClass
+    definitions.SeqFactoryClass
+    definitions.UnapplySeqWrapperClass
     definitions.JavaStringBuilderClass
     definitions.JavaStringBufferClass
     definitions.JavaCharSequenceClass

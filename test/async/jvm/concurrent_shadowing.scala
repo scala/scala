@@ -20,6 +20,7 @@ object Test extends App { test
           case _ => foo; ()
         }
         ()
+      case x => throw new MatchError(x)
     }
     ()
   }, Duration.Inf)

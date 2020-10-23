@@ -1,3 +1,15 @@
+virtpatmat_unapplyprod.scala:10: warning: match may not be exhaustive.
+It would fail on the following input: FooSeq(_, _, _)
+  FooSeq(2, "3") match {
+        ^
+virtpatmat_unapplyprod.scala:14: warning: match may not be exhaustive.
+It would fail on the following input: FooSeq(_, _, _)
+  FooSeq(2, "3", true, false, true) match {
+        ^
+virtpatmat_unapplyprod.scala:19: warning: match may not be exhaustive.
+It would fail on the following inputs: FooSeq((x: Int forSome x not in 1), "a", _), FooSeq((x: Int forSome x not in 1), (x: String forSome x not in "a"), _), FooSeq(1, (x: String forSome x not in "a"), _)
+  FooSeq(1, "a", true, false, true) match {
+        ^
 (2,3)
 (2,3)
 (2,3)

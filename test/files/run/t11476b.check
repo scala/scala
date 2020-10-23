@@ -1,0 +1,4 @@
+t11476b.scala:11: warning: match may not be exhaustive.
+It would fail on the following input: Foo(_)
+     val x = Foo(1) match { case FooExtractor(a) => a }
+                ^

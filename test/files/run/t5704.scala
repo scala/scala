@@ -13,6 +13,7 @@ object Test extends App {
       toolbox.typecheck(tree) match{
         case Apply(Select(lhs,op),rhs::Nil) =>
           println(rhs.tpe)
+        case x => throw new MatchError(x)
       }
     }
   }

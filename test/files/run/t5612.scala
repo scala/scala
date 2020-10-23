@@ -12,6 +12,7 @@ class Foo {
           case L.One => println("ONE"); return
           case L.Two => println("TWO")
           case L.Three => println("THREE"); break()
+          case x       => throw new MatchError(x)
         }
       }
     }

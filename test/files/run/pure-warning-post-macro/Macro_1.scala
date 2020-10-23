@@ -8,6 +8,7 @@ object Macro {
     block match {
       case Block(stats, expr) =>
         q"_root_.scala.List.apply[${weakTypeOf[T]}](..${stats :+ expr})"
+      case x => throw new MatchError(x)
     }
   }
 }

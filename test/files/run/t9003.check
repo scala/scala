@@ -1,0 +1,20 @@
+t9003.scala:33: warning: match may not be exhaustive.
+It would fail on the following input: Single
+    Single match {
+    ^
+t9003.scala:39: warning: match may not be exhaustive.
+It would fail on the following input: Product
+    Product match {
+    ^
+t9003.scala:45: warning: match may not be exhaustive.
+It would fail on the following input: Sequence
+    Sequence match {
+    ^
+t9003.scala:52: warning: match may not be exhaustive.
+It would fail on the following input: Sequence
+    Sequence match {
+    ^
+t9003.scala:69: warning: match may not be exhaustive.
+It would fail on the following input: CaseSequence(_)
+    CaseSequence(aArgs: _*) match {
+                ^

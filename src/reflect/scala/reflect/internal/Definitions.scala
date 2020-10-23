@@ -477,6 +477,9 @@ trait Definitions extends api.StandardDefinitions {
              def List_cons              = getMemberMethod(ListClass, nme.CONS)
     @migration("SeqClass now refers to scala.collection.immutable.Seq", "2.13.0")
     lazy val SeqClass               = requiredClass[scala.collection.immutable.Seq[_]]
+    lazy val SeqFactoryClass        = requiredModule[scala.collection.SeqFactory.type]
+    lazy val UnapplySeqWrapperClass = getTypeMember(SeqFactoryClass, tpnme.UnapplySeqWrapper)
+
     lazy val JavaStringBuilderClass = requiredClass[java.lang.StringBuilder]
     lazy val JavaStringBufferClass  = requiredClass[java.lang.StringBuffer]
     lazy val JavaCharSequenceClass  = requiredClass[java.lang.CharSequence]

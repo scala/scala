@@ -76,6 +76,7 @@ object Test extends ScaladocModelTest {
                       ).map( _.split("#").toSeq ).map({
                         case Seq(one)      => scalaURL + "/" + one + ".html"
                         case Seq(one, two) => scalaURL + "/" + one + ".html#" + two
+                        case x             => throw new MatchError(x)
                       }) ++ Set(s"$jdkURL/java/lang/Throwable.html")
 
     def isExpectedExternalLink(l: EntityLink) = l.link match {

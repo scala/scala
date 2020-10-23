@@ -1,0 +1,11 @@
+t5365d.scala:11: warning: match may not be exhaustive.
+It would fail on the following inputs: C(_), D(_)
+  def extractorOnly(t: T): Unit = t match {
+                                  ^
+t5365d.scala:15: warning: match may not be exhaustive.
+It would fail on the following input: D(_)
+  def extractorAndClass(t: T): Unit = t match {
+                                      ^
+error: No warnings can be incurred under -Werror.
+2 warnings
+1 error

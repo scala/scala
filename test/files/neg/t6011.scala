@@ -4,6 +4,7 @@ object Test {
   def f(ch: Char): Any = ch match {
     case 'a'  => 1
     case 'a' | 'c' => 1 // unreachable
+    case _         => throw new MatchError(ch)
   }
 
   // won't be compiled to a switch since it has an unreachable (duplicate) case

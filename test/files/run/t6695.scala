@@ -4,6 +4,7 @@ object Test extends App {
 	  	case Array("a", "x", "c") => println("x")
 	  	case Array("a", "b", "x") => println("a");
 	  	case Array("a", "d", _*) => println("wrongly positive")
+	  	case x                   => throw new MatchError(x)
 	  }
 	  assert(false, "match succeeded")
 	} catch {
@@ -14,5 +15,6 @@ object Test extends App {
   	case Array("a", "x", "c") => println("x")
   	case Array("a", "b", "x") => println("a");
   	case Array("a", "b", _*) => // okay
+  	case x                   => throw new MatchError(x)
   }
 }
