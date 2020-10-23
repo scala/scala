@@ -324,7 +324,11 @@ class Flags extends ModifierFlags {
 
   // A precaution against future additions to FlagsNotPickled turning out
   // to be overloaded flags thus not-pickling more than intended.
-  assert((OverloadedFlagsMask & FlagsNotPickled) == 0, flagsToString(OverloadedFlagsMask & FlagsNotPickled))
+  assert(
+    (OverloadedFlagsMask & FlagsNotPickled) == 0,
+    "overloaded flags should not overlap with FlagsNotPickled; found: " +
+      flagsToString(OverloadedFlagsMask & FlagsNotPickled)
+  )
 
   /** These flags are pickled */
   final val PickledFlags  = (
@@ -493,7 +497,9 @@ class Flags extends ModifierFlags {
     else "private[" + privateWithin + "]"
   )
 
-  @deprecated("use flagString on the flag-carrying member", "2.10.0")
+  // FIXME: This method is used several places internally. Remove its
+  //        internal use and then re-deprecate it.
+  // @deprecated("use flagString on the flag-carrying member", "2.10.0")
   private[scala] def flagsToString(flags: Long, privateWithin: String): String = {
     val access    = accessString(flags, privateWithin)
     val nonAccess = flagsToString(flags & ~AccessFlags)
@@ -501,7 +507,9 @@ class Flags extends ModifierFlags {
     List(nonAccess, access) filterNot (_ == "") mkString " "
   }
 
-  @deprecated("use flagString on the flag-carrying member", "2.10.0")
+  // FIXME: This method is used several places internally. Remove its
+  //        internal use and then re-deprecate it.
+  // @deprecated("use flagString on the flag-carrying member", "2.10.0")
   private[scala] def flagsToString(flags: Long): String = {
     // Fast path for common case
     if (flags == 0L) "" else {

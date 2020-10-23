@@ -301,7 +301,7 @@ abstract class UnPickler {
       def pflags            = flags & PickledFlags
 
       def finishSym(sym: Symbol): Symbol = {
-        /**
+        /*
          * member symbols (symbols owned by a class) are added to the class's scope, with a number
          * of exceptions:
          *
@@ -373,9 +373,9 @@ abstract class UnPickler {
       val end = readEnd()
       @inline def all[T](body: => T): List[T] = until(end, () => body)
 
-      def readTypes()   = all(readTypeRef)
-      def readSymbols() = all(readSymbolRef)
-      def readAnnots()  = all(readAnnotationRef)
+      def readTypes()   = all(readTypeRef())
+      def readSymbols() = all(readSymbolRef())
+      def readAnnots()  = all(readAnnotationRef())
 
       // if the method is overloaded, the params cannot be determined (see readSymbol) => return NoType.
       // Only happen for trees, "case Apply" in readTree() takes care of selecting the correct
@@ -554,51 +554,51 @@ abstract class UnPickler {
       }
       def selectorsRef() = all(ImportSelector(nameRef(), -1, nameRef(), -1))
 
-      /** A few of the most popular trees have been pulled to the top for
-       *  switch efficiency purposes.
+      /* A few of the most popular trees have been pulled to the top for
+       * switch efficiency purposes.
        */
       def readTree(tpe: Type): Tree = (tag: @switch) match {
-        case IDENTtree           => Ident(nameRef)
-        case SELECTtree          => Select(ref, nameRef)
-        case APPLYtree           => fixApply(Apply(ref, all(ref)), tpe) // !!!
-        case BINDtree            => Bind(nameRef, ref)
-        case BLOCKtree           => all(ref) match { case stats :+ expr => Block(stats, expr) }
-        case IFtree              => If(ref, ref, ref)
-        case LITERALtree         => Literal(constRef)
-        case TYPEAPPLYtree       => TypeApply(ref, all(ref))
-        case TYPEDtree           => Typed(ref, ref)
-        case ALTERNATIVEtree     => Alternative(all(ref))
-        case ANNOTATEDtree       => Annotated(ref, ref)
-        case APPLIEDTYPEtree     => AppliedTypeTree(ref, all(ref))
-        case APPLYDYNAMICtree    => ApplyDynamic(ref, all(ref))
-        case ARRAYVALUEtree      => ArrayValue(ref, all(ref))
-        case ASSIGNtree          => Assign(ref, ref)
-        case CASEtree            => CaseDef(ref, ref, ref)
-        case CLASStree           => ClassDef(modsRef, typeNameRef, rep(tparamRef), implRef)
-        case COMPOUNDTYPEtree    => CompoundTypeTree(implRef)
-        case DEFDEFtree          => DefDef(modsRef, termNameRef, rep(tparamRef), rep(rep(vparamRef)), ref, ref)
-        case EXISTENTIALTYPEtree => ExistentialTypeTree(ref, all(memberRef))
-        case FUNCTIONtree        => Function(rep(vparamRef), ref)
-        case IMPORTtree          => Import(ref, selectorsRef)
-        case LABELtree           => LabelDef(termNameRef, rep(idRef), ref)
-        case MATCHtree           => Match(ref, all(caseRef))
-        case MODULEtree          => ModuleDef(modsRef, termNameRef, implRef)
-        case NEWtree             => New(ref)
-        case PACKAGEtree         => PackageDef(refTreeRef, all(ref))
-        case RETURNtree          => Return(ref)
-        case SELECTFROMTYPEtree  => SelectFromTypeTree(ref, typeNameRef)
-        case SINGLETONTYPEtree   => SingletonTypeTree(ref)
-        case STARtree            => Star(ref)
-        case SUPERtree           => Super(ref, typeNameRef)
-        case TEMPLATEtree        => Template(rep(ref), vparamRef, all(ref))
-        case THIStree            => This(typeNameRef)
-        case THROWtree           => Throw(ref)
-        case TREtree             => Try(ref, rep(caseRef), ref)
-        case TYPEBOUNDStree      => TypeBoundsTree(ref, ref)
-        case TYPEDEFtree         => TypeDef(modsRef, typeNameRef, rep(tparamRef), ref)
+        case IDENTtree           => Ident(nameRef())
+        case SELECTtree          => Select(ref(), nameRef())
+        case APPLYtree           => fixApply(Apply(ref(), all(ref())), tpe) // !!!
+        case BINDtree            => Bind(nameRef(), ref())
+        case BLOCKtree           => all(ref()) match { case stats :+ expr => Block(stats, expr) }
+        case IFtree              => If(ref(), ref(), ref())
+        case LITERALtree         => Literal(constRef())
+        case TYPEAPPLYtree       => TypeApply(ref(), all(ref()))
+        case TYPEDtree           => Typed(ref(), ref())
+        case ALTERNATIVEtree     => Alternative(all(ref()))
+        case ANNOTATEDtree       => Annotated(ref(), ref())
+        case APPLIEDTYPEtree     => AppliedTypeTree(ref(), all(ref()))
+        case APPLYDYNAMICtree    => ApplyDynamic(ref(), all(ref()))
+        case ARRAYVALUEtree      => ArrayValue(ref(), all(ref()))
+        case ASSIGNtree          => Assign(ref(), ref())
+        case CASEtree            => CaseDef(ref(), ref(), ref())
+        case CLASStree           => ClassDef(modsRef(), typeNameRef(), rep(tparamRef()), implRef())
+        case COMPOUNDTYPEtree    => CompoundTypeTree(implRef())
+        case DEFDEFtree          => DefDef(modsRef(), termNameRef(), rep(tparamRef()), rep(rep(vparamRef())), ref(), ref())
+        case EXISTENTIALTYPEtree => ExistentialTypeTree(ref(), all(memberRef()))
+        case FUNCTIONtree        => Function(rep(vparamRef()), ref())
+        case IMPORTtree          => Import(ref(), selectorsRef())
+        case LABELtree           => LabelDef(termNameRef(), rep(idRef()), ref())
+        case MATCHtree           => Match(ref(), all(caseRef()))
+        case MODULEtree          => ModuleDef(modsRef(), termNameRef(), implRef())
+        case NEWtree             => New(ref())
+        case PACKAGEtree         => PackageDef(refTreeRef(), all(ref()))
+        case RETURNtree          => Return(ref())
+        case SELECTFROMTYPEtree  => SelectFromTypeTree(ref(), typeNameRef())
+        case SINGLETONTYPEtree   => SingletonTypeTree(ref())
+        case STARtree            => Star(ref())
+        case SUPERtree           => Super(ref(), typeNameRef())
+        case TEMPLATEtree        => Template(rep(ref()), vparamRef(), all(ref()))
+        case THIStree            => This(typeNameRef())
+        case THROWtree           => Throw(ref())
+        case TREtree             => Try(ref(), rep(caseRef()), ref())
+        case TYPEBOUNDStree      => TypeBoundsTree(ref(), ref())
+        case TYPEDEFtree         => TypeDef(modsRef(), typeNameRef(), rep(tparamRef()), ref())
         case TYPEtree            => TypeTree()
-        case UNAPPLYtree         => UnApply(ref, all(ref))
-        case VALDEFtree          => ValDef(modsRef, termNameRef, ref, ref)
+        case UNAPPLYtree         => UnApply(ref(), all(ref()))
+        case VALDEFtree          => ValDef(modsRef(), termNameRef(), ref(), ref())
         case _                   => noSuchTreeTag(tag, end)
       }
 

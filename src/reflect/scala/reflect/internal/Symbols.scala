@@ -137,7 +137,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
       enclosingPackage.info.decls.foreach { sym =>
         if(sourceFile == sym.sourceFile) {
-          sym.rawInfo.forceDirectSuperclasses
+          sym.rawInfo.forceDirectSuperclasses()
         }
       }
 
@@ -2057,7 +2057,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
           setInfo (this.info cloneInfo clone)
           setAnnotations this.annotations
       )
-      assert(clone.attachments.isEmpty)
+      assert(clone.attachments.isEmpty, "cloned symbol cannot have attachments")
       clone.setAttachments(this.attachments.cloneAttachments)
       if (clone.thisSym != clone)
         clone.typeOfThis = (clone.typeOfThis cloneInfo clone)
@@ -3894,7 +3894,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     markFlagsCompleted(sym1)(mask)
     markFlagsCompleted(sym2)(mask)
   }
-  final def markAllCompleted(sym: Symbol): Unit = forEachRelevantSymbol(sym, _.markAllCompleted)
+  final def markAllCompleted(sym: Symbol): Unit = forEachRelevantSymbol(sym, _.markAllCompleted())
   final def markAllCompleted(sym1: Symbol, sym2: Symbol): Unit = {
     markAllCompleted(sym1)
     markAllCompleted(sym2)

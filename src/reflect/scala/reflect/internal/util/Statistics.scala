@@ -18,6 +18,7 @@ import scala.reflect.internal.SymbolTable
 import scala.reflect.internal.settings.MutableSettings
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
+import scala.annotation.nowarn
 import scala.runtime.LongRef
 
 abstract class Statistics(val symbolTable: SymbolTable, settings: MutableSettings) {
@@ -237,9 +238,12 @@ quant)
     override def toString = s"${super.toString} aggregate, ${show(specificNanos)} specific"
   }
 
+  // FIXME: Redesign `QuantMap` so that it no longer extends `HashMap` (probably
+  //        using composition), then remove the `@nowarn` annotation
   /** A mutable map quantity where missing elements are automatically inserted
    *  on access by executing `initValue`.
    */
+  @nowarn("""cat=deprecation&origin=scala\.collection\.mutable\.HashMap""")
   class QuantMap[K, V](val prefix: String, val phases: Seq[String], initValue: => V)(implicit ev: V => Ordered[V])
       extends mutable.HashMap[K, V] with Quantity {
     override def default(key: K) = {

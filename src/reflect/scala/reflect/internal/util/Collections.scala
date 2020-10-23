@@ -160,7 +160,7 @@ trait Collections {
       ys1 = ys1.tail
       ys2 = ys2.tail
     }
-    if (lb eq null) Nil else lb.result
+    if (lb eq null) Nil else lb.result()
   }
 
   // compare to foldLeft[A, B](xs)
@@ -318,8 +318,8 @@ trait Collections {
       private[this] var head: Option[C] = None
       private[this] def advanceHead(): Unit =
         while (head.isEmpty && itA.hasNext && itB.hasNext) {
-          val x = itA.next
-          val y = itB.next
+          val x = itA.next()
+          val y = itB.next()
           head = f(x, y)
         }
 

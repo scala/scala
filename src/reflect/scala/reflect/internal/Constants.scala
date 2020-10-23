@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.switch
+import scala.annotation.{nowarn, switch}
 
 trait Constants extends api.Constants {
   self: SymbolTable =>
@@ -110,7 +110,9 @@ trait Constants extends api.Constants {
             case DoubleTag =>
               doubleToRawLongBits(value.asInstanceOf[Double]) == doubleToRawLongBits(that.value.asInstanceOf[Double])
             case _ =>
-              this.value.equals(that.value)
+              // we do not want cooperative equality for determining if constants are equal
+              // TODO: switch to `cat`-based after 2.13.4 re-STARR // : @nowarn("cat=other-non-cooperative-equals")
+              this.value.equals(that.value): @nowarn("msg=comparing values .* is unsafe due to cooperative equality")
           }
         }
       case _ => false

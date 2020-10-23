@@ -142,7 +142,7 @@ trait HasFlags {
       while (i <= MaxBitPosition) {
         val flag = Flags.rawFlagPickledOrder(i)
         if ((bits & flag) != 0L) {
-          val s = resolveOverloadedFlag(flag)
+          val s = Flags.flagToString(flag)
           if (s.length > 0) {
             if (sb eq null) sb = new StringBuilder append s
             else if (sb.length == 0) sb append s

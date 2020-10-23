@@ -15,7 +15,7 @@ package reflect
 package internal
 
 import Flags._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.reflect.macros.Attachments
@@ -275,7 +275,7 @@ trait Trees extends api.Trees {
         )
     }
     def transform(transformer: Transformer): Tree = xtransform(transformer, this)
-    def traverse(traverser: Traverser): Unit = xtraverse(traverser, this)
+    def traverse(traverser: Traverser): Unit = xtraverse(traverser, this): @nowarn("cat=deprecation")
   }
 
   trait TermTree extends Tree with TermTreeApi
@@ -1601,13 +1601,13 @@ trait Trees extends api.Trees {
 
   // --- generic traversers and transformers
 
-  @deprecated("2.12.3", "Use Tree#traverse instead")
+  @deprecated("Use Tree#traverse instead", since = "2.12.3")
   override protected def itraverse(traverser: Traverser, tree: Tree): Unit = {
     tree.traverse(traverser)
   }
 
   //OPT ordered according to frequency to speed it up.
-  @deprecated("2.12.3", "Use Tree#transform instead")
+  @deprecated("Use Tree#transform instead", since = "2.12.3")
   override protected def itransform(transformer: Transformer, tree: Tree): Tree = {
     tree.transform(transformer)
   }

@@ -46,6 +46,10 @@ object Test extends App {
         |package scala.reflect
         |package runtime
         |
+        |import scala.annotation.nowarn
+        |
+        |@nowarn("cat=deprecation&origin=scala\\\\.reflect\\\\.internal\\\\.Internals\\\\.compat")
+        |@nowarn("cat=deprecation&origin=scala\\\\.reflect\\\\.internal\\\\.Trees\\\\.emptyValDef")
         |trait JavaUniverseForce { self: runtime.JavaUniverse  =>
         |  def force(): Unit = {
         |    Literal(Constant(42)).duplicate

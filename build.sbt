@@ -773,11 +773,16 @@ lazy val reflect = configureAsSubproject(project)
   .settings(generatePropertiesFileSettings)
   .settings(Osgi.settings)
   .settings(AutomaticModuleName.settings("scala.reflect"))
+  .settings(fatalWarningsSettings)
   .settings(
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions += "-Xlint:-deprecation,-inaccessible,-nonlocal-return,-valpattern,-doc-detached,_",
+    fatalWarnings := false,
+    Compile / scalacOptions ++= Seq(
+      "-Xlint",
+      "-feature",
+    ),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),

@@ -15,8 +15,9 @@ package reflect
 package internal
 
 import java.security.MessageDigest
+
 import Chars.isOperatorPart
-import scala.annotation.switch
+import scala.annotation.{nowarn, switch}
 import scala.collection.immutable
 import scala.io.Codec
 
@@ -170,8 +171,12 @@ trait StdNames {
     final val WILDCARD: NameType = nameType("_")
   }
 
+  // FIXME: This class requires early initializers to work, which are deprecated
+  //        and will not be supported in 3.0. Please change the design and remove
+  //        the early initializer.
   /** This should be the first trait in the linearization. */
   // abstract class Keywords extends CommonNames {
+  @nowarn("cat=deprecation&msg=early initializers")
   abstract class Keywords extends {
     private[this] val kw = new KeywordSetBuilder
 

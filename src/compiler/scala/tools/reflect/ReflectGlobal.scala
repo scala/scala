@@ -62,7 +62,7 @@ class ReflectGlobal(currentSettings: Settings, reporter: Reporter, override val 
   // Mirror and RuntimeClass come from both Global and reflect.runtime.SymbolTable
   // so here the compiler needs an extra push to help decide between those (in favor of the latter)
   import scala.reflect.ClassTag
-  override type Mirror = JavaMirror
+  override type Mirror = MirrorImpl
   override implicit val MirrorTag: ClassTag[Mirror] = ClassTag[Mirror](classOf[Mirror])
   override type RuntimeClass = java.lang.Class[_]
   override implicit val RuntimeClassTag: ClassTag[RuntimeClass] = ClassTag[RuntimeClass](classOf[RuntimeClass])

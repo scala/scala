@@ -113,7 +113,7 @@ private[internal] trait TypeConstraints {
     def stopWidening(): Unit = avoidWidening = true
 
     def stopWideningIfPrecluded(): Unit =
-      if (instValid && TypeVar.precludesWidening(inst)) stopWidening
+      if (instValid && TypeVar.precludesWidening(inst)) stopWidening()
 
     def addLoBound(tp: Type, isNumericBound: Boolean = false): Unit = {
       // For some reason which is still a bit fuzzy, we must let Nothing through as

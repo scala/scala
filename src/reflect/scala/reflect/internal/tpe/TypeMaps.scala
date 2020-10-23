@@ -17,7 +17,7 @@ package tpe
 
 import scala.collection.{immutable, mutable}
 import Flags._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import Variance._
 import scala.collection.mutable.ListBuffer
 
@@ -169,6 +169,7 @@ private[internal] trait TypeMaps {
       else args1
     }
 
+    @nowarn("cat=lint-nonlocal-return")
     def mapOver(tree: Tree): Tree =
       mapOver(tree, () => return UnmappableTree)
 
@@ -1038,18 +1039,20 @@ private[internal] trait TypeMaps {
         }
       }
 
+    private class CollectingTraverser(p: Tree => Boolean) extends FindTreeTraverser(p) {
+      def collect(arg: Tree): Boolean = {
+        /*super[FindTreeTraverser].*/ result = None
+        traverse(arg)
+        /*super[FindTreeTraverser].*/ result.isDefined
+      }
+    }
+
     private lazy val findInTree = {
       def inTree(t: Tree): Boolean = {
         if (pred(t.symbol)) result = true else apply(t.tpe)
         result
       }
-      new FindTreeTraverser(inTree) {
-        def collect(arg: Tree): Boolean = {
-          /*super[FindTreeTraverser].*/ result = None
-          traverse(arg)
-          /*super[FindTreeTraverser].*/ result.isDefined
-        }
-      }
+      new CollectingTraverser(inTree)
     }
 
     override def foldOver(arg: Tree) = if (!result) findInTree.collect(arg)

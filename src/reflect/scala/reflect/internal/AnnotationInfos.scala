@@ -14,7 +14,7 @@ package scala
 package reflect
 package internal
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.immutable.ListMap
 
 /** AnnotationInfo and its helpers */
@@ -77,6 +77,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
    *
    * TODO: rename to `ConstantAnnotationArg`
    */
+  @nowarn("""cat=deprecation&origin=scala\.reflect\.api\.Annotations\.JavaArgumentApi""")
   sealed abstract class ClassfileAnnotArg extends Product with JavaArgumentApi
   type JavaArgument = ClassfileAnnotArg
   implicit val JavaArgumentTag = ClassTag[ClassfileAnnotArg](classOf[ClassfileAnnotArg])

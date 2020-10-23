@@ -16,13 +16,16 @@ package reflect.internal.util
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.io.AbstractFile
-import java.net.{ URL, URLConnection, URLStreamHandler }
+import java.net.{URL, URLConnection, URLStreamHandler}
 import java.security.cert.Certificate
-import java.security.{ ProtectionDomain, CodeSource }
-import java.util.{ Collections => JCollections, Enumeration => JEnumeration }
+import java.security.{CodeSource, ProtectionDomain}
+import java.util.{Collections => JCollections, Enumeration => JEnumeration}
+
+import scala.annotation.nowarn
 
 object AbstractFileClassLoader {
   // should be a method on AbstractFile, but adding in `internal.util._` for now as we're in a minor release
+  @nowarn("cat=lint-nonlocal-return")
   private[scala] final def lookupPath(base: AbstractFile)(pathParts: Seq[String], directory: Boolean): AbstractFile = {
     var file: AbstractFile = base
     for (dirPart <- pathParts.init) {
@@ -52,6 +55,7 @@ class AbstractFileClassLoader(val root: AbstractFile, parent: ClassLoader)
   protected def dirNameToPath(name: String): String =
     name.replace('.', '/')
 
+  @nowarn("cat=lint-nonlocal-return")
   protected def findAbstractDir(name: String): AbstractFile = {
     var file: AbstractFile = root
     val pathParts          = dirNameToPath(name) split '/'

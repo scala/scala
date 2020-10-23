@@ -15,6 +15,10 @@ package internal
 package transform
 
 trait PostErasure {
+  // FIXME: With `global` as a `val`, implementers must use early initializers, which
+  //        are deprecated and will not be supported in 3.0. Please change the design,
+  //        remove the early initializers from implementers, and then remove the
+  //        `@nowarn` annotations from implementers.
   val global: SymbolTable
   import global._
 
