@@ -11,6 +11,8 @@ To contribute in this repo, please open a [pull request](https://help.github.com
 
 For coordinating bigger work items, we use the [scala/scala-dev tracker](https://github.com/scala/scala-dev/issues).
 
+Be aware that we can't accept additions to the standard library, only modifications to existing code.  Binary compatibility forbids adding new public classes or public methods. Additions are made to [scala-library-next](https://github.com/scala/scala-library-next) instead.
+
 We do have to ask you to sign the [Scala CLA](http://www.lightbend.com/contribute/cla/scala) before we can merge any of your work, to protect its open source nature.
 
 The general workflow is as follows.
@@ -21,12 +23,11 @@ The general workflow is as follows.
 
 For more information on building and developing the core of Scala, make sure to read the rest of this README, especially for [setting up your machine](https://github.com/scala/scala#get-ready-to-contribute)!
 
+# Get in touch!
+
 In order to get in touch with other Scala contributors, join
 [scala/contributors](https://gitter.im/scala/contributors) (Gitter) or post on
 [contributors.scala-lang.org](http://contributors.scala-lang.org) (Discourse).
-
-
-# Get in touch!
 
 If you need some help with your PR at any time, please feel free to @-mention anyone from the list below, and we will do our best to help you out:
 
