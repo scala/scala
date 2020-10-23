@@ -29,7 +29,6 @@ jobs:
           - buildLocker
           - buildQuick
           - triggerScalaDist
-          - sbt -Dscala.build.compileWithDotty=true library/compile
 
       # pull request validation (w/ bootstrap)
       # differs from the bootstrap above by:
