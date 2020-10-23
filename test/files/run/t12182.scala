@@ -1,5 +1,5 @@
 object Test {
-  abstract class Base[T] {
+  sealed abstract class Base[T] {
     def v: T
   }
   class ImplI extends Base[Int] {
