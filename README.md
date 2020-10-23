@@ -164,18 +164,11 @@ meantime you can:
 
 #### Bootstrapping locally
 
-To perform a bootstrap using sbt
-  - first a build is published either locally or on a temporary repository,
-  - then a separate invocation of sbt (using the previously built version as `starr`)
-    is used to build / publish the actual build.
-
-Assume the current `starr` version is `2.12.0` (defined in
-[versions.properties](versions.properties)) and the current version is `2.12.0-SNAPSHOT`
-(defined in [build.sbt](build.sbt)). To perform a local bootstrap:
-  - Run `publishLocal` (you may want to specify a custom version suffix and skip
-    generating API docs, see above).
-  - Quit sbt and start a new sbt instance using `sbt -Dstarr.version=<version>` where
-    `<version>` is the version number you published locally.
+To perform a bootstrap run `restarrFull` within an sbt session.  This will build and publish the Scala
+distribution to your local artifact repository and then switch sbt to use that version as its new
+`scalaVersion`.  You may then revert back with `reload`.  Note `restarrFull` will also write the STARR version to
+`buildcharacter.properties` so you can switch back to it with `restarr` without republishing (though incremental
+compilation will recompile from scratch, sadly.)
 
 ### IDE setup
 
@@ -217,13 +210,15 @@ If you see a spurious build failure, you can post `/rebuild` as a PR comment.
 The [scabot README](https://github.com/scala/scabot) lists all available commands.
 
 If you'd like to test your patch before having everything polished for review,
-feel free to submit a PR and add the `WIP` label. In case your WIP branch contains
+you can have Travis CI build your branch (make sure you have a fork and have Travis CI
+enabled for branch builds on it first, and then push your branch).  Also
+feel free to submit a draft PR. In case your draft branch contains
 a large number of commits (that you didn't clean up / squash yet for review),
 consider adding `[ci: last-only]` to the PR title. That way only the last commit
-will be tested, saving some energy and CI-resources. Note that inactive WIP PRs
+will be tested, saving some energy and CI-resources. Note that inactive draft PRs
 will be closed eventually, which does not mean the change is being rejected.
 
-CI performs a full bootstrap. The first task, `validate-publish-core`, publishes
+CI performs a compiler bootstrap. The first task, `validate-publish-core`, publishes
 a build of your commit to the temporary repository
 https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots.
 Note that this build is not yet bootstrapped, its bytecode is built using the
