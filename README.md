@@ -241,21 +241,17 @@ $ sbt
 > console
 ```
 
-## Nightly builds
+## "Nightly" builds
 
 The Scala CI builds nightly download releases and publishes
-them to the following locations:
-  - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/?C=M;O=D)
-  - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/?C=M;O=D)
-
-The CI also publishes nightly API docs:
-  - [2.12.x](http://www.scala-lang.org/files/archive/nightly/2.12.x/api/?C=M;O=D)
-    - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.12.x/api/2.12.x/)
-  - [2.13.x](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/?C=M;O=D)
-    - [symlink to the latest](http://www.scala-lang.org/files/archive/nightly/2.13.x/api/2.13.x/)
+them to https://scala-ci.typesafe.com/artifactory/scala-integration/ .
 
 Using a nightly build in sbt is explained in
 [this Stack Overflow answer](http://stackoverflow.com/questions/40622878)
+
+Although we casually refer to these as "nightly" builds, they aren't
+actually built nightly, but "mergely".  That is to say, a build is
+published for every merged PR.
 
 ## Scala CI internals
 
