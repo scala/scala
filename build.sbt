@@ -772,6 +772,7 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
+    fatalWarnings := false,
     Compile / scalacOptions ++= Seq(
       "-Xlint",
       "-feature",
