@@ -929,11 +929,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree = completeSelect(name)
 
-      def completeSelect(name: TastyName)(implicit ctx: Context): Tree = {
-        val qual     = readTerm()
-        val qualType = qual.tpe // TODO [tasty]: qual.tpe.widenIfUnstable
-        tpd.Select(qual, name)(namedMemberOfPrefix(qualType, name))
-      }
+      def completeSelect(name: TastyName)(implicit ctx: Context): Tree = tpd.Select(readTerm(), name)
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
         assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
@@ -964,17 +960,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case SELECTin =>
-              val sname = readTastyName()
+              val name = readTastyName()
               val qual  = readTerm()
               if (inParentCtor) {
-                assert(sname.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
+                assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
                 skipTree()
                 qual
               }
               else {
-                val owner   = readType()
-                val qualTpe = qual.tpe // qual.tpe.widenIfUnstable
-                tpd.Select(qual, sname)(namedMemberOfTypeWithPrefix(qualTpe, owner, sname))
+                tpd.Select(readType())(qual, name)
               }
             case SUPER =>
               val qual = readTerm()
