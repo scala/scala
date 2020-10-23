@@ -15,7 +15,7 @@ package scala
 /** An annotation to designate that the annotated entity
  *  should not be considered for additional compiler checks.
  *  Specific applications include annotating the subject of
- *  a match expression to suppress exhaustiveness warnings, and
+ *  a match expression to suppress exhaustiveness and reachability warnings, and
  *  annotating a type argument in a match case to suppress
  *  unchecked warnings.
  *
