@@ -727,6 +727,7 @@ lazy val library = configureAsSubproject(project)
   .settings(
     name := "scala-library",
     description := "Scala Standard Library",
+    fatalWarnings := false,
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
     Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= {
