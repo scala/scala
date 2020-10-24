@@ -14,6 +14,7 @@ package scala
 package reflect
 
 import java.lang.{ Class => jClass }
+import java.lang.ref.{WeakReference => jWeakReference}
 
 import scala.collection.mutable
 import scala.runtime.BoxedUnit
@@ -136,15 +137,15 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
-  private[this] val cache = new ClassValue[ClassTag[_]] {
-    override def computeValue(runtimeClass: jClass[_]): ClassTag[_] = {
-      runtimeClass match {
+  private[this] val cache = new ClassValue[jWeakReference[ClassTag[_]]] {
+    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] = {
+      new jWeakReference(runtimeClass match {
         case x if x.isPrimitive => primitiveClassTag(runtimeClass)
         case ObjectTYPE         => ClassTag.Object
         case NothingTYPE        => ClassTag.Nothing
         case NullTYPE           => ClassTag.Null
         case _                  => new GenericClassTag[AnyRef](runtimeClass)
-      }
+      })
     }
 
     private def primitiveClassTag[T](runtimeClass: Class[_]): ClassTag[_] = runtimeClass match {
@@ -168,7 +169,15 @@ object ClassTag {
     }
   }
 
-  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = cache.get(runtimeClass1).asInstanceOf[ClassTag[T]]
+  def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
+    val ref = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]]
+    var tag = ref.get
+    if (tag == null) {
+      cache.remove(runtimeClass1)
+      tag = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]].get
+    }
+    tag
+  }
 
   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
 }
