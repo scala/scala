@@ -1328,6 +1328,8 @@ lazy val root: Project = (project in file("."))
     // Wasn't sure if findRootCauses would work if I just aggregated testAll1/etc, so a little duplication..
     testAll  := runTests(unitTests ::: partests ::: osgiTests ::: remainingTests).value,
     testOsgi := runTests(osgiTests).value,
+    // splitting this in two parts allows them to run in parallel on CI.
+    // partest takes the longest, so "partest vs. everything else" is a roughly equal split
     testAll1 := runTests(unitTests ::: remainingTests).value,
     testAll2 := runTests(partests).value,
 

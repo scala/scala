@@ -29,12 +29,13 @@ jobs:
           - buildLocker
           - buildQuick
           - triggerScalaDist
-          - sbt -Dscala.build.compileWithDotty=true library/compile
 
       # pull request validation (w/ bootstrap)
       # differs from the bootstrap above by:
       # - not using bash script setup, but just the underlying sbt calls
       # - publishing locally rather than to Artifactory
+      # the bootstrap above is older historically; this way of doing it is newer
+      # and also simpler. we should aim to reduce/eliminate the duplication.
       - stage: build
         name: bootstrap and publishLocal
         if: type = pull_request OR repo != scala/scala
