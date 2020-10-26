@@ -850,7 +850,6 @@ lazy val compiler = configureAsSubproject(project)
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
       "-Wconf:msg=match may not be exhaustive:i",
-      "-Ypatmat-exhaust-depth", "80",
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
