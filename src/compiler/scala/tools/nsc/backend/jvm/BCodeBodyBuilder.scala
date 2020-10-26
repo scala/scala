@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.{switch, tailrec}
+import scala.annotation.{nowarn, switch, tailrec}
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Flags
 import scala.tools.asm
@@ -215,7 +215,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genPrimitiveOp(tree: Apply, expectedType: BType): BType = {
       val sym = tree.symbol
-      val Apply(fun @ Select(receiver, _), _) = tree
+      val Apply(fun @ Select(receiver, _), _) = tree: @nowarn("msg=match may not be exhaustive")
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       import scalaPrimitives.{isArithmeticOp, isArrayOp, isComparisonOp, isLogicalOp}
@@ -715,7 +715,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     } // end of genApply()
 
     private def genArrayValue(av: ArrayValue): BType = {
-      val ArrayValue(tpt @ TypeTree(), elems) = av
+      val ArrayValue(tpt @ TypeTree(), elems) = av: @nowarn("msg=match may not be exhaustive")
 
       val elmKind       = tpeTK(tpt)
       val generatedType = ArrayBType(elmKind)

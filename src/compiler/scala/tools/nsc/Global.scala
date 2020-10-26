@@ -18,7 +18,7 @@ import java.io.{Closeable, FileNotFoundException, IOException}
 import java.net.URL
 import java.nio.charset._
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.{immutable, mutable}
 import scala.reflect.ClassTag
 import scala.reflect.internal.pickling.PickleBuffer
@@ -711,7 +711,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
 
   // sequences the phase assembly
   protected def computePhaseDescriptors: List[SubComponent] = {
-    /** Allow phases to opt out of the phase assembly. */
+    /* Allow phases to opt out of the phase assembly. */
     def cullPhases(phases: List[SubComponent]) = {
       val enabled = if (settings.debug && settings.isInfo) phases else phases filter (_.enabled)
       def isEnabled(q: String) = enabled exists (_.phaseName == q)
@@ -1130,8 +1130,8 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   override protected[scala] def currentRunProfilerAfterCompletion(root: Symbol, associatedFile: AbstractFile): Unit =
     curRun.profiler.afterCompletion(root, associatedFile)
 
-  /** A Run is a single execution of the compiler on a set of units.
-   */
+  /** A Run is a single execution of the compiler on a set of units. */
+  @nowarn("""cat=deprecation&origin=scala\.reflect\.macros\.Universe\.RunContextApi""")
   class Run extends RunContextApi with RunReporting with RunParsing {
     /** Have been running into too many init order issues with Run
      *  during erroneous conditions.  Moved all these vals up to the

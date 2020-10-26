@@ -12,6 +12,7 @@
 
 package scala.tools.nsc.transform.async
 
+import scala.collection.immutable.ArraySeq
 import scala.collection.mutable
 import scala.reflect.internal.Flags._
 
@@ -46,7 +47,7 @@ trait LiveVariables extends ExprBuilder {
         liftedSyms -= sym
     }
 
-    /**
+    /*
      *  Traverse statements of an `AsyncState`, collect `Ident`-s referring to lifted fields.
      *
      *  @param  as  a state of an `async` expression
@@ -110,7 +111,7 @@ trait LiveVariables extends ExprBuilder {
       g.finish()
     }
 
-    graph.lastReferences[Int](liftedSyms.toArray[Symbol])(_.t.state)
+    graph.lastReferences[Int](ArraySeq.unsafeWrapArray(liftedSyms.toArray[Symbol]))(_.t.state)
   }
 
   private final class Graph[T] {
@@ -177,7 +178,7 @@ trait LiveVariables extends ExprBuilder {
     }
     private var finished = false
     def finish(): this.type = {
-      assert(!finished)
+      assert(!finished, "cannot finish when already finished")
       for (node <- nodes.valuesIterator) {
         foreachWithIndex(node.succTs) {(succT, i) =>
           val succ = nodes(succT)
@@ -189,7 +190,7 @@ trait LiveVariables extends ExprBuilder {
       this
     }
     def lastReferences[K](syms: IndexedSeq[Symbol])(keyMapping: Node => K): mutable.LinkedHashMap[K, (mutable.LinkedHashSet[Symbol], mutable.LinkedHashSet[Symbol])] = {
-      assert(finished)
+      assert(finished, "lastReferences before finished")
       val symIndices: Map[Symbol, Int] = syms.zipWithIndex.toMap
       val nodeValues = nodes.values.toArray
       nodeValues.foreach { node =>
@@ -225,11 +226,11 @@ trait LiveVariables extends ExprBuilder {
           result
         }
       }
-      mutable.LinkedHashMap(nodeValues.map { x =>
+      mutable.LinkedHashMap(ArraySeq.unsafeWrapArray(nodeValues.map { x =>
         val pre = toSymSet(x.deadOnEntryLiveOnPredecessorExit)
         val post = toSymSet(x.deadOnExitLiveOnEntry)
         (keyMapping(x), (pre, post))
-      }: _*)
+      }): _*)
     }
   }
 }

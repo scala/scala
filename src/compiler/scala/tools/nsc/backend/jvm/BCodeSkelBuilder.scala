@@ -19,6 +19,7 @@ import scala.tools.nsc.symtab._
 import scala.tools.asm
 import GenBCode._
 import BackendReporting._
+import scala.annotation.nowarn
 
 /*
  *  @author  Miguel Garcia, http://lampwww.epfl.ch/~magarcia/ScalaCompilerCornerReloaded/
@@ -533,7 +534,7 @@ abstract class BCodeSkelBuilder extends BCodeHelpers {
               val forwarderDefDef = {
                 val dd1 = global.gen.mkStatic(deriveDefDef(dd)(_ => EmptyTree), newTermName(traitSuperAccessorName(sym)), _.cloneSymbol.withoutAnnotations)
                 dd1.symbol.setFlag(Flags.ARTIFACT).resetFlag(Flags.OVERRIDE)
-                val selfParam :: realParams = dd1.vparamss.head.map(_.symbol)
+                val selfParam :: realParams = dd1.vparamss.head.map(_.symbol): @nowarn("msg=match may not be exhaustive")
                 deriveDefDef(dd1)(_ =>
                   atPos(dd1.pos)(
                     Apply(Select(global.gen.mkAttributedIdent(selfParam).setType(sym.owner.typeConstructor), dd.symbol),

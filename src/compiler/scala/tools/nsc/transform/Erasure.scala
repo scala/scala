@@ -13,9 +13,9 @@
 package scala.tools.nsc
 package transform
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.reflect.internal.ClassfileConstants._
-import scala.collection.{ mutable, immutable }
+import scala.collection.{immutable, mutable}
 import symtab._
 import Flags._
 import scala.reflect.internal.Mode._
@@ -35,7 +35,7 @@ abstract class Erasure extends InfoTransform
 
   val requiredDirectInterfaces = perRunCaches.newAnyRefMap[Symbol, mutable.Set[Symbol]]()
 
-  def newTransformer(unit: CompilationUnit): Transformer =
+  def newTransformer(unit: CompilationUnit): AstTransformer =
     new ErasureTransformer(unit)
 
   override def keepsTypeParams = false
@@ -359,10 +359,10 @@ abstract class Erasure extends InfoTransform
             if (unboxedVCs) {
               val unboxedSeen = (tp memberType sym.derivedValueClassUnbox).finalResultType
               jsig(unboxedSeen, existentiallyBound, toplevel, unboxedVCs = true)
-            } else classSig
+            } else classSig()
           }
           else if (sym.isClass)
-            classSig
+            classSig()
           else
             jsig(erasure(sym0)(tp), existentiallyBound, toplevel, unboxedVCs)
         case PolyType(tparams, restpe) =>
@@ -446,7 +446,7 @@ abstract class Erasure extends InfoTransform
 
       case Block(stats, expr) =>
         // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
-        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER))
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)): @nowarn("msg=match may not be exhaustive")
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
     }
   }
@@ -855,8 +855,8 @@ abstract class Erasure extends InfoTransform
   }
 
   /** The erasure transformer */
-  class ErasureTransformer(unit: CompilationUnit) extends Transformer {
-    import overridingPairs.Cursor
+  class ErasureTransformer(unit: CompilationUnit) extends AstTransformer {
+    import overridingPairs.PairsCursor
 
     private def doubleDefError(pair: SymbolPair): Unit = {
       import pair._
@@ -913,7 +913,7 @@ abstract class Erasure extends InfoTransform
       }
     }
 
-    private class DoubleDefsCursor(root: Symbol) extends Cursor(root) {
+    private class DoubleDefsCursor(root: Symbol) extends PairsCursor(root) {
       // specialized members have no type history before 'specialize', causing double def errors for curried defs
       override def exclude(sym: Symbol): Boolean = (
            sym.isType

@@ -14,6 +14,7 @@ package scala.tools
 package nsc
 package settings
 
+import scala.annotation.nowarn
 import scala.tools.nsc.Reporting.WarningCategory
 
 /** Settings influencing the printing of warnings.
@@ -221,7 +222,7 @@ trait Warnings {
   def warnRecurseWithDefault     = lint contains RecurseWithDefault
   def unitSpecialization         = lint contains UnitSpecialization
   def multiargInfix              = lint contains MultiargInfix
-  def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || warnSelfImplicit
+  def lintImplicitRecursion      = lint.contains(ImplicitRecursion) || (warnSelfImplicit: @nowarn("cat=deprecation"))
 
   // The Xlint warning group.
   val lint = MultiChoiceSetting(

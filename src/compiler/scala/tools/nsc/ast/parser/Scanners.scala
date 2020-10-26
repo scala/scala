@@ -432,9 +432,9 @@ trait Scanners extends ScannersCommon {
         token = nl
       }
 
-      /** A leading symbolic or backquoted identifier is treated as an infix operator
-       *  if it is followed by at least one ' ' and a token on the same line
-       *  that can start an expression.
+      /* A leading symbolic or backquoted identifier is treated as an infix operator
+       * if it is followed by at least one ' ' and a token on the same line
+       * that can start an expression.
        */
       def isLeadingInfixOperator =
         allowLeadingInfixOperators &&

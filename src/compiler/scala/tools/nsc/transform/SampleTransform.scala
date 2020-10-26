@@ -24,10 +24,10 @@ abstract class SampleTransform extends Transform {
   /** the following two members override abstract members in Transform */
   val phaseName: String = "sample-phase"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer =
+  protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new SampleTransformer(unit)
 
-  class SampleTransformer(unit: CompilationUnit) extends Transformer {
+  class SampleTransformer(unit: CompilationUnit) extends AstTransformer {
 
     override def transform(tree: Tree): Tree = {
       val tree1 = super.transform(tree);      // transformers always maintain `currentOwner`.

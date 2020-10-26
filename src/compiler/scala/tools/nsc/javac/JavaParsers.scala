@@ -676,7 +676,7 @@ trait JavaParsers extends ast.parser.ParsersCommon with JavaScanners {
     def varDecl(pos: Position, mods: Modifiers, tpt: Tree, name: TermName): ValDef = {
       val tpt1 = optArrayBrackets(tpt)
 
-      /** Tries to detect final static literals syntactically and returns a constant type replacement */
+      /* Tries to detect final static literals syntactically and returns a constant type replacement */
       def optConstantTpe(): Tree = {
         def constantTpe(const: Constant): Tree = TypeTree(ConstantType(const))
 

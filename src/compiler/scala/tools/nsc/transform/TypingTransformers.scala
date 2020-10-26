@@ -29,7 +29,7 @@ trait TypingTransformers {
   else // TODO: AM: should some phases use a regular rootContext instead of a post-typer one??
     analyzer.newTyper(analyzer.rootContextPostTyper(unit, EmptyTree))
 
-  abstract class TypingTransformer(initLocalTyper: global.analyzer.Typer) extends Transformer {
+  abstract class TypingTransformer(initLocalTyper: global.analyzer.Typer) extends AstTransformer {
     def this(unit: CompilationUnit) = this(newRootLocalTyper(unit))
     var localTyper: analyzer.Typer = initLocalTyper
     currentOwner = localTyper.context.owner

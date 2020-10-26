@@ -243,7 +243,7 @@ abstract class BCodeSyncAndTry extends BCodeBodyBuilder {
       val endTryBody = currProgramPoint()
       bc goTo postHandlers
 
-      /**
+      /*
        * A return within a `try` or `catch` block where a `finally` is present ("early return")
        * emits a store of the result to a local, jump to a "cleanup" version of the `finally` block,
        * and sets `shouldEmitCleanup = true` (see [[PlainBodyBuilder.genReturn]]).

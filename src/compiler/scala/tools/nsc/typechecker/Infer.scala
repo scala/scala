@@ -414,7 +414,7 @@ trait Infer extends Checkable {
       if (if (useWeaklyCompatible) isWeaklyCompatible(resTpVars, pt) else isCompatible(resTpVars, pt)) {
         // If conforms has just solved a tvar as a singleton type against pt, then we need to
         // prevent it from being widened later by adjustTypeArgs
-        tvars.foreach(_.constr.stopWideningIfPrecluded)
+        tvars.foreach(_.constr.stopWideningIfPrecluded())
 
         // If the restpe is an implicit method, and the expected type is fully defined
         // optimize type variables wrt to the implicit formals only; ignore the result type.

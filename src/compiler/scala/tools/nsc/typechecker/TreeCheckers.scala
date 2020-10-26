@@ -129,7 +129,7 @@ abstract class TreeCheckers extends Analyzer {
     def reportChanges(): Unit = {
       // new symbols
       if (newSyms.nonEmpty) {
-        informFn(newSyms.size + " new symbols.")
+        informFn("" + newSyms.size + " new symbols.")
         val toPrint = if (settings.debug) sortedNewSyms mkString " " else ""
 
         newSyms.clear()

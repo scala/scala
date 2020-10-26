@@ -36,7 +36,7 @@ trait MacroRuntimes extends JavaReflectionRuntimes {
   /** Default implementation of `macroRuntime`.
    *  Can be overridden by analyzer plugins (see AnalyzerPlugins.pluginsMacroRuntime for more details)
    */
-  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]
+  private val macroRuntimesCache = perRunCaches.newWeakMap[Symbol, MacroRuntime]()
   def standardMacroRuntime(expandee: Tree): MacroRuntime = {
     val macroDef = expandee.symbol
     macroLogVerbose(s"looking for macro implementation: $macroDef")

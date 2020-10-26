@@ -14,7 +14,7 @@ package scala.tools.nsc.transform.patmat
 
 import java.util
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{immutable, mutable}
 import scala.reflect.internal.util.StatisticsStatics
@@ -95,7 +95,8 @@ trait Solving extends Logic {
 
     final case class Solvable(cnf: Cnf, symbolMapping: SymbolMapping) {
       def ++(other: Solvable) = {
-        require(this.symbolMapping eq other.symbolMapping)
+        require(this.symbolMapping eq other.symbolMapping,
+          "this and other must have the same symbol mapping (same reference)")
         Solvable(cnf ++ other.cnf, symbolMapping)
       }
 
@@ -239,7 +240,7 @@ trait Solving extends Logic {
         // no need for auxiliary variable
         def not(a: Lit): Lit = -a
 
-        /**
+        /*
          * This encoding adds 3n-4 variables auxiliary variables
          * to encode that at most 1 symbol can be set.
          * See also "Towards an Optimal CNF Encoding of Boolean Cardinality Constraints"
@@ -257,7 +258,7 @@ trait Solving extends Logic {
                 @inline
                 def /\(a: Lit, b: Lit) = addClauseProcessed(clause(a, b))
 
-                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1)
+                val (mid, xn :: Nil) = tail.splitAt(tail.size - 1): @nowarn("msg=match may not be exhaustive")
 
                 // 1 <= x1,...,xn <==>
                 //

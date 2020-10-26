@@ -78,7 +78,7 @@ abstract class RefChecks extends Transform {
     false
   }
 
-  class RefCheckTransformer(unit: CompilationUnit) extends Transformer {
+  class RefCheckTransformer(unit: CompilationUnit) extends AstTransformer {
 
     var localTyper: analyzer.Typer = typer
     var currentApplication: Tree = EmptyTree
@@ -284,10 +284,10 @@ abstract class RefChecks extends Transform {
         macroStr + member.defStringSeenAs(self.memberInfo(member)) + location
       }
 
-      /** Check that all conditions for overriding `other` by `member` of class `clazz` are met.
-        *
-        * TODO: error messages could really be improved, including how they are composed
-        */
+      /* Check that all conditions for overriding `other` by `member` of class `clazz` are met.
+       *
+       * TODO: error messages could really be improved, including how they are composed
+       */
       def checkOverride(pair: SymbolPair): Unit = {
         import pair.{highType, lowType, highInfo, rootType}
 
@@ -523,7 +523,7 @@ abstract class RefChecks extends Transform {
         }
       }
 
-      val opc = new overridingPairs.Cursor(clazz)
+      val opc = new overridingPairs.PairsCursor(clazz)
       while (opc.hasNext) {
         if (!opc.high.isClass)
           checkOverride(opc.currentPair)
@@ -1146,7 +1146,7 @@ abstract class RefChecks extends Transform {
       }
       val receiver = underlyingClass(qual.tpe)
       val actual   = underlyingClass(other.tpe)
-      def typesString = normalizeAll(qual.tpe.widen)+" and "+normalizeAll(other.tpe.widen)
+      def typesString = "" + normalizeAll(qual.tpe.widen) + " and " + normalizeAll(other.tpe.widen)
       def nonSensiblyEquals() = {
         refchecksWarning(pos, s"comparing values of types $typesString using `${name.decode}` is unsafe due to cooperative equality; use `==` instead", WarningCategory.OtherNonCooperativeEquals)
       }

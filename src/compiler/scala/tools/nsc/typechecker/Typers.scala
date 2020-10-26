@@ -14,7 +14,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.reflect.internal.{Chars, TypesStats}
 import scala.reflect.internal.util.{FreshNameCreator, ListOfNil, Statistics, StatisticsStatics}
@@ -836,7 +836,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
                 // scala/bug#10066 Need to patch the enclosing tree in the context to make translation of Dynamic
                 // work during fallback typechecking below.
                 val resetContext: Context = {
-                  object substResetForOriginal extends Transformer {
+                  object substResetForOriginal extends AstTransformer {
                     override def transform(tree: Tree): Tree = {
                       if (tree eq original) resetTree
                       else super.transform(tree)
@@ -1691,7 +1691,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     private def normalizeFirstParent(parents: List[Tree]): List[Tree] = {
       @annotation.tailrec
       def explode0(parents: List[Tree]): List[Tree] = {
-        val supertpt :: rest = parents // parents is always non-empty here - it only grows
+        val supertpt :: rest = parents: @nowarn("msg=match may not be exhaustive") // parents is always non-empty here - it only grows
         if (supertpt.tpe.typeSymbol == AnyClass) {
           supertpt setType AnyRefTpe
           parents
@@ -3279,22 +3279,22 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val sym = e.sym
             val sym1 = e1.sym
 
-            /** From the spec (refchecks checks other conditions regarding erasing to the same type and default arguments):
-              *
-              * A block expression [... its] statement sequence may not contain two definitions or
-              * declarations that bind the same name --> `inBlock`
-              *
-              * It is an error if a template directly defines two matching members.
-              *
-              * A member definition $M$ _matches_ a member definition $M'$, if $M$ and $M'$ bind the same name,
-              * and one of following holds:
-              *   1. Neither $M$ nor $M'$ is a method definition.
-              *   2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
-              *   3. $M$ defines a parameterless method and $M'$ defines a method with an empty parameter list `()` or _vice versa_.
-              *   4. $M$ and $M'$ define both polymorphic methods with equal number of argument types $\overline T$, $\overline T'$
-              *      and equal numbers of type parameters $\overline t$, $\overline t'$, say,
-              *      and  $\overline T' = [\overline t'/\overline t]\overline T$.
-              */
+            /* From the spec (refchecks checks other conditions regarding erasing to the same type and default arguments):
+             *
+             * A block expression [... its] statement sequence may not contain two definitions or
+             * declarations that bind the same name --> `inBlock`
+             *
+             * It is an error if a template directly defines two matching members.
+             *
+             * A member definition $M$ _matches_ a member definition $M'$, if $M$ and $M'$ bind the same name,
+             * and one of following holds:
+             *   1. Neither $M$ nor $M'$ is a method definition.
+             *   2. $M$ and $M'$ define both monomorphic methods with equivalent argument types.
+             *   3. $M$ defines a parameterless method and $M'$ defines a method with an empty parameter list `()` or _vice versa_.
+             *   4. $M$ and $M'$ define both polymorphic methods with equal number of argument types $\overline T$, $\overline T'$
+             *      and equal numbers of type parameters $\overline t$, $\overline t'$, say,
+             *      and  $\overline T' = [\overline t'/\overline t]\overline T$.
+             */
             if (!(accesses(sym, sym1) || accesses(sym1, sym))  // TODO: does this purely defer errors until later?
                 && (inBlock || !(sym.isMethod || sym1.isMethod) || (sym.tpe matches sym1.tpe))
                 // default getters are defined twice when multiple overloads have defaults.
@@ -3843,6 +3843,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
     /**
      * Convert an annotation constructor call into an AnnotationInfo.
      */
+    @nowarn("cat=lint-nonlocal-return")
     def typedAnnotation(ann: Tree, annotee: Option[Tree], mode: Mode = EXPRmode): AnnotationInfo = context.withinAnnotation {
       var hasError: Boolean = false
       var unmappable: Boolean = false
@@ -4814,15 +4815,15 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       }
 
 
-      /** Eta expand an expression like `m _`, where `m` denotes a method or a by-name argument
-        *
-        * The spec says:
-        * The expression `$e$ _` is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter.
-        *   (1) If $e$ is a method with parameters, `$e$ _` represents $e$ converted to a function type
-        *       by [eta expansion](#eta-expansion).
-        *   (2) If $e$ is a parameterless method or call-by-name parameter of type `=> $T$`, `$e$ _` represents
-        *       the function of type `() => $T$`, which evaluates $e$ when it is applied to the empty parameter list `()`.
-        */
+      /* Eta expand an expression like `m _`, where `m` denotes a method or a by-name argument
+       *
+       * The spec says:
+       * The expression `$e$ _` is well-formed if $e$ is of method type or if $e$ is a call-by-name parameter.
+       *   (1) If $e$ is a method with parameters, `$e$ _` represents $e$ converted to a function type
+       *       by [eta expansion](#eta-expansion).
+       *   (2) If $e$ is a parameterless method or call-by-name parameter of type `=> $T$`, `$e$ _` represents
+       *       the function of type `() => $T$`, which evaluates $e$ when it is applied to the empty parameter list `()`.
+       */
       def typedEta(methodValue: Tree): Tree = methodValue.tpe match {
         case tp@(MethodType(_, _) | PolyType(_, MethodType(_, _))) => // (1)
           if (tp.params.lengthCompare(definitions.MaxFunctionArity) > 0) MaxFunctionArityError(methodValue, s"; method ${methodValue.symbol.name} cannot be eta-expanded because it takes ${tp.params.length} arguments")

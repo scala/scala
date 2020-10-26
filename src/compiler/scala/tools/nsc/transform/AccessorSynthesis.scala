@@ -118,7 +118,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
 
 
   // TODO: better way to communicate from info transform to tree transform?
-  private[this] val _bitmapInfo  = perRunCaches.newMap[Symbol, BitmapInfo]
+  private[this] val _bitmapInfo  = perRunCaches.newMap[Symbol, BitmapInfo]()
   private[this] val _slowPathFor = perRunCaches.newMap[Symbol, Symbol]()
 
   def checkedAccessorSymbolSynth(clz: Symbol): CheckedAccessorSymbolSynth =
@@ -315,7 +315,7 @@ trait AccessorSynthesis extends Transform with ast.TreeDSL {
     class SynthInitCheckedAccessorsIn(clazz: Symbol) extends SynthCheckedAccessorsTreesInClass(clazz) {
 
       // Add statements to the body of a constructor to set the 'init' bit for each field initialized in the constructor
-      private object addInitBitsTransformer extends Transformer {
+      private object addInitBitsTransformer extends AstTransformer {
         override def transformStats(stats: List[Tree], exprOwner: Symbol) = {
           val checkedStats = stats flatMap {
             // Mark field as initialized after an assignment

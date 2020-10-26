@@ -116,9 +116,9 @@ abstract class Flatten extends InfoTransform {
 
   def transformInfo(sym: Symbol, tp: Type): Type = flattened(tp)
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new Flattener
+  protected def newTransformer(unit: CompilationUnit): AstTransformer = new Flattener
 
-  class Flattener extends Transformer {
+  class Flattener extends AstTransformer {
     /** Buffers for lifted out classes */
     private val liftedDefs = perRunCaches.newMap[Symbol, ListBuffer[Tree]]()
 

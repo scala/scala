@@ -86,7 +86,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
   /** the following two members override abstract members in Transform */
   val phaseName: String = "fields"
 
-  protected def newTransformer(unit: CompilationUnit): Transformer = new FieldsTransformer(unit)
+  protected def newTransformer(unit: CompilationUnit): AstTransformer = new FieldsTransformer(unit)
   override def transformInfo(sym: Symbol, tp: Type): Type =
     if (sym.isJavaDefined || sym.isPackageClass || !sym.isClass) tp
     else synthFieldsAndAccessors(tp)
@@ -205,7 +205,7 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
 
 
   // can't use the referenced field since it already tracks the module's moduleClass
-  private[this] val moduleOrLazyVarOf = perRunCaches.newMap[Symbol, Symbol]
+  private[this] val moduleOrLazyVarOf = perRunCaches.newMap[Symbol, Symbol]()
 
   // TODO: can we drop FINAL? In any case, since these variables are MUTABLE, they cannot and will
   // not be emitted as ACC_FINAL. They are FINAL in the Scala sense, though: cannot be overridden.
@@ -220,25 +220,25 @@ abstract class Fields extends InfoTransform with ast.TreeDSL with TypingTransfor
     def needsInit = Apply(Select(moduleVarRef, Object_eq), List(CODE.NULL))
     val init = Assign(moduleVarRef, gen.newModule(module, moduleVar.info))
 
-    /** double-checked locking following https://shipilev.net/blog/2014/safe-public-construction/#_safe_publication
-      *
-      * public class SafeDCLFactory {
-      *   private volatile Singleton instance;
-      *
-      *   public Singleton get() {
-      *     if (instance == null) {  // check 1
-      *       synchronized(this) {
-      *         if (instance == null) { // check 2
-      *           instance = new Singleton();
-      *         }
-      *       }
-      *     }
-      *     return instance;
-      *   }
-      * }
-      *
-      * TODO: optimize using local variable?
-      */
+    /* double-checked locking following https://shipilev.net/blog/2014/safe-public-construction/#_safe_publication
+     *
+     * public class SafeDCLFactory {
+     *   private volatile Singleton instance;
+     *
+     *   public Singleton get() {
+     *     if (instance == null) {  // check 1
+     *       synchronized(this) {
+     *         if (instance == null) { // check 2
+     *           instance = new Singleton();
+     *         }
+     *       }
+     *     }
+     *     return instance;
+     *   }
+     * }
+     *
+     * TODO: optimize using local variable?
+     */
     val computeName = nme.newLazyValSlowComputeName(module.name)
     val computeMethod = DefDef(NoMods, computeName, Nil, ListOfNil, TypeTree(UnitTpe), gen.mkSynchronized(monitorHolder)(If(needsInit, init, EmptyTree)))
     Block(computeMethod :: If(needsInit, Apply(Ident(computeName), Nil), EmptyTree) :: Nil,

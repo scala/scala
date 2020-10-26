@@ -19,7 +19,7 @@ package scala
 package tools.nsc
 package typechecker
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import mutable.{LinkedHashMap, ListBuffer}
 import scala.util.matching.Regex
@@ -483,7 +483,7 @@ trait Implicits {
     private def dominates(dtor: Type, dted: Type): Boolean = {
       @annotation.tailrec def sumComplexity(acc: Int, xs: List[Type]): Int = xs match {
         case h :: t => sumComplexity(acc + complexity(h), t)
-        case _: Nil.type => acc
+        case _      => acc
       }
 
       def complexity(tp: Type): Int = tp.dealias match {
@@ -696,7 +696,7 @@ trait Implicits {
               } else {
                 // we can't usefully prune views any further because we would need to type an application
                 // of the view to the term as is done in the computation of itree2 in typedImplicit1.
-                tvars.foreach(_.constr.stopWideningIfPrecluded)
+                tvars.foreach(_.constr.stopWideningIfPrecluded())
                 val targs = solvedTypes(tvars, allUndetparams, varianceInType(wildPt), upper = false, lubDepth(tpInstantiated :: wildPt :: Nil))
                 val adjusted = adjustTypeArgs(allUndetparams, tvars, targs)
                 val tpSubst = deriveTypeWithWildcards(adjusted.undetParams)(tp.instantiateTypeParams(adjusted.okParams, adjusted.okArgs))
@@ -1030,6 +1030,7 @@ trait Implicits {
 
       /** True if a given ImplicitInfo (already known isValid) is eligible.
        */
+      @nowarn("cat=lint-inaccessible")
       def survives(info: ImplicitInfo, shadower: Shadower) = (
            !isIneligible(info)                      // cyclic, erroneous, shadowed, or specially excluded
         && isPlausiblyCompatible(info.tpe, wildPt)  // optimization to avoid matchesPt
@@ -1183,7 +1184,7 @@ trait Implicits {
       }
 
       if (eligible.nonEmpty)
-        printTyping(tree, eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
+        printTyping(tree, "" + eligible.size + s" eligible for pt=$pt at ${fullSiteString(context)}")
 
       /** Faster implicit search.  Overall idea:
        *   - prune aggressively
@@ -1425,7 +1426,7 @@ trait Implicits {
       }
       emptyInfos.foreach(infoMap.remove)
       if (infoMap.nonEmpty)
-        printTyping(tree, infoMap.size + " implicits in companion scope")
+        printTyping(tree, "" + infoMap.size + " implicits in companion scope")
 
       infoMap
     }
@@ -1453,7 +1454,7 @@ trait Implicits {
           if (StatisticsStatics.areSomeColdStatsEnabled) statistics.stopTimer(subtypeETNanos, start)
           implicitsCache(pt) = implicitInfoss1
           if (implicitsCache.size >= sizeLimit)
-            implicitsCache -= implicitsCache.keysIterator.next
+            implicitsCache -= implicitsCache.keysIterator.next()
           implicitInfoss1
       }
     }

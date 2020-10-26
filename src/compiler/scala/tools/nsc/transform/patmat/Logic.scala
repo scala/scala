@@ -13,6 +13,7 @@
 package scala
 package tools.nsc.transform.patmat
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 import scala.collection.immutable.ArraySeq
 import scala.reflect.internal.util.Collections._
@@ -204,14 +205,14 @@ trait Logic extends Debugging  {
         else if (size == 2) { // Specialized versions for size 2+3
           val it = ops0.iterator
           val result = checkPair(it.next(), it.next())
-          assert(!it.hasNext)
+          assert(!it.hasNext, "iterator must be empty")
           result
         } else if (size == 3) {
           val it = ops0.iterator
           val a = it.next()
           val b = it.next()
           val c = it.next()
-          assert(!it.hasNext)
+          assert(!it.hasNext, "iterator must be empty")
           checkPair(a, b) || checkPair(a, c) || checkPair(b, c)
         } else {
           val ops = new Array[Prop](size)
@@ -483,7 +484,7 @@ trait Logic extends Debugging  {
     type Solvable
 
     def propToSolvable(p: Prop): Solvable = {
-      val (eqAxiom, pure :: Nil) = removeVarEq(List(p), modelNull = false)
+      val (eqAxiom, pure :: Nil) = removeVarEq(List(p), modelNull = false): @nowarn("msg=match may not be exhaustive")
       eqFreePropToSolvable(And(eqAxiom, pure))
     }
 
@@ -609,7 +610,7 @@ trait ScalaLogic extends Interface with Logic with TreeAndTypeAnalysis {
           // else  debug.patmat("NOT implies: "+(lower, upper))
 
 
-        /** Does V=A preclude V=B?
+        /* Does V=A preclude V=B?
          *
          * (0) A or B must be in the domain to draw any conclusions.
          *

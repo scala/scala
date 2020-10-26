@@ -30,7 +30,7 @@ import scala.util.matching.Regex
 trait Reporting extends internal.Reporting { self: ast.Positions with CompilationUnits with internal.Symbols =>
   def settings: Settings
 
-  @deprecated("use `globalError` instead")
+  @deprecated("use `globalError` instead", since = "2.13.4")
   def error(msg: String): Unit = globalError(msg)
 
   // a new instance of this class is created for every Run (access the current instance via `runReporting`)

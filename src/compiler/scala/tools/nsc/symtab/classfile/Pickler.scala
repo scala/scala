@@ -24,7 +24,7 @@ import scala.reflect.internal.util.shortClassOfInstance
 import scala.collection.mutable
 import PickleFormat._
 import Flags._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 
 /**
  * Serialize a top-level module and/or class.
@@ -68,6 +68,7 @@ abstract class Pickler extends SubComponent {
       else
         None
 
+    @nowarn("cat=lint-nonlocal-return")
     def apply(unit: CompilationUnit): Unit = {
       def pickle(tree: Tree): Unit = {
         tree match {

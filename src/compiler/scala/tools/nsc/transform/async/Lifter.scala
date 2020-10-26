@@ -69,7 +69,7 @@ trait Lifter extends ExprBuilder {
               }
             }
             companionship.record(classesBuffer, moduleClassesBuffer)
-            assert(!expr.isInstanceOf[ClassDef])
+            assert(!expr.isInstanceOf[ClassDef], "expression cannot be a class def")
             super.traverse(tree)
           case _ =>
             super.traverse(tree)

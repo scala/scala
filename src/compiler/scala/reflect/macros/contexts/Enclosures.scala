@@ -23,6 +23,7 @@ trait Enclosures {
   private lazy val site       = callsiteTyper.context
 
   private def lenientEnclosure[T <: Tree : ClassTag]: Tree = site.nextEnclosing(c => classTag[T].runtimeClass.isInstance(c.tree)).tree
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   private def strictEnclosure[T <: Tree : ClassTag]: T = site.nextEnclosing(c => classTag[T].runtimeClass.isInstance(c.tree)) match {
     case analyzer.NoContext => throw EnclosureException(classTag[T].runtimeClass, site.enclosingContextChain map (_.tree))
     case cx => cx.tree.asInstanceOf[T]
@@ -31,18 +32,23 @@ trait Enclosures {
   val macroApplication: Tree                      = expandee
   def enclosingPackage: PackageDef                = site.nextEnclosing(_.tree.isInstanceOf[PackageDef]).tree.asInstanceOf[PackageDef]
   lazy val enclosingClass: Tree                   = lenientEnclosure[ImplDef]
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   def enclosingImpl: ImplDef                      = strictEnclosure[ImplDef]
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   def enclosingTemplate: Template                 = strictEnclosure[Template]
   lazy val enclosingImplicits: List[ImplicitCandidate] = site.openImplicits.map(_.toImplicitCandidate)
   private val analyzerOpenMacros                  = universe.analyzer.openMacros
   val enclosingMacros: List[Context]              = this :: analyzerOpenMacros // include self
   lazy val enclosingMethod: Tree                       = lenientEnclosure[DefDef]
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   def enclosingDef: DefDef                        = strictEnclosure[DefDef]
   lazy val enclosingPosition: Position            = if (this.macroApplication.pos ne NoPosition) this.macroApplication.pos else {
     analyzerOpenMacros.collectFirst {
       case x if x.macroApplication.pos ne NoPosition => x.macroApplication.pos
     }.getOrElse(NoPosition)
   }
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   val enclosingUnit: CompilationUnit              = universe.currentRun.currentUnit
+  @deprecated("c.enclosingTree-style APIs are now deprecated; consult the scaladoc for more information", "2.13.4")
   val enclosingRun: Run                           = universe.currentRun
 }

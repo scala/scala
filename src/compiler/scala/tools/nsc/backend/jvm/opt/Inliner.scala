@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm
@@ -528,7 +528,7 @@ abstract class Inliner {
     val elided = mutable.Set.empty[InlineRequest]
     def nonElidedRequests(methodNode: MethodNode): Set[InlineRequest] = requestsByMethod(methodNode) diff elided
 
-    /**
+    /*
      * Break cycles in the inline request graph by removing callsites.
      *
      * The list `requests` is traversed left-to-right, removing those callsites that are part of a
@@ -685,7 +685,7 @@ abstract class Inliner {
    */
   def inlineCallsite(callsite: Callsite, aliasFrame: Option[AliasingFrame[Value]] = None, updateCallGraph: Boolean = true): Map[AbstractInsnNode, AbstractInsnNode] = {
     import callsite._
-    val Right(callsiteCallee) = callsite.callee
+    val Right(callsiteCallee) = callsite.callee: @nowarn("msg=match may not be exhaustive")
     import callsiteCallee.{callee, calleeDeclarationClass, sourceFilePath}
 
     val isStatic = isStaticMethod(callee)
@@ -989,7 +989,7 @@ abstract class Inliner {
    */
   def earlyCanInlineCheck(callsite: Callsite): Option[CannotInlineWarning] = {
     import callsite.{callsiteClass, callsiteMethod}
-    val Right(callsiteCallee) = callsite.callee
+    val Right(callsiteCallee) = callsite.callee: @nowarn("msg=match may not be exhaustive")
     import callsiteCallee.{callee, calleeDeclarationClass}
 
     if (isSynchronizedMethod(callee)) {
@@ -1023,7 +1023,7 @@ abstract class Inliner {
    */
   def canInlineCallsite(callsite: Callsite): Option[CannotInlineWarning] = {
     import callsite.{callsiteClass, callsiteInstruction, callsiteMethod, callsiteStackHeight}
-    val Right(callsiteCallee) = callsite.callee
+    val Right(callsiteCallee) = callsite.callee: @nowarn("msg=match may not be exhaustive")
     import callsiteCallee.{callee, calleeDeclarationClass}
 
     def calleeDesc = s"${callee.name} of type ${callee.desc} in ${calleeDeclarationClass.internalName}"
@@ -1173,7 +1173,7 @@ abstract class Inliner {
    *     error occurred
    */
   def findIllegalAccess(instructions: InsnList, calleeDeclarationClass: ClassBType, destinationClass: ClassBType): Either[(AbstractInsnNode, OptimizerWarning), List[AbstractInsnNode]] = {
-    /**
+    /*
      * Check if `instruction` can be transplanted to `destinationClass`.
      *
      * If the instruction references a class, method or field that cannot be found in the

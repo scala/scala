@@ -155,7 +155,7 @@ object TastyFlags {
           buf += f(flag)
         }
       }
-      buf.result
+      buf.result()
     }
   }
 

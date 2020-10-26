@@ -52,7 +52,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     }.updateAttachment(ChangeOwnerAttachment(owner))
   }
 
-  def newTransformer(unit: CompilationUnit): Transformer = new AsyncTransformer(unit)
+  def newTransformer(unit: CompilationUnit): AstTransformer = new AsyncTransformer(unit)
 
   private def compileTimeOnlyPrefix: String = "[async] "
 
@@ -110,7 +110,8 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
               deriveTemplate(impl)(liftedTrees ::: _)
             })
           }
-          assert(localTyper.context.owner == cd.symbol.owner)
+          assert(localTyper.context.owner == cd.symbol.owner,
+            "local typer context's owner must be ClassDef symbol's owner")
           val withFields = new UseFields(localTyper, cd.symbol, applySym, liftedSyms).transform(cd1)
           withFields
 
@@ -192,7 +193,7 @@ abstract class AsyncPhase extends Transform with TypingTransformers with AnfTran
     private class UseFields(initLocalTyper: analyzer.Typer, stateMachineClass: Symbol,
                             applySym: Symbol, liftedSyms: Set[Symbol]) extends explicitOuter.OuterPathTransformer(initLocalTyper) {
       private def fieldSel(tree: Tree) = {
-        assert(currentOwner != NoSymbol)
+        assert(currentOwner != NoSymbol, "currentOwner cannot be NoSymbol")
         val outerOrThis = if (stateMachineClass == currentClass) gen.mkAttributedThis(stateMachineClass) else {
           // These references need to be selected from an outer reference, because explicitouter
           // has already run we must perform this transform explicitly here.

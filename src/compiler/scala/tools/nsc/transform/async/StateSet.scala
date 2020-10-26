@@ -15,7 +15,7 @@ package scala.tools.nsc.transform.async
 import java.util
 import java.util.function.{Consumer, IntConsumer}
 
-import scala.collection.JavaConverters.{asScalaIteratorConverter, iterableAsScalaIterableConverter}
+import scala.jdk.CollectionConverters._
 
 // Set for StateIds, which are either small positive integers or -symbolID.
 final class StateSet {

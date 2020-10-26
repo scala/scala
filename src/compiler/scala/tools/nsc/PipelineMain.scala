@@ -21,6 +21,7 @@ import java.util.{Collections, Locale}
 import javax.tools.Diagnostic.Kind
 import javax.tools.{Diagnostic, DiagnosticListener, JavaFileObject, ToolProvider}
 
+import scala.annotation.nowarn
 import scala.collection.{immutable, mutable}
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.concurrent._
@@ -76,6 +77,7 @@ class PipelineMainClass(argFiles: Seq[Path], pipelineSettings: PipelineMain.Pipe
     p.getParent.resolve(changedFileName)
   }
 
+  @nowarn("cat=lint-inaccessible")
   def writeDotFile(logDir: Path, dependsOn: mutable.LinkedHashMap[Task, List[Dependency]]): Unit = {
     val builder = new java.lang.StringBuilder()
     builder.append("digraph projects {\n")

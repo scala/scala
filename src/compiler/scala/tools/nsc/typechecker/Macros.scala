@@ -220,7 +220,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
       // there's another gotcha
       // if you don't assign a ConstantType to a constant
       // then pickling will crash
-      new Transformer {
+      new AstTransformer {
         override def transform(tree: Tree) = {
           tree match {
             case Literal(const @ Constant(x)) if tree.tpe == null => tree setType ConstantType(const)
@@ -855,7 +855,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    */
   var hasPendingMacroExpansions = false // JZ this is never reset to false. What is its purpose? Should it not be stored in Context?
   def typerShouldExpandDeferredMacros: Boolean = hasPendingMacroExpansions && !delayed.isEmpty
-  private val forced = perRunCaches.newWeakSet[Tree]
+  private val forced = perRunCaches.newWeakSet[Tree]()
   private val delayed = perRunCaches.newWeakMap[Tree, scala.collection.mutable.Set[Symbol]]()
   private def isDelayed(expandee: Tree) = !delayed.isEmpty && (delayed contains expandee)
   def clearDelayed(): Unit = delayed.clear()
@@ -897,7 +897,7 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    *  See the documentation for `macroExpand` for more information.
    */
   def macroExpandAll(typer: Typer, expandee: Tree): Tree =
-    new Transformer {
+    new AstTransformer {
       override def transform(tree: Tree) = super.transform(tree match {
         // todo. expansion should work from the inside out
         case tree if (delayed contains tree) && calculateUndetparams(tree).isEmpty && !tree.isErroneous =>

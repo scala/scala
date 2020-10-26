@@ -184,7 +184,7 @@ trait GenSymbols {
       val reification = reificode(sym)
       import reification.{name, binding}
       val tree = reification.tree updateAttachment ReifyBindingAttachment(binding)
-      state.symtab += (sym, name.toTermName, tree)
+      state.symtab = state.symtab.add(sym, name.toTermName, tree)
     }
     fromSymtab
   }
