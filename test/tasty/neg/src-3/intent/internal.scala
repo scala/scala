@@ -27,9 +27,13 @@ class Expect[T](blk: => T, position: Position, negated: Boolean = false)
 
 trait ExpectGivens:
 
-  def [T](expect: Expect[T]) toEqual (expected: T)(using eqq: Eq[T], fmt: Formatter[T]): Expectation = ???
+  extension [T](expect: Expect[T])
+    def toEqual (expected: T)(using eqq: Eq[T], fmt: Formatter[T]): Expectation = ???
 
 trait IntentStatelessSyntax extends TestLanguage:
 
-  def (testName: String) in (testImpl: => Expectation)(using pos: Position): Unit = ???
-  def (blockName: String) apply (block: => Unit)(using pos: Position): Unit = ???
+  extension (testName: String)
+    def in (testImpl: => Expectation)(using pos: Position): Unit = ???
+
+  extension (blockName: String)
+    def apply (block: => Unit)(using pos: Position): Unit = ???

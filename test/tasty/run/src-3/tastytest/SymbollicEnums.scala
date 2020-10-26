@@ -18,7 +18,7 @@ object SymbollicEnums:
   trait Interpreter[T]:
     val zero: Expr[T]
     val one: Expr[T]
-    def (e: Expr[T]).interpret: T
+    extension (e: Expr[T]) def interpret: T
 
   class Laws[T](using intp: Interpreter[T]):
     import intp._
