@@ -88,15 +88,15 @@ class ListMapTest extends AllocationTest {
 
     m = ListMap(1 -> 1)
     acc.dataFrom(m)
-    assertEquals("(1,1)XX", exactAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
+    assertEquals("(1,1)XX", onlyAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
 
     m = ListMap(1 -> 1, 2 -> 2)
     acc.dataFrom(m)
-    assertEquals("(1,1)XX", exactAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
+    assertEquals("(1,1)XX", onlyAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
 
     m = ListMap(1 -> 1, 2 -> 2, 3 -> 3)
     acc.dataFrom(m)
-    assertEquals("(1,1)XX", exactAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
+    assertEquals("(1,1)XX", onlyAllocates(tuples(m.size))(m.foldRight(acc.reset)(acc)))
   }
 
   /** we base the result on tuples of strings as ListMap is not specialised */
