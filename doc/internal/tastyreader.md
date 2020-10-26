@@ -143,11 +143,12 @@ A key tool for working with the tasty reader on individual test cases is `scala.
 Each sub command is executed with the Dotty standard library and tooling on the classpath, with the version determined by
 `TastySupport.dottyCompiler` in the build definition. All relative paths will use the working directory `tasty/test`:
 
-In the sbt shell the `Scripted` runner can be executed by `tasty/test:runMain scala.tools.tastytest.Scripted`, and provides several sub-commands:
+In the sbt shell the `scripted` runner can be executed by `tasty/test:runMain scala.tools.tastytest.Scripted`, and provides several sub-commands:
 - `dotc <out: Directory> <src: File>`: compile a Scala 3 source file, which may depend on classes already compiled in `out`.
 - `dotcd <tasty: File> <args: String*>`: decompile a tasty file, pass `-print-tasty` to see the structure of the ASTs.
 - `scalac <out: Directory> <src: File> <args: String*>`: compile a Scala 2 source file, which may depend on classes already compiled in `out`, including those compiled by Scala 3. `args` can be used to pass additional scalac flags, such as `-Ydebug-tasty`
 - `runDotty <classpath: Paths> <classname: String>`: execute the static main method of the given class, and providing no arguments.
+- `javac <out: Directory> <src: File>`: compile a Java source file matching, which may depend on classes already compiled in `out`.
 
 ### tastytest Runner
 

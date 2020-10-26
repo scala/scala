@@ -4,7 +4,7 @@ import scala.util.{ Try, Success }
 
 import java.lang.reflect.Modifier
 
-object DotcDecompiler {
+object DotcDecompiler extends Script.Command {
 
   private[this] lazy val dotcProcess = Dotc.processMethod("dotty.tools.dotc.decompiler.Main")
 

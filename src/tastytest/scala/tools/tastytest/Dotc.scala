@@ -4,7 +4,7 @@ import scala.util.{ Try, Success }
 
 import java.lang.reflect.Modifier
 
-object Dotc {
+object Dotc extends Script.Command {
 
   private[this] lazy val dotcProcess = processMethod("dotty.tools.dotc.Main")
 
