@@ -164,7 +164,7 @@ trait TreeOps { self: TastyUniverse =>
         tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
       }
       else {
-        u.Annotated(annot, tpt).setType(u.AnnotatedType(mkAnnotation(annot) :: Nil, tpt.tpe))
+        u.Annotated(annot, tpt).setType(defn.AnnotatedType(tpt.tpe, annot))
       }
     }
 

@@ -118,7 +118,12 @@ trait TypeOps { self: TastyUniverse =>
     def ConstantType(c: Constant): Type = u.ConstantType(c)
     def IntersectionType(tps: Type*): Type = u.intersectionType(tps.toList)
     def IntersectionType(tps: List[Type]): Type = u.intersectionType(tps)
-    def AnnotatedType(tpe: Type, annot: Tree): Type = u.AnnotatedType(mkAnnotation(annot) :: Nil, tpe)
+
+    def AnnotatedType(tpe: Type, annot: Tree): Type = tpe match {
+      case u.AnnotatedType(annots, tpe) => u.AnnotatedType(annots :+ mkAnnotation(annot), tpe)
+      case _                            => u.AnnotatedType(mkAnnotation(annot) :: Nil   , tpe)
+    }
+
     def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
     def LambdaFromParams(typeParams: List[Symbol], ret: Type): Type = u.PolyType(typeParams, lambdaResultType(ret))
     def RecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
