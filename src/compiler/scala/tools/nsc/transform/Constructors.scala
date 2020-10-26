@@ -473,18 +473,22 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
     def usesSpecializedField = intoConstructor.usesSpecializedField
 
     // The constructor parameter corresponding to an accessor
-    def parameter(acc: Symbol): Symbol = parameterNamed(acc.unexpandedName.getterName)
-
-    // The constructor parameter with given name. This means the parameter
-    // has given name, or starts with given name, and continues with a `$` afterwards.
-    def parameterNamed(name: Name): Symbol = {
-      def matchesName(param: Symbol) = param.name == name || param.name.startsWith(s"${name}${nme.NAME_JOIN_STRING}")
-
-      primaryConstrParams filter matchesName match {
-        case Nil    => abort(s"$name not in $primaryConstrParams")
-        case p :: _ => p
-      }
+    def parameter(acc: Symbol): Symbol = {
+      import scala.util.Try
+      //works around the edge case where unexpandedName over-unexpands shenanigans like literal $$ or `$#`
+      def unexpanded = parameterNamed(acc.unexpandedName.getterName)
+      def expanded = parameterNamed(acc.getterName)
+      unexpanded.orElse(expanded).swap.map(abort).merge
     }
+
+    // The constructor parameter with given getter name. This means the parameter name
+    // decodes to the same name that the getter decodes to
+    def parameterNamed(name: Name): Either[String, Symbol] =  
+      primaryConstrParams.filter(_.name.decodedName == name.decodedName) match {
+        case List(p) => Right(p)
+        case Nil     => Left(s"No constructor parameter named $name (decoded to ${name.decodedName}) found in list of constructor parameters $primaryConstrParams (decoded to ${primaryConstrParams.map(_.decodedName)})")
+        case ps      => Left(s"$name matches multiple constructor parameters $ps")
+      }
 
     // A transformer for expressions that go into the constructor
     object intoConstructor extends AstTransformer {
@@ -530,7 +534,7 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
           else if (canBeSupplanted(tree.symbol))
             gen.mkAttributedIdent(parameter(tree.symbol)) setPos tree.pos
           else if (tree.symbol.outerSource == clazz && !isDelayedInitSubclass)
-            gen.mkAttributedIdent(parameterNamed(nme.OUTER)) setPos tree.pos
+            gen.mkAttributedIdent(parameterNamed(nme.OUTER).fold(abort, identity)).setPos(tree.pos)
           else
             super.transform(tree)
 
