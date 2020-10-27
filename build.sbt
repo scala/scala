@@ -978,7 +978,7 @@ lazy val tastytest = configureAsSubproject(project)
   .settings(
     name := "scala-tastytest",
     description := "Scala TASTy Integration Testing Tool",
-    libraryDependencies ++= List(diffUtilsDep, TastySupport.dottyCompiler),
+    libraryDependencies ++= List(diffUtilsDep, TastySupport.scala3Compiler),
   )
 
 // An instrumented version of BoxesRunTime and ScalaRunTime for partest's "specialized" test category

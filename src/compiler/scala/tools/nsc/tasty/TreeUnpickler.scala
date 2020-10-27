@@ -282,8 +282,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         tpd.Constant(null)
       case CLASSconst =>
         tpd.Constant(readType())
-      case ENUMconst =>
-        tpd.Constant(readTypeRef().termSymbol)
     }
 
     /** Read a type */
