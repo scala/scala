@@ -669,4 +669,11 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *  @return A clone of the Array.
    */
   override def clone(): Array[T] = throw new Error()
+
+  /** Tests whether the Array is empty.
+   *
+   *  @return    `true` if the Array contains no elements, `false` otherwise.
+   */
+  // This method can only be added after changing the starr to 2.13.4
+  // def isEmpty: Boolean = throw new Error()
 }

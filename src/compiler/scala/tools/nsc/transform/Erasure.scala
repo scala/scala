@@ -1101,7 +1101,7 @@ abstract class Erasure extends InfoTransform
         }
       }
 
-      private def preEraseApply(tree: Apply) = {
+      private def preEraseApply(tree: Apply): Tree = {
         tree.fun match {
           case TypeApply(fun @ Select(qual, name), args @ List(arg))
           if ((fun.symbol == Any_isInstanceOf || fun.symbol == Object_isInstanceOf) &&
@@ -1128,7 +1128,11 @@ abstract class Erasure extends InfoTransform
             val args = tree.args
             if (fn.symbol.owner == ArrayClass) {
               // Have to also catch calls to abstract types which are bounded by Array.
-              if (unboundedGenericArrayLevel(qual.tpe.widen) == 1 || qual.tpe.typeSymbol.isAbstractType) {
+              if (fn.symbol == definitions.Array_isEmpty) {
+                // scala/bug#12172
+                val l = preEraseApply(Apply(gen.mkAttributedSelect(qual, definitions.Array_length), Nil).setType(IntTpe))
+                global.typer.typedPos(tree.pos)(Apply(Select(l, termNames.EQ), List(Literal(Constant(0)))))
+              } else if (unboundedGenericArrayLevel(qual.tpe.widen) == 1 || qual.tpe.typeSymbol.isAbstractType) {
                 // convert calls to apply/update/length on generic arrays to
                 // calls of ScalaRunTime.array_xxx method calls
                 global.typer.typedPos(tree.pos) {

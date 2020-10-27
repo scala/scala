@@ -311,6 +311,7 @@ trait JavaUniverseForce { self: runtime.JavaUniverse  =>
     definitions.Array_update
     definitions.Array_length
     definitions.Array_clone
+    definitions.Array_isEmpty
     definitions.SoftReferenceClass
     definitions.MethodClass
     definitions.EmptyMethodCacheClass

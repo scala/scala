@@ -500,6 +500,7 @@ trait Definitions extends api.StandardDefinitions {
       lazy val Array_update                = getMemberMethod(ArrayClass, nme.update)
       lazy val Array_length                = getMemberMethod(ArrayClass, nme.length)
       lazy val Array_clone                 = getMemberMethod(ArrayClass, nme.clone_)
+      lazy val Array_isEmpty               = getMemberIfDefined(ArrayClass, nme.isEmpty) // change to `getMemberMethod` eventually
 
     // reflection / structural types
     lazy val SoftReferenceClass     = requiredClass[java.lang.ref.SoftReference[_]]
