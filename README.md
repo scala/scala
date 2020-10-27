@@ -49,6 +49,22 @@ If you need some help with your PR at any time, please feel free to @-mention an
 P.S.: If you have some spare time to help out around here, we would be delighted to add your name to this list!
 
 
+# Branches
+
+Target the oldest branch you would like your changes to end up in. We periodically merge forward from older release branches (e.g., 2.12.x) to new ones (e.g. 2.13.x).
+
+If your change might be difficult to merge forward, you may be asked to also submit a separate PR targeting the newer branch.
+
+If your change is version-specific and shouldn't be merged forward, put `[nomerge]` in the PR name.
+
+If your change is a backport from a newer branch and therefore doesn't need to be merged forward, put `[backport]` in the PR name.
+
+## Choosing a branch
+
+Most changes should target 2.13.x. We are increasingly reluctant to target 2.12.x unless there is a special reason (e.g. if an especially bad bug is found, or if there is commercial sponsorship).
+
+The 2.11.x branch is now [inactive](https://github.com/scala/scala-dev/issues/451) and no further 2.11.x releases are planned -- unless unusual, unforeseeable circumstances arise. You should not target 2.11.x without asking maintainers first.
+
 # Repository structure
 
 ```
@@ -87,10 +103,10 @@ You need the following tools:
   - Java SDK. The baseline version is 8 for both 2.12.x and 2.13.x. It may be possible to use a
     later SDK for local development, but the CI will verify against the baseline
     version.
-  - sbt (sbt 0.13 on the 2.12.x branch, sbt 1 on the 2.13.x branch)
+  - sbt
 
 MacOS and Linux work. Windows may work if you use Cygwin. Community help with keeping
-the build working on Windows is appreciated.
+the build working on Windows and documenting any needed setup is appreciated.
 
 ## Tools we use
 
