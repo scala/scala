@@ -172,6 +172,8 @@ extends AbstractMap[A, B]
     def next()  = iter.next().value
   }
 
+  private[collection] def entriesIterator0: Iterator[DefaultEntry[A, B]] = entriesIterator
+
   /** Toggles whether a size map is used to track hash map statistics.
    */
   def useSizeMap(t: Boolean) = if (t) {
