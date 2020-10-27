@@ -86,7 +86,7 @@ trait PartialFunction[-A, +B] extends (A => B) { self =>
   /** Checks if a value is contained in the function's domain.
    *
    *  @param  x   the value to test
-   *  @return `'''true'''`, iff `x` is in the domain of this function, `'''false'''` otherwise.
+   *  @return `'''true'''`, if `x` is in the domain of this function, `'''false'''` otherwise.
    */
   def isDefinedAt(x: A): Boolean
 
