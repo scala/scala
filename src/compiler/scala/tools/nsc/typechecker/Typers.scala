@@ -5286,16 +5286,18 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             val pre = qual.tpe
             var accessibleError: AccessTypeError = null
             val result = silent(_.makeAccessible(tree1, sym, pre, qual)) match {
-              case SilentTypeError(err: AccessTypeError) =>
-                accessibleError = err
-                tree1
-              case SilentTypeError(err) =>
-                SelectWithUnderlyingError(tree, err)
-                return tree
-              case SilentResultValue((qual: Tree, pre1: Type)) =>
-                stabilize(qual, pre1, mode, pt)
-              case SilentResultValue(qual: Tree) =>
-                stabilize(qual, pre, mode, pt)
+              case SilentTypeError(err) => err match {
+                case err: AccessTypeError =>
+                  accessibleError = err
+                  tree1
+                case _ =>
+                  SelectWithUnderlyingError(tree, err)
+                  return tree
+              }
+              case SilentResultValue(value) => value match {
+                case qual: Tree               => stabilize(qual, pre, mode, pt)
+                case (qual: Tree, pre1: Type) => stabilize(qual, pre1, mode, pt)
+              }
             }
 
             result match {
