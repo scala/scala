@@ -295,7 +295,7 @@ trait ReificationSupport { self: SymbolTable =>
         else {
           val (rawEdefs, rest) = tbody.span(treeInfo.isEarlyDef)
           val (gvdefs, etdefs) = rawEdefs.partition(treeInfo.isEarlyValDef)
-          val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest))
+          val (fieldDefs, UnCtor(ctorMods, ctorVparamss, lvdefs) :: body) = rest.splitAt(indexOfCtor(rest)): @unchecked
           val evdefs = gvdefs.zip(lvdefs).map {
             // TODO: in traits, early val defs are defdefs
             case (gvdef @ ValDef(_, _, tpt: TypeTree, _), ValDef(_, _, _, rhs)) =>
@@ -314,7 +314,7 @@ trait ReificationSupport { self: SymbolTable =>
               case other => other
             }
             // undo flag modifications by merging flag info from constructor args and fieldDefs
-            val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods }.toMap
+            val modsMap = fieldDefs.map { case ValDef(mods, name, _, _) => name -> mods case x => throw new MatchError(x) }.toMap
             def ctorArgsCorrespondToFields = vparamssRestoredImplicits.flatten.forall { vd => modsMap.contains(vd.name) }
             if (!ctorArgsCorrespondToFields) None
             else {
@@ -1082,6 +1082,7 @@ trait ReificationSupport { self: SymbolTable =>
           case NameSelector(name, offset)                     => NameSelectorRepr(name, derivedPos(imp, offset))
           case RenameSelector(name1, offset1, name2, offset2) => RenameSelectorRepr(name1, derivedPos(imp, offset1), name2, derivedPos(imp, offset2))
           case UnimportSelector(name, offset)                 => UnimportSelectorRepr(name, derivedPos(imp, offset))
+          case x                                              => throw new MatchError(x)
         }
         Some((imp.expr, selectors))
       }

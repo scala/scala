@@ -499,18 +499,15 @@ abstract class TreeInfo {
 
     def recoverBody(body: List[Tree]) = body map {
       case vd @ ValDef(vmods, vname, _, vrhs) if nme.isLocalName(vname) =>
-        tbody find {
-          case dd: DefDef => dd.name == vname.dropLocal
-          case _ => false
-        } map { dd =>
-          val DefDef(dmods, dname, _, _, _, drhs) = dd
-          // get access flags from DefDef
-          val defDefMask = Flags.AccessFlags | OVERRIDE | IMPLICIT | DEFERRED
-          val vdMods = (vmods &~ defDefMask) | (dmods & defDefMask).flags
-          // for most cases lazy body should be taken from accessor DefDef
-          val vdRhs = if (vmods.isLazy) lazyValDefRhs(drhs) else vrhs
-          copyValDef(vd)(mods = vdMods, name = dname, rhs = vdRhs)
-        } getOrElse (vd)
+        tbody.collectFirst {
+          case DefDef(dmods, dname, _, _, _, drhs) if dname == vname.dropLocal =>
+            // get access flags from DefDef
+            val defDefMask = Flags.AccessFlags | OVERRIDE | IMPLICIT | DEFERRED
+            val vdMods = (vmods &~ defDefMask) | (dmods & defDefMask).flags
+            // for most cases lazy body should be taken from accessor DefDef
+            val vdRhs = if (vmods.isLazy) lazyValDefRhs(drhs) else vrhs
+            copyValDef(vd)(mods = vdMods, name = dname, rhs = vdRhs)
+        }.getOrElse(vd)
       // for abstract and some lazy val/vars
       case dd @ DefDef(mods, name, _, _, tpt, rhs) if mods.hasAccessorFlag =>
         // transform getter mods to field
@@ -860,10 +857,10 @@ abstract class TreeInfo {
   object Applied {
     def apply(tree: Tree): Applied = new Applied(tree)
 
-    def unapply(applied: Applied): Option[(Tree, List[Tree], List[List[Tree]])] =
+    def unapply(applied: Applied): Some[(Tree, List[Tree], List[List[Tree]])] =
       Some((applied.core, applied.targs, applied.argss))
 
-    def unapply(tree: Tree): Option[(Tree, List[Tree], List[List[Tree]])] =
+    def unapply(tree: Tree): Some[(Tree, List[Tree], List[List[Tree]])] =
       unapply(dissectApplied(tree))
   }
 
@@ -1008,6 +1005,7 @@ trait MacroAnnotionTreeInfo { self: TreeInfo =>
 
   def primaryConstructorArity(tree: ClassDef): Int = treeInfo.firstConstructor(tree.impl.body) match {
     case DefDef(_, _, _, params :: _, _, _) => params.length
+    case x                                  => throw new MatchError(x)
   }
 
   def anyConstructorHasDefault(tree: ClassDef): Boolean = tree.impl.body exists {

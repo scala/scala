@@ -378,8 +378,8 @@ abstract class SymbolTable extends macros.Universe
       }
       val newParams = method.newSyntheticValueParams(formals.init :+ definitions.javaRepeatedType(elemtp))
       MethodType(newParams, rtpe)
-    case PolyType(tparams, rtpe) =>
-      PolyType(tparams, arrayToRepeated(rtpe))
+    case PolyType(tparams, rtpe) => PolyType(tparams, arrayToRepeated(rtpe))
+    case x                       => throw new MatchError(x)
   }
 
   abstract class SymLoader extends LazyType {

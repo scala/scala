@@ -67,6 +67,7 @@ trait Translations {
     case _: TypeSymbol                       => ALIASsym
     case _: TermSymbol if sym.isModule       => MODULEsym
     case _: TermSymbol                       => VALsym
+    case x                                   => throw new MatchError(x)
   }
 
   @tailrec
@@ -87,6 +88,7 @@ trait Translations {
     case _: ExistentialType            => EXISTENTIALtpe
     case StaticallyAnnotatedType(_, _) => ANNOTATEDtpe
     case _: AnnotatedType              => picklerTag(tpe.underlying)
+    case x                             => throw new MatchError(x)
   }
 
   def picklerSubTag(tree: Tree): Int = tree match {
@@ -133,6 +135,7 @@ trait Translations {
     case _: AppliedTypeTree     => APPLIEDTYPEtree
     case _: TypeBoundsTree      => TYPEBOUNDStree
     case _: ExistentialTypeTree => EXISTENTIALTYPEtree
+    case x                      => throw new MatchError(x)
   }
 }
 

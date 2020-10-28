@@ -308,17 +308,19 @@ trait Trees extends api.Trees {
       case qual if qual.isType =>
         assert(name.isTypeName, s"qual = $qual, name = $name")
         SelectFromTypeTree(qual, name.toTypeName)
+      case x => throw new MatchError(x)
     }
     def unapply(refTree: RefTree): Option[(Tree, Name)] = Some((refTree.qualifier, refTree.name))
   }
 
-  abstract class DefTree extends SymTree with NameTree with DefTreeApi {
+  sealed abstract class DefTree extends SymTree with NameTree with DefTreeApi {
     def name: Name
     override def isDef = true
   }
 
-  abstract class MemberDef extends DefTree with MemberDefApi {
+  sealed abstract class MemberDef extends DefTree with MemberDefApi {
     def mods: Modifiers
+
     def keyword: String = this match {
       case TypeDef(_, _, _, _)      => "type"
       case ClassDef(mods, _, _, _)  => if (mods hasFlag TRAIT) "trait" else "class"
@@ -326,9 +328,7 @@ trait Trees extends api.Trees {
       case ModuleDef(_, _, _)       => "object"
       case PackageDef(_, _)         => "package"
       case ValDef(mods, _, _, _)    => if (mods hasFlag MUTABLE) "var" else "val"
-      case _ => ""
     }
-
   }
 
   case class PackageDef(pid: RefTree, stats: List[Tree])
@@ -349,7 +349,7 @@ trait Trees extends api.Trees {
   }
   object PackageDef extends PackageDefExtractor
 
-  abstract class ImplDef extends MemberDef with ImplDefApi {
+  sealed abstract class ImplDef extends MemberDef with ImplDefApi {
     def impl: Template
   }
 
@@ -412,7 +412,7 @@ trait Trees extends api.Trees {
       }
   }
 
-  abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
+  sealed abstract class ValOrDefDef extends MemberDef with ValOrDefDefApi {
     def name: TermName
     def tpt: Tree
     def rhs: Tree
@@ -873,11 +873,13 @@ trait Trees extends api.Trees {
   case class ReferenceToBoxed(ident: Ident) extends TermTree with ReferenceToBoxedApi {
     override def symbol: Symbol = ident.symbol
     override def symbol_=(sym: Symbol): Unit = { ident.symbol = sym }
-    override def transform(transformer: Transformer): Tree =
-      transformer.treeCopy.ReferenceToBoxed(this, transformer.transform(ident) match { case idt1: Ident => idt1 })
-    override def traverse(traverser: Traverser): Unit = {
-      traverser.traverse(ident)
+    override def transform(transformer: Transformer): Tree = {
+      transformer.treeCopy.ReferenceToBoxed(this, transformer.transform(ident) match {
+        case idt1: Ident => idt1
+        case x           => throw new MatchError(x)
+      })
     }
+    override def traverse(traverser: Traverser): Unit = traverser.traverse(ident)
   }
   object ReferenceToBoxed extends ReferenceToBoxedExtractor
 
@@ -1582,15 +1584,11 @@ trait Trees extends api.Trees {
 
   /** Block factory that flattens directly nested blocks.
    */
-  def Block(stats: Tree*): Block = {
-    if (stats.isEmpty) Block(Nil, Literal(Constant(())))
-    else stats match {
-      case Seq(b @ Block(_, _)) => b
-      case Seq(stat) => Block(stats.toList, Literal(Constant(())))
-      case Seq(_, rest @ _*) => Block(stats.init.toList, stats.last)
-    }
+  def Block(stats: Tree*): Block = stats match {
+    case Seq(b @ Block(_, _)) => b
+    case init :+ last         => Block(init.toList, last)
+    case _                    => Block(stats.toList, Literal(Constant(())))
   }
-
 
   /** Delegate for a TypeTree symbol. This operation is unsafe because
    *  it may trigger type checking when forcing the type symbol of the

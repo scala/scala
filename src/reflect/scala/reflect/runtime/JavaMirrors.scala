@@ -20,17 +20,17 @@ import scala.ref.WeakReference
 import scala.collection.mutable.WeakHashMap
 import scala.collection.immutable.ArraySeq
 
-import java.lang.{Class => jClass, Package => jPackage}
+import java.lang.{ Class => jClass, Package => jPackage }
 import java.lang.reflect.{
   Method => jMethod, Constructor => jConstructor, Field => jField,
   Member => jMember, Type => jType, TypeVariable => jTypeVariable,
   Parameter => jParameter, GenericDeclaration, GenericArrayType,
   ParameterizedType, WildcardType, AnnotatedElement }
-import java.lang.annotation.{Annotation => jAnnotation}
+import java.lang.annotation.{ Annotation => jAnnotation }
 import java.io.IOException
-import java.lang.ref.{WeakReference => jWeakReference}
+import java.lang.ref.{ WeakReference => jWeakReference }
 
-import scala.reflect.internal.{JavaAccFlags, MissingRequirementError}
+import scala.reflect.internal.{ JavaAccFlags, MissingRequirementError }
 import internal.pickling.ByteCodecs
 import internal.pickling.UnPickler
 import scala.collection.mutable.ListBuffer
@@ -38,7 +38,7 @@ import internal.Flags._
 import ReflectionUtils._
 import scala.annotation.nowarn
 import scala.reflect.api.TypeCreator
-import scala.runtime.{BoxesRunTime, ScalaRunTime}
+import scala.runtime.{ BoxesRunTime, ScalaRunTime }
 
 private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUniverse with TwoWayCaches { thisUniverse: SymbolTable =>
 
@@ -161,6 +161,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
           case jclazz: jClass[_]        => jclazz
           case jmeth: jMethod           => jmeth.getDeclaringClass
           case jconstr: jConstructor[_] => jconstr.getDeclaringClass
+          case x                        => throw new MatchError(x)
         }
       })
 
@@ -1097,6 +1098,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       val owner = genericDeclarationToScala(jparam.getGenericDeclaration)
       owner.info match {
         case PolyType(tparams, _) => tparams.find(_.name string_== jparam.getName).get.asType
+        case x                    => throw new MatchError(x)
       }
     }
 
@@ -1107,10 +1109,12 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       case jclazz: jClass[_]        => classToScala(jclazz)
       case jmeth: jMethod           => methodToScala(jmeth)
       case jconstr: jConstructor[_] => constructorToScala(jconstr)
+      case x                        => throw new MatchError(x)
     }
     def reflectMemberToScala(m: jMember): Symbol = m match {
       case x: GenericDeclaration => genericDeclarationToScala(x)
       case x: jField             => jfieldAsScala(x)
+      case x                     => throw new MatchError(x)
     }
 
     /**
@@ -1163,6 +1167,7 @@ private[scala] trait JavaMirrors extends internal.SymbolTable with api.JavaUnive
       case jtvar: jTypeVariable[_] =>
         val tparam = typeParamToScala(jtvar)
         typeRef(NoPrefix, tparam, List())
+      case x => throw new MatchError(x)
     }
 
     /**

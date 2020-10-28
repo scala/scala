@@ -126,6 +126,7 @@ trait Importers { to: SymbolTable =>
             case null                  => null
             case theirloc: from.Tree   => importTree(theirloc)
             case theirloc: from.Symbol => importSymbol(theirloc)
+            case x                     => throw new MatchError(x)
           }
           myowner.newTypeSkolemSymbol(myname.toTypeName, origin, mypos, myflags)
         case their: from.ModuleClassSymbol =>
@@ -142,8 +143,8 @@ trait Importers { to: SymbolTable =>
           }
           my.associatedFile = their.associatedFile
           my
-        case their: from.TypeSymbol =>
-          myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
+        case their: from.TypeSymbol => myowner.newTypeSymbol(myname.toTypeName, mypos, myflags)
+        case x                      => throw new MatchError(x)
       }
       symMap.weakUpdate(their, my)
       markFlagsCompleted(my)(mask = AllFlags)
@@ -285,6 +286,7 @@ trait Importers { to: SymbolTable =>
         NoPrefix
       case null =>
         null
+      case x => throw new MatchError(x)
     }
 
     def importType(their: from.Type): Type = {
@@ -396,7 +398,7 @@ trait Importers { to: SymbolTable =>
       case from.Ident(name) =>
         new Ident(importName(name))
       case from.ReferenceToBoxed(ident) =>
-        new ReferenceToBoxed(importTree(ident) match { case ident: Ident => ident })
+        new ReferenceToBoxed(importTree(ident) match { case ident: Ident => ident case x => throw new MatchError(x) })
       case from.Literal(constant @ from.Constant(_)) =>
         new Literal(importConstant(constant))
       case theirtt @ from.TypeTree() =>
@@ -421,6 +423,7 @@ trait Importers { to: SymbolTable =>
         EmptyTree
       case null =>
         null
+      case x => throw new MatchError(x)
     }
 
     def importTree(their: from.Tree): Tree = {

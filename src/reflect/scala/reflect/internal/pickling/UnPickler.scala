@@ -562,7 +562,7 @@ abstract class UnPickler {
         case SELECTtree          => Select(ref(), nameRef())
         case APPLYtree           => fixApply(Apply(ref(), all(ref())), tpe) // !!!
         case BINDtree            => Bind(nameRef(), ref())
-        case BLOCKtree           => all(ref()) match { case stats :+ expr => Block(stats, expr) }
+        case BLOCKtree           => all(ref()) match { case stats :+ expr => Block(stats, expr) case x => throw new MatchError(x) }
         case IFtree              => If(ref(), ref(), ref())
         case LITERALtree         => Literal(constRef())
         case TYPEAPPLYtree       => TypeApply(ref(), all(ref()))

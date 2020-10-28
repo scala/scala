@@ -413,6 +413,7 @@ trait Erasure {
           case MethodType(params, TypeRef(pre, sym1, args)) =>
             MethodType(cloneSymbolsAndModify(params, specialErasure(sym)),
                        typeRef(specialErasure(sym)(pre), sym1, args))
+          case x => throw new MatchError(x)
         }
       else if (sym.name == nme.apply)
         tp

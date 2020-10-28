@@ -277,8 +277,8 @@ trait Definitions extends api.StandardDefinitions {
           assert(parents.head.typeSymbol == ObjectClass, parents)
           ClassInfoType(AnyTpe :: parents.tail, decls, clazz)
         }
-      case PolyType(tparams, restpe) =>
-        PolyType(tparams, fixupAsAnyTrait(restpe))
+      case PolyType(tparams, restpe) => PolyType(tparams, fixupAsAnyTrait(restpe))
+      case _                         => throw new MatchError(tpe)
     }
 
     // top types
@@ -951,7 +951,7 @@ trait Definitions extends api.StandardDefinitions {
        *  a member of the whole type.
        */
       def isVolatileRefinedType: Boolean = {
-        val RefinedType(parents, decls)         = tp
+        val RefinedType(parents, decls)         = (tp: @unchecked)
         def isVisibleDeferred(m: Symbol)        = m.isDeferred && ((tp nonPrivateMember m.name).alternatives contains m)
         def contributesAbstractMembers(p: Type) = p.deferredMembers exists isVisibleDeferred
         def dropConcreteParents                 = parents dropWhile (p => !p.typeSymbol.isAbstractType)

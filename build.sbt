@@ -820,7 +820,7 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature", "-Wconf:msg=match may not be exhaustive:i"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
