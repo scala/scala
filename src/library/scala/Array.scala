@@ -674,6 +674,5 @@ final class Array[T](_length: Int) extends java.io.Serializable with java.lang.C
    *
    *  @return    `true` if the Array contains no elements, `false` otherwise.
    */
-  // This method can only be added after changing the starr to 2.13.4
-  // def isEmpty: Boolean = throw new Error()
+   def isEmpty: Boolean = throw new Error()
 }

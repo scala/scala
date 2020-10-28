@@ -86,6 +86,8 @@ ThisBuild / headerLicense  := Some(HeaderLicense.Custom(
      |""".stripMargin
 ))
 
+Global / resolvers += "prs" at "https://scala-ci.typesafe.com/artifactory/scala-pr-validation-snapshots"
+
 Global / mimaReferenceVersion := Some("2.13.0")
 
 import com.typesafe.tools.mima.core._
