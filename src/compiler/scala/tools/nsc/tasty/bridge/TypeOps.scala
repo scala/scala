@@ -83,6 +83,9 @@ trait TypeOps { self: TastyUniverse =>
       def originalFlagSet: TastyFlagSet = EmptyTastyFlags
     }
 
+    private[bridge] def CopyInfo(underlying: u.TermSymbol, originalFlagSet: TastyFlagSet): TastyRepr =
+      new CopyCompleter(underlying, originalFlagSet)
+
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
     def SingleType(pre: Type, sym: Symbol): Type = u.singleType(pre, sym)
@@ -271,6 +274,8 @@ trait TypeOps { self: TastyUniverse =>
           })
         }
         ErasedTypeRef(name.toTypeName, dims)
+      case u.ErrorType =>
+        ErasedTypeRef(tpnme.ErrorType, 0)
     }
 
   }
@@ -327,6 +332,14 @@ trait TypeOps { self: TastyUniverse =>
     /**Compute and set the info for the symbol in the given Context
      */
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
+  }
+
+  private[TypeOps] class CopyCompleter(underlying: u.TermSymbol, final val originalFlagSet: TastyFlagSet)
+      extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
+    override final def complete(sym: Symbol): Unit = {
+      underlying.ensureCompleted()
+      sym.info = underlying.tpe
+    }
   }
 
   def prefixedRef(prefix: Type, sym: Symbol): Type = {

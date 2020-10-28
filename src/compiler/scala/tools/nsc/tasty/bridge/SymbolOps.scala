@@ -34,7 +34,7 @@ trait SymbolOps { self: TastyUniverse =>
   final def declaringSymbolOf(sym: Symbol): Symbol =
     if (sym.isModuleClass) sym.sourceModule else sym
 
-  implicit class SymbolDecorator(val sym: Symbol) {
+  implicit final class SymbolDecorator(val sym: Symbol) {
 
     def isScala3Macro: Boolean = repr.originalFlagSet.is(Inline | Macro)
     def isScala3Inline: Boolean = repr.originalFlagSet.is(Inline)
@@ -44,6 +44,9 @@ trait SymbolOps { self: TastyUniverse =>
     def isMixinCtor: Boolean = u.nme.MIXIN_CONSTRUCTOR == sym.name && sym.owner.isTrait
 
     def isTraitParamAccessor: Boolean = sym.owner.isTrait && repr.originalFlagSet.is(FieldAccessor|ParamSetter)
+
+    def isParamGetter: Boolean =
+      sym.isMethod && sym.repr.originalFlagSet.is(FlagSets.FieldAccessorFlags)
 
     /** A computed property that should only be called on a symbol which is known to have been initialised by the
      *  Tasty Unpickler and is not yet completed.

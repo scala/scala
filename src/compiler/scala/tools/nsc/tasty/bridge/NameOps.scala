@@ -49,6 +49,8 @@ trait NameOps { self: TastyUniverse =>
     final val Or: TypeName = TastyName.SimpleName("|").toTypeName
     final val And: TypeName = TastyName.SimpleName("&").toTypeName
     final val AnyKind: TypeName = TastyName.SimpleName("AnyKind").toTypeName
+
+    final val ErrorType: TypeName = TastyName.SimpleName("<error>").toTypeName
   }
 
 }
