@@ -23,7 +23,7 @@ import scala.reflect.internal.util.{Position, ScalaClassLoader}
   */
 abstract class Reporter extends internal.Reporter {
   // used by sbt
-  @deprecated("Use echo, as internal.Reporter does not support unforced info", since="2.13.0")
+  @deprecated("Use echo, as internal.Reporter does not support unforced info", since="2.12.13")
   final def info(pos: Position, msg: String, force: Boolean): Unit = info0(pos, msg, INFO, force = true)
 
   // allow calling info0 in MakeFilteringForwardingReporter
@@ -88,7 +88,7 @@ abstract class FilteringReporter extends Reporter {
   // this should be the abstract method all the way up in reflect.internal.Reporter, but sbt compat
   def doReport(pos: Position, msg: String, severity: Severity): Unit
 
-  @deprecatedOverriding("override doReport instead", "2.13.1") // overridden in scalameta for example
+  @deprecatedOverriding("override doReport instead", "2.12.13") // overridden in scalameta for example
   protected def info0(pos: Position, msg: String, severity: Severity, force: Boolean): Unit = doReport(pos, msg, severity)
 
   private lazy val positions = mutable.Map[Position, Severity]() withDefaultValue INFO
