@@ -302,6 +302,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
             sym setInfo completerOf(tree)
           case tree @ Import(_, _) =>
             namerOf(tree.symbol) importTypeCompleter tree
+          case x => throw new MatchError(x)
         }
       }
     }
@@ -379,7 +380,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
 
           def maybeExpand(annotation: Tree, annottee: Tree, maybeExpandee: Tree): Option[List[Tree]] =
             if (context.macrosEnabled) { // TODO: when is this bit flipped -- can we pull this check out farther?
-              val treeInfo.Applied(Select(New(tpt), nme.CONSTRUCTOR), _, _) = annotation
+              val treeInfo.Applied(Select(New(tpt), nme.CONSTRUCTOR), _, _) = annotation: @unchecked
               val mann = probeMacroAnnotation(context, tpt)
               if (mann.isClass && mann.hasFlag(MACRO)) {
                 assert(!currentRun.compiles(mann), mann)
@@ -732,6 +733,7 @@ trait MacroAnnotationNamers { self: Analyzer =>
                   MacroAnnotationTopLevelModuleBadExpansion(expandee)
                   None
               }
+            case x => throw new MatchError(x)
           }
         } else {
           if (wasTransient) {

@@ -36,6 +36,7 @@ trait SymbolTables {
         case Some(FreeDef(_, name, _, _, _)) => name
         case Some(SymDef(_, name, _, _)) => name
         case None => nme.EMPTY
+        case x    => throw new MatchError(x)
       }
 
     def symAliases(sym: Symbol): List[TermName] =
@@ -49,6 +50,7 @@ trait SymbolTables {
         case Some(FreeDef(_, _, binding, _, _)) => binding
         case Some(SymDef(_, _, _, _)) => throw new UnsupportedOperationException(s"${symtab(sym)} is a symdef, hence it doesn't have a binding")
         case None => EmptyTree
+        case x    => throw new MatchError(x)
       }
 
     def symRef(sym: Symbol): Tree =
@@ -56,6 +58,7 @@ trait SymbolTables {
         case Some(FreeDef(_, name, binding, _, _)) => Ident(name) updateAttachment binding
         case Some(SymDef(_, name, _, _)) => Ident(name) updateAttachment ReifyBindingAttachment(Ident(sym))
         case None => EmptyTree
+        case x    => throw new MatchError(x)
       }
 
     @deprecated("use add instead", since="2.13.3")
@@ -78,7 +81,8 @@ trait SymbolTables {
       assert(sym != NoSymbol, showRaw(symDef))
       val name = symDef match {
         case FreeDef(_, name, _, _, _) => name
-        case SymDef(_, name, _, _) => name
+        case SymDef(_, name, _, _)     => name
+        case x                         => throw new MatchError(x)
       }
       val newSymtab = if (!(symtab contains sym)) symtab + (sym -> symDef) else symtab
       val newAliases = aliases :+ (sym -> name)
@@ -108,7 +112,7 @@ trait SymbolTables {
       val newAliases = aliases filter (_._2 != name)
       newSymtab = newSymtab filter { case ((sym, _)) => newAliases exists (_._1 == sym) }
       newSymtab = newSymtab map { case ((sym, tree)) =>
-        val ValDef(mods, primaryName, tpt, rhs) = tree
+        val ValDef(mods, primaryName, tpt, rhs) = tree: @unchecked
         val tree1 =
           if (!(newAliases contains ((sym, primaryName)))) {
             val primaryName1 = newAliases.find(_._1 == sym).get._2

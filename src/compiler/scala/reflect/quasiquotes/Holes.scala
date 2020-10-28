@@ -72,7 +72,7 @@ trait Holes { self: Quasiquotes =>
    *  It packs together a rank, pre-reified tree representation
    *  (possibly preprocessed) and position.
    */
-  abstract class Hole {
+  sealed abstract class Hole {
     val tree: Tree
     val pos: Position
     val rank: Rank
@@ -193,13 +193,14 @@ trait Holes { self: Quasiquotes =>
       case Bind(pname, inner @ Bind(_, Typed(Ident(nme.WILDCARD), tpt))) => (pname, inner.pos, Some(tpt))
       case Bind(pname, inner @ Typed(Ident(nme.WILDCARD), tpt))          => (pname, inner.pos, Some(tpt))
       case Bind(pname, inner)                                            => (pname, inner.pos, None)
+      case x                                                             => throw new MatchError(x)
     }
     val treeNoUnlift = Bind(placeholderName, Ident(nme.WILDCARD))
     lazy val tree =
       tptopt.map { tpt =>
         val TypeDef(_, _, _, typedTpt) =
-          try c.typecheck(TypeDef(NoMods, TypeName("T"), Nil, tpt))
-          catch { case TypecheckException(pos, msg) => c.abort(pos.asInstanceOf[c.Position], msg) }
+          (try c.typecheck(TypeDef(NoMods, TypeName("T"), Nil, tpt))
+          catch { case TypecheckException(pos, msg) => c.abort(pos.asInstanceOf[c.Position], msg) }): @unchecked
         val tpe = typedTpt.tpe
         val (iterableRank, _) = stripIterable(tpe)
         if (iterableRank.value < rank.value)
@@ -244,6 +245,7 @@ trait Holes { self: Quasiquotes =>
         val helperName = rank match {
           case DotDot    => nme.UnliftListElementwise
           case DotDotDot => nme.UnliftListOfListsElementwise
+          case x         => throw new MatchError(x)
         }
         val lifter = inferUnliftable(tpe)
         assert(helperName.isTermName, "Must be a term")

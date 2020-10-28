@@ -182,6 +182,7 @@ trait Lifter extends ExprBuilder {
               }
               treeCopy.ClassDef(cd, Modifiers(sym.flags), sym.name, tparams, impl)
             }
+          case x => throw new MatchError(x)
         }
         atPos(t.pos)(treeLifted)
     }.toList

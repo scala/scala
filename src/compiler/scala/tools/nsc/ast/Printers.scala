@@ -168,24 +168,25 @@ trait Printers extends scala.reflect.internal.Printers { this: Global =>
           def ifIndented(x: Tree) = {
             indent() ; println() ; printTree(x) ; undent()
           }
-
-          val List(thenStmts, elseStmts) = List(thenp, elsep) map allStatements
           print("if ("); print(cond); print(") ")
 
-          thenStmts match {
+          allStatements(thenp) match {
             case List(x: If)  => ifIndented(x)
             case List(x)      => printTree(x)
             case _            => printTree(thenp)
           }
 
-          if (elseStmts.nonEmpty) {
+          def printElse(elsep: Tree) = {
             print(" else")
             indent() ; println()
-            elseStmts match {
-              case List(x)  => printTree(x)
-              case _        => printTree(elsep)
-            }
+            printTree(elsep)
             undent() ; println()
+          }
+
+          allStatements(elsep) match {
+            case Nil     =>
+            case List(x) => printElse(x)
+            case _       => printElse(elsep)
           }
         case _        => s()
       }

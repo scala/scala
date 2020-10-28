@@ -205,6 +205,7 @@ abstract class BCodeIdiomatic {
         // jlStringBuilder does not have overloads for byte and short, but we can just use the int version
         case BYTE | SHORT                                             => INT
         case pt: PrimitiveBType                                       => pt
+        case x @ MethodBType(_, _)                                    => throw new MatchError(x)
       }
       val bt = MethodBType(Array(paramType), jlStringBuilderRef)
       invokevirtual(JavaStringBuilderClassName, "append", bt.descriptor, pos)

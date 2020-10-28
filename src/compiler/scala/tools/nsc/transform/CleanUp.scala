@@ -15,7 +15,6 @@ package transform
 
 import symtab._
 import Flags._
-import scala.annotation.nowarn
 import scala.collection._
 import scala.tools.nsc.Reporting.WarningCategory
 
@@ -52,7 +51,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
       symbolsStoredAsStatic.clear()
     }
     private def transformTemplate(tree: Tree) = {
-      val Template(_, _, body) = tree
+      val Template(_, _, body) = tree: @unchecked
       clearStatics()
       val newBody = transformTrees(body)
       val templ   = deriveTemplate(tree)(_ => transformTrees(newStaticMembers.toList) ::: newBody)
@@ -288,6 +287,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
                 case nme.update => REF(arrayUpdateMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)), args(2))
                 case nme.apply  => REF(arrayApplyMethod) APPLY List(args(0), (REF(unboxMethod(IntClass)) APPLY args(1)))
                 case nme.clone_ => REF(arrayCloneMethod) APPLY List(args(0))
+                case x          => throw new MatchError(x)
               },
               mustBeUnit = methSym.name == nme.update
             )
@@ -354,6 +354,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
               }
             case NoType =>
               abort(ad.symbol.toString)
+            case x => throw new MatchError(x)
           }
           typedPos {
             val sym = currentOwner.newValue(mkTerm("qual"), ad.pos) setInfo qual0.tpe
@@ -403,10 +404,11 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
         case IntTpe => sw // can switch directly on ints
         case StringTpe =>
           // these assumptions about the shape of the tree are justified by the codegen in MatchOptimization
-          val Match(Typed(selTree, _), cases) = sw: @nowarn("msg=match may not be exhaustive")
+          val Match(Typed(selTree, _), cases) = sw: @unchecked
           def selArg = selTree match {
             case x: Ident   => REF(x.symbol)
             case x: Literal => x
+            case x          => throw new MatchError(x)
           }
           val restpe = sw.tpe
           val swPos = sw.pos.focus
@@ -457,6 +459,7 @@ abstract class CleanUp extends Statics with Transform with ast.TreeDSL {
           val newSel = selTree match {
             case _: Ident   => atPos(selTree.symbol.pos) { IF(selTree.symbol OBJ_EQ NULL) THEN ifNull ELSE noNull }
             case x: Literal => atPos(selTree.pos) { if (x.value.value == null) ifNull else noNull }
+            case x          => throw new MatchError(x)
           }
           val casesByHash =
             cases.flatMap {

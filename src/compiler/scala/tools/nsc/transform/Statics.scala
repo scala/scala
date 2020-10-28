@@ -32,6 +32,7 @@ abstract class Statics extends Transform with ast.TreeDSL {
             case term: TermTree           =>
               // need to create a new block with inits and the old term
               treeCopy.Block(term, newStaticInits, term)
+            case x => throw new MatchError(x)
           }
       } getOrElse {
         // create new static ctor

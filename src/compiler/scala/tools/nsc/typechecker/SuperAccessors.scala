@@ -195,6 +195,7 @@ abstract class SuperAccessors extends transform.Transform with transform.TypingT
 
       def mixIsTrait = sup.tpe match {
         case SuperType(thisTpe, superTpe) => superTpe.typeSymbol.isTrait
+        case x                            => throw new MatchError(x)
       }
 
       val needAccessor = name.isTermName && {

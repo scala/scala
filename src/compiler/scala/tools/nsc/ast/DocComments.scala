@@ -436,8 +436,8 @@ trait DocComments { self: Global =>
           key.drop(start) -> value
         }
       } map {
-        case (key, Trim(value)) =>
-          variableName(key) -> value.replaceAll("\\s+\\*+$", "")
+        case (key, Trim(value)) => variableName(key) -> value.replaceAll("\\s+\\*+$", "")
+        case x                  => throw new MatchError(x)
       }
     }
   }

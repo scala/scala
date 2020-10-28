@@ -241,7 +241,7 @@ abstract class UnCurry extends InfoTransform
 
         val typedNewFun = localTyper.typedPos(fun.pos)(Block(liftedMethod :: Nil, super.transform(newFun)))
         if (mustExpand) {
-          val Block(stats, expr : Function) = typedNewFun
+          val Block(stats, expr : Function) = typedNewFun: @unchecked
           treeCopy.Block(typedNewFun, stats, gen.expandFunction(localTyper)(expr, inConstructorFlag))
         } else {
           typedNewFun
@@ -308,7 +308,7 @@ abstract class UnCurry extends InfoTransform
         val javaStyleVarArgs = isJavaVarArgsMethod(fun)
         var suffix: Tree =
           if (treeInfo isWildcardStarArgList args) {
-            val Typed(tree, _) = args.last
+            val Typed(tree, _) = args.last: @unchecked
             if (javaStyleVarArgs)
               if (tree.tpe.typeSymbol == ArrayClass) tree
               else sequenceToArray(tree)

@@ -133,7 +133,7 @@ abstract class ExtensionMethods extends Transform with TypingTransformers {
 
           log(s"Value class $origThis spawns extension method.\n  Old: ${origMeth.defString}\n  New: ${extensionMeth.defString}")
 
-          val GenPolyType(extensionTpeParams, MethodType(thiz :: Nil, extensionMono)) = newInfo
+          val GenPolyType(extensionTpeParams, MethodType(thiz :: Nil, extensionMono)) = newInfo: @unchecked
           val extensionParams = allParameters(extensionMono)
           val extensionThis   = gen.mkAttributedStableRef(thiz setPos extensionMeth.pos)
 

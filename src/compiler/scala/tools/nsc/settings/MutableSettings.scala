@@ -595,7 +595,7 @@ class MutableSettings(val errorFn: String => Unit, val pathFactory: PathFactory)
     withHelpSyntax(s"$name:<${helpArg}s>")
 
     object ChoiceOrVal {
-      def unapply(a: domain.Value): Option[(String, String, List[domain.Choice])] = a match {
+      def unapply(a: domain.Value): Some[(String, String, List[domain.Choice])] = a match {
         case c: domain.Choice => Some((c.name, c.help, c.expandsTo))
         case v: domain.Value  => Some((v.toString, "", Nil))
       }

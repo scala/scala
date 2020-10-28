@@ -748,7 +748,7 @@ abstract class CopyProp {
   }
 }
 
-trait RemovePairDependency
+sealed trait RemovePairDependency
 case class RemovePair(store: VarInsnNode, other: AbstractInsnNode, depends: List[RemovePairDependency]) extends RemovePairDependency {
   override def toString = s"<${AsmUtils textify store},${AsmUtils textify other}> [$depends]"
 }

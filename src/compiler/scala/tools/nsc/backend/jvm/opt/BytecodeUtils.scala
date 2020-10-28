@@ -289,7 +289,7 @@ object BytecodeUtils {
         if (l == from) list.set(i, to)
       }
     }
-    reference match {
+    (reference: @unchecked) match {
       case jump: JumpInsnNode           => jump.label = to
       case line: LineNumberNode         => line.start = to
       case switch: LookupSwitchInsnNode => substList(switch.labels); if (switch.dflt == from) switch.dflt = to

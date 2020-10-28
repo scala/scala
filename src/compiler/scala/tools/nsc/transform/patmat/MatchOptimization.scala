@@ -295,16 +295,17 @@ trait MatchOptimization extends MatchTreeMaking with MatchAnalysis {
             if (isDefault || !canJump) defaultBody
             else Apply(Ident(defaultLabel), Nil)
 
-          val guardedBody = same.foldRight(jumpToDefault){
+          val guardedBody = same.foldRight(jumpToDefault) {
             // the last case may be unguarded (we know it's the last one since fold's accum == jumpToDefault)
             // --> replace jumpToDefault by the unguarded case's body
-            case (CaseDef(_, EmptyTree, b), `jumpToDefault`)     => b
-            case (cd@CaseDef(_, g, b), els) if isGuardedCase(cd) => If(g, b, els)
+            case (CaseDef(_, EmptyTree, b), `jumpToDefault`)       => b
+            case (cd @ CaseDef(_, g, b), els) if isGuardedCase(cd) => If(g, b, els)
+            case x                                                 => throw new MatchError(x)
           }
 
           // if the cases that we're going to collapse bind variables,
           // must replace them by the single binder introduced by the collapsed case
-          val binders = same.collect{case CaseDef(x@Bind(_, _), _, _) if x.symbol != NoSymbol => x.symbol}
+          val binders = same.collect { case CaseDef(x @ Bind(_, _), _, _) if x.symbol != NoSymbol => x.symbol }
           val (pat, guardedBodySubst) =
             if (binders.isEmpty) (commonPattern, guardedBody)
             else {

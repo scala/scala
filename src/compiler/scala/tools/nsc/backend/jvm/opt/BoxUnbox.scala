@@ -829,7 +829,7 @@ abstract class BoxUnbox {
     }
 
     private val getterIndexPattern = "_(\\d{1,2}).*".r
-    def tupleGetterIndex(getterName: String) = getterName match { case getterIndexPattern(i) => i.toInt - 1 }
+    def tupleGetterIndex(getterName: String) = getterName match { case getterIndexPattern(i) => i.toInt - 1 case x => throw new MatchError(x) }
   }
 
   // TODO: add more

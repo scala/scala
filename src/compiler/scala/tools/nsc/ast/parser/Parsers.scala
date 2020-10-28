@@ -3177,6 +3177,7 @@ self =>
   /** Create a tree representing a packaging. */
     def makePackaging(start: Offset, pkg: Tree, stats: List[Tree]): PackageDef = pkg match {
       case x: RefTree => atPos(start, pkg.pos.point)(PackageDef(x, stats))
+      case x          => throw new MatchError(x)
     }
 
     def makeEmptyPackage(start: Offset, stats: List[Tree]): PackageDef = (

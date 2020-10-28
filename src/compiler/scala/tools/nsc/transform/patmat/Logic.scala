@@ -52,7 +52,7 @@ trait Logic extends Debugging  {
     type Type
     type Tree
 
-    class Prop
+    sealed abstract class Prop
     final case class Eq(p: Var, q: Const) extends Prop
 
     type Const
@@ -243,12 +243,14 @@ trait Logic extends Debugging  {
 
       // push negation inside formula
       def negationNormalFormNot(p: Prop): Prop = p match {
-        case And(ops) => Or(mapConserve(ops)(negationNormalFormNot)) // De Morgan
-        case Or(ops)  => And(mapConserve(ops)(negationNormalFormNot)) // De Morgan
-        case Not(p)   => negationNormalForm(p)
-        case True     => False
-        case False    => True
-        case s: Sym   => Not(s)
+        case And(ops)         => Or(mapConserve(ops)(negationNormalFormNot)) // De Morgan
+        case Or(ops)          => And(mapConserve(ops)(negationNormalFormNot)) // De Morgan
+        case Not(p)           => negationNormalForm(p)
+        case True             => False
+        case False            => True
+        case s: Sym           => Not(s)
+        case Eq(_, _)         => Not(p)
+        case p @ AtMostOne(_) => Not(p)
       }
 
       def negationNormalForm(p: Prop): Prop = p match {
@@ -262,6 +264,7 @@ trait Logic extends Debugging  {
         case True
              | False
              | (_: Sym)
+             | (_: Eq)
              | (_: AtMostOne)   => p
       }
 

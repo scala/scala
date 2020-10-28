@@ -180,23 +180,14 @@ trait Solving extends Logic {
 
         def convert(p: Prop): Option[Lit] = {
           p match {
-            case And(fv)  =>
-              Some(and(fv.flatMap(convert)))
-            case Or(fv)   =>
-              Some(or(fv.flatMap(convert)))
-            case Not(a)   =>
-              convert(a).map(not)
-            case sym: Sym =>
-              Some(convertSym(sym))
-            case True     =>
-              Some(constTrue)
-            case False    =>
-              Some(constFalse)
-            case AtMostOne(ops) =>
-              atMostOne(ops)
-              None
-            case _: Eq    =>
-              throw new MatchError(p)
+            case And(fv)        => Some(and(fv.flatMap(convert)))
+            case Or(fv)         => Some(or(fv.flatMap(convert)))
+            case Not(a)         => convert(a).map(not)
+            case sym: Sym       => Some(convertSym(sym))
+            case True           => Some(constTrue)
+            case False          => Some(constFalse)
+            case AtMostOne(ops) => atMostOne(ops) ; None
+            case _: Eq          => throw new MatchError(p)
           }
         }
 

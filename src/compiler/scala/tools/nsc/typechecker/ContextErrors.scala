@@ -16,7 +16,7 @@ package typechecker
 import scala.reflect.internal.util.StringOps.{countAsString, countElementsAsString}
 import java.lang.System.{lineSeparator => EOL}
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.reflect.runtime.ReflectionUtils
 import scala.reflect.macros.runtime.AbortMacroException
 import scala.util.control.{ControlThrowable, NonFatal}
@@ -1258,6 +1258,7 @@ trait ContextErrors {
               "type arguments " + argtypes.mkString("[", ",", "]") +
               " conform to the bounds of none of the overloaded alternatives of\n "+sym+
               ": "+sym.info
+            case x => throw new MatchError(x)
           }
         issueNormalTypeError(tree, msg)
         ()
@@ -1350,42 +1351,19 @@ trait ContextErrors {
 
       def SymbolValidationError(sym: Symbol, errKind: SymValidateErrors.Value): Unit = {
         val msg = errKind match {
-          case ImplicitConstr =>
-            "`implicit` modifier not allowed for constructors"
-
-          case ImplicitNotTermOrClass =>
-            "`implicit` modifier can be used only for values, variables, methods and classes"
-
-          case ImplicitAtToplevel =>
-            "`implicit` modifier cannot be used for top-level objects"
-
-          case OverrideClass =>
-            "`override` modifier not allowed for classes"
-
-          case SealedNonClass =>
-            "`sealed` modifier can be used only for classes"
-
-          case AbstractNonClass =>
-            "`abstract` modifier can be used only for classes; it should be omitted for abstract members"
-
-          case OverrideConstr =>
-            "`override` modifier not allowed for constructors"
-
-          case AbstractOverride =>
-            "`abstract override` modifier only allowed for members of traits"
-
-          case AbstractOverrideOnTypeMember =>
-            "`abstract override` modifier not allowed for type members"
-
-          case LazyAndEarlyInit =>
-            "`lazy` definitions may not be initialized early"
-
-          case ByNameParameter =>
-            "pass-by-name arguments not allowed for case class parameters"
-
-          case AbstractVar =>
-            "only traits and abstract classes can have declared but undefined members" + abstractVarMessage(sym)
-
+          case ImplicitConstr               => "`implicit` modifier not allowed for constructors"
+          case ImplicitNotTermOrClass       => "`implicit` modifier can be used only for values, variables, methods and classes"
+          case ImplicitAtToplevel           => "`implicit` modifier cannot be used for top-level objects"
+          case OverrideClass                => "`override` modifier not allowed for classes"
+          case SealedNonClass               => "`sealed` modifier can be used only for classes"
+          case AbstractNonClass             => "`abstract` modifier can be used only for classes; it should be omitted for abstract members"
+          case OverrideConstr               => "`override` modifier not allowed for constructors"
+          case AbstractOverride             => "`abstract override` modifier only allowed for members of traits"
+          case AbstractOverrideOnTypeMember => "`abstract override` modifier not allowed for type members"
+          case LazyAndEarlyInit             => "`lazy` definitions may not be initialized early"
+          case ByNameParameter              => "pass-by-name arguments not allowed for case class parameters"
+          case AbstractVar                  => "only traits and abstract classes can have declared but undefined members" + abstractVarMessage(sym)
+          case x                            => throw new MatchError(x)
         }
         issueSymbolTypeError(sym, msg)
       }
@@ -1406,10 +1384,9 @@ trait ContextErrors {
 
       def DuplicatesError(tree: Tree, name: Name, kind: DuplicatesErrorKinds.Value) = {
         val msg = kind match {
-          case RenamedTwice =>
-            "is renamed twice"
-          case AppearsTwice =>
-            "appears twice as a target of a renaming"
+          case RenamedTwice => "is renamed twice"
+          case AppearsTwice => "appears twice as a target of a renaming"
+          case x            => throw new MatchError(x)
         }
 
         issueNormalTypeError(tree, name.decode + " " + msg)
@@ -1432,7 +1409,7 @@ trait ContextErrors {
                 | $pre2 ${info2.sym.fullLocationString} of type ${info2.tpe}
                 | $trailer"""
         def viewMsg = {
-          val found :: req :: _ = pt.typeArgs: @nowarn("msg=match may not be exhaustive")
+          val found :: req :: _ = pt.typeArgs: @unchecked
           def explanation = {
             val sym = found.typeSymbol
             // Explain some common situations a bit more clearly. Some other

@@ -367,6 +367,7 @@ trait Namers extends MethodSynthesis {
       val pkgOwner = pid match {
         case Ident(_)                 => if (owner.isEmptyPackageClass) rootMirror.RootClass else owner
         case Select(qual: RefTree, _) => createPackageSymbol(pos, qual).moduleClass
+        case x                        => throw new MatchError(x)
       }
       val existing = pkgOwner.info.decls.lookup(pid.name)
 
@@ -1534,7 +1535,7 @@ trait Namers extends MethodSynthesis {
      * flag.
      */
     private def addDefaultGetters(meth: Symbol, ddef: DefDef, vparamss: List[List[ValDef]], tparams: List[TypeDef], overridden: Symbol): Unit = {
-      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate)
+      val DefDef(_, _, rtparams0, rvparamss0, _, _) = resetAttrs(deriveDefDef(ddef)(_ => EmptyTree).duplicate): @unchecked
       // having defs here is important to make sure that there's no sneaky tree sharing
       // in methods with multiple default parameters
       def rtparams  = rtparams0.map(_.duplicate)
@@ -1681,7 +1682,7 @@ trait Namers extends MethodSynthesis {
             moduleNamer match {
               case Some(namer) =>
                 val cdef = attachment.classWithDefault
-                val ClassDef(_, _, rtparams, _) = resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate)
+                val ClassDef(_, _, rtparams, _) = resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate): @unchecked
                 val defTparams = rtparams.map(rt => copyTypeDef(rt)(mods = rt.mods &~ (COVARIANT | CONTRAVARIANT)))
                 val tree = create(namer, defTparams)
                 namer.enterSyntheticSym(tree)
@@ -1886,6 +1887,7 @@ trait Namers extends MethodSynthesis {
       try tree match {
         case member: MemberDef => createNamer(tree).memberSig(member)
         case imp: Import       => importSig(imp)
+        case x                 => throw new MatchError(x)
       } catch typeErrorHandler(tree, ErrorType)
     }
 
@@ -1924,7 +1926,7 @@ trait Namers extends MethodSynthesis {
         case tdef: TypeDef   => typeDefSig(tdef)
         case cdef: ClassDef  => classSig(cdef)
         case mdef: ModuleDef => moduleSig(mdef)
-        // skip PackageDef
+        case x: PackageDef   => throw new MatchError(x) // skip PackageDef
       }
 
     def includeParent(tpe: Type, parent: Symbol): Type = tpe match {

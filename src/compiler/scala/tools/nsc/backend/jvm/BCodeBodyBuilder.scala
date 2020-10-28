@@ -13,13 +13,13 @@
 package scala.tools.nsc
 package backend.jvm
 
-import scala.annotation.{nowarn, switch, tailrec}
+import scala.annotation.{ switch, tailrec }
 import scala.collection.mutable.ListBuffer
 import scala.reflect.internal.Flags
 import scala.tools.asm
 import scala.tools.asm.Opcodes
-import scala.tools.asm.tree.{InvokeDynamicInsnNode, MethodInsnNode, MethodNode}
-import scala.tools.nsc.backend.jvm.BCodeHelpers.{InvokeStyle, TestOp}
+import scala.tools.asm.tree.{ InvokeDynamicInsnNode, MethodInsnNode, MethodNode }
+import scala.tools.nsc.backend.jvm.BCodeHelpers.{ InvokeStyle, TestOp }
 import scala.tools.nsc.backend.jvm.BackendReporting._
 import scala.tools.nsc.backend.jvm.GenBCode._
 
@@ -102,7 +102,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate code for primitive arithmetic operations. */
     def genArithmeticOp(tree: Tree, code: Int): BType = {
-      val Apply(fun @ Select(larg, _), args) = tree
+      val Apply(fun @ Select(larg, _), args) = tree: @unchecked
       var resKind = tpeTK(larg)
 
       assert(resKind.isNumericType || (resKind == BOOL),
@@ -157,7 +157,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     /* Generate primitive array operations. */
     def genArrayOp(tree: Tree, code: Int, expectedType: BType): BType = {
-      val Apply(Select(arrayObj, _), args) = tree
+      val Apply(Select(arrayObj, _), args) = tree: @unchecked
       val k = tpeTK(arrayObj)
       genLoad(arrayObj, k)
       val elementType = typeOfArrayOp.getOrElse(code, abort(s"Unknown operation on arrays: $tree code: $code"))
@@ -171,7 +171,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         generatedType = k.asArrayBType.componentType
         bc.aload(elementType)
       } else if (scalaPrimitives.isArraySet(code)) {
-        val List(a1, a2) = args
+        val List(a1, a2) = args: @unchecked
         genLoad(a1, INT)
         genLoad(a2, elementType)
         generatedType = UNIT
@@ -215,7 +215,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
 
     def genPrimitiveOp(tree: Apply, expectedType: BType): BType = {
       val sym = tree.symbol
-      val Apply(fun @ Select(receiver, _), _) = tree: @nowarn("msg=match may not be exhaustive")
+      val Apply(fun @ Select(receiver, _), _) = tree: @unchecked
       val code = scalaPrimitives.getPrimitive(sym, receiver.tpe)
 
       import scalaPrimitives.{isArithmeticOp, isArrayOp, isComparisonOp, isLogicalOp}
@@ -306,7 +306,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           val numStaticArgs = bootstrapMethodRef.paramss.head.size - 3 /*JVM provided args*/
           val (staticArgs, dynamicArgs) = staticAndDynamicArgs.splitAt(numStaticArgs)
           val bootstrapDescriptor = staticHandleFromSymbol(bootstrapMethodRef)
-          val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos)})
+          val bootstrapArgs = staticArgs.map({case t @ Literal(c: Constant) => bootstrapMethodArg(c, t.pos) case x => throw new MatchError(x)})
           val descriptor = methodBTypeFromMethodType(qual.symbol.info, false)
           genLoadArguments(dynamicArgs, qual.symbol.info.params.map(param => typeToBType(param.info)))
           mnode.visitInvokeDynamicInsn(qual.symbol.name.encoded, descriptor.descriptor, bootstrapDescriptor, bootstrapArgs : _*)
@@ -525,7 +525,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             case _                    => abort(s"Unexpected type application $fun[sym: ${sym.fullName}] in: $app")
           }
 
-          val Select(obj, _) = fun
+          val Select(obj, _) = fun: @unchecked
           val l = tpeTK(obj)
           val r = tpeTK(targs.head)
 
@@ -655,7 +655,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
             if (invokeStyle.hasInstance) genLoadQualifier(fun)
             genLoadArguments(args, paramTKs(app))
 
-            val Select(qual, _) = fun // fun is a Select, also checked in genLoadQualifier
+            val Select(qual, _) = fun: @unchecked // fun is a Select, also checked in genLoadQualifier
             if (sym == definitions.Array_clone) {
               // Special-case Array.clone, introduced in 36ef60e. The goal is to generate this call
               // as "[I.clone" instead of "java/lang/Object.clone". This is consistent with javac.
@@ -715,7 +715,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
     } // end of genApply()
 
     private def genArrayValue(av: ArrayValue): BType = {
-      val ArrayValue(tpt @ TypeTree(), elems) = av: @nowarn("msg=match may not be exhaustive")
+      val ArrayValue(tpt @ TypeTree(), elems) = (av: @unchecked)
 
       val elmKind       = tpeTK(tpt)
       val generatedType = ArrayBType(elmKind)
@@ -1098,9 +1098,11 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
         }
       } else {
         val opc = style match {
-          case Static => Opcodes.INVOKESTATIC
-          case Special => Opcodes.INVOKESPECIAL
-          case Virtual => if (isInterface) Opcodes.INVOKEINTERFACE else Opcodes.INVOKEVIRTUAL
+          case Static    => Opcodes.INVOKESTATIC
+          case Special   => Opcodes.INVOKESPECIAL
+          case Virtual   => if (isInterface) Opcodes.INVOKEINTERFACE else Opcodes.INVOKEVIRTUAL
+          case x @ Super => throw new MatchError(x) // ?!?
+          case x         => throw new MatchError(x)
         }
         bc.emitInvoke(opc, receiverName, jname, mdescr, isInterface, pos)
       }
@@ -1168,6 +1170,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           op match { // references are only compared with EQ and NE
             case TestOp.EQ => bc emitIFNULL    success
             case TestOp.NE => bc emitIFNONNULL success
+            case x         => throw new MatchError(x)
           }
         } else {
           def useCmpG = if (negated) op == TestOp.GT || op == TestOp.GE else op == TestOp.LT || op == TestOp.LE
@@ -1239,7 +1242,7 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
           import scalaPrimitives._
 
           // lhs and rhs of test
-          lazy val Select(lhs, _) = fun
+          lazy val Select(lhs, _) = fun: @unchecked
           val rhs = if (args.isEmpty) EmptyTree else args.head // args.isEmpty only for ZNOT
 
           def genZandOrZor(and: Boolean): Unit = {

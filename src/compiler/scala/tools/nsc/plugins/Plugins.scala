@@ -16,7 +16,6 @@ package plugins
 import java.net.URL
 import java.util
 
-import scala.annotation.nowarn
 import scala.reflect.internal.util.ScalaClassLoader
 import scala.reflect.io.Path
 import scala.tools.nsc.Reporting.WarningCategory
@@ -115,32 +114,27 @@ trait Plugins { global: Global =>
    */
   protected def loadPlugins(): List[Plugin] = {
     // remove any with conflicting names or subcomponent names
-    def pick(
-      plugins: List[Plugin],
-      plugNames: Set[String],
-      phaseNames: Set[String]): List[Plugin] =
-    {
-      if (plugins.isEmpty) return Nil // early return
+    def pick(plugins: List[Plugin], plugNames: Set[String], phaseNames: Set[String]): List[Plugin] = plugins match {
+      case Nil          => Nil // early return
+      case plug :: tail =>
+        val plugPhaseNames    = Set(plug.components map (_.phaseName): _*)
+        def withoutPlug       = pick(tail, plugNames, plugPhaseNames)
+        def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
+        lazy val commonPhases = phaseNames intersect plugPhaseNames
 
-      val plug :: tail      = plugins: @nowarn("msg=match may not be exhaustive") // just checked if it's empty
-      val plugPhaseNames    = Set(plug.components map (_.phaseName): _*)
-      def withoutPlug       = pick(tail, plugNames, plugPhaseNames)
-      def withPlug          = plug :: pick(tail, plugNames + plug.name, phaseNames ++ plugPhaseNames)
-      lazy val commonPhases = phaseNames intersect plugPhaseNames
+        def note(msg: String): Unit = if (settings.verbose) inform(msg format plug.name)
+        def fail(msg: String)       = { note(msg) ; withoutPlug }
 
-      def note(msg: String): Unit = if (settings.verbose) inform(msg format plug.name)
-      def fail(msg: String)       = { note(msg) ; withoutPlug }
-
-      if (plugNames contains plug.name)
-        fail("[skipping a repeated plugin: %s]")
-      else if (settings.disable.value contains plug.name)
-        fail("[disabling plugin: %s]")
-      else if (!commonPhases.isEmpty)
-        fail("[skipping plugin %s because it repeats phase names: " + (commonPhases mkString ", ") + "]")
-      else {
-        note("[loaded plugin %s]")
-        withPlug
-      }
+        if (plugNames contains plug.name)
+          fail("[skipping a repeated plugin: %s]")
+        else if (settings.disable.value contains plug.name)
+          fail("[disabling plugin: %s]")
+        else if (!commonPhases.isEmpty)
+          fail("[skipping plugin %s because it repeats phase names: " + (commonPhases mkString ", ") + "]")
+        else {
+          note("[loaded plugin %s]")
+          withPlug
+        }
     }
 
     val plugs = pick(roughPluginsList, Set(), (phasesSet map (_.phaseName)).toSet)

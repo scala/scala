@@ -141,28 +141,28 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
    */
   def macroEngine = "v7.0 (implemented in Scala 2.11.0-M8)"
   object MacroImplBinding {
-    def pickleAtom(obj: Any): Tree =
-      obj match {
-        case list: List[_] => Apply(Ident(ListModule), list map pickleAtom)
-        case s: String => Literal(Constant(s))
-        case d: Double => Literal(Constant(d))
-        case b: Boolean => Literal(Constant(b))
-        case f: Fingerprint => Literal(Constant(f.value))
-      }
+    def pickleAtom(obj: Any): Tree = obj match {
+      case list: List[_]  => Apply(Ident(ListModule), list map pickleAtom)
+      case s: String      => Literal(Constant(s))
+      case d: Double      => Literal(Constant(d))
+      case b: Boolean     => Literal(Constant(b))
+      case f: Fingerprint => Literal(Constant(f.value))
+      case x              => throw new MatchError(x)
+    }
 
-    def unpickleAtom(tree: Tree): Any =
-      tree match {
-        case Apply(list @ Ident(_), args) if list.symbol == ListModule => args map unpickleAtom
-        case Literal(Constant(s: String)) => s
-        case Literal(Constant(d: Double)) => d
-        case Literal(Constant(b: Boolean)) => b
-        case Literal(Constant(i: Int)) => Fingerprint(i)
-      }
+    def unpickleAtom(tree: Tree): Any = tree match {
+      case Apply(list @ Ident(_), args) if list.symbol == ListModule => args map unpickleAtom
+      case Literal(Constant(s: String))                              => s
+      case Literal(Constant(d: Double))                              => d
+      case Literal(Constant(b: Boolean))                             => b
+      case Literal(Constant(i: Int))                                 => Fingerprint(i)
+      case x                                                         => throw new MatchError(x)
+    }
 
     def extractMacroBindingImpl(macroImplRef: Tree): MacroImplBinding = {
       val runDefinitions = currentRun.runDefinitions
       import runDefinitions._
-      val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = macroImplRef
+      val MacroImplReference(isBundle, isBlackbox, owner, macroImpl, targs) = (macroImplRef: @unchecked)
 
       // todo. refactor when fixing scala/bug#5498
       def className: String = {
@@ -238,8 +238,8 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
           case TypeApply(wrapped, targs) => (wrapped, targs)
           case wrapped => (wrapped, Nil)
         }
-      val Apply(_, pickledPayload) = wrapped
-      val payload = pickledPayload.map{ case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) }.toMap
+      val Apply(_, pickledPayload) = wrapped: @unchecked
+      val payload = pickledPayload.map { case Assign(k, v) => (unpickleAtom(k), unpickleAtom(v)) case x => throw new MatchError(x) }.toMap
 
       // TODO: refactor error handling: fail always throws a TypeError,
       // and uses global state (analyzer.lastTreeToTyper) to determine the position for the error
@@ -831,12 +831,11 @@ trait Macros extends MacroRuntimes with Traces with Helpers {
     val fallbackSym = expandee.symbol.nextOverriddenSymbol orElse MacroImplementationNotFoundError(expandee)
     macroLogLite(s"falling back to: $fallbackSym")
 
-    def mkFallbackTree(tree: Tree): Tree = {
-      tree match {
-        case Select(qual, name) => Select(qual, name) setPos tree.pos setSymbol fallbackSym
-        case Apply(fn, args) => Apply(mkFallbackTree(fn), args) setPos tree.pos
-        case TypeApply(fn, args) => TypeApply(mkFallbackTree(fn), args) setPos tree.pos
-      }
+    def mkFallbackTree(tree: Tree): Tree = tree match {
+      case Select(qual, name)  => Select(qual, name) setPos tree.pos setSymbol fallbackSym
+      case Apply(fn, args)     => Apply(mkFallbackTree(fn), args) setPos tree.pos
+      case TypeApply(fn, args) => TypeApply(mkFallbackTree(fn), args) setPos tree.pos
+      case x                   => throw new MatchError(x)
     }
     Fallback(mkFallbackTree(expandee))
   }

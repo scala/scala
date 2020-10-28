@@ -211,6 +211,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
           case RefinedType(parents, _) => parents.map(typeToBType(_).asClassBType).reduceLeft((a, b) => a.jvmWiseLUB(b).get)
           case AnnotatedType(_, t)     => typeToBType(t)
           case ExistentialType(_, t)   => typeToBType(t)
+          case x                       => throw new MatchError(x)
         }
     }
   }
@@ -605,6 +606,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
             val selfParam = methodSym.newSyntheticValueParam(methodSym.owner.typeConstructor, nme.SELF)
             val staticMethodType = methodSym.info match {
               case mt@MethodType(params, res) => copyMethodType(mt, selfParam :: params, res)
+              case x                          => throw new MatchError(x)
             }
             val staticMethodSignature = (staticName, methodBTypeFromMethodType(staticMethodType, isConstructor = false).descriptor)
             val staticMethodInfo = MethodInlineInfo(

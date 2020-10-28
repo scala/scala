@@ -347,39 +347,32 @@ trait MatchApproximation extends TreeAndTypeAnalysis with ScalaLogic with MatchT
           if (!substitutionComputed) updateSubstitution(tm)
 
           tm match {
-            case ttm@TypeTestTreeMaker(prevBinder, testedBinder, pt, _)   =>
-              object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
-                type Result                                           = Prop
-                def and(a: Result, b: Result)                         = And(a, b)
-                def withOuterTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
-                def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
-                  val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
-                }
-                def nonNullTest(testedBinder: Symbol)                 = uniqueNonNullProp(binderToUniqueTree(testedBinder))
-                def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
-                // rewrite eq test to type test against the singleton type `pat.tpe`; unrelated to == (uniqueEqualityProp), could be null
-                def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueTypeProp(binderToUniqueTree(testedBinder), uniqueTp(pat.tpe))
-                def tru                                               = True
-              }
-              ttm.renderCondition(condStrategy)
+            case ttm @ TypeTestTreeMaker(_, _, _, _)                  => ttm.renderCondition(condStrategy)
             case EqualityTestTreeMaker(prevBinder, patTree, _)        => uniqueEqualityProp(binderToUniqueTree(prevBinder), unique(patTree))
             case AlternativesTreeMaker(_, altss, _)                   => \/(altss map (alts => /\(alts map this)))
             case ProductExtractorTreeMaker(testedBinder, None)        => uniqueNonNullProp(binderToUniqueTree(testedBinder))
             case SubstOnlyTreeMaker(_, _)                             => True
             case NonNullTestTreeMaker(prevBinder, _, _)               => uniqueNonNullProp(binderToUniqueTree(prevBinder))
-            case GuardTreeMaker(guard) =>
-              guard.tpe match {
-                case ConstantTrue  => True
-                case ConstantFalse => False
-                case _             => handleUnknown(tm)
-              }
-            case ExtractorTreeMaker(_, _, _) |
-                 ProductExtractorTreeMaker(_, _) |
-                 BodyTreeMaker(_, _)               => handleUnknown(tm)
+            case GuardTreeMaker(guard) if guard.tpe == ConstantTrue   => True
+            case GuardTreeMaker(guard) if guard.tpe == ConstantFalse  => False
+            case _                                                    => handleUnknown(tm)
           }
         }
       }
 
+      object condStrategy extends TypeTestTreeMaker.TypeTestCondStrategy {
+        type Result                                           = Prop
+        def and(a: Result, b: Result)                         = And(a, b)
+        def withOuterTest(testedBinder: Symbol, expectedTp: Type) = True // TODO OuterEqProp(testedBinder, expectedType)
+        def typeTest(b: Symbol, pt: Type) = { // a type test implies the tested path is non-null (null.isInstanceOf[T] is false for all T)
+          val p = binderToUniqueTree(b);                        And(uniqueNonNullProp(p), uniqueTypeProp(p, uniqueTp(pt)))
+        }
+        def nonNullTest(testedBinder: Symbol)                 = uniqueNonNullProp(binderToUniqueTree(testedBinder))
+        def equalsTest(pat: Tree, testedBinder: Symbol)       = uniqueEqualityProp(binderToUniqueTree(testedBinder), unique(pat))
+        // rewrite eq test to type test against the singleton type `pat.tpe`; unrelated to == (uniqueEqualityProp), could be null
+        def eqTest(pat: Tree, testedBinder: Symbol)           = uniqueTypeProp(binderToUniqueTree(testedBinder), uniqueTp(pat.tpe))
+        def tru                                               = True
+      }
 
       private val irrefutableExtractor: PartialFunction[TreeMaker, Prop] = {
         // the extra condition is None, the extractor's result indicates it always succeeds,

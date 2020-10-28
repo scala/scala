@@ -83,19 +83,18 @@ trait Unapplies extends ast.TreeDSL {
   }
 
   private def constrParamss(cdef: ClassDef): List[List[ValDef]] = {
-    val prunedClassDef = deriveClassDef(cdef)(tmpl => deriveTemplate(tmpl)(stats => treeInfo.firstConstructor(stats).duplicate :: Nil))
-    val ClassDef(_, _, _, Template(_, _, firstConstructor :: Nil)) = resetAttrs(prunedClassDef)
-    val DefDef(_, _, _, vparamss, _, _) = firstConstructor
-    vparamss
+    resetAttrs(deriveClassDef(cdef)(deriveTemplate(_)(treeInfo.firstConstructor(_).duplicate :: Nil))) match {
+      case ClassDef(_, _, _, Template(_, _, DefDef(_, _, _, vparamss, _, _) :: Nil)) => vparamss
+      case x                                                                         => throw new MatchError(x)
+    }
   }
 
   private def constrTparamsInvariant(cdef: ClassDef): List[TypeDef] = {
-    val prunedClassDef = deriveClassDef(cdef)(tmpl => Template(Nil, noSelfType, Nil))
-    val ClassDef(_, _, tparams, _) = resetAttrs(prunedClassDef.duplicate)
-    val tparamsInvariant = tparams.map(tparam => copyTypeDef(tparam)(mods = tparam.mods &~ (COVARIANT | CONTRAVARIANT)))
-    tparamsInvariant
+    resetAttrs(deriveClassDef(cdef)(_ => Template(Nil, noSelfType, Nil)).duplicate) match {
+      case ClassDef(_, _, tparams, _) => tparams.map(tparam => copyTypeDef(tparam)(mods = tparam.mods &~ (COVARIANT | CONTRAVARIANT)))
+      case x                          => throw new MatchError(x)
+    }
   }
-
 
   private def applyShouldInheritAccess(mods: Modifiers) =
     currentRun.isScala3 && (mods.hasFlag(PRIVATE) || (!mods.hasFlag(PROTECTED) && mods.hasAccessBoundary))

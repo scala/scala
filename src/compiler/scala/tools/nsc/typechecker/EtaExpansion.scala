@@ -107,6 +107,7 @@ trait EtaExpansion { self: Analyzer =>
           treeCopy.Select(tree, liftout(qual, byName = false), name).clearType() setSymbol NoSymbol
         case Ident(name) =>
           tree
+        case x => throw new MatchError(x)
       }
       if (tree1 ne tree) tree1 setPos tree1.pos.makeTransparent
       tree1

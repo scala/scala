@@ -445,7 +445,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
    */
   def iterator: IntIterator = andNotIterator(this, empty, null)
 
-  def +=(value: Int): Unit = this.set match {
+  def +=(value: Int): Unit = (set: @unchecked) match {
     case s: SmallBitSet => (size: @switch) match {
       case 0 =>                                                     s.a = value; size = 1
       case 1 => if (value != s.a)                                 { s.b = value; size = 2 }
@@ -466,7 +466,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
       bsAdd(this, value)
   }
 
-  def -=(value: Int): Unit = this.set match {
+  def -=(value: Int): Unit = (set: @unchecked) match {
     case s: SmallBitSet => (size: @switch) match {
       case 0 =>
       case 1 =>
@@ -491,7 +491,7 @@ class AliasSet(var set: Object /*SmallBitSet | Array[Long]*/, var size: Int) {
   }
 
   override def clone(): AliasSet = {
-    val resSet = this.set match {
+    val resSet = (set: @unchecked) match {
       case s: SmallBitSet => new SmallBitSet(s.a, s.b, s.c, s.d)
       case bits: Array[Long] => bits.clone()
     }
@@ -593,12 +593,12 @@ object AliasSet {
     // true if the current value of `i` should be returned by this iterator
     private var iValid = false
 
-    setA.set match {
+    (setA.set: @unchecked) match {
       case s: SmallBitSet => a = s.a; b = s.b; c = s.c; d = s.d
       case bits: Array[Long] => xs = bits
     }
 
-    setB.set match {
+    (setB.set: @unchecked) match {
       case s: SmallBitSet => notA = s.a; notB = s.b; notC = s.c; notD = s.d
       case bits: Array[Long] => notXs = bits
     }

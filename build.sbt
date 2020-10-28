@@ -892,7 +892,6 @@ lazy val compiler = configureAsSubproject(project)
       "-Xlint",
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
-      "-Wconf:msg=match may not be exhaustive:i",
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"
