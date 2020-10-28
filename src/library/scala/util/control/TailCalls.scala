@@ -46,7 +46,7 @@ object TailCalls {
 
   /** This class represents a tailcalling computation
    */
-  abstract class TailRec[+A] {
+  sealed abstract class TailRec[+A] {
 
     /** Continue the computation with `f`. */
     final def map[B](f: A => B): TailRec[B] =

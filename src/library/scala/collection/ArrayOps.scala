@@ -317,7 +317,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     val lo = max(from, 0)
     val hi = min(until, xs.length)
     if (hi > lo) {
-      ((xs: Array[_]) match {
+      (((xs: Array[_]): @unchecked) match {
         case x: Array[AnyRef]     => copyOfRange(x, lo, hi)
         case x: Array[Int]        => copyOfRange(x, lo, hi)
         case x: Array[Double]     => copyOfRange(x, lo, hi)
@@ -396,7 +396,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   }
 
   def iterator: Iterator[A] =
-    ((xs: Any) match {
+    ((xs: Any @unchecked) match {
       case xs: Array[AnyRef]  => new ArrayOps.ArrayIterator(xs)
       case xs: Array[Int]     => new ArrayOps.ArrayIterator(xs)
       case xs: Array[Double]  => new ArrayOps.ArrayIterator(xs)
@@ -412,7 +412,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
 
   def stepper[S <: Stepper[_]](implicit shape: StepperShape[A, S]): S with EfficientSplit = {
     import convert.impl._
-    val s = shape.shape match {
+    val s = (shape.shape: @unchecked) match {
       case StepperShape.ReferenceShape => (xs: Any) match {
         case bs: Array[Boolean] => new BoxedBooleanArrayStepper(bs, 0, xs.length)
         case _ => new ObjectArrayStepper[AnyRef](xs.asInstanceOf[Array[AnyRef ]], 0, xs.length)
@@ -527,7 +527,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     *  @return  an iterator yielding the elements of this array in reversed order
     */
   def reverseIterator: Iterator[A] =
-    ((xs: Any) match {
+    ((xs: Any @unchecked) match {
       case xs: Array[AnyRef]  => new ArrayOps.ReverseIterator(xs)
       case xs: Array[Int]     => new ArrayOps.ReverseIterator(xs)
       case xs: Array[Double]  => new ArrayOps.ReverseIterator(xs)
@@ -776,7 +776,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       }
       v
     }
-    ((xs: Any) match {
+    ((xs: Any @unchecked) match {
       case null => throw new NullPointerException // null-check first helps static analysis of instanceOf
       case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
@@ -881,7 +881,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
       }
       v
     }
-    ((xs: Any) match {
+    ((xs: Any @unchecked) match {
       case null => throw new NullPointerException
       case xs: Array[AnyRef]  => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
       case xs: Array[Int]     => f(xs, op.asInstanceOf[(Any, Any) => Any], z)
@@ -920,7 +920,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
     val ys = new Array[B](len)
     if(len > 0) {
       var i = 0
-      (xs: Any) match {
+      (xs: Any @unchecked) match {
         case xs: Array[AnyRef]  => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
         case xs: Array[Int]     => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
         case xs: Array[Double]  => while (i < len) { ys(i) = f(xs(i).asInstanceOf[A]); i = i+1 }
@@ -1319,7 +1319,7 @@ final class ArrayOps[A](private val xs: Array[A]) extends AnyVal {
   def foreach[U](f: A => U): Unit = {
     val len = xs.length
     var i = 0
-    (xs: Any) match {
+    (xs: Any @unchecked) match {
       case xs: Array[AnyRef]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
       case xs: Array[Int]     => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }
       case xs: Array[Double]  => while (i < len) { f(xs(i).asInstanceOf[A]); i = i+1 }

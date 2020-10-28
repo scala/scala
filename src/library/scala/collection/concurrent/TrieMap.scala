@@ -127,6 +127,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                 val nn = rn.updatedAt(pos, inode(CNode.dual(sn, sn.hc, new SNode(k, v, hc), hc, lev + 5, gen, equiv)), gen)
                 GCAS(cn, nn, ct)
               }
+            case basicNode => throw new MatchError(basicNode)
           }
         } else {
           val rn = if (cn.gen eq gen) cn else cn.renewed(gen, ct)
@@ -139,6 +140,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
       case ln: LNode[K, V] => // 3) an l-node
         val nn = ln.inserted(k, v)
         GCAS(ln, nn, ct)
+      case mainNode => throw new MatchError(mainNode)
     }
   }
 
@@ -200,6 +202,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                   if (GCAS(cn, cn.updatedAt(pos, new SNode(k, v, hc), gen), ct)) Some(sn.v) else null
                 } else None
             }
+            case basicNode => throw new MatchError(basicNode)
           }
         } else cond match {
           case INode.KEY_PRESENT_OR_ABSENT | INode.KEY_ABSENT =>
@@ -237,6 +240,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
               case _ => None
             }
         }
+      case mainNode => throw new MatchError(mainNode)
     }
   }
 
@@ -269,6 +273,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
             case sn: SNode[K, V] => // 2) singleton node
               if (sn.hc == hc && equal(sn.k, k, ct)) sn.v.asInstanceOf[AnyRef]
               else NO_SUCH_ELEMENT_SENTINEL
+            case basicNode => throw new MatchError(basicNode)
           }
         }
       case tn: TNode[K, V] => // 3) non-live node
@@ -282,6 +287,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
         cleanReadOnly(tn)
       case ln: LNode[K, V] => // 5) an l-node
         ln.get(k).asInstanceOf[Option[AnyRef]].getOrElse(NO_SUCH_ELEMENT_SENTINEL)
+      case mainNode => throw new MatchError(mainNode)
     }
   }
 
@@ -327,6 +333,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                 val ncn = cn.removedAt(pos, flag, gen).toContracted(lev)
                 if (GCAS(cn, ncn, ct)) Some(sn.v) else null
               } else None
+            case basicNode => throw new MatchError(basicNode)
           }
 
           if (res == None || (res eq null)) res
@@ -342,7 +349,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
                   else {
                     val pos = Integer.bitCount(bmp & (flag - 1))
                     val sub = cn.array(pos)
-                    if (sub eq this) nonlive match {
+                    if (sub eq this) (nonlive: @unchecked) match {
                       case tn: TNode[K, V] =>
                         val ncn = cn.updatedAt(pos, tn.copyUntombed, gen).toContracted(lev - 5)
                         if (!parent.GCAS(cn, ncn, ct))
@@ -376,6 +383,7 @@ private[collection] final class INode[K, V](bn: MainNode[K, V], g: Gen, equiv: E
             if (GCAS(ln, nn, ct)) optv else null
           case _ => None
         }
+      case mainNode => throw new MatchError(mainNode)
     }
   }
 
@@ -529,6 +537,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
       array(pos) match {
         case sn: SNode[_, _] => sz += 1
         case in: INode[K, V] => sz += in.cachedSize(ct)
+        case basicNode       => throw new MatchError(basicNode)
       }
       i += 1
     }
@@ -610,6 +619,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
           tmparray(i) = resurrect(in, inodemain)
         case sn: SNode[K, V] =>
           tmparray(i) = sn
+        case basicNode => throw new MatchError(basicNode)
       }
       i += 1
     }
@@ -622,6 +632,7 @@ private[collection] final class CNode[K, V](val bitmap: Int, val array: Array[Ba
   private def collectLocalElems: Seq[String] = array.flatMap({
     case sn: SNode[K, V] => Iterable.single(sn.kvPair._2.toString)
     case in: INode[K, V] => Iterable.single(scala.Predef.augmentString(in.toString).drop(14) + "(" + in.gen + ")")
+    case basicNode       => throw new MatchError(basicNode)
   })
 
   override def toString = {
@@ -736,6 +747,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
     r match {
       case in: INode[K, V] => in
       case desc: RDCSS_Descriptor[K, V] => RDCSS_Complete(abort)
+      case x                            => throw new MatchError(x)
     }
   }
 
@@ -760,6 +772,7 @@ final class TrieMap[K, V] private (r: AnyRef, rtupd: AtomicReferenceFieldUpdater
             else RDCSS_Complete(abort)
           }
         }
+      case x => throw new MatchError(x)
     }
   }
 
@@ -1060,6 +1073,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
       checkSubiter()
     case null =>
       current = null
+    case mainNode => throw new MatchError(mainNode)
   }
 
   private def checkSubiter() = if (!subiter.hasNext) {
@@ -1084,6 +1098,7 @@ private[collection] class TrieMapIterator[K, V](var level: Int, private var ct: 
           current = sn
         case in: INode[K, V] =>
           readin(in)
+        case basicNode => throw new MatchError(basicNode)
       }
     } else {
       depth -= 1

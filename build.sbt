@@ -771,7 +771,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature", "-Wconf:msg=match may not be exhaustive:i"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(

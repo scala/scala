@@ -120,7 +120,7 @@ object Array {
     *
     * @see `java.util.Arrays#copyOf`
     */
-  def copyOf[A](original: Array[A], newLength: Int): Array[A] = (original match {
+  def copyOf[A](original: Array[A], newLength: Int): Array[A] = ((original: @unchecked) match {
     case x: Array[BoxedUnit]  => newUnitArray(newLength).asInstanceOf[Array[A]]
     case x: Array[AnyRef]     => java.util.Arrays.copyOf(x, newLength)
     case x: Array[Int]        => java.util.Arrays.copyOf(x, newLength)

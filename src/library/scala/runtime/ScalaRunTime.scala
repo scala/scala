@@ -54,7 +54,7 @@ object ScalaRunTime {
 
   /** Retrieve generic array element */
   def array_apply(xs: AnyRef, idx: Int): Any = {
-    xs match {
+    (xs: @unchecked) match {
       case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
       case x: Array[Int]     => x(idx).asInstanceOf[Any]
       case x: Array[Double]  => x(idx).asInstanceOf[Any]
@@ -71,7 +71,7 @@ object ScalaRunTime {
 
   /** update generic array element */
   def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
-    xs match {
+    (xs: @unchecked) match {
       case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
       case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]
       case x: Array[Double]  => x(idx) = value.asInstanceOf[Double]
@@ -91,7 +91,7 @@ object ScalaRunTime {
 
   // TODO: bytecode Object.clone() will in fact work here and avoids
   // the type switch. See Array_clone comment in BCodeBodyBuilder.
-  def array_clone(xs: AnyRef): AnyRef = xs match {
+  def array_clone(xs: AnyRef): AnyRef = (xs: @unchecked) match {
     case x: Array[AnyRef]  => x.clone()
     case x: Array[Int]     => x.clone()
     case x: Array[Double]  => x.clone()
@@ -122,7 +122,7 @@ object ScalaRunTime {
         dest
       }
     }
-    src match {
+    (src: @unchecked) match {
       case x: Array[AnyRef]  => x
       case x: Array[Int]     => copy(x)
       case x: Array[Double]  => copy(x)

@@ -12,8 +12,6 @@
 
 package scala.collection.concurrent;
 
-import java.lang.Object;
-
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class MainNode<K, V> extends BasicNode {
@@ -31,7 +29,7 @@ abstract class MainNode<K, V> extends BasicNode {
     }
 
     public void WRITE_PREV(MainNode<K, V> nval) {
-	updater.set(this, nval);
+        updater.set(this, nval);
     }
 
     // do we need this? unclear in the javadocs...
