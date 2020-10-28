@@ -474,7 +474,6 @@ abstract class Constructors extends Statics with Transform with TypingTransforme
 
     // The constructor parameter corresponding to an accessor
     def parameter(acc: Symbol): Symbol = {
-      import scala.util.Try
       //works around the edge case where unexpandedName over-unexpands shenanigans like literal $$ or `$#`
       def unexpanded = parameterNamed(acc.unexpandedName.getterName)
       def expanded = parameterNamed(acc.getterName)

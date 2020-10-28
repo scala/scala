@@ -1,12 +1,13 @@
 package scala.tools.tastytest
 
-import org.junit.{Test => test}
+import org.junit.{Ignore, Test => test}
 import org.junit.Assert._
 
 import scala.util.Properties
 
 class TastyTestJUnit {
 
+  @Ignore // https://github.com/scala/scala/pull/9280#issuecomment-717804739
   @test def run(): Unit = TastyTest.runSuite(
     src                     = "run",
     srcRoot                 = assertPropIsSet(propSrc),
@@ -34,6 +35,7 @@ class TastyTestJUnit {
     additionalDottySettings = Nil
   ).get
 
+  @Ignore // https://github.com/scala/scala/pull/9280#issuecomment-717804739
   @test def neg(): Unit = TastyTest.negSuite(
     src                     = "neg",
     srcRoot                 = assertPropIsSet(propSrc),
