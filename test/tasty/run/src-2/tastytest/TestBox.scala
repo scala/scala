@@ -8,5 +8,9 @@ object TestBox extends Suite("TestBox") {
     assert(productString(Box(true)) === "Box(true)")
   }
 
+  test("Box(23).a is 23") {
+    assert(Box(23).a === 23)
+  }
+
   def productString(p: Product) = ScalaRunTime._toString(p)
 }

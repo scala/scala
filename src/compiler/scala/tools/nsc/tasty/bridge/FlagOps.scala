@@ -31,6 +31,8 @@ trait FlagOps { self: TastyUniverse =>
     val ObjectCreationFlags: TastyFlagSet = Object | Lazy | Final | Stable
     val ObjectClassCreationFlags: TastyFlagSet = Object | Final
     val SingletonEnumFlags: TastyFlagSet = Case | Static | Enum | Stable
+    val FieldAccessorFlags: TastyFlagSet = FieldAccessor | Stable
+    val LocalFieldFlags: TastyFlagSet = Private | Local
   }
 
   /**encodes a [[TastyFlagSet]] as [[scala.reflect]] flags and will ignore flags that can't be converted, such as

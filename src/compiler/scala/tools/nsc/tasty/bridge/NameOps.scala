@@ -54,6 +54,9 @@ trait NameOps { self: TastyUniverse =>
 
     val ContextFunctionN = raw"ContextFunction(\d+)".r
     val FunctionN        = raw"Function(\d+)".r
+
+    final val ErrorType: TypeName = TastyName.SimpleName("<error>").toTypeName
+
   }
 
 }
