@@ -134,6 +134,7 @@ abstract class SessionTest extends ReplTest  {
       margin.replaceSomeIn(prompted, continued)
     case pasted(cmd, pasted, null) =>
       cmd + pasted + "\u0004"
+    case x => throw new MatchError(x)
   }.mkString
 
   // Just the last line of the interactive prompt

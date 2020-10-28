@@ -542,7 +542,7 @@ trait ImplicitMemberShadowing {
 }
 
 /** A trait that encapsulates a constraint necessary for implicit conversion */
-trait Constraint
+sealed trait Constraint
 
 /** A constraint involving a type parameter which must be in scope */
 trait ImplicitInScopeConstraint extends Constraint {
@@ -571,7 +571,7 @@ trait KnownTypeClassConstraint extends TypeClassConstraint {
 }
 
 /** A constraint involving a type parameter */
-trait TypeParamConstraint extends Constraint {
+sealed trait TypeParamConstraint extends Constraint {
   /** The type parameter involved */
   def typeParamName: String
 }

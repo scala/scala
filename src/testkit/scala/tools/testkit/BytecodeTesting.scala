@@ -235,7 +235,8 @@ object BytecodeTesting {
   def assertSameSummary(actual: List[Instruction], expected: List[Any]): Unit = {
     def expectedString = expected.map({
       case s: String => s""""$s""""
-      case i: Int => opcodeToString(i, i)
+      case i: Int    => opcodeToString(i, i)
+      case x         => throw new MatchError(x)
     }).mkString("List(", ", ", ")")
     assert(actual.summary == expected, s"\nFound   : ${actual.summaryText}\nExpected: $expectedString")
   }

@@ -23,8 +23,8 @@ trait Helpers {
       val st = scala.reflect.runtime.universe.asInstanceOf[scala.reflect.internal.SymbolTable]
       val FreshName = new st.FreshNameExtractor
       def unapply[T <: Name](name: T): Option[T] = name.asInstanceOf[st.Name] match {
-        case FreshName(prefix) =>
-          Some((if (name.isTermName) TermName(prefix) else TypeName(prefix)).asInstanceOf[T])
+        case FreshName(prefix) => Some((if (name.isTermName) TermName(prefix) else TypeName(prefix)).asInstanceOf[T])
+        case x                 => throw new MatchError(x)
       }
     }
 
@@ -32,8 +32,7 @@ trait Helpers {
       case Ident(SimplifiedName(name))                  => Ident(name)
       case ValDef(mods, SimplifiedName(name), tpt, rhs) => ValDef(mods, name, transform(tpt), transform(rhs))
       case Bind(SimplifiedName(name), rhs)              => Bind(name, rhs)
-      case _ =>
-        super.transform(tree)
+      case _                                            => super.transform(tree)
     }
 
     def apply(tree: Tree): Tree = transform(tree)

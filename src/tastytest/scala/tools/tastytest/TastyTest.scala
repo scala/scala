@@ -117,26 +117,23 @@ object TastyTest {
             unexpectedFail += source
             System.err.println(output)
             printerrln(s"ERROR: $source did not compile when expected to. Perhaps it should match (**/*${ScalaFail.name})")
-          case Some(checkFileOpt) =>
-            checkFileOpt match {
-              case Some(checkFile) if Check.filter(checkFile) =>
-                processLines(checkFile) { stream =>
-                  val checkLines  = stream.iterator().asScala.toSeq
-                  val outputLines = Diff.splitIntoLines(output)
-                  val diff        = Diff.compareContents(outputLines, checkLines)
-                  if (diff.nonEmpty) {
-                    errors += source
-                    printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
-                  }
-                }
-              case Some(skipCheckFile) if SkipCheck.filter(skipCheckFile) =>
-                printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
-              case None =>
-                if (output.nonEmpty) {
-                  errors += source
-                  val diff = Diff.compareContents(output, "")
-                  printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
-                }
+          case Some(Some(checkFile)) if Check.filter(checkFile) =>
+            processLines(checkFile) { stream =>
+              val checkLines  = stream.iterator().asScala.toSeq
+              val outputLines = Diff.splitIntoLines(output)
+              val diff        = Diff.compareContents(outputLines, checkLines)
+              if (diff.nonEmpty) {
+                errors += source
+                printerrln(s"ERROR: $source failed, unexpected output.\n$diff")
+              }
+            }
+          case Some(Some(skipCheckFile)) =>
+            printwarnln(s"warning: skipping check on ${skipCheckFile.stripSuffix(SkipCheck.name)}")
+          case Some(None) =>
+            if (output.nonEmpty) {
+              errors += source
+              val diff = Diff.compareContents(output, "")
+              printerrln(s"ERROR: $source failed, no check file found for unexpected output.\n$diff")
             }
         }
       }

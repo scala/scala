@@ -326,28 +326,29 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   def toString(t: Type, sep: String)(implicit flags: TypeFlags): String = {
     // print type itself
     t match {
-      case ThisType(symbol) => sep + processName(symbol.path) + ".type"
+      case ThisType(symbol)            => sep + processName(symbol.path) + ".type"
       case SingleType(typeRef, symbol) => sep + processName(symbol.path) + ".type"
-      case ConstantType(constant) => sep + (constant match {
-        case null => "scala.Null"
-        case _: Unit => "scala.Unit"
-        case _: Boolean => "scala.Boolean"
-        case _: Byte => "scala.Byte"
-        case _: Char => "scala.Char"
-        case _: Short => "scala.Short"
-        case _: Int => "scala.Int"
-        case _: Long => "scala.Long"
-        case _: Float => "scala.Float"
-        case _: Double => "scala.Double"
-        case _: String => "java.lang.String"
-        case c: Class[_] => "java.lang.Class[" + c.getComponentType.getCanonicalName.replace("$", ".") + "]"
+      case ConstantType(constant)      => sep + (constant match {
+        case null              => "scala.Null"
+        case _: Unit           => "scala.Unit"
+        case _: Boolean        => "scala.Boolean"
+        case _: Byte           => "scala.Byte"
+        case _: Char           => "scala.Char"
+        case _: Short          => "scala.Short"
+        case _: Int            => "scala.Int"
+        case _: Long           => "scala.Long"
+        case _: Float          => "scala.Float"
+        case _: Double         => "scala.Double"
+        case _: String         => "java.lang.String"
+        case c: Class[_]       => "java.lang.Class[" + c.getComponentType.getCanonicalName.replace("$", ".") + "]"
         case e: ExternalSymbol => e.parent.get.path
-        case tp: Type => "java.lang.Class[" + toString(tp, sep) + "]"
+        case tp: Type          => "java.lang.Class[" + toString(tp, sep) + "]"
+        case x                 => throw new MatchError(x)
       })
       case TypeRefType(prefix, symbol, typeArgs) => sep + (symbol.path match {
         case "scala.<repeated>" => flags match {
           case TypeFlags(true) => toString(typeArgs.head) + "*"
-          case _ => "scala.Seq" + typeArgString(typeArgs)
+          case _               => "scala.Seq" + typeArgString(typeArgs)
         }
         case "scala.<byname>" => "=> " + toString(typeArgs.head)
         case _ => {
