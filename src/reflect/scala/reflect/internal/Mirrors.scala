@@ -103,7 +103,7 @@ trait Mirrors extends api.Mirrors {
       }
     }
 
-    @deprecated("Use overload that accepts a String.", "2.13.0")
+    @deprecated("Use overload that accepts a String.", "2.12.13")
     def getClassByName(fullname: Name): ClassSymbol =
       ensureClassSymbol(fullname.toString, getModuleOrClass(fullname.toString, fullname.length, newTypeName(_)))
 
@@ -123,7 +123,7 @@ trait Mirrors extends api.Mirrors {
     def getClassIfDefined(fullname: String): Symbol =
       getClassIfDefined(fullname, newTypeName(_))
 
-    @deprecated("Use overload that accepts a String.", "2.13.0")
+    @deprecated("Use overload that accepts a String.", "2.12.13")
     def getClassIfDefined(fullname: Name): Symbol =
       wrapMissing(getClassByName(fullname.toTypeName))
 
@@ -148,7 +148,7 @@ trait Mirrors extends api.Mirrors {
         case _                                                     => MissingRequirementError.notFound("object " + fullname)
       }
 
-    @deprecated("Use overload that accepts a String.", "2.13.0")
+    @deprecated("Use overload that accepts a String.", "2.12.13")
     def getModuleByName(fullname: Name): ModuleSymbol =
       getModuleByName(fullname.toString)
 
@@ -171,7 +171,7 @@ trait Mirrors extends api.Mirrors {
     def getModuleIfDefined(fullname: String): Symbol =
       wrapMissing(getModuleByName(fullname))
 
-    @deprecated("Use overload that accepts a String.", "2.13.0")
+    @deprecated("Use overload that accepts a String.", "2.12.13")
     def getModuleIfDefined(fullname: Name): Symbol =
       getModuleIfDefined(fullname.toString)
 
@@ -192,7 +192,7 @@ trait Mirrors extends api.Mirrors {
         case _                                                   => MissingRequirementError.notFound("package " + fullname)
       }
 
-    @deprecated("use overload that accepts a String.", since = "2.13.0")
+    @deprecated("use overload that accepts a String.", since = "2.12.13")
     def getPackage(fullname: TermName): ModuleSymbol =
       getPackage(fullname.toString)
     def getPackage(fullname: String): ModuleSymbol =

@@ -21,7 +21,7 @@ trait FrontEnds {
 
   def echo(pos: Position, msg: String): Unit = universe.reporter.echo(pos, msg)
 
-  @deprecated("Use echo, info messages are always forced", since="2.13.0")
+  @deprecated("Use echo, info messages are always forced", since="2.12.13")
   def info(pos: Position, msg: String, force: Boolean): Unit = universe.reporter.echo(pos, msg)
 
   def hasWarnings: Boolean = universe.reporter.hasErrors
