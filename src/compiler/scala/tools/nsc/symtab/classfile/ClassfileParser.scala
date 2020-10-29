@@ -81,6 +81,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
   protected def moduleClass: Symbol = staticModule.moduleClass
   protected val TASTYUUIDLength: Int = 16
   private var sawPrivateConstructor = false
+  private var YtastyReader          = false
 
   private def ownerForFlags(jflags: JavaAccFlags) = if (jflags.isStatic) moduleClass else clazz
 
@@ -160,6 +161,7 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         this.clazz        = clazz
         this.staticModule = module
         this.isScala      = false
+        this.YtastyReader = settings.YtastyReader
 
         val magic = in.getInt(in.bp)
         if (magic != JAVA_MAGIC && file.name.endsWith(".sig")) {
@@ -1114,6 +1116,8 @@ abstract class ClassfileParser(reader: ReusableInstance[ReusableDataReader]) {
         case tpnme.ScalaATTR =>
           isScalaRaw = true
           i = numAttrs
+        case tpnme.TASTYATTR if !YtastyReader =>
+          MissingRequirementError.signal(s"Add -Ytasty-reader to scalac options to parse the TASTy in $file")
         case tpnme.TASTYATTR =>
           isTASTY = true
           TASTYAttrLen = attrLen

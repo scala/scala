@@ -8,6 +8,8 @@ TASTy is an intermediate representation of a Scala program after type checking a
 
 ### Compiler flags
 
+- `-Ytasty-reader` enables the support for reading Scala 3's TASTy files.
+
 - `-Ydebug-tasty` enables rich output when traversing tasty files, important for tracing the history of events when diagnosing errors.
 
 - `-Ytasty-no-annotations` ignores all annotations on tasty symbols, may be useful for ignoring complex annotations that are unsupported, but will prevent safety checks for pattern matching.

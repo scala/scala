@@ -60,7 +60,7 @@ object TastyTest {
 
   private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
-    successWhen(Scalac.scalac(out, additionalSettings, sources:_*))("scalac failed to compile sources.")
+    successWhen(Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, sources:_*))("scalac failed to compile sources.")
   }
 
   private def scalacNeg(out: String, additionalSettings: Seq[String], files: String*): Try[Unit] = {
@@ -89,7 +89,7 @@ object TastyTest {
           }
           val compiled = Console.withErr(byteArrayStream) {
             Console.withOut(byteArrayStream) {
-              Scalac.scalac(out, additionalSettings, source)
+              Scalac.scalac(out, "-Ytasty-reader" +: additionalSettings, source)
             }
           }
           byteArrayStream.flush()
