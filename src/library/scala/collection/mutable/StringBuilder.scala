@@ -12,8 +12,6 @@
 
 package scala.collection.mutable
 
-import java.lang.String
-
 import scala.collection.{IterableFactoryDefaults, IterableOnce}
 import scala.collection.immutable.WrappedString
 
@@ -468,6 +466,14 @@ final class StringBuilder(val underlying: java.lang.StringBuilder) extends Abstr
    *  @return             the last applicable index where target occurs, or -1 if not found.
    */
   def lastIndexOf(str: String, fromIndex: Int): Int = underlying.lastIndexOf(str, fromIndex)
+
+  /** Tests whether this builder is empty.
+   *
+   *  This method is required for JDK15+ compatibility
+   *
+   *  @return  `true` if this builder contains nothing, `false` otherwise.
+   */
+  override def isEmpty: Boolean = underlying.length() == 0
 }
 
 object StringBuilder {
