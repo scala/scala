@@ -166,6 +166,25 @@ object ExecutionContext {
     override final def reportFailure(t: Throwable): Unit = defaultReporter(t)
   }
 
+  /**
+   * This `ExecutionContext` is ideally suited to execute short-lived tasks on the `global` `ExecutionContext` as it
+   * attempts to locally batch the execution of nested tasks.
+   *
+   * WARNING: long-running and/or blocking tasks should be demarcated within `scala.concurrent.blocking`-blocks,
+   *          to ensure that any pending tasks in the current batch can be executed by another thread on `global`.
+   */
+  private[scala] lazy val opportunistic: ExecutionContextExecutor = new ExecutionContextExecutor with BatchingExecutor {
+    final override def submitForExecution(runnable: Runnable): Unit = global.execute(runnable)
+
+    final override def execute(runnable: Runnable): Unit =
+      if ((!runnable.isInstanceOf[impl.Promise.Transformation[_,_]] || runnable.asInstanceOf[impl.Promise.Transformation[_,_]].benefitsFromBatching) && runnable.isInstanceOf[Batchable])
+        submitAsyncBatched(runnable)
+      else
+        submitForExecution(runnable)
+
+    override final def reportFailure(t: Throwable): Unit = global.reportFailure(t)
+  }
+
   object Implicits {
     /**
      * The implicit global `ExecutionContext`. Import `global` when you want to provide the global
