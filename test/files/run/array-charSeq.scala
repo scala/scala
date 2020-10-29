@@ -1,6 +1,6 @@
 object Test {
   val arr = Array[Char]('a' to 'i': _*)
-  var xs: CharSequence = arr
+  var xs: CharSequence = ArrayCharSequence(arr)
   val hash = xs.hashCode
 
   def check(chars: CharSequence) {

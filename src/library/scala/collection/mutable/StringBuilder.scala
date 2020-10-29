@@ -447,6 +447,15 @@ final class StringBuilder(private val underlying: JavaStringBuilder)
    *  @return  the string assembled by this StringBuilder
    */
   def result(): String = toString
+
+
+  /** Tests whether this builder is empty.
+   *
+   *  This method is required for JDK15+ compatibility
+   *
+   *  @return  `true` if this builder contains nothing, `false` otherwise.
+   */
+  override def isEmpty: Boolean = underlying.length() == 0
 }
 
 object StringBuilder {
