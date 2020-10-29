@@ -1,0 +1,10 @@
+TestPolymorphicFuncs_fail.scala:4: error: Unsupported Scala 3 polymorphic function type in result: [T](t: T): T; found in method id in object tastytest.PolymorphicFuncs.
+  def test1 = PolymorphicFuncs.id(23) // error
+                               ^
+TestPolymorphicFuncs_fail.scala:5: error: Unsupported Scala 3 polymorphic function type in parameter value f: [T](t: T): T; found in method takesId in object tastytest.PolymorphicFuncs.
+  def test2 = PolymorphicFuncs.takesId(new PolyFunction{def apply[T](t: T): T = t}) // error
+                               ^
+TestPolymorphicFuncs_fail.scala:7: error: Unsupported Scala 3 polymorphic function type in bounds of type F: [T](t: T): T; found in class tastytest.PolymorphicFuncs.PolyBox.
+    val box = new PolymorphicFuncs.PolyBox[PolyFunction{def apply[T](t: T): T}] // error
+                                   ^
+3 errors

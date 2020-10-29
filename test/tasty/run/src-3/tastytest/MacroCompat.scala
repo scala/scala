@@ -28,9 +28,9 @@ object MacroCompat {
     def polyImpl[T: Type](using QuoteContext) = Expr(summon[Type[T]].show)
 
     def posImpl(using qctx: QuoteContext): Expr[Position] = {
-      import qctx.tasty.{given _}
-      val name = qctx.tasty.rootPosition.sourceFile.jpath.getFileName.toString
-      val line = qctx.tasty.rootPosition.startLine + 1
+      import qctx.reflect.given
+      val name = qctx.reflect.rootPosition.sourceFile.jpath.getFileName.toString
+      val line = qctx.reflect.rootPosition.startLine + 1
       '{ Position(${Expr(name)}, ${Expr(line)}) }
     }
 

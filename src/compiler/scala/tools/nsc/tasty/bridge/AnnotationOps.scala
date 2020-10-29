@@ -23,21 +23,41 @@ trait AnnotationOps { self: TastyUniverse =>
       u.AnnotationInfo(tpt.tpe, args, Nil)
     case u.Apply(u.TypeApply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), tpargs), args) =>
       u.AnnotationInfo(u.appliedType(tpt.tpe, tpargs.map(_.tpe)), args, Nil)
+    case u.New(tpt) => // special case for `val $values: Array[E] @unchecked` for scala 3 enums
+      u.AnnotationInfo(tpt.tpe, Nil, Nil)
     case _ =>
       throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")
   }
 
-  final class DeferredAnnotation(tree: Symbol => Context => Tree) {
-    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
-      val atree = tree(annotee)(ctx)
-      ctx.log(s"annotation of $annotee = $atree")
-      mkAnnotation(atree)
-    }
+  abstract class DeferredAnnotation {
+    private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo
     private[bridge] def lzy(annotee: Symbol)(implicit ctx: Context): u.LazyAnnotationInfo = {
       u.AnnotationInfo.lazily {
         eager(annotee)
       }
     }
+  }
+
+  object DeferredAnnotation {
+
+    def fromTree(tree: Symbol => Context => Tree) =
+      new FromTree(tree)
+
+    class FromTree(tree: Symbol => Context => Tree) extends DeferredAnnotation {
+      private[bridge] def eager(annotee: Symbol)(implicit ctx: Context): u.AnnotationInfo = {
+        val atree = tree(annotee)(ctx)
+        ctx.log(s"annotation on $annotee: $atree")
+        val annot = mkAnnotation(atree)
+        val annotSym = annot.tpe.typeSymbol
+        if ((annotSym eq defn.AlphaAnnotationClass) || (annotSym eq defn.StaticMethodAnnotationClass)) {
+          annotee.addAnnotation(
+            u.definitions.CompileTimeOnlyAttr,
+            u.Literal(u.Constant(unsupportedMessage(s"annotation on $annotee: @$annot"))))
+        }
+        annot
+      }
+    }
+
   }
 
 }

@@ -11,8 +11,9 @@ object SourceKind {
   case object ScalaFail extends SourceKind("_fail.scala")()
   case object Check     extends SourceKind(".check")()
   case object SkipCheck extends SourceKind(".skipcheck")()
+  case object Java      extends SourceKind(".java")()
 
-  def whitelist(kinds: Set[SourceKind], paths: String*): Seq[String] =
+  def filterByKind(kinds: Set[SourceKind], paths: String*): Seq[String] =
     if (kinds.isEmpty) Nil
     else paths.filter(kinds.foldLeft(NoSource.filter)((filter, kind) => p => kind.filter(p) || filter(p)))
 }

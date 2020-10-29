@@ -83,7 +83,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
     ownerTree = new OwnerTree(NoAddr, 0, rdr.fork, reader.endAddr)
     def indexTopLevel(implicit ctx: Context): Unit = rdr.indexStats(reader.endAddr)
     if (rdr.isTopLevel)
-      inIndexStatsContext(indexTopLevel(_))
+      inIndexScopedStatsContext(indexTopLevel(_))
   }
 
   /** A completer that captures the current position and context, which then uses the position to discover the symbol
@@ -282,8 +282,6 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         tpd.Constant(null)
       case CLASSconst =>
         tpd.Constant(readType())
-      case ENUMconst =>
-        tpd.Constant(readTypeRef().termSymbol)
     }
 
     /** Read a type */
@@ -628,7 +626,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         rdr.readTerm()(ctx)
       })(annotCtx.retractMode(IndexScopedStats))
       ctx.log(s">>> $start LazyAnnotationRef[${annotSym.fullName}](<lazy>)")
-      new DeferredAnnotation(deferred)
+      DeferredAnnotation.fromTree(deferred)
     }
 
     /** Create symbols for the definitions in the statement sequence between
@@ -769,19 +767,18 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               else tpe
             )
           case TYPEDEF | TYPEPARAM =>
-            checkUnsupportedFlags(repr.tastyOnlyFlags &~ (Enum | Open | Opaque | Exported | SuperTrait))
+            val allowedTypeFlags = Enum | Open | Exported | SuperTrait
+            val allowedClassFlags = allowedTypeFlags | Opaque
             if (sym.isClass) {
+              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedClassFlags)
               sym.owner.ensureCompleted()
               readTemplate()(localCtx)
             }
             else {
-              // sym.setFlag(Provisional) // TODO [tasty]: is there an equivalent in scala 2?
+              checkUnsupportedFlags(repr.tastyOnlyFlags &~ allowedTypeFlags)
               val rhs = readTpt()(localCtx)
-              // TODO [tasty]: if opaque type alias will be supported, unwrap `type bounds with alias` to bounds and then
-              //               refine self type of the owner to be aware of the alias.
               ctx.setInfo(sym, defn.NormalisedBounds(rhs.tpe, sym))
               if (sym.is(Param)) sym.reset(Private | Protected)
-              // if sym.isOpaqueAlias then sym.typeRef.recomputeDenot() // make sure we see the new bounds from now on
               // sym.resetFlag(Provisional)
             }
           case PARAM =>
@@ -930,11 +927,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
 
       def completeSelectType(name: TastyName.TypeName)(implicit ctx: Context): Tree = completeSelect(name)
 
-      def completeSelect(name: TastyName)(implicit ctx: Context): Tree = {
-        val qual     = readTerm()
-        val qualType = qual.tpe // TODO [tasty]: qual.tpe.widenIfUnstable
-        tpd.Select(qual, name)(namedMemberOfPrefix(qualType, name))
-      }
+      def completeSelect(name: TastyName)(implicit ctx: Context): Tree = tpd.Select(readTerm(), name)
 
       def completeSelectionParent(name: TastyName)(implicit ctx: Context): Tree = {
         assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
@@ -965,17 +958,15 @@ class TreeUnpickler[Tasty <: TastyUniverse](
         val result =
           (tag: @switch) match {
             case SELECTin =>
-              val sname = readTastyName()
+              val name = readTastyName()
               val qual  = readTerm()
               if (inParentCtor) {
-                assert(sname.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
+                assert(name.isSignedConstructor, s"Parent of ${ctx.owner} is not a constructor.")
                 skipTree()
                 qual
               }
               else {
-                val owner   = readType()
-                val qualTpe = qual.tpe // qual.tpe.widenIfUnstable
-                tpd.Select(qual, sname)(namedMemberOfTypeWithPrefix(qualTpe, owner, sname))
+                tpd.Select(readType())(qual, name)
               }
             case SUPER =>
               val qual = readTerm()
@@ -1018,8 +1009,7 @@ class TreeUnpickler[Tasty <: TastyUniverse](
               val lo    = readTpt()
               val hi    = if (currentAddr == end) lo else readTpt()
               val alias = if (currentAddr == end) untpd.EmptyTree else readTpt()
-              if (alias != untpd.EmptyTree) alias // only for opaque type alias
-              else tpd.TypeBoundsTree(lo, hi)
+              tpd.TypeBoundsTree(lo, hi, alias)
             case BLOCK =>
               if (inParentCtor | ctx.mode.is(ReadMacro)) {
                 val exprReader = fork

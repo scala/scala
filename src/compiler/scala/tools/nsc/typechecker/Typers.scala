@@ -1774,7 +1774,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
      *    <li>no two parents define same symbol.</li>
      *  </ul>
      */
-    def validateParentClasses(parents: List[Tree], selfType: Type): Unit = {
+    def validateParentClasses(parents: List[Tree], selfType: Type, clazzIsTrait: Boolean): Unit = {
       val pending = ListBuffer[AbsTypeError]()
       def validateDynamicParent(parent: Symbol, parentPos: Position) =
         if (parent == DynamicClass) checkFeature(parentPos, currentRun.runDefinitions.DynamicsFeature)
@@ -1793,6 +1793,16 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
               val ps = psym.info.parents
               if (!ps.isEmpty && !superclazz.isSubClass(ps.head.typeSymbol))
                 pending += ParentSuperSubclassError(parent, superclazz, ps.head.typeSymbol, psym)
+              if (!clazzIsTrait) {
+                // TODO perhaps there can be a flag to skip this when we know there can be no Scala 3 definitions
+                // or otherwise use an optimised representation for trait parameters
+                (parent.tpe :: ps).collectFirst {
+                  case p if p.typeSymbol.hasAttachment[DottyParameterisedTrait] =>
+                    p.typeSymbol.attachments.get[DottyParameterisedTrait].foreach( attach =>
+                      pending += ParentIsScala3TraitError(parent, p.typeSymbol, attach.params, psym)
+                    )
+                }
+              }
             } else {
               pending += ParentNotATraitMixinError(parent, psym)
             }
@@ -2018,7 +2028,7 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
       val body1 = pluginsEnterStats(this, namer.expandMacroAnnotations(templ.body))
       enterSyms(context.outer.make(templ, clazz, clazz.info.decls), body1)
       if (!templ.isErrorTyped) // if `parentTypes` has invalidated the template, don't validate it anymore
-      validateParentClasses(parents1, selfType)
+      validateParentClasses(parents1, selfType, clazz.isTrait)
       if (clazz.isCase)
         validateNoCaseAncestor(clazz)
       if (clazz.isTrait && hasSuperArgs(parents1.head))

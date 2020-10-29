@@ -32,9 +32,14 @@ trait TypeOps { self: TastyUniverse =>
   @inline final def mergeableParams(t: Type, u: Type): Boolean =
     t.typeParams.size == u.typeParams.size
 
-  @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in bounds of ${ctx.owner}")
-  @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in bounds of ${ctx.owner}")
+  /** `*:` erases to either TupleXXL or Product */
+  @inline final def tupleConsIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"generic tuple type *: in ${boundsString(ctx.owner)}")
+  @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"function type with more than 22 parameters in ${boundsString(ctx.owner)}: $tpeStr")
+  @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type in ${boundsString(ctx.owner)}: $tpeStr")
+  @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
+  @inline final def matchTypeIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"match type in ${boundsString(ctx.owner)}")
   @inline final def erasedRefinementIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"erased modifier in refinement of ${ctx.owner}")
+  @inline final def polyFuncIsUnsupported[T](tpe: Type)(implicit ctx: Context): T = unsupportedError(s"polymorphic function type in ${boundsString(ctx.owner)}: $tpe")
 
   @inline final def isConstantType(tpe: Type): Boolean = tpe.isInstanceOf[u.ConstantType]
 
@@ -72,6 +77,19 @@ trait TypeOps { self: TastyUniverse =>
 
     final val ChildAnnot: Symbol = u.definitions.ChildAnnotationClass
     final val RepeatedAnnot: Symbol = u.definitions.RepeatedAnnotationClass
+    final val AlphaAnnotationClass: Symbol = u.definitions.AlphaAnnotationClass
+    final val StaticMethodAnnotationClass: Symbol = u.definitions.StaticMethodAnnotationClass
+
+    object PolyFunctionType {
+
+      val PolyFunctionClass: Symbol = u.definitions.PolyFunctionClass
+
+      def unapply(tpe: Type): Boolean = tpe match {
+        case polyfnRef: u.TypeRef => polyfnRef.sym eq PolyFunctionClass
+        case _                    => false
+      }
+
+    }
 
     final val NoType: Type = u.NoType
 
@@ -82,6 +100,9 @@ trait TypeOps { self: TastyUniverse =>
       override def isTrivial: Boolean = true
       def originalFlagSet: TastyFlagSet = EmptyTastyFlags
     }
+
+    private[bridge] def CopyInfo(underlying: u.TermSymbol, originalFlagSet: TastyFlagSet): TastyRepr =
+      new CopyCompleter(underlying, originalFlagSet)
 
     def ByNameType(arg: Type): Type = u.definitions.byNameType(arg)
     def TypeBounds(lo: Type, hi: Type): Type = u.TypeBounds.apply(lo, hi)
@@ -97,7 +118,12 @@ trait TypeOps { self: TastyUniverse =>
     def ConstantType(c: Constant): Type = u.ConstantType(c)
     def IntersectionType(tps: Type*): Type = u.intersectionType(tps.toList)
     def IntersectionType(tps: List[Type]): Type = u.intersectionType(tps)
-    def AnnotatedType(tpe: Type, annot: Tree): Type = u.AnnotatedType(mkAnnotation(annot) :: Nil, tpe)
+
+    def AnnotatedType(tpe: Type, annot: Tree): Type = tpe match {
+      case u.AnnotatedType(annots, tpe) => u.AnnotatedType(annots :+ mkAnnotation(annot), tpe)
+      case _                            => u.AnnotatedType(mkAnnotation(annot) :: Nil   , tpe)
+    }
+
     def SuperType(thisTpe: Type, superTpe: Type): Type = u.SuperType(thisTpe, superTpe)
     def LambdaFromParams(typeParams: List[Symbol], ret: Type): Type = u.PolyType(typeParams, lambdaResultType(ret))
     def RecType(run: RecType => Type)(implicit ctx: Context): Type = new RecType(run).parent
@@ -113,6 +139,8 @@ trait TypeOps { self: TastyUniverse =>
     def RefinedType(parent: Type, name: TastyName, refinedCls: Symbol, tpe: Type)(implicit ctx: Context): Type = {
       val decl = ctx.newRefinementSymbol(parent, refinedCls, name, tpe)
       parent match {
+        case defn.PolyFunctionType() =>
+          polyFuncIsUnsupported(tpe)
         case nested: u.RefinedType =>
           mkRefinedTypeWith(nested.parents, refinedCls, nested.decls.cloneScope.tap(_.enter(decl)))
         case _ =>
@@ -129,9 +157,21 @@ trait TypeOps { self: TastyUniverse =>
 
     def AppliedType(tycon: Type, args: List[Type])(implicit ctx: Context): Type = {
 
+      def formatFnType(arrow: String, arity: Int, args: List[Type]): String = {
+        val len = args.length
+        assert(len == arity + 1) // tasty should be type checked already
+        val res = args.last
+        val params = args.init
+        val paramsBody = params.mkString(",")
+        val argList = if (len == 2) paramsBody else s"($paramsBody)"
+        s"$argList $arrow $res"
+      }
+
       def typeRefUncurried(tycon: Type, args: List[Type]): Type = tycon match {
         case tycon: u.TypeRef if tycon.typeArgs.nonEmpty =>
           unsupportedError(s"curried type application $tycon[${args.mkString(",")}]")
+        case ContextFunctionType(n) => ctxFnIsUnsupported(formatFnType("?=>", n, args))
+        case FunctionXXLType(n)     => bigFnIsUnsupported(formatFnType("=>", n, args))
         case _ =>
           u.appliedType(tycon, args)
       }
@@ -271,6 +311,8 @@ trait TypeOps { self: TastyUniverse =>
           })
         }
         ErasedTypeRef(name.toTypeName, dims)
+      case u.ErrorType =>
+        ErasedTypeRef(tpnme.ErrorType, 0)
     }
 
   }
@@ -280,18 +322,41 @@ trait TypeOps { self: TastyUniverse =>
    */
   case object AndTpe extends Type
 
+  case class ContextFunctionType(arity: Int) extends Type {
+    assert(arity > 0)
+  }
+
+  case class FunctionXXLType(arity: Int) extends Type {
+    assert(arity > 22)
+  }
+
+  private val SyntheticScala3Type =
+    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:)$$".r
+
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
-    if (prefix.typeSymbol === u.definitions.ScalaPackage && (
-           name === tpnme.And
-        || name === tpnme.Or
-        || name === tpnme.AnyKind) ) {
-      if (name === tpnme.And) AndTpe
-      else if (name === tpnme.AnyKind) u.definitions.AnyTpe // TODO [tasty]: scala.AnyKind can appear in upper bounds of raw type wildcards, but elsewhere it is unclear if it should be erased or error
-      else unionIsUnsupported
+    import scala.tools.tasty.TastyName._
+
+    def lookupType = namedMemberOfTypeWithPrefix(prefix, space, name)
+
+    // we escape some types in the scala package especially
+    if (prefix.typeSymbol === u.definitions.ScalaPackage) {
+      name match {
+        case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
+          case tpnme.And                                   => AndTpe
+          case tpnme.Or                                    => unionIsUnsupported
+          case tpnme.ContextFunctionN(n) if (n.toInt > 0)  => ContextFunctionType(n.toInt)
+          case tpnme.FunctionN(n)        if (n.toInt > 22) => FunctionXXLType(n.toInt)
+          case tpnme.TupleCons                             => tupleConsIsUnsupported
+          case tpnme.AnyKind                               => u.definitions.AnyTpe
+          case _                                           => lookupType
+        }
+
+        case _ => lookupType
+      }
     }
     else {
-      namedMemberOfTypeWithPrefix(prefix, space, name)
+      lookupType
     }
   }
 
@@ -327,6 +392,14 @@ trait TypeOps { self: TastyUniverse =>
     /**Compute and set the info for the symbol in the given Context
      */
     def computeInfo(sym: Symbol)(implicit ctx: Context): Unit
+  }
+
+  private[TypeOps] class CopyCompleter(underlying: u.TermSymbol, final val originalFlagSet: TastyFlagSet)
+      extends u.LazyType with TastyRepr with u.FlagAgnosticCompleter {
+    override final def complete(sym: Symbol): Unit = {
+      underlying.ensureCompleted()
+      sym.info = underlying.tpe
+    }
   }
 
   def prefixedRef(prefix: Type, sym: Symbol): Type = {

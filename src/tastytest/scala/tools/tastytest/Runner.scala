@@ -41,7 +41,7 @@ class Runner private (classloader: ScalaClassLoader) {
   }
 }
 
-object Runner {
+object Runner extends Script.Command {
 
   private val name = "scala.tools.tastytest.internal.Runner"
 

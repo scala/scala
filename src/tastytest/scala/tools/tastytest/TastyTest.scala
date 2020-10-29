@@ -26,10 +26,11 @@ object TastyTest {
   } yield ()
 
   def posSuite(src: String, srcRoot: String, pkgName: String, outDir: Option[String], additionalSettings: Seq[String], additionalDottySettings: Seq[String]): Try[Unit] = for {
-    (pre, src2, src3) <- getRunSources(srcRoot/src)
+    (pre, src2, src3) <- getRunSources(srcRoot/src, preFilters = Set(Scala, Java))
     _                 =  println(s"Sources to compile under test: ${src2.map(cyan).mkString(", ")}")
     out               <- outDir.fold(tempDir(pkgName))(dir)
-    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, pre:_*)
+    _                 <- javacPos(out, sourceRoot=srcRoot/src/"pre", filterByKind(Set(Java), pre:_*):_*)
+    _                 <- scalacPos(out, sourceRoot=srcRoot/src/"pre", additionalSettings, filterByKind(Set(Scala), pre:_*):_*)
     _                 <- dotcPos(out, sourceRoot=srcRoot/src/"src-3", additionalDottySettings, src3:_*)
     _                 <- scalacPos(out, sourceRoot=srcRoot/src/"src-2", additionalSettings, src2:_*)
   } yield ()
@@ -57,6 +58,11 @@ object TastyTest {
     _                    <- dotcPos(out2, classpath(out1, out2), sourceRoot=srcRoot/src/"src-3-B", additionalDottySettings, src3B:_*)
     _                    <- scalacNeg(out2, additionalSettings, src2:_*)
   } yield ()
+
+  private def javacPos(out: String, sourceRoot: String, sources: String*): Try[Unit] = {
+    println(s"compiling sources in ${yellow(sourceRoot)} with javac.")
+    successWhen(Javac.javac(out, sources:_*))("javac failed to compile sources.")
+  }
 
   private def scalacPos(out: String, sourceRoot: String, additionalSettings: Seq[String], sources: String*): Try[Unit] = {
     println(s"compiling sources in ${yellow(sourceRoot)} with scalac.")
@@ -163,7 +169,7 @@ object TastyTest {
     for {
       (src2, src3) <- get2And3Sources(root, src2Filters, src3Filters)
       pre          <- getFiles(root/"pre")
-    } yield (whitelist(preFilters, pre:_*), src2, src3)
+    } yield (filterByKind(preFilters, pre:_*), src2, src3)
   }
 
   private def getMovePreChangeSources(root: String,
@@ -175,7 +181,7 @@ object TastyTest {
     for {
       (src2, src3) <- get2And3Sources(root, src2Filters, src3Filters)
       (preA, preB) <- getPreChangeSources(root, preAFilters, preBFilters)
-    } yield (whitelist(preAFilters, preA:_*), whitelist(preBFilters, preB:_*), src2, src3)
+    } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*), src2, src3)
   }
 
   private def get2And3Sources(root: String, src2Filters: Set[SourceKind] = Set(Scala),
@@ -184,7 +190,7 @@ object TastyTest {
     for {
       src2 <- getFiles(root/"src-2")
       src3 <- getFiles(root/"src-3")
-    } yield (whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3:_*))
+    } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3:_*))
   }
 
   private def getPreChangeSources(root: String, preAFilters: Set[SourceKind] = Set(Scala),
@@ -193,7 +199,7 @@ object TastyTest {
     for {
       preA <- getFiles(root/"pre-a")
       preB <- getFiles(root/"pre-b")
-    } yield (whitelist(preAFilters, preA:_*), whitelist(preBFilters, preB:_*))
+    } yield (filterByKind(preAFilters, preA:_*), filterByKind(preBFilters, preB:_*))
   }
 
   private def getNegIsolatedSources(root: String, src2Filters: Set[SourceKind] = Set(Scala),
@@ -203,7 +209,7 @@ object TastyTest {
       src2  <- getFiles(root/"src-2")
       src3A <- getFiles(root/"src-3-A")
       src3B <- getFiles(root/"src-3-B")
-    } yield (whitelist(src2Filters, src2:_*), whitelist(src3Filters, src3A:_*), whitelist(src3Filters, src3B:_*))
+    } yield (filterByKind(src2Filters, src2:_*), filterByKind(src3Filters, src3A:_*), filterByKind(src3Filters, src3B:_*))
   }
 
   private def visibleClasses(classpath: String, pkgName: String, src2: String*): Try[Seq[String]] = Try {

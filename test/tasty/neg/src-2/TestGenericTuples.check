@@ -1,0 +1,13 @@
+TestGenericTuples_fail.scala:4: error: Unsupported Scala 3 generic tuple type *: in result; found in method bigtuple in object tastytest.GenericTuples.
+  val test1 = GenericTuples.bigtuple // error
+                            ^
+TestGenericTuples_fail.scala:6: error: Unsupported Scala 3 generic tuple type *: in result; found in method pair in object tastytest.GenericTuples.
+  val test3 = GenericTuples.pair // error
+                            ^
+TestGenericTuples_fail.scala:7: error: Unsupported Scala 3 generic tuple type *: in result; found in method simpleTuple in object tastytest.GenericTuples.
+  val test4 = GenericTuples.simpleTuple // error
+                            ^
+TestGenericTuples_fail.scala:9: error: Unsupported Scala 3 generic tuple type *: in bounds of type T; found in method consumeBigTuple in object tastytest.GenericTuples.
+  val test6 = GenericTuples.consumeBigTuple((1, "")) // error
+                            ^
+4 errors

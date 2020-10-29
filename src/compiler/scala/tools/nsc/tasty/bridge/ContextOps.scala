@@ -38,6 +38,12 @@ trait ContextOps { self: TastyUniverse =>
     s"$kind ${owner.nameString}"
   }
 
+  def boundsString(owner: Symbol): String = {
+    if (owner.isType) s"bounds of $owner"
+    else if (owner.isOneOf(Param | ParamSetter)) s"parameter $owner"
+    else "result"
+  }
+
   @inline final def unsupportedTermTreeError[T](noun: String)(implicit ctx: Context): T =
     unsupportedError(
       if (ctx.mode.is(ReadAnnotation)) s"$noun in an annotation of ${describeOwner(ctx.owner)}; note that complex trees are not yet supported for Annotations"
@@ -45,7 +51,11 @@ trait ContextOps { self: TastyUniverse =>
     )
 
   @inline final def unsupportedError[T](noun: String)(implicit ctx: Context): T = {
-    typeError(s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}.")
+    typeError(unsupportedMessage(noun))
+  }
+
+  @inline final def unsupportedMessage(noun: String)(implicit ctx: Context): String = {
+    s"Unsupported Scala 3 $noun; found in ${location(ctx.globallyVisibleOwner)}."
   }
 
   final def location(owner: Symbol): String = {
@@ -136,7 +146,7 @@ trait ContextOps { self: TastyUniverse =>
     final def ignoreAnnotations: Boolean = u.settings.YtastyNoAnnotations
     final def verboseDebug: Boolean = u.settings.debug
 
-    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro || decl.isTraitParamAccessor
+    def requiresLatentEntry(decl: Symbol): Boolean = decl.isScala3Macro
     def neverEntered(decl: Symbol): Boolean = decl.isPureMixinCtor
 
     def canEnterOverload(decl: Symbol): Boolean = {
@@ -271,7 +281,7 @@ trait ContextOps { self: TastyUniverse =>
     }
 
     protected final def enterIfUnseen0(decls: u.Scope, decl: Symbol): Unit = {
-      if (allowsOverload(decl)) {
+      if (allowsOverload(decl) || decl.isParamGetter) {
         if (canEnterOverload(decl)) {
           decls.enter(decl)
         }
@@ -291,13 +301,24 @@ trait ContextOps { self: TastyUniverse =>
     final def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
       adjustSymbol(unsafeNewUntypedClassSymbol(owner, typeName, flags), info, privateWithin)
 
-    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol =
-      if (flags.is(Param)) {
+    private final def unsafeNewUntypedSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet): Symbol = {
+      if (flags.isOneOf(Param | ParamSetter)) {
         if (name.isTypeName) {
           owner.newTypeParameter(encodeTypeName(name.toTypeName), u.NoPosition, encodeFlagSet(flags))
         }
         else {
-          owner.newValueParameter(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
+          if (owner.isClass && flags.is(FlagSets.FieldAccessorFlags)) {
+            val fieldFlags = flags &~ FlagSets.FieldAccessorFlags | FlagSets.LocalFieldFlags
+            val termName   = encodeTermName(name)
+            val getter     = owner.newMethodSymbol(termName, u.NoPosition, encodeFlagSet(flags))
+            val fieldSym   = owner.newValue(termName, u.NoPosition, encodeFlagSet(fieldFlags))
+            fieldSym.info  = defn.CopyInfo(getter, fieldFlags)
+            owner.rawInfo.decls.enter(fieldSym)
+            getter
+          }
+          else {
+            owner.newValueParameter(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
+          }
         }
       }
       else if (name === TastyName.Constructor) {
@@ -319,6 +340,7 @@ trait ContextOps { self: TastyUniverse =>
       else {
         owner.newMethodSymbol(encodeTermName(name), u.NoPosition, encodeFlagSet(flags))
       }
+    }
 
     private final def unsafeNewUntypedClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet): Symbol = {
       if (flags.is(FlagSets.ObjectClassCreationFlags)) {
@@ -553,9 +575,11 @@ trait ContextOps { self: TastyUniverse =>
       def reportParameterizedTrait(cls: Symbol, decls: u.Scope): Unit = {
         val traitParams = traitParamAccessors(cls).getOrElse(Iterable.empty)
         if (traitParams.nonEmpty) {
-          val parameters = traitParams.map(_.nameString)
-          val msg = s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
-          unsupportedError(msg)(this.withOwner(cls.owner))
+          log {
+            val parameters = traitParams.map(_.nameString)
+            s"parameterized trait ${parameters.mkString(s"${cls.nameString}(", ", ", ")")}"
+          }
+          cls.updateAttachment(new u.DottyParameterisedTrait(traitParams.toList))
         }
       }
 

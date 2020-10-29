@@ -118,6 +118,8 @@ trait StdAttachments {
 
   class DottyEnumSingleton(val name: String) extends PlainAttachment
 
+  class DottyParameterisedTrait(val params: List[Symbol])
+
   class QualTypeSymAttachment(val sym: Symbol)
 
   case object ConstructorNeedsFence extends PlainAttachment

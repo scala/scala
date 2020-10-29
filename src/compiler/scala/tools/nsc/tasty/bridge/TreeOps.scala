@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.TastyUniverse
+import scala.tools.nsc.tasty.{TastyUniverse, TastyModes}, TastyModes._
 
 import scala.tools.tasty.TastyName
 import scala.reflect.internal.Flags
@@ -36,14 +36,56 @@ trait TreeOps { self: TastyUniverse =>
   }
 
   object tpd {
-    @inline final def Constant(value: Any): Constant = u.Constant(value)
-    def Ident(name: TastyName)(tpe: Type): Tree = new TastyIdent(name).setType(tpe)
-    def Select(qual: Tree, name: TastyName)(tpe: Type): Tree = u.Select(qual, encodeTastyName(name)).setType(tpe)
-    def This(qual: TastyName.TypeName)(tpe: Type): Tree = u.This(encodeTypeName(qual)).setType(tpe)
-    def New(tpt: Tree): Tree = u.New(tpt).setType(safeClassType(tpt.tpe))
-    def SingletonTypeTree(ref: Tree): Tree = u.SingletonTypeTree(ref).setType(ref.tpe)
-    def ByNameTypeTree(arg: Tree): Tree = u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
-    def NamedArg(name: TastyName, value: Tree): Tree = u.NamedArg(u.Ident(encodeTastyName(name)), value).setType(value.tpe)
+
+    @inline final def Constant(value: Any): Constant =
+      u.Constant(value)
+
+    @inline final def Ident(name: TastyName)(tpe: Type): Tree =
+      new TastyIdent(name).setType(tpe)
+
+    @inline final def Select(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => namedMemberOfPrefix(qual.tpe, name))
+
+    @inline final def Select(owner: Type)(qual: Tree, name: TastyName)(implicit ctx: Context): Tree =
+      selectImpl(qual, name)(implicit ctx => namedMemberOfTypeWithPrefix(qual.tpe, owner, name))
+
+    private def selectImpl(qual: Tree, name: TastyName)(lookup: Context => Type)(implicit ctx: Context): Tree = {
+
+      def selectName(qual: Tree, name: TastyName)(lookup: Context => Type) =
+        u.Select(qual, encodeTastyName(name)).setType(lookup(ctx))
+
+      def selectCtor(qual: Tree) =
+        u.Select(qual, u.nme.CONSTRUCTOR).setType(qual.tpe.typeSymbol.primaryConstructor.tpe)
+
+      if (ctx.mode.is(ReadAnnotation) && name.isSignedConstructor) {
+        val cls = qual.tpe.typeSymbol
+        cls.ensureCompleted() // need to force flags
+        if (cls.isJavaAnnotation)
+          selectCtor(qual)
+        else
+          selectName(qual, name)(lookup)
+      }
+      else {
+        selectName(qual, name)(lookup)
+      }
+
+    }
+
+    @inline final def This(qual: TastyName.TypeName)(tpe: Type): Tree =
+      u.This(encodeTypeName(qual)).setType(tpe)
+
+    @inline final def New(tpt: Tree): Tree =
+      u.New(tpt).setType(safeClassType(tpt.tpe))
+
+    @inline final def SingletonTypeTree(ref: Tree): Tree =
+      u.SingletonTypeTree(ref).setType(ref.tpe)
+
+    @inline final def ByNameTypeTree(arg: Tree): Tree =
+      u.gen.mkFunctionTypeTree(Nil, arg).setType(u.definitions.byNameType(arg.tpe))
+
+    @inline final def NamedArg(name: TastyName, value: Tree): Tree =
+      u.NamedArg(u.Ident(encodeTastyName(name)), value).setType(value.tpe)
+
     def Super(qual: Tree, mixId: TastyName.TypeName)(mixTpe: Type): Tree = {
       val owntype = (
         if (!mixId.isEmpty) mixTpe
@@ -60,9 +102,8 @@ trait TreeOps { self: TastyUniverse =>
 
     @inline final def TypeTree(tp: Type): Tree = u.TypeTree(tp)
 
-    def LambdaTypeTree(tparams: List[Symbol], body: Tree): Tree = {
+    @inline final def LambdaTypeTree(tparams: List[Symbol], body: Tree): Tree =
       u.TypeTree(defn.LambdaFromParams(tparams, body.tpe))
-    }
 
     def Macro(impl: Tree): Tree = impl match {
       case tree @ u.TypeApply(qual, args) =>
@@ -86,12 +127,19 @@ trait TreeOps { self: TastyUniverse =>
         tree
     }
 
-    def Typed(expr: Tree, tpt: Tree): Tree = u.Typed(expr, tpt).setType(tpt.tpe)
+    @inline final def Typed(expr: Tree, tpt: Tree): Tree = u.Typed(expr, tpt).setType(tpt.tpe)
 
-    def Apply(fun: Tree, args: List[Tree]): Tree = u.Apply(fun, args).setType(fnResult(fun.tpe))
+    @inline final def Apply(fun: Tree, args: List[Tree]): Tree = u.Apply(fun, args).setType(fnResult(fun.tpe))
 
-    def TypeApply(fun: Tree, args: List[Tree]): Tree =
-      u.TypeApply(fun, args).setType(tyconResult(fun.tpe, args.map(_.tpe)))
+    def TypeApply(fun: Tree, args: List[Tree]): Tree = {
+      if (u.definitions.isPredefMemberNamed(fun.tpe.termSymbol, u.TermName("classOf"))) {
+        assert(args.length == 1 && !fun.tpe.termSymbol.isOverloaded)
+        u.Literal(Constant(args.head.tpe))
+      }
+      else {
+        u.TypeApply(fun, args).setType(tyconResult(fun.tpe, args.map(_.tpe)))
+      }
+    }
 
     def If(cond: Tree, thenp: Tree, elsep: Tree): Tree =
       u.If(cond, thenp, elsep).setType(
@@ -99,7 +147,7 @@ trait TreeOps { self: TastyUniverse =>
         else u.lub(thenp.tpe :: elsep.tpe :: Nil)
       )
 
-    def SeqLiteral(trees: List[Tree], tpt: Tree): Tree = u.ArrayValue(tpt, trees).setType(tpt.tpe)
+    @inline final def SeqLiteral(trees: List[Tree], tpt: Tree): Tree = u.ArrayValue(tpt, trees).setType(tpt.tpe)
 
     def AppliedTypeTree(tpt: Tree, args: List[Tree])(implicit ctx: Context): Tree = {
       if (tpt.tpe === AndTpe) {
@@ -116,15 +164,22 @@ trait TreeOps { self: TastyUniverse =>
         tpd.TypeTree(u.definitions.scalaRepeatedType(tpt.tpe.typeArgs.head))
       }
       else {
-        u.Annotated(annot, tpt).setType(u.AnnotatedType(mkAnnotation(annot) :: Nil, tpt.tpe))
+        u.Annotated(annot, tpt).setType(defn.AnnotatedType(tpt.tpe, annot))
       }
     }
 
-    def RefinedTypeTree(parent: Tree, decls: List[Tree], refinedCls: Symbol): Tree = {
-      u.CompoundTypeTree(u.Template(parent :: Nil, u.noSelfType, decls)).setType(refinedCls.info)
+    def RefinedTypeTree(parent: Tree, decls: List[Tree], refinedCls: Symbol)(implicit ctx: Context): Tree = {
+      refinedCls.info.parents.head match {
+        case defn.PolyFunctionType() =>
+          val polyType = refinedCls.info.decls.map(_.tpe).headOption.fold(defn.NoType)(x => x)
+          polyFuncIsUnsupported(polyType)
+        case _ =>
+          u.CompoundTypeTree(u.Template(parent :: Nil, u.noSelfType, decls)).setType(refinedCls.info)
+      }
     }
 
-    def TypeBoundsTree(lo: Tree, hi: Tree): Tree = {
+    def TypeBoundsTree(lo: Tree, hi: Tree, alias: Tree): Tree = {
+      val _ = alias // ignore until we enable opaque types
       u.TypeBoundsTree(lo, hi).setType(u.TypeBounds(lo.tpe, hi.tpe))
     }
   }

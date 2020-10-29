@@ -1,0 +1,4 @@
+TestStaticAnnot_fail.scala:5: error: Unsupported Scala 3 annotation on method sum: @scala.annotation.static; found in object tastytest.StaticAnnot.
+  def test = assert(StaticAnnot.sum(1,2) == 3)
+                                ^
+1 error

@@ -1,0 +1,7 @@
+TestCtxFns_fail.scala:15: error: Unsupported Scala 3 context function type in bounds of type Contextual: tastytest.CtxFns.Context ?=> T; found in object tastytest.CtxFns.
+    puts(23)(ctx)
+    ^
+TestCtxFns_fail.scala:22: error: Unsupported Scala 3 context function type in bounds of type F: X ?=> X; found in class tastytest.CtxFns.CtxBox.
+    val box = new CtxBox[Contextual]
+                  ^
+2 errors

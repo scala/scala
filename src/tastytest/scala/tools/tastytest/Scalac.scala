@@ -3,7 +3,7 @@ package scala.tools.tastytest
 import scala.util.{ Try, Success, chaining }, chaining._
 import scala.tools.nsc.{Global, Settings, reporters}, reporters.ConsoleReporter
 
-object Scalac {
+object Scalac extends Script.Command {
 
   def scalac(out: String, additionalSettings: Seq[String], sources: String*): Try[Boolean] = {
 

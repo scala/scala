@@ -1,0 +1,7 @@
+TestLogarithms_fail.scala:7: error: Unsupported Scala 3 opaque type Logarithm; found in object tastytest.Logarithms.
+  val Some(l1) = Logarithm.of(2)
+          ^
+TestLogarithms_fail.scala:10: error: value - is not a member of Any
+  val l3: Double = l1 - l2 // error
+                      ^
+2 errors

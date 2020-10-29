@@ -1,22 +1,60 @@
-IllegalTraitParams_fail.scala:3: error: Unsupported Scala 3 parameterized trait Foo(a); found in object tastytest.TraitParams.
-class Illegal extends TraitParams.Foo("?")
-              ^
-IllegalTraitParams_fail.scala:3: error: trait Foo is a trait; does not take constructor arguments
+IllegalTraitParams_fail.scala:3: error: trait Foo(a: String) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
 class Illegal extends TraitParams.Foo("?")
                       ^
-IllegalTraitParams_fail.scala:4: error: Unsupported Scala 3 parameterized trait Bar(x, y); found in object tastytest.TraitParams.
-class IllegalMulti extends TraitParams.Bar(0, "")
-                   ^
-IllegalTraitParams_fail.scala:4: error: trait Bar is a trait; does not take constructor arguments
+IllegalTraitParams_fail.scala:3: error: illegal inheritance; parameterized mixin trait Foo
+ is defined in Scala 3 as trait Foo(a: String)
+class Illegal extends TraitParams.Foo("?")
+                                  ^
+IllegalTraitParams_fail.scala:4: error: trait Bar(x: Int, y: String) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
 class IllegalMulti extends TraitParams.Bar(0, "")
                            ^
-IllegalTraitParams_fail.scala:5: error: Unsupported Scala 3 parameterized trait Baz(baz); found in object tastytest.TraitParams.
-class IllegalUseParam extends TraitParams.Baz {
-                      ^
-IllegalTraitParams_fail.scala:6: error: not found: value baz
-  def foo = println(baz)
-                    ^
-IllegalTraitParams_fail.scala:8: error: Unsupported Scala 3 parameterized trait Qux(qux); found in object tastytest.TraitParams.
+IllegalTraitParams_fail.scala:4: error: illegal inheritance; parameterized mixin trait Bar
+ is defined in Scala 3 as trait Bar(x: Int, y: String)
+class IllegalMulti extends TraitParams.Bar(0, "")
+                                       ^
+IllegalTraitParams_fail.scala:5: error: trait Baz(baz: String) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
+class IllegalUseParam extends TraitParams.Baz("baz") {
+                              ^
+IllegalTraitParams_fail.scala:5: error: illegal inheritance; parameterized mixin trait Baz
+ is defined in Scala 3 as trait Baz(baz: String)
+class IllegalUseParam extends TraitParams.Baz("baz") {
+                                          ^
+IllegalTraitParams_fail.scala:8: error: illegal inheritance; parameterized mixin trait Qux
+ is defined in Scala 3 as trait Qux(qux: String)
 class IllegalIgnoreParam extends TraitParams.Qux
-                         ^
-7 errors
+                                             ^
+IllegalTraitParams_fail.scala:9: error: illegal inheritance; parameterized mixin trait ForOverride
+ is defined in Scala 3 as trait ForOverride(myParam: String)
+class IllegalOverrideParamField extends TraitParams.ForOverride {
+                                                    ^
+IllegalTraitParams_fail.scala:12: error: illegal inheritance; parameterized mixin trait ForOverride
+ is defined in Scala 3 as trait ForOverride(myParam: String)
+class IllegalOverrideParamParam(override val myParam: String) extends TraitParams.ForOverride
+                                                                                  ^
+IllegalTraitParams_fail.scala:13: error: illegal inheritance; parameterized mixin trait ForOverrideFinal
+ is defined in Scala 3 as trait ForOverrideFinal(myFinalParam: String)
+class IllegalOverrideFinalParamField extends TraitParams.ForOverrideFinal {
+                                                         ^
+IllegalTraitParams_fail.scala:16: error: illegal inheritance; parameterized mixin trait ForOverrideFinal
+ is defined in Scala 3 as trait ForOverrideFinal(myFinalParam: String)
+class IllegalOverrideFinalParamParam(override val myFinalParam: String) extends TraitParams.ForOverrideFinal
+                                                                                            ^
+IllegalTraitParams_fail.scala:18: error: trait TopLevelTraitParams1(a: String) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
+class IllegalTopLevel extends TopLevelTraitParams1("?")
+                              ^
+IllegalTraitParams_fail.scala:19: error: trait TopLevelTraitParams2(t: Int, u: String) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
+class IllegalTopLevelMulti extends TopLevelTraitParams2(0, "")
+                                   ^
+IllegalTraitParams_fail.scala:20: error: trait TopLevelTraitParams3(b: Boolean) is an illegal Scala 3 parameterized trait; so can not take constructor arguments
+class IllegalTopLevelUseParam extends TopLevelTraitParams3(true) {
+                                      ^
+IllegalTraitParams_fail.scala:28: error: illegal inheritance; parameterized mixin trait TopLevelTraitParams4
+ is defined in Scala 3 as trait TopLevelTraitParams4(uninstantiated: String)
+class IllegalTopLevelIgnoreParam extends TopLevelTraitParams4
+                                         ^
+IllegalTraitParams_fail.scala:31: error: illegal inheritance; parameterized supertrait TopLevelTraitParams4
+ of the mixin trait OkTraitExtendsTraitWithParams
+ is defined in Scala 3 as trait TopLevelTraitParams4(uninstantiated: String)
+class IllegalMixinFromTraitWithParams extends OkTraitExtendsTraitWithParams // error - mixin indirectly parameterised trait
+                                              ^
+16 errors

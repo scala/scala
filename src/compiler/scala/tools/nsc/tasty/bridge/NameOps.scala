@@ -46,9 +46,17 @@ trait NameOps { self: TastyUniverse =>
   }
 
   object tpnme {
-    final val Or: TypeName = TastyName.SimpleName("|").toTypeName
-    final val And: TypeName = TastyName.SimpleName("&").toTypeName
-    final val AnyKind: TypeName = TastyName.SimpleName("AnyKind").toTypeName
+
+    final val Or: String = "|"
+    final val And: String = "&"
+    final val AnyKind: String = "AnyKind"
+    final val TupleCons: String = "*:"
+
+    val ContextFunctionN = raw"ContextFunction(\d+)".r
+    val FunctionN        = raw"Function(\d+)".r
+
+    final val ErrorType: TypeName = TastyName.SimpleName("<error>").toTypeName
+
   }
 
 }
