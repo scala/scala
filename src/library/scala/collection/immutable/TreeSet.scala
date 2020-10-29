@@ -14,10 +14,8 @@ package scala
 package collection
 package immutable
 
-import java.io.IOException
-
 import generic._
-import immutable.{NewRedBlackTree => RB}
+import immutable.{RedBlackTree => RB}
 import mutable.Builder
 import scala.runtime.AbstractFunction1
 
@@ -67,33 +65,6 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
     }
 
     override def result(): TreeSet[A] = new TreeSet[A](beforePublish(tree))(ordering)
-  }
-  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeSet.newSerialisation", "false") == "false"
-
-  @SerialVersionUID(-8462554036344260506L)
-  private class TreeSetProxy[A](
-    @transient private[this] var tree: RB.Tree[A, Any],
-    @transient private[this] var ordering: Ordering[A]) extends Serializable {
-
-    @throws[IOException]
-    private[this] def writeObject(out: java.io.ObjectOutputStream) = {
-      out.writeInt(RB.count(tree))
-      out.writeObject(ordering)
-      RB.foreachKey(tree, out.writeObject)
-    }
-    @throws[IOException]
-    private[this] def readObject(in: java.io.ObjectInputStream) = {
-      val size = in.readInt()
-      ordering = in.readObject().asInstanceOf[Ordering[A]]
-      val data = Iterable.newBuilder[A]
-      data.sizeHint(size)
-      for (i <- 0 until size)
-        data += in.readObject().asInstanceOf[A]
-      tree = RB.fromOrderedKeys(data.result.iterator, size)
-    }
-    @throws[IOException]
-    private[this] def readResolve(): AnyRef =
-      new TreeSet(tree)(ordering)
   }
 }
 
@@ -302,15 +273,5 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   override def equals(obj: Any): Boolean = obj match {
     case that: TreeSet[A] if ordering == that.ordering => RB.keysEqual(tree, that.tree)
     case _ => super.equals(obj)
-  }
-
-  @throws[IOException]
-  private[this] def writeReplace(): AnyRef =
-    if (TreeSet.legacySerialisation) this else new TreeSet.TreeSetProxy(tree, ordering)
-
-  @throws[IOException]
-  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
-    out.writeObject(ordering)
-    out.writeObject(immutable.RedBlackTree.from(tree))
   }
 }

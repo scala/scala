@@ -14,10 +14,8 @@ package scala
 package collection
 package immutable
 
-import java.io.IOException
-
 import generic._
-import immutable.{NewRedBlackTree => RB}
+import immutable.{RedBlackTree => RB}
 import mutable.Builder
 import scala.annotation.tailrec
 import scala.runtime.{AbstractFunction1, AbstractFunction2}
@@ -85,43 +83,6 @@ object TreeMap extends ImmutableSortedMapFactory[TreeMap] {
 
     override def result(): TreeMap[A, B] = new TreeMap[A, B](beforePublish(tree))
   }
-  private val legacySerialisation = System.getProperty("scala.collection.immutable.TreeMap.newSerialisation", "false") == "false"
-
-  @SerialVersionUID(-5672253444750945796L)
-  private class TreeMapProxy[A, B](
-    @transient private[this] var tree: RB.Tree[A, B],
-    @transient private[this] var ordering: Ordering[A]) extends Serializable {
-
-    @throws[IOException]
-    private[this] def writeObject(out: java.io.ObjectOutputStream) = {
-      out.writeInt(RB.count(tree))
-      out.writeObject(ordering)
-      RB.foreachEntry(tree, {
-        (k: A, v: B) =>
-          out.writeObject(k)
-          out.writeObject(v)
-      })
-    }
-    @throws[IOException]
-    private[this] def readObject(in: java.io.ObjectInputStream) = {
-      val size = in.readInt()
-      ordering = in.readObject().asInstanceOf[Ordering[A]]
-      implicit val ord = ordering
-
-      val data = Array.newBuilder[(A, B)]
-      data.sizeHint(size)
-      for (i <- 0 until size) {
-        val key = in.readObject().asInstanceOf[A]
-        val value = in.readObject().asInstanceOf[B]
-        data += ((key, value))
-      }
-      tree = RB.fromOrderedEntries(data.result.iterator, size)
-    }
-    @throws[IOException]
-    private[this] def readResolve(): AnyRef =
-      new TreeMap(tree)(ordering)
-  }
-
 }
 
 /** This class implements immutable maps using a tree.
@@ -410,16 +371,4 @@ final class TreeMap[A, +B] private (tree: RB.Tree[A, B])(implicit val ordering: 
       newMapOrSelf(RB.transform[A, B, W](tree, f)).asInstanceOf[That]
     else super.transform(f)
   }
-
-  @throws[IOException]
-  private[this] def writeReplace(): AnyRef =
-    if (TreeMap.legacySerialisation) this else new TreeMap.TreeMapProxy(tree, ordering)
-
-  @throws[IOException]
-  private[this] def writeObject(out: java.io.ObjectOutputStream) = {
-    out.writeObject(ordering)
-    out.writeObject(immutable.RedBlackTree.from(tree))
-  }
-
-
 }
