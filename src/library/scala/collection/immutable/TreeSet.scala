@@ -16,8 +16,9 @@ package immutable
 
 import scala.collection.Stepper.EfficientSplit
 import scala.collection.generic.DefaultSerializable
-import scala.collection.immutable.{RedBlackTree => RB}
 import scala.collection.mutable.ReusableBuilder
+import scala.collection.immutable.{RedBlackTree => RB}
+import scala.runtime.AbstractFunction1
 
 
 /** This class implements immutable sorted sets using a tree.
@@ -185,7 +186,17 @@ final class TreeSet[A] private[immutable] (private[immutable] val tree: RB.Tree[
   override def removedAll(that: IterableOnce[A]): TreeSet[A] = that match {
     case ts: TreeSet[A] if ordering == ts.ordering =>
       newSetOrSelf(RB.difference(tree, ts.tree))
-    case _ => super.removedAll(that)
+    case _ =>
+      //TODO add an implementation of a mutable subtractor similar to TreeMap
+      //but at least this doesn't create a TreeSet for each iteration
+      object sub extends AbstractFunction1[A, Unit] {
+        var currentTree = tree
+        override def apply(k: A): Unit = {
+          currentTree = RB.delete(currentTree, k)
+        }
+      }
+      that.iterator.foreach(sub)
+      newSetOrSelf(sub.currentTree)
   }
 
   override def intersect(that: collection.Set[A]): TreeSet[A] = that match {
@@ -246,20 +257,40 @@ object TreeSet extends SortedIterableFactory[TreeSet] {
         new TreeSet[E](t)
     }
 
-  def newBuilder[A](implicit ordering: Ordering[A]): ReusableBuilder[A, TreeSet[A]] = new ReusableBuilder[A, TreeSet[A]] {
-    private[this] var tree: RB.Tree[A, Any] = null
-    def addOne(elem: A): this.type = { tree = RB.update(tree, elem, null, overwrite = false); this }
+  def newBuilder[A](implicit ordering: Ordering[A]): ReusableBuilder[A, TreeSet[A]] = new TreeSetBuilder[A]
+  private class TreeSetBuilder[A](implicit ordering: Ordering[A])
+    extends RB.SetHelper[A]
+      with ReusableBuilder[A, TreeSet[A]] {
+    type Tree = RB.Tree[A, Any]
+    private [this] var tree:RB.Tree[A, Any] = null
+
+    override def addOne(elem: A): this.type = {
+      tree = mutableUpd(tree, elem)
+      this
+    }
+
     override def addAll(xs: IterableOnce[A]): this.type = {
       xs match {
-        case ts: TreeSet[A] if ordering == ts.ordering =>
-          tree = RB.union(tree, ts.tree)
+        // TODO consider writing a mutable-safe union for TreeSet/TreeMap builder ++=
+        // for the moment we have to force immutability before the union
+        // which will waste some time and space
+        // calling `beforePublish` makes `tree` immutable
+        case ts: TreeSet[A] if ts.ordering == ordering =>
+          if (tree eq null) tree = ts.tree
+          else tree = RB.union(beforePublish(tree), ts.tree)(ordering)
+        case ts: TreeMap[A, _] if ts.ordering == ordering =>
+          if (tree eq null) tree = ts.tree0
+          else tree = RB.union(beforePublish(tree), ts.tree0)(ordering)
         case _ =>
-          val it = xs.iterator
-          while (it.hasNext) tree = RB.update(tree, it.next(), null, overwrite = false)
+          super.addAll(xs)
       }
       this
     }
-    def result(): TreeSet[A] = if(tree eq null) TreeSet.empty else new TreeSet[A](tree)
-    def clear(): Unit = { tree = null }
+
+    override def clear(): Unit = {
+      tree = null
+    }
+
+    override def result(): TreeSet[A] = new TreeSet[A](beforePublish(tree))(ordering)
   }
 }
