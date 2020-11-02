@@ -40,6 +40,7 @@ jobs:
         name: bootstrap and publishLocal
         if: type = pull_request OR repo != scala/scala
         script:
+          - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testOsgi
@@ -56,6 +57,7 @@ jobs:
         workspaces:
           use: published-local
         script:
+          - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll1
           - sbt -Dscala.build.compileWithDotty=true library/compile
@@ -65,6 +67,7 @@ jobs:
         workspaces:
           use: published-local
         script:
+          - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
           - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll2
 
