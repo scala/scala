@@ -261,6 +261,7 @@ trait ScalaSettings extends StandardScalaSettings with Warnings { _: MutableSett
   val YmacroFresh     = BooleanSetting    ("-Ymacro-global-fresh-names", "Should fresh names in macros be unique across all compilation units")
   val YmacroAnnotations = BooleanSetting  ("-Ymacro-annotations", "Enable support for macro annotations, formerly in macro paradise.")
   val YtastyNoAnnotations = BooleanSetting("-Ytasty-no-annotations", "Disable support for reading annotations from TASTy, this will prevent safety features such as pattern match exhaustivity and reachability analysis.")
+  val YtastyReader        = BooleanSetting("-Ytasty-reader", "Enable support for reading Scala 3's TASTy files, allowing consumption of libraries compiled with Scala 3 (provided they don't use any Scala 3 only features).")
   val Yreplclassbased = BooleanSetting    ("-Yrepl-class-based", "Use classes to wrap REPL snippets instead of objects", default = true)
   val YreplMagicImport = BooleanSetting   ("-Yrepl-use-magic-imports", "In the code that wraps REPL snippets, use magic imports rather than nesting wrapper object/classes", default = true)
   val Yreploutdir     = StringSetting     ("-Yrepl-outdir", "path", "Write repl-generated classfiles to given output directory (use \"\" to generate a temporary dir)" , "")
