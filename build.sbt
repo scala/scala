@@ -567,6 +567,7 @@ val mimaFilterSettings = Seq {
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.api.Internals#InternalApi.markForAsyncTransform"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.io.ZipArchive.RootEntry"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.ClassTag$cache$"),
   )
 }
 

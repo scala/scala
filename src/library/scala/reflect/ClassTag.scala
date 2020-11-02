@@ -137,16 +137,19 @@ object ClassTag {
   val Nothing : ClassTag[scala.Nothing]    = Manifest.Nothing
   val Null    : ClassTag[scala.Null]       = Manifest.Null
 
-  private[this] val cache = new ClassValue[jWeakReference[ClassTag[_]]] {
-    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] = {
-      new jWeakReference(runtimeClass match {
+  private val cacheDisabledProp = scala.sys.Prop[String]("scala.reflect.classtag.cache.disable")
+  private[this] object cache extends ClassValue[jWeakReference[ClassTag[_]]] {
+    override def computeValue(runtimeClass: jClass[_]): jWeakReference[ClassTag[_]] =
+      new jWeakReference(computeTag(runtimeClass))
+
+    def computeTag(runtimeClass: jClass[_]): ClassTag[_] =
+      runtimeClass match {
         case x if x.isPrimitive => primitiveClassTag(runtimeClass)
         case ObjectTYPE         => ClassTag.Object
         case NothingTYPE        => ClassTag.Nothing
         case NullTYPE           => ClassTag.Null
         case _                  => new GenericClassTag[AnyRef](runtimeClass)
-      })
-    }
+     }
 
     private def primitiveClassTag[T](runtimeClass: Class[_]): ClassTag[_] = runtimeClass match {
       case java.lang.Byte.TYPE      => ClassTag.Byte
@@ -170,13 +173,17 @@ object ClassTag {
   }
 
   def apply[T](runtimeClass1: jClass[_]): ClassTag[T] = {
-    val ref = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]]
-    var tag = ref.get
-    if (tag == null) {
-      cache.remove(runtimeClass1)
-      tag = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]].get
+    if (cacheDisabledProp.isSet)
+      cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
+    else {
+      val ref = cache.get(runtimeClass1).asInstanceOf[jWeakReference[ClassTag[T]]]
+      var tag = ref.get
+      if (tag == null) {
+        cache.remove(runtimeClass1)
+        tag = cache.computeTag(runtimeClass1).asInstanceOf[ClassTag[T]]
+      }
+      tag
     }
-    tag
   }
 
   def unapply[T](ctag: ClassTag[T]): Option[Class[_]] = Some(ctag.runtimeClass)
