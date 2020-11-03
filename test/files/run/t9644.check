@@ -1,6 +1,0 @@
-t9644.scala:14: warning: match may not be exhaustive.
-  d.tree match {
-    ^
-t9644.scala:20: warning: match may not be exhaustive.
-  r.tree match {
-    ^

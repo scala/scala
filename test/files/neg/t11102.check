@@ -1,34 +1,13 @@
-t11102.scala:2: warning: match may not be exhaustive.
-It would fail on the following input: (x: ImmutableSeq forSome x not in ImmutableCons)
-  def f(x: ImmutableSeq) = x match {
-                           ^
-t11102.scala:5: warning: match may not be exhaustive.
-It would fail on the following input: (x: MutableSeq forSome x not in MutableCons)
-  def f(x: MutableSeq) = x match {
-                         ^
 t11102.scala:5: error: error during expansion of this match (this is a scalac bug).
 The underlying error was: type mismatch;
  found   : Seq[MutableCons] (in scala.collection.mutable)
  required: Seq[MutableCons] (in scala.collection.immutable)
   def f(x: MutableSeq) = x match {
                            ^
-t11102.scala:8: warning: match may not be exhaustive.
-It would fail on the following input: (x: CollectionSeq forSome x not in CollectionCons)
-  def f(x: CollectionSeq) = x match {
-                            ^
 t11102.scala:8: error: error during expansion of this match (this is a scalac bug).
 The underlying error was: type mismatch;
  found   : Seq[CollectionCons] (in scala.collection)
  required: Seq[CollectionCons] (in scala.collection.immutable)
   def f(x: CollectionSeq) = x match {
                               ^
-t11102.scala:11: warning: match may not be exhaustive.
-It would fail on the following input: (x: ScalaSeq forSome x not in ScalaCons)
-  def f(x: ScalaSeq) = x match {
-                       ^
-t11102.scala:14: warning: match may not be exhaustive.
-It would fail on the following input: (x: DefaultSeq forSome x not in DefaultCons)
-  def f(x: DefaultSeq) = x match {
-                         ^
-5 warnings
 2 errors

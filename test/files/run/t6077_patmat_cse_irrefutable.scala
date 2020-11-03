@@ -1,4 +1,3 @@
-// scalac: -Xno-unsealed-patmat-analysis
 class LiteralNode(val value: Any)
 
 object LiteralNode {

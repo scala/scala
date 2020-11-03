@@ -6,10 +6,6 @@ t5898.scala:10: warning: match may not be exhaustive.
 It would fail on the following input: C(_)
   val D(x) = t
              ^
-t5898.scala:11: warning: match may not be exhaustive.
-It would fail on the following input: (x: Any forSome x not in D)
-  val D(y) = (null: Any)
-                  ^
 error: No warnings can be incurred under -Werror.
-3 warnings
+2 warnings
 1 error

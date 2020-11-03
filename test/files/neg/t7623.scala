@@ -1,4 +1,4 @@
-// scalac: -Xlint:stars-align -Xfatal-warnings -Xno-unsealed-patmat-analysis
+// scalac: -Xlint:stars-align -Xfatal-warnings
 //
 
 
