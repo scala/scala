@@ -91,12 +91,12 @@ object PickleExtractor {
     if (input.visibleAnnotations != null) {
       input.visibleAnnotations.asScala.foreach { node =>
         if (node.desc == "Lscala/reflect/ScalaSignature;") {
-          val Array("bytes", data: String) = node.values.toArray()
+          val Array("bytes", data: String) = node.values.toArray(): @unchecked
           val bytes = data.getBytes(java.nio.charset.StandardCharsets.UTF_8)
           val len = ByteCodecs.decode(bytes)
           pickleData = bytes.take(len)
         } else if (node.desc == "Lscala/reflect/ScalaLongSignature;") {
-          val Array("bytes", data: java.util.Collection[String @unchecked]) = node.values.toArray()
+          val Array("bytes", data: java.util.Collection[String @unchecked]) = node.values.toArray(): @unchecked
           val encoded = data.asScala.toArray flatMap (_.getBytes(java.nio.charset.StandardCharsets.UTF_8))
           val len = ByteCodecs.decode(encoded)
           pickleData = encoded.take(len)

@@ -39,7 +39,7 @@ trait JavaReflectionRuntimes {
           case _ => false
         }
 
-        val Array(bundleCtor) = implClass.getConstructors.filter(isBundleCtor)
+        val Array(bundleCtor) = implClass.getConstructors.filter(isBundleCtor): @unchecked
         args => {
           val implObj = bundleCtor.newInstance(args.c)
           implMeth.invoke(implObj, args.others.asInstanceOf[Seq[AnyRef]]: _*)

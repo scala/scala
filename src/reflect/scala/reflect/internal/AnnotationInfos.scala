@@ -113,7 +113,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def apply(atp: Type, args: List[Tree], assocs: List[(Name, ClassfileAnnotArg)]): AnnotationInfo =
       new CompleteAnnotationInfo(atp, args, assocs)
 
-    def unapply(info: AnnotationInfo): Option[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])] =
+    def unapply(info: AnnotationInfo): Some[(Type, List[Tree], List[(Name, ClassfileAnnotArg)])] =
       Some((info.atp, info.args, info.assocs))
 
     def mkFilter(category: Symbol, defaultRetention: Boolean)(ann: AnnotationInfo) =
@@ -294,7 +294,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   object Annotation extends AnnotationExtractor {
     def apply(tpe: Type, scalaArgs: List[Tree], javaArgs: ListMap[Name, ClassfileAnnotArg]): Annotation =
       AnnotationInfo(tpe, scalaArgs, javaArgs.toList)
-    def unapply(annotation: Annotation): Option[(Type, List[Tree], ListMap[Name, ClassfileAnnotArg])] =
+    def unapply(annotation: Annotation): Some[(Type, List[Tree], ListMap[Name, ClassfileAnnotArg])] =
       Some((annotation.tpe, annotation.scalaArgs, annotation.javaArgs))
   }
   implicit val AnnotationTag = ClassTag[AnnotationInfo](classOf[AnnotationInfo])
@@ -367,19 +367,12 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     * as well as “new-style” `@throws[Exception]("cause")` annotations.
     */
   object ThrownException {
-    def unapply(ann: AnnotationInfo): Option[Type] = {
-      ann match {
-        case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass =>
-          None
-        // old-style: @throws(classOf[Exception]) (which is throws[T](classOf[Exception]))
-        case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _) =>
-          Some(tpe)
-        // new-style: @throws[Exception], @throws[Exception]("cause")
-        case AnnotationInfo(TypeRef(_, _, arg :: _), _, _) =>
-          Some(arg)
-        case AnnotationInfo(TypeRef(_, _, Nil), _, _) =>
-          Some(ThrowableTpe)
-      }
+    def unapply(ann: AnnotationInfo): Option[Type] = ann match {
+      case AnnotationInfo(tpe, _, _) if tpe.typeSymbol != ThrowsClass => None
+      case AnnotationInfo(_, List(Literal(Constant(tpe: Type))), _)   => Some(tpe) // old-style
+      case AnnotationInfo(TypeRef(_, _, arg :: _), _, _)              => Some(arg) // new-style
+      case AnnotationInfo(TypeRef(_, _, Nil), _, _)                   => Some(ThrowableTpe)
+      case _                                                          => None
     }
   }
 }

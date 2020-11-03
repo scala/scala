@@ -305,6 +305,7 @@ trait Variances {
       case AnnotatedType(annots, _) if unchecked(annots)   => Bivariant
       case AnnotatedType(annots, tp)                       => inAnnots(annots)     & inType(tp)
       case SuperType(thistpe, supertpe)                    => inType(thistpe)      & inType(supertpe)
+      case x                                               => throw new MatchError(x)
     }
 
     def apply(tp: Type, tparam: Symbol, considerUnchecked: Boolean): Variance = {

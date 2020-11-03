@@ -98,9 +98,9 @@ abstract class Taggers {
   }
 
   private def failTag(result: Tree, reason: Any): Nothing = {
-    val Apply(TypeApply(fun, List(tpeTree)), _) = c.macroApplication
+    val Apply(TypeApply(fun, List(tpeTree)), _) = c.macroApplication: @unchecked
     val tpe = tpeTree.tpe
-    val PolyType(_, MethodType(_, tagTpe)) = fun.tpe
+    val PolyType(_, MethodType(_, tagTpe)) = fun.tpe: @unchecked
     val tagModule = tagTpe.typeSymbol.companionSymbol
     if (c.compilerSettings.contains("-Xlog-implicits"))
       c.echo(c.enclosingPosition, s"cannot materialize ${tagModule.name}[$tpe] as $result because:\n$reason")
@@ -108,7 +108,7 @@ abstract class Taggers {
   }
 
   private def failExpr(result: Tree, reason: Any): Nothing = {
-    val Apply(_, expr :: Nil) = c.macroApplication
+    val Apply(_, expr :: Nil) = c.macroApplication: @unchecked
     c.abort(c.enclosingPosition, s"Cannot materialize $expr as $result because:\n$reason")
   }
 }

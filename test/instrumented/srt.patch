@@ -18,7 +18,7 @@
    /** Retrieve generic array element */
    def array_apply(xs: AnyRef, idx: Int): Any = {
 +    arrayApplyCount += 1
-     xs match {
+     (xs: @unchecked) match {
        case x: Array[AnyRef]  => x(idx).asInstanceOf[Any]
        case x: Array[Int]     => x(idx).asInstanceOf[Any]
 @@ -69,8 +74,11 @@
@@ -30,6 +30,6 @@
    /** update generic array element */
    def array_update(xs: AnyRef, idx: Int, value: Any): Unit = {
 +    arrayUpdateCount += 1
-     xs match {
+     (xs: @unchecked) match {
        case x: Array[AnyRef]  => x(idx) = value.asInstanceOf[AnyRef]
        case x: Array[Int]     => x(idx) = value.asInstanceOf[Int]

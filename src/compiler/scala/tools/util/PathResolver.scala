@@ -199,6 +199,7 @@ object PathResolver {
         pr.result match {
           case cp: AggregateClassPath =>
             println(s"ClassPath has ${cp.aggregates.size} entries and results in:\n${cp.asClassPathStrings}")
+          case x => throw new MatchError(x)
         }
       } finally {
         registry.close()

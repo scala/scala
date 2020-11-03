@@ -303,7 +303,7 @@ abstract class Delambdafy extends Transform with TypingTransformers with ast.Tre
         }
         try {
           // during this call boxingBridgeMethods will be populated from the Function case
-          val Template(parents, self, body) = super.transform(deriveTemplate(tree)(_.mapConserve(pretransform)))
+          val Template(parents, self, body) = super.transform(deriveTemplate(tree)(_.mapConserve(pretransform))): @unchecked
           Template(parents, self, body ++ boxingBridgeMethods)
         } finally boxingBridgeMethods.clear()
       case dd: DefDef if dd.symbol.isLiftedMethod && !dd.symbol.isDelambdafyTarget =>

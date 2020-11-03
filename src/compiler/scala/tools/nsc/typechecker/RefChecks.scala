@@ -1539,6 +1539,7 @@ abstract class RefChecks extends Transform {
               // the companion class is actually not a ClassSymbol, but a reference to an abstract type.
               module.symbol.companionClass.isClass
             )
+        case x => throw new MatchError(x)
       }
 
       sym.name == nme.apply &&

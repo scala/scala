@@ -771,7 +771,7 @@ lazy val library = configureAsSubproject(project)
     name := "scala-library",
     description := "Scala Standard Library",
     Compile / scalacOptions ++= Seq("-sourcepath", (Compile / scalaSource).value.toString),
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature", "-Wconf:msg=match may not be exhaustive:i"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= {
       val libraryAuxDir = (ThisBuild / baseDirectory).value / "src/library-aux"
       Seq(
@@ -820,7 +820,7 @@ lazy val reflect = configureAsSubproject(project)
     name := "scala-reflect",
     description := "Scala Reflection Library",
     Osgi.bundleName := "Scala Reflect",
-    Compile / scalacOptions ++= Seq("-Xlint", "-feature", "-Wconf:msg=match may not be exhaustive:i"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
     Compile / doc / scalacOptions ++= Seq(
       "-skip-packages", "scala.reflect.macros.internal:scala.reflect.internal:scala.reflect.io"
     ),
@@ -892,7 +892,6 @@ lazy val compiler = configureAsSubproject(project)
       "-Xlint",
       "-feature",
       "-Wconf:cat=deprecation&msg=early initializers:s", // compiler heavily relies upon early initializers
-      "-Wconf:msg=match may not be exhaustive:i",
     ),
     Compile / doc / scalacOptions ++= Seq(
       "-doc-root-content", (Compile / sourceDirectory).value + "/rootdoc.txt"

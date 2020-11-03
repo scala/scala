@@ -502,8 +502,8 @@ private[internal] trait TypeMaps {
       *  @param   rhs    a type application constructed from `clazz`
       */
     private def correspondingTypeArgument(lhs: Type, rhs: Type): Type = {
-      val TypeRef(_, lhsSym, lhsArgs) = lhs
-      val TypeRef(_, rhsSym, rhsArgs) = rhs
+      val TypeRef(_, lhsSym, lhsArgs) = lhs: @unchecked
+      val TypeRef(_, rhsSym, rhsArgs) = rhs: @unchecked
       require(lhsSym.owner == rhsSym, s"$lhsSym is not a type parameter of $rhsSym")
 
       // Find the type parameter position; we'll use the corresponding argument.
@@ -765,7 +765,8 @@ private[internal] trait TypeMaps {
 
     protected def toType(fromTpe: Type, sym: Symbol) = fromTpe match {
       case TypeRef(pre, _, args) => copyTypeRef(fromTpe, pre, sym, args)
-      case SingleType(pre, _) => singleType(pre, sym)
+      case SingleType(pre, _)    => singleType(pre, sym)
+      case x                     => throw new MatchError(x)
     }
 
     @tailrec private def subst(sym: Symbol, from: List[Symbol], to: List[Symbol]): Symbol =

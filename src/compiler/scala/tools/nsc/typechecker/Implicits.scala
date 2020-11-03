@@ -1362,6 +1362,7 @@ trait Implicits {
             }
             getParts(pre)
           }
+        case x => throw new MatchError(x)
       }
 
       /* Populate implicit info map by traversing all parts of type `tp`.
@@ -1840,6 +1841,7 @@ trait Implicits {
       Intersobralator.replaceAllIn(text, (_: Regex.Match) match {
         case Regex.Groups(v) => Regex quoteReplacement vars.getOrElse(v, "")
           // #3915: need to quote replacement string since it may include $'s (such as the interpreter's $iw)
+        case x               => throw new MatchError(x)
       })
 
     def referencedTypeParams: List[String] = Intersobralator.findAllMatchIn(msg).map(_.group(1)).distinct.toList

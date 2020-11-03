@@ -797,7 +797,7 @@ abstract class BTypes {
       "scala/Null",
       "scala/Nothing"
     )
-    def unapply(cr:ClassBType) = Some(cr.internalName)
+    def unapply(cr: ClassBType): Some[InternalName] = Some(cr.internalName)
 
     /**
      * Retrieve the `ClassBType` for the class with the given internal name, creating the entry if it doesn't

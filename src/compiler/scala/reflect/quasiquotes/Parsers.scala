@@ -44,6 +44,7 @@ trait Parsers { self: Quasiquotes =>
       def fallbackPosition = posMapList match {
         case (pos1, (start1, end1)) :: _   if start1 > offset => pos1
         case _ :+ ((pos2, (start2, end2))) if end2 <= offset  => pos2.withPoint(pos2.point + (end2 - start2))
+        case x                                                => throw new MatchError(x)
       }
       posMapList.sliding(2).collect {
         case (pos1, (start1, end1)) :: _                        if containsOffset(start1, end1) => (pos1, offset - start1)

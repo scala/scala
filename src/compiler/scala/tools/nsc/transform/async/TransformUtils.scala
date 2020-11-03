@@ -55,7 +55,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     case trees @ (init :+ last) =>
       val pos = trees.map(_.pos).reduceLeft(_ union _)
       Block(init, last).setType(last.tpe).setPos(pos)
-    case Nil =>
+    case _ =>
       throw new MatchError(trees)
   }
 
@@ -77,6 +77,7 @@ private[async] trait TransformUtils extends AsyncTransformStates {
     case MatchEnd(ld) =>
       ld.symbol.modifyInfo {
         case MethodType(params, _) => MethodType(params, exprType)
+        case x                     => throw new MatchError(x)
       }
       treeCopy.LabelDef(ld, ld.name, ld.params, deriveTree(ld.rhs, exprType)(deriveExpr)).setType(exprType)
     case _ =>

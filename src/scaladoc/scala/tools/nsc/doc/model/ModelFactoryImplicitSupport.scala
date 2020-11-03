@@ -203,6 +203,7 @@ trait ModelFactoryImplicitSupport {
           case global.analyzer.SilentTypeError(err) =>
             context.warning(sym.pos, err.toString, WarningCategory.Scaladoc)
             return Nil
+          case x => throw new MatchError(x)
         }
       }
 

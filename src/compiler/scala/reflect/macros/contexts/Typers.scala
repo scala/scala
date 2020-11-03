@@ -39,7 +39,7 @@ trait Typers {
             case universe.analyzer.SilentResultValue(result) =>
               macroLogVerbose(result)
               result
-            case error@universe.analyzer.SilentTypeError(_) =>
+            case error: universe.analyzer.SilentTypeError =>
               macroLogVerbose(error.err.errMsg)
               if (!silent) throw new TypecheckException(error.err.errPos, error.err.errMsg)
               universe.EmptyTree

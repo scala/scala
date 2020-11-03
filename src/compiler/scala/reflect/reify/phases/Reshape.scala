@@ -226,6 +226,7 @@ trait Reshape {
         val annot1 = toPreTyperAnnotation(at.tpe.asInstanceOf[AnnotatedType].annotations(0))
         if (reifyDebug) println("originals are: " + annot1)
         Annotated(annot1, arg).copyAttrs(at)
+      case x => throw new MatchError(x)
     }
 
     /** Restore pre-typer representation of an annotation.

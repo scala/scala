@@ -2070,7 +2070,7 @@ trait Types
 
   object ConstantType extends ConstantTypeExtractor {
     def apply(c: Constant): ConstantType = FoldableConstantType(c)
-    def unapply(tpe: ConstantType): Option[Constant] = Some(tpe.value)
+    def unapply(tpe: ConstantType): Some[Constant] = Some(tpe.value)
   }
 
   /** A class representing the inferred type of a constant value. Constant types and their
@@ -4186,7 +4186,7 @@ trait Types
     def apply(tparams: List[Symbol], tpe: Type): Type =
       if (tparams.isEmpty) tpe else PolyType(tparams, tpe)
 
-    def unapply(tpe: Type): Option[(List[Symbol], Type)] = tpe match {
+    def unapply(tpe: Type): Some[(List[Symbol], Type)] = tpe match {
       case PolyType(tparams, restpe) => Some((tparams, restpe))
       case _                         => Some((Nil, tpe))
     }

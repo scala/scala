@@ -156,6 +156,7 @@ object ASMConverters {
       case i: t.LabelNode              => Label        (labelIndex(i))
       case i: t.FrameNode              => FrameEntry   (i.`type`, mapOverFrameTypes(lst(i.local)), mapOverFrameTypes(lst(i.stack)))
       case i: t.LineNumberNode         => LineNumber   (i.line, applyLabel(i.start))
+      case i                           => throw new MatchError(x)
     }
 
     private def convertBsmArgs(a: Array[Object]): List[Object] = a.iterator.map({

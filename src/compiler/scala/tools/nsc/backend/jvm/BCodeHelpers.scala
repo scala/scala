@@ -1028,6 +1028,7 @@ object BCodeHelpers {
       case GE => LT
       case GT => LE
       case LE => GT
+      case x  => throw new MatchError(x)
     }
     def opcodeIF = asm.Opcodes.IFEQ + op
     def opcodeIFICMP = asm.Opcodes.IF_ICMPEQ + op

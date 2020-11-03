@@ -189,7 +189,7 @@ abstract class ToolBoxFactory[U <: JavaUniverse](val u: U) { factorySelf =>
               case analyzer.SilentResultValue(result) =>
                 trace("success: ")(showAttributed(result, true, true, settings.Yshowsymkinds.value))
                 result
-              case error @ analyzer.SilentTypeError(_) =>
+              case error: analyzer.SilentTypeError =>
                 trace("failed: ")(error.err.errMsg)
                 if (!silent) throw ToolBoxError("reflective typecheck has failed: %s".format(error.err.errMsg))
                 EmptyTree

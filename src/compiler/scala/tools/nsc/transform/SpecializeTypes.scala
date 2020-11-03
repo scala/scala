@@ -231,7 +231,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
   protected def newTransformer(unit: CompilationUnit): AstTransformer =
     new SpecializationTransformer(unit)
 
-  abstract class SpecializedInfo {
+  sealed abstract class SpecializedInfo {
     def target: Symbol
 
     /** Are type bounds of @specialized type parameters of 'target' now in 'env'? */
@@ -748,7 +748,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           info(specCtor) = Forward(m)
         }
         else if (isNormalizedMember(m)) {  // methods added by normalization
-          val NormalizedMember(original) = info(m)
+          val NormalizedMember(original) = info(m): @unchecked
           if (nonConflicting(env ++ typeEnv(m))) {
             if (info(m).degenerate) {
               debuglog("degenerate normalized member " + m.defString)
@@ -1726,7 +1726,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
           if (symbol.isConstructor) {
             val t = atOwner(symbol)(forwardCtorCall(tree.pos, gen.mkSuperInitCall, vparamss, symbol.owner))
             def check(fwd: Tree): Unit = if (settings.unitSpecialization) {
-              val Apply(_, args) = fwd
+              val Apply(_, args) = fwd: @unchecked
               args.zip(vparamss.flatten).find {
                 case (arg, param) if (arg.tpe =:= UnitTpe) && param.symbol.name.endsWith(nme.SPECIALIZED_SUFFIX) =>
                   val msg = "Class parameter is specialized for type Unit. Consider using `@specialized(Specializable.Arg)` instead."
@@ -1806,6 +1806,8 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
             case SpecialSuperAccessor(_) => // same as abstract method
               debuglog(s"special super accessor: $tree with $symbol -> ${symbol.alias} in ${symbol.alias.owner} (in $currentClass)")
               localTyper.typed(deriveDefDef(tree)(rhs => rhs))
+
+            case x @ SpecializedInnerClass(_, _) => throw new MatchError(x) // ?!?
           }
           } // end transformDefDef
           expandInnerNormalizedMembers(transformDefDef(ddef))

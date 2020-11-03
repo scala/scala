@@ -205,7 +205,7 @@ object ClassManifestFactory {
   def classType[T](prefix: OptManifest[_], clazz: jClass[_], args: OptManifest[_]*): ClassManifest[T] =
     new ClassTypeManifest[T](Some(prefix), clazz, args.toList)
 
-  def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = arg match {
+  def arrayType[T](arg: OptManifest[_]): ClassManifest[Array[T]] = (arg: @unchecked) match {
     case NoManifest          => Object.asInstanceOf[ClassManifest[Array[T]]]
     case m: ClassManifest[_] => m.asInstanceOf[ClassManifest[T]].arrayManifest
   }

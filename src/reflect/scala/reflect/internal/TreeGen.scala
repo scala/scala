@@ -396,7 +396,7 @@ abstract class TreeGen {
 
     val (edefs, rest) = body span treeInfo.isEarlyDef
     val (evdefs, etdefs) = edefs partition treeInfo.isEarlyValDef
-    val gvdefs = evdefs map {
+    val gvdefs = evdefs collect {
       case vdef @ ValDef(_, _, tpt, _) =>
         copyValDef(vdef)(
         // atPos for the new tpt is necessary, since the original tpt might have no position
@@ -694,6 +694,7 @@ abstract class TreeGen {
     /* A reference to the name bound in Bind `pat`. */
     def makeValue(pat: Tree): Tree = pat match {
       case Bind(name, _) => Ident(name) setPos pat.pos.focus
+      case x             => throw new MatchError(x)
     }
 
     /* The position of the closure that starts with generator at position `genpos`. */
@@ -719,8 +720,8 @@ abstract class TreeGen {
         val valeqs = rest.take(definitions.MaxTupleArity - 1).takeWhile { ValEq.unapply(_).nonEmpty }
         assert(!valeqs.isEmpty, "Missing ValEq")
         val rest1 = rest.drop(valeqs.length)
-        val pats = valeqs map { case ValEq(pat, _) => pat }
-        val rhss = valeqs map { case ValEq(_, rhs) => rhs }
+        val pats = valeqs.collect { case ValEq(pat, _) => pat }
+        val rhss = valeqs.collect { case ValEq(_, rhs) => rhs }
         val defpat1 = makeBind(pat)
         val defpats = pats map makeBind
         val pdefs = defpats.lazyZip(rhss).flatMap(mkPatDef)

@@ -21,11 +21,13 @@ object IteratorProperties extends Properties("Iterator") {
   property("takeRight") = check((it, n) => it match {
     case it: Iterable[Int] => it.takeRight(n)
     case it: Iterator[Int] => View.takeRightIterator(it, n)
+    case x                 => throw new MatchError(x)
   })
   property("drop") = check(_ drop _)
   property("dropRight") = check((it, n) => it match {
     case it: Iterable[Int] => it.dropRight(n)
     case it: Iterator[Int] => View.dropRightIterator(it, n)
+    case x                 => throw new MatchError(x)
   })
 
   def check(f: (IterableOnceOps[Int, IterableOnce, IterableOnce[Int]], Int) => IterableOnce[Int]): Prop = forAll(Arbitrary.arbitrary[Seq[Int]], smallInteger) { (s: Seq[Int], n: Int) =>

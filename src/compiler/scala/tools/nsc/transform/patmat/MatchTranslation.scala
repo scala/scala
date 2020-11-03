@@ -386,6 +386,7 @@ trait MatchTranslation {
       def apply(tree: Tree): ExtractorCall = tree match {
         case UnApply(unfun@Unapplied(fun), args) => new ExtractorCallRegular(fun, args)(unfun) // extractor
         case Apply(fun, args)                    => new ExtractorCallProd(fun, args)      // case class
+        case x                                   => throw new MatchError(x)
       }
     }
 

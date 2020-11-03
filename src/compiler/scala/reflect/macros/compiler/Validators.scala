@@ -79,7 +79,7 @@ trait Validators {
         val boundsOk = typer.silent(_.infer.checkBounds(macroDdef, NoPrefix, NoSymbol, atparams, atargs, ""))
         boundsOk match {
           case SilentResultValue(true) => // do nothing, success
-          case SilentResultValue(false) | SilentTypeError(_) => MacroImplTargMismatchError(atargs, atparams)
+          case SilentResultValue(false) | _: SilentTypeError => MacroImplTargMismatchError(atargs, atparams)
         }
       } catch {
         case ex: NoInstance => MacroImplTparamInstantiationError(atparams, ex)

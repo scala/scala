@@ -42,8 +42,8 @@ sealed trait ZipAndJarFileLookupFactory {
         val result: ClassPath with Closeable = createForZipFile(zipFile, settings.releaseValue)
         closeableRegistry.registerCloseable(result)
         result
-      case Right(Seq(path)) =>
-        cache.getOrCreate(List(path), () => createForZipFile(zipFile, settings.releaseValue), closeableRegistry, checkStamps = true)
+      case Right(paths) =>
+        cache.getOrCreate(paths, () => createForZipFile(zipFile, settings.releaseValue), closeableRegistry, checkStamps = true)
     }
   }
 
@@ -291,6 +291,7 @@ final class FileBasedCache[T] {
               } else {
                 // TODO: What do do here? Maybe add to a list of closeables polled by a cleanup thread?
               }
+            case x => throw new MatchError(x)
           }
           val value = create()
           val entry = Entry(stamps, value)

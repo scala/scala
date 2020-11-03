@@ -40,6 +40,7 @@ object ReflectionExtractorsTest extends Properties("reflection extractors") {
     name match {
       case TermName(s) => s == name.toString
       case TypeName(s) => s == name.toString
+      case x           => throw new MatchError(x)
     }
   }
 

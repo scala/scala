@@ -138,6 +138,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
       new InjectDerivedValue(arg).copyAttrs(tree)
     def TypeTreeWithDeferredRefCheck(tree: Tree) = tree match {
       case dc@TypeTreeWithDeferredRefCheck() => new TypeTreeWithDeferredRefCheck()(dc.check).copyAttrs(tree)
+      case x                                 => throw new MatchError(x)
     }
   }
 
@@ -203,6 +204,7 @@ trait Trees extends scala.reflect.internal.Trees { self: Global =>
         tree, transformer.transform(arg))
     case TypeTreeWithDeferredRefCheck() =>
       transformer.treeCopy.TypeTreeWithDeferredRefCheck(tree)
+    case x => super.xtransform(transformer, tree)
   }
 
   // Finally, no one uses resetAllAttrs anymore, so I'm removing it from the compiler.

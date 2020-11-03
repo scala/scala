@@ -39,7 +39,7 @@ trait Helpers {
     import runDefinitions._
 
     val MacroContextUniverse = definitions.MacroContextUniverse
-    val treeInfo.MacroImplReference(isBundle, _, _, macroImpl, _) = macroImplRef
+    val treeInfo.MacroImplReference(isBundle, _, _, macroImpl, _) = macroImplRef: @unchecked
     val paramss = macroImpl.paramss
     val ContextParam = paramss match {
       case Nil | _ :+ Nil                                       => NoSymbol // no implicit parameters in the signature => nothing to do

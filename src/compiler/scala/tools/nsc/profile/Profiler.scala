@@ -235,6 +235,7 @@ private [profile] class RealProfiler(reporter : ProfileReporter, val settings: S
           gcEvents += gcEvent
         }
         reporter.reportGc(gcEvent)
+      case x => throw new MatchError(x)
     }
   }
 

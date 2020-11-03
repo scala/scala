@@ -467,8 +467,9 @@ trait EntityPage extends HtmlPage {
 
       mbr.comment.fold(NoElems) { comment =>
         val cmtedPrs = prs filter {
-          case tp: TypeParam => comment.typeParams isDefinedAt tp.name
+          case tp: TypeParam  => comment.typeParams isDefinedAt tp.name
           case vp: ValueParam => comment.valueParams isDefinedAt vp.name
+          case x              => throw new MatchError(x)
         }
         if (cmtedPrs.isEmpty && comment.result.isEmpty) NoElems
         else {
@@ -960,6 +961,7 @@ trait EntityPage extends HtmlPage {
             val anchor = "#" + mbr.signature
             val link = relativeLinkTo(mbr.inTemplate)
             myXml ++= Span(`class`="name", elems= A(href=link + anchor, elems= Txt(str.substring(from, to))))
+          case x => throw new MatchError(x)
         }
         index = to
       }
@@ -997,7 +999,7 @@ trait EntityPage extends HtmlPage {
 
   private def blockToStr(block: comment.Block): String = block match {
     case comment.Paragraph(in) => Page.inlineToStr(in)
-    case _ => block.toString
+    case _                     => block.toString
   }
 
   private def constraintToHtml(constraint: Constraint): Elems = constraint match {

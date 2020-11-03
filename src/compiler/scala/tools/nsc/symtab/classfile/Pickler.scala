@@ -569,6 +569,7 @@ abstract class Pickler extends SubComponent {
         case StaticallyAnnotatedType(annots, tp) => writeRef(tp) ; writeRefs(annots)
         case AnnotatedType(_, tp)                => writeTypeBody(tp) // write the underlying type if there are no static annotations
         case CompoundType(parents, _, clazz)     => writeRef(clazz); writeRefs(parents)
+        case x                                   => throw new MatchError(x)
       }
 
       def writeTreeBody(tree: Tree): Unit = {

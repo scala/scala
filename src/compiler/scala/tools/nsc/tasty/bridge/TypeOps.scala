@@ -110,6 +110,7 @@ trait TypeOps { self: TastyUniverse =>
     def ExprType(res: Type): Type = u.NullaryMethodType(res)
     def InlineExprType(res: Type): Type = res match {
       case u.ConstantType(value) => u.NullaryMethodType(u.FoldableConstantType(value))
+      case x                     => throw new MatchError(x)
     }
     def PolyType(params: List[Symbol], res: Type): Type = u.PolyType(params, res)
     def ClassInfoType(parents: List[Type], clazz: Symbol): Type = u.ClassInfoType(parents, clazz.rawInfo.decls, clazz.asType)
@@ -301,6 +302,7 @@ trait TypeOps { self: TastyUniverse =>
               val pre = tpe.prefix
               if (rec(pre)) unpeelName(ref :: acc, pre)
               else ref :: acc
+            case x => throw new MatchError(x)
           }
         }
         val name = (unpeelName(Nil, clazzRef): @unchecked) match {
@@ -313,6 +315,7 @@ trait TypeOps { self: TastyUniverse =>
         ErasedTypeRef(name.toTypeName, dims)
       case u.ErrorType =>
         ErasedTypeRef(tpnme.ErrorType, 0)
+      case x => throw new MatchError(x)
     }
 
   }
@@ -367,6 +370,7 @@ trait TypeOps { self: TastyUniverse =>
   def singletonLike(tpe: Type): Symbol = tpe match {
     case u.SingleType(_, sym) => sym
     case u.TypeRef(_,sym,_)   => sym
+    case x                    => throw new MatchError(x)
   }
 
   private[TypeOps] val NoSymbolFn = (_: Context) => u.NoSymbol

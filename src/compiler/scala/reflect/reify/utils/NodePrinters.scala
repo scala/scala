@@ -31,7 +31,7 @@ trait NodePrinters {
       // Rolling a full-fledged, robust TreePrinter would be several times more code.
       // Also as of late we have tests that ensure that UX won't be broken by random changes to the reifier.
       val lines = (tree.toString.split(EOL) drop 1 dropRight 1).toList splitAt 2
-      val (List(universe, mirror), reification0) = lines
+      val (List(universe, mirror), reification0) = lines: @unchecked
       val reification = (for (line <- reification0) yield {
         var s = line substring 2
         s = s.replace(nme.UNIVERSE_PREFIX.toString, "")

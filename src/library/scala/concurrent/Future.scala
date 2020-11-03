@@ -587,7 +587,8 @@ object Future {
             now = System.nanoTime()
           }
           // Done waiting, drop out
-        case _: FiniteDuration => // Drop out if 0 or less
+        case _: FiniteDuration    => // Drop out if 0 or less
+        case x: Duration.Infinite => throw new MatchError(x)
       }
       throw new TimeoutException(s"Future timed out after [$atMost]")
     }

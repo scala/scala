@@ -448,6 +448,8 @@ abstract class Erasure extends InfoTransform
         // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
         val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)): @nowarn("msg=match may not be exhaustive")
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
+
+      case x => throw new MatchError(x)
     }
   }
 
@@ -1015,8 +1017,9 @@ abstract class Erasure extends InfoTransform
         val args = tree.args
 
         def qualifier = fn match {
-          case Select(qual, _) => qual
+          case Select(qual, _)               => qual
           case TypeApply(Select(qual, _), _) => qual
+          case x                             => throw new MatchError(x)
         }
 
         // TODO: this should share logic with TypeTestTreeMaker in the pattern matcher,
@@ -1192,7 +1195,7 @@ abstract class Erasure extends InfoTransform
             } else qual match {
               case New(tpt) if name == nme.CONSTRUCTOR && tpt.tpe.typeSymbol.isDerivedValueClass =>
                 // println("inject derived: "+arg+" "+tpt.tpe)
-                val List(arg) = args
+                val List(arg) = args: @unchecked
                 val attachment = new TypeRefAttachment(tree.tpe.asInstanceOf[TypeRef])
                 InjectDerivedValue(arg) updateAttachment attachment
               case _ =>

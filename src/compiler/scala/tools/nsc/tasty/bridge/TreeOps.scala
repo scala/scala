@@ -98,6 +98,7 @@ trait TreeOps { self: TastyUniverse =>
       case _:u.TypeRef | _:u.SingleType => u.TypeTree(tpe)
       case path: u.ThisType             => u.This(path.sym.name.toTypeName).setType(path)
       case path: u.ConstantType         => u.Literal(path.value).setType(tpe)
+      case x                            => throw new MatchError(x)
     }
 
     @inline final def TypeTree(tp: Type): Tree = u.TypeTree(tp)
@@ -115,6 +116,7 @@ trait TreeOps { self: TastyUniverse =>
         val sym = tree.tpe match {
           case u.SingleType(_, sym) => sym
           case u.TypeRef(_, sym, _) => sym
+          case x                    => throw new MatchError(x)
         }
         if (tree.tpe.prefix === u.NoPrefix && (sym.hasFlag(Flags.PACKAGE) && !sym.isPackageObjectOrClass || sym.isLocalToBlock)) {
           if (sym.isLocalToBlock) u.Ident(sym).setType(tree.tpe)

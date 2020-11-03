@@ -12,8 +12,6 @@
 
 package scala.collection.concurrent;
 
-import java.lang.Object;
-
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 abstract class INodeBase<K, V> extends BasicNode {
@@ -35,7 +33,7 @@ abstract class INodeBase<K, V> extends BasicNode {
     }
 
     public BasicNode prev() {
-	return null;
+        return null;
     }
 
 }

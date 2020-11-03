@@ -62,6 +62,7 @@ package object reflect {
       case API_INFO    => reporter.echo(info.pos, info.msg)
       case API_WARNING => reporter.warning(info.pos, info.msg)
       case API_ERROR   => reporter.error(info.pos, info.msg)
+      case x           => throw new MatchError(x)
     }
 
     override def flush(): Unit = {

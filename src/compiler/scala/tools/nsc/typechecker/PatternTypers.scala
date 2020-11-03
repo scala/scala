@@ -141,7 +141,7 @@ trait PatternTypers {
     }
 
     protected def typedStarInPattern(tree: Tree, mode: Mode, pt: Type) = {
-      val Typed(expr, tpt) = tree
+      val Typed(expr, tpt) = tree: @unchecked
       val exprTyped = typed(expr, mode)
       val baseClass = exprTyped.tpe.typeSymbol match {
         case ArrayClass   => ArrayClass

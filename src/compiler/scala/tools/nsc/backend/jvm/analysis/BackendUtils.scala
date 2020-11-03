@@ -16,7 +16,7 @@ package analysis
 
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{nowarn, switch, tailrec}
+import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable.BitSet
 import scala.collection.immutable.ArraySeq.unsafeWrapArray
 import scala.collection.mutable
@@ -25,12 +25,12 @@ import scala.reflect.internal.util.Position
 import scala.tools.asm
 import scala.tools.asm.Opcodes._
 import scala.tools.asm.tree._
-import scala.tools.asm.{Handle, Opcodes, Type}
+import scala.tools.asm.{ Handle, Opcodes, Type }
 import scala.tools.nsc.backend.jvm.BTypes._
 import scala.tools.nsc.backend.jvm.GenBCode._
 import scala.tools.nsc.backend.jvm.analysis.BackendUtils._
 import scala.tools.nsc.backend.jvm.opt.BytecodeUtils._
-import scala.util.control.{NoStackTrace, NonFatal}
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * This component hosts tools and utilities used in the backend that require access to a `BTypes`
@@ -441,7 +441,7 @@ abstract class BackendUtils extends PerRunInit {
 
     for (nestedClass <- allNestedClasses) {
       // Extract the innerClassEntry - we know it exists, enclosingNestedClassesChain only returns nested classes.
-      val Some(e) = nestedClass.innerClassAttributeEntry.get: @nowarn("msg=match may not be exhaustive")
+      val Some(e) = nestedClass.innerClassAttributeEntry.get: @unchecked
       jclass.visitInnerClass(e.name, e.outerName, e.innerName, e.flags)
     }
   }

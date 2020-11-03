@@ -77,7 +77,7 @@ abstract class Reifier extends States
           val rtree = pipeline(tree)
 
           val tpe = typer.packedType(tree, NoSymbol)
-          val ReifiedType(_, _, tpeSymtab, _, rtpe, tpeReificationIsConcrete) = `package`.reifyType(global)(typer, universe, mirror, tpe, concrete = false)
+          val ReifiedType(_, _, tpeSymtab, _, rtpe, tpeReificationIsConcrete) = `package`.reifyType(global)(typer, universe, mirror, tpe, concrete = false): @unchecked
           state.reificationIsConcrete &= tpeReificationIsConcrete
           state.symtab ++= tpeSymtab
           ReifiedTree(universe, mirror, symtab, rtree, tpe, rtpe, reificationIsConcrete)

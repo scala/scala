@@ -54,8 +54,8 @@ object Decode {
     import classFile._
 
     classFile annotation SCALA_SIG_ANNOTATION map { case Annotation(_, els) =>
-      val bytesElem = els find (x => constant(x.elementNameIndex) == BYTES_VALUE) orNull
-      val _bytes    = bytesElem.elementValue match { case ConstValueIndex(x) => constantWrapped(x) }
+      val bytesElem = els.find(x => constant(x.elementNameIndex) == BYTES_VALUE).orNull
+      val _bytes    = bytesElem.elementValue match { case ConstValueIndex(x) => constantWrapped(x) case x => throw new MatchError(x) }
       val bytes     = _bytes.asInstanceOf[StringBytesPair].bytes
       val length    = ByteCodecs.decode(bytes)
 

@@ -31,22 +31,26 @@ trait FastStringInterpolator extends FormatInterpolator {
 
       val treated = 
         try
-          parts.mapConserve { case lit@Literal(Constant(stringVal: String)) =>
-            val k = Constant(if (isRaw && currentRun.isScala3) stringVal
-                             else if (isRaw) {
-                               val processed = StringContext.processUnicode(stringVal)
-                               if(processed != stringVal){
-                                 val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
-                                   case ((p, o), i) if p != o => i
-                                 }.getOrElse(processed.length - 1)
-                                 
-                                 runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
-                               }
-                               processed
-                             }
-                             else StringContext.processEscapes(stringVal))
-            // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
-            treeCopy.Literal(lit, k).setType(ConstantType(k))
+          parts.mapConserve {
+            case lit @ Literal(Constant(stringVal: String)) =>
+              val value =
+                if (isRaw && currentRun.isScala3) stringVal
+                else if (isRaw) {
+                  val processed = StringContext.processUnicode(stringVal)
+                  if (processed != stringVal) {
+                    val diffindex = processed.zip(stringVal).zipWithIndex.collectFirst {
+                      case ((p, o), i) if p != o => i
+                    }.getOrElse(processed.length - 1)
+
+                    runReporting.deprecationWarning(lit.pos.withShift(diffindex), "Unicode escapes in raw interpolations are deprecated. Use literal characters instead.", "2.13.2", "", "")
+                  }
+                  processed
+                }
+                else StringContext.processEscapes(stringVal)
+              val k = Constant(value)
+              // To avoid the backlash of backslash, taken literally by Literal, escapes are processed strictly (scala/bug#11196)
+              treeCopy.Literal(lit, k).setType(ConstantType(k))
+            case x => throw new MatchError(x)
           }
         catch {
           case ie: StringContext.InvalidEscapeException => c.abort(parts.head.pos.withShift(ie.index), ie.getMessage)
@@ -97,5 +101,6 @@ trait FastStringInterpolator extends FormatInterpolator {
           $args,
           sc.parts)
       }"""
+    case x => throw new MatchError(x)
   }
 }

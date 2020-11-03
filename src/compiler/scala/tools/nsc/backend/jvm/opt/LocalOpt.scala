@@ -944,6 +944,7 @@ object LocalOptImpls {
           if (oldIndex >= firstLocalIndex && renumber(oldIndex) != oldIndex) varIns match {
             case vi: VarInsnNode => vi.`var` = renumber(slot)
             case ii: IincInsnNode => ii.`var` = renumber(slot)
+            case x                => throw new MatchError(x)
           }
         case _ =>
       }

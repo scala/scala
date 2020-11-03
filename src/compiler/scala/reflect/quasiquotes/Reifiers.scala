@@ -72,7 +72,7 @@ trait Reifiers { self: Quasiquotes =>
         val freshdefs = nameMap.iterator.map {
           case (origname, names) =>
             assert(names.size == 1, "Require one name")
-            val FreshName(prefix) = origname
+            val FreshName(prefix) = origname: @unchecked
             val nameTypeName = if (origname.isTermName) tpnme.TermName else tpnme.TypeName
             val freshName = if (origname.isTermName) nme.freshTermName else nme.freshTypeName
             // q"val ${names.head}: $u.$nameTypeName = $u.internal.reificationSupport.$freshName($prefix)"
@@ -104,9 +104,9 @@ trait Reifiers { self: Quasiquotes =>
             }
             val guard =
               nameMap.collect { case (_, nameset) if nameset.size >= 2 =>
-                nameset.toList.sliding(2).map { case List(n1, n2) =>
-                  // q"$n1 == $n2"
-                  Apply(Select(Ident(n1), nme.EQ), List(Ident(n2)))
+                nameset.toList.sliding(2).map {
+                  case List(n1, n2) => Apply(Select(Ident(n1), nme.EQ), List(Ident(n2))) // q"$n1 == $n2"
+                  case x            => throw new MatchError(x)
                 }
               }.flatten.reduceOption[Tree] { (l, r) =>
                 // q"$l && $r"
@@ -435,6 +435,7 @@ trait Reifiers { self: Quasiquotes =>
         }
         val (mods, flags) = modsPlaceholders.map {
           case ModsPlaceholder(hole: ApplyHole) => hole
+          case x                                => throw new MatchError(x)
         }.partition { hole =>
           if (hole.tpe <:< modsType) true
           else if (hole.tpe <:< flagsType) false

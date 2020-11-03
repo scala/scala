@@ -143,6 +143,7 @@ trait TypeAdaptingTransformer { self: TreeDSL =>
             // Push the cast into the RHS of matchEnd LabelDefs.
             ld.symbol.modifyInfo {
               case MethodType(params, _) => MethodType(params, pt)
+              case x                     => throw new MatchError(x)
             }
             deriveLabelDef(ld)(rhs => cast(rhs, pt)).setType(pt)
           case _ =>
