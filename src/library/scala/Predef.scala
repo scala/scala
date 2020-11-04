@@ -87,9 +87,9 @@ import scala.annotation.meta.{ companionClass, companionMethod }
  * @groupprio implicit-classes-any 70
  * @groupdesc implicit-classes-any These implicit classes add useful extension methods to every type.
  *
- * @groupname implicit-classes-char CharSequence Conversions
- * @groupprio implicit-classes-char 80
- * @groupdesc implicit-classes-char These implicit classes add CharSequence methods to Array[Char] and IndexedSeq[Char] instances.
+ * @groupname char-sequence-wrappers CharSequence Wrappers
+ * @groupprio char-sequence-wrappers 80
+ * @groupdesc char-sequence-wrappers Wrappers that implements CharSequence and were implicit classes.
  *
  * @groupname conversions-java-to-anyval Java to Scala
  * @groupprio conversions-java-to-anyval 90
@@ -380,20 +380,27 @@ object Predef extends LowPriorityImplicits {
     def +(other: String): String = String.valueOf(self) + other
   }
 
-  implicit final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
+  /** @group char-sequence-wrappers */
+  final class SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]) extends CharSequence {
     def length: Int                                     = sequenceOfChars.length
     def charAt(index: Int): Char                        = sequenceOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new SeqCharSequence(sequenceOfChars.slice(start, end))
     override def toString                               = sequenceOfChars.mkString
   }
 
-  /** @group implicit-classes-char */
-  implicit final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
+  /** @group char-sequence-wrappers */
+  def SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]): SeqCharSequence = new SeqCharSequence(sequenceOfChars)
+
+  /** @group char-sequence-wrappers */
+  final class ArrayCharSequence(arrayOfChars: Array[Char]) extends CharSequence {
     def length: Int                                     = arrayOfChars.length
     def charAt(index: Int): Char                        = arrayOfChars(index)
     def subSequence(start: Int, end: Int): CharSequence = new runtime.ArrayCharSequence(arrayOfChars, start, end)
     override def toString                               = arrayOfChars.mkString
   }
+
+  /** @group char-sequence-wrappers */
+  def ArrayCharSequence(arrayOfChars: Array[Char]): ArrayCharSequence = new ArrayCharSequence(arrayOfChars)
 
   /** @group conversions-string */
   @inline implicit def augmentString(x: String): StringOps = new StringOps(x)
