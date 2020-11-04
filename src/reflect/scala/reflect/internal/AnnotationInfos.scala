@@ -110,6 +110,9 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     def lazily(lazyInfo: => AnnotationInfo) =
       new LazyAnnotationInfo(lazyInfo)
 
+    def lazily(lazySymbol: => Symbol, lazyInfo: => AnnotationInfo) =
+      new ExtraLazyAnnotationInfo(lazySymbol, lazyInfo)
+
     def apply(atp: Type, args: List[Tree], assocs: List[(Name, ClassfileAnnotArg)]): AnnotationInfo =
       new CompleteAnnotationInfo(atp, args, assocs)
 
@@ -154,7 +157,7 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
   /** Symbol annotations parsed in `Namer` (typeCompleter of
    *  definitions) have to be lazy (#1782)
    */
-  final class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
+  class LazyAnnotationInfo(lazyInfo: => AnnotationInfo) extends AnnotationInfo {
     private[this] var forced = false
     private lazy val forcedInfo = try lazyInfo finally forced = true
 
@@ -170,6 +173,11 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     override def pos: Position = if (forced) forcedInfo.pos else NoPosition
 
     override def completeInfo(): Unit = forcedInfo
+  }
+
+  final class ExtraLazyAnnotationInfo(sym: => Symbol, lazyInfo: => AnnotationInfo) extends LazyAnnotationInfo(lazyInfo) {
+    private[this] lazy val typeSymbol = sym
+    override def symbol: Symbol = typeSymbol
   }
 
   /** Typed information about an annotation. It can be attached to either
