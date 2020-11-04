@@ -87,7 +87,7 @@ class Global(var currentSettings: Settings, reporter0: Reporter)
   private[this] var currentReporter: FilteringReporter = null
   locally { reporter = reporter0 }
 
-  def reporter: Reporter = currentReporter
+  def reporter: FilteringReporter = currentReporter
   def reporter_=(newReporter: Reporter): Unit =
     currentReporter = newReporter match {
       case f: FilteringReporter => f
