@@ -439,7 +439,6 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
   def compileSourcesKeepingRun(sources: SourceFile*) = {
     val run = new Run()
     assert(run.typerPhase != NoPhase, "REPL requires a typer phase.")
-    reporter.reset()
     run compileSources sources.toList
     (!reporter.hasErrors, run)
   }
@@ -598,13 +597,22 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
       }
     }
 
-    compile(line, synthetic) match {
+    val res = compile(line, synthetic) match {
       case Left(result) => result
       case Right(req)   => loadAndRunReq(req)
     }
+
+    // besides regular errors, clear deprecation and feature warnings
+    // so they don't leak from last compilation run into next provisional parse
+    if (res != IR.Incomplete) {
+      reporter.reset()
+      currentRun.reporting.clearAllConditionalWarnings()
+    }
+
+    res
   }
 
-  // create a Request and compile it
+  // create a Request and compile it if input is complete
   private[interpreter] def compile(line: String, synthetic: Boolean): Either[IR.Result, Request] = {
     if (global == null) Left(IR.Error)
     else requestFromLine(line, synthetic) match {
@@ -1158,27 +1166,32 @@ class IMain(initialSettings: Settings, protected val out: JPrintWriter) extends 
 
     def apply(line: String): Result = debugging(s"""parse("$line")""") {
       var isIncomplete = false
-      def parse = withoutWarnings {
-        reporter.reset()
+      def parse = {
         val trees = newUnitParser(line, label).parseStats()
         if (!isIncomplete)
           runReporting.summarizeErrors()
         if (reporter.hasErrors) Error(trees)
         else if (isIncomplete) Incomplete(trees)
+        else if (reporter.hasWarnings && settings.fatalWarnings) Error(trees)
         else Success(trees)
       }
-      currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true)(parse)
+      val res = currentRun.parsing.withIncompleteHandler((_, _) => isIncomplete = true)(parse)
+      if (!isIncomplete) reporter.reset()
+      res
     }
+
     // code has a named package
     def packaged(line: String): Boolean = {
       def parses = {
         reporter.reset()
         val tree = newUnitParser(line).parse()
-        !reporter.hasErrors && {
+        val res  = !reporter.hasErrors && {
           tree match { case PackageDef(Ident(id), _) => id != nme.EMPTY_PACKAGE_NAME case _ => false }
         }
+        if (reporter.hasErrors) reporter.reset()
+        res
       }
-      beSilentDuring(parses)
+      !reporter.hasErrors && beSilentDuring(parses)
     }
   }
 

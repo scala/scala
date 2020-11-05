@@ -93,6 +93,7 @@ scala> case class Bar(n: Int)
 defined class Bar
 
 scala> implicit def foo2bar(foo: Foo) = Bar(foo.n)
+warning: one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 foo2bar: (foo: Foo)Bar
 
 scala> val bar: Bar = Foo(3)
@@ -266,6 +267,7 @@ scala> xs map (x => x)
 res6: Array[_] = Array(1, 2)
 
 scala> xs map (x => (x, x))
+warning: one feature warning; for details, enable `:setting -feature' or `:replay -feature'
 res7: Array[(_$1, _$1)] forSome { type _$1 } = Array((1,1), (2,2))
 
 scala> 
@@ -351,6 +353,10 @@ defined class Term
 scala> def f(e: Exp) = e match {  // non-exhaustive warning here
   case _:Fact => 3
 }
+<console>:18: warning: match may not be exhaustive.
+It would fail on the following inputs: Exp(), Term()
+def f(e: Exp) = e match {  // non-exhaustive warning here
+                ^
 f: (e: Exp)Int
 
 scala> :quit
