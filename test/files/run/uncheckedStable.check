@@ -1,4 +1,0 @@
-uncheckedStable.scala:9: warning: match may not be exhaustive.
-It would fail on the following input: (x: Any forSome x not in (Test.this.A, Test.this.T, Test.this.o))
-  def m(a: Any) = a match {
-                  ^

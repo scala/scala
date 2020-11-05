@@ -1,6 +1,3 @@
-newSource1.scala:28: warning: match may not be exhaustive.
-  0 match {
-  ^
 [[syntax trees at end of                    patmat]] // newSource1.scala
 [0:553]package [0:0]<empty> {
   [0:151]object Case3 extends [13:151][152]scala.AnyRef {

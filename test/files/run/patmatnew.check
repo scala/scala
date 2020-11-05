@@ -16,22 +16,6 @@ patmatnew.scala:356: warning: multiline expressions might require enclosing pare
 patmatnew.scala:356: warning: a pure expression does nothing in statement position
         case 3 => assert(false); "KO"
                                  ^
-patmatnew.scala:119: warning: match may not be exhaustive.
-It would fail on the following inputs: (x: Any forSome x not in Test.Test717.foo1.Bar), Bar((x: Int forSome x not in 2))
-      val res = (foo1.Bar(2): Any) match {
-                            ^
-patmatnew.scala:138: warning: match may not be exhaustive.
-It would fail on the following inputs: (x: Shmeez.this.Tree forSome x not in (HagbardCeline, Shmeez.this.Beez)), Beez((x: Int forSome x not in 2))
-    def foo = tree match {
-              ^
-patmatnew.scala:148: warning: match may not be exhaustive.
-It would fail on the following inputs: (x: Test.TestGuards.Tree forSome x not in Test.TestGuards.Beez), Beez(_)
-      val res = tree match {
-                ^
-patmatnew.scala:153: warning: match may not be exhaustive.
-It would fail on the following inputs: (x: Test.TestGuards.Tree forSome x not in Test.TestGuards.Beez), Beez(_)
-      val ret = (Beez(3): Tree) match {
-                        ^
 patmatnew.scala:175: warning: match may not be exhaustive.
 It would fail on the following inputs: List(_), Nil
     def doMatch(xs: List[String]): String = xs match {
@@ -40,13 +24,6 @@ patmatnew.scala:178: warning: match may not be exhaustive.
 It would fail on the following inputs: List(_), Nil
     def doMatch2(xs: List[String]): List[String] = xs match {
                                                    ^
-patmatnew.scala:193: warning: match may not be exhaustive.
-    def doMatch(l: Seq[String]): String = l match {
-                                          ^
-patmatnew.scala:264: warning: match may not be exhaustive.
-It would fail on the following inputs: (x: Any forSome x not in Test.TestSequence06.A), A((x: Any forSome x not in (1, Test.TestSequence06.A))), A(A((x: Any forSome x not in 1)))
-    def doMatch(x: Any, bla: Int) = x match {
-                                    ^
 patmatnew.scala:280: warning: match may not be exhaustive.
 It would fail on the following inputs: List(_), Nil
     def doMatch1(xs: List[Char]) = xs match {
@@ -55,22 +32,6 @@ patmatnew.scala:283: warning: match may not be exhaustive.
 It would fail on the following inputs: List(_), Nil
     def doMatch2(xs: List[Char]) = xs match {
                                    ^
-patmatnew.scala:286: warning: match may not be exhaustive.
-    def doMatch3(xs: Seq[Char]) = xs match {
-                                  ^
-patmatnew.scala:290: warning: match may not be exhaustive.
-    def doMatch4(xs: Seq[Char]) = xs match {
-                                  ^
-patmatnew.scala:318: warning: match may not be exhaustive.
-      lazyList match {
-      ^
-patmatnew.scala:396: warning: match may not be exhaustive.
-      "baz" match {
-      ^
-patmatnew.scala:443: warning: match may not be exhaustive.
-It would fail on the following input: (x: 42 forSome x not in FooBar)
-  def lala() = 42 match {
-               ^
 patmatnew.scala:492: warning: unreachable code
         case _ if false =>
                         ^
