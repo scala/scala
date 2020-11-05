@@ -1906,6 +1906,8 @@ trait Namers extends MethodSynthesis {
         }
         ann match {
           case treeInfo.Applied(Select(New(tpt), _), _, _) =>
+            // We can defer typechecking the arguments of annotations. This is important to avoid cycles in
+            // checking `hasAnnotation(UncheckedStable)` during typechecking.
             def computeSymbol = enteringTyper {
               val tptCopy = tpt.duplicate
               val silentTyper  = newTyper(ctx.makeSilent(newtree = tptCopy))
@@ -1915,12 +1917,7 @@ trait Namers extends MethodSynthesis {
             }
             AnnotationInfo.lazily(computeSymbol, computeInfo)
           case _ =>
-            AnnotationInfo lazily {
-              enteringTyper {
-                val annotSig = newTyper(ctx.makeNonSilent(ann)).typedAnnotation(ann, Some(annotee))
-                if (pred(annotSig)) annotSig else UnmappableAnnotation // UnmappableAnnotation will be dropped in typedValDef and typedDefDef
-              }
-            }
+            AnnotationInfo.lazily(computeInfo)
         }
       }
 
