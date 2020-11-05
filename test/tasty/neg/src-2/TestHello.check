@@ -14,14 +14,14 @@ TestHello_fail.scala:5: error: type mismatch;
  required: T
   HelloWorld.higherBounded3(List(List("")))
                                 ^
-TestHello_fail.scala:6: error: inferred type arguments [scala.util.Left[String,String]] do not conform to method higherBounded4's type parameter bounds [T <: Either[_ <: Int, String]]
-  HelloWorld.higherBounded4(Left[String,String](""))
+TestHello_fail.scala:6: error: inferred type arguments [scala.util.Left[String]] do not conform to method higherBounded4's type parameter bounds [T <: Either[_ <: Int, String]]
+  HelloWorld.higherBounded4(Left(""))
              ^
 TestHello_fail.scala:6: error: type mismatch;
- found   : scala.util.Left[String,String]
+ found   : scala.util.Left[String]
  required: T
-  HelloWorld.higherBounded4(Left[String,String](""))
-                                               ^
+  HelloWorld.higherBounded4(Left(""))
+                                ^
 TestHello_fail.scala:10: error: kinds of the type arguments (helloworld.TestHello.Show) do not conform to the expected kinds of the type parameters (type F).
 helloworld.TestHello.Show's type parameters do not match type F's expected parameters:
 type A is contravariant, but type _ is declared covariant

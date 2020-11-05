@@ -86,12 +86,12 @@ object GenericInstances {
       def from(r: Repr): Cat = r match { case ::(x, ::(y, HNil)) => Cat(x, y) }
     }
 
-  implicit def genEither[A, B]: Generic[Either[A, B]] { type Repr = Left[A, B] :+: Right[A, B] :+: CNil } =
+  implicit def genEither[A, B]: Generic[Either[A, B]] { type Repr = Left[A] :+: Right[B] :+: CNil } =
     new Generic[Either[A, B]] {
-      type Repr = Left[A, B] :+: Right[A, B] :+: CNil
+      type Repr = Left[A] :+: Right[B] :+: CNil
       def to(t: Either[A, B]): Repr = t match {
-        case (x: Left[A, B]  @unchecked) => Inl(x)
-        case (x: Right[A, B] @unchecked) => Inr(Inl(x))
+        case (x: Left[A]  @unchecked) => Inl(x)
+        case (x: Right[B] @unchecked) => Inr(Inl(x))
       }
       def from(r: Repr): Either[A, B] = r match {
         case Inl(x) => x
@@ -100,18 +100,18 @@ object GenericInstances {
       }
     }
 
-  implicit def genLeft[A, B]: Generic[Left[A, B]] { type Repr = A :: HNil } =
-    new Generic[Left[A, B]] {
+  implicit def genLeft[A]: Generic[Left[A]] { type Repr = A :: HNil } =
+    new Generic[Left[A]] {
       type Repr = A :: HNil
-      def to(t: Left[A, B]): Repr = t match { case Left(x) => ::(x, HNil) }
-      def from(r: Repr): Left[A, B] = r match { case ::(x, HNil) => Left(x) }
+      def to(t: Left[A]): Repr = t match { case Left(x) => ::(x, HNil) }
+      def from(r: Repr): Left[A] = r match { case ::(x, HNil) => Left(x) }
     }
 
-  implicit def genRight[A, B]: Generic[Right[A, B]] { type Repr = B :: HNil } =
-    new Generic[Right[A, B]] {
+  implicit def genRight[B]: Generic[Right[B]] { type Repr = B :: HNil } =
+    new Generic[Right[B]] {
       type Repr = B :: HNil
-      def to(t: Right[A, B]): Repr = t match { case Right(x) => ::(x, HNil) }
-      def from(r: Repr): Right[A, B] = r match { case ::(x, HNil) => Right(x) }
+      def to(t: Right[B]): Repr = t match { case Right(x) => ::(x, HNil) }
+      def from(r: Repr): Right[B] = r match { case ::(x, HNil) => Right(x) }
     }
 }
 

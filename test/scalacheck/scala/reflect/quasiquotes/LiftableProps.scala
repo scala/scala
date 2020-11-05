@@ -152,7 +152,7 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
   property("lift left") = test {
     val left1 = Left(1)
     assert(q"$left1" ≈ q"scala.util.Left(1)")
-    val left2: Left[Int, Int] = Left(1)
+    val left2: Left[Int] = Left(1)
     assert(q"$left2" ≈ q"scala.util.Left(1)")
     val left3: Either[Int, Int] = Left(1)
     assert(q"$left3" ≈ q"scala.util.Left(1)")
@@ -161,7 +161,7 @@ object LiftableProps extends QuasiquoteProperties("liftable") {
   property("lift right") = test {
     val right1 = Right(1)
     assert(q"$right1" ≈ q"scala.util.Right(1)")
-    val right2: Right[Int, Int] = Right(1)
+    val right2: Right[Int] = Right(1)
     assert(q"$right2" ≈ q"scala.util.Right(1)")
     val right3: Either[Int, Int] = Right(1)
     assert(q"$right3" ≈ q"scala.util.Right(1)")

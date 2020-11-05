@@ -82,7 +82,7 @@ abstract class BTypesFromClassfile {
     }
   }
 
-  private def computeClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): Right[Nothing, ClassInfo] = {
+  private def computeClassInfoFromClassNode(classNode: ClassNode, classBType: ClassBType): Right[ClassInfo] = {
     val superClass = classNode.superName match {
       case null =>
         assert(classNode.name == ObjectRef.internalName, s"class with missing super type: ${classNode.name}")

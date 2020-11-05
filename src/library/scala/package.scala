@@ -138,10 +138,10 @@ package object scala {
   type Either[+A, +B] = scala.util.Either[A, B]
   val Either = scala.util.Either
 
-  type Left[+A, +B] = scala.util.Left[A, B]
+  type Left[+A] = scala.util.Left[A]
   val Left = scala.util.Left
 
-  type Right[+A, +B] = scala.util.Right[A, B]
+  type Right[+B] = scala.util.Right[B]
   val Right = scala.util.Right
 
 }

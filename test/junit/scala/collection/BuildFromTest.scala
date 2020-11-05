@@ -143,7 +143,7 @@ class BuildFromTest {
     @unused val xs5: immutable.List[String] = xs3
 
     val xs6 = immutable.TreeMap((1, "1"), (2, "2"))
-    val (xs7, xs8) = partitionMap(xs6) { case (k, v) => Left[(String, Int), (Int, Boolean)]((v, k)) }
+    val (xs7, xs8) = partitionMap(xs6)(kv => Left(kv.swap).withRight[(Int, Boolean)])
     @unused val xs9: immutable.TreeMap[String, Int] = xs7
     @unused val xs10: immutable.TreeMap[Int, Boolean] = xs8
   }

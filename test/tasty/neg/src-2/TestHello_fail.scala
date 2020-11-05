@@ -3,7 +3,7 @@ package helloworld
 object TestHello {
   HelloWorld.higherBounded2(List(""))
   HelloWorld.higherBounded3(List(List("")))
-  HelloWorld.higherBounded4(Left[String,String](""))
+  HelloWorld.higherBounded4(Left(""))
 
   trait Show[-A]
 

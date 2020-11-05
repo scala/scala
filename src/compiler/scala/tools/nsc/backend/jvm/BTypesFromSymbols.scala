@@ -266,7 +266,7 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       r
   }))
 
-  private def computeClassInfo(classSym: Symbol, classBType: ClassBType): Right[Nothing, ClassInfo] = {
+  private def computeClassInfo(classSym: Symbol, classBType: ClassBType): Right[ClassInfo] = {
     /*
      * Reconstruct the classfile flags from a Java defined class symbol.
      *

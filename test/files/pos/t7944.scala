@@ -6,7 +6,7 @@ object Test {
   }
 
   def foo = {
-    val l: Either[Int, Nothing] = Left[Int, Nothing](1)
+    val l: Either[Int, Nothing] = Left(1)
 
     var ok = EitherOps(l).disjunction
 

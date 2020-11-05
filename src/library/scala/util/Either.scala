@@ -451,35 +451,35 @@ sealed abstract class Either[+A, +B] extends Product with Serializable {
 
 /** The left side of the disjoint union, as opposed to the [[scala.util.Right]] side.
  */
-final case class Left[+A, +B](value: A) extends Either[A, B] {
+final case class Left[+A](value: A) extends Either[A, Nothing] {
   def isLeft  = true
   def isRight = false
 
   /**
-    * Upcasts this `Left[A, B]` to `Either[A, B1]`
+    * Upcasts this `Left[A]` to `Either[A, B]`
     * {{{
-    *   Left(1)                   // Either[Int, Nothing]
+    *   Left(1)                   // Left[Int]
     *   Left(1).withRight[String] // Either[Int, String]
     * }}}
     */
-  def withRight[B1 >: B]: Either[A, B1] = this
+  def withRight[B]: Either[A, B] = this
 
 }
 
 /** The right side of the disjoint union, as opposed to the [[scala.util.Left]] side.
  */
-final case class Right[+A, +B](value: B) extends Either[A, B] {
+final case class Right[+B](value: B) extends Either[Nothing, B] {
   def isLeft  = false
   def isRight = true
 
   /**
-    * Upcasts this `Right[A, B]` to `Either[A1, B]`
+    * Upcasts this `Right[B]` to `Either[A, B]`
     * {{{
-    *   Right("x")               // Either[Nothing, String]
+    *   Right("x")               // Right[String]
     *   Right("x").withLeft[Int] // Either[Int, String]
     * }}}
     */
-  def withLeft[A1 >: A]: Either[A1, B] = this
+  def withLeft[A]: Either[A, B] = this
 
 }
 

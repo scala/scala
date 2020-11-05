@@ -60,11 +60,17 @@ trait StandardLiftables { self: Universe =>
       case none: None.type => lift(none)
     }
 
-    implicit def liftLeft[L: Liftable, R]: Liftable[Left[L, R]]               = Liftable { case Left(v)  => callScala(stdnme.util, stdnme.Left)(lift(v) :: Nil) }
-    implicit def liftRight[L, R: Liftable]: Liftable[Right[L, R]]             = Liftable { case Right(v) => callScala(stdnme.util, stdnme.Right)(lift(v) :: Nil) }
+    implicit def liftLeft[L: Liftable]: Liftable[Left[L]] = Liftable {
+      case Left(v) => callScala(stdnme.util, stdnme.Left)(lift(v) :: Nil)
+    }
+
+    implicit def liftRight[R: Liftable]: Liftable[Right[R]] = Liftable {
+      case Right(v) => callScala(stdnme.util, stdnme.Right)(lift(v) :: Nil)
+    }
+
     implicit def liftEither[L: Liftable, R: Liftable]: Liftable[Either[L, R]] = Liftable {
-      case left: Left[L, R]   => lift(left)
-      case right: Right[L, R] => lift(right)
+      case left: Left[L]   => lift(left)
+      case right: Right[R] => lift(right)
     }
 
     implicit def liftTuple2[T1, T2](implicit liftT1: Liftable[T1], liftT2: Liftable[T2]): Liftable[Tuple2[T1, T2]] = Liftable { t =>

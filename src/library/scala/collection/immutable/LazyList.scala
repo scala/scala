@@ -452,7 +452,7 @@ final class LazyList[+A] private(private[this] var lazyState: () => LazyList.Sta
     */
   override def partitionMap[A1, A2](f: A => Either[A1, A2]): (LazyList[A1], LazyList[A2]) = {
     val (left, right) = map(f).partition(_.isLeft)
-    (left.map(_.asInstanceOf[Left[A1, _]].value), right.map(_.asInstanceOf[Right[_, A2]].value))
+    (left.map(_.asInstanceOf[Left[A1]].value), right.map(_.asInstanceOf[Right[A2]].value))
   }
 
   /** @inheritdoc

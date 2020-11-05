@@ -15,7 +15,7 @@ object TestHello extends Suite("TestHello") {
   test(assert(HelloWorld.higherBounded(List(1,2,3)) === List(1,2,3)))
   test(assert(HelloWorld.higherBounded2(List(1,2,3)) === List(1,2,3)))
   test(assert(HelloWorld.higherBounded3(List(List(1))) === List(List(1))))
-  test(assert(HelloWorld.higherBounded4(Left[Int,String](3)) === Left[Int,String](3)))
+  test(assert(HelloWorld.higherBounded4(Left(3)) === Left(3)))
   test(assert(HelloWorld.higherBounded5(List(1,2,3)) === List(1,2,3)))
   test(assert(HelloWorld.higherBounded6(ShowString) === (ShowString: Show[String])))
   test(assert(HelloWorld.higherBounded7(orInt("")) === orInt("")))
