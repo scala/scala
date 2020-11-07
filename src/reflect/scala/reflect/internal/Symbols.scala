@@ -1722,7 +1722,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
     def maybeInitialize = {
       try   { initialize ; true }
-      catch { case _: CyclicReference => debuglog("Hit cycle in maybeInitialize of $this") ; false }
+      catch { case _: CyclicReference => debuglog(s"Hit cycle in maybeInitialize of $this") ; false }
     }
 
     /** Was symbol's type updated during given phase? */

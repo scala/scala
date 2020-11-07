@@ -36,4 +36,7 @@ object Test {
   def x = "${ bar }"                                          // warn, a cheap ident in scope
   def y = "${ baz }"                                          // no warn, cheap ident not in scope
   def z = "${ baz * 3}"                                       // warn, no expr parsing
+
+  def thisly = "$this"
+  def exprly = "${this}"
 }

@@ -5774,41 +5774,45 @@ trait Typers extends Adaptations with Tags with TypersTracking with PatternTyper
             case _                                          => false
           })
         }
-        // attempt to avoid warning about the special interpolated message string
-        // for implicitNotFound or any standard interpolation (with embedded $$).
-        def isRecognizablyNotForInterpolation = context.enclosingApply.tree match {
-          case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => true
-          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _) => true
-          case _                                                            => isMacroExpansion
+        // An interpolation desugars to `StringContext(parts).m(args)`, so obviously not missing.
+        // `implicitNotFound` annotations have strings with `${A}`, so never warn for that.
+        // Also don't warn for macro expansion.
+        def mightBeMissingInterpolation: Boolean = context.enclosingApply.tree match {
+          case Apply(Select(Apply(RefTree(_, nme.StringContextName), _), _), _) => false
+          case Apply(Select(New(RefTree(_, tpnme.implicitNotFound)), _), _)     => false
+          case _                                                                => !isMacroExpansion
         }
-        @tailrec
-        def requiresNoArgs(tp: Type): Boolean = tp match {
-          case PolyType(_, restpe)     => requiresNoArgs(restpe)
-          case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
-          case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
-          case _                       => true                    // catches all others including NullaryMethodType
-        }
-        def isPlausible(m: Symbol) = !m.hasPackageFlag && m.alternatives.exists(x => requiresNoArgs(x.info))
-
         def maybeWarn(s: String): Unit = {
-          def warn(message: String)         = context.warning(lit.pos, s"possible missing interpolator: $message", WarningCategory.LintMissingInterpolator)
-          def suspiciousSym(name: TermName) = context.lookupSymbol(name, _ => true).symbol
-          val suspiciousExprs               = InterpolatorCodeRegex findAllMatchIn s
-          def suspiciousIdents              = InterpolatorIdentRegex findAllIn s map (s => suspiciousSym(TermName(s drop 1)))
-          def isCheapIdent(expr: String)    = Character.isJavaIdentifierStart(expr.charAt(0)) && expr.tail.forall(Character.isJavaIdentifierPart)
-          def warnableExpr(expr: String)    = !expr.isEmpty && (!isCheapIdent(expr) || isPlausible(suspiciousSym(TermName(expr))))
+          def warn(message: String) = context.warning(lit.pos, s"possible missing interpolator: $message", WarningCategory.LintMissingInterpolator)
+          def isPlausible(id: String): Boolean = {
+            def requiresNoArgs(tp: Type): Boolean = tp match {
+              case PolyType(_, restpe)     => requiresNoArgs(restpe)
+              case MethodType(Nil, restpe) => requiresNoArgs(restpe)  // may be a curried method - can't tell yet
+              case MethodType(p :: _, _)   => p.isImplicit            // implicit method requires no args
+              case _                       => true                    // catches all others including NullaryMethodType
+            }
+            def isNullaryTerm: Boolean = {
+              val maybe = context.lookupSymbol(TermName(id), _ => true).symbol
+              maybe != NoSymbol && !maybe.hasPackageFlag && maybe.alternatives.exists(x => requiresNoArgs(x.info))
+            }
+            id == "this" || isNullaryTerm
+          }
+          val suspiciousExprs  = InterpolatorCodeRegex.findAllMatchIn(s)
+          def suspiciousIdents = InterpolatorIdentRegex.findAllIn(s)
 
           if (suspiciousExprs.hasNext) {
-            val exprs = (suspiciousExprs map (_ group 1)).toList
+            def isCheapIdent(expr: String) = Character.isJavaIdentifierStart(expr.charAt(0)) && expr.tail.forall(Character.isJavaIdentifierPart)
+            def warnableExpr(expr: String) = !expr.isEmpty && (!isCheapIdent(expr) || isPlausible(expr))
+            val exprs = suspiciousExprs.map(_ group 1).toList
             // short-circuit on leading ${}
             if (!exprs.head.isEmpty && exprs.exists(warnableExpr))
               warn("detected an interpolated expression") // "${...}"
           } else
-            suspiciousIdents find isPlausible foreach (sym => warn(s"detected interpolated identifier `$$${sym.name}`")) // "$id"
+            suspiciousIdents.find(id => isPlausible(id.substring(1))).foreach(id => warn(s"detected interpolated identifier `$id`"))
         }
         lit match {
-          case Literal(Constant(s: String)) if !isRecognizablyNotForInterpolation => maybeWarn(s)
-          case _                                                                  =>
+          case Literal(Constant(s: String)) if mightBeMissingInterpolation => maybeWarn(s)
+          case _                                                           =>
         }
       }
 
