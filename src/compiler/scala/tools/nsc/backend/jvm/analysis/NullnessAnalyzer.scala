@@ -93,7 +93,7 @@ final class NullnessInterpreter(knownNonNullInvocation: MethodInsnNode => Boolea
     val isThis = local == 0 && (isInstanceMethod || {
       method.parameters != null && !method.parameters.isEmpty && {
         val p = method.parameters.get(0)
-        (p.access & Opcodes.ACC_SYNTHETIC) != 0 && p.name == "$this"
+        (p.access & Opcodes.ACC_SYNTHETIC) != 0 && p.name == s"$$this"
       }
     })
     if (isThis) NotNullValue
