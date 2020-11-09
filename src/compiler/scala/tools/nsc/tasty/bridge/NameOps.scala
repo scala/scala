@@ -51,6 +51,7 @@ trait NameOps { self: TastyUniverse =>
     final val And: String = "&"
     final val AnyKind: String = "AnyKind"
     final val TupleCons: String = "*:"
+    final val Tuple: String = "Tuple"
 
     val ContextFunctionN = raw"ContextFunction(\d+)".r
     val FunctionN        = raw"Function(\d+)".r

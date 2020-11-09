@@ -7,4 +7,7 @@ object TestGenericTuples {
   val test4 = GenericTuples.simpleTuple // error
   val test5 = GenericTuples.emptyTuple // ok
   val test6 = GenericTuples.consumeBigTuple((1, "")) // error
+  val test7 = GenericTuples.tuple // error
+  val test8 = new GenericTuples.ConsumeTuple(???) // error
+  val test9 = new GenericTuples.ConsumeTupleGen[(Int, String)](???) // error
 }
