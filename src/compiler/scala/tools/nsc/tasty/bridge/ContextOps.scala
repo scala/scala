@@ -20,7 +20,7 @@ import scala.tools.nsc.tasty.{TastyUniverse, TastyModes, SafeEq}, TastyModes._
 import scala.reflect.internal.MissingRequirementError
 import scala.collection.mutable
 
-/**This contains the definition for [[Context]], along with standard error throwing capabilities with user friendly
+/**This contains the definition for `Context`, along with standard error throwing capabilities with user friendly
  * formatted errors that can change their output depending on the context mode.
  */
 trait ContextOps { self: TastyUniverse =>
@@ -104,7 +104,7 @@ trait ContextOps { self: TastyUniverse =>
     inIndexStatsContext(inInnerScopeContext(op)(_))(ctx)
   }
 
-  /**Forces lazy annotations, if one is [[scala.annotation.internal.Child]] then it will add the referenced type as a
+  /**Forces lazy annotations, if one is `scala.annotation.internal.Child` then it will add the referenced type as a
    * sealed child.
    */
   private def analyseAnnotations(sym: Symbol)(implicit ctx: Context): Unit = {
@@ -291,12 +291,12 @@ trait ContextOps { self: TastyUniverse =>
       }
     }
 
-    /** Unsafe to call for creation of a object val, prefer [[delayCompletion]] if info is a LazyType
+    /** Unsafe to call for creation of a object val, prefer `delayCompletion` if info is a LazyType
       */
     final def unsafeNewSymbol(owner: Symbol, name: TastyName, flags: TastyFlagSet, info: Type, privateWithin: Symbol = noSymbol): Symbol =
       adjustSymbol(unsafeNewUntypedSymbol(owner, name, flags), info, privateWithin)
 
-    /** Unsafe to call for creation of a object class, prefer [[delayClassCompletion]] if info is a LazyType
+    /** Unsafe to call for creation of a object class, prefer `delayClassCompletion` if info is a LazyType
       */
     final def unsafeNewClassSymbol(owner: Symbol, typeName: TastyName.TypeName, flags: TastyFlagSet, info: Type, privateWithin: Symbol): Symbol =
       adjustSymbol(unsafeNewUntypedClassSymbol(owner, typeName, flags), info, privateWithin)
@@ -491,7 +491,7 @@ trait ContextOps { self: TastyUniverse =>
     /** Force any lazy annotations collected from declaration statements directly in this scope.
      *
      *  It is important to call this *after* indexing statements in a scope, otherwise calling
-     *  [[ownertree.findOwner]] can fail, this is because [[ownertree.findOwner]] cannot traverse a definition tree at
+     *  `ownertree.findOwner` can fail, this is because `ownertree.findOwner` cannot traverse a definition tree at
      *  a given address before a symbol has been registered to that address.
      */
     private[ContextOps] def forceAnnotations(): Unit = {

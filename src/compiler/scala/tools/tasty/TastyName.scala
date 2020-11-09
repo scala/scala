@@ -165,11 +165,11 @@ object TastyName {
 
 }
 
-/**This is a data structure representing semantic names. [[TastyName]] is the interface that TASTy uses to select
+/**This is a data structure representing semantic names. `TastyName` is the interface that TASTy uses to select
  * members from a type, providing more information than simple strings, such as selecting types over terms,
  * companion module instead of a class, or signals if a term is a default getter.
- * Names can also be a [[SignedName]], which is used to select an overloaded method, and pairs a name with a
- * [[MethodSignature]] with types are represented by [[ErasedTypeRef]].
+ * Names can also be a `SignedName`, which is used to select an overloaded method, and pairs a name with a
+ * `MethodSignature` with types are represented by `ErasedTypeRef`.
  */
 sealed abstract class TastyName extends Product with Serializable { self =>
   import TastyName._

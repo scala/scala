@@ -23,7 +23,8 @@ trait AnnotationOps { self: TastyUniverse =>
       u.AnnotationInfo(tpt.tpe, args, Nil)
     case u.Apply(u.TypeApply(u.Select(u.New(tpt), u.nme.CONSTRUCTOR), tpargs), args) =>
       u.AnnotationInfo(u.appliedType(tpt.tpe, tpargs.map(_.tpe)), args, Nil)
-    case u.New(tpt) => // special case for `val $values: Array[E] @unchecked` for scala 3 enums
+    case u.New(tpt) =>
+      // this is to handle incorrectly formatted annotations in dotty - https://github.com/lampepfl/dotty/issues/10113
       u.AnnotationInfo(tpt.tpe, Nil, Nil)
     case _ =>
       throw new Exception(s"unexpected annotation kind from TASTy: ${u.showRaw(tree)}")

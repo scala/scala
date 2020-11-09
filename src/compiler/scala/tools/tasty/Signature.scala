@@ -27,7 +27,7 @@ sealed abstract class Signature[+T] { self =>
 
 object Signature {
 
-  /** Encodes either an [[Int]] which is the size of a type parameter list, or [[T]], which represents a type */
+  /** Encodes either an `Int` which is the size of a type parameter list, or `T`, which represents a type */
   type ParamSig[T] = Either[Int, T]
 
   def merge[T](sb: StringBuilder, sig: Signature[T]): StringBuilder = sig.mergeShow(sb)

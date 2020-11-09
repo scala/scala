@@ -20,16 +20,16 @@ import scala.reflect.io.AbstractFile
 import scala.reflect.internal.Variance
 import scala.util.chaining._
 
-/**[[TreeUnpickler]] is responsible for traversing all trees in the "ASTs" section of a TASTy file, which represent the
- * definitions inside the classfile associated with the root class/module. [[TreeUnpickler]] will enter the public api
- * of the TASTy file into the symbolTable of [[TastyUniverse]]. "Public API" includes annotations when they are
+/**`TreeUnpickler` is responsible for traversing all trees in the "ASTs" section of a TASTy file, which represent the
+ * definitions inside the classfile associated with the root class/module. `TreeUnpickler` will enter the public api
+ * of the TASTy file into the symbolTable of `TastyUniverse`. "Public API" includes annotations when they are
  * simple trees.
  *
- * Where possible, [[TreeUnpickler]] should not directly manipulate values created by the symbolTable, but use
- * operations provided by [[TastyUniverse]]
+ * Where possible, `TreeUnpickler` should not directly manipulate values created by the symbolTable, but use
+ * operations provided by `TastyUniverse`
  *  @param reader    the reader from which to unpickle
  *  @param nameAtRef an index of names from the tasty file of this unpickler
- *  @param tasty     the handle on the [[TastyUniverse]]
+ *  @param tasty     the handle on the `TastyUniverse`
  */
 class TreeUnpickler[Tasty <: TastyUniverse](
     reader: TastyReader,
