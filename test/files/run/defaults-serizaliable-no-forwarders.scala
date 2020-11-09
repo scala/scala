@@ -1,3 +1,5 @@
+// scalac: -Xmixin-force-forwarders:false
+
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 
 trait T1 extends Serializable {
