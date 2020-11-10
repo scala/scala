@@ -365,6 +365,13 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.removeElement"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.addElement"),
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.macros.Attachments.containsElement"),
+    // https://github.com/scala/scala/pull/7960: these only cause problems if someone is implausibly extending Attachments somehow
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.reflect.macros.Attachments.all"),
+    ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.reflect.macros.Attachments.all"),
+    ProblemFilters.exclude[DirectAbstractMethodProblem]("scala.reflect.macros.Attachments.isEmpty"),
+    ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.reflect.macros.Attachments.isEmpty"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.macros.EmptyAttachments"),
+    ProblemFilters.exclude[MissingClassProblem]("scala.reflect.macros.SingleAttachment"),
 
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.reflect.runtime.Settings.async"),
 
