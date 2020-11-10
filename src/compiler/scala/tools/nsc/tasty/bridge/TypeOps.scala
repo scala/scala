@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.tasty.bridge
 
-import scala.tools.nsc.tasty.{TastyUniverse, SafeEq}
+import scala.tools.nsc.tasty.{TastyUniverse, SafeEq, TastyModes}, TastyModes._
 
 import scala.tools.tasty.{TastyName, ErasedTypeRef, TastyFlags}, TastyFlags._
 
@@ -22,9 +22,9 @@ import scala.util.chaining._
 import scala.collection.mutable
 import scala.reflect.internal.Flags
 
-/**This layer adds factories that construct [[scala.reflect]] Types in the shapes that TASTy expects.
+/**This layer adds factories that construct `scala.reflect` Types in the shapes that TASTy expects.
  * Additionally provides operations to select a type from a type, or a type from a type with an additional prefix,
- * using a [[TastyName]].
+ * using a `TastyName`.
  */
 trait TypeOps { self: TastyUniverse =>
   import self.{symbolTable => u}
@@ -33,7 +33,7 @@ trait TypeOps { self: TastyUniverse =>
     t.typeParams.size == u.typeParams.size
 
   /** `*:` erases to either TupleXXL or Product */
-  @inline final def tupleConsIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"generic tuple type *: in ${boundsString(ctx.owner)}")
+  @inline final def genTupleIsUnsupported[T](name: String)(implicit ctx: Context): T = unsupportedError(s"generic tuple type $name in ${boundsString(ctx.owner)}")
   @inline final def bigFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"function type with more than 22 parameters in ${boundsString(ctx.owner)}: $tpeStr")
   @inline final def ctxFnIsUnsupported[T](tpeStr: String)(implicit ctx: Context): T = unsupportedError(s"context function type in ${boundsString(ctx.owner)}: $tpeStr")
   @inline final def unionIsUnsupported[T](implicit ctx: Context): T = unsupportedError(s"union in ${boundsString(ctx.owner)}")
@@ -334,7 +334,7 @@ trait TypeOps { self: TastyUniverse =>
   }
 
   private val SyntheticScala3Type =
-    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:)$$".r
+    raw"^(?:&|\||AnyKind|(?:Context)?Function\d+|\*:|Tuple)$$".r
 
   def selectType(name: TastyName.TypeName, prefix: Type)(implicit ctx: Context): Type = selectType(name, prefix, prefix)
   def selectType(name: TastyName.TypeName, prefix: Type, space: Type)(implicit ctx: Context): Type = {
@@ -346,13 +346,14 @@ trait TypeOps { self: TastyUniverse =>
     if (prefix.typeSymbol === u.definitions.ScalaPackage) {
       name match {
         case TypeName(SimpleName(raw @ SyntheticScala3Type())) => raw match {
-          case tpnme.And                                   => AndTpe
-          case tpnme.Or                                    => unionIsUnsupported
-          case tpnme.ContextFunctionN(n) if (n.toInt > 0)  => ContextFunctionType(n.toInt)
-          case tpnme.FunctionN(n)        if (n.toInt > 22) => FunctionXXLType(n.toInt)
-          case tpnme.TupleCons                             => tupleConsIsUnsupported
-          case tpnme.AnyKind                               => u.definitions.AnyTpe
-          case _                                           => lookupType
+          case tpnme.And                                              => AndTpe
+          case tpnme.Or                                               => unionIsUnsupported
+          case tpnme.ContextFunctionN(n) if (n.toInt > 0)             => ContextFunctionType(n.toInt)
+          case tpnme.FunctionN(n)        if (n.toInt > 22)            => FunctionXXLType(n.toInt)
+          case tpnme.TupleCons                                        => genTupleIsUnsupported("scala.*:")
+          case tpnme.Tuple               if !ctx.mode.is(ReadParents) => genTupleIsUnsupported("scala.Tuple")
+          case tpnme.AnyKind                                          => u.definitions.AnyTpe
+          case _                                                      => lookupType
         }
 
         case _ => lookupType

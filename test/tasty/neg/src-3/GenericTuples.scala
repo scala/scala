@@ -7,9 +7,13 @@ object GenericTuples {
   val simpleTuple: Int *: EmptyTuple = 1 *: EmptyTuple                         // *: erases to Product
   val emptyTuple: EmptyTuple = EmptyTuple                                      // statically EmptyTuple.type
 
+  val tuple: Tuple = (1,2,3)
 
   def consumeBigTuple[T <: (Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any,Any)](
     f: T
   ): Any = f(12) // this case tests type trees rather than types
+
+  class ConsumeTupleGen[T <: Tuple](t: T)
+  class ConsumeTuple(t: Tuple)
 
 }

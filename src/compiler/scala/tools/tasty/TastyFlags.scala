@@ -13,7 +13,7 @@
 package scala.tools.tasty
 
 /**A static type representing a bitset of flags that are encoded in a TASTy file, along with some other flags
- * inferred from context, such as [[Method]] and [[Deferred]].
+ * inferred from context, such as `Method` and `Deferred`.
  */
 object TastyFlags {
 

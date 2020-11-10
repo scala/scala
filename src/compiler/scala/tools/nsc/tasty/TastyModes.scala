@@ -33,7 +33,7 @@ object TastyModes {
   /** When not at the package scope */
   final val InnerScope: TastyMode = TastyMode(1 << 5)
 
-  /** The union of [[IndexStats]] and [[InnerScope]] */
+  /** The union of `IndexStats` and `InnerScope` */
   final val IndexScopedStats: TastyMode = IndexStats | InnerScope
 
   case class TastyMode(val toInt: Int) extends AnyVal { mode =>

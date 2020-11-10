@@ -20,9 +20,9 @@ import TastyName._
 import scala.annotation.nowarn
 import scala.reflect.io.AbstractFile
 
-/**The entry point to TASTy unpickling for nsc, initialises a [[TastyUniverse#Context]] with the root symbols of a
+/**The entry point to TASTy unpickling for nsc, initialises a `TastyUniverse#Context` with the root symbols of a
  * top-level class, then parses the header and names from a TASTy file, before entering symbols from the `ASTs` section
- * with [[TreeUnpickler]]
+ * with `TreeUnpickler`
  */
 object TastyUnpickler {
 

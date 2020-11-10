@@ -16,7 +16,7 @@ import scala.tools.tasty.TastyFlags._
 import scala.tools.nsc.tasty.TastyUniverse
 import scala.reflect.internal.{Flags, ModifierFlags}
 
-/**Handles encoding of [[TastyFlagSet]] to [[scala.reflect]] flags and witnessing which flags do not map directly
+/**Handles encoding of `TastyFlagSet` to `scala.reflect` flags and witnessing which flags do not map directly
  * from TASTy.
  */
 trait FlagOps { self: TastyUniverse =>
@@ -35,8 +35,8 @@ trait FlagOps { self: TastyUniverse =>
     val LocalFieldFlags: TastyFlagSet = Private | Local
   }
 
-  /**encodes a [[TastyFlagSet]] as [[scala.reflect]] flags and will ignore flags that can't be converted, such as
-   * members of [[FlagSets.TastyOnlyFlags]]
+  /**encodes a `TastyFlagSet` as `scala.reflect` flags and will ignore flags that can't be converted, such as
+   * members of `FlagSets.TastyOnlyFlags`
    */
   private[bridge] def encodeFlagSet(tflags: TastyFlagSet): u.FlagSet = {
     import u.Flag
