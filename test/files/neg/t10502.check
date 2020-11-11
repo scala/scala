@@ -1,0 +1,31 @@
+t10502.scala:7: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def single(opt: Option[String])  = opt match { // missing None case
+                                     ^
+t10502.scala:10: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def nested(opt: Option[String])  = opt match { // missing None case
+                                     ^
+t10502.scala:13: warning: match may not be exhaustive.
+It would fail on the following inputs: None, Some(_)
+  def nested2(opt: Option[String]) = opt match { // missing None case
+                                     ^
+t10502.scala:22: warning: match may not be exhaustive.
+  def foo(foo: Foo) = foo match { // missing None case
+                      ^
+t10502.scala:32: warning: match may not be exhaustive.
+  def bar(bar: Bar) = bar match { // missing None case
+                      ^
+t10502.scala:49: warning: match may not be exhaustive.
+  def length(str: String) = str match { // missing non-0 case
+                            ^
+t10502.scala:62: warning: match may not be exhaustive.
+  def nestedUnderIrrefutable(any: Any) = any match { // missing non-int case
+                                         ^
+t10502.scala:75: warning: match may not be exhaustive.
+It would fail on the following inputs: Just(_), Nada()
+  def usingMay[A](may: May[A]) = may match { // missing Nada case
+                                 ^
+error: No warnings can be incurred under -Werror.
+8 warnings
+1 error
