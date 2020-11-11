@@ -1091,9 +1091,16 @@ abstract class BCodeBodyBuilder extends BCodeSkelBuilder {
       import InvokeStyle._
       if (style == Super) {
         if (receiverClass.isTrait && !method.isJavaDefined) {
-          val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
-          val staticName = traitSuperAccessorName(method)
-          bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
+          // See https://github.com/scala/bug/issues/12137, https://github.com/scala/scala/pull/9263#issuecomment-724695665
+          if (binaryIncompatibleTraitOverrides(method)) {
+            if (method == OptionOrderingEquals) genCallMethod(definitions.Object_equals, style, pos)
+            else if (method == OptionOrderingHashCode) genCallMethod(definitions.Object_hashCode, style, pos)
+            else genCallMethod(method.nextOverriddenSymbol, style, pos)
+          } else {
+            val staticDesc = MethodBType(typeToBType(method.owner.info) :: bmType.argumentTypes, bmType.returnType).descriptor
+            val staticName = traitSuperAccessorName(method)
+            bc.invokestatic(receiverName, staticName, staticDesc, isInterface, pos)
+          }
         } else {
           if (receiverClass.isTraitOrInterface) {
             // An earlier check in Mixin reports an error in this case, so it doesn't reach the backend

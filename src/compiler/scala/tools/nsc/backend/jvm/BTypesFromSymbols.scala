@@ -759,4 +759,32 @@ abstract class BTypesFromSymbols[G <: Global](val global: G) extends BTypes {
       ( if (sym hasAnnotation VolatileAttr)  asm.Opcodes.ACC_VOLATILE  else 0) |
       ( if (sym.isMutable) 0 else asm.Opcodes.ACC_FINAL)
   }
+
+  private def methodSymbol(path: List[String]): Symbol = {
+    def sel(cls: Symbol, ps: List[String]): Symbol = ps match {
+      case m :: Nil => cls.map(_.info.member(TermName(m)))
+      case i :: xs  => sel(cls.map(_.info.member(TypeName(i))), xs)
+    }
+    sel(rootMirror.getClassIfDefined(path.head), path.tail)
+  }
+
+  lazy val OptionOrderingEquals = methodSymbol(List("scala.math.Ordering.OptionOrdering", "equals"))
+  lazy val OptionOrderingHashCode = methodSymbol(List("scala.math.Ordering.OptionOrdering", "hashCode"))
+
+  lazy val binaryIncompatibleTraitOverrides: Set[Symbol] = {
+    // Trait overrides that were added, list from https://github.com/scala/scala/pull/9260/files
+    // `FloatOrdering.reverse` and `DoubleOrdering.reverse` are trait overrides that were removed (not added)
+    // in 44318c8959, so there's nothing we can do. Compiling with 2.12.0 and running on 2.12.12 is not binary
+    // compatible for super calls to these two methods.
+    enteringTyper {
+      Set(
+        List("scala.math.Ordering.IntOrdering", "reverse"),                  // 44318c8959
+        List("scala.collection.IndexedSeqOptimized", "toList"),              // 17fb78c1bf
+        List("scala.collection.LinearSeqOptimized", "tails"),                // 7de41a40ec
+        List("scala.collection.TraversableViewLike", "Transformed", "last"), // d4852dc6f6
+        List("scala.collection.immutable.SortedSet", "equals"),              // 11f93da364
+        List("scala.collection.immutable.SortedMap", "equals"),              // ..
+        ).map(methodSymbol).filterNot(_ == NoSymbol) ++ Set(OptionOrderingEquals, OptionOrderingHashCode)
+    }
+  }
 }
