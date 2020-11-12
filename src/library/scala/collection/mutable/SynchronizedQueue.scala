@@ -27,6 +27,7 @@ package mutable
  *  @define coll synchronized queue
  */
 @deprecated("Synchronization via selective overriding of methods is inherently unreliable. Consider java.util.concurrent.ConcurrentLinkedQueue as an alternative.", "2.11.0")
+@SerialVersionUID(9032322813113599864L)
 class SynchronizedQueue[A] extends Queue[A] {
   /** Checks if the queue is empty.
    *

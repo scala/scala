@@ -623,11 +623,14 @@ trait TraversableLike[+A, +Repr] extends Any
     * @return The last element of this $coll.
     * @throws NoSuchElementException If the $coll is empty.
     */
-  def last: A = {
-    var lst = head
-    for (x <- this)
-      lst = x
-    lst
+  def last: A = this match {
+    case t: TraversableViewLike[_, _, _]#Transformed[A] =>
+      t.lastImpl
+    case _ =>
+      var lst = head
+      for (x <- this)
+        lst = x
+      lst
   }
 
   /** Optionally selects the last element.
@@ -751,7 +754,10 @@ trait TraversableLike[+A, +Repr] extends Any
    *  @return   an iterator over all the tails of this $coll
    *  @example  `List(1,2,3).tails = Iterator(List(1,2,3), List(2,3), List(3), Nil)`
    */
-  def tails: Iterator[Repr] = iterateUntilEmpty(_.tail)
+  def tails: Iterator[Repr] = this match {
+    case lso: LinearSeqOptimized[_, Repr] => lso.tailsImpl
+    case _ => iterateUntilEmpty(_.tail)
+  }
 
   /** Iterates over the inits of this $coll. The first value will be this
    *  $coll and the final one will be an empty $coll, with the intervening

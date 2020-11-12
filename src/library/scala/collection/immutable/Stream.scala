@@ -201,6 +201,7 @@ import scala.language.implicitConversions
  *  @define orderDependentFold
  *  @define willTerminateInf Note: lazily evaluated; will terminate for infinite-sized collections.
  */
+@SerialVersionUID(4897901117128916054L)
 sealed abstract class Stream[+A] extends AbstractSeq[A]
                              with LinearSeq[A]
                              with GenericTraversableTemplate[A, Stream]
@@ -1103,6 +1104,7 @@ object Stream extends SeqFactory[Stream] {
     def result: Stream[A] = parts.toStream flatMap (_.toStream)
   }
 
+  @SerialVersionUID(-7198474341142331012L)
   object Empty extends Stream[Nothing] {
     override def isEmpty = true
     override def head = throw new NoSuchElementException("head of empty stream")

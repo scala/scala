@@ -29,20 +29,22 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
   /** Needs to be overridden in subclasses. */
   override def empty: SortedSet[A] = SortedSet.empty[A]
 
+  private[collection] def equalsImpl(ss: SortedSet[_]): Boolean = {
+    (ss canEqual this) &&
+      (this.size == ss.size) && {
+      val i1 = this.iterator
+      val i2 = ss.iterator
+      var allEqual = true
+      while (allEqual && i1.hasNext)
+        allEqual = i1.next() == i2.next
+      allEqual
+    }
+  }
+
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case ss: SortedSet[_] if ss.ordering == this.ordering =>
-      (ss canEqual this) &&
-        (this.size == ss.size) && {
-        val i1 = this.iterator
-        val i2 = ss.iterator
-        var allEqual = true
-        while (allEqual && i1.hasNext)
-          allEqual = i1.next() == i2.next
-        allEqual
-      }
-    case _ =>
-      super.equals(that)
+    case ss: SortedSet[_] if ss.ordering == this.ordering => equalsImpl(ss)
+    case _ => super.equals(that)
   }
 }
 /** $factoryInfo

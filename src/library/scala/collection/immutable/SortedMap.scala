@@ -102,18 +102,21 @@ self =>
     override def valuesIteratorFrom(start : A) = self valuesIteratorFrom start map f
   }
 
+  final private[collection] def equalsImpl(sm: SortedMap[_, _]): Boolean = {
+    (sm canEqual this) &&
+      (this.size == sm.size) && {
+      val i1 = this.iterator
+      val i2 = sm.iterator
+      var allEqual = true
+      while (allEqual && i1.hasNext)
+        allEqual = i1.next() == i2.next()
+      allEqual
+    }
+  }
+
   override def equals(that: Any): Boolean = that match {
     case _ if this eq that.asInstanceOf[AnyRef] => true
-    case sm: SortedMap[k, v] if sm.ordering == this.ordering =>
-      (sm canEqual this) &&
-        (this.size == sm.size) && {
-        val i1 = this.iterator
-        val i2 = sm.iterator
-        var allEqual = true
-        while (allEqual && i1.hasNext)
-          allEqual = i1.next() == i2.next()
-        allEqual
-      }
+    case sm: SortedMap[_, _] if sm.ordering == this.ordering => equalsImpl(sm)
     case _ => super.equals(that)
   }
 }

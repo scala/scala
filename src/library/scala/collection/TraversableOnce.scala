@@ -347,7 +347,19 @@ trait TraversableOnce[+A] extends Any with GenTraversableOnce[A] {
 
   def toTraversable: Traversable[A]
 
-  def toList: List[A] = to[List]
+  def toList: List[A] = this match {
+    case iso: IndexedSeqOptimized[_, _] =>
+      var i = iso.length - 1
+      var result: List[A] = Nil
+      while (i >= 0) {
+        result ::= iso.apply(i)
+        i -= 1
+      }
+      result
+
+    case _ =>
+      to[List]
+  }
 
   def toIterable: Iterable[A] = toStream
 

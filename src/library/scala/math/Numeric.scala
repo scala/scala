@@ -59,7 +59,9 @@ object Numeric {
     def toFloat(x: Int): Float = x.toFloat
     def toDouble(x: Int): Double = x.toDouble
   }
-  implicit object IntIsIntegral extends IntIsIntegral with Ordering.IntOrdering
+  implicit object IntIsIntegral extends IntIsIntegral with Ordering.IntOrdering {
+    override def reverse: Ordering[Int] = Ordering.IntReverse
+  }
 
   trait ShortIsIntegral extends Integral[Short] {
     def plus(x: Short, y: Short): Short = (x + y).toShort

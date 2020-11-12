@@ -185,7 +185,7 @@ object Ordering extends LowPriorityOrderingImplicits {
     }
     override def hashCode(): Int = outer.hashCode() * reverseSeed
   }
-  private final val IntReverse: Ordering[Int] = new Reverse(Ordering.Int)
+  private[math] final val IntReverse: Ordering[Int] = new Reverse(Ordering.Int)
 
   private final class IterableOrdering[CC[X] <: Iterable[X], T](private val ord: Ordering[T]) extends Ordering[CC[T]] {
     def compare(x: CC[T], y: CC[T]): Int = {
@@ -286,7 +286,9 @@ object Ordering extends LowPriorityOrderingImplicits {
     def compare(x: Int, y: Int) = java.lang.Integer.compare(x, y)
     override def reverse: Ordering[Int] = IntReverse
   }
-  implicit object Int extends IntOrdering
+  implicit object Int extends IntOrdering {
+    override def reverse: Ordering[Int] = IntReverse
+  }
 
   trait LongOrdering extends Ordering[Long] {
     def compare(x: Long, y: Long) = java.lang.Long.compare(x, y)
@@ -334,6 +336,11 @@ object Ordering extends LowPriorityOrderingImplicits {
   }
   implicit object String extends StringOrdering
 
+  private def optionOrderingEquals(a: OptionOrdering[_], b: Any): Boolean = b match {
+    case that: AnyRef if a eq that => true
+    case that: OptionOrdering[_]   => a.optionOrdering == that.optionOrdering
+    case _                         => false
+  }
   trait OptionOrdering[T] extends Ordering[Option[T]] {
     def optionOrdering: Ordering[T]
     def compare(x: Option[T], y: Option[T]) = (x, y) match {
@@ -343,15 +350,15 @@ object Ordering extends LowPriorityOrderingImplicits {
       case (Some(x), Some(y)) => optionOrdering.compare(x, y)
     }
 
-    override def equals(obj: scala.Any): Boolean = obj match {
-      case that: AnyRef if this eq that => true
-      case that: OptionOrdering[T]      => this.optionOrdering == that.optionOrdering
-      case _                            => false
-    }
+    override def equals(obj: Any): Boolean = optionOrderingEquals(this, obj)
     override def hashCode(): Int = optionOrdering.hashCode() * optionSeed
   }
   implicit def Option[T](implicit ord: Ordering[T]): Ordering[Option[T]] =
-    new OptionOrdering[T] { val optionOrdering = ord }
+    new OptionOrdering[T] {
+      val optionOrdering = ord
+      override def equals(obj: Any): Boolean = optionOrderingEquals(this, obj)
+      override def hashCode(): Int = optionOrdering.hashCode() * optionSeed
+    }
 
   implicit def Iterable[T](implicit ord: Ordering[T]): Ordering[Iterable[T]] =
     new IterableOrdering[Iterable, T](ord)

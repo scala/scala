@@ -117,6 +117,9 @@ trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals
    *              same mappings, `false` otherwise.
    */
   override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case sm: immutable.SortedMap[_, _] if this.isInstanceOf[immutable.SortedMap[_, _]] && sm.ordering == this.asInstanceOf[immutable.SortedMap[_, _]].ordering =>
+      this.asInstanceOf[immutable.SortedMap[_, _]].equalsImpl(sm)
     case that: GenMap[b, _] =>
       (this eq that) ||
       (that canEqual this) &&

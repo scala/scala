@@ -117,6 +117,9 @@ extends GenIterableLike[A, Repr]
    *              as this set.
    */
   override def equals(that: Any): Boolean = that match {
+    case _ if this eq that.asInstanceOf[AnyRef] => true
+    case ss: immutable.SortedSet[_] if this.isInstanceOf[immutable.SortedSet[_]] && ss.ordering == this.asInstanceOf[immutable.SortedSet[_]].ordering =>
+      this.asInstanceOf[immutable.SortedSet[_]].equalsImpl(ss)
     case that: GenSet[_] =>
       (this eq that) ||
       (that canEqual this) &&
