@@ -4558,9 +4558,9 @@ trait Types
     if (isRawType(tp)) rawToExistential(tp)
     else tp.normalize match {
       // Unify the representations of module classes
-      case st@SingleType(_, sym) if sym.isModule => st.underlying.normalize
-      case st@ThisType(sym) if sym.isModuleClass => normalizePlus(st.underlying)
-      case _ => tp.normalize
+      case st @ SingleType(_, _) if st.typeSymbol.isModuleClass => st.underlying.normalize
+      case st @ ThisType(sym) if sym.isModuleClass              => normalizePlus(st.underlying)
+      case tpNorm                                               => tpNorm
     }
   }
 
