@@ -85,15 +85,31 @@ object TreeSet extends ImmutableSortedSetFactory[TreeSet] {
     private[this] def readObject(in: java.io.ObjectInputStream) = {
       val size = in.readInt()
       ordering = in.readObject().asInstanceOf[Ordering[A]]
-      val data = Iterable.newBuilder[A]
-      data.sizeHint(size)
-      for (i <- 0 until size)
-        data += in.readObject().asInstanceOf[A]
-      tree = RB.fromOrderedKeys(data.result.iterator, size)
+      size match {
+        case 0 => //tree is null already
+        case 1 =>
+          val entry = in.readObject().asInstanceOf[A]
+          tree = RB.update(null, entry, (), false)(ordering)
+        case _ =>
+          val entries = new Array[Any](size)
+          var i       = 0
+          while (i < size) {
+            entries(i) = in.readObject()
+            i += 1
+          }
+          tree = RB.fromOrderedEntries(
+            entries.iterator.asInstanceOf[Iterator[A]],
+            unitsIterator,
+            size)
+      }
     }
     @throws[IOException]
     private[this] def readResolve(): AnyRef =
       new TreeSet(tree)(ordering)
+  }
+  private[this] object unitsIterator extends AbstractIterator[Unit] {
+    override def hasNext: Boolean = true
+    override def next(): Unit = ()
   }
 }
 

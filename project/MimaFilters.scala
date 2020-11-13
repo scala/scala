@@ -19,6 +19,9 @@ object MimaFilters extends AutoPlugin {
   val mimaFilters: Seq[ProblemFilter] = Seq[ProblemFilter](
     // KEEP: scala.reflect.internal isn't public API
     ProblemFilters.exclude[Problem]("scala.reflect.internal.*"),
+
+    // #9314 introduced private[this] object
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeSet$unitsIterator$"),
   )
 
   override val buildSettings = Seq(
