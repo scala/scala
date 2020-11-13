@@ -505,7 +505,10 @@ val mimaFilterSettings = Seq {
     ProblemFilters.exclude[DirectMissingMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.this"),
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.black"),
     ProblemFilters.exclude[ReversedAbstractMethodProblem]("scala.collection.immutable.RedBlackTree#Tree.red"),
-    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeMap$TreeMapBuilder")
+    ProblemFilters.exclude[MissingClassProblem]("scala.collection.immutable.TreeMap$TreeMapBuilder"),
+
+    // Escape hatch for getting Scala 2.13.0 behavior of the global ExecutionContext
+    ProblemFilters.exclude[DirectMissingMethodProblem]("scala.concurrent.ExecutionContext.opportunistic"),
   ),
 }
 

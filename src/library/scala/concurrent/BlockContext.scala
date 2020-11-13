@@ -13,12 +13,12 @@
 package scala.concurrent
 
 /**
- * A context to be notified by `scala.concurrent.blocking` when
+ * A context to be notified by [[scala.concurrent.blocking]] when
  * a thread is about to block. In effect this trait provides
- * the implementation for `scala.concurrent.Await`.
- * `scala.concurrent.Await.result()` and `scala.concurrent.Await.ready()`
+ * the implementation for [[scala.concurrent.Await]].
+ * [[scala.concurrent.Await.result]] and [[scala.concurrent.Await.ready]]
  * locates an instance of `BlockContext` by first looking for one
- * provided through `BlockContext.withBlockContext()` and failing that,
+ * provided through [[BlockContext.withBlockContext]] and failing that,
  * checking whether `Thread.currentThread` is an instance of `BlockContext`.
  * So a thread pool can have its `java.lang.Thread` instances implement
  * `BlockContext`. There's a default `BlockContext` used if the thread
