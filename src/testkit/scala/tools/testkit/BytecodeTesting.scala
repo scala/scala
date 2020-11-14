@@ -68,11 +68,13 @@ class Compiler(val global: Global) {
     global.settings.outputDirs.setSingleOutput(new VirtualDirectory("(memory)", None))
   }
 
-  def newRun(): global.Run = {
+  def newRun(reuseEmptyPkg: Boolean = false): global.Run = {
     global.reporter.reset()
     resetOutput()
     keptPerRunCaches.foreach(_.clear())
-    new global.Run()
+    val run = new global.Run()
+    if (!reuseEmptyPkg) global.rootMirror.EmptyPackageClass.reset(global.rootMirror.rootLoader)
+    run
   }
 
   private def reporter = global.reporter.asInstanceOf[StoreReporter]
@@ -85,19 +87,19 @@ class Compiler(val global: Global) {
     }
   }
 
-  def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): List[(String, Array[Byte])] = {
-    val run = newRun()
+  def compileToBytes(scalaCode: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false, reuseEmptyPkg: Boolean = false): List[(String, Array[Byte])] = {
+    val run = newRun(reuseEmptyPkg)
     run.compileSources(makeSourceFile(scalaCode, "unitTestSource.scala") :: javaCode.map(p => makeSourceFile(p._1, p._2)))
     checkReport(allowMessage)
     getGeneratedClassfiles(global.settings.outputDirs.getSingleOutput.get)
   }
 
-  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): List[ClassNode] = {
-    readAsmClasses(compileToBytes(code, javaCode, allowMessage))
+  def compileClasses(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false, reuseEmptyPkg: Boolean = false): List[ClassNode] = {
+    readAsmClasses(compileToBytes(code, javaCode, allowMessage, reuseEmptyPkg))
   }
 
-  def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false): ClassNode = {
-    val List(c) = compileClasses(code, javaCode, allowMessage)
+  def compileClass(code: String, javaCode: List[(String, String)] = Nil, allowMessage: StoreReporter.Info => Boolean = _ => false, reuseEmptyPkg: Boolean = false): ClassNode = {
+    val List(c) = compileClasses(code, javaCode, allowMessage, reuseEmptyPkg)
     c
   }
 
@@ -121,8 +123,8 @@ class Compiler(val global: Global) {
   def compileClassesTransformed(scalaCode: String, javaCode: List[(String, String)] = Nil, beforeBackend: global.Tree => global.Tree): List[ClassNode] =
     readAsmClasses(compileToBytesTransformed(scalaCode, javaCode, beforeBackend))
 
-  def compileAsmMethods(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false): List[MethodNode] = {
-    val c = compileClass(s"class C { $code }", allowMessage = allowMessage)
+  def compileAsmMethods(code: String, allowMessage: StoreReporter.Info => Boolean = _ => false, reuseEmptyPkg: Boolean = false): List[MethodNode] = {
+    val c = compileClass(s"class C { $code }", allowMessage = allowMessage, reuseEmptyPkg = reuseEmptyPkg)
     getAsmMethods(c, _ != "<init>")
   }
 
