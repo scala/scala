@@ -37,5 +37,12 @@ extends GenSetLike[A, GenSet[A]]
 object GenSet extends GenTraversableFactory[GenSet] {
   implicit def canBuildFrom[A] = ReusableCBF.asInstanceOf[GenericCanBuildFrom[A]]
   def newBuilder[A] = Set.newBuilder
+  private[collection] def setEquals[A1, A2](thisSet: GenSetLike[A1, _], thatSet: GenSet[A2]): Boolean = {
+    (thisSet eq thatSet) ||
+      (thatSet canEqual thisSet) &&
+        (thisSet.size == thatSet.size) &&
+        (try thisSet subsetOf thatSet.asInstanceOf[GenSet[A1]]
+        catch { case ex: ClassCastException => false })
+  }
 }
 

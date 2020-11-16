@@ -114,7 +114,11 @@ self =>
           allEqual = i1.next() == i2.next()
         allEqual
       }
-    case _ => super.equals(that)
+    // copy/pasted from super.equals for binary compat reasons!
+    case that: GenMap[b, _] =>
+      GenMap.mapEquals(this, that)
+    case _ =>
+      false && super.equals(that) // generate unused super accessor for binary compatibility (scala/scala#9311)
   }
 }
 

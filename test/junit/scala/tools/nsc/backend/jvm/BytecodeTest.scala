@@ -312,4 +312,17 @@ class BytecodeTest extends BytecodeTesting {
     val a = A.fields.asScala.find(_.name == "a").get
     assertEquals(0, a.access & Opcodes.ACC_FINAL)
   }
+
+  @Test
+  def sortedSetMapEqualsSuperAccessor(): Unit = {
+    // ensure super accessors are there (scala/scala#9311)
+
+    val sn = "scala$collection$immutable$SortedSet$$super$equals"
+    val sm = classOf[scala.collection.immutable.TreeSet[_]].getDeclaredMethod(sn, classOf[Object])
+    assertEquals(sn, sm.getName)
+
+    val mn = "scala$collection$immutable$SortedMap$$super$equals"
+    val mm = classOf[scala.collection.immutable.TreeMap[_, _]].getDeclaredMethod(mn, classOf[Object])
+    assertEquals(mn, mm.getName)
+  }
 }

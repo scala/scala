@@ -13,8 +13,6 @@
 package scala
 package collection
 
-import scala.runtime.AbstractFunction1
-
 /** A trait for all maps upon which operations may be
  *  implemented in parallel.
  *
@@ -117,25 +115,9 @@ trait GenMapLike[K, +V, +Repr] extends GenIterableLike[(K, V), Repr] with Equals
    *              same mappings, `false` otherwise.
    */
   override def equals(that: Any): Boolean = that match {
+    // copy/pasted to immutable.SortedMap.equals for binary compat reasons!
     case that: GenMap[b, _] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) && {
-      try {
-        val checker = new AbstractFunction1[(K, V),Boolean] with Function0[V]{
-          override def apply(kv: (K,V)): Boolean = {
-            // Note: uncurry optimizes this to `get.getOrElse(..., this: Function0)`;  there is no extra lambda allocated.
-            val v2 = that.getOrElse(kv._1.asInstanceOf[b], this.apply())
-            // A mis-behaving user-defined equals method might not expect the sentinel value, and we should try to limit
-            // the chance of it escaping. Its also probably quicker to avoid the virtual call to equals.
-            (v2.asInstanceOf[AnyRef] ne this) && v2 == kv._2
-          }
-          override def apply(): V = this.asInstanceOf[V]
-        }
-        this forall checker
-      } catch {
-        case ex: ClassCastException => false
-      }}
+      GenMap.mapEquals(this, that)
     case _ =>
       false
   }

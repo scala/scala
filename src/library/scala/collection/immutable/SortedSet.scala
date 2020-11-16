@@ -41,8 +41,11 @@ trait SortedSet[A] extends Set[A] with scala.collection.SortedSet[A] with Sorted
           allEqual = i1.next() == i2.next
         allEqual
       }
+    // copy/pasted from super.equals for binary compat reasons!
+    case that: GenSet[_] =>
+      GenSet.setEquals(this, that)
     case _ =>
-      super.equals(that)
+      false && super.equals(that) // generate unused super accessor for binary compatibility (scala/scala#9311)
   }
 }
 /** $factoryInfo

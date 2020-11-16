@@ -117,12 +117,9 @@ extends GenIterableLike[A, Repr]
    *              as this set.
    */
   override def equals(that: Any): Boolean = that match {
+    // copy/pasted to immutable.SortedSet.equals for binary compat reasons!
     case that: GenSet[_] =>
-      (this eq that) ||
-      (that canEqual this) &&
-      (this.size == that.size) &&
-      (try this subsetOf that.asInstanceOf[GenSet[A]]
-       catch { case ex: ClassCastException => false })
+      GenSet.setEquals(this, that)
     case _ =>
       false
   }
