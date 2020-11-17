@@ -152,10 +152,6 @@ private[collection] object RedBlackTree {
           mutableBalanceLeft(tree, mutableUpd(tree.left, k))
         else if (cmp > 0)
           mutableBalanceRight(tree, mutableUpd(tree.right, k))
-        else if (k != tree.key)
-          tree.mutableWithK(k)
-        //Note - in 2.13 remove the above else clause
-        // due to the different handling of key equality
         else tree
       }
   }
@@ -171,10 +167,6 @@ private[collection] object RedBlackTree {
           mutableBalanceLeft(tree, mutableUpd(tree.left, k, v))
         else if (cmp > 0)
           mutableBalanceRight(tree, mutableUpd(tree.right, k, v))
-        else if (k != tree.key)
-          tree.mutableWithKV(k,v)
-        //Note - in 2.13 remove the above else clause
-       // due to the different handling of key equality
         else tree.mutableWithV(v)
       }
   }
@@ -557,9 +549,7 @@ private[collection] object RedBlackTree {
     @`inline` private[RedBlackTree] final def sizeOf(tree:Tree[_,_]) = if (tree eq null) 0 else tree.count
     @`inline` private[immutable] final def key = _key
     @`inline` private[immutable] final def value = _value.asInstanceOf[B]
-    //Note - in 2.13 this should be private[RedBlackTree] as its only needed or the 2.12 Old RedBlackTree
     @`inline` private[immutable] final def left = _left.asInstanceOf[Tree[A, B]]
-    //Note - in 2.13 this should be private[RedBlackTree] as its only needed or the 2.12 Old RedBlackTree
     @`inline` private[immutable] final def right = _right.asInstanceOf[Tree[A, B]]
     //Note - only used in tests outside RedBlackTree
     @`inline` private[immutable] final def isBlack = _count < 0
@@ -605,15 +595,7 @@ private[collection] object RedBlackTree {
 //      }
 //      else new Tree(_key, _value, _left, _right, initialRedCount)
 //    }
-    //Note - in 2.13 remove his method
-    //due to the handling of keys in 2.13 we never replace a key
-    private[RedBlackTree] def mutableWithK[B1 >: B](newKey: A): Tree[A, B1] = {
-      if (newKey.asInstanceOf[AnyRef] eq _key.asInstanceOf[AnyRef]) this
-      else if (isMutable) {
-        _key = newKey
-        this
-      } else new Tree(newKey, _value.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
-    }
+
     private[RedBlackTree] def mutableWithV[B1 >: B](newValue: B1): Tree[A, B1] = {
       if (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef]) this
       else if (isMutable) {
@@ -621,17 +603,7 @@ private[collection] object RedBlackTree {
         this
       } else new Tree(_key, newValue.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
     }
-    //Note - in 2.13 remove his method
-    //due to the handling of keys in 2.13 we never replace a key
-    private[RedBlackTree] def mutableWithKV[B1 >: B](newKey: A, newValue: B1): Tree[A, B1] = {
-      if ((newKey.asInstanceOf[AnyRef] eq _key.asInstanceOf[AnyRef]) &&
-        (newValue.asInstanceOf[AnyRef] eq _value.asInstanceOf[AnyRef])) this
-      else if (isMutable) {
-        _key = newKey
-        _value = newValue.asInstanceOf[AnyRef]
-        this
-      } else new Tree(newKey, newValue.asInstanceOf[AnyRef], _left, _right, mutableRetainingColour)
-    }
+
     private[RedBlackTree] def mutableWithLeft[B1 >: B](newLeft: Tree[A, B1]): Tree[A, B1] = {
       if (_left eq newLeft) this
       else if (isMutable) {
@@ -754,14 +726,12 @@ private[collection] object RedBlackTree {
   /** create a new immutable red tree.
    * left and right may be null
    */
-    //Note - in 2.13 this should be private[RedBlackTree] as its only needed or the 2.12 Old RedBlackTree
   private[immutable] def RedTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]): Tree[A, B] = {
     //assertNotMutable(left)
     //assertNotMutable(right)
     val size = sizeOf(left) + sizeOf(right) + 1
     new Tree(key, value.asInstanceOf[AnyRef], left, right, initialRedCount | size)
   }
-  //Note - in 2.13 this should be private[RedBlackTree] as its only needed or the 2.12 Old RedBlackTree
   private[immutable] def BlackTree[A, B](key: A, value: B, left: Tree[A, B], right: Tree[A, B]): Tree[A, B] = {
     //assertNotMutable(left)
     //assertNotMutable(right)
