@@ -95,7 +95,7 @@ case class InlineInfoAttribute(inlineInfo: InlineInfo) extends Attribute(InlineI
     var next = off
 
     def nextByte()  = { val r = cr.readByte(next)     ; next += 1; r }
-    def nextUTF8()  = { val r = cr.readUTF8(next, buf); next += 2; r }
+    def nextUTF8()  = { val r = cr.readUTF8(next, buf); next += r.getBytes("UTF8").length; r }
     def nextShort() = { val r = cr.readShort(next)    ; next += 2; r }
 
     val version = nextByte()
