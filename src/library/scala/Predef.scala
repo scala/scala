@@ -361,6 +361,7 @@ object Predef extends LowPriorityImplicits with DeprecatedPredef {
   def SeqCharSequence(sequenceOfChars: scala.collection.IndexedSeq[Char]): SeqCharSequence = new SeqCharSequence(sequenceOfChars)
 
   /** @group char-sequence-wrappers */
+  @deprecated("use `java.nio.CharBuffer.wrap` instead", "2.12.13")
   final class ArrayCharSequence(@deprecated("will be made private", "2.12.0") @deprecatedName(null, "2.12.0") val __arrayOfChars: Array[Char]) extends CharSequence {
     def length: Int                                     = __arrayOfChars.length
     def charAt(index: Int): Char                        = __arrayOfChars(index)
@@ -553,7 +554,7 @@ private[scala] trait DeprecatedPredef {
   @deprecated("use `StringFormat`", "2.11.0") def any2stringfmt(x: Any): StringFormat[Any]                                  = new StringFormat(x)
   @deprecated("use `Throwable` directly", "2.11.0") def exceptionWrapper(exc: Throwable)                                    = new RichException(exc)
   @deprecated("use `SeqCharSequence`", "2.11.0") def seqToCharSequence(xs: scala.collection.IndexedSeq[Char]): CharSequence = new SeqCharSequence(xs)
-  @deprecated("use `ArrayCharSequence`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence                   = new ArrayCharSequence(xs)
+  @deprecated("use `java.nio.CharBuffer.wrap`", "2.11.0") def arrayToCharSequence(xs: Array[Char]): CharSequence = new ArrayCharSequence(xs)
 
   @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readLine(): String                 = StdIn.readLine()
   @deprecated("use the method in `scala.io.StdIn`", "2.11.0") def readLine(text: String, args: Any*) = StdIn.readLine(text, args: _*)
