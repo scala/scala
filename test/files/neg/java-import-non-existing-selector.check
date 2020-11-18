@@ -2,5 +2,9 @@ java-import-non-existing-selector/BadClient.java:3: error: cannot find symbol
 import static p1.Test.DoesNotExist;
 ^
   symbol:   static DoesNotExist
+#partest java8
   location: class
+#partest !java8
+  location: class Test
+#partest
 1 error
