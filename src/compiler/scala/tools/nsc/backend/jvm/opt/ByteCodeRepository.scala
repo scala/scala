@@ -274,25 +274,30 @@ abstract class ByteCodeRepository extends PerRunInit {
 
   private def parseClass(internalName: InternalName): Either[ClassNotFound, ClassNode] = {
     val fullName = internalName.replace('/', '.')
-    backendClassPath.findClassFile(fullName) map { classFile =>
+    backendClassPath.findClassFile(fullName).flatMap { classFile =>
       val classNode = new ClassNode1
       val classReader = new asm.ClassReader(classFile.toByteArray)
 
-      // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`
-      // method of the InlineInfoAttribute class, instead of putting the byte array into a generic
-      // Attribute.
-      // We don't need frames when inlining, but we want to keep the local variable table, so we
-      // don't use SKIP_DEBUG.
-      classReader.accept(classNode, Array[Attribute](InlineInfoAttributePrototype), asm.ClassReader.SKIP_FRAMES)
-      // SKIP_FRAMES leaves line number nodes. Remove them because they are not correct after
-      // inlining.
-      // TODO: we need to remove them also for classes that are not parsed from classfiles, why not simplify and do it once when inlining?
-      // OR: instead of skipping line numbers for inlined code, use write a SourceDebugExtension
-      // attribute that contains JSR-45 data that encodes debugging info.
-      //   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
-      //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
-      removeLineNumbersAndAddLMFImplMethods(classNode)
-      classNode
+      try {
+        // Passing the InlineInfoAttributePrototype makes the ClassReader invoke the specific `read`
+        // method of the InlineInfoAttribute class, instead of putting the byte array into a generic
+        // Attribute.
+        // We don't need frames when inlining, but we want to keep the local variable table, so we
+        // don't use SKIP_DEBUG.
+        classReader.accept(classNode, Array[Attribute](InlineInfoAttributePrototype), asm.ClassReader.SKIP_FRAMES)
+        // SKIP_FRAMES leaves line number nodes. Remove them because they are not correct after
+        // inlining.
+        // TODO: we need to remove them also for classes that are not parsed from classfiles, why not simplify and do it once when inlining?
+        // OR: instead of skipping line numbers for inlined code, use write a SourceDebugExtension
+        // attribute that contains JSR-45 data that encodes debugging info.
+        //   http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.7.11
+        //   https://jcp.org/aboutJava/communityprocess/final/jsr045/index.html
+        removeLineNumbersAndAddLMFImplMethods(classNode)
+        Some(classNode)
+      } catch {
+        case e: Exception =>
+          None
+      }
     } match {
       case Some(node) => Right(node)
       case None       => Left(ClassNotFound(internalName, javaDefinedClasses.get(internalName)))
