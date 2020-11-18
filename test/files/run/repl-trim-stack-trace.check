@@ -24,7 +24,11 @@ java.lang.Exception
   ... ??? elided
 
 scala> null.asInstanceOf
+#partest !java15
 java.lang.NullPointerException
+#partest java15
+java.lang.NullPointerException: Cannot throw exception because the return value of "res3()" is null
+#partest
   at .lzycompute(<synthetic>:8)
   ... ??? elided
 

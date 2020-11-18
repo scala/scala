@@ -12,9 +12,9 @@
 
 package scala.tools.testkit
 
-import scala.reflect.ClassTag
+import scala.reflect.{ ClassTag, classTag, ensureAccessible }
 import scala.util.chaining._
-import java.lang.reflect.{Array => _, _}
+import java.lang.reflect.{ Array => _, _ }
 
 /** This module contains reflection-related utilities.
  *
@@ -22,10 +22,18 @@ import java.lang.reflect.{Array => _, _}
  *  Native, making any test using `ReflectUtil` JVM-only.
  */
 object ReflectUtil {
-  private lazy val modsField = classOf[Field].getDeclaredField("modifiers").tap(_.setAccessible(true))
+  private lazy val modsField = ensureAccessible {
+    try ensureAccessible(classOf[Class[_]].getDeclaredMethod("getDeclaredFields0", classOf[Boolean]))
+      .invoke(classOf[Field], false).asInstanceOf[Array[Field]]
+      .findLast(_.getName == "modifiers")
+      .getOrElse(getModsField)
+    catch { case _: NoSuchMethodException => getModsField }
+  }
+
+  private def getModsField = classOf[Field].getDeclaredField("modifiers")
 
   def getFieldAccessible[T: ClassTag](n: String): Field =
-    implicitly[ClassTag[T]]
+    classTag[T]
       .runtimeClass.getDeclaredField(n)
       .tap { f =>
         if ((f.getModifiers & Modifier.FINAL) != 0)
