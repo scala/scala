@@ -100,19 +100,19 @@ checksensible.scala:86: warning: comparing values of types EqEqRefTest.this.C3 a
 checksensible.scala:97: warning: comparing values of types Unit and Int using `!=` will always yield true
     while ((c = in.read) != -1)
                          ^
-checksensible.scala:105: warning: comparing values of types Long and Int using `equals` is unsafe due to cooperative equality; use `==` instead
+checksensible.scala:105: warning: comparing values of types Long and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
   1L equals 1
      ^
-checksensible.scala:112: warning: comparing values of types Any and Int using `equals` is unsafe due to cooperative equality; use `==` instead
+checksensible.scala:112: warning: comparing values of types Any and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
   (1L: Any) equals 1
             ^
-checksensible.scala:113: warning: comparing values of types AnyVal and Int using `equals` is unsafe due to cooperative equality; use `==` instead
+checksensible.scala:113: warning: comparing values of types AnyVal and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
   (1L: AnyVal) equals 1
                ^
-checksensible.scala:114: warning: comparing values of types AnyVal and AnyVal using `equals` is unsafe due to cooperative equality; use `==` instead
+checksensible.scala:114: warning: comparing values of types AnyVal and AnyVal using `equals` unsafely bypasses cooperative equality; use `==` instead
   (1L: AnyVal) equals (1: AnyVal)
                ^
-checksensible.scala:117: warning: comparing values of types A and Int using `equals` is unsafe due to cooperative equality; use `==` instead
+checksensible.scala:117: warning: comparing values of types A and Int using `equals` unsafely bypasses cooperative equality; use `==` instead
   def foo[A](a: A) = a.equals(1)
                              ^
 error: No warnings can be incurred under -Werror.

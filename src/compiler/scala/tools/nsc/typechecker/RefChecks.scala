@@ -1148,7 +1148,7 @@ abstract class RefChecks extends Transform {
       val actual   = underlyingClass(other.tpe)
       def typesString = "" + normalizeAll(qual.tpe.widen) + " and " + normalizeAll(other.tpe.widen)
       def nonSensiblyEquals() = {
-        refchecksWarning(pos, s"comparing values of types $typesString using `${name.decode}` is unsafe due to cooperative equality; use `==` instead", WarningCategory.OtherNonCooperativeEquals)
+        refchecksWarning(pos, s"comparing values of types $typesString using `${name.decode}` unsafely bypasses cooperative equality; use `==` instead", WarningCategory.OtherNonCooperativeEquals)
       }
       def isScalaNumber(s: Symbol) = s isSubClass ScalaNumberClass
       def isJavaNumber(s: Symbol)  = s isSubClass JavaNumberClass
