@@ -21,8 +21,7 @@ final class SeqCharSequence(val xs: scala.collection.IndexedSeq[Char]) extends C
   override def toString = xs.mkString("")
 }
 
-// Still need this one since the implicit class ArrayCharSequence only converts
-// a single argument.
+@deprecated("use `java.nio.CharBuffer.wrap` instead", "2.12.13")
 final class ArrayCharSequence(val xs: Array[Char], start: Int, end: Int) extends CharSequence {
   // yikes
   // java.lang.VerifyError: (class: scala/runtime/ArrayCharSequence, method: <init> signature: ([C)V)
