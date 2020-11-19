@@ -7,6 +7,5 @@ object BuildSettings extends AutoPlugin {
   object autoImport {
     lazy val baseVersion = settingKey[String]("The base version number from which all others are derived")
     lazy val baseVersionSuffix = settingKey[String]("Identifies the kind of version to build")
-    lazy val mimaReferenceVersion = settingKey[Option[String]]("Scala version number to run MiMa against")
   }
 }
