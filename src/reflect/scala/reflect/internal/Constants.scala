@@ -112,7 +112,7 @@ trait Constants extends api.Constants {
             case _ =>
               // we do not want cooperative equality for determining if constants are equal
               // TODO: switch to `cat`-based after 2.13.4 re-STARR // : @nowarn("cat=other-non-cooperative-equals")
-              this.value.equals(that.value): @nowarn("msg=comparing values .* is unsafe due to cooperative equality")
+              this.value.equals(that.value): @nowarn("msg=comparing values .* unsafely bypasses cooperative equality")
           }
         }
       case _ => false

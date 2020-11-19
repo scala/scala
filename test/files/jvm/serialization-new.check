@@ -1,13 +1,13 @@
-serialization-new.scala:24: warning: comparing values of types A and B using `equals` is unsafe due to cooperative equality; use `==` instead
+serialization-new.scala:24: warning: comparing values of types A and B using `equals` unsafely bypasses cooperative equality; use `==` instead
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
                                 ^
-serialization-new.scala:24: warning: comparing values of types B and A using `equals` is unsafe due to cooperative equality; use `==` instead
+serialization-new.scala:24: warning: comparing values of types B and A using `equals` unsafely bypasses cooperative equality; use `==` instead
     println("x equals y: " + (x equals y) + ", y equals x: " + (y equals x))
                                                                   ^
-serialization-new.scala:25: warning: comparing values of types A and B using `equals` is unsafe due to cooperative equality; use `==` instead
+serialization-new.scala:25: warning: comparing values of types A and B using `equals` unsafely bypasses cooperative equality; use `==` instead
     assert((x equals y) && (y equals x))
               ^
-serialization-new.scala:25: warning: comparing values of types B and A using `equals` is unsafe due to cooperative equality; use `==` instead
+serialization-new.scala:25: warning: comparing values of types B and A using `equals` unsafely bypasses cooperative equality; use `==` instead
     assert((x equals y) && (y equals x))
                               ^
 warning: 4 deprecations (since 2.13.0); re-run with -deprecation for details
