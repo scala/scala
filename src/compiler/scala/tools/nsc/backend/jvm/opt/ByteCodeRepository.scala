@@ -17,6 +17,7 @@ package opt
 
 import scala.collection.JavaConverters._
 import scala.collection.{concurrent, mutable}
+import scala.reflect.internal.util.NoPosition
 import scala.tools.asm
 import scala.tools.asm.Attribute
 import scala.tools.asm.tree._
@@ -33,7 +34,7 @@ abstract class ByteCodeRepository extends PerRunInit {
 
   import postProcessor.{bTypes, bTypesFromClassfile, callGraph}
   import bTypes._
-  import frontendAccess.{backendClassPath, recordPerRunCache}
+  import frontendAccess.{backendReporting, backendClassPath, recordPerRunCache}
 
   /**
    * Contains ClassNodes and the canonical path of the source file path of classes being compiled in
@@ -295,7 +296,9 @@ abstract class ByteCodeRepository extends PerRunInit {
         removeLineNumbersAndAddLMFImplMethods(classNode)
         Some(classNode)
       } catch {
-        case e: Exception =>
+        case ex: Exception =>
+          if (frontendAccess.compilerSettings.debug) ex.printStackTrace()
+          backendReporting.warning(NoPosition, s"Error while reading InlineInfoAttribute from ${fullName}\n${ex.getMessage}")
           None
       }
     } match {
