@@ -43,7 +43,11 @@ jobs:
           - set -e
           - sbt -warn setupPublishCore generateBuildCharacterPropertiesFile headerCheck publishLocal
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testOsgi
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest compile
+          # as per discussion on #9332, caching the new STARR only goes halfway.
+          # we should also cache the products of the bootstrapped build. currently all three stages
+          # (build, testAll1, testAll2) end up recompiling core projects like `library` and `compiler`.
+          # fixing that will take some care to satisfy sbt/zinc.
         workspaces:
           create:
             name: published-local
@@ -59,7 +63,7 @@ jobs:
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll1
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest Test/compile info testAll1
           - sbt -Dscala.build.compileWithDotty=true library/compile
 
       - name: testAll2
@@ -69,7 +73,7 @@ jobs:
         script:
           - set -e
           - STARR=$(sed -n 's/^maven\.version\.number=//p' buildcharacter.properties) && echo $STARR
-          - sbt -Dstarr.version=$STARR -warn setupValidateTest test:compile info testAll2
+          - sbt -Dstarr.version=$STARR -warn setupValidateTest info testAll2
 
       - stage: build
         name: build the spec using jekyll

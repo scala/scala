@@ -963,8 +963,7 @@ lazy val root: Project = (project in file("."))
     testJarSize := TestJarSize.testJarSizeImpl.value,
 
     // Wasn't sure if findRootCauses would work if I just aggregated testAll1/etc, so a little duplication..
-    testAll  := runTests(unitTests ::: partests ::: osgiTests ::: remainingTests).value,
-    testOsgi := runTests(osgiTests).value,
+    testAll  := runTests(unitTests ::: partests ::: remainingTests).value,
     // splitting this in two parts allows them to run in parallel on CI.
     // partest takes the longest, so "partest vs. everything else" is a roughly equal split
     testAll1 := runTests(unitTests ::: remainingTests).value,
@@ -998,13 +997,9 @@ lazy val partests = List(
   (tasty / Test / Keys.test).result.map(_ -> "tasty/test"),
 )
 
-// failed in CI? :( https://travis-ci.com/github/dwijnand/scala/jobs/403646205
-lazy val osgiTests = List(
+lazy val remainingTests = List(
   (osgiTestFelix   / Test / Keys.test).result.map(_ -> "osgiTestFelix/test"),
   (osgiTestEclipse / Test / Keys.test).result.map(_ -> "osgiTestEclipse/test"),
-)
-
-lazy val remainingTests = List(
   (mimaReportBinaryIssues                ).result.map(_ -> "mimaReportBinaryIssues"),
   (testJDeps                             ).result.map(_ -> "testJDeps"),
   (testJarSize                           ).result.map(_ -> "testJarSize"),
@@ -1124,7 +1119,6 @@ lazy val mkBin = taskKey[Seq[File]]("Generate shell script (bash or Windows batc
 lazy val mkQuick = taskKey[File]("Generate a full build, including scripts, in build/quick")
 lazy val mkPack = taskKey[File]("Generate a full build, including scripts, in build/pack")
 lazy val testAll = taskKey[Unit]("Run all test tasks sequentially")
-lazy val testOsgi = taskKey[Unit]("Run OSGI test tasks sequentially")
 lazy val testAll1 = taskKey[Unit]("Run 1/2 test tasks sequentially")
 lazy val testAll2 = taskKey[Unit]("Run 2/2 test tasks sequentially")
 
