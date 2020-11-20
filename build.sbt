@@ -513,7 +513,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    scalacOptions in Compile ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"),
   )
   .dependsOn(compiler)
 
@@ -703,7 +703,7 @@ lazy val tasty = project.in(file("test") / "tasty")
     Test / fork := true,
     libraryDependencies += junitInterfaceDep,
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v"),
-    testOptions in Test += Tests.Argument(
+    Test / testOptions += Tests.Argument(
       s"-Dtastytest.src=${baseDirectory.value}",
       s"-Dtastytest.packageName=tastytest"
     ),
@@ -768,12 +768,12 @@ def osgiTestProject(p: Project, framework: ModuleID) = p
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-a", "-v", "-q"),
     Test / javaOptions += "-Dscala.bundle.dir=" + (ThisBuild / buildDirectory).value / "osgi",
     Test / Keys.test / forkOptions := (Test / Keys.test / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
-    unmanagedSourceDirectories in Test := List((ThisBuild / baseDirectory).value / "test" / "osgi" / "src"),
-    unmanagedResourceDirectories in Compile := (unmanagedSourceDirectories in Test).value,
-    includeFilter in unmanagedResources in Compile := "*.xml",
-    packageBin in Compile := { // Put the bundle JARs required for the tests into build/osgi
+    Test / unmanagedSourceDirectories := List((ThisBuild / baseDirectory).value / "test" / "osgi" / "src"),
+    Compile / unmanagedResourceDirectories := (Test / unmanagedSourceDirectories).value,
+    Compile / unmanagedResources / includeFilter := "*.xml",
+    Compile / packageBin := { // Put the bundle JARs required for the tests into build/osgi
       val targetDir = (ThisBuild / buildDirectory).value / "osgi"
-      val mappings = ((mkPack in dist).value / "lib").listFiles.collect {
+      val mappings = ((dist / mkPack).value / "lib").listFiles.collect {
         case f if f.getName.startsWith("scala-") && f.getName.endsWith(".jar") => (f, targetDir / f.getName)
       }
       IO.copy(mappings, CopyOptions() withOverwrite true)
@@ -793,7 +793,7 @@ lazy val partestJavaAgent = Project("partest-javaagent", file(".") / "src" / "pa
     name := "scala-partest-javaagent",
     description := "Scala Compiler Testing Tool (compiler-specific java agent)",
     // add required manifest entry - previously included from file
-    packageOptions in (Compile, packageBin) +=
+    Compile / packageBin / packageOptions +=
       Package.ManifestAttributes( "Premain-Class" -> "scala.tools.partest.javaagent.ProfilingAgent" ),
     // we need to build this to a JAR
     exportJars := true
@@ -815,25 +815,25 @@ lazy val test = project
     // test sources are compiled in partest run, not here
     IntegrationTest / unmanagedSourceDirectories := Nil,
     IntegrationTest / sources := Nil,
-    fork in IntegrationTest := true,
+    IntegrationTest / fork := true,
     // enable this in 2.13, when tests pass
-    //scalacOptions in Compile += "-Yvalidate-pos:parser,typer",
-    javaOptions in IntegrationTest ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
-    testOptions in IntegrationTest += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
+    //Compile / scalacOptions += "-Yvalidate-pos:parser,typer",
+    IntegrationTest / javaOptions ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
+    IntegrationTest / testOptions += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
-    testOptions in IntegrationTest += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
-    testOptions in IntegrationTest += Tests.Argument("-Dpartest.scalac_opts=" + (scalacOptions in Compile).value.mkString(" ")),
-    (forkOptions in IntegrationTest) := (forkOptions in IntegrationTest).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
-    testOptions in IntegrationTest += {
-      val cp = (dependencyClasspath in Test).value
+    IntegrationTest / testOptions += Tests.Argument("-Dpartest.java_opts=-Xmx1024M -Xms64M"),
+    IntegrationTest / testOptions += Tests.Argument("-Dpartest.scalac_opts=" + (Compile / scalacOptions).value.mkString(" ")),
+    (IntegrationTest / forkOptions) := (IntegrationTest / forkOptions).value.withWorkingDirectory((ThisBuild / baseDirectory).value),
+    IntegrationTest / testOptions += {
+      val cp = (Test / dependencyClasspath).value
       val baseDir = (ThisBuild / baseDirectory).value
-      val instrumentedJar = (packagedArtifact in (specLib, Compile, packageBin)).value._2
+      val instrumentedJar = (specLib / Compile / packageBin / packagedArtifact).value._2
       Tests.Setup { () =>
         // Copy instrumented.jar (from specLib)to the location where partest expects it.
         IO.copyFile(instrumentedJar, baseDir / "test/files/speclib/instrumented.jar")
       }
     },
-    definedTests in IntegrationTest += new sbt.TestDefinition(
+    IntegrationTest / definedTests += new sbt.TestDefinition(
       "partest",
       // marker fingerprint since there are no test classes
       // to be discovered by sbt:
@@ -842,10 +842,10 @@ lazy val test = project
         def annotationName = "partest"
       }, true, Array()
     ),
-    executeTests in IntegrationTest := {
+    IntegrationTest / executeTests := {
       val log = streams.value.log
-      val result = (executeTests in IntegrationTest).value
-      val result2 = (executeTests in Test).value
+      val result = (IntegrationTest / executeTests).value
+      val result2 = (Test / executeTests).value
       if (result.overall != TestResult.Error && result.events.isEmpty) {
         // workaround for https://github.com/sbt/sbt/issues/2722
         log.error("No test events found")
@@ -853,7 +853,7 @@ lazy val test = project
       }
       else result
     },
-    testListeners in IntegrationTest += new PartestTestListener(target.value)
+    IntegrationTest / testListeners += new PartestTestListener(target.value)
   )
 
 lazy val manual = configureAsSubproject(project)
@@ -861,16 +861,16 @@ lazy val manual = configureAsSubproject(project)
   .settings(publish / skip := true)
   .settings(
     libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value,
-    classDirectory in Compile := (target in Compile).value / "classes"
+    Compile / classDirectory := (Compile / target).value / "classes"
   )
 
 lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-dist-src-dummy")
   .settings(commonSettings)
   .settings(disableDocs)
   .settings(
-    mappings in Compile in packageBin ++= {
+    Compile / packageBin / mappings ++= {
       val binBaseDir = buildDirectory.value / "pack"
-      val binMappings = (mkBin in dist).value.pair(Path.relativeTo(binBaseDir), errorIfNone = false)
+      val binMappings = (dist / mkBin).value.pair(Path.relativeTo(binBaseDir), errorIfNone = false)
       // With the way the resource files are spread out over the project sources we can't just add
       // an unmanagedResourceDirectory, so we generate the mappings manually:
       val docBaseDir = (ThisBuild / baseDirectory).value
@@ -879,15 +879,15 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       val resMappings = resBaseDir ** ("*.html" | "*.css" | "*.gif" | "*.png") pair (p => Path.relativeTo(resBaseDir)(p).map("doc/tools/" + _))
       docMappings ++ resMappings ++ binMappings
     },
-    resourceGenerators in Compile += Def.task {
+    Compile / resourceGenerators += Def.task {
       val command = "fsc, scala, scalac, scaladoc, scalap"
-      val htmlOut = (resourceManaged in Compile).value / "doc/tools"
-      val manOut = (resourceManaged in Compile).value / "genman"
-      val fixedManOut = (resourceManaged in Compile).value / "man"
+      val htmlOut = (Compile / resourceManaged).value / "doc/tools"
+      val manOut = (Compile / resourceManaged).value / "genman"
+      val fixedManOut = (Compile / resourceManaged).value / "man"
       IO.createDirectory(htmlOut)
       IO.createDirectory(manOut / "man1")
       runner.value.run("scala.tools.docutil.ManMaker",
-        (fullClasspath in Compile in manual).value.files,
+        (manual / Compile / fullClasspath).value.files,
         Seq(command, htmlOut.getAbsolutePath, manOut.getAbsolutePath),
         streams.value.log).failed foreach (sys error _.getMessage)
       (manOut ** "*.1" pair Path.rebase(manOut, fixedManOut)).foreach { case (in, out) =>
@@ -898,7 +898,7 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       }
       (htmlOut ** "*.html").get ++ (fixedManOut ** "*.1").get
     }.taskValue,
-    managedResourceDirectories in Compile := Seq((resourceManaged in Compile).value),
+    Compile / managedResourceDirectories := Seq((Compile / resourceManaged).value),
     libraryDependencies ++= jlineDeps,
     apiURL := None,
     fixPom(
@@ -906,12 +906,12 @@ lazy val scalaDist = Project("scala-dist", file(".") / "target" / "scala-dist-di
       "/project/description" -> <description>The Artifacts Distributed with Scala</description>,
       "/project/packaging" -> <packaging>jar</packaging>
     ),
-    publishArtifact in (Compile, packageSrc) := false
+    Compile / packageSrc / publishArtifact := false
   )
   .dependsOn(library, reflect, compiler, scalap)
 
 def partestOnly(in: String): Def.Initialize[Task[Unit]] =
-  (testOnly in IntegrationTest in testP).toTask(" -- --terse " + in)
+  (testP / IntegrationTest / testOnly).toTask(" -- --terse " + in)
 
 def partestDesc(in: String): Def.Initialize[Task[(Result[Unit], String)]] =
   partestOnly(in).result map (_ -> s"partest $in")
@@ -923,7 +923,7 @@ lazy val root: Project = (project in file("."))
   .settings(
     commands ++= ScriptCommands.all,
     extractBuildCharacterPropertiesFile := {
-      val jar = (scalaInstance in bootstrap).value.allJars.find(_.getName contains "-compiler").get
+      val jar = (bootstrap / scalaInstance).value.allJars.find(_.getName contains "-compiler").get
       val bc = buildCharacterPropertiesFile.value
       val packagedName = "scala-buildcharacter.properties"
       IO.withTemporaryDirectory { tmp =>
