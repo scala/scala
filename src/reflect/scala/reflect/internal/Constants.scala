@@ -111,8 +111,7 @@ trait Constants extends api.Constants {
               doubleToRawLongBits(value.asInstanceOf[Double]) == doubleToRawLongBits(that.value.asInstanceOf[Double])
             case _ =>
               // we do not want cooperative equality for determining if constants are equal
-              // TODO: switch to `cat`-based after 2.13.4 re-STARR // : @nowarn("cat=other-non-cooperative-equals")
-              this.value.equals(that.value): @nowarn("msg=comparing values .* unsafely bypasses cooperative equality")
+              this.value.equals(that.value): @nowarn("cat=other-non-cooperative-equals")
           }
         }
       case _ => false
