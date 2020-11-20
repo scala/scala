@@ -124,9 +124,7 @@ final class BigInt(val bigInteger: BigInteger)
     else bigInteger.##
 
   /** Compares this BigInt with the specified value for equality. */
-  // TODO: switch to `cat`-based after 2.13.4 re-STARR
-  // @nowarn("cat=other-non-cooperative-equals")
-  @nowarn("msg=comparing values .* unsafely bypasses cooperative equality")
+  @nowarn("cat=other-non-cooperative-equals")
   override def equals(that: Any): Boolean = that match {
     case that: BigInt     => this equals that
     case that: BigDecimal => that equals this
