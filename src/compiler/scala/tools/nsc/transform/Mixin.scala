@@ -234,8 +234,7 @@ abstract class Mixin extends Transform with ast.TreeDSL with AccessorSynthesis {
         if (member.isMethod) publicizeTraitMethod(member)
         else {
           assert(member.isTerm && !member.isDeferred, member)
-          // disable assert to support compiling against code compiled by an older compiler (until we re-starr)
-          // assert(member hasFlag PRESUPER, s"unexpected $member in $clazz ${member.debugFlagString}")
+          assert(member hasFlag PRESUPER, s"unexpected $member in $clazz ${member.debugFlagString}")
           clazz.info.decls.unlink(member)
         }
 
