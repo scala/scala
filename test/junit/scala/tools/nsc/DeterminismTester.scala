@@ -2,16 +2,14 @@ package scala.tools.nsc
 
 import java.io.OutputStreamWriter
 import java.nio.charset.Charset
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
-import scala.collection.JavaConverters._
+import java.nio.file.{Files, Path, Paths}
 import javax.tools.ToolProvider
 
-import scala.reflect.internal.util.SourceFile
+import scala.jdk.CollectionConverters._
+import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 import scala.reflect.io.AbstractFile
 import scala.tools.nsc.FileUtils._
 import scala.tools.nsc.reporters.StoreReporter
-import scala.reflect.internal.util.BatchSourceFile
 
 object DeterminismTester extends DeterminismTester {
   def main(args: Array[String]): Unit = {
@@ -49,7 +47,7 @@ class DeterminismTester {
       g.settings.outputDirs.setSingleOutput(output.toString)
       g.settings.async.value = true
       g.settings.processArguments(scalacOptions, true)
-      val storeReporter = new StoreReporter
+      val storeReporter = new StoreReporter(g.settings)
       g.reporter = storeReporter
       import g._
       val r = new Run
@@ -79,7 +77,10 @@ class DeterminismTester {
     }
     compile(referenceOutput, groups.last)
 
+    /* unused
+    import java.nio.file.{FileVisitResult, SimpleFileVisitor}
     class CopyVisitor(src: Path, dest: Path) extends SimpleFileVisitor[Path] {
+      import java.nio.file.attribute.BasicFileAttributes
       override def preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult = {
         Files.createDirectories(dest.resolve(src.relativize(dir)))
         super.preVisitDirectory(dir, attrs)
@@ -89,6 +90,7 @@ class DeterminismTester {
         super.visitFile(file, attrs)
       }
     }
+    */
     val permutations: List[List[SourceFile]] = if (groups.last.size > 32) {
       groups.last.reverse :: groups.last.map(_ :: Nil)
     } else permutationsWithSubsets(groups.last)

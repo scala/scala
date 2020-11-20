@@ -1,6 +1,6 @@
 package scala.tools.nsc
 
-import org.junit.{ Ignore, Test }
+import org.junit.Test
 
 import scala.reflect.internal.util.{BatchSourceFile, SourceFile}
 

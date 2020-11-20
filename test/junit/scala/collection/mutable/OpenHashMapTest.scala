@@ -2,7 +2,7 @@ package scala.collection.mutable
 
 import org.junit.Assert._
 import org.junit.Test
-import org.openjdk.jol.info.{GraphPathRecord, GraphVisitor, GraphWalker}
+import org.openjdk.jol.info.GraphWalker
 
 /** Tests for [[OpenHashMap]]. */
 @deprecated("Tests deprecated API", since="2.13")
@@ -47,7 +47,6 @@ class OpenHashMapTest {
   /** Test that an [[OpenHashMap]] frees references to a deleted key (scala/bug#9522). */
   @Test
   def freesDeletedKey(): Unit = {
-    import scala.language.reflectiveCalls
 
     class MyClass {
       override def hashCode() = 42
