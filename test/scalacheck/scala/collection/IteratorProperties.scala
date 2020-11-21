@@ -1,7 +1,7 @@
 package scala.collection
 
 import org.scalacheck.{Arbitrary, Gen, Properties, Prop}
-import org.scalacheck.Prop.{forAll, BooleanOperators, all}
+import org.scalacheck.Prop.{forAll, all, propBoolean}
 
 object IteratorProperties extends Properties("Iterator") {
 
