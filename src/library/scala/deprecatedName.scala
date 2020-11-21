@@ -14,7 +14,6 @@ package scala
 
 import scala.annotation.meta._
 
-
  /** An annotation that designates that the name of a parameter is deprecated.
   *
   *  Using this name in a named argument generates a deprecation warning.
@@ -43,6 +42,8 @@ import scala.annotation.meta._
 @param
 @deprecatedInheritance("Scheduled for being final in the future", "2.13.0")
 class deprecatedName(name: String = "<none>", since: String = "") extends scala.annotation.StaticAnnotation {
+  // at the time we remove these constructors, we should also change this from a StaticAnnotation to
+  // a ConstantAnnotation; for now, the presence of auxiliary constructors blocks that change
   @deprecated("The parameter name should be a String, not a symbol.", "2.13.0") def this(name: Symbol, since: String) = this(name.name, since)
   @deprecated("The parameter name should be a String, not a symbol.", "2.13.0") def this(name: Symbol) = this(name.name, "")
 }
