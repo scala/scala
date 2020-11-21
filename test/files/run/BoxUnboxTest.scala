@@ -1,4 +1,4 @@
-import org.junit.Assert._
+import org.junit.Assert.{ assertThrows => _, _ }
 import scala.tools.testkit.AssertUtil._
 
 class VCI(val x: Int) extends AnyVal { override def toString = "" + x }

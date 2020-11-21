@@ -1,7 +1,6 @@
-
 package scala.util
 
-import org.junit.Assert._
+import org.junit.Assert.{ assertThrows => _, _ }
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
