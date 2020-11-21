@@ -14,7 +14,7 @@ package scala.jdk
 
 import java.io.NotSerializableException
 
-import org.junit.Assert._
+import org.junit.Assert.{ assertThrows => _, _ }
 import org.junit.Test
 
 import scala.annotation.unused
