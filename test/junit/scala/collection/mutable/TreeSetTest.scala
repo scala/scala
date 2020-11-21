@@ -19,6 +19,7 @@ class TreeSetTest {
     assertEquals("b", set.range("b", "c").mkString(","))
   }
 
+  @deprecated("Tests deprecated API", since="2.13.4")
   @Test def diff(): Unit = {
     val src        = TreeSet(1, 2, 4, 5)
     val removeList = List(1, 2, 7)

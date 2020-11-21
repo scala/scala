@@ -280,9 +280,9 @@ class Regex private[matching](val pattern: Pattern, groupNames: String*) extends
    *  @return       The matches
    */
   def unapplySeq(s: CharSequence): Option[List[String]] = {
-    val m = pattern matcher s
-      if (runMatcher(m)) Some(List.tabulate(m.groupCount) { i => m.group(i + 1) })
-      else None
+    val m = pattern.matcher(s)
+    if (runMatcher(m)) Some(List.tabulate(m.groupCount) { i => m.group(i + 1) })
+    else None
   }
 
   /** Tries to match the String representation of a [[scala.Char]].

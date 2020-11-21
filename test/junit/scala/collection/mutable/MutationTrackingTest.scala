@@ -144,12 +144,14 @@ object MutationTrackingTest {
       checkFine   { _ dropRightInPlace 0 }
     }
 
+    @deprecated("Tests deprecated API", since="2.13.4")
     @Test
     def trimStart(): Unit = {
       checkThrows { _ trimStart 2 }
       checkFine   { _ trimStart 0 }
     }
 
+    @deprecated("Tests deprecated API", since="2.13.4")
     @Test
     def trimEnd(): Unit = {
       checkThrows { _ trimEnd 2 }

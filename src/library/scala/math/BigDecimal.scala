@@ -15,7 +15,11 @@ package math
 
 import scala.language.implicitConversions
 
-import java.math.{ MathContext, BigDecimal => BigDec }
+import java.math.{
+  BigDecimal => BigDec,
+  MathContext,
+  RoundingMode => JRM,
+}
 import scala.collection.immutable.NumericRange
 
 object BigDecimal {
@@ -31,16 +35,15 @@ object BigDecimal {
 
   object RoundingMode extends Enumeration {
     // Annoying boilerplate to ensure consistency with java.math.RoundingMode
-    import java.math.{RoundingMode => RM}
     type RoundingMode = Value
-    val UP          = Value(RM.UP.ordinal)
-    val DOWN        = Value(RM.DOWN.ordinal)
-    val CEILING     = Value(RM.CEILING.ordinal)
-    val FLOOR       = Value(RM.FLOOR.ordinal)
-    val HALF_UP     = Value(RM.HALF_UP.ordinal)
-    val HALF_DOWN   = Value(RM.HALF_DOWN.ordinal)
-    val HALF_EVEN   = Value(RM.HALF_EVEN.ordinal)
-    val UNNECESSARY = Value(RM.UNNECESSARY.ordinal)
+    val UP          = Value(JRM.UP.ordinal)
+    val DOWN        = Value(JRM.DOWN.ordinal)
+    val CEILING     = Value(JRM.CEILING.ordinal)
+    val FLOOR       = Value(JRM.FLOOR.ordinal)
+    val HALF_UP     = Value(JRM.HALF_UP.ordinal)
+    val HALF_DOWN   = Value(JRM.HALF_DOWN.ordinal)
+    val HALF_EVEN   = Value(JRM.HALF_EVEN.ordinal)
+    val UNNECESSARY = Value(JRM.UNNECESSARY.ordinal)
   }
 
   /** Constructs a `BigDecimal` using the decimal text representation of `Double` value `d`, rounding if necessary. */
@@ -586,11 +589,11 @@ extends ScalaNumber with ScalaNumericConversions with Serializable with Ordered[
    */
   def setScale(scale: Int): BigDecimal =
     if (this.scale == scale) this
-    else new BigDecimal(this.bigDecimal setScale scale, mc)
+    else new BigDecimal(this.bigDecimal.setScale(scale), mc)
 
   def setScale(scale: Int, mode: RoundingMode): BigDecimal =
     if (this.scale == scale) this
-    else new BigDecimal(this.bigDecimal.setScale(scale, mode.id), mc)
+    else new BigDecimal(this.bigDecimal.setScale(scale, JRM.valueOf(mode.id)), mc)
 
   /** Converts this BigDecimal to a Byte.
    *  If the BigDecimal is too big to fit in a Byte, only the low-order 8 bits are returned.

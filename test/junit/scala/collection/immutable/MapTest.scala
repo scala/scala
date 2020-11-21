@@ -128,14 +128,14 @@ class MapTest {
         for (form2 <- List(addList, addMap, addArray, addSortSame, addSortReverse, addTreeSame, addTreeReverse)) {
           val info2 = s"form2[${form2.getClass.getSimpleName}]=$form2, $info"
 
-          assertEquals(info2, expected, (emptySB ++= form ++= form2).result.toList)
-          assertEquals(info2, expected, (emptyTB ++= form ++= form2).result.toList)
+          assertEquals(info2, expected, (emptySB ++= form ++= form2).result().toList)
+          assertEquals(info2, expected, (emptyTB ++= form ++= form2).result().toList)
 
-          assertEquals(info2, expected, ((form.foldLeft(emptySB)(_ += _)) ++= form2).result.toList)
-          assertEquals(info2, expected, ((form.foldLeft(emptyTB)(_ += _)) ++= form2).result.toList)
+          assertEquals(info2, expected, ((form.foldLeft(emptySB)(_ += _)) ++= form2).result().toList)
+          assertEquals(info2, expected, ((form.foldLeft(emptyTB)(_ += _)) ++= form2).result().toList)
 
-          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result.toList)
-          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result.toList)
+          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList)
+          assertEquals(info2, expected, (form2.foldLeft(form.foldLeft(emptySB)(_ += _))(_ += _)).result().toList)
 
         }
       }
