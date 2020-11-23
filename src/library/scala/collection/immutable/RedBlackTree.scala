@@ -261,11 +261,6 @@ private[collection] object NewRedBlackTree {
       }
     }
 
-    def leftBlackHeight(tree: Tree[_, _], h: Int): Int = {
-      if (tree eq null) h
-      else leftBlackHeight(tree.left, h + (if (tree.isBlack) 1 else 0))
-    }
-
     def validateBlackHeight(tree: Tree[_, _], h: Int, expected: Int): Unit = {
       if (tree eq null)
         if (h != 0) throw new IllegalStateException(s"at red tree ${tree.key} tree is has a black height of ${expected -h} while expecting $expected")
@@ -279,7 +274,7 @@ private[collection] object NewRedBlackTree {
       try {
         checkImmutable(generated)
         checkAdjacentRed(generated)
-        val h = leftBlackHeight(generated, 0)
+        val h = blackHeight(generated, 0)
         validateBlackHeight(generated, h, h)
       } catch {
         case e: IllegalStateException => {
@@ -1277,12 +1272,13 @@ private[collection] object NewRedBlackTree {
       else mkTree(trBlack, tr.key, tr.value, ttl, tr.right)
     }
   }
+  @tailrec private def blackHeight(tree: Tree[_, _], heightSoFar: Int): Int =
+    if (tree eq null) heightSoFar + 1
+    else blackHeight(tree.left, if (tree.isBlack) heightSoFar + 1 else heightSoFar)
 
   private[this] def join[A, B](tl: Tree[A, B], k: A, v: B, tr: Tree[A, B]): Tree[A, B] = {
-    @tailrec def h(t: Tree[_, _], i: Int): Int =
-      if(t eq null) i+1 else h(t.left, if(isBlackTree(t)) i+1 else i)
-    val bhtl = h(tl, 0)
-    val bhtr = h(tr, 0)
+    val bhtl = blackHeight(tl, 0)
+    val bhtr = blackHeight(tr, 0)
     if(bhtl > bhtr) {
       val tt = joinRight(tl, k, v, tr, bhtl, rank(tr, bhtr))
       if(isRedTree(tt) && isRedTree(tt.right)) tt.black
