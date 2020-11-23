@@ -9,6 +9,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
 
 import scala.tools.testing.AllocationTest
+import scala.util.Random
 
 @RunWith(classOf[JUnit4])
 class TreeSetTest extends AllocationTest{
@@ -286,6 +287,148 @@ class TreeSetTest extends AllocationTest{
     for (set <- List(keepISS, keepMSS, keepIBS, keepMBS)) {
       assertEquals(expected, src intersect set)
       assertEquals(expected, src filter set)
+    }
+  }
+  def validate[A, B](original: TreeSet[Int], result: TreeSet[Int]): TreeSet[Int] = {
+    NewRedBlackTree.validate(original.tree, result.tree)
+    result
+  }
+
+  @Test
+  def randomTreePlusMinus() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+    }
+  }
+  @Test
+  def randomTreeBuild() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      val builder = TreeSet.newBuilder[Int]
+      builder ++= r.shuffle(m.toList)
+      val res = validate(m, builder.result())
+
+      assertEquals(m, res)
+    }
+  }
+  @Test
+  def randomTreeSplit() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      val (m1,m2) = m.splitAt(r.nextInt(1000))
+
+      validate(m, m1)
+      validate(m, m2)
+    }
+  }
+  @Test
+  def randomTreeDrop() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.drop(r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeTake() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.take(r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeSlice() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.slice(r.nextInt(1000),r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeInit() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.init)
+    }
+  }
+  @Test
+  def randomTreeTail() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.tail)
+    }
+  }
+  @Test
+  def randomTreeFrom() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.from(r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeTo() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.to(r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeUntil() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.until(r.nextInt(1000)))
+    }
+  }
+  @Test
+  def randomTreeRange() {
+    val r = new Random(0)
+    var m = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m = validate(m, m + r.nextInt(1000))
+      m = validate(m, m - r.nextInt(1000))
+
+      validate(m, m.range(r.nextInt(1000), r.nextInt(1000)))
     }
   }
 }
