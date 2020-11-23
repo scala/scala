@@ -23,9 +23,6 @@ libraryDependencies ++= Seq(
   "org.eclipse.jgit" % "org.eclipse.jgit" % "4.6.0.201612231935-r",
   "org.slf4j" % "slf4j-nop" % "1.7.23",
   "com.googlecode.java-diff-utils" % "diffutils" % "1.3.0",
-  // we should be able to remove this again when we move to sbt 1.4.4,
-  // as per https://github.com/sbt/sbt/pull/6085
-  "org.scala-lang" % "scala-compiler" % scalaVersion.value,
 )
 
 Global / concurrentRestrictions := Seq(
