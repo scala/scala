@@ -15,7 +15,7 @@ package doc
 package base
 
 import base.comment._
-import scala.annotation.tailrec
+import scala.annotation.{nowarn, tailrec}
 import scala.collection._
 import scala.util.matching.Regex
 import scala.reflect.internal.util.Position
@@ -183,11 +183,11 @@ trait CommentFactoryBase { this: MemberLookupBase =>
 
   /** The start of a Scaladoc code block */
   private val CodeBlockStartRegex =
-    new Regex("""(.*?)((?:\{\{\{)|(?:\u000E<pre(?: [^>]*)?>\u000E))(.*)""")
+    new Regex("""(.*?)((?:\{\{\{)|(?:<pre(?: [^>]*)?>))(.*)""")
 
   /** The end of a Scaladoc code block */
   private val CodeBlockEndRegex =
-    new Regex("""(.*?)((?:\}\}\})|(?:\u000E</pre>\u000E))(.*)""")
+    new Regex("""(.*?)((?:\}\}\})|(?:</pre>))(.*)""")
 
   /** A key used for a tag map. The key is built from the name of the tag and
     * from the linked symbol if the tag has one.
@@ -771,12 +771,13 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       }
 
       // TODO: Abandon table parsing when the delimiter is missing instead of fixing and continuing.
-      val delimiterRow :: dataRows = if (rows.nonEmpty)
-        rows.toList
-      else {
-        reportError(pos, "Fixing missing delimiter row", site)
-        Row(Cell(Paragraph(Text("-")) :: Nil) :: Nil) :: Nil
-      }
+      val delimiterRow :: dataRows = {
+        if (rows.nonEmpty) rows.toList
+        else {
+          reportError(pos, "Fixing missing delimiter row", site)
+          Row(Cell(Paragraph(Text("-")) :: Nil) :: Nil) :: Nil
+        }
+      }: @nowarn("msg=match may not be exhaustive")
 
       if (delimiterRow.cells.isEmpty) sys.error("TODO: Handle table with empty delimiter row")
 
@@ -893,7 +894,18 @@ trait CommentFactoryBase { this: MemberLookupBase =>
         else if (check(",,")) subscript()
         else if (check("[[")) link()
         else {
-          val str = readUntil { char == safeTagMarker || check("''") || char == '`' || check("__") || char == '^' || check(",,") || check("[[") || isInlineEnd || checkParaEnded || char == endOfLine }
+          val str = readUntil {
+            char == safeTagMarker ||
+              check("''") ||
+              char == '`' ||
+              check("__") ||
+              char == '^' ||
+              check(",,") ||
+              check("[[") ||
+              isInlineEnd ||
+              checkParaEnded() ||
+              char == endOfLine
+          }
           Text(textTransform(str))
         }
       }
@@ -901,7 +913,7 @@ trait CommentFactoryBase { this: MemberLookupBase =>
       val inlines: List[Inline] = {
         val iss = mutable.ListBuffer.empty[Inline]
         iss += inline0()
-        while (!isInlineEnd && !checkParaEnded) {
+        while (!isInlineEnd && !checkParaEnded()) {
           val skipEndOfLine = if (char == endOfLine) {
             nextChar()
             true

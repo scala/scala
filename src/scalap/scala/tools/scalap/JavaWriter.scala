@@ -176,12 +176,12 @@ class JavaWriter(classfile: Classfile, writer: Writer) extends CodeWriter(writer
       case cf.Attribute(name, _) => getName(name) == "JacoMeta"
     } match {
       case None =>
-        printClassHeader;
+        printClassHeader();
       case Some(cf.Attribute(_, data)) =>
         val mp = new MetaParser(getName(
           ((data(0) & 0xff) << 8) + (data(1) & 0xff)).trim())
         mp.parse match {
-          case None => printClassHeader;
+          case None => printClassHeader();
           case Some(str) =>
             if (isInterface(cf.flags))
               print("trait " + getSimpleClassName(cf.classname) + str)

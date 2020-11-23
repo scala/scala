@@ -41,7 +41,7 @@ class MetaParser(meta: String) {
       do {
         res.append(if (token == ",") ", " else "[")
         nextToken
-        parseType
+        parseType()
       } while (token == ",")
       nextToken
       res.append("]")
@@ -88,7 +88,7 @@ class MetaParser(meta: String) {
         if (token == "<") {
           nextToken
           res.append(" <: ")
-          parseType
+          parseType()
         }
       } while (token == ",")
       nextToken
@@ -101,7 +101,7 @@ class MetaParser(meta: String) {
         else
           res.append(" with ")
         nextToken
-        parseType
+        parseType()
       } while (token == "with")
     }
     res.toString()
@@ -122,7 +122,7 @@ class MetaParser(meta: String) {
           if (token == "<") {
             nextToken
             res.append(" <: ")
-            parseType
+            parseType()
           }
           if (token == ",") {
             nextToken
@@ -149,15 +149,15 @@ class MetaParser(meta: String) {
             nextToken
             res.append("def ")
           }
-          parseType
+          parseType()
         }
       } while (token == ",")
       nextToken
       res.append("): ")
-      parseType
+      parseType()
     } else {
       res.append(": ")
-      parseType
+      parseType()
     }
     res.toString()
   }
@@ -165,7 +165,7 @@ class MetaParser(meta: String) {
   protected def parseMetaField: String = {
     nextToken
     res.append(": ")
-    parseType
+    parseType()
     res.toString()
   }
 
@@ -176,7 +176,7 @@ class MetaParser(meta: String) {
         res.append(if (token == "(") "(" else ", ")
         nextToken
         if (token != ")")
-          parseType
+          parseType()
       } while (token == ",")
       nextToken
       res.append(")")

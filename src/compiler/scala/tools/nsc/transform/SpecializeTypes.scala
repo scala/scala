@@ -1901,7 +1901,7 @@ abstract class SpecializeTypes extends InfoTransform with TypingTransformers {
     private def addBody(tree: DefDef, source: Symbol): DefDef = {
       val symbol = tree.symbol
       debuglog("specializing body of" + symbol.defString)
-      val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree: @nowarn("msg=match may not be exhaustive")
+      val DefDef(_, _, tparams, vparams :: Nil, tpt, _) = tree: @unchecked
       val env = typeEnv(symbol)
       val origtparams = source.typeParams.filter(tparam => !env.contains(tparam) || !isPrimitiveValueType(env(tparam)))
       if (origtparams.nonEmpty || symbol.typeParams.nonEmpty)

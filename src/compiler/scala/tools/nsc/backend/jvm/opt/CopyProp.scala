@@ -14,7 +14,7 @@ package scala.tools.nsc
 package backend.jvm
 package opt
 
-import scala.annotation.{nowarn, switch, tailrec}
+import scala.annotation.{switch, tailrec}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
 import scala.tools.asm.Opcodes._
@@ -660,7 +660,7 @@ abstract class CopyProp {
 
       @tailrec def tryPairing(): Unit = {
         if (completesStackTop(insn)) {
-          val (store: VarInsnNode, depends) = pairStartStack.pop(): @nowarn("msg=match may not be exhaustive")
+          val (store: VarInsnNode, depends) = pairStartStack.pop(): @unchecked
           addDepends(mkRemovePair(store, insn, depends.toList))
         } else if (pairStartStack.nonEmpty) {
           val (top, topDepends) = pairStartStack.pop()

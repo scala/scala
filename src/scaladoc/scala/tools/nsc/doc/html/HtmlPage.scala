@@ -26,6 +26,8 @@ import java.net.URI
 
 import javax.xml.stream.XMLOutputFactory
 
+import scala.annotation.nowarn
+
 /** An html page that is part of a Scaladoc site.
   * @author David Bernard
   * @author Gilles Dubochet */
@@ -271,11 +273,13 @@ abstract class HtmlPage extends Page { thisPage =>
       })
 
   private def memberToUrl(template: Entity): String = {
-    val (signature: Option[String], containingTemplate: TemplateEntity) = template match {
-      case dte: DocTemplateEntity => (None, dte)
-      case me: MemberEntity => (Some(me.signature), me.inTemplate)
-      case tpl => (None, tpl)
-    }
+    val (signature: Option[String], containingTemplate: TemplateEntity) = {
+      template match {
+        case dte: DocTemplateEntity => (None, dte)
+        case me: MemberEntity => (Some(me.signature), me.inTemplate)
+        case tpl => (None, tpl)
+      }
+    }: @nowarn("msg=match may not be exhaustive")
 
     val templatePath = templateToPath(containingTemplate)
     val url = "../" * (thisPage.path.size - 1) + templatePath.reverse.mkString("/")

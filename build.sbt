@@ -512,7 +512,7 @@ lazy val interactive = configureAsSubproject(project)
   .settings(
     name := "scala-compiler-interactive",
     description := "Scala Interactive Compiler",
-    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"),
+    Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"),
   )
   .dependsOn(compiler)
 
@@ -520,7 +520,7 @@ lazy val repl = configureAsSubproject(project)
   .settings(disableDocs)
   .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
-  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation:msg=early.initializers:s"))
+  .settings(Compile / scalacOptions ++= Seq("-Xlint", "-Wconf:cat=deprecation&msg=early initializers:s"))
   .dependsOn(compiler, interactive)
 
 lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".") / "src" / "repl-frontend"))
@@ -540,17 +540,24 @@ lazy val replFrontend = configureAsSubproject(Project("repl-frontend", file(".")
 
 lazy val scaladoc = configureAsSubproject(project)
   .settings(disableDocs)
+  .settings(fatalWarningsSettings)
   .settings(publish / skip := true)
   .settings(
     name := "scala-compiler-doc",
     description := "Scala Documentation Generator",
     Compile / unmanagedResources / includeFilter := "*.html" | "*.css" | "*.gif" | "*.png" | "*.js" | "*.txt" | "*.svg" | "*.eot" | "*.woff" | "*.ttf",
     libraryDependencies ++= ScaladocSettings.webjarResources,
-    Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar
+    Compile / resourceGenerators += ScaladocSettings.extractResourcesFromWebjar,
+    Compile / scalacOptions ++= Seq(
+      "-Xlint",
+      "-feature",
+      "-Wconf:cat=deprecation&msg=early initializers:s",
+    ),
   )
   .dependsOn(compiler)
 
 lazy val scalap = configureAsSubproject(project)
+  .settings(fatalWarningsSettings)
   .settings(
     description := "Scala Bytecode Parser",
     // Include decoder.properties
@@ -575,7 +582,8 @@ lazy val scalap = configureAsSubproject(project)
       val excluded = Set("Memoisable.scala", "Result.scala", "Rule.scala", "Rules.scala", "SeqRule.scala")
       xs filter { x => !excluded(x.getName) }
     },
-    Compile / headerResources := Nil
+    Compile / headerResources := Nil,
+    Compile / scalacOptions ++= Seq("-Xlint", "-feature"),
   )
   .dependsOn(compiler)
 

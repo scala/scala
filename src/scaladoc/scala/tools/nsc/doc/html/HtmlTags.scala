@@ -15,6 +15,8 @@ package scala.tools.nsc.doc.html
 import java.io.Writer
 import javax.xml.stream.XMLStreamWriter
 
+import scala.language.implicitConversions
+
 // a lightweight replacement for scala-xml
 object HtmlTags {
   def textOf(elems: Elems) = elems.map(_.toText).foldLeft("")(_ + _)

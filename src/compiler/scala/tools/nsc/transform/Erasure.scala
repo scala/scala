@@ -13,7 +13,7 @@
 package scala.tools.nsc
 package transform
 
-import scala.annotation.{nowarn, tailrec}
+import scala.annotation.tailrec
 import scala.reflect.internal.ClassfileConstants._
 import scala.collection.{immutable, mutable}
 import symtab._
@@ -446,7 +446,7 @@ abstract class Erasure extends InfoTransform
 
       case Block(stats, expr) =>
         // needs `hasSymbolField` check because `supercall` could be a block (named / default args)
-        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)): @nowarn("msg=match may not be exhaustive")
+        val (presuper, supercall :: rest) = stats span (t => t.hasSymbolWhich(_ hasFlag PRESUPER)): @unchecked
         treeCopy.Block(tree, presuper ::: (supercall :: mixinConstructorCalls ::: rest), expr)
 
       case x => throw new MatchError(x)

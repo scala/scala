@@ -509,7 +509,7 @@ trait EntityPage extends HtmlPage {
             case constraints =>
               Br :: Txt("This conversion will take place only if all of the following constraints are met:") :: Br :: {
                 var index = 0
-                constraints flatMap { constraint => Txt({ index += 1; index } + ". ") :: (constraintToHtml(constraint) :+ Br) }
+                constraints flatMap { constraint => Txt("" + { index += 1; index } + ". ") :: (constraintToHtml(constraint) :+ Br) }
               }
           }
 

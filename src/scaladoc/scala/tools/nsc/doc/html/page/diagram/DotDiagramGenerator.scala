@@ -100,7 +100,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
         def tooltip(nodes: List[Node]) = limitSize(nodes.map(_.tpe.name).mkString(", "))
 
         def counted(nodes: List[Node]) = new TypeEntity {
-          val name = nodes.length + MultiSuffix;
+          val name = "" + nodes.length + MultiSuffix;
           def refEntity: SortedMap[Int, (base.LinkTo, Int)] = SortedMap()
         }
         // avoid overcrowding the diagram:
@@ -204,7 +204,7 @@ class DotDiagramGenerator(settings: doc.Settings) extends DiagramGenerator {
           "node" + node2Index(from) + " -> node" + node2Index(to) +
           nodeAttrString(Map(
                               "class" -> edgeClass(from, to),
-                              "id" -> (node2Index(from) + "_" + node2Index(to)),
+                              "id" -> ("" + node2Index(from) + "_" + node2Index(to)),
                               "tooltip" -> tooltip,
                               "constraint" -> "false",
                               "minlen" -> "2",

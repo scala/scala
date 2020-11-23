@@ -12,7 +12,7 @@
 
 package scala.tools.nsc.doc
 
-import scala.collection._
+import scala.collection.immutable.{SortedMap, SortedSet}
 
 trait Index {
   type SymbolMap = SortedMap[String, SortedSet[model.MemberEntity]]

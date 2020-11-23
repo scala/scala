@@ -44,11 +44,11 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
             !(symbol.isPrivate && !printPrivates)) {
       def indent(): Unit = {for (i <- 1 to level) print("  ")}
 
-      printSymbolAttributes(symbol, true, indent)
+      printSymbolAttributes(symbol, true, indent())
       symbol match {
         case o: ObjectSymbol =>
           if (!isCaseClassObject(o)) {
-            indent
+            indent()
             if (o.name == "package") {
               // print package object
               printPackageObject(level, o)
@@ -57,15 +57,15 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
             }
           }
         case c: ClassSymbol if !refinementClass(c) && !c.isModule =>
-          indent
+          indent()
           printClass(level, c)
         case m: MethodSymbol =>
           printMethod(level, m, () => indent())
         case a: AliasSymbol =>
-          indent
+          indent()
           printAlias(level, a)
         case t: TypeSymbol if !t.name.matches("_\\$\\d+")=>
-          indent
+          indent()
           printTypeSymbol(level, t)
         case s =>
       }
@@ -73,7 +73,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
   }
 
   def isCaseClassObject(o: ObjectSymbol): Boolean = {
-    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType: @unchecked
     o.isFinal && (classSymbol.children.find(x => x.isCase && x.isInstanceOf[MethodSymbol]) match {
       case Some(_) => true
       case None => false
@@ -92,7 +92,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
 
   def printWithIndent(level: Int, s: String): Unit = {
     def indent(): Unit = {for (i <- 1 to level) print("  ")}
-    indent
+    indent()
     print(s)
   }
 
@@ -170,7 +170,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     print("object ")
     val poName = o.symbolInfo.owner.name
     print(processName(poName))
-    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType: @unchecked
     printType(classSymbol)
     print(" {\n")
     printChildren(level, classSymbol)
@@ -182,7 +182,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     printModifiers(o)
     print("object ")
     print(processName(o.name))
-    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType
+    val TypeRefType(_, classSymbol: ClassSymbol, _) = o.infoType: @unchecked
     printType(classSymbol)
     print(" {\n")
     printChildren(level, classSymbol)
@@ -250,7 +250,7 @@ class ScalaSigPrinter(stream: PrintStream, printPrivates: Boolean) {
     n match {
       case CONSTRUCTOR_NAME =>
         print("this")
-        printMethodType(m.infoType, false)(cont)
+        printMethodType(m.infoType, false)(cont())
       case name =>
         val nn = processName(name)
         print(nn)

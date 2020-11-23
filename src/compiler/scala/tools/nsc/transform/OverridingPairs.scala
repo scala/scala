@@ -25,7 +25,8 @@ import scala.reflect.internal.SymbolPairs
 abstract class OverridingPairs extends SymbolPairs {
   import global._
 
-  @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.OverridingPairs\.Cursor""")
+  // TODO: uncomment when deprecating the below
+  // @nowarn("""cat=deprecation&origin=scala\.tools\.nsc\.transform\.OverridingPairs\.Cursor""")
   final type PairsCursor = Cursor
 
   // TODO: deprecate when we can cleanly cross-compile without warnings

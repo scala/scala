@@ -163,7 +163,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
      */
     override def discardDocBuffer() = {
       import scala.tools.nsc.doc.base.comment.Comment
-      val doc = flushDoc
+      val doc = flushDoc()
       // tags that make a local double-star comment look unclean, as though it were API
       def unclean(comment: Comment): Boolean = {
         import comment._
@@ -182,7 +182,7 @@ abstract class ScaladocSyntaxAnalyzer[G <: Global](val global: G) extends Syntax
     override def withPatches(patches: List[BracePatch]) = new ScaladocUnitParser(unit, patches)
 
     override def joinComment(trees: => List[Tree]): List[Tree] = {
-      val doc = in.flushDoc
+      val doc = in.flushDoc()
       if ((doc ne null) && doc.raw.length > 0) {
         log(s"joinComment(doc=$doc)")
         val joined = trees map {
