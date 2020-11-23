@@ -16,6 +16,7 @@ class StringOpsTest {
     assert("a".mkString(",") == "a")
     assert("ab".mkString(",") == "a,b")
     assert("ab".mkString("foo", ",", "bar") == "fooa,bbar")
+    assert("👏👏👏".mkString("keep", "them", "together") == "keep👏them👏them👏together")
   }
 
   @Test def addString(): Unit = {

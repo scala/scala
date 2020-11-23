@@ -594,12 +594,11 @@ final class StringOps(private val s: String) extends AnyVal {
       if (sep.isEmpty) jsb.append(s)
       else {
         jsb.ensureCapacity(jsb.length + len + end.length + (len - 1) * sep.length)
-        jsb.append(s.charAt(0))
-        var i = 1
-        while (i < len) {
+        val it = codePointStepper.iterator
+        jsb.appendCodePoint(it.next())
+        while(it.hasNext){
           jsb.append(sep)
-          jsb.append(s.charAt(i))
-          i += 1
+          jsb.appendCodePoint(it.next())
         }
       }
     }
