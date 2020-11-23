@@ -94,10 +94,8 @@ object AssertUtil {
    *  and that its message satisfies the `checkMessage` predicate.
    *  Any other exception is propagated.
    */
-  def assertThrows[T <: Throwable: ClassTag](body: => Any,
-      checkMessage: String => Boolean = _ => true): Unit = {
+  def assertThrows[T <: Throwable: ClassTag](body: => Any, checkMessage: String => Boolean = _ => true): Unit =
     assertThrown[T](t => checkMessage(t.getMessage))(body)
-  }
 
   private val Unthrown = new ControlThrowable {}
 
@@ -117,6 +115,8 @@ object AssertUtil {
         ae.addSuppressed(other)
         throw ae
     }
+
+  def assertFails[U](checkMessage: String => Boolean)(body: => U): Unit = assertThrows[AssertionError](body, checkMessage)
 
   /** JUnit-style assertion for `IterableLike.sameElements`.
    */
