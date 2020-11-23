@@ -137,9 +137,8 @@ lazy val commonSettings = instanceSettings ++ clearSourceAndResourceDirectories 
   Compile / unmanagedResourceDirectories += (ThisBuild / baseDirectory).value / "src" / thisProject.value.id,
   sourcesInBase := false,
   Compile / scalaSource := (Compile / sourceDirectory).value,
-  Compile / javaSource := (Compile / sourceDirectory).value,
-  // resources are stored along source files in our current layout
-  Compile / resourceDirectory := (Compile / sourceDirectory).value,
+  // for some reason sbt 1.4 issues unused-settings warnings for this, it seems to me incorrectly
+  Global / excludeLintKeys ++= Set(scalaSource),
   // each subproject has to ask specifically for files they want to include
   Compile / unmanagedResources / includeFilter := NothingFilter,
   target := (ThisBuild / baseDirectory).value / "target" / thisProject.value.id,
@@ -1377,6 +1376,8 @@ def findJar(files: Seq[Attributed[File]], dep: ModuleID): Option[Attributed[File
 whitesourceProduct               := "Lightbend Reactive Platform"
 whitesourceAggregateProjectName  := "scala-2.13-stable"
 whitesourceIgnoredScopes         := Vector("test", "scala-tool")
+// for some reason sbt 1.4 issues an unused-setting warning for this, I don't understand why
+Global / excludeLintKeys += whitesourceIgnoredScopes
 
 {
   scala.build.TravisOutput.installIfOnTravis()
