@@ -53,7 +53,7 @@ trait ClassTag[T] extends ClassManifestDeprecatedApis[T] with Equals with Serial
 
   @transient private[scala] lazy val emptyArray       : Array[T]                = {
     val componentType =
-      if (runtimeClass eq classOf[Void]) classOf[BoxedUnit] else runtimeClass
+      if (runtimeClass eq java.lang.Void.TYPE) classOf[BoxedUnit] else runtimeClass
     java.lang.reflect.Array.newInstance(componentType, 0).asInstanceOf[Array[T]]
   }
   @transient private[scala] lazy val emptyWrappedArray: mutable.WrappedArray[T] =

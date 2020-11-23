@@ -1,17 +1,20 @@
 package scala
 
-import org.junit.Assert.{ assertArrayEquals, assertFalse, assertTrue }
+import org.junit.Assert.{ assertFalse, assertTrue }
 import org.junit.Test
-
-import scala.runtime.BoxedUnit
 
 class ArrayTest {
 
   @Test
   def testArrayIsEmpty(): Unit = {
     assertTrue(Array[Int]().isEmpty)
+    assertTrue(Array.empty[Int].isEmpty)
     assertTrue(Array[Char]().isEmpty) // scala/bug#12172
+    assertTrue(Array.empty[Char].isEmpty)
     assertTrue(Array[String]().isEmpty)
+    assertTrue(Array.empty[String].isEmpty)
+    assertTrue(Array[Unit]().isEmpty)
+    assertTrue(Array.empty[Unit].isEmpty)
 
     assertFalse(Array(1).isEmpty)
     assertFalse(Array[Char](1).isEmpty)
