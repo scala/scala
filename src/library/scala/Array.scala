@@ -535,21 +535,28 @@ object Array {
     }
   }
 
-  def equals(xs: Array[AnyRef], ys: Array[AnyRef]): Boolean = {
-    if (xs eq ys)
-      return true
-    if (xs.length != ys.length)
-      return false
-
-    val len = xs.length
-    var i = 0
-    while (i < len) {
-      if (xs(i) != ys(i))
-        return false
-      i += 1
+  /** Compare two arrays per element.
+   *
+   *  A more efficient version of `xs.sameElements(ys)`.
+   *
+   *  Note that arrays are invariant in Scala, but it may
+   *  be sound to cast an array of arbitrary reference type
+   *  to `Array[AnyRef]`. Arrays on the JVM are covariant
+   *  in their element type.
+   *
+   *  `Array.equals(xs.asInstanceOf[Array[AnyRef]], ys.asInstanceOf[Array[AnyRef]])`
+   *
+   *  @param xs an array of AnyRef
+   *  @param ys an array of AnyRef
+   *  @return true if corresponding elements are equal
+   */
+  def equals(xs: Array[AnyRef], ys: Array[AnyRef]): Boolean =
+    (xs eq ys) ||
+    (xs.length == ys.length) && {
+      var i = 0
+      while (i < xs.length && xs(i) == ys(i)) i += 1
+      i >= xs.length
     }
-    true
-  }
 
   /** Called in a pattern match like `{ case Array(x,y,z) => println('3 elements')}`.
    *
