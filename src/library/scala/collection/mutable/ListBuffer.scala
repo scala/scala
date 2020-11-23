@@ -65,7 +65,7 @@ class ListBuffer[A]
   override def isEmpty: Boolean = len == 0
 
   private def copyElems(): Unit = {
-    val buf = ListBuffer.from(this)
+    val buf = new ListBuffer[A].freshFrom(this)
     first = buf.first
     last0 = buf.last0
     aliased = false
@@ -120,31 +120,35 @@ class ListBuffer[A]
     this
   }
 
-  // Overridden for performance
-  override final def addAll(xs: IterableOnce[A]): this.type = {
-    if (xs.asInstanceOf[AnyRef] eq this) { // avoid mutating under our own iterator
-      if (len > 0) {
-        ensureUnaliased()
-        val copy = ListBuffer.from(this)
-        last0.next = copy.first
-        last0 = copy.last0
-        len *= 2
-      }
-    } else {
-      val it = xs.iterator
-      if (it.hasNext) {
-        ensureUnaliased()
+  // MUST only be called on fresh instances
+  private def freshFrom(xs: IterableOnce[A]): this.type = {
+    val it = xs.iterator
+    if (it.hasNext) {
+      var len = 1
+      var last0 = new ::[A](it.next(), Nil)
+      first = last0
+      while (it.hasNext) {
         val last1 = new ::[A](it.next(), Nil)
-        if (len == 0) first = last1 else last0.next = last1
+        last0.next = last1
         last0 = last1
         len += 1
-        while (it.hasNext) {
-          val last1 = new ::[A](it.next(), Nil)
-          last0.next = last1
-          last0 = last1
-          len += 1
-        }
       }
+      // copy local vars into instance
+      this.len = len
+      this.last0 = last0
+    }
+    this
+  }
+
+  override final def addAll(xs: IterableOnce[A]): this.type = {
+    val it = xs.iterator
+    if (it.hasNext) {
+      val fresh = new ListBuffer[A].freshFrom(it)
+      ensureUnaliased()
+      if (len == 0) first = fresh.first
+      else last0.next = fresh.first
+      last0 = fresh.last0
+      len += fresh.length
     }
     this
   }
@@ -234,43 +238,26 @@ class ListBuffer[A]
     this
   }
 
-  private def insertAfter(p: Predecessor[A], it: Iterator[A]): Predecessor[A] = {
-    var prev = p
-    val follow = getNext(prev)
-    while (it.hasNext) {
-      len += 1
-      val next = (it.next() :: follow).asInstanceOf[::[A]]
-      if(prev eq null) first = next else prev.next = next
-      prev = next
+  // `fresh` must be a `ListBuffer` that only we have access to
+  private def insertAfter(prev: Predecessor[A], fresh: ListBuffer[A]): Unit = {
+    if (!fresh.isEmpty) {
+      val follow = getNext(prev)
+      if (prev eq null) first = fresh.first else prev.next = fresh.first
+      fresh.last0.next = follow
+      len += fresh.length
     }
-    if ((prev ne null) && prev.next.isEmpty) last0 = prev
-    prev
   }
 
   def insertAll(idx: Int, elems: IterableOnce[A]): Unit = {
     if (idx < 0 || idx > len) throw new IndexOutOfBoundsException(s"$idx is out of bounds (min 0, max ${len-1})")
-    elems match {
-      case elems: AnyRef if elems eq this => // avoid mutating under our own iterator
-        if (len > 0) {
-          val copy = ListBuffer.from(this)
-          if (idx == 0 || idx == len) { // prepend/append
-            last0.next = copy.first
-            last0 = copy.last0
-          } else {
-            val prev = locate(idx) // cannot be `null` because other condition catches that
-            val follow = prev.next
-            prev.next = copy.first
-            copy.last0.next = follow
-          }
-          len *= 2
-        }
-      case elems =>
-        val it = elems.iterator
-        if (it.hasNext) {
-          ensureUnaliased()
-          if (idx == len) ++=(elems)
-          else insertAfter(locate(idx), it)
-        }
+    val it = elems.iterator
+    if (it.hasNext) {
+      if (idx == len) addAll(it)
+      else {
+        val fresh = new ListBuffer[A].freshFrom(it)
+        ensureUnaliased()
+        insertAfter(locate(idx), fresh)
+      }
     }
   }
 
@@ -370,12 +357,13 @@ class ListBuffer[A]
     // don't want to add a mutation or check aliasing (potentially expensive)
     // if there's no patching to do
     if (nonEmptyPatch || nonEmptyReplace) {
+      val fresh = new ListBuffer[A].freshFrom(it)
       ensureUnaliased()
       val i = math.min(_from, _len)
       val n = math.min(_replaced, _len)
       val p = locate(i)
       removeAfter(p, math.min(n, _len - i))
-      insertAfter(p, it)
+      insertAfter(p, fresh)
     }
     this
   }
@@ -407,7 +395,7 @@ class ListBuffer[A]
 @SerialVersionUID(3L)
 object ListBuffer extends StrictOptimizedSeqFactory[ListBuffer] {
 
-  def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A] ++= coll
+  def from[A](coll: collection.IterableOnce[A]): ListBuffer[A] = new ListBuffer[A].freshFrom(coll)
 
   def newBuilder[A]: Builder[A, ListBuffer[A]] = new GrowableBuilder(empty[A])
 
