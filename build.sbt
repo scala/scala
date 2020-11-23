@@ -816,8 +816,7 @@ lazy val test = project
     IntegrationTest / unmanagedSourceDirectories := Nil,
     IntegrationTest / sources := Nil,
     IntegrationTest / fork := true,
-    // enable this in 2.13, when tests pass
-    //Compile / scalacOptions += "-Yvalidate-pos:parser,typer",
+    Compile / scalacOptions += "-Yvalidate-pos:parser,typer",
     IntegrationTest / javaOptions ++= List("-Xmx2G", "-Dpartest.exec.in.process=true", "-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     IntegrationTest / testOptions += Tests.Argument("-Dfile.encoding=UTF-8", "-Duser.language=en", "-Duser.country=US"),
     testFrameworks += new TestFramework("scala.tools.partest.sbt.Framework"),
