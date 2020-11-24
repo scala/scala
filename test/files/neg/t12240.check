@@ -1,0 +1,13 @@
+t12240.scala:21: warning: match may not be exhaustive.
+  def guardedNonExhaustive(x: Int) = x match {
+                                     ^
+t12240.scala:25: warning: match may not be exhaustive.
+  def guardedSeqNonExhaustive(x: Int) = x match {
+                                        ^
+t12240.scala:32: warning: match may not be exhaustive.
+It would fail on the following input: Vector1()
+  def reported(v: Vector[String]) = v match {
+                                    ^
+error: No warnings can be incurred under -Werror.
+3 warnings
+1 error

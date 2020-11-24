@@ -308,7 +308,7 @@ object SeqFactory {
   }
 
   final class UnapplySeqWrapper[A](private val c: SeqOps[A, Seq, Seq[A]]) extends AnyVal {
-    def isEmpty: Boolean = false
+    def isEmpty: false = false
     def get: UnapplySeqWrapper[A] = this
     def lengthCompare(len: Int): Int = c.lengthCompare(len)
     def apply(i: Int): A = c(i)

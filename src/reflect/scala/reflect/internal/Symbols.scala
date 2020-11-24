@@ -3089,17 +3089,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     override def isVarargs: Boolean = definitions.isVarArgsList(paramss.flatten)
 
-    override def returnType: Type = {
-      @tailrec
-      def loop(tpe: Type): Type =
-        tpe match {
-          case NullaryMethodType(ret) => loop(ret)
-          case MethodType(_, ret) => loop(ret)
-          case PolyType(_, tpe) => loop(tpe)
-          case tpe => tpe
-        }
-      loop(info)
-    }
+    override def returnType: Type = definitions.finalResultType(info)
 
     override def exceptions = {
       rawInfo match {

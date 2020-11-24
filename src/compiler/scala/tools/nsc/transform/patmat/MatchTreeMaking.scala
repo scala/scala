@@ -323,25 +323,6 @@ trait MatchTreeMaking extends MatchCodeGen with Debugging {
       override def toString = "P"+((prevBinder.name,  extraCond getOrElse "", localSubstitution))
     }
 
-    object IrrefutableExtractorTreeMaker {
-      // will an extractor with unapply method of methodtype `tp` always succeed?
-      // note: this assumes the other side-conditions implied by the extractor are met
-      // (argument of the right type, length check succeeds for unapplySeq,...)
-      def irrefutableExtractorType(tp: Type): Boolean = tp.resultType.dealias match {
-        case TypeRef(_, SomeClass, _) => true
-        // probably not useful since this type won't be inferred nor can it be written down (yet)
-        case ConstantTrue => true
-        case _            => false
-      }
-
-      def unapply(xtm: ExtractorTreeMaker): Option[(Tree, Symbol)] = xtm match {
-        case ExtractorTreeMaker(extractor, None, nextBinder) if irrefutableExtractorType(extractor.tpe) =>
-          Some((extractor, nextBinder))
-        case _ =>
-          None
-      }
-    }
-
     object TypeTestTreeMaker {
       // factored out so that we can consistently generate other representations of the tree that implements the test
       // (e.g. propositions for exhaustivity and friends, boolean for isPureTypeTest)
