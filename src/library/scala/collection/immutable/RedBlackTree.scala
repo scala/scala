@@ -287,11 +287,11 @@ private[collection] object NewRedBlackTree {
           throw new IllegalStateException(
             s"""
               | bad tree:
-              | ${generated.debugToString}
+              | ${generated.debugToString(Some(original))}
               | rebuilt:
-              | ${rebuiltTree.debugToString}.
+              | ${rebuiltTree.debugToString(None)}.
               | original input tree:
-              | ${if (original eq null) "<null>" else  original.debugToString}
+              | ${if (original eq null) "<null>" else  original.debugToString(None)}
               |""".stripMargin
             , e)
         }
@@ -622,22 +622,35 @@ private[collection] object NewRedBlackTree {
     }
     //retain the colour, and mark as mutable
     @`inline` private def mutableRetainingColour = _count & colourBit
-    def debugToString: String = {
+    def debugToString(inputTree: Option[Tree[_, _]] = None): String = {
       val b = new StringBuilder
-      def loop(parent: Tree[A, B], tree: Tree[A, B], depth: Int): Unit = {
+      val inputNodes = inputTree match {
+        case None => java.util.Collections.emptySet[AnyRef]()
+        case Some(t) =>
+          val set = java.util.Collections.newSetFromMap[AnyRef](new java.util.IdentityHashMap[AnyRef, java.lang.Boolean](sizeOf(t)))
+          class NodeIterator[A1, B1](tree: Tree[A1, B1]) extends TreeIterator[A1, B1, Tree[A1, B1]](tree, None)(null) {
+            override def nextResult(tree: Tree[A1, B1]) = tree
+          }
+          new NodeIterator(t).foreach(node => set.add(node))
+          set
+      }
+      def loop(tree: Tree[A, B], depth: Int): Unit = {
         b ++= ("  " * depth)
         if (tree == null) b ++= "Empty\n"
         else {
-          b ++= s"${if (tree.isRed) "RedTree" else "BlackTree"}(${tree.key}, ${tree.value})"
+          b ++= s"${if (tree.isRed) "RedTree" else "BlackTree"}(${tree.key})"
+          if (inputNodes.contains(tree)) {
+            b ++= " [shared] "
+          }
           if (tree.isRed && (isRedTree(tree.left) || isRedTree(tree.right))) {
             b ++= " !! Red contains Red"
           }
           b ++= "\n"
-          loop(tree, tree.left, depth + 1)
-          loop(tree, tree.right, depth + 1)
+          loop(tree.left, depth + 1)
+          loop(tree.right, depth + 1)
         }
       }
-      loop(null, this, 0)
+      loop(this, 0)
       b.toString
     }
 

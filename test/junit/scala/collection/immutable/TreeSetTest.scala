@@ -431,4 +431,30 @@ class TreeSetTest extends AllocationTest{
       validate(m, m.range(r.nextInt(1000), r.nextInt(1000)))
     }
   }
+
+  @Test
+  def toStructuralSharing() {
+    def check(input: Seq[Int], expectedSharedNodes: Int)(operation: TreeSet[Int] => TreeSet[Int]): Unit = {
+      val s1 = TreeSet(input: _*)
+      val s2 = operation(s1)
+      val debugString = s2.tree.debugToString(Some(s1.tree))
+      val regex = """\[shared\]""".r
+      val sharedNodes = regex.findAllIn(debugString).size
+      // could be >=, but let's start with an exact assertion.
+      assertEquals("Structural sharing changed. Final tree: " + debugString, expectedSharedNodes, sharedNodes)
+    }
+    check((1 to 64), 64)(_.to(64))
+    check((1 to 64), 64)(_.until(64 + 1))
+    check((1 to 64), 64)(_.from(1))
+    check((1 to 64), 64)(_.range(1, 64 + 1))
+
+    check((1 to 64), 52)(_.to(63))
+    check((1 to 64), 52)(_.until(63 + 1))
+    check((1 to 64), 52)(_.range(1, 63 + 1))
+
+    check((1 to 64), 53)(_.from(2))
+    check((1 to 64), 53)(_.range(2, 64 + 1))
+
+    check((1 to 64), 44)(_.range(2, 63 + 1))
+  }
 }
