@@ -347,8 +347,20 @@ trait AnnotationInfos extends api.Annotations { self: SymbolTable =>
     // !!! when annotation arguments are not literals, but any sort of
     // expression, there is a fair chance they will turn up here not as
     // Literal(const) but some arbitrary AST.
-    def constantAtIndex(index: Int): Option[Constant] =
-      argAtIndex(index) collect { case Literal(x) => x }
+    //
+    // We recurse over Typed / Annotated trees to allow things like:
+    // `@implicitNotFound("$foo": @nowarn)`
+    def constantAtIndex(index: Int): Option[Constant] = {
+      @tailrec
+      def lit(tree: Tree): Option[Constant] = tree match {
+        case Literal(c)      => Some(c)
+        case Typed(t, _)     => lit(t)
+        case Annotated(_, t) => lit(t)
+        case _               => None
+      }
+
+      argAtIndex(index).flatMap(lit)
+    }
 
     def argAtIndex(index: Int): Option[Tree] =
       if (index < args.size) Some(args(index)) else None

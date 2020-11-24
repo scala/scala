@@ -1,0 +1,7 @@
+annotated-literal-annotation-arg.scala:14: error: $foo
+  implicitly[Foo]
+            ^
+annotated-literal-annotation-arg.scala:15: error: bar
+  implicitly[Bar]
+            ^
+two errors found
