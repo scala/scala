@@ -1076,6 +1076,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     //if (debugIDE) typeMembers(pos)
   }
 
+  // it's expected that later items in the `LazyList` supersede earlier items.
+  // (once a second item becomes available, you entirely discard the first item,
+  // rather than combine them)
   private def typeMembers(pos: Position): LazyList[List[TypeMember]] = {
     // Choosing which tree will tell us the type members at the given position:
     //   If pos leads to an Import, type the expr
@@ -1180,7 +1183,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     }
   }
   object CompletionResult {
-    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name, val forImport: Boolean) extends CompletionResult {
+    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name, forImport: Boolean) extends CompletionResult {
       type M = ScopeMember
     }
     final case class TypeMembers(positionDelta: Int, qualifier: Tree, tree: Tree, results: List[TypeMember], name: Name) extends CompletionResult {

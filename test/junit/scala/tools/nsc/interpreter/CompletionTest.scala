@@ -228,6 +228,17 @@ class CompletionTest {
   }
 
   @Test
+  def importTypesAndTermsBoth(): Unit = {
+    val (completer, _, _) = interpretLines(
+      """object A { class Type; object Term }"""
+    )
+    val candidates1 = completer.complete("A.T").candidates
+    assertEquals("Term", candidates1.map(_.defString).mkString(" "))
+    val candidates2 = completer.complete("import A.T").candidates
+    assertEquals("Term Type", candidates2.map(_.defString).sorted.mkString(" "))
+  }
+
+  @Test
   def dependentTypeImplicits_t10353(): Unit = {
     val code =
       """
