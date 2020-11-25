@@ -4,69 +4,70 @@ import java.util.{concurrent => juc}
 import java.{lang => jl, util => ju}
 
 import org.junit.Test
+import org.junit.Assert.assertNull
 
 import scala.jdk.CollectionConverters._
 
-// scala/bug#9113: tests to insure that wrappers return null instead of wrapping it as a collection
+// scala/bug#9113: tests to ensure that wrappers return null instead of wrapping it as a collection
 
 class NullSafetyToScalaTest {
   @Test def testIteratorDecoration(): Unit = {
     val nullJIterator: ju.Iterator[AnyRef] = null
 
-    assert(nullJIterator.asScala == null)
+    assertNull(nullJIterator.asScala)
   }
 
   @Test def testEnumerationDecoration(): Unit = {
     val nullJEnumeration: ju.Enumeration[AnyRef] = null
 
-    assert(nullJEnumeration.asScala == null)
+    assertNull(nullJEnumeration.asScala)
   }
 
   @Test def testIterableDecoration(): Unit = {
     val nullJIterable: jl.Iterable[AnyRef] = null
 
-    assert(nullJIterable.asScala == null)
+    assertNull(nullJIterable.asScala)
   }
 
   @Test def testCollectionDecoration(): Unit = {
     val nullJCollection: ju.Collection[AnyRef] = null
 
-    assert(nullJCollection.asScala == null)
+    assertNull(nullJCollection.asScala)
   }
 
   @Test def testBufferDecoration(): Unit = {
     val nullJBuffer: ju.List[AnyRef] = null
 
-    assert(nullJBuffer.asScala == null)
+    assertNull(nullJBuffer.asScala)
   }
 
   @Test def testSetDecoration(): Unit = {
     val nullJSet: ju.Set[AnyRef] = null
 
-    assert(nullJSet.asScala == null)
+    assertNull(nullJSet.asScala)
   }
 
   @Test def testMapDecoration(): Unit = {
     val nullJMap: ju.Map[AnyRef, AnyRef] = null
 
-    assert(nullJMap.asScala == null)
+    assertNull(nullJMap.asScala)
   }
 
   @Test def testConcurrentMapDecoration(): Unit = {
     val nullJConMap: juc.ConcurrentMap[AnyRef, AnyRef] = null
 
-    assert(nullJConMap.asScala == null)
+    assertNull(nullJConMap.asScala)
   }
 
   @Test def testDictionaryDecoration(): Unit = {
     val nullJDict: ju.Dictionary[AnyRef, AnyRef] = null
 
-    assert(nullJDict.asScala == null)
+    assertNull(nullJDict.asScala)
   }
 
   @Test def testPropertiesDecoration(): Unit = {
     val nullJProperties: ju.Properties = null
 
-    assert(nullJProperties.asScala == null)
+    assertNull(nullJProperties.asScala)
   }
 }
