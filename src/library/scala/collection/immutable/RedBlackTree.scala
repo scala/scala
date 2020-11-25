@@ -230,11 +230,11 @@ private[collection] object NewRedBlackTree {
     result(tree, _init(tree))
   }
 
-  @inline private def result[A, B](inputTree: Tree[A, B], in: Tree[A, B]): Tree[A, B] = {
-    val tree = blacken(in)
+  @inline private def result[A, B](inputTree: Tree[A, _], resultTree: Tree[A, B]): Tree[A, B] = {
+    val tree = blacken(resultTree)
     // during development or enhancements to the RedBlackTree, uncomment the next line to validate the
     // invariants of the RedBlackTree
-    // validate(inputTree, tree)
+    validate(inputTree, tree)
     tree
   }
 
@@ -1021,7 +1021,7 @@ private[collection] object NewRedBlackTree {
         val right = f(level+1, size-1-leftSize)
         BlackTree(x, null, left, right)
     }
-    f(1, size)
+    result(null, f(1, size))
   }
 
   /** Build a Tree suitable for a TreeMap from an ordered sequence of key/value pairs */
@@ -1039,24 +1039,27 @@ private[collection] object NewRedBlackTree {
         val right = f(level+1, size-1-leftSize)
         BlackTree(k, v, left, right)
     }
-    f(1, size)
+    result(null, f(1, size))
   }
 
-  def transform[A, B, C](t: Tree[A, B], f: (A, B) => C): Tree[A, C] =
-    if(t eq null) null
-    else {
-      val k = t.key
-      val v = t.value
-      val l = t.left
-      val r = t.right
-      val l2 = transform(l, f)
-      val v2 = f(k, v)
-      val r2 = transform(r, f)
-      if((v2.asInstanceOf[AnyRef] eq v.asInstanceOf[AnyRef])
-        && (l2 eq l)
-        && (r2 eq r)) t.asInstanceOf[Tree[A, C]]
-      else mkTree(isBlackTree(t), k, v2, l2, r2)
-    }
+  def transform[A, B, C](t: Tree[A, B], f: (A, B) => C): Tree[A, C] = {
+    def transform0(t: Tree[A, B], f: (A, B) => C): Tree[A, C] =
+      if(t eq null) null
+      else {
+        val k = t.key
+        val v = t.value
+        val l = t.left
+        val r = t.right
+        val l2 = transform0(l, f)
+        val v2 = f(k, v)
+        val r2 = transform0(r, f)
+        if((v2.asInstanceOf[AnyRef] eq v.asInstanceOf[AnyRef])
+          && (l2 eq l)
+          && (r2 eq r)) t.asInstanceOf[Tree[A, C]]
+        else mkTree(isBlackTree(t), k, v2, l2, r2)
+      }
+    result(t, transform0(t, f))
+  }
 
   def filterEntries[A, B](t: Tree[A, B], f: (A, B) => Boolean): Tree[A, B] = if(t eq null) null else {
     def fk(t: Tree[A, B]): Tree[A, B] = {
@@ -1071,7 +1074,7 @@ private[collection] object NewRedBlackTree {
       else if((l2 eq l) && (r2 eq r)) t
       else join(l2, k, v, r2)
     }
-    blacken(fk(t))
+    result(t, (fk(t)))
   }
 
   def filterKeys[A, B](t: Tree[A, B], f: A => Boolean, isFlipped: Boolean): Tree[A, B] = if(t eq null) null else {
@@ -1086,7 +1089,7 @@ private[collection] object NewRedBlackTree {
       else if((l2 eq l) && (r2 eq r)) t
       else join(l2, k, t.value, r2)
     }
-    blacken(fk(t))
+    result(t, fk(t))
   }
 
   def partitionEntries[A, B](t: Tree[A, B], p: (A, B) => Boolean): (Tree[A, B], Tree[A, B]) = if(t eq null) (null, null) else {
@@ -1120,7 +1123,7 @@ private[collection] object NewRedBlackTree {
       tmpd = jd
     }
     fk(t)
-    (blacken(tmpk), blacken(tmpd))
+    (result(t, tmpk), result(t, tmpd))
   }
 
   def partitionKeys[A, B](t: Tree[A, B], p: A => Boolean): (Tree[A, B], Tree[A, B]) = if(t eq null) (null, null) else {
@@ -1154,7 +1157,7 @@ private[collection] object NewRedBlackTree {
       tmpd = jd
     }
     fk(t)
-    (blacken(tmpk), blacken(tmpd))
+    (result(t, tmpk), result(t, tmpd))
   }
 
 
@@ -1231,12 +1234,12 @@ private[collection] object NewRedBlackTree {
   // of child nodes from it. Where possible the black height is used directly instead of deriving the rank from it.
   // Our trees are supposed to have a black root so we always blacken as the last step of union/intersect/difference.
 
-  def union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_union(t1, t2))
+  def union[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = result(t1, _union(t1, t2))
 
-  def intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = blacken(_intersect(t1, t2))
+  def intersect[A, B](t1: Tree[A, B], t2: Tree[A, B])(implicit ordering: Ordering[A]): Tree[A, B] = result(t1, _intersect(t1, t2))
 
   def difference[A, B](t1: Tree[A, B], t2: Tree[A, _])(implicit ordering: Ordering[A]): Tree[A, B] =
-    blacken(_difference(t1, t2.asInstanceOf[Tree[A, B]]))
+    result(t1, _difference(t1, t2.asInstanceOf[Tree[A, B]]))
 
   /** Compute the rank from a tree and its black height */
   @`inline` private[this] def rank(t: Tree[_, _], bh: Int): Int = {

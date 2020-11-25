@@ -230,8 +230,12 @@ class TreeMapTest extends AllocationTest {
 
   }
 
-  def validate[A, B](original: TreeMap[A, B], result: TreeMap[A, B]): TreeMap[A, B] = {
+  private def validateMap[A, B](original: TreeMap[A, B], result: TreeMap[A, B]): TreeMap[A, B] = {
     NewRedBlackTree.validate(original.tree0, result.tree0)
+    result
+  }
+  private def validateSet[A](original: TreeSet[A], result: TreeSet[A]): TreeSet[A] = {
+    NewRedBlackTree.validate(original.tree, result.tree)
     result
   }
   @Test
@@ -239,8 +243,8 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
     }
   }
   @Test
@@ -248,13 +252,13 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
-      
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
+
       val builder = TreeMap.newBuilder[Int, String]
       builder ++= r.shuffle(m.toList)
-      val res = validate(m, builder.result())
-      
+      val res = validateMap(m, builder.result())
+
       assertEquals(m, res)
     }
   }
@@ -263,13 +267,13 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
       val (m1,m2) = m.splitAt(r.nextInt(1000))
 
-      validate(m, m1)
-      validate(m, m2)
+      validateMap(m, m1)
+      validateMap(m, m2)
     }
   }
   @Test
@@ -277,10 +281,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.drop(r.nextInt(1000)))
+      validateMap(m, m.drop(r.nextInt(1000)))
     }
   }
   @Test
@@ -288,10 +292,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.take(r.nextInt(1000)))
+      validateMap(m, m.take(r.nextInt(1000)))
     }
   }
   @Test
@@ -299,10 +303,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.slice(r.nextInt(1000),r.nextInt(1000)))
+      validateMap(m, m.slice(r.nextInt(1000), r.nextInt(1000)))
     }
   }
   @Test
@@ -310,10 +314,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.init)
+      validateMap(m, m.init)
     }
   }
   @Test
@@ -321,10 +325,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.tail)
+      validateMap(m, m.tail)
     }
   }
   @Test
@@ -332,10 +336,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.from(r.nextInt(1000)))
+      validateMap(m, m.from(r.nextInt(1000)))
     }
   }
   @Test
@@ -343,10 +347,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.to(r.nextInt(1000)))
+      validateMap(m, m.to(r.nextInt(1000)))
     }
   }
   @Test
@@ -354,10 +358,10 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.until(r.nextInt(1000)))
+      validateMap(m, m.until(r.nextInt(1000)))
     }
   }
   @Test
@@ -365,10 +369,183 @@ class TreeMapTest extends AllocationTest {
     val r = new Random(0)
     var m = TreeMap[Int, String]()
     for (i <- 1 to 100000) {
-      m = validate(m, m + ((r.nextInt(1000), "")))
-      m = validate(m, m - r.nextInt(1000))
+      m = validateMap(m, m + ((r.nextInt(1000), "")))
+      m = validateMap(m, m - r.nextInt(1000))
 
-      validate(m, m.range(r.nextInt(1000), r.nextInt(1000)))
+      validateMap(m, m.range(r.nextInt(1000), r.nextInt(1000)))
     }
   }
+  @Test
+  def randomTreeUnion() {
+    val r = new Random(0)
+    var m1 = TreeMap[Int, String]()
+    var m2 = TreeMap[Int, String]()
+    for (i <- 1 to 100000) {
+      m1 = validateMap(m1, m1 +((r.nextInt(1000), "")))
+      m1 = validateMap(m1, m1 - r.nextInt(1000))
+
+      m2 = validateMap(m2, m2 + ((r.nextInt(1000), "")))
+      m2 = validateMap(m2, m2 - r.nextInt(1000))
+
+      validateMap(m1, m1 ++ m2)
+
+      var m3 = m1
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      //subset
+      validateMap(m1, m1 ++ m3)
+
+      m3 = m1
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      //superset
+      validateMap(m1, m1 ++ m3)
+
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      //overlap
+      validateMap(m1, m1 ++ m3)
+    }
+  }
+  @Test
+  def randomTreeDiff() {
+    val r = new Random(0)
+    var m1 = TreeMap[Int, String]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validateMap(m1, m1 + ((r.nextInt(1000), "")))
+      m1 = validateMap(m1, m1 - r.nextInt(1000))
+
+      m2 = validateSet(m2, m2 + r.nextInt(1000))
+      m2 = validateSet(m2, m2 - r.nextInt(1000))
+
+      validateMap(m1, m1 -- m2)
+
+      var m3 = m1.keySet.asInstanceOf[TreeSet[Int]]
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      //subset
+      validateMap(m1, m1 -- m2)
+
+      m3 = m1.keySet.asInstanceOf[TreeSet[Int]]
+      m3 = validateSet(m3, m3 + r.nextInt(1000))
+      m3 = validateSet(m3, m3 + r.nextInt(1000))
+      m3 = validateSet(m3, m3 + r.nextInt(1000))
+      //superset
+      validateMap(m1, m1 -- m2)
+
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      m3 = validateSet(m3, m3 - r.nextInt(1000))
+      //overlap
+      validateMap(m1, m1 -- m2)
+    }
+  }
+  @Test
+  def randomTreeFilter() {
+    val r = new Random(0)
+    var m1 = TreeMap[Int, String]()
+    var m2 = HashSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validateMap(m1, m1 + ((r.nextInt(1000), "")))
+      m1 = validateMap(m1, m1 - r.nextInt(1000))
+
+      m2 = m2 + r.nextInt(1000)
+      m2 = m2 - r.nextInt(1000)
+
+      //we want this as a function, avoid any special optimised code
+      validateMap(m1, m1.filter(x => m2 contains x._1))
+
+      var m3 = m1
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      //subset
+      validateMap(m1, m1.filter(x => m3 contains x._1))
+
+      m3 = m1
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      m3 = validateMap(m3, m3 + ((r.nextInt(1000), "")))
+      //superset
+      validateMap(m1, m1.filter(x => m3 contains x._1))
+
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      m3 = validateMap(m3, m3 - r.nextInt(1000))
+      //overlap
+      validateMap(m1, m1.filter(x => m3 contains x._1))
+    }
+  }
+  @Test
+  def randomTreeTransform() {
+    val r = new Random(0)
+    var m1 = TreeMap[Int, String]()
+    for (i <- 1 to 100000) {
+      m1 = validateMap(m1, m1 + ((r.nextInt(1000), "")))
+      m1 = validateMap(m1, m1 - r.nextInt(1000))
+
+      validateMap(m1, m1.transform((k, v) => if (r.nextBoolean()) "" else "z"))
+    }
+  }
+  @Test
+  def randomTreePartition() {
+    val r = new Random(0)
+    var m1 = TreeMap[Int, String]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validateMap(m1, m1 + ((r.nextInt(1000), "")))
+      m1 = validateMap(m1, m1 - r.nextInt(1000))
+
+      m2 = m2 + r.nextInt(1000)
+      m2 = m2 - r.nextInt(1000)
+
+      //we want this as a function, avoid any special optimised code
+      {
+        val (p1, p2) = m1.partition(x => m2 contains x._1)
+        validateMap(m1, p1)
+        validateMap(m1, p2)
+      }
+
+      var m3 = m1
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+
+      //subset
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x._1)
+        validateMap(m1, p1)
+        validateMap(m1, p2)
+      }
+
+      m3 = m1
+      m3 = m3 + ((r.nextInt(1000), ""))
+      m3 = m3 + ((r.nextInt(1000), ""))
+      m3 = m3 + ((r.nextInt(1000), ""))
+
+      //superset
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x._1)
+        validateMap(m1, p1)
+        validateMap(m1, p2)
+      }
+
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+
+      //overlap
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x._1)
+        validateMap(m1, p1)
+        validateMap(m1, p2)
+      }
+    }
+  }
+
 }

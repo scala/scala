@@ -431,6 +431,203 @@ class TreeSetTest extends AllocationTest{
       validate(m, m.range(r.nextInt(1000), r.nextInt(1000)))
     }
   }
+  @Test
+  def randomTreeUnion() {
+    val r = new Random(0)
+    var m1 = TreeSet[Int]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validate(m1, m1 + r.nextInt(1000))
+      m1 = validate(m1, m1 - r.nextInt(1000))
+
+      m2 = validate(m2, m2 + r.nextInt(1000))
+      m2 = validate(m2, m2 - r.nextInt(1000))
+
+      validate(m1, m1.union(m2))
+
+      var m3 = m1
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //subset
+      validate(m1, m1.union(m3))
+
+      m3 = m1
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      //superset
+      validate(m1, m1.union(m3))
+
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //overlap
+      validate(m1, m1.union(m3))
+    }
+  }
+  @Test
+  def randomTreeIntersect() {
+    val r = new Random(0)
+    var m1 = TreeSet[Int]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validate(m1, m1 + r.nextInt(1000))
+      m1 = validate(m1, m1 - r.nextInt(1000))
+
+      m2 = validate(m2, m2 + r.nextInt(1000))
+      m2 = validate(m2, m2 - r.nextInt(1000))
+
+      validate(m1, m1.intersect(m2))
+
+      var m3 = m1
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //subset
+      validate(m1, m1.intersect(m3))
+
+      m3 = m1
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      //superset
+      validate(m1, m1.intersect(m3))
+
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //overlap
+      validate(m1, m1.intersect(m3))
+    }
+  }
+  @Test
+  def randomTreeDiff() {
+    val r = new Random(0)
+    var m1 = TreeSet[Int]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validate(m1, m1 + r.nextInt(1000))
+      m1 = validate(m1, m1 - r.nextInt(1000))
+
+      m2 = validate(m2, m2 + r.nextInt(1000))
+      m2 = validate(m2, m2 - r.nextInt(1000))
+
+      validate(m1, m1.diff(m2))
+
+      var m3 = m1
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //subset
+      validate(m1, m1.diff(m3))
+
+      m3 = m1
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      //superset
+      validate(m1, m1.diff(m3))
+
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //overlap
+      validate(m1, m1.diff(m3))
+    }
+  }
+  @Test
+  def randomTreeFilter() {
+    val r = new Random(0)
+    var m1 = TreeSet[Int]()
+    var m2 = HashSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validate(m1, m1 + r.nextInt(1000))
+      m1 = validate(m1, m1 - r.nextInt(1000))
+
+      m2 = m2 + r.nextInt(1000)
+      m2 = m2 - r.nextInt(1000)
+
+      //we want this as a function, avoid any special optimised code
+      validate(m1, m1.filter(x => m2 contains x))
+
+      var m3 = m1
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //subset
+      validate(m1, m1.filter(x => m3 contains x))
+
+      m3 = m1
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      m3 = validate(m3, m3 + r.nextInt(1000))
+      //superset
+      validate(m1, m1.filter(x => m3 contains x))
+
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      m3 = validate(m3, m3 - r.nextInt(1000))
+      //overlap
+      validate(m1, m1.filter(x => m3 contains x))
+    }
+  }
+
+  @Test
+  def randomTreePartition() {
+    val r = new Random(0)
+    var m1 = TreeSet[Int]()
+    var m2 = TreeSet[Int]()
+    for (i <- 1 to 100000) {
+      m1 = validate(m1, m1 + r.nextInt(1000))
+      m1 = validate(m1, m1 - r.nextInt(1000))
+
+      m2 = m2 + r.nextInt(1000)
+      m2 = m2 - r.nextInt(1000)
+
+      //we want this as a function, avoid any special optimised code
+      {
+        val (p1, p2) = m1.partition(x => m2 contains x)
+        validate(m1, p1)
+        validate(m1, p2)
+      }
+      var m3 = m1
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+
+      //subset
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x)
+        validate(m1, p1)
+        validate(m1, p2)
+      }
+
+      m3 = m1
+      m3 = m3 + r.nextInt(1000)
+      m3 = m3 + r.nextInt(1000)
+      m3 = m3 + r.nextInt(1000)
+
+      //superset
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x)
+        validate(m1, p1)
+        validate(m1, p2)
+      }
+
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+      m3 = m3 - r.nextInt(1000)
+
+      //overlap
+      {
+        val (p1, p2) = m1.partition(x => m3 contains x)
+        validate(m1, p1)
+        validate(m1, p2)
+      }
+    }
+  }
+
 
   @Test
   def toStructuralSharing() {
