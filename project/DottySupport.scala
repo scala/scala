@@ -22,7 +22,7 @@ object TastySupport {
  *  Dotty in .travis.yml.
  */
 object DottySupport {
-  val dottyVersion = "0.27.0-RC1"
+  val dottyVersion = "3.0.0-M2"
   val compileWithDotty: Boolean =
     Option(System.getProperty("scala.build.compileWithDotty")).map(_.toBoolean).getOrElse(false)
   lazy val commonSettings = Seq(
@@ -31,34 +31,33 @@ object DottySupport {
     )
   )
   lazy val librarySettings = Seq(
-    // Needed to compile dotty-library together with scala-library
+    // Needed to compile scala3-library together with scala-library
     compileOrder := CompileOrder.Mixed,
 
-    // Add the dotty-library sources to the sourcepath
+    // Add the scala3-library sources to the sourcepath
     Compile / scalacOptions := {
       val old = (Compile / scalacOptions).value
 
       val (beforeSourcepath, "-sourcepath" :: oldSourcepath :: afterSourcePath) = old.span(_ != "-sourcepath")
 
       val newSourcepath =
-        ((Compile / sourceManaged).value / "dotty-library-src").getAbsolutePath +
+        ((Compile / sourceManaged).value / "scala3-library-src").getAbsolutePath +
         File.pathSeparator + oldSourcepath
 
       beforeSourcepath ++ ("-sourcepath" :: newSourcepath :: afterSourcePath)
     },
 
     Compile / scalacOptions ++= Seq(
-      "-Yerased-terms" // needed to compile dotty-library
+      "-Yerased-terms" // needed to compile scala3-library
     ),
 
     // Some files shouldn't be compiled
     unmanagedSources / excludeFilter ~= (old =>
       old ||
-      "AnyVal.scala" ||
-      "language.scala"  // Replaced by scalaShadowing/language.scala from dotty-library
+      "AnyVal.scala"
     ),
 
-    // Add the sources of dotty-library to the current project to compile the
+    // Add the sources of scala3-library to the current project to compile the
     // complete standard library of Dotty in one go.
     // Adapted from similar code in the scala-js build.
     Compile / sourceGenerators += Def.task {
@@ -73,7 +72,7 @@ object DottySupport {
 
       val s = streams.value
       val cacheDir = s.cacheDirectory
-      val trgDir = (Compile / sourceManaged).value / "dotty-library-src"
+      val trgDir = (Compile / sourceManaged).value / "scala3-library-src"
 
       val dottyLibrarySourceJar = fetchSourceJarOf(
         dependencyResolution.value,
@@ -81,11 +80,11 @@ object DottySupport {
         updateConfiguration.value,
         (update / unresolvedWarningConfiguration).value,
         streams.value.log,
-        scalaOrganization.value %% "dotty-library" % scalaVersion.value)
+        scalaOrganization.value %% "scala3-library" % scalaVersion.value)
 
       FileFunction.cached(cacheDir / s"fetchDottyLibrarySource",
         FilesInfo.lastModified, FilesInfo.exists) { dependencies =>
-        s.log.info(s"Unpacking dotty-library sources to $trgDir...")
+        s.log.info(s"Unpacking scala3-library sources to $trgDir...")
         if (trgDir.exists)
           IO.delete(trgDir)
         IO.createDirectory(trgDir)
