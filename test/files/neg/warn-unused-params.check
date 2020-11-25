@@ -28,6 +28,15 @@ warn-unused-params.scala:89: warning: parameter value i in anonymous function is
 warn-unused-params.scala:95: warning: parameter value i in anonymous function is never used
   def g = for (i <- List(1)) yield 42    // warn map.(i => 42)
                ^
+warn-unused-params.scala:99: warning: parameter value ctx in method f is never used
+  def f[A](implicit ctx: Context[A]) = 42
+                    ^
+warn-unused-params.scala:100: warning: parameter value evidence$1 in method g is never used
+  def g[A: Context] = 42
+      ^
+warn-unused-params.scala:102: warning: parameter value evidence$2 in class Bound is never used
+class Bound[A: Context]
+             ^
 error: No warnings can be incurred under -Werror.
-10 warnings
+13 warnings
 1 error

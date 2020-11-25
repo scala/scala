@@ -124,8 +124,9 @@ trait Warnings {
     val Locals    = Choice("locals",    "Warn if a local definition is unused.")
     val Explicits = Choice("explicits", "Warn if an explicit parameter is unused.")
     val Implicits = Choice("implicits", "Warn if an implicit parameter is unused.")
+    val Synthetics = Choice("synthetics", "Warn if a synthetic implicit parameter (context bound) is unused.")
     val Nowarn    = Choice("nowarn",    "Warn if a @nowarn annotation does not suppress any warnings.")
-    val Params    = Choice("params",    "Enable -Wunused:explicits,implicits.", expandsTo = List(Explicits, Implicits))
+    val Params    = Choice("params",    "Enable -Wunused:explicits,implicits,synthetics.", expandsTo = List(Explicits, Implicits, Synthetics))
     val Linted    = Choice("linted",    "-Xlint:unused.", expandsTo = List(Imports, Privates, Locals, Implicits, Nowarn))
   }
 
@@ -142,9 +143,10 @@ trait Warnings {
   def warnUnusedPatVars   = warnUnused contains UnusedWarnings.PatVars
   def warnUnusedPrivates  = warnUnused contains UnusedWarnings.Privates
   def warnUnusedLocals    = warnUnused contains UnusedWarnings.Locals
-  def warnUnusedParams    = warnUnusedExplicits || warnUnusedImplicits
+  def warnUnusedParams    = warnUnusedExplicits || warnUnusedImplicits || warnUnusedSynthetics
   def warnUnusedExplicits = warnUnused contains UnusedWarnings.Explicits
   def warnUnusedImplicits = warnUnused contains UnusedWarnings.Implicits
+  def warnUnusedSynthetics = warnUnused contains UnusedWarnings.Synthetics
   def warnUnusedNowarn    = warnUnused contains UnusedWarnings.Nowarn
 
   val warnExtraImplicit   = BooleanSetting("-Wextra-implicit", "Warn when more than one implicit parameter section is defined.") withAbbreviation "-Ywarn-extra-implicit"
