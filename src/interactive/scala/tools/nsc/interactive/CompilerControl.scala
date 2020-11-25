@@ -292,6 +292,7 @@ trait CompilerControl { self: Global =>
     def infoString = s"$accessible_s${sym.defStringSeenAs(tpe)}"
   }
 
+  // Note: a `TypeMember` is a member *of* a type, not a member that *is* a type
   case class TypeMember(
     sym: Symbol,
     tpe: Type,

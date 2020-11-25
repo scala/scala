@@ -16,7 +16,7 @@ package interactive
 import java.io.{FileReader, FileWriter}
 import java.util.concurrent.ConcurrentHashMap
 
-import scala.annotation.{elidable, tailrec, nowarn}
+import scala.annotation.{elidable, nowarn, tailrec}
 import scala.collection.mutable
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.jdk.javaapi.CollectionConverters
@@ -1076,6 +1076,9 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     //if (debugIDE) typeMembers(pos)
   }
 
+  // it's expected that later items in the `LazyList` supersede earlier items.
+  // (once a second item becomes available, you entirely discard the first item,
+  // rather than combine them)
   private def typeMembers(pos: Position): LazyList[List[TypeMember]] = {
     // Choosing which tree will tell us the type members at the given position:
     //   If pos leads to an Import, type the expr
@@ -1153,7 +1156,6 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
           addTypeMember(sym, vpre, inherited = false, view.tree.symbol)
         }
       }
-      //println()
       LazyList(members.allMembers)
     }
   }
@@ -1165,29 +1167,34 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     def name: Name
     /** Cursor Offset - positionDelta == position of the start of the name */
     def positionDelta: Int
+    def forImport: Boolean
     def matchingResults(nameMatcher: (Name) => Name => Boolean = entered => candidate => candidate.startsWith(entered)): List[M] = {
       val enteredName = if (name == nme.ERROR) nme.EMPTY else name
       val matcher = nameMatcher(enteredName)
       results filter { (member: Member) =>
         val symbol = member.sym
         def isStable = member.tpe.isStable || member.sym.isStable || member.sym.getterIn(member.sym.owner).isStable
-        def isJunk = symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
-        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && (symbol.name.isTermName == name.isTermName || name.isTypeName && isStable))
+        def isJunk = !symbol.exists || symbol.name.isEmpty || !isIdentifierStart(member.sym.name.charAt(0)) // e.g. <byname>
+        def nameTypeOk = forImport ||                  // Completing an import: keep terms and types.
+          symbol.name.isTermName == name.isTermName || // Keep names of the same type
+          name.isTypeName && isStable                  // Completing a type: keep stable terms (paths)
+        !isJunk && member.accessible && !symbol.isConstructor && (name.isEmpty || matcher(member.sym.name) && nameTypeOk)
       }
     }
   }
   object CompletionResult {
-    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name) extends CompletionResult {
+    final case class ScopeMembers(positionDelta: Int, results: List[ScopeMember], name: Name, forImport: Boolean) extends CompletionResult {
       type M = ScopeMember
     }
     final case class TypeMembers(positionDelta: Int, qualifier: Tree, tree: Tree, results: List[TypeMember], name: Name) extends CompletionResult {
+      def forImport: Boolean = tree.isInstanceOf[Import]
       type M = TypeMember
     }
     case object NoResults extends CompletionResult {
       override def results = Nil
       override def name = nme.EMPTY
       override def positionDelta = 0
-
+      override def forImport: Boolean = false
     }
     private val CamelRegex = "([A-Z][^A-Z]*)".r
     private def camelComponents(s: String, allowSnake: Boolean): List[String] = {
@@ -1231,7 +1238,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
     val focus1: Tree = typedTreeAt(pos)
     def typeCompletions(tree: Tree, qual: Tree, nameStart: Int, name: Name): CompletionResult = {
       val qualPos = qual.pos
-      val allTypeMembers = typeMembers(qualPos).toList.flatten
+      val allTypeMembers = typeMembers(qualPos).last
       val positionDelta: Int = pos.start - nameStart
       val subName: Name = name.newName(new String(pos.source.content, nameStart, pos.start - nameStart)).encodedName
       CompletionResult.TypeMembers(positionDelta, qual, tree, allTypeMembers, subName)
@@ -1242,7 +1249,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val nameStart = i.pos.start
         val positionDelta: Int = pos.start - nameStart
         val subName = name.subName(0, pos.start - i.pos.start)
-        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = true)
       case imp@Import(qual, selectors) =>
         selectors.reverseIterator.find(_.namePos <= pos.start) match {
           case None => CompletionResult.NoResults
@@ -1261,7 +1268,7 @@ class Global(settings: Settings, _reporter: Reporter, projectName: String = "") 
         val allMembers = scopeMembers(pos)
         val positionDelta: Int = pos.start - focus1.pos.start
         val subName = name.subName(0, positionDelta)
-        CompletionResult.ScopeMembers(positionDelta, allMembers, subName)
+        CompletionResult.ScopeMembers(positionDelta, allMembers, subName, forImport = false)
       case _ =>
         CompletionResult.NoResults
     }

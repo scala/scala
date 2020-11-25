@@ -180,7 +180,6 @@ trait PresentationCompilation { self: IMain =>
       def toCandidates(members: List[Member]): List[CompletionCandidate] =
         members
           .map(m => CompletionCandidate(m.symNameDropLocal.decoded, memberArity(m), isMemberDeprecated(m), isMemberUniversal(m)))
-          .distinctBy(_.defString)
           .sortBy(_.defString)
       val found = this.completionsAt(cursor) match {
         case NoResults => NoCandidates
