@@ -13,7 +13,7 @@
 package scala.tools.testkit
 
 import java.io.{IOException, File}
-import java.nio.file.{Files, FileVisitor, FileVisitResult, SimpleFileVisitor, Path}, FileVisitResult.{CONTINUE => Continue}
+import java.nio.file.{Files, FileVisitResult, SimpleFileVisitor, Path}, FileVisitResult.{CONTINUE => Continue}
 import java.nio.file.attribute._
 
 import scala.util.Properties
